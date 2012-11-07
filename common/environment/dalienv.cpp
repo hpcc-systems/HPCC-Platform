@@ -438,13 +438,42 @@ bool getRemoteRunInfo(const char * keyName, const char * exeName, const char * v
     return false;
 }
 
+#define SDS_CONNECT_TIMEOUT 30000
 bool envGetConfigurationDirectory(const char *category, const char *component,const char *instance, StringBuffer &dirout)
 {
     SessionId sessid = myProcessSession();
     if (!sessid)
         return false;
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories",sessid, 0, 10000);
+    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories",sessid, 0, SDS_CONNECT_TIMEOUT);
     if (conn) 
         return getConfigurationDirectory(conn->queryRoot(),category,component,instance,dirout);
     return false;
+}
+
+IPropertyTree *envGetNASConfiguration()
+{
+    SessionId sessid = myProcessSession();
+    if (!sessid)
+        return NULL;
+    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware/NAS", sessid, 0, SDS_CONNECT_TIMEOUT);
+    if (!conn)
+        return NULL;
+    return createPTreeFromIPT(conn->queryRoot());
+}
+
+IPropertyTree *envGetInstallNASHooks()
+{
+    IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
+    if (!daFileSrvHook) // probably always installed
+        return NULL;
+    daFileSrvHook->clearSubNetFilters();
+    Owned<IPropertyTree> nasPTree = envGetNASConfiguration();
+    if (!nasPTree)
+        return NULL;
+    return daFileSrvHook->addMySubnetFilters(nasPTree);
+}
+
+void envInstallNASHooks()
+{
+    Owned<IPropertyTree> installedFilters = envGetInstallNASHooks();
 }

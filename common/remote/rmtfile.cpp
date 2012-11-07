@@ -62,8 +62,56 @@ void setLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mount
 
 
 
-class CDaliServixIntercept: public CInterface, implements IRemoteFileCreateHook
+class CDaliServixFilter : public CInterface
 {
+    IpSubNet ipSubNet;
+    StringAttr dir;
+    bool trace;
+public:
+    CDaliServixFilter(IPropertyTree &filter)
+    {
+        const char *subnet = filter.queryProp("@subnet");
+        const char *mask = filter.queryProp("@mask");
+        if (!ipSubNet.set(subnet, mask))
+            throw MakeStringException(0, "Invalid sub net definition: %s, %s", subnet, mask);
+        dir.set(filter.queryProp("@directory"));
+        trace = filter.getPropBool("@trace");
+    }
+    CDaliServixFilter(const char *subnet, const char *mask, const char *_dir, bool _trace) : dir(_dir), trace(_trace)
+    {
+        if (!ipSubNet.set(subnet, mask))
+            throw MakeStringException(0, "Invalid sub net definition: %s, %s", subnet, mask);
+    }
+    bool queryTrace() const { return trace; }
+    const char *queryDirectory() const { return dir; }
+    const IpSubNet &querySubNet() const { return ipSubNet; }
+    bool testIp(const IpAddress &ip) const { return ipSubNet.test(ip); }
+    bool testPath(const char *path) const
+    {
+        if (!dir) // if no dir in filter, match any
+            return true;
+        else
+            return startsWith(path, dir.get());
+    }
+};
+
+class CDaliServixIntercept: public CInterface, implements IDaFileSrvHook
+{
+    CIArrayOf<CDaliServixFilter> filters;
+
+    void addSubnetFilter(CDaliServixFilter *filter)
+    {
+        const IpSubNet &ipSubNet = filter->querySubNet();
+        StringBuffer msg("DaFileSrvHook: adding translateToLocal(subnet=");
+        ipSubNet.getNetText(msg);
+        msg.append(", mask=");
+        ipSubNet.getMaskText(msg);
+        if (filter->queryDirectory())
+            msg.append(", dir=").append(filter->queryDirectory());
+        msg.append(", trace=").append(filter->queryTrace() ? "true" : "false").append(")");
+        PROGLOG("%s", msg.str());
+        filters.append(*filter);
+    }
 public:
     IMPLEMENT_IINTERFACE;
     virtual IFile * createIFile(const RemoteFilename & filename)
@@ -71,10 +119,33 @@ public:
         SocketEndpoint ep = filename.queryEndpoint();
         bool noport = (ep.port==0);
         setDafsEndpointPort(ep);
-        if (!filename.isLocal()||(ep.port!=DAFILESRV_PORT)) {   // assume standard port is running on local machine 
+        if (!filename.isLocal()||(ep.port!=DAFILESRV_PORT)) // assume standard port is running on local machine
+        {
 #ifdef __linux__
-#ifndef USE_SAMBA   
-            return createDaliServixFile(filename);  
+#ifndef USE_SAMBA
+            if (noport && filters.ordinality())
+            {
+                ForEachItemIn(sn, filters)
+                {
+                    CDaliServixFilter &filter = filters.item(sn);
+                    if (filter.testIp(ep))
+                    {
+                        StringBuffer lPath;
+                        filename.getLocalPath(lPath);
+                        if (filter.testPath(lPath.str()))
+                        {
+                            if (filter.queryTrace())
+                            {
+                                StringBuffer fromPath;
+                                filename.getRemotePath(fromPath);
+                                PROGLOG("Redirecting path: '%s' to '%s", fromPath.str(), lPath.str());
+                            }
+                            return ::createIFile(lPath.str());
+                        }
+                    }
+                }
+            }
+            return createDaliServixFile(filename);
 #endif
 #endif
             if (!noport)            // expect all filenames that specify port to be dafilesrc or daliservix
@@ -87,7 +158,42 @@ public:
                 return createDaliServixFile(filename);  
         }
         return NULL;
-    }   
+    }
+    virtual void addSubnetFilter(const char *subnet, const char *mask, const char *dir, bool trace)
+    {
+        Owned<CDaliServixFilter> filter = new CDaliServixFilter(subnet, mask, dir, trace);
+        addSubnetFilter(filter.getClear());
+    }
+    virtual IPropertyTree *addSubnetFilters(IPropertyTree *config, const IpAddress *myIp)
+    {
+        if (!config)
+            return NULL;
+        Owned<IPropertyTree> result;
+        Owned<IPropertyTreeIterator> iter = config->getElements("Filter");
+        ForEach(*iter)
+        {
+            Owned<CDaliServixFilter> filter = new CDaliServixFilter(iter->query());
+            // Only add filters where myIP is within subnet
+            if (!myIp || filter->testIp(*myIp))
+            {
+                addSubnetFilter(filter.getClear());
+                if (!result)
+                    result.setown(createPTree());
+                result->addPropTree("Filter", LINK(&iter->query()));
+            }
+        }
+        return result.getClear();
+    }
+    virtual IPropertyTree *addMySubnetFilters(IPropertyTree *config)
+    {
+        IpAddress ip;
+        GetHostIp(ip);
+        return addSubnetFilters(config, &ip);
+    }
+    virtual void clearSubNetFilters()
+    {
+        filters.kill();
+    }
 } *DaliServixIntercept = NULL;
 
 bool testDaliServixPresent(const SocketEndpoint &_ep)
@@ -717,3 +823,7 @@ MODULE_EXIT()
     removeFileHooks();
 }
 
+IDaFileSrvHook *queryDaFileSrvHook()
+{
+    return DaliServixIntercept;
+}

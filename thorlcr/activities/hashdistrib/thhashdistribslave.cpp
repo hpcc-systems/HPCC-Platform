@@ -742,11 +742,10 @@ public:
         fixedEstSize = meta->querySerializedMeta()->getFixedSize();
         rowManager = activity->queryJob().queryRowManager();
 
-        bool defaultAllowSpill = activity->queryJob().getWorkUnitValueBool("allowSpillHashDist", globals->getPropBool("@allowSpillHashDist", true));
-        allowSpill = activity->queryContainer().queryXGMML().getPropBool("hint[@name=\"allow_spill\"]/@value", defaultAllowSpill);
+        allowSpill = activity->getOptBool(THOROPT_HDIST_SPILL, true);
         if (allowSpill)
             ActPrintLog(activity, "Using spilling buffer (will spill if overflows)");
-        writerPoolSize = (unsigned)activity->queryJob().getWorkUnitValueInt("hashDistWritePoolSize", globals->getPropInt("@hashDistWritePoolSize", DEFAULT_WRITEPOOLSIZE));
+        writerPoolSize = activity->getOptUInt(THOROPT_HDIST_WRITE_POOL_SIZE, DEFAULT_WRITEPOOLSIZE);
         if (writerPoolSize>numnodes)
             writerPoolSize = numnodes; // no point in more
         ActPrintLog(activity, "Writer thread pool size : %d", writerPoolSize);
@@ -1793,8 +1792,10 @@ public:
         ThorDataLinkMetaInfo info;
         in->getMetaInfo(info);
         offset_t sz = info.byteTotal;
-        if (sz==(offset_t)-1) {
+        if (sz==(offset_t)-1)
+        {
             // not great but hopefully exception not rule!
+            unsigned rwFlags = DEFAULT_RWFLAGS;
             sz = 0;
             StringBuffer tempname;
             GetTempName(tempname,"hdprop",true); // use alt temp dir
@@ -1803,10 +1804,13 @@ public:
                 ActPrintLogEx(&activity->queryContainer(), thorlog_null, MCwarning, "REDISTRIBUTE size unknown, spilling to disk");
                 MemoryAttr ma;
                 activity->startInput(in);
-                Owned<IExtRowWriter> out = createRowWriter(tempfile,serializer,activity->queryRowAllocator(),false, false, false);
+                if (activity->getOptBool(THOROPT_COMPRESS_SPILLS, true))
+                    rwFlags |= rw_compress;
+                Owned<IExtRowWriter> out = createRowWriter(tempfile, activity, rwFlags);
                 if (!out)
                     throw MakeStringException(-1,"Could not created file %s",tempname.str());
-                loop {
+                loop
+                {
                     const void * row = in->ungroupedNextRow();
                     if (!row)
                         break;
@@ -1816,7 +1820,7 @@ public:
                 sz = out->getPosition();
                 activity->stopInput(in);
             }
-            ret.setown(createSimpleRowStream(tempfile,activity));
+            ret.setown(createRowStream(tempfile, activity, rwFlags));
         }
         CMessageBuffer mb;
         mb.append(sz);
@@ -2139,20 +2143,23 @@ public:
 
 class CSpill : public CSimpleInterface, implements IRowWriter
 {
+    CActivityBase &owner;
     IRowInterfaces *rowIf;
     rowcount_t count;
     Owned<CFileOwner> spillFile;
     IRowWriter *writer;
     StringAttr desc;
-    unsigned bucketN;
+    unsigned bucketN, rwFlags;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CSpill(IRowInterfaces *_rowIf, const char *_desc, unsigned _bucketN) : rowIf(_rowIf), desc(_desc), bucketN(_bucketN)
+    CSpill(CActivityBase &_owner, IRowInterfaces *_rowIf, const char *_desc, unsigned _bucketN)
+        : owner(_owner), rowIf(_rowIf), desc(_desc), bucketN(_bucketN)
     {
         count = 0;
         writer = NULL;
+        rwFlags = DEFAULT_RWFLAGS;
     }
     ~CSpill()
     {
@@ -2167,7 +2174,9 @@ public:
         GetTempName(tempname, prefix.str(), true);
         OwnedIFile iFile = createIFile(tempname.str());
         spillFile.setown(new CFileOwner(iFile.getLink()));
-        writer = createRowWriter(iFile, rowIf->queryRowSerializer(), rowIf->queryRowAllocator());
+        if (owner.getOptBool(THOROPT_COMPRESS_SPILLS, true))
+            rwFlags |= rw_compress;
+        writer = createRowWriter(iFile, rowIf, rwFlags);
     }
     IRowStream *getReader(rowcount_t *_count=NULL) // NB: also detatches ownership of 'fileOwner'
     {
@@ -2175,7 +2184,7 @@ public:
         Owned<CFileOwner> fileOwner = spillFile.getClear();
         if (!fileOwner)
             return NULL;
-        Owned<IExtRowStream> strm = createSimpleRowStream(&fileOwner->queryIFile(), rowIf);
+        Owned<IExtRowStream> strm = createRowStream(&fileOwner->queryIFile(), rowIf, rwFlags);
         Owned<CStreamFileOwner> fileStream = new CStreamFileOwner(fileOwner, strm);
         if (_count)
             *_count = count;
@@ -2188,7 +2197,7 @@ public:
             return;
         flush();
         ::Release(writer);
-        writer =NULL;
+        writer = NULL;
     }
 // IRowWriter
     virtual void putRow(const void *row)
@@ -2393,8 +2402,9 @@ class HashDedupSlaveActivityBase : public CSlaveActivity, public CThorDataLink
 {
 protected:
     IRowStream *input;      // can be changed
+    IRowStream *initialInput;
     Owned<IRowStream> currentInput;
-    bool inputstopped, eos, extractKey, local, isVariable;
+    bool inputstopped, eos, lastEog, extractKey, local, isVariable, grouped;
     const char *actTxt;
     IHThorHashDedupArg *helper;
     IHash *iHash, *iKeyHash;
@@ -2406,7 +2416,7 @@ protected:
     SpinLock stopSpin;
     PointerArrayOf<CHashTableRowTable> _hashTables;
     CHashTableRowTable **hashTables;
-    unsigned numHashTables;
+    unsigned numHashTables, initialNumBuckets;
     roxiemem::RoxieHeapFlags allocFlags;
 
     inline CHashTableRowTable &queryHashTable(unsigned n) const { return *hashTables[n]; }
@@ -2445,7 +2455,17 @@ public:
     HashDedupSlaveActivityBase(CGraphElementBase *_container, bool _local)
         : CSlaveActivity(_container), CThorDataLink(this), local(_local)
     {
-        inputstopped = false;
+        input = initialInput = NULL;
+        actTxt = NULL;
+        initialNumBuckets = 0;
+        inputstopped = eos = lastEog = extractKey = local = isVariable = grouped = false;
+        helper = NULL;
+        iHash = iKeyHash = NULL;
+        iCompare = rowKeyCompare = NULL;
+        keyRowInterfaces = NULL;
+        hashTables = NULL;
+        numHashTables = initialNumBuckets = 0;
+        roxiemem::RoxieHeapFlags allocFlags = roxiemem::RHFnone;
     }
     ~HashDedupSlaveActivityBase()
     {
@@ -2458,8 +2478,6 @@ public:
         iHash = helper->queryHash();
         appendOutputLinked(this);
         iCompare = helper->queryCompare();
-        numHashTables = 0;
-        hashTables = NULL;
         allocFlags = queryJob().queryThorAllocator()->queryFlags();
 
         // JCSMORE - it may not be worth extracting the key,
@@ -2496,21 +2514,27 @@ public:
             rowKeyCompare = iCompare;
             iKeyHash = iHash;
         }
+        grouped = container.queryGrouped();
     }
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         inputstopped = false;
-        eos = false;
+        eos = lastEog = false;
         startInput(inputs.item(0));
-        input = inputs.item(0);
         ThorDataLinkMetaInfo info;
         inputs.item(0)->getMetaInfo(info);
+        initialInput = input = inputs.item(0);
         unsigned div = local ? 1 : queryJob().querySlaves(); // if global, hash values already modulated by # slaves
         bucketHandler.setown(new CBucketHandler(*this, this, keyRowInterfaces, iHash, iKeyHash, rowKeyCompare, extractKey, 0, div));
-        unsigned initialNumBuckets = container.queryXGMML().getPropInt("hint[@name=\"num_buckets\"]/@value");
+        initialNumBuckets = container.queryXGMML().getPropInt("hint[@name=\"num_buckets\"]/@value");
         if (0 == initialNumBuckets)
-            initialNumBuckets = bucketHandler->getBucketEstimate(info.totalRowsMax); // will use default if no meta total
+        {
+            if (grouped)
+                initialNumBuckets = HASHDEDUP_BUCKETS_MIN;
+            else
+                initialNumBuckets = bucketHandler->getBucketEstimate(info.totalRowsMax); // will use default if no meta total
+        }
         ensureNumHashTables(initialNumBuckets);
         bucketHandler->init(initialNumBuckets);
         dataLinkStart(actTxt, container.queryId());
@@ -2543,10 +2567,11 @@ public:
             OwnedConstThorRow row;
             {
                 SpinBlock b(stopSpin);
-                row.setown(input->ungroupedNextRow());
+                row.setown(grouped?input->nextRow():input->ungroupedNextRow());
             }
             if (row)
             {
+                lastEog = false;
                 if (bucketHandler->addRow(row)) // true if new, i.e. non-duplicate (does not take ownership)
                 {
                     dataLinkIncrement();
@@ -2558,7 +2583,7 @@ public:
                 Owned<CBucketHandler> nextBucketHandler;
                 loop
                 {
-                    // If spill event occured, disk buckets + key buckets will have been created by this stage.
+                    // If spill event occurred, disk buckets + key buckets will have been created by this stage.
                     bucketHandler->flushBuckets();
 
                     // pop off parents until one has a bucket left to read
@@ -2570,7 +2595,22 @@ public:
                         {
                             currentInput.clear();
                             bucketHandler.clear();
-                            eos = true;
+                            if (grouped)
+                            {
+                                if (lastEog)
+                                    eos = true;
+                                else
+                                {
+                                    lastEog = true;
+                                    // reset for next group
+                                    input = initialInput;
+                                    bucketHandler.setown(new CBucketHandler(*this, this, keyRowInterfaces, iHash, iKeyHash, rowKeyCompare, extractKey, 0, 1));
+                                    ensureNumHashTables(initialNumBuckets); // resets
+                                    bucketHandler->init(initialNumBuckets);
+                                }
+                            }
+                            else
+                                eos = true;
                             return NULL;
                         }
                         bucketHandler.setown(&bucketHandlerStack.popGet());
@@ -2591,7 +2631,7 @@ public:
         }
     }
 
-    virtual bool isGrouped() { return false; }
+    virtual bool isGrouped() { return grouped; }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
 friend class CBucketHandler;
 friend class CHashTableRowTable;
@@ -2664,7 +2704,7 @@ bool CHashTableRowTable::rehash()
 
 CBucket::CBucket(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable &_htRows)
     : owner(_owner), rowIf(_rowIf), keyIf(_keyIf), iRowHash(_iRowHash), iKeyHash(_iKeyHash), iCompare(_iCompare), extractKey(_extractKey), bucketN(_bucketN), htRows(_htRows),
-      rowSpill(_rowIf, "rows", _bucketN), keySpill(_keyIf, "keys", _bucketN)
+      rowSpill(owner, _rowIf, "rows", _bucketN), keySpill(owner, _keyIf, "keys", _bucketN)
 
 {
     spilt = false;

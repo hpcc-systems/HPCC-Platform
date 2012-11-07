@@ -285,9 +285,8 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
                 <xsl:message terminate="yes">This XSL transformation can only be run by an XSLT processor supporting exslt sets!</xsl:message>
             </xsl:if>
             <Plugins>
-                <xsl:attribute name="path"><xsl:for-each select="set:distinct($pluginsNodes)"><xsl:if test="../@type != 'lib'"><xsl:choose><xsl:when test="$isLinuxInstance"><xsl:value-of select="translate(../@destPath, '\', '/')"/><xsl:value-of select="translate(., '\', '/')"/><xsl:text disable-output-escaping="yes">:</xsl:text></xsl:when><xsl:otherwise><xsl:value-of select="../@destPath"/><!--already has \ --><xsl:value-of select="."/><xsl:text disable-output-escaping="yes">;</xsl:text></xsl:otherwise></xsl:choose></xsl:if></xsl:for-each></xsl:attribute>
+               <xsl:attribute name="path"><xsl:value-of select="@pluginsPath"/></xsl:attribute>
             </Plugins>
-
         </EspService>
         <EspBinding name="{$bindName}" service="{$serviceName}" protocol="{$bindingNode/@protocol}" type="{$bindType}" plugin="{$servicePlugin}" netAddress="0.0.0.0" port="{$bindingNode/@port}">
             <xsl:call-template name="bindAuthentication">

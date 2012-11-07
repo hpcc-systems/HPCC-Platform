@@ -562,6 +562,13 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
+      <xs:attribute name="compressInternalSpills" type="xs:boolean" default="true">
+        <xs:annotation>
+          <xs:appinfo>
+            <tooltip>Compress internal writes to disk when spilling</tooltip>
+          </xs:appinfo>
+        </xs:annotation>
+      </xs:attribute>
     </xs:complexType>
     <xs:key name="thorProcessKey1">
       <xs:selector xpath="./ThorMasterProcess|./ThorSlaveProcess"/>

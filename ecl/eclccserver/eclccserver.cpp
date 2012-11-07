@@ -220,6 +220,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread
                     Owned<ILocalWorkUnit> embeddedWU = createLocalWorkUnit();
                     embeddedWU->loadXML(wuXML);
                     queryExtendedWU(workunit)->copyWorkUnit(embeddedWU, true);
+                    workunit->setIsClone(false);
                     SCMStringBuffer jobname;
                     if (embeddedWU->getJobName(jobname).length()) //let ECL win naming job during initial compile
                         workunit->setJobName(jobname.str());

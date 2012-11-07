@@ -45,6 +45,13 @@
     #define graph_decl
 #endif
 
+/// Thor options, that can be hints, workunit options, or global settings
+#define THOROPT_COMPRESS_SPILLS       "compressInternalSpills"
+#define THOROPT_HDIST_SPILL           "hdistSpill"
+#define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"
+#define THOROPT_SPLITTER_SPILL        "splitterSpill"
+#define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"
+
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
 #define THOR_SEM_RETRY_TIMEOUT 2
