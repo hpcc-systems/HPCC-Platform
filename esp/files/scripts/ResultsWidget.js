@@ -15,8 +15,10 @@
 ############################################################################## */
 define([
 	"dojo/_base/declare",
+	"dojo/_base/lang",
 	"dojo/_base/xhr",
 	"dojo/dom",
+	"dojo/request/iframe",
 
 	"dijit/layout/_LayoutWidget",
 	"dijit/_TemplatedMixin",
@@ -28,7 +30,7 @@ define([
 	"hpcc/ESPWorkunit",
 	"hpcc/ResultsControl",
 	"dojo/text!../templates/ResultsWidget.html"
-], function (declare, xhr, dom,
+], function (declare, lang, xhr, dom, iframe,
 				_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, TabContainer, registry,
 				ESPBase, ESPWorkunit, ResultsControl,
 				template) {
@@ -36,6 +38,7 @@ define([
         templateString: template,
         baseClass: "ResultsWidget",
 
+        borderContainer: null,
         resultsPane: null,
         resultsControl: null,
 
@@ -46,7 +49,6 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this._initControls();
-            this.resultsPane.resize();
         },
 
         startup: function (args) {
@@ -55,11 +57,43 @@ define([
 
         resize: function (args) {
             this.inherited(arguments);
-            this.resultsPane.resize();
+            this.borderContainer.resize();
         },
 
         layout: function (args) {
             this.inherited(arguments);
+        },
+
+        _doDownload: function (type) {
+            if (lang.exists("resultsControl.selectedResult.Sequence", this)) {
+                var sequence = this.resultsControl.selectedResult.Sequence;
+                var downloadPdfIframeName = "downloadIframe_" + sequence;
+                var frame = iframe.create(downloadPdfIframeName);
+                var url = this.wu.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + this.wu.wuid + "&Sequence=" + sequence;
+                iframe.setSrc(frame, url, true);
+            } else if (lang.exists("resultsControl.selectedResult.Name", this)) {
+                var logicalName = this.resultsControl.selectedResult.Name;
+                var downloadPdfIframeName = "downloadIframe_" + logicalName;
+                var frame = iframe.create(downloadPdfIframeName);
+                var url = this.wu.getBaseURL() + "/WUResultBin?Format=" + type + "&Wuid=" + this.wu.wuid + "&LogicalName=" + logicalName;
+                iframe.setSrc(frame, url, true);
+            }
+        },
+
+        _onDownloadZip: function (args) {
+            this._doDownload("zip");
+        },
+
+        _onDownloadGZip: function (args) {
+            this._doDownload("gzip");
+        },
+
+        _onDownloadXLS: function (args) {
+            this._doDownload("xls");
+        },
+
+        _onFileDetails: function (args) {
+            alert("todo");
         },
 
         //  Implementation  ---
@@ -68,11 +102,12 @@ define([
 
         _initControls: function () {
             var context = this;
+            this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.resultsPane = registry.byId(this.id + "ResultsPane");
 
             var context = this;
             this.resultsControl = new ResultsControl({
-                resultsSheetID: this.id + "ResultsPane",
+                id: this.id + "ResultsPane",
                 sequence: 0,
                 onErrorClick: function (line, col) {
                     context.onErrorClick(line, col);

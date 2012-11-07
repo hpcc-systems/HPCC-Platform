@@ -16,38 +16,30 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/aspect",
-    "dojo/has",
-    "dojo/dom",
-    "dojo/dom-construct",
-    "dojo/dom-class",
     "dojo/store/Memory",
-    "dojo/_base/Color",
 
     "dijit/registry",
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
-    "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
 
     "dojox/treemap/TreeMap",
-    "dojox/color/MeanColorModel",
 
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
-    function (declare, aspect, has, dom, domConstruct, domClass, Memory, Color,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, ContentPane,
-            TreeMap, MeanColorModel,
+    function (declare, Memory,
+            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ContentPane,
+            TreeMap, 
             ESPWorkunit,
             template) {
         return declare("TimingTreeMapWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
             baseClass: "TimingTreeMapWidget",
-            borderContainer: null,
-            timingContentPane: null,
+            contentPane: null,
+            treeMap: null,
 
             dataStore: null,
 
@@ -59,17 +51,17 @@ define([
 
             postCreate: function (args) {
                 this.inherited(arguments);
-                this.borderContainer = registry.byId(this.id + "BorderContainer");
-                this.timingContentPane = registry.byId(this.id + "TimingContentPane");
+                this.contentPane = registry.byId(this.id + "ContentPane");
+                this.treeMap = registry.byId(this.id + "TreeMap");
 
                 var context = this;
-                this.timingContentPane.on("change", function (e) {
+                this.treeMap.on("change", function (e) {
                     context.lastSelection = e.newValue;
                 });
-                this.timingContentPane.on("click", function (evt) {
+                this.treeMap.on("click", function (evt) {
                     context.onClick(context.lastSelection);
                 });
-                this.timingContentPane.on("dblclick", function (evt) {
+                this.treeMap.on("dblclick", function (evt) {
                     context.onDblClick(context.lastSelection);
                 });
             },
@@ -80,7 +72,7 @@ define([
 
             resize: function (args) {
                 this.inherited(arguments);
-                this.borderContainer.resize();
+                this.contentPane.resize();
             },
 
             layout: function (args) {
@@ -94,9 +86,6 @@ define([
             onDblClick: function (value) {
             },
 
-            initTreeMap: function () {
-            },
-
             init: function (params) {
                 var context = this;
                 if (params.Wuid) {
@@ -104,35 +93,52 @@ define([
                         wuid: params.Wuid
                     });
                     this.wu.fetchTimers(function (timers) {
+                        context.timers = timers;
                         context.loadTimers(timers, "*");
                     });
                 }
             },
 
+            setQuery: function(query) {
+                this.loadTimers(this.timers, query);
+            },
+
+            getSelected: function () {
+                return [{
+                    SubGraphId: this.lastSelection.subGraphId
+                }];
+            },
+
+            setSelected: function (selItems) {
+                //  TODO:  Not sure this possible...
+            },
+
             loadTimers: function (timers, query) {
                 this.largestValue = 0;
                 var timerData = [];
-                for (var i = 0; i < timers.length; ++i) {
-                    if (timers[i].GraphName && (query == "*" || query == timers[i].GraphName)) {
-                        var value = timers[i].Seconds;
-                        timerData.push({
-                            graphName: timers[i].GraphName,
-                            subGraphId: timers[i].SubGraphId,
-                            name: timers[i].Name,
-                            value: value
-                        });
-                        if (this.largestValue < value * 1000) {
-                            this.largestValue = value * 1000;
+                if (timers) {
+                    for (var i = 0; i < timers.length; ++i) {
+                        if (timers[i].GraphName && timers[i].SubGraphId && (query == "*" || query == timers[i].GraphName)) {
+                            var value = timers[i].Seconds;
+                            timerData.push({
+                                graphName: timers[i].GraphName,
+                                subGraphId: timers[i].SubGraphId,
+                                label: timers[i].Name,
+                                value: value
+                            });
+                            if (this.largestValue < value * 1000) {
+                                this.largestValue = value * 1000;
+                            }
                         }
                     }
                 }
                 var dataStore = new Memory({
-                    idProperty: "name",
+                    idProperty: "sequenceNumber",
                     data: timerData
                 });
 
                 var context = this;
-                this.timingContentPane.set("colorFunc", function (item) {
+                this.treeMap.set("colorFunc", function (item) {
                     var redness = 255 * (item.value * 1000 / context.largestValue);
                     return {
                         r: 255,
@@ -140,19 +146,13 @@ define([
                         b: 255 - redness
                     };
                 });
-                this.timingContentPane.set("areaAttr", "value");
-                this.timingContentPane.set("tooltipFunc", function (item) {
-                    return item.name + " " + item.value;
+                this.treeMap.set("areaAttr", "value");
+                this.treeMap.set("tooltipFunc", function (item) {
+                    return item.label + " " + item.value;
                 });
-                this.timingContentPane.set("groupAttrs", ["graphName"]);
+                this.treeMap.set("groupAttrs", ["graphName"]);
 
-                this.timingContentPane.set("store", dataStore);
-            },
-
-            select: function (graphID, subGraphID) {
-                //this.timingContentPane.setItemSelected(this.timingContentPane.store.data[2]);
-
+                this.treeMap.set("store", dataStore);
             }
-
         });
     });

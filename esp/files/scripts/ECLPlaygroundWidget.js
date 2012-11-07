@@ -14,30 +14,30 @@
 #    limitations under the License.
 ############################################################################## */
 define([
-	"dojo/_base/declare",
-	"dojo/_base/xhr",
-	"dojo/dom",
+    "dojo/_base/declare",
+    "dojo/_base/xhr",
+    "dojo/dom",
 
-	"dijit/layout/_LayoutWidget",
-	"dijit/_TemplatedMixin",
-	"dijit/_WidgetsInTemplateMixin",
-	"dijit/layout/BorderContainer",
-	"dijit/layout/TabContainer",
-	"dijit/layout/ContentPane",
-	"dijit/registry",
+    "dijit/layout/_LayoutWidget",
+    "dijit/_TemplatedMixin",
+    "dijit/_WidgetsInTemplateMixin",
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
+    "dijit/layout/ContentPane",
+    "dijit/registry",
 
-	"hpcc/ECLSourceWidget",
-	"hpcc/TargetSelectWidget",
-	"hpcc/SampleSelectWidget",
-	"hpcc/GraphWidget",
-	"hpcc/ResultsWidget",
-	"hpcc/ESPWorkunit",
+    "hpcc/ECLSourceWidget",
+    "hpcc/TargetSelectWidget",
+    "hpcc/SampleSelectWidget",
+    "hpcc/GraphWidget",
+    "hpcc/ResultsWidget",
+    "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/ECLPlaygroundWidget.html"
 ], function (declare, xhr, dom,
-				_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry,
-				EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, Workunit,
-				template) {
+                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry,
+                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, Workunit,
+                template) {
     return declare("ECLPlaygroundWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "ECLPlaygroundWidget",
@@ -96,15 +96,13 @@ define([
             this.targetSelectWidget.setValue(params.Target);
 
             this.initEditor();
+            this.editorControl.init(params);
 
             var context = this;
             this.initGraph();
             if (params.Wuid) {
                 this.wu = new Workunit({
                     wuid: params.Wuid
-                });
-                this.wu.fetchText(function (text) {
-                    context.editorControl.setText(text);
                 });
                 this.wu.monitor(function () {
                     context.monitorEclPlayground();
@@ -211,7 +209,9 @@ define([
             var context = this;
             this.wu = new Workunit({
                 onCreate: function () {
-                    context.wu.update(context.editorControl.getText());
+                    context.wu.update({
+                        QueryText: context.editorControl.getText()
+                    });
                 },
                 onUpdate: function () {
                     context.wu.submit(context.targetSelectWidget.getValue());

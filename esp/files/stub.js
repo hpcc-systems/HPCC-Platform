@@ -25,10 +25,13 @@ define([
     "hpcc/ECLPlaygroundWidget",
     "hpcc/GraphPageWidget",
     "hpcc/ResultsWidget",
+    "hpcc/TimingPageWidget",
     "hpcc/TimingTreeMapWidget",
-    "hpcc/ECLSourceWidget"
+    "hpcc/ECLSourceWidget",
+    "hpcc/InfoGridWidget",
+    "hpcc/WUDetailsWidget"
 ], function (fx, baseWindow, dom, domStyle, domGeometry, ioQuery, ready,
-        ECLPlaygroundWidget, GraphPageWidget, ResultsWidget, TimingTreeMapWidget, ECLSourceWidget) {
+        ECLPlaygroundWidget, GraphPageWidget, ResultsWidget, TimingPageWidget, TimingTreeMapWidget, ECLSourceWidget, InfoGridWidget, WUDetailsWidget) {
 
     var initUi = function () {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
@@ -36,7 +39,7 @@ define([
         //TODO:  Can we get rid of the required dependency above?
         var widget = new (eval(params.Widget))({
             id: "appLayout",
-            class: "hpccApp"
+            "class": "hpccApp"
         });
 
         if (widget) {
@@ -66,7 +69,7 @@ define([
                 domStyle.set(node, "display", "none");
             }
         }).play();
-    }
+    };
 
     return {
         init: function () {
