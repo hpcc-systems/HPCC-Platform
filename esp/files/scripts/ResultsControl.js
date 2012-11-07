@@ -18,25 +18,27 @@ define([
 	"dojo/store/Memory",
 	"dojo/data/ObjectStore",
 
+	"dijit/registry",
+	"dijit/layout/ContentPane",
+
 	"dojox/grid/DataGrid",
 	"dojox/grid/EnhancedGrid",
 	"dojox/grid/enhanced/plugins/Pagination",
 	"dojox/grid/enhanced/plugins/Filter",
-	"dojox/grid/enhanced/plugins/NestedSorting",
+	"dojox/grid/enhanced/plugins/NestedSorting"
 
-	"dijit/registry",
-	"dijit/layout/ContentPane"
 ], function (declare, Memory, ObjectStore,
-			DataGrid, EnhancedGrid, Pagination, Filter, NestedSorting,
-			registry, ContentPane) {
+    registry, ContentPane,
+    DataGrid, EnhancedGrid, Pagination, Filter, NestedSorting) {
 	return declare(null, {
 		workunit: null,
 		paneNum: 0,
-		resultsSheetID: "",
+		id: "",
 		dataGridSheet: {},
 		resultIdStoreMap: [],
 		resultIdGridMap: [],
 		delayLoad: [],
+		selectedResult: null,
 
 		//  Callbacks
 		onErrorClick: function (line, col) {
@@ -46,12 +48,12 @@ define([
 		constructor: function (args) {
 			declare.safeMixin(this, args);
 
-			this.dataGridSheet = registry.byId(this.resultsSheetID);
+			this.dataGridSheet = registry.byId(this.id);
 			var context = this;
 			this.dataGridSheet.watch("selectedChildWidget", function (name, oval, nval) {
 				if (nval.id in context.delayLoad) {
-					var result = context.delayLoad[nval.id].result;
-					if (!result.isComplete()) {
+					context.selectedResult = context.delayLoad[nval.id].result;
+					if (!context.selectedResult.isComplete()) {
 						context.delayLoad[nval.id].loadingMessage = context.getLoadingMessage();
 					}
 					context.delayLoad[nval.id].placeAt(nval.containerNode, "last");
@@ -73,7 +75,7 @@ define([
 		},
 
 		getNextPaneID: function () {
-			return "Pane_" + ++this.paneNum;
+			return this.id + "Pane_" + ++this.paneNum;
 		},
 
 		addTab: function (label, paneID) {
@@ -83,7 +85,6 @@ define([
 			var pane = new ContentPane({
 				title: label,
 				id: paneID,
-				closable: true,
 				style: {
 					overflow: "hidden",
 					padding: 0
@@ -95,6 +96,7 @@ define([
 
 		addResultTab: function (result) {
 			var paneID = this.getNextPaneID();
+
 			var grid = EnhancedGrid({
 				result: result,
 				store: result.getObjectStore(),
@@ -163,7 +165,15 @@ define([
 		},
 
 		addExceptionTab: function (exceptions) {
-			if (exceptions.length) {
+			var hasErrorWarning = false;
+			for (var i = 0; i < exceptions.length; ++i) {
+				if (exceptions[i].Severity == "Error" || exceptions[i].Severity == "Warning") {
+					hasErrorWarning = true;
+					break;
+				}
+			}
+
+			if (hasErrorWarning) {
 				var resultNode = this.addTab("Error/Warning(s)");
 				store = new Memory({ data: exceptions });
 				dataStore = new ObjectStore({ objectStore: store });

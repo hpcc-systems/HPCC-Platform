@@ -60,7 +60,6 @@ define([
 
             startup: function (args) {
                 this.inherited(arguments);
-                this.initEditor();
             },
 
             resize: function (args) {
@@ -73,25 +72,31 @@ define([
             },
 
             //  Plugin wrapper  ---
-            initEditor: function () {
+            init: function (params) {
                 this.editor = CodeMirror.fromTextArea(document.getElementById(this.id + "EclCode"), {
                     tabMode: "indent",
                     matchBrackets: true,
                     gutter: true,
                     lineNumbers: true,
+                    mode: this.WUXml ? "xml" : "ecl",
                     readOnly: this.readOnly
                 });
-            },
 
-            init: function (params) {
                 var context = this;
                 if (params.Wuid) {
                     this.wu = new ESPWorkunit({
                         wuid: params.Wuid
                     });
-                    this.wu.fetchText(function (text) {
-                        context.editor.setValue(text);
-                    });
+                    if (this.WUXml) {
+                        this.wu.fetchXML(function (xml) {
+                            context.editor.setValue(xml);
+                        });
+                    }
+                    else {
+                        this.wu.fetchText(function (text) {
+                            context.editor.setValue(text);
+                        });
+                    }
                 }
             },
 

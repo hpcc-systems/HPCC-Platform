@@ -15,14 +15,8 @@
             <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
                 <div id="${id}MiniGraphWidget" title="Overview" data-dojo-type="GraphWidget">
                 </div>
-                <table id="${id}TimingsGrid" title="Timings" style="padding: 0px; overflow: hidden" data-dojo-type="dojox.grid.DataGrid">
-                    <thead>
-                        <tr>
-                            <th field="Name" width="auto">Component</th>
-                            <th field="Seconds" width="auto">Time (Seconds)</th>
-                        </tr>
-                    </thead>
-                </table>
+                <div id="${id}TimingsGrid" title="Timings" data-dojo-type="TimingGridWidget">
+                </div>
                 <div id="${id}TimingsTreeMap" title="Timings Map" data-dojo-type="TimingTreeMapWidget">
                 </div>
                 <div id="${id}VerticesGrid" title="Activities" style="padding: 0px; overflow: hidden" data-dojo-type="dojox.grid.DataGrid">
@@ -30,7 +24,7 @@
                 <div id="${id}EdgesGrid" title="Edges" style="padding: 0px; overflow: hidden" data-dojo-type="dojox.grid.DataGrid">
                 </div>
             </div>
-            <div id="${id}LocalTabContainer" class="edgePanel" style="height: 66%" data-dojo-props="region: 'bottom', splitter:true, minSize: 120, tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}LocalTabContainer" style="height: 66%" data-dojo-props="region: 'bottom', splitter:true, minSize: 120, tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
                 <div id="${id}LocalGraphWidget" title="Local" data-dojo-type="GraphWidget">
                     <div id="${id}LocalSync" data-dojo-attach-event="onClick:_onLocalSync" data-dojo-type="dijit.form.Button">Recalculate</div>
                 </div>

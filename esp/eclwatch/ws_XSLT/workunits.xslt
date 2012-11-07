@@ -484,6 +484,10 @@
                     </a>
                 </xsl:otherwise>
             </xsl:choose>
+           -
+           <a href="javascript:go('/esp/files/stub.htm?Widget=WUDetailsWidget&amp;Wuid={Wuid}')">
+             Show
+           </a>
          </td>
          <td>
          <xsl:choose>
