@@ -25,8 +25,8 @@
       <title>Installation and configuration</title>
 
       <para>The ECL Scheduler installs when you install the HPCC platform. It
-      starts and stops using hpcc-init, just as all other HPCC components
-      are.</para>
+      starts and stops using hpcc-init, just as all other HPCC
+      components.</para>
     </sect1>
 
     <sect1>
@@ -60,8 +60,10 @@
 
           <para>The <emphasis role="bold">EVENT </emphasis>function returns a
           trigger event, which may be used within the <emphasis
-          role="bold">WHEN </emphasis>workflow service or the NOTIFY
-          action.</para>
+          role="bold">WHEN </emphasis>workflow service or the <emphasis
+          role="bold">NOTIFY</emphasis> action. EVENT is not really a
+          statement, rather a parameter to WHEN/NOTIFY to describe what kind
+          of event it is used for.</para>
         </sect3>
 
         <sect3>
@@ -70,7 +72,9 @@
           <para>The <emphasis role="bold">CRON </emphasis>function defines a
           timer event for use within the <emphasis role="bold">WHEN
           </emphasis>workflow service. This is synonymous with <emphasis
-          role="bold">EVENT(‘CRON’, time)</emphasis>.</para>
+          role="bold">EVENT(‘CRON’, time)</emphasis>. CRON itself is not a
+          statement, rather a parameter to WHEN/NOTIFY to describe what kind
+          of event it is used for.</para>
         </sect3>
       </sect2>
 
@@ -117,7 +121,7 @@
       </sect2>
     </sect1>
 
-    <sect1 id="ECLSched_INterface">
+    <sect1 id="ECLSched_Interface">
       <title>Interface in ECL Watch</title>
 
       <para>To access the ECL Scheduler interface in ECL Watch, click on the
@@ -132,11 +136,10 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="../images/ESCHed01.jpg" />
+              <imagedata fileref="../../images/ESCHed01.jpg" />
             </imageobject>
           </mediaobject>
-        </figure><!--COMMENT: INSERT INTERFACE DOCU HERE... WRKUNIT USE THOR!
---></para>
+        </figure></para>
 
       <para>The EventName is a created when scheduling a workunit. The
       EventText is an accompanying sub event (see <link
@@ -158,7 +161,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../images/ESCHed02.jpg" />
+                <imagedata fileref="../../images/ESCHed02.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -208,7 +211,7 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="../images/ESCHed03.jpg" />
+                      <imagedata fileref="../../images/ESCHed03.jpg" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>

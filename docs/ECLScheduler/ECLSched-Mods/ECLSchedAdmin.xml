@@ -24,6 +24,11 @@
     <sect1 role="nobrk">
       <title>Command Line Interface: scheduleadmin</title>
 
+      <para>The <emphasis role="bold">scheduleadmin</emphasis> is the command
+      line interface to the ECL Scheduler. The scheduleadmin is located by
+      default in <emphasis role="bold">/opt/HPCCSystems/bin/ </emphasis>on
+      your HPCC system.</para>
+
       <para><emphasis role="bold">scheduleadmin
       </emphasis><emphasis>daliserver</emphasis>
       <emphasis>operation</emphasis> <emphasis
@@ -246,7 +251,7 @@
 
               <tbody>
                 <row>
-                  <entry><emphasis>eelserver</emphasis></entry>
+                  <entry><emphasis>eclserver</emphasis></entry>
 
                   <entry>The name of an ECL Server queue attached to the
                   daliserver.</entry>
