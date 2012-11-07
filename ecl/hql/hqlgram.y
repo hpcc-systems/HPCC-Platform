@@ -3129,7 +3129,7 @@ soapFlag
                             parser->normalizeExpression($3, type_string, false);
                             if ($4.queryExpr())
                                 parser->normalizeExpression($4, type_string, false);
-                            $$.setExpr(createExprAttribute(headerAtom, $3.getExpr(), $4.getExpr()));
+                            $$.setExpr(createExprAttribute(headingAtom, $3.getExpr(), $4.getExpr()));
                             $$.setPosition($1);
                         }
     | SEPARATOR '(' expression ')'
@@ -9469,7 +9469,7 @@ csvOption
                         }
     | HEADING
                         {
-                            $$.setExpr(createAttribute(headerAtom));
+                            $$.setExpr(createAttribute(headingAtom));
                             $$.setPosition($1);
                         }
     | HEADING '(' startHeadingAttrs headingOptions ')'
@@ -9478,7 +9478,7 @@ csvOption
                             $4.unwindCommaList(args);
                             HqlExprArray orderedArgs;
                             reorderAttributesToEnd(orderedArgs, args);
-                            $$.setExpr(createExprAttribute(headerAtom, orderedArgs), $1);
+                            $$.setExpr(createExprAttribute(headingAtom, orderedArgs), $1);
                             $$.setPosition($1);
                         }
     | MAXLENGTH '(' constExpression ')'
@@ -9572,7 +9572,7 @@ xmlOption
                             parser->normalizeExpression($3, type_string, false);
                             if ($4.queryExpr())
                                 parser->normalizeExpression($4, type_string, false);
-                            $$.setExpr(createExprAttribute(headerAtom, $3.getExpr(), $4.getExpr()));
+                            $$.setExpr(createExprAttribute(headingAtom, $3.getExpr(), $4.getExpr()));
                             $$.setPosition($1);
                         }
     | expression        {

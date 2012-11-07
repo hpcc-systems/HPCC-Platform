@@ -143,7 +143,7 @@ extern HQL_API _ATOM _graphLocal_Atom;
 extern HQL_API _ATOM groupAtom;
 extern HQL_API _ATOM groupedAtom;
 extern HQL_API _ATOM hashAtom;
-extern HQL_API _ATOM headerAtom;
+extern HQL_API _ATOM headingAtom;
 extern HQL_API _ATOM _hidden_Atom;
 extern HQL_API _ATOM hintAtom;
 extern HQL_API _ATOM holeAtom;

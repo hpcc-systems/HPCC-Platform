@@ -139,7 +139,7 @@ _ATOM graphAtom;
 _ATOM groupAtom;
 _ATOM groupedAtom;
 _ATOM hashAtom;
-_ATOM headerAtom;
+_ATOM headingAtom;
 _ATOM _hidden_Atom;
 _ATOM hintAtom;
 _ATOM holeAtom;
@@ -519,7 +519,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(group);
     MAKEATOM(grouped);
     MAKEATOM(hash);
-    MAKEATOM(header);
+    MAKEATOM(heading);
     MAKESYSATOM(hidden);
     MAKEATOM(hint);
     MAKEATOM(hole);
