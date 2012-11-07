@@ -51,7 +51,11 @@
 #define DFSSERVER_THROTTLE_COUNT 20
 #define DFSSERVER_THROTTLE_TIME 1000
 
+#if _INTERNAL_EDITION == 1
+#warning Disabling Sub-file compatibility checking
+#else
 #define SUBFILE_COMPATIBILITY_CHECKING
+#endif
 
 //#define PACK_ECL
 

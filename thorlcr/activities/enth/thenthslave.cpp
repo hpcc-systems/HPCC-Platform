@@ -196,6 +196,23 @@ class CEnthSlaveActivity : public BaseEnthActivity
         msg.append(count);
         container.queryJob().queryJobComm().send(msg, container.queryJob().queryMyRank()+1, mpTag);
     }
+    bool getPrev()
+    {
+        if (!firstNode()) // no need if 1st node
+        {
+            CMessageBuffer msg;
+            if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag))
+                return false;
+            msg.read(prevRecCount);
+        }
+        setInitialCounter(prevRecCount);
+        if (haveLocalCount()) // if local total count known, send total now
+            sendCount(prevRecCount + localRecCount);
+        else
+            prevRecCountSem.signal();
+        return true;
+    }
+
 public:
     CEnthSlaveActivity(CGraphElementBase *container) : BaseEnthActivity(container)
     { 
@@ -225,18 +242,8 @@ public:
         if (first)
         {
             first = false;
-            if (!firstNode()) // no need if 1st node
-            {
-                CMessageBuffer msg;
-                if (!receiveMsg(msg, container.queryJob().queryMyRank()-1, mpTag))
-                    return NULL;
-                msg.read(prevRecCount);
-            }
-            setInitialCounter(prevRecCount);
-            if (haveLocalCount()) // if local total count known, send total now
-                sendCount(prevRecCount + localRecCount);
-            else
-                prevRecCountSem.signal();
+            if (!getPrev())
+                return NULL;
         }
         while (!abortSoon)
         {
@@ -250,6 +257,16 @@ public:
             }
         }
         return NULL;        
+    }
+    virtual void stop()
+    {
+        // Need to ensure sequence continues, in nextRow has never been called.
+        if (first)
+        {
+            first = false;
+            getPrev();
+        }
+        BaseEnthActivity::stop();
     }
     virtual void onInputFinished(rowcount_t localRecCount)
     {

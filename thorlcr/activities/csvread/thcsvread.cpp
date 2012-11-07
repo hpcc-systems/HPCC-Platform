@@ -52,8 +52,12 @@ public:
         if (headerLines)
         {
             dst.append((int)mpTag);
-            ISuperFileDescriptor *superFDesc = fileDesc->querySuperFileDescriptor();
-            unsigned subFiles = superFDesc ? superFDesc->querySubFiles() : 1;
+            unsigned subFiles = 0;
+            if (fileDesc)
+            {
+                ISuperFileDescriptor *superFDesc = fileDesc->querySuperFileDescriptor();
+                subFiles = superFDesc ? superFDesc->querySubFiles() : 1;
+            }
             dst.append(subFiles);
         }
     }
