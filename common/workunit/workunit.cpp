@@ -1866,6 +1866,25 @@ public:
     }
 };      
 
+class asyncRemoveRemoteFileWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveDll
+{
+    RemoteFilename name;
+public:
+    IMPLEMENT_IINTERFACE;
+
+    asyncRemoveRemoteFileWorkItem(const char * _ip, const char * _name)
+    {
+        SocketEndpoint ep(_ip);
+        name.setPath(ep, _name);
+    }
+    void execute()
+    {
+        Owned<IFile> file = createIFile(name);
+        PROGLOG("WU removeDll %s",file->queryFilename());
+        file->remove();
+    }
+};
+
 #define WUID_VERSION 1 // recorded in each wuid created, useful for bkwd compat. checks
 
 class CWorkUnitFactory : public CInterface, implements IWorkUnitFactory, implements IDaliClientShutdown
@@ -2263,7 +2282,13 @@ public:
 
     void asyncRemoveDll(const char * name, bool removeDlls, bool removeDirectory)
     {
-        deletedllworkq->post(new asyncRemoveDllWorkItem(name,removeDlls,removeDirectory));
+        const char * tail = pathTail(name);
+        deletedllworkq->post(new asyncRemoveDllWorkItem(tail,removeDlls,removeDirectory));
+    }
+
+    void asyncRemoveFile(const char * ip, const char * name)
+    {
+        deletedllworkq->post(new asyncRemoveRemoteFileWorkItem(ip, name));
     }
 
     ISDSManager *sdsManager;
@@ -2673,12 +2698,21 @@ void CLocalWorkUnit::cleanupAndDelete(bool deldll,bool deleteOwned)
             {
                 Owned<IConstWUAssociatedFileIterator> iter = &q->getAssociatedFiles();
                 SCMStringBuffer name;
+                SCMStringBuffer ip;
                 ForEach(*iter)
                 {
                     IConstWUAssociatedFile & cur = iter->query();
                     cur.getName(name);
-                    bool removeDir = (cur.getType() == FileTypeDll);        // this is to keep the code the same as before, but I don't know why it only does it for the dll.
-                    factory->asyncRemoveDll(name.str(), true, removeDir);
+                    if (cur.getType() == FileTypeDll)
+                    {
+                        bool removeDir = true;        // this is to keep the code the same as before, but I don't know why it only does it for the dll.
+                        factory->asyncRemoveDll(name.str(), true, removeDir);
+                    }
+                    else
+                    {
+                        cur.getIp(ip);
+                        factory->asyncRemoveFile(ip.str(), name.str());
+                    }
                 }
             }
         }
