@@ -195,10 +195,16 @@ public:
     IpSubNet(const char *_net,const char *_mask)    { set(_net,_mask); }
     bool set(const char *_net,const char *_mask); // _net NULL means match everything
                                                   // _mask NULL means match exact
-    bool test(const IpAddress &ip);
-    StringBuffer getNetText(StringBuffer &text);
-    StringBuffer getMaskText(StringBuffer &text);
-    bool isNull();
+    bool test(const IpAddress &ip) const;
+    StringBuffer getNetText(StringBuffer &text) const;
+    StringBuffer getMaskText(StringBuffer &text) const;
+    bool isNull() const;
+    bool operator==(IpSubNet const &other) const
+    {
+        if ((0 == memcmp(net, other.net, sizeof(net))) && (0 == memcmp(mask, other.mask, sizeof(mask))))
+            return true;
+        return false;
+    }
 };
 
 
