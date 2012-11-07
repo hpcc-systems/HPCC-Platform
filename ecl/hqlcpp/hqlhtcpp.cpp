@@ -9139,7 +9139,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
 
     bool singleHeader = false;
     bool manyHeader = false;
-    IHqlExpression * headerAttr = queryProperty(headerAtom, attrs);
+    IHqlExpression * headerAttr = queryProperty(headingAtom, attrs);
     IHqlExpression * terminator = queryProperty(terminatorAtom, attrs);
     IHqlExpression * separator = queryProperty(separatorAtom, attrs);
     IHqlExpression * escape = queryProperty(escapeAtom, attrs);
@@ -9937,7 +9937,7 @@ void HqlCppTranslator::buildXmlWriteMembers(ActivityInstance * instance, IHqlExp
     IHqlExpression * rowAttr = xmlAttr->queryProperty(rowAtom);
     if (rowAttr)
         doBuildVarStringFunction(instance->startctx, "queryIteratorPath", rowAttr->queryChild(0));
-    IHqlExpression * headerAttr = xmlAttr->queryProperty(headerAtom);
+    IHqlExpression * headerAttr = xmlAttr->queryProperty(headingAtom);
     if (headerAttr)
     {
         doBuildVarStringFunction(instance->startctx, "queryHeader", headerAttr->queryChild(0));
@@ -16455,7 +16455,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
 
     //virtual const char * queryHeader()
     //virtual const char * queryFooter()
-    IHqlExpression * header = expr->queryProperty(headerAtom);
+    IHqlExpression * header = expr->queryProperty(headingAtom);
     if (header)
     {
         doBuildVarStringFunction(instance->startctx, "queryHeader", header->queryChild(0));
