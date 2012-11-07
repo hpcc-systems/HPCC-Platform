@@ -165,11 +165,11 @@
     <para>The following are supported methods for the ECL Scheduler included
     in the ECL Standard Library Reference.</para>
 
-    <xi:include href="StandardLibraryReference/SLR-Mods/MonitorFile.xml"
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorFile.xml"
                 xpointer="MonitorFile"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="StandardLibraryReference/SLR-Mods/MonitorLogicalFileName.xml"
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/MonitorLogicalFileName.xml"
                 xpointer="MonitorLogicalFileName"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
