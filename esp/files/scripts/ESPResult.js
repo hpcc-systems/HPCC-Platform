@@ -202,6 +202,9 @@ define([
 				case "xs:double":
 					retVal = 8;
 					break;
+				case "xs:string":
+					retVal = 32;
+					break;
 				default:
 					var numStr = "0123456789";
 					var underbarPos = type.lastIndexOf("_");
