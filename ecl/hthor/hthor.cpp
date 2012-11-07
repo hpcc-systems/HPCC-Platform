@@ -2516,9 +2516,10 @@ const void * CHThorHashDedupActivity::nextInGroup()
     {
         OwnedConstHThorRow next(input->nextInGroup());
         if(!next)
-            next.setown(input->nextInGroup());
-        if(!next)
+        {
+            table.kill();
             return NULL;
+        }
         if(table.insert(next))
             return next.getClear();
     }

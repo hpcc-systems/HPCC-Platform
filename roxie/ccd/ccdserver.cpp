@@ -6817,12 +6817,13 @@ public:
         {
             const void * next = input->nextInGroup();
             if(!next)
-                next = input->nextInGroup();
-            if(!next)
-            {   
-                eof = true;
-                break;
+            {
+                if (table.count() == 0)
+                    eof = true;
+                table.reset();
+                return NULL;
             }
+
             if(table.insert(next))
                 return next;
             else
