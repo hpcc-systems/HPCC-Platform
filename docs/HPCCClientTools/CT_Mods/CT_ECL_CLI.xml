@@ -1548,6 +1548,7 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
             </tgroup>
           </informaltable></para>
       </sect2>
+
       <sect2 id="eclpackagedelete" role="brk">
         <title>ecl packagemap delete</title>
 
@@ -1918,6 +1919,91 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
 
                   <entry>The target containing the packagemap to
                   retrieve</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 id="eclpackageinfo" role="brk">
+        <title>ecl packagemap validate</title>
+
+        <para><emphasis role="bold">ecl packagemap validate &lt;filename&gt;
+        </emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl packagemap validate mypackagemap.pkg</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl packagemap validate</entry>
+
+                  <entry>Calls the packagemap validate command</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Actions</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>validate</entry>
+
+                  <entry>validates packagemap info</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Arguments</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>filename</entry>
+
+                  <entry>The filename containing the packagemap info to
+                  validate</entry>
                 </row>
 
                 <row>
