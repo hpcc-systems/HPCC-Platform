@@ -2323,6 +2323,7 @@ CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
     jobComm.setown(createCommunicator(jobGroup));
     slaveGroup.setown(jobGroup->remove(0));
     myrank = jobGroup->rank(queryMyNode());
+    globalMemorySize = globals->getPropInt("@globalMemorySize"); // in MB
 }
 
 void CJobBase::init()
@@ -2346,7 +2347,6 @@ void CJobBase::init()
     pausing = false;
     resumed = false;
 
-    unsigned gmemSize = globals->getPropInt("@globalMemorySize"); // in MB
 #ifdef _DEBUG
     bool defaultCrcChecking = true;
 #else
@@ -2355,13 +2355,13 @@ void CJobBase::init()
     bool crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", defaultCrcChecking));
     bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", false));
     unsigned memorySpillAt = getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
-    thorAllocator.setown(createThorAllocator(((memsize_t)gmemSize)*0x100000, memorySpillAt, crcChecking, usePackedAllocator));
+    thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, crcChecking, usePackedAllocator));
 
-    unsigned defaultMemMB = gmemSize*3/4;
+    unsigned defaultMemMB = globalMemorySize*3/4;
     unsigned largeMemSize = getOptInt("@largeMemSize", defaultMemMB);
-    if (gmemSize && largeMemSize >= gmemSize)
-        throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, gmemSize);
-    PROGLOG("Global memory size = %d MB, memory spill at = %d%%, large mem size = %d MB", gmemSize, memorySpillAt, largeMemSize);
+    if (globalMemorySize && largeMemSize >= globalMemorySize)
+        throw MakeStringException(0, "largeMemSize(%d) can not exceed globalMemorySize(%d)", largeMemSize, globalMemorySize);
+    PROGLOG("Global memory size = %d MB, memory spill at = %d%%, large mem size = %d MB", globalMemorySize, memorySpillAt, largeMemSize);
     StringBuffer tracing("maxActivityCores = ");
     if (maxActivityCores)
         tracing.append(maxActivityCores);
