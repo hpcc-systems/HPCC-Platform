@@ -6817,12 +6817,13 @@ public:
         {
             const void * next = input->nextInGroup();
             if(!next)
-                next = input->nextInGroup();
-            if(!next)
-            {   
-                eof = true;
-                break;
+            {
+                if (table.count() == 0)
+                    eof = true;
+                table.reset();
+                return NULL;
             }
+
             if(table.insert(next))
                 return next;
             else
@@ -10744,9 +10745,17 @@ public:
         diskout.setown(createBufferedIOStream(io));
         if (extend)
             diskout->seek(0, IFSend);
-        rowSerializer.setown(input->queryOutputMeta()->createRowSerializer(ctx->queryCodeContext(), activityId)); 
         tallycrc = !factory->queryQueryFactory().getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck) && !blockcompressed;
-        outSeq.setown(createRowWriter(diskout, rowSerializer, rowAllocator, grouped, tallycrc, true )); 
+        Owned<IRowInterfaces> rowIf = createRowInterfaces(input->queryOutputMeta(), activityId, ctx->queryCodeContext());
+        rowSerializer.set(rowIf->queryRowSerializer());
+        unsigned rwFlags = rw_autoflush;
+        if(grouped)
+            rwFlags |= rw_grouped;
+        if(tallycrc)
+            rwFlags |= rw_crc;
+        if(!factory->queryQueryFactory().getDebugValueBool("skipFileFormatCrcCheck", false) && !(helper.getFlags() & TDRnocrccheck))
+            rwFlags |= rw_crc;
+        outSeq.setown(createRowWriter(diskout, rowIf, rwFlags));
     }
 
     virtual void stop(bool aborting)

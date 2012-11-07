@@ -20,14 +20,15 @@ define([
 
     "dojox/xml/parser",
     "dojox/xml/DomParser",
+    "dojox/html/entities",
+
     "hpcc/WsWorkunits",
     "hpcc/ESPBase"
 ], function (declare, ObjectStore, domConstruct,
-            parser, DomParser,
+            parser, DomParser, entities, 
             WsWorkunits, ESPBase) {
 	return declare(ESPBase, {
 		store: null,
-		hasChildDataset: false,
 		Total: "-1",
 
 		constructor: function (args) {
@@ -49,7 +50,7 @@ define([
 
         getFirstSchemaNode: function (node, name) {
             if (node && node.attributes) {
-                if ((node.localName && node.localName == name) || (node.hasAttributes() && node.getAttribute("name") == name)) {
+                if ((node.baseName && node.baseName == name) || (node.localName && node.localName == name) || (typeof(node.getAttribute) != "undefined" && node.getAttribute("name") == name)) {
                     return node;
                 }
             }
@@ -83,16 +84,20 @@ define([
                     if (i == 0) {
                         var tr = domConstruct.create("tr", null, table);
                         for (key in cell.Row[i]) {
-                            var th = domConstruct.create("th", { innerHTML: key }, tr);
+                            var th = domConstruct.create("th", { innerHTML: entities.encode(key) }, tr);
                         }
                     }
                     var tr = domConstruct.create("tr", null, table);
                     for (key in cell.Row[i]) {
-                        if (cell.Row[i][key].Row) {
-                            var td = domConstruct.create("td", null, tr);
-                            td.appendChild(this.rowToTable(cell.Row[i][key]));
+                        if (cell.Row[i][key]) {
+                            if (cell.Row[i][key].Row) {
+                                var td = domConstruct.create("td", null, tr);
+                                td.appendChild(this.rowToTable(cell.Row[i][key]));
+                            } else {
+                                var td = domConstruct.create("td", { innerHTML: entities.encode(cell.Row[i][key]) }, tr);
+                            }
                         } else {
-                            var td = domConstruct.create("td", { innerHTML: cell.Row[i][key] }, tr);
+                            var td = domConstruct.create("td", { innerHTML: "" }, tr);
                         }
                     }
                 }
@@ -108,7 +113,7 @@ define([
 
             for (var i = 0; i < sequence.childNodes.length; ++i) {
                 var node = sequence.childNodes[i];
-                if (node.hasAttributes()) {
+                if (typeof (node.getAttribute) != "undefined") {
                     var name = node.getAttribute("name");
                     var type = node.getAttribute("type");
                     if (name && type) {
@@ -120,7 +125,6 @@ define([
                         });
                     }
                     if (node.hasChildNodes()) {
-                        this.hasChildDataset = true;
                         var context = this;
                         retVal.push({
                             name: name,
@@ -143,11 +147,11 @@ define([
             var structure = [
                 {
                     cells: [
-                           [
+                        [
                             {
                                 name: "##", field: this.store.idProperty, width: "40px", classes: "resultGridCell"
                             }
-                         ]
+                        ]
                     ]
                 }
             ];
@@ -169,7 +173,7 @@ define([
 
             for (var i = 0; i < sequence.childNodes.length; ++i) {
                 var node = sequence.childNodes[i];
-                if (node.hasAttributes()) {
+                if (typeof (node.getAttribute) != "undefined") {
                     var name = node.getAttribute("name");
                     var type = node.getAttribute("type");
                     if (name && type) {
@@ -198,16 +202,20 @@ define([
 				case "xs:double":
 					retVal = 8;
 					break;
+				case "xs:string":
+					retVal = 32;
+					break;
 				default:
 					var numStr = "0123456789";
 					var underbarPos = type.lastIndexOf("_");
-					var i = underbarPos > 0 ? underbarPos : type.length;
-					while (i >= 0) {
-						if (numStr.indexOf(type.charAt(--i)) == -1)
+					var length = underbarPos > 0 ? underbarPos : type.length;
+					var i = length - 1;
+					for (; i >= 0; --i) {
+						if (numStr.indexOf(type.charAt(i)) == -1)
 							break;
 					}
-					if (i > 0 && i + 1 < type.length) {
-						retVal = parseInt(type.substring(i + 1, type.length));
+					if (i + 1 < length) {
+						retVal = parseInt(type.substring(i + 1, length));
 					}
 					if (type.indexOf("data") == 0) {
 						retVal *= 2;

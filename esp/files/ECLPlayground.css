@@ -138,5 +138,6 @@ h1 {
 	background-color: rgb(238, 238, 238);
 }
 .resultGridCell {
+	vertical-align:text-top;
 	font-family: monospace;
 }

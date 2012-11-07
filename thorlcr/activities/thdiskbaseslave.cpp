@@ -340,7 +340,12 @@ void CDiskWriteSlaveActivityBase::open()
     else
     {
         stream.setown(createIOStream(iFileIO));
-        out.setown(createRowWriter(stream,::queryRowSerializer(input),::queryRowAllocator(input),grouped,calcFileCrc,false)); // flushed by close
+        unsigned rwFlags = 0;
+        if (grouped)
+            rwFlags |= rw_grouped;
+        if (calcFileCrc)
+            rwFlags |= rw_crc;
+        out.setown(createRowWriter(stream, ::queryRowInterfaces(input), rwFlags));
     }
     CDfsLogicalFileName dlfn;
     dlfn.set(logicalFilename);
