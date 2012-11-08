@@ -119,7 +119,7 @@ class JoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implement
         {
             if (firstrow)
                 return firstrow.getClear();
-            return base->nextRow();
+            return base->ungroupedNextRow();
         }
 
         void stop()
