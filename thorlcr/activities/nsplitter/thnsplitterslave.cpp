@@ -257,6 +257,7 @@ public:
             return;
         inputsConfigured = true;
         unsigned noutputs = container.connectedOutputs.getCount();
+        ActPrintLog("Number of connected outputs: %d", noutputs);
         if (1 == noutputs)
         {
             CIOConnection *io = NULL;
@@ -338,7 +339,7 @@ public:
             try {
                 startInput(input);
                 grouped = input->isGrouped();
-                nstopped = outputs.ordinality();
+                nstopped = container.connectedOutputs.getCount();
                 if (smartBuf)
                     smartBuf->reset();
                 else
@@ -354,6 +355,13 @@ public:
                     {
                         ActPrintLog("Spill is 'balanced'");
                         smartBuf.setown(createSharedSmartMemBuffer(this, outputs.ordinality(), queryRowInterfaces(input), NSPLITTER_SPILL_BUFFER_SIZE));
+                    }
+                    // mark any unconnected outputs of smartBuf as already stopped.
+                    ForEachItemIn(o, outputs)
+                    {
+                        CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
+                        if (NULL == container.connectedOutputs.queryItem(o))
+                            smartBuf->queryOutput(o)->stop();
                     }
                 }
                 writer.start();
