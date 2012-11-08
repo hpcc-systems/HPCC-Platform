@@ -14,52 +14,52 @@
 #    limitations under the License.
 ############################################################################## */
 define([
-	"dojo/_base/declare",
-	"dojo/_base/xhr",
-	"dojo/data/ItemFileReadStore",
-	"dijit/form/Select"
+    "dojo/_base/declare",
+    "dojo/_base/xhr",
+    "dojo/data/ItemFileReadStore",
+    "dijit/form/Select"
 ], function (declare, xhr, ItemFileReadStore, Select) {
-	return declare(null, {
-		id: null,
-		samplesURL: null,
-		selectControl: null,
+    return declare(null, {
+        id: null,
+        samplesURL: null,
+        selectControl: null,
 
-		onNewSelection: function (eclText) {
-		},
+        onNewSelection: function (eclText) {
+        },
 
-		constructor: function (args) {
-			declare.safeMixin(this, args);
-			var sampleStore = new dojo.data.ItemFileReadStore({
-				url: this.samplesURL
-			});
+        constructor: function (args) {
+            declare.safeMixin(this, args);
+            var sampleStore = new dojo.data.ItemFileReadStore({
+                url: this.samplesURL
+            });
 
-			var context = this;
-			this.selectControl = new dijit.form.Select({
-				name: this.id,
-				store: sampleStore,
-				value: "default.ecl",
-				maxHeight: 480,
-				style: {
-					padding: 0
-				},
-				onChange: function () {
-					var filename = dijit.byId(this.id).get("value");
-					xhr.get({
-						url: "ecl/" + filename,
-						handleAs: "text",
-						load: function (eclText) {
-							context.onNewSelection(eclText);
-						},
-						error: function () {
-						}
-					});
-				}
-			}, this.id);
-			try {
-				this.selectControl.startup();
-			} catch (e) {
-			}
-		}
+            var context = this;
+            this.selectControl = new dijit.form.Select({
+                name: this.id,
+                store: sampleStore,
+                value: "default.ecl",
+                maxHeight: 480,
+                style: {
+                    padding: 0
+                },
+                onChange: function () {
+                    var filename = dijit.byId(this.id).get("value");
+                    xhr.get({
+                        url: "ecl/" + filename,
+                        handleAs: "text",
+                        load: function (eclText) {
+                            context.onNewSelection(eclText);
+                        },
+                        error: function () {
+                        }
+                    });
+                }
+            }, this.id);
+            try {
+                this.selectControl.startup();
+            } catch (e) {
+            }
+        }
 
-	});
+    });
 });

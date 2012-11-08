@@ -14,21 +14,21 @@
 #    limitations under the License.
 ############################################################################## */
 require([
-	"dojo/_base/declare",
-	"dojo/_base/xhr",
-	"dojo/dom",
+    "dojo/_base/declare",
+    "dojo/_base/xhr",
+    "dojo/dom",
 
-	"dijit/layout/_LayoutWidget",
-	"dijit/_TemplatedMixin",
-	"dijit/_WidgetsInTemplateMixin",
-	"dijit/form/Select",
-	"dijit/registry",
+    "dijit/layout/_LayoutWidget",
+    "dijit/_TemplatedMixin",
+    "dijit/_WidgetsInTemplateMixin",
+    "dijit/form/Select",
+    "dijit/registry",
 
-	"hpcc/ESPBase",
-	"dojo/text!./templates/TargetSelectWidget.html"
+    "hpcc/ESPBase",
+    "dojo/text!./templates/TargetSelectWidget.html"
 ], function (declare, xhr, dom,
-					_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, Select, registry,
-					ESPBase, template) {
+                    _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, Select, registry,
+                    ESPBase, template) {
     return declare("TargetSelectWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "TargetSelectWidget",

@@ -35,7 +35,7 @@ define([
     "dojo/text!../templates/LogsWidget.html"
 ],
     function (declare, array, lang, Memory, ObjectStore, iframe,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
+            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
             EnhancedGrid, IndirectSelection,
             ESPWorkunit,
             template) {
@@ -64,7 +64,7 @@ define([
                     ],
                     plugins: {
                         indirectSelection: {
-                            headerSelector:true, width:"40px", styles:"text-align: center;"
+                            headerSelector: true, width: "40px", styles: "text-align: center;"
                         }
                     }
                 });
