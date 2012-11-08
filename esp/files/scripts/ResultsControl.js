@@ -99,7 +99,7 @@ define([
 			var paneID = this.getNextPaneID();
 
 			var grid = EnhancedGrid({
-				result: result,
+				resultIndex: resultIndex,
 				store: result.getObjectStore(),
 				query: { id: "*" },
 				structure: result.getStructure(),
