@@ -10721,7 +10721,10 @@ void HqlCppTranslator::assignCastUnknownLength(BuildCtx & ctx, const CHqlBoundTa
                                 throwError(HQLERR_CastInfiniteString);
 
                             ITranslationInfo * translator = queryDefaultTranslation(tgtset, srcset);
-                            funcName = createIdentifierAtom(translator->queryVarRtlFunction());
+                            if (translator)
+                                funcName = createIdentifierAtom(translator->queryVarRtlFunction());
+                            else
+                                funcName = str2StrXAtom;
                         }
                     }
                     break;
