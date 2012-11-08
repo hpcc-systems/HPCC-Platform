@@ -1564,7 +1564,7 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="175.55pt" />
 
               <colspec colwidth="384.85pt" />
 
@@ -1638,7 +1638,7 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="175.55pt" />
 
               <colspec colwidth="384.85pt" />
 
@@ -1721,7 +1721,7 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="175.55pt" />
 
               <colspec colwidth="384.85pt" />
 
@@ -1960,7 +1960,7 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
           </informaltable></para>
       </sect2>
 
-      <sect2 id="eclpackageinfo" role="brk">
+      <sect2 id="eclpackagevalidate" role="brk">
         <title>ecl packagemap validate</title>
 
         <para><emphasis role="bold">ecl packagemap validate &lt;filename&gt;
@@ -1970,11 +1970,29 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
 
         <programlisting>ecl packagemap validate mypackagemap.pkg</programlisting>
 
+        <para>The packagemap validate command verifies that :</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Referenced superkeys have subfiles defined (warns if no
+            subfiles exist)</para>
+          </listitem>
+
+          <listitem>
+            <para>All referenced queries exist in the current Roxie
+            queryset</para>
+          </listitem>
+
+          <listitem>
+            <para>All Roxie queries are defined in the package </para>
+          </listitem>
+        </itemizedlist>
+
         <para></para>
 
         <para><informaltable colsep="0" frame="none" rowsep="0">
             <tgroup cols="2">
-              <colspec align="left" colwidth="125.55pt" />
+              <colspec align="left" colwidth="175.55pt" />
 
               <colspec colwidth="384.85pt" />
 
@@ -1982,7 +2000,7 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
                 <row>
                   <entry>ecl packagemap validate</entry>
 
-                  <entry>Calls the packagemap validate command</entry>
+                  <entry>Calls the packagemap validate command. </entry>
                 </row>
 
                 <row>
