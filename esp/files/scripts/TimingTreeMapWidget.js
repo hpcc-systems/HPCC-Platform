@@ -32,7 +32,7 @@ define([
 ],
     function (declare, Memory,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ContentPane,
-            TreeMap, 
+            TreeMap,
             ESPWorkunit,
             template) {
         return declare("TimingTreeMapWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -99,7 +99,7 @@ define([
                 }
             },
 
-            setQuery: function(query) {
+            setQuery: function (query) {
                 this.loadTimers(this.timers, query);
             },
 
