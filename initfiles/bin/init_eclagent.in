@@ -48,12 +48,12 @@ agentexec 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
 
-if [ -e ${SENTINEL} ]; then
+while [ -e ${SENTINEL} ]; do
     sleep 1
     if [ -e ${SENTINEL} ]; then
         agentexec 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
     fi
-fi
+done
 
