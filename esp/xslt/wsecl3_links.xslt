@@ -36,6 +36,9 @@
                     Parameter XML:&nbsp;&nbsp;<a href="/WsEcl/definitions/query/{$pathval}/{$queryname}/resource/soap/{$queryname}.xml?display">display</a>
                 </li>
                 <li>
+                    SOAP (Post SOAP messages to this URL):&nbsp;&nbsp;<a href="/WsEcl/soap/query/{$pathval}/{$queryname}">/WsEcl/soap/query/<xsl:value-of select="$pathval"/>/<xsl:value-of select="$queryname"/></a>
+                </li>
+                <li>
                     WSDL:&nbsp;&nbsp;<a href="/WsEcl/definitions/query/{$pathval}/{$queryname}/main/{$queryname}.wsdl?display">display</a>&nbsp;&nbsp;<a  target="_blank" href="/WsEcl/definitions/query/{$pathval}/{$queryname}/main/{$queryname}.wsdl">link</a>
                 </li>
                 <li>
