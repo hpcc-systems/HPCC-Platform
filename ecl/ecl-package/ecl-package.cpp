@@ -226,12 +226,6 @@ public:
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
     {
-        if (iter.done())
-        {
-            usage();
-            return false;
-        }
-
         for (; !iter.done(); iter.next())
         {
             const char *arg = iter.query();
@@ -253,12 +247,6 @@ public:
     {
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
-        if (optTarget.isEmpty())
-        {
-            fprintf(stderr, "\nTarget cluster must be specified\n");
-            usage();
-            return false;
-        }
         return true;
     }
     virtual int processCMD()
@@ -267,6 +255,7 @@ public:
 
         Owned<IClientListPackageRequest> request = packageProcessClient->createListPackageRequest();
         request->setTarget(optTarget);
+        request->setProcess("*");
 
         Owned<IClientListPackageResponse> resp = packageProcessClient->ListPackage(request);
         if (resp->getExceptions().ordinality())
@@ -350,12 +339,6 @@ public:
     {
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
-        if (optTarget.isEmpty())
-        {
-            fprintf(stderr, "\nTarget cluster must be specified\n");
-            usage();
-            return false;
-        }
         return true;
     }
     virtual int processCMD()
@@ -364,6 +347,7 @@ public:
 
         Owned<IClientGetPackageRequest> request = packageProcessClient->createGetPackageRequest();
         request->setTarget(optTarget);
+        request->setProcess("*");
 
         Owned<IClientGetPackageResponse> resp = packageProcessClient->GetPackage(request);
         if (resp->getExceptions().ordinality())
