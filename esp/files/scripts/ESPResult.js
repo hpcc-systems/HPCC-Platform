@@ -26,47 +26,47 @@ define([
     "hpcc/WsWorkunits",
     "hpcc/ESPBase"
 ], function (declare, Deferred, ObjectStore, domConstruct,
-            parser, DomParser, entities, 
+            parser, DomParser, entities,
             WsWorkunits, ESPBase) {
-	return declare(ESPBase, {
-		store: null,
-		Total: "-1",
+    return declare(ESPBase, {
+        store: null,
+        Total: "-1",
 
-		constructor: function (args) {
-			declare.safeMixin(this, args);
-			if (this.Sequence != null) {
-				this.store = new WsWorkunits.WUResult({
-					wuid: this.wuid,
-					sequence: this.Sequence,
-					isComplete: this.isComplete()
-				});
-			} else {
-				this.store = new WsWorkunits.WUResult({
-					wuid: this.wuid,
-					name: this.Name,
-					isComplete: true
-				});
-			}
-		},
+        constructor: function (args) {
+            declare.safeMixin(this, args);
+            if (this.Sequence != null) {
+                this.store = new WsWorkunits.WUResult({
+                    wuid: this.wuid,
+                    sequence: this.Sequence,
+                    isComplete: this.isComplete()
+                });
+            } else {
+                this.store = new WsWorkunits.WUResult({
+                    wuid: this.wuid,
+                    name: this.Name,
+                    isComplete: true
+                });
+            }
+        },
 
-		getName: function () {
-			return this.Name;
-		},
+        getName: function () {
+            return this.Name;
+        },
 
-		getID: function () {
-			if (this.Sequence != null) {
-				return this.Sequence;
-			}
-			return this.Name;
-		},
+        getID: function () {
+            if (this.Sequence != null) {
+                return this.Sequence;
+            }
+            return this.Name;
+        },
 
-		isComplete: function () {
-			return this.Total != "-1";
-		},
+        isComplete: function () {
+            return this.Total != "-1";
+        },
 
         getFirstSchemaNode: function (node, name) {
             if (node && node.attributes) {
-                if ((node.baseName && node.baseName == name) || (node.localName && node.localName == name) || (typeof(node.getAttribute) != "undefined" && node.getAttribute("name") == name)) {
+                if ((node.baseName && node.baseName == name) || (node.localName && node.localName == name) || (typeof (node.getAttribute) != "undefined" && node.getAttribute("name") == name)) {
                     return node;
                 }
             }
@@ -242,61 +242,61 @@ define([
             return retVal;
         },
 
-		extractWidth: function (type, name) {
-			var retVal = -1;
+        extractWidth: function (type, name) {
+            var retVal = -1;
 
-			switch (type) {
-				case "xs:boolean":
-					retVal = 5;
-					break;
-				case "xs:integer":
-					retVal = 8;
-					break;
-				case "xs:nonNegativeInteger":
-					retVal = 8;
-					break;
-				case "xs:double":
-					retVal = 8;
-					break;
-				case "xs:string":
-					retVal = 32;
-					break;
-				default:
-					var numStr = "0123456789";
-					var underbarPos = type.lastIndexOf("_");
-					var length = underbarPos > 0 ? underbarPos : type.length;
-					var i = length - 1;
-					for (; i >= 0; --i) {
-						if (numStr.indexOf(type.charAt(i)) == -1)
-							break;
-					}
-					if (i + 1 < length) {
-						retVal = parseInt(type.substring(i + 1, length));
-					}
-					if (type.indexOf("data") == 0) {
-						retVal *= 2;
-					}
-					break;
-			}
-			if (retVal < name.length)
-				retVal = name.length;
+            switch (type) {
+                case "xs:boolean":
+                    retVal = 5;
+                    break;
+                case "xs:integer":
+                    retVal = 8;
+                    break;
+                case "xs:nonNegativeInteger":
+                    retVal = 8;
+                    break;
+                case "xs:double":
+                    retVal = 8;
+                    break;
+                case "xs:string":
+                    retVal = 32;
+                    break;
+                default:
+                    var numStr = "0123456789";
+                    var underbarPos = type.lastIndexOf("_");
+                    var length = underbarPos > 0 ? underbarPos : type.length;
+                    var i = length - 1;
+                    for (; i >= 0; --i) {
+                        if (numStr.indexOf(type.charAt(i)) == -1)
+                            break;
+                    }
+                    if (i + 1 < length) {
+                        retVal = parseInt(type.substring(i + 1, length));
+                    }
+                    if (type.indexOf("data") == 0) {
+                        retVal *= 2;
+                    }
+                    break;
+            }
+            if (retVal < name.length)
+                retVal = name.length;
 
-			return retVal;
-		},
+            return retVal;
+        },
 
-		getObjectStore: function () {
-			return ObjectStore({
-				objectStore: this.store
-			});
-		},
+        getObjectStore: function () {
+            return ObjectStore({
+                objectStore: this.store
+            });
+        },
 
-		getECLRecord: function () {
-			var retVal = "RECORD\n";
-			for (var i = 0; i < this.ECLSchemas.ECLSchemaItem.length; ++i) {
-				retVal += "\t" + this.ECLSchemas.ECLSchemaItem[i].ColumnType + "\t" + this.ECLSchemas.ECLSchemaItem[i].ColumnName + ";\n";
-			}
-			retVal += "END;\n";
-			return retVal;
-		}
-	});
+        getECLRecord: function () {
+            var retVal = "RECORD\n";
+            for (var i = 0; i < this.ECLSchemas.ECLSchemaItem.length; ++i) {
+                retVal += "\t" + this.ECLSchemas.ECLSchemaItem[i].ColumnType + "\t" + this.ECLSchemas.ECLSchemaItem[i].ColumnName + ";\n";
+            }
+            retVal += "END;\n";
+            return retVal;
+        }
+    });
 });

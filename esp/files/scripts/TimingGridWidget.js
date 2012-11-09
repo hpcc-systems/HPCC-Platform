@@ -31,8 +31,8 @@ define([
 
     "dojo/text!../templates/TimingGridWidget.html"
 ],
-    function (declare, array, Memory, ObjectStore, 
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
+    function (declare, array, Memory, ObjectStore,
+            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
             DataGrid,
             ESPWorkunit,
             template) {

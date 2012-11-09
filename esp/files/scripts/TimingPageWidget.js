@@ -28,8 +28,8 @@ define([
 
     "dojo/text!../templates/TimingPageWidget.html"
 ],
-    function (declare, 
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, 
+    function (declare,
+            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer,
             TimingGridWidget, TimingTreeMapWidget,
             template) {
         return declare("TimingPageWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {

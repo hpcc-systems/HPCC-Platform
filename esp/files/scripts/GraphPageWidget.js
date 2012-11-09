@@ -163,11 +163,11 @@ define([
             this.timingGrid = registry.byId(this.id + "TimingsGrid");
 
             var context = this;
-            this.timingGrid.onClick = function(items) {
+            this.timingGrid.onClick = function (items) {
                 context.syncSelectionFrom(context.timingGrid);
             };
 
-            this.timingGrid.onDblClick = function(item) {
+            this.timingGrid.onDblClick = function (item) {
                 var subgraphID = item.SubGraphId;
                 var mainItem = context.main.getItem(subgraphID);
                 context.main.centerOnItem(mainItem, true);

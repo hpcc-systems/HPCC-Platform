@@ -14,39 +14,39 @@
 #	limitations under the License.
 ############################################################################## */
 define([
-	"dojo/_base/declare",
-	"dojo/_base/xhr",
-	"dojo/dom",
-	"dojo/store/Memory",
-	"dojo/data/ObjectStore",
+    "dojo/_base/declare",
+    "dojo/_base/xhr",
+    "dojo/dom",
+    "dojo/store/Memory",
+    "dojo/data/ObjectStore",
 
-	"dijit/layout/_LayoutWidget",
-	"dijit/_TemplatedMixin",
-	"dijit/_WidgetsInTemplateMixin",
-	"dijit/layout/BorderContainer",
-	"dijit/layout/TabContainer",
-	"dijit/layout/ContentPane",
-	"dijit/Toolbar",
-	"dijit/TooltipDialog",
-	"dijit/form/Textarea",
-	"dijit/form/Button",
-	"dijit/TitlePane",
-	"dijit/registry",
+    "dijit/layout/_LayoutWidget",
+    "dijit/_TemplatedMixin",
+    "dijit/_WidgetsInTemplateMixin",
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
+    "dijit/layout/ContentPane",
+    "dijit/Toolbar",
+    "dijit/TooltipDialog",
+    "dijit/form/Textarea",
+    "dijit/form/Button",
+    "dijit/TitlePane",
+    "dijit/registry",
 
-	"hpcc/ECLSourceWidget",
-	"hpcc/TargetSelectWidget",
-	"hpcc/SampleSelectWidget",
-	"hpcc/GraphWidget",
-	"hpcc/ResultsWidget",
-	"hpcc/InfoGridWidget",
-	"hpcc/LogsWidget",
-	"hpcc/ESPWorkunit",
+    "hpcc/ECLSourceWidget",
+    "hpcc/TargetSelectWidget",
+    "hpcc/SampleSelectWidget",
+    "hpcc/GraphWidget",
+    "hpcc/ResultsWidget",
+    "hpcc/InfoGridWidget",
+    "hpcc/LogsWidget",
+    "hpcc/ESPWorkunit",
 
-	"dojo/text!../templates/WUDetailsWidget.html"
+    "dojo/text!../templates/WUDetailsWidget.html"
 ], function (declare, xhr, dom, Memory, ObjectStore,
-				_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Textarea, Button, TitlePane, registry,
-				EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, LogsWidget, Workunit,
-				template) {
+                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Textarea, Button, TitlePane, registry,
+                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, LogsWidget, Workunit,
+                template) {
     return declare("WUDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "WUDetailsWidget",
@@ -360,7 +360,7 @@ define([
                         }
                         context.logsWidget.set("title", "Helpers " + "(" + helpersCount + ")");
                         //dom.byId(context.id + "WUInfoResponse").innerHTML = context.objectToText(response);
-                        dom.byId("showDescription").value = response.Description;                        
+                        dom.byId("showDescription").value = response.Description;
                         dom.byId("showAction").innerHTML = response.ActionEx;
                         dom.byId("showScope").innerHTML = response.Scope;
                         var protectedCheckbox = registry.byId("showProtected");

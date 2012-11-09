@@ -14,26 +14,26 @@
 #    limitations under the License.
 ############################################################################## */
 define([
-	"dojo/_base/declare",
-	"dojo/_base/lang",
-	"dojo/_base/xhr",
-	"dojo/dom",
-	"dojo/request/iframe",
+    "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/_base/xhr",
+    "dojo/dom",
+    "dojo/request/iframe",
 
-	"dijit/layout/_LayoutWidget",
-	"dijit/_TemplatedMixin",
-	"dijit/_WidgetsInTemplateMixin",
-	"dijit/layout/TabContainer",
-	"dijit/registry",
+    "dijit/layout/_LayoutWidget",
+    "dijit/_TemplatedMixin",
+    "dijit/_WidgetsInTemplateMixin",
+    "dijit/layout/TabContainer",
+    "dijit/registry",
 
-	"hpcc/ESPBase",
-	"hpcc/ESPWorkunit",
-	"hpcc/ResultsControl",
-	"dojo/text!../templates/ResultsWidget.html"
+    "hpcc/ESPBase",
+    "hpcc/ESPWorkunit",
+    "hpcc/ResultsControl",
+    "dojo/text!../templates/ResultsWidget.html"
 ], function (declare, lang, xhr, dom, iframe,
-				_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, TabContainer, registry,
-				ESPBase, ESPWorkunit, ResultsControl,
-				template) {
+                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, TabContainer, registry,
+                ESPBase, ESPWorkunit, ResultsControl,
+                template) {
     return declare("ResultsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "ResultsWidget",
