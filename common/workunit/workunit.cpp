@@ -4798,8 +4798,11 @@ void CLocalWorkUnit::setDebugValue(const char *propname, const char *value, bool
     if (overwrite || !p->hasProp(prop.str()))
     {
         // MORE - not sure this line should be needed....
-        p->setProp("Debug", ""); 
-        p->setProp(prop.str(), value); 
+        p->setProp("Debug", "");
+        if (value && *value)
+            p->setProp(prop.str(), value);
+        else
+            p->removeProp(prop.str());
     }
 }
 
