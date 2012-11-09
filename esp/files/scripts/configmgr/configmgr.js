@@ -1033,6 +1033,11 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
               doPageRefresh();
             }
           }
+          var indexOfSubType = newParams.indexOf("::subType");
+          var newParamsSubString = newParams.substr(indexOfSubType);
+
+          top.document.selectRecordClick = true;
+          top.document.selectRecord = newParamsSubString.substr(newParamsSubString.indexOf("@name")+7).substring(0,newParamsSubString.substr(newParamsSubString.indexOf("@name")+7).indexOf("'"));
           top.document.navDT.clickCurrentSelOrName(top.document.navDT); // refresh
         } else {
           alert(r.replyText);
@@ -2855,7 +2860,34 @@ function onMenuItemClickGenericAddDelete(p_sType, p_aArgs, p_oValue) {
 
   var type = compTabToNode[parentName];
 
-  if (dt.parentDT)
+  if (parentName == "Access Rules (Ordered List)")
+  {
+    var xmlArgs = "<XmlArgs ";
+    if ( this.cfg.getProperty("text") == "Add" )
+      xmlArgs += "XPath = \'Software/RoxieCluster[@name=\"" + top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name') + "\"]/ACL[@name=\"" + dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]).getData('name') + "\"]\'";
+    else
+      xmlArgs += "XPath = \'Software/RoxieCluster[@name=\"" + top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name') + "\"]/ACL[@name=\"" + dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]).getData('name') + "\"]/Access[@name=\"" + dt.getRecord(dt.getRecordIndex(dt.getSelectedRows()[0])).getData('name') + "\"]\'";
+
+    xmlArgs += " />";
+
+    YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleAccessRules', {
+      success: function(o)
+      {
+        top.document.selectRecord = dt.parentDT.getRecord((dt.parentDT.getSelectedRows()[0])).getData('name');
+        top.document.selectRecordClick = true;
+        top.document.navDT.clickCurrentSelOrName(top.document.navDT);
+      },
+      failure: function(o) {
+        top.document.stopWait(document);
+          alert(o.statusText);
+      },
+      scope: this
+    },
+    top.document.navDT.getFileName(true) + 'Operation=' + this.cfg.getProperty("text") + '&XmlArgs=' + xmlArgs);
+    return;
+  }
+
+  if (dt.parentDT && dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]) != null)
     type = dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]).getData('name');
 
   var subRecs = null;
