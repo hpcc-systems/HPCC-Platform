@@ -1015,7 +1015,7 @@ public:
     virtual void killSorted() = 0;
 };
 
-class CHThorGroupSortActivity : public CHThorSimpleActivityBase
+class CHThorGroupSortActivity : public CHThorSimpleActivityBase, implements roxiemem::IBufferedRowCallback
 {
 public:
     CHThorGroupSortActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSortArg &_arg, ThorActivityKind _kind);
@@ -1029,6 +1029,10 @@ public:
 
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
 
+    //interface roxiemem::IBufferedRowCallback
+    unsigned getPriority() const;
+    bool freeBufferedRows(bool critical);
+
 private:
     void createSorter();
     void getSorted();
@@ -1037,11 +1041,11 @@ protected:
     IHThorSortArg &helper;
     bool gotSorted;
     bool eof;
-    memsize_t spillThreshold;
     Owned<ISorter> sorter;
     bool sorterIsConst;
     Owned<IDiskMerger> diskMerger;
     Owned<IRowStream> diskReader;
+    memsize_t grpSize;
 };
 
 class CSimpleSorterBase : public CInterface, public ISorter
