@@ -2702,6 +2702,14 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
             WsEclWuInfo wsinfo(wuid.str(), qs.str(), qid.str(), context->queryUserId(), context->queryPassword());
             return getWsEclLinks(*context, request, response, wsinfo);
         }
+        else if (strieq(methodName.str(), "soap"))
+        {
+            StringBuffer url;
+            url.append("/WsEcl/forms/soap/").append(thepath);
+            response->redirect(*request, url);
+            return 0;
+        }
+
     }
     catch (IMultiException* mex)
     {
