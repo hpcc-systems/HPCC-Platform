@@ -48,7 +48,6 @@
 #define EMPTY_LOOP_LIMIT 1000
 
 static unsigned const hthorReadBufferSize = 0x10000;
-static memsize_t const defaultHThorSpillThreshold = 512*1024*1024;  // MORE - should increase on 64-bit platform?
 static offset_t const defaultHThorDiskWriteSizeLimit = I64C(10*1024*1024*1024); //10 GB, per Nigel
 static size32_t const spillStreamBufferSize = 0x10000;
 static int const defaultWorkUnitWriteLimit = 10; //10MB as thor
@@ -3612,16 +3611,18 @@ const void * CHThorGroupActivity::nextGE(const void * seek, unsigned numFields)
 
 CHThorGroupSortActivity::CHThorGroupSortActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorSortArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
+    queryRowManager()->addRowBuffer(this);
     gotSorted = false;
+}
+
+CHThorGroupSortActivity::~CHThorGroupSortActivity()
+{
+    queryRowManager()->removeRowBuffer(this);
 }
 
 void CHThorGroupSortActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
-    eof = false;
-    spillThreshold = (memsize_t)agent.queryWorkUnit()->getDebugValueInt64("hthorSpillThreshold", defaultHThorSpillThreshold);
-    memsize_t totalMemoryLimit = roxiemem::getTotalMemoryLimit();
-    spillThreshold = (memsize_t)std::min(spillThreshold, totalMemoryLimit / 3);
     if(!sorter)
         createSorter();
 }
@@ -3629,10 +3630,12 @@ void CHThorGroupSortActivity::ready()
 void CHThorGroupSortActivity::done()
 {
     if(sorter)
+    {
         if(sorterIsConst)
             sorter->killSorted();
         else
             sorter.clear();
+    }
     gotSorted = false;
     diskReader.clear();
     CHThorSimpleActivityBase::done();
@@ -3642,8 +3645,6 @@ const void *CHThorGroupSortActivity::nextInGroup()
 {
     if(!gotSorted)
         getSorted();
-    if(eof)
-        return NULL;
 
     if(diskReader)
     {
@@ -3668,11 +3669,10 @@ const void *CHThorGroupSortActivity::nextInGroup()
 
 void CHThorGroupSortActivity::createSorter()
 {
-    sorterIsConst = true;
     IHThorAlgorithm * algo = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
     if(!algo)
     {
-        sorter.setown(new CHeapSorter(helper.queryCompare()));
+        sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         return;
     }
     unsigned flags = algo->getAlgorithmFlags();
@@ -3681,32 +3681,32 @@ void CHThorGroupSortActivity::createSorter()
     if(!algoname)
     {
         if((flags & TAFunstable) != 0)
-            sorter.setown(new CQuickSorter(helper.queryCompare()));
+            sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         else
-            sorter.setown(new CHeapSorter(helper.queryCompare()));
+            sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         return;
     }
     if(stricmp(algoname, "quicksort") == 0)
         if((flags & TAFstable) != 0)
-            sorter.setown(new CStableQuickSorter(helper.queryCompare()));
+            sorter.setown(new CStableQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         else
-            sorter.setown(new CQuickSorter(helper.queryCompare()));
+            sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     else if(stricmp(algoname, "heapsort") == 0)
-        sorter.setown(new CHeapSorter(helper.queryCompare()));
+        sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     else if(stricmp(algoname, "insertionsort") == 0)
         if((flags & TAFstable) != 0)
-            sorter.setown(new CStableInsertionSorter(helper.queryCompare()));
+            sorter.setown(new CStableInsertionSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         else
-            sorter.setown(new CInsertionSorter(helper.queryCompare()));
+            sorter.setown(new CInsertionSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     else
     {
         StringBuffer sb;
         sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname);
         agent.addWuException(sb.str(),0,ExceptionSeverityWarning,"hthor");
         if((flags & TAFunstable) != 0)
-            sorter.setown(new CQuickSorter(helper.queryCompare()));
+            sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
         else
-            sorter.setown(new CHeapSorter(helper.queryCompare()));
+            sorter.setown(new CHeapSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
     }
 }
 
@@ -3714,60 +3714,85 @@ void CHThorGroupSortActivity::getSorted()
 {
     diskMerger.clear();
     diskReader.clear();
-    memsize_t grpSize = 0;
     const void * next;
     while((next = input->nextInGroup()) != NULL)
     {
-        size32_t nextSize = input->queryOutputMeta()->getRecordSize(next);
-        if((grpSize+nextSize) > spillThreshold) //Spill ??
+        if (!sorter->addRow(next))
         {
-            if(!diskMerger)
             {
-                StringBuffer fbase;
-                agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
-                PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
-                class CHThorRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
-                {
-                public:
-                    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-                    virtual void releaseRow(const void *row)
-                    {
-                        releaseHThorRow(row);
-                    }
-                    virtual void linkRow(const void *row)
-                    {
-                        linkHThorRow(row);
-                    }
-                };
-                Owned<IRowLinkCounter> linker = new CHThorRowLinkCounter();
-                Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(input->queryOutputMeta(), activityId, agent.queryCodeContext());
-                diskMerger.setown(createDiskMerger(rowInterfaces, linker, fbase.str()));
+                //Unlikely that this code will ever be executed but added for comfort
+                roxiemem::RoxieOutputRowArrayLock block(sorter->getRowArray());
+                sorter->flushRows();
+                sortAndSpillRows();
+                //Ensure new rows are written to the head of the array.  It needs to be a separate call because
+                //performSort() cannot shift active row pointer since it can be called from any thread
+                sorter->flushRows();
             }
-            sorter->performSort();
-            sorter->spillSortedToDisk(diskMerger);
-            grpSize = 0;
+            if (!sorter->addRow(next))
+            {
+                releaseHThorRow(next);
+                throw MakeStringException(0, "Insufficient memory to append sort row");
+            }
         }
-        sorter->addRow(next);
-        grpSize += nextSize;
     }
+    sorter->flushRows();
 
+    roxiemem::RoxieOutputRowArrayLock block(sorter->getRowArray());
     if(diskMerger)
     {
-        sorter->performSort();
-        sorter->spillSortedToDisk(diskMerger);
+        sortAndSpillRows();
+        sorter->killSorted();
         ICompare *compare = helper.queryCompare();
-        assertex(compare);
         diskReader.setown(diskMerger->merge(compare));
-    }
-    else if(grpSize)
-    {
-        sorter->performSort();
     }
     else
     {
-        eof = true;
+        sorter->performSort();
     }
     gotSorted = true;
+}
+
+//interface roxiemem::IBufferedRowCallback
+unsigned CHThorGroupSortActivity::getPriority() const
+{
+    return 10;
+}
+
+bool CHThorGroupSortActivity::freeBufferedRows(bool critical)
+{
+    roxiemem::RoxieOutputRowArrayLock block(sorter->getRowArray());
+    return sortAndSpillRows();
+}
+
+bool CHThorGroupSortActivity::sortAndSpillRows()
+{
+    if (0 == sorter->numCommitted())
+        return false;
+    if(!diskMerger)
+    {
+        StringBuffer fbase;
+        agent.getTempfileBase(fbase).appendf(".spill_sort_%p", this);
+        PROGLOG("SORT: spilling to disk, filename base %s", fbase.str());
+        class CHThorRowLinkCounter : public CSimpleInterface, implements IRowLinkCounter
+        {
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+            virtual void releaseRow(const void *row)
+            {
+                releaseHThorRow(row);
+            }
+            virtual void linkRow(const void *row)
+            {
+                linkHThorRow(row);
+            }
+        };
+        Owned<IRowLinkCounter> linker = new CHThorRowLinkCounter();
+        Owned<IRowInterfaces> rowInterfaces = createRowInterfaces(input->queryOutputMeta(), activityId, agent.queryCodeContext());
+        diskMerger.setown(createDiskMerger(rowInterfaces, linker, fbase.str()));
+    }
+    sorter->performSort();
+    sorter->spillSortedToDisk(diskMerger);
+    return true;
 }
 
 // Base for Quick sort and both Insertion sorts
@@ -3780,71 +3805,76 @@ void CSimpleSorterBase::spillSortedToDisk(IDiskMerger * merger)
         const void *row = getNextSorted();
         if (!row)
             break;
-        linkHThorRow(row);
         out->putRow(row);
+        releaseHThorRow(row);
     }
-    ForEachItemIn(idxx, rows)
-        releaseHThorRow(rows.item(idxx));
-    rows.kill();
-}
-
-const void * CSimpleSorterBase::getNextSorted()
-{
-    if(finger < rows.ordinality())
-        return rows.item(finger++);
-    else
-        return NULL;
-}
-
-void CSimpleSorterBase::killSorted()
-{
-    while(rows.isItem(finger))
-        releaseHThorRow(rows.item(finger++));
-    rows.kill();
+    finger = 0;
+    rowsToSort.noteSpilled(rowsToSort.numCommitted());
 }
 
 // Quick sort
 
 void CQuickSorter::performSort()
 {
-    qsortvec((void * *)rows.getArray(), rows.ordinality(), *compare);
-    finger = 0;
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        qsortvec((void * *)rows, numRows, *compare);
+        finger = 0;
+    }
 }
 
 // StableQuick sort
 
 void CStableQuickSorter::performSort()
 {
-    index = (void ***)realloc(index, rows.ordinality()*sizeof(void**));
-    qsortvecstable((void * *)rows.getArray(), rows.ordinality(), *compare, index);
-    finger = 0;
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        index = (void ***)realloc(index, numRows * sizeof(void**));
+        qsortvecstable((void * *)rows, numRows, *compare, index);
+        finger = 0;
+    }
 }
 
 const void * CStableQuickSorter::getNextSorted()
 {
-    if(finger < rows.ordinality())
-        return *(index[finger++]);
+    if(finger < rowsToSort.numCommitted())
+    {
+        const void * row = static_cast<OwnedHThorRow *>(*(index[finger++]));
+        if (row)
+            LinkRoxieRow(row);
+        return row;
+    }
     else
         return NULL;
 }
 
 void CStableQuickSorter::killSorted()
 {
-    while(finger < rows.ordinality())
-        releaseHThorRow(*(index[finger++]));
-    rows.kill();
+    rowsToSort.kill();
     free(index);
     index = NULL;
 }
 
 // Heap sort
 
-void CHeapSorter::addRow(const void * next)
+void CHeapSorter::performSort()
 {
-    heap.append(heapsize);
-    rows.append(next);
-    heap_push_up(heapsize, heap.getArray(), rows.getArray(), compare);
-    ++heapsize;
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        roxiemem::RoxieSimpleInputRowArray sorted;
+        for (unsigned i = 0; i < numRows; i++)
+        {
+            heap.append(heapsize);
+            heap_push_up(heapsize, heap.getArray(), rows, compare);
+            ++heapsize;
+        }
+    }
 }
 
 void CHeapSorter::spillSortedToDisk(IDiskMerger * merger)
@@ -3858,39 +3888,53 @@ const void * CHeapSorter::getNextSorted()
 {
     if(heapsize)
     {
-        unsigned top = heap.item(0);
-        --heapsize;
-        heap.replace(heap.item(heapsize), 0);
-        heap_push_down(0, heapsize, heap.getArray(), rows.getArray(), compare);
-        return rows.item(top);
+        size32_t numRows = rowsToSort.numCommitted();
+        if (numRows)
+        {
+            const void * * rows = rowsToSort.getBlock(numRows);
+            unsigned top = heap.item(0);
+            --heapsize;
+            heap.replace(heap.item(heapsize), 0);
+            heap_push_down(0, heapsize, heap.getArray(), rows, compare);
+            return rowsToSort.get(top);
+        }
     }
-    else
-    {
-        return NULL;
-    }
+    return NULL;
 }
 
 void CHeapSorter::killSorted()
 {
-    for(unsigned i=0; i<heapsize; ++i)
-        releaseHThorRow(rows.item(heap.item(i)));
-    rows.kill();
+    rowsToSort.kill();
     heap.kill();
     heapsize = 0;
 }
 
 // Insertion sorts
 
-void CInsertionSorter::addRow(const void * next)
+void CInsertionSorter::performSort()
 {
-    rows.append(NULL);
-    binary_vec_insert(next, rows.getArray(), rows.ordinality()-1, *compare);
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        for (unsigned i = 0; i < numRows; i++)
+        {
+            binary_vec_insert(rowsToSort.query(i), rows, i, *compare);
+        }
+    }
 }
 
-void CStableInsertionSorter::addRow(const void * next)
+void CStableInsertionSorter::performSort()
 {
-    rows.append(NULL);
-    binary_vec_insert_stable(next, rows.getArray(), rows.ordinality()-1, *compare);
+    size32_t numRows = rowsToSort.numCommitted();
+    if (numRows)
+    {
+        const void * * rows = rowsToSort.getBlock(numRows);
+        for (unsigned i = 0; i < numRows; i++)
+        {
+            binary_vec_insert_stable(rowsToSort.query(i), rows, i, *compare);
+        }
+    }
 }
 
 //=====================================================================================================
