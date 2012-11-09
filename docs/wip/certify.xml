@@ -176,7 +176,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         <listitem>
           <para>Filenames and other variables are defined in the
           _Certification.Setup file, you can edit this file to change the
-          number of records or filenames produced. </para>
+          number of records or filenames produced.</para>
         </listitem>
       </orderedlist>
     </sect1>
@@ -385,7 +385,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         about each component. The component name, the condition, the component
         state, how long the component has been up and running, the amount of
         disk usage, memory usage and other information is available at a
-        glance. </para>
+        glance.</para>
 
         <para><informaltable colsep="1" frame="all" rowsep="1">
             <?dbfo keep-together="always"?>
@@ -404,7 +404,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                 </row>
               </tbody>
             </tgroup>
-          </informaltable> </para>
+          </informaltable></para>
 
         <para>If there are any failed components, they are highlighted in
         orange, indicating they are not ready.</para>
@@ -573,6 +573,24 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                   <para>Double-click on the <emphasis
                   role="bold">BuildDataFiles</emphasis> file to open
                   it.</para>
+
+                  <para>Have a look at the BuildDataFiles file. You will see
+                  some ECL code in the file as follows:</para>
+
+                  <programlisting>  Base := Cert.Setup.NodeMult1; //max = 20
+  Mult := Cert.Setup.NodeMult2; //max = 20
+  //base * Mult = number of millions of records to generate
+  //it's normal to generate 1 million recs/node
+  //maximum dataset size = 18,800,000,000 bytes (47 * 400 million)</programlisting>
+
+                  <para>Notice the code has two multipliers, <emphasis
+                  role="bold">NodeMult1</emphasis> and <emphasis
+                  role="bold">NodeMult2</emphasis>. These values are factored
+                  together to generate the records. The values as configured
+                  in the _Certification sample generate 2,000,000 records. If
+                  you have a larger multi-node system you will probably want
+                  to adjust these values to generate a greater number of
+                  records.</para>
 
                   <?hard-pagebreak ?>
                 </listitem>
@@ -1352,16 +1370,15 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
   <chapter id="Spray">
     <title>Spray and Despray Data</title>
 
-    <para>This section verifies the systems ability to Spray and Despray data.
-    Spraying is the means by which the HPCC distributes data across the system
-    nodes.</para>
+    <para>This section verifies the systems ability to Spray and Despray
+    data.</para>
 
     <para>Spraying takes a file and distributes pieces of it across the nodes.
-    Despray is the opposite, the system combines the data from the multiple
+    Despray is the opposite--the system combines the data from the multiple
     nodes into a single file.</para>
 
     <sect1 id="Move_data_to_Landing_Zone">
-      <title>Certify Data Retrieval (Despray)</title>
+      <title>Certify Despray</title>
 
       <para>The next step to verify that your system is working properly is to
       test the Despray capabilities. Despray is when the system combines the
@@ -1369,10 +1386,9 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
       to the Landing Zone from the Data Refinery.</para>
 
       <sect2>
-        <title>DeSpray from ECL Watch</title>
+        <title>Despray from ECL Watch</title>
 
-        <!--The following information seemed familiar so I embedded a XInclude to the section in DataTutorial. This is more of a Test...
-Why retype and maintain in two places when we can just keep the cromulent data in one file, and reference it... anywhere!***-->
+        <!--The following cromulent information can also be found in the DataTutorial.***-->
 
         <para>Despray is the opposite of spraying, is a good way to certify
         that piece is working properly.</para>
@@ -1391,11 +1407,11 @@ Why retype and maintain in two places when we can just keep the cromulent data i
           </listitem>
 
           <listitem>
-            <para>Select the <emphasis>Browse Logical Files </emphasis>link
+            <para>Click the <emphasis>Browse Logical Files </emphasis>link
             under DFU Files.</para>
 
             <para><figure>
-                <title>***</title>
+                <title>Browse Files</title>
 
                 <mediaobject>
                   <imageobject>
@@ -1447,7 +1463,8 @@ Why retype and maintain in two places when we can just keep the cromulent data i
 
                         <entry>Use the drop list to select the machine to
                         despray to. The items in the list are landing zones
-                        defined in the system’s confguration.</entry>
+                        defined in the system’s confguration. Your system may
+                        have only one.</entry>
                       </row>
 
                       <row>
@@ -1522,7 +1539,7 @@ Why retype and maintain in two places when we can just keep the cromulent data i
           <title id="LandingZone_Expected_Results">EXPECTED RESULTS:</title>
 
           <para>Upon completion of the despray operation you will have a
-          singular file. You can then retrieve the file from the landing zone.
+          single file. You can then retrieve the file from the landing zone.
           This will certify that the despray operation is working
           correctly.</para>
         </sect3>
@@ -1530,14 +1547,13 @@ Why retype and maintain in two places when we can just keep the cromulent data i
     </sect1>
 
     <sect1>
-      <title>Certify Data Transfer (Spray)</title>
+      <title>Certify Spray</title>
 
       <para>The file will be sprayed from the Landing Zone to the Data
       Refinery, this will certify that data can be moved from Landing Zone to
       the Data Refinery.</para>
 
-      <!--The following information seemed familiar so I embedded a XInclude to the section in DataTutorial. This is more of a Test...
-Why retype and maintain in two places when we can just keep the cromulent data in one file, and reference it... anywhere!***
+      <!--The following is a comment***
 
 -->
 
@@ -1555,12 +1571,10 @@ Why retype and maintain in two places when we can just keep the cromulent data i
         that we just put out on our landing zone.</para>
 
         <para>We are going to spray the file to our Thor cluster and give it a
-        logical name of <emphasis role="bold">thor::</emphasis><emphasis
-        role="bold">YN</emphasis><emphasis
-        role="bold">::full_test_distributed</emphasis><emphasis role="bold">
-        </emphasis>where <emphasis role="bold">YN</emphasis> are your
-        initials. The Distrubuted File Utility maintains a list of logical
-        files and their corresponding physical file locations.</para>
+        logical name of <emphasis
+        role="bold">certification::full_test_distributed</emphasis>. The
+        Distrubuted File Utility maintains a list of logical files and their
+        corresponding physical file locations.</para>
 
         <orderedlist>
           <listitem>
@@ -1609,11 +1623,8 @@ Why retype and maintain in two places when we can just keep the cromulent data i
           <listitem>
             <para>Fill in the <emphasis role="bold">Label</emphasis> using the
             naming convention described earlier: <emphasis
-            role="bold">thor::</emphasis><emphasis
-            role="bold">YN</emphasis><emphasis
-            role="bold">::</emphasis><emphasis
-            role="bold">full_test_distributed</emphasis> (remember, <emphasis
-            role="bold">YN</emphasis> are your initials).</para>
+            role="bold">certification::</emphasis><emphasis
+            role="bold">full_test_distributed</emphasis>.</para>
           </listitem>
 
           <listitem>
@@ -1632,7 +1643,8 @@ Why retype and maintain in two places when we can just keep the cromulent data i
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/CS-1909.jpg" />
+                    <imagedata fileref="images/CS-1909.jpg"
+                               vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -1696,10 +1708,9 @@ Why retype and maintain in two places when we can just keep the cromulent data i
           <listitem>
             <para>Click on the <inlinegraphic fileref="images/RM-19.jpg" />
             button next to the file listing for <emphasis
-            role="bold">thor::yn::full_test_distributed</emphasis>, (where
-            <emphasis role="bold">YN</emphasis> are your initials) then select
-            <emphasis role="bold">Details</emphasis> to open the logical file
-            statistics.</para>
+            role="bold">certification::full_test_distributed</emphasis>, then
+            select <emphasis role="bold">Details</emphasis> to open the
+            logical file statistics.</para>
           </listitem>
 
           <listitem>
