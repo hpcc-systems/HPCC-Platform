@@ -720,9 +720,9 @@ create_dropzone() {
     # Creating DropZone directory
     if [ ! -d ${D} ]; then
          mkdir -p $D > /dev/null 2>&1
+         chown -cR $user:$user $D > /dev/null 2>&1
+	 chmod 777 $D > /dev/null 2>&1
     fi
-      chown -cR $user:$user $D > /dev/null 2>&1
-      chmod 777 $D > /dev/null 2>&1
     done
 }
 
