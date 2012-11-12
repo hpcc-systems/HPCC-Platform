@@ -583,14 +583,16 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
                   <para>These two multipliers, <emphasis
                   role="bold">NodeMult1</emphasis> and <emphasis
-                  role="bold">NodeMult2</emphasis> are factored together to
-                  generate the records. The values as configured in the
+                  role="bold">NodeMult2</emphasis> define the total number of
+                  millions of records. The values as configured in the
                   _Certification sample generate 2,000,000 records. Typically
-                  you would want to generate about 1 million records per node.
-                  The maximum data set size of 18,800,000,000 bytes (47 * 400
-                  million). If you have a larger multi-node system you should
-                  adjust these values to generate a greater number of records.
-                  </para>
+                  you would want to generate 1 million records per node, up to
+                  400 nodes. The maximum data set size is 18,800,000,000 bytes
+                  (47 * 400 million). The code used in this example is
+                  designed to generate a maximum of 400 million records. A
+                  larger number of nodes will result in fewer records per
+                  node, however the code will still work as intended for this
+                  exercise. </para>
 
                   <?hard-pagebreak ?>
                 </listitem>
