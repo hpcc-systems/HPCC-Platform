@@ -10013,7 +10013,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case LENGTH: msg.append("LENGTH"); break;
     case LIBRARY: msg.append("LIBRARY"); break;
     case LIMIT: msg.append("LIMIT"); break;
-    case _LINKCOUNTED_: msg.append("_LINKCOUNTED_"); break;
+    case LINKCOUNTED: msg.append("LINKCOUNTED"); break;
     case LITERAL: msg.append("LITERAL"); break;
     case LITTLE: msg.append("LITTLE_ENDIAN"); break;
     case LN: msg.append("LN"); break;

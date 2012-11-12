@@ -262,7 +262,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   LENGTH
   LIBRARY
   LIMIT
-  _LINKCOUNTED_
+  LINKCOUNTED
   LITERAL
   LITTLE
   LN
@@ -742,7 +742,7 @@ explicitDatasetType1
                             $$.setType(makeOutOfLineModifier($2.getType()));
                             $$.setPosition($1);
                         }
-    | _LINKCOUNTED_ explicitDatasetType
+    | LINKCOUNTED explicitDatasetType
                         {
                             Owned<ITypeInfo> dsType = $2.getType();
                             $$.setType(setLinkCountedAttr(dsType, true));
@@ -775,7 +775,7 @@ explicitDictionaryType
                             $$.setType(makeDictionaryType(makeRowType(recordType)));
                             $$.setPosition($1);
                         }
-    | _LINKCOUNTED_ explicitDictionaryType
+    | LINKCOUNTED explicitDictionaryType
                         {
                             Owned<ITypeInfo> dsType = $2.getType();
                             $$.setType(setLinkCountedAttr(dsType, true));
@@ -850,7 +850,7 @@ paramType
                             $$.setType(makeRowType(record->getType()));
                             $$.setPosition($1);
                         }
-    | _LINKCOUNTED_ ROW {
+    | LINKCOUNTED ROW {
                             IHqlExpression* record = queryNullRecord();
                             Owned<ITypeInfo> rowType = makeRowType(record->getType());
                             $$.setType(setLinkCountedAttr(rowType, true));
@@ -3748,7 +3748,7 @@ funcRetType
                             $$.setType(makeOriginalModifier(makeRowType(expr->getType()), LINK(expr)));
                             $$.setPosition($1);
                         }
-    | _LINKCOUNTED_ ROW '(' recordDef ')'       
+    | LINKCOUNTED ROW '(' recordDef ')'       
                         {
                             OwnedHqlExpr expr = $4.getExpr();
                             Owned<ITypeInfo> rowType = makeOriginalModifier(makeRowType(expr->getType()), LINK(expr));
@@ -4418,7 +4418,7 @@ fieldAttr
                             getStringValue(text, expr);
                             $$.setExpr(createAttribute(createIdentifierAtom(text), $3.getExpr()), $1);
                         }
-    | _LINKCOUNTED_     
+    | LINKCOUNTED     
                         {
                             $$.setExpr(getLinkCountedAttr());
                             $$.setPosition($1);
