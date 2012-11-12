@@ -574,7 +574,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                   role="bold">BuildDataFiles</emphasis> file to open
                   it.</para>
 
-                  <para>In the BuildDataFiles file. You will see some ECL code
+                  <para>In the BuildDataFiles file, you will see some ECL code
                   in the file as follows:</para>
 
                   <programlisting>  Base := Cert.Setup.NodeMult1; //max = 20
