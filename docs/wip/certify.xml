@@ -574,23 +574,23 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                   role="bold">BuildDataFiles</emphasis> file to open
                   it.</para>
 
-                  <para>Have a look at the BuildDataFiles file. You will see
-                  some ECL code in the file as follows:</para>
+                  <para>In the BuildDataFiles file. You will see some ECL code
+                  in the file as follows:</para>
 
                   <programlisting>  Base := Cert.Setup.NodeMult1; //max = 20
   Mult := Cert.Setup.NodeMult2; //max = 20
-  //base * Mult = number of millions of records to generate
-  //it's normal to generate 1 million recs/node
-  //maximum dataset size = 18,800,000,000 bytes (47 * 400 million)</programlisting>
+</programlisting>
 
-                  <para>Notice the code has two multipliers, <emphasis
+                  <para>These two multipliers, <emphasis
                   role="bold">NodeMult1</emphasis> and <emphasis
-                  role="bold">NodeMult2</emphasis>. These values are factored
-                  together to generate the records. The values as configured
-                  in the _Certification sample generate 2,000,000 records. If
-                  you have a larger multi-node system you will probably want
-                  to adjust these values to generate a greater number of
-                  records.</para>
+                  role="bold">NodeMult2</emphasis> are factored together to
+                  generate the records. The values as configured in the
+                  _Certification sample generate 2,000,000 records. Typically
+                  you would want to generate about 1 million records per node.
+                  The maximum data set size of 18,800,000,000 bytes (47 * 400
+                  million). If you have a larger multi-node system you should
+                  adjust these values to generate a greater number of records.
+                  </para>
 
                   <?hard-pagebreak ?>
                 </listitem>
