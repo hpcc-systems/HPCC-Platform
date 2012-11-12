@@ -40,6 +40,8 @@
 #include "eclrtl_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "rtlread_imp.hpp"
+#include "roxiemem.hpp"
+#include "roxierowbuff.hpp"
 
 roxiemem::IRowManager * queryRowManager();
 #define releaseHThorRow(row) ReleaseRoxieRow(row)
@@ -47,6 +49,7 @@ roxiemem::IRowManager * queryRowManager();
 typedef roxiemem::OwnedRoxieRow OwnedHThorRow;
 typedef roxiemem::OwnedConstRoxieRow OwnedConstHThorRow;
 typedef roxiemem::OwnedRoxieRow OwnedRow;
+typedef roxiemem::DynamicRoxieOutputRowArray dynamicOutputRowArray;
 
 //-- Memory allocation helper class
 
@@ -1008,17 +1011,27 @@ class ISorter : public IInterface
 {
 public:
     virtual ~ISorter() {}
-    virtual void addRow(const void * next) = 0;
+    virtual bool addRow(const void * next) = 0;
     virtual void performSort() = 0;
     virtual void spillSortedToDisk(IDiskMerger * merger) = 0;
     virtual const void * getNextSorted() = 0;
     virtual void killSorted() = 0;
+    virtual const dynamicOutputRowArray & getRowArray() = 0;
+    virtual void flushRows() = 0;
+    virtual unsigned numCommitted() = 0;
 };
 
-class CHThorGroupSortActivity : public CHThorSimpleActivityBase
+class CHThorGroupSortActivity : public CHThorSimpleActivityBase, implements roxiemem::IBufferedRowCallback
 {
+   enum {
+        InitialSortElements = 0,
+        //The number of rows that can be added without entering a critical section, and therefore also the number
+        //of rows that wont get freed when memory gets tight.
+        CommitStep=32
+    };
 public:
     CHThorGroupSortActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSortArg &_arg, ThorActivityKind _kind);
+    virtual ~CHThorGroupSortActivity();
 
     //interface IHThorInput
     virtual void ready();
@@ -1029,6 +1042,11 @@ public:
 
     virtual IOutputMetaData * queryOutputMeta() const { return outputMeta; }
 
+    //interface roxiemem::IBufferedRowCallback
+    unsigned getPriority() const;
+    bool freeBufferedRows(bool critical);
+    bool sortAndSpillRows();
+
 private:
     void createSorter();
     void getSorted();
@@ -1036,8 +1054,6 @@ private:
 protected:
     IHThorSortArg &helper;
     bool gotSorted;
-    bool eof;
-    memsize_t spillThreshold;
     Owned<ISorter> sorter;
     bool sorterIsConst;
     Owned<IDiskMerger> diskMerger;
@@ -1047,34 +1063,37 @@ protected:
 class CSimpleSorterBase : public CInterface, public ISorter
 {
 public:
-    CSimpleSorterBase(ICompare * _compare) : compare(_compare), finger(0) {}
-    virtual ~CSimpleSorterBase() { killSorted(); }
+    CSimpleSorterBase(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : compare(_compare), finger(0),
+        rowsToSort(_rowManager, _initialSize, _commitDelta) {}
+    virtual ~CSimpleSorterBase()                            { killSorted(); }
     IMPLEMENT_IINTERFACE;
+    virtual bool addRow(const void * next)                  { return rowsToSort.append(next); }
     virtual void spillSortedToDisk(IDiskMerger * merger);
-    virtual const void * getNextSorted();
-    virtual void killSorted();
+    virtual const void * getNextSorted()                    { return rowsToSort.get(finger++); }
+    virtual void killSorted()                               { rowsToSort.kill(); }
+    virtual const dynamicOutputRowArray & getRowArray()     { return rowsToSort; }
+    virtual void flushRows()                                { rowsToSort.flush(); }
+    virtual size32_t numCommitted()                         { return rowsToSort.numCommitted(); }
 
 protected:
     ICompare * compare;
-    ConstPointerArray rows;
+    dynamicOutputRowArray rowsToSort;
     aindex_t finger;
 };
 
 class CQuickSorter : public CSimpleSorterBase
 {
 public:
-    CQuickSorter(ICompare * _compare) : CSimpleSorterBase(_compare) {}
-    virtual void addRow(const void * next) { rows.append(next); }
+    CQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta) {}
     virtual void performSort();
 };
 
 class CStableQuickSorter : public CSimpleSorterBase
 {
 public:
-    CStableQuickSorter(ICompare * _compare) : CSimpleSorterBase(_compare), index(NULL) {}
+    CStableQuickSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta), index(NULL) {}
     virtual ~CStableQuickSorter() { killSorted(); }
     IMPLEMENT_IINTERFACE;
-    virtual void addRow(const void * next) { rows.append(next); }
     virtual void performSort();
     virtual const void * getNextSorted();
     virtual void killSorted();
@@ -1086,11 +1105,10 @@ private:
 class CHeapSorter :  public CSimpleSorterBase
 {
 public:
-    CHeapSorter(ICompare * _compare) : CSimpleSorterBase(_compare), heapsize(0) {}
+    CHeapSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta), heapsize(0) {}
     virtual ~CHeapSorter() { killSorted(); }
     IMPLEMENT_IINTERFACE;
-    virtual void addRow(const void * next);
-    virtual void performSort() {}
+    virtual void performSort();
     virtual void spillSortedToDisk(IDiskMerger * merger);
     virtual const void * getNextSorted();
     virtual void killSorted();
@@ -1103,17 +1121,15 @@ private:
 class CInsertionSorter : public CSimpleSorterBase
 {
 public:
-    CInsertionSorter(ICompare * _compare) : CSimpleSorterBase(_compare) {}
-    virtual void addRow(const void * next);
-    virtual void performSort() {}
+    CInsertionSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta) {}
+    virtual void performSort();
 };
 
 class CStableInsertionSorter : public CSimpleSorterBase
 {
 public:
-    CStableInsertionSorter(ICompare * _compare) : CSimpleSorterBase(_compare) {}
-    virtual void addRow(const void * next);
-    virtual void performSort() {}
+    CStableInsertionSorter(ICompare * _compare, roxiemem::IRowManager * _rowManager, size32_t _initialSize, size32_t _commitDelta) : CSimpleSorterBase(_compare, _rowManager, _initialSize, _commitDelta) {}
+    virtual void performSort();
 };
 
 class CHThorGroupedActivity : public CHThorSimpleActivityBase
