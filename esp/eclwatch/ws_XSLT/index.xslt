@@ -711,6 +711,21 @@
                 <xsl:otherwise>0</xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
+        <xsl:variable name="showWarning">
+            <xsl:choose>
+                <xsl:when test="$clusterType = 'DFUserver' or $clusterType = 'ECLCCserver' or $clusterType = 'ECLagent'">
+                    <xsl:choose>
+                        <xsl:when test="$status='paused'"> Queue paused </xsl:when>
+                        <xsl:when test="$status='stopped'"> Queue stopped </xsl:when>
+                        <xsl:otherwise></xsl:otherwise>
+                    </xsl:choose>
+                </xsl:when>
+                <xsl:when test="($status2='1') or ($status2='2')"> Queue paused </xsl:when>
+                <xsl:when test="$status2='3'"> Queue paused - Cluster stopped </xsl:when>
+                <xsl:when test="$status2='5'"> Cluster stopped </xsl:when>
+                <xsl:otherwise></xsl:otherwise>
+            </xsl:choose>
+        </xsl:variable>
         <table class="clusters" border="2" frame="box" rules="groups" style="margin-bottom:5px">
             <tr>
                 <xsl:variable name="pid" select="position()"/>
@@ -794,6 +809,11 @@
                                 <xsl:value-of select="$clusterType"/> - <xsl:value-of select="$queue"/>
                             </xsl:otherwise>
                         </xsl:choose>
+                        <xsl:if test="string-length($showWarning)">
+                            <span style="background: #C00">
+                                <xsl:copy-of select="$showWarning"/>
+                            </span>
+                        </xsl:if>
                     </a>
                 </td>
             </tr>
