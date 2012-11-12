@@ -721,7 +721,7 @@ create_dropzone() {
     if [ ! -d ${D} ]; then
          mkdir -p $D > /dev/null 2>&1
          chown -cR $user:$user $D > /dev/null 2>&1
-	 chmod 777 $D > /dev/null 2>&1
+         chmod 777 $D > /dev/null 2>&1
     fi
     done
 }
