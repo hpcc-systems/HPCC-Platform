@@ -328,7 +328,7 @@ static bool setupDFS(const char *scope, unsigned supersToDel=3, unsigned subsToC
         sub.append("::").append(name);
 
         // Remove first
-        if (dir.exists(sub.str(),user,true,false) && !dir.removePhysical(sub.str(), user, NULL, NULL)) {
+        if (dir.exists(sub.str(),user,true,false) && !dir.removePhysical(sub.str(), user)) {
             ERROR1("Can't remove %s", sub.str());
             return false;
         }
@@ -913,14 +913,56 @@ static void testDFSDel()
         e->Release();
     }
 
+    // Logical Remove
     printf("Deleting 'regress::del::super1, should work\n");
     if (!dir.removeEntry("regress::del::super1", user)) {
         ERROR("Can't remove super1");
         return;
     }
-    printf("Deleting 'regress::del::sub1, should work\n");
+    printf("Deleting 'regress::del::sub1 autoCommit, should work\n");
     if (!dir.removeEntry("regress::del::sub1", user)) {
         ERROR("Can't remove sub1");
+        return;
+    }
+
+    printf("Removing 'regress::del::sub2 - rollback\n");
+    transaction->start();
+    dir.removeEntry("regress::del::sub2", user, INFINITE, transaction);
+    transaction->rollback();
+
+    if (!dir.exists("regress::del::sub2", user, true, false)) {
+        ERROR("Shouldn't have removed sub2 on rollback");
+        return;
+    }
+
+    printf("Removing 'regress::del::sub2 - commit\n");
+    transaction->start();
+    dir.removeEntry("regress::del::sub2", user, INFINITE, transaction);
+    transaction->commit();
+
+    if (dir.exists("regress::del::sub2", user, true, false)) {
+        ERROR("Should have removed sub2 on commit");
+        return;
+    }
+
+    // Physical Remove
+    printf("Physically removing 'regress::del::sub3 - rollback\n");
+    transaction->start();
+    dir.removeEntry("regress::del::sub3", user, INFINITE, transaction);
+    transaction->rollback();
+
+    if (!dir.exists("regress::del::sub3", user, true, false)) {
+        ERROR("Shouldn't have removed sub3 on rollback");
+        return;
+    }
+
+    printf("Physically removing 'regress::del::sub3 - commit\n");
+    transaction->start();
+    dir.removeEntry("regress::del::sub3", user, INFINITE, transaction);
+    transaction->commit();
+
+    if (dir.exists("regress::del::sub3", user, true, false)) {
+        ERROR("Should have removed sub3 on commit");
         return;
     }
 }
@@ -929,11 +971,11 @@ static void testDFSRename()
 {
     Owned<IDistributedFileTransaction> transaction = createDistributedFileTransaction(user); // disabled, auto-commit
 
-    if (dir.exists("regress::rename::other1",user,false,false) && !dir.removePhysical("regress::rename::other1", user, NULL, NULL)) {
+    if (dir.exists("regress::rename::other1",user,false,false) && !dir.removePhysical("regress::rename::other1", user)) {
         ERROR("Can't remove 'regress::rename::other1'");
         return;
     }
-    if (dir.exists("regress::rename::other2",user,false,false) && !dir.removePhysical("regress::rename::other2", user, NULL, NULL)) {
+    if (dir.exists("regress::rename::other2",user,false,false) && !dir.removePhysical("regress::rename::other2", user)) {
         ERROR("Can't remove 'regress::rename::other2'");
         return;
     }
