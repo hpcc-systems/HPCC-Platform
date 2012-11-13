@@ -5306,21 +5306,13 @@ bool CWsDeployFileInfo::handleAccessRules(IEspContext &context, IEspHandleAccess
 
     getUniqueName(pEnvRoot, sbNewName, "Access", xpath);
 
-    StringBuffer newXPath(xpath);
-    newXPath.appendf("/Access[@name=\"%s\"]",sbNewName.str());
-
     IPropertyTree* pTempTree = createPTreeFromIPT(pNewCompTree->queryPropTree("Access"));
     pTempTree->setProp(XML_ATTR_NAME, sbNewName.str());
 
     (pEnvRoot->queryPropTree(xpath))->addPropTree("Access",pTempTree);
   }
   else if (stricmp("Delete", operation) == 0)
-  {
-    StringBuffer XPath(xpath);
-    IPropertyTree *pTree = pEnvRoot->queryPropTree(xpath);
-
     pEnvRoot->removeProp(xpath);
-  }
 
   return true;
 }
