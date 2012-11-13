@@ -2340,10 +2340,12 @@ int CHttpResponse::sendException(IEspHttpException* e)
     return 0;
 }
 
-StringBuffer &toJSON(StringBuffer &json, IMultiException *me)
+StringBuffer &toJSON(StringBuffer &json, IMultiException *me, const char *callback)
 {
     IArrayOf<IException> &exs = me->getArray();
-    appendJSONName(json.set("{"), "Exceptions").append("{");
+    if (callback && *callback)
+        json.append(callback).append('(');
+    appendJSONName(json.append("{"), "Exceptions").append("{");
     appendJSONValue(json, "Source", me->source());
     appendJSONName(json, "Exception").append("[");
     ForEachItemIn(i, exs)
@@ -2357,6 +2359,8 @@ StringBuffer &toJSON(StringBuffer &json, IMultiException *me)
         json.append("}");
     }
     json.append("]}}");
+    if (callback && *callback)
+        json.append(");");
     return json;
 }
 
@@ -2372,9 +2376,11 @@ bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, c
         switch (context->getResponseFormat())
         {
         case ESPSerializationJSON:
+        {
             setContentType(HTTP_TYPE_APPLICATION_JSON_UTF8);
-            toJSON(content, me);
+            toJSON(content, me, context->queryRequestParameters()->queryProp("jsonp"));
             break;
+        }
         case ESPSerializationXML:
             setContentType(HTTP_TYPE_APPLICATION_XML);
             me->serialize(content);
