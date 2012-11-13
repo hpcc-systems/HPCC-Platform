@@ -912,8 +912,8 @@ public:
     bool existsPhysical(const char *_logicalname,IUserDescriptor *user);
 
     void addEntry(CDfsLogicalFileName &lfn,IPropertyTree *root,bool superfile, bool ignoreexists);
-    bool removeEntry(const char *_logicalname,IUserDescriptor *user, unsigned timeoutms=INFINITE);
-    bool removePhysical(const char *_logicalname,IUserDescriptor *user,const char *cluster,IMultiException *mexcept);
+    bool removeEntry(const char *_logicalname,IUserDescriptor *user, unsigned timeoutms=INFINITE, IDistributedFileTransaction *transaction=NULL);
+    bool removePhysical(const char *_logicalname,IUserDescriptor *user,const char *cluster=NULL,unsigned timeoutms=INFINITE,IDistributedFileTransaction *transaction=NULL);
     void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction);
     void removeEmptyScope(const char *name);
 
@@ -1170,30 +1170,29 @@ static StringBuffer &checkNeedFQ(const char *filename, const char *dir, RemoteFi
 
 class CDelayedDelete: public CInterface
 {
-    StringAttr lfn;
+    StringAttr cluster;
+    CDfsLogicalFileName lfn;
     bool remphys;
     Linked<IUserDescriptor> user;
+    unsigned timeoutms;
 public:
-    CDelayedDelete(const char *_lfn,bool _remphys,IUserDescriptor *_user)
-        : lfn(_lfn),user(_user)
+    CDelayedDelete(const char *_lfn,bool _remphys,IUserDescriptor *_user,unsigned _timeoutms,const char* _cluster=NULL)
+        : user(_user), timeoutms(_timeoutms), cluster(_cluster)
     {
+        lfn.set(_lfn);
         remphys = _remphys;
     }
-    void doDelete()
+    void doDelete() // Throw on error!
     {
-        try {
-            if (remphys) 
-                queryDistributedFileDirectory().removePhysical(lfn.get(),user.get(),NULL,NULL);
-            else 
-                queryDistributedFileDirectory().removeEntry(lfn.get(),user);
-        }
-        catch (IException *e) {
-
-            StringBuffer s;
-            s.appendf("Transaction commit deleting %s: ",lfn.get());
-            e->errorMessage(s);
-            WARNLOG("%s",s.str());
-            e->Release();
+        CDistributedFileDirectory *dir = QUERYINTERFACE(&queryDistributedFileDirectory(), CDistributedFileDirectory);
+        assertex(dir);
+        if (remphys) {
+            Owned<IMultiException> exceptions = MakeMultiException("Transaction");
+            dir->doRemovePhysical(lfn,cluster,exceptions,user,false);
+            if (exceptions->ordinality())
+                throw exceptions.getClear();
+        } else {
+            dir->doRemoveEntry(lfn,user,false,timeoutms);
         }
     }
 };
@@ -1402,18 +1401,25 @@ public:
         return udesc;
     }
 
-    bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user)
+    bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user,unsigned timeoutms,const char*cluster)
     {
-        delayeddelete.append(*new CDelayedDelete(lfn,remphys,user));
+        delayeddelete.append(*new CDelayedDelete(lfn,remphys,user,timeoutms,cluster));
         return true;
     }
     
-    void deleteFiles()      // no rollback, no exceptions thrown, no regrets
+    void deleteFiles()      // no rollback at this point
     {
+        Owned<IMultiException> me = MakeMultiException("Transaction");
         ForEachItemIn(i,delayeddelete) {
-            delayeddelete.item(i).doDelete();
+            try {
+                delayeddelete.item(i).doDelete();
+            } catch (IException *e) {
+                me->append(*e);
+            }
         }
         delayeddelete.kill();
+        if (me->ordinality())
+            throw me.getClear();
     }
 };
 
@@ -6970,11 +6976,38 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
 }
 
 
-bool CDistributedFileDirectory::removeEntry(const char *name,IUserDescriptor *user, unsigned timeoutms)
+bool CDistributedFileDirectory::removeEntry(const char *name,IUserDescriptor *user, unsigned timeoutms, IDistributedFileTransaction *transaction)
 {
-    CDfsLogicalFileName dlfn;   
-    dlfn.set(name);
-    return doRemoveEntry(dlfn,user,false, timeoutms);
+    CDfsLogicalFileName logicalname;
+    logicalname.set(name);
+    checkLogicalName(logicalname,user,true,true,false,"delete");
+
+    // Create a local transaction that will be destroyed (but never touch the external transaction)
+    Linked<IDistributedFileTransaction> localtrans;
+    if (transaction) {
+        localtrans.set(transaction);
+    } else {
+        // TODO: Make it explicit in the API that a transaction is required
+        localtrans.setown(new CDistributedFileTransaction(user));
+    }
+
+    // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
+    localtrans->addDelayedDelete(logicalname.get(), false, user, timeoutms);
+
+    try
+    {
+        localtrans->autoCommit();
+    }
+    catch (IException *e)
+    {
+        // TODO: Transform removeEntry into void
+        StringBuffer msg;
+        e->errorMessage(msg);
+        ERRLOG("Error while deleting %s: %s", logicalname.get(), msg.str());
+        e->Release();
+        return false;
+    }
+    return true;
 }
 
 void CDistributedFileDirectory::removeEmptyScope(const char *scope)
@@ -7031,11 +7064,38 @@ bool CDistributedFileDirectory::doRemovePhysical(CDfsLogicalFileName &dlfn,const
     return true;
 }
 
-bool CDistributedFileDirectory::removePhysical(const char *_logicalname,IUserDescriptor *user,const char *cluster,IMultiException *exceptions)
+bool CDistributedFileDirectory::removePhysical(const char *_logicalname,IUserDescriptor *user,const char *cluster,unsigned timeoutms,IDistributedFileTransaction *transaction)
 {
-    CDfsLogicalFileName dlfn;
-    dlfn.set(_logicalname);
-    return doRemovePhysical(dlfn,cluster,exceptions,user,false);
+    CDfsLogicalFileName logicalname;
+    logicalname.set(_logicalname);
+    checkLogicalName(logicalname,user,true,true,false,"delete physical");
+
+    // Create a local transaction that will be destroyed (but never touch the external transaction)
+    Linked<IDistributedFileTransaction> localtrans;
+    if (transaction) {
+        localtrans.set(transaction);
+    } else {
+        // TODO: Make it explicit in the API that a transaction is required
+        localtrans.setown(new CDistributedFileTransaction(user));
+    }
+
+    // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
+    localtrans->addDelayedDelete(logicalname.get(), true, user, timeoutms, cluster);
+
+    try
+    {
+        localtrans->autoCommit();
+    }
+    catch (IException *e)
+    {
+        // TODO: Transform removePhysical into void
+        StringBuffer msg;
+        e->errorMessage(msg);
+        ERRLOG("Error while deleting %s: %s", logicalname.get(), msg.str());
+        e->Release();
+        return false;
+    }
+    return true;
 }
 
     
@@ -9708,7 +9768,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
     // MORE - once deletion of logic files are also in transaction we can move this up (and allow promote within transactions)
     if (delsub) {
         ForEachItemIn(j,outunlinked) 
-            removePhysical(outunlinked.item(j),user,NULL,NULL);
+            removePhysical(outunlinked.item(j),user,NULL,timeout,transaction);
     }
 }
 
