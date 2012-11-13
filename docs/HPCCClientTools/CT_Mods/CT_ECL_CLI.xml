@@ -1446,13 +1446,14 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
       <sect2 id="eclpackageadd" role="brk">
         <title>ecl packagemap add</title>
 
-        <para><emphasis role="bold">ecl packagemap add [options]
+        <para><emphasis role="bold">ecl packagemap add [--daliip][options]
         &lt;target&gt; &lt;filename&gt;</emphasis></para>
 
         <para>Examples:</para>
 
         <programlisting>ecl packagemap add  -s=192.168.1.10 roxie mypackagemap.pkg
 ecl packagemap add roxie mypackagemap.pkg --overwrite
+ecl packagemap add roxie mypackagemap.pkg --dailip=192.168.11.11
 </programlisting>
 
         <para></para>
@@ -1495,6 +1496,13 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
 
                   <entry>The name of the file containing packagemap
                   information.</entry>
+                </row>
+
+                <row>
+                  <entry>--daliip=</entry>
+
+                  <entry>IP address or hostname of the remote Dali to use for
+                  logical file lookups</entry>
                 </row>
 
                 <row>
@@ -1548,6 +1556,7 @@ ecl packagemap add roxie mypackagemap.pkg --overwrite
             </tgroup>
           </informaltable></para>
       </sect2>
+
       <sect2 id="eclpackagedelete" role="brk">
         <title>ecl packagemap delete</title>
 
