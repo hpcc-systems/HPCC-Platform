@@ -1053,9 +1053,10 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
           }
           var indexOfSubType = newParams.indexOf("::subType");
           var newParamsSubString = newParams.substr(indexOfSubType);
+          var indexOfName = newParamsSubString.indexof("@name")+7;
 
           top.document.selectRecordClick = true;
-          top.document.selectRecord = newParamsSubString.substr(newParamsSubString.indexOf("@name")+7).substring(0,newParamsSubString.substr(newParamsSubString.indexOf("@name")+7).indexOf("'"));
+          top.document.selectRecord = newParamsSubString.substr(indexOfName).substring(0,newParamsSubString.substr(indexOfName).indexOf("'"));
           top.document.navDT.clickCurrentSelOrName(top.document.navDT); // refresh
         } else {
           alert(r.replyText);
@@ -2905,7 +2906,39 @@ function onMenuItemClickGenericAddDelete(p_sType, p_aArgs, p_oValue) {
     return;
   }
 
-  if (dt.parentDT && dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]) != null)
+  if (parentName == "Base Access Control Lists (Ordered List)")
+  {
+    var xmlArgs = "<XmlArgs ";
+    if ( this.cfg.getProperty("text") == "Add" )
+      xmlArgs += "XPath = \'Software/RoxieCluster[@name=\"" + top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name') + "\"]/ACL[@name=\"" + dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]).getData('name') + "\"]\'";
+    else
+    {
+      record = dt.getRecord(dt.getRecordIndex(dt.getSelectedRows()[0]));
+      record = record.getData('params').substring(record.getData('params').indexOf('subTypeKey=[@name=')+19);
+      record = record.substring(0,record.indexOf('\''));
+
+      xmlArgs += "XPath = \'Software/RoxieCluster[@name=\"" + top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name') + "\"]/ACL[@name=\"" + dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]).getData('name') + "\"]/BaseList[@name=\"" + record + "\"]\'";
+    }
+    xmlArgs += " />";
+
+    YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleBaseAccessControlList', {
+      success: function(o)
+      {
+        top.document.selectRecord = dt.parentDT.getRecord((dt.parentDT.getSelectedRows()[0])).getData('name');
+        top.document.selectRecordClick = true;
+        top.document.navDT.clickCurrentSelOrName(top.document.navDT);
+      },
+      failure: function(o) {
+        top.document.stopWait(document);
+          alert(o.statusText);
+      },
+      scope: this
+    },
+    top.document.navDT.getFileName(true) + 'Operation=' + this.cfg.getProperty("text") + '&XmlArgs=' + xmlArgs);
+    return;
+  }
+
+ if (dt.parentDT && dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]) != null)
     type = dt.parentDT.getRecord(dt.parentDT.getSelectedRows()[0]).getData('name');
 
   var subRecs = null;
