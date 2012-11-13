@@ -96,6 +96,7 @@ void usage(const char *exe)
   printf("\n");
   printf("Workunit commands:\n");
   printf("  listworkunits <workunit-mask> [<prop>=<val> <lower> <upper>]\n");
+  printf("  listmatches <connection xpath> [<match xpath>=<val> [<property xpath>]]\n");
   printf("  workunittimings <WUID>\n");
   printf("\n");
   printf("Other dali server and misc commands:\n");
@@ -1554,6 +1555,37 @@ static void listworkunits(const char *test,const char *min, const char *max)
 
 //=============================================================================
 
+static void listmatches(const char *path, const char *match, const char *pval)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), 0, 5*60*1000);
+    if (!conn)
+    {
+        PROGLOG("Failed to connect to %s", path);
+        return;
+    }
+    StringBuffer output("Listing matches for path=");
+    output.append(path);
+    if (match)
+    {
+        output.append(", match=").append(match);
+        if (pval)
+            output.append(", property value = ").append(pval);
+    }
+    Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(match?match:"*", iptiter_remote);
+    ForEach(*iter)
+    {
+        IPropertyTree &e=iter->query();
+        output.clear().append(e.queryName());
+        const char *val = e.queryProp(pval?pval:NULL);
+        if (val)
+            output.append(" = ").append(val);
+        outln(output.str());
+    }
+}
+
+//=============================================================================
+
+
 static const char *getNum(const char *s,unsigned &num)
 {
     while (*s&&!isdigit(*s))
@@ -2285,7 +2317,11 @@ int main(int argc, char* argv[])
             }
             else if (stricmp(cmd,"listworkunits")==0) {
                 CHECKPARAMS(0,3);
-                listworkunits((np>1)?params.item(1):NULL,(np>2)?params.item(2):NULL,(np>3)?params.item(3):NULL);
+                listworkunits((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
+            }
+            else if (stricmp(cmd,"listmatches")==0) {
+                CHECKPARAMS(0,3);
+                listmatches((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
             }
             else if (stricmp(cmd,"workunittimings")==0) {
                 CHECKPARAMS(1,1);
