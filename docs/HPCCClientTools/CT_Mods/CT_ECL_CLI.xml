@@ -1453,7 +1453,7 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
 
         <programlisting>ecl packagemap add  -s=192.168.1.10 roxie mypackagemap.pkg
 ecl packagemap add roxie mypackagemap.pkg --overwrite
-ecl packagemap add roxie mypackagemap.pkg --dailip=192.168.11.11
+ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 </programlisting>
 
         <para></para>
