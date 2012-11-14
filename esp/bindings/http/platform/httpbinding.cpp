@@ -1434,22 +1434,54 @@ int EspHttpBinding::onGetRespSampleXml(IEspContext &ctx, CHttpRequest* request, 
 
 int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
-    if (!ctx.validateFeatureAccess(FILE_UPLOAD, SecAccess_Full, false))
-        throw MakeStringException(-1, "Permission denied.");
-
-    StringBuffer netAddress, path;
-    request->getParameter("NetAddress", netAddress);
-    request->getParameter("Path", path);
-
-    if ((netAddress.length() < 1) || (path.length() < 1))
+    StringBuffer errMsg;
+    try
     {
-        DBGLOG(">> Upload destination not specified.");
-        return 0;
+        if (!ctx.validateFeatureAccess(FILE_UPLOAD, SecAccess_Full, false))
+            throw MakeStringException(-1, "Permission denied.");
+
+        StringBuffer netAddress, path;
+        request->getParameter("NetAddress", netAddress);
+        request->getParameter("Path", path);
+
+        if ((netAddress.length() < 1) || (path.length() < 1))
+            throw MakeStringException(-1, "Upload destination not specified.");
+
+        request->readContentToFile(netAddress, path);
+    }
+    catch (IException* e)
+    {
+        StringBuffer msg;
+        e->errorMessage(msg);
+        errMsg.appendf("Exception in File Upload - %s\n", msg.str());
+    }
+    catch (...)
+    {
+        errMsg.append("Exception in File Upload - Unknown Exception\n");
     }
 
-    request->readContentToFile(netAddress, path);
+    if (errMsg.length() < 1)
+        return onFinishUpload(ctx, request, response, serv, method);
 
-    return onFinishUpload(ctx, request, response, serv, method);
+    WARNLOG(errMsg.str());
+    StringBuffer content(
+        "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+            "<head>"
+                "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
+                "<title>Enterprise Services Platform</title>"
+            "</head>"
+            "<body>"
+                "<form name=\"DropzoneFileForm\">"
+                    "<div id=\"DropzoneFileData\"><br/><b>");
+    content.append(errMsg.str());
+    content.append("</b></div>"
+                "</form>"
+            "</body>"
+        "</html>");
+
+    response->setContent(content.str());
+    response->send();
+    return 0;
 }
 
 int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)
