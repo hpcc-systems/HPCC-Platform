@@ -1009,6 +1009,8 @@
         SSHusername="${RUNTIME_USER}"/>
    <Storage/>
    <SwapNode/>
+   <Memory/>
+   <Port/>
    <ThorMasterProcess computer="localhost" name="m1"/>
    <ThorSlaveProcess computer="localhost" name="s1"/>
   </ThorCluster>

@@ -82,7 +82,84 @@
             <xs:field xpath="@process"/>
           </xs:keyref>
         </xs:element>
-        <xs:element name="SSH">
+
+       <xs:element name="Port">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Port Settings</title>
+              <tooltip>Port Settings</tooltip>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:attribute name="masterport" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <tooltip>Base port to use for master</tooltip>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="slaveport" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <tooltip>Base port to use for slaves</tooltip>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="replicateOutputs" type="xs:boolean" default="true">
+            <xs:annotation>
+              <xs:appinfo>
+                <autogenforwizard>1</autogenforwizard>
+                <autogendefaultvalue>false</autogendefaultvalue>
+                <autogendefaultformultinode>true</autogendefaultformultinode>
+                <tooltip>Replicate output files</tooltip>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" use="optional" default="1">
+            <xs:annotation>
+              <xs:appinfo>
+                <tooltip>This allows multiple slaves to exist on each node</tooltip>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:element>
+
+        <xs:element name="Memory">
+          <xs:annotation>
+            <xs:appinfo>
+              <title>Memory Options</title>
+              <tooltip>Memory Settings</tooltip>
+            </xs:appinfo>
+          </xs:annotation>
+          <xs:attribute name="masterMemorySize" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <tooltip>Memory (in MB) to use for Link Counted Rows on thor master. It will default to globalMemorySize if unset</tooltip>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="globalMemorySize" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <tooltip>Memory (in MB) to use for Link Counted Rows. It will default to physical available memory if unset</tooltip>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="memorySpillAt" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <tooltip>Threshold that the memory manager should start requesting memory to be freed (percentage)</tooltip>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+          <xs:attribute name="largeMemSize" type="xs:nonNegativeInteger" use="optional">
+            <xs:annotation>
+              <xs:appinfo>
+                <tooltip>Memory available to thor for heavyweith operations (MB)</tooltip>
+              </xs:appinfo>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:element>
+       <xs:element name="SSH">
           <xs:annotation>
             <xs:appinfo>
               <title>SSH options</title>
@@ -384,21 +461,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="masterport" type="xs:nonNegativeInteger" use="optional">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>Base port to use for master</tooltip>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="slaveport" type="xs:nonNegativeInteger" use="optional">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>Base port to use for slaves</tooltip>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="localThor" type="xs:boolean" default="false">
+     <xs:attribute name="localThor" type="xs:boolean" default="false">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Assume all slaves are local to this machine rather than started via agent</tooltip>
@@ -409,13 +472,6 @@
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Base port for local thor slaves (when localThor set)</tooltip>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="slavesPerNode" type="xs:nonNegativeInteger" use="optional" default="1">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>This allows multiple slaves to exist on each node</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
@@ -447,17 +503,7 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="replicateOutputs" type="xs:boolean" default="true">
-        <xs:annotation>
-          <xs:appinfo>
-            <autogenforwizard>1</autogenforwizard>
-            <autogendefaultvalue>false</autogendefaultvalue>
-            <autogendefaultformultinode>true</autogendefaultformultinode>
-            <tooltip>Replicate output files</tooltip>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="replicateAsync" type="xs:boolean" default="true">
+     <xs:attribute name="replicateAsync" type="xs:boolean" default="true">
         <xs:annotation>
           <xs:appinfo>
             <autogenforwizard>1</autogenforwizard>
@@ -522,13 +568,6 @@
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Period of idle time after which to initiate an auto restart (minutes)</tooltip>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
-      <xs:attribute name="largeMemSize" type="xs:nonNegativeInteger" use="optional">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>Memory available to thor for heavyweith operations (MB)</tooltip>
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
