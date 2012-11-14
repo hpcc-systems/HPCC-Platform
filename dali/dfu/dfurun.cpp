@@ -1244,7 +1244,7 @@ public:
                                     oldfile.clear();
                                     if (!options->getOverwrite())
                                         throw MakeStringException(-1,"Destination file %s already exists and overwrite not specified",tmp.str());
-                                    fdir.removePhysical(tmp.str(),userdesc,NULL,NULL);
+                                    fdir.removeEntry(tmp.str(),userdesc);
                                 }
                             }
                             StringBuffer jobname;
@@ -1405,7 +1405,7 @@ public:
                         if (options->getNoDelete())
                             fdir.removeEntry(tmp.str(),userdesc);
                         else
-                            fdir.removePhysical(tmp.str(),userdesc,NULL,NULL);
+                            fdir.removeEntry(tmp.str(),userdesc);
                         Audit("REMOVE",userdesc,tmp.clear(),NULL);
                         runningconn.clear();
                     }
