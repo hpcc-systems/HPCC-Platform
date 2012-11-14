@@ -526,6 +526,23 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
       </itemizedlist>
 
       <sect2>
+        <title>XML View</title>
+
+        <para>In the advanced view of configuration manager, you can
+        optionally choose to work with the XML view. </para>
+
+        <para>To see the the configuration in XML view click on the
+        Environment heading in the Navigator panel on the left side.</para>
+
+        <para><graphic fileref="images\CM-120.jpg" />You can access the same
+        attributes through the XML view. If you wish to add an attribute that
+        does not exist in XML view, RT-CLICK on one of the components then you
+        can choose to add the attribute options.</para>
+
+        <para><graphic fileref="images\CM-121.jpg" /></para>
+      </sect2>
+
+      <sect2>
         <title>Hardware Section</title>
 
         <para>This section allows you to define your list of servers. When
@@ -1485,7 +1502,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <row>
                       <entry><emphasis>maxEclccProcesses</emphasis></entry>
 
-                      <entry>The maximum number of eclcc processes that will be launched in parallel</entry>
+                      <entry>The maximum number of eclcc processes that will
+                      be launched in parallel</entry>
                     </row>
 
                     <row>
