@@ -840,7 +840,7 @@ bool CWsWorkunitsEx::onWUUpdate(IEspContext &context, IEspWUUpdateRequest &req, 
         if (origValueChanged(req.getJobname(), req.getJobnameOrig(), s))
             wu->setJobName(s.trim().str());
         if (origValueChanged(req.getDescription(), req.getDescriptionOrig(), s.clear()))
-            wu->setDebugValue("description", (req.getDescription()) ? s.trim().str() : NULL, true);
+            wu->setDebugValue("description", (req.getDescription() && *req.getDescription()) ? s.trim().str() : NULL, true);
 
         double version = context.getClientVersion();
         if (version > 1.04)
