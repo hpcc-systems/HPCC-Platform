@@ -147,7 +147,7 @@ int CEclAgentExecutionServer::run()
         while (started)
         {
             PROGLOG("AgentExec: Waiting on queue(s) '%s'", queueNames.str());
-            Owned<IJobQueueItem> item = queue->dequeue(WAIT_FOREVER);
+            Owned<IJobQueueItem> item = queue->dequeue();
             if (item.get())
             {
                 StringAttr wuid;

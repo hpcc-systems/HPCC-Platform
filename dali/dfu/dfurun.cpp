@@ -462,7 +462,7 @@ public:
     void startListener(const char *queuename,CSDSServerStatus *serverstatus)
     {
         PROGLOG("DFU server waiting on queue %s",queuename);
-        cDFUlistener *lt = new cDFUlistener(this,queuename,false,serverstatus, 1000*60);
+        cDFUlistener *lt = new cDFUlistener(this,queuename,false,serverstatus);
         listeners.append(*lt);
         lt->start();
     }
