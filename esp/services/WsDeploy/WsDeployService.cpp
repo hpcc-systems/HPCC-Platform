@@ -3528,38 +3528,6 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
           }
         }
 
-        if (pSrcTree->hasProp("ACL"))
-        {
-          Owned<IPropertyTreeIterator> iterACL = pSrcTree->getElements("ACL");
-          ForEach (*iterACL)
-          {
-            IPropertyTree* pAcl = &iterACL->query();
-
-            if (!pAcl->queryPropTree("Access") && pNewCompTree->queryPropTree("Access"))
-            {
-              IPropertyTree* pAccess = pAcl->addPropTree("Access", createPTreeFromIPT(pNewCompTree->queryPropTree("Access")));
-
-              Owned<IAttributeIterator> iAttrElem = pNewCompTree->queryPropTree("Access")->getAttributes();
-                    ForEach(*iAttrElem)
-                    {
-                        const char* attrName = iAttrElem->queryName();
-                        pAccess->setProp(attrName, "");
-                    }
-            }
-
-            if (!pAcl->queryPropTree("BaseList") && pNewCompTree->queryPropTree("BaseList"))
-            {
-              IPropertyTree* pBaseList = pAcl->addPropTree("BaseList", createPTreeFromIPT(pNewCompTree->queryPropTree("BaseList")));
-              Owned<IAttributeIterator> iAttrElem = pNewCompTree->queryPropTree("BaseList")->getAttributes();
-                    ForEach(*iAttrElem)
-                    {
-                        const char* attrName = iAttrElem->queryName();
-                        pBaseList->setProp(attrName, "");
-                    }
-            }
-          }
-        }
-
         xml.clear();
         toXML(pSrcTree, xml, false);
         xml.replaceString("<RoxieFarmProcess ", "<RoxieFarmProcess process=\"Farm\" ");
@@ -5308,6 +5276,46 @@ bool CWsDeployFileInfo::handleThorTopology(IEspContext &context, IEspHandleThorT
   return true;
 }
 
+bool CWsDeployFileInfo::handleAccessRules(IEspContext &context, IEspHandleAccessRulesRequest &req, IEspHandleAccessRulesResponse &resp)
+{
+  synchronized block(m_mutex);
+  checkForRefresh(context, &req.getReqInfo(), true);
+
+  StringBuffer buildSetPath;
+
+  IPropertyTree *pEnvRoot = getEnvTree(context,&req.getReqInfo());
+  const char* xmlArg = req.getXmlArgs();
+  const char* operation = req.getOperation();
+
+  Owned<IPropertyTreeIterator> buildSetIter = pEnvRoot->getElements("./Programs/Build/BuildSet[@name=\"roxie\"]");
+
+  buildSetIter->first();
+  IPropertyTree* pBuildSet = &buildSetIter->query();
+  Owned<IPropertyTree> pParams = createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>");
+
+  const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
+  const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
+  const char* xpath = pParams->queryProp("@XPath");
+
+  Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
+  Owned<IPropertyTree> pNewCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName());
+
+  if (stricmp("Add",operation) == 0)
+  {
+    StringBuffer sbNewName("ACLrule");
+
+    getUniqueName(pEnvRoot, sbNewName, "Access", xpath);
+
+    IPropertyTree* pTempTree = createPTreeFromIPT(pNewCompTree->queryPropTree("Access"));
+    pTempTree->setProp(XML_ATTR_NAME, sbNewName.str());
+
+    (pEnvRoot->queryPropTree(xpath))->addPropTree("Access",pTempTree);
+  }
+  else if (stricmp("Delete", operation) == 0)
+    pEnvRoot->removeProp(xpath);
+
+  return true;
+}
 
 bool CWsDeployFileInfo::handleRows(IEspContext &context, IEspHandleRowsRequest &req, IEspHandleRowsResponse &resp)
 {
@@ -7033,6 +7041,13 @@ bool CWsDeployEx::onHandleRows(IEspContext &context, IEspHandleRowsRequest &req,
   return fi->handleRows(context, req, resp);
 }
 
+bool CWsDeployEx::onHandleAccessRules(IEspContext &context, IEspHandleAccessRulesRequest &req, IEspHandleAccessRulesResponse &resp)
+{
+  CWsDeployFileInfo* fi = getFileInfo(req.getReqInfo().getFileName());
+  return fi->handleAccessRules(context, req, resp);
+}
+
+
 bool CWsDeployEx::onGraph(IEspContext &context, IEspEmptyRequest& req, IEspGraphResponse& resp)
 {
   CWsDeployFileInfo* fi = getFileInfo(m_envFile.str());
@@ -7284,6 +7299,11 @@ bool CWsDeployExCE::onHandleTopology(IEspContext &context, IEspHandleTopologyReq
 }
 
 bool CWsDeployExCE::onHandleRows(IEspContext &context, IEspHandleRowsRequest &req, IEspHandleRowsResponse &resp)
+{
+  return supportedInEEOnly();
+}
+
+bool CWsDeployExCE::onHandleAccessRules(IEspContext &context, IEspHandleAccessRulesRequest &req, IEspHandleAccessRulesResponse &resp)
 {
   return supportedInEEOnly();
 }

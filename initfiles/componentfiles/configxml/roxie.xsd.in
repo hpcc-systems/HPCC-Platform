@@ -194,6 +194,15 @@
                       </xs:appinfo>
                     </xs:annotation>
                   </xs:attribute>
+                  <xs:attribute name="name" type="xs:string" use="required" default="ACLrule">
+                    <xs:annotation>
+                      <xs:appinfo>
+                        <tooltip>Name of this Access Control Rule.</tooltip>
+                        <title>Name</title>
+                        <colIndex>7</colIndex>
+                      </xs:appinfo>
+                    </xs:annotation>
+                  </xs:attribute>
                   <xs:attribute name="error" type="xs:string" use="optional" default="">
                     <xs:annotation>
                       <xs:appinfo>
