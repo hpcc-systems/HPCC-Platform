@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>HPCC Configuration Manager</title>
+    <title> HPCC Configuration Manager</title>
 
     <mediaobject>
       <imageobject>
@@ -529,12 +529,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         <title>XML View</title>
 
         <para>In the advanced view of configuration manager, you can
-        optionally choose to work with the XML view. </para>
+        optionally choose to work with the XML view.</para>
 
         <para>To see the the configuration in XML view click on the
         Environment heading in the Navigator panel on the left side.</para>
 
-        <para><graphic fileref="images\CM-120.jpg" />You can access the same
+        <para><graphic fileref="images/CM-120.jpg" />You can access the same
         attributes through the XML view. If you wish to add an attribute that
         does not exist in XML view, RT-CLICK on one of the components then you
         can choose to add the attribute options.</para>
