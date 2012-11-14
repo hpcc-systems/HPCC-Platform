@@ -525,7 +525,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
       </itemizedlist>
 
-      <sect2>
+      <sect2 role="brk">
         <title>XML View</title>
 
         <para>In the advanced view of configuration manager, you can
@@ -539,7 +539,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         does not exist in XML view, RT-CLICK on one of the components then you
         can choose to add the attribute options.</para>
 
-        <para><graphic fileref="images\CM-121.jpg" /></para>
+        <para><graphic fileref="images/CM-121.jpg" /></para>
       </sect2>
 
       <sect2>
