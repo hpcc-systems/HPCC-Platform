@@ -154,7 +154,7 @@
           <xs:attribute name="largeMemSize" type="xs:nonNegativeInteger" use="optional">
             <xs:annotation>
               <xs:appinfo>
-                <tooltip>Memory available to thor for heavyweith operations (MB)</tooltip>
+                <tooltip>Memory available to thor for heavyweigth operations (MB)</tooltip>
               </xs:appinfo>
             </xs:annotation>
           </xs:attribute>
