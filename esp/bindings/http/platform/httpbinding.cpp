@@ -1488,10 +1488,11 @@ int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHtt
 {
     response->setContentType("text/html; charset=UTF-8");
     StringBuffer content(
-    "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-        "<head>"
-            "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
-            "<title>Enterprise Services Platform</title>"
+        "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
+            "<head>"
+                "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
+                "<title>Enterprise Services Platform</title>"
+            "</head>"
             "<body>"
                 "<form name=\"DropzoneFileForm\">"
                     "<div id=\"DropzoneFileData\">"
