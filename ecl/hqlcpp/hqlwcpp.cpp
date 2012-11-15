@@ -812,7 +812,12 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
             if (isOut)
                 out.append(" &");
             if (paramName)
-                appendCapital(out.append(" len"), paramNameText);
+            {
+                if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
+                    appendCapital(out.append(" count"), paramNameText);
+                else
+                    appendCapital(out.append(" len"), paramNameText);
+            }
             out.append(",");
         }
         break;
