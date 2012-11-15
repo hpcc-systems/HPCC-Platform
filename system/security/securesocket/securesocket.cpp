@@ -16,7 +16,9 @@
 ############################################################################## */
 
 // Some ssl prototypes use char* where they should be using const char *, resulting in lots of spurious warnings
+#ifndef _MSC_VER
 #pragma GCC diagnostic ignored "-Wwrite-strings"
+#endif
 
 //jlib
 #include "jliball.hpp"
