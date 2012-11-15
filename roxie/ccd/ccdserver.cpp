@@ -19654,13 +19654,13 @@ public:
                 if (map)
                     numParts = map->getNumParts();
                 else
-                {
                     numParts = 0;
-                    eof = true;
-                    return;
-                }
             }
-            if (useRemote())
+            if (!numParts)
+            {
+                eof = true;
+            }
+            else if (useRemote())
             {
                 remote->onStart(parentExtractSize, parentExtract);
                 remote->setLimits(rowLimit, (unsigned __int64) -1, stopAfter);
@@ -19999,7 +19999,10 @@ public:
 
     virtual const void *nextInGroup()
     {
-        // Note - in remote case this never gets called as input chain is routed to remoteResultAdaptor
+        if (eof)
+            return NULL;
+        else if (useRemote())
+            return remote->nextInGroup();
         assertex(xmlParser != NULL);
         try
         {
@@ -20104,7 +20107,10 @@ public:
 
     virtual const void *nextInGroup()
     {
-        // Note - in remote case this never gets called as input chain is routed to remoteResultAdaptor
+        if (eof)
+            return NULL;
+        else if (useRemote())
+            return remote->nextInGroup();
         try
         {
             while (!eof)
@@ -20211,6 +20217,8 @@ public:
     {
         if (eof)
             return NULL;
+        else if (useRemote())
+            return remote->nextInGroup();
         RtlDynamicRowBuilder rowBuilder(rowAllocator);
         unsigned transformedSize = 0;
         if (isKeyed)
@@ -20357,7 +20365,7 @@ public:
         done = true;
 
         unsigned __int64 totalCount = 0;
-        if (helper.canMatchAny())
+        if (helper.canMatchAny() && !eof)
         {
             if (useRemote())
             {
@@ -20486,28 +20494,31 @@ public:
         else
         {
             aggregateHelper.clearAggregate(rowBuilder);
-            if (isKeyed)
+            if (helper.canMatchAny() && !eof)
             {
-                loop
+                if (isKeyed)
                 {
-                    const void *next = cursor->nextMatch();
-                    if (!next)
-                        break;
-                    aggregateHelper.processRow(rowBuilder, next);
-                }
-            }
-            else
-            {
-                assertex(reader != NULL);
-                while (!deserializeSource.eos())
-                {
-                    prefetcher->readAhead(deserializeSource);
-                    const byte *nextRec = deserializeSource.queryRow();
-                    if (!cursor || !cursor->isFiltered(nextRec))
+                    loop
                     {
-                        aggregateHelper.processRow(rowBuilder, nextRec);
+                        const void *next = cursor->nextMatch();
+                        if (!next)
+                            break;
+                        aggregateHelper.processRow(rowBuilder, next);
                     }
-                    deserializeSource.finishedRow();
+                }
+                else
+                {
+                    assertex(reader != NULL);
+                    while (!deserializeSource.eos())
+                    {
+                        prefetcher->readAhead(deserializeSource);
+                        const byte *nextRec = deserializeSource.queryRow();
+                        if (!cursor || !cursor->isFiltered(nextRec))
+                        {
+                            aggregateHelper.processRow(rowBuilder, nextRec);
+                        }
+                        deserializeSource.finishedRow();
+                    }
                 }
             }
             finalSize = meta.getRecordSize(rowBuilder.getSelf());
@@ -20570,11 +20581,14 @@ public:
         }
         else
         {
-            Owned<IInMemoryFileProcessor> processor = isKeyed ? 
-                createKeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper) :
-                createUnkeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper, manager->createReader(0, 0, 1),
-                                                           ctx->queryCodeContext(), activityId);
-            processor->doQuery(NULL, 0, 0, 0);
+            if (helper.canMatchAny() && !eof)
+            {
+                Owned<IInMemoryFileProcessor> processor = isKeyed ?
+                    createKeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper) :
+                    createUnkeyedGroupAggregateRecordProcessor(cursor, resultAggregator, aggregateHelper, manager->createReader(0, 0, 1),
+                                                               ctx->queryCodeContext(), activityId);
+                processor->doQuery(NULL, 0, 0, 0);
+            }
         }
         gathered = true;
     }
@@ -31097,6 +31111,7 @@ private:
 
 class RoxieWorkUnitListener : public RoxieListener
 {
+    Owned<IJobQueue> queue;
 public:
     RoxieWorkUnitListener(unsigned _poolSize, bool _suspended)
       : RoxieListener(_poolSize, _suspended)
@@ -31118,9 +31133,23 @@ public:
         UNIMPLEMENTED;
     }
 
+    virtual bool stop(unsigned timeout)
+    {
+        if (queue)
+        {
+            DBGLOG("RoxieWorkUnitListener::stop");
+            queue->cancelAcceptConversation();
+        }
+        return RoxieListener::stop(timeout);
+    }
+
     virtual void stopListening()
     {
-        // Nothing to do
+        if (queue)
+        {
+            DBGLOG("RoxieWorkUnitListener::stopListening");
+            queue->cancelAcceptConversation();
+        }
     }
 
     virtual int run()
@@ -31140,12 +31169,12 @@ public:
                         DBGLOG("roxie: Waiting on queue(s) '%s'", queueNames.str());
                     try
                     {
-                        Owned<IJobQueue> queue = createJobQueue(queueNames.str());
+                        queue.setown(createJobQueue(queueNames.str()));
                         queue->connect();
                         daliHelper->noteQueuesRunning(queueNames.str());
                         while (running)
                         {
-                            Owned<IJobQueueItem> item = queue->dequeue(5000);
+                            Owned<IJobQueueItem> item = queue->dequeue();
                             if (item.get())
                             {
                                 if (traceLevel)
@@ -31153,6 +31182,7 @@ public:
                                 pool->start((void *) item->queryWUID());
                             }
                         }
+                        queue.clear();
                     }
                     catch (IDaliClient_Exception *E)
                     {
@@ -31160,6 +31190,7 @@ public:
                             EXCLOG(E, "roxie: Dali connection lost");
                         E->Release();
                         daliHelper->disconnect();
+                        queue.clear();
                     }
                 }
             }

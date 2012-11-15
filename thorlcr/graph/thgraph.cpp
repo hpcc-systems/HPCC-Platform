@@ -836,6 +836,12 @@ bool isGlobalActivity(CGraphElementBase &container)
         }
         case TAKspill:
             return false;
+        case TAKcsvread:
+        {
+            Owned<IHThorCsvReadArg> helper = (IHThorCsvReadArg *)container.helperFactory();
+            // if header lines, then [may] need to co-ordinate across slaves
+            return helper->queryCsvParameters()->queryHeaderLen() > 0;
+        }
 // dependent on child acts?
         case TAKlooprow:
         case TAKloopcount:
@@ -938,7 +944,6 @@ bool isGlobalActivity(CGraphElementBase &container)
 
         case TAKindexread:
         case TAKindexnormalize:
-        case TAKcsvread:
         case TAKxmlread:
         case TAKdiskexists:
         case TAKindexexists:

@@ -125,13 +125,11 @@ void coalesceDatastore(bool force)
             OwnedIFile detachedIFile = createIFile(detachPath.str());
             if (detachedIFile->exists() || iStoreHelper->detachCurrentDelta())
             {
-                OwnedIFileIO iFileIO = detachedIFile->open(IFOread);
-                PROGLOG("COALESCER: Loading delta: %s, size=%"I64F"d", detachName.str(), iFileIO->size());
+                PROGLOG("COALESCER: Loading delta: %s, size=%"I64F"d", detachName.str(), detachedIFile->size());
                 bool noError;
                 Owned<IException> deltaE;
-                try { noError = iStoreHelper->loadDelta(detachName.str(), iFileIO, root); }
+                try { noError = iStoreHelper->loadDelta(detachName.str(), detachedIFile, root); }
                 catch (IException *e) { deltaE.setown(e); noError = false; }
-                iFileIO.clear();
                 if (!noError && 0 != (SH_BackupErrorFiles & configFlags))
                 {
                     iStoreHelper->backup(detachPath.str());
