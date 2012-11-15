@@ -1448,6 +1448,7 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
             throw MakeStringException(-1, "Upload destination not specified.");
 
         request->readContentToFile(netAddress, path);
+        return onFinishUpload(ctx, request, response, serv, method);
     }
     catch (IException* e)
     {
@@ -1460,9 +1461,6 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
         errMsg.append("Exception in File Upload - Unknown Exception\n");
     }
 
-    if (errMsg.length() < 1)
-        return onFinishUpload(ctx, request, response, serv, method);
-
     WARNLOG(errMsg.str());
     StringBuffer content(
         "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
@@ -1471,11 +1469,9 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
                 "<title>Enterprise Services Platform</title>"
             "</head>"
             "<body>"
-                "<form name=\"DropzoneFileForm\">"
-                    "<div id=\"DropzoneFileData\"><br/><b>");
+                "<div id=\"DropzoneFileData\"><br/><b>");
     content.append(errMsg.str());
     content.append("</b></div>"
-                "</form>"
             "</body>"
         "</html>");
 
@@ -1494,11 +1490,9 @@ int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHtt
                 "<title>Enterprise Services Platform</title>"
             "</head>"
             "<body>"
-                "<form name=\"DropzoneFileForm\">"
-                    "<div id=\"DropzoneFileData\">"
-                        "<br/><b>File has been uploaded.</b>"
-                    "</div>"
-                "</form>"
+                "<div id=\"DropzoneFileData\">"
+                    "<br/><b>File has been uploaded.</b>"
+                "</div>"
             "</body>"
         "</html>");
 
