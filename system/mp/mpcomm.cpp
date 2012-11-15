@@ -169,7 +169,17 @@ struct MultiPacketHeader
     size32_t size;
     unsigned idx;
     unsigned numparts;
-    size32_t total;     //
+    size32_t total;
+    StringBuffer &getDetails(StringBuffer &out) const
+    {
+        out.append("MultiPacketHeader: ");
+        out.append("tag=").append((unsigned)tag);
+        out.append(",ofs=").append(ofs);
+        out.append(",size=").append(size);
+        out.append(",idx=").append(idx);
+        out.append(",numparts=").append(numparts);
+        out.append(",total=").append(total);
+    }
 };
 
 
@@ -1008,7 +1018,25 @@ class MultiPacketHandler // TAG_SYS_MULTI
 {
     CIArrayOf<CMultiPacketReceiver> inprogress; // should be ok as not many in progress hopefully (TBD orphans)
     CriticalSection sect;
+    unsigned lastErrMs;
+
+    void logError(unsigned code, MultiPacketHeader &mhdr, CMessageBuffer &msg)
+    {
+        unsigned ms = msTick();
+        if (lastErrMs-ms > 1000) // avoid logging too much
+        {
+            StringBuffer errorMsg("sender=");
+            msg.getSender().getUrlStr(errorMsg).newline();
+            mhdr.getDetails(errorMsg).newline();
+            msg.getDetails(errorMsg);
+            LOG(MCerror, unknownJob, "MultiPacketHandler: protocol error (%d) %s", code, errorMsg.str());
+        }
+        lastErrMs = ms;
+    }
 public:
+    MultiPacketHandler() : lastErrMs(0)
+    {
+    }
     CMessageBuffer *handle(CMessageBuffer * msg)
     {
         if (!msg) 
@@ -1026,7 +1054,8 @@ public:
         }
         if (mhdr.idx==0) {
             if ((mhdr.ofs!=0)||(recv!=NULL)) {
-                LOG(MCerror, unknownJob, "MultiPacketHandler: protocol error (1)");
+                logError(1, mhdr, *msg);
+                delete msg;
                 return NULL;
             }
             recv = new CMultiPacketReceiver;
@@ -1043,7 +1072,7 @@ public:
                  (recv->info.idx+1!=mhdr.idx)||
                  (recv->info.total!=mhdr.total)||
                  (mhdr.ofs+mhdr.size>mhdr.total)) {
-                LOG(MCerror, unknownJob, "MultiPacketHandler: protocol error (2)");
+                logError(2, mhdr, *msg);
                 delete msg;
                 return NULL;
             }
@@ -1054,7 +1083,7 @@ public:
         recv->info = mhdr;
         if (mhdr.idx+1==mhdr.numparts) {
             if (mhdr.ofs+mhdr.size!=mhdr.total) {
-                LOG(MCerror, unknownJob, "MultiPacketHandler: protocol error (3)");
+                logError(3, mhdr, *msg);
                 return NULL;
             }
             msg = recv->msg;
