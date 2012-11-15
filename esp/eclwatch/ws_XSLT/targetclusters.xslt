@@ -106,16 +106,10 @@
             document.getElementsByName('TargetClusters.itemcount')[0].value = countTCs;
             initSelection('resultsTable');
 
-            if (countTCs > 0)
-            {
-              for (i=0; i<countTCs; i++)
-              { 
-                var ch = document.getElementById('TargetClusters.'+i);
-                if (ch && ch.checked)
-                {
-                  clusterChecked++;
-                }
-              }
+            if (countTCs > 1)
+            { //no target cluster is selected when the page is loaded.
+              document.getElementById( 'TargetClusters.All' ).checked = false;
+              document.getElementById( 'TargetClusters.All2' ).checked = false;
             }
 
             initPreflightControls();
@@ -201,24 +195,38 @@
 
           function clickTCCheckbox(type, name, o) 
           {
-            selectObj = document.getElementById( 'methodObj' );
+            if (countTCs < 1)
+              return;
 
-            if (o.checked)
-              clusterChecked++;
-            else
-              clusterChecked--;
-
-            if (selectObj.selectedIndex == 0)
+            if ((o.id == 'TargetClusters.All') || (o.id == 'TargetClusters.All2'))
             {
-              if (clusterChecked > 0)
-              {
-                document.forms[0].submitBtn.disabled = false;
-              }
+              for (i=0; i<countTCs; i++)
+                document.getElementById( 'TargetClusters.' + i ).checked = o.checked;
+              clusterChecked = o.checked? countTCs:0;
+
+              if (o.id == 'TargetClusters.All')
+                document.getElementById( 'TargetClusters.All2' ).checked = o.checked;
               else
+                document.getElementById( 'TargetClusters.All' ).checked = o.checked;
+            }
+            else
+            {
+              if (o.checked)
+                clusterChecked++;
+              else
+                clusterChecked--;
+
+              if (countTCs > 1)
               {
-                document.forms[0].submitBtn.disabled = true;
+                document.getElementById( 'TargetClusters.All' ).checked = (clusterChecked == countTCs)? true: false;
+                document.getElementById( 'TargetClusters.All2' ).checked = (clusterChecked == countTCs)? true: false;
               }
             }
+
+            if (clusterChecked > 0)
+              document.forms[0].submitBtn.disabled = false;
+            else
+              document.forms[0].submitBtn.disabled = true;
           }
 
           ]]></xsl:text>
@@ -229,12 +237,37 @@
                 <h3>Target Clusters:</h3>
                 <form id="listitems" action="/ws_machine/GetTargetClusterInfo" method="post">
                     <input type="hidden" name="TargetClusters.itemcount" value=""/>
+                    <xsl:if test="TpTargetClusters/TpTargetCluster[2]">
+                        <table cellpadding="0" width="100%">
+                            <tr>
+                                <th id="selectAll" width="1%" style="padding-left:4px">
+                                    <input type="checkbox" id="TargetClusters.All" name="TargetClusters.ALL"
+                                           title="Select all target clusters" onclick="return clickTCCheckbox('', '', this);"></input>
+                                </th>
+                                <th colspan="5" align="left">Select All / None</th>
+                            </tr>
+                        </table>
+                    </xsl:if>
                     <xsl:for-each select="TpTargetClusters/TpTargetCluster">
                         <xsl:call-template name="show-cluster">
                             <xsl:with-param name="type" select="Type"/>
                             <xsl:with-param name="name" select="Name"/>
                         </xsl:call-template>
                     </xsl:for-each>
+                    <xsl:if test="TpTargetClusters/TpTargetCluster[2]">
+                        <table cellpadding="0" width="100%">
+                            <tr>
+                                <th id="selectAll2" width="1%" style="padding-left:4px">
+                                    <input type="checkbox" id="TargetClusters.All2" name="TargetClusters.ALL2"
+                                           title="Select all target clusters" onclick="return clickTCCheckbox('', '', this);"></input>
+                                </th>
+                                <th colspan="5" align="left">Select All / None</th>
+                            </tr>
+                            <tr>
+                                <td height="20"/>
+                            </tr>
+                        </table>
+                    </xsl:if>
           <xsl:call-template name="ShowPreflightControls">
             <xsl:with-param name="method" select="'GetMachineInfo'"/>
             <xsl:with-param name="getProcessorInfo" select="1"/>
