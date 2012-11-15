@@ -328,10 +328,25 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExp
     bool usesContents = false;
     getUniqueId(xmlInstanceName.append("xml"));
     buildXmlReadTransform(ds, xmlFactoryName, usesContents);
+
     OwnedHqlExpr curActivityId = getCurrentActivityId(ctx);
-    s.append("Owned<IXmlToRowTransformer> ").append(xmlInstanceName).append(" = ").append(xmlFactoryName).append("(ctx,");
-    generateExprCpp(s, curActivityId).append(");");
-    ctx.addQuoted(s);
+
+    //MORE: This should be generalised so that any invariant class creation can be handled by the same code.
+    BuildCtx * declareCtx = &ctx;
+    BuildCtx * initCtx = &ctx;
+    if (!insideOnCreate(ctx) && getInvariantMemberContext(ctx, &declareCtx, &initCtx, false, false))
+    {
+        declareCtx->addQuoted(s.clear().append("Owned<IXmlToRowTransformer> ").append(xmlInstanceName).append(";"));
+        s.clear().append(xmlInstanceName).append(".setown(").append(xmlFactoryName).append("(ctx,");
+        generateExprCpp(s, curActivityId).append("));");
+        initCtx->addQuoted(s);
+    }
+    else
+    {
+        s.append("Owned<IXmlToRowTransformer> ").append(xmlInstanceName).append(" = ").append(xmlFactoryName).append("(ctx,");
+        generateExprCpp(s, curActivityId).append(");");
+        ctx.addQuoted(s);
+    }
 
     HqlExprArray args;
     args.append(*createRowAllocator(ctx, record));
