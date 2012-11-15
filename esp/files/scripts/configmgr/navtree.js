@@ -1427,6 +1427,7 @@ function createNavigationTree(navTreeData) {
     var xy = [parseInt(oArgs.event.clientX, 10) + 10, parseInt(oArgs.event.clientY, 10) + 10];
     var params = "queryType=multiple::category=Software::compName=" + rec.getData('Name') + "::subType=Instance::attrName=netAddress";
 
+    navDT.tt.doNotShow = false;
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/GetValue', {
       success: function(o) {
         if (o.responseText.indexOf("<?xml") === 0) {
@@ -1447,9 +1448,10 @@ function createNavigationTree(navTreeData) {
 
             if (instances.length) {
               navDT.showTimer = window.setTimeout(function() {
-                navDT.tt.setBody("Instance(s): " + instances);
+                navDT.tt.setBody("Instance(s): " + (instances.length > 100 ? (instances.substring(0,instances.substring(100,instances.length).indexOf(',')+100) + ",...") : instances));
                 navDT.tt.cfg.setProperty('xy', xy);
-                navDT.tt.show();
+                if (navDT.tt.doNotShow != true)
+                  navDT.tt.show();
                 navDT.hideTimer = window.setTimeout(function() {
                   navDT.tt.hide();
                 }, 5000);
@@ -1467,6 +1469,7 @@ function createNavigationTree(navTreeData) {
   });
 
   navDT.subscribe("cellMouseoutEvent", function(oArgs) {
+    navDT.tt.doNotShow = true;
     if (navDT.showTimer) {
       window.clearTimeout(navDT.showTimer);
       navDT.showTimer = 0;
