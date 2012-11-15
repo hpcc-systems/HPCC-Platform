@@ -1707,39 +1707,80 @@ ILargeMemLimitNotify *createMultiThorResourceMutex(const char *grpname,CSDSServe
     return new cMultiThorResourceMutex(grpname,_status);
 }
 
+#pragma pack(push,1) // hashing on members, so ensure contiguous
+struct ThorAllocatorKey
+{
+    IOutputMetaData *meta;
+    unsigned activityId;
+    ThorAllocatorKey(IOutputMetaData *_meta, unsigned &_activityId) : meta(_meta), activityId(_activityId) { }
+    bool operator==(ThorAllocatorKey const &other) const
+    {
+        return (meta == other.meta) && (activityId == other.activityId);
+    }
+};
+#pragma pack(pop)
 
-class CThorAllocator : public CSimpleInterface, implements roxiemem::IRowAllocatorCache, implements IRtlRowCallback, implements IThorAllocator
+class CThorAllocatorCacheItem : public OwningHTMapping<IEngineRowAllocator, ThorAllocatorKey>
+{
+    Linked<IOutputMetaData> meta;
+public:
+    CThorAllocatorCacheItem(IEngineRowAllocator *allocator, ThorAllocatorKey &key)
+        : OwningHTMapping<IEngineRowAllocator, ThorAllocatorKey>(*allocator, key)
+    {
+        meta.set(key.meta);
+    }
+};
+
+class CThorAllocatorCache : private OwningSimpleHashTableOf<CThorAllocatorCacheItem, ThorAllocatorKey>
+{
+public:
+    inline IEngineRowAllocator *find(IOutputMetaData *meta, unsigned activityId) const
+    {
+        ThorAllocatorKey key(meta, activityId);
+        CThorAllocatorCacheItem *container = OwningSimpleHashTableOf::find(key);
+        if (!container)
+            return NULL;
+        return &container->queryElement();
+    }
+    inline bool add(IEngineRowAllocator *allocator, IOutputMetaData *meta, unsigned activityId)
+    {
+        ThorAllocatorKey key(meta, activityId);
+        CThorAllocatorCacheItem *container = new CThorAllocatorCacheItem(allocator, key);
+        return replace(*container);
+    }
+};
+class CThorAllocator : public CSimpleInterface, implements IRtlRowCallback, implements IThorAllocator, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:
-    mutable IArrayOf<IEngineRowAllocator> allAllocators;
-    mutable SpinLock allAllocatorsLock;
+    mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<roxiemem::IRowManager> rowManager;
     roxiemem::RoxieHeapFlags flags;
+
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CThorAllocator(memsize_t memSize, unsigned memorySpillAt, roxiemem::RoxieHeapFlags _flags) : flags(_flags)
     {
-        rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), this, false));
+        allocatorMetaCache.setown(createRowAllocatorCache(this));
+        rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
         rowManager->setMemoryLimit(memSize, 0==memorySpillAt ? 0 : memSize/100*memorySpillAt);
         rtlSetReleaseRowHook(this);
     }
     ~CThorAllocator()
     {
         rowManager.clear();
-        allAllocators.kill();
+        allocatorMetaCache.clear();
         rtlSetReleaseRowHook(NULL); // nothing should use it beyond this point anyway
     }
-
+// roxiemem::IRowAllocatorMetaActIdCacheCallback
+    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id) const
+    {
+        return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
+    }
 // IThorAllocator
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
-        // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
-        SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator *ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), flags);
-        LINK(ret);
-        allAllocators.append(*ret);
-        return ret;
+        return allocatorMetaCache->ensure(meta, activityId);
     }
     virtual roxiemem::IRowManager *queryRowManager() const
     {
@@ -1748,58 +1789,6 @@ public:
     virtual roxiemem::RoxieHeapFlags queryFlags() const { return flags; }
     virtual bool queryCrc() const { return false; }
 
-// IRowAllocatorCache
-    virtual unsigned getActivityId(unsigned cacheId) const
-    {
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(allocatorIndex))
-            return allAllocators.item(allocatorIndex).queryActivityId();
-        else
-        {
-            //assert(false);
-            return 12345678; // Used for tracing, better than a crash...
-        }
-    }
-    virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
-    {
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(allocatorIndex))
-            return allAllocators.item(allocatorIndex).getId(out);
-        else
-        {
-            assert(false);
-            return out.append("unknown"); // Used for tracing, better than a crash...
-        }
-    }
-    virtual void onDestroy(unsigned cacheId, void *row) const
-    {
-        IEngineRowAllocator *allocator;
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        {
-            SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
-            if (allAllocators.isItem(allocatorIndex))
-                allocator = &allAllocators.item(allocatorIndex);
-            else
-            {
-                assert(false);
-                return;
-            }
-        }
-        if (!RoxieRowCheckValid(cacheId, row))
-        {
-            //MORE: Give an error, but don't throw an exception!
-        }
-        allocator->queryOutputMeta()->destruct((byte *) row);
-    }
-    virtual void checkValid(unsigned cacheId, const void *row) const
-    {
-        if (!RoxieRowCheckValid(cacheId, row))
-        {
-            //MORE: Throw an exception?
-        }
-    }
 // IRtlRowCallback
     virtual void releaseRow(const void * row) const
     {
@@ -1840,16 +1829,12 @@ public:
     {
     }
 // IThorAllocator
-    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
-    {
-        // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
-        SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator *ret = createCrcRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), flags);
-        LINK(ret);
-        allAllocators.append(*ret);
-        return ret;
-    }
     virtual bool queryCrc() const { return true; }
+// roxiemem::IRowAllocatorMetaActIdCacheCallback
+    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned cacheId) const
+    {
+        return createCrcRoxieRowAllocator(*rowManager, meta, activityId, cacheId, flags);
+    }
 };
 
 
