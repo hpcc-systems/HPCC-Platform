@@ -50,6 +50,8 @@
 #define _putch putchar
 #endif
 
+#define DEFAULT_DALICONNECT_TIMEOUT 5 // seconds
+static unsigned daliConnectTimeoutMs = 5000;
 
 static bool noninteractive=false;
 
@@ -96,6 +98,7 @@ void usage(const char *exe)
   printf("\n");
   printf("Workunit commands:\n");
   printf("  listworkunits <workunit-mask> [<prop>=<val> <lower> <upper>]\n");
+  printf("  listmatches <connection xpath> [<match xpath>=<val> [<property xpath>]]\n");
   printf("  workunittimings <WUID>\n");
   printf("\n");
   printf("Other dali server and misc commands:\n");
@@ -109,13 +112,14 @@ void usage(const char *exe)
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
   printf("  unlock <xpath or logicalfile>   --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
   printf("\n");
-  printf("Common options (can be placed in dfuutil.ini)\n");
+  printf("Common options\n");
   printf("  server=<dali-server-ip>         -- server ip\n");
   printf("                                  -- can be 1st param if numeric ip (or '.')\n");
   printf("  user=<username>                 -- for file operations\n");
   printf("  password=<password>             -- for file operations\n");
   printf("  logfile=<filename>              -- filename blank for no log\n");
   printf("  rawlog=0|1                      -- if raw omits timestamps etc\n");
+  printf("  timeout=<seconds>               -- set dali connect timeout\n");
 }
 
 #define SDS_LOCK_TIMEOUT  60000
@@ -194,11 +198,11 @@ static IRemoteConnection *connectXPathOrFile(const char *path,bool safe,StringBu
     }
     else if (strchr(path+((*path=='/')?1:0),'/')==NULL)
         safe = true;    // all root trees safe
-    Owned<IRemoteConnection> conn = querySDS().connect(remLeading(path),myProcessSession(),safe?0:RTM_LOCK_READ, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(remLeading(path),myProcessSession(),safe?0:RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn&&lfnpath.length()) {
         lfn.makeFullnameQuery(lfnpath.clear(),DXB_SuperFile);
         path = lfnpath.str();
-        conn.setown(querySDS().connect(remLeading(path),myProcessSession(),safe?0:RTM_LOCK_READ, INFINITE));
+        conn.setown(querySDS().connect(remLeading(path),myProcessSession(),safe?0:RTM_LOCK_READ, daliConnectTimeoutMs));
     }
     if (conn.get())
         xpath.append(path);
@@ -246,7 +250,7 @@ static void import(const char *path,const char *src,bool add)
     if (!tail)
         return;
     if (!add) {
-        Owned<IRemoteConnection> bconn = querySDS().connect(remLeading(path),myProcessSession(),RTM_LOCK_READ|RTM_SUB, INFINITE);
+        Owned<IRemoteConnection> bconn = querySDS().connect(remLeading(path),myProcessSession(),RTM_LOCK_READ|RTM_SUB, daliConnectTimeoutMs);
         if (bconn) {
             Owned<IPropertyTree> broot = bconn->getRoot();
             StringBuffer bakname;
@@ -256,7 +260,7 @@ static void import(const char *path,const char *src,bool add)
             toXML(broot, *fstream);         // formatted (default)
         }
     }
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),0, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),0, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
         return;
@@ -294,7 +298,7 @@ static void _delete_(const char *path,bool backup)
     const char *tail=splitpath(path,head,tmp);
     if (!tail)
         return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
         return;
@@ -328,7 +332,7 @@ static void set(const char *path,const char *val)
     const char *tail=splitpath(path,head,tmp);
     if (!tail)
         return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
         return;
@@ -353,7 +357,7 @@ static void get(const char *path)
     const char *tail=splitpath(path,head,tmp);
     if (!tail)
         return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
         return;
@@ -375,7 +379,7 @@ static void bget(const char *path,const char *outfn)
     const char *tail=splitpath(path,head,tmp);
     if (!tail)
         return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
         return;
@@ -395,7 +399,7 @@ static void xget(const char *path)
 {
     if (!path||!*path)
         return;
-    Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),RTM_LOCK_READ, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect("/",myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to /");
         return;
@@ -444,7 +448,7 @@ static void wget(const char *path)
     const char *tail=splitpath(path,head,tmp);
     if (!tail)
         return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
         return;
@@ -468,7 +472,7 @@ static void add(const char *path,const char *val)
     const char *tail=splitpath(path,head,tmp);
     if (!tail)
         return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
         return;
@@ -491,7 +495,7 @@ static void delv(const char *path)
     const char *tail=splitpath(path,head,tmp);
     if (!tail)
         return;
-    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(head.str(),myProcessSession(),RTM_LOCK_WRITE, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",path);
         return;
@@ -520,7 +524,7 @@ static void dfsfile(const char *lname,IUserDescriptor *userDesc, UnsignedArray *
     CDfsLogicalFileName lfn;
     lfn.set(lname);
     if (!lfn.isExternal()) {
-        Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(lname,userDesc,NULL,1000*60*5,true); //,userDesc);
+        Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(lname,userDesc,NULL,daliConnectTimeoutMs,true); //,userDesc);
         if (partslist)
             filterParts(tree,*partslist);
         if (!tree) {
@@ -1000,7 +1004,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
     lname.set(lfn);
     StringBuffer query;
     lname.makeFullnameQuery(query, DXB_SuperFile, true);
-    Owned<IRemoteConnection> conn = querySDS().connect(query.str(),myProcessSession(),fix?RTM_LOCK_WRITE:0, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(query.str(),myProcessSession(),fix?RTM_LOCK_WRITE:0, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to %s",lfn);
         ERRLOG("Superfile %s FAILED",lname.get());
@@ -1044,10 +1048,10 @@ static void checksuperfile(const char *lfn,bool fix=false)
         if (!sublname.isExternal()&&!sublname.isForeign()) {
             StringBuffer subquery;
             sublname.makeFullnameQuery(subquery, DXB_File, true);
-            Owned<IRemoteConnection> subconn = querySDS().connect(subquery.str(),myProcessSession(),fix?RTM_LOCK_WRITE:0, INFINITE);
+            Owned<IRemoteConnection> subconn = querySDS().connect(subquery.str(),myProcessSession(),fix?RTM_LOCK_WRITE:0, daliConnectTimeoutMs);
             if (!subconn) {
                 sublname.makeFullnameQuery(subquery.clear(), DXB_SuperFile, true);
-                subconn.setown(querySDS().connect(subquery.str(),myProcessSession(),0, INFINITE));
+                subconn.setown(querySDS().connect(subquery.str(),myProcessSession(),0, daliConnectTimeoutMs));
             }
             if (!subconn) {
                 ERRLOG("SuperFile %s is missing sub-file file %s",lname.get(),subname.str());
@@ -1081,7 +1085,7 @@ static void checksuperfile(const char *lfn,bool fix=false)
                     sdlname.set(pname.str());
                     StringBuffer sdquery;
                     sdlname.makeFullnameQuery(sdquery, DXB_SuperFile, true);
-                    Owned<IRemoteConnection> sdconn = querySDS().connect(sdquery.str(),myProcessSession(),0, INFINITE);
+                    Owned<IRemoteConnection> sdconn = querySDS().connect(sdquery.str(),myProcessSession(),0, daliConnectTimeoutMs);
                     if (!conn) {
                         WARNLOG("SubFile %s has missing owner superfile %s",sublname.get(),sdlname.get());
                     }
@@ -1211,10 +1215,10 @@ static void checksubfile(const char *lfn)
     lname.set(lfn);
     StringBuffer query;
     lname.makeFullnameQuery(query, DXB_File, true);
-    Owned<IRemoteConnection> conn = querySDS().connect(query.str(),myProcessSession(),0, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect(query.str(),myProcessSession(),0, daliConnectTimeoutMs);
     if (!conn) {
         lname.makeFullnameQuery(query.clear(), DXB_SuperFile, true);
-        conn.setown(querySDS().connect(query.str(),myProcessSession(),0, INFINITE));
+        conn.setown(querySDS().connect(query.str(),myProcessSession(),0, daliConnectTimeoutMs));
     }
     if (!conn) {
         ERRLOG("Could not connect to %s",lfn);
@@ -1231,7 +1235,7 @@ static void checksubfile(const char *lfn)
         sdlname.set(pname.str());
         StringBuffer sdquery;
         sdlname.makeFullnameQuery(sdquery, DXB_SuperFile, true);
-        Owned<IRemoteConnection> sdconn = querySDS().connect(sdquery.str(),myProcessSession(),0, INFINITE);
+        Owned<IRemoteConnection> sdconn = querySDS().connect(sdquery.str(),myProcessSession(),0, daliConnectTimeoutMs);
         if (!conn) {
             ERRLOG("SubFile %s has missing owner superfile %s",lname.get(),sdlname.get());
             ok = false;
@@ -1449,7 +1453,7 @@ static void dfsscopes(const char *name, IUserDescriptor *user)
         StringBuffer s;
         dlfn.makeScopeQuery(s,true);
         ln.clear().append("SCOPE '").append(iter->query()).append('\'');
-        Owned<IRemoteConnection> conn = querySDS().connect(s.str(),myProcessSession(),RTM_LOCK_READ, INFINITE);
+        Owned<IRemoteConnection> conn = querySDS().connect(s.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
         if (!conn)
             ERRLOG("%s - Could not connect using %s",ln.str(),s.str());
         else {
@@ -1498,7 +1502,7 @@ static void cleanscopes(IUserDescriptor *user)
         scope.append(iter->query());
         dlfn.set(scope.str(),"x");
         dlfn.makeScopeQuery(s.clear(),true);
-        Owned<IRemoteConnection> conn = querySDS().connect(s.str(),myProcessSession(),RTM_LOCK_READ, INFINITE);
+        Owned<IRemoteConnection> conn = querySDS().connect(s.str(),myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
         if (!conn)  
             DBGLOG("Could not connect to '%s' using %s",iter->query(),s.str());
         else {
@@ -1525,7 +1529,7 @@ static void cleanscopes(IUserDescriptor *user)
 
 static void listworkunits(const char *test,const char *min, const char *max)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), 0, 5*60*1000);
+    Owned<IRemoteConnection> conn = querySDS().connect("/", myProcessSession(), 0, daliConnectTimeoutMs);
     Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements("WorkUnits/*");
     ForEach(*iter) {
         IPropertyTree &e=iter->query();
@@ -1554,6 +1558,37 @@ static void listworkunits(const char *test,const char *min, const char *max)
 
 //=============================================================================
 
+static void listmatches(const char *path, const char *match, const char *pval)
+{
+    Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), 0, daliConnectTimeoutMs);
+    if (!conn)
+    {
+        PROGLOG("Failed to connect to %s", path);
+        return;
+    }
+    StringBuffer output("Listing matches for path=");
+    output.append(path);
+    if (match)
+    {
+        output.append(", match=").append(match);
+        if (pval)
+            output.append(", property value = ").append(pval);
+    }
+    Owned<IPropertyTreeIterator> iter = conn->queryRoot()->getElements(match?match:"*", iptiter_remote);
+    ForEach(*iter)
+    {
+        IPropertyTree &e=iter->query();
+        output.clear().append(e.queryName());
+        const char *val = e.queryProp(pval?pval:NULL);
+        if (val)
+            output.append(" = ").append(val);
+        outln(output.str());
+    }
+}
+
+//=============================================================================
+
+
 static const char *getNum(const char *s,unsigned &num)
 {
     while (*s&&!isdigit(*s))
@@ -1570,7 +1605,7 @@ static void workunittimings(const char *wuid)
 {
     StringBuffer path;
     path.append("/WorkUnits/").append(wuid);
-    Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), 0, 5*60*1000);
+    Owned<IRemoteConnection> conn = querySDS().connect(path, myProcessSession(), 0, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("WU %s not found",wuid);
         return;
@@ -1688,7 +1723,7 @@ static unsigned clustersToGroups(IPropertyTree *envroot,const StringArray &cmpls
 
 static void clusterlist()
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, 1000*60);
+    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, daliConnectTimeoutMs);
     if (!conn) {
         ERRLOG("Could not connect to /Environment/Software");
         return;
@@ -1835,7 +1870,7 @@ static void convertBinBranch(IPropertyTree &cluster,const char *branch)
 
 static void getxref(const char *dst)
 {
-    Owned<IRemoteConnection> conn = querySDS().connect("DFU/XREF",myProcessSession(),RTM_LOCK_READ, INFINITE);
+    Owned<IRemoteConnection> conn = querySDS().connect("DFU/XREF",myProcessSession(),RTM_LOCK_READ, daliConnectTimeoutMs);
     Owned<IPropertyTree> root = createPTreeFromIPT(conn->getRoot());
     Owned<IPropertyTreeIterator> iter = root->getElements("Cluster");
     ForEach(*iter) {
@@ -2078,7 +2113,8 @@ int main(int argc, char* argv[])
             (memcmp(param,"rawlog=",8)==0)||
             (memcmp(param,"user=",5)==0)||
             (memcmp(param,"password=",9)==0) ||
-            (memcmp(param,"fix=",4)==0))
+            (memcmp(param,"fix=",4)==0) ||
+            (memcmp(param,"timeout=",4)==0))
             props->loadProp(param);
         else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
             props->setProp("server",ep.getUrlStr(tmps.clear()).str());
@@ -2149,6 +2185,7 @@ int main(int argc, char* argv[])
                 userDesc->set(tmps.str(),ps.str());
                 queryDistributedFileDirectory().setDefaultUser(userDesc);
             }
+            daliConnectTimeoutMs = 1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT);
             unsigned np = params.ordinality()-1;
             const char *cmd = params.item(0);
             if (stricmp(cmd,"export")==0) {
@@ -2285,7 +2322,11 @@ int main(int argc, char* argv[])
             }
             else if (stricmp(cmd,"listworkunits")==0) {
                 CHECKPARAMS(0,3);
-                listworkunits((np>1)?params.item(1):NULL,(np>2)?params.item(2):NULL,(np>3)?params.item(3):NULL);
+                listworkunits((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
+            }
+            else if (stricmp(cmd,"listmatches")==0) {
+                CHECKPARAMS(0,3);
+                listmatches((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
             }
             else if (stricmp(cmd,"workunittimings")==0) {
                 CHECKPARAMS(1,1);
