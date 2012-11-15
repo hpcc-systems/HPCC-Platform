@@ -361,6 +361,7 @@ void copyPackageSubFiles(IPropertyTree *packageInfo, const char *target, const c
 void getPackageListInfo(IPropertyTree *mapTree, IEspPackageListMapData *pkgList)
 {
     pkgList->setId(mapTree->queryProp("@id"));
+    pkgList->setTarget(mapTree->queryProp("@querySet"));
 
     Owned<IPropertyTreeIterator> iter = mapTree->getElements("Package");
     IArrayOf<IConstPackageListData> results;
@@ -391,34 +392,40 @@ void getAllPackageListInfo(IPropertyTree *mapTree, StringBuffer &info)
     }
     info.append("</PackageMap>");
 }
-void listPkgInfo(const char *target, IArrayOf<IConstPackageListMapData>* results)
+void listPkgInfo(const char *target, const char *process, IArrayOf<IConstPackageListMapData>* results)
 {
-    StringBuffer info;
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     if (!globalLock)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali /PackageMaps");
     IPropertyTree *root = globalLock->queryRoot();
+    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry((process && *process) ? process : "*", NULL, true);
+    if (!pkgSetRegistry)
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process %s", (process && *process) ? process : "*");
+
+    StringBuffer xpath("PackageMap");
     if (!target || !*target)
     {
-        info.append("<PackageMaps>");
-        Owned<IPropertyTreeIterator> iter = root->getElements("PackageMap");
+        Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements("PackageMap");
         ForEach(*iter)
         {
             Owned<IEspPackageListMapData> res = createPackageListMapData("", "");
             IPropertyTree &item = iter->query();
-            getPackageListInfo(&item, res);
-            results->append(*res.getClear());
+            StringBuffer xpath;
+            const char *id = item.queryProp("@id");
+            if (id)
+            {
+                xpath.append("PackageMap[@id='").append(id).append("']");
+                IPropertyTree *mapTree = root->queryPropTree(xpath);
+                Owned<IEspPackageListMapData> res = createPackageListMapData("", "");
+                getPackageListInfo(mapTree, res);
+                results->append(*res.getClear());
+            }
         }
-        info.append("</PackageMaps>");
     }
     else
     {
-        Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(target, NULL, true);
-        if (!pkgSetRegistry)
-            throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for target %s", target);
-
-        Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements("PackageMap");
-        info.append("<PackageMaps>");
+        xpath.appendf("[@querySet='%s']", target);
+        Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements(xpath.str());
         ForEach(*iter)
         {
             IPropertyTree &item = iter->query();
@@ -433,36 +440,33 @@ void listPkgInfo(const char *target, IArrayOf<IConstPackageListMapData>* results
                 results->append(*res.getClear());
             }
         }
-        info.append("</PackageMaps>");
     }
 }
-void getPkgInfo(const char *target, StringBuffer &info)
+void getPkgInfo(const char *target, const char *process, StringBuffer &info)
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     if (!globalLock)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali /PackageMaps");
     IPropertyTree *root = globalLock->queryRoot();
     Owned<IPropertyTree> tree = createPTree("PackageMaps");
-    if (target)
+    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry((process && *process) ? process : "*", NULL, true);
+    StringBuffer xpath("PackageMap[@active='1']");
+    if (target && *target)
+        xpath.appendf("[@querySet='%s']", target);
+    Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements(xpath.str());
+    ForEach(*iter)
     {
-        Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(target, NULL, true);
-        Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements("PackageMap[@active='1']");
-        ForEach(*iter)
+        IPropertyTree &item = iter->query();
+        const char *id = item.queryProp("@id");
+        if (id)
         {
-            IPropertyTree &item = iter->query();
-            const char *id = item.queryProp("@id");
-            if (id)
-            {
-                StringBuffer xpath;
-                xpath.append("PackageMap[@id='").append(id).append("']");
-                IPropertyTree *mapTree = root->queryPropTree(xpath);
-                if (mapTree)
-                    mergePTree(tree, mapTree);
-            }
+            StringBuffer xpath;
+            xpath.append("PackageMap[@id='").append(id).append("']");
+            IPropertyTree *mapTree = root->queryPropTree(xpath);
+            if (mapTree)
+                mergePTree(tree, mapTree);
         }
     }
-    else
-        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "No target defined");
 
     toXML(tree, info);
 }
@@ -610,7 +614,8 @@ bool CWsPackageProcessEx::onListPackage(IEspContext &context, IEspListPackageReq
 {
     resp.updateStatus().setCode(0);
     IArrayOf<IConstPackageListMapData> results;
-    listPkgInfo(req.getTarget(), &results);
+    StringAttr process(req.getProcess());
+    listPkgInfo(req.getTarget(), process.length() ? process.get() : "*", &results);
     resp.setPkgListMapData(results);
     return true;
 }
@@ -618,9 +623,9 @@ bool CWsPackageProcessEx::onListPackage(IEspContext &context, IEspListPackageReq
 bool CWsPackageProcessEx::onGetPackage(IEspContext &context, IEspGetPackageRequest &req, IEspGetPackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
-    StringAttr target(req.getTarget());
+    StringAttr process(req.getProcess());
     StringBuffer info;
-    getPkgInfo(target.length() ? target.get() : "*", info);
+    getPkgInfo(req.getTarget(), process.length() ? process.get() : "*", info);
     resp.setInfo(info);
     return true;
 }

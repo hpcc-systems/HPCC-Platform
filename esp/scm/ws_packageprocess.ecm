@@ -72,6 +72,7 @@ ESPresponse [exceptions_inline] DeActivatePackageResponse
 ESPrequest GetPackageRequest
 {
     string Target;
+    string Process;
 };
 
 ESPresponse [exceptions_inline] GetPackageResponse
@@ -83,6 +84,7 @@ ESPresponse [exceptions_inline] GetPackageResponse
 ESPrequest ListPackageRequest
 {
     string Target;
+    string Process;
 };
 
 ESPstruct PackageListData
@@ -94,6 +96,7 @@ ESPstruct PackageListData
 ESPstruct PackageListMapData
 {
     string Id;
+    string Target;
     ESParray<ESPstruct PackageListData> PkgListData;
 };
 
