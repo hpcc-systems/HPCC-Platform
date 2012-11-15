@@ -1939,7 +1939,7 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
       }
 
      var aMenuItemsX = [ { text: "Delete",        onclick: { fn: onContextMenuBeforeShowDeleteContextMenu} },
-                          { text: "Add Attribute", onclick: { fn: onContextMenuBeforeAddAttribute}, }
+                          { text: "Add Attribute", onclick: { fn: onContextMenuBeforeAddAttribute} }
                         ];
       top.document.rightDT = dt;
       top.document.rightDT.expandRecord = function(id) {
