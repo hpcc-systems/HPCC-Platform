@@ -31,19 +31,26 @@ Doesn't include jlib.hpp yet, so different implementation of CInterface (RtlCInt
 //---------------------------------------------------------------------------
 // Record size handling.
 
-class COutputRowSerializer : public RtlCInterface, implements IOutputRowSerializer
+class CGlobalHelperClass : public RtlCInterface
 {
 public:
-    inline COutputRowSerializer(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
-    RTLIMPLEMENT_IINTERFACE
+    inline CGlobalHelperClass(unsigned _activityId) { activityId = _activityId; ctx = NULL; }
 
     inline void onCreate(ICodeContext * _ctx) { ctx = _ctx; }
-
-    virtual void serialize(IRowSerializerTarget & out, const byte * self) = 0;
 
 protected:
     ICodeContext * ctx;
     unsigned activityId;
+
+};
+
+class COutputRowSerializer : public CGlobalHelperClass, implements IOutputRowSerializer
+{
+public:
+    inline COutputRowSerializer(unsigned _activityId) : CGlobalHelperClass(_activityId) { }
+    RTLIMPLEMENT_IINTERFACE
+
+    virtual void serialize(IRowSerializerTarget & out, const byte * self) = 0;
 };
 
 
@@ -234,6 +241,16 @@ public:
     {
         return new CFixedSourceRowPrefetcher(activityId, 0);
     }
+};
+
+//---------------------------------------------------------------------------
+
+class CXmlToRowTransformer : public CGlobalHelperClass, implements IXmlToRowTransformer
+{
+public:
+    inline CXmlToRowTransformer(unsigned _activityId) : CGlobalHelperClass(_activityId) {}
+    RTLIMPLEMENT_IINTERFACE
+
 };
 
 //---------------------------------------------------------------------------
