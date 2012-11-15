@@ -180,6 +180,7 @@ struct MultiPacketHeader
         out.append(",idx=").append(idx);
         out.append(",numparts=").append(numparts);
         out.append(",total=").append(total);
+        return out;
     }
 };
 
