@@ -52,7 +52,9 @@
 #define DFSSERVER_THROTTLE_TIME 1000
 
 #if _INTERNAL_EDITION == 1
+#ifndef _MSC_VER
 #warning Disabling Sub-file compatibility checking
+#endif
 #else
 #define SUBFILE_COMPATIBILITY_CHECKING
 #endif

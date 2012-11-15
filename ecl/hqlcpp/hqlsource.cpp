@@ -6805,26 +6805,21 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
     StringBuffer s, id, className;
     getUniqueId(id);
     className.append("cx2r").append(id);
-    factoryName.append("fx2r").append(id);
 
     const char * interfaceName = "IXmlToRowTransformer";
+
 
     StringBuffer prolog, epilog;
     prolog.append("struct ").append(className).append(" : public RtlCInterface, implements ").append(interfaceName);
     epilog.append(";");
 
-    BuildCtx classctx(declarectx);
-    classctx.setNextPriority(XmlTransformerPrio);
-    IHqlStmt * transformClass = classctx.addQuotedCompound(prolog, epilog);
-    transformClass->setIncomplete(true);
+    GlobalClassBuilder builder(*this, declarectx, className, "CXmlToRowTransformer", interfaceName);
+    builder.buildClass(XmlTransformerPrio);
+    builder.setIncomplete(true);
 
-    s.clear().append(className).append("() { ctx = NULL; activityId = 0; }");
+    BuildCtx & classctx = builder.classctx;
+    s.clear().append("inline ").append(className).append("(unsigned _activityId) : CXmlToRowTransformer(_activityId) {}");
     classctx.addQuoted(s);
-    s.clear().append(className).append("(ICodeContext * _ctx, unsigned _activityId) { ctx = _ctx; activityId = _activityId; }");
-    classctx.addQuoted(s);
-    classctx.addQuoted("inline void setContext(ICodeContext * _ctx) { ctx = _ctx; }");
-    classctx.addQuoted("virtual void Link() const { RtlCInterface::Link(); }");
-    classctx.addQuoted("virtual bool Release() const { return RtlCInterface::Release(); }");
 
     BuildCtx funcctx(classctx);
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, IColumnProvider * row, IThorDiskCallback * fpp)");
@@ -6845,21 +6840,12 @@ void HqlCppTranslator::buildXmlReadTransform(IHqlExpression * dataset, StringBuf
     usesContents = xmlUsesContents;
     rootSelfRow = NULL;
 
-    classctx.addQuoted("ICodeContext * ctx;");
-    classctx.addQuoted("unsigned activityId;");
     buildMetaMember(classctx, dataset, false, "queryRecordSize");
 
-    transformClass->setIncomplete(false);
+    builder.setIncomplete(false);
+    builder.completeClass(XmlTransformerPrio);
 
-    BuildCtx factoryctx(*code, declareAtom);
-    factoryctx.setNextPriority(XmlTransformerPrio);
-    factoryctx.addQuoted(s.clear().append(interfaceName).append(" * ").append(factoryName).append("(ICodeContext * ctx, unsigned activityId) { return new ").append(className).append("(ctx, activityId); }"));
-    if (spanMultipleCppFiles())
-    {
-        s.clear().append("extern ").append(interfaceName).append(" * ").append(factoryName).append("(ICodeContext * ctx, unsigned activityId);");
-        BuildCtx protoctx(*code, mainprototypesAtom);
-        protoctx.addQuoted(s);
-    }
+    factoryName.append(builder.accessorName);
 
     OwnedHqlExpr matchedValue = createAttribute(internalAtom, createConstant(factoryName.str()), createConstant(usesContents));
     declarectx.associateExpr(xmlMarker, matchedValue);
