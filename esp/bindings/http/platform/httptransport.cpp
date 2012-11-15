@@ -2339,35 +2339,65 @@ int CHttpResponse::sendException(IEspHttpException* e)
     send();
     return 0;
 }
+
+StringBuffer &toJSON(StringBuffer &json, IMultiException *me, const char *callback)
+{
+    IArrayOf<IException> &exs = me->getArray();
+    if (callback && *callback)
+        json.append(callback).append('(');
+    appendJSONName(json.append("{"), "Exceptions").append("{");
+    appendJSONValue(json, "Source", me->source());
+    appendJSONName(json, "Exception").append("[");
+    ForEachItemIn(i, exs)
+    {
+        IException &e = exs.item(i);
+        if (i>0)
+            json.append(",");
+        StringBuffer msg;
+        appendJSONValue(json.append("{"), "Code", e.errorCode());
+        appendJSONValue(json, "Message", e.errorMessage(msg).str());
+        json.append("}");
+    }
+    json.append("]}}");
+    if (callback && *callback)
+        json.append(");");
+    return json;
+}
+
 bool CHttpResponse::handleExceptions(IXslProcessor *xslp, IMultiException *me, const char *serv, const char *meth, const char *errorXslt)
 {
     IEspContext *context=queryContext();
     if (me->ordinality()>0)
     {
-        StringBuffer text;
-        me->errorMessage(text);
-        text.append('\n');
-        WARNLOG("Exception(s) in %s::%s - %s", serv, meth, text.str());
+        StringBuffer msg;
+        WARNLOG("Exception(s) in %s::%s - %s", serv, meth, me->errorMessage(msg).append('\n').str());
 
-        bool returnXml = context->queryRequestParameters()->hasProp("rawxml_");
-        if (errorXslt || returnXml)
+        StringBuffer content;
+        switch (context->getResponseFormat())
         {
-            me->serialize(text.clear());
-            if (returnXml)
-            {
-                setContent(text.str());
-                setContentType(HTTP_TYPE_APPLICATION_XML);
-            }
-            else
-            {
-                StringBuffer theOutput;
-                xslTransformHelper(xslp, text.str(), errorXslt, theOutput, context->queryXslParameters());
-                setContent(theOutput.str());
-                setContentType("text/html");
-            }
-            send();
-            return true;
+        case ESPSerializationJSON:
+        {
+            setContentType(HTTP_TYPE_APPLICATION_JSON_UTF8);
+            toJSON(content, me, context->queryRequestParameters()->queryProp("jsonp"));
+            break;
         }
+        case ESPSerializationXML:
+            setContentType(HTTP_TYPE_APPLICATION_XML);
+            me->serialize(content);
+            break;
+        case ESPSerializationANY:
+        default:
+            {
+            if (!errorXslt || !*errorXslt)
+                return false;
+            setContentType("text/html");
+            StringBuffer xml;
+            xslTransformHelper(xslp, me->serialize(xml), errorXslt, content, context->queryXslParameters());
+            }
+        }
+        setContent(content);
+        send();
+        return true;
     }
     return false;
 }

@@ -433,6 +433,7 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     unsigned maxThreadsActive;
     bool running;
     CSDSServerStatus serverstatus;
+    Owned<IJobQueue> queue;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -455,7 +456,7 @@ public:
     void run()
     {
         DBGLOG("eclccServer (%d threads) waiting for requests on queue(s) %s", poolSize, queueName.get());
-        Owned<IJobQueue> queue = createJobQueue(queueName.get());
+        queue.setown(createJobQueue(queueName.get()));
         queue->connect();
         running = true;
         LocalIAbortHandler abortHandler(*this);
@@ -463,7 +464,7 @@ public:
         {
             try
             {
-                Owned<IJobQueueItem> item = queue->dequeue(1000);
+                Owned<IJobQueueItem> item = queue->dequeue();
                 if (item.get())
                 {
                     try
@@ -508,6 +509,8 @@ public:
     virtual bool onAbort() 
     {
         running = false;
+        if (queue)
+            queue->cancelAcceptConversation();
         return false;
     }
 };

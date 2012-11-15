@@ -233,7 +233,7 @@ extern da_decl unsigned querySDSLockTimeoutCount();
 interface IStoreHelper : extends IInterface
 {
     virtual StringBuffer &getDetachedDeltaName(StringBuffer &detachName) = 0;
-    virtual bool loadDelta(const char *filename, IFileIO *iFile, IPropertyTree *root) = 0;
+    virtual bool loadDelta(const char *filename, IFile *iFile, IPropertyTree *root) = 0;
     virtual bool loadDeltas(IPropertyTree *root, bool *errors=NULL) = 0;
     virtual bool detachCurrentDelta() = 0;
     virtual void saveStore(IPropertyTree *root, unsigned *newEdition=NULL, bool currentEdition=false) = 0;

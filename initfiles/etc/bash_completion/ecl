@@ -77,7 +77,7 @@ _ecl_nextcommand()
 
 _ecl_opts_common()
 {
-    echo "--help -v --verbose -s --server=<ip> --port=N -u --username=<name> -pw --password=<pw>"
+    echo "--help -v --verbose -s= --server= --port= -u= --username= -pw= --password="
 }
 
 _ecl_opts_queries()
@@ -89,16 +89,16 @@ _ecl_opts_queries()
             echo "--help list copy config"
             ;;
         copy)
-            echo -n "--no-reload --wait=MS --timeLimit=SEC --warnTimeLimit=SEC --memoryLimit=MEM "
+            echo -n "--no-reload --wait= --timeLimit= --warnTimeLimit= --memoryLimit= "
             _ecl_opts_common
             ;;
         config)
-            echo -n "-t --target=<target> --no-files --daliip=<ip> -A --activate --no-reload "
-            echo -n "-O --overwrite --wait=MS --timeLimit=SEC --warnTimeLimit=SEC --memoryLimit=MEM "
+            echo -n "-t= --target= --no-files --daliip= -A --activate --no-reload "
+            echo -n "-O --overwrite --wait= --timeLimit= --warnTimeLimit= --memoryLimit= "
             _ecl_opts_common
             ;;
         list)
-            echo -n "-t --target=<target> --show=<ASU> "
+            echo -n "-t= --target= --show= "
             _ecl_opts_common
             ;;
          *)
@@ -115,7 +115,7 @@ _ecl_opts_roxie()
             echo "--help attach detach check reload"
             ;;
         attach | detach | check | reload)
-            echo -n "--wait=MS "
+            echo -n "--wait= "
             _ecl_opts_common
             ;;
          *)
@@ -150,8 +150,8 @@ _ecl_opts_packagemap()
 
 _ecl_opts_deploy()
 {
-    echo -n "-t --target=<name> -n --name=<name> --main=<definition> --ecl-only --limit=N "
-    echo -n "--wait=<ms> -I<path> -L<path> -f<option>=value --manifest=<file> "
+    echo -n "-t= --target= -n= --name= --main= --ecl-only --limit= "
+    echo -n "--wait= --manifest= "
 }
 
 _ecl_opts_core_file()
@@ -166,12 +166,12 @@ _ecl_opts_core_file()
                 _ecl_opts_common
                 ;;
             publish)
-                echo -n "-A --activate --no-reload --timeLimit=ms --warnTimeLimit=ms --memoryLimit=value "
+                echo -n "-A --activate --no-reload --timeLimit= --warnTimeLimit= --memoryLimit= "
                 _ecl_opts_deploy
                 _ecl_opts_common
                 ;;
             run)
-                echo -n "-in --input=<xml|file> -X<name>=<value> "
+                echo -n "-in= --input= "
                 _ecl_opts_deploy
                 _ecl_opts_common
                 ;;

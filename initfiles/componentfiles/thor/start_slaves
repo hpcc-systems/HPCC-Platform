@@ -15,43 +15,80 @@
 #    limitations under the License.
 ################################################################################
 
-echo --------------------------
-echo starting thorslaves ...
+ip=$1
+prog=$2
+master=$3
+masterport=$4
+logpth=$5
+instancedir=$6
+hpcc_compname=$7
+hpcc_setenv=$8
+logredirect=$9
 
-if [ "$localthor" = "true" ]; then
-        ulimit -c unlimited
-        ulimit -n $handlelimit
-        let "n = 1";
-        for slave in $(cat $instancedir/thorgroup); do
-            slaveport=${slave/*:/}
-            if [ "$slaveport" = "" ]; then
-                slaveport=$THORSLAVEPORT
-            fi
-            $deploydir/start_slave $n thorslave${LCR} $THORMASTER:$THORMASTERPORT $logdir $instancedir $slaveport $THORNAME $PATH_PRE $logdir/start_slave_$logpthtail.$n.log
-            let "n += 1";
-        done
-else
-        ## multislaves for bkwd compat. with old environments
-        if [ ${slavespernode} -gt 1 ] || [ "$multislaves" = "true" ]; then
-            let "n = 1";
-            for slave in $(cat $instancedir/thorgroup); do
-                ip=${slave/:*/}
-                slaveport=${slave/*:/}
-                if [ "$slaveport" = "" ]; then
-                    slaveport=$THORSLAVEPORT
-                fi
-                logredirect="$logdir/start_slave_$logpthtail.$n.log"
-                frunssh $ip "/bin/sh -c '$deploydir/start_slave $n thorslave${LCR} $THORMASTER:$THORMASTERPORT $logdir $instancedir $slaveport $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 &
-                let "n += 1";
-            done
-            wait
-        else
-            if [ -e $instancedir/thorgroup ]; then
-                mv $instancedir/thorgroup $instancedir/thorgroup.local
-            fi
-            logredirect="$logdir/start_slave_$logpthtail.log"
-            frunssh $instancedir/slaves "/bin/sh -c '$deploydir/start_slave %n thorslave${LCR} $THORMASTER:$THORMASTERPORT $logdir $instancedir $THORSLAVEPORT $THORNAME $PATH_PRE $logredirect'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1
-        fi
+source ${hpcc_setenv}
+
+if [ $# -lt 9 ]; then
+  echo usage: ip prog master masterport logdir workingdir hpcc_compname hpcc_setenv logredirect
+  exit 1
 fi
-echo thorslaves started
 
+# this must match jsocket hard limit
+export handlelimit=32768
+
+sudo /etc/init.d/hpcc-init -c dafilesrv setup
+mkdir -p $instancedir
+mkdir -p `dirname $logredirect`
+exec >>$logredirect 2>&1
+
+cd $instancedir
+
+echo "slave(${ip}) init `date`"
+
+lckfile="$PID/start_slaves_${hpcc_compname}_${ip}.pid"
+
+# prevent two of these scripts starting together
+while [ -e $lckfile ]; do
+  echo waiting on lckfile: $lckfile
+  oldpid=`cat $lckfile`
+  if ps h $oldpid; then
+     echo killing pid $oldpid start_slaves
+     kill -9 $oldpid
+     rm $lckfile                   # just in case
+     sleep 1
+  else
+     rm -f $lckfile
+  fi
+done
+trap "rm -f $lckfile" exit
+echo $$ > $lckfile
+
+ulimit -c unlimited
+ulimit -n $handlelimit
+
+echo "slave(s) starting `date`"
+
+# sync to current master thorgroup
+echo rsync $master:$instancedir/thorgroup $instancedir/thorgroup.slave
+rsync $master:$instancedir/thorgroup $instancedir/thorgroup.slave
+
+let "slavenum = 1";
+for slave in $(cat $instancedir/thorgroup.slave); do
+  slaveip=${slave/:*/}
+  if [ ${slaveip} = ${ip} ]; then
+    slaveport=${slave/*:/}
+    if [ "$slaveport" = "" ]; then
+      slaveport=$THORSLAVEPORT
+    fi
+    echo $prog master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth
+    $prog master=$master:$masterport slave=.:$slaveport slavenum=$slavenum logDir=$logpth 2>/dev/null 1>/dev/null &
+    slavepid=$!
+    PID_NAME="$PID/${hpcc_compname}_slave_${slavenum}.pid"
+    echo $slavepid > $PID_NAME
+    if [ "$slavepid" -eq "0" ]; then
+      echo "failed to start at `date`"
+    else
+      echo "slave pid $slavepid started `date`"
+    fi
+  fi
+  let "slavenum += 1";
+done

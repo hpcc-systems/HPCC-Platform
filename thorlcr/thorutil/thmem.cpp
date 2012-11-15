@@ -1247,6 +1247,10 @@ protected:
         }
 
         {
+            // Ensure existing callback is cleared, before locked section below, which in turn may add a new callback
+            // Otherwise there is potential for deadlock with the callback mechanism, if it is in the midst of calling this callback.
+            clearSpillingCallback();
+
             CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
             if (spillableRowSet)
                 instrms.append(*spillableRowSet->createRowStream());
@@ -1294,8 +1298,15 @@ protected:
         totalRows = 0;
         overflowCount = outStreams = 0;
     }
-
     inline bool spillingEnabled() const { return SPILL_PRIORITY_DISABLE != spillPriority; }
+    void clearSpillingCallback()
+    {
+        if (mmRegistered)
+        {
+            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+            mmRegistered = false;
+        }
+    }
 public:
     CThorRowCollectorBase(CActivityBase &_activity, IRowInterfaces *_rowIf, ICompare *_iCompare, bool _isStable, RowCollectorFlags _diskMemMix, unsigned _spillPriority)
         : activity(_activity),
@@ -1320,8 +1331,7 @@ public:
     ~CThorRowCollectorBase()
     {
         reset();
-        if (mmRegistered)
-            activity.queryJob().queryRowManager()->removeRowBuffer(this);
+        clearSpillingCallback();
     }
     void transferRowsOut(CThorExpandingRowArray &out, bool sort)
     {

@@ -12164,7 +12164,7 @@ void HqlCppTranslator::doBuildAggregateProcessTransform(BuildCtx & ctx, BoundRow
 
         IHqlExpression * src = cur->queryChild(1);
         IHqlExpression * arg = src->queryChild(0);
-        IHqlExpression * cond = src->queryChild(1);
+        IHqlExpression * cond = queryRealChild(src, 1);
 
         BuildCtx condctx(ctx);
         node_operator srcOp = src->getOperator();
