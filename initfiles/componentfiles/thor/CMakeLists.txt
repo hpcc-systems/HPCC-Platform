@@ -12,7 +12,6 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/setup_nfs
     ${CMAKE_CURRENT_SOURCE_DIR}/setup_one_nfs
     ${CMAKE_CURRENT_SOURCE_DIR}/sshslaves
-    ${CMAKE_CURRENT_SOURCE_DIR}/start_slave
     ${CMAKE_CURRENT_SOURCE_DIR}/start_slaves
     ${CMAKE_CURRENT_SOURCE_DIR}/start_thor
     ${CMAKE_CURRENT_SOURCE_DIR}/run_thor
