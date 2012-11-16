@@ -39,7 +39,7 @@ static const char * compatibleVersions[] = {
 
 #define STRINGLIB_VERSION "STRINGLIB 1.1.14"
 
-const char * EclDefinition =  
+static const char * EclDefinition =
 "export StringLib := SERVICE\n"
 "  string StringFilterOut(const string src, const string _within) : c, pure,entrypoint='slStringFilterOut'; \n"
 "  string StringFilter(const string src, const string _within) : c, pure,entrypoint='slStringFilter'; \n"
