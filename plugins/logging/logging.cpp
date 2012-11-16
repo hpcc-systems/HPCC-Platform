@@ -28,7 +28,7 @@ static const char * compatibleVersions[] = {
     LOGGING_VERSION,
     NULL };
 
-const char * EclDefinition = 
+static const char * EclDefinition =
 "export Logging := SERVICE\n"
 "  dbglog(const string src) : c,action,entrypoint='logDbgLog'; \n"
 "  addWorkunitInformation(const varstring txt, unsigned code=0, unsigned severity=0) : ctxmethod,action,entrypoint='addWuException'; \n"

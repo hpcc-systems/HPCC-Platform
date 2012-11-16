@@ -31,13 +31,13 @@
 
 #define UNICODELIB_VERSION "UNICODELIB 1.1.06"
 
-UChar32 const u32comma = ',';
-UChar32 const u32space = ' ';
-UChar const u16asterisk = '*';
-UChar const u16query = '?';
-UChar const u16space = ' ';
+static UChar32 const u32comma = ',';
+static UChar32 const u32space = ' ';
+static UChar const u16asterisk = '*';
+static UChar const u16query = '?';
+static UChar const u16space = ' ';
 
-const char * EclDefinition = 
+static const char * EclDefinition =
 "export UnicodeLib := SERVICE\n"
 "  unicode UnicodeFilterOut(const unicode src, const unicode _within) : c, pure,entrypoint='ulUnicodeFilterOut'; \n"
 "  unicode UnicodeFilter(const unicode src, const unicode _within) : c, pure,entrypoint='ulUnicodeFilter'; \n"
