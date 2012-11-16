@@ -3,7 +3,7 @@
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book xml:base="../">
   <bookinfo>
-    <title>HPCC Configuration Manager</title>
+    <title> HPCC Configuration Manager</title>
 
     <mediaobject>
       <imageobject>
@@ -525,7 +525,25 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
       </itemizedlist>
 
-      <sect2>
+      <sect2 role="brk">
+        <title>XML View</title>
+
+        <para>In the advanced view of Configuration Manager, you can
+        optionally choose to work with the XML View.</para>
+
+        <para>To see the the configuration in XML View, click on the
+        Environment heading in the Navigator panel on the left side.</para>
+
+        <para><graphic fileref="images/CM-120.jpg" />You can access all
+        attributes through the XML view. </para>
+
+        <para>If you wish to add an attribute that does not exist, RT-CLICK on
+        one of the components then you can choose to add an attribute.</para>
+
+        <para><graphic fileref="images/CM-121.jpg" /></para>
+      </sect2>
+
+      <sect2 role="brk">
         <title>Hardware Section</title>
 
         <para>This section allows you to define your list of servers. When
