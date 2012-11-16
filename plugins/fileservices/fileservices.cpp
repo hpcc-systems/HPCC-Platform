@@ -48,7 +48,7 @@ static const char * compatibleVersions[] = {
     "FILESERVICES 2.1.3",
     NULL };
 
-const char * EclDefinition =
+static const char * EclDefinition =
 "export FsFilenameRecord := record string name{maxlength(1023)}; integer8 size; string19 modified; end; \n"
 "export FsLogicalFileName := string{maxlength(255)}; \n"
 "export FsLogicalFileNameRecord := record FsLogicalFileName name; end; \n"

@@ -506,14 +506,14 @@
   
   #define EXAMPLELIB_VERSION "EXAMPLELIB 1.0.00"
   
-  const char * const HoleDefinition =
+  static const char * const HoleDefinition =
     "SYSTEM\n"
     "MODULE (SYSTEM)\n"
     " FUNCTION StringFind(string src, string search,
         unsigned4 instance),unsigned4,c,name('elStringFind')\n"
     "END\n";
   
-  const char * const EclDefinition =
+  static const char * const EclDefinition =
     "export ExampleLib := SERVICE\n"
     " unsigned integer4 StringFind(const string src,
         const string tofind, unsigned4 instance )
