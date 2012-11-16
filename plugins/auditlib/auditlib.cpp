@@ -24,7 +24,7 @@ static const char * compatibleVersions[] = {
     AUDITLIB_VERSION,
     NULL };
 
-const char * EclDefinition = 
+static const char * EclDefinition =
 "export AuditLib := SERVICE\n"
 "  boolean Audit(const string atype, const string msg) : c, action, volatile, entrypoint='alAudit', hole; \n"
 "  boolean AuditData(const string atype, const string msg, const data datablock) : c, action, volatile, entrypoint='alAuditData', hole; \n"

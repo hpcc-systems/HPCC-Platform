@@ -292,18 +292,28 @@ void ViewTransformerRegistry::addPlugins(const char * name)
     HqlParseContext parseCtx(dataServer, NULL);
     HqlLookupContext ctx(parseCtx, &errors);
     getRootScopes(scopes, dataServer, ctx);
+
     ForEachItemIn(i, scopes)
     {
         IHqlScope * scope = &scopes.item(i);
         HqlExprArray symbols;
-        scope->ensureSymbolsDefined(ctx);
-        scope->getSymbols(symbols);
-
-        ForEachItemIn(j, symbols)
+        try
         {
-            IHqlExpression & cur = symbols.item(j);
-            if (cur.getOperator() == no_service)
-                addServiceDefinition(&cur);
+            scope->ensureSymbolsDefined(ctx);
+            scope->getSymbols(symbols);
+
+            ForEachItemIn(j, symbols)
+            {
+                IHqlExpression & cur = symbols.item(j);
+                if (cur.getOperator() == no_service)
+                    addServiceDefinition(&cur);
+            }
+        }
+        catch (IException * e)
+        {
+            const char * name = scope->queryName()->str();
+            VStringBuffer msg("Error loading plugin %s", name);
+            EXCLOG(e, msg.str());
         }
     }
 }

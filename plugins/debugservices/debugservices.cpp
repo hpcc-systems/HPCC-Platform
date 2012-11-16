@@ -20,7 +20,7 @@
 
 #define DEBUGSERVICES_VERSION "DEBUGSERVICES 1.0.1"
 
-const char * EclDefinition = 
+static const char * EclDefinition =
 "export DebugServices := SERVICE\n"
 "  Sleep(integer millis) : c,pure,entrypoint='dsSleep',initFunction='dsInitDebugServices'; \n"
 "  varstring GetBuildInfo() : c,pure,entrypoint='dsGetBuildInfo',initFunction='dsInitDebugServices';\n"
