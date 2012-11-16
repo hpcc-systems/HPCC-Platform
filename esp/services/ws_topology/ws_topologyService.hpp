@@ -99,7 +99,7 @@ private:
     bool findTimestampAndLT(StringBuffer logname, IFile* pFile, ReadLog& readLogReq, CDateTime& latestLogTime);
     unsigned findLineTerminator(const char* dataPtr, const size32_t dataSize);
     bool isLineTerminator(const char* dataPtr, const size32_t dataSize, unsigned ltLength);
-    char* readALogLine(char* dataPtr, size32_t& dataSize, unsigned ltLength, StringBuffer& logLine, bool& hasLineTernimator);
+    char* readALogLine(char* dataPtr, size32_t& dataSize, unsigned ltLength, StringBuffer& logLine, bool& hasLineTerminator);
     void addALogLine(offset_t& readFrom, unsigned& locationFlag, StringBuffer dataRow, ReadLog& readLogReq, StringArray& returnbuff);
     void readTpLogFileRequest(IEspContext &context, const char* fileName, IFile* rFile, IEspTpLogFileRequest  &req, ReadLog& readLogReq);
     void setTpLogFileResponse(IEspContext &context, ReadLog& readLogReq, const char* fileName,
