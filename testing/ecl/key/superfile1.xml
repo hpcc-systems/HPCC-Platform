@@ -35,7 +35,7 @@
  <Row><Result_9>4</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><Result_10>subfile3</Result_10></Row>
+ <Row><Result_10>t1_subfile3</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
  <Row><Result_11>2</Result_11></Row>
