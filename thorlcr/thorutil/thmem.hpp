@@ -214,7 +214,32 @@ graph_decl StringBuffer &getRecordString(const void *key, IOutputRowSerializer *
 
 enum StableSortFlag { stableSort_none, stableSort_earlyAlloc, stableSort_lateAlloc };
 class CThorSpillableRowArray;
-class graph_decl CThorExpandingRowArray : public CSimpleInterface
+
+// general really
+interface IThorArrayLock
+{
+    virtual void lock() const = 0;
+    virtual void unlock() const = 0;
+};
+
+class CThorArrayLockBlock
+{
+    CThorArrayLockBlock(CThorArrayLockBlock &); // avoid accidental use
+    const IThorArrayLock &alock;
+public:
+    inline CThorArrayLockBlock(const IThorArrayLock &_alock) : alock(_alock) { alock.lock(); }
+    inline ~CThorArrayLockBlock() { alock.unlock(); }
+};
+class CThorArrayLockUnblock
+{
+    CThorArrayLockUnblock(CThorArrayLockUnblock &); // avoid accidental use
+    const IThorArrayLock &alock;
+public:
+    inline CThorArrayLockUnblock(const IThorArrayLock &_alock) : alock(_alock) { alock.unlock(); }
+    inline ~CThorArrayLockUnblock() { alock.lock(); }
+};
+
+class graph_decl CThorExpandingRowArray : public CSimpleInterface, implements IThorArrayLock
 {
 protected:
     CActivityBase &activity;
@@ -222,10 +247,9 @@ protected:
     IEngineRowAllocator *allocator;
     IOutputRowSerializer *serializer;
     IOutputRowDeserializer *deserializer;
-
     roxiemem::IRowManager *rowManager;
     const void **rows;
-    void **stableSortTmp;
+    void **stableTable;
     bool throwOnOom; // tested during array expansion (ensure())
     bool allowNulls;
     StableSortFlag stableSort;
@@ -233,9 +257,10 @@ protected:
     rowidx_t numRows;  // High water mark of rows added
 
     void init(rowidx_t initialSize, StableSortFlag stableSort);
-    void **allocateStableTable(bool error); // allocates stable table based on std. ptr table
     const void *allocateRowTable(rowidx_t num);
     const void *allocateNewRows(rowidx_t requiredRows);
+    rowidx_t getNewSize(rowidx_t requiredRows);
+    bool resizeRowTable(void **oldRows, memsize_t newCapacity, bool copy, roxiemem::IRowResizeCallback &callback);
     void serialize(IRowSerializerTarget &out);
     void doSort(rowidx_t n, void **const rows, ICompare &compare, unsigned maxCores);
     inline rowidx_t getRowsCapacity() const { return rows ? RoxieRowCapacity(rows) / sizeof(void *) : 0; }
@@ -308,7 +333,7 @@ public:
         swap(from);
     }
     void transferRows(rowidx_t & outNumRows, const void * * & outRows);
-    void transferFrom(CThorExpandingRowArray &src); 
+    void transferFrom(CThorExpandingRowArray &src);
     void transferFrom(CThorSpillableRowArray &src);
     void removeRows(rowidx_t start, rowidx_t n);
     void clearUnused();
@@ -330,8 +355,10 @@ public:
     void deserializeRow(IRowDeserializerSource &in); // NB single row not NULL
     void deserialize(size32_t sz, const void *buf);
     void deserializeExpand(size32_t sz, const void *data);
-
-    virtual bool ensure(rowidx_t requiredRows);
+    bool ensure(rowidx_t requiredRows);
+// IThorArrayLock
+    virtual void lock() const { }
+    virtual void unlock() const { }
 };
 
 interface IWritePosCallback : extends IInterface
@@ -340,7 +367,7 @@ interface IWritePosCallback : extends IInterface
     virtual void filePosition(offset_t pos) = 0;
 };
 
-class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray
+class graph_decl CThorSpillableRowArray : public CThorExpandingRowArray
 {
     const size32_t commitDelta;  // How many rows need to be written before they are added to the committed region?
     rowidx_t firstRow; // Only rows firstRow..numRows are considered initialized.  Only read/write within cs.
@@ -348,23 +375,6 @@ class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray
     mutable CriticalSection cs;
     ICopyArrayOf<IWritePosCallback> writeCallbacks;
 public:
-
-    class CThorSpillableRowArrayLock
-    {
-        CThorSpillableRowArrayLock(CThorSpillableRowArrayLock &); // avoid accidental use
-        const CThorSpillableRowArray & rows;
-    public:
-        inline CThorSpillableRowArrayLock(const CThorSpillableRowArray &_rows) : rows(_rows) { rows.lock(); }
-        inline ~CThorSpillableRowArrayLock() { rows.unlock(); }
-    };
-    class CThorSpillableRowArrayUnlock
-    {
-        CThorSpillableRowArrayUnlock(CThorSpillableRowArrayLock &); // avoid accidental use
-        const CThorSpillableRowArray & rows;
-    public:
-        inline CThorSpillableRowArrayUnlock(const CThorSpillableRowArray &_rows) : rows(_rows) { rows.unlock(); }
-        inline ~CThorSpillableRowArrayUnlock() { rows.lock(); }
-    };
 
     CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
     ~CThorSpillableRowArray();
@@ -400,17 +410,17 @@ public:
     //The following can be accessed from the reader without any need to lock
     inline const void *query(rowidx_t i) const
     {
-        CThorSpillableRowArrayLock block(*this);
+        CThorArrayLockBlock block(*this);
         return CThorExpandingRowArray::query(i);
     }
     inline const void *get(rowidx_t i) const
     {
-        CThorSpillableRowArrayLock block(*this);
+        CThorArrayLockBlock block(*this);
         return CThorExpandingRowArray::get(i);
     }
     inline const void *getClear(rowidx_t i)
     {
-        CThorSpillableRowArrayLock block(*this);
+        CThorArrayLockBlock block(*this);
         return CThorExpandingRowArray::getClear(i);
     }
 
@@ -427,10 +437,6 @@ public:
 
     inline rowidx_t firstCommitted() const { return firstRow; }
     inline rowidx_t numCommitted() const { return commitRows - firstRow; }
-
-    //Locking functions - use CThorSpillableRowArrayLock above
-    inline void lock() const { cs.enter(); }
-    inline void unlock() const { cs.leave(); }
 
 // access to
     void swap(CThorSpillableRowArray &src);
@@ -458,7 +464,10 @@ public:
     }
     void deserialize(size32_t sz, const void *buf, bool hasNulls){ CThorExpandingRowArray::deserialize(sz, buf); }
     void deserializeRow(IRowDeserializerSource &in) { CThorExpandingRowArray::deserializeRow(in); }
-    virtual bool ensure(rowidx_t requiredRows);
+    bool ensure(rowidx_t requiredRows) { return CThorExpandingRowArray::ensure(requiredRows); }
+// IThorArrayLock
+    virtual void lock() const { cs.enter(); }
+    virtual void unlock() const { cs.leave(); }
 };
 
 
