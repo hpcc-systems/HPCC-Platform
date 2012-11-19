@@ -422,7 +422,7 @@ unsigned editDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, 
 // * special case edit1 - you could use variables for the 6 interesting array elements, and get
 //   rid of the array completely.  You could also unwind the first (and last iterations).
 // * I suspect the early exit condition could be improved depending the lengths of the strings.
-unsigned editDistanceV3(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
+extern STRINGLIB_API unsigned editDistanceV3(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
 {
     if (radius >= 255)
         return 255;
