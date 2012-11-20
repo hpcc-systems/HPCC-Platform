@@ -34,8 +34,12 @@
 #include "hqlplugins.hpp"
 
 extern "C" {
+
+#ifdef STRINGLIB_EXPORTS
 STRINGLIB_API bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb);
 STRINGLIB_API void setPluginContext(IPluginContext * _ctx);
+#endif
+
 STRINGLIB_API void STRINGLIB_CALL slStringFilterOut(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned hitLen, const char * hit);
 STRINGLIB_API void STRINGLIB_CALL slStringFilter(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned hitLen, const char * hit);
 STRINGLIB_API void STRINGLIB_CALL slStringSubsOut(unsigned & tgtLen, char * & tgt, unsigned srcLen, const char * src, unsigned hitLen, const char * hit, unsigned newCharLen, const char * newChar);
@@ -87,4 +91,7 @@ STRINGLIB_API unsigned STRINGLIB_CALL slMatchDate(size32_t lenS, const char * s,
 STRINGLIB_API void STRINGLIB_CALL slFormatDate(size32_t & __lenResult, char * & __result, unsigned date, const char * format);
 }
 
+namespace nsStringlib {
+extern STRINGLIB_API unsigned editDistanceV3(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius);
+}
 #endif
