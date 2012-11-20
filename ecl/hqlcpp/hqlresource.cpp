@@ -654,6 +654,7 @@ ResourceGraphInfo::ResourceGraphInfo(CResourceOptions * _options) : resources(_o
     isUnconditional = false;
     mergedConditionSource = false;
     hasConditionSource = false;
+    hasSequentialSource = false;
     isDead = false;
     startedGeneratingResourced = false;
     inheritedExpandedDependencies = false;
@@ -901,6 +902,9 @@ bool ResourceGraphInfo::mergeInSource(ResourceGraphInfo & other, const CResource
     if (options->checkResources() && !allocateResources(other.resources, limit))
         return false;
 
+    if (hasSequentialSource && other.hasSequentialSource)
+        return false;
+
     mergeGraph(other, isConditionalLink, mergeConditions);
     return true;
 }
@@ -916,6 +920,12 @@ void ResourceGraphInfo::mergeGraph(ResourceGraphInfo & other, bool isConditional
 
     if (other.hasConditionSource)
         hasConditionSource = true;
+
+    if (other.hasSequentialSource)
+    {
+        assertex(!hasSequentialSource);
+        hasSequentialSource = true;
+    }
 
     //Recalculate the dependents, because sources of the source merged in may no longer be indirect
     //although they may be via another path.  
@@ -947,6 +957,9 @@ void ResourceGraphInfo::mergeGraph(ResourceGraphInfo & other, bool isConditional
 bool ResourceGraphInfo::mergeInSibling(ResourceGraphInfo & other, const CResources & limit)
 {
     if ((!isUnconditional || !other.isUnconditional) && !hasSameConditions(other))
+        return false;
+
+    if (hasSequentialSource && other.hasSequentialSource)
         return false;
 
     if (isDependentOn(other, false) || other.isDependentOn(*this, false))
@@ -1735,6 +1748,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     targetClusterType = _targetClusterType; 
     clusterSize = _clusterSize ? _clusterSize : FIXED_CLUSTER_SIZE;
     insideNeverSplit = false;
+    sequential = false;
     options.mangleSpillNameWithWuid = false;
     options.minimizeSpillSize = _translatorOptions.minimizeSpillSize;
 
@@ -2806,6 +2820,8 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
             thisGraph.setown(createGraph());
             connectGraphs(thisGraph, expr, ownerGraph, owner, linkKind);
             info->numExternalUses++;
+            if (!ownerGraph && sequential)
+                thisGraph->hasSequentialSource = true;
         }
         info->graph.set(thisGraph);
 
@@ -4743,7 +4759,7 @@ IHqlExpression * resourceThorGraph(HqlCppTranslator & translator, IHqlExpression
 
 static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCopyArray * activeRows, IHqlExpression * expr, 
                                         ClusterType targetClusterType, unsigned clusterSize,
-                                        IHqlExpression * graphIdExpr, unsigned * numResults, bool isChild, bool useGraphResults)
+                                        IHqlExpression * graphIdExpr, unsigned * numResults, bool isChild, bool useGraphResults, bool sequential)
 {
     HqlExprArray transformed;
     {
@@ -4752,6 +4768,7 @@ static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCo
             resourcer.setChildQuery(true);
         resourcer.setNewChildQuery(graphIdExpr, *numResults);
         resourcer.setUseGraphResults(useGraphResults);
+        resourcer.setSequential(sequential);
 
         if (activeRows)
             resourcer.tagActiveCursors(*activeRows);
@@ -4769,18 +4786,18 @@ static IHqlExpression * doResourceGraph(HqlCppTranslator & translator, HqlExprCo
 
 IHqlExpression * resourceLibraryGraph(HqlCppTranslator & translator, IHqlExpression * expr, ClusterType targetClusterType, unsigned clusterSize, IHqlExpression * graphIdExpr, unsigned * numResults)
 {
-    return doResourceGraph(translator, NULL, expr, targetClusterType, clusterSize, graphIdExpr, numResults, false, true);       //?? what value for isChild (e.g., thor library call).  Need to gen twice?
+    return doResourceGraph(translator, NULL, expr, targetClusterType, clusterSize, graphIdExpr, numResults, false, true, false);       //?? what value for isChild (e.g., thor library call).  Need to gen twice?
 }
 
 
-IHqlExpression * resourceNewChildGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned * numResults)
+IHqlExpression * resourceNewChildGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned * numResults, bool sequential)
 {
-    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, true, true);
+    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, true, true, sequential);
 }
 
 IHqlExpression * resourceLoopGraph(HqlCppTranslator & translator, HqlExprCopyArray & activeRows, IHqlExpression * expr, ClusterType targetClusterType, IHqlExpression * graphIdExpr, unsigned * numResults, bool insideChildQuery)
 {
-    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, insideChildQuery, true);
+    return doResourceGraph(translator, &activeRows, expr, targetClusterType, 0, graphIdExpr, numResults, insideChildQuery, true, false);
 }
 
 IHqlExpression * resourceRemoteGraph(HqlCppTranslator & translator, IHqlExpression * expr, ClusterType targetClusterType, unsigned clusterSize)

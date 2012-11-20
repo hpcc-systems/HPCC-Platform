@@ -1810,7 +1810,7 @@ protected:
     double getComplexity(IHqlExpression * expr, ClusterType cluster);
     bool prepareToGenerate(HqlQueryContext & query, WorkflowArray & exprs, bool isEmbeddedLibrary);
     IHqlExpression * getResourcedGraph(IHqlExpression * expr, IHqlExpression * graphIdExpr);
-    IHqlExpression * getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * graphIdExpr, unsigned numResults, node_operator graphKind);
+    IHqlExpression * getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * childQuery, unsigned numResults, node_operator graphKind);
     IHqlExpression * optimizeCompoundSource(IHqlExpression * expr, unsigned flags);
     IHqlExpression * optimizeGraphPostResource(IHqlExpression * expr, unsigned csfFlags);
     bool isInlineOk();

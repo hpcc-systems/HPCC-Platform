@@ -1298,8 +1298,7 @@ void ChildGraphBuilder::generateGraph(BuildCtx & ctx)
     if (numResults == 0) numResults++;
 
     IHqlExpression * query = childQuery->queryChild(2);
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, query, represents, numResults, no_none);
-    resourced.setown(inheritAttribute(resourced, childQuery, sequentialAtom));
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(graphctx, childQuery, numResults, no_none);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(graphctx, PETchild, represents, resourced, true);
     if (!translator.queryOptions().serializeRowsetInExtract)
@@ -1348,7 +1347,7 @@ void ChildGraphBuilder::generatePrefetchGraph(BuildCtx & _ctx, OwnedHqlExpr * re
     aliasctx.addGroup();
 
     IHqlExpression * query = childQuery->queryChild(2);
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_none);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_none);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETchild, represents, resourced, false);
     createBuilderAlias(aliasctx, extractBuilder);
@@ -1380,7 +1379,7 @@ unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, bool multiInstance)
     subctx.addGroup();
 
     IHqlExpression * query = childQuery->queryChild(2);
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_loop);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_loop);
     //Add a flag to indicate multi instance
     if (multiInstance)
         resourced.setown(appendOwnedOperand(resourced, createAttribute(multiInstanceAtom)));
@@ -1483,7 +1482,7 @@ unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, bool isParalle
 
     IHqlExpression * query = childQuery->queryChild(2);
     translator.traceExpression("Before Loop resource", query);
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_loop);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_loop);
     translator.traceExpression("After Loop resource", resourced);
 
     //Add a flag to indicate multi instance
@@ -1515,7 +1514,7 @@ unique_id_t ChildGraphBuilder::buildRemoteGraph(BuildCtx & ctx)
     subctx.addGroup();
 
     IHqlExpression * query = childQuery->queryChild(2);
-    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, query, represents, numResults, no_allnodes);
+    OwnedHqlExpr resourced = translator.getResourcedChildGraph(ctx, childQuery, numResults, no_allnodes);
 
     Owned<ParentExtract> extractBuilder = translator.createExtractBuilder(ctx, PETremote, represents, GraphRemote, false);
 
@@ -1576,12 +1575,13 @@ void HqlCppTranslator::buildAssignChildDataset(BuildCtx & ctx, const CHqlBoundTa
 }
 
 
-IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * graphIdExpr, unsigned numResults, node_operator graphKind)
+IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlExpression * childQuery, unsigned numResults, node_operator graphKind)
 {
     if (options.paranoidCheckNormalized || options.paranoidCheckDependencies)
         DBGLOG("Before resourcing a child graph");
 
-    LinkedHqlExpr resourced = expr;
+    IHqlExpression * graphIdExpr = childQuery->queryChild(0);
+    LinkedHqlExpr resourced = childQuery->queryChild(2);
     checkNormalized(ctx, resourced);
 
     unsigned csfFlags = CSFindex|options.optimizeDiskFlag;
@@ -1626,7 +1626,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults, insideChild));
     }
     else
-        resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults));
+        resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults, childQuery->hasProperty(sequentialAtom)));
 
     DEBUG_TIMER("EclServer: resource graph", msTick()-time);
     checkNormalized(ctx, resourced);
@@ -1664,6 +1664,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     if (options.paranoidCheckNormalized || options.paranoidCheckDependencies)
         DBGLOG("After resourcing a child graph");
 
+    resourced.setown(inheritAttribute(resourced, childQuery, sequentialAtom));
     return resourced.getClear();
 }
 
