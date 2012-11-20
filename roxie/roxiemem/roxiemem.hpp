@@ -314,6 +314,7 @@ public:
 #define RoxieRowCapacity(row)  roxiemem::HeapletBase::capacity(row)
 #define RoxieRowHasDestructor(row)  roxiemem::HeapletBase::hasDestructor(row)
 #define RoxieRowAllocatorId(row) roxiemem::HeapletBase::getAllocatorId(row)
+#define RoxieRowIsShared(row)  roxiemem::HeapletBase::isShared(row)
 
 class OwnedRoxieRow;
 class OwnedConstRoxieRow
