@@ -216,7 +216,9 @@ protected:
             return rowset;
 
         memsize_t capacity;
-        return (byte * *)rowManager.resizeRow(rowset, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED, capacity);
+        void * ptr = (void *)rowset;
+        rowManager.resizeRow(capacity, ptr, oldRowCount * sizeof(void *), newRowCount * sizeof(void *), allocatorId | ACTIVITY_FLAG_ISREGISTERED);
+        return (byte * *)ptr;
     }
 
 protected:

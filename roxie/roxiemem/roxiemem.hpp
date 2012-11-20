@@ -411,11 +411,30 @@ enum RoxieHeapFlags
     RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
 };
 
+//This interface is here to allow atomic updates to allocations when they are being resized.  There are a few complications:
+//- If a new block is allocated, we just need to update the capacity/pointer atomically
+//  but they need to be updated at the same time, otherwise a spill occuring after the pointer update, but before
+//  the resizeRow returns could lead to an out of date capacity.
+//- If a block is resized by expanding earlier then the pointer needs to be locked while the data is being copied.
+//- If any intermediate function adds extra bytes to the amount to be allocated it will need a local implementation
+//  to apply a delta to the values being passed through.
+//
+//NOTE: update will not be called if the allocation was already large enough => the size must be set to the capacity.
+
+interface IRowResizeCallback
+{
+    virtual void lock() = 0; // prevent access to the row pointer
+    virtual void unlock() = 0; // allow access to the row pointer
+    virtual void update(memsize_t capacity, void * ptr) = 0; // update the capacity, row pointer while a lock is held.
+    virtual void atomicUpdate(memsize_t capacity, void * ptr) = 0; // update the row pointer while no lock is held
+};
+
 // Variable size aggregated link-counted Roxie (etc) row manager
 interface IRowManager : extends IInterface
 {
     virtual void *allocate(memsize_t size, unsigned activityId) = 0;
-    virtual void *resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, memsize_t &capacity) = 0;
+    virtual void resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, IRowResizeCallback & callback) = 0;
+    virtual void resizeRow(memsize_t & capacity, void * & original, memsize_t copysize, memsize_t newsize, unsigned activityId) = 0;
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;
     virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;
     virtual unsigned allocated() = 0;
