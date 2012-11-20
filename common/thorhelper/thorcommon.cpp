@@ -1593,7 +1593,7 @@ public:
         tempname.append('.').append(tempfiles.ordinality()).append('_').append((__int64)GetCurrentThreadId()).append('_').append((unsigned)GetCurrentProcessId());
         IFile *file = createIFile(tempname.str());
         tempfiles.append(*file);
-        return createRowWriter(file, rowInterfaces, 0); // flushed by close
+        return createRowWriter(file, rowInterfaces);
     }
     void put(const void **rows,unsigned numrows)
     {
