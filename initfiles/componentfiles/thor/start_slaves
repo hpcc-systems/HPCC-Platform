@@ -68,8 +68,8 @@ ulimit -n $handlelimit
 echo "slave(s) starting `date`"
 
 # sync to current master thorgroup
-echo rsync $master:$instancedir/thorgroup $instancedir/thorgroup.slave
-rsync $master:$instancedir/thorgroup $instancedir/thorgroup.slave
+echo rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
+rsync -e "ssh -o StrictHostKeyChecking=no" $master:$instancedir/thorgroup $instancedir/thorgroup.slave
 
 let "slavenum = 1";
 for slave in $(cat $instancedir/thorgroup.slave); do

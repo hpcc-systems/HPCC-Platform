@@ -23,9 +23,9 @@
 
 #define EXAMPLELIB_VERSION "EXAMPLELIB 1.0.00"
 
-const char * HoleDefinition = NULL;
+static const char * HoleDefinition = NULL;
 
-const char * EclDefinition = 
+static const char * EclDefinition =
 "export ExampleLib := SERVICE\n"
 "  string EchoString(const string src) : c, pure,entrypoint='elEchoString'; \n"
 "END;";

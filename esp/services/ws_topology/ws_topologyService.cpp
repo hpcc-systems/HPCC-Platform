@@ -531,26 +531,23 @@ bool CWsTopologyEx::findTimestampAndLT(StringBuffer logname, IFile* rFile, ReadL
     return true;
 }
 
-char* CWsTopologyEx::readALogLine(char* dataPtr, size32_t& bytesRemaining, unsigned ltLength, StringBuffer& logLine, bool& hasLineTernimator)
+char* CWsTopologyEx::readALogLine(char* dataPtr, size32_t& bytesRemaining, unsigned ltLength, StringBuffer& logLine, bool& hasLineTerminator)
 {
-    bool inQuote = false;
     char* pTr = dataPtr;
 
-    hasLineTernimator = false;
+    CDateTime dt;
+    hasLineTerminator = false;
     while(bytesRemaining > 0)
     {
-        if (pTr[0] == '\"')
-            inQuote = !inQuote;
-
-        hasLineTernimator = isLineTerminator(pTr, bytesRemaining, ltLength);
-        if (hasLineTernimator && !inQuote) //a log line may be broken into multiple lines
+        hasLineTerminator = isLineTerminator(pTr, bytesRemaining, ltLength);
+        if (hasLineTerminator && (bytesRemaining > ltLength + 27) && readLogTime(pTr+ltLength, 9, 19, dt))
             break;
 
         pTr++;
         bytesRemaining--;
     }
 
-    if (hasLineTernimator)
+    if (hasLineTerminator && (bytesRemaining > 0))
     {
         pTr += ltLength;
         bytesRemaining -= ltLength;

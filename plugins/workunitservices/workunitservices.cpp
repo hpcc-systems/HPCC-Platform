@@ -58,7 +58,7 @@ static const char * compatibleVersions[] = {
     "WORKUNITSERVICES 1.0.1", 
     NULL };
 
-const char * EclDefinition = 
+static const char * EclDefinition =
 "export WsWorkunitRecord := record "
                             " string24 wuid;"
                             " string owner{maxlength(64)};"
