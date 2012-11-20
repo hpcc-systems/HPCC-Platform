@@ -1503,7 +1503,7 @@ public:
     IMPLEMENT_IINTERFACE
 
     virtual void *allocate(memsize_t size, memsize_t & capacity);
-    virtual void *resizeRow(void * original, memsize_t oldsize, memsize_t newsize, memsize_t &capacity);
+    virtual void *resizeRow(void * original, memsize_t copysize, memsize_t newsize, memsize_t &capacity);
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize);
 
 protected:
@@ -1650,7 +1650,7 @@ public:
     }
 
     void * doAllocate(memsize_t _size, unsigned allocatorId);
-    void *expandHeap(void * original, memsize_t oldsize, memsize_t newsize, unsigned activityId, memsize_t &capacity);
+    void *expandHeap(void * original, memsize_t copysize, memsize_t oldcapacity, memsize_t newsize, unsigned activityId, memsize_t &capacity);
 
 protected:
     HugeHeaplet * allocateHeaplet(memsize_t _size, unsigned allocatorId);
@@ -2296,7 +2296,7 @@ public:
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::setMemoryLimit new memlimit=%"I64F"u pageLimit=%u spillLimit=%u rowMgr=%p", (unsigned __int64) bytes, pageLimit, spillPageLimit, this);
     }
 
-    virtual void *resizeRow(void * original, memsize_t oldsize, memsize_t newsize, unsigned activityId, memsize_t &capacity)
+    virtual void *resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, memsize_t &capacity)
     {
         assertex(newsize);
         assertex(!HeapletBase::isShared(original));
@@ -2308,10 +2308,10 @@ public:
             return original;
         }
         if (curCapacity > FixedSizeHeaplet::maxHeapSize())
-            return hugeHeap.expandHeap(original, oldsize, newsize, activityId, capacity);
+            return hugeHeap.expandHeap(original, copysize, curCapacity, newsize, activityId, capacity);
 
         void *ret = allocate(newsize, activityId);
-        memcpy(ret, original, oldsize);
+        memcpy(ret, original, copysize);
         HeapletBase::release(original);
         capacity = HeapletBase::capacity(ret);
         return ret;
@@ -2681,9 +2681,9 @@ void * CRoxieVariableRowHeap::allocate(memsize_t size, memsize_t & capacity)
     return ret;
 }
 
-void * CRoxieVariableRowHeap::resizeRow(void * original, memsize_t oldsize, memsize_t newsize, memsize_t &capacity)
+void * CRoxieVariableRowHeap::resizeRow(void * original, memsize_t copysize, memsize_t newsize, memsize_t &capacity)
 {
-    return rowManager->resizeRow(original, oldsize, newsize, allocatorId, capacity);
+    return rowManager->resizeRow(original, copysize, newsize, allocatorId, capacity);
 }
 
 void * CRoxieVariableRowHeap::finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize)
@@ -2733,10 +2733,10 @@ void * CHugeChunkingHeap::doAllocate(memsize_t _size, unsigned allocatorId)
     return head->allocateHuge(_size);
 }
 
-void *CHugeChunkingHeap::expandHeap(void * original, memsize_t oldsize, memsize_t newsize, unsigned activityId, memsize_t &capacity)
+void *CHugeChunkingHeap::expandHeap(void * original, memsize_t copysize, memsize_t oldcapacity, memsize_t newsize, unsigned activityId, memsize_t &capacity)
 {
     unsigned newPages = PAGES(newsize + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
-    unsigned oldPages = PAGES(oldsize + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
+    unsigned oldPages = PAGES(oldcapacity + HugeHeaplet::dataOffset(), HEAP_ALIGNMENT_SIZE);
     assert(newPages > oldPages);
     unsigned numPages = newPages - oldPages;
     void *oldbase =  (void *) ((memsize_t) original & HEAP_ALIGNMENT_MASK);
@@ -2784,7 +2784,7 @@ void *CHugeChunkingHeap::expandHeap(void * original, memsize_t oldsize, memsize_
                     }
                 }
                 // MORE - If we were really clever, we could manipulate the page table to avoid moving ANY data here...
-                memmove(realloced, oldbase, oldsize + HugeHeaplet::dataOffset());  // NOTE - assumes no trailing data (e.g. end markers)
+                memmove(realloced, oldbase, copysize + HugeHeaplet::dataOffset());  // NOTE - assumes no trailing data (e.g. end markers)
                 SpinBlock b(crit);
                 // Add at front of chain
                 setNext(head, active);
