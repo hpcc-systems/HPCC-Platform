@@ -893,20 +893,45 @@ static void testDFSDel()
     if (!setupDFS("del"))
         return;
 
-    printf("Creating 'regress::del::super1 and attaching sub\n");
-    Owned<IDistributedSuperFile> sfile1 = dir.createSuperFile("regress::del::super1", user, false, false, transaction);
-    sfile1->addSubFile("regress::del::sub1", false, NULL, false, transaction);
-    sfile1.clear();
+    // Sub-file deletion
+    printf("Creating regress::del::super1 and attaching sub\n");
+    Owned<IDistributedSuperFile> sfile = dir.createSuperFile("regress::del::super1", user, false, false, transaction);
+    sfile->addSubFile("regress::del::sub1", false, NULL, false, transaction);
+    sfile->addSubFile("regress::del::sub4", false, NULL, false, transaction);
+    sfile.clear();
 
-    printf("Deleting 'regress::del::sub1, should fail\n");
+    printf("Deleting regress::del::sub1, should fail\n");
     try {
-        if (dir.removeEntry("regress::del::sub1", user)) {
+        if (dir.removeEntry("regress::del::sub1", user, transaction)) {
             ERROR("Could remove sub, this will make the DFS inconsistent!");
             return;
         }
     } catch (IException *e) {
         // expecting an exception
         e->Release();
+    }
+
+
+    printf("Removing regress::del::sub1 from super1, no del\n");
+    sfile.setown(transaction->lookupSuperFileCached("regress::del::super1"));
+    sfile->removeSubFile("regress::del::sub1", false, false, transaction);
+    if (sfile->numSubFiles() != 1)
+        ERROR("File sub1 was not removed from super1");
+    sfile.clear();
+    if (!dir.exists("regress::del::sub1", user)) {
+        ERROR("File sub1 was removed from the file system");
+        return;
+    }
+
+    printf("Removing regress::del::sub4 from super1, del\n");
+    sfile.setown(transaction->lookupSuperFileCached("regress::del::super1"));
+    sfile->removeSubFile("regress::del::sub4", true, false, transaction);
+    if (sfile->numSubFiles())
+        ERROR("File sub4 was not removed from super1");
+    sfile.clear();
+    if (dir.exists("regress::del::sub4", user)) {
+        ERROR("File sub4 was NOT removed from the file system");
+        return;
     }
 
     // Logical Remove

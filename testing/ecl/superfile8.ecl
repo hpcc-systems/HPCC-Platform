@@ -67,7 +67,7 @@ SEQUENTIAL(
   FileServices.AddSuperFile('regress::superfile8','regress::subfile6'),
   FileServices.AddSuperFile('regress::superfile8','regress::subfile7'),
   FileServices.AddSuperFile('regress::superfile8','regress::subfile8'),
-  FileServices.DeleteSuperFile('regress::superfile8'),
+  FileServices.DeleteSuperFile('regress::superfile8', true),
   FileServices.FinishSuperFileTransaction(true),    // rollback
   OUTPUT(FileServices.SuperFileExists('regress::superfile8')), // false
   OUTPUT(FileServices.FileExists('regress::subfile5')), // true

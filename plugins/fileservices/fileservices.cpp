@@ -1216,7 +1216,7 @@ FILESERVICES_API void FILESERVICES_CALL fslRemoveSuperFile(ICodeContext *ctx, co
     lookupSuperFile(ctx, lsuperfn, file, true, lsfn, false, true);
     IDistributedFileTransaction *transaction = ctx->querySuperFileTransaction();
     assertex(transaction);
-    file->removeSubFile(_lfn?lfn.str():NULL,del,del,remcontents,transaction);
+    file->removeSubFile(_lfn?lfn.str():NULL,del,remcontents,transaction);
     StringBuffer s;
     if (_lfn)
         s.append("RemoveSuperFile ('");
