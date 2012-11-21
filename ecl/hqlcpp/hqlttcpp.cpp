@@ -1223,8 +1223,9 @@ static void normalizeResultFormat(WorkflowArray & workflow, const HqlCppOptions 
 //---------------------------------------------------------------------------
 
 static HqlTransformerInfo sequenceNumberAllocatorInfo("SequenceNumberAllocator");
-SequenceNumberAllocator::SequenceNumberAllocator() : NewHqlTransformer(sequenceNumberAllocatorInfo)
+SequenceNumberAllocator::SequenceNumberAllocator(HqlCppTranslator & _translator) : NewHqlTransformer(sequenceNumberAllocatorInfo), translator(_translator)
 {
+    applyDepth = 0;
     sequence = 0;
 }
 
@@ -1354,6 +1355,22 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
     {
     case no_actionlist:
         return doTransformRootExpr(expr);
+    case no_apply:
+        {
+            HqlExprArray args;
+            args.append(*transform(expr->queryChild(0)));
+            applyDepth++;
+            args.append(*transform(expr->queryChild(1)));
+            applyDepth--;
+            OwnedHqlExpr ret = completeTransform(expr, args);
+            return attachSequenceNumber(ret);
+        }
+    case no_outputscalar:
+        if (applyDepth)
+        {
+            translator.WARNINGAT(expr, HQLERR_ScalarOutputWithinApply);
+        }
+        break;
     }
     Owned<IHqlExpression> transformed = NewHqlTransformer::createTransformed(expr);
     return attachSequenceNumber(transformed.get());
@@ -1412,7 +1429,7 @@ IHqlExpression * SequenceNumberAllocator::attachSequenceNumber(IHqlExpression * 
 void HqlCppTranslator::allocateSequenceNumbers(HqlExprArray & exprs)
 {
     HqlExprArray sequenced;
-    SequenceNumberAllocator transformer;
+    SequenceNumberAllocator transformer(*this);
     transformer.transformRoot(exprs, sequenced);
     replaceArray(exprs, sequenced);
     maxSequence = transformer.getMaxSequence();
