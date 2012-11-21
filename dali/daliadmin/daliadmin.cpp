@@ -78,7 +78,7 @@ void usage(const char *exe)
   printf("  dfsfile <logicalname>          -- get meta information for file\n");
   printf("  dfspart <logicalname> <part>   -- get meta information for part num\n");
   printf("  dfscsv <logicalnamemask>       -- get csv info. for files matching mask\n");
-  printf("  dfsgroup <logicalgroupname>    -- get IPs for logical group (aka cluster)\n");
+  printf("  dfsgroup <logicalgroupname> [filename] -- get IPs for logical group (aka cluster). Written to optional filename if provided\n");
   printf("  dfsmap <logicalname>           -- get part files (primary and replicates)\n");
   printf("  dfsexists <logicalname>        -- sets return value to 0 if file exists\n");
   printf("  dfsparents <logicalname>       -- list superfiles containing file\n");
@@ -606,17 +606,32 @@ void dfscsv(const char *dali,IUserDescriptor *udesc)
 
 //=============================================================================
 
-static void dfsgroup(const char *name)
+static void dfsgroup(const char *name, const char *outputFilename)
 {
+    Owned<IFileIOStream> io;
+    if (outputFilename)
+    {
+        OwnedIFile iFile = createIFile(outputFilename);
+        OwnedIFileIO iFileIO = iFile->open(IFOcreate);
+        io.setown(createIOStream(iFileIO));
+    }
     Owned<IGroup> group = queryNamedGroupStore().lookup(name);
-    if (!group) {
+    if (!group)
+    {
         ERRLOG("cannot find group %s",name);
         return;
     }
     StringBuffer eps;
-    for (unsigned i=0;i<group->ordinality();i++) {
+    for (unsigned i=0;i<group->ordinality();i++)
+    {
         group->queryNode(i).endpoint().getUrlStr(eps.clear());
-        OUTLOG("%s",eps.str());
+        if (io)
+        {
+            eps.newline();
+            io->write(eps.length(), eps.str());
+        }
+        else
+            OUTLOG("%s",eps.str());
     }
 }
 
@@ -2249,8 +2264,8 @@ int main(int argc, char* argv[])
                 dfscsv(params.item(1),userDesc);
             }
             else if (stricmp(cmd,"dfsgroup")==0) {
-                CHECKPARAMS(1,1);
-                dfsgroup(params.item(1));
+                CHECKPARAMS(1,2);
+                dfsgroup(params.item(1),(np>1)?params.item(2):NULL);
             }
             else if (stricmp(cmd,"dfsmap")==0) {
                 CHECKPARAMS(1,1);

@@ -285,7 +285,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         ForEachItemIn(i, inputs) {
             IThorDataLink * input = inputs.item(i);
-            try { 
+            try {
                 startInput(input); 
             }
             catch (CATCHALL) {
@@ -294,7 +294,10 @@ public:
                     streams.item(s).stop();
                 throw;
             }
-            streams.append(*LINK(input));
+            if (input->isGrouped())
+                streams.append(*createUngroupStream(input));
+            else
+                streams.append(*LINK(input));
         }
 #ifndef _STABLE_MERGE
         // shuffle streams otherwise will all be reading in order initially
@@ -444,7 +447,10 @@ public:
                     streams.item(s).stop();
                 throw;
             }
-            streams.append(*LINK(input));
+            if (input->isGrouped())
+                streams.append(*createUngroupStream(input));
+            else
+                streams.append(*LINK(input));
         }
         Owned<IRowLinkCounter> linkcounter = new CThorRowLinkCounter;
         out.setown(createRowStreamMerger(streams.ordinality(), streams.getArray(), helper->queryCompare(), helper->dedup(), linkcounter));
