@@ -438,8 +438,26 @@ public:
             if (temporary && !job.queryUseCheckpoints()) 
                 dir.append(queryTempDir(false));
             else
-                makePhysicalPartName(scopedName.str(), 0, 0, dir, false, os);
-
+            {
+                // NB: always >= 1 groupNames
+                StringBuffer curDir;
+                ForEachItemIn(gn, groupNames)
+                {
+                    if (!getConfigurationDirectory(globals->queryPropTree("Directories"), "data", "thor", groupNames.item(gn), curDir))
+                        makePhysicalPartName(scopedName.str(), 0, 0, curDir, false, os); // legacy
+                    if (!dir.length())
+                        dir.swapWith(curDir);
+                    else
+                    {
+                        if (!streq(curDir, dir))
+                            throw MakeStringException(0, "When targeting multiple clusters on a write, the clusters must have the same target directory");
+                        curDir.clear();
+                    }
+                }
+                curDir.swapWith(dir);
+                // places logical filename directory in 'dir'
+                makePhysicalPartName(scopedName.str(), 0, 0, dir, false, os, curDir.str());
+            }
             desc->setDefaultDir(dir.str());
 
             StringBuffer partmask;
