@@ -43,8 +43,6 @@
 
 #undef ALLOCATE
 #undef CLONE
-#undef RESIZEROW
-#undef SHRINKROW
 #undef MEMACTIVITYTRACESTRING 
 
 

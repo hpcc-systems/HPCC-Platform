@@ -397,7 +397,7 @@ interface IFixedRowHeap : extends IInterface
 interface IVariableRowHeap : extends IInterface
 {
     virtual void *allocate(memsize_t size, memsize_t & capacity) = 0;
-    virtual void *resizeRow(void * original, memsize_t oldsize, memsize_t newsize, memsize_t &capacity) = 0;
+    virtual void *resizeRow(void * original, memsize_t copysize, memsize_t newsize, memsize_t &capacity) = 0;
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize) = 0;
 };
 
@@ -414,7 +414,7 @@ enum RoxieHeapFlags
 interface IRowManager : extends IInterface
 {
     virtual void *allocate(memsize_t size, unsigned activityId) = 0;
-    virtual void *resizeRow(void * original, memsize_t oldsize, memsize_t newsize, unsigned activityId, memsize_t &capacity) = 0;
+    virtual void *resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, memsize_t &capacity) = 0;
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;
     virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;
     virtual unsigned allocated() = 0;
@@ -471,8 +471,6 @@ extern roxiemem_decl atomic_t dataBuffersActive;
 
 #define ALLOCATE(a) allocate(a, activityId)
 #define CLONE(a,b) clone(a, b, activityId)
-#define RESIZEROW(a,b,c) resizeRow(a, b, c, activityId)
-#define SHRINKROW(a,b,c) resizeRow(a, b, c, activityId)
 
 extern roxiemem_decl StringBuffer &memstats(StringBuffer &stats);
 extern roxiemem_decl void memstats(unsigned &totalpg, unsigned &freepg, unsigned &maxblk);
