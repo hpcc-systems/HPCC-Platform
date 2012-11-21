@@ -2344,7 +2344,7 @@ public:
             const char *lfn = expirylist.item(i);
             PROGLOG(LOGPFX2 "Deleting %s",lfn);
             try {
-                queryDistributedFileDirectory().removePhysical(lfn,UNKNOWN_USER);//MORE:Pass IUserDescriptor
+                queryDistributedFileDirectory().removeEntry(lfn,UNKNOWN_USER);//MORE:Pass IUserDescriptor
             }
             catch (IException *e) { // may want to just detach if fails
                 StringBuffer s;
