@@ -155,7 +155,7 @@ private:
 class SequenceNumberAllocator : public NewHqlTransformer
 {
 public:
-    SequenceNumberAllocator();
+    SequenceNumberAllocator(HqlCppTranslator & _translator);
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr);
     virtual ANewTransformInfo * createTransformInfo(IHqlExpression * expr) { return CREATE_NEWTRANSFORMINFO(SequenceNumberInfo, expr); }
@@ -172,6 +172,8 @@ protected:
     IHqlExpression * attachSequenceNumber(IHqlExpression * expr);
 
 protected:
+    HqlCppTranslator & translator; // should really be an error handler - could do with refactoring.
+    unsigned applyDepth;
     unsigned sequence;
     MapOwnedHqlToOwnedHql namedMap;
 };

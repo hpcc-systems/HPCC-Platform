@@ -34,7 +34,7 @@ echo $$ > $RUN_THOR_PID_NAME
 
 export SENTINEL="thor.sentinel"
 while [ 1 ]; do
-    daliadmin $DALISERVER dfsgroup ${groupName} > slaves
+    daliadmin $DALISERVER dfsgroup ${groupName} slaves
     errcode=$?
     if [ 0 != ${errcode} ]; then
     echo 'failed to lookup dali group for $groupName'

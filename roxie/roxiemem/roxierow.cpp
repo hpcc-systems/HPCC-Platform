@@ -196,6 +196,21 @@ protected:
         if (!rowset)
             return createRowset(newRowCount);
 
+        //Occasionally (in aggregates) we may try and append to a shared rowset.  In this case we need to clone the
+        //target rowset.  It could be that the rowset is unshared immediately, but that is inefficient at worst.
+        if (RoxieRowIsShared(rowset))
+        {
+            byte * * newset = createRowset(newRowCount);
+            for (unsigned i=0; i < oldRowCount; i++)
+            {
+                byte * cur = rowset[i];
+                LinkRoxieRow(cur);
+                newset[i] = cur;
+            }
+            ReleaseRoxieRow(rowset);
+            return newset;
+        }
+
         //This would be more efficient if previous capacity was stored by the caller - or if capacity() is more efficient
         if (newRowCount * sizeof(void *) <= RoxieRowCapacity(rowset))
             return rowset;
