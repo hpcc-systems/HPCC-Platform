@@ -595,7 +595,7 @@ protected:
     ActivityArray *loadChildGraph(IPropertyTree &graph)
     {
         // MORE - this is starting to look very much like loadGraph (on Roxie server side)
-        ActivityArray *activities = new ActivityArray(true, graph.getPropBool("@delayed"), graph.getPropBool("@library"));
+        ActivityArray *activities = new ActivityArray(true, graph.getPropBool("@delayed"), graph.getPropBool("@library"), graph.getPropBool("@sequential"));
         unsigned subgraphId = graph.getPropInt("@id");
         try
         {
@@ -1212,7 +1212,8 @@ public:
     virtual ActivityArray *loadGraph(IPropertyTree &graph, const char *graphName)
     {
         bool isLibraryGraph = graph.getPropBool("@library");
-        ActivityArray *activities = new ActivityArray(isLibraryGraph, false, isLibraryGraph);
+        bool isSequential = graph.getPropBool("@sequential");
+        ActivityArray *activities = new ActivityArray(isLibraryGraph, false, isLibraryGraph, isSequential);
         if (isLibraryGraph)
             activities->setLibraryGraphId(graph.getPropInt("node/@id"));
         try
@@ -1522,7 +1523,8 @@ public:
     {
         // MORE: common up with loadGraph for the Roxie server..
         bool isLibraryGraph = graph.getPropBool("@library");
-        ActivityArray *activities = new ActivityArray(isLibraryGraph, false, isLibraryGraph);
+        bool isSequential = graph.getPropBool("@sequential");
+        ActivityArray *activities = new ActivityArray(isLibraryGraph, false, isLibraryGraph, isSequential);
         if (isLibraryGraph)
             activities->setLibraryGraphId(graph.getPropInt("node/@id"));
         try

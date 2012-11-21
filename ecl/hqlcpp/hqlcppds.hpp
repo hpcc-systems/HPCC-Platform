@@ -27,7 +27,7 @@ public:
     IHqlExpression * addDataset(IHqlExpression * expr);
     void addAction(IHqlExpression * expr);
     unsigned addInput();
-    IHqlExpression * getGraph();
+    IHqlExpression * getGraph(_ATOM extraAttrName = NULL);
 
     inline IHqlExpression * queryRepresents() const { return represents; }
     inline unsigned numResults() const { return numInputs + numOutputs; }
@@ -61,11 +61,11 @@ protected:
     HqlCppTranslator & translator;
     unsigned id;
     StringBuffer instanceName;
+    LinkedHqlExpr childQuery;
     OwnedHqlExpr instanceExpr;
     OwnedHqlExpr resultInstanceExpr;
     OwnedHqlExpr represents;
     OwnedHqlExpr resultsExpr;
-    HqlExprArray results;
     unsigned numResults;
 };
 
