@@ -185,7 +185,7 @@ interface IDistributedFileTransaction: extends IInterface
     virtual IDistributedSuperFile *lookupSuperFile(const char *slfn,unsigned timeout=INFINITE)=0;
     virtual IDistributedSuperFile *lookupSuperFileCached(const char *slfn,unsigned timeout=INFINITE)=0;
     virtual IUserDescriptor *queryUser()=0;
-    virtual bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user,unsigned timeoutms=INFINITE,const char*cluster=NULL)=0; // used internally to delay deletes untill commit
+    virtual bool addDelayedDelete(const char *lfn,bool remphys,const char*cluster=NULL,unsigned timeoutms=INFINITE)=0; // used internally to delay deletes untill commit
     virtual void addAction(CDFAction *action)=0; // internal
     virtual void addFile(IDistributedFile *file)=0; // TODO: avoid this being necessary
     virtual void clearFiles()=0; // internal
@@ -457,8 +457,7 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
 
-    virtual bool removeEntry(const char *name,IUserDescriptor *user, unsigned timeoutms=INFINITE, IDistributedFileTransaction *transaction=NULL) = 0;  // equivalent to lookup/detach/release
-    virtual bool removePhysical(const char *name,IUserDescriptor *user,const char *cluster=NULL,unsigned timeoutms=INFINITE,IDistributedFileTransaction *transaction=NULL) = 0;                           // removes the physical parts as well as entry
+    virtual bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, const char *cluster=NULL, unsigned timeoutms=INFINITE) = 0;
     virtual void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
     

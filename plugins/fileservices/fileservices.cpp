@@ -349,9 +349,9 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
     Linked<IUserDescriptor> udesc = ctx->queryUserDescriptor();
     StringBuffer uname;
     PrintLog("Deleting NS logical file %s for user %s", lfn.str(),udesc?udesc->getUserName(uname).str():"");
-    if (queryDistributedFileDirectory().removePhysical(lfn.str(),udesc,NULL,INFINITE,transaction))
+    if (queryDistributedFileDirectory().removeEntry(lfn.str(),udesc,transaction))
     {
-        StringBuffer s("DeleteLogicalFile ('");         // ** TBD use removephysical (handles cluster)
+        StringBuffer s("DeleteLogicalFile ('");
         s.append(lfn);
         if (transaction->active())
             s.append("') added to transaction");
@@ -361,7 +361,8 @@ FILESERVICES_API void FILESERVICES_CALL fsDeleteLogicalFile(ICodeContext *ctx, c
         AuditMessage(ctx,"DeleteLogicalFile",lfn.str());
 
     }
-    else if (!ifexists) {
+    else if (!ifexists)
+    {
         throw MakeStringException(0, "Could not delete file %s", lfn.str());
     }
 }

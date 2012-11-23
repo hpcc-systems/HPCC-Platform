@@ -98,7 +98,7 @@ void testMultiCluster()
     for (i=0;i<file->numClusters();i++)
         PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());
     file.clear();
-    queryDistributedFileDirectory().removePhysical("test::testfile1@testgrp2",UNKNOWN_USER);
+    queryDistributedFileDirectory().removeEntry("test::testfile1@testgrp2",UNKNOWN_USER);
     file.setown(queryDistributedFileDirectory().lookup("test::testfile1",UNKNOWN_USER));
     for (i=0;i<file->numClusters();i++)
         PROGLOG("cluster[%d] = %s",i,file->getClusterName(i,name.clear()).str());

@@ -914,8 +914,7 @@ public:
     bool existsPhysical(const char *_logicalname,IUserDescriptor *user);
 
     void addEntry(CDfsLogicalFileName &lfn,IPropertyTree *root,bool superfile, bool ignoreexists);
-    bool removeEntry(const char *_logicalname,IUserDescriptor *user, unsigned timeoutms=INFINITE, IDistributedFileTransaction *transaction=NULL);
-    bool removePhysical(const char *_logicalname,IUserDescriptor *user,const char *cluster=NULL,unsigned timeoutms=INFINITE,IDistributedFileTransaction *transaction=NULL);
+    bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, const char *cluster=NULL, unsigned timeoutms=INFINITE);
     void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction);
     void removeEmptyScope(const char *name);
 
@@ -1403,9 +1402,9 @@ public:
         return udesc;
     }
 
-    bool addDelayedDelete(const char *lfn,bool remphys,IUserDescriptor *user,unsigned timeoutms,const char*cluster)
+    bool addDelayedDelete(const char *lfn,bool remphys,const char*cluster,unsigned timeoutms)
     {
-        delayeddelete.append(*new CDelayedDelete(lfn,remphys,user,timeoutms,cluster));
+        delayeddelete.append(*new CDelayedDelete(lfn,remphys,udesc,timeoutms,cluster));
         return true;
     }
     
@@ -3252,12 +3251,13 @@ public:
         root->serialize(mb);
         conn.clear();
         root.setown(createPTree(mb));
-        StringAttr lname(logicalName.get());
+        CDfsLogicalFileName lname;
+        lname.set(logicalName);
         logicalName.clear();
 #ifdef EXTRA_LOGGING
         LOGPTREE("CDistributedFile::detach root.2",root);
 #endif
-        parent->removeEntry(lname.get(),udesc, timeoutms);
+        parent->doRemoveEntry(lname,udesc,false,timeoutms);
     }
 
     bool removePhysicalPartFiles(const char *cluster,IMultiException *mexcept)
@@ -4691,9 +4691,10 @@ public:
         root.clear();
         conn.clear();
         root.setown(createPTree(mb));
-        StringAttr lname(logicalName.get());
+        CDfsLogicalFileName lname;
+        lname.set(logicalName);
         logicalName.clear();
-        parent->removeEntry(lname.get(),udesc, timeoutms);
+        parent->doRemoveEntry(lname,udesc,false,timeoutms);
     }
 
     bool removePhysicalPartFiles(const char *clustername,IMultiException *mexcept)
@@ -5118,7 +5119,7 @@ private:
                     bool done;
                     CDfsLogicalFileName dlfn;
                     dlfn.set(subnames.item(i).text.get());
-                    if (!transaction||!delayed||!transaction->addDelayedDelete(dlfn.get(),remphys,udesc)) {
+                    if (!transaction||!delayed||!transaction->addDelayedDelete(dlfn.get(),remphys)) {
                         if (remphys) 
                             done = parent->doRemovePhysical(dlfn,NULL,NULL,udesc,true);
                         else {
@@ -6978,7 +6979,7 @@ bool CDistributedFileDirectory::doRemoveEntry(CDfsLogicalFileName &dlfn,IUserDes
 }
 
 
-bool CDistributedFileDirectory::removeEntry(const char *name,IUserDescriptor *user, unsigned timeoutms, IDistributedFileTransaction *transaction)
+bool CDistributedFileDirectory::removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction, const char *cluster, unsigned timeoutms)
 {
     CDfsLogicalFileName logicalname;
     logicalname.set(name);
@@ -6993,8 +6994,16 @@ bool CDistributedFileDirectory::removeEntry(const char *name,IUserDescriptor *us
         localtrans.setown(new CDistributedFileTransaction(user));
     }
 
+    bool remphys = true;
+    Owned<IDistributedSuperFile> temp = localtrans->lookupSuperFileCached(name, timeoutms);
+    if (temp)
+    {
+        remphys = false; // Super-files are not physical entities
+        temp.clear();
+    }
+
     // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
-    localtrans->addDelayedDelete(logicalname.get(), false, user, timeoutms);
+    localtrans->addDelayedDelete(logicalname.get(), remphys, cluster, timeoutms);
 
     try
     {
@@ -7065,41 +7074,6 @@ bool CDistributedFileDirectory::doRemovePhysical(CDfsLogicalFileName &dlfn,const
     }
     return true;
 }
-
-bool CDistributedFileDirectory::removePhysical(const char *_logicalname,IUserDescriptor *user,const char *cluster,unsigned timeoutms,IDistributedFileTransaction *transaction)
-{
-    CDfsLogicalFileName logicalname;
-    logicalname.set(_logicalname);
-    checkLogicalName(logicalname,user,true,true,false,"delete physical");
-
-    // Create a local transaction that will be destroyed (but never touch the external transaction)
-    Linked<IDistributedFileTransaction> localtrans;
-    if (transaction) {
-        localtrans.set(transaction);
-    } else {
-        // TODO: Make it explicit in the API that a transaction is required
-        localtrans.setown(new CDistributedFileTransaction(user));
-    }
-
-    // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
-    localtrans->addDelayedDelete(logicalname.get(), true, user, timeoutms, cluster);
-
-    try
-    {
-        localtrans->autoCommit();
-    }
-    catch (IException *e)
-    {
-        // TODO: Transform removePhysical into void
-        StringBuffer msg;
-        e->errorMessage(msg);
-        ERRLOG("Error while deleting %s: %s", logicalname.get(), msg.str());
-        e->Release();
-        return false;
-    }
-    return true;
-}
-
     
 void CDistributedFileDirectory::renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction)
 {
@@ -9770,7 +9744,7 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
     // MORE - once deletion of logic files are also in transaction we can move this up (and allow promote within transactions)
     if (delsub) {
         ForEachItemIn(j,outunlinked) 
-            removePhysical(outunlinked.item(j),user,NULL,timeout,transaction);
+            removeEntry(outunlinked.item(j),user,transaction,NULL,timeout);
     }
 }
 
