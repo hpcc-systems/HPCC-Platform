@@ -234,11 +234,15 @@ public:
         flags = helper->getPipeFlags();
         needTransform = false;
 
+        IRowInterfaces *_inrowif;
         if (needTransform)
+        {
             inrowif.setown(createRowInterfaces(helper->queryDiskRecordSize(),queryActivityId(),queryCodeContext()));
+            _inrowif = inrowif;
+        }
         else
-            inrowif.set(this);
-        readTransformer.setown(createReadRowStream(inrowif->queryRowAllocator(), inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), flags));
+            _inrowif = this;
+        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), flags));
         appendOutputLinked(this);
     }
     virtual void start()
