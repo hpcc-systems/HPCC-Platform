@@ -30,7 +30,7 @@
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
       of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
-      registered trademark of LexisNexis Risk Data Management Inc.</para>
+      registered trademark of LexisNexis Risk Data Management Inc. </para>
 
       <para>Amazon Web Services, AWS, Amazon EC2, EC2, Amazon Elastic Compute
       Cloud, Amazon S3, Amazon Simple Storage Service, are trademarks,
@@ -1380,12 +1380,6 @@ OUTPUT(ValidWords)
     <para>This section explains data handling in an AWS configuration. More
     information about Data Handling in an HPCC Systems platform are available
     in the <emphasis>Data Handling</emphasis> manual.</para>
-
-    <sect1>
-      <title>Using Snapshots</title>
-
-      <para></para>
-    </sect1>
 
     <sect1 role="nobrk">
       <title>Using S3 buckets</title>
