@@ -241,6 +241,7 @@ typedef CIArrayOf<CGraphBase> CGraphArray;
 typedef CopyCIArrayOf<CGraphBase> CGraphArrayCopy;
 typedef IIteratorOf<CGraphBase> IThorGraphIterator;
 typedef ArrayIIteratorOf<const CGraphArray, CGraphBase, IThorGraphIterator> CGraphArrayIterator;
+typedef ArrayIIteratorOf<const CGraphArrayCopy, CGraphBase, IThorGraphIterator> CGraphArrayCopyIterator;
 
 class CJobBase;
 class graph_decl CGraphElementBase : public CInterface, implements IInterface
@@ -425,7 +426,8 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
     mutable int localOnly;
     activity_id parentActivityId;
     IPropertyTree *xgmml;
-    CGraphTable childGraphs;
+    CGraphTable childGraphsTable;
+    CGraphArrayCopy childGraphs;
     Owned<IGraphTempHandler> tmpHandler;
 
     void clean();
@@ -522,7 +524,7 @@ protected:
     Owned<IPropertyTree> node;
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
-    bool created, connected, started, aborted, graphDone, prepared;
+    bool created, connected, started, aborted, graphDone, prepared, sequential;
     bool reinit, sentInitData, sentStartCtx;
     CJobBase &job;
     graph_id graphId;
@@ -698,11 +700,11 @@ public:
     const activity_id &queryParentActivityId() const { return parentActivityId; }
     const graph_id &queryGraphId() const { return graphId; }
     void addChildGraph(CGraphBase &graph);
-    unsigned queryChildGraphCount() { return childGraphs.count(); }
+    unsigned queryChildGraphCount() { return childGraphs.ordinality(); }
     CGraphBase *getChildGraph(graph_id gid)
     {
         CriticalBlock b(crit);
-        return LINK(childGraphs.find(gid));
+        return LINK(childGraphsTable.find(gid));
     }
     IThorGraphIterator *getChildGraphs() const;
 
