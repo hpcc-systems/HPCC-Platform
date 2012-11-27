@@ -8530,7 +8530,7 @@ public:
     {
         if (builder)
         {
-            OwnedHqlExpr childquery = builder->getGraph();
+            OwnedHqlExpr childquery = builder->getGraph(sequentialAtom);
             translator.buildStmt(ctx, childquery);
             builder.clear();
         }
@@ -8764,6 +8764,8 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
         subGraph->setPropBool("@delayed", true);
     if (expr->queryProperty(childAtom))
         subGraph->setPropBool("@child", true);
+    if (expr->hasProperty(sequentialAtom))
+        subGraph->setPropBool("@sequential", true);
 
     if (insideChildGraph(ctx))
     {

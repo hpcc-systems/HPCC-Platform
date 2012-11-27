@@ -4198,6 +4198,11 @@ IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor,
     return appendOwnedOperand(expr, LINK(donor->queryProperty(name)));
 }
 
+IHqlExpression * appendAttribute(IHqlExpression * expr, _ATOM attr)
+{
+    return appendOwnedOperand(expr, createAttribute(attr));
+}
+
 IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand)
 {
     if (!ownedOperand)

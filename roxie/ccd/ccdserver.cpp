@@ -26935,7 +26935,7 @@ public:
         if (sinks.ordinality()==1)
             sinks.item(0).execute(parentExtractSize, parentExtract);
 #ifdef PARALLEL_EXECUTE
-        else if (!probeManager)
+        else if (!probeManager && !graphDefinition.isSequential())
         {
             class casyncfor: public CAsyncFor
             {
@@ -32746,7 +32746,7 @@ protected:
         DBGLOG("testPrefetchProject");
         init();
         Owned <IRoxieServerActivityFactory> factory = createRoxieServerPrefetchProjectActivityFactory(1, 1, *queryFactory, prefetchProjectActivityTestFactory, TAKprefetchproject);
-        Owned<ActivityArray> childGraph = new ActivityArray(false, false, false);
+        Owned<ActivityArray> childGraph = new ActivityArray(false, false, false, false);
         IRoxieServerActivityFactory *ttf = createRoxieServerTempTableActivityFactory(2, 1, *queryFactory, tempTableActivityTestFactory, TAKtemptable);
         IRoxieServerActivityFactory *snf = createRoxieServerSelectNActivityFactory(3, 1, *queryFactory, selectNActivityTestFactory, TAKselectn);
         IRoxieServerActivityFactory *lrf = createRoxieServerLocalResultWriteActivityFactory(4, 1, *queryFactory, localResultActivityTestFactory, TAKlocalresultwrite, 0, 8, true);
