@@ -1049,6 +1049,7 @@ void CGraphBase::clean()
     ::Release(doneBarrier);
     localResults.clear();
     graphLoopResults.clear();
+    childGraphsTable.kill();
     childGraphs.kill();
     disconnectActivities();
     containers.kill();
@@ -1113,7 +1114,7 @@ void CGraphBase::reset()
     setCompleteEx(false);
     if (0 == containers.count())
     {
-        SuperHashIteratorOf<CGraphBase> iter(childGraphs);
+        SuperHashIteratorOf<CGraphBase> iter(childGraphsTable);
         ForEach(iter)
             iter.query().reset();
     }
@@ -1136,14 +1137,15 @@ void CGraphBase::reset()
 void CGraphBase::addChildGraph(CGraphBase &graph)
 {
     CriticalBlock b(crit);
-    childGraphs.replace(graph);
+    childGraphs.append(graph);
+    childGraphsTable.replace(graph);
     job.associateGraph(graph);
 }
 
 IThorGraphIterator *CGraphBase::getChildGraphs() const
 {
     CriticalBlock b(crit);
-    return new CGraphTableIterator(childGraphs);
+    return new CGraphArrayCopyIterator(childGraphs);
 }
 
 bool CGraphBase::fireException(IException *e)
@@ -1660,6 +1662,7 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
     node.setown(createPTreeFromIPT(_node));
     xgmml = node->queryPropTree("att/graph");
     sink = xgmml->getPropBool("att[@name=\"rootGraph\"]/@value", false);
+    sequential = xgmml->getPropBool("@sequential");
     graphId = node->getPropInt("@id");
     global = false;
     localOnly = -1; // unset
@@ -1735,6 +1738,8 @@ void CGraphBase::createFromXGMML(IPropertyTree *_node, CGraphBase *_owner, CGrap
 
 void CGraphBase::executeChildGraphs(size32_t parentExtractSz, const byte *parentExtract)
 {
+    // JCSMORE - would need to respect codegen 'sequential' flag, if these child graphs
+    // could be executed in parallel.
     Owned<IThorGraphIterator> iter = getChildGraphs();
     ForEach(*iter)
     {
