@@ -73,6 +73,7 @@ public:
     const void * query(rowidx_t i) const;
     const void * getClear(rowidx_t i);
     const void * get(rowidx_t i) const;
+    rowidx_t rowCapacity() const { return rows ? RoxieRowCapacity(rows)/sizeof(void*) : 0; }
 
     //A thread calling the following functions must own the lock, or guarantee no other thread will access
     const void * * getBlock(rowidx_t readRows);
