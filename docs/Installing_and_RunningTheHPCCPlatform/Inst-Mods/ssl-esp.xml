@@ -386,7 +386,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
         <para>You might prefer to use a script to automate this step,
         especially if you have many nodes. See the Example Scripts section in
-        the Appendix of the Installing_and_RunningtheHPCCPlatform
+        the Appendix of the Installing and Running the HPCCPlatform
         manual.</para>
       </listitem>
 
