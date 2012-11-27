@@ -585,6 +585,8 @@ const char * cppSystemText[]  = {
     "   evaluateChildQueryInstance(unsigned4 lenExtract, row parentExtract) : method,entrypoint='evaluate';",       // actually returns something el
     "   dataset getChildQueryResult(unsigned4 id)   : method,pure,entrypoint='getResult';",
     "   _linkcounted_ dataset getChildQueryLinkedResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getLinkedResult';",
+    "   _linkcounted_ dictionary getChildQueryDictionaryResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getDictionaryResult';",
+    
     //MORE: Should this be utf8?
     "   varstring getenv(const varstring name, const varstring defaultValue) : pure,ctxmethod,entrypoint='getEnv';",
 
@@ -643,6 +645,7 @@ const char * cppSystemText[]  = {
     "   set of any getResultSet(const varstring stepname, unsigned4 sequence, boolean xmltransformer, boolean csvtransformer) : ctxmethod,pure,entrypoint='getResultSet',newset;",
 
     "   _linkcounted_ dataset getResultRowset(const varstring stepname, unsigned4 sequence, boolean _allocator, boolean _deserializer, boolean isGrouped, boolean xmltransformer, boolean csvtransformer) : ctxmethod,allocator(false),pure,entrypoint='getResultRowset';",
+    "   linkcounted dictionary getResultDictionary(const varstring stepname, unsigned4 sequence, boolean _deserializer, boolean xmltransformer, boolean csvtransformer, boolean hasher) : ctxmethod,pure,entrypoint='getResultDictionary';",
 
     //Don't make these pure because they may change over time.
     "   boolean isResult(const varstring stepname, unsigned4 sequence) : gctxmethod,entrypoint='isResult';",
@@ -738,6 +741,7 @@ const char * cppSystemText[]  = {
 
     "   dataset getLocalResult(unsigned4 id) :  method,pure,entrypoint='getResult';",
     "   _linkcounted_ dataset getLocalLinkedResult(unsigned4 id) : method,allocator(false),pure,entrypoint='getLinkedResult';",
+    "   linkcounted dictionary getLocalDictionaryResult(unsigned4 id) : method,allocator(false),pure,entrypoint='getDictionaryResult';",
     "   unsigned4 getGraphLoopCounter() : ctxmethod,entrypoint='getGraphLoopCounter';",
 
     "   _linkcounted_ row(dummyRecord) finalizeRowClear(unsigned4 _size) : omethod,entrypoint='finalizeRowClear';",

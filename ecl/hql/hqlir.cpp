@@ -814,11 +814,9 @@ static const char * getOperatorText(node_operator op)
     DUMP_CASE(no,dataset_alias);
     DUMP_CASE(no,childquery);
     DUMP_CASE(no,selectmap);
-    DUMP_CASE(no,inlinedictionary);
+    DUMP_CASE(no,createdictionary);
     DUMP_CASE(no,indict);
     DUMP_CASE(no,countdict);
-    DUMP_CASE(no,userdictionary);
-    DUMP_CASE(no,newuserdictionary);
     DUMP_CASE(no,chooseds);
 
     case no_unused6:
@@ -827,6 +825,8 @@ static const char * getOperatorText(node_operator op)
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
+    case no_unused100:
+    case no_unused101:
         return "unused";
     }
     return "unknown_op";

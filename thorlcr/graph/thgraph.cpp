@@ -1870,6 +1870,12 @@ void CGraphBase::getResult(size32_t & len, void * & data, unsigned id)
     result->getResult(len, data);
 }
 
+void CGraphBase::getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+{
+    Owned<IThorResult> result = getResult(id, true); // will get collated distributed result
+    result->getLinkedResult(count, ret);
+}
+
 void CGraphBase::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
 {
     Owned<IThorResult> result = getResult(id, true); // will get collated distributed result

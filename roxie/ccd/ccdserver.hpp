@@ -86,12 +86,13 @@ interface IRoxieServerLoopResultProcessor;
 interface IWorkUnitRowReader : public IInterface
 {
     virtual const void * nextInGroup() = 0;
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt) = 0;
 };
 
 interface IDeserializedResultStore : public IInterface
 {
-    virtual int addResult(ConstPointerArray *data, IOutputMetaData *meta) = 0;
-    virtual int appendResult(int oldId, ConstPointerArray *data, IOutputMetaData *meta) = 0;
+    virtual int addResult(size32_t count, byte **data, IOutputMetaData *meta) = 0;
+    virtual void getResult(int id, size32_t &count, byte ** &data) const = 0;
     virtual IWorkUnitRowReader *createDeserializedReader(int id) const = 0;
     virtual void serialize(unsigned & tlen, void * & tgt, int id, ICodeContext *ctx) const = 0;
 };
@@ -161,7 +162,7 @@ interface IRoxieServerContext : extends IInterface
     virtual IGlobalCodeContext *queryGlobalCodeContext() = 0;
     virtual FlushingStringBuffer *queryResult(unsigned sequence) = 0;
     virtual void setResultXml(const char *name, unsigned sequence, const char *xml) = 0;
-    virtual void appendResultDeserialized(const char *name, unsigned sequence, ConstPointerArray *data, bool extend, IOutputMetaData *meta) = 0;
+    virtual void appendResultDeserialized(const char *name, unsigned sequence, size32_t count, byte **data, bool extend, IOutputMetaData *meta) = 0;
     virtual void appendResultRawContext(const char *name, unsigned sequence, int len, const void * data, int numRows, bool extend, bool saveInContext) = 0;
     virtual IWorkUnitRowReader *getWorkunitRowReader(const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;
@@ -487,6 +488,7 @@ extern IRoxieServerActivityFactory *createRoxieServerCaseActivityFactory(unsigne
 extern IRoxieServerActivityFactory *createRoxieServerIfActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, bool _graphInvariant);
 extern IRoxieServerActivityFactory *createRoxieServerParseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, IResourceContext *rc);
 extern IRoxieServerActivityFactory *createRoxieServerWorkUnitWriteActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot);
+extern IRoxieServerActivityFactory *createRoxieServerWorkUnitWriteDictActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot);
 extern IRoxieServerActivityFactory *createRoxieServerRemoteResultActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, unsigned _usageCount, bool _isRoot);
 extern IRoxieServerActivityFactory *createRoxieServerXmlParseActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind);
 extern IRoxieServerActivityFactory *createRoxieServerDiskReadActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind, const RemoteActivityId &_remoteId, IPropertyTree &_graphNode);

@@ -1053,6 +1053,13 @@ void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * s
     );
 }
 
+void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+{
+    UNIMPLEMENTED;
+    tcount = 0;
+    tgt = NULL;
+}
+
 const void * EclAgent::fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
 {
     return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);

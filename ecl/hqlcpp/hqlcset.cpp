@@ -723,7 +723,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
 
     StringBuffer lookupHelperName;
     OwnedHqlExpr dict = createDictionary(no_null, LINK(record));
-    translator.buildDictionaryHashClass(ctx, record, dict, lookupHelperName);
+    translator.buildDictionaryHashClass(record, dict, lookupHelperName);
     CHqlBoundTarget target;
     target.expr.set(tempRow->queryBound());
 
@@ -745,7 +745,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
 
     StringBuffer lookupHelperName;
     OwnedHqlExpr dict = createDictionary(no_null, LINK(record));
-    translator.buildDictionaryHashClass(ctx, record, dict, lookupHelperName);
+    translator.buildDictionaryHashClass(record, dict, lookupHelperName);
 
     HqlExprArray args;
     args.append(*createQuoted(lookupHelperName, makeBoolType()));
@@ -1799,7 +1799,7 @@ void LinkedDictionaryBuilder::buildDeclare(BuildCtx & ctx)
 
     StringBuffer lookupHelperName;
     OwnedHqlExpr dict = createDictionary(no_null, record.getLink()); // MORE - is the actual dict not available?
-    translator.buildDictionaryHashClass(ctx, record, dict, lookupHelperName);
+    translator.buildDictionaryHashClass(record, dict, lookupHelperName);
 
     decl.append("RtlLinkedDictionaryBuilder ").append(instanceName).append("(");
     decl.append(allocatorName).append(", &").append(lookupHelperName);

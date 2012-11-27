@@ -14,7 +14,7 @@ the --oneline version of the generated changelog.\n
 Use git commit -s -t $1 to reopen previous message for editing\n"
 
 
-(head -1 "$1" | grep -E -q "^HPCC-[0-9]+ ") || {
+(head -1 "$1" | grep -E -q "^HPCC-[0-9]+ |^Merge ") || {
   echo >&2 "\n ERROR: Missing Jira issue on beginning of first line (HPCC-XXXX)"
   echo >&2 $usage
   exit 1
@@ -26,7 +26,7 @@ Use git commit -s -t $1 to reopen previous message for editing\n"
   exit 1
 }
 
-(head -1 "$1" | grep -E -q "^HPCC-[0-9]+ [^a-z]") || {
+(head -1 "$1" | grep -E -q "^HPCC-[0-9]+ [^a-z]|^Merge ") || {
   echo >&2 "\n ERROR: Short description should start with a capital"
   echo >&2 $usage
   exit 1

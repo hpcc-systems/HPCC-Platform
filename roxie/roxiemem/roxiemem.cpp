@@ -1065,12 +1065,20 @@ private:
         const char * ptr = (const char *)_ptr;
         const char *baseptr = ptr - chunkHeaderSize;
         ChunkHeader * header = (ChunkHeader *)baseptr;
+#ifdef _DEBUG
+        if (memTraceLevel >= 100)
+        {
+            DBGLOG("%s: Pointer %p %x", reason, ptr, *(unsigned *) baseptr);
+            if (memTraceLevel >= 1000)
+                PrintStackReport();
+        }
+#endif
         if ((header->allocatorId & ~ACTIVITY_MASK) != ACTIVITY_MAGIC)
         {
-            DBGLOG("%s: Attempt to free invalid pointer %p %x", reason, ptr, *(unsigned *) baseptr);
+            DBGLOG("%s: Invalid pointer %p %x", reason, ptr, *(unsigned *) baseptr);
             PrintStackReport();
             PrintMemoryReport();
-            HEAPERROR("Attempt to free invalid pointer");
+            HEAPERROR("Invalid pointer");
         }
     }
 };

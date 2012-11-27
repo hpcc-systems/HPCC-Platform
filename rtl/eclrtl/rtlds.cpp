@@ -334,7 +334,7 @@ void RtlLinkedDatasetBuilder::append(const void * source)
     if (count < choosenLimit)
     {
         ensure(count+1);
-        rowset[count] = (byte *)rowAllocator->linkRow(source);
+        rowset[count] = source ? (byte *)rowAllocator->linkRow(source) : NULL;
         count++;
     }
 }

@@ -920,6 +920,12 @@ IHqlExpression * CHqlBoundExpr::getTranslatedExpr() const
     return createValue(no_translated, LINK(type), args);
 }
 
+IHqlExpression * CHqlBoundExpr::getComplexExpr() const
+{
+    assertex(count && expr);
+    return createValue(no_complex, expr->getType(), LINK(count), LINK(expr));
+}
+
 IHqlExpression * CHqlBoundExpr::getIsAll() const
 {
     if (isAll)

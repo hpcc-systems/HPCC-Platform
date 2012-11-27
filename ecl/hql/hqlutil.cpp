@@ -3250,7 +3250,7 @@ IHqlExpression * createGetResultFromSetResult(IHqlExpression * setResult, ITypeI
     case type_groupedtable:
         return createDataset(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), createAttribute(groupedAtom), LINK(aliasAttr)));
     case type_dictionary:
-        return createDictionary(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), createAttribute(groupedAtom), LINK(aliasAttr)));
+        return createDictionary(no_workunit_dataset, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
     case type_row:
     case type_record:
          return createRow(no_getresult, LINK(queryOriginalRecord(valueType)), createComma(LINK(seqAttr), LINK(aliasAttr)));
@@ -4569,6 +4569,9 @@ static bool splitDatasetAttribute(SharedHqlExpr & dataset, SharedHqlExpr & attri
     node_operator leftOp = left->getOperator();
     if ((leftOp !=no_select) || expr->hasProperty(newAtom))
     {
+        if (leftOp == no_selectmap)
+            return false;
+
         IHqlExpression * lhs = LINK(left);
         IHqlExpression * field = expr->queryChild(1);
         if (lhs->isDataset()) lhs = createRow(no_activerow, lhs);
@@ -4620,7 +4623,7 @@ IHqlExpression * createSetResult(HqlExprArray & args)
         args.add(*attribute.getClear(), 1);
         return createValue(no_extractresult, makeVoidType(), args);
     }
-    if (value->isDataset())
+    if (value->isDataset() || value->isDictionary())
         return createValue(no_output, makeVoidType(), args);
     return createValue(no_setresult, makeVoidType(), args);
 }
@@ -5403,7 +5406,7 @@ IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation 
     return expr->cloneAllAnnotations(ret);
 }
 
-static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr, bool isDictionary)
+static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
@@ -5440,18 +5443,13 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLloc
     HqlExprArray children;
     children.append(*createValue(no_transformlist, makeNullType(), transforms));
     children.append(*LINK(record));
-    OwnedHqlExpr ret = isDictionary ? createDictionary(no_inlinedictionary, children) : createDataset(no_inlinetable, children);
+    OwnedHqlExpr ret = createDataset(no_inlinetable, children);
     return expr->cloneAllAnnotations(ret);
 }
 
 IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
 {
-    return convertTempTableToInline(errors, location, expr, false);
-}
-
-IHqlExpression * convertTempTableToInlineDictionary(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
-{
-    return convertTempTableToInline(errors, location, expr, true);
+    return convertTempTableToInline(errors, location, expr);
 }
 
 void setPayloadAttribute(HqlExprArray &args)

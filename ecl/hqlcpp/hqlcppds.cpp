@@ -1242,7 +1242,7 @@ IHqlExpression * ChildGraphExprBuilder::addDataset(IHqlExpression * expr)
     IHqlExpression * recordCountAttr = queryRecordCountInfo(expr);
     if (recordCountAttr)
         args.append(*LINK(recordCountAttr));
-    OwnedHqlExpr ret = createDataset(no_getgraphresult, args);
+    OwnedHqlExpr ret = expr->isDictionary() ? createDictionary(no_getgraphresult, args) : createDataset(no_getgraphresult, args);
     if (expr->isDatarow())
         ret.setown(createRow(no_selectnth, LINK(ret), createComma(getSizetConstant(1), createAttribute(noBoundCheckAtom))));
     return ret.getClear();
@@ -1935,15 +1935,18 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     case no_owned_ds:
         buildTempExpr(ctx, expr, tgt);
         return;
+    case no_fail:
+        doBuildStmtFail(ctx, expr->queryChild(1));
+        //fallthrough
     case no_null:
         {
             tgt.count.setown(getSizetConstant(0));
             tgt.length.setown(getSizetConstant(0));
             IHqlExpression * record = expr->queryRecord();
-            ITypeInfo * type = makeTableType(makeRowType(record->getType()), NULL, NULL, NULL);
+            Owned<ITypeInfo> type = makeTableType(makeRowType(record->getType()), NULL, NULL, NULL);
             if ((format == FormatLinkedDataset) || (format == FormatArrayDataset))
-                type = makeAttributeModifier(type, getLinkCountedAttr());
-            tgt.expr.setown(createValue(no_nullptr, makeReferenceModifier(type)));
+                type.setown(setLinkCountedAttr(type, true));
+            tgt.expr.setown(createValue(no_nullptr, makeReferenceModifier(type.getClear())));
             return;
         }
     case no_translated:
@@ -2077,6 +2080,25 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             buildDataset(ctx, expr->queryChild(1), tgt, format);
             return;
         }
+    case no_createdictionary:
+        {
+            IHqlExpression * record = expr->queryRecord();
+            Owned<IHqlCppDatasetBuilder> builder = createLinkedDictionaryBuilder(record);
+
+            builder->buildDeclare(ctx);
+
+            buildDatasetAssign(ctx, builder, expr->queryChild(0));
+
+            builder->buildFinish(ctx, tgt);
+            ctx.associateExpr(expr, tgt);
+            return;
+        }
+    }
+
+    if (expr->isDictionary())
+    {
+        buildTempExpr(ctx, expr, tgt, format);
+        return;
     }
 
     bool singleRow = hasSingleRow(expr);
@@ -2140,22 +2162,15 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
 
             if (format == FormatLinkedDataset || format == FormatArrayDataset)
             {
-                if (expr->isDictionary())
+                IHqlExpression * choosenLimit = NULL;
+                if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
                 {
-                    builder.setown(createLinkedDictionaryBuilder(record));
+                    choosenLimit = expr->queryChild(1);
+                    expr = expr->queryChild(0);
                 }
-                else
-                {
-                    IHqlExpression * choosenLimit = NULL;
-                    if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
-                    {
-                        choosenLimit = expr->queryChild(1);
-                        expr = expr->queryChild(0);
-                    }
 
-                    //MORE: Extract limit and choosen and pass as parameters
-                    builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
-                }
+                //MORE: Extract limit and choosen and pass as parameters
+                builder.setown(createLinkedDatasetBuilder(record, choosenLimit));
             }
             else if ((op == no_choosen) && !isChooseNAllLimit(expr->queryChild(1)) && !queryRealChild(expr, 2))
             {
@@ -2202,6 +2217,9 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     node_operator op = expr->getOperator();
     switch (op)
     {
+    case no_fail:
+        doBuildStmtFail(ctx, expr->queryChild(1));
+        return;
     case no_call:
     case no_externalcall:
         if (!hasStreamedModifier(expr->queryType()))
@@ -2220,14 +2238,20 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_null:
         {
             CHqlBoundExpr bound;
-            buildDataset(ctx, expr, bound, isArrayRowset(expr->queryType()) ? FormatLinkedDataset : FormatBlockedDataset);
-            OwnedHqlExpr translated = bound.getTranslatedExpr();
-            if (target.count) ctx.addAssign(target.count, bound.count);
-            if (target.length) ctx.addAssign(target.length, bound.length);
-            ctx.addAssign(target.expr, bound.expr);
+            buildDataset(ctx, expr, bound, isArrayRowset(target.queryType()) ? FormatLinkedDataset : FormatBlockedDataset);
+            if (hasWrapperModifier(target.queryType()))
+            {
+                OwnedHqlExpr complex = bound.getComplexExpr();
+                ctx.addAssign(target.expr, complex);
+            }
+            else
+            {
+                if (target.count) ctx.addAssign(target.count, bound.count);
+                if (target.length) ctx.addAssign(target.length, bound.length);
+                ctx.addAssign(target.expr, bound.expr);
+            }
             return;
         }
-    case no_inlinedictionary:
     case no_inlinetable:
         {
             //This will typically generate a loop.  If few items then it is more efficient to expand the assigns/clones out.
@@ -2346,6 +2370,17 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
                 return;
             }
             break;
+        }
+    case no_createdictionary:
+        {
+            IHqlExpression * record = expr->queryRecord();
+            Owned<IHqlCppDatasetBuilder> builder = createLinkedDictionaryBuilder(record);
+            builder->buildDeclare(ctx);
+
+            buildDatasetAssign(ctx, builder, expr->queryChild(0));
+
+            builder->buildFinish(ctx, target);
+            return;
         }
     }
 
@@ -2768,7 +2803,7 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
 
     if (sourceCursor)
     {
-        if (isNullProject(expr, false))
+        if (isNullProject(expr, true, false))
         {
             if (target->buildLinkRow(iterctx, sourceCursor))
                 return;
@@ -2787,7 +2822,6 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
         case no_hqlproject:
             doBuildRowAssignProject(iterctx, targetRef, expr);
             break;
-        case no_newuserdictionary:
         case no_newusertable:
             doBuildRowAssignUserTable(iterctx, targetRef, expr);
             break;
@@ -2933,6 +2967,9 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
     BuildCtx subctx(ctx);
     switch (expr->getOperator())
     {
+    case no_fail:
+        doBuildStmtFail(ctx, expr->queryChild(1));
+        return;
     case no_addfiles:
         buildDatasetAssign(subctx, target, expr->queryChild(0));
         buildDatasetAssign(subctx, target, expr->queryChild(1));
@@ -2941,7 +2978,6 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
         buildDatasetAssignTempTable(subctx, target, expr);
         //MORE: Create rows and assign each one in turn.  Could possibly be done with a different dataset selector
         return;
-    case no_inlinedictionary:
     case no_inlinetable:
         buildDatasetAssignInlineTable(subctx, target, expr);
         return;
@@ -2989,7 +3025,6 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, IHqlCppDatasetBuilder 
         return;
     case no_hqlproject:
     case no_newusertable:
-    case no_newuserdictionary:
         buildDatasetAssignProject(subctx, target, expr);
         return;
     case no_compound_childread:
@@ -4366,7 +4401,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndex(BuildCtx & ctx, IHqlExp
             specialCase = !isMultiLevelDatasetSelector(expr, false);
             break;
         case no_if:
-        case no_inlinedictionary:
+        case no_createdictionary:
         case no_inlinetable:
         case no_join:
             //Always creates a temporary, so don't use an iterator
@@ -4418,7 +4453,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetSelectMap(BuildCtx & ctx, IHq
 
     OwnedHqlExpr dataset = normalizeAnyDatasetAliases(expr->queryChild(0));
     BoundRow * row = NULL;
-    assertex(canProcessInline(&ctx, expr));
+    //assertex(canProcessInline(&ctx, expr));
 
     if (!row)
     {
@@ -4463,6 +4498,8 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
         HqlExprArray args;
         args.append(*LINK(matchedResults->queryExpr()));
         args.append(*LINK(resultNum));
+        if (expr->isDictionary())
+            return bindFunctionCall(getChildQueryDictionaryResultAtom, args, exprType);
         if (preferLinkedRows)
             return bindFunctionCall(getChildQueryLinkedResultAtom, args, exprType);
         return bindFunctionCall(getChildQueryResultAtom, args, exprType);
@@ -4485,6 +4522,8 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
     HqlExprArray args;
     args.append(*LINK(retInstanceExpr));
     args.append(*LINK(resultNum));
+    if (expr->isDictionary())
+        return bindFunctionCall(getLocalDictionaryResultAtom, args, exprType);
     if (preferLinkedRows)
         return bindFunctionCall(getLocalLinkedResultAtom, args, exprType);
     return bindFunctionCall(getLocalResultAtom, args, exprType);
@@ -4585,10 +4624,59 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphResult(BuildCtx & ctx,
     return instance->getBoundActivity();
 }
 
+ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphDictionaryResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
+{
+    IHqlExpression * dictionary = expr->queryChild(0);
+    IHqlExpression * dataset = dictionary->queryChild(0);
+    IHqlExpression * graphId = expr->queryChild(1);
+    IHqlExpression * resultNum = expr->queryChild(2);
+    bool isSpill = expr->hasProperty(_spill_Atom);
+
+    ABoundActivity * parentActivity = activeActivities.ordinality() ? &activeActivities.tos() : NULL;
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKdictionaryresultwrite, expr, "DictionaryResultWrite");
+
+    buildActivityFramework(instance, isRoot && !isSpill);
+
+    buildInstancePrefix(instance);
+
+    doBuildUnsignedFunction(instance->classctx, "querySequence", resultNum);
+    doBuildBoolFunction(instance->classctx, "usedOutsideGraph", !isSpill);
+
+    if (parentActivity && !insideRemoteGraph(ctx) && !isSpill)
+    {
+        addDependency(ctx, instance->queryBoundActivity(), parentActivity, childAtom, "Child");
+    }
+
+    {
+        StringBuffer lookupHelperName;
+        buildDictionaryHashClass(dictionary->queryRecord(), dictionary, lookupHelperName);
+
+        BuildCtx funcctx(instance->createctx);
+        StringBuffer s;
+        s.append("virtual IHThorHashLookupInfo * queryHashLookupInfo() { return &").append(lookupHelperName).append("; }");
+        funcctx.addQuoted(s);
+    }
+
+    instance->addAttributeBool("_isSpill", isSpill);
+    if (targetRoxie())
+        addGraphIdAttribute(instance, ctx, graphId);
+
+    buildInstanceSuffix(instance);
+
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+    associateRemoteResult(*instance, graphId, resultNum);
+
+    return instance->getBoundActivity();
+}
 
 ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
     IHqlExpression * dataset = expr->queryChild(0);
+    if (dataset->isDictionary())
+        return doBuildActivitySetGraphDictionaryResult(ctx, expr, isRoot);
+
     IHqlExpression * graphId = expr->queryChild(1);
     IHqlExpression * resultNum = expr->queryChild(2);
     bool isSpill = expr->hasProperty(_spill_Atom);

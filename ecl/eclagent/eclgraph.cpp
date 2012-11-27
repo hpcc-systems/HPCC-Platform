@@ -1068,6 +1068,12 @@ void EclSubGraph::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
 }
 
 
+void EclSubGraph::getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+{
+    localResults->queryResult(id)->getLinkedResult(count, ret);
+}
+
+
 EclGraphElement * EclSubGraph::idToActivity(unsigned id)
 {
     ForEachItemIn(idx, elements)
