@@ -499,14 +499,44 @@ Blankline</programlisting></para>
           </listitem>
 
           <listitem>
-            <para>Repeat the spray steps for the actresses file. (Just replace
-            <emphasis>actor.list</emphasis> with the <emphasis>actresses.list
-            </emphasis> in both the Local Path, Logical File name, and Label
-            field.)</para>
+            <para>Following the same steps you used to spray the actors file,
+            now spray the actresses file. </para>
 
-            <para>Once the <emphasis role="bold">two</emphasis> sprays are
-            complete, we can query the logical files on the HPCC to see the
-            files we sprayed.</para>
+            <para><itemizedlist>
+                <listitem>
+                  <para>Click on the Spray CSV</para>
+                </listitem>
+
+                <listitem>
+                  <para>Select mydropzone in the Source <emphasis
+                  role="bold">Machine/dropzone</emphasis> drop-list.</para>
+                </listitem>
+
+                <listitem>
+                  <para>Enter the file name for the
+                  <emphasis>actresses.list</emphasis> file, or use the
+                  <emphasis role="bold">Choose File</emphasis> button to
+                  select the the <emphasis>actresses.list </emphasis>file from
+                  a list of files in the folder. </para>
+                </listitem>
+
+                <listitem>
+                  <para>Fill in the Label using the Logical File name desired:
+                  : <emphasis
+                  role="bold">~thor::in::IMDB::actresses.list</emphasis></para>
+
+                  <para>Make sure the <emphasis
+                  role="bold">Overwrite</emphasis> and <emphasis
+                  role="bold">Replicate </emphasis>boxes are checked (if
+                  available).</para>
+                </listitem>
+
+                <listitem>
+                  <para>Press the Submit button</para>
+                </listitem>
+              </itemizedlist>Once the <emphasis role="bold">two</emphasis>
+            sprays are complete, we can query the logical files on the HPCC to
+            see the files we sprayed.</para>
           </listitem>
 
           <listitem>
