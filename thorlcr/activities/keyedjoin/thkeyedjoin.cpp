@@ -91,6 +91,10 @@ public:
         {
             unsigned numParts = 0;
             localKey = indexFile->queryAttributes().getPropBool("@local");
+
+            if (container.queryLocal() && !localKey)
+                throw MakeActivityException(this, 0, "Keyed Join cannot be LOCAL unless supplied index is local");
+
             checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), true);
             Owned<IFileDescriptor> indexFileDesc = indexFile->getFileDescriptor();
             IDistributedSuperFile *superIndex = indexFile->querySuperFile();
