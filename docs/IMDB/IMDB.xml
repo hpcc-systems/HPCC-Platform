@@ -500,11 +500,11 @@ Blankline</programlisting></para>
 
           <listitem>
             <para>Following the same steps you used to spray the actors file,
-            now spray the actresses file. </para>
+            now spray the actresses file.</para>
 
             <para><itemizedlist>
                 <listitem>
-                  <para>Click on the Spray CSV</para>
+                  <para>Click on the Spray CSV link.</para>
                 </listitem>
 
                 <listitem>
@@ -517,7 +517,7 @@ Blankline</programlisting></para>
                   <emphasis>actresses.list</emphasis> file, or use the
                   <emphasis role="bold">Choose File</emphasis> button to
                   select the the <emphasis>actresses.list </emphasis>file from
-                  a list of files in the folder. </para>
+                  a list of files in the folder.</para>
                 </listitem>
 
                 <listitem>
@@ -534,9 +534,8 @@ Blankline</programlisting></para>
                 <listitem>
                   <para>Press the Submit button</para>
                 </listitem>
-              </itemizedlist>Once the <emphasis role="bold">two</emphasis>
-            sprays are complete, we can query the logical files on the HPCC to
-            see the files we sprayed.</para>
+              </itemizedlist>After both sprays are complete, we can query the
+            logical files on the HPCC to see the files we sprayed.</para>
           </listitem>
 
           <listitem>
