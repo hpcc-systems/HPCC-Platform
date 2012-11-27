@@ -1018,7 +1018,7 @@ public:
     virtual void killSorted() = 0;
     virtual const DynamicOutputRowArray & getRowArray() = 0;
     virtual void flushRows() = 0;
-    virtual unsigned numCommitted() = 0;
+    virtual unsigned numCommitted() const = 0;
     virtual void setActivityId(unsigned _activityId) = 0;
 };
 
@@ -1084,7 +1084,7 @@ public:
     virtual void killSorted()                               { rowsToSort.kill(); finger = 0;}
     virtual const DynamicOutputRowArray & getRowArray()     { return rowsToSort; }
     virtual void flushRows()                                { rowsToSort.flush(); }
-    virtual size32_t numCommitted()                         { return rowsToSort.numCommitted(); }
+    virtual size32_t numCommitted() const                   { return rowsToSort.numCommitted(); }
     virtual void setActivityId(unsigned _activityId)        { activityId = _activityId; }
 
 protected:

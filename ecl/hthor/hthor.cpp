@@ -3826,16 +3826,16 @@ void CQuickSorter::performSort()
 
 bool CStableQuickSorter::addRow(const void * next)
 {
-    size32_t capacity = rowsToSort.capacity() + 1;//increment capacity for the row we are about to add
-    if (capacity > indexCapacity)
+    size32_t nextRowCapacity = rowsToSort.rowCapacity() + 1;//increment capacity for the row we are about to add
+    if (nextRowCapacity > indexCapacity)
     {
-        void *** newIndex = (void ***)rowManager->allocate(capacity, activityId);//could force a spill
+        void *** newIndex = (void ***)rowManager->allocate(nextRowCapacity * sizeof(void*), activityId);//could force an OOM callback
         if (newIndex)
         {
-            roxiemem::RoxieOutputRowArrayLock block(getRowArray());//could spill after index is freed but before index,indexCapacity is updated
+            roxiemem::RoxieOutputRowArrayLock block(getRowArray());//could force an OOM callback after index is freed but before index,indexCapacity is updated
             releaseHThorRow(index);
             index = newIndex;
-            indexCapacity = RoxieRowCapacity(index);
+            indexCapacity = RoxieRowCapacity(index) / sizeof(void*);
         }
         else
         {
