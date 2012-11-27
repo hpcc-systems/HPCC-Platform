@@ -40,6 +40,8 @@ class CGraphProgressHandlerBase : public CSimpleInterface, implements ISlaveWatc
     {
         MemoryBuffer sendMb, progressMb;
         HeartBeatPacketHeader hb;
+        //clear struct, to avoid spurious warnings when serializing raw [unpacked] struct
+        memset(&hb, 0, sizeof(HeartBeatPacketHeader));
         hb.sender = self;
         hb.tick++;
         size32_t progressSizePos = (byte *)&hb.progressSize - (byte *)&hb;
