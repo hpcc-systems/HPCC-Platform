@@ -128,7 +128,7 @@ public:
             if (notify) 
                 notify->onInputStarted(NULL);
             startsem.signal();
-            Linked<IRowWriter> writer = smartbuf->queryWriter();
+            IRowWriter *writer = smartbuf->queryWriter();
             if (preserveLhsGrouping)
             {
                 while (required&&running)

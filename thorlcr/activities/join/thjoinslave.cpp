@@ -425,7 +425,7 @@ public:
             if (rightpartition)
                 strm1.set(input1.get()); // already ungrouped
             else
-                strm1.set(createUngroupStream(input1));
+                strm1.setown(createUngroupStream(input1));
         }
         else {
             StringBuffer tmpStr;

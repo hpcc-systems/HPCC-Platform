@@ -799,6 +799,10 @@ public:
     CThorSlaveGraphResults(CSlaveGraph &_graph,unsigned numResults) : CThorGraphResults(numResults), graph(_graph)
     {
     }
+    ~CThorSlaveGraphResults()
+    {
+        clear();
+    }
     virtual void clear()
     {
         CriticalBlock procedure(cs);

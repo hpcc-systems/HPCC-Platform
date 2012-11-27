@@ -295,7 +295,7 @@ public:
 
         ThorDataLinkMetaInfo info;
         inputs.item(0)->getMetaInfo(info);
-        outRowAllocator.set(queryJob().getRowAllocator(helper->queryDiskRecordSize(), container.queryId()));
+        outRowAllocator.setown(queryJob().getRowAllocator(helper->queryDiskRecordSize(), container.queryId()));
         if (refactor)
         {
             assertex(isLocal);
