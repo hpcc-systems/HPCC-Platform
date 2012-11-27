@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+"http://www.oasis-open.org/docbook/xml/4.1.2/docbookx.dtd">
+<sect1 id="ssl4esp">
+  <title><emphasis role="bold">Configuring ESP Server to use HTTPS
+  (SSL)</emphasis></title>
+
+  <para>The HPCC Enterprise Services Platform server (ESP) supports Secure
+  Sockets Layer (SSL), a protocol used to send and receive private data or
+  documents.</para>
+
+  <para>SSL works by using a private key to encrypt and decrypt data
+  transferred over the SSL connection. By convention, URLs using an SSL
+  connection start with HTTPS instead of HTTP.</para>
+
+  <para>The SSL option in the ESP Server allows secure and encrypted
+  communication between a browser or SOAP client application and the HPCC
+  platform.</para>
+
+  <para>SSL capabilities are configured in the Configuration Manager, but
+  require a certificate be installed on the ESP server. The OpenSSL libraries
+  provide a means to create the necessary certificate files in one of two
+  ways.</para>
+
+  <itemizedlist mark="bullet">
+    <listitem>
+      <para>You can use the OpenSSL libraries to create a private key and a
+      Certificate Signing Request (CSR) to purchase a certificate from a
+      Certificate Issuing Authority (such as, VeriSign).</para>
+    </listitem>
+
+    <listitem>
+      <para>You can use that CSR to generate your own self-signed certificate
+      and then install the certificate and private key to your ESP
+      Server.</para>
+    </listitem>
+  </itemizedlist>
+
+  <para>In either case, once installed and configured, the network traffic is
+  encrypted and secure. The Public and Private Keys use 1024-bit RSA
+  encryption.</para>
+
+  <sect2>
+    <title><emphasis role="bold">Generate an RSA Private
+    Key</emphasis></title>
+
+    <para>Use the OpenSSL toolkit to generate an RSA Private Key and a
+    Certificate Signing Request (CSR). This can also be the basis for a
+    self-signed certificate. Self-signed certificates are useful for internal
+    use or testing.</para>
+
+    <para>In our example, we create a 1024-bit RSA Private Key which is
+    encrypted using Triple-DES encryption and stored in Privacy Enhanced Mail
+    (PEM) format.</para>
+
+    <programlisting>openssl genrsa -des3 -out server.key 1024</programlisting>
+
+    <para>When prompted, provide a passphrase. This is used as the basis for
+    the encryption.</para>
+
+    <para><emphasis role="bold">Remember this passphrase as you will need to
+    enter it into the Configuration Manager later.</emphasis></para>
+  </sect2>
+
+  <sect2 role="brk">
+    <title><emphasis role="bold">Generate a CSR (Certificate Signing
+    Request)</emphasis></title>
+
+    <para>After you have a private key, you can use it to create a Certificate
+    Signing Request (CSR). You can use your CSR to request a signed
+    certificate from a Certificate Authority (such as Verisign or Network
+    Solutions). You can also use the CSR to create a self-signed
+    certificate.</para>
+
+    <programlisting>openssl req -new -key server.key -out server.csr </programlisting>
+
+    <para>Answer the questions when prompted:</para>
+
+    <para><informaltable colsep="1" frame="all" rowsep="1">
+        <tgroup cols="2">
+          <colspec colwidth="243.90pt" />
+
+          <colspec colwidth="234.90pt" />
+
+          <tbody>
+            <row>
+              <entry>Country Name (2 letter code):</entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry>State or Province Name (full name):</entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry>Locality Name (eg, city) :</entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry>Organization Name (eg, company) :</entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry>Organizational Unit Name (eg, section) :</entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry>Common Name (e.g., server’s hostname):</entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry>Email Address :</entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry>A challenge password (optional):</entry>
+
+              <entry></entry>
+            </row>
+
+            <row>
+              <entry>An optional company name (optional):</entry>
+
+              <entry></entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable></para>
+  </sect2>
+
+  <sect2>
+    <title><emphasis role="bold">Generate a Self-Signed
+    Certificate</emphasis></title>
+
+    <para>To generate a temporary certificate, which is good for up to 365
+    days, issue the following command:</para>
+
+    <programlisting>openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt </programlisting>
+
+    <para>When prompted, enter the passphrase you used earlier when creating
+    your CSR.</para>
+  </sect2>
+
+  <sect2>
+    <title><emphasis role="bold">Installing the Private Key and Certificate to
+    your ESP Server</emphasis></title>
+
+    <para>You must install the certificate and private key on all ESP server
+    node(s) that will host a service binding using SSL.</para>
+
+    <para>Your PrivateKey and certificate must be copied to
+    /var/lib/HPCCSystems/myesp/.</para>
+
+    <programlisting># For example:
+sudo cp server.crt /var/lib/HPCCSystems/myesp/certificate.cer
+sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer
+</programlisting>
+  </sect2>
+
+  <sect2 role="brk">
+    <title><emphasis role="bold">Configure HTTPS on your ESP
+    Server</emphasis></title>
+
+    <sect3>
+      <title><emphasis role="bold">Start Configuration Manager in Advanced
+      Mode</emphasis></title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Start the Configuration Manager Service on one node (usually
+          the first node is considered the head node and is used for this
+          task, but this is up to you).</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr
+</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Using a Web browser, go to the Configuration Manager's
+          interface.</para>
+
+          <para>Use the url of http://nnn.nnn.nnn.nnn:pppp, where
+          nnn.nnn.nnn.nnn is the IP address of the node running Configuration
+          Manager and pppp is the port (default is 8015).</para>
+
+          <para>The Configuration Manager startup wizard displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select <emphasis role="bold">Advanced View</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select an XML file from the drop list.</para>
+
+          <para>This list is populated from versions of an environment XML
+          file in your server's <emphasis
+          role="bold">/etc/HPCCSystems/source/</emphasis> directory.</para>
+
+          <para><emphasis role="bold">Tip</emphasis>: The XML file that
+          matches the active environment.xml is highlighted.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Next</emphasis> button.</para>
+
+          <para>The Configuration Manager Advanced View interface
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Check the <emphasis role="bold">Write Access </emphasis>box at
+          the top of the page.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3 role="brk">
+      <title><emphasis role="bold">Configure ESP</emphasis></title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Select ESP - MyEsp in the Navigator panel on the left
+          side.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">HTTPS</emphasis> tab. <figure>
+              <title>Select HTTPS Tab</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ssl-01.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>In the <emphasis role="bold">passphrase</emphasis> entry
+          control, enter the passphrase you used earlier when you created the
+          private key.</para>
+        </listitem>
+
+        <listitem>
+          <para>When prompted, provide the passphrase again.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click the disk icon to save.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3>
+      <title><emphasis role="bold">Configure one or more SSL-Enabled Service
+      Bindings</emphasis></title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Select the ESP Service Bindings tab.</para>
+        </listitem>
+
+        <listitem>
+          <para>Rt-click on the list of services, then select <emphasis
+          role="bold">Add</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Provide a name for the binding (e.g., myws_ecl_ssl)</para>
+        </listitem>
+
+        <listitem>
+          <para>Select myws_ecl from the service drop-list.</para>
+
+          <figure>
+            <title>myws_ecl</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ssl-02.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+        </listitem>
+
+        <listitem>
+          <para>When prompted about the FilesBaseDN, press the <emphasis
+          role="bold">OK</emphasis> button.</para>
+
+          <figure>
+            <title>FilesBaseDN</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ssl-03.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+        </listitem>
+
+        <listitem>
+          <para>Select https from the protocol drop-list.</para>
+
+          <figure>
+            <title>Select HTTPS</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ssl-04.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure>
+
+          <para><emphasis role="bold">Note:</emphasis> If you have not
+          previously edited the port, the change from http to https triggers
+          Configuration Manager to automatically change the port to the
+          default port for https (18002). It only updates automatically if the
+          port has not been edited.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click the disk icon to save</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+  </sect2>
+
+  <sect2 role="brk">
+    <title><emphasis role="bold">Distribute the environment configuration file
+    to all nodes, Restart, and Certify</emphasis></title>
+
+    <para>Once your environment is set up as desired, you must copy the
+    configuration file out to the other nodes.</para>
+
+    <orderedlist numeration="arabic">
+      <listitem>
+        <para>If it is running, stop the system.</para>
+
+        <para>Make sure system is stopped before attempting to move the
+        environment.xml file.</para>
+      </listitem>
+
+      <listitem>
+        <para>Back up the original environment.xml file</para>
+
+        <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/environment.xml /etc/HPCCSystems/environment.bak
+</programlisting>
+
+        <para>Note: the "live" environment.xml file is located in your
+        <emphasis role="bold">/etc/HPCCSystems/ </emphasis>directory.
+        ConfigManager works on files in <emphasis
+        role="bold">/etc/HPCCSystems/source </emphasis>directory. You must
+        copy the XML file from this location to make an environment.xml file
+        active.</para>
+      </listitem>
+
+      <listitem>
+        <para>Copy the NewEnvironment.xml file from the source directory to
+        the /etc/HPCCSystems and rename the file to environment.xml</para>
+
+        <programlisting># for example
+sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/environment.xml
+</programlisting>
+      </listitem>
+
+      <listitem>
+        <para>Copy the <emphasis
+        role="bold">/etc/HPCCSystems/environment.xml</emphasis> to
+        the<emphasis role="bold"> /etc/HPCCSystems/ </emphasis>on every
+        node.</para>
+
+        <para>You might prefer to use a script to automate this step,
+        especially if you have many nodes. See the Example Scripts section in
+        the Appendix of the Installing_and_RunningtheHPCCPlatform
+        manual.</para>
+      </listitem>
+
+      <listitem>
+        <para>Restart the HPCC system and certify the components as
+        usual.</para>
+      </listitem>
+    </orderedlist>
+  </sect2>
+</sect1>
