@@ -2,11 +2,12 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <book lang="en_US" xml:base="../">
-  <title>One-Click<trademark> Thor </trademark> within Amazon Web
-  Services</title>
+  <title>HPCC Systems<superscript>®</superscript> Instant Cloud for
+  AWS</title>
 
   <bookinfo>
-    <title>One-Click Thor™ within AWS</title>
+    <title>HPCC Systems<superscript>®</superscript> Instant Cloud for
+    AWS</title>
 
     <mediaobject>
       <imageobject>
@@ -28,7 +29,8 @@
       message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license.</para>
+      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
+      registered trademark of LexisNexis Risk Data Management Inc.</para>
 
       <para>Amazon Web Services, AWS, Amazon EC2, EC2, Amazon Elastic Compute
       Cloud, Amazon S3, Amazon Simple Storage Service, are trademarks,
@@ -58,7 +60,7 @@
 
     <mediaobject role="logo">
       <imageobject>
-        <imagedata fileref="images/AWS_One-click_COVER_LN_Rightjustified.jpg" />
+        <imagedata fileref="images/AWS_InstantCloud_COVER_registeredTm.jpg" />
       </imageobject>
     </mediaobject>
   </bookinfo>
@@ -66,12 +68,12 @@
   <chapter>
     <title>Introduction</title>
 
-    <para>This guide provides details and guidance in running an HPCC Systems
-    Thor cluster inside an Amazon Web Services (AWS) Elastic Cloud (EC2) using
-    the One-Click Launch page.</para>
+    <para>This guide provides details and guidance in running an HPCC
+    Systems<superscript>®</superscript> Platform inside an Amazon Web Services
+    (AWS) Elastic Cloud (EC2) using the Instant Cloud for AWS page.</para>
 
     <para>This allows you to <emphasis role="bold">instantiate</emphasis> and
-    run HPCC Systems Thor clusters of different sizes on the fly.</para>
+    run HPCC Systems clusters of different sizes on the fly.</para>
 
     <para>This is useful for:</para>
 
@@ -89,12 +91,12 @@
       </listitem>
 
       <listitem>
-        <para>Leveraging the HPCC Systems Thor platform without incurring cost
-        of hardware and administration</para>
+        <para>Leveraging the HPCC Systems platform without incurring cost of
+        hardware and administration</para>
       </listitem>
 
       <listitem>
-        <para>Create and use an HPCC Systems Thor cluster immediately without
+        <para>Create and use an HPCC Systems cluster immediately without
         purchasing and installing new hardware</para>
       </listitem>
     </itemizedlist>
@@ -114,11 +116,10 @@
 
     <para>We are working with Amazon to improve the set up processes.
     <emphasis role="bold">In the near future, we will have a guide to show how
-    to run an HPCC Systems Thor cluster in an Amazon Elastic Map Reduce (EMR)
-    type environment.</emphasis> We expect that method to be more robust and
-    easier to set up and operate. In addition, HPCC Systems is working on its
-    own Enterprise Cloud offering, but it is not yet ready to be
-    announced.</para>
+    to run an HPCC Systems cluster in an Amazon Elastic Map Reduce (EMR) type
+    environment.</emphasis> We expect that method to be more robust and easier
+    to set up and operate. In addition, HPCC Systems is working on its own
+    Enterprise Cloud offering, but it is not yet ready to be announced.</para>
 
     <informaltable colsep="1" frame="all" rowsep="1">
       <?dbfo keep-together="always"?>
@@ -164,7 +165,7 @@
               </listitem>
 
               <listitem>
-                <para><emphasis>Mac<superscript>*</superscript> workstation
+                <para><emphasis>Mac<superscript></superscript> workstation
                 with the Eclipse IDE and the ECL plug-in for Eclipse
                 (available soon)</emphasis></para>
               </listitem>
@@ -196,13 +197,9 @@
         </listitem>
       </itemizedlist>
 
-      <!--***eclipse info needs to be added-->
+      <!--***eclipse info needs to be added when released-->
 
-      <para><footnote label="*">
-          <para>Some required components have not yet been built for the Mac
-          platform (for example, the eclcc compiler). For the time being you
-          can use a Windows emulator or a Virtual Machine on a Mac.</para>
-        </footnote></para>
+      <para></para>
 
       <para><informaltable colsep="1" frame="all" rowsep="1">
           <?dbfo keep-together="always"?>
@@ -227,7 +224,7 @@
   </chapter>
 
   <chapter id="Collect">
-    <title>Using One-Click Launch</title>
+    <title>Using Instant Cloud Launch</title>
 
     <sect1 role="nobrk">
       <title>Before you begin</title>
@@ -271,17 +268,17 @@
             and <emphasis role="bold">Secret Access Key</emphasis>. This
             information is never stored on our system.</para>
 
-            <para>If you don't have it handy, you can click on the <emphasis
-            role="bold">AWS Activities &gt;&gt; Access Keys</emphasis> link
-            from the top menu to go to that section of the AWS Management
-            Console.<emphasis role="bluebold"></emphasis>.</para>
+            <para>If you don't have it handy, you can click on the link under
+            <emphasis role="bold">Can't find your Access Key ID?</emphasis> to
+            go to that section of the AWS Management Console.<emphasis
+            role="bluebold"></emphasis>.</para>
 
             <para><figure>
                 <title>Login</title>
 
                 <mediaobject>
                   <imageobject>
-                    <imagedata fileref="images/AWS_OneClick_Login.jpg" />
+                    <imagedata fileref="images/AWS_InstantCloud_Login.jpg" />
                   </imageobject>
                 </mediaobject>
               </figure></para>
@@ -306,7 +303,7 @@
             <para>Click on the <emphasis role="bold">Launch Cluster
             </emphasis>link at the top.</para>
 
-            <para>The <emphasis role="bold">Launch a New Thor Cluster
+            <para>The <emphasis role="bold">Launch a New HPCC Cluster
             </emphasis>window displays.</para>
 
             <para></para>
@@ -315,10 +312,10 @@
     </sect1>
 
     <sect1>
-      <title>Launch a Thor Cluster</title>
+      <title>Launch a New HPCC Cluster</title>
 
-      <para>In this section, you will launch a set of Ubuntu 10.04 machines to
-      use for your HPCC Systems Thor platform. The One-Click page, uses the
+      <para>In this section, you will launch a set of Ubuntu 12.04 machines to
+      use for your HPCC Systems Thor platform. The Instant Cloud page uses the
       input you specify to create your cluster for you.</para>
 
       <para>When you press the <emphasis role="bold">Launch Cluster
@@ -339,8 +336,8 @@
         </listitem>
 
         <listitem>
-          <para>Launches the number of m1.large nodes requested using
-          ami-fbbf7892.</para>
+          <para>Launches the number of m1.large nodes requested using the
+          provided AMI (ami-e01698d0).</para>
         </listitem>
 
         <listitem>
@@ -352,7 +349,8 @@
         </listitem>
 
         <listitem>
-          <para>Configures Cluster and Support nodes.</para>
+          <para>Configures the requested Thor Cluster, the requested Roxie
+          Cluster, and the required Support nodes.</para>
         </listitem>
 
         <listitem>
@@ -373,7 +371,8 @@
 
         <orderedlist numeration="arabic">
           <listitem>
-            <para>Specify the number of Thor nodes to instantiate.</para>
+            <para>Specify the number of Thor nodes and the number of Roxie
+            nodes to instantiate.</para>
 
             <para><figure>
                 <title>Launch a New Thor Cluster</title>
@@ -384,6 +383,14 @@
                   </imageobject>
                 </mediaobject>
               </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Optionally, specify Snapshot ID(s) to attach data to your
+            landing zone.</para>
+
+            <para>This would be a previously saved "snapshot" of a landing
+            zone data store.</para>
           </listitem>
 
           <listitem>
@@ -550,7 +557,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/AWS_OneClick_003.jpg" />
+                  <imagedata fileref="images/AWS_OneClick_ViewClustersTerminate.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -566,10 +573,9 @@
 
           <para><orderedlist>
               <listitem>
-                <para>Open the <emphasis role="bold">Running
-                Clusters</emphasis> page using the <emphasis
-                role="bluebold">View Clusters</emphasis> Link at the top of a
-                page.</para>
+                <para>Open the <emphasis role="bold">View Clusters</emphasis>
+                page using the <emphasis role="bluebold">View
+                Clusters</emphasis> Link at the top of a page.</para>
 
                 <figure>
                   <title>Running Clusters</title>
@@ -612,7 +618,7 @@
                 system.</para>
 
                 <para>Note: This does not remove the keys from your running
-                cluster. It only removes it from the One-Click system and
+                cluster. It only removes it from the Instant Cloud system and
                 prevents further downloads of the key. Once deleted, there is
                 no way to retrieve the key.</para>
               </listitem>
@@ -628,7 +634,7 @@
     <para></para>
 
     <sect1 id="ECL-on-a-single-node-system" role="nobrk">
-      <title>Running ECL on your HPCC Systems Thor cluster</title>
+      <title>Running ECL on your HPCC Systems cluster</title>
 
       <para>After your platform is running, and you can now create and run
       some ECL<footnote>
@@ -1507,21 +1513,6 @@ s3cmd --configure
 
   <chapter id="NextSteps">
     <title>Next Steps</title>
-
-    <para>From ECL Watch page, click on the <emphasis role="bold">Resources
-    </emphasis> link in the menu on the left side.</para>
-
-    <para><figure>
-        <title>ECL Watch Resource Page</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="images/AWS_ECLWatchNextSteps.jpg" />
-          </imageobject>
-        </mediaobject>
-      </figure></para>
-
-    <para><emphasis role="bold"></emphasis></para>
 
     <para>To familiarize yourself with what your system can do, we recommend
     following the steps in:<itemizedlist spacing="compact">
