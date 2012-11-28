@@ -65,7 +65,7 @@ SEQUENTIAL(
 
   // Delete Super + Rollback (del subs, not really)
   FileServices.StartSuperFileTransaction(),
-  FileServices.DeleteSuperFile('regress::superfile7'),
+  FileServices.DeleteSuperFile('regress::superfile7', true),
   FileServices.FinishSuperFileTransaction(true),    // rollback
   OUTPUT(FileServices.SuperFileExists('regress::superfile7')), // true
   OUTPUT(FileServices.FileExists('regress::subfile1')), // true

@@ -691,7 +691,7 @@ static void dfsunlink(const char *lname, IUserDescriptor *user)
             if (!iter->first())
                 break;
             IDistributedSuperFile *sf = &iter->query();
-            if (sf->removeSubFile(lname,false,false))
+            if (sf->removeSubFile(lname,false))
                 OUTLOG("removed %s from %s",lname,sf->queryLogicalName());
             else
                 ERRLOG("FAILED to remove %s from %s",lname,sf->queryLogicalName());
