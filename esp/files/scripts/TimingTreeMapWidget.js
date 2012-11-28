@@ -16,13 +16,13 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/store/Memory",
 
     "dijit/registry",
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
-    "dijit/layout/ContentPane",
 
     "dojox/treemap/TreeMap",
 
@@ -30,20 +30,17 @@ define([
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
-    function (declare, Memory,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ContentPane,
+    function (declare, lang, Memory,
+            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
             TreeMap,
             ESPWorkunit,
             template) {
         return declare("TimingTreeMapWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
             baseClass: "TimingTreeMapWidget",
-            contentPane: null,
             treeMap: null,
 
-            dataStore: null,
-
-            lastSelection: null,
+            store: null,
 
             buildRendering: function (args) {
                 this.inherited(arguments);
@@ -51,18 +48,14 @@ define([
 
             postCreate: function (args) {
                 this.inherited(arguments);
-                this.contentPane = registry.byId(this.id + "ContentPane");
                 this.treeMap = registry.byId(this.id + "TreeMap");
 
                 var context = this;
-                this.treeMap.on("change", function (e) {
-                    context.lastSelection = e.newValue;
-                });
                 this.treeMap.on("click", function (evt) {
-                    context.onClick(context.lastSelection);
+                    context.onClick(context.treeMap.selectedItems);
                 });
                 this.treeMap.on("dblclick", function (evt) {
-                    context.onDblClick(context.lastSelection);
+                    context.onDblClick(context.treeMap.selectedItem);
                 });
             },
 
@@ -72,7 +65,8 @@ define([
 
             resize: function (args) {
                 this.inherited(arguments);
-                this.contentPane.resize();
+                this.treeMap._dataChanged = true;
+                this.treeMap.resize(args);
             },
 
             layout: function (args) {
@@ -87,14 +81,19 @@ define([
             },
 
             init: function (params) {
+                this.defaultQuery = "*";
+                if (params.query) {
+                    this.defaultQuery = params.query;
+                }
+
                 var context = this;
                 if (params.Wuid) {
                     this.wu = new ESPWorkunit({
-                        wuid: params.Wuid
+                        Wuid: params.Wuid
                     });
                     this.wu.fetchTimers(function (timers) {
                         context.timers = timers;
-                        context.loadTimers(timers, "*");
+                        context.loadTimers(timers, context.defaultQuery);
                     });
                 }
             },
@@ -104,13 +103,20 @@ define([
             },
 
             getSelected: function () {
-                return [{
-                    SubGraphId: this.lastSelection.subGraphId
-                }];
+                return this.treeMap.selectedItems;
             },
 
             setSelected: function (selItems) {
-                //  TODO:  Not sure this possible...
+                if (this.store) {
+                    var selectedItems = [];
+                    for (var i = 0; i < selItems.length; ++i) {
+                        var item = this.store.get(selItems[i]);
+                        if (item) {
+                            selectedItems.push(item);
+                        }
+                    }
+                    this.treeMap.set("selectedItems", selectedItems);
+                }
             },
 
             loadTimers: function (timers, query) {
@@ -119,40 +125,34 @@ define([
                 if (timers) {
                     for (var i = 0; i < timers.length; ++i) {
                         if (timers[i].GraphName && timers[i].SubGraphId && (query == "*" || query == timers[i].GraphName)) {
-                            var value = timers[i].Seconds;
-                            timerData.push({
-                                graphName: timers[i].GraphName,
-                                subGraphId: timers[i].SubGraphId,
-                                label: timers[i].Name,
-                                value: value
-                            });
-                            if (this.largestValue < value * 1000) {
-                                this.largestValue = value * 1000;
+                            timerData.push(timers[i]);
+                            if (this.largestValue < timers[i].Seconds * 1000) {
+                                this.largestValue = timers[i].Seconds * 1000;
                             }
                         }
                     }
                 }
-                var dataStore = new Memory({
-                    idProperty: "sequenceNumber",
+                this.store = new Memory({
+                    idProperty: "SubGraphId",
                     data: timerData
                 });
 
                 var context = this;
+                this.treeMap.set("store", this.store);
+                this.treeMap.set("areaAttr", "Seconds");
                 this.treeMap.set("colorFunc", function (item) {
-                    var redness = 255 * (item.value * 1000 / context.largestValue);
+                    var redness = Math.floor(255 * (item.Seconds * 1000 / context.largestValue));
                     return {
                         r: 255,
                         g: 255 - redness,
                         b: 255 - redness
                     };
                 });
-                this.treeMap.set("areaAttr", "value");
+                this.treeMap.set("groupAttrs", ["GraphName"]);
+                this.treeMap.set("labelAttr", "Name");
                 this.treeMap.set("tooltipFunc", function (item) {
-                    return item.label + " " + item.value;
+                    return item.Name + " " + item.Seconds;
                 });
-                this.treeMap.set("groupAttrs", ["graphName"]);
-
-                this.treeMap.set("store", dataStore);
             }
         });
     });

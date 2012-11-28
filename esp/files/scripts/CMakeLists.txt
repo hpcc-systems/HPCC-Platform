@@ -27,13 +27,16 @@ set ( SCRIPTS_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/effects.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPBase.js
     ${CMAKE_CURRENT_SOURCE_DIR}/espdefault.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/ESPLogicalFile.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPResult.js
     ${CMAKE_CURRENT_SOURCE_DIR}/ESPWorkunit.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/ESPDFUWorkunit.js
     ${CMAKE_CURRENT_SOURCE_DIR}/fixedTables.js
     ${CMAKE_CURRENT_SOURCE_DIR}/graphgvc.js
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphPageWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/InfoGridWidget.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/LFDetailsWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/LogsWidget.js
     ${CMAKE_CURRENT_SOURCE_DIR}/multiselect.js
     ${CMAKE_CURRENT_SOURCE_DIR}/objtree.js

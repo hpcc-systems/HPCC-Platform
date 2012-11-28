@@ -87,10 +87,11 @@ define([
             if (this.isComplete == true) {
                 var request = {};
                 request['Wuid'] = this.wuid;
-                if (this.sequence != null) {
-                    request['Sequence'] = this.sequence;
-                } else {
+                if (this.cluster && this.name) {
+                    request['Cluster'] = this.cluster;
                     request['LogicalName'] = this.name;
+                } else {
+                    request['Sequence'] = this.sequence;
                 }
                 request['Start'] = options.start;
                 request['Count'] = options.count;
