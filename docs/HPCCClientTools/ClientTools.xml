@@ -23,13 +23,15 @@
       Number in the text of the message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. Other products,
-      logos, and services may be trademarks or registered trademarks of their
-      respective companies. All names and example data used in this manual are
-      fictitious. Any similarity to actual persons, living or dead, is purely
-      coincidental.</para>
+      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
+      registered trademark of LexisNexis Risk Data Management Inc.</para>
 
-      <para></para>
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies. All names and
+      example data used in this manual are fictitious. Any similarity to
+      actual persons, living or dead, is purely coincidental.</para>
+
+      <para> </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -50,10 +52,12 @@
     </mediaobject>
   </bookinfo>
 
-  <xi:include href="HPCCClientTools/CT_Mods/CT_Overview_withoutIDE.xml" xpointer="CT_Overview"
+  <xi:include href="HPCCClientTools/CT_Mods/CT_Overview_withoutIDE.xml"
+              xpointer="CT_Overview"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_ECL.xml" xpointer="Command_Line_ECL"
+  <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_ECL.xml"
+              xpointer="Command_Line_ECL"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
   <xi:include href="HPCCClientTools/CT_Mods/CT_ECL_CLI.xml" xpointer="ECL_CLI"
@@ -62,6 +66,7 @@
   <xi:include href="HPCCClientTools/CT_Mods/ECLCC.xml" xpointer="ECL_Compiler"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-  <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_DFU.xml" xpointer="Command_Line_DFU"
+  <xi:include href="HPCCClientTools/CT_Mods/CT_Comm_Line_DFU.xml"
+              xpointer="Command_Line_DFU"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
 </book>
