@@ -412,6 +412,19 @@ static void testSDSRW()
         ERROR("RTM_DELETE_ON_DISCONNECT failed");
 }
 
+/*
+ * This test is invasive, obsolete and the main source of
+ * errors in the DFS code. It was created on a time where
+ * the DFS API was spread open and methods could openly
+ * fiddle with its internals without injury. Times have changed.
+ *
+ * TODO: Convert this test into a proper test of the DFS as
+ * it currently stands, not work around its deficiencies.
+ *
+ * Unfortunately, to do that, some functionality has to be
+ * re-worked (like creating groups, adding files to it,
+ * creating physical temporary files, etc).
+ */
 static void testDFS()
 {
     const size32_t recsize = 17;
@@ -580,7 +593,8 @@ static void testDFS()
         Owned<IDistributedFile> dfile = dir.lookup(s.str(),user);
         if (!dfile)
             ERROR1("Could not find %s",s.str());
-        dfile->detach();
+        // HACK: Please refactor this test so that detachLogical does not need to be exported
+        dfile->detachLogical();
         t = (t+37)%100; 
     }
     printf("DFile removal complete\n");
@@ -1052,6 +1066,14 @@ static void testDFSRename()
         e->Release();
     }
 
+    // To make sure renamed files are cleaned properly
+    printf("Renaming 'regress::rename::other2 to 'sub2' on auto-commit\n");
+    dir.renamePhysical("regress::rename::other2", "regress::rename::sub2", user, transaction);
+    if (!dir.exists("regress::rename::sub2", user, true, false))
+    {
+        ERROR("Renamed from other2 failed");
+        return;
+    }
 }
 
 // ======================================================================= Test Engine

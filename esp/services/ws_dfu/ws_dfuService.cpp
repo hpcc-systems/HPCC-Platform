@@ -1250,7 +1250,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                 else
                 {
                     df.clear(); 
-                    deleted = queryDistributedFileDirectory().removeEntry(logicalFileName.str(), userdesc, NULL, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT); // this can remove clusters also
+                    deleted = queryDistributedFileDirectory().removeEntry(logicalFileName.str(), userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT); // this can remove clusters also
                     if (deleted)
                         returnStr.appendf("<Message><Value>Detached File %s</Value></Message>", logicalFileName.str());
                 }
