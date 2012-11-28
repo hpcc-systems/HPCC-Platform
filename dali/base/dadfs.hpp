@@ -185,10 +185,14 @@ interface IDistributedFileTransaction: extends IInterface
     virtual IDistributedSuperFile *lookupSuperFile(const char *slfn,unsigned timeout=INFINITE)=0;
     virtual IDistributedSuperFile *lookupSuperFileCached(const char *slfn,unsigned timeout=INFINITE)=0;
     virtual IUserDescriptor *queryUser()=0;
-    virtual bool addDelayedDelete(const char *lfn,bool remphys,const char*cluster=NULL,unsigned timeoutms=INFINITE)=0; // used internally to delay deletes untill commit
-    virtual void addAction(CDFAction *action)=0; // internal
+    virtual bool addDelayedDelete(const char *lfn,const char*cluster=NULL,unsigned timeoutms=INFINITE)=0; // used internally to delay deletes until commit
+    virtual void descend()=0;  // descend into a recursive call (can't autoCommit if depth is not zero)
+    virtual void ascend()=0;   // ascend back from the deep, one step at a time
+
+    // MORE: These need refactoring
+    virtual void addAction(CDFAction *action)=0; // internal (so why is this on a public interface?)
     virtual void addFile(IDistributedFile *file)=0; // TODO: avoid this being necessary
-    virtual void clearFiles()=0; // internal
+    virtual void clearFiles()=0; // internal (so why is this on a public interface?)
 };
 
 interface IDistributedSuperFileIterator: extends IIteratorOf<IDistributedSuperFile>
@@ -317,10 +321,8 @@ interface IDistributedSuperFile: extends IDistributedFile
                          )=0;
     virtual bool removeSubFile(const char *subfile,         // if NULL removes all
                                 bool remsub,                // if true removes subfiles from DFS
-                                bool remphys,               // if true removes physical parts of sub file
                                 bool remcontents=false,     // if true removes contents of subfile (assuming it is a superfile)
-                                IDistributedFileTransaction *transaction=NULL,
-                                bool delayed = false)=0;
+                                IDistributedFileTransaction *transaction=NULL)=0;
                             // Note does not delete subfile
     virtual bool swapSuperFile( IDistributedSuperFile *_file,               // swaps sub files
                                 IDistributedFileTransaction *transaction)=0;

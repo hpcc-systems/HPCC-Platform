@@ -778,7 +778,7 @@ public:
         if (toremove.ordinality()) {
             transaction->start();
             ForEachItemIn(i2,toremove)
-                superfile->removeSubFile(toremove.item(i2).text.get(),delsub,delsub,false,transaction);
+                superfile->removeSubFile(toremove.item(i2).text.get(),delsub,false,transaction);
             transaction->commit();
         }
         // Delete superfile if empty

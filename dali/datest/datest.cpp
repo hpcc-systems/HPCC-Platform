@@ -107,7 +107,7 @@ void Test_SuperFile()
 #if 1
     sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"1",UNKNOWN_USER));
     if (sfile) {
-        sfile->removeSubFile(NULL,true,false);
+        sfile->removeSubFile(NULL,true);
         sfile.clear();
         queryDistributedFileDirectory().removeEntry(TEST_SUPER_FILE"1",UNKNOWN_USER);
     }
@@ -176,7 +176,7 @@ void Test_SuperFile()
     transaction->rollback();
     sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"2",UNKNOWN_USER));
     transaction->start();
-    sfile->removeSubFile(TEST_SUB_FILE"1",false,false,false,transaction);
+    sfile->removeSubFile(TEST_SUB_FILE"1",false,false,transaction);
     StringBuffer name(TEST_SUB_FILE"4");
     addTestFile(name.str(),3);
     sfile->addSubFile(name,false,NULL,false,transaction);
@@ -259,7 +259,7 @@ void Test_SuperFile2()
         sfile.setown(queryDistributedFileDirectory().lookupSuperFile(TEST_SUPER_FILE"B1",UNKNOWN_USER));
         printf("NumSubFiles = %d\n",sfile->numSubFiles());
         if (tst==1) {
-            sfile->removeSubFile(NULL,false,false);
+            sfile->removeSubFile(NULL,false);
             printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
         }
         else {
@@ -268,7 +268,7 @@ void Test_SuperFile2()
                 name.append(i+1);
                 Owned<IDistributedFile> sbfile = queryDistributedFileDirectory().lookup(name,UNKNOWN_USER);
                 printf("removing size = %"I64F"d\n",sbfile->getFileSize(false,false));
-                sfile->removeSubFile(name,false,false);
+                sfile->removeSubFile(name,false);
                 printf("sfile size = %"I64F"d\n",sfile->getFileSize(false,false));
             }
         }
