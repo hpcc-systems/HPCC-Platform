@@ -21,7 +21,7 @@ define([
     "hpcc/ESPBase"
 ], function (declare, lang, xhr, ESPResult, ESPBase) {
     return declare(ESPBase, {
-        wuid: "",
+        Wuid: "",
 
         stateID: 0,
         state: "",
@@ -36,6 +36,8 @@ define([
         exceptions: [],
         timers: [],
 
+        WUInfoResponse: {},
+
         onCreate: function () {
         },
         onUpdate: function () {
@@ -44,9 +46,10 @@ define([
         },
         constructor: function (args) {
             declare.safeMixin(this, args);
-
-            if (!this.wuid) {
-                this.create();
+            if (this.Wuid) {
+                this.WUInfoResponse = {
+                    Wuid: this.Wuid
+                }
             }
         },
         isComplete: function () {
@@ -67,41 +70,56 @@ define([
         monitor: function (callback, monitorDuration) {
             if (!monitorDuration)
                 monitorDuration = 0;
-            var request = {};
-            request['Wuid'] = this.wuid;
-            request['rawxml_'] = "1";
+            var request = {
+                Wuid: this.Wuid,
+                TruncateEclTo64k: true,
+                IncludeExceptions: false,
+                IncludeGraphs: false,
+                IncludeSourceFiles: false,
+                IncludeResults: false,
+                IncludeResultsViewNames: false,
+                IncludeVariables: false,
+                IncludeTimers: false,
+                IncludeDebugValues: false,
+                IncludeApplicationValues: false,
+                IncludeWorkflows: false,
+                IncludeXmlSchemas: false,
+                SuppressResultSchemas: true
+            };
 
             var context = this;
             xhr.post({
-                url: this.getBaseURL() + "/WUQuery.json",
+                url: this.getBaseURL() + "/WUInfo.json",
                 handleAs: "json",
                 content: request,
                 load: function (response) {
-                    var workunit = response.WUQueryResponse.Workunits.ECLWorkunit[0];
-                    context.stateID = workunit.StateID;
-                    context.state = workunit.State;
-                    context.protected = workunit.Protected;
-                    if (callback) {
-                        callback(workunit);
-                    }
-
-                    if (!context.isComplete()) {
-                        var timeout = 30;	// Seconds
-
-                        if (monitorDuration < 5) {
-                            timeout = 1;
-                        } else if (monitorDuration < 10) {
-                            timeout = 2;
-                        } else if (monitorDuration < 30) {
-                            timeout = 5;
-                        } else if (monitorDuration < 60) {
-                            timeout = 10;
-                        } else if (monitorDuration < 120) {
-                            timeout = 20;
+                    if (lang.exists("WUInfoResponse.Workunit", response)) {
+                        context.WUInfoResponse = response.WUInfoResponse.Workunit;
+                        context.stateID = context.WUInfoResponse.StateID;
+                        context.state = context.WUInfoResponse.State;
+                        context.protected = context.WUInfoResponse.Protected;
+                        if (callback) {
+                            callback(context.WUInfoResponse);
                         }
-                        setTimeout(function () {
-                            context.monitor(callback, monitorDuration + timeout);
-                        }, timeout * 1000);
+
+                        if (!context.isComplete()) {
+                            var timeout = 30;	// Seconds
+
+                            if (monitorDuration < 5) {
+                                timeout = 1;
+                            } else if (monitorDuration < 10) {
+                                timeout = 2;
+                            } else if (monitorDuration < 30) {
+                                timeout = 5;
+                            } else if (monitorDuration < 60) {
+                                timeout = 10;
+                            } else if (monitorDuration < 120) {
+                                timeout = 20;
+                            }
+                            setTimeout(function () {
+                                context.monitor(callback, monitorDuration + timeout);
+                            }, timeout * 1000);
+                        }
                     }
                 },
                 error: function () {
@@ -119,7 +137,7 @@ define([
                 handleAs: "json",
                 content: request,
                 load: function (response) {
-                    context.wuid = response.WUCreateResponse.Workunit.Wuid;
+                    context.Wuid = response.WUCreateResponse.Workunit.Wuid;
                     context.onCreate();
                 },
                 error: function () {
@@ -128,7 +146,7 @@ define([
         },
         update: function (request, appData, callback) {
             lang.mixin(request, {
-                Wuid: this.wuid,
+                Wuid: this.Wuid,
                 rawxml_: true
             });
             if (this.WUInfoResponse) {
@@ -173,7 +191,7 @@ define([
         },
         submit: function (target) {
             var request = {
-                Wuid: this.wuid,
+                Wuid: this.Wuid,
                 Cluster: target
             };
             request['rawxml_'] = "1";
@@ -192,7 +210,7 @@ define([
         },
         _resubmit: function (clone, resetWorkflow, callback) {
             var request = {
-                Wuids: this.wuid,
+                Wuids: this.Wuid,
                 CloneWorkunit: clone,
                 ResetWorkflow: resetWorkflow,
                 rawxml_: true
@@ -226,7 +244,7 @@ define([
         },
         _action: function (action, callback) {
             var request = {
-                Wuids: this.wuid,
+                Wuids: this.Wuid,
                 ActionType: action,
                 rawxml_: true
             };
@@ -256,7 +274,7 @@ define([
         },
         publish: function (jobName) {
             var request = {
-                Wuid: this.wuid,
+                Wuid: this.Wuid,
                 JobName: jobName,
                 Activate: 1,
                 UpdateWorkUnitName: 1,
@@ -277,9 +295,9 @@ define([
         },
         getInfo: function (args) {
             var request = {
-                Wuid: this.wuid,
+                Wuid: this.Wuid,
                 TruncateEclTo64k: args.onGetText ? false : true,
-                IncludeExceptions: args.onGetExceptions ? true : false,
+                IncludeExceptions: args.onGetWUExceptions ? true : false,
                 IncludeGraphs: args.onGetGraphs ? true : false,
                 IncludeSourceFiles: args.onGetSourceFiles ? true : false,
                 IncludeResults: args.onGetResults ? true : false,
@@ -300,92 +318,92 @@ define([
                 handleAs: "json",
                 content: request,
                 load: function (response) {
-                    //var workunit = context.getValue(xmlDom, "Workunit", ["ECLException", "ECLResult", "ECLGraph", "ECLTimer", "ECLSchemaItem", "ApplicationValue"]);
-                    var workunit = response.WUInfoResponse.Workunit;
-                    context.WUInfoResponse = workunit;
+                    if (lang.exists("WUInfoResponse.Workunit", response)) {
+                        context.WUInfoResponse = response.WUInfoResponse.Workunit;
 
-                    if (args.onGetText && workunit.Query.Text) {
-                        context.text = workunit.Query.Text;
-                        args.onGetText(context.text);
-                    }
-                    if (args.onGetExceptions && workunit.Exceptions && workunit.Exceptions.ECLException) {
-                        context.exceptions = [];
-                        for (var i = 0; i < workunit.Exceptions.ECLException.length; ++i) {
-                            context.exceptions.push(workunit.Exceptions.ECLException[i]);
+                        if (args.onGetText && lang.exists("Query.Text", context.WUInfoResponse)) {
+                            context.text = context.WUInfoResponse.Query.Text;
+                            args.onGetText(context.text);
                         }
-                        args.onGetExceptions(context.exceptions);
-                    }
-                    if (args.onGetApplicationValues && workunit.ApplicationValues && workunit.ApplicationValues.ApplicationValue) {
-                        context.applicationValues = workunit.ApplicationValues.ApplicationValue;
-                        args.onGetApplicationValues(context.applicationValues)
-                    }
-                    if (args.onGetVariables && workunit.Variables && workunit.Variables.ECLResult) {
-                        context.variables = [];
-                        var variables = workunit.Variables.ECLResult;
-                        for (var i = 0; i < variables.length; ++i) {
-                            context.variables.push(lang.mixin({
-                                ColumnType: variables[i].ECLSchemas && variables[i].ECLSchemas.ECLSchemaItem.length ? variables[i].ECLSchemas.ECLSchemaItem[0].ColumnType : "unknown"
-                            }, variables[i]));
-                        }
-                        args.onGetVariables(context.variables);
-                    }
-                    if (args.onGetResults && workunit.Results && workunit.Results.ECLResult) {
-                        context.results = [];
-                        var results = workunit.Results.ECLResult;
-                        for (var i = 0; i < results.length; ++i) {
-                            context.results.push(new ESPResult(lang.mixin({ wuid: context.wuid }, results[i])));
-                        }
-                        args.onGetResults(context.results);
-                    }
-                    if (args.onGetSourceFiles && workunit.SourceFiles && workunit.SourceFiles.ECLSourceFile) {
-                        context.sourceFiles = [];
-                        var sourceFiles = workunit.SourceFiles.ECLSourceFile;
-                        for (var i = 0; i < sourceFiles.length; ++i) {
-                            context.sourceFiles.push(new ESPResult(lang.mixin({ wuid: context.wuid }, sourceFiles[i])));
-                        }
-                        args.onGetSourceFiles(context.sourceFiles);
-                    }
-                    if (args.onGetTimers && workunit.Timers && workunit.Timers.ECLTimer) {
-                        context.timers = [];
-                        for (var i = 0; i < workunit.Timers.ECLTimer.length; ++i) {
-                            var timeParts = workunit.Timers.ECLTimer[i].Value.split(":");
-                            var secs = 0;
-                            for (var j = 0; j < timeParts.length; ++j) {
-                                secs = secs * 60 + timeParts[j] * 1;
+                        if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context.WUInfoResponse)) {
+                            context.exceptions = [];
+                            for (var i = 0; i < context.WUInfoResponse.Exceptions.ECLException.length; ++i) {
+                                context.exceptions.push(context.WUInfoResponse.Exceptions.ECLException[i]);
                             }
-
-                            context.timers.push(lang.mixin(workunit.Timers.ECLTimer[i], {
-                                Seconds: Math.round(secs * 1000) / 1000,
-                                HasSubGraphId: workunit.Timers.ECLTimer[i].SubGraphId && workunit.Timers.ECLTimer[i].SubGraphId != "" ? true : false
-                            }));
+                            args.onGetWUExceptions(context.exceptions);
                         }
-                        args.onGetTimers(context.timers);
-                    }
-                    if (args.onGetGraphs && workunit.Graphs && workunit.Graphs.ECLGraph) {
-                        context.graphs = workunit.Graphs.ECLGraph;
-                        if (context.timers || context.applicationValues) {
-                            for (var i = 0; i < context.graphs.length; ++i) {
-                                if (context.timers) {
-                                    context.graphs[i].Time = 0;
-                                    for (var j = 0; j < context.timers.length; ++j) {
-                                        if (context.timers[j].GraphName == context.graphs[i].Name) {
-                                            context.graphs[i].Time += context.timers[j].Seconds;
+                        if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context.WUInfoResponse)) {
+                            context.applicationValues = context.WUInfoResponse.ApplicationValues.ApplicationValue;
+                            args.onGetApplicationValues(context.applicationValues)
+                        }
+                        if (args.onGetVariables && lang.exists("Variables.ECLResult", context.WUInfoResponse)) {
+                            context.variables = [];
+                            var variables = context.WUInfoResponse.Variables.ECLResult;
+                            for (var i = 0; i < variables.length; ++i) {
+                                context.variables.push(lang.mixin({
+                                    ColumnType: variables[i].ECLSchemas && variables[i].ECLSchemas.ECLSchemaItem.length ? variables[i].ECLSchemas.ECLSchemaItem[0].ColumnType : "unknown"
+                                }, variables[i]));
+                            }
+                            args.onGetVariables(context.variables);
+                        }
+                        if (args.onGetResults && lang.exists("Results.ECLResult", context.WUInfoResponse)) {
+                            context.results = [];
+                            var results = context.WUInfoResponse.Results.ECLResult;
+                            for (var i = 0; i < results.length; ++i) {
+                                context.results.push(new ESPResult(lang.mixin({ wu: context, Wuid: context.Wuid }, results[i])));
+                            }
+                            args.onGetResults(context.results);
+                        }
+                        if (args.onGetSourceFiles && lang.exists("SourceFiles.ECLSourceFile", context.WUInfoResponse)) {
+                            context.sourceFiles = [];
+                            var sourceFiles = context.WUInfoResponse.SourceFiles.ECLSourceFile;
+                            for (var i = 0; i < sourceFiles.length; ++i) {
+                                context.sourceFiles.push(new ESPResult(lang.mixin({ wu: context, Wuid: context.Wuid }, sourceFiles[i])));
+                            }
+                            args.onGetSourceFiles(context.sourceFiles);
+                        }
+                        if (args.onGetTimers && lang.exists("Timers.ECLTimer", context.WUInfoResponse)) {
+                            context.timers = [];
+                            for (var i = 0; i < context.WUInfoResponse.Timers.ECLTimer.length; ++i) {
+                                var timeParts = context.WUInfoResponse.Timers.ECLTimer[i].Value.split(":");
+                                var secs = 0;
+                                for (var j = 0; j < timeParts.length; ++j) {
+                                    secs = secs * 60 + timeParts[j] * 1;
+                                }
+
+                                context.timers.push(lang.mixin(context.WUInfoResponse.Timers.ECLTimer[i], {
+                                    Seconds: Math.round(secs * 1000) / 1000,
+                                    HasSubGraphId: context.WUInfoResponse.Timers.ECLTimer[i].SubGraphId && context.WUInfoResponse.Timers.ECLTimer[i].SubGraphId != "" ? true : false
+                                }));
+                            }
+                            args.onGetTimers(context.timers);
+                        }
+                        if (args.onGetGraphs && lang.exists("Graphs.ECLGraph", context.WUInfoResponse)) {
+                            context.graphs = context.WUInfoResponse.Graphs.ECLGraph;
+                            if (context.timers || context.applicationValues) {
+                                for (var i = 0; i < context.graphs.length; ++i) {
+                                    if (context.timers) {
+                                        context.graphs[i].Time = 0;
+                                        for (var j = 0; j < context.timers.length; ++j) {
+                                            if (context.timers[j].GraphName == context.graphs[i].Name) {
+                                                context.graphs[i].Time += context.timers[j].Seconds;
+                                            }
+                                            context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                         }
-                                        context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                     }
-                                }
-                                if (context.applicationValues) {
-                                    var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
-                                    if (idx >= 0) {
-                                        context.graphs[i].svg = context.applicationValues[idx].Value;
+                                    if (context.applicationValues) {
+                                        var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
+                                        if (idx >= 0) {
+                                            context.graphs[i].svg = context.applicationValues[idx].Value;
+                                        }
                                     }
                                 }
                             }
+                            args.onGetGraphs(context.graphs)
                         }
-                        args.onGetGraphs(context.graphs)
-                    }
-                    if (args.onGetAll) {
-                        args.onGetAll(workunit);
+                        if (args.onGetAll) {
+                            args.onGetAll(context.WUInfoResponse);
+                        }
                     }
                 },
                 error: function (e) {
@@ -410,6 +428,35 @@ define([
         },
         getState: function () {
             return this.state;
+        },
+        getStateIconClass: function () {
+            switch (this.stateID) {
+                case 1:
+                case 3:
+                    return "iconCompleted";
+                case 2:
+                case 11:
+                case 15:
+                    return "iconRunning";                
+                case 4:
+                case 7:
+                    return "iconFailed";
+                case 5:
+                case 8:
+                case 10:
+                case 12:
+                case 13:
+                case 14:
+                case 16:
+                    return "iconArchived";
+                case 6:
+                    return "iconAborting";                                
+                case 9:
+                    return "iconSubmitted";                
+                case 999:
+                    return "iconDeleted";
+            }
+            return "iconWorkunit";
         },
         getStateImage: function () {
             switch (this.stateID) {
@@ -443,6 +490,8 @@ define([
                     return "img/workunit_warning.png";
                 case 15:
                     return "img/workunit_running.png";
+                case 16:
+                    return "img/workunit_warning.png";
                 case 999:
                     return "img/workunit_deleted.png";
             }
@@ -471,7 +520,7 @@ define([
             }
 
             var request = {
-                Wuid: this.wuid,
+                Wuid: this.Wuid,
                 Type: "XML"
             };
 
@@ -526,7 +575,7 @@ define([
         },
         fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
             var request = {};
-            request['Wuid'] = this.wuid;
+            request['Wuid'] = this.Wuid;
             request['GraphName'] = this.graphs[idx].Name;
             request['rawxml_'] = "1";
 

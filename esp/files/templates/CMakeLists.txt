@@ -19,6 +19,7 @@ set ( TEMPLATES_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphPageWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/GraphWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/InfoGridWidget.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/LFDetailsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/LogsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/ResultsWidget.html
     ${CMAKE_CURRENT_SOURCE_DIR}/SampleSelectWidget.html

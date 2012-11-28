@@ -92,8 +92,8 @@ define([
                 this.hideTitle();
             }
 
-            this.wuid = params.Wuid;
-            this.targetSelectWidget.setValue(params.Target);
+            this.Wuid = params.Wuid;
+            this.targetSelectWidget.init(params);
 
             this.initEditor();
             this.editorControl.init(params);
@@ -102,10 +102,10 @@ define([
             this.initGraph();
             if (params.Wuid) {
                 this.wu = new Workunit({
-                    wuid: params.Wuid
+                    Wuid: params.Wuid
                 });
                 this.wu.monitor(function () {
-                    context.monitorEclPlayground();
+                    context.monitorWorkunit();
                 });
             } else {
                 this.initSamples();
@@ -155,12 +155,12 @@ define([
             this.resultsWidget.clear();
         },
 
-        monitorEclPlayground: function () {
+        monitorWorkunit: function () {
             dom.byId(this.id + "Status").innerHTML = this.wu.state;
             var context = this;
             if (this.wu.isComplete()) {
                 this.wu.getInfo({
-                    onGetExceptions: function (exceptions) {
+                    onGetWUExceptions: function (exceptions) {
                         context.displayExceptions(exceptions);
                     },
                     onGetResults: function (results) {
@@ -218,10 +218,11 @@ define([
                 },
                 onSubmit: function () {
                     context.wu.monitor(function () {
-                        context.monitorEclPlayground();
+                        context.monitorWorkunit();
                     });
                 }
             });
+            this.wu.create();
         }
     });
 });

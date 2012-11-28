@@ -65,9 +65,38 @@ define([
 
             //  Plugin wrapper  ---
             init: function (params) {
+                var context = this;
                 this.timingGrid.init(params);
-                this.timingTreeMap.init(params);
-            }
+                this.timingGrid.onClick = function (items) {
+                    context.syncSelectionFrom(context.timingGrid);
+                };
 
+                this.timingTreeMap.init(params);
+                this.timingTreeMap.onClick = function (value) {
+                    context.syncSelectionFrom(context.timingTreeMap);
+                }
+            },
+
+            syncSelectionFrom: function (sourceControl) {
+                var selItems = [];
+
+                //  Get Selected Items  ---
+                if (sourceControl == this.timingGrid || sourceControl == this.timingTreeMap) {
+                    var items = sourceControl.getSelected();
+                    for (var i = 0; i < items.length; ++i) {
+                        if (items[i].SubGraphId) {
+                            selItems.push(items[i].SubGraphId);
+                        }
+                    }
+                }
+
+                //  Set Selected Items  ---
+                if (sourceControl != this.timingGrid) {
+                    this.timingGrid.setSelected(selItems);
+                }
+                if (sourceControl != this.timingTreeMap) {
+                    this.timingTreeMap.setSelected(selItems);
+                }
+            }
         });
     });

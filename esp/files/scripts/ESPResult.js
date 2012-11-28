@@ -16,6 +16,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/Deferred",
+    "dojo/_base/lang",
     "dojo/data/ObjectStore",
     "dojo/dom-construct",
 
@@ -25,7 +26,7 @@ define([
 
     "hpcc/WsWorkunits",
     "hpcc/ESPBase"
-], function (declare, Deferred, ObjectStore, domConstruct,
+], function (declare, Deferred, lang, ObjectStore, domConstruct,
             parser, DomParser, entities,
             WsWorkunits, ESPBase) {
     return declare(ESPBase, {
@@ -36,13 +37,14 @@ define([
             declare.safeMixin(this, args);
             if (this.Sequence != null) {
                 this.store = new WsWorkunits.WUResult({
-                    wuid: this.wuid,
+                    wuid: this.Wuid,
                     sequence: this.Sequence,
                     isComplete: this.isComplete()
                 });
             } else {
                 this.store = new WsWorkunits.WUResult({
-                    wuid: this.wuid,
+                    wuid: this.Wuid,
+                    cluster: this.Cluster,
                     name: this.Name,
                     isComplete: true
                 });
@@ -62,6 +64,15 @@ define([
 
         isComplete: function () {
             return this.Total != "-1";
+        },
+
+        canShowResults: function () {
+            if (lang.exists("Sequence", this)) { //  Regular WU result
+                return true;
+            } else if (lang.exists("RecordCount", this) && this.RecordCount != "") { //  DFU Sprayed CSV File will fail here
+                return true;
+            }
+            return false;
         },
 
         getFirstSchemaNode: function (node, name) {
@@ -189,7 +200,7 @@ define([
                     cells: [
                         [
                             {
-                                name: "##", field: this.store.idProperty, width: "40px", classes: "resultGridCell"
+                                name: "##", field: this.store.idProperty, width: "6", classes: "resultGridCell"
                             }
                         ]
                     ]
@@ -288,6 +299,13 @@ define([
             return ObjectStore({
                 objectStore: this.store
             });
+        },
+
+        getLoadingMessage: function () {
+            if (lang.exists("wu.state", this)) {
+                return "<span class=\'dojoxGridWating\'>[" + this.wu.state + "]</span>";
+            }
+            return "<span class=\'dojoxGridWating\'>[unknown]</span>";
         },
 
         getECLRecord: function () {

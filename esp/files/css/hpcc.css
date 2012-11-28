@@ -29,11 +29,6 @@ html, body {
 }
 
 
-#borderContainer { width:100%; height:100% }
-
-#helpAction, #helpScope{
-width:12px; height:12px; }
-
 button {
     background-position: top;
     padding: 2px 8px 4px;
@@ -57,24 +52,91 @@ h1 {
     font-size: 1.5em;
 }
 
-.CodeMirror {
-}
-.CodeMirror-scroll {
-    position: absolute;
-    height: 100%;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
+#myProgressBar{
+    width:200px;
 }
 
-.claro .hpccApp .topPanel {
-    background-color: rgb(208, 233, 252);
+
+.rounded{
+border-radius: 5px;
+-moz-border-radius:10px;
+-webkit-border-radius:10px;
+-khtml-border-radius:10px;
+box-shadow: inset 0 2px 0 #fff;
+background:rgb(244,244,244);
+padding:10px;
+margin:10px 0;
+border:solid 1px rgb(214,214,214); ;
 }
 
-.claro .hpccApp .edgePanel {
-    background-color: rgb(208, 233, 252);
+form {
+    margin:0;
+    padding:0;
+    width:100%;
 }
+
+#longList label{
+    float: left;
+    width: 14%;
+    margin: 0 15px 0 0;
+    text-align: right;
+    padding-top: 4px;
+    font-weight:bold;
+    height:20px;
+
+}
+
+form label{
+    float: left;
+    width: 14%;
+    margin: 0 15px 0 0;
+    text-align: left;
+    padding-top: 4px;
+    font-weight:bold;
+    height:20px;
+}
+
+form textarea{
+    font-size: 13px;
+    font-family: Arial;
+    width:auto;
+    height:auto;
+    float:left;
+}
+
+
+form ul{
+    list-style:none;
+    margin:0;
+    padding:0;
+}
+
+form li{
+    margin: 0;
+    padding: 6px 1% 9px 1%;
+    clear: both;
+    position: relative;
+    height:20px;
+}
+
+form div{
+    margin:4px 0 0 0;
+}
+
+form h2{
+    padding:5px 0;
+}
+
+#borderContainer {
+    width:100%;
+    height:100%;
+}
+
+#helpAction, #helpScope{
+    width:12px; 
+    height:12px;
+}
+
 
 #appLayout {
     height: 100%;
@@ -104,7 +166,6 @@ h1 {
     overflow: hidden;
 }
 
-
 /*start styles for WUDetails*/
     #container{
         width:960px;
@@ -120,37 +181,24 @@ h1 {
         padding-left:10px;
     }
 
-    table{
-        margin-left:5px;
-    }
-
-
-   table tr td:first-child{
-    padding : 10px 20px 10px 0px;
-    font-size:13px;
-    font-weight:normal;
+   
+.CodeMirror {
+}
+.CodeMirror-scroll {
+    position: absolute;
+    height: 100%;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
 }
 
-
-
-
-form {
-    margin-left:10px;
+.claro .hpccApp .topPanel {
+    background-color: rgb(208, 233, 252);
 }
 
-form textarea{
-    font-size: 13px;
-    font-family: Arial;
-    width:170px;}
-
-
-
-form div{
-    padding:5px 0px 10px 0px;  
-}
-
-form h2{
-    padding:5px 0px;
+.claro .hpccApp .edgePanel {
+    background-color: rgb(208, 233, 252);
 }
 
 
@@ -160,18 +208,86 @@ form h2{
 
 }
 
-
 .iconAlign{
     vertical-align: middle;
 }
 
 .iconRefresh {
-	background-image: url("../img/refresh2.png"); 
-	width: 16px;
-	height: 16px;
+    background-image: url("../img/refresh2.png"); 
+    width: 16px;
+    height: 16px;
 }
 
-/*dijit specific styles*/
+.iconLogicalFile {
+    background-image: url("../img/folder_table.png"); 
+    width: 16px;
+    height: 16px;
+}
+
+
+
+/*STATES*/
+.iconWorkunit {
+    background-image: url("../img/workunit.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+
+.iconCompiled, .iconCompleted{
+    background-image: url("../img/workunit_completed.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+
+}
+
+.iconRunning, .iconCompiling, .iconDebugRunning {
+    background-image: url("../img/workunit_running.png"); 
+    width: 16px;
+    height: 16px; 
+    display: inline-block;  
+}
+
+.iconFailed, .iconStateAborted{
+    background-image: url("../img/workunit_failed.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+
+.iconArchived, .iconBlocked, .iconScheduled, .iconWait, .iconUploadingFiles, .iconDebugPaused{
+    background-image: url("../img/workunit_warning.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;    
+}
+
+.iconAborting{
+    background-image: url("../img/workunit_aborting.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconSubmitted{
+    background-image: url("../img/workunit_submitted.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+.iconDeleted{
+    background-image: url("../img/workunit_deleted.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
+
+
 
 .ErrorCell{
 background: red;
@@ -181,12 +297,6 @@ color: white;
 .WarningCell{
 background: yellow;
 }
-
-.showDescription{
-    padding:10px;
-    height:100px;   
-}
-
 
 
 /* CAN WE MOVE AND REPLACE Prompt with this instead?.bold{

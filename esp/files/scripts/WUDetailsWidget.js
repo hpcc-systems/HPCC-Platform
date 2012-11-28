@@ -15,37 +15,38 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/xhr",
     "dojo/dom",
+    "dojo/dom-class",
     "dojo/store/Memory",
     "dojo/data/ObjectStore",
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
-    "dijit/layout/BorderContainer",
-    "dijit/layout/TabContainer",
-    "dijit/layout/ContentPane",
-    "dijit/Toolbar",
-    "dijit/TooltipDialog",
-    "dijit/form/Textarea",
-    "dijit/form/Button",
-    "dijit/TitlePane",
     "dijit/registry",
 
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/SampleSelectWidget",
-    "hpcc/GraphWidget",
+    "hpcc/GraphsWidget",
     "hpcc/ResultsWidget",
     "hpcc/InfoGridWidget",
     "hpcc/LogsWidget",
     "hpcc/ESPWorkunit",
 
-    "dojo/text!../templates/WUDetailsWidget.html"
-], function (declare, xhr, dom, Memory, ObjectStore,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Textarea, Button, TitlePane, registry,
-                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, LogsWidget, Workunit,
+    "dojo/text!../templates/WUDetailsWidget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/TabContainer",
+    "dijit/layout/ContentPane",
+    "dijit/form/Textarea",
+    "dijit/form/Button",
+    "dijit/Toolbar",
+    "dijit/TooltipDialog",
+    "dijit/TitlePane"
+], function (declare, dom, domClass, Memory, ObjectStore,
+                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, Workunit,
                 template) {
     return declare("WUDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -68,6 +69,8 @@ define([
         playgroundWidgetLoaded: false,
         xmlWidget: null,
         xmlWidgetLoaded: false,
+        legacyPane: null,
+        legacyPaneLoaded: false,
 
         wu: null,
         prevState: "",
@@ -89,49 +92,58 @@ define([
             this.playgroundWidget = registry.byId(this.id + "Playground");
             this.xmlWidget = registry.byId(this.id + "XML");
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
+            this.legacyPane = registry.byId(this.id + "Legacy");
+
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
                 if (nval.id == context.id + "Results" && !context.resultsWidgetLoaded) {
                     context.resultsWidgetLoaded = true;
                     context.resultsWidget.init({
-                        Wuid: context.wu.wuid
+                        Wuid: context.wu.Wuid
                     });
                 } else if (nval.id == context.id + "Files" && !context.filesWidgetLoaded) {
                     context.filesWidgetLoaded = true;
                     context.filesWidget.init({
-                        Wuid: context.wu.wuid,
+                        Wuid: context.wu.Wuid,
                         SourceFiles: true
                     });
                 } else if (nval.id == context.id + "Timers" && !context.timersWidgetLoaded) {
                     context.timersWidgetLoaded = true;
                     context.timersWidget.init({
-                        Wuid: context.wu.wuid
+                        Wuid: context.wu.Wuid
                     });
                 } else if (nval.id == context.id + "Graphs" && !context.graphsWidgetLoaded) {
                     context.graphsWidgetLoaded = true;
                     context.graphsWidget.init({
-                        Wuid: context.wu.wuid
+                        Wuid: context.wu.Wuid
                     });
                 } else if (nval.id == context.id + "Source" && !context.sourceWidgetLoaded) {
                     context.sourceWidgetLoaded = true;
                     context.sourceWidget.init({
-                        Wuid: context.wu.wuid
+                        Wuid: context.wu.Wuid
                     });
                 } else if (nval.id == context.id + "Logs" && !context.logsWidgetLoaded) {
                     context.logsWidgetLoaded = true;
                     context.logsWidget.init({
-                        Wuid: context.wu.wuid
+                        Wuid: context.wu.Wuid
                     });
                 } else if (nval.id == context.id + "Playground" && !context.playgroundWidgetLoaded) {
                     context.playgroundWidgetLoaded = true;
                     context.playgroundWidget.init({
-                        Wuid: context.wu.wuid
+                        Wuid: context.wu.Wuid,
+                        Target: context.wu.WUInfoResponse.Cluster
                     });
                 } else if (nval.id == context.id + "XML" && !context.xmlWidgetLoaded) {
                     context.xmlWidgetLoaded = true;
                     context.xmlWidget.init({
-                        Wuid: context.wu.wuid
+                        Wuid: context.wu.Wuid
                     });
+                } else if (nval.id == context.id + "Legacy" && !context.legacyPaneLoaded) {
+                    context.legacyPaneLoaded = true;
+                    context.legacyPane.set("content", dojo.create("iframe", {
+                        src: "/WsWorkunits/WUInfo?Wuid=" + context.wu.Wuid + "&IncludeExceptions=0&IncludeGraphs=0&IncludeSourceFiles=0&IncludeResults=0&IncludeVariables=0&IncludeTimers=0&IncludeDebugValues=0&IncludeApplicationValues=0&IncludeWorkflows&SuppressResultSchemas=1",
+                        style: "border: 0; width: 100%; height: 100%"
+                    }));
                 }
             });
         },
@@ -151,11 +163,11 @@ define([
 
         //  Hitched actions  ---
         _onSave: function (event) {
-            var protectedCheckbox = registry.byId("showProtected");
+            var protectedCheckbox = registry.byId(this.id + "Protected");
             var context = this;
             this.wu.update({
-                Description: dom.byId("showDescription").value,
-                Jobname: dom.byId("showJobName").value,
+                Description: dom.byId(context.id + "Description").value,
+                Jobname: dom.byId(context.id + "JobName").value,
                 Protected: protectedCheckbox.get("value")
             }, null, {
                 load: function (response) {
@@ -205,16 +217,17 @@ define([
             });
         },
         _onPublish: function (event) {
-            this.wu.publish(dom.byId("showJobName2").value);
+            this.wu.publish(dom.byId(this.id + "JobName2").value);
         },
 
         //  Implementation  ---
         init: function (params) {
             if (params.Wuid) {
+                registry.byId(this.id + "Summary").set("title", params.Wuid);
+
                 dom.byId(this.id + "Wuid").innerHTML = params.Wuid;
-                dom.byId(this.id + "Wuid2").innerHTML = params.Wuid;
                 this.wu = new Workunit({
-                    wuid: params.Wuid
+                    Wuid: params.Wuid
                 });
                 this.monitor();
             }
@@ -225,7 +238,7 @@ define([
             var prevState = "";
             var context = this;
             this.wu.monitor(function (workunit) {
-                context.monitorEclPlayground(workunit);
+                context.monitorWorkunit(workunit);
             });
         },
 
@@ -250,7 +263,7 @@ define([
             return text;
         },
 
-        monitorEclPlayground: function (response) {
+        monitorWorkunit: function (response) {
             registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete());
             //registry.byId(this.id + "Reload").set("disabled", this.wu.isComplete());
             registry.byId(this.id + "Clone").set("disabled", !this.wu.isComplete());
@@ -259,22 +272,22 @@ define([
             registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete());
             registry.byId(this.id + "Restart").set("disabled", !this.wu.isComplete());
             registry.byId(this.id + "Publish").set("disabled", !this.wu.isComplete());
+            
+            registry.byId(this.id + "JobName").set("readOnly", !this.wu.isComplete());
+            registry.byId(this.id + "Description").set("readOnly", !this.wu.isComplete());
+            registry.byId(this.id + "Protected").set("readOnly", !this.wu.isComplete());
 
-            registry.byId("showJobName").set("readOnly", !this.wu.isComplete());
-            registry.byId("showDescription").set("readOnly", !this.wu.isComplete());
-            registry.byId("showProtected").set("readOnly", !this.wu.isComplete());
+            registry.byId(this.id + "Summary").set("iconClass",this.wu.getStateIconClass());
+            domClass.remove(this.id + "StateIdImage");
+            domClass.add(this.id + "StateIdImage", this.wu.getStateIconClass());
 
-            dom.byId("showStateIdImage").src = this.wu.getStateImage();
-            dom.byId("showStateIdImage").title = response.State;
-            dom.byId("showStateIdImage2").src = this.wu.getStateImage();
-            dom.byId("showStateIdImage2").title = response.State;
-            dom.byId("showProtectedImage").src = this.wu.getProtectedImage();
-            dom.byId("showProtectedImage2").src = this.wu.getProtectedImage();
-            dom.byId("showState").innerHTML = response.State;
-            dom.byId("showOwner").innerHTML = response.Owner;
-            dom.byId("showJobName").value = response.Jobname;
-            dom.byId("showJobName2").value = response.Jobname;
-            dom.byId("showCluster").innerHTML = response.Cluster;
+            //dom.byId(this.id + "StateIdImage").title = response.State;
+            dom.byId(this.id + "ProtectedImage").src = this.wu.getProtectedImage();
+            dom.byId(this.id + "State").innerHTML = response.State;
+            dom.byId(this.id + "Owner").innerHTML = response.Owner;
+            dom.byId(this.id + "JobName").value = response.Jobname;
+            dom.byId(this.id + "JobName2").value = response.Jobname;
+            dom.byId(this.id + "Cluster").innerHTML = response.Cluster;
 
             var context = this;
             if (this.wu.isComplete() || this.prevState != response.State) {
@@ -327,7 +340,7 @@ define([
                             if (response[i].GraphName)
                                 continue;
                             if (response[i].Name == "Process")
-                                dom.byId("showTime").innerHTML = response[i].Value;
+                                dom.byId(context.id + "Time").innerHTML = response[i].Value;
                             if (tooltip != "")
                                 tooltip += "\n";
                             tooltip += response[i].Name;
@@ -358,12 +371,16 @@ define([
                         if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
                             helpersCount += response.ThorLogList.ThorLogInfo.length;
                         }
+                        if (response.HasArchiveQuery) {
+                            helpersCount += 1;
+                        }
+
                         context.logsWidget.set("title", "Helpers " + "(" + helpersCount + ")");
                         //dom.byId(context.id + "WUInfoResponse").innerHTML = context.objectToText(response);
-                        dom.byId("showDescription").value = response.Description;
-                        dom.byId("showAction").innerHTML = response.ActionEx;
-                        dom.byId("showScope").innerHTML = response.Scope;
-                        var protectedCheckbox = registry.byId("showProtected");
+                        dom.byId(context.id + "Description").value = response.Description;
+                        dom.byId(context.id + "Action").innerHTML = response.ActionEx;
+                        dom.byId(context.id + "Scope").innerHTML = response.Scope;
+                        var protectedCheckbox = registry.byId(context.id + "Protected");
                         protectedCheckbox.set("value", response.Protected);
                     }
                 });

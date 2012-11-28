@@ -17,29 +17,36 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/array",
-    "dojo/store/Memory",
-    "dojo/data/ObjectStore",
 
     "dijit/registry",
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
 
-    "dojox/grid/DataGrid",
+    "dojox/data/AndOrReadStore",
 
     "hpcc/ESPWorkunit",
 
-    "dojo/text!../templates/InfoGridWidget.html"
+    "dojo/text!../templates/InfoGridWidget.html",
+
+    "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane",
+    "dijit/form/CheckBox",
+    "dojox/grid/DataGrid"
 ],
-    function (declare, array, Memory, ObjectStore,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
-            DataGrid,
+    function (declare, array, 
+            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
+            AndOrReadStore,
             ESPWorkunit,
             template) {
         return declare("InfoGridWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
             baseClass: "InfoGridWidget",
+            borderContainer: null,
             infoGrid: null,
+            errorsCheck: null,
+            warningsCheck: null,
+            infoCheck: null,
 
             dataStore: null,
 
@@ -64,21 +71,30 @@ define([
 
             postCreate: function (args) {
                 this.inherited(arguments);
+                this.borderContainer = registry.byId(this.id + "BorderContainer");
                 this.infoGrid = registry.byId(this.id + "InfoGrid");
+                this.errorsCheck = registry.byId(this.id + "Errors");
+                this.warningsCheck = registry.byId(this.id + "Warnings");
+                this.infoCheck = registry.byId(this.id + "Info");
 
                 var context = this;
                 this.infoGrid.setStructure([
                     { name: "Severity", field: "Severity", width: 8, formatter: context.test },
-                    { name: "Source", field: "Source", width: 10 },
+                    { name: "Source", field: "Source", width: 8 },
                     { name: "Code", field: "Code", width: 4 },
-                    { name: "Message", field: "Message", width: "100%" }
+                    { name: "Message", field: "Message", width: "40" },
+                    { name: "Col", field: "Column", width: 3 },
+                    { name: "Line", field: "LineNo", width: 3 },
+                    { name: "FileName", field: "FileName", width: "40" }
                 ]);
-
+                
                 this.infoGrid.on("RowClick", function (evt) {
-                });
-
-                this.infoGrid.on("RowDblClick", function (evt) {
-                });
+                    var idx = evt.rowIndex;
+                    var item = this.getItem(idx);
+                    var line = parseInt(this.store.getValue(item, "LineNo"), 10);
+                    var col = parseInt(this.store.getValue(item, "Column"), 10);
+                    context.onErrorClick(line, col);
+                }, true);
             },
 
             startup: function (args) {
@@ -87,11 +103,26 @@ define([
 
             resize: function (args) {
                 this.inherited(arguments);
-                this.infoGrid.resize();
+                this.borderContainer.resize();
             },
 
             layout: function (args) {
                 this.inherited(arguments);
+            },
+
+            onErrorClick: function(line, col) {
+            },
+
+            _onErrors: function (args) {
+                this.refreshFilter();
+            },
+
+            _onWarnings: function (args) {
+                this.refreshFilter();
+            },
+
+            _onInfo: function (args) {
+                this.refreshFilter();
             },
 
             //  Plugin wrapper  ---
@@ -109,38 +140,45 @@ define([
                 this.infoGrid.edit.styleRow(row);
             },
 
-            onClick: function (items) {
-            },
-
-            onDblClick: function (item) {
-            },
-
             init: function (params) {
+                if (params.onErrorClick) {
+                    this.onErrorClick = params.onErrorClick;
+                }
+                
                 this.wu = new ESPWorkunit({
-                    wuid: params.Wuid
+                    Wuid: params.Wuid
                 });
 
                 var context = this;
                 this.wu.monitor(function () {
                     context.wu.getInfo({
-                        onGetExceptions: function (exceptions) {
+                        onGetWUExceptions: function (exceptions) {
                             context.loadExceptions(exceptions);
                         }
                     });
                 });
             },
 
-            setQuery: function (graphName) {
-                if (!graphName || graphName == "*") {
-                    this.infoGrid.setQuery({
-                        GraphName: "*"
-                    });
-                } else {
-                    this.infoGrid.setQuery({
-                        GraphName: graphName,
-                        HasSubGraphId: true
-                    });
+            refreshFilter: function (graphName) {
+                var filter = "";
+                if (this.errorsCheck.get("checked")) {
+                    filter = "Severity: 'Error'";
                 }
+                if (this.warningsCheck.get("checked")) {
+                    if (filter.length) {
+                        filter += " OR ";
+                    }
+                    filter += "Severity: 'Warning'";
+                }
+                if (this.infoCheck.get("checked")) {
+                    if (filter.length) {
+                        filter += " OR ";
+                    }
+                    filter += "Severity: 'Info'";
+                }
+                this.infoGrid.setQuery({
+                    complexQuery: filter
+                });
             },
 
             getSelected: function () {
@@ -155,10 +193,14 @@ define([
             },
 
             loadExceptions: function (exceptions) {
-                var memory = new Memory({ data: exceptions });
-                this.store = new ObjectStore({ objectStore: memory });
+                var data = {
+                    'items': exceptions
+                };
+                this.store = new AndOrReadStore({
+                    data: data
+                });
                 this.infoGrid.setStore(this.store);
-                this.setQuery("*");
+                this.refreshFilter();
             }
         });
     });
