@@ -23,13 +23,15 @@
       Number in the text of the message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. Other products,
-      logos, and services may be trademarks or registered trademarks of their
-      respective companies. All names and example data used in this manual are
-      fictitious. Any similarity to actual persons, living or dead, is purely
-      coincidental.</para>
+      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
+      registered trademark of LexisNexis Risk Data Management Inc.</para>
 
-      <para></para>
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies. All names and
+      example data used in this manual are fictitious. Any similarity to
+      actual persons, living or dead, is purely coincidental.</para>
+
+      <para> </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -167,7 +169,8 @@
   <chapter id="Remote_File_Support">
     <title><emphasis>Remote Files</emphasis></title>
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/RfsQuery.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/RfsQuery.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/RfsAction.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -201,9 +204,11 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/AbortDfuWorkunit.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Copy.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Copy.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/DeSpray.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/DeSpray.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/RemotePull.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -217,7 +222,8 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SprayVariable.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/SprayXML.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/SprayXML.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/WaitDfuWorkunit.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -238,7 +244,8 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CompareIgnoreCase.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Contains.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Contains.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/CountWords.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -249,23 +256,32 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EditDistanceWithinRadius.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/EndsWith.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/EndsWith.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/EqualIgnoreCase.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeFirstWord.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeLastWord.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeNthWord.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeFirstWord.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Extract.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeLastWord.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Filter.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/ExcludeNthWord.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Extract.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Filter.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/FilterOut.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Find.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Find.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/FindCount.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -285,7 +301,8 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/RemoveSuffix.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Reverse.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Reverse.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/SplitWords.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -329,7 +346,7 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/Day.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-                
+
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DateFromParts.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
@@ -341,15 +358,16 @@
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/ToGregorianYMD.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-
   </chapter>
 
   <chapter id="Cluster_Handling">
     <title><emphasis>Cluster Handling</emphasis></title>
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Node.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Node.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Nodes.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Nodes.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/LogicalToPhysical.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -357,27 +375,33 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/DaliServers.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Group.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Group.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetExpandLogicalFileName.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-   
   </chapter>
 
   <chapter id="Job_Handling">
     <title><emphasis>Job Handling</emphasis></title>
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/WUID.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/WUID.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Cluster.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Cluster.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/JobName.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/JobName.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/JobOwner.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/JobOwner.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/OS.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/OS.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Platform.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Platform.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/LogString.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -396,7 +420,8 @@
   <chapter id="Logging">
     <title><emphasis>Logging</emphasis></title>
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/dbglog.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/dbglog.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/addWorkunitInformation.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
@@ -411,7 +436,8 @@
   <chapter id="Auditing">
     <title><emphasis>Auditing</emphasis></title>
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Audit.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Audit.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Utilities">
@@ -439,9 +465,11 @@
     <xi:include href="ECLStandardLibraryReference/SLR-Mods/GetXMLParseTree.xml"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Sleep.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/Sleep.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLStandardLibraryReference/SLR-Mods/msTick.xml" xmlns:xi="http://www.w3.org/2001/XInclude" />
+    <xi:include href="ECLStandardLibraryReference/SLR-Mods/msTick.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Email">
