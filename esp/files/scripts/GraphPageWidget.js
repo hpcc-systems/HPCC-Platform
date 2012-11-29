@@ -15,11 +15,13 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/_base/sniff",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-construct",
     "dojo/on",
+    "dojo/has",
     "dojo/store/Memory",
     "dojo/data/ObjectStore",
 
@@ -41,9 +43,8 @@ define([
 
     "dojo/text!../templates/GraphPageWidget.html",
 
-    "dijit/form/Select",
     "dijit/form/TextBox"
-], function (declare, sniff, array, dom, domConstruct, on, Memory, ObjectStore,
+], function (declare, lang, sniff, array, dom, domConstruct, on, has, Memory, ObjectStore,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
             DataGrid, GraphWidget, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
             template) {
@@ -58,7 +59,6 @@ define([
         main: null,
         overview: null,
         local: null,
-        graphSelect: null,
         timingGrid: null,
         timingTreeMap: null,
         verticesGrid: null,
@@ -67,6 +67,7 @@ define([
         findText: "",
         found: [],
         foundIndex: 0,
+        initalized: false,
 
         buildRendering: function (args) {
             this.inherited(arguments);
@@ -89,13 +90,6 @@ define([
             this.main.watchSplitter(splitter);
             this.overview.watchSplitter(splitter);
             this.local.watchSplitter(splitter);
-
-            this.main.watchSelect(this.graphSelect);
-            this.overview.watchSelect(this.graphSelect);
-            this.local.watchSelect(this.graphSelect);
-
-            this.overview.watchStyleChange();
-            this.local.watchStyleChange();
         },
 
         resize: function (args) {
@@ -113,7 +107,6 @@ define([
             this.rightBorderContainer = registry.byId(this.id + "RightBorderContainer");
             this.findField = registry.byId(this.id + "FindField");
             this._initGraphControls();
-            this._initGraphSelect()
             this._initTimings();
             this._initVertices();
             this._initEdges();
@@ -148,17 +141,6 @@ define([
             };
         },
 
-        _initGraphSelect: function () {
-            this.graphSelect = registry.byId(this.id + "GraphSelect");
-            var context = this;
-            this.graphSelect.onChange = function () {
-                context.graphName = this.getValue();
-                context.loadGraph(context.wu, context.graphName);
-                context.timingGrid.setQuery(context.graphName);
-                context.timingTreeMap.setQuery(context.graphName);
-            }
-        },
-
         _initTimings: function () {
             this.timingGrid = registry.byId(this.id + "TimingsGrid");
 
@@ -178,7 +160,7 @@ define([
                 context.syncSelectionFrom(context.timingTreeMap);
             }
             this.timingTreeMap.onDblClick = function (value) {
-                var mainItem = context.main.getItem(value.subGraphId);
+                var mainItem = context.main.getItem(value.SubGraphId);
                 context.main.centerOnItem(mainItem, true);
             }
         },
@@ -266,10 +248,36 @@ define([
             this._doFind(true);
         },
 
+        _onAbout: function () {
+            myDialog = new Dialog({
+                title: "About HPCC Systems Graph Control",
+                content: "Version:  " + this.main.getVersion() + "<br>"
+                + this.main.getResourceLinks(),
+                style: "width: 320px"
+            });
+            if (has("chrome")) {
+                this.main.hide();
+                this.overview.hide();
+                this.local.hide();
+
+                var context = this;
+                myDialog.connect(myDialog, "hide", function (e) {
+                    context.main.show();
+                    context.overview.show();
+                    context.local.show();
+                });
+            }
+            myDialog.show();
+        },
+
         init: function (params) {
+            if (this.initalized) {
+                return;
+            }
+            this.initalized = true;
             this.graphName = params.GraphName;
             this.wu = new ESPWorkunit({
-                wuid: params.Wuid
+                Wuid: params.Wuid
             });
 
             var firstLoad = true;
@@ -281,7 +289,7 @@ define([
                     onGetGraphs: function (graphs) {
                         if (firstLoad == true) {
                             firstLoad = false;
-                            context.loadGraphSelect(graphs);
+                            context.loadGraph(context.wu, context.graphName);
                         } else {
                             context.refreshGraph(context.wu, context.graphName);
                         }
@@ -289,24 +297,14 @@ define([
                 });
             });
 
-            this.timingGrid.init(params);
-            this.timingGrid.setQuery(this.graphName);
+            this.timingGrid.init(lang.mixin({
+                query: this.graphName
+            }, params));
 
-            this.timingTreeMap.init(params);
-        },
+            this.timingTreeMap.init(lang.mixin({
+                query: this.graphName
+            }, params));
 
-        loadGraphSelect: function (graphs) {
-            this.graphSelect.options = [];
-            for (var i = 0; i < graphs.length; ++i) {
-                if (!this.graphName) {
-                    this.graphName = graphs[i].Name;
-                }
-                this.graphSelect.options.push({
-                    label: graphs[i].Name + (graphs[i].Time ? " (" + graphs[i].Time + ")" : ""),
-                    value: graphs[i].Name
-                });
-            }
-            this.graphSelect.setValue(this.graphName);
         },
 
         loadGraph: function (wu, graphName) {
@@ -463,15 +461,6 @@ define([
             for (var i = 0; i < mainItems.length; ++i) {
                 this.main.displayProperties(mainItems[i], propertiesDom);
             }
-        },
-
-        showHelpAbout: function () {
-            myDialog = new Dialog({
-                title: "About Graph sourceControl",
-                content: "Version:  " + main.getVersion(),
-                style: "width: 300px"
-            });
-            myDialog.show();
         },
 
         resetPage: function () {

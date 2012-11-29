@@ -1,0 +1,83 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}ContentPane" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.ContentPane">
+            <div style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">                	                    
+                    <form>
+                    	<ul>
+                    		<li>
+		                    	<h2>Open DFU Workunit</h2>
+			                    <label for="WorkUnitId" class="Prompt">Workunit ID:</label>
+			                    <div><input name="FindDfuWu" type="text" data-dojo-type="dijit/form/TextBox" placeholder="enter workunit id"
+			                    data-dojo-props="trim:true, propercase:true"/>
+								</div>
+							</li>
+							<li>
+								<div>
+							<button data-dojo-type="dijit/form/Button" type="button">Load Below
+			                </button>
+			                	</div>
+			                </li>
+						</ul>	
+						<ul>
+							<li>			
+						<h2>Search DFU Workunits</h2>
+						<label for="Type" class="Prompt">Type:</label>
+						<div>
+							<select name="SelectType" data-dojo-type="dijit/form/Select">
+    							<option value="NA">Non&ndash;Archived Workunits</option>
+    							<option value="A" selected="Selected">Archived Workunits</option>    
+							</select>
+						</div>
+						</li>
+						<li>
+						<label for="Username" class="Prompt">Username:</label>
+						<div>
+							<input id="Username" data-dojo-type="dijit/form/TextBox" placeholder="enter username"
+                                data-dojo-props="trim:true, propercase:true">
+                        </div>
+                        </li>
+                        <li>
+                        <label for="Cluster" class="Prompt">Cluster:</label>
+                        <div>
+                        	<select name="SelectCluster" data-dojo-type="TargetSelectWidget">    								  
+							</select>
+						</div>
+						</li>
+						<li>
+						<label for="State" class="Prompt">State:</label>
+						<div>
+							<select name="SelectState" data-dojo-type="dijit/form/Select">
+	                            	<option>unknown</option>
+									<option>scheduled</option>
+									<option>compiled</option>
+									<option>running</option>
+									<option>finished</option>
+									<option>failed</option>
+									<option>aborting</option>
+									<option>aborted</option>
+									<option>blocked</option>
+									<option>monitoring</option>
+							</select>
+						</div>
+					</li>
+					<li>
+						<label for="Jobname" class="Prompt">Jobname:</label>
+						<div>
+							<input id="FindJobName" data-dojo-type="dijit/form/TextBox" placeholder="enter jobname"
+                                data-dojo-props="trim:true, propercase:true">
+                        </div>
+                    </li>
+                     <li>
+                        <div>
+                        	<button data-dojo-type="dijit/form/Button" type="button">Search
+                            </button>
+                        </div>
+                       </li>
+					</form>
+				</div>
+             	<div id="${id}InfoContainer" style="height: 35%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120" data-dojo-type="InfoGridWidget">  </div>
+     		
+        </div>
+	</div>
+</div>

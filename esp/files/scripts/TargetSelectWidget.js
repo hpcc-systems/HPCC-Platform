@@ -56,6 +56,12 @@ require([
             this.targetSelectControl.onChange = function () {
                 context.onChange(this.get("value"));
             };
+        },
+
+        init: function (params) {
+            if (params.Target) {
+                this._value = params.Target;
+            }
             this.loadTargets();
         },
 

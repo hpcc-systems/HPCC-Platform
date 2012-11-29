@@ -1,0 +1,13 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-props="splitter: false" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}Toolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+            <span class="bold">Download:</span>
+            <div data-dojo-attach-event="onClick:_onDownloadZip" data-dojo-type="dijit.form.Button">Zip</div>
+            <div data-dojo-attach-event="onClick:_onDownloadGZip" data-dojo-type="dijit.form.Button">GZip</div>
+            <div data-dojo-attach-event="onClick:_onDownloadXLS" data-dojo-type="dijit.form.Button">XLS</div>
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+        </div>
+        <div id="${id}Grid" data-dojo-props="region: 'center', plugins: { pagination: { pageSizes: [25, 50, 100, 'All'], defaultPageSize: 50, description: true, sizeSwitch: true, pageStepper: true, gotoButton: true, maxPageStep: 4, position: 'bottom', } }" data-dojo-type="dojox.grid.EnhancedGrid">
+        </div>
+    </div>
+</div>

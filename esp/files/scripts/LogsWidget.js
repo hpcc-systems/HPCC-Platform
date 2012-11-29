@@ -105,18 +105,21 @@ define([
                             var parts = selection[i].Orig.Name.split("/");
                             if (parts.length) {
                                 var leaf = parts[parts.length - 1];
-                                params = "/WUFile/" + leaf + "?Wuid=" + this.wu.wuid + "&Name=" + selection[i].Orig.Name + "&Type=" + selection[i].Orig.Type;
+                                params = "/WUFile/" + leaf + "?Wuid=" + this.wu.Wuid + "&Name=" + selection[i].Orig.Name + "&Type=" + selection[i].Orig.Type;
                             }
                             break;
                         case "res":
-                            params = "/WUFile/res.txt?Wuid=" + this.wu.wuid + "&Type=" + selection[i].Orig.Type;
+                            params = "/WUFile/res.txt?Wuid=" + this.wu.Wuid + "&Type=" + selection[i].Orig.Type;
                             break;
                         case "ThorLog":
                         case "EclAgentLog":
-                            params = "/WUFile/" + selection[i].Type + "?Wuid=" + this.wu.wuid + "&Process=" + selection[i].Orig.Description + "&Type=" + selection[i].Orig.Type;
+                            params = "/WUFile/" + selection[i].Type + "?Wuid=" + this.wu.Wuid + "&Process=" + selection[i].Orig.Description + "&Type=" + selection[i].Orig.Type;
                             break;
                         case "ThorSlaveLog":
-                            params = "/WUFile?Wuid=" + this.wu.wuid + "&Process=" + selection[i].Orig.ProcessName + "&ClusterGroup=" + selection[i].Orig.ProcessName + "&LogDate=" + selection[i].Orig.LogDate + "&SlaveNumber=" + selection[i].Orig.SlaveNumber + "&Type=" + selection[i].Type;
+                            params = "/WUFile?Wuid=" + this.wu.Wuid + "&Process=" + selection[i].Orig.ProcessName + "&ClusterGroup=" + selection[i].Orig.ProcessName + "&LogDate=" + selection[i].Orig.LogDate + "&SlaveNumber=" + selection[i].Orig.SlaveNumber + "&Type=" + selection[i].Type;
+                            break;
+                        case "Archive Query":
+                            params = "/WUFile/ArchiveQuery?Wuid=" + this.wu.Wuid + "&Name=ArchiveQuery&Type=ArchiveQuery";
                             break;
                     }
 
@@ -137,7 +140,7 @@ define([
             //  Plugin wrapper  ---
             init: function (params) {
                 this.wu = new ESPWorkunit({
-                    wuid: params.Wuid
+                    Wuid: params.Wuid
                 });
 
                 var context = this;
@@ -145,6 +148,11 @@ define([
                     context.wu.getInfo({
                         onGetAll: function (response) {
                             context.logData = [];
+                            if (response.HasArchiveQuery) {
+                                context.logData.push({
+                                    Type: "Archive Query"
+                                });
+                            }
                             if (response.Helpers && response.Helpers.ECLHelpFile) {
                                 context.loadHelpers(response.Helpers.ECLHelpFile);
                             }

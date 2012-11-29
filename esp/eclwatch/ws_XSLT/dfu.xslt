@@ -82,7 +82,7 @@
             <xsl:text disable-output-escaping="yes"><![CDATA[
           function DFUFilePopup(query, filename, cluster, replicate, roxiecluster, browsedata, PosId) {
             function detailsDFUFile() {
-              document.location.href='/WsDfu/DFUInfo?Name='+ escape(filename) + '&Cluster=' + cluster;
+              document.location.href='/esp/files/stub.htm?Widget=LFDetailsWidget&Name=' + escape(filename) + '&Cluster=' + cluster;
                       }
                         function browseDFUData() {
                           document.location.href='/WsDfu/DFUGetDataColumns?OpenLogicalName='+filename;
@@ -663,6 +663,7 @@
             <xsl:value-of select="$popup"/>
           </xsl:variable>
           <img id="mn{position()}" class="menu1" src="/esp/files/img/menu1.png" onclick="{$popup}"></img>
+          <a href="javascript:go('/esp/files/stub.htm?Widget=LFDetailsWidget&amp;Cluster={ClusterName}&amp;Name={Name}')">Details</a>
       </td>
             <td>
               <xsl:if test="isZipfile=1">
