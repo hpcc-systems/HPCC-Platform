@@ -23,15 +23,18 @@
       Number in the text of the message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. Other products,
-      logos, and services may be trademarks or registered trademarks of their
-      respective companies. All names and example data used in this manual are
-      fictitious. Any similarity to actual persons, living or dead, is purely
-      coincidental.</para>
+      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
+      registered trademark of LexisNexis Risk Data Management Inc.</para>
+
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies. All names and
+      example data used in this manual are fictitious. Any similarity to
+      actual persons, living or dead, is purely coincidental.</para>
 
       <para><!--Release Information is used for running footers only. The ID attribute in version.xml is FooterInfo
 Date is used as the dateline/version number in the title page. The ID attribute in version.xml is DateVer--><!--
-Copyright is used for the copyright line on title page. The ID attribute is CopyRight--></para>
+Copyright is used for the copyright line on title page. The ID attribute is CopyRight-->
+      </para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -592,7 +595,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                   designed to generate a maximum of 400 million records. A
                   larger number of nodes will result in fewer records per
                   node, however the code will still work as intended for this
-                  exercise. </para>
+                  exercise.</para>
 
                   <?hard-pagebreak ?>
                 </listitem>
