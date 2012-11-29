@@ -33,7 +33,7 @@
 
 interface IRecordSizeEx : public IRecordSize
 {
-    IRecordSize::getRecordSize;
+    using IRecordSize::getRecordSize;
     virtual size32_t getRecordSize(unsigned maxLength, const void *rec) = 0;
 };
 
