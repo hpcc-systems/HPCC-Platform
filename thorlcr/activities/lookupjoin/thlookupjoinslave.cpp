@@ -45,12 +45,13 @@ class CSendItem : public CSimpleInterface
 {
     CMessageBuffer msg;
     broadcast_code code;
-    unsigned origin;
+    unsigned origin, headerLen;
 public:
     CSendItem(broadcast_code _code, unsigned _origin) : code(_code), origin(_origin)
     {
         msg.append((unsigned)code);
         msg.append(origin);
+        headerLen = msg.length();
     }
     CSendItem(CMessageBuffer &_msg)
     {
@@ -59,6 +60,7 @@ public:
         msg.read(origin);
     }
     unsigned length() const { return msg.length(); }
+    void reset() { msg.setLength(headerLen); }
     CMessageBuffer &queryMsg() { return msg; }
     broadcast_code queryCode() const { return code; }
     unsigned queryOrigin() const { return origin; }
@@ -1128,6 +1130,7 @@ public:
                 if (!broadcaster.send(sendItem))
                     break;
                 mb.clear();
+                sendItem->reset();
             }
         }
         catch (IException *e)
