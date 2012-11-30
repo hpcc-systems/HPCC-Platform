@@ -592,7 +592,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                             }
                         }
                     }
-                    const void *row = input->nextRow();
+                    const void *row = input->ungroupedNextRow();
                     if (!row)
                         break;
                     unsigned dest = owner.ihash->hash(row)%owner.numnodes;
