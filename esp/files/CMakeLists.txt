@@ -30,49 +30,43 @@ add_subdirectory (templates)
 source_group(templates FILES ${TEMPLATES_FILES})
 
 set ( MAIN_FILES 
-    dummy.cpp
-    default.css
-    gen_form.css
-    wsecl2_form.css
-    configmgr.html
-    GraphViewCtl.cab
-    npGraphViewCtl.xpi
-    update.rdf
     base64.js
-    qmalert.html
     calendar.html
     calendar_xs.js
     components.xml
+    configmgr.html
+    default.css
     empty.svg
+    esp_app.html
+    esp_app_tree.html
+    gen_form.css
     gen_form.js
     get_input.js
     graph.js
+    GraphViewCtl.cab
+    groupadd.html
     hashtable.js
     hint.js
     joblist.js
     jobqueue.js
     minus.gif
+    npGraphViewCtl.xpi
     plus.gif
     popup.js
+    qmalert.html
     req_array.js
     select.js
     stack.js
     stringbuffer.js
+    stub.htm
+    stub.js
     submitNavForm.html
     tabularForm.xslt
     transformDlg.html
-    esp_app_tree.html
-    esp_app.html
+    update.rdf
     useradd.html
-    groupadd.html
-    stub.htm
-    stub.js
+    wsecl2_form.css
 )
-source_group("Source Files" FILES ${MAIN_FILES})
-
-set ( SRCS ${MAIN_FILES} ${HTML_FILES} ${IMG_FILES} ${LOGO_FILES} ${CSS_FILES} ${SCRIPTS_FILES} ${TEMPLATES_FILES})
-
-HPCC_ADD_LIBRARY( web_files ${SRCS} )
 
 FOREACH( iFile ${MAIN_FILES} )
     Install( FILES ${iFile} DESTINATION componentfiles/files COMPONENT Runtime )
