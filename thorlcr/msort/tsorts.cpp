@@ -591,7 +591,7 @@ class CThorSorter : public CSimpleInterface, implements IThorSorter, implements 
         try
         {
             ActPrintLog(activity, "Creating SortSlaveServer on tag %d MP",mpTagRPC);    
-            while(SortSlaveMP::marshall(*this,clusterComm,mpTagRPC)&&!stopping);
+            while(SortSlaveMP::marshall(*this,clusterComm,mpTagRPC)&&!stopping)
                ;
             stopping = true;
             ActPrintLog(activity, "Exiting SortSlaveServer on tag %d",mpTagRPC);    
