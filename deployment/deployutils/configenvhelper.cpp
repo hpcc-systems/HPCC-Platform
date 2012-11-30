@@ -721,10 +721,10 @@ bool CConfigEnvHelper::deleteRoxieServers(const char* xmlArg)
     {
         IPropertyTree* pChild;
         //if atleast one slave, delete all slaves
-        while (pChild = pRoxieCluster->queryPropTree( "RoxieSlave[1]" ))
+        while ((pChild = pRoxieCluster->queryPropTree( "RoxieSlave[1]" )) != NULL)
             pRoxieCluster->removeTree( pChild );
 
-        while (pChild = pRoxieCluster->queryPropTree( XML_TAG_ROXIE_SLAVE "[1]" ))
+        while ((pChild = pRoxieCluster->queryPropTree( XML_TAG_ROXIE_SLAVE "[1]" )) != NULL)
             pRoxieCluster->removeTree( pChild );
 
         break;
@@ -1144,7 +1144,7 @@ bool CConfigEnvHelper::GenerateFullRedConfig(IPropertyTree* pRoxie, int copies, 
 void CConfigEnvHelper::RemoveSlaves(IPropertyTree* pRoxie, bool bLegacySlaves/*=false*/)
 {
     IPropertyTree* pChild;
-    while (pChild = pRoxie->queryPropTree( bLegacySlaves ? XML_TAG_ROXIE_SLAVE "[1]" : "RoxieSlave[1]"))
+    while ((pChild = pRoxie->queryPropTree( bLegacySlaves ? XML_TAG_ROXIE_SLAVE "[1]" : "RoxieSlave[1]")) != NULL)
         pRoxie->removeTree( pChild );
 }
 

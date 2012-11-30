@@ -551,7 +551,7 @@ HRPCmptransport* MakeHRPCmptransport(MpTransportStateCommon* s)
 // Intra Communication
 IHRPCtransport *MakeClientMpTransport( ICommunicator *comm, rank_t rank, mptag_t tag)
 {
-    if ((comm==NULL))
+    if (comm==NULL)
         THROWHRPCEXCEPTION(HRPCERR_bad_address);
     // line below: check valid rank value is between 0 and ordinatlity-1
     unsigned count  = comm->queryGroup().ordinality();

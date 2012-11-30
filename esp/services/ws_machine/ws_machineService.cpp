@@ -1787,7 +1787,7 @@ bool Cws_machineEx::excludePartition(const char* partition) const
         for (it=itBegin; it != itEnd; it++)
         {
             const string& pattern = *it;
-            if (found = ::WildMatch(partition, partitionLen, pattern.c_str(), pattern.length(), false))
+            if ((found = ::WildMatch(partition, partitionLen, pattern.c_str(), pattern.length(), false)))
                 break;
         }
     }

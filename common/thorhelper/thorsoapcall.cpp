@@ -150,7 +150,7 @@ public:
     {
         char *p;
 
-        if (p = strstr(urltext, "://"))
+        if ((p = strstr(urltext, "://")) != NULL)
         {
             *p = 0;
             p += 3; // skip past the colon-slash-slash
@@ -160,7 +160,7 @@ public:
         else
             throw MakeStringException(-1, "Malformed URL");
 
-        if (p = strchr(urltext, '@'))
+        if ((p = strchr(urltext, '@')) != NULL)
         {
             // extract username & password
             *p = 0;
@@ -170,7 +170,7 @@ public:
             urltext = p;
         }
 
-        if (p = strchr(urltext, ':'))
+        if ((p = strchr(urltext, ':')) != NULL)
         {
             // extract the port
             *p = 0;
@@ -180,7 +180,7 @@ public:
 
             host.append(urltext);
 
-            if (p = strchr(p, '/'))
+            if ((p = strchr(p, '/')) != NULL)
                 path.append(p);
             else
                 path.append("/");
@@ -195,7 +195,7 @@ public:
             else
                 throw MakeStringException(-1, "Unsupported access method");
 
-            if (p = strchr(urltext, '/'))
+            if ((p = strchr(urltext, '/')) != NULL)
             {
                 *p = 0;
                 p++;
@@ -940,7 +940,7 @@ public:
                 {
                     return outputQ.dequeue();
                 }
-                else if ((done == numRowThreads))
+                else if (done == numRowThreads)
                 {
                     complete = true;
                     if (error.get())

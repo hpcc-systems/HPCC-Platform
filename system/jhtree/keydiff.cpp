@@ -173,7 +173,7 @@ public:
 
     size32_t buffSize() { return buffsize; }
     size32_t rowSize() { return thisrowsize; }
-    size32_t serializeRowSize() { return thisrowsize+sizeof(offset_t)+isVar?sizeof(size32_t):0; }
+    size32_t serializeRowSize() { return thisrowsize+sizeof(offset_t)+(isVar?sizeof(size32_t):0); }
 
     size32_t serialize(void *dst)
     {
