@@ -4443,7 +4443,7 @@ restart:
         if (ignoreNameSpaces)
         {
             const char *colon;
-            if (colon = strchr(tagName.str(), ':'))
+            if ((colon = strchr(tagName.str(), ':')) != NULL)
                 tagName.remove(0, (size32_t)(colon - tagName.str() + 1));
         }
         iEvent->beginNode(tagName.toCharArray(), startOffset);
@@ -4748,7 +4748,7 @@ public:
                 if (ignoreNameSpaces)
                 {
                     const char *colon;
-                    if (colon = strchr(stateInfo->wnsTag, ':'))
+                    if ((colon = strchr(stateInfo->wnsTag, ':')) != NULL)
                         stateInfo->wnsTag = colon+1;
                 }
                 endOfRoot = false;

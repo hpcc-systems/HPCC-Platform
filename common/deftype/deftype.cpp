@@ -2623,8 +2623,8 @@ static ITypeInfo * getPromotedType(ITypeInfo * lType, ITypeInfo * rType, bool is
 
     type_t lcode = l->getTypeCode();
     type_t rcode = r->getTypeCode();
-    if ((lcode == type_any)) return LINK(r);
-    if ((rcode == type_any)) return LINK(l);
+    if (lcode == type_any) return LINK(r);
+    if (rcode == type_any) return LINK(l);
     if ((lcode == type_set) || (rcode == type_set))
         return getPromotedSet(l, r, isCompare);
     if ((lcode == type_unicode) || (rcode == type_unicode))

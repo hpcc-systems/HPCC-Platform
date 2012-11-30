@@ -1632,7 +1632,7 @@ public:
     {
         Owned<IRowWriter> out = createWriteBlock();
         void * row;
-        while(row = rows->getNextSorted())
+        while((row = rows->getNextSorted()) != NULL)
             out->putRow(row);
     }
     IRowStream *merge(ICompare *icompare, bool partdedup)
