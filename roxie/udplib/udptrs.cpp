@@ -123,13 +123,13 @@ public:
             permit.toString(permitStr);
             DBGLOG("UdpSender: cleanRetryData (%s), total %u available between %u and %u", permitStr.str(), retryDataCount, minUdpSequence, maxUdpSequence); 
         }
-        unsigned lastReceived = permit.lastSequenceSeen;
+        unsigned lastReceived = permit.sb.lastSequenceSeen;
         unsigned missingIndex = 0;
-        unsigned missingCount = permit.missingCount;
+        unsigned missingCount = permit.sb.missingCount;
         unsigned i = 0;
         if (maxRetryData)
         {
-            while (i < retryDataCount && retries.length() < permit.max_data)
+            while (i < retryDataCount && retries.length() < permit.sb.max_data)
             {
                 unsigned idx = (retryDataIdx + i) % maxRetryData;
                 DataBuffer *buffer = retryData[idx];
@@ -187,7 +187,7 @@ public:
     unsigned sendData(const UdpPermitToSendMsg &permit, bool isLocal, TokenBucket *bucket, bool &moreRequested, unsigned &maxPackets)
     {
         moreRequested = false;
-        maxPackets = permit.max_data;
+        maxPackets = permit.sb.max_data;
         PointerArray toSend;
         unsigned totalSent = cleanRetryData(permit, toSend);
         while (toSend.length() < maxPackets && dataQueued())
@@ -213,7 +213,7 @@ public:
             if (isRetry)
             {
                 if (checkTraceLevel(TRACE_RETRY_DATA, 1))
-                    DBGLOG("UdpSender: Resending packet to destination node %u sequence %u", permit.destNodeIndex, header->udpSequence);
+                    DBGLOG("UdpSender: Resending packet to destination node %u sequence %u", permit.sb.destNodeIndex, header->udpSequence);
                 atomic_inc(&packetsRetried);
             }
             else
@@ -264,7 +264,7 @@ public:
                 else
                 {
                     if (udpTraceLevel > 0)
-                        DBGLOG("Overflow in resend packet buffer for destination node %u - discarding packet sequence %u", permit.destNodeIndex, header->udpSequence);
+                        DBGLOG("Overflow in resend packet buffer for destination node %u - discarding packet sequence %u", permit.sb.destNodeIndex, header->udpSequence);
                     ::Release(retryData[slot]);
                 }
                 retryData[slot] = buffer;
@@ -372,7 +372,7 @@ public:
         retryData = NULL;
     }
 
-    void init(unsigned destNodeIndex, unsigned _numQueues, unsigned queueSize, unsigned _maxRetryData, unsigned sendFlowPort, unsigned dataPort, bool isLocal) 
+    void init(unsigned destNodeIndex, unsigned _numQueues, unsigned queueSize, unsigned _maxRetryData, unsigned sendFlowPort, unsigned dataPort, bool isLocal)
     {
         assert(!initialized);
         maxRetryData = _maxRetryData;
@@ -948,20 +948,20 @@ class CSendManager : public CInterface, implements ISendManager
                     {
                         unsigned int res ;
                         flow_socket->read(&f, 1, sizeof(f), res, 5);
-                        assertex(res == f.length);
+                        assertex(res == f.sb.length);
 #ifdef CRC_MESSAGES
-                        assertex(f.crc == f.calcCRC());
+                        assertex(f.sb.crc == f.calcCRC());
 #endif
-                        switch (f.cmd) 
+                        switch (f.sb.cmd)
                         {
                         case flow_t::ok_to_send:
                             if (udpTraceLevel > 1) 
-                                DBGLOG("UdpSender: received ok_to_send msg max %d packets from node=%u (length %u)", f.max_data, f.destNodeIndex, res);
+                                DBGLOG("UdpSender: received ok_to_send msg max %d packets from node=%u (length %u)", f.sb.max_data, f.sb.destNodeIndex, res);
                             parent.data->ok_to_send(f);
                             break;
 
                         default: 
-                            DBGLOG("UdpSender: received unknown flow message type=%d", f.cmd);
+                            DBGLOG("UdpSender: received unknown flow message type=%d", f.sb.cmd);
                         }
                     }
                     catch (IException *e) 
@@ -1060,7 +1060,7 @@ class CSendManager : public CInterface, implements ISendManager
                 return true;
             else 
             {
-                DBGLOG("UdpSender: push() failed - ignored ok_to_send msg - index=%u, maxData=%u", msg.destNodeIndex, msg.max_data);
+                DBGLOG("UdpSender: push() failed - ignored ok_to_send msg - index=%u, maxData=%u", msg.sb.destNodeIndex, msg.sb.max_data);
                 return false;
             }
         }
@@ -1081,19 +1081,19 @@ class CSendManager : public CInterface, implements ISendManager
 
                 if (udpSnifferEnabled)
                     send_sniff(true);
-                parent.send_flow->clear_to_send_received(permit.destNodeIndex);
-                UdpReceiverEntry &receiverInfo = parent.receiversTable[permit.destNodeIndex];
+                parent.send_flow->clear_to_send_received(permit.sb.destNodeIndex);
+                UdpReceiverEntry &receiverInfo = parent.receiversTable[permit.sb.destNodeIndex];
                 bool moreRequested;
                 unsigned maxPackets;
-                unsigned payload = receiverInfo.sendData(permit, (parent.myNodeIndex == permit.destNodeIndex), bucket, moreRequested, maxPackets);
+                unsigned payload = receiverInfo.sendData(permit, (parent.myNodeIndex == permit.sb.destNodeIndex), bucket, moreRequested, maxPackets);
                 if (udpSendCompletedInData && !maxPackets)
-                    parent.sendRequest(permit.destNodeIndex, flow_t::send_completed);
-                parent.send_flow->send_done(permit.destNodeIndex, moreRequested);
+                    parent.sendRequest(permit.sb.destNodeIndex, flow_t::send_completed);
+                parent.send_flow->send_done(permit.sb.destNodeIndex, moreRequested);
                 if (udpSnifferEnabled)
                     send_sniff(false);
                 
                 if (udpTraceLevel > 1) 
-                    DBGLOG("UdpSender: sent %u bytes to node=%d", payload, permit.destNodeIndex);
+                    DBGLOG("UdpSender: sent %u bytes to node=%d", payload, permit.sb.destNodeIndex);
                 
             }
             if (udpTraceLevel > 0)

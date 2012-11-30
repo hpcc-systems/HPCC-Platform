@@ -40,9 +40,6 @@ include_directories (
          ./../../roxie/roxie
     )
 
-if (${CMAKE_COMPILER_IS_GNUCXX})
-    ADD_DEFINITIONS( -Wno-invalid-offsetof )
-endif (${CMAKE_COMPILER_IS_GNUCXX})
 HPCC_ADD_LIBRARY( udplib SHARED ${SRCS} )
 set_target_properties( udplib PROPERTIES 
     COMPILE_FLAGS -D_USRDLL

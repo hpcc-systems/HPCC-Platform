@@ -230,13 +230,13 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                     UdpPermitToSendMsg msg;
                     {
                         SpinBlock block(resendInfoLock);
-                        msg.length = UdpPermitToSendMsg::messageFixedSize + missingCount*sizeof(msg.missingSequences[0]);
-                        msg.cmd = flow_t::ok_to_send;
+                        msg.sb.length = sizeof(UdpPermitToSendMsg::StaticBlock) + missingCount*sizeof(msg.missingSequences[0]);
+                        msg.sb.cmd = flow_t::ok_to_send;
 
-                        msg.destNodeIndex = myNodeIndex;
-                        msg.max_data = maxTransfer;
-                        msg.lastSequenceSeen = lastSeen;
-                        msg.missingCount = missingCount;
+                        msg.sb.destNodeIndex = myNodeIndex;
+                        msg.sb.max_data = maxTransfer;
+                        msg.sb.lastSequenceSeen = lastSeen;
+                        msg.sb.missingCount = missingCount;
                         for (unsigned i = 0; i < missingCount; i++)
                         {
                             unsigned idx = (missingIndex + i) % missingTableSize;
@@ -245,7 +245,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                                 DBGLOG("Requesting resend of packet %d", missing[idx]);
                         }
 #ifdef CRC_MESSAGES
-                        msg.crc = msg.calcCRC();
+                        msg.sb.crc = msg.calcCRC();
 #endif
                     }
                     if (checkTraceLevel(TRACE_RETRY_DATA, 5))
@@ -253,7 +253,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                         StringBuffer s;
                         DBGLOG("requestToSend %s", msg.toString(s).str());
                     }
-                    flowSocket->write(&msg, msg.length);
+                    flowSocket->write(&msg, msg.sb.length);
                 }
                 catch(IException *e) 
                 {
