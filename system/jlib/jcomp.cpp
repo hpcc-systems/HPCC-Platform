@@ -186,7 +186,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
     int r = stat(fname.str(), &filestatus);
     if (    (r != 0)
         ||  (!S_ISREG(filestatus.st_mode))
-        ||  (filestatus.st_mode&(S_IXOTH|S_IXGRP|S_IXUSR)==0))
+        ||  ((filestatus.st_mode&(S_IXOTH|S_IXGRP|S_IXUSR))==0))
     {
         if (r == -1) errno = ENOENT;
 #endif
