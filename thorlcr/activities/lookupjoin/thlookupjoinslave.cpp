@@ -88,7 +88,7 @@ class CBroadcaster : public CSimpleInterface
     Owned<IBitSet> slavesStopped;
     IBCastReceive *recvInterface;
     Semaphore allDoneSem;
-    CriticalSection allDoneLock;
+    CriticalSection allDoneLock, bcastOtherCrit;
     bool allDone, allDoneWaiting, allRequestStop, stopping;
     Owned<IBitSet> slavesDone, slavesStopping;
 
@@ -190,6 +190,7 @@ class CBroadcaster : public CSimpleInterface
         unsigned psuedoNode = (myNode<origin) ? slaves-origin+myNode : myNode-origin;
         CMessageBuffer replyMsg;
         // sends to all in 1st pass, then waits for ack from all
+        CriticalBlock b(bcastOtherCrit);
         for (unsigned sendRecv=0; sendRecv<2 && !activity.queryAbortSoon(); sendRecv++)
         {
             unsigned i = 0;
