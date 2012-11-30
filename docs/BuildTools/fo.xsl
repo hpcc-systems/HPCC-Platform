@@ -332,13 +332,13 @@
 
 <!--NEW-inline_monospace-8-12-->
 <xsl:template match="emphasis[@role='code']">
-       <fo:inline font-family="courier">
+       <fo:inline font-family="monospace">
          <xsl:apply-templates/>
        </fo:inline>
 </xsl:template>
 
 <xsl:template match="emphasis[@role='codebold']">
-       <fo:inline font-family="courier" font-weight="bold">
+       <fo:inline font-family="monospace" font-weight="bold">
          <xsl:apply-templates/>
        </fo:inline>
 </xsl:template>
