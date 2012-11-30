@@ -19,7 +19,6 @@ set ( LOGO_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/seisint_small.gif
     ${CMAKE_CURRENT_SOURCE_DIR}/slogo.gif
 )
-set ( LOGO_FILES ${LOGO_FILES} PARENT_SCOPE)
 
 FOREACH( iFile ${LOGO_FILES} )
     Install( FILES ${iFile} DESTINATION componentfiles/files/logo COMPONENT Runtime )

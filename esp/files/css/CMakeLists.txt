@@ -15,19 +15,18 @@
 ################################################################################
 
 set ( CSS_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/espdefault.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/ecl.css
     ${CMAKE_CURRENT_SOURCE_DIR}/eclwatch.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/espdefault.css
     ${CMAKE_CURRENT_SOURCE_DIR}/graph.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/winclassic.css
     ${CMAKE_CURRENT_SOURCE_DIR}/headerFooter.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/hpcc.css
     ${CMAKE_CURRENT_SOURCE_DIR}/list.css
     ${CMAKE_CURRENT_SOURCE_DIR}/rightSideBar.css
     ${CMAKE_CURRENT_SOURCE_DIR}/sortabletable.css
     ${CMAKE_CURRENT_SOURCE_DIR}/tabs.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/hpcc.css
-    ${CMAKE_CURRENT_SOURCE_DIR}/ecl.css
+    ${CMAKE_CURRENT_SOURCE_DIR}/winclassic.css
 )
-set ( CSS_FILES ${CSS_FILES} PARENT_SCOPE)
 
 FOREACH( iFile ${CSS_FILES} )
     Install( FILES ${iFile} DESTINATION componentfiles/files/css COMPONENT Runtime )
