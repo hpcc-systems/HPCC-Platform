@@ -1024,7 +1024,7 @@ class MultiPacketHandler // TAG_SYS_MULTI
     void logError(unsigned code, MultiPacketHeader &mhdr, CMessageBuffer &msg)
     {
         unsigned ms = msTick();
-        if (lastErrMs-ms > 1000) // avoid logging too much
+        if ((ms-lastErrMs) > 1000) // avoid logging too much
         {
             StringBuffer errorMsg("sender=");
             msg.getSender().getUrlStr(errorMsg).newline();
