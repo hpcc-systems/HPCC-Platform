@@ -230,7 +230,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                     UdpPermitToSendMsg msg;
                     {
                         SpinBlock block(resendInfoLock);
-                        msg.length = offsetof(UdpPermitToSendMsg, missingSequences) + missingCount*sizeof(msg.missingSequences[0]);
+                        msg.length = UdpPermitToSendMsg::messageFixedSize + missingCount*sizeof(msg.missingSequences[0]);
                         msg.cmd = flow_t::ok_to_send;
 
                         msg.destNodeIndex = myNodeIndex;

@@ -187,6 +187,11 @@ struct UdpPermitToSendMsg
     unsigned        missingCount;
 #ifdef CRC_MESSAGES
     unsigned        crc;
+    // Change this value when new fields are added above (+crc)
+    static const size_t messageFixedSize = 4*sizeof(unsigned short) + 3*sizeof(unsigned);
+#else
+    // Change this value when new fields are added above
+    static const size_t messageFixedSize = 4*sizeof(unsigned short) + 2*sizeof(unsigned);
 #endif
     unsigned        missingSequences[MAX_RESEND_TABLE_SIZE]; // only [missingCount] actually sent
 
