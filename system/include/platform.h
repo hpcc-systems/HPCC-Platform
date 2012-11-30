@@ -439,6 +439,7 @@ typedef int socklen_t;
 
 #define strtok(a,b)   j_strtok_deprecated(a,b)  // will disappear at some point
 
+typedef unsigned __int64 hash64_t;
 typedef unsigned __int64 __uint64;
 typedef __uint64 offset_t;
 typedef unsigned char byte;

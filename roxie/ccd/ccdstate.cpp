@@ -36,6 +36,8 @@
 #include "dafdesc.hpp"
 #include "dautils.hpp"
 
+#include "pkgimpl.hpp"
+
 //-------------------------------------------------------------------------------------------
 // class CRoxiePluginCtx - provide the environments for plugins loaded by roxie. 
 // Base class handles making sure memory allocation comes from the right heap. 
@@ -179,18 +181,40 @@ public:
  * </PackageMaps>
  */
 
-class CRoxiePackage : extends CInterface, implements IRoxiePackage
+class CRoxiePackageNode : extends CPackageNode, implements IRoxiePackage
 {
 protected:
-    Owned<IPropertyTree> node;
-    IArrayOf<CRoxiePackage> bases;
     Owned<IRoxieDaliHelper> daliHelper;
-    Owned<IProperties> mergedEnvironment;
-    hash64_t hash;
-    bool compulsory;  // This concept may well disappear...
 
     mutable CriticalSection cacheLock;
     mutable CopyMapStringToMyClass<IResolvedFile> fileCache;
+
+    virtual aindex_t getBaseCount() const = 0;
+    virtual const CRoxiePackageNode *getBaseNode(aindex_t pos) const = 0;
+
+    //map ambiguous IHpccPackage
+    virtual ISimpleSuperFileEnquiry *resolveSuperFile(const char *superFileName) const
+    {
+        return CPackageNode::resolveSuperFile(superFileName);
+    }
+    virtual const char *queryEnv(const char *varname) const
+    {
+        return CPackageNode::queryEnv(varname);
+    }
+    virtual bool getEnableFieldTranslation() const
+    {
+        return CPackageNode::getEnableFieldTranslation();
+    }
+    virtual const IPropertyTree *queryTree() const
+    {
+        return CPackageNode::queryTree();
+    }
+    virtual hash64_t queryHash() const
+    {
+        return CPackageNode::queryHash();
+    }
+
+    virtual bool getSysFieldTranslationEnabled() const {return fieldTranslationEnabled;} //roxie configured value
 
     // Add a filename and the corresponding IResolvedFile to the cache
     void addCache(const char *filename, const IResolvedFile *file) const
@@ -224,82 +248,7 @@ protected:
         }
         return NULL;
     }
-    // Load mergedEnvironment from local XML node
-    void loadEnvironment()
-    {
-        mergedEnvironment.setown(createProperties(true));
-        Owned<IPropertyTreeIterator> envIterator = node->getElements("Environment");
-        ForEach(*envIterator)
-        {
-            IPropertyTree &env = envIterator->query();
-            const char *id = env.queryProp("@id");
-            const char *val = env.queryProp("@value");
-            if (!val)
-                val = env.queryProp("@val"); // Historically we used val here - not sure why... other parts of package file used value
-            if (id && val)
-                mergedEnvironment->setProp(id, val);
-            else
-            {
-                StringBuffer s;
-                toXML(&env, s);
-                throw MakeStringException(0, "PACKAGE_ERROR: Environment element missing id or value: %s", s.str());
-            }
-        }
-        Owned<IAttributeIterator> attrs = node->getAttributes();
-        for(attrs->first(); attrs->isValid(); attrs->next())
-        {
-            StringBuffer s("control:");
-            s.append(attrs->queryName()+1);  // queryName() has a leading @, hence the +1
-            mergedEnvironment->setProp(s.str(), attrs->queryValue());
-        }
-    }
-    // Merge base package environment into mergedEnvironment
-    void mergeEnvironment(const CRoxiePackage *base)
-    {
-        Owned<IPropertyIterator> envIterator = base->mergedEnvironment->getIterator();
-        ForEach(*envIterator)
-        {
-            const char *id = envIterator->getPropKey();
-            const char *val = base->mergedEnvironment->queryProp(id);
-            if (id && val && !mergedEnvironment->hasProp(id))
-                mergedEnvironment->setProp(id, val);
-        }
-    }
-    // Search this package and any bases for an element matching xpath1, then return iterator for its children that match xpath2
-    IPropertyTreeIterator *lookupElements(const char *xpath1, const char *xpath2) const
-    {
-        IPropertyTree *parentNode = node->queryPropTree(xpath1);
-        if (parentNode)
-            return parentNode->getElements(xpath2);
-        ForEachItemIn(idx, bases)
-        {
-            const CRoxiePackage &basePackage = bases.item(idx);
-            IPropertyTreeIterator *it = basePackage.lookupElements(xpath1, xpath2);
-            if (it)
-                return it;
-        }
-        return NULL;
-    }
-    // Use local package and its bases to resolve superfile name list of subfiles via all supported resolvers
-    const ISimpleSuperFileEnquiry *resolveSuperFile(const char *superFileName) const
-    {
-        // Order of resolution: 
-        // 1. SuperFiles named in local package
-        // 2. SuperFiles named in bases
-        // There is no dali or local case - a superfile that is resolved in dali must also resolve the subfiles there (and is all done in the resolveLFNusingDali method)
-        if (node)
-        {
-            StringBuffer superFileXPath;
-            superFileXPath.append("SuperFile[@id='").append(superFileName).append("']");
-            Owned<IPropertyTreeIterator> subFiles = lookupElements(superFileXPath, "SubFile");
-            if (subFiles)
-            {
-                Owned<CSimpleSuperFileArray> result = new CSimpleSuperFileArray(*subFiles);
-                return result.getClear();
-            }
-        }
-        return NULL;
-    }
+
     // Use local package file only to resolve subfile into physical file info
     IResolvedFile *resolveLFNusingPackage(const char *fileName) const
     {
@@ -316,6 +265,7 @@ protected:
         }
         return NULL;
     }
+
     // Use dali to resolve subfile into physical file info
     IResolvedFile *resolveLFNusingDali(const char *fileName, bool cacheIt, bool writeAccess, bool alwaysCreate) const
     {
@@ -423,10 +373,13 @@ protected:
                 addCache(fileName, result);
             return result;
         }
-        ForEachItemIn(idx, bases)
+        aindex_t count = getBaseCount();
+        for (aindex_t i = 0; i < count; i++)
         {
-            const CRoxiePackage &basePackage = bases.item(idx);
-            IResolvedFile *result = basePackage.lookupFile(fileName, cache, writeAccess, alwaysCreate);
+            const CRoxiePackageNode *basePackage = getBaseNode(i);
+            if (!basePackage)
+                continue;
+            IResolvedFile *result = basePackage->lookupFile(fileName, cache, writeAccess, alwaysCreate);
             if (result)
                 return result;
         }
@@ -434,96 +387,25 @@ protected:
     }
 
     // default constructor for derived class use
-    CRoxiePackage()
+    CRoxiePackageNode()
     {
-        hash = 0;
-        compulsory = false;
     }
 
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxiePackage(IPropertyTree *p)
+    CRoxiePackageNode(IPropertyTree *p) : CPackageNode(p)
     {
-        if (p)
-            node.set(p);
-        else
-            node.setown(createPTree("RoxiePackages"));
-        StringBuffer xml;
-        toXML(node, xml);
-        hash = rtlHash64Data(xml.length(), xml.str(), 9994410);
-        compulsory = false;
         daliHelper.setown(connectToDali()); // MORE - should make this conditional
         if (!daliHelper.get() || !daliHelper->connected())
             node->setPropBool("@localFiles", true);
     }
 
-    ~CRoxiePackage()
+    ~CRoxiePackageNode()
     {
         assertex(fileCache.count()==0);
         // If it's possible for cached objects to outlive the cache I think there is a problem...
         // we could set the cache field to null here for any objects still in cache but there would be a race condition
-    }
-
-    virtual void resolveBases(IPackageMap *packages)
-    {
-        loadEnvironment();
-        if (packages)
-        {
-            Owned<IPropertyTreeIterator> baseIterator = node->getElements("Base");
-            if (baseIterator->first())
-            {
-                do
-                {
-                    IPropertyTree &baseElem = baseIterator->query();
-                    const char *baseId = baseElem.queryProp("@id");
-                    if (!baseId)
-                        throw MakeStringException(0, "PACKAGE_ERROR: base element missing id attribute");
-                    const IRoxiePackage *_base = packages->queryPackage(baseId);
-                    if (_base)
-                    {
-                        const CRoxiePackage *base = static_cast<const CRoxiePackage *>(_base);
-                        bases.append(const_cast<CRoxiePackage &>(*LINK(base)));   // should really be an arrayof<const base> but that would require some fixing in jlib
-                        hash = rtlHash64Data(sizeof(base->hash), &base->hash, hash);
-                        mergeEnvironment(base);
-                    }
-                    else
-                        throw MakeStringException(0, "PACKAGE_ERROR: base package %s not found", baseId);
-                }
-                while(baseIterator->next());
-            }
-            else 
-            {
-                const IRoxiePackage &rootPackage = queryRootPackage();
-                const CRoxiePackage &base = static_cast<const CRoxiePackage &>(rootPackage);
-                base.Link();
-                bases.append(const_cast<CRoxiePackage &>(base));   // should really be an arryof<const base> but that would require some fixing in jlib
-                hash = rtlHash64Data(sizeof(base.hash), &base.hash, hash);
-                mergeEnvironment(&base);
-            }
-        }
-        const char * val = queryEnv("control:compulsory");
-        if (val)
-            compulsory=strToBool(val);
-    }
-
-    virtual bool getEnableFieldTranslation() const
-    {
-        const char *val = queryEnv("control:enableFieldTranslation");
-        if (val)
-            return strToBool(val);
-        else
-            return fieldTranslationEnabled;
-    }
-
-    virtual const char *queryEnv(const char *varname) const
-    {
-        return mergedEnvironment->queryProp(varname);
-    }
-
-    virtual hash64_t queryHash() const 
-    {
-        return hash;
     }
 
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const 
@@ -578,11 +460,6 @@ public:
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
 
-    virtual const IPropertyTree *queryTree() const
-    {
-        return node;
-    }
-
     virtual IPropertyTree *getQuerySets() const
     {
         if (node)
@@ -592,84 +469,66 @@ public:
     }
 };
 
-IRoxiePackage *createPackage(IPropertyTree *p)
+typedef CResolvedPackage<CRoxiePackageNode> CRoxiePackage;
+
+IRoxiePackage *createRoxiePackage(IPropertyTree *p, IRoxiePackageMap *packages)
 {
-    return new CRoxiePackage(p);
+    Owned<CRoxiePackage> pkg = new CRoxiePackage(p);
+    if (packages)
+        pkg->resolveBases(packages);
+    return pkg.getClear();
 }
 
 //================================================================================================
 // CPackageMap - an implementation of IPackageMap using a string map
 //================================================================================================
 
-class CPackageMap : public CInterface, implements IPackageMap
+class CRoxiePackageMap : public CPackageMapOf<CRoxiePackageNode, IRoxiePackage>, implements IRoxiePackageMap
 {
-    MapStringToMyClass<IRoxiePackage> packages;
-    StringAttr packageId;
-    bool active;
-    StringArray wildMatches, wildIds;
 public:
     IMPLEMENT_IINTERFACE;
-    CPackageMap(const char *_packageId, bool _active)
-        : packageId(_packageId), active(_active), packages(true)
+
+    typedef CPackageMapOf<CRoxiePackageNode, IRoxiePackage> BASE;
+
+    CRoxiePackageMap(const char *_packageId, const char *_querySet, bool _active)
+        : BASE(_packageId, _querySet, _active)
     {
     }
 
-    // IPackageMap interface
-    virtual bool isActive() const
+    //map ambiguous IHpccPackageMap interface
+    virtual const IHpccPackage *queryPackage(const char *name) const
     {
-        return active;
+        return BASE::queryPackage(name);
     }
-    virtual const IRoxiePackage *queryPackage(const char *name) const
+    virtual const IHpccPackage *matchPackage(const char *name) const
     {
-        return name ? packages.getValue(name) : NULL;
-    }
-    virtual const IRoxiePackage *matchPackage(const char *name) const
-    {
-        if (name)
-        {
-            ForEachItemIn(idx, wildMatches)
-            {
-                if (WildMatch(name, wildMatches.item(idx), true))
-                    return queryPackage(wildIds.item(idx));
-            }
-        }
-        return NULL;
+        return BASE::matchPackage(name);
     }
     virtual const char *queryPackageId() const
     {
-        return packageId;
+        return BASE::queryPackageId();
     }
-    void load(IPropertyTree *xml)
+    virtual bool isActive() const
     {
-        Owned<IPropertyTreeIterator> allpackages = xml->getElements("Package");
-        ForEach(*allpackages)
-        {
-            IPropertyTree &packageTree = allpackages->query();
-            const char *id = packageTree.queryProp("@id");
-            if (id && *id)
-            {
-                Owned<IRoxiePackage> package = createPackage(&packageTree);
-                package->resolveBases(this);
-                packages.setValue(id, package);
-                const char *queries = packageTree.queryProp("@queries");
-                if (queries && *queries)
-                {
-                    wildMatches.append(queries);
-                    wildIds.append(id);
-                }
-            }
-            else
-                throw MakeStringException(ROXIE_UNKNOWN_PACKAGE, "Invalid package map - Package element missing id attribute");
-        }
+        return BASE::isActive();
+    }
+
+    virtual const IRoxiePackage *queryRoxiePackage(const char *name) const
+    {
+        return queryResolvedPackage(name);
+    }
+    virtual const IRoxiePackage *matchRoxiePackage(const char *name) const
+    {
+        return matchResolvedPackage(name);
     }
 };
 
-static CPackageMap *emptyPackageMap;
+static CRoxiePackageMap *emptyPackageMap;
 static CRoxiePackage *rootPackage;
 static SpinLock emptyPackageMapCrit;
 static IRoxieDebugSessionManager *debugSessionManager;
 
-extern const IRoxiePackage &queryRootPackage()
+extern const IRoxiePackage &queryRootRoxiePackage()
 {
     SpinBlock b(emptyPackageMapCrit);
     if (!rootPackage)
@@ -681,11 +540,11 @@ extern const IRoxiePackage &queryRootPackage()
     return *rootPackage;
 }
 
-extern const IPackageMap &queryEmptyPackageMap()
+extern const IRoxiePackageMap &queryEmptyRoxiePackageMap()
 {
     SpinBlock b(emptyPackageMapCrit);
     if (!emptyPackageMap)
-        emptyPackageMap = new CPackageMap("<none>", true);
+        emptyPackageMap = new CRoxiePackageMap("<none>", NULL, true);
     return *emptyPackageMap;
 }
 
@@ -765,7 +624,7 @@ protected:
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Invalid parameters to addAlias");
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo) = 0;
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo) = 0;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -785,7 +644,7 @@ public:
         return active;
     }
 
-    virtual void load(const IPropertyTree *querySet, const IPackageMap &packages, hash64_t &hash)
+    virtual void load(const IPropertyTree *querySet, const IRoxiePackageMap &packages, hash64_t &hash)
     {
         Owned<IPropertyTreeIterator> queryNames = querySet->getElements("Query");
         ForEach (*queryNames)
@@ -798,7 +657,7 @@ public:
                 if (!id || !*id || !dllName || !*dllName)
                     throw MakeStringException(ROXIE_QUERY_MODIFICATION, "dll and id must be specified");
                 Owned<const IQueryDll> queryDll = createQueryDll(dllName);
-                const IRoxiePackage *package = NULL;
+                const IHpccPackage *package = NULL;
                 const char *packageName = query.queryProp("@package");
                 if (packageName && *packageName)
                 {
@@ -810,7 +669,7 @@ public:
                 {
                     package = packages.queryPackage(id);  // Look for an exact match, then a fuzzy match, using query name as the package id
                     if(!package) package = packages.matchPackage(id);
-                    if (!package) package = &queryRootPackage();
+                    if (!package) package = &queryRootRoxiePackage();
                 }
                 assertex(package);
                 addQuery(id, loadQueryFromDll(id, queryDll.getClear(), *package, &query), hash);
@@ -932,7 +791,7 @@ public:
     {
     }
 
-    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)
+    virtual IQueryFactory * loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
     {
         return createServerQueryFactory(id, dll, package, stateInfo);
     }
@@ -956,7 +815,7 @@ public:
         channelNo = _channelNo;
     }
 
-    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IRoxiePackage &package, const IPropertyTree *stateInfo)
+    virtual IQueryFactory *loadQueryFromDll(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
     {
         return createSlaveQueryFactory(id, dll, package, channelNo, stateInfo);
     }
@@ -997,7 +856,7 @@ public:
         return managers[idx];
     }
 
-    virtual void load(const IPropertyTree *querySets, const IPackageMap &packages, hash64_t &hash)
+    virtual void load(const IPropertyTree *querySets, const IRoxiePackageMap &packages, hash64_t &hash)
     {
         for (unsigned channel = 0; channel < numChannels; channel++)
             if (managers[channel])
@@ -1079,7 +938,7 @@ class CRoxieQueryPackageManager : public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CRoxieQueryPackageManager(unsigned _numChannels, const char *_querySet, const IPackageMap *_packages)
+    CRoxieQueryPackageManager(unsigned _numChannels, const char *_querySet, const IRoxiePackageMap *_packages)
         : numChannels(_numChannels), packages(_packages), querySet(_querySet)
     {
         queryHash = 0;
@@ -1196,7 +1055,7 @@ protected:
     Owned<CRoxieSlaveQuerySetManagerSet> slaveManagers;
     Owned<IRoxieQuerySetManager> serverManager;
 
-    Owned<const IPackageMap> packages;
+    Owned<const IRoxiePackageMap> packages;
     unsigned numChannels;
     hash64_t queryHash;
     StringAttr querySet;
@@ -1229,7 +1088,7 @@ class CRoxieDaliQueryPackageManager : public CRoxieQueryPackageManager, implemen
 
 public:
     IMPLEMENT_IINTERFACE;
-    CRoxieDaliQueryPackageManager(unsigned _numChannels, const IPackageMap *_packages, const char *_querySet)
+    CRoxieDaliQueryPackageManager(unsigned _numChannels, const IRoxiePackageMap *_packages, const char *_querySet)
         : CRoxieQueryPackageManager(_numChannels, _querySet, _packages)
     {
         daliHelper.setown(connectToDali());
@@ -1274,7 +1133,7 @@ class CStandaloneQueryPackageManager : public CRoxieQueryPackageManager
 public:
     IMPLEMENT_IINTERFACE;
 
-    CStandaloneQueryPackageManager(unsigned _numChannels, const char *_querySet, const IPackageMap *_packages, IPropertyTree *_standaloneDll)
+    CStandaloneQueryPackageManager(unsigned _numChannels, const char *_querySet, const IRoxiePackageMap *_packages, IPropertyTree *_standaloneDll)
         : CRoxieQueryPackageManager(_numChannels, _querySet, _packages), standaloneDll(_standaloneDll)
     {
         assertex(standaloneDll);
@@ -2282,7 +2141,7 @@ private:
         throw MakeStringException(ROXIE_INVALID_INPUT, "Badly formated control query");
     }
 
-    void createQueryPackageManager(unsigned numChannels, const IPackageMap *packageMap, const char *querySet)
+    void createQueryPackageManager(unsigned numChannels, const IRoxiePackageMap *packageMap, const char *querySet)
     {
         // Called from reload inside write lock block
         Owned<CRoxieQueryPackageManager> qpm = new CRoxieDaliQueryPackageManager(numChannels, packageMap, querySet);
@@ -2331,7 +2190,7 @@ private:
                             DBGLOG("Loading package map %s, active %s", packageMapId, isActive ? "true" : "false");
                         try
                         {
-                            Owned<CPackageMap> packageMap = new CPackageMap(packageMapId, isActive);
+                            Owned<CRoxiePackageMap> packageMap = new CRoxiePackageMap(packageMapId, packageMapFilter, isActive);
                             Owned<IPropertyTree> xml = daliHelper->getPackageMap(packageMapId);
                             packageMap->load(xml);
                             createQueryPackageManager(numChannels, packageMap.getLink(), querySet);
@@ -2352,7 +2211,7 @@ private:
         {
             if (traceLevel)
                 DBGLOG("Loading empty package for QuerySet %s", querySet);
-            createQueryPackageManager(numChannels, LINK(&queryEmptyPackageMap()), querySet);
+            createQueryPackageManager(numChannels, LINK(&queryEmptyRoxiePackageMap()), querySet);
         }
         if (traceLevel)
             DBGLOG("Loaded packages");
@@ -2365,7 +2224,7 @@ private:
         standAloneDllTree.setown(createPTree("Query"));
         standAloneDllTree->setProp("@id", "roxie");
         standAloneDllTree->setProp("@dll", standAloneDll->queryDll()->queryName());
-        Owned<CRoxieQueryPackageManager> qpm = new CStandaloneQueryPackageManager(numChannels, querySet, LINK(&queryEmptyPackageMap()), standAloneDllTree.getClear());
+        Owned<CRoxieQueryPackageManager> qpm = new CStandaloneQueryPackageManager(numChannels, querySet, LINK(&queryEmptyRoxiePackageMap()), standAloneDllTree.getClear());
         qpm->load();
         stateHash = rtlHash64Data(sizeof(stateHash), &stateHash, qpm->getHash());
         allQueryPackages.append(*qpm.getClear());
