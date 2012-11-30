@@ -30017,7 +30017,7 @@ public:
         CriticalBlock b(daliUpdateCrit);
         if (!dynamicPackage)
         {
-            dynamicPackage.setown(createPackage(NULL));
+            dynamicPackage.setown(createRoxiePackage(NULL, NULL));
         }
         return dynamicPackage->lookupFileName(filename, isOpt, true, workUnit);
     }
@@ -30027,7 +30027,7 @@ public:
         CriticalBlock b(daliUpdateCrit);
         if (!dynamicPackage)
         {
-            dynamicPackage.setown(createPackage(NULL));
+            dynamicPackage.setown(createRoxiePackage(NULL, NULL));
         }
         return dynamicPackage->createFileName(filename, overwrite, extend, clusters, workUnit);
     }
@@ -32445,7 +32445,7 @@ protected:
 
     void init()
     {
-        package.setown(createPackage(NULL));
+        package.setown(createPackage(NULL, NULL));
         ctx.setown(createSlaveContext(NULL, logctx, 0, 50*1024*1024, NULL));
         queryDll.setown(createExeQueryDll("roxie"));
         queryFactory.setown(createServerQueryFactory("test", queryDll.getLink(), *package, NULL));
