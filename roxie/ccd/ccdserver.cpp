@@ -7267,14 +7267,14 @@ IRoxieServerActivityFactory *createRoxieServerNormalizeLinkedChildActivityFactor
 
 //=================================================================================
 
-interface ISortAlgorithm
+interface ISortAlgorithm : extends IInterface
 {
     virtual void prepare(IRoxieInput *input) = 0;
     virtual const void *next() = 0;
     virtual void reset() = 0;
 };
 
-class CQuickSortAlgorithm : implements ISortAlgorithm
+class CQuickSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
 {
     unsigned curIndex;
     ConstPointerArray sorted;
@@ -7309,7 +7309,7 @@ public:
     }
 };
 
-class CSpillingQuickSortAlgorithm : implements ISortAlgorithm, implements roxiemem::IBufferedRowCallback
+class CSpillingQuickSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>, implements roxiemem::IBufferedRowCallback
 {
     enum {
         InitialSortElements = 0,
@@ -7545,7 +7545,7 @@ public:
     }
 };
 
-class CInsertionSortAlgorithm : implements ISortAlgorithm
+class CInsertionSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
 {
     SortedBlock *curBlock;
     unsigned blockNo;
@@ -7680,7 +7680,7 @@ public:
     }
 };
 
-class CHeapSortAlgorithm : implements ISortAlgorithm
+class CHeapSortAlgorithm : implements CInterfaceOf<ISortAlgorithm>
 {
     unsigned curIndex;
     ConstPointerArray sorted;
@@ -7887,7 +7887,7 @@ class CRoxieServerSortActivity : public CRoxieServerActivity
 protected:
     IHThorSortArg &helper;
     ICompare *compare;
-    ISortAlgorithm *sorter;
+    Owned<ISortAlgorithm> sorter;
     bool readInput;
     RoxieSortAlgorithm sortAlgorithm;
     unsigned sortFlags;
@@ -7898,12 +7898,6 @@ public:
     {
         compare = helper.queryCompare();
         readInput = false;
-        sorter = NULL;
-    }
-
-    ~CRoxieServerSortActivity()
-    {
-        delete sorter;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
@@ -7912,19 +7906,19 @@ public:
         switch (sortAlgorithm)
         {
         case heapSort:
-            sorter = new CHeapSortAlgorithm(compare);
+            sorter.setown(new CHeapSortAlgorithm(compare));
             break;
         case insertionSort:
-            sorter = new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
+            sorter.setown(new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId));
             break;
         case quickSort:
-            sorter = new CQuickSortAlgorithm(compare);
+            sorter.setown(new CQuickSortAlgorithm(compare));
             break;
         case spillingQuickSort:
-            sorter = new CSpillingQuickSortAlgorithm(compare, ctx, meta, activityId);
+            sorter.setown(new CSpillingQuickSortAlgorithm(compare, ctx, meta, activityId));
             break;
         case unknownSort:
-            sorter = NULL; // create it later....
+            sorter.clear(); // create it later....
             break;
         default:
             throwUnexpected();
@@ -7953,8 +7947,7 @@ public:
         {
             if (sortAlgorithm == unknownSort)
             {
-                delete sorter;
-                sorter = NULL;
+                sorter.clear();
                 IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
                 const char *useAlgorithm = sortMethod->queryAlgorithm();
                 if (useAlgorithm)
@@ -7963,23 +7956,23 @@ public:
                     {
                         if (sortFlags & TAFstable)
                             throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
-                        sorter = new CQuickSortAlgorithm(compare);
+                        sorter.setown(new CQuickSortAlgorithm(compare));
                     }
                     else if (stricmp(useAlgorithm, "heapsort")==0)
-                        sorter = new CHeapSortAlgorithm(compare);
+                        sorter.setown(new CHeapSortAlgorithm(compare));
                     else if (stricmp(useAlgorithm, "insertionsort")==0)
-                        sorter = new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId);
+                        sorter.setown(new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId));
                     else
                     {
                         WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
                         if (sortFlags & TAFunstable)
-                            sorter = new CQuickSortAlgorithm(compare);
+                            sorter.setown(new CQuickSortAlgorithm(compare));
                         else
-                            sorter = new CHeapSortAlgorithm(compare);
+                            sorter.setown(new CHeapSortAlgorithm(compare));
                     }
                 }
                 else
-                    sorter = new CHeapSortAlgorithm(compare); // shouldn't really happen but there was a vintage of codegen that did not set the flag when algorithm not specified...
+                    sorter.setown(new CHeapSortAlgorithm(compare)); // shouldn't really happen but there was a vintage of codegen that did not set the flag when algorithm not specified...
             }
             sorter->prepare(input);
             readInput = true;
