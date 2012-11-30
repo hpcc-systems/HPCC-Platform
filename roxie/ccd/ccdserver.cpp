@@ -7272,6 +7272,7 @@ interface ISortAlgorithm
     virtual void prepare(IRoxieInput *input) = 0;
     virtual const void *next() = 0;
     virtual void reset() = 0;
+    virtual ~ISortAlgorithm() {}
 };
 
 class CQuickSortAlgorithm : implements ISortAlgorithm
