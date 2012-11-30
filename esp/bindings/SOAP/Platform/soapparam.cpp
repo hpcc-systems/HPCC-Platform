@@ -464,7 +464,11 @@ bool EspBaseArrayParam::unmarshallItems(IEspContext* ctx, CSoapValue *sv, const 
         if (ctx && optGroup)
             ctx->addOptGroup(optGroup);
         ForEachItemIn(i, *children)
-            append(ctx, children->item(i));
+        {
+            CSoapValue &child = children->item(i);
+            child.setEncodeXml(false);
+            append(ctx, child);
+        }
         return true;
     }
     return false;
