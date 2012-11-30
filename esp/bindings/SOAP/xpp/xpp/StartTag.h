@@ -88,7 +88,7 @@ namespace xpp {
 
     /** @return DO NOT DEALLOCATE RETURN VALUE! */
     const SXT_CHAR* getType(int index) const {
-        index;
+      index = index;
       return _MYT("CDATA");
     }
 
@@ -107,7 +107,7 @@ namespace xpp {
      * @return DO NOT DEALLOCATE RETURN VALUE! 
      */
     const SXT_CHAR* getType (const SXT_CHAR* qName_) const {
-      qName_;
+      qName_ = qName_;
       return _MYT("CDATA");
     }
     
@@ -116,8 +116,8 @@ namespace xpp {
      * @return DO NOT DEALLOCATE RETURN VALUE! 
      */
     const SXT_CHAR* getType (const SXT_STRING* uri_, const SXT_CHAR* localName_) const {
-      uri_;
-      localName_;
+      uri_ = uri_;
+      localName_ = localName_;
       return _MYT("CDATA");
     }
 

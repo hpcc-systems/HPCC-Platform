@@ -2583,7 +2583,8 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
         char* pTempFile = tempfile + strlen(tempfile);
 
         strcpy(pTempFile, pszCertFile);
-        DeleteFile(tempfile);
+        if (!DeleteFile(tempfile))
+            WARNLOG("Couldn't delete file %s", tempfile);
         
         //write certificate in this temp file
         Owned<IFile> pFile = createIFile(tempfile);
@@ -2600,7 +2601,8 @@ void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *inst
         
         //create temp file path to save private key
         strcpy(pTempFile, pszPrivFile);
-        DeleteFile(tempfile);
+        if (!DeleteFile(tempfile))
+            WARNLOG("Couldn't delete file %s", tempfile);
 
         //write private key in this temp file
         pFile.set( createIFile(tempfile) );
