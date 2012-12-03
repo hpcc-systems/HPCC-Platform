@@ -382,7 +382,7 @@
              name="s1"
              netAddress="."/>
   </EclAgentProcess>
-   <EclCCServerProcess build="${projname}_${version}-${stagever}"
+  <EclCCServerProcess build="${projname}_${version}-${stagever}"
                     buildSet="eclccserver"
                     daliServers="mydali"
                     description="EclCCServer process"
@@ -394,6 +394,7 @@
              directory="${RUNTIME_PATH}/myeclccserver"
              name="s1"
              netAddress="."/>
+   <Option name="maxCompileThreads" value="2"/>
   </EclCCServerProcess>
    <EclSchedulerProcess build="${projname}_${version}-${stagever}"
                 buildSet="eclscheduler"
