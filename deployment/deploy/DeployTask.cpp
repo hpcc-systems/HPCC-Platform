@@ -419,12 +419,12 @@ public:
                catch(IException* e)
                {
                  if (!DeleteFile(sb.str()))
-                       WARNLOG("Couldn't delete file %s", sb.str());
+                   WARNLOG("Couldn't delete file %s", sb.str());
                  throw e;
                }
 
                if (!DeleteFile(sb.str()))
-                     WARNLOG("Couldn't delete file %s", sb.str());
+                 WARNLOG("Couldn't delete file %s", sb.str());
               }
            }
 
@@ -466,7 +466,7 @@ public:
 
          //remove incomplete (invalid) output file produced thus far
          if (!DeleteFile(target))
-               WARNLOG("Couldn't delete file %s", target);
+           WARNLOG("Couldn't delete file %s", target);
        }
        catch (...)
        {
@@ -475,7 +475,7 @@ public:
 
          //remove incomplete (invalid) output file produced thus far
          if (!DeleteFile(target))
-               WARNLOG("Couldn't delete file %s", target);
+           WARNLOG("Couldn't delete file %s", target);
        }
        // Prompt to retry on error
        m_errorCode = (DWORD) -1;//don't format m_errorString based on last error
