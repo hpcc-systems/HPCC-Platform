@@ -418,11 +418,13 @@ public:
                }
                catch(IException* e)
                {
-                 DeleteFile(sb.str());
+                 if (!DeleteFile(sb.str()))
+                   WARNLOG("Couldn't delete file %s", sb.str());
                  throw e;
                }
 
-                DeleteFile(sb.str());               
+               if (!DeleteFile(sb.str()))
+                 WARNLOG("Couldn't delete file %s", sb.str());
               }
            }
 
@@ -463,7 +465,8 @@ public:
          e->Release();
 
          //remove incomplete (invalid) output file produced thus far
-         DeleteFile(target);
+         if (!DeleteFile(target))
+           WARNLOG("Couldn't delete file %s", target);
        }
        catch (...)
        {
@@ -471,7 +474,8 @@ public:
          m_errorString.append("Unspecified XSL error");
 
          //remove incomplete (invalid) output file produced thus far
-         DeleteFile(target);
+         if (!DeleteFile(target))
+           WARNLOG("Couldn't delete file %s", target);
        }
        // Prompt to retry on error
        m_errorCode = (DWORD) -1;//don't format m_errorString based on last error

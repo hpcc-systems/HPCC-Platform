@@ -225,7 +225,6 @@ int COneServerHttpProxyThread::start()
         socket2->write(requestbuf.str(), requestbuf.length());
         StringBuffer respbuf;
         Owned<IByteOutputStream> respstream = createOutputStream(respbuf);
-        isRoxie;
         Http::receiveData(socket2.get(), respstream.get(), true, isRoxie);
         
         if(http_tracelevel >= 5)
