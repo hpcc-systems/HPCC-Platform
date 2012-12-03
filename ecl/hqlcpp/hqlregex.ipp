@@ -93,8 +93,8 @@ protected:
 class HqlRegexHashTable : public SuperHashTable
 {
 public:
-    SuperHashTable::add;
-    SuperHashTable::find;
+    using SuperHashTable::add;
+    using SuperHashTable::find;
     ~HqlRegexHashTable() { releaseAll(); }
 
 private:
