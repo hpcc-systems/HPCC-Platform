@@ -1,0 +1,1563 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book lang="en_US" xml:base="../">
+  <title>HPCC Systems<superscript>®</superscript> Instant Cloud for
+  AWS</title>
+
+  <bookinfo>
+    <title>HPCC Systems<superscript>®</superscript> Instant Cloud for
+    AWS</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email></para>
+
+      <para>Please include <emphasis role="bold">Documentation
+      Feedback</emphasis> in the subject line and reference the document name,
+      page numbers, and current Version Number in the text of the
+      message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
+      registered trademark of LexisNexis Risk Data Management Inc.</para>
+
+      <para>Amazon Web Services, AWS, Amazon EC2, EC2, Amazon Elastic Compute
+      Cloud, Amazon S3, Amazon Simple Storage Service, are trademarks,
+      registered trademarks or trade dress of AWS in the U.S. and/or other
+      countries.</para>
+
+      <para>Other products, logos, and services may be trademarks or
+      registered trademarks of their respective companies. All names and
+      example data used in this manual are fictitious. Any similarity to
+      actual persons, living or dead, is purely coincidental.</para>
+
+      <para></para>
+
+      <para><emphasis role="redbold"></emphasis></para>
+    </legalnotice>
+
+    <xi:include href="common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="images/AWS_InstantCloud_COVER_registeredTm.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <para>This guide provides details and guidance in running an HPCC
+    Systems<superscript>®</superscript> Platform inside an Amazon Web Services
+    (AWS) Elastic Cloud (EC2) using the Instant Cloud for AWS page.</para>
+
+    <para>This allows you to <emphasis role="bold">instantiate</emphasis> and
+    run HPCC Systems clusters of different sizes on the fly.</para>
+
+    <para>This is useful for:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Proof-of-concept</para>
+      </listitem>
+
+      <listitem>
+        <para>Experimentation</para>
+      </listitem>
+
+      <listitem>
+        <para>Learning</para>
+      </listitem>
+
+      <listitem>
+        <para>Leveraging the HPCC Systems platform without incurring cost of
+        hardware and administration</para>
+      </listitem>
+
+      <listitem>
+        <para>Create and use an HPCC Systems cluster immediately without
+        purchasing and installing new hardware</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>You can create a small cluster for small tasks or larger clusters
+    for larger jobs. This flexibility allows you to match cost and processing
+    power to the job at hand.</para>
+
+    <para>Instantiating temporary EC2 nodes allows you to "rent" computing
+    capacity without long term commitments. In this manner, you pay as you go
+    instead of incurring large fixed costs at the start.</para>
+
+    <para><emphasis role="bold">Keep in mind that you should terminate any
+    unneeded instances to avoid paying for computing time you don't need.
+    </emphasis><emphasis role="redbold">You are solely responsible for all AWS
+    charges.</emphasis></para>
+
+    <para>We are working with Amazon to improve the set up processes.
+    <emphasis role="bold">In the near future, we will have a guide to show how
+    to run an HPCC Systems cluster in an Amazon Elastic Map Reduce (EMR) type
+    environment.</emphasis> We expect that method to be more robust and easier
+    to set up and operate. In addition, HPCC Systems is working on its own
+    Enterprise Cloud offering, but it is not yet ready to be announced.</para>
+
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <?dbfo keep-together="always"?>
+
+      <tgroup cols="2">
+        <colspec colwidth="49.50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+
+            <entry>We suggest <emphasis role="bold">reading</emphasis> this
+            document in its entirety before beginning.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+    <sect1>
+      <title>Prerequisites and Assumptions</title>
+
+      <para>You will need:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>An Amazon Web Services account with EC2 enabled</para>
+        </listitem>
+
+        <listitem>
+          <para>A workstation with Internet access to access the Amazon Web
+          Services, This can be either a:</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para><emphasis>Windows PC or </emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis>Linux workstation with the Eclipse IDE and the
+                ECL plug-in for Eclipse (available soon)</emphasis></para>
+              </listitem>
+
+              <listitem>
+                <para><emphasis>Mac<superscript></superscript> workstation
+                with the Eclipse IDE and the ECL plug-in for Eclipse
+                (available soon)</emphasis></para>
+              </listitem>
+            </itemizedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>A Web browser (Firefox, Internet Explorer, or Chrome)</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>Optionally, you could benefit from having:</para>
+
+      <itemizedlist mark="bullet">
+        <listitem>
+          <para>An SSH tool, such as PuTTY</para>
+        </listitem>
+
+        <listitem>
+          <para>A key generation and conversion tool, like PuTTYGen</para>
+        </listitem>
+
+        <listitem>
+          <para>A secure copy tool (such as, WinSCP)</para>
+        </listitem>
+
+        <listitem>
+          <para>Familiarity in navigating Linux file systems</para>
+        </listitem>
+      </itemizedlist>
+
+      <!--***eclipse info needs to be added when released-->
+
+      <para></para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic fileref="images/OSSgr3.png" /></entry>
+
+                <entry>For detailed PuTTY/pcsp/PUTTYGen directions from
+                Amazon, see: <para><ulink
+                url="http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html">http://docs.amazonwebservices.com/AmazonEC2/gsg/2006-06-26/putty.html</ulink></para></entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+    </sect1>
+  </chapter>
+
+  <chapter id="Collect">
+    <title>Using Instant Cloud Launch</title>
+
+    <sect1 role="nobrk">
+      <title>Before you begin</title>
+
+      <para>In this section, you will gather some information you need before
+      beginning. This includes:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Your AWS Access Key ID and Secret Access Key</para>
+        </listitem>
+
+        <listitem>
+          <para>The size of the cluster you want.</para>
+        </listitem>
+      </itemizedlist>
+
+      <!--Include follows-->
+
+      <xi:include href="InstantCloud/AWS-Mods/AWSIncludes.xml"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+    </sect1>
+
+    <sect1>
+      <title>Login</title>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Open a browser and go to <ulink
+            url="https://aws.hpccsystems.com">https://aws.hpccsystems.com/</ulink>.</para>
+
+            <para>If not logged in, you will see the <emphasis
+            role="bold">Login</emphasis> link at the top of the page. If you
+            see a <emphasis role="bold">Logout</emphasis> link, you are
+            already logged in.</para>
+          </listitem>
+
+          <listitem>
+            <para>Specify your <emphasis role="bold">Access Key ID</emphasis>
+            and <emphasis role="bold">Secret Access Key</emphasis>. This
+            information is never stored on our system.</para>
+
+            <para>If you don't have it handy, you can click on the link under
+            <emphasis role="bold">Can't find your Access Key ID?</emphasis> to
+            go to that section of the AWS Management Console.<emphasis
+            role="bluebold"></emphasis>.</para>
+
+            <para><figure>
+                <title>Login</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_InstantCloud_Login.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Portions of this image are intentionally blurred</para>
+          </listitem>
+
+          <listitem>
+            <para>Check the box to accept the Terms of Use.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Login </emphasis>
+            button.</para>
+
+            <para>The <emphasis role="bold">View Clusters </emphasis>window
+            displays. This shows any clusters you have started. From here, you
+            can access the link to launch a new cluster.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the <emphasis role="bold">Launch Cluster
+            </emphasis>link at the top.</para>
+
+            <para>The <emphasis role="bold">Launch a New HPCC Cluster
+            </emphasis>window displays.</para>
+
+            <para></para>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+
+    <sect1>
+      <title>Launch a New HPCC Cluster</title>
+
+      <para>In this section, you will launch a set of Ubuntu 12.04 machines to
+      use for your HPCC Systems Thor platform. The Instant Cloud page uses the
+      input you specify to create your cluster for you.</para>
+
+      <para>When you press the <emphasis role="bold">Launch Cluster
+      </emphasis>button, it:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Creates a unique Cluster Name.</para>
+        </listitem>
+
+        <listitem>
+          <para>Creates a Security Group with the access to the TCP and UDP
+          ports enabled.</para>
+        </listitem>
+
+        <listitem>
+          <para>Creates a Key Pair.</para>
+        </listitem>
+
+        <listitem>
+          <para>Launches the number of m1.large nodes requested using the
+          provided AMI (ami-e01698d0).</para>
+        </listitem>
+
+        <listitem>
+          <para>Gathers Private and Public IPs.</para>
+        </listitem>
+
+        <listitem>
+          <para>Installs HPCC Systems platform packages.</para>
+        </listitem>
+
+        <listitem>
+          <para>Configures the requested Thor Cluster, the requested Roxie
+          Cluster, and the required Support nodes.</para>
+        </listitem>
+
+        <listitem>
+          <para>Creates the internal user (HPCC).</para>
+        </listitem>
+
+        <listitem>
+          <para>Propagates the environment.xml file to all nodes.</para>
+        </listitem>
+
+        <listitem>
+          <para>Starts up all components.</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2 role="brk">
+        <title>Launch a New Thor Cluster</title>
+
+        <orderedlist numeration="arabic">
+          <listitem>
+            <para>Specify the number of Thor nodes and the number of Roxie
+            nodes to instantiate.</para>
+
+            <para><figure>
+                <title>Launch a New Thor Cluster</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_OneClick_LaunchNew.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Optionally, specify Snapshot ID(s) to attach data to your
+            landing zone.</para>
+
+            <para>This would be a previously saved "snapshot" of a landing
+            zone data store.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Launch Cluster</emphasis>
+            button.</para>
+
+            <para>The <emphasis role="bold">Cluster Launch Log
+            </emphasis>window displays. This shows details while it is
+            launching (it auto-refreshes during launch or termination). It
+            also shows your Cluster ID (a unique identifier) which can be
+            useful to identify the cluster when you have more than one
+            running.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Wait until the <emphasis role="bold">Cluster Launch
+            Log</emphasis> says <emphasis role="bold">Status: Ready</emphasis>
+            to indicate completion of the startup processes.</para>
+
+            <para><figure>
+                <title>Launch Cluster</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_OneClick_LaunchLog.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the <emphasis role="bluebold">View
+            Clusters</emphasis> link to see running clusters.</para>
+
+            <para>This list has links for the ECL Watch page, the Launch Log
+            page, the Configuration file for the cluster, a list of IPs, and
+            the SSH Key.</para>
+
+            <para>It also has a link that allows you to <emphasis
+            role="bold">Terminate</emphasis> the cluster instantiation.</para>
+
+            <para><figure>
+                <title>View Clusters</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_OneClick_ViewClusters.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Terminating your instances</title>
+
+        <para>If you need to save your data, you must to despray it first and
+        save it off of your cluster before shutting down. More information
+        about Data Handling in an HPCC Systems platform are available in the
+        <emphasis>Data Handling</emphasis> manual. See the <link
+        linkend="NextSteps">Next Steps</link> section for details on
+        downloading other manuals.</para>
+
+        <para><emphasis role="bold">To terminate your cluster:
+        </emphasis><orderedlist>
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Open the <emphasis role="bold">View Clusters</emphasis>
+              page using the link at the top of a page.</para>
+
+              <figure>
+                <title>Running Clusters</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/AWS_OneClick_ViewClustersTerminate.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Click on the <emphasis
+              role="bluebold">Terminate</emphasis> link next to the cluster
+              you wish to close.</para>
+
+              <para><figure>
+                  <title>Terminate Cluster</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_OneClick_005.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Terminate
+              Cluster</emphasis> button and confirm when prompted.</para>
+
+              <para>The <emphasis role="bold">Launch Log</emphasis> page
+              displays and shows activity while terminating.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Wait until the Cluster Launch Log says <emphasis
+              role="bold">Status: Terminated</emphasis>.</para>
+
+              <para><figure>
+                  <title>Terminated Cluster</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_OneClick_Terminated.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Optionally, go to the AWS management console to confirm
+              your instances have properly terminated.</para>
+
+              <para><emphasis role="redbold">You are solely responsible for
+              all charges to your AWS account.</emphasis></para>
+            </listitem>
+          </orderedlist></para>
+
+        <para></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Other Tasks</title>
+
+        <para></para>
+
+        <para><!--***  Log Out Comments FAQs Forum AWS Access Keys AWS Management Console AWS Health Dashboard AWS Limit Increase Request
+--></para>
+
+        <sect3>
+          <title>View Clusters</title>
+
+          <para>The <emphasis role="bold">View Clusters</emphasis> page
+          provides access to each cluster's Launch Date/Time, Cluster ID,
+          Number of Nodes, Zone, ECL Watch Page, Status, Launch Log, Config
+          File, IP Addresses, and SSH Key.</para>
+
+          <para>It also provides a link to terminate a cluster with a single
+          click.</para>
+
+          <para><figure>
+              <title>Running Clusters</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/AWS_OneClick_ViewClustersTerminate.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+
+        <sect3>
+          <title>Manage your SSH keys</title>
+
+          <para>The SSH Key management page allows you to download your
+          cluster's SSH key (.PEM file) to use to authenticate an SSH session,
+          such as a console session using PuTTY. It also provides a means to
+          delete it from the One-Click system.</para>
+
+          <para><orderedlist>
+              <listitem>
+                <para>Open the <emphasis role="bold">View Clusters</emphasis>
+                page using the <emphasis role="bluebold">View
+                Clusters</emphasis> Link at the top of a page.</para>
+
+                <figure>
+                  <title>Running Clusters</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_OneClick_003a.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure>
+              </listitem>
+
+              <listitem>
+                <?dbfo keep-together="always"?>
+
+                <para>Click on the <emphasis role="bluebold">Key</emphasis>
+                link next to the cluster.</para>
+
+                <para><figure>
+                    <title>Key Management</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/AWS_OneClick_006.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Click on the <emphasis role="bluebold">pem file
+                </emphasis> link to download the key.</para>
+
+                <para>You should store this file in a safe place.</para>
+              </listitem>
+
+              <listitem>
+                <para>Press the <emphasis role="bold">Delete SSH
+                Key</emphasis> button to delete the SSH key from the One-Click
+                system.</para>
+
+                <para>Note: This does not remove the keys from your running
+                cluster. It only removes it from the Instant Cloud system and
+                prevents further downloads of the key. Once deleted, there is
+                no way to retrieve the key.</para>
+              </listitem>
+            </orderedlist></para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Running ECL</title>
+
+    <para></para>
+
+    <sect1 id="ECL-on-a-single-node-system" role="nobrk">
+      <title>Running ECL on your HPCC Systems cluster</title>
+
+      <para>After your platform is running, and you can now create and run
+      some ECL<footnote>
+          <para><emphasis role="bold">E</emphasis>nterprise <emphasis
+          role="bold">C</emphasis>ontrol <emphasis
+          role="bold">L</emphasis>anguage (ECL) is a declarative, data centric
+          programming language used to manage all aspects of the massive data
+          joins, sorts, and builds that truly differentiate HPCC (High
+          Performance Computing Cluster) from other technologies in its
+          ability to provide flexible data analysis on a massive scale.</para>
+        </footnote> code using either ECL IDE, the command line ECL compiler,
+      or the ECLPlus tool.</para>
+
+      <sect2>
+        <title>Install the ECL IDE and HPCC Client Tools</title>
+
+        <para>You only need to install the ECL IDE once. If you have already
+        installed it, you can skip this section. .</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>In a Web browser, connect to ECL Watch using
+              http://<emphasis
+              role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
+              PUBLIC_DNS is the public DNS name of your ESP server).</para>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png" /></entry>
+
+                        <entry>Your IP address could be different from the
+                        ones provided in the example images. Please use the IP
+                        address of <emphasis role="bold">your</emphasis>
+                        node.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>From ECL Watch page, click on the <emphasis
+              role="bold">Resources </emphasis> link in the menu on the left
+              side.</para>
+
+              <para><figure>
+                  <title>ECL Watch Resource Page</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/GS_1311.JPG"
+                                 vendor="eclwatchSS" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <para>Follow the link to the HPCC System's portal.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click on the <emphasis role="bold">ECL IDE and Client
+              Tools </emphasis>link.</para>
+            </listitem>
+
+            <listitem>
+              <para>Follow the instructions on the web page to install the ECL
+              IDE.</para>
+            </listitem>
+
+            <listitem>
+              <para>Install the ECL IDE, following the prompts in the
+              installation program. Once the ECL IDE is installed
+              successfully, you can proceed.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Running a basic ECL program from the ECL IDE</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Open the ECL IDE on your Windows workstation, from your
+              start menu. (<emphasis role="bold">Start</emphasis> &gt;&gt;
+              <emphasis role="bold">All Programs</emphasis> &gt;&gt; <emphasis
+              role="bold">HPCCSystems</emphasis> &gt;&gt; <emphasis
+              role="bold">ECL IDE</emphasis> ).</para>
+
+              <informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png" /></entry>
+
+                      <entry>You can create a shortcut on your desktop to
+                      provide quick access to the ECL IDE.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+            </listitem>
+
+            <listitem>
+              <para>On the Login Window, press the <emphasis
+              role="bold">Preferences</emphasis> button.</para>
+            </listitem>
+
+            <listitem>
+              <para>In the <emphasis role="bold">Server</emphasis> entry
+              control, type the Public IP of your ESP Server of your ESP
+              server) then press the <emphasis role="bold">Ok</emphasis>
+              button.</para>
+
+              <para><figure>
+                  <title>Login Window</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/AWS_IDE_Preferences.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Enter the <emphasis role="bold">Login ID</emphasis> and
+              <emphasis role="bold">Password</emphasis> provided in the Login
+              dialog.</para>
+
+              <informaltable colsep="1" rowsep="1">
+                <tgroup cols="2">
+                  <colspec colwidth="80pt" />
+
+                  <colspec colwidth="100pt" />
+
+                  <tbody>
+                    <row>
+                      <entry>Login ID</entry>
+
+                      <entry><emphasis
+                      role="bluebold">hpccdemo</emphasis></entry>
+                    </row>
+
+                    <row>
+                      <entry>Password</entry>
+
+                      <entry><emphasis
+                      role="bluebold">hpccdemo</emphasis></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable>
+
+              <figure>
+                <title>Login Window</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg06a.JPG" />
+                  </imageobject>
+                </mediaobject>
+              </figure>
+            </listitem>
+
+            <listitem>
+              <para>Open a new <emphasis role="bold">Builder Window</emphasis>
+              (CTRL+N) and write the following code:</para>
+
+              <para><programlisting>OUTPUT('Hello World');
+</programlisting></para>
+
+              <para>This could also be written as:</para>
+
+              <para><programlisting>'Hello World';
+</programlisting>In the second program listing, the OUTPUT keyword is omitted.
+              This is possible because the language is declarative and the
+              OUTPUT action is implicit.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select <emphasis role="bluebold">thor</emphasis> as your
+              target cluster.</para>
+
+              <para><emphasis role="bold">Thor</emphasis> is the Data Refinery
+              component of your HPCC. It is a disk based massively parallel
+              computer cluster, optimized for sorting, manipulating, and
+              transforming massive data.</para>
+
+              <para><figure>
+                  <title>Select target</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg10.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Press the syntax check button on the main toolbar (or
+              press F7).</para>
+
+              <para><figure>
+                  <title>Syntax Check</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg09.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure>A successful syntax check displays the "No Errors"
+              message.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Press the <emphasis role="bold">Submit</emphasis> button
+              (or press ctrl+enter).</para>
+
+              <para><figure>
+                  <title>Completed job</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg11.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure>The green check mark indicates successful
+              completion.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Click on the workunit number tab and then on the Result 1
+              tab to see the output.</para>
+
+              <para><figure>
+                  <title>Completed job output</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg12.JPG" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>More ECL Examples</title>
+
+    <para>This section contains additional ECL examples you can use on your
+    HPCC Systems Thor platform. You can run these on a single-node system or a
+    larger multi-node cluster.</para>
+
+    <sect1 role="nobrk">
+      <title>ECL Example: Anagram1</title>
+
+      <para>This example takes a STRING and produces every possible anagram
+      from it. This code is the basis for a second example which evaluates
+      which of these are actual words using a word list data file.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>Open the ECL IDE (<emphasis role="bold">Start</emphasis>
+            &gt;&gt; <emphasis role="bold">All Programs</emphasis> &gt;&gt;
+            <emphasis role="bold">HPCC Systems</emphasis> &gt;&gt; ECL IDE )
+            and login to your HPCC.</para>
+          </listitem>
+
+          <listitem>
+            <para>Open a new <emphasis role="bold">Builder Window</emphasis>
+            (CTRL+N) and write the following code:<programlisting>STRING Word := 'FRED' :STORED('Word');
+R := RECORD
+        STRING SoFar {MAXLENGTH(200)};
+        STRING Rest {MAXLENGTH(200)};
+     END;
+Init := DATASET([{'',Word}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+                SELF.SoFar := le.SoFar + le.Rest[c];
+                SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+// Boundary Conditions handled automatically
+  END;
+RETURN NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER));
+  END;
+L := LOOP(Init,LENGTH(TRIM(Word)),Pluck1(ROWS(LEFT)));
+OUTPUT(L);</programlisting></para>
+          </listitem>
+
+          <listitem>
+            <para>Select <emphasis role="bold">thor</emphasis> as your target
+            cluster.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the syntax check button on the main toolbar (or press
+            F7)</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Submit</emphasis> button (or
+            press ctrl+enter).</para>
+
+            <para><figure>
+                <title>Completed job</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11a.JPG" />
+                  </imageobject>
+                </mediaobject>
+              </figure>The green check mark indicates successful
+            completion.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Click on the workunit number tab and then on the Result 1
+            tab to see the output.</para>
+
+            <para><figure>
+                <title>Completed job output</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg11b.JPG" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+        </orderedlist></para>
+
+      <?hard-pagebreak ?>
+    </sect1>
+
+    <sect1>
+      <title>Anagram2</title>
+
+      <para>In this example, we will download an open source data file of
+      dictionary words, spray<footnote>
+          <para>A <emphasis>spray</emphasis> or <emphasis>import</emphasis> is
+          the relocation of a data file from one location (such as a Landing
+          Zone) to a Data Refinery cluster. The term spray was adopted due to
+          the nature of the file movement – the file is partitioned across all
+          nodes within a cluster.</para>
+        </footnote> that file to our Thor cluster, then validate our anagrams
+      against that file so that we determine which are valid words. The
+      validation step uses a JOIN of the anagram list to the dictionary file.
+      Using an index and a keyed join would be more efficient, but this serves
+      as a simple example.</para>
+
+      <sect2>
+        <title>Download the word list</title>
+
+        <para>We will download the word list from <ulink
+        url="http://wordlist.sourceforge.net/">http://wordlist.sourceforge.net/</ulink></para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Download the <emphasis>Official 12 Dicts
+              </emphasis>Package. The files are available in tar.gz or ZIP
+              format.</para>
+            </listitem>
+
+            <listitem>
+              <para>Extract the <emphasis role="bold">2of12.txt</emphasis>
+              file to a folder on your local machine.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2 id="Load_the_Incoming_Data">
+        <title>Load the Dictionary File to your Landing Zone</title>
+
+        <para>In this step, you will copy the data files to a location from
+        which it can be sprayed to your HPCC Thor cluster. A Landing Zone is a
+        storage location attached to your HPCC. It has a utility running to
+        facilitate file spraying to a cluster.</para>
+
+        <para>For smaller data files, maximum of 2GB, you can use the
+        upload/download file utility in ECL Watch. This data file is only ~400
+        kb.</para>
+
+        <para>Next you will distribute (or Spray) the dataset to all the nodes
+        in the HPCC Thor cluster. The power of the HPCC comes from its ability
+        to assign multiple processors to work on different portions of the
+        data file in parallel. Even though the VM Edition only has a single
+        node, the data must be sprayed to the cluster.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>In a Web browser, connect to ECL Watch using
+            http://<emphasis
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
+            PUBLIC_DNS is the public DNS name of your ESP server).</para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/caution.png" /></entry>
+
+                      <entry>Your IP address could be different from the ones
+                      provided in the example images. Please use the IP
+                      address provided by <emphasis
+                      role="bold">your</emphasis> installation.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>From ECL Watch page, click on the <emphasis
+            role="bluebold">Upload/download File </emphasis> link in the menu
+            on the left side.</para>
+
+            <para><figure>
+                <title>Upload/download</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg03-1.jpg"
+                               vendor="eclwatchSS" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>Once you click on the Upload/download file link, it will
+            take you to the <emphasis role="bold">Dropzones and
+            Files</emphasis> page, where you can choose to <emphasis
+            role="bold">Browse</emphasis> your machine for a file to
+            upload:</para>
+
+            <para><figure>
+                <title>Dropzones and Files</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/LZimg04.jpg"
+                               vendor="eclwatchSS" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Browse</emphasis> button to
+            browse the files on your local machine, select the file to upload
+            and then press the <emphasis role="bold">Open</emphasis>
+            button.</para>
+
+            <para>The file you selected should appear in the <emphasis
+            role="bold">Select a file to upload:</emphasis> field. The data
+            file is named: <emphasis role="bold">2of12.txt</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press on <emphasis role="bold">Upload Now</emphasis> to
+            complete the file upload.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Spray_the_Data_to_THOR" role="brk">
+        <title>Spray the Data File to your <emphasis>Thor
+        Cluster</emphasis></title>
+
+        <para>To use the data file in our HPCC Thor system, we must “spray” it
+        to all the nodes. A <emphasis>spray</emphasis> or
+        <emphasis>import</emphasis> is the relocation of a data file from one
+        location (such as a Landing Zone) to multiple file parts on nodes in a
+        cluster.</para>
+
+        <para>The distributed or sprayed file is given a
+        <emphasis>logical-file-name</emphasis> as follows<emphasis
+        role="bold">: ~thor::word_list_csv </emphasis> The system maintains a
+        list of logical files and the corresponding physical file locations of
+        the file parts.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>In a Web browser, connect to ECL Watch using
+            http://<emphasis
+            role="bluebold">&lt;PUBLIC_DNS&gt;:8010</emphasis> (where
+            PUBLIC_DNS is the public DNS name of your ESP server).</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the Spray CSV hyperlink under the DFU Files menu on
+            the left.</para>
+
+            <para><figure>
+                <title>Spray CSV</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/IMDB_01.jpg"
+                               vendor="eclwatchSS" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para>The <emphasis role="bold">DFU Spray CSV</emphasis> page
+            displays.</para>
+          </listitem>
+
+          <listitem>
+            <para>Select mydropzone in the Source <emphasis
+            role="bold">Machine/dropzone</emphasis> drop list.</para>
+
+            <para>The IP Address is automatically filled and the Local Path is
+            partially filled with the default folder on your landing zone.
+            Note: The Community Edition typically only has one landing zone
+            defined.</para>
+          </listitem>
+
+          <listitem>
+            <para>Complete the Local Path to include the complete file name or
+            use the <emphasis role="bold">Choose File</emphasis> button to
+            select the file from a list of files in the folder. The file is
+            <emphasis role="bold">2of12.txt</emphasis>.<emphasis
+            role="bold"></emphasis></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Fill in the rest of the parameters (if they are not filled
+            in already).</para>
+
+            <para><itemizedlist>
+                <listitem>
+                  <para>Max Record Length 8192</para>
+                </listitem>
+
+                <listitem>
+                  <para>Separator \,</para>
+                </listitem>
+
+                <listitem>
+                  <para>Line Terminator \n,\r\n</para>
+                </listitem>
+
+                <listitem>
+                  <para>Quote: '</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <para>Fill in the Label using the Logical File name desired:
+            thor::word_list_csv<emphasis role="bold"> </emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Make sure the <emphasis role="bold">Overwrite</emphasis> and
+            <emphasis role="bold">Replicate</emphasis><emphasis role="bold">
+            </emphasis>boxes are checked.</para>
+
+            <para><figure>
+                <title>Spray the File</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1000.jpg" vendor="eclwatchSS" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <para><emphasis role="bold">Note:</emphasis> The <emphasis
+            role="bold">Replicate</emphasis> option is only available on
+            systems where replication has been enabled.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Submit</emphasis><emphasis
+            role="bold"> </emphasis>button</para>
+
+            <para><figure>
+                <title>View Progress</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/VM1001.jpg" vendor="eclwatchSS" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Click the <emphasis role="bold">View Progress</emphasis>
+            link</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>The Workunit progress page displays.</para>
+
+            <figure>
+              <title>Workunit Progress</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/VM1002.jpg" vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Run the ECL program on Thor<parameter></parameter></title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Open a new <emphasis role="bold">Builder Window</emphasis>
+              (CTRL+N) and write the following code:<programlisting>IMPORT Std;
+layout_word_list := record
+  string word;
+end;
+File_Word_List := dataset('~thor::word_list_csv', layout_word_list,
+                          CSV(heading(1),separator(','),quote('')));
+STRING Word := 'teacher' :STORED('Word');
+STRING SortString(STRING input) := FUNCTION
+  OneChar := RECORD
+    STRING c;
+  END;
+  OneChar MakeSingle(OneChar L, unsigned pos) := TRANSFORM
+    SELF.c := L.c[pos];
+  END;
+  Split := NORMALIZE(DATASET([input],OneChar), LENGTH(input),
+  MakeSingle(LEFT,COUNTER));
+  SortedSplit := SORT(Split, c);
+  OneChar Recombine(OneChar L, OneChar R) := TRANSFORM
+    SELF.c := L.c+R.c;
+  END;
+  Recombined := ROLLUP(SortedSplit, Recombine(LEFT, RIGHT),ALL);
+  RETURN Recombined[1].c;
+END;
+
+STRING CleanedWord := SortString(TRIM(Std.Str.ToUpperCase(Word)));
+
+R := RECORD
+  STRING SoFar {MAXLENGTH(200)};
+  STRING Rest {MAXLENGTH(200)};
+END;
+Init := DATASET([{'',CleanedWord}],R);
+R Pluck1(DATASET(R) infile) := FUNCTION
+  R TakeOne(R le, UNSIGNED1 c) := TRANSFORM
+    SELF.SoFar := le.SoFar + le.Rest[c];
+    SELF.Rest := le.Rest[..c-1]+le.Rest[c+1..];
+    // Boundary Conditions
+    // handled automatically
+  END;
+  RETURN DEDUP(NORMALIZE(infile,LENGTH(LEFT.Rest),TakeOne(LEFT,COUNTER)));
+END;
+L := LOOP(Init,LENGTH(CleanedWord),Pluck1(ROWS(LEFT)));
+ValidWords := JOIN(L,File_Word_List,
+LEFT.SoFar=Std.Str.ToUpperCase(RIGHT.Word),TRANSFORM(LEFT));
+OUTPUT(CleanedWord);
+COUNT(ValidWords);
+OUTPUT(ValidWords)
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Select <emphasis role="bold">thor</emphasis> as your
+              target cluster.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the syntax check button on the main toolbar (or
+              press F7)</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Submit</emphasis><emphasis
+              role="bold"> </emphasis>button.</para>
+            </listitem>
+
+            <listitem>
+              <para>When it completes, select the Workunit<emphasis
+              role="bold"> </emphasis>tab, then select the Result tab.</para>
+            </listitem>
+
+            <listitem>
+              <para>Examine the result.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter>
+    <title>Data Handling</title>
+
+    <para>This section explains data handling in an AWS configuration. More
+    information about Data Handling in an HPCC Systems platform are available
+    in the <emphasis>Data Handling</emphasis> manual.</para>
+
+    <sect1 role="nobrk">
+      <title>Using S3 buckets</title>
+
+      <para>S3 buckets provide a means of persistent storage inside Amazon Web
+      Services. You must configure your AWS account to have an active Access
+      Key pair enable and create S3 buckets. Once you have created and
+      activated your access key pair and and created a unique S3 bucket, you
+      will use these for all future instantiations.</para>
+
+      <!--*** include follows-->
+
+      <xi:include href="InstantCloud/AWS-Mods/AWSIncludes.xml"
+                  xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+      <sect2>
+        <title role="brk">Install and Configure S3 packages on your Landing
+        Zone node</title>
+
+        <para>To move files to or from S3 storage, the S3 packages must be
+        installed and configured on your Landing Zone node.</para>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Open a console window and connect to the Landing Zone (LZ)
+              node</para>
+            </listitem>
+
+            <listitem>
+              <para>Run these commands:</para>
+
+              <para><programlisting>sudo apt-get install s3cmd
+s3cmd --configure
+</programlisting></para>
+            </listitem>
+
+            <listitem>
+              <para>Enter your <emphasis role="bold">Access
+              Key</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Enter your <emphasis role="bold">Secret Access
+              Key</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Leave encrypt password blank</para>
+            </listitem>
+
+            <listitem>
+              <para>Leave path to GPG program blank</para>
+            </listitem>
+
+            <listitem>
+              <para>Answer the question Use HTTPS?</para>
+
+              <itemizedlist>
+                <listitem>
+                  <para>Enter no to improve performance</para>
+                </listitem>
+
+                <listitem>
+                  <para>Enter yes if you are concerned about data
+                  privacy</para>
+                </listitem>
+              </itemizedlist>
+            </listitem>
+
+            <listitem>
+              <para>Leave proxy server blank</para>
+            </listitem>
+
+            <listitem>
+              <para>Enter <emphasis role="bold">Yes </emphasis>to Test
+              Access</para>
+            </listitem>
+
+            <listitem>
+              <para>Enter <emphasis role="bold">Yes</emphasis> to Save
+              Settings</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2>
+        <title>Creating and Using S3 Buckets</title>
+
+        <para>To store data on S3, you must create a bucket that is unique to
+        the whole s3 system. Once created, this bucket persists even when you
+        close a instances of servers.</para>
+
+        <para>You can despray a file from Thor to your landing zone, then copy
+        to an S3 bucket to for persistent storage. Later, you can copy files
+        from the S3 bucket to a landing zone and spray the file to a Thor
+        cluster. More information about Data Handling in an HPCC Systems
+        platform are available in the <emphasis>Data Handling</emphasis>
+        manual.</para>
+
+        <sect3>
+          <title>Create a bucket</title>
+
+          <para><programlisting>s3cmd mb s3://your-unique-bucket-name</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>List Buckets</title>
+
+          <para><programlisting>s3cmd ls</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Upload a file to a bucket</title>
+
+          <para><programlisting>s3cmd put myfile.csv s3://your-unique-bucket-name
+</programlisting></para>
+        </sect3>
+
+        <sect3>
+          <title>Retrieve a file from a bucket</title>
+
+          <para><programlisting>s3cmd get s3://your-unique-bucket-name/myfile.csv myfile.csv
+</programlisting>See <ulink
+          url="http://s3tools.org/s3cmd">http://s3tools.org/s3cmd</ulink> for
+          more information on how to use s3cmd</para>
+        </sect3>
+      </sect2>
+    </sect1>
+  </chapter>
+
+  <chapter id="NextSteps">
+    <title>Next Steps</title>
+
+    <para>To familiarize yourself with what your system can do, we recommend
+    following the steps in:<itemizedlist spacing="compact">
+        <listitem>
+          <para>The <emphasis role="bold">HPCC Data Tutorial</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para><emphasis role="bold">The Six Degrees of Kevin
+          Bacon</emphasis> example</para>
+        </listitem>
+
+        <listitem>
+          <para>Read <emphasis role="bold">Using Config Manager</emphasis> to
+          learn how to configure an HPCC platform using Advanced View.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use your new skills to process your own massive
+          dataset!</para>
+        </listitem>
+      </itemizedlist></para>
+
+    <para>The HPCC Systems Portal ( <ulink
+    url="http://hpccsystems.com">HPCCSystems.com</ulink> ) is also a valuable
+    resource for more information including:</para>
+
+    <itemizedlist spacing="compact">
+      <listitem>
+        <para>Video Tutorials</para>
+      </listitem>
+
+      <listitem>
+        <para>Additional examples</para>
+      </listitem>
+
+      <listitem>
+        <para>White Papers</para>
+      </listitem>
+
+      <listitem>
+        <para>Documentation</para>
+      </listitem>
+
+      <listitem>
+        <para>User Forums</para>
+      </listitem>
+    </itemizedlist>
+  </chapter>
+</book>
