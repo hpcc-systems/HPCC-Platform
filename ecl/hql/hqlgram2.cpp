@@ -9941,6 +9941,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ENTH: msg.append("ENTH"); break;
     case ENUM: msg.append("ENUM"); break;
     case TOK_ERROR: msg.append("ERROR"); break;
+    case ESCAPE: msg.append("ESCAPE"); break;
     case EVALUATE: msg.append("EVALUATE"); break;
     case EVENT: msg.append("EVENT"); break;
     case EVENTEXTRA: msg.append("EVENTEXTRA"); break;
