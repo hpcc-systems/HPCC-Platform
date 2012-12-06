@@ -581,9 +581,10 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
         unsigned flag = column.flag;
         const char * name = meta->queryName(idx);
         const char * childname = NULL;
+        const char * xname = NULL;
         if (useXPath)
         {
-            const char * xname = meta->queryXPath(idx);
+            xname = meta->queryXPath(idx);
             if (xname)
             {
                 const char * slash = strchr(xname, '/');
@@ -621,7 +622,7 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
             break;
         case FVFFdataset:
             {
-                if (!childname) childname = "Row";
+                if (!childname && (!xname || !*xname)) childname = "Row";
                 ITypeInfo * singleFieldType = (useXPath && name && *name && childname && *childname) ? containsSingleSimpleFieldBlankXPath(column.childMeta.get()) : NULL;
                 if (!singleFieldType || !builder.addSingleFieldDataset(name, childname, *singleFieldType))
                 {
