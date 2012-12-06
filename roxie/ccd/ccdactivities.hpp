@@ -81,6 +81,7 @@ struct KeyedJoinHeader
 
 static inline int KEYEDJOIN_RECORD_SIZE(int dataSize)
 {
+    // As long as KeyedJoinHeader remains a POD, this is OK
     return offsetof(KeyedJoinHeader, rhsdata) + dataSize;
 }
 
