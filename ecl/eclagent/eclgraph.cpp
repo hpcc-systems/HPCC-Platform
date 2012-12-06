@@ -1711,7 +1711,7 @@ void EclAgent::executeThorGraph(const char * graphName)
 void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract)
 {
     assertex(parentExtractSize == 0);
-    if (realThor)
+    if (realThor && !isStandAloneExe)
     {
         executeThorGraph(graphName);
     }
