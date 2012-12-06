@@ -2227,20 +2227,28 @@ void ImplicitProjectTransformer::processTransform(ComplexImplicitProjectInfo * e
     {
         IHqlExpression * cur = &assigns.item(itr);
         //Need to handle skip attributes...
-        if (cur->getOperator() == no_skip)
+        switch (cur->getOperator())
         {
-            const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
-            processSelects(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
-        }
-        else if (cur->getOperator() == no_assign)
-        {
-            IHqlExpression * value = cur->queryChild(1);
-            if (!value->isPure())
+        case no_assign:
             {
-                IHqlExpression * lhs = cur->queryChild(0);
-                processMatchingSelector(extra->outputFields, lhs, lhs->queryChild(0));
-                const SelectUsedArray & selectsUsed = querySelectsUsed(value);
+                IHqlExpression * value = cur->queryChild(1);
+                if (!value->isPure())
+                {
+                    IHqlExpression * lhs = cur->queryChild(0);
+                    processMatchingSelector(extra->outputFields, lhs, lhs->queryChild(0));
+                    const SelectUsedArray & selectsUsed = querySelectsUsed(value);
+                    processSelects(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
+                }
+                break;
+            }
+        case no_attr:
+        case no_attr_expr:
+            break;
+        default:
+            {
+                const SelectUsedArray & selectsUsed = querySelectsUsed(cur);
                 processSelects(extra, selectsUsed, dsSelect, leftSelect, rightSelect);
+                break;
             }
         }
     }
