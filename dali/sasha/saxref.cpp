@@ -479,7 +479,10 @@ public:
         StringBuffer line;
         line.valist_appendf(format, args);
         va_end(args);
-        PROGLOG(LOGPFX "[%s] %s",clustname.get(),line.str());
+        if (clustname.get())
+            PROGLOG(LOGPFX "[%s] %s",clustname.get(),line.str());
+        else
+            PROGLOG(LOGPFX "%s",line.str());
         if (logconn) {
             logcache.set(line.str());
             updateStatus(false);
@@ -675,7 +678,7 @@ public:
 
 
     CNewXRefManager(unsigned maxMb=DEFAULT_MAXMEMORY)
-        : mem(0x100000*maxMb,0x10000,true)
+        : mem(0x100000*((memsize_t)maxMb),0x10000,true)
     {
         iswin = false; // set later
         root = new cDirDesc(mem,"");
