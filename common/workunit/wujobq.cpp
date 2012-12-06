@@ -511,22 +511,22 @@ public:
                             pconn.setown(querySDS().connect("/JobQueues",myProcessSession(),RTM_LOCK_WRITE|RTM_CREATE_QUERY,wait));
                             if (!pconn)
                                 throw MakeStringException(-1,"CJobQueue could not create JobQueues");
+                            IPropertyTree *proot = pconn->queryRoot();
+                            StringBuffer cpath;
+                            cpath.appendf("Queue[@name=\"%s\"]",qd->qname.get());
+                            if (!proot->hasProp(cpath.str())) {
+                                IPropertyTree *pt = proot->addPropTree("Queue",createPTree("Queue"));
+                                pt->setProp("@name",qd->qname.get());
+                                pt->setProp("@state","active");
+                                pt->setPropInt("@count", 0);
+                                pt->setPropInt("Edition", 1);
+                            }
                         }
                         catch (ISDSException *e) {
                             if (SDSExcpt_LockTimeout != e->errorCode())
                                 throw;
                             e->Release();
                             timeout = true;
-                        }
-                        IPropertyTree *proot = pconn->queryRoot();
-                        StringBuffer cpath;
-                        cpath.appendf("Queue[@name=\"%s\"]",qd->qname.get());
-                        if (!proot->hasProp(cpath.str())) {
-                            IPropertyTree *pt = proot->addPropTree("Queue",createPTree("Queue"));
-                            pt->setProp("@name",qd->qname.get());
-                            pt->setProp("@state","active");
-                            pt->setPropInt("@count", 0);
-                            pt->setPropInt("Edition", 1);
                         }
                     }
                     if (!timeout)
