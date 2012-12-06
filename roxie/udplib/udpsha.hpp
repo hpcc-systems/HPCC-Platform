@@ -179,24 +179,29 @@ public:
 #pragma pack(push,1)
 struct UdpPermitToSendMsg
 {
-    unsigned short  length;
-    unsigned short  cmd;
-    unsigned short  destNodeIndex;
-    unsigned short  max_data;
-    unsigned        lastSequenceSeen;
-    unsigned        missingCount;
+    // New static fields must be included inside this block, so that
+    // size calculations work correctly
+    struct MsgHeader {
+        unsigned short  length;
+        unsigned short  cmd;
+        unsigned short  destNodeIndex;
+        unsigned short  max_data;
+        unsigned        lastSequenceSeen;
+        unsigned        missingCount;
 #ifdef CRC_MESSAGES
-    unsigned        crc;
+        unsigned        crc;
 #endif
+    } hdr;
+    // WARNING: Do not add any field below this line, if it must be included in the message
     unsigned        missingSequences[MAX_RESEND_TABLE_SIZE]; // only [missingCount] actually sent
 
     StringBuffer &toString(StringBuffer &str) const
     {
-        str.appendf("lastSeen=%u missingCount=%u", lastSequenceSeen, missingCount);
-        if (missingCount)
+        str.appendf("lastSeen=%u missingCount=%u", hdr.lastSequenceSeen, hdr.missingCount);
+        if (hdr.missingCount)
         {
             str.append(" missing=");
-            for (unsigned j = 0; j < missingCount; j++)
+            for (unsigned j = 0; j < hdr.missingCount; j++)
                 str.appendf(j?",%u":"%u", missingSequences[j]);
         }
         return str;
@@ -205,7 +210,8 @@ struct UdpPermitToSendMsg
 #ifdef CRC_MESSAGES
     unsigned calcCRC()
     {
-        unsigned expectedCRC = crc32((const char *) this, offsetof(UdpPermitToSendMsg, crc), 0);
+        size_t len = sizeof(MsgHeader) - sizeof(hdr.crc);
+        unsigned expectedCRC = crc32((const char *) this, len, 0);
         if (missingCount)
             expectedCRC = crc32((const char *) &missingSequences, missingCount * sizeof(missingSequences[0]), expectedCRC); 
         return expectedCRC;
@@ -214,26 +220,18 @@ struct UdpPermitToSendMsg
 
     UdpPermitToSendMsg()
     {
-        length = cmd = destNodeIndex = max_data = 0;
-        lastSequenceSeen = 0;
-        missingCount = 0;
+        hdr.length = hdr.cmd = hdr.destNodeIndex = hdr.max_data = 0;
+        hdr.lastSequenceSeen = 0;
+        hdr.missingCount = 0;
 #ifdef CRC_MESSAGES
-        crc = calcCRC();
+        hdr.crc = calcCRC();
 #endif
     }
 
     UdpPermitToSendMsg(const UdpPermitToSendMsg &from)
     {
-        length = from.length;
-        cmd = from.cmd;
-        destNodeIndex = from.destNodeIndex;
-        max_data = from.max_data;
-        lastSequenceSeen = from.lastSequenceSeen;
-        missingCount = from.missingCount;
-#ifdef CRC_MESSAGES
-        crc = from.crc;
-#endif
-        memcpy(missingSequences, from.missingSequences, from.missingCount * sizeof(missingSequences[0]));
+        hdr = from.hdr;
+        memcpy(missingSequences, from.missingSequences, from.hdr.missingCount * sizeof(missingSequences[0]));
     }
 };
 

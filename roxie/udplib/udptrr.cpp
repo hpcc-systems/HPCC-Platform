@@ -230,13 +230,13 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                     UdpPermitToSendMsg msg;
                     {
                         SpinBlock block(resendInfoLock);
-                        msg.length = offsetof(UdpPermitToSendMsg, missingSequences) + missingCount*sizeof(msg.missingSequences[0]);
-                        msg.cmd = flow_t::ok_to_send;
+                        msg.hdr.length = sizeof(UdpPermitToSendMsg::MsgHeader) + missingCount*sizeof(msg.missingSequences[0]);
+                        msg.hdr.cmd = flow_t::ok_to_send;
 
-                        msg.destNodeIndex = myNodeIndex;
-                        msg.max_data = maxTransfer;
-                        msg.lastSequenceSeen = lastSeen;
-                        msg.missingCount = missingCount;
+                        msg.hdr.destNodeIndex = myNodeIndex;
+                        msg.hdr.max_data = maxTransfer;
+                        msg.hdr.lastSequenceSeen = lastSeen;
+                        msg.hdr.missingCount = missingCount;
                         for (unsigned i = 0; i < missingCount; i++)
                         {
                             unsigned idx = (missingIndex + i) % missingTableSize;
@@ -245,7 +245,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                                 DBGLOG("Requesting resend of packet %d", missing[idx]);
                         }
 #ifdef CRC_MESSAGES
-                        msg.crc = msg.calcCRC();
+                        msg.hdr.crc = msg.calcCRC();
 #endif
                     }
                     if (checkTraceLevel(TRACE_RETRY_DATA, 5))
@@ -253,7 +253,7 @@ class CReceiveManager : public CInterface, implements IReceiveManager
                         StringBuffer s;
                         DBGLOG("requestToSend %s", msg.toString(s).str());
                     }
-                    flowSocket->write(&msg, msg.length);
+                    flowSocket->write(&msg, msg.hdr.length);
                 }
                 catch(IException *e) 
                 {
