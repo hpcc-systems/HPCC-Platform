@@ -1439,7 +1439,7 @@ const char *getOpString(node_operator op)
     case no_getenv: return "GETENV";
     case no_once: return "ONCE";
     case no_persist_check: return "no_persist_check";
-    case no_create_initializer: "no_create_initializer";
+    case no_create_initializer: return "no_create_initializer";
     case no_owned_ds: return "no_owned_ds";
     case no_complex: return ",";
     case no_assign_addfiles: return "+=";

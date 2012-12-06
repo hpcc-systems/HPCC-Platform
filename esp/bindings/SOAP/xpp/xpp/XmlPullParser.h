@@ -720,7 +720,7 @@ namespace xpp {
     }
 
     void ensureNsBufSpace(int addSpace) {
-      addSpace;
+      addSpace = addSpace;
     /*
     // NOTE: unfortunately it can not be used as i was storing char* pointers 
     //   to this block of memory, storing relative offsets though will work - but later!

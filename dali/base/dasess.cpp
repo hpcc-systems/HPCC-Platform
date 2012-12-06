@@ -828,7 +828,7 @@ public:
     {
         CMessageBuffer mb;
         mb.append((int)MSR_REGISTER_SESSION).append(tok).append(parentid);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST),SESSIONREPLYTIMEOUT)
+        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return 0;
         SessionId ret;
         mb.read(ret);

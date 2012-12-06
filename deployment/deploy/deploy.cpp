@@ -113,7 +113,8 @@ public:
         int count = m_tempFiles.length();
         int i;
         for (i = 0; i < count; i++)
-            DeleteFile(m_tempFiles.item(i));
+            if (!DeleteFile(m_tempFiles.item(i)))
+                WARNLOG("Couldn't delete file %s", m_tempFiles.item(i));
         
         count = m_tempDirs.length();
         for (i = 0; i < count; i++)
