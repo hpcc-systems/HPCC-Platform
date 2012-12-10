@@ -276,7 +276,11 @@ bool CConfigEnvHelper::handleReplaceRoxieServer(const char* xmlArg)
 
   if (pszRoxieCluster && *pszRoxieCluster)
   {
-    xpath.clear().appendf(XML_TAG_ROXIECLUSTER"[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
+    StringBuffer xpathNode;
+    xpathNode.appendf("./%s/%s", XML_TAG_NODES, XML_TAG_NODE);
+
+    xpath.clear().appendf("%s[%s='%s']/%s[%s='%s']", XML_TAG_ROXIECLUSTER, XML_ATTR_NAME, pszRoxieCluster, XML_TAG_ROXIE_FARM, XML_ATTR_NAME, pSrcTree->queryPropTree(xpathNode.str())->queryProp(XML_ATTR_FARM));
+
     IPropertyTree* pFarm = pParent->queryPropTree(xpath.str());
     if (!pFarm)
       throw MakeStringException(-1, "Could not find a RoxieCluster with name '%s'", pszRoxieCluster);
