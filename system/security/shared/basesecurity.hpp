@@ -284,6 +284,8 @@ public:
         return m_passwordExpirationWarningDays;
     }
 
+    virtual bool createUserScopes() {UNIMPLEMENTED; return false;}
+
 protected:
     const char* getServer(){return m_dbserver.toCharArray();}
     const char* getUser(){return m_dbuser.toCharArray();}

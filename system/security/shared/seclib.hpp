@@ -298,6 +298,7 @@ interface ISecManager : extends IInterface
     virtual bool authorizeWorkunitScope(ISecUser & user, ISecResourceList * resources) = 0;
     virtual const char * getDescription() = 0;
     virtual unsigned getPasswordExpirationWarningDays() = 0;
+    virtual bool createUserScopes() = 0;
 };
 
 interface IExtSecurityManager
