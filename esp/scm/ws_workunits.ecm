@@ -1070,6 +1070,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     string memoryLimit;
     nonNegativeInteger TimeLimit(0);
     nonNegativeInteger WarnTimeLimit(0);
+    string RemoteDali;
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
