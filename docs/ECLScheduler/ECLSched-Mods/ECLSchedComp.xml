@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <bookinfo>
+    <title>ECL Scheduler</title>
+
+    <author>
+      <firstname>Boca Raton</firstname>
+
+      <surname>Documentation Team</surname>
+
+      <affiliation>
+        <orgname>Lexis Nexis</orgname>
+      </affiliation>
+    </author>
+
+    <pubdate>2012</pubdate>
+  </bookinfo>
+
+  <chapter id="ECLSched_comp">
+    <title>ECL Scheduler Component</title>
+
+    <sect1 id="ECLSched_component" role="nobrk">
+      <title>Installation and configuration</title>
+
+      <para>The ECL Scheduler installs when you install the HPCC platform. It
+      starts and stops using hpcc-init, just as all other HPCC
+      components.</para>
+    </sect1>
+
+    <sect1>
+      <title>Using the ECL Scheduler</title>
+
+      <sect2>
+        <title>ECL Language Statements Used</title>
+
+        <para>The Following ECL Language Statements are used:</para>
+
+        <sect3>
+          <title>WHEN</title>
+
+          <para>The <emphasis role="bold">WHEN </emphasis>service executes the
+          action whenever the event is triggered. The optional <emphasis
+          role="bold">COUNT </emphasis>option specifies the number of events
+          to trigger instances of the action.</para>
+        </sect3>
+
+        <sect3>
+          <title>NOTIFY</title>
+
+          <para>The <emphasis role="bold">NOTIFY </emphasis>action triggers
+          the event so that the <emphasis role="bold">WHEN </emphasis>workflow
+          service can proceed with operations they are assigned to
+          execute.</para>
+        </sect3>
+
+        <sect3>
+          <title>EVENT</title>
+
+          <para>The <emphasis role="bold">EVENT </emphasis>function returns a
+          trigger event, which may be used within the <emphasis
+          role="bold">WHEN </emphasis>workflow service or the <emphasis
+          role="bold">NOTIFY</emphasis> action. EVENT is not really a
+          statement, rather a parameter to WHEN/NOTIFY to describe what kind
+          of event it is used for.</para>
+        </sect3>
+
+        <sect3>
+          <title>CRON</title>
+
+          <para>The <emphasis role="bold">CRON </emphasis>function defines a
+          timer event for use within the <emphasis role="bold">WHEN
+          </emphasis>workflow service. This is synonymous with <emphasis
+          role="bold">EVENT(‘CRON’, time)</emphasis>. CRON itself is not a
+          statement, rather a parameter to WHEN/NOTIFY to describe what kind
+          of event it is used for.</para>
+        </sect3>
+
+        <sect3>
+          <title>WAIT</title>
+
+          <para>The <emphasis role="bold">WAIT </emphasis>function is a string
+          constant containing the name of the event to wait for. It is used
+          much like the <emphasis role="bold">WHEN</emphasis> workflow
+          service, but may be used within conditional code.</para>
+        </sect3>
+      </sect2>
+
+      <sect2>
+        <title>Monitoring Functions in the FileServices Service
+        Library</title>
+
+        <sect3>
+          <title>MonitorFile</title>
+
+          <para>The <emphasis role="bold">MonitorFile </emphasis>function
+          creates a file monitor job in the DFU Server for a physical
+          file.</para>
+        </sect3>
+
+        <sect3>
+          <title>MonitorLogicalFileName</title>
+
+          <para>The <emphasis role="bold">MonitorLogicalFileName
+          </emphasis>function creates a file monitor job in the DFU Server for
+          a logical file.</para>
+        </sect3>
+      </sect2>
+
+      <sect2>
+        <title>DFUPlus: Monitor Option</title>
+
+        <para><programlisting>     dfuplus action=monitor event=MyEvent</programlisting></para>
+
+        <para><variablelist>
+            <varlistentry>
+              <term><emphasis role="bold">Note</emphasis>:</term>
+
+              <listitem>
+                <para>DFUServer file monitoring (either using FileServices or
+                DFUPlus) creates a DFU Workunit. While monitoring, the
+                Workunit’s state is <emphasis>monitoring </emphasis>and once
+                it triggers the event, it is set to
+                <emphasis>finished</emphasis>. You can Abort a “monitoring”
+                DFU Workunit to stop monitoring from ECL Watch.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="ECLSched_Interface">
+      <title>Interface in ECL Watch</title>
+
+      <para>To access the ECL Scheduler interface in ECL Watch, click on the
+      Scheduler link in the menu on the left hand side. The Scheduler
+      interface displays and you can see the scheduled workunits, if any. The
+      list of scheduled workunits has two significant columns, the <emphasis
+      role="bold">EventName </emphasis>and the <emphasis
+      role="bold">EventText</emphasis>.</para>
+
+      <para><figure>
+          <title>ECL Scheduler Interface</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ESCHed01.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>The EventName is a created when scheduling a workunit. The
+      EventText is an accompanying sub event (see <link
+      linkend="WHEN">WHEN</link>).</para>
+
+      <para>You can trigger an event by entering the EventName and Event Text
+      in the entry boxes and then pressing the <emphasis
+      role="bold">PushEvent</emphasis> button. This is the same as triggering
+      an event using NOTIFY (see <link linkend="NOTIFY">NOTIFY</link>).</para>
+
+      <sect2>
+        <title>Scheduler Workunit List</title>
+
+        <para>You can search scheduled workunits by cluster or event name. You
+        can also filter by clicking on event names in the list. For example,
+        clicking on the Thor hyperlink in the cluster column, displays only
+        workunits sent to that target cluster. <figure>
+            <title>Workunits in the Scheduler Interface</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ESCHed02.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>You can sort the workunits by clicking on a column
+        header.</para>
+
+        <para>To view the workunit details, click on the workunit ID (WUID)
+        link for the workunit.</para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Managing Events</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Enter the EventName:</para>
+
+              <para>The EventName is a case-insensitive string constant naming
+              the event to trap.</para>
+
+              <para>See Also: EVENT</para>
+            </listitem>
+
+            <listitem>
+              <para>Enter the EventText:</para>
+
+              <para>The EventText is case-insensitive string constant naming
+              the specific type of event to trap. It may contain * and ? to
+              wildcard-match.</para>
+
+              <para>See Also: EVENT</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">PushEvent</emphasis>
+              button</para>
+
+              <para>This is the equivalent of</para>
+
+              <para><programlisting>  NOTIFY(EVENT(EventName,EventText));</programlisting></para>
+
+              <para>See Also: NOTIFY, EVENT</para>
+
+              <para><figure>
+                  <title>PushEvent</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ESCHed03.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>
