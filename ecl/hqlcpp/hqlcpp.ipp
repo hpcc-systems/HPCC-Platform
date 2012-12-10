@@ -1182,6 +1182,8 @@ public:
     void buildDatasetAssignTempTable(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
     void buildDatasetAssignXmlProject(BuildCtx & ctx, IHqlCppDatasetBuilder * target, IHqlExpression * expr);
 
+    void buildDatasetAssignChoose(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
+    void buildDatasetAssignIf(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     BoundRow * buildDatasetIterateSelectN(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateChoosen(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateLimit(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
