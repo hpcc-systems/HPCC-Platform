@@ -2033,16 +2033,28 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         actualCount++;
         IConstWorkUnit& cw = it->query();
         if (chooseWuAccessFlagsByOwnership(context.queryUserId(), cw, accessOwn, accessOthers) < SecAccess_Read)
+        {
+            actualCount--;
+            numWUs--;
             continue;
+        }
         if (bDoubleCheckState && (cw.getState() != WUStateSubmitted))
+        {
+            actualCount--;
+            numWUs--;
             continue;
+        }
 
         SCMStringBuffer parent;
         if (!cw.getParentWuid(parent).length())
         {
             const char* wuid = cw.getWuid(parent).str();
             if (!looksLikeAWuid(wuid))
+            {
+                actualCount--;
+                numWUs--;
                 continue;
+            }
             Owned<IEspECLWorkunit> info = createECLWorkunit("","");
             WsWuInfo winfo(context, wuid);
             winfo.getCommon(*info, 0);
