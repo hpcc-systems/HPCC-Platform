@@ -1461,7 +1461,7 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
         errMsg.append("Exception in File Upload - Unknown Exception\n");
     }
 
-    WARNLOG(errMsg.str());
+    WARNLOG("%s", errMsg.str());
     StringBuffer content(
         "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
             "<head>"
