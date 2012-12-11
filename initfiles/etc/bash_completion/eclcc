@@ -38,15 +38,8 @@ _eclcc()
 
     # Options with parameters
     case "${prev}" in
-        -I|-L)
-            local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
-            COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
-            return 0
-            ;;
-        -o|-logfile|-specs)
-            local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
-            COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
-            return 0
+        -I|-L|-o|-logfile|-specs)
+            COMPREPLY=( $(compgen -f ${cur}) )
             ;;
         -platform)
             local platforms="roxie thor hthor"
@@ -58,8 +51,7 @@ _eclcc()
     esac
 
     # ECL source filename
-    local files=$(find . -maxdepth 1 -name ${cur}\* | sed 's/\.\///')
-    COMPREPLY=( $(compgen -W "${files}" -- ${cur}) )
+    COMPREPLY=( $(compgen -f ${cur}) )
     return 0
 }
-complete -F _eclcc eclcc
+complete -o nospace -F _eclcc eclcc
