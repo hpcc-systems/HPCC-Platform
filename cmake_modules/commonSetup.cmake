@@ -39,6 +39,36 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   cmake_policy ( SET CMP0011 NEW )
 
+  ###
+  ## Config Block
+  ###
+  option(PREFIX "Set the install prefix")
+  option(EXEC_PREFIX "Set the execution prefix")
+  option(CONFIG_PREFIX "Set the configuration prefix")
+  option(DIR_NAME "Set the install directory name")
+  option(LIB_DIR "Set the library install dir")
+  option(EXEC_DIR "Set the executable install dir")
+  option(COMPONENTFILES_DIR "Set the componentfiles dir")
+  option(ADMIN_DIR "Set the admin dir")
+  option(PLUGINS_DIR "Set the plugins dir")
+  option(CONFIG_SOURCE_DIR "Set the configuration source dir")
+  option(RUNTIME_DIR "Set the runtime dir")
+  option(HOME_DIR "Set the home dir")
+  option(LOCK_DIR "Set the lock dir")
+  option(PID_DIR "Set the pid dir")
+  option(LOG_DIR "Set the log dir")
+  option(RUNTIME_USER "Set the runtime username")
+  option(RUNTIME_GROUP "Set the runtime group")
+  option(ENV_XML_FILE "Set the environment xml file name.")
+  option(ENV_CONF_FILE "Set the environment conf file name.")
+  option(LICENSE_FILE "Set the license file to use.")
+
+  if( NOT LICENSE_FILE )
+      set(LICENSE_FILE "LICENSE.txt")
+  endif()
+
+  include(${CMAKE_MODULE_PATH}/optionDefaults.cmake)
+  ###
   option(CLIENTTOOLS "Enable the building/inclusion of a Client Tools component." ON)
   option(PLATFORM "Enable the building/inclusion of a Platform component." ON)
   option(DEVEL "Enable the building/inclusion of a Development component." OFF)
@@ -93,13 +123,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       set(DEVEL OFF)
   endif()
   
+  if ( DEVEL )
+    set(PLATFORM OFF)
+    set(CLIENTTOOLS OFF)
+endif()
+
   option(PORTALURL "Set url to hpccsystems portal download page")
 
   if ( NOT PORTALURL )
     set( PORTALURL "http://hpccsystems.com/download" )
   endif()
 
-  set(CMAKE_MODULE_PATH "${HPCC_SOURCE_DIR}/cmake_modules/")
 
   ##########################################################
 
@@ -503,15 +537,17 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   ###
   ## The following sets the install directories and names.
   ###
-  if ( PLATFORM )
-    set ( CMAKE_INSTALL_PREFIX "${PREFIX}/${DIR_NAME}" )
-  else ( PLATFORM )
-    set ( CMAKE_INSTALL_PREFIX "${PREFIX}/${DIR_NAME}/${version}/clienttools" )
-  endif ( PLATFORM )
-  set (CMAKE_SKIP_BUILD_RPATH  FALSE)
-  set (CMAKE_BUILD_WITH_INSTALL_RPATH FALSE) 
-  set (CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${LIB_DIR}")
-  set (CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  if ( PLATFORM OR DEVEL )
+    set ( OSSDIR "${DIR_NAME}" )
+  else()
+    set ( OSSDIR "${DIR_NAME}/${version}/clienttools" )
+  endif()
+  set ( CPACK_INSTALL_PREFIX "${PREFIX}/${OSSDIR}" )
+  set ( CPACK_PACKAGING_INSTALL_PREFIX "${PREFIX}/${OSSDIR}" )
+  SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+  SET(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+  SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/${OSSDIR}/lib")
+  SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   if (APPLE)
     set(CMAKE_INSTALL_RPATH "@loader_path/../${LIB_DIR}")
     set(CMAKE_INSTALL_NAME_DIR "@loader_path/../${LIB_DIR}") 
