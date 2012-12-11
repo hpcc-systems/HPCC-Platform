@@ -414,10 +414,16 @@ inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char
     return appendXMLCloseTag(xml, tag, prefix);
 }
 
-inline StringBuffer &delimitJSON(StringBuffer &s)
+inline StringBuffer &delimitJSON(StringBuffer &s, bool addNewline=false, bool escapeNewline=false)
 {
-    if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
-        s.append(", ");
+    if (s.length() && !strchr("{[:n\n", s.charAt(s.length()-1))) //'n' or '\n' indicates already formatted with optionally escaped newline
+    {
+        s.append(",");
+        if (addNewline)
+            s.append(escapeNewline ? "\\n" : "\n");
+        else
+            s.append(' ');
+    }
     return s;
 }
 
