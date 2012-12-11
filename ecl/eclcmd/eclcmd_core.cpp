@@ -327,6 +327,8 @@ public:
                 continue;
             if (iter.matchOption(optName, ECLOPT_NAME)||iter.matchOption(optName, ECLOPT_NAME_S))
                 continue;
+            if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
+                continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
             if (iter.matchOption(optTimeLimit, ECLOPT_TIME_LIMIT))
@@ -396,6 +398,7 @@ public:
             req->setJobName(optName.get());
         if (optTargetCluster.length())
             req->setCluster(optTargetCluster.get());
+        req->setRemoteDali(optDaliIP.get());
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
 
@@ -447,6 +450,7 @@ public:
             "   -A, --activate         Activate query when published (default)\n"
             "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
+            "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
             "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
             "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
             "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
@@ -457,6 +461,7 @@ public:
     }
 private:
     StringAttr optName;
+    StringAttr optDaliIP;
     StringAttr optMemoryLimit;
     unsigned optMsToWait;
     unsigned optTimeLimit;
