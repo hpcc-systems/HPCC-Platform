@@ -2867,13 +2867,14 @@ unsigned CBucketHandler::getBucketEstimate(rowcount_t totalRows) const
     // If the number of buckets is too low then we might need to do another round of spilling - which is painful.
     //
     // The estimation below, assumes there are no duplicates, i.e. the worse case, as such, it is very likely to be an over-estimate.
-    // Over-estimating is likely to be preferrable to underestimating, which would cause more phases.
+    // Over-estimating is likely to be preferable to underestimating, which would cause more phases.
     //
     // Lower and upper bounds are defined for # buckets (HASHDEDUP_BUCKETS_MIN/HASHDEDUP_BUCKETS_MAX)
-    // NB: initiali estimate is bypassed completely if "num_buckets" hint specifics starting # buckets.
+    // NB: initial estimate is bypassed completely if "num_buckets" hint specifics starting # buckets.
 
     unsigned retBuckets = HASHDEDUP_BUCKETS_MIN;
-    if (-1 != totalRows && !owner.isVariable) // give up guessing if variable
+    // only guess in fixed case and if totalRows known and >0
+    if (RCMAX != totalRows && totalRows>0 && !owner.isVariable)
     {
         // Rough estimate for # buckets to start with
         // likely to be way off for variable
@@ -2892,13 +2893,13 @@ unsigned CBucketHandler::getBucketEstimate(rowcount_t totalRows) const
         else
             maxRowGuess = (rowidx_t)_maxRowGuess;
         memsize_t bucketSpace = retBuckets * rM->getExpectedCapacity(((maxRowGuess+retBuckets-1)/retBuckets) * sizeof(void *), owner.allocFlags);
-        // now rebase maxRowguess
+        // now rebase maxRowGuess
         _maxRowGuess = (availMem-bucketSpace) / initKeySize;
         if (_maxRowGuess >= RCIDXMAX/sizeof(void *))
             maxRowGuess = (rowidx_t)RCIDXMAX/sizeof(void *);
         else
             maxRowGuess = (rowidx_t)_maxRowGuess;
-        maxRowGuess = maxRowGuess / 100 * HTSIZE_LIMIT_PC; // scale down to ht limit %
+        maxRowGuess = (rowidx_t) (((float)maxRowGuess / 100) * HTSIZE_LIMIT_PC); // scale down to ht limit %
         memsize_t rowMem = maxRowGuess * initKeySize;
         if (rowMem > (availMem-bucketSpace))
         {
