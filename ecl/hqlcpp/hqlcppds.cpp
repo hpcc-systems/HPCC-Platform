@@ -2188,6 +2188,15 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
 //---------------------------------------------------------------------------
 // Dataset assignment - to temp
 
+static bool isWorthAssigningDirectly(BuildCtx & ctx, const CHqlBoundTarget & /*target*/, IHqlExpression * expr)
+{
+    //target parameter is currently unused - it should be used to check that linkcounted attributes match etc.
+    if (expr->getOperator() == no_null)
+        return false;
+    //A poor approximation.  Could also include function calls if the is-link-counted matches.
+    return ::canEvaluateInline(&ctx, expr);
+}
+
 void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
     node_operator op = expr->getOperator();
@@ -2275,6 +2284,23 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_sectioninput:
         buildDatasetAssign(ctx, target, expr->queryChild(0));
         return;
+    case no_if:
+        //Only generate conditional assignments to a target if both source and target require no temporary.
+        if (expr->isDictionary() || (::canEvaluateInline(&ctx, expr->queryChild(1)) && ::canEvaluateInline(&ctx, expr->queryChild(2))))
+        //The following line would be better, but it needs improvements to the cse generation first, otherwise some examples get worse.
+        //if (expr->isDictionary() || (isWorthAssigningDirectly(ctx, target, expr->queryChild(1)) || isWorthAssigningDirectly(ctx, target, expr->queryChild(2))))
+        {
+            buildDatasetAssignIf(ctx, target, expr);
+            return;
+        }
+        break;
+    case no_chooseds:
+        if (expr->isDictionary())
+        {
+            buildDatasetAssignChoose(ctx, target, expr);
+            return;
+        }
+        break;
     case no_serialize:
         if (isDummySerializeDeserialize(expr))
             buildDatasetAssign(ctx, target, expr->queryChild(0)->queryChild(0));
@@ -2859,6 +2885,43 @@ void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, IHqlCppDatasetBu
 
         buildDatasetAssign(subctx, target, cur);
     }
+}
+
+
+void HqlCppTranslator::buildDatasetAssignChoose(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+{
+    CHqlBoundExpr cond;
+    buildExpr(ctx, expr->queryChild(0), cond);
+
+    IHqlExpression * last = queryLastNonAttribute(expr);
+    BuildCtx subctx(ctx);
+    IHqlStmt * switchstmt = subctx.addSwitch(cond.expr);
+    ForEachChildFrom(i, expr, 1)
+    {
+        IHqlExpression * cur = expr->queryChild(i);
+        if (cur != last)
+        {
+            OwnedHqlExpr label = getSizetConstant(i);
+            subctx.addCase(switchstmt, label);
+        }
+        else
+            subctx.addDefault(switchstmt);
+
+        buildDatasetAssign(subctx, target, cur);
+    }
+}
+
+
+void HqlCppTranslator::buildDatasetAssignIf(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+{
+    BuildCtx subctx(ctx);
+    IHqlStmt * filter = buildFilterViaExpr(subctx, expr->queryChild(0));
+    buildDatasetAssign(subctx, target, expr->queryChild(1));
+
+    IHqlExpression * elseExpr = expr->queryChild(2);
+    assertex(elseExpr);
+    subctx.selectElse(filter);
+    buildDatasetAssign(subctx, target, elseExpr);
 }
 
 
