@@ -33,7 +33,7 @@ class Suite:
 
     def buildSuite(self):
         if not os.path.isdir(self.dir_ec):
-            raise Exception("ECL Directory does not exist.")
+            raise Error("2001", err="Not Found: %s" % self.dir_ec)
         for files in os.listdir(self.dir_ec):
             if files.endswith(".ecl"):
                 ecl = os.path.join(self.dir_ec, files)

@@ -22,6 +22,7 @@ ERROR = {
     "1001": "Command return code non-zero.",
     "1002": "Command timed out.",
     "2000": "Value must be of Type Suite or ECLFile.",
+    "2001": "ECL Directory does not exist.",
     "3000": "Return is null",
     "3001": "Return diff does not match."
 }
@@ -34,6 +35,6 @@ class Error(Exception):
 
     def __str__(self):
         if self.err:
-            return "Error (%s): %s \n %s" % (self.code,
-                                             ERROR[self.code], self.err)
+            return "Error (%s): %s \n %s\n" % (self.code,
+                                               ERROR[self.code], self.err)
         return "Error (%s): %s " % (self.code, ERROR[self.code])
