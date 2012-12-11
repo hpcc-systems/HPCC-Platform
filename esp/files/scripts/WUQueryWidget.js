@@ -16,14 +16,18 @@
 define([
     "dojo/_base/declare",
     "dojo/dom",
+    "dojo/dom-class",
     "dojo/data/ObjectStore",
     "dojo/date",
-    "dojo/on",
+    "dijit/Menu",
+    "dijit/MenuItem",
+    "dijit/MenuSeparator",
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+    
 
     "dojox/grid/EnhancedGrid",
     "dojox/grid/enhanced/plugins/Pagination",
@@ -44,7 +48,8 @@ define([
     "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
-], function (declare, dom, ObjectStore, date, on,
+    
+], function (declare, dom, domClass, ObjectStore, date, Menu, MenuItem, MenuSeparator,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 EnhancedGrid, Pagination, IndirectSelection,
                 WsWorkunits, WUDetailsWidget,
@@ -95,6 +100,50 @@ define([
             this.inherited(arguments);
             this.refreshActionState();
             this.initWorkunitsGrid();
+
+            var pMenu;
+        pMenu = new Menu({
+            targetNodeIds: [this.id + "WorkunitsGrid"]
+        });
+        pMenu.addChild(new MenuItem({
+            label: "Open",
+            //TODO
+        }));
+        pMenu.addChild(new MenuSeparator());
+        pMenu.addChild(new MenuItem({
+            label: "Delete"
+            //TODO
+        }));
+        pMenu.addChild(new MenuSeparator());
+        pMenu.addChild(new MenuItem({
+            label: "Set To Failed"
+            //TODO
+        }));
+        pMenu.addChild(new MenuSeparator());
+        pMenu.addChild(new MenuItem({
+            label: "Protect"
+            //TODO we should hide this menu item if it is protected already
+            //disabled: true
+        }));
+        pMenu.addChild(new MenuSeparator());
+        pMenu.addChild(new MenuItem({
+            label: "Un-Protect"
+             //TODO we should hide this menu item if it is un-protected already
+             //disabled: true
+        }));
+        pMenu.addChild(new MenuSeparator());
+        pMenu.addChild(new MenuItem({
+            label: "Reschedule"
+            //TODO
+        }));
+        pMenu.addChild(new MenuSeparator());
+        pMenu.addChild(new MenuItem({
+            label: "Deschedule"
+            //TODO
+        }));
+
+        pMenu.startup();
+
         },
 
         resize: function (args) {
@@ -158,9 +207,15 @@ define([
         },
         _onDeschedule: function (event) {
         },
+        
         _onFilterApply: function (event) {
             this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
             this.refreshGrid();
+            if (domClass.contains("iconFilter", "hidden")){             
+             domClass.add("iconFilter", "iconFilter")
+            }
+
+            
         },
         _onFilterClear: function(event) {
             this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
@@ -174,7 +229,11 @@ define([
             dom.byId(this.id + "FromDate").value = "";
             dom.byId(this.id + "FromTime").value = "";
             dom.byId(this.id + "ToDate").value = "";
-            dom.byId(this.id + "LastNDays").value = "";
+            dom.byId(this.id + "LastNDays").value = "";            
+            domClass.remove("iconFilter", "iconFilter");
+            /*if (domClass.contains("iconFilter", "iconFilter")){             
+             domClass.add("iconFilter", "hidden");
+            }*/
             this.refreshGrid();
         },
 
@@ -219,6 +278,8 @@ define([
         //  Implementation  ---
         init: function (params) {
             if (params.Wuid) {
+
+
             }
         },
 
