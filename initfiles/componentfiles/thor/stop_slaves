@@ -17,11 +17,26 @@
 
 hpcc_compname=$1
 hpcc_setenv=$2
+master=$3
 
 source ${hpcc_setenv}
 
-for file in $PID/${hpcc_compname}_slave_*.pid
-do
-  kill -9 `cat ${file}` # > /dev/null
-done
+echo PID=${PID}
+echo hpcc_compname=${hpcc_compname}
+echo master=${master}
 
+for file in $(ls $PID/${hpcc_compname}_slave_*.pid)
+do
+  apid=`cat ${file}`
+  echo pid = ${apid}
+  slavecmdline=`cat /proc/${apid}/cmdline`
+  psline=`echo ${slavecmdline} | grep ${master}`
+  if [ ! -z "${psline}" ]
+  then
+    echo Process cmdline = `cat /proc/${apid}/cmdline`
+    echo kill -9 ${apid}
+    kill -9 ${apid} # > /dev/null
+  fi
+done
+echo rm -f $PID/${hpcc_compname}_slave_*.pid
+rm -f $PID/${hpcc_compname}_slave_*.pid
