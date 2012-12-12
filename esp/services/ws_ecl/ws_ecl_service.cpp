@@ -355,8 +355,9 @@ void CWsEclBinding::getDynNavData(IEspContext &context, IProperties *params, IPr
         const char *setname = params->queryProp("queryset");
         if (!setname || !*setname)
             return;
-
         Owned<IPropertyTree> settree = getQueryRegistry(setname, true);
+        if (!settree)
+            return;
 
         if (params->hasProp("QueryList"))
         {
