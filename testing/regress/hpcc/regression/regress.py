@@ -20,6 +20,7 @@
 import logging
 import os
 import sys
+import time
 
 from ..common.config import Config
 from ..common.logger import Logger
@@ -30,10 +31,13 @@ from ..util.ecl.command import ECLcmd
 
 
 class Regression:
-    def __init__(self, config="regress.json"):
+    def __init__(self, config="regress.json", level="info"):
         self.config = Config(config).configObj
         self.suites = {}
-        self.log = Logger("DEBUG")
+        self.log = Logger(level)
+
+    def setLogLevel(self, level):
+        self.log.setLevel(level)
 
     def bootstrap(self):
         archives = os.path.join(self.config.baseDir, self.config.archiveDir)
@@ -66,15 +70,16 @@ class Regression:
         logDir = os.path.join(self.config.baseDir, self.config.logDir)
         server = self.config.ip
         report = Report(name)
-        logName = name + ".log"
+        curTime = time.strftime("%y-%m-%d-%H-%M")
+        logName = name + "." + curTime + ".log"
         if name == "setup":
             cluster = 'hthor'
         else:
             cluster = name
         log = os.path.join(logDir, logName)
         self.log.addHandler(log, 'DEBUG')
-        logging.debug("Suite: %s" % name)
-        logging.debug("Queries: %s" % repr(len(suite.getSuite())))
+        logging.warn("Suite: %s" % name)
+        logging.warn("Queries: %s" % repr(len(suite.getSuite())))
         cnt = 1
         for query in suite.getSuite():
             logging.warn("%s. Test: %s" % (repr(cnt), query.ecl))
