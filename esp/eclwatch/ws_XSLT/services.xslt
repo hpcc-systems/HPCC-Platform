@@ -40,6 +40,7 @@
 <xsl:variable name="encapsulatedSystem" select="/TpServiceQueryResponse/EncapsulatedSystem"/>
 <xsl:variable name="enableSNMP" select="/TpServiceQueryResponse/EnableSNMP"/>
 <xsl:variable name="addProcessesToFilter" select="/TpServiceQueryResponse/PreflightProcessFilter"/>
+<xsl:variable name="numFTSlaves" select="count(/TpServiceQueryResponse/ServiceList/TpFTSlaves/TpFTSlave/TpMachines/TpMachine)"/>
 
 
   <xsl:template match="/TpServiceQueryResponse">
@@ -102,6 +103,7 @@
         <script language="javascript" src="&filePathEntity;/scripts/multiselect.js">
         </script>
         <script language="javascript">
+            var numFTSlaves=<xsl:value-of select="$numFTSlaves"/>;
             <xsl:text disable-output-escaping="yes"><![CDATA[
       var fromTargetClusterPage = false;
             function onRowCheck(checked)
@@ -114,6 +116,36 @@
                 document.getElementsByName('Addresses.itemcount')[0].value = totalItems;
                 initPreflightControls();
                 onRowCheck(true);
+                toggleComponent('FTSlave', true);
+            }
+
+            function toggleComponent(ComponentType, onload)
+            {
+                var obj = document.getElementById('row_'+ComponentType+'_1');
+                if (null == obj)
+                    return;
+
+                var display = '';
+                var visibility = 'visible';
+                var src = '/esp/files_/img/folderopen.gif';
+                if (onload || obj.style.visibility == 'visible')
+                {
+                    display = 'none';
+                    visibility = 'hidden';
+                    src = '/esp/files_/img/folder.gif';
+                }
+
+                img  = document.getElementById( ComponentType + 'ExpLink' );
+                if (img)
+                    img.src = src;
+                for (i = 1; i <=numFTSlaves; i++)
+                {
+                    obj = document.getElementById('row_'+ComponentType+'_'+i);
+                    if (null == obj)
+                        return;
+                    obj.style.display = display;
+                    obj.style.visibility = visibility;
+                }
             }
             function toggleDetails(id)
             {
@@ -338,7 +370,17 @@
         <tr class="content">
             <th colspan="7">
                 <br/>
-                <xsl:value-of select="$caption"/>
+                <xsl:choose>
+                    <xsl:when test="$caption='FT Slaves'">
+                        <a href="javascript:toggleComponent('FTSlave', false)">
+                            <img id="FTSlaveExpLink" border="0" src="&filePathEntity;/img/folder.gif" align="middle"/>
+                                <xsl:value-of select="$caption"/>
+                        </a>
+                    </xsl:when>
+                    <xsl:otherwise>
+                        <xsl:value-of select="$caption"/>
+                    </xsl:otherwise>
+                </xsl:choose>
             </th>
         </tr>
         <xsl:for-each select="$nodes">
@@ -349,6 +391,11 @@
                     <xsl:if test="$showBindings">
                         <xsl:attribute name="id">
                             <xsl:value-of select="concat('row_', $compName, '_', position())"/>
+                        </xsl:attribute>
+                    </xsl:if>
+                    <xsl:if test="$caption='FT Slaves'">
+                        <xsl:attribute name="id">
+                            <xsl:value-of select="concat('row_FTSlave_', position())"/>
                         </xsl:attribute>
                     </xsl:if>
                     <td width="1%" valign="top">
