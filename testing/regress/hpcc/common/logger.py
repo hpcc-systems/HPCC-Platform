@@ -58,13 +58,13 @@ class Logger(object):
                 prefix = '[Error]' % \
                     record.__dict__
             elif record.__dict__['levelname'] == "DEBUG":
-                prefix = '[TEST]' % \
+                prefix = '[Debug]' % \
                     record.__dict__
             elif record.__dict__['levelname'] == "INFO":
                 prefix = '[Pass]' % \
                     record.__dict__
             elif record.__dict__['levelname'] == "WARNING":
-                prefix = '[Running]' % \
+                prefix = '[Action]' % \
                     record.__dict__
             if self._color:
                 prefix = (self._colors.get(record.levelno, self._normal) +
@@ -77,7 +77,7 @@ class Logger(object):
                 formatted = formatted.rstrip() + "\n" + record.exc_text
             return formatted.replace("\n", "\n    ")
 
-    def addHandler(self, fd, level='debug'):
+    def addHandler(self, fd, level='info'):
         root_logger = logging.getLogger()
         channel = logging.FileHandler(fd)
         channel.setLevel(getattr(logging, level.upper()))
@@ -97,18 +97,9 @@ class Logger(object):
         channel.setFormatter(Logger._LogFormatter(color=color))
         root_logger.addHandler(channel)
 
-    def __init__(self, level='debug'):
+    def setLevel(self, level):
         logging.getLogger().setLevel(getattr(logging, level.upper()))
+
+    def __init__(self, level='info'):
+        self.setLevel(level)
         self.enable_pretty_logging()
-
-
-def main():
-    logging.info("INFO")
-    logging.debug("sort.ecl")
-    logging.warn("WARN")
-    logging.error("ERROR")
-    logging.critical("CRITICAL")
-
-if __name__ == '__main__':
-    regLog = Logger('debug')
-    main()

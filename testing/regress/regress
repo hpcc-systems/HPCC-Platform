@@ -31,6 +31,9 @@ if __name__ == "__main__":
                         version='%(prog)s 0.0.1')
     parser.add_argument('--config', help="Config file to use.",
                         nargs='?', default="regress.json")
+    parser.add_argument('--loglevel', help="Set the log level.",
+                        nargs='?', default="info",
+                        choices=['info', 'debug'])
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
     parser_list.add_argument('clusters', help="Print clusters from config.",
@@ -39,7 +42,8 @@ if __name__ == "__main__":
     parser_run.add_argument('cluster', help="Run the cluster suite.",
                             nargs='?', default='setup')
     args = parser.parse_args()
-    regress = Regression(args.config)
+
+    regress = Regression(args.config, args.loglevel)
     if 'clusters' in args:
         Clusters = ['setup']
         for cluster in regress.config.Clusters:

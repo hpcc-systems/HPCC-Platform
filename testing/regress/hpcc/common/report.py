@@ -47,7 +47,7 @@ class Report:
         self.report = _dict(report)
         self.name = name
 
-    def display(self):
+    def display(self, log=None):
         reportStr = "\n"
         reportStr += "Results\n"
         reportStr += "-------------------------------------------------\n"
@@ -58,6 +58,9 @@ class Report:
             for result in self.report._fail:
                 reportStr += result.Diff
                 reportStr += "\n"
+            reportStr += "-------------------------------------------------\n"
+        if log:
+            reportStr += "Log: %s\n" % str(log)
             reportStr += "-------------------------------------------------\n"
         logging.warn(reportStr)
 
