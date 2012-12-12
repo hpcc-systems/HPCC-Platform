@@ -438,6 +438,7 @@ public:
     {
         return m_passwordExpirationWarningDays;
     }
+    virtual bool createUserScopes();
 };
 
 #endif

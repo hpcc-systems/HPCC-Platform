@@ -79,7 +79,7 @@ public:
 
         return true;
     }
-
+    virtual bool createUserScopes() { return false; }
 };
 
 class CLocalSecurityManager : public CDefaultSecurityManager
