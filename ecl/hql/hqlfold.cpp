@@ -3096,6 +3096,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     case no_sumlist:
         {
             IHqlExpression * child = expr->queryChild(0);
+            OwnedHqlExpr folded;
             switch (child->getOperator())
             {
             case no_null:
@@ -3122,12 +3123,17 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         }
                     }
                     if (ok)
-                    {
-                        return createConstant(sum.getClear());
-                    }
+                        folded.setown(createConstant(sum.getClear()));
                 }
+
                 if (child->numChildren() == 1)
-                    return expr->cloneAllAnnotations(child->queryChild(0));
+                    folded.set(child->queryChild(0));
+
+                if (folded)
+                {
+                    OwnedHqlExpr cast = ensureExprType(folded, expr->queryType());
+                    return expr->cloneAllAnnotations(cast);
+                }
                 break;
             }
             break;
