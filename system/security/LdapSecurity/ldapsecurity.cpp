@@ -1216,6 +1216,19 @@ bool CLdapSecManager::getUserInfo(ISecUser& user, const char* infotype)
     return m_ldap_client->getUserInfo(user, infotype);
 }
 
+bool CLdapSecManager::createUserScopes()
+{
+    Owned<ISecUserIterator> it = getAllUsers();
+    it->first();
+    while(it->isValid())
+    {
+        ISecUser &user = it->get();
+        if (!m_ldap_client->createUserScope(user))
+            PROGLOG("Error creating scope for user '%s'", user.getName());
+        it->next();
+    }
+    return true;
+}
 
 extern "C"
 {

@@ -5089,6 +5089,16 @@ private:
 
         return true;
     }
+
+    bool createUserScope(ISecUser& user)
+    {
+        //Add tempfile scope for given user (spill, paused and checkpoint
+        //files will be created under this user specific scope)
+        StringBuffer resName(queryDfsXmlBranchName(DXB_Internal));
+        resName.append("::").append(user.getName());
+        Owned<ISecResource> resource = new CLdapSecResource(resName.str());
+        return addResource(RT_FILE_SCOPE, user, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
+    }
 };
 
 int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)
