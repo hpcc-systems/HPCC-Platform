@@ -1430,7 +1430,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
 
 ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx, IHqlExpression * expr)
 {
-    if (!targetThor())
+    if (!targetThor() || insideChildQuery(ctx))
         return buildCachedActivity(ctx, expr->queryChild(0));
 
     HqlExprArray leftSorts, rightSorts;

@@ -1392,7 +1392,7 @@ unique_id_t ChildGraphBuilder::buildLoopBody(BuildCtx & ctx, bool multiInstance)
     createBuilderAlias(subctx, extractBuilder);
 
     translator.beginExtract(ctx, extractBuilder);
-    translator.doBuildThorSubGraph(ctx, resourced, SubGraphChild, id, represents);
+    translator.doBuildThorSubGraph(ctx, resourced, SubGraphLoop, id, represents);
     translator.endExtract(ctx, extractBuilder);
 
     return id;
@@ -1503,7 +1503,7 @@ unique_id_t ChildGraphBuilder::buildGraphLoopBody(BuildCtx & ctx, bool isParalle
     createBuilderAlias(subctx, extractBuilder);
 
     translator.beginExtract(ctx, extractBuilder);
-    translator.doBuildThorSubGraph(ctx, resourced, SubGraphChild, id, represents);
+    translator.doBuildThorSubGraph(ctx, resourced, SubGraphLoop, id, represents);
     translator.endExtract(ctx, extractBuilder);
 
     return id;
