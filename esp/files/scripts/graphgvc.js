@@ -609,7 +609,7 @@ function loadXGMMLGraph(xgmmlResponse) {
         if (gt != null) {
             clearTimeout(gt);
         }
-        gt = setTimeout("reloadGraph()", 8000);
+        gt = setTimeout("reloadGraph()", 30000);
     }
 
     update_details();
@@ -1034,7 +1034,7 @@ function sendWuInfoRequest() {
                 }
             }
             else {
-                gt = setTimeout("reloadGraph()", 8000);
+                gt = setTimeout("reloadGraph()", 30000);
                 hideElement('loadingMsg');
             }
         },
