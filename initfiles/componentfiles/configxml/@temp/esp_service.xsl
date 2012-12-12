@@ -552,9 +552,11 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                     </xsl:call-template>
                 </xsl:variable>
                 <xsl:variable name="pluginsFilePath" select="concat('file:///', $outputPath, $espServiceName, '_plugins.xml')"/>
-                <xsl:variable name="pluginsRoot" select="document($pluginsFilePath)"/>
+                <xsl:variable name="backSlash">&#92;</xsl:variable>
+                <xsl:variable name="pluginsFilePath2" select="translate($pluginsFilePath, $backSlash, '/')"/>
+                <xsl:variable name="pluginsRoot" select="document($pluginsFilePath2)"/>
                 <xsl:if test="not($pluginsRoot)">
-                    <xsl:message terminate="yes">The plugins file '<xsl:value-of select="$pluginsFilePath"/>' was either not generated or failed to open!</xsl:message>
+                  <xsl:message terminate="yes">The plugins file '<xsl:value-of select="$pluginsFilePath2"/>' was either not generated or failed to open!</xsl:message>
                 </xsl:if>
                 <xsl:variable name="pluginsNodes" select="$pluginsRoot/Plugins/Plugin/@destName"/>
                 <xsl:if test="not(function-available('set:distinct'))">
