@@ -23,98 +23,143 @@ declare -a arrPIDName
 declare -a arrPIDPath
 declare -a arrDep
 
-if [ $# -lt 2 ]; then
-    echo usage: $0 -p=PIDPath[,PIDPath,...] -n=PIDName[,PIDName,...] [-m=YES/NO] [-d=dependency,dependency,...]
-    exit 1
-fi
+if [ "${1:0:1}" == '-' ]; then
+    if [ $# -lt 2 ]; then
+        echo usage: $0 -p=PIDPath[,PIDPath,...] -n=PIDName[,PIDName,...] [-m=YES/NO] [-d=dependency,dependency,...]
+        exit 1
+    fi
 
-dfOption='-l'
-depAll=0
-for (( i=1;$i<=$#;i=$i+1 )) do
-    case ${!i:0:3} in '-p=')
-             IFS=, read -a arrPIDPath <<< "${!i:3}";;
-        '-n=')
-             IFS=, read -a arrPIDName <<< "${!i:3}";;
-        '-d=')
-            if [ "${!i:3}" == 'ALL' ]; then
-                depAll=1
-            else
-                IFS=, read -a arrDep <<< "${!i:3}"
-            fi
-            ;;
-        '-m=')
-            if [ "${!i:3}" == 'YES' ]; then
-                dfOption='-a'
-            fi
-            ;;
-        *)
-             echo "wrong augument:${!i}";;
-    esac
-done
-
-lPath=${#arrPIDPath[*]}
-if [ ${#arrPIDName[@]} -gt $lPath ]; then
-    lastPath=${arrPIDPath[lPath-1]}
-    for (( i = $lPath; i < ${#arrPIDName[@]}; i++)); do
-        arrPIDPath[i]=$lastPath
+    dfOption='-l'
+    depAll=0
+    for (( i=1;$i<=$#;i=$i+1 )) do
+        case ${!i:0:3} in '-p=')
+                 IFS=, read -a arrPIDPath <<< "${!i:3}";;
+            '-n=')
+                 IFS=, read -a arrPIDName <<< "${!i:3}";;
+            '-d=')
+                if [ "${!i:3}" == 'ALL' ]; then
+                    depAll=1
+                else
+                    IFS=, read -a arrDep <<< "${!i:3}"
+                fi
+                ;;
+            '-m=')
+                if [ "${!i:3}" == 'YES' ]; then
+                    dfOption='-a'
+                fi
+                ;;
+            *)
+                 echo "wrong augument:${!i}";;
+        esac
     done
-fi
 
-#find machineInfo and output:
+    lPath=${#arrPIDPath[*]}
+    if [ ${#arrPIDName[@]} -gt $lPath ]; then
+        lastPath=${arrPIDPath[lPath-1]}
+        for (( i = $lPath; i < ${#arrPIDName[@]}; i++)); do
+            arrPIDPath[i]=$lastPath
+        done
+    fi
 
-mem=`free | head -n 3 | tail -n 1 | awk '{print $3,$4}'`
-cpu=`vmstat 1 2 | tail -n 1 | awk '{print $15}'`
-echo CPU-Idle: $cpu%
-cuptime=`uptime | cut -f 1,2 -d ','`
-echo ComputerUpTime: $cuptime
+    #find machineInfo and output:
 
-echo ---SpaceUsedAndFree---
-swap=`free | tail -n 1 | awk '{print $3,$4}'`
-echo Physical Memory: $mem
-echo Virtual Memory: $swap
+    mem=`free | head -n 3 | tail -n 1 | awk '{print $3,$4}'`
+    cpu=`vmstat 1 2 | tail -n 1 | awk '{print $15}'`
+    echo CPU-Idle: $cpu%
+    cuptime=`uptime | cut -f 1,2 -d ','`
+    echo ComputerUpTime: $cuptime
 
-i=0
-for name in `df $dfOption | tail -n +2 | awk '{if(NF>=4) print $NF}'`; do
-    arr0[i]=$name
-    i=$((i+1))
-done
-i=0
-for used in `df $dfOption | tail -n +2 | awk '{if(NF>=4) print $(NF-3)}'`; do
-    arr1[i]=$used
-    i=$((i+1))
-done
-i=0
-for free in `df $dfOption | tail -n +2 | awk '{if(NF>=4) print $(NF-2)}'`; do
-    arr2[i]=$free
-    i=$((i+1))
-done
-for j in $(seq 0 $((i-1))); do
-    echo ${arr0[$j]}: ${arr1[$j]} ${arr2[$j]}
-done
+    echo ---SpaceUsedAndFree---
+    swap=`free | tail -n 1 | awk '{print $3,$4}'`
+    echo Physical Memory: $mem
+    echo Virtual Memory: $swap
 
-# foreach PIDName in arrPIDName do: find process info and output
-echo ---ProcessList1---
+    i=0
+    for name in `df $dfOption | tail -n +2 | awk '{if(NF>=4) print $NF}'`; do
+        arr0[i]=$name
+        i=$((i+1))
+    done
+    i=0
+    for used in `df $dfOption | tail -n +2 | awk '{if(NF>=4) print $(NF-3)}'`; do
+        arr1[i]=$used
+        i=$((i+1))
+    done
+    i=0
+    for free in `df $dfOption | tail -n +2 | awk '{if(NF>=4) print $(NF-2)}'`; do
+        arr2[i]=$free
+        i=$((i+1))
+    done
+    for j in $(seq 0 $((i-1))); do
+        echo ${arr0[$j]}: ${arr1[$j]} ${arr2[$j]}
+    done
 
-i=0
-for (( i = 0; i < ${#arrPIDName[@]}; i++)); do
-    full=${arrPIDPath[i]}/${arrPIDName[i]}.pid
-    pid=`cat $full`
-    elapsed=`ps -o etime $pid | sed -e '1d' | tail -n 1`
-    echo Process ${arrPIDPath[i]}/${arrPIDName[i]}:  $pid $elapsed
-done
+    # foreach PIDName in arrPIDName do: find process info and output
+    echo ---ProcessList1---
 
-#read other processes
+    i=0
+    for (( i = 0; i < ${#arrPIDName[@]}; i++)); do
+        full=${arrPIDPath[i]}/${arrPIDName[i]}.pid
+        pid=`cat $full`
+        elapsed=`ps -o etime $pid | sed -e '1d' | tail -n 1`
+        echo Process ${arrPIDPath[i]}/${arrPIDName[i]}:  $pid $elapsed
+    done
 
-echo ---ProcessList2---
-if [[ $depAll -gt 0 ]]; then
-    ps -el | tail -n +1 | awk '{print $4,$14;}'
+    #read other processes
+
+    echo ---ProcessList2---
+    if [[ $depAll -gt 0 ]]; then
+        ps -el | tail -n +1 | awk '{print $4,$14;}'
+    else
+        echo 'NAME:PID CMD'
+        for (( i = 0; i < ${#arrDep[@]}; i++)); do
+            aDep=${arrDep[i]}
+            aDepInit=init_$aDep
+            #depCHK=$(ps aux | grep $aDep | grep -v grep | grep -v $aDepInit | wc -l)
+            depCHK=$(ps -el | grep $aDep  | grep -v grep | grep -v $aDepInit | awk '{print $4,$14;}')
+            echo $aDep:$depCHK
+        done
+    fi
 else
-    echo 'NAME:PID CMD'
-    for (( i = 0; i < ${#arrDep[@]}; i++)); do
-        aDep=${arrDep[i]}
-        aDepInit=init_$aDep
-        #depCHK=$(ps aux | grep $aDep | grep -v grep | grep -v $aDepInit | wc -l)
-        depCHK=$(ps -el | grep $aDep  | grep -v grep | grep -v $aDepInit | awk '{print $4,$14;}')
-        echo $aDep:$depCHK
+    i=0
+    if [ $# -lt 2 ]; then
+            echo usage: $0 dir command
+            exit 1
+    fi
+    #full=$1/$2
+    #pid=`ps -ef | grep $full | grep -v grep | awk '{print $2}'`
+    full=$1/$2.pid
+    pid=`cat $full`
+    echo ProcessID: $pid
+    elapsed=`ps -o etime $pid | sed -e '1d' | tail -n 1`
+    echo ProcessUpTime: $elapsed
+    mem=`free | head -n 3 | tail -n 1 | awk '{print $3,$4}'`
+    cpu=`vmstat 1 2 | tail -n 1 | awk '{print $15}'`
+    echo CPU-Idle: $cpu%
+    cuptime=`uptime | cut -f 1,2 -d ','`
+    echo ComputerUpTime: $cuptime
+    echo ---SpaceUsedAndFree---
+    swap=`free | tail -n 1 | awk '{print $3,$4}'`
+    echo Physical Memory: $mem
+    echo Virtual Memory: $swap
+    for name in `df -l | tail -n +2 | awk '{if(NF>=4) print $NF}'`
+    do
+        arr0[i]=$name
+        i=$((i+1))
+    done
+    i=0
+    for used in `df -l | tail -n +2 | awk '{if(NF>=4) print $(NF-3)}'`
+    do
+        arr1[i]=$used
+        i=$((i+1))
+    done
+    i=0
+    for free in `df -l | tail -n +2 | awk '{if(NF>=4) print $(NF-2)}'`
+    do
+        arr2[i]=$free
+        i=$((i+1))
+    done
+    for j in $(seq 0 $((i-1)))
+    do
+        echo ${arr0[$j]}: ${arr1[$j]} ${arr2[$j]}
     done
 fi

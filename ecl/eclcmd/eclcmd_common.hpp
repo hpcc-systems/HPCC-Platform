@@ -91,9 +91,6 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_NOROOT "--noroot"
 
-#define ECLOPT_DALIIP "--daliip"
-#define ECLOPT_PROCESS "--process"
-
 #define ECLOPT_WUID "--wuid"
 #define ECLOPT_WUID_S "-wu"
 #define ECLOPT_CLUSTER_DEPRECATED "--cluster"

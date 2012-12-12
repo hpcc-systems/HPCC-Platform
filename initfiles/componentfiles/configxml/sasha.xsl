@@ -201,7 +201,7 @@
                    </xsl:call-template>
                 </xsl:attribute>
                 <xsl:attribute name="memoryLimit">
-                   <xsl:value-of select="@memoryLimit"/>
+                   <xsl:value-of select="@xrefMaxMemory"/>
                 </xsl:attribute>
             </xsl:element>
             <xsl:element name="DfuExpiry">

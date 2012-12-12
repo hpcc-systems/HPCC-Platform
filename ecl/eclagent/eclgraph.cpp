@@ -1713,6 +1713,8 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
     assertex(parentExtractSize == 0);
     if (realThor)
     {
+        if (isStandAloneExe)
+            throw MakeStringException(0, "Cannot execute Thor Graph in standalone mode");
         executeThorGraph(graphName);
     }
     else

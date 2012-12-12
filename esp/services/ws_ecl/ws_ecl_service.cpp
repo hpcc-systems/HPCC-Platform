@@ -764,6 +764,59 @@ StringBuffer &appendJSONNumericString(StringBuffer &s, const char *value, bool a
 
 inline const char *jsonNewline(unsigned flags){return ((flags & REQXML_ESCAPEFORMATTERS) ? "\\n" : "\n");}
 
+typedef enum _JSONFieldCategory
+{
+    JSONField_String,
+    JSONField_Integer,
+    JSONField_Real,
+    JSONField_Boolean
+} JSONField_Category;
+
+JSONField_Category xsdTypeToJSONFieldCategory(const char *xsdtype)
+{
+    if (!strnicmp(xsdtype, "real", 4) || !strnicmp(xsdtype, "dec", 3) || !strnicmp(xsdtype, "double", 6) || !strnicmp(xsdtype, "float", 5))
+        return JSONField_Real;
+    if (!strnicmp(xsdtype, "int", 3))
+        return JSONField_Integer;
+    if (!strnicmp(xsdtype, "bool", 4))
+        return JSONField_Boolean;
+    return JSONField_String;
+}
+
+static void buildJsonAppendValue(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, const char *value, unsigned flags, int &indent)
+{
+    indenter(out, indent);
+    if (tag && *tag)
+        out.appendf("\"%s\": ", tag);
+    StringBuffer sample;
+    if ((!value || !*value) && (flags & REQXML_SAMPLE_DATA))
+    {
+        type->getSampleValue(sample, NULL);
+        value = sample.str();
+    }
+
+    if (value)
+    {
+        switch (xsdTypeToJSONFieldCategory(type->queryName()))
+        {
+        case JSONField_String:
+            appendJSONValue(out, NULL, value);
+            break;
+        case JSONField_Integer:
+            appendJSONNumericString(out, value, false);
+            break;
+        case JSONField_Real:
+            appendJSONNumericString(out, value, true);
+            break;
+        case JSONField_Boolean:
+            appendJSONValue(out, NULL, (bool)('1'==*value || strieq(value, "true")));
+            break;
+        }
+    }
+    else
+        out.append("null");
+}
+
 static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out, const char* tag, IPropertyTree *parmtree, unsigned flags, int &indent)
 {
     assertex(type!=NULL);
@@ -875,7 +928,7 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                 }
                 out.append(jsonNewline(flags));
             }
-            else
+            else if (parmtree->hasProp(itemName))
             {
                 Owned<IPropertyTreeIterator> items = parmtree->getElements(itemName);
                 bool first=true;
@@ -888,6 +941,22 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
                     buildJsonMsg(parent,itemType,out, NULL, &items->query(), flags & ~REQXML_ROOT, indent);
                 }
                 out.append(jsonNewline(flags));
+            }
+            else
+            {
+                const char *s = parmtree->queryProp(NULL);
+                if (s && *s)
+                {
+                    StringArray items;
+                    items.appendList(s, "\n");
+                    ForEachItemIn(i, items)
+                    {
+                        delimitJSON(out, true, 0!=(flags & REQXML_ESCAPEFORMATTERS));
+                        buildJsonAppendValue(parent, type, out, NULL, items.item(i), flags & ~REQXML_ROOT, indent);
+                    }
+                    out.append(jsonNewline(flags));
+                }
+
             }
         }
         else
@@ -904,32 +973,7 @@ static void buildJsonMsg(StringStack& parent, IXmlType* type, StringBuffer& out,
     else // simple type
     {
         const char *parmval = (parmtree) ? parmtree->queryProp(NULL) : NULL;
-        indenter(out, indent);
-        out.appendf("\"%s\": ", tag);
-        if (parmval)
-        {
-            const char *tname = type->queryName();
-            //TBD: HACK
-            if (!strnicmp(tname, "real", 4) ||
-                !strnicmp(tname, "dec", 3) ||
-                !strnicmp(tname, "double", 6) ||
-                !strnicmp(tname, "float", 5))
-                appendJSONNumericString(out, parmval, true);
-            else if (!strnicmp(tname, "int", 3))
-                appendJSONNumericString(out, parmval, false);
-            else if (!strnicmp(tname, "bool", 4))
-                appendJSONValue(out, NULL, (bool)('1'==*parmval || strieq(parmval, "true")));
-            else
-                appendJSONValue(out, NULL, parmval);
-        }
-        else if (flags & REQXML_SAMPLE_DATA)
-        {
-            out.append('\"');
-            type->getSampleValue(out,NULL);
-            out.append('\"');
-        }
-        else
-            out.append("null");
+        buildJsonAppendValue(parent, type, out, tag, parmval, flags, indent);
     }
 
     if (flags & REQXML_ROOT)

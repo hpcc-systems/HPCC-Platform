@@ -3869,16 +3869,28 @@ bool XmlSchemaBuilder::beginDataset(const char * name, const char * row)
     if (xml.length() == 0)
         addSchemaPrefix();
 
+    if ((!name || !*name) && row) // xpath("Name") and xpath("/Name") seem to be equivalent
+    {
+        name = row;
+        row = NULL;
+    }
+
     if (name && *name)
     {
         xml.append("<xs:element name=\"").append(name).append("\"");
-        if (optionalNesting)
+        if (!row || !*row)
+            xml.append(" minOccurs=\"0\" maxOccurs=\"unbounded\"");
+        else if (optionalNesting)
             xml.append(" minOccurs=\"0\"");
         xml.append(">").newline();
         xml.append("<xs:complexType>").newline();
     }
 
-    xml.append("<xs:sequence minOccurs=\"0\" maxOccurs=\"unbounded\">").newline();
+    xml.append("<xs:sequence");
+    if (!name || !*name || (row && *row))
+        xml.append(" minOccurs=\"0\" maxOccurs=\"unbounded\"");
+    xml.append('>').newline();
+
     if (row && *row)
     {
         attributes.append(*new StringBufferItem);
@@ -3891,6 +3903,12 @@ bool XmlSchemaBuilder::beginDataset(const char * name, const char * row)
 
 void XmlSchemaBuilder::endDataset(const char * name, const char * row)
 {
+    if ((!name || !*name) && row) // xpath("Name") and xpath("/Name") seem to be equivalent
+    {
+        name = row;
+        row = NULL;
+    }
+
     if (row && *row)
     {
         xml.append("</xs:sequence>").newline();

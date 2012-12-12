@@ -414,20 +414,33 @@ inline StringBuffer &appendXMLTag(StringBuffer &xml, const char *tag, const char
     return appendXMLCloseTag(xml, tag, prefix);
 }
 
-inline StringBuffer &delimitJSON(StringBuffer &s)
+inline StringBuffer &delimitJSON(StringBuffer &s, bool addNewline=false, bool escapeNewline=false)
 {
-    if (s.length() && !strchr("{[:", s.charAt(s.length()-1)))
-        s.append(", ");
+    if (s.length() && !strchr("{ [:,n\n", s.charAt(s.length()-1))) //'n' or '\n' indicates already formatted with optionally escaped newline
+    {
+        s.append(",");
+        if (addNewline)
+            s.append(escapeNewline ? "\\n" : "\n");
+        else
+            s.append(' ');
+    }
     return s;
 }
 
 jlib_decl StringBuffer &encodeJSON(StringBuffer &s, const char *value);
 jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name);
 
+inline StringBuffer &appendJSONNameOrDelimit(StringBuffer &s, const char *name)
+{
+    if (name && *name)
+        return appendJSONName(s, name);
+    return delimitJSON(s);
+}
+
 template <typename type>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, type value)
 {
-    appendJSONName(s, name);
+    appendJSONNameOrDelimit(s, name);
     return s.append(value);
 }
 
@@ -435,14 +448,14 @@ inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, type val
 template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, bool value)
 {
-    appendJSONName(s, name);
+    appendJSONNameOrDelimit(s, name);
     return s.append((value) ? "true" : "false");
 }
 
 template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, const char *value)
 {
-    appendJSONName(s, name);
+    appendJSONNameOrDelimit(s, name);
     if (!value)
         return s.append("null");
     return encodeJSON(s.append('"'), value).append('"');
@@ -451,14 +464,14 @@ inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, const ch
 template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, long value)
 {
-    appendJSONName(s, name);
+    appendJSONNameOrDelimit(s, name);
     return s.appendlong(value);
 }
 
 template <>
 inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned long value)
 {
-    appendJSONName(s, name);
+    appendJSONNameOrDelimit(s, name);
     return s.appendulong(value);
 }
 

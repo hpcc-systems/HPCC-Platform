@@ -421,7 +421,7 @@
                 </xs:appinfo>
             </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="memoryLimit" type="xs:nonNegativeInteger" use="optional" default="4096">
+        <xs:attribute name="xrefMaxMemory" type="xs:nonNegativeInteger" use="optional" default="4096">
             <xs:annotation>
                 <xs:appinfo>
                     <tooltip>The upper memory limit that xref can use.</tooltip>
