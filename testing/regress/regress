@@ -20,8 +20,10 @@
 '''
 
 import argparse
+import logging
 
 from hpcc.regression.regress import Regression
+
 
 if __name__ == "__main__":
     prog = "regress"
@@ -34,6 +36,8 @@ if __name__ == "__main__":
     parser.add_argument('--loglevel', help="Set the log level.",
                         nargs='?', default="info",
                         choices=['info', 'debug'])
+    parser.add_argument('--suiteDir', '-s', help="suiteDir to use.",
+                        nargs='?')
     subparsers = parser.add_subparsers(help='sub-command help')
     parser_list = subparsers.add_parser('list', help='list help')
     parser_list.add_argument('clusters', help="Print clusters from config.",
@@ -43,17 +47,25 @@ if __name__ == "__main__":
                             nargs='?', default='setup')
     args = parser.parse_args()
 
-    regress = Regression(args.config, args.loglevel)
-    if 'clusters' in args:
-        Clusters = ['setup']
-        for cluster in regress.config.Clusters:
-            Clusters.append(str(cluster))
-        print "Avaliable Clusters: "
-        for i in Clusters:
-            print i
-    if 'cluster' in args:
-        regress.bootstrap()
-        if 'setup' in args.cluster:
-            regress.runSuite('setup', regress.setup)
-        else:
-            regress.runSuite(args.cluster, regress.suites[args.cluster])
+    suiteDir = ""
+    if 'suiteDir' in args:
+        suiteDir = args.suiteDir
+    try:
+        regress = Regression(args.config, args.loglevel, suiteDir)
+        if 'clusters' in args:
+            Clusters = ['setup']
+            for cluster in regress.config.Clusters:
+                Clusters.append(str(cluster))
+            print "Avaliable Clusters: "
+            for i in Clusters:
+                print i
+        if 'cluster' in args:
+            regress.bootstrap()
+            if 'setup' in args.cluster:
+                regress.runSuite('setup', regress.setup)
+            else:
+                regress.runSuite(args.cluster, regress.suites[args.cluster])
+    except Exception as e:
+        logging.critical(e)
+    except KeyboardInterrupt:
+        logging.critical("Keyboard Interrupt Caught.")
