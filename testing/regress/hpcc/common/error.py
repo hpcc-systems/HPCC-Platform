@@ -23,6 +23,7 @@ ERROR = {
     "1002": "Command timed out.",
     "2000": "Value must be of Type Suite or ECLFile.",
     "2001": "ECL Directory does not exist.",
+    "2002": "suiteDir not set. Set in regress.json or use --suiteDir",
     "3000": "Return is null",
     "3001": "Return diff does not match."
 }

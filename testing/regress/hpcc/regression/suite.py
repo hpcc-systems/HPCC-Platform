@@ -19,6 +19,7 @@
 
 import os
 from ..util.ecl.file import ECLFile
+from ..common.error import Error
 
 
 class Suite:
