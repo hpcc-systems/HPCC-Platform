@@ -332,10 +332,7 @@ void CSoapComplexType::serializeJSONStruct(IEspContext* ctx, StringBuffer& s, co
 {
     if (ctx && ctx->getResponseFormat()==ESPSerializationJSON)
     {
-        if (s.length() && !strchr("[{:", s.charAt(s.length()-1)))
-            s.append(", ");
-        if (name && *name)
-            s.append('\"').append(name).append("\": ");
+        appendJSONNameOrDelimit(s, name);
         s.append("{");
         serializeContent(ctx, s);
         s.append("}");
