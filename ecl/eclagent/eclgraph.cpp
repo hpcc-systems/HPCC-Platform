@@ -98,6 +98,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createGroupActivity(agent, activityId, subgraphId, (IHThorGroupArg &)arg, kind);
     case TAKworkunitwrite:
         return createWorkUnitWriteActivity(agent, activityId, subgraphId, (IHThorWorkUnitWriteArg &)arg, kind);
+    case TAKdictionaryworkunitwrite:
+        return createDictionaryWorkUnitWriteActivity(agent, activityId, subgraphId, (IHThorDictionaryWorkUnitWriteArg &)arg, kind);
     case TAKfunnel:
         return createConcatActivity(agent, activityId, subgraphId, (IHThorFunnelArg &)arg, kind);
     case TAKapply:

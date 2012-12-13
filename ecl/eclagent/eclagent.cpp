@@ -1053,11 +1053,16 @@ void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * s
     );
 }
 
-void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
 {
-    UNIMPLEMENTED;
     tcount = 0;
     tgt = NULL;
+    PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
+        MemoryBuffer datasetBuffer;
+        MemoryBuffer2IDataVal result(datasetBuffer);
+        r->getResultRaw(result, NULL, NULL);
+        rtlDictionary2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray());
+    );
 }
 
 const void * EclAgent::fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)

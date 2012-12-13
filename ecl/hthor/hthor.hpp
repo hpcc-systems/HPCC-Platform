@@ -104,6 +104,7 @@ extern HTHOR_API IHThorActivity *createSelfJoinActivity(IAgentContext &, unsigne
 extern HTHOR_API IHThorActivity *createLookupJoinActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorHashJoinArg & arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createAllJoinActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorAllJoinArg & arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createWorkUnitWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorWorkUnitWriteArg &arg, ThorActivityKind kind);
+extern HTHOR_API IHThorActivity *createDictionaryWorkUnitWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryWorkUnitWriteArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createFirstNActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorFirstNArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createCountActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createTempTableActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &arg, ThorActivityKind kind);

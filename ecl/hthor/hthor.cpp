@@ -5884,6 +5884,91 @@ void CHThorWorkUnitWriteActivity::execute()
 
 //=====================================================================================================
 
+CHThorDictionaryWorkUnitWriteActivity::CHThorDictionaryWorkUnitWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryWorkUnitWriteArg &_arg, ThorActivityKind _kind)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorDictionaryWorkUnitWriteActivity::execute()
+{
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit) * 0x100000;
+    MemoryBuffer rowdata;
+    IRecordSize * inputMeta = input->queryOutputMeta();
+
+    Owned<IOutputRowSerializer> rowSerializer;
+    if (input->queryOutputMeta()->getMetaFlags() & MDFneedserialize)
+        rowSerializer.setown( input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId) );
+
+    int sequence = helper.getSequence();
+    const char *storedName = helper.queryName();
+    assertex(storedName && *storedName);
+    assertex(sequence < 0);
+
+    RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
+    loop
+    {
+        const void *row = input->nextInGroup();
+        if (!row)
+        {
+            row = input->nextInGroup();
+            if (!row)
+                break;
+        }
+        builder.appendOwn(row);
+        processed++;
+    }
+
+    size32_t rows = builder.getcount();
+    byte **dict = builder.queryrows();
+    size32_t idx = 0;
+    while (idx < rows)
+    {
+        byte numRows = 0;
+        while (numRows < 255 && idx+numRows < rows && dict[idx+numRows] != NULL)
+            numRows++;
+        rowdata.append(1, &numRows);
+        for (int i = 0; i < numRows; i++)
+        {
+            byte *nextrec = dict[idx+i];
+            assert(nextrec);
+            size32_t thisSize = inputMeta->getRecordSize(nextrec);
+            if(outputLimit && ((rowdata.length() + thisSize) > outputLimit))
+            {
+                StringBuffer errMsg("Dictionary too large to output to workunit (limit ");
+                errMsg.append(outputLimit/0x100000).append(") megabytes, in result (");
+                const char *name = helper.queryName();
+                if (name)
+                    errMsg.append("name=").append(name);
+                else
+                    errMsg.append("sequence=").append(helper.getSequence());
+                errMsg.append(")");
+                throw MakeStringException(0, "%s", errMsg.str());
+            }
+            if (rowSerializer)
+            {
+                CThorDemoRowSerializer serializerTarget(rowdata);
+                rowSerializer->serialize(serializerTarget, nextrec );
+            }
+            else
+                rowdata.append(thisSize, nextrec);
+        }
+        idx += numRows;
+        byte numNulls = 0;
+        while (numNulls < 255 && idx+numNulls < rows && dict[idx+numNulls] == NULL)
+            numNulls++;
+        rowdata.append(1, &numNulls);
+        idx += numNulls;
+    }
+    WorkunitUpdate w = agent.updateWorkUnit();
+    Owned<IWUResult> result = updateWorkUnitResult(w, helper.queryName(), helper.getSequence());
+    result->setResultRaw(rowdata.length(), rowdata.toByteArray(), ResultFormatRaw);
+    result->setResultStatus(ResultStatusCalculated);
+    result->setResultRowCount(rows);
+    result->setResultTotalRowCount(rows); // Is this right??
+}
+
+//=====================================================================================================
+
 CHThorCountActivity::CHThorCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &_arg, ThorActivityKind _kind)
  : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
@@ -9767,6 +9852,7 @@ MAKEFACTORY_ARG(SelfJoin, Join);
 MAKEFACTORY_ARG(LookupJoin, HashJoin);
 MAKEFACTORY(AllJoin);
 MAKEFACTORY(WorkUnitWrite);
+MAKEFACTORY(DictionaryWorkUnitWrite);
 MAKEFACTORY(FirstN);
 MAKEFACTORY(Count);
 MAKEFACTORY(TempTable);

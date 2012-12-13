@@ -455,6 +455,8 @@ extern ECLRTL_API void rtlGroupedDataset2RowsetX(size32_t & count, byte * * & ro
 extern ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
 extern ECLRTL_API void rtlGroupedRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
 
+extern ECLRTL_API void rtlDictionary2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
+
 extern ECLRTL_API size32_t rtlDeserializeRow(size32_t lenOut, void * out, IOutputRowDeserializer * deserializer, const void * src);
 extern ECLRTL_API size32_t rtlSerializeRow(size32_t lenOut, void * out, IOutputRowSerializer * serializer, const void * src);
 extern ECLRTL_API size32_t rtlDeserializeToBuilder(ARowBuilder & builder, IOutputRowDeserializer * deserializer, const void * src);

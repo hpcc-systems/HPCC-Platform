@@ -950,6 +950,28 @@ extern ECLRTL_API size32_t rtlSerializeToBuilder(ARowBuilder & builder, IOutputR
     return target.length();
 }
 
+extern ECLRTL_API void rtlDictionary2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src)
+{
+    RtlLinkedDatasetBuilder builder(rowAllocator);
+    Owned<ISerialStream> stream = createMemorySerialStream(src, lenSrc);
+    CThorStreamDeserializerSource source(stream);
+
+    byte nullsPending = 0;
+    byte rowsPending = 0;
+    while (!source.finishedNested(lenSrc))
+    {
+        source.read(1, &rowsPending);
+        for (int i = 0; i < rowsPending; i++)
+            builder.deserializeRow(*deserializer, source);
+        source.read(1, &nullsPending);
+        for (int i = 0; i < nullsPending; i++)
+            builder.append(NULL);
+    }
+
+    count = builder.getcount();
+    rowset = builder.linkrows();
+}
+
 //---------------------------------------------------------------------------
 
 RtlDatasetCursor::RtlDatasetCursor(size32_t _len, const void * _data)
