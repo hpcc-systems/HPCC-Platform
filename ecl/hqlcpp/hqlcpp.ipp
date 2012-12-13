@@ -481,7 +481,7 @@ public:
     Linked<IPropertyTree> graph;
 };
 
-enum SubGraphType { SubGraphRoot, SubGraphRemote, SubGraphChild };
+enum SubGraphType { SubGraphRoot, SubGraphRemote, SubGraphChild, SubGraphLoop };
 
 struct SubGraphInfo : public HqlExprAssociation
 {
@@ -1646,7 +1646,7 @@ public:
 
     EvalContext * queryEvalContext(BuildCtx & ctx)          { return (EvalContext *)ctx.queryFirstAssociation(AssocExtractContext); }
     inline unsigned nextActivityId()                        { return ++curActivityId; }
-    bool insideChildGraph(BuildCtx & ctx);
+    bool insideChildOrLoopGraph(BuildCtx & ctx);
     bool insideChildQuery(BuildCtx & ctx);
     bool insideRemoteGraph(BuildCtx & ctx);
     bool isCurrentActiveGraph(BuildCtx & ctx, IHqlExpression * graphTag);
