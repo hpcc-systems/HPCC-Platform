@@ -92,7 +92,7 @@ interface IWorkUnitRowReader : public IInterface
 interface IDeserializedResultStore : public IInterface
 {
     virtual int addResult(size32_t count, byte **data, IOutputMetaData *meta) = 0;
-    virtual void getResult(int id, size32_t &count, byte ** &data) const = 0;
+    virtual void queryResult(int id, size32_t &count, byte ** &data) const = 0;
     virtual IWorkUnitRowReader *createDeserializedReader(int id) const = 0;
     virtual void serialize(unsigned & tlen, void * & tgt, int id, ICodeContext *ctx) const = 0;
 };

@@ -28567,7 +28567,7 @@ public:
         metas.append(meta);
         return stored.ordinality()-1;
     }
-    virtual void getResult(int id, size32_t &count, rowset_t &data) const
+    virtual void queryResult(int id, size32_t &count, rowset_t &data) const
     {
         count = counts.item(id);
         data = stored.item(id);
@@ -29148,7 +29148,7 @@ public:
             assertex(oldFormat && strcmp(oldFormat, "deserialized")==0);
             size32_t oldCount;
             rowset_t oldData;
-            resultStore.getResult(oldId, oldCount, oldData);
+            resultStore.queryResult(oldId, oldCount, oldData);
             Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, 0, 0, roxiemem::RHFnone);
             RtlLinkedDatasetBuilder builder(allocator);
             builder.appendRows(oldCount, oldData);
