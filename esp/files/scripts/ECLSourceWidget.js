@@ -74,7 +74,9 @@ define([
                     gutter: true,
                     lineNumbers: true,
                     mode: this.WUXml ? "xml" : "ecl",
-                    readOnly: this.readOnly
+                    readOnly: this.readOnly,
+                    gutter: this.WUXml ? true : false,
+                    onGutterClick: CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder)
                 });
 
                 var context = this;

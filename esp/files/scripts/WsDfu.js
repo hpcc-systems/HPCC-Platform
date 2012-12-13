@@ -15,100 +15,102 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 define([
-	"dojo/_base/declare",
-	"dojo/_base/lang",
-	"dojo/_base/xhr",
-	"dojo/_base/Deferred",
-	"dojo/store/util/QueryResults",
-	"hpcc/ESPBase"
+    "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/_base/xhr",
+    "dojo/_base/Deferred",
+    "dojo/store/util/QueryResults",
+    "hpcc/ESPBase"
 ], function (declare, lang, xhr, Deferred, QueryResults, ESPBase) {
-	var DFUQuery = declare(ESPBase, {
-		idProperty: "Name",
+    var DFUQuery = declare(ESPBase, {
+        idProperty: "Name",
 
-		constructor: function (options) {
-			declare.safeMixin(this, options);
-		},
+        constructor: function (options) {
+            declare.safeMixin(this, options);
+        },
 
-		getIdentity: function (object) {
-			return object[this.idProperty];
-		},
+        getIdentity: function (object) {
+            return object[this.idProperty];
+        },
 
-		query: function (query, options) {
-			var request = {};
-			lang.mixin(request, options.query);
-			request['PageStartFrom'] = options.start;
-			request['PageSize'] = options.count;
-			if (options.sort) {
-				request['Sortby'] = options.sort[0].attribute;
-				request['Descending'] = options.sort[0].descending;
-			}
-			request['rawxml_'] = "1";
+        query: function (query, options) {
+            var request = {};
+            lang.mixin(request, options.query);
+            request['PageStartFrom'] = options.start;
+            request['PageSize'] = options.count;
+            if (options.sort) {
+                request['Sortby'] = options.sort[0].attribute;
+                request['Descending'] = options.sort[0].descending;
+            }
+            request['rawxml_'] = "1";
 
-			var results = xhr.get({
-				url: this.getBaseURL("WsDfu") + "/DFUQuery",
-				handleAs: "xml",
-				content: request
-			});
+            var results = xhr.get({
+                url: this.getBaseURL("WsDfu") + "/DFUQuery.json",
+                handleAs: "json",
+                content: request
+            });
 
-			var context = this;
-			var parsedResults = results.then(function (domXml) {
-				data = context.getValues(domXml, "DFULogicalFile");
-				data.total = context.getValue(domXml, "NumFiles");
-				return data;
-			});
+            var deferredResults = new Deferred();
+            deferredResults.total = results.then(function (response) {
+                if (lang.exists("DFUQueryResponse.NumFiles", response)) {
+                    return response.DFUQueryResponse.NumFiles;
+                }
+                return 0;
+            });
+            Deferred.when(results, function (response) {
+                var workunits = [];
+                if (lang.exists("DFUQueryResponse.DFULogicalFiles.DFULogicalFile", response)) {
+                    workunits = response.DFUQueryResponse.DFULogicalFiles.DFULogicalFile;
+                }
+                deferredResults.resolve(workunits);
+            });
 
-			lang.mixin(parsedResults, {
-				total: Deferred.when(parsedResults, function (data) {
-					return data.total;
-				})
-			});
-	
-			return QueryResults(parsedResults);
-		}
-	});
+            return QueryResults(deferredResults);
+        }
+    });
 
-	var DFUFileView = declare(ESPBase, {
-		idProperty: "Wuid",
+    var DFUFileView = declare(ESPBase, {
+        idProperty: "Wuid",
 
-		constructor: function (options) {
-			declare.safeMixin(this, options);
-		},
+        constructor: function (options) {
+            declare.safeMixin(this, options);
+        },
 
-		getIdentity: function (object) {
-			return object[this.idProperty];
-		},
+        getIdentity: function (object) {
+            return object[this.idProperty];
+        },
 
-		query: function (query, options) {
-			var request = {};
-			lang.mixin(request, options.query);
-			request['rawxml_'] = "1";
+        query: function (query, options) {
+            var request = {};
+            lang.mixin(request, options.query);
+            request['rawxml_'] = "1";
 
-			var results = xhr.get({
-				url: this.getBaseURL("WsDfu") + "/DFUFileView",
-				handleAs: "xml",
-				content: request
-			});
+            var results = xhr.get({
+                url: this.getBaseURL("WsDfu") + "/DFUFileView",
+                handleAs: "xml",
+                content: request
+            });
 
-			var context = this;
-			var parsedResults = results.then(function (domXml) {
-				var debug = context.getValues(domXml);
-				var data = context.getValues(domXml, "DFULogicalFile");
-				return data;
-			});
+            var context = this;
+            var parsedResults = results.then(function (domXml) {
+                var debug = context.getValues(domXml);
+                var data = context.getValues(domXml, "DFULogicalFile");
+                return data;
+            });
 
-			lang.mixin(parsedResults, {
-				total: Deferred.when(parsedResults, function (data) {
-					return data ? data.length : 0;
-				})
-			});
-	
-			return QueryResults(parsedResults);
-		}
-	});
+            lang.mixin(parsedResults, {
+                total: Deferred.when(parsedResults, function (data) {
+                    return data ? data.length : 0;
+                })
+            });
+    
+            return QueryResults(parsedResults);
+        }
+    });
 
-	return {
-		DFUQuery: DFUQuery,
-		DFUFileView: DFUFileView
-	};
+    return {
+        DFUQuery: DFUQuery,
+        DFUFileView: DFUFileView
+    };
 });
 
