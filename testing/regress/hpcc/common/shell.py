@@ -17,6 +17,7 @@
 ############################################################################ */
 '''
 
+import logging
 import sys
 from subprocess import (
     PIPE,
@@ -42,6 +43,7 @@ class Shell:
 
     def __run(self, *args, **kwargs):
         args = [i for i in args if i is not None]
+        logging.debug("CMD: " + " ". join(args))
         process = Popen(
             args, stdout=kwargs.pop('stdout', PIPE),
             stderr=kwargs.pop('stderr', PIPE),

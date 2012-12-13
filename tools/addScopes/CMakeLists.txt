@@ -14,36 +14,39 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: nbcd 
+# Component: addScopes 
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for nbcd
+#    Cmake Input File for addScopes
 #####################################################
 
 
-project( nbcd ) 
+project( addScopes ) 
 
-set ( SRCS 
-      nbcd.cpp 
-      nbcds.cpp 
-      nbcdtest.cpp 
-      sourcedoc.xml
+set (    SRCS 
+         addScopes.cpp 
     )
 
 include_directories ( 
-      ./../../system/include 
-      ./../../system/jlib
+         ./../../system/security/LdapSecurity
+         ./../../system/security/shared 
+         ./../../system/jlib 
+         ./../../system/include 
     )
 
-ADD_DEFINITIONS( -D_USRDLL -DNBCD_EXPORTS )
+ADD_DEFINITIONS( -D_CONSOLE )
 
-HPCC_ADD_LIBRARY( nbcd SHARED ${SRCS} )
-install ( TARGETS nbcd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
-target_link_libraries ( nbcd 
-      jlib
-      ${CPPUNIT_LIBRARIES}
+
+HPCC_ADD_EXECUTABLE ( addScopes ${SRCS} )
+install ( TARGETS addScopes RUNTIME DESTINATION ${EXEC_DIR} )
+
+
+
+target_link_libraries ( addScopes 
+         jlib
+         LdapSecurity 
     )
 
 

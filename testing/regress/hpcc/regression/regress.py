@@ -20,8 +20,10 @@
 import logging
 import os
 import sys
+import time
 
 from ..common.config import Config
+from ..common.error import Error
 from ..common.logger import Logger
 from ..common.report import Report, Tee
 from ..regression.suite import Suite
@@ -30,51 +32,70 @@ from ..util.ecl.command import ECLcmd
 
 
 class Regression:
-    def __init__(self, config="regress.json"):
+    def __init__(self, config="regress.json", level='info', suiteDir=None):
         self.config = Config(config).configObj
         self.suites = {}
-        self.log = Logger("DEBUG")
+        self.log = Logger(level)
+        if not suiteDir:
+            self.suiteDir = self.config.suiteDir
+            if not self.suiteDir:
+                raise Error("2002")
+        else:
+            self.suiteDir = suiteDir
+        self.regressionDir = self.config.regressionDir
+        self.logDir = self.config.logDir
+        self.setupDir = os.path.join(self.suiteDir, self.config.setupDir)
+        self.dir_ec = os.path.join(self.suiteDir, self.config.eclDir)
+        self.dir_ex = os.path.join(self.suiteDir, self.config.keyDir)
+        self.dir_a = os.path.join(self.regressionDir, self.config.archiveDir)
+        self.dir_r = os.path.join(self.regressionDir, self.config.resultDir)
+        logging.debug("Suite Dir      : %s", suiteDir)
+        logging.debug("Regression Dir : %s", self.regressionDir)
+        logging.debug("Result Dir     : %s", self.dir_r)
+        logging.debug("Log Dir        : %s", self.logDir)
+        logging.debug("ECL Dir        : %s", self.dir_ec)
+        logging.debug("Key Dir        : %s", self.dir_ex)
+        logging.debug("Setup Dir      : %s", self.setupDir)
+        logging.debug("Archive Dir    : %s", self.dir_a)
+
+    def setLogLevel(self, level):
+        self.log.setLevel(level)
 
     def bootstrap(self):
-        archives = os.path.join(self.config.baseDir, self.config.archiveDir)
-        results = os.path.join(self.config.baseDir, self.config.resultDir)
-        self.createDirectory(archives)
-        self.createDirectory(results)
+        self.createDirectory(self.regressionDir)
+        self.createDirectory(self.dir_a)
+        self.createDirectory(self.dir_r)
+        self.createDirectory(self.logDir)
         self.setup = self.Setup()
         for cluster in self.config.Clusters:
             self.createSuite(cluster)
+        os.chdir(self.regressionDir)
 
     def createDirectory(self, dir_n):
         if not os.path.isdir(dir_n):
             os.makedirs(dir_n)
 
     def createSuite(self, cluster):
-        dir_ec = os.path.join(self.config.baseDir, self.config.eclDir)
-        dir_a = os.path.join(self.config.baseDir, self.config.archiveDir)
-        dir_ex = os.path.join(self.config.baseDir, self.config.keyDir)
-        dir_r = os.path.join(self.config.baseDir, self.config.resultDir)
-        self.suites[cluster] = Suite(cluster, dir_ec, dir_a, dir_ex, dir_r)
+        self.suites[cluster] = Suite(cluster, self.dir_ec,
+                                     self.dir_a, self.dir_ex, self.dir_r)
 
     def Setup(self):
-        setup = os.path.join(self.config.baseDir, self.config.setupDir)
-        dir_a = os.path.join(self.config.baseDir, self.config.archiveDir)
-        dir_ex = os.path.join(self.config.baseDir, self.config.keyDir)
-        dir_r = os.path.join(self.config.baseDir, self.config.resultDir)
-        return Suite('setup', setup, dir_a, dir_ex, dir_r)
+        return Suite('setup', self.setupDir, self.dir_a, self.dir_ex,
+                     self.dir_r)
 
     def runSuite(self, name, suite):
-        logDir = os.path.join(self.config.baseDir, self.config.logDir)
         server = self.config.ip
         report = Report(name)
-        logName = name + ".log"
+        curTime = time.strftime("%y-%m-%d-%H-%M")
+        logName = name + "." + curTime + ".log"
         if name == "setup":
             cluster = 'hthor'
         else:
             cluster = name
-        log = os.path.join(logDir, logName)
+        log = os.path.join(self.logDir, logName)
         self.log.addHandler(log, 'DEBUG')
-        logging.debug("Suite: %s" % name)
-        logging.debug("Queries: %s" % repr(len(suite.getSuite())))
+        logging.warn("Suite: %s" % name)
+        logging.warn("Queries: %s" % repr(len(suite.getSuite())))
         cnt = 1
         for query in suite.getSuite():
             logging.warn("%s. Test: %s" % (repr(cnt), query.ecl))
@@ -97,4 +118,4 @@ class Regression:
                     logging.error("Fail %s" % wuid)
                     logging.error("URL %s" % url)
             cnt += 1
-        report.display()
+        report.display(log)

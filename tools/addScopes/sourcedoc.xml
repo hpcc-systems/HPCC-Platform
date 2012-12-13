@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
@@ -13,37 +15,12 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
+-->
+<!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
+<section>
+    <title>tools/addScopes</title>
 
-# Component: nbcd 
-
-#####################################################
-# Description:
-# ------------
-#    Cmake Input File for nbcd
-#####################################################
-
-
-project( nbcd ) 
-
-set ( SRCS 
-      nbcd.cpp 
-      nbcds.cpp 
-      nbcdtest.cpp 
-      sourcedoc.xml
-    )
-
-include_directories ( 
-      ./../../system/include 
-      ./../../system/jlib
-    )
-
-ADD_DEFINITIONS( -D_USRDLL -DNBCD_EXPORTS )
-
-HPCC_ADD_LIBRARY( nbcd SHARED ${SRCS} )
-install ( TARGETS nbcd RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} ARCHIVE DESTINATION componentfiles/cl/lib )
-target_link_libraries ( nbcd 
-      jlib
-      ${CPPUNIT_LIBRARIES}
-    )
-
-
+    <para>
+        The tools/addScopes directory contains the sources for the tools/addScopes tool.
+    </para>
+</section>

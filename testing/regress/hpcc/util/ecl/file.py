@@ -103,16 +103,23 @@ class ECLFile:
     def testResults(self):
         d = difflib.Differ()
         try:
+            logging.debug("EXP: " + self.getExpected())
+            logging.debug("REC: " + self.getResults())
+            if not os.path.isfile(self.getExpected()):
+                raise IOError("KEY FILE NOT FOUND. " + self.getExpected())
+            if not os.path.isfile(self.getResults()):
+                raise IOError("RESULT FILE NOT FOUND. " + self.getResults())
             expected = open(self.getExpected(), 'r').readlines()
             recieved = open(self.getResults(), 'r').readlines()
-        except IOError as e:
+            for line in difflib.unified_diff(recieved,
+                                             expected,
+                                             fromfile=self.xml_r,
+                                             tofile=self.xml_e):
+                self.diff += line
+        except Exception as e:
             logging.critical(e)
+            return False
 
-        for line in difflib.unified_diff(recieved,
-                                         expected,
-                                         fromfile=self.xml_r,
-                                         tofile=self.xml_e):
-            self.diff += line
         if not self.diff:
             return True
         return False
