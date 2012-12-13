@@ -211,15 +211,6 @@ void HqlCppTranslator::buildJoinMatchFunction(BuildCtx & ctx, const char * name,
 
 //--------------------------------------------------------------------------------------------------
 
-IHqlExpression * createKeyFromComplexKey(IHqlExpression * expr)
-{
-    IHqlExpression * base = queryPhysicalRootTable(expr);
-    if (base->getOperator() == no_newkeyindex)
-        return LINK(base);
-    UNIMPLEMENTED_XY("Key", getOpString(base->getOperator()));
-    return NULL;
-}
-
 class KeyedJoinInfo : public CInterface
 {
 public:
@@ -260,6 +251,7 @@ public:
 protected:
     void buildClearRecord(BuildCtx & ctx, RecordSelectIterator & rawIter, RecordSelectIterator & keyIter);
     void buildTransformBody(BuildCtx & ctx, IHqlExpression * transform);
+    IHqlExpression * createKeyFromComplexKey(IHqlExpression * expr);
     IHqlExpression * expandDatasetReferences(IHqlExpression * expr, IHqlExpression * ds);
     IHqlExpression * optimizeTransfer(HqlExprArray & fields, HqlExprArray & values, IHqlExpression * expr, IHqlExpression * leftSelector);
     void optimizeExtractJoinFields();
@@ -344,6 +336,22 @@ KeyedJoinInfo::~KeyedJoinInfo()
     delete monitors;
 }
 
+
+IHqlExpression * KeyedJoinInfo::createKeyFromComplexKey(IHqlExpression * expr)
+{
+    IHqlExpression * base = queryPhysicalRootTable(expr);
+    if (!base)
+    {
+        translator.throwError1(HQLERR_KeyedJoinNoRightIndex_X, getOpString(expr->getOperator()));
+        return NULL;
+    }
+
+    if (base->getOperator() == no_newkeyindex)
+        return LINK(base);
+
+    translator.throwError1(HQLERR_KeyedJoinNoRightIndex_X, getOpString(base->getOperator()));
+    return NULL;
+}
 
 void KeyedJoinInfo::buildClearRecord(BuildCtx & ctx, RecordSelectIterator & rawIter, RecordSelectIterator & keyIter)
 {
