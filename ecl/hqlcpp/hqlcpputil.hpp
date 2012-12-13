@@ -51,6 +51,8 @@ extern bool canCreateTemporary(IHqlExpression * expr);
 extern IHqlExpression * projectCreateSetDataset(IHqlExpression * createsetExpr);
 extern IHqlExpression * mapInternalFunctionParameters(IHqlExpression * expr);
 
+extern bool mustInitializeField(IHqlExpression * field);
+
 //Common types and expressions...
 extern ITypeInfo * boolType;
 extern ITypeInfo * sizetType;

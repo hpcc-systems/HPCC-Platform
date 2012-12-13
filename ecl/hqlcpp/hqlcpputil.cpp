@@ -445,3 +445,11 @@ IHqlExpression * mapInternalFunctionParameters(IHqlExpression * expr)
 
     return LINK(expr);
 }
+
+
+bool mustInitializeField(IHqlExpression * field)
+{
+    if (hasLinkCountedModifier(field))
+        return true;
+    return false;
+}
