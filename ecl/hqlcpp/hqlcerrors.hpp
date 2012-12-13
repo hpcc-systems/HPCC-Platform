@@ -204,7 +204,8 @@
 #define HQLERR_OutsideGroupAggregate            4182
 #define HQLERR_ResourceAddAfterFinalManifest    4183
 #define HQLERR_SkipInsideCreateRow              4184
-#define HQLERR_ScalarOutputWithinApply          4185
+#define HQLERR_KeyedJoinNoRightIndex_X          4185
+#define HQLERR_ScalarOutputWithinApply          4186
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -481,7 +482,11 @@
 #define HQLERR_OutsideGroupAggregate_Text       "%s used outside of a TABLE aggregation"
 #define HQLERR_ResourceAddAfterFinalManifest_Text "%s resource added after manifest was finalized"
 #define HQLERR_SkipInsideCreateRow_Text         "SKIP inside a ROW(<transform>) not supported.  It is only allowed in a DATASET transform."
+<<<<<<< HEAD
 #define HQLERR_ScalarOutputWithinApply_Text     "A scalar output within an APPLY is undefined and may fail.  Use OUTPUT(dataset,EXTEND) instead."
+=======
+#define HQLERR_KeyedJoinNoRightIndex_X_Text     "Right dataset (%s) for a keyed join isn't a key"
+>>>>>>> origin/candidate-3.10.0
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
