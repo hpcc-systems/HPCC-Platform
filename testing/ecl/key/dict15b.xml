@@ -1,12 +1,4 @@
 <Dataset name='Result 1'>
- <Row><word>course              </word></Row>
- <Row><word>gch01               </word></Row>
- <Row><word>gch02               </word></Row>
- <Row><word>gch10               </word></Row>
- <Row><word>gch20               </word></Row>
- <Row><word>how                 </word></Row>
- <Row><word>source              </word></Row>
  <Row><word>there               </word></Row>
  <Row><word>three               </word></Row>
- <Row><word>who                 </word></Row>
 </Dataset>

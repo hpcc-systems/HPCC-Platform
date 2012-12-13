@@ -18,7 +18,7 @@
 //UseStandardFiles
 //Find all anagrams of a word, that match the list of known words
 
-allWordsDs := DEDUP(SORTED(TS_wordIndex), word);
+allWordsDs := DEDUP(SORTED(TS_wordIndex(word[1]='t'), word), word);  // Restrict to words starting T for speed
 
 knownWords := DICTIONARY(allWordsDs, { word });
 
@@ -43,7 +43,7 @@ findAnagrams(string searchWord) := FUNCTION
   RETURN uniqueAnagrams(Word in knownWords);
 END;
 
-shortWords := TABLE(allWordsDs, { Word })(LENGTH(TRIM(Word)) <= 6); 
+shortWords := TABLE(allWordsDs, { Word })(LENGTH(TRIM(Word)) <= 5);
 
 //BUG: Without the NOFOLD the code generator merges the projects, and introduces an ambiguous dataset
 moreThanOne := NOFOLD(shortWords)(count(findAnagrams(Word))>1);
