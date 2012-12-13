@@ -17,6 +17,8 @@ define([
     "dojo/_base/declare",
     "dojo/_base/xhr",
     "dojo/dom",
+    "dojo/dom-class",
+    "dojo/dom-style",
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
@@ -39,7 +41,7 @@ define([
     "hpcc/ESPDFUWorkunit",
 
     "dojo/text!../templates/DFUWUDetailsWidget.html"
-], function (declare, xhr, dom,
+], function (declare, xhr, dom, domClass, domStyle,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
                 EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, DFUWorkunit,
                 template) {
@@ -128,28 +130,12 @@ define([
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 }
-            });       
+            });
         },
 
         startup: function (args) {
             this.inherited(arguments);
-
-            
         },
-    //TODO
-
-        /*showProgress: function(event){
-            alert(response.PercentDone);
-            numParts = Math.floor(100/10);
-            
-            jsProgressBar.update({maximum:numParts, progress:response.PercentDone});
-
-            for (var i = response.PercentDone; i <= numParts; i++){                
-                timer = setTimeout(
-                "jsProgressBar.update({progress: " + i + "})", (i+1)*1000 //1000ms of 1
-                )
-            }        
-        },*/
 
         resize: function (args) {
             this.inherited(arguments);
@@ -158,13 +144,6 @@ define([
 
         layout: function (args) {
             this.inherited(arguments);
-        },
-
-        //  Hitched actions  ---
-        _onSave: function (event) {
-        },
-
-        _onDelete: function (event) {
         },
 
         //  Implementation  ---
@@ -182,10 +161,7 @@ define([
                     context.monitorDFUWorkunit(workunit);
                 });
             }
-           // this.infoGridWidget.init(params);
-        },
-
-        resetPage: function () {
+            // this.infoGridWidget.init(params);
         },
 
         objectToText: function (obj) {
@@ -207,7 +183,15 @@ define([
 
         },
 
-        _onSave: function (event) { 
+        //  Hitched actions  ---
+
+        resetPage: function () {
+        },
+
+        _onDelete: function (event) {
+        },
+
+        _onSave: function (event) {
             var protectedCheckbox = registry.byId(this.id + "Protected");
             var context = this;
             this.wu.update({
@@ -229,7 +213,7 @@ define([
                 }
             });
         },
-         _onResubmit: function (event) {
+        _onResubmit: function (event) {
             var context = this;
             this.wu.resubmit({
                 load: function (response) {
@@ -237,7 +221,7 @@ define([
                 }
             });
         },
-         _onModify: function (event) {
+        _onModify: function (event) {
             var context = this;
             this.wu.resubmit({
                 load: function (response) {
@@ -247,63 +231,89 @@ define([
         },
 
         monitorDFUWorkunit: function (response) {
-            if (!this.loaded) {                
-                 registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete());            
-                 registry.byId(this.id + "Delete").set("disabled", !this.wu.isComplete());
-                 registry.byId(this.id + "Abort").set("disabled", this.wu.isComplete());            
-                 registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete());
-                 registry.byId(this.id + "Modify").set("disabled", !this.wu.isComplete());
-                 registry.byId(this.id + "Protected").set("readOnly", !this.wu.isComplete());
-                 
-                 dom.byId(this.id + "ID").innerHTML = response.ID;
-                 dom.byId(this.id + "JobName").value = response.JobName;
-                 dom.byId(this.id + "Queue").innerHTML = response.Queue;
-                 dom.byId(this.id + "Command").innerHTML = response.Command;
-                 dom.byId(this.id + "TimeStarted").innerHTML = response.TimeStarted;
-                 dom.byId(this.id + "TimeStopped").innerHTML = response.TimeStopped;                             
-                 dom.byId(this.id + "ProgressBar").value = response.PercentDone;
+            if (!this.loaded) {
+                registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete());
+                registry.byId(this.id + "Delete").set("disabled", !this.wu.isComplete());
+                registry.byId(this.id + "Abort").set("disabled", this.wu.isComplete());
+                registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete());
+                registry.byId(this.id + "Modify").set("disabled", !this.wu.isComplete());
+                registry.byId(this.id + "Protected").set("readOnly", !this.wu.isComplete());
 
-                 dom.byId(this.id + "ProgressMessage").innerHTML = response.ProgressMessage;
-                 dom.byId(this.id + "SummaryMessage").innerHTML = response.SummaryMessage;
-                 dom.byId(this.id + "SourceLogicalName").innerHTML = response.SourceLogicalName;
-                 dom.byId(this.id + "DestDirectory").innerHTML = response.DestDirectory;
-                 dom.byId(this.id + "DestIP").innerHTML = response.DestIP;
-                 dom.byId(this.id + "DestFilePath").innerHTML = response.DestFilePath;
-                 dom.byId(this.id + "DestFormat").innerHTML = response.DestFormat;
-                 dom.byId(this.id + "DestNumParts").innerHTML = response.DestNumParts;
-                 dom.byId(this.id + "MonitorSub").innerHTML = response.MonitorSub;
-                 dom.byId(this.id + "Overwrite").innerHTML = response.Overwrite;
-                 dom.byId(this.id + "Replicate").innerHTML = response.Replicate;
-                 dom.byId(this.id + "Compress").innerHTML = response.Compress;
-                 dom.byId(this.id + "AutoRefresh").innerHTML = response.AutoRefresh;
+                dom.byId(this.id + "ID").innerHTML = response.ID;
+                dom.byId(this.id + "ClusterName").value = response.ClusterName;
+                dom.byId(this.id + "JobName").value = response.JobName;
+                dom.byId(this.id + "Queue").innerHTML = response.Queue;
+                dom.byId(this.id + "TimeStarted").innerHTML = response.TimeStarted;
+                dom.byId(this.id + "TimeStopped").innerHTML = response.TimeStopped;
+                //dom.byId(this.id + "ProgressBar").value = response.PercentDone;
+                dom.byId(this.id + "ProgressMessage").innerHTML = response.ProgressMessage;
+                dom.byId(this.id + "SummaryMessage").innerHTML = response.SummaryMessage;
+                dom.byId(this.id + "MonitorSub").innerHTML = response.MonitorSub;
+                dom.byId(this.id + "Overwrite").innerHTML = response.Overwrite;
+                dom.byId(this.id + "Replicate").innerHTML = response.Replicate;
+                dom.byId(this.id + "Compress").innerHTML = response.Compress;
+                //dom.byId(this.id + "AutoRefresh").innerHTML = response.AutoRefresh;     
+                if (!response.AutoRefresh) {
+                    dom.byId(this.id + "AutoRefresh").innerHTML = "false";
+                }
 
-                 
+                if (response.Command == "6") {
+                    domClass.add(this.id + "ExportGroup", "hidden");
+                    dom.byId(this.id + "Command").innerHTML = "Spray";
+                    dom.byId(this.id + "SourceIP").innerHTML = response.SourceIP;
+                    dom.byId(this.id + "SourceFilePath").innerHTML = response.SourceFilePath;
+                    dom.byId(this.id + "SourceRecordSize").innerHTML = response.SourceRecordSize;
+                    dom.byId(this.id + "SourceFormat").innerHTML = response.SourceFormat;
+                    dom.byId(this.id + "SourceNumParts").innerHTML = response.SourceNumParts;
+                    dom.byId(this.id + "SourceDirectory").innerHTML = response.SourceDirectory;
+                    dom.byId(this.id + "DestGroupName").innerHTML = response.DestGroupName;
+                    dom.byId(this.id + "DestLogicalName").innerHTML = response.DestLogicalName;
+                    dom.byId(this.id + "DestDirectory").innerHTML = response.DestDirectory;
+                    dom.byId(this.id + "DestNumParts").innerHTML = response.DestNumParts;
+                } else {
+                    domClass.add(this.id + "ImportGroup", "hidden");
+                    domClass.add(this.id + "ClusterLine", "hidden");
+                    dom.byId(this.id + "Command").innerHTML = "Despray";
+                    dom.byId(this.id + "SourceLogicalName").innerHTML = response.SourceLogicalName;
+                    dom.byId(this.id + "DestDirectory").innerHTML = response.DestDirectory;
+                    dom.byId(this.id + "DestIP").innerHTML = response.DestIP;
+                    dom.byId(this.id + "DestFilePath").innerHTML = response.DestFilePath;
+                    dom.byId(this.id + "DestFormat").innerHTML = response.DestFormat;
+                    dom.byId(this.id + "DestNumParts").innerHTML = response.DestNumParts;
+                    dom.byId(this.id + "MonitorSub").innerHTML = response.MonitorSub;
+                    dom.byId(this.id + "Overwrite").innerHTML = response.Overwrite;
+                    dom.byId(this.id + "Replicate").innerHTML = response.Replicate;
+                    dom.byId(this.id + "Compress").innerHTML = response.Compress;
+                }
+                //start progress bar
+
+
+
+
+                //end progress bar
                 this.loaded = true;
             }
-
-
-
             var context = this;
             if (this.wu.isComplete()) {
                 this.wu.getInfo({
                     onGetResults: function (response) {
-                        
+
                     },
 
                     onGetSourceFiles: function (response) {
-                        
+
                     },
 
                     onGetTimers: function (response) {
-                       
+
                     },
 
                     onGetGraphs: function (response) {
-                        
+
                     },
 
                     onGetAll: function (response) {
-                        
+
 
                     }
                 });
