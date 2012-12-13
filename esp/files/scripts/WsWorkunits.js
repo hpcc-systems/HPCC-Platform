@@ -19,8 +19,17 @@ define([
     "dojo/_base/xhr",
     "dojo/_base/Deferred",
     "dojo/store/util/QueryResults",
+    "dojo/store/JsonRest", 
+    "dojo/store/Memory", 
+    "dojo/store/Cache", 
+    "dojo/store/Observable",
+    
+    "dojox/xml/parser",    
+
     "hpcc/ESPBase"
-], function (declare, lang, xhr, Deferred, QueryResults, ESPBase) {
+], function (declare, lang, xhr, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
+    parser,
+    ESPBase) {
     var WUQuery = declare(ESPBase, {
         idProperty: "Wuid",
 
@@ -46,25 +55,79 @@ define([
             request['rawxml_'] = "1";
 
             var results = xhr.get({
-                url: this.getBaseURL("WsWorkunits") + "/WUQuery",
-                handleAs: "xml",
+                url: this.getBaseURL("WsWorkunits") + "/WUQuery.json",
+                handleAs: "json",
                 content: request
             });
 
+            var deferredResults = new Deferred();
+            deferredResults.total = results.then(function (response) {
+                if (lang.exists("WUQueryResponse.NumWUs", response)) {
+                    return response.WUQueryResponse.NumWUs;
+                }
+                return 0;
+            });
+            Deferred.when(results, function (response) {
+                var workunits = [];
+                if (lang.exists("WUQueryResponse.Workunits.ECLWorkunit", response)) {
+                    workunits = response.WUQueryResponse.Workunits.ECLWorkunit;
+                }
+                deferredResults.resolve(workunits);
+            });
+
+            return QueryResults(deferredResults);
+        }
+    });
+
+    var WUResultTest = declare(ESPBase, {
+        idProperty: "myInjectedRowNum",
+        wuid: "",
+        sequence: 0,
+        isComplete: false,
+
+        constructor: function (args) {
+            declare.safeMixin(this, args);
+        },
+
+        getIdentity: function (object) {
+            return object[this.idProperty];
+        },
+
+        query: function (query, options) {
+            var request = {};
+            request['Wuid'] = this.wuid;
+            if (this.cluster && this.name) {
+                request['Cluster'] = this.cluster;
+                request['LogicalName'] = this.name;
+            } else {
+                request['Sequence'] = this.sequence;
+            }
+            request['Start'] = options.start;
+            request['Count'] = options.count;
+            request['rawxml_'] = "1";
+
+            var results = xhr.get({
+                url: this.getBaseURL("WsWorkunits") + "/WUResult.json",
+                handleAs: "json",
+                content: request
+            });
+
+            var deferredResults = new Deferred();
+            deferredResults.total = results.then(function (response) {
+                return response.WUResultResponse.Total;
+            });
             var context = this;
-            var parsedResults = results.then(function (domXml) {
-                data = context.getValues(domXml, "ECLWorkunit");
-                data.total = context.getValue(domXml, "NumWUs");
-                return data;
+            Deferred.when(results, function (response) {
+                var resultXml = response.WUResultResponse.Result;
+                var domXml = parser.parse("<WUResultResponse>" + resultXml + "</WUResultResponse>");
+                var rows = context.getValues(domXml, "Row");
+                for (var i = 0; i < rows.length; ++i) {
+                    rows[i].myInjectedRowNum = options.start + i + 1;
+                }
+                deferredResults.resolve(rows);
             });
 
-            lang.mixin(parsedResults, {
-                total: Deferred.when(parsedResults, function (data) {
-                    return data.total;
-                })
-            });
-
-            return QueryResults(parsedResults);
+            return QueryResults(deferredResults);
         }
     });
 
@@ -144,7 +207,35 @@ define([
 
     return {
         WUQuery: WUQuery,
-        WUResult: WUResult
+        WUResult: WUResult,
+
+        WUAction: function (items, actionType, callback) {
+            var request = {
+                ActionType: actionType
+            };
+
+            for (var i = 0; i < items.length; ++i) {
+                request["Wuids_i" + i] = items[i].Wuid;
+            }
+
+            var espBase = new ESPBase();
+            var context = this;
+            xhr.post({
+                url: espBase.getBaseURL("WsWorkunits") + "/WUAction.json",
+                handleAs: "json",
+                content: request,
+                load: function (response) {
+                    if (callback && callback.load) {
+                        callback.load(response);
+                    }
+                },
+                error: function () {
+                    if (callback && callback.error) {
+                        callback.error(e);
+                    }
+                }
+            });
+        }
     };
 });
 

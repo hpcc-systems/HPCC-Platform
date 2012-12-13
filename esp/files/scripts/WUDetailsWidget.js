@@ -72,6 +72,7 @@ define([
         legacyPane: null,
         legacyPaneLoaded: false,
 
+        initalized: false,
         wu: null,
         prevState: "",
 
@@ -161,6 +162,10 @@ define([
             this.inherited(arguments);
         },
 
+        destroy: function (args) {
+            this.inherited(arguments);
+        },
+
         //  Hitched actions  ---
         _onSave: function (event) {
             var protectedCheckbox = registry.byId(this.id + "Protected");
@@ -222,6 +227,10 @@ define([
 
         //  Implementation  ---
         init: function (params) {
+            if (this.initalized)
+                return;
+
+            this.initalized = true;
             if (params.Wuid) {
                 registry.byId(this.id + "Summary").set("title", params.Wuid);
 

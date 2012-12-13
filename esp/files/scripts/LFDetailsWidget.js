@@ -133,7 +133,7 @@ define([
                 } else if (nval.id == context.id + "Legacy" && !context.legacyPaneLoaded) {
                     context.legacyPaneLoaded = true;
                     context.legacyPane.set("content", dojo.create("iframe", {
-                        src: "/WsDfu/DFUInfo?Name=" + context.logicalFile.logicalName + "&Cluster=" + context.logicalFile.cluster,
+                        src: "/WsDfu/DFUInfo?Name=" + context.logicalFile.logicalName,//+ "&Cluster=" + context.logicalFile.cluster,
                         style: "border: 0; width: 100%; height: 100%"
                     }));
                 }
