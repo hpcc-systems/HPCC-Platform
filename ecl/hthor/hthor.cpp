@@ -5891,14 +5891,6 @@ CHThorDictionaryWorkUnitWriteActivity::CHThorDictionaryWorkUnitWriteActivity(IAg
 
 void CHThorDictionaryWorkUnitWriteActivity::execute()
 {
-    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit) * 0x100000;
-    MemoryBuffer rowdata;
-    IRecordSize * inputMeta = input->queryOutputMeta();
-
-    Owned<IOutputRowSerializer> rowSerializer;
-    if (input->queryOutputMeta()->getMetaFlags() & MDFneedserialize)
-        rowSerializer.setown( input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId) );
-
     int sequence = helper.getSequence();
     const char *storedName = helper.queryName();
     assertex(storedName && *storedName);
@@ -5917,55 +5909,32 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
         builder.appendOwn(row);
         processed++;
     }
+    size32_t usedCount = rtlDictionaryCount(builder.getcount(), builder.queryrows());
 
-    size32_t rows = builder.getcount();
-    byte **dict = builder.queryrows();
-    size32_t idx = 0;
-    rowdata.append(sizeof(rows), &rows);
-    while (idx < rows)
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit) * 0x100000;
+    MemoryBuffer rowdata;
+    CThorDemoRowSerializer out(rowdata);
+    Owned<IOutputRowSerializer> serializer = input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId);
+    rtlSerializeDictionary(out, serializer, builder.getcount(), builder.queryrows());
+    if(outputLimit && (rowdata.length()  > outputLimit))
     {
-        byte numRows = 0;
-        while (numRows < 255 && idx+numRows < rows && dict[idx+numRows] != NULL)
-            numRows++;
-        rowdata.append(1, &numRows);
-        for (int i = 0; i < numRows; i++)
-        {
-            byte *nextrec = dict[idx+i];
-            assert(nextrec);
-            size32_t thisSize = inputMeta->getRecordSize(nextrec);
-            if(outputLimit && ((rowdata.length() + thisSize) > outputLimit))
-            {
-                StringBuffer errMsg("Dictionary too large to output to workunit (limit ");
-                errMsg.append(outputLimit/0x100000).append(") megabytes, in result (");
-                const char *name = helper.queryName();
-                if (name)
-                    errMsg.append("name=").append(name);
-                else
-                    errMsg.append("sequence=").append(helper.getSequence());
-                errMsg.append(")");
-                throw MakeStringException(0, "%s", errMsg.str());
-            }
-            if (rowSerializer)
-            {
-                CThorDemoRowSerializer serializerTarget(rowdata);
-                rowSerializer->serialize(serializerTarget, nextrec );
-            }
-            else
-                rowdata.append(thisSize, nextrec);
-        }
-        idx += numRows;
-        byte numNulls = 0;
-        while (numNulls < 255 && idx+numNulls < rows && dict[idx+numNulls] == NULL)
-            numNulls++;
-        rowdata.append(1, &numNulls);
-        idx += numNulls;
+        StringBuffer errMsg("Dictionary too large to output to workunit (limit ");
+        errMsg.append(outputLimit/0x100000).append(") megabytes, in result (");
+        const char *name = helper.queryName();
+        if (name)
+            errMsg.append("name=").append(name);
+        else
+            errMsg.append("sequence=").append(helper.getSequence());
+        errMsg.append(")");
+        throw MakeStringException(0, "%s", errMsg.str());
     }
+
     WorkunitUpdate w = agent.updateWorkUnit();
     Owned<IWUResult> result = updateWorkUnitResult(w, helper.queryName(), helper.getSequence());
     result->setResultRaw(rowdata.length(), rowdata.toByteArray(), ResultFormatRaw);
     result->setResultStatus(ResultStatusCalculated);
-    result->setResultRowCount(rows);
-    result->setResultTotalRowCount(rows); // Is this right??
+    result->setResultRowCount(usedCount);
+    result->setResultTotalRowCount(usedCount); // Is this right??
 }
 
 //=====================================================================================================
