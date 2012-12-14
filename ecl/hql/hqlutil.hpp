@@ -67,6 +67,7 @@ extern HQL_API void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpressi
 extern HQL_API bool recordContainsBlobs(IHqlExpression * record);
 inline bool recordIsEmpty(IHqlExpression * record) { return queryLastField(record) == NULL; }
 extern HQL_API IHqlExpression * queryVirtualFileposField(IHqlExpression * record);
+extern HQL_API IHqlExpression * removePropertyFromFields(IHqlExpression * expr, _ATOM name);
 
 extern HQL_API IHqlExpression * flattenListOwn(IHqlExpression * list);
 extern HQL_API void flattenListOwn(HqlExprArray & out, IHqlExpression * list);
