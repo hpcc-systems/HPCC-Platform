@@ -2321,10 +2321,10 @@ protected:
             {
                 IHqlExpression * cond = expr->queryChild(0);
                 analyseExpr(cond);
-                if (expr->isDataset() || expr->isDatarow())// || expr->isDictionary())
+                if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
                     conditionalDepth++;
                 doAnalyseChildren(expr, 1);
-                if (expr->isDataset() || expr->isDatarow())// || expr->isDictionary())
+                if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
                     conditionalDepth--;
                 break;
             }

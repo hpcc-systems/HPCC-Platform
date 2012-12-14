@@ -1580,6 +1580,7 @@ public:
     void buildDedupFilterFunction(BuildCtx & ctx, HqlExprArray & equalities, HqlExprArray & conds, IHqlExpression * dataset, IHqlExpression * selSeq);
     void buildDedupSerializeFunction(BuildCtx & ctx, const char * funcName, IHqlExpression * srcDataset, IHqlExpression * tgtDataset, HqlExprArray & srcValues, HqlExprArray & tgtValues, IHqlExpression * selSeq);
     void buildDictionaryHashClass(IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &lookupHelperName);
+    void buildDictionaryHashMember(BuildCtx & ctx, IHqlExpression *dictionary, const char * memberName);
     void buildHashClass(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, const DatasetReference & dataset);
     void buildHashOfExprsClass(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset, bool compareToSelf);
     void buildInstancePrefix(ActivityInstance * instance);

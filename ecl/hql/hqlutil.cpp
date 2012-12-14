@@ -4569,6 +4569,7 @@ static bool splitDatasetAttribute(SharedHqlExpr & dataset, SharedHqlExpr & attri
     node_operator leftOp = left->getOperator();
     if ((leftOp !=no_select) || expr->hasProperty(newAtom))
     {
+        //Ensure selections from dictionaries do not have a separate activity for the row lookup.
         if (leftOp == no_selectmap)
             return false;
 

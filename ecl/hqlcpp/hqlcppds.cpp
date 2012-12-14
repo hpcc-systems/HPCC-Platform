@@ -4451,23 +4451,20 @@ IReferenceSelector * HqlCppTranslator::buildDatasetSelectMap(BuildCtx & ctx, IHq
     if (match)
         return createReferenceSelector(static_cast<BoundRow *>(match));
 
-    OwnedHqlExpr dataset = normalizeAnyDatasetAliases(expr->queryChild(0));
-    BoundRow * row = NULL;
-    //assertex(canProcessInline(&ctx, expr));
+    OwnedHqlExpr dictionary = normalizeAnyDatasetAliases(expr->queryChild(0));
+
+    //MORE: This should really be a createDictionarySelector call.
+    Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dictionary);
+    BoundRow * row = cursor->buildSelectMap(ctx, expr);
 
     if (!row)
     {
-        Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dataset);
-        row = cursor->buildSelectMap(ctx, expr);
-
-        if (!row)
-        {
-            CHqlBoundExpr boundCleared;
-            buildDefaultRow(ctx, dataset, boundCleared);
-            OwnedHqlExpr defaultRowPtr = getPointer(boundCleared.expr);
-            row = bindRow(ctx, expr, defaultRowPtr);
-        }
+        CHqlBoundExpr boundCleared;
+        buildDefaultRow(ctx, dictionary, boundCleared);
+        OwnedHqlExpr defaultRowPtr = getPointer(boundCleared.expr);
+        row = bindRow(ctx, expr, defaultRowPtr);
     }
+
     return createReferenceSelector(row);
 }
 
@@ -4649,15 +4646,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphDictionaryResult(Build
         addDependency(ctx, instance->queryBoundActivity(), parentActivity, childAtom, "Child");
     }
 
-    {
-        StringBuffer lookupHelperName;
-        buildDictionaryHashClass(dictionary->queryRecord(), dictionary, lookupHelperName);
-
-        BuildCtx funcctx(instance->createctx);
-        StringBuffer s;
-        s.append("virtual IHThorHashLookupInfo * queryHashLookupInfo() { return &").append(lookupHelperName).append("; }");
-        funcctx.addQuoted(s);
-    }
+    buildDictionaryHashMember(instance->createctx, dictionary, "queryHashLookupInfo");
 
     instance->addAttributeBool("_isSpill", isSpill);
     if (targetRoxie())
