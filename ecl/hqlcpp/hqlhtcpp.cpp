@@ -5358,6 +5358,17 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, IHqlExpr
     }
 }
 
+void HqlCppTranslator::buildDictionaryHashMember(BuildCtx & ctx, IHqlExpression *dictionary, const char * memberName)
+{
+    StringBuffer lookupHelperName;
+    buildDictionaryHashClass(dictionary->queryRecord(), dictionary, lookupHelperName);
+
+    BuildCtx funcctx(ctx);
+    StringBuffer s;
+    s.append("virtual IHThorHashLookupInfo * ").append(memberName).append("() { return &").append(lookupHelperName).append("; }");
+    funcctx.addQuoted(s);
+}
+
 
 //---------------------------------------------------------------------------
 
@@ -10863,15 +10874,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDictionaryWorkunitWrite(BuildC
     }
 
     //Owned<IWUResult> result = createDatasetResultSchema(seq, name, record, true, false);
-    {
-        StringBuffer lookupHelperName;
-        buildDictionaryHashClass(record, dictionary, lookupHelperName);
-
-        BuildCtx funcctx(instance->createctx);
-        StringBuffer s;
-        s.append("virtual IHThorHashLookupInfo * queryHashLookupInfo() { return &").append(lookupHelperName).append("; }");
-        funcctx.addQuoted(s);
-    }
+    buildDictionaryHashMember(instance->createctx, dictionary, "queryHashLookupInfo");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
