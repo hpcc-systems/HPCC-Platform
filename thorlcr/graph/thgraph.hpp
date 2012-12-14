@@ -503,6 +503,8 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
         virtual const IContextLogger &queryContextLogger() const { return ctx->queryContextLogger(); }
         virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const { return ctx->getRowAllocator(meta, activityId); }
         virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, deserializer, isGrouped, xmlTransformer, csvTransformer); }
+        virtual void getResultDictionary(size32_t & tcount, byte * * & tgt,IEngineRowAllocator * _rowAllocator,  const char * name, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { ctx->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, deserializer, xmlTransformer, csvTransformer, hasher); }
+
         virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) { convertRowToXML(lenResult, result, info, row, flags); }
         virtual unsigned getGraphLoopCounter() const
         {
@@ -737,6 +739,7 @@ public:
 
 // ILocalGraph
     virtual void getResult(size32_t & len, void * & data, unsigned id);
+    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
 
 // IThorChildGraph
@@ -1070,6 +1073,7 @@ protected:
         virtual void serialize(MemoryBuffer &mb) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getResult(size32_t & retSize, void * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
         virtual void getLinkedResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
+        virtual void getDictionaryResult(unsigned & count, byte * * & ret) { throw MakeStringException(0, "Graph Result %d accessed before it is created", id); }
     };
     IArrayOf<IThorResult> results;
     CriticalSection cs;
@@ -1123,6 +1127,11 @@ public:
         result->getResult(retSize, ret);
     }
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+    {
+        Owned<IThorResult> result = getResult(id, true);
+        result->getLinkedResult(count, ret);
+    }
+    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
     {
         Owned<IThorResult> result = getResult(id, true);
         result->getLinkedResult(count, ret);

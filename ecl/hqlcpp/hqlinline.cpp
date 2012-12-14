@@ -211,14 +211,13 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 return flags;
             return RETevaluate|HEFspillinline;
         }
+    case no_fail:
+        return RETevaluate;
     case no_catchds:
         return 0;       // for the moment always do this out of line 
     case no_table:
         return 0;
-    case no_newuserdictionary:
-    case no_userdictionary:
-        return RETassign;
-    case no_inlinedictionary:
+    case no_createdictionary:
         return RETassign;
     case no_owned_ds:
         {

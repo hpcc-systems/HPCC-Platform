@@ -3654,6 +3654,14 @@ ITypeInfo *HqlGram::checkPromoteIfType(attribute &a1, attribute &a2)
         checkDatarow(a2);
         return NULL;
     }
+    if (a1.isDictionary() || a2.isDictionary())
+    {
+        OwnedHqlExpr right = a2.getExpr();
+        a2.setExpr(checkEnsureRecordsMatch(a1.queryExpr(), right, a2, true));
+        checkDictionary(a1);
+        checkDictionary(a2);
+        return NULL;
+    }
 
     checkCompatible(a1.queryExprType(), a2.queryExprType(), a2);
     ITypeInfo *t1 = a1.queryExprType();
@@ -8987,6 +8995,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                 case type_record:
                 case type_row:
                 case type_transform:
+                case type_dictionary:
                     break;
                 default:
                     expr.setown(forceEnsureExprType(expr, type));
@@ -10362,6 +10371,7 @@ void HqlGram::simplifyExpected(int *expected)
                        TOXML, '@', SECTION, EVENTEXTRA, EVENTNAME, __SEQUENCE__, IFF, OMITTED, GETENV, __DEBUG__, __STAND_ALONE__, 0);
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
+    simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);
     simplify(expected, VALUE_ID, DATASET_ID, DICTIONARY_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, DICTIONARY_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, 0);
     simplify(expected, LIBRARY, LIBRARY, SCOPE_FUNCTION, STORED, PROJECT, INTERFACE, MODULE, 0);
     simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, 0);

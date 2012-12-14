@@ -275,9 +275,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_temprow:
 
 //Dictionaries
-    case no_userdictionary:
-    case no_newuserdictionary:
-    case no_inlinedictionary:
+    case no_createdictionary:
 
 //Datasets [see also selection operators]
     case no_rollup:
@@ -622,6 +620,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
     case no_unused80: case no_unused83:
+    case no_unused100: case no_unused101:
     case no_is_null:
     case no_position:
     case no_current_time:

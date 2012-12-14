@@ -483,6 +483,7 @@ public:
     virtual unsigned getResultHash(const char * name, unsigned sequence);
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer);
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer);
+    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher);
     virtual char *getDaliServers();
     virtual char *getJobName();
     virtual char *getJobOwner();
@@ -849,6 +850,10 @@ public:
     {
         queryResult(id)->getLinkedResult(count, ret);
     }
+    virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
+    {
+        queryResult(id)->getLinkedResult(count, ret);
+    }
 
 protected:
     void ensureAtleast(unsigned id);
@@ -1006,6 +1011,7 @@ public:
 
     virtual void getResult(unsigned & len, void * & data, unsigned id);
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
+    virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id);
     inline unsigned __int64 queryId() const
     {
         return id;

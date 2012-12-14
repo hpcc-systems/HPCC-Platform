@@ -1002,6 +1002,18 @@ public:
             rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);
         );
     }
+    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+    {
+        tgt = NULL;
+        PROTECTED_GETRESULT(stepname, sequence, "Dictionary", "dictionary",
+            MemoryBuffer datasetBuffer;
+            MemoryBuffer2IDataVal result(datasetBuffer);
+            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
+            Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
+            r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
+            throwUnexpected();
+        );
+    }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {
         tgt = NULL;

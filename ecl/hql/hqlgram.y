@@ -7096,25 +7096,29 @@ simpleDictionary
                             HqlExprArray args;
                             args.append(*LINK(dataset));
                             args.append(*LINK(record));
-                            $$.setExpr(createDictionary(no_userdictionary, args));
-                            parser->checkProjectedFields($$.queryExpr(), $5);
-                            $$.setPosition($1);
+                            OwnedHqlExpr ds = createDataset(no_usertable, args);
+                            parser->checkProjectedFields(ds, $5);
+                            $$.setExpr(createDictionary(no_createdictionary, ds.getClear()), $1);
                         }
-
+    | DICTIONARY '(' startTopFilter ')' endTopFilter
+                        {
+                            OwnedHqlExpr ds = $3.getExpr();
+                            $$.setExpr(createDictionary(no_createdictionary, ds.getClear()), $1);
+                        }
     | DICTIONARY '(' '[' ']' ',' recordDef ')'
                         {
                             HqlExprArray values;  // Empty list
                             OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $6.getExpr());
-                            $$.setExpr(convertTempTableToInlineDictionary(parser->errorHandler, $4.pos, table));
-                            $$.setPosition($1);
+                            OwnedHqlExpr ds = convertTempTableToInlineTable(parser->errorHandler, $4.pos, table);
+                            $$.setExpr(createDictionary(no_createdictionary, ds.getClear()), $1);
                         }
     | DICTIONARY '(' '[' beginList inlineDatasetValueList ']' ',' recordDef ')'
                         {
                             HqlExprArray values;
                             parser->endList(values);
                             OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $8.getExpr());
-                            $$.setExpr(convertTempTableToInlineDictionary(parser->errorHandler, $5.pos, table));
-                            $$.setPosition($1);
+                            OwnedHqlExpr ds = convertTempTableToInlineTable(parser->errorHandler, $5.pos, table);
+                            $$.setExpr(createDictionary(no_createdictionary, ds.getClear()), $1);
                         }
     | '(' dictionary  ')'  {
                             $$.setExpr($2.getExpr());
@@ -7140,8 +7144,136 @@ simpleDictionary
                             OwnedHqlExpr ds = parser->processIfProduction($3, $5, NULL);
                             $$.setExpr(ds.getClear(), $1);
                         }
-// MORE - should do CASE and MAP
+    | MAP '(' mapDictionarySpec ',' dictionary ')'
+                        {
+                            HqlExprArray args;
+                            IHqlExpression * elseDict = $5.getExpr();
+                            $3.unwindCommaList(args);
+                            ForEachItemIn(idx, args)
+                            {
+                                IHqlExpression * cur = args.item(idx).queryChild(1);
+                                parser->checkRecordTypes(cur, elseDict, $5);
+                            }
+                            args.append(*elseDict);
+                            $$.setExpr(::createDictionary(no_map, args));
+                            $$.setPosition($1);
+                        }
+    | MAP '(' mapDictionarySpec ')'
+                        {
+                            HqlExprArray args;
+                            $3.unwindCommaList(args);
+                            IHqlExpression * elseDict;
+                            if (args.ordinality())
+                                elseDict = createNullExpr(&args.item(0));
+                            else
+                                elseDict = createDictionary(no_null, LINK(queryNullRecord()));
+                            ForEachItemIn(idx, args)
+                            {
+                                IHqlExpression * cur = args.item(idx).queryChild(1);
+                                parser->checkRecordTypes(cur, elseDict, $1);
+                            }
+                            args.append(*elseDict);
+                            $$.setExpr(::createDictionary(no_map, args));
+                            $$.setPosition($1);
+                        }
+    | CASE '(' expression ',' beginList caseDictionarySpec ',' dictionary ')'
+                        {
+                            parser->normalizeExpression($3, type_scalar, false);
+                            HqlExprArray args;
+                            IHqlExpression * elseDict = $8.getExpr();
+                            parser->endList(args);
+                            parser->checkCaseForDuplicates(args, $6);
+                            ForEachItemIn(idx, args)
+                            {
+                                IHqlExpression * cur = args.item(idx).queryChild(1);
+                                parser->checkRecordTypes(cur, elseDict, $8);
+                            }
+                            args.add(*$3.getExpr(),0);
+                            args.append(*elseDict);
+                            $$.setExpr(::createDataset(no_case, args));
+                            $$.setPosition($1);
+                        }
+    | CASE '(' expression ',' beginList caseDictionarySpec ')'
+                        {
+                            parser->normalizeExpression($3, type_scalar, false);
+                            HqlExprArray args;
+                            parser->endList(args);
+                            IHqlExpression * elseDict;
+                            if (args.ordinality())
+                                elseDict = createNullExpr(&args.item(0));
+                            else
+                                elseDict = createDictionary(no_null, LINK(queryNullRecord()));
+                            parser->checkCaseForDuplicates(args, $6);
+                            ForEachItemIn(idx, args)
+                            {
+                                IHqlExpression * cur = args.item(idx).queryChild(1);
+                                parser->checkRecordTypes(cur, elseDict, $6);
+                            }
+                            args.add(*$3.getExpr(),0);
+                            args.append(*elseDict);
+                            $$.setExpr(::createDictionary(no_case, args));
+                            $$.setPosition($1);
+                        }
+    | CASE '(' expression ',' beginList dictionary ')'
+                        {
+                            parser->normalizeExpression($3, type_scalar, false);
+                            // change error to warning.
+                            parser->reportWarning(WRN_CASENOCONDITION, $1.pos, "CASE does not have any conditions");
+                            HqlExprArray list;
+                            parser->endList(list);
+                            $3.release();
+                            $$.setExpr($6.getExpr(), $1);
+                        }
+    | FAIL '(' dictionary failDatasetParam ')'
+                        {
+                            OwnedHqlExpr dict = $3.getExpr();
+                            //Actually allow a sequence of arbitrary actions....
+                            $$.setExpr(createDictionary(no_fail, LINK(dict->queryRecord()), $4.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | TOK_ERROR '(' dictionary failDatasetParam ')'
+                        {
+                            OwnedHqlExpr dict = $3.getExpr();
+                            //Actually allow a sequence of arbitrary actions....
+                            $$.setExpr(createDictionary(no_fail, LINK(dict->queryRecord()), $4.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | CHOOSE '(' expression ',' dictionaryList ')'
+                        {
+                            parser->normalizeExpression($3, type_int, false);
+                            OwnedHqlExpr values = $5.getExpr();
+                            HqlExprArray args;
+                            values->unwindList(args, no_comma);
+
+                            IHqlExpression * compareDict = NULL;
+                            ForEachItemIn(idx, args)
+                            {
+                                IHqlExpression * cur = &args.item(idx);
+                                if (cur->queryRecord())
+                                {
+                                    if (compareDict)
+                                    {
+                                        parser->checkRecordTypes(cur, compareDict, $5);
+                                    }
+                                    else
+                                        compareDict = cur;
+                                }
+                            }
+
+                            args.add(*$3.getExpr(), 0);
+                            $$.setExpr(createDictionary(no_chooseds, args), $1); // no_choosedict ?
+                        }
     ;
+
+dictionaryList
+    : dictionary
+    | dictionary ',' dictionaryList
+                        {
+                            $$.setExpr(createComma($1.getExpr(), $3.getExpr()));
+                            $$.setPosition($1);
+                        }
+    ;
+
 
 scopedDictionaryId
     : globalScopedDictionaryId
@@ -7157,7 +7289,6 @@ scopedDictionaryId
                                 $$.setExpr(e2);
                             }
                         }
-/*
     | dictionaryFunction '('
                         {
                             parser->beginFunctionCall($1);
@@ -7166,7 +7297,6 @@ scopedDictionaryId
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()));
                         }
-*/
     ;
 
 globalScopedDictionaryId
@@ -10659,6 +10789,20 @@ datasetFunction
                         }
     ;
 
+dictionaryFunction
+    : DICTIONARY_FUNCTION
+    | moduleScopeDot DICTIONARY_FUNCTION leaveScope
+                        {
+                            $1.release();
+                            $$.setExpr($2.getExpr());
+                        }
+    | startCompoundExpression reqparmdef beginInlineFunctionToken optDefinitions RETURN dictionary ';' endInlineFunctionToken
+                        {
+                            Owned<ITypeInfo> retType = $1.getType();
+                            $$.setExpr(parser->leaveLamdaExpression($6), $8);
+                        }
+    ;
+
 scopeFunction
     : SCOPE_FUNCTION
     | moduleScopeDot SCOPE_FUNCTION leaveScope
@@ -11075,6 +11219,24 @@ mapDatasetItem
                         }
     ;
 
+mapDictionarySpec
+    : mapDictionaryItem
+    | mapDictionarySpec ',' mapDictionaryItem
+                        {
+                            ITypeInfo *type = parser->checkType($1, $3);
+                            $$.setExpr(createValue(no_comma, type, $1.getExpr(), $3.getExpr()));
+                        }
+    ;
+
+mapDictionaryItem
+    : booleanExpr GOESTO dictionary
+                        {
+                            IHqlExpression *e3 = $3.getExpr();
+                            $$.setExpr(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
+                            $$.setPosition($3);
+                        }
+    ;
+
 caseDatasetSpec
     : caseDatasetItem
     | caseDatasetSpec ',' caseDatasetItem
@@ -11082,6 +11244,23 @@ caseDatasetSpec
 
 caseDatasetItem
     : expression GOESTO dataSet
+                        {
+                            parser->normalizeExpression($1);
+                            parser->applyDefaultPromotions($1, true);
+                            IHqlExpression *e3 = $3.getExpr();
+                            parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
+                            $$.clear();
+                            $$.setPosition($3);
+                        }
+    ;
+
+caseDictionarySpec
+    : caseDictionaryItem
+    | caseDictionarySpec ',' caseDictionaryItem
+    ;
+
+caseDictionaryItem
+    : expression GOESTO dictionary
                         {
                             parser->normalizeExpression($1);
                             parser->applyDefaultPromotions($1, true);

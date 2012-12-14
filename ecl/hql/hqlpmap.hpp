@@ -175,7 +175,7 @@ extern HQL_API void replaceSelectors(HqlExprArray & out, unsigned first, IHqlExp
 extern HQL_API IHqlExpression * scopedReplaceSelector(IHqlExpression * expr, IHqlExpression * oldDataset, IHqlExpression * newDataset);
 extern HQL_API IHqlExpression * replaceSelfRefSelector(IHqlExpression * expr, IHqlExpression * newDataset);
 
-extern HQL_API bool isNullProject(IHqlExpression * expr, bool canLoseFieldsFromEnd);
+extern HQL_API bool isNullProject(IHqlExpression * expr, bool canIgnorePayload, bool canLoseFieldsFromEnd);
 extern HQL_API bool isSimpleProject(IHqlExpression * expr);                             // Restriction or rearrangement only
 extern HQL_API bool leftRecordIsSubsetOfRight(IHqlExpression * left, IHqlExpression * right);
 extern HQL_API IHqlExpression * transformTrivialSelectProject(IHqlExpression * select);

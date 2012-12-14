@@ -334,7 +334,7 @@ void RtlLinkedDatasetBuilder::append(const void * source)
     if (count < choosenLimit)
     {
         ensure(count+1);
-        rowset[count] = (byte *)rowAllocator->linkRow(source);
+        rowset[count] = source ? (byte *)rowAllocator->linkRow(source) : NULL;
         count++;
     }
 }
@@ -742,6 +742,57 @@ extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo,
     }
 }
 
+extern ECLRTL_API void rtlSerializeDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
+{
+    out.put(sizeof(count), &count);
+    size32_t idx = 0;
+    while (idx < count)
+    {
+        byte numRows = 0;
+        while (numRows < 255 && idx+numRows < count && rows[idx+numRows] != NULL)
+            numRows++;
+        out.put(1, &numRows);
+        for (int i = 0; i < numRows; i++)
+        {
+            byte *nextrec = rows[idx+i];
+            assert(nextrec);
+            serializer->serialize(out, nextrec);
+        }
+        idx += numRows;
+        byte numNulls = 0;
+        while (numNulls < 255 && idx+numNulls < count && rows[idx+numNulls] == NULL)
+            numNulls++;
+        out.put(1, &numNulls);
+        idx += numNulls;
+    }
+}
+
+extern ECLRTL_API void rtlDictionary2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src)
+{
+    RtlLinkedDatasetBuilder builder(rowAllocator);
+    Owned<ISerialStream> stream = createMemorySerialStream(src, lenSrc);
+    CThorStreamDeserializerSource source(stream);
+
+    size32_t totalRows;
+    source.read(sizeof(totalRows), &totalRows);
+    builder.ensure(totalRows);
+    byte nullsPending = 0;
+    byte rowsPending = 0;
+    while (!source.finishedNested(lenSrc))
+    {
+        source.read(1, &rowsPending);
+        for (int i = 0; i < rowsPending; i++)
+            builder.deserializeRow(*deserializer, source);
+        source.read(1, &nullsPending);
+        for (int i = 0; i < nullsPending; i++)
+            builder.append(NULL);
+    }
+
+    count = builder.getcount();
+    assertex(count==totalRows);
+    rowset = builder.linkrows();
+}
+
 //---------------------------------------------------------------------------
 
 //These definitions should be shared with thorcommon, but to do that
@@ -831,6 +882,17 @@ extern ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutput
 extern ECLRTL_API void rtlGroupedRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
 {
     doRowset2DatasetX(tlen, tgt, serializer, count, rows, true);
+}
+
+extern ECLRTL_API void rtlRowset2DictionaryX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows)
+{
+    MemoryBuffer rowdata;
+    CThorRtlRowSerializer out(rowdata);
+    rtlSerializeDictionary(out, serializer, count, rows);
+
+    rtlFree(tgt);
+    tlen = rowdata.length();
+    tgt = rowdata.detach();
 }
 
 void deserializeRowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in)

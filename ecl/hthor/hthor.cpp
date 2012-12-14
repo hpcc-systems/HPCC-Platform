@@ -5884,6 +5884,61 @@ void CHThorWorkUnitWriteActivity::execute()
 
 //=====================================================================================================
 
+CHThorDictionaryWorkUnitWriteActivity::CHThorDictionaryWorkUnitWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryWorkUnitWriteArg &_arg, ThorActivityKind _kind)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+}
+
+void CHThorDictionaryWorkUnitWriteActivity::execute()
+{
+    int sequence = helper.getSequence();
+    const char *storedName = helper.queryName();
+    assertex(storedName && *storedName);
+    assertex(sequence < 0);
+
+    RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
+    loop
+    {
+        const void *row = input->nextInGroup();
+        if (!row)
+        {
+            row = input->nextInGroup();
+            if (!row)
+                break;
+        }
+        builder.appendOwn(row);
+        processed++;
+    }
+    size32_t usedCount = rtlDictionaryCount(builder.getcount(), builder.queryrows());
+
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit) * 0x100000;
+    MemoryBuffer rowdata;
+    CThorDemoRowSerializer out(rowdata);
+    Owned<IOutputRowSerializer> serializer = input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId);
+    rtlSerializeDictionary(out, serializer, builder.getcount(), builder.queryrows());
+    if(outputLimit && (rowdata.length()  > outputLimit))
+    {
+        StringBuffer errMsg("Dictionary too large to output to workunit (limit ");
+        errMsg.append(outputLimit/0x100000).append(") megabytes, in result (");
+        const char *name = helper.queryName();
+        if (name)
+            errMsg.append("name=").append(name);
+        else
+            errMsg.append("sequence=").append(helper.getSequence());
+        errMsg.append(")");
+        throw MakeStringException(0, "%s", errMsg.str());
+    }
+
+    WorkunitUpdate w = agent.updateWorkUnit();
+    Owned<IWUResult> result = updateWorkUnitResult(w, helper.queryName(), helper.getSequence());
+    result->setResultRaw(rowdata.length(), rowdata.toByteArray(), ResultFormatRaw);
+    result->setResultStatus(ResultStatusCalculated);
+    result->setResultRowCount(usedCount);
+    result->setResultTotalRowCount(usedCount); // Is this right??
+}
+
+//=====================================================================================================
+
 CHThorCountActivity::CHThorCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &_arg, ThorActivityKind _kind)
  : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
@@ -9767,6 +9822,7 @@ MAKEFACTORY_ARG(SelfJoin, Join);
 MAKEFACTORY_ARG(LookupJoin, HashJoin);
 MAKEFACTORY(AllJoin);
 MAKEFACTORY(WorkUnitWrite);
+MAKEFACTORY(DictionaryWorkUnitWrite);
 MAKEFACTORY(FirstN);
 MAKEFACTORY(Count);
 MAKEFACTORY(TempTable);

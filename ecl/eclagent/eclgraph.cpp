@@ -98,6 +98,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createGroupActivity(agent, activityId, subgraphId, (IHThorGroupArg &)arg, kind);
     case TAKworkunitwrite:
         return createWorkUnitWriteActivity(agent, activityId, subgraphId, (IHThorWorkUnitWriteArg &)arg, kind);
+    case TAKdictionaryworkunitwrite:
+        return createDictionaryWorkUnitWriteActivity(agent, activityId, subgraphId, (IHThorDictionaryWorkUnitWriteArg &)arg, kind);
     case TAKfunnel:
         return createConcatActivity(agent, activityId, subgraphId, (IHThorFunnelArg &)arg, kind);
     case TAKapply:
@@ -1063,6 +1065,12 @@ void EclSubGraph::getResult(unsigned & len, void * & data, unsigned id)
 }
 
 void EclSubGraph::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
+{
+    localResults->queryResult(id)->getLinkedResult(count, ret);
+}
+
+
+void EclSubGraph::getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
 {
     localResults->queryResult(id)->getLinkedResult(count, ret);
 }

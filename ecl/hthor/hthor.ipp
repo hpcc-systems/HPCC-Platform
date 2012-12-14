@@ -1468,6 +1468,18 @@ public:
     virtual void execute();
 };
 
+class CHThorDictionaryWorkUnitWriteActivity : public CHThorActivityBase
+{
+    IHThorDictionaryWorkUnitWriteArg &helper;
+
+public:
+    IMPLEMENT_SINKACTIVITY;
+
+    CHThorDictionaryWorkUnitWriteActivity (IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryWorkUnitWriteArg &_arg, ThorActivityKind _kind);
+    virtual void execute();
+    virtual bool needsAllocator() const { return true; }
+};
+
 class CHThorCountActivity : public CHThorActivityBase
 {
     IHThorCountArg &helper;

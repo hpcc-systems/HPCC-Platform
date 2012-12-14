@@ -246,7 +246,9 @@ public:
     void clear()                                { expr.clear(); length.clear(); }
     bool exists() const                         { return (expr != NULL); }
     IHqlExpression * getIsAll() const;
+    IHqlExpression * getComplexExpr() const;
     IHqlExpression * getTranslatedExpr() const;
+
     ITypeInfo * queryType() const               { return expr->queryType(); }
     void set(const CHqlBoundExpr & src)         { expr.set(src.expr); length.set(src.length); count.set(src.count); isAll.set(src.isAll); }
     void setFromTarget(const CHqlBoundTarget & target);
@@ -1184,6 +1186,7 @@ public:
 
     void buildDatasetAssignChoose(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
     void buildDatasetAssignIf(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);
+
     BoundRow * buildDatasetIterateSelectN(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateChoosen(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateLimit(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
@@ -1365,6 +1368,7 @@ public:
     ABoundActivity * doBuildActivityDedup(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityDefineSideEffect(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityDenormalize(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivityDictionaryWorkunitWrite(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityDiskAggregate(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityDiskGroupAggregate(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityDiskNormalize(BuildCtx & ctx, IHqlExpression * expr);
@@ -1433,6 +1437,7 @@ public:
     ABoundActivity * doBuildActivitySelectNth(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivitySequentialParallel(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivitySerialize(BuildCtx & ctx, IHqlExpression * expr);
+    ABoundActivity * doBuildActivitySetGraphDictionaryResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivitySetGraphResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivitySetGraphLoopResult(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivitySetResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
@@ -1574,7 +1579,8 @@ public:
     void buildConnectOrders(BuildCtx & ctx, ABoundActivity * slaveActivity, ABoundActivity * masterActivity);
     void buildDedupFilterFunction(BuildCtx & ctx, HqlExprArray & equalities, HqlExprArray & conds, IHqlExpression * dataset, IHqlExpression * selSeq);
     void buildDedupSerializeFunction(BuildCtx & ctx, const char * funcName, IHqlExpression * srcDataset, IHqlExpression * tgtDataset, HqlExprArray & srcValues, HqlExprArray & tgtValues, IHqlExpression * selSeq);
-    void buildDictionaryHashClass(BuildCtx &ctx, IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &lookupHelperName);
+    void buildDictionaryHashClass(IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &lookupHelperName);
+    void buildDictionaryHashMember(BuildCtx & ctx, IHqlExpression *dictionary, const char * memberName);
     void buildHashClass(BuildCtx & ctx, const char * name, IHqlExpression * orderExpr, const DatasetReference & dataset);
     void buildHashOfExprsClass(BuildCtx & ctx, const char * name, IHqlExpression * cond, const DatasetReference & dataset, bool compareToSelf);
     void buildInstancePrefix(ActivityInstance * instance);
