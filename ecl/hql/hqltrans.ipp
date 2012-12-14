@@ -150,7 +150,7 @@ public:
 #endif
         noteMemory();
         unlockTransformMutex(); 
-        endTime();          // must come afetr unlockTransformMutex
+        endTime();          // must come after unlockTransformMutex
 #ifdef TRANSFORM_STATS
         info.tally(stats);
 #endif
