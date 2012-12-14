@@ -1229,6 +1229,7 @@ public:
         catch (...)
         {
             ::Release(activities);
+            allActivities.kill();
             throw;
         }
         return activities;
