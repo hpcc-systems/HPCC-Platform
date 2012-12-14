@@ -11009,7 +11009,6 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     }
 }
 
-
 void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * selector, IHqlExpression * selfSelect, IHqlExpression * leftSelect, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, bool needToClear)
 {
     ForEachChild(i, record)
@@ -11033,7 +11032,7 @@ void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression *
                 {
                     generateSerializeAssigns(ctx, cur->queryRecord(), selected, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear);
                 }
-                else if (needToClear)
+                else if (needToClear || mustInitializeField(cur))
                 {
                     //MORE: Might want to recurse if a record
                     Owned<IHqlExpression> self = tgtDataset.mapScalar(selected, selfSelect);
