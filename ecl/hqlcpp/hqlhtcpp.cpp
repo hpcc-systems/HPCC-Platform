@@ -10736,7 +10736,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
             buildReturn(namectx, name, constUnknownVarStringType);
         }
 
-        Owned<IWUResult> result = createDatasetResultSchema(seq, name, record, true, false);
+        LinkedHqlExpr cleanedRecord = record;
+        if (options.removeXpathFromOutput)
+            cleanedRecord.setown(removePropertyFromFields(cleanedRecord, xpathAtom));
+
+        Owned<IWUResult> result = createDatasetResultSchema(seq, name, cleanedRecord, true, false);
         if (result)
         {
             result->setResultRowLimit(-1);
