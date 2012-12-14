@@ -956,6 +956,9 @@ extern ECLRTL_API void rtlDictionary2RowsetX(size32_t & count, byte * * & rowset
     Owned<ISerialStream> stream = createMemorySerialStream(src, lenSrc);
     CThorStreamDeserializerSource source(stream);
 
+    size32_t totalRows;
+    source.read(sizeof(totalRows), &totalRows);
+    builder.ensure(totalRows);
     byte nullsPending = 0;
     byte rowsPending = 0;
     while (!source.finishedNested(lenSrc))
@@ -969,6 +972,7 @@ extern ECLRTL_API void rtlDictionary2RowsetX(size32_t & count, byte * * & rowset
     }
 
     count = builder.getcount();
+    assertex(count==totalRows);
     rowset = builder.linkrows();
 }
 

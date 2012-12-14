@@ -5921,6 +5921,7 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
     size32_t rows = builder.getcount();
     byte **dict = builder.queryrows();
     size32_t idx = 0;
+    rowdata.append(sizeof(rows), &rows);
     while (idx < rows)
     {
         byte numRows = 0;
