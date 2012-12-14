@@ -329,6 +329,16 @@ RtlLinkedDatasetBuilder::~RtlLinkedDatasetBuilder()
     ::Release(rowAllocator);
 }
 
+void RtlLinkedDatasetBuilder::clear()
+{
+    builder.clear();
+    if (rowset)
+        rowAllocator->releaseRowset(count, rowset);
+    rowset = NULL;
+    count = 0;
+    max = 0;
+}
+
 void RtlLinkedDatasetBuilder::append(const void * source)
 {
     if (count < choosenLimit)

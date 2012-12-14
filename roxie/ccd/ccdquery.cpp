@@ -491,6 +491,11 @@ protected:
                 unsigned graphId = getGraphId(node);
                 return createRoxieServerLocalResultWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), graphId, isRootAction(node));
             }
+        case TAKdictionaryresultwrite:
+            {
+                unsigned graphId = getGraphId(node);
+                return createRoxieServerDictionaryResultWriteActivityFactory(id, subgraphId, *this, helperFactory, kind, usageCount(node), graphId, isRootAction(node));
+            }
         case TAKloopcount:
         case TAKlooprow:
         case TAKloopdataset:
