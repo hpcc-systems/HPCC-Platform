@@ -482,11 +482,8 @@
 #define HQLERR_OutsideGroupAggregate_Text       "%s used outside of a TABLE aggregation"
 #define HQLERR_ResourceAddAfterFinalManifest_Text "%s resource added after manifest was finalized"
 #define HQLERR_SkipInsideCreateRow_Text         "SKIP inside a ROW(<transform>) not supported.  It is only allowed in a DATASET transform."
-<<<<<<< HEAD
 #define HQLERR_ScalarOutputWithinApply_Text     "A scalar output within an APPLY is undefined and may fail.  Use OUTPUT(dataset,EXTEND) instead."
-=======
 #define HQLERR_KeyedJoinNoRightIndex_X_Text     "Right dataset (%s) for a keyed join isn't a key"
->>>>>>> origin/candidate-3.10.0
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
