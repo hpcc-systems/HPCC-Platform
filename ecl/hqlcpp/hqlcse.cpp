@@ -1217,6 +1217,7 @@ static bool canHoistInvariant(IHqlExpression * expr)
     {
     case no_list:
     case no_datasetlist:
+    case no_createdictionary:
         return false;       // probably don't want to hoist these
     }
     return true;

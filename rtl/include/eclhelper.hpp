@@ -464,6 +464,7 @@ interface IEclGraphResults : public IInterface
 {
     virtual void getResult(size32_t & retSize, void * & ret, unsigned id) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id) = 0;
+    virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id) = 0;
 };
 
 //Provided by engine=>can extent
@@ -477,6 +478,7 @@ interface ILocalGraph : public IInterface
 {
     virtual void getResult(unsigned & len, void * & data, unsigned id) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id) = 0;
+    virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id) = 0;
 };
 
 //NB: New methods must always be added at the end of this interface to retain backward compatibility
@@ -485,6 +487,7 @@ interface IDebuggableContext;
 interface IDistributedFileTransaction;
 interface IUserDescriptor;
 interface IHThorArg;
+interface IHThorHashLookupInfo;
 
 interface ICodeContext : public IResourceContext
 {
@@ -559,6 +562,7 @@ interface ICodeContext : public IResourceContext
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) = 0;
     virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
+    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) = 0;
 };
 
 
@@ -814,6 +818,8 @@ enum ThorActivityKind
     TAKexternalsource,
     TAKexternalsink,
     TAKexternalprocess,
+    TAKdictionaryworkunitwrite,
+    TAKdictionaryresultwrite,
 
     TAKlast
 };
@@ -959,6 +965,8 @@ enum ActivityInterfaceEnum
     TAIshuffleextra_1,
     TAIhashdeduparg_2,
     TAIsoapcallextra_2,
+    TAIdictionaryworkunitwritearg_1,
+    TAIdictionaryresultwritearg_1,
 
 //Should remain as last of all meaningful tags, but before aliases
     TAImax,
@@ -2703,6 +2711,21 @@ interface IHThorHashLookupInfo
     virtual ICompare * queryCompare() = 0;
 };
 
+
+struct IHThorDictionaryWorkUnitWriteArg : public IHThorArg
+{
+    virtual int getSequence() = 0;
+    virtual const char * queryName() = 0;
+    virtual unsigned getFlags() = 0;
+    virtual IHThorHashLookupInfo * queryHashLookupInfo() = 0;
+};
+
+struct IHThorDictionaryResultWriteArg : public IHThorArg
+{
+    virtual unsigned querySequence() = 0;
+    virtual bool usedOutsideGraph() = 0;
+    virtual IHThorHashLookupInfo * queryHashLookupInfo() = 0;
+};
 
 //------------------------- Other stuff -------------------------
 

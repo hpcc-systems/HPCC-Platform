@@ -201,6 +201,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKexternalprocess] = "externalprocess";
     kindArray[TAKwhen_action] = "when_action";
     kindArray[TAKshuffle] = "shuffle";
+    kindArray[TAKdictionaryworkunitwrite] = "dictionaryworkunitwrite";
+    kindArray[TAKdictionaryresultwrite] = "dictionaryresultwrite";
 
 //Non standard
     kindArray[TAKcountdisk] = "countdisk";

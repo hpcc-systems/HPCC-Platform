@@ -2702,7 +2702,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         if (alreadyDone.find(*condValue) == NotFound)
                         {
                             alreadyDone.append(*condValue);
-                            args2.append(*createValue(no_mapto, LINK(condValue), LINK(mapValue)));
+                            args2.append(*createValue(no_mapto, mapValue->getType(), LINK(condValue), LINK(mapValue)));
                         }
                     }
                 }
@@ -3002,13 +3002,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             IHqlExpression * child = expr->queryChild(0);
             node_operator childOp = child->getOperator();
-            switch (childOp)
-            {
-            case no_inlinedictionary:
-                if (isPureInlineDataset(child))
-                    return createConstant(expr->queryType()->castFrom(false, (__int64)child->queryChild(0)->numChildren()));
-                break;
-            }
+            //MORE: Can't really optimize count of a dictionary since the input dataset may contain duplicates which will be removed.
             break;
         }
     case no_countlist:
@@ -3579,7 +3573,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
             break;
         }
     case no_newusertable:
-        if (isNullProject(expr, false))
+        if (isNullProject(expr, false, false))
             return removeParentNode(expr);
         if (isNull(child))
         {
@@ -3766,7 +3760,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_hqlproject:
     case no_projectrow:
         {
-            if (isNullProject(expr, false))
+            if (isNullProject(expr, false, false))
                 return removeParentNode(expr);
             if (isNull(child))
                 return replaceWithNull(expr);
@@ -5584,6 +5578,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_outofline:
     case no_owned_ds:
     case no_dataset_alias:
+    case no_createdictionary:
         exprMapping.set(gatherConstants(expr->queryChild(0)));
         break;
     case no_normalizegroup:
@@ -5594,12 +5589,6 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         //all bets are off.
         break;
 
-    case no_newuserdictionary:
-    case no_userdictionary:
-    case no_inlinedictionary:
-    case no_selectmap:
-        // MORE - maybe should be something here?
-        break;
 
     case no_selectnth:
         {
@@ -5709,6 +5698,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
             exprMapping.set(gatherConstants(expr->queryChild(0)));
         break;
 
+    case no_selectmap:
     case no_select:
     case no_record:
         break;

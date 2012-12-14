@@ -972,10 +972,11 @@ static bool isTrivialTransform(IHqlExpression * expr, IHqlExpression * selector)
     return true;
 }
 
-bool isNullProject(IHqlExpression * expr, bool canLoseFieldsFromEnd)
+bool isNullProject(IHqlExpression * expr, bool canIgnorePayload, bool canLoseFieldsFromEnd)
 {
     IHqlExpression * ds = expr->queryChild(0);
-    if (!recordTypesMatchIgnorePayload(expr, ds))
+    bool matches = canIgnorePayload ? recordTypesMatchIgnorePayload(expr, ds) : recordTypesMatch(expr, ds);
+    if (!matches)
     {
         if (canLoseFieldsFromEnd)
         {
@@ -999,7 +1000,6 @@ bool isSimpleProject(IHqlExpression * expr)
     case no_projectrow:
         selector.setown(createSelector(no_left, ds, querySelSeq(expr)));
         break;
-    case no_newuserdictionary:
     case no_newusertable:
          if (isAggregateDataset(expr))
              return false;

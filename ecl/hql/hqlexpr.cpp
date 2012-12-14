@@ -1446,7 +1446,7 @@ const char *getOpString(node_operator op)
     case no_debug_option_value: return "__DEBUG__";
     case no_dataset_alias: return "TABLE";
     case no_childquery: return "no_childquery";
-    case no_inlinedictionary: case no_userdictionary: case no_newuserdictionary: return "DICTIONARY";
+    case no_createdictionary: return "DICTIONARY";
     case no_chooseds: return "CHOOSE";
 
     case no_unused6:
@@ -1458,6 +1458,8 @@ const char *getOpString(node_operator op)
     case no_unused80:
     case no_unused81:
     case no_unused83:
+    case no_unused100:
+    case no_unused101:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
     default: assertex(false); return "???";
@@ -1816,8 +1818,6 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_transformascii:
     case no_selectfields:
     case no_newaggregate:
-    case no_userdictionary:
-    case no_newuserdictionary:
     case no_newusertable:
     case no_usertable:
     case no_alias_project:
@@ -2107,7 +2107,6 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_compound_inline:
     case no_transformascii:
     case no_transformebcdic:
-    case no_newuserdictionary:
     case no_newusertable:
     case no_aggregate:
     case no_usertable:
@@ -2613,7 +2612,6 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     case no_createrow:
     case no_typetransfer:
         return expr->queryChild(0);
-    case no_userdictionary:
     case no_usertable:
     case no_selectfields:
     case no_transformebcdic:
@@ -2631,7 +2629,6 @@ IHqlExpression * queryNewColumnProvider(IHqlExpression * expr)
     case no_newkeyindex:
     case no_aggregate:
     case no_newaggregate:
-    case no_newuserdictionary:
     case no_newusertable:
     case no_normalize:
     case no_xmlparse:
@@ -2899,6 +2896,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     case type_groupedtable:
         if (recordTypesMatch(type, exprType))
             return LINK(expr);
+        assertex(!expr->isDictionary());
         break;
     case type_scope:
     case type_function:
@@ -3592,6 +3590,12 @@ switch (op)
             }
             break;
         }
+    case no_indict:
+        assertex(queryChild(1)->isDictionary());
+        break;
+    case no_countdict:
+        assertex(queryChild(0)->isDictionary());
+        break;
     }
 
 #ifdef _DEBUG
@@ -9943,10 +9947,8 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
 
     switch (op)
     {
-    case no_newuserdictionary:
-    case no_userdictionary:
-    case no_inlinedictionary:
-        type.setown(makeDictionaryType(makeRowType(createRecordType(&parms.item(1)))));
+    case no_createdictionary:
+        type.setown(makeDictionaryType(makeRowType(createRecordType(&parms.item(0)))));
         break;
     case no_select:
         type.set(parms.item(1).queryType());
@@ -9955,6 +9957,9 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
         type.set(parms.item(0).queryType());  // It's an error if they don't all match, caught elsewhere (?)
         break;
     case no_if:
+        type.set(parms.item(1).queryType());  // It's an error if they don't match, caught elsewhere
+        break;
+    case no_chooseds:
         type.set(parms.item(1).queryType());  // It's an error if they don't match, caught elsewhere
         break;
     case no_case:
@@ -9968,6 +9973,9 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
     case no_null:
     case no_fail:
     case no_anon:
+    case no_workunit_dataset:
+    case no_getgraphresult:
+    case no_getresult:
     {
         IHqlExpression * record = &parms.item(0);
         IHqlExpression * metadata = queryProperty(_metadata_Atom, parms);
@@ -9993,6 +10001,7 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
     case no_alias:
     case no_translated:
     case no_catch:
+    case no_colon:
         type.set(parms.item(0).queryType());
         break;
     default:
@@ -12955,6 +12964,9 @@ static IHqlExpression * doAttachWorkflowOwn(IHqlExpression * value, IHqlExpressi
         
         if (value->queryType()->getTypeCode() == type_row)
             return createRow(no_colon, value, LINK(workflow));
+
+        if (value->isDictionary())
+            return createDictionary(no_colon, value, LINK(workflow));
     }
 
     //If a string value is stored, its type is a string of unknown length 
@@ -14875,7 +14887,6 @@ extern HQL_API bool hasUnknownTransform(IHqlExpression * expr)
         if (expr->hasProperty(mergeTransformAtom))
             return true;
         break;
-    case no_inlinedictionary:
     case no_inlinetable:
         {
             IHqlExpression * transforms = expr->queryChild(0);
@@ -14940,7 +14951,7 @@ bool transformHasSkipAttr(IHqlExpression * transform)
 
 bool isPureInlineDataset(IHqlExpression * expr)
 {
-    assertex(expr->getOperator() == no_inlinetable || expr->getOperator() == no_inlinedictionary);
+    assertex(expr->getOperator() == no_inlinetable);
     IHqlExpression * values = expr->queryChild(0);
     ForEachChild(i, values)
     {

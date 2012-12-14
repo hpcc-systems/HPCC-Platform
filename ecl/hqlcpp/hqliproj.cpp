@@ -938,6 +938,11 @@ static int compareHqlExprPtr(IInterface * * left, IInterface * * right)
     return *left == *right ? 0 : *left < *right ? -1 : +1;
 }
 
+inline bool hasActivityType(IHqlExpression * expr)
+{
+    return (expr->isDataset() || expr->isDatarow() || expr->isDictionary());
+}
+
 //------------------------------------------------------------------------
 
 ImplicitProjectInfo::ImplicitProjectInfo(IHqlExpression * _original, ProjectExprKind _kind) : NewTransformInfo(_original), kind(_kind)
@@ -1322,7 +1327,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
         case no_evaluate:
             throwUnexpected();
         case no_select:
-            if (expr->isDataset() || expr->isDatarow())
+            if (hasActivityType(expr))
             {
                 //MORE: These means that selects from a parent dataset don't project down the parent dataset.
                 //I'm not sure how big an issue that would be.
@@ -1361,7 +1366,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             allowActivity = true;
             return;
         case no_thor:
-            if (expr->isDataset() || expr->isDatarow())
+            if (hasActivityType(expr))
             {
                 assertex(extra->activityKind() == SimpleActivity);
                 Parent::analyseExpr(expr);
@@ -1459,7 +1464,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
                 unsigned first = 0;
                 unsigned last = numArgs;
                 unsigned start = 0;
-                if (!expr->isAction() && !expr->isDataset() && !expr->isDatarow())
+                if (!expr->isAction() && !expr->isDataset() && !expr->isDatarow() && !expr->isDictionary())
                 {
                     switch (op)
                     {
@@ -1627,7 +1632,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
     }
 
     IHqlExpression * record = expr->queryRecord();
-    if (record && !isPatternType(type) && !expr->isTransform() && !expr->isDictionary())
+    if (record && !isPatternType(type) && !expr->isTransform())
     {
         assertex(complexExtra);
         complexExtra->setOriginalRecord(queryBodyComplexExtra(record));
@@ -1912,7 +1917,6 @@ const SelectUsedArray & ImplicitProjectTransformer::querySelectsUsed(IHqlExpress
     return extra->querySelectsUsed(); 
 }
 
-
 ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -1920,7 +1924,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_evaluate:
         throwUnexpected();
     case no_select:
-        if (expr->isDataset() || expr->isDatarow())
+        if (hasActivityType(expr))
             return SourceActivity;
         if (isNewSelector(expr))
             return ScalarSelectActivity;
@@ -1932,21 +1936,21 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_attr_link:
         return NonActivity;
     case no_typetransfer:
-        if (expr->isDataset() || expr->isDatarow())
+        if (hasActivityType(expr))
             return SourceActivity;
         return NonActivity;
     case no_thor:
-        if (expr->isDataset() || expr->isDatarow())
+        if (hasActivityType(expr))
             return SimpleActivity;
         return NonActivity;
     case no_compound:
-        if (expr->isDataset())
+        if (expr->isDataset() || expr->isDictionary())
             return SimpleActivity;
         if (expr->isDatarow())
             return ComplexNonActivity;
         return NonActivity;
     case no_executewhen:
-        if (expr->isDataset() || expr->isDatarow())
+        if (hasActivityType(expr))
             return SimpleActivity;
         return NonActivity;
     case no_subgraph:
@@ -1979,8 +1983,8 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_inlinetable:
     case no_dataset_from_transform:
         return CreateRecordSourceActivity;
-    case no_inlinedictionary:
-        return NonActivity;
+    case no_createdictionary:
+        return FixedInputActivity;
     case no_indict:
     case no_selectmap:
         return FixedInputActivity;
@@ -2005,7 +2009,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return AnyTypeActivity;
     case no_skip:
     case no_fail:
-        if (expr->isDataset() || expr->isDatarow())
+        if (hasActivityType(expr))
             return AnyTypeActivity;
         return NonActivity;
     case no_table:
@@ -2061,19 +2065,23 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_getgraphloopresult:
     case no_rows:
         return SourceActivity;
+    case no_getresult:
+        if (hasActivityType(expr))
+            return SourceActivity;
+        return NonActivity;
     case no_allnodes:
     case no_httpcall:
     case no_soapcall:
     case no_newsoapcall:
     case no_libraryinput:
     case no_thisnode:
-        if (expr->isDataset() || expr->isDatarow())
+        if (hasActivityType(expr))
             return SourceActivity;
         return NonActivity;
     case no_pipe:
     case no_nofold:
     case no_nohoist:
-        if (expr->isDataset() || expr->isDatarow())
+        if (hasActivityType(expr))
             return FixedInputActivity;
         return NonActivity;
     case no_soapcall_ds:
@@ -2103,9 +2111,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_selfjoin:
         return CreateRecordActivity;
     case no_if:
-        if (expr->isDataset())
-            return PassThroughActivity;
-        if (expr->isDatarow())
+        if (hasActivityType(expr))
             return PassThroughActivity;
         return NonActivity;
     case no_addfiles:
@@ -2134,7 +2140,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         return SinkActivity;
     case no_call:
     case no_externalcall:
-        if (expr->isDataset() || expr->isDatarow())
+        if (hasActivityType(expr))
             return SourceActivity;
         //MORE: What about parameters??
         return NonActivity;
@@ -2166,6 +2172,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case type_groupedtable:
         break;
     case type_dictionary:
+        return FixedInputActivity;
     case type_transform:
         return NonActivity;
     default:

@@ -769,6 +769,8 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKexternalprocess:        return "User Proceess";
     case TAKwhen_action:            return "When";
     case TAKshuffle:                return "Shuffle";
+    case TAKdictionaryworkunitwrite:return "Dictionary Write";
+    case TAKdictionaryresultwrite:  return "Dictionary Result";
     }
     throwUnexpected();
 }
@@ -850,6 +852,8 @@ extern bool isActivitySink(ThorActivityKind kind)
     case TAKparallel:
     case TAKsequential:
     case TAKwhen_action:
+    case TAKdictionaryworkunitwrite:
+    case TAKdictionaryresultwrite:
         return true;
     }
     return false;
