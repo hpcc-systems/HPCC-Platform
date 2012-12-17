@@ -73,6 +73,7 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../../common/roxiehelper 
          ./../../rtl/include
+         ./../../testing/unittests
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )

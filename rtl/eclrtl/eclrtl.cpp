@@ -5683,8 +5683,7 @@ void ensureRtlLoaded()
 }
 
 #ifdef _USE_CPPUNIT
-#include <cppunit/extensions/HelperMacros.h>
-#define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
+#include "unittests.hpp"
 
 class EclRtlTests : public CppUnit::TestFixture
 {

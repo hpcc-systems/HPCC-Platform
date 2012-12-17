@@ -29,13 +29,16 @@ project( unitests )
 set (    SRCS
          unittests.cpp
          remotetests.cpp
+         dalitests.cpp
     )
 
 include_directories (
          .
          ./../../system/include
          ./../../system/jlib
+         ./../../system/mp
          ./../../common/remote
+         ./../../dali/base
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -46,6 +49,7 @@ install ( TARGETS unittests DESTINATION ${OSSDIR}/bin )
 target_link_libraries ( unittests
          jlib
          remote
+         dalibase
          ${CPPUNIT_LIBRARIES}
     )
 
