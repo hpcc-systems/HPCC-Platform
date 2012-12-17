@@ -172,12 +172,29 @@ public:
 // default implementation - can be overridden for efficiency...
 bool IRoxieInput::nextGroup(ConstPointerArray & group)
 {
+    // MORE - this should be replaced with a version that reads to a builder
     const void * next;
     while ((next = nextInGroup()) != NULL)
         group.append(next);
     if (group.ordinality())
         return true;
     return false;
+}
+
+void IRoxieInput::readAll(RtlLinkedDatasetBuilder &builder)
+{
+    loop
+    {
+        const void *nextrec = nextInGroup();
+        if (!nextrec)
+        {
+            nextrec = nextInGroup();
+            if (!nextrec)
+                break;
+            builder.appendEOG();
+        }
+        builder.appendOwn(nextrec);
+    }
 }
 
 inline const void * nextUngrouped(IRoxieInput * input)
@@ -5966,20 +5983,7 @@ public:
     virtual void onExecute() 
     {
         RtlLinkedDatasetBuilder builder(rowAllocator);
-        loop
-        {
-            const void *nextrec = input->nextInGroup();
-            if (!nextrec)
-            {
-                nextrec = input->nextInGroup();
-                if (!nextrec)
-                    break;
-                builder.appendEOG();
-            }
-            builder.appendOwn(nextrec);
-        }
-
-        IOutputMetaData *outputMeta = input->queryOutputMeta();
+        input->readAll(builder);
         Owned<CGraphResult> result = new CGraphResult(builder.getcount(), builder.linkrows());
         graph->setResult(helper.querySequence(), result);
     }
@@ -6267,22 +6271,8 @@ public:
 
     virtual void onExecute() 
     {
-        // MORE - could probably common up this code snippet - it appears in a few places.
         RtlLinkedDatasetBuilder builder(rowAllocator);
-        loop
-        {
-            const void *nextrec = input->nextInGroup();
-            if (!nextrec)
-            {
-                nextrec = input->nextInGroup();
-                if (!nextrec)
-                    break;
-                builder.appendEOG();
-            }
-            builder.appendOwn(nextrec);
-        }
-
-        IOutputMetaData *outputMeta = input->queryOutputMeta();
+        input->readAll(builder);
         Owned<CGraphResult> result = new CGraphResult(builder.getcount(), builder.linkrows());
         graph->setGraphLoopResult(result);
     }
@@ -14590,22 +14580,8 @@ public:
     void createInitialGraphInput()
     {
         loopGraph->clearGraphLoopResults();
-        // MORE - could probably common up this code snippet - it appears in a few places.
         RtlLinkedDatasetBuilder builder(rowAllocator);
-        loop
-        {
-            const void *nextrec = input->nextInGroup();
-            if (!nextrec)
-            {
-                nextrec = input->nextInGroup();
-                if (!nextrec)
-                    break;
-                builder.appendEOG();
-            }
-            builder.appendOwn(nextrec);
-        }
-
-        IOutputMetaData *outputMeta = input->queryOutputMeta();
+        input->readAll(builder);
         Owned<CGraphResult> result = new CGraphResult(builder.getcount(), builder.linkrows());
         loopGraph->setGraphLoopResult(0, result);
     }

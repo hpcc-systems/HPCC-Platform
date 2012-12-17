@@ -189,6 +189,7 @@ interface IRoxieInput : extends IInterface, extends IInputBase
     virtual unsigned queryId() const = 0;
 
     virtual bool nextGroup(ConstPointerArray & group);
+    virtual void readAll(RtlLinkedDatasetBuilder &builder);
     virtual unsigned __int64 queryTotalCycles() const = 0;
     virtual unsigned __int64 queryLocalCycles() const = 0;
     virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra) { throwUnexpected(); }  // can only be called on stepping fields.
