@@ -32300,14 +32300,13 @@ bool suspendRoxieListener(unsigned port, bool suspended)
 //================================================================================================================================
 
 #ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
 // There is a bug in VC6 implemetation of protected which prevents nested classes from accessing owner's data. It can be tricky to work around - hence...
 #if _MSC_VER==1200
 #undef protected
 #endif
 
-#include <cppunit/extensions/HelperMacros.h>
-
-#define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
 static const char *sortAlgorithm;
 
 class TestMetaData : public CInterface, implements IOutputMetaData 

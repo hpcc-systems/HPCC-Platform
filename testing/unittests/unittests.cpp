@@ -16,16 +16,7 @@
 ############################################################################## */
 
 #ifdef _USE_CPPUNIT
-#include "platform.h"
-#include "jlib.hpp"
-#include "jlog.hpp"
-#include "jmisc.hpp"
-
-#include <cppunit/extensions/TestFactoryRegistry.h>
-#include <cppunit/ui/text/TestRunner.h>
-#include <cppunit/extensions/HelperMacros.h>
-
-#define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
+#include "unittests.hpp"
 
 /*
  * This is the main unittest driver for HPCC. From here,
@@ -44,32 +35,6 @@
  *
  * CPPUnit will automatically recognise and run them all.
  */
-
-/*
- * Helper class to unload libraries at the end
- * and make sure the SharedObject gets deleted
- * correctly.
- *
- * This is important to run valgrind tests and not
- * having to care about which memory leaks are "good"
- * and which are not.
- */
-class LoadedObject : public IInterface, CInterface {
-    SharedObject *so;
-public:
-    IMPLEMENT_IINTERFACE;
-
-    LoadedObject(const char * name)
-    {
-        so = new SharedObject;
-        so->load(name, true);
-    }
-    ~LoadedObject()
-    {
-        so->unload();
-        delete so;
-    }
-};
 
 int main(int argc, char* argv[])
 {

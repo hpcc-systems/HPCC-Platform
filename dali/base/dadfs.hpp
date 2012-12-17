@@ -225,7 +225,6 @@ interface IDistributedFile: extends IInterface
 
     virtual void attach(const char *logicalname,IUserDescriptor *user) = 0;     // attach to name in DFS
     virtual void detach(unsigned timeoutms=INFINITE) = 0;                       // no longer attached to name in DFS
-    virtual void detachLogical(unsigned timeoutms=INFINITE) = 0;                // INTERNAL ONLY, please do not use!
 
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 

@@ -46,6 +46,7 @@ include_directories (
          ./../../system/include 
          ./../../common/workunit
          ./../../system/jlib 
+         ./../../testing/unittests
          ${ICU_INCLUDE_DIR}
          ${BOOST_REGEX_INCLUDE_DIR}
     )

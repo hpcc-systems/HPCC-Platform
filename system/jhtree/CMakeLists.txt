@@ -52,6 +52,7 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../../system/include 
          ./../../system/jlib 
+         ./../../testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DJHTREE_EXPORTS -DECLRTL_LOCAL )
