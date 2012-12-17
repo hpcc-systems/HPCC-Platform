@@ -100,50 +100,52 @@ define([
             this.inherited(arguments);
             this.refreshActionState();
             this.initWorkunitsGrid();
-
+               
+            
             var pMenu;
-        pMenu = new Menu({
-            targetNodeIds: [this.id + "WorkunitsGrid"]
-        });
-        pMenu.addChild(new MenuItem({
-            label: "Open",
-            //TODO
-        }));
-        pMenu.addChild(new MenuSeparator());
-        pMenu.addChild(new MenuItem({
-            label: "Delete"
-            //TODO
-        }));
-        pMenu.addChild(new MenuSeparator());
-        pMenu.addChild(new MenuItem({
-            label: "Set To Failed"
-            //TODO
-        }));
-        pMenu.addChild(new MenuSeparator());
-        pMenu.addChild(new MenuItem({
-            label: "Protect"
-            //TODO we should hide this menu item if it is protected already
-            //disabled: true
-        }));
-        pMenu.addChild(new MenuSeparator());
-        pMenu.addChild(new MenuItem({
-            label: "Un-Protect"
-             //TODO we should hide this menu item if it is un-protected already
-             //disabled: true
-        }));
-        pMenu.addChild(new MenuSeparator());
-        pMenu.addChild(new MenuItem({
-            label: "Reschedule"
-            //TODO
-        }));
-        pMenu.addChild(new MenuSeparator());
-        pMenu.addChild(new MenuItem({
-            label: "Deschedule"
-            //TODO
-        }));
-
-        pMenu.startup();
-
+            var context = this;
+            
+            
+            pMenu = new Menu({
+                targetNodeIds: [this.id + "WorkunitsGrid"]
+          });
+            pMenu.addChild(new MenuItem({
+                label: "Open",            
+                onClick: function(){context._onOpen();}                       
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new MenuItem({
+                label: "Delete",
+                onClick: function(){context._onDelete();}
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new MenuItem({
+                label: "Set To Failed",
+                onClick: function(){context._onSetToFailed();}
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new MenuItem({
+                label: "Protect",                        
+                onClick: function(){context._onProtect(event);},
+                //id:isProtected;
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new MenuItem({
+                label: "Un-Protect",                            
+                onClick: function(){context._onUnprotect();},
+                //id:isNotProtected;               
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new MenuItem({
+                label: "Reschedule",
+                onClick: function(){context._onReschedule();}
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new MenuItem({
+                label: "Deschedule",
+                onClick: function(){context._onDeschedule();}
+            }));
+            pMenu.startup();        
         },
 
         resize: function (args) {
@@ -193,6 +195,8 @@ define([
                 load: function (response) {
                     context.refreshGrid(response);
                 }
+                /* perhaps toggle this by using an id in other languages
+                I just use something like pMenu.child[3].disabled(true)*/               
             });
         },
         _onUnprotect: function (event) {
@@ -292,6 +296,7 @@ define([
 				    formatter: function (protected) {
 					    if (protected == true) {
 					        return "P";
+                            isProtected = true;
 					    }
 					    return "";
 				    }
@@ -337,6 +342,7 @@ define([
             }, 200);
         },
 
+
         refreshActionState: function () {
             var selection = this.workunitsGrid.selection.getSelected();
             var hasSelection = false;
@@ -344,10 +350,11 @@ define([
             var hasNotProtected = false;
             var hasFailed = false;
             var hasNotFailed = false;
+
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i] && selection[i].Protected && selection[i].Protected != "0") {
-                    hasProtected = true;
+                    hasProtected = true;                
                 } else {
                     hasNotProtected = true;
                 }
@@ -392,6 +399,9 @@ define([
                 Wuid: wuid
             });
             this.tabContainer.selectChild(wuTab);
-        }
+        },
+
+      
     });
+        
 });
