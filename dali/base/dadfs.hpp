@@ -185,7 +185,7 @@ interface IDistributedFileTransaction: extends IInterface
     virtual IDistributedSuperFile *lookupSuperFile(const char *slfn,unsigned timeout=INFINITE)=0;
     virtual IDistributedSuperFile *lookupSuperFileCached(const char *slfn,unsigned timeout=INFINITE)=0;
     virtual IUserDescriptor *queryUser()=0;
-    virtual bool addDelayedDelete(const char *lfn,const char*cluster=NULL,unsigned timeoutms=INFINITE)=0; // used internally to delay deletes until commit
+    virtual bool addDelayedDelete(CDfsLogicalFileName &lfn,unsigned timeoutms=INFINITE)=0; // used internally to delay deletes until commit
     virtual void descend()=0;  // descend into a recursive call (can't autoCommit if depth is not zero)
     virtual void ascend()=0;   // ascend back from the deep, one step at a time
 
@@ -225,6 +225,7 @@ interface IDistributedFile: extends IInterface
 
     virtual void attach(const char *logicalname,IUserDescriptor *user) = 0;     // attach to name in DFS
     virtual void detach(unsigned timeoutms=INFINITE) = 0;                       // no longer attached to name in DFS
+    virtual void detachLogical(unsigned timeoutms=INFINITE) = 0;                // INTERNAL ONLY, please do not use!
 
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
@@ -459,7 +460,8 @@ interface IDistributedFileDirectory: extends IInterface
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
 
-    virtual bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, const char *cluster=NULL, unsigned timeoutms=INFINITE) = 0;
+    // Removes files and super-files with format: context/file@cluster
+    virtual bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, unsigned timeoutms=INFINITE) = 0;
     virtual void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
     
