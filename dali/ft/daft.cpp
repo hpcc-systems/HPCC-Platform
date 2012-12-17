@@ -212,6 +212,7 @@ offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget,
     return totalSize;
 }
 
+// FIXME: This should NOT call detach / removePhysical directly!
 bool CDistributedFileSystem::remove(IDistributedFile * file,const char *cluster,IMultiException *mexcept, unsigned timeoutms)
 {
     // this is now equivalent to removePhysicalPartFiles as linux uses dafilesrv by default
