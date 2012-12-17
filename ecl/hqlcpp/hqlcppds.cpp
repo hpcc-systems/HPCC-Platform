@@ -3239,9 +3239,15 @@ BoundRow * HqlCppTranslator::buildDatasetIterateSpecialTempTable(BuildCtx & ctx,
 {
     IHqlExpression * values = expr->queryChild(0);
     bool requiresTempRow = false;
-    ITypeInfo * type = values->queryType()->queryChildType();
+    ITypeInfo * setType = values->queryType();
+    ITypeInfo * type = setType->queryChildType();
     switch (type->getTypeCode())
     {
+    case type_int:
+        requiresTempRow = isComplexSet(setType, false);
+        break;
+    case type_swapint:
+    case type_packedint:
     case type_alien:
     case type_bitfield:
         requiresTempRow = true;
@@ -3256,9 +3262,10 @@ BoundRow * HqlCppTranslator::buildDatasetIterateSpecialTempTable(BuildCtx & ctx,
     CHqlBoundExpr boundCurElement;
     cursor->buildIterateLoop(ctx, boundCurElement, false);
 
-    OwnedHqlExpr address = getPointer(boundCurElement.expr);
     if (requiresTempRow)
     {
+        //MORE: This could probably be improved by having a variety of buildIterateLoop which returned the
+        //underlying bound row.  However it occurs fairly infrequently, so not a priority.
         Owned<BoundRow> tempRow = declareTempAnonRow(ctx, ctx, expr);
         Owned<BoundRow> rowBuilder = createRowBuilder(ctx, tempRow);
 
@@ -3273,6 +3280,7 @@ BoundRow * HqlCppTranslator::buildDatasetIterateSpecialTempTable(BuildCtx & ctx,
     else
     {
         assertex(!boundCurElement.length && !boundCurElement.count);
+        OwnedHqlExpr address = getPointer(boundCurElement.expr);
         address.setown(createValue(no_implicitcast, makeRowReferenceType(expr), LINK(address)));
         return bindTableCursor(ctx, expr, address);
     }
