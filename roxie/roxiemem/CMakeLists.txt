@@ -41,6 +41,7 @@ include_directories (
          ./../../rtl/include
          ./../../rtl/eclrtl
          ./../../common/thorhelper
+         ./../../testing/unittests
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DROXIEMEM_EXPORTS)

@@ -3386,9 +3386,19 @@ public:
 #endif
     }
 
-    // MORE: This should really be an internal flag, but due to daregress bug
-    // I have to externalize it. Please, make it internal once daregress refactory
-    // is done.
+private:
+    /*
+     * Internal method (not in IDistributedFile interface) that is used
+     * when renaming files (so don't delete the physical representation).
+     *
+     * This is also used during CPPUINT tests, so we need to make them public
+     * only when tests are enabled (ie. non-production mode).
+     *
+     * See removeLogical()
+     */
+#ifdef _USE_CPPUNIT
+public:
+#endif
     void detachLogical(unsigned timeoutms=INFINITE)
     {
         detachLogic = true;
@@ -3400,6 +3410,8 @@ public:
         }
         detachLogic = false;
     }
+
+public:
 
     void detach(unsigned timeoutms=INFINITE)
     {
@@ -4884,13 +4896,6 @@ public:
         conn.setown(fcl.detach());
         assertex(conn.get()); // must have been attached
         root.setown(conn->getRoot());
-    }
-
-    // MORE: This should be removed when daregress gets refactored
-    // For super-files, it's not really a problem, since all removal is logical
-    void detachLogical(unsigned timeoutms=INFINITE)
-    {
-        detach(timeoutms);
     }
 
     void detach(unsigned timeoutms=INFINITE)
@@ -10389,3 +10394,20 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
 {
     return new CDFProtectedIterator(owner,notsuper,superonly,defaultTimeout);
 }
+
+#ifdef _USE_CPPUNIT
+/*
+ * This method removes files only logically. removeEntry() used to do that, but the only
+ * external use for logical-files only is this test-suite, so I'd rather hack the test
+ * suite than expose the behaviour to more viewers.
+ */
+void removeLogical(const char *fname, IUserDescriptor *user) {
+    if (queryDistributedFileDirectory().exists(fname, user)) {
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fname, user, true);
+        CDistributedFile *f = QUERYINTERFACE(file.get(),CDistributedFile);
+        assert(f);
+        f->detachLogical();
+    }
+}
+
+#endif // _USE_CPPUNIT

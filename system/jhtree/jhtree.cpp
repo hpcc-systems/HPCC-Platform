@@ -2922,8 +2922,7 @@ extern jhtree_decl IKeyArray *createKeyArray()
 }
 
 #ifdef _USE_CPPUNIT
-#include <cppunit/extensions/HelperMacros.h>
-#define ASSERT(a) { if (!(a)) CPPUNIT_ASSERT(a); }
+#include "unittests.hpp"
 
 class IKeyManagerTest : public CppUnit::TestFixture  
 {
