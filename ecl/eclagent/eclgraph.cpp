@@ -263,6 +263,8 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createLocalResultReadActivity(agent, activityId, subgraphId, (IHThorLocalResultReadArg &)arg, kind, graphId);
     case TAKlocalresultwrite:
         return createLocalResultWriteActivity(agent, activityId, subgraphId, (IHThorLocalResultWriteArg &)arg, kind, graphId);
+    case TAKdictionaryresultwrite:
+        return createDictionaryResultWriteActivity(agent, activityId, subgraphId, (IHThorDictionaryResultWriteArg &)arg, kind, graphId);
     case TAKlocalresultspill:
         return createLocalResultSpillActivity(agent, activityId, subgraphId, (IHThorLocalResultSpillArg &)arg, kind, graphId);
     case TAKcombine:

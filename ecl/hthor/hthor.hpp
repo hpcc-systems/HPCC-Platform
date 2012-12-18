@@ -182,6 +182,7 @@ extern HTHOR_API IHThorActivity *createXmlReadActivity(IAgentContext &, unsigned
 extern HTHOR_API IHThorActivity *createLocalResultReadActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultReadArg &arg, ThorActivityKind kind, __int64 graphId);
 extern HTHOR_API IHThorActivity *createLocalResultWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultWriteArg &arg, ThorActivityKind kind, __int64 graphId);
 extern HTHOR_API IHThorActivity *createLocalResultSpillActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultSpillArg &arg, ThorActivityKind kind, __int64 graphId);
+extern HTHOR_API IHThorActivity *createDictionaryResultWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryResultWriteArg &arg, ThorActivityKind kind, __int64 graphId);
 extern HTHOR_API IHThorActivity *createCombineActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCombineArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createRollupGroupActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorRollupGroupArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createRegroupActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorRegroupArg &arg, ThorActivityKind kind);
