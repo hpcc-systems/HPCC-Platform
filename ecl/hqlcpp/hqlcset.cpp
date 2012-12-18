@@ -619,10 +619,9 @@ BoundRow * InlineLinkedDatasetCursor::doBuildIterateLoop(BuildCtx & ctx, bool ne
 
     ctx.addLoop(test, NULL, false);
     ctx.addQuoted(s.clear().append(rowName).append(" = *").append(cursorName).append("++;"));
-    if (checkForNull)
-        ctx.addQuoted(s.clear().append("if (!").append(rowName).append(") continue;"));
     BoundRow * cursor = translator.bindTableCursor(ctx, ds, row);
-
+    if (checkForNull)
+        cursor->setConditional(true);
     return cursor;
 }
 

@@ -348,7 +348,7 @@ enum _node_operator {
         no_shuffle,
         no_chooseds,
         no_alias,
-    no_unused19,
+        no_datasetfromdictionary,
     no_unused20,
     no_unused21,
     no_unused22,

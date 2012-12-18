@@ -8932,6 +8932,11 @@ simpleDataSet
                             $$.setExpr(createDatasetFromRow(row));
                             $$.setPosition($1);
                         }
+    | DATASET '(' dictionary ')'
+                        {
+                            IHqlExpression * dictionary = $3.getExpr();
+                            $$.setExpr(createDataset(no_datasetfromdictionary, dictionary), $1);
+                        }
     | _EMPTY_ '(' recordDef ')'
                         {
                             IHqlExpression * record = $3.getExpr();
