@@ -560,6 +560,7 @@ bool queryAddUniqueToActivity(IHqlExpression * expr)
     case no_getgraphloopresult:
     case no_xmlproject:
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
     case no_rows:
     case no_allnodes:
     case no_thisnode:
@@ -1565,6 +1566,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
         case no_compound_childgroupaggregate:
         case no_compound_selectnew:
         case no_compound_inline:
+        case no_datasetfromdictionary:
             expr = expr->queryChild(0);
             break;
         case no_filter:

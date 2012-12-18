@@ -219,6 +219,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return 0;
     case no_createdictionary:
         return RETassign;
+    case no_datasetfromdictionary:
+        return RETiterate;
     case no_owned_ds:
         {
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
@@ -624,6 +626,8 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
             }
             break;
         }
+    case no_datasetfromdictionary:
+        return GraphCoLocal;
     case no_createrow:
     case no_inlinetable:
         {

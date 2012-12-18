@@ -1960,6 +1960,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_nwayjoin:           // could probably project output of this one...
     case no_nwaymerge:
     case no_libraryselect:
+    case no_datasetfromdictionary:
         return SourceActivity;
     case no_setresult:
     case no_ensureresult:

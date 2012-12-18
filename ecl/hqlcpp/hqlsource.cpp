@@ -162,6 +162,7 @@ bool isSimpleSource(IHqlExpression * expr)
         case no_xmlproject:
         case no_null:
         case no_datasetfromrow:
+        case no_datasetfromdictionary:
         case no_getgraphresult:
         case no_getgraphloopresult:
         case no_rows:

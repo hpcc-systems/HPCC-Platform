@@ -3378,6 +3378,15 @@ BoundRow * HqlCppTranslator::buildDatasetIterateSpecialTempTable(BuildCtx & ctx,
 }
 
 
+BoundRow * HqlCppTranslator::buildDatasetIterateFromDictionary(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak)
+{
+    BoundRow * dictionaryRow = buildDatasetIterate(ctx, expr->queryChild(0), needToBreak);
+    assertex(dictionaryRow->isConditional());
+    ctx.addFilter(dictionaryRow->queryBound());
+    return rebindTableCursor(ctx, expr, dictionaryRow, no_none, NULL);
+}
+
+
 BoundRow * HqlCppTranslator::buildDatasetIterateStreamedCall(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak)
 {
     CHqlBoundExpr bound;
@@ -3523,6 +3532,8 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
             }
             break;
         }
+    case no_datasetfromdictionary:
+        return buildDatasetIterateFromDictionary(ctx, expr, needToBreak);
     case no_call:
     case no_externalcall:
         if (hasStreamedModifier(expr->queryType()))

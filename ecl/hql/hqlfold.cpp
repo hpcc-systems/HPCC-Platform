@@ -5568,6 +5568,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_stepped:
     case no_cluster:
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
     case no_filtergroup:
     case no_section:
     case no_sectioninput:

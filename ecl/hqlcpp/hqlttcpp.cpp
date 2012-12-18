@@ -69,6 +69,7 @@ static bool isWorthHoisting(IHqlExpression * expr, bool asSubQuery)
         case no_independent:
         case no_field:
         case no_datasetfromrow:
+        case no_datasetfromdictionary:
         case no_null:
         case no_workunit_dataset:
         case no_colon:

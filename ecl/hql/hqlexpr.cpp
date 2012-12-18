@@ -1448,9 +1448,10 @@ const char *getOpString(node_operator op)
     case no_childquery: return "no_childquery";
     case no_createdictionary: return "DICTIONARY";
     case no_chooseds: return "CHOOSE";
+    case no_datasetfromdictionary: return "DICTIONARY";
 
     case no_unused6:
-    case no_unused13: case no_unused14: case no_unused15: case no_unused19:
+    case no_unused13: case no_unused14: case no_unused15:
     case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
@@ -1785,6 +1786,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_id2blob:
     case no_cppbody:
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
     case no_createrow:
     case no_param:
     case no_typetransfer:
@@ -2196,6 +2198,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_id2blob:
     case no_cppbody:
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
     case no_param:
     case no_translated:
     case no_call:
@@ -2488,6 +2491,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_externalcall:
     case no_projectrow:
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
     case no_forcelocal:                 // for the moment this defines a table, otherwise the transforms get rather tricky.
     case no_forcenolocal:
     case no_allnodes:
@@ -5902,6 +5906,7 @@ void CHqlDataset::cacheParent()
     case no_inlinetable:
     case no_xmlproject:
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
     case no_fail:
     case no_skip:
     case no_field:
@@ -10836,6 +10841,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_fail:
     case no_skip:
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
     case no_if:
     case no_translated:
     case no_rows:
@@ -11759,6 +11765,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
         type.set(childType);
         break;
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
         type.setown(makeTableType(makeRowType(createRecordType(&parms.item(0))), NULL, NULL, NULL));
         break;
     default:
