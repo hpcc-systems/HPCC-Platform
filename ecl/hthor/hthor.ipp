@@ -2494,6 +2494,18 @@ public:
     virtual bool needsAllocator() const { return true; }
 };
 
+class CHThorDictionaryResultWriteActivity : public CHThorActivityBase
+{
+    IHThorDictionaryResultWriteArg &helper;
+    ILocalGraphEx * graph;
+
+public:
+    IMPLEMENT_SINKACTIVITY;
+
+    CHThorDictionaryResultWriteActivity (IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId);
+    virtual void execute();
+    virtual bool needsAllocator() const { return true; }
+};
 
 class CHThorLocalResultSpillActivity : public CHThorSimpleActivityBase
 {

@@ -369,6 +369,7 @@ public:
     void resize(size32_t required);
     void finalizeRows();
     void finalizeRow(size32_t len);
+    void clear();
 
     inline RtlDynamicRowBuilder & rowBuilder() { return builder; }
     inline void ensure(size32_t required) { if (required > max) expand(required); }
