@@ -464,46 +464,49 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 {
     try
     {
+        IArrayOf<IEspECLHelpFile> helpers;
+
         Owned <IConstWUQuery> query = cw->getQuery();
         if(!query)
         {
             ERRLOG("Cannot get Query for this workunit.");
             info.setHelpersDesc("Cannot get Query for this workunit.");
         }
-
-        SCMStringBuffer qname;
-        query->getQueryShortText(qname);
-        if(qname.length())
+        else
         {
-            if((flags & WUINFO_TruncateEclTo64k) && (qname.length() > 64000))
-                qname.setLen(qname.str(), 64000);
-
-            IEspECLQuery* q=&info.updateQuery();
-            q->setText(qname.str());
-        }
-
-        if (version > 1.34)
-        {
-            SCMStringBuffer mainDefinition;
-            query->getQueryMainDefinition(mainDefinition);
-            if(mainDefinition.length())
+            SCMStringBuffer qname;
+            query->getQueryShortText(qname);
+            if(qname.length())
             {
+                if((flags & WUINFO_TruncateEclTo64k) && (qname.length() > 64000))
+                    qname.setLen(qname.str(), 64000);
+
                 IEspECLQuery* q=&info.updateQuery();
-                q->setQueryMainDefinition(mainDefinition.str());
+                q->setText(qname.str());
             }
-        }
 
-        if (version > 1.30)
-        {
-            SCMStringBuffer qText;
-            query->getQueryText(qText);
-            if ((qText.length() > 0) && isArchiveQuery(qText.str()))
-                info.setHasArchiveQuery(true);
-        }
+            if (version > 1.34)
+            {
+                SCMStringBuffer mainDefinition;
+                query->getQueryMainDefinition(mainDefinition);
+                if(mainDefinition.length())
+                {
+                    IEspECLQuery* q=&info.updateQuery();
+                    q->setQueryMainDefinition(mainDefinition.str());
+                }
+            }
 
-        IArrayOf<IEspECLHelpFile> helpers;
-        for (unsigned i = 0; i < FileTypeSize; i++)
-            getHelpFiles(query, (WUFileType) i, helpers);
+            if (version > 1.30)
+            {
+                SCMStringBuffer qText;
+                query->getQueryText(qText);
+                if ((qText.length() > 0) && isArchiveQuery(qText.str()))
+                    info.setHasArchiveQuery(true);
+            }
+
+            for (unsigned i = 0; i < FileTypeSize; i++)
+                getHelpFiles(query, (WUFileType) i, helpers);
+        }
 
         getWorkunitThorLogInfo(helpers, info);
 
