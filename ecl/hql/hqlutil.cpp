@@ -1523,6 +1523,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
     case no_thisnode:
     case no_keydiff:
     case no_keypatch:
+    case no_datasetfromdictionary:
         return 0;
     case no_setresult:
         if (expr->queryChild(0)->isAction())
@@ -1665,6 +1666,7 @@ bool isDistributedSourceActivity(IHqlExpression * expr)
     case no_compound_selectnew:
     case no_compound_inline:
     case no_rows:
+    case no_datasetfromdictionary:
         return false;
     default:
         UNIMPLEMENTED;
@@ -1691,6 +1693,7 @@ bool isSourceActivity(IHqlExpression * expr, bool ignoreCompound)
     case no_rows:
     case no_allnodes:
     case no_thisnode:
+    case no_datasetfromdictionary:
         return true;
     case no_null:
         return expr->isDataset();

@@ -400,6 +400,7 @@ public:
             //The expressions in the transform may contain datasets
         case no_addfiles:
         case no_datasetfromrow:
+        case no_datasetfromdictionary:
         case no_alias_scope:
             //child datasets may have something worth creating a graph for
         case no_if:
@@ -6126,6 +6127,9 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                         result = buildCachedActivity(ctx, row);
                     break;
                 }
+            case no_datasetfromdictionary:
+                result = doBuildActivityChildDataset(ctx, expr);
+                break;
             case no_temptable:
                 result = doBuildActivityTempTable(ctx, expr);
                 break;

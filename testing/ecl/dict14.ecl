@@ -33,4 +33,6 @@ squareRoots := DICTIONARY(squares, { UNSIGNED value := square => UNSIGNED root :
 //Use a dictionary as a dataset
 values := NOFOLD(DATASET(squareRoots)(value = root * root));
 
-OUTPUT(values);
+OUTPUT(TABLE(values, { cnt := COUNT(GROUP)}));
+OUTPUT(CHOOSEN(SORT(values, value), 10));
+

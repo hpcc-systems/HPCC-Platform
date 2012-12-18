@@ -1189,6 +1189,7 @@ public:
 
     BoundRow * buildDatasetIterateSelectN(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateChoosen(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
+    BoundRow * buildDatasetIterateFromDictionary(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateLimit(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateProject(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateUserTable(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);

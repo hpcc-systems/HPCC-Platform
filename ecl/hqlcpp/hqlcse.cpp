@@ -560,6 +560,7 @@ bool CseSpotter::checkPotentialCSE(IHqlExpression * expr, CseSpotterInfo * extra
     case no_inlinetable:
     case no_xmlproject:
     case no_datasetfromrow:
+    case no_datasetfromdictionary:
     case no_preservemeta:
     case no_dataset_alias:
     case no_workunit_dataset:
