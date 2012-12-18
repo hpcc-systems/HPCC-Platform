@@ -104,6 +104,8 @@ the dumper should print "unknown_*", so that you can continue debugging
 your program, and open an issue to fix the dumper or the expression tree
 in separate.
 
+The test cases at the end of this file give some examples of the output that is expected.
+
 */
 
 // -------------------------------------------------------------------------------------------------------------------
@@ -1271,8 +1273,8 @@ public:
                 line.append("shared");
             break;
         case annotate_location:
-            line.append("location \"").append(info.name);
-            line.append("\"");
+            line.append("location '").append(info.name);
+            line.append("'");
             if (info.value)
             {
                 line.append(",").append(info.value);
@@ -1302,16 +1304,16 @@ public:
                 line.append("(");
                 if (filename)
                 {
-                    line.append("\"");
+                    line.append("'");
                     appendStringAsCPP(line, strlen(filename), filename, false);
-                    line.append("\"");
+                    line.append("'");
                 }
                 line.append(",").append(warning->getLine());
                 line.append(",").append(warning->getColumn());
                 line.append(",").append(warning->errorCode());
-                line.append(",\"");
+                line.append(",'");
                 appendStringAsCPP(line, msg.length(), msg.str(), false);
-                line.append("\"");
+                line.append("'");
                 line.append(",").append(warning->errorAudience());
                 line.append(",").append(warning->isError());
                 line.append(")");
@@ -1572,6 +1574,45 @@ protected:
 
 protected:
     FILE * file;
+};
+
+class StringBufferIRBuilder : public TextIRBuilder
+{
+public:
+    StringBufferIRBuilder(StringBuffer & _target, unsigned _options) : TextIRBuilder(_options), target(_target) {}
+
+protected:
+    virtual void finishLine()
+    {
+        if (line.length())
+        {
+            target.append(line).append(";\n");
+            line.clear();
+        }
+    }
+
+protected:
+    StringBuffer & target;
+};
+
+class StringArrayIRBuilder : public TextIRBuilder
+{
+public:
+    StringArrayIRBuilder(StringArray & _target, unsigned _options) : TextIRBuilder(_options), target(_target) {}
+
+protected:
+    virtual void finishLine()
+    {
+        if (line.length())
+        {
+            line.append(";");
+            target.append(line.str());
+            line.clear();
+        }
+    }
+
+protected:
+    StringArray & target;
 };
 //--------------------------------------------------------------------------------------------------------------------
 //- XML
@@ -1936,7 +1977,7 @@ id_t ExpressionIRPlayer::doProcessAnnotation(IHqlExpression * expr)
             break;
         }
     case annotate_location:
-        info.name = expr->querySourcePath()->getNamePtr();
+        info.name = expr->querySourcePath()->str();
         info.value = expr->getStartLine();
         info.col = expr->getStartColumn();
         break;
@@ -2005,60 +2046,132 @@ extern HQL_API void dbglogIR(const HqlExprArray & exprs)
         reader.play(&exprs.item(i));
 }
 
+extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpression * expr)
+{
+    StringBufferIRBuilder output(target, options);
+    ExpressionIRPlayer reader(&output);
+    reader.play(expr);
+}
+
+static void getIRText(StringArray & target, unsigned options, IHqlExpression * expr)
+{
+    StringArrayIRBuilder output(target, options);
+    ExpressionIRPlayer reader(&output);
+    reader.play(expr);
+}
 
 } // end namespace
 
-/*
-Example:
 
-r := RECORD
-  unsigned id;
-END;
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
 
-r t(unsigned value) := TRANSFORM
-  SELF.id := value;
-END;
+namespace EclIR
+{
 
-ds := DATASET([t(10), t(1 + 10)]);
-OUTPUT(ds);
+// These test queries illustrate the kind of output that is expected from the IR generation
+static const char * const testQuery1 = 
+"r := RECORD\n"
+"  unsigned id;\n"
+"END;\n"
+"\n"
+"r t(unsigned value) := TRANSFORM\n"
+"  SELF.id := value;\n"
+"END;\n"
+"\n"
+"ds := DATASET([t(10), t(1 + 10)]);\n"
+"OUTPUT(ds);\n";
 
-//Text
-%t1 = type uint4;
-%e2 = field[id] : %t1;
-%e3 = record(%e2);
-%e4 = %e3 {symbol name='r'};
-%tr5 = type record(%e3);
-%tw6 = type row(%tr5);
-%e7 = self(%e3);                        # : %tw6 - although the type is implicit.
-%e8 = select(%e7, %e2) : %t1;           # type could be optional here as well.
-%e9 = const(10) : int8;
-%e10 = assign(%e8, %e9);
-%e11 = %e10 {location file() line(..)};
-%e12 = 1i8; # alternative syntax?
-%e13 = add(%e12, %e9) : int8;
-%e14 = assign(%e8, %e13);
-%tt15 = type transform(%tw6);
-%e15 = transform(%e10) : %tt15;
-%e16 = transform(%e14) : %tt15;
-%e17 = transform_list(%e15, %e16);
-%e18 = inlinedataset(%e17);
-%e19 = output(%e18);
-return %e19;
+static const char * const expectedIR1 [] = {
+"%t1 = type uint8;",
+"%e2 = field#id : %t1;",
+"%e3 = record(%e2);",
+"%t4 = type record(%e3);",
+"%t5 = type row(%t4);",
+"%e6 = self(%e3) : %t5;",
+"%e7 = select(%e6,%e2) : %t1;",
+"%c8 = constant 10 : %t1;",
+"%as9 = assign(%e7,%c8);",
+"%e10 = %as9 {location '',6,3};",
+"%e11 = %e3 {symbol r};",
+"%t12 = type %t4 {original(%e11)};",
+"%t13 = type transform(%t12);",
+"%e14 = transform(%e10) : %t13;",
+"%e15 = %e14 {symbol t};",
+"%t16 = type int8;",
+"%c17 = constant 1 : %t16;",
+"%c18 = constant 10 : %t16;",
+"%e19 = add(%c17,%c18) : %t16;",
+"%e20 = implicitcast(%e19) : %t1;",
+"%as21 = assign(%e7,%e20);",
+"%e22 = %as21 {location '',6,3};",
+"%e23 = transform(%e22) : %t13;",
+"%e24 = %e23 {symbol t};",
+"%t25 = type null;",
+"%e26 = transformlist(%e15,%e24) : %t25;",
+"%t27 = type table(%t5);",
+"%e28 = inlinetable(%e26,%e3) : %t27;",
+"%e29 = %e28 {location '',9,7};",
+"%e30 = %e29 {symbol ds};",
+"%e31 = null : <null>;",
+"%e32 = selectfields(%e30,%e31) : %t27;",
+"%t33 = type uint4;",
+"%c34 = constant 3219609901 : %t33;",
+"%e35 = attr#always;",
+"%e36 = attr#update(%c34,%e35);",
+"%e37 = output(%e32,%e36);",
+"%e38 = %e37 {location '',10,1};",
+"%e39 = %e38 {location '',10,1};",
+"return %e39;",
+NULL
+};
 
+class EclIRTests : public CppUnit::TestFixture  
+{
+    CPPUNIT_TEST_SUITE( EclIRTests );
+        CPPUNIT_TEST(testExprToText);
+    CPPUNIT_TEST_SUITE_END();
 
-//Binary
-1:type integer 4 false
-2:expr field id type:1 []
-3:expr record [ expr:2 ]
-4:expr-annotation expr:3 symbol 'r'
-5:type record expr:3
-6:type row type:5
-7:expr self [ expr:3 ]
-8:expr select [ expr:7, expr:2 ]
-9:type integer 8 true
-10:expr constant type:9 10              # unlike the text, the types are always references.
-                                        # Could use a top bit set if ever wanted to allow embedded.
-...
-20:return expr:19
+public:
+    void compareStringArrays(const StringArray & left, const char * const right[], unsigned test)
+    {
+        for (unsigned i=0;;i++)
+        {
+            const char * leftLine = left.isItem(i) ? left.item(i) : NULL;
+            const char * rightLine = right[i];
+            if (!leftLine && !rightLine)
+                return;
+            if (!rightLine)
+            {
+                printf("Test %u@%u: Extra item on left: %s", test, i, leftLine);
+                ASSERT(false);
+            }
+            else if (!leftLine)
+            {
+                printf("Test %u@%u: Extra item on right: %s", test, i, rightLine);
+                ASSERT(false);
+            }
+            else
+            {
+                if (strcmp(leftLine, rightLine) != 0)
+                {
+                    printf("Test %u@%u: Line mismatch: [%s],[%s]", test, i, leftLine, rightLine);
+                    ASSERT(false);
+                }
+            }
+        }
+    }
+    void testExprToText()
+    {
+        OwnedHqlExpr query = parseQuery(testQuery1, NULL);
+        StringArray ir;
+        getIRText(ir, 0, query);
+        compareStringArrays(ir, expectedIR1, __LINE__);
+    }
+};
 
-*/
+CPPUNIT_TEST_SUITE_REGISTRATION( EclIRTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( EclIRTests, "EclIRTests" );
+
+} // end namespace
+#endif // USE_CPPUNIT
