@@ -13773,7 +13773,7 @@ class CRoxieServerSequentialLoopActivity : public CRoxieServerLoopActivity
     Owned<IActivityGraph> loopQuery;
     Owned<IRoxieServerChildGraph> loopGraph;
     IRoxieInput * curInput;
-    RtlLinkedDatasetBuilder *builder;
+    RtlLinkedDatasetBuilder *loopInputBuilder;
     CPointerArrayRoxieInput arrayInput;
     Linked<IRoxieInput> resultInput; 
     unsigned loopCounter;
@@ -13784,7 +13784,7 @@ public:
     {
         curInput = NULL;
         loopCounter = 0;
-        builder = NULL;
+        loopInputBuilder = NULL;
     }
 
     virtual bool needsAllocator() const { return true; }
@@ -13803,13 +13803,13 @@ public:
 
         //MORE: Not sure about this, should IRoxieServerChildGraph be combined with IActivityGraph?
         loopGraph.set(loopQuery->queryLoopGraph());
-        builder = new RtlLinkedDatasetBuilder(rowAllocator);
+        loopInputBuilder = new RtlLinkedDatasetBuilder(rowAllocator);
     }
 
     virtual void stop(bool aborting)
     {
-        delete builder;
-        builder = NULL;
+        delete loopInputBuilder;
+        loopInputBuilder = NULL;
         CRoxieServerLoopActivity::stop(aborting);
     }
 
@@ -13844,7 +13844,7 @@ public:
                     processed++;
                     return ret;
                 }
-                builder->appendOwn(ret);
+                loopInputBuilder->appendOwn(ret);
             }
 
             switch (activityKind)
@@ -13853,14 +13853,14 @@ public:
                 {
                     if (!(flags & IHThorLoopArg::LFnewloopagain))
                     {
-                        if (!helper.loopAgain(loopCounter, builder->getcount(), (const void**) builder->linkrows()))
+                        if (!helper.loopAgain(loopCounter, loopInputBuilder->getcount(), (const void**) loopInputBuilder->queryrows()))
                         {
-                            if (builder->getcount() == 0)
+                            if (loopInputBuilder->getcount() == 0)
                             {
                                 eof = true;
                                 return NULL;
                             }
-                            arrayInput.init(builder->getcount(), builder->linkrows());
+                            arrayInput.init(loopInputBuilder->getcount(), loopInputBuilder->linkrows());
                             // MORE - should builder be cleared here?
                             curInput = &arrayInput;
                             finishedLooping = true;
@@ -13870,7 +13870,7 @@ public:
                     break;
                 }
             case TAKlooprow:
-                if (!builder->getcount())
+                if (!loopInputBuilder->getcount())
                 {
                     finishedLooping = true;
                     eof = true;
@@ -13879,7 +13879,7 @@ public:
                 break;
             }
 
-            if (builder->getcount())
+            if (loopInputBuilder->getcount())
                 emptyIterations = 0;
             else
             {
@@ -13926,8 +13926,8 @@ public:
         {
             loopGraph->beforeExecute();
 
-            Owned<IGraphResult> inputRowsResult = new CGraphResult(builder->getcount(), builder->linkrows());
-            builder->clear();
+            Owned<IGraphResult> inputRowsResult = new CGraphResult(loopInputBuilder->getcount(), loopInputBuilder->linkrows());
+            loopInputBuilder->clear();
             loopGraph->setInputResult(1, inputRowsResult);
 
             createCounterResult(loopGraph, counter);
