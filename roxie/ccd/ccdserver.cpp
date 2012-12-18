@@ -6062,7 +6062,6 @@ public:
             builder.appendOwn(row);
             processed++;
         }
-        IOutputMetaData *outputMeta = input->queryOutputMeta();
         Owned<CGraphResult> result = new CGraphResult(builder.getcount(), builder.linkrows());
         graph->setResult(helper.querySequence(), result);
     }

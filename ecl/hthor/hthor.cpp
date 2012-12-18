@@ -8925,6 +8925,40 @@ void CHThorLocalResultWriteActivity::execute()
 
 //=====================================================================================================
 
+CHThorDictionaryResultWriteActivity::CHThorDictionaryResultWriteActivity (IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryResultWriteArg &_arg, ThorActivityKind _kind, __int64 graphId)
+ : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
+{
+    graph = resolveLocalQuery(graphId);
+}
+
+void CHThorDictionaryResultWriteActivity::execute()
+{
+    RtlLinkedDictionaryBuilder builder(rowAllocator, helper.queryHashLookupInfo());
+    loop
+    {
+        const void *row = input->nextInGroup();
+        if (!row)
+        {
+            row = input->nextInGroup();
+            if (!row)
+                break;
+        }
+        builder.appendOwn(row);
+    }
+    IHThorGraphResult * result = graph->createResult(helper.querySequence(), LINK(rowAllocator));
+    size32_t dictSize = builder.getcount();
+    byte ** dictRows = builder.queryrows();
+    for (size32_t row = 0; row < dictSize; row++)
+    {
+        byte *thisRow = dictRows[row];
+        if (thisRow)
+            LinkRoxieRow(thisRow);
+        result->addRowOwn(thisRow);
+    }
+}
+
+//=====================================================================================================
+
 CHThorLocalResultSpillActivity::CHThorLocalResultSpillActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLocalResultSpillArg &_arg, ThorActivityKind _kind, __int64 graphId)
  : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
@@ -9904,6 +9938,7 @@ MAKEFACTORY(XmlRead)
 
 MAKEFACTORY_EXTRA(LocalResultRead, __int64)
 MAKEFACTORY_EXTRA(LocalResultWrite, __int64)
+MAKEFACTORY_EXTRA(DictionaryResultWrite, __int64)
 MAKEFACTORY_EXTRA(LocalResultSpill, __int64)
 MAKEFACTORY_EXTRA(GraphLoopResultRead, __int64)
 MAKEFACTORY_EXTRA(GraphLoopResultWrite, __int64)
