@@ -42,7 +42,16 @@
  * See the C++ file for better description of the IR.
  */
 
+namespace EclIR
+{
+extern HQL_API const char * getOperatorIRText(node_operator op);
+extern HQL_API const char * getTypeIRText(type_t type);
+
 extern HQL_API void dump_ir(IHqlExpression * expr);
-extern HQL_API void dump_ir(HqlExprArray list);
+extern HQL_API void dump_ir(const HqlExprArray & exprs);
+extern HQL_API void dbglogIR(IHqlExpression * expr);
+extern HQL_API void dbglogIR(const HqlExprArray & exprs);
+
+} // namespace EclIR
 
 #endif /* HQLIR_INCL */
