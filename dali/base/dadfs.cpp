@@ -10401,7 +10401,7 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
  * external use for logical-files only is this test-suite, so I'd rather hack the test
  * suite than expose the behaviour to more viewers.
  */
-void removeLogical(const char *fname, IUserDescriptor *user) {
+extern da_decl void removeLogical(const char *fname, IUserDescriptor *user) {
     if (queryDistributedFileDirectory().exists(fname, user)) {
         Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(fname, user, true);
         CDistributedFile *f = QUERYINTERFACE(file.get(),CDistributedFile);
