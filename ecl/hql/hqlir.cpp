@@ -719,10 +719,10 @@ const char * getTypeIRText(type_t type)
 
 // -----------------------------------------------------------------
 
-// The class performing the building is repsonsible for mapping its internal representation to and from the types
+// The class performing the building is responsible for mapping its internal representation to and from the types
 // returned by the builder interface
 
-typedef memsize_t id_t;
+typedef unsigned id_t;
 typedef id_t typeid_t;
 typedef id_t exprid_t;
 typedef UnsignedArray IdArray;
@@ -945,7 +945,7 @@ protected:
     void readPacked(X & value) const { read(value); }
     _ATOM readName();
 
-    exprid_t BinaryIRPlayer::readId() const;
+    exprid_t readId() const;
 
 private:
     Owned<ISimpleReadStream> in;
