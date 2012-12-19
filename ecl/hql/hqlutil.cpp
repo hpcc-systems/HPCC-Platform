@@ -5146,7 +5146,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                 if (included)
                 {
                     LinkedHqlExpr src = queryRealChild(curRow, col);
-                    if (expr->isDataset())
+                    if (expr->isDataset() || expr->isDictionary())
                     {
                         if (src)
                             col++;
