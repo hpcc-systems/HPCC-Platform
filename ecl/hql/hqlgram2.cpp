@@ -47,6 +47,7 @@
 #include "hqlusage.hpp"
 #include "hqlvalid.hpp"
 #include "hqlrepository.hpp"
+#include "hqlir.hpp"
 
 #define FAST_FIND_FIELD
 //#define USE_WHEN_FOR_SIDEEFFECTS
@@ -11200,6 +11201,22 @@ void testHqlInternals()
         } catch (...) {
             error++;
             printf("   Error: getOpString(%d) is not defined\n",op);
+        }
+        const char * text = EclIR::getOperatorIRText(op);
+        if (!text || streq(text, "<unknown>"))
+        {
+            error++;
+            printf("   Error: getOperatorIRText(%d) is not defined\n",op);
+        }
+    }
+
+    for (type_t tc = (type_t)0; tc < type_max; tc = (type_t)(tc+1))
+    {
+        const char * text = EclIR::getTypeIRText(tc);
+        if (!text || streq(text, "<unknown>"))
+        {
+            error++;
+            printf("   Error: getTypeIRText(%d) is not defined\n",tc);
         }
     }
 

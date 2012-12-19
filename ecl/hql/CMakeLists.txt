@@ -102,6 +102,7 @@ include_directories (
          ./../../common/workunit
          ./../../system/jlib 
          ./../../ecl/hql 
+         ./../../testing/unittests
     )
 
 if (WIN32)
@@ -136,6 +137,7 @@ target_link_libraries ( hql
          nbcd 
          eclrtl 
          deftype 
+         ${CPPUNIT_LIBRARIES}
     )
 
 

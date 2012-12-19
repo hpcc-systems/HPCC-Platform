@@ -19,890 +19,2159 @@
 #include "jiface.hpp"
 #include "hqlir.hpp"
 
+namespace EclIR
+{
+
 /*
- * The general format of IR is the following:
- *
- * %value = op_type operation(arg1, arg2, etc) @annotation1 etc
- *
- * Where:
- *  * %value is an auto-increment value that stores temporary values
- *    that can be used on subsequent operations.
- *  * op_type is the type of the operation, which will be the type of
- *    the return value
- *  * operation is the op-name of the node, which can be found by adding
- *    a leading op_ to it (ex. normalize -> op_normalize)
- *  * argN are the arguments (including flags) to the operation
- *  * annotation are all extra information on the operation
- *
- * The type of every value is defined by the operation that created it,
- * and it shall not be repeated when using it as argument of other
- * operations, because type information can be big enough on its own.
- *
- * For the same reasons, annotations are only printed on the operation.
- *
- * The IR will be printed in logical order, with the operation being
- * dumped at the end, and all its dependencies (and their dependencies)
- * printed in dependency order, upwards.
- *
- * Note that operations do accept multiple types for each argument
- * (think integerN, stringN, any numerical value, etc), so it's important
- * to make sure the argument is compatible, but there's no way to
- * enforce type safety with the current set of operators.
- *
- * Note that this code is intentionally not throwing exceptions or asserting,
- * since it will be largely used during debug sessions (step through or
- * core analysis) and debuggers are not that comfortable with calls throwing
- * exceptions or asserting.
- *
- * In case where an invalid tree might be produced (missing information),
- * the dumper should print "unknown_*", so that you can continue debugging
- * your program, and open an issue to fix the dumper or the expression tree
- * in separate.
- */
+The general format of IR is the following:
 
-// For now, this is exclusive to the dumper, but could be extended to
-// generate the importer tables, as well, with more clever macros
-#define DUMP_CASE(t,x) case t##_##x: return #x
-static const char * getOperatorText(node_operator op);
-static const char * getTypeText(type_t type);
+<type> := <complex-type>
+       | <simple-type>
+       | %typelabel
+       | <type> { annotation }
+       | typeof <expr>
 
-//-------------------------------------------------------------------------------------------------
-/* IR Expression Dumper : A complete description of an expression in IR form
- *
- * This dumper should produce a complete description of the expression graph into textual
- * form, thus, it should be possible to read back and build the exact same graph.
- *
- * However, this feature is in development, and should be so until this comment is
- * removed. Make sure the IR you're printing can be read back before relying on it.
- *
- * Implementation details:
- *  * This dumper is depth first, to create the most basic nodes first. Not only they
- *    get printed first (logically) but they also receive the lower names
- *  * Names are, for now, numerical sequence. To implement text+num would require a
- *    more complex logic, which is not the point in this first implementation
- *  * attributes(attr, attr_expr) are not printed within the expression, but expanded
- *    like other dependencies. This might change in the future
- *  *
- */
-class HQL_API IRExpressionDumper
-{
-public:
-    IRExpressionDumper();
-    ~IRExpressionDumper();
+complex-type
+    := set '(' <type> ')'
+    | dataset '(' record-type ')'
+    | row '(' record-type ')'
+    | grouped <type>
+    ;
 
-    // Re-use IRExtra information across multiple calls
-    const char * dump(IHqlExpression * expr);
+<simple-type>
+    := [u]int<n>            // [unsigned] integer[n]
+    | [u]swap<n>            //
+    | [u]packed
+    | [e]str<n>
+    | [u]dec(<n>[,m)
+    | real<n>
+    | vstr<n>
+    | data<n>
+    | uni<n>
+    | vuni<n>
+    | any
+    | action
+    | null
+    ;
 
-protected:
-    void expandGraphText(IHqlExpression * expr);
-    void expandExprDefinition(IHqlExpression * expr);
-    void expandExprUse(IHqlExpression * expr);
+%typelabel = 'type' <type>;
 
-    // For now only id, but should have more
-    struct IRExtra : public IInterface, CInterface {
-        IMPLEMENT_IINTERFACE;
-        unsigned id; // unique identifier (%NNN)
-        IRExtra(unsigned _id) : id(_id) {}
-    };
-    bool visited(IHqlExpression * expr);
-    IRExtra * queryExtra(IHqlExpression * expr);   // assign or return
+<expression> := operator[#name][(sequence(n))][(arg1, arg2, ... argn) : <type>]
+             | %exprlabel
+             | <expression> { annotation };
 
-    // Information specific dumpers
-    void appendType(IHqlExpression * expr);
-    void appendOperation(IHqlExpression * expr);
-    void appendAnnotation(IHqlExpression * expr);
+%exprlabel = <expression>;
 
-    unsigned lastUsedId; // thread unsafe
-    StringBuffer string; // output
-};
+By convention the labels are generated as follows:
 
-IRExpressionDumper::IRExpressionDumper()
-    : lastUsedId(0)
-{
-    lockTransformMutex();
-}
+Types
+  %t<nnnnn> - name of a type
+  %tr<nnnnn> - type of a record
+  %tw<nnnnn> - type of a row
+  %td<nnnnn> - type of a dataset
 
-IRExpressionDumper::~IRExpressionDumper()
-{
-    unlockTransformMutex();
-}
+Expressions
+  %ds<nnnnn> - a dataset
+  %rw<nnnnn> - a row
+  %rc<nnnnn> - a record
+  %dt<nnnnn> - a dictionary
+  %e<nnnnn>  - a general expression
 
-// Public methods
-const char * IRExpressionDumper::dump(IHqlExpression * expr)
-{
-    string.clear();
-    expandGraphText(expr);
-    return string.str();
-}
+Where <nnnnn> is an auto incremented number.
 
-// Private methods
-void IRExpressionDumper::expandGraphText(IHqlExpression * expr)
-{
-    if (visited(expr))
-        return;
+There are options on generating to
+a) Expand unshared annotations inline
+b) Expand simple operands inline (e.g., constants, attributes)
+c) Use #name as a synonym for attr:name
+d) Expand simple types inline instead of using type labels.
 
-    // Body with annotations
-    IHqlExpression * body = expr->queryBody(true);
-    if (body != expr)
-    {
-        expandGraphText(body);
-    }
-    else
-    {
-        // Depth first, to get deeper dependencies with lower names
-        unsigned max = expr->numChildren();
-        for (unsigned i=0; i < max; i++)
-            expandGraphText(expr->queryChild(i));
-    }
+The IR will be printed in logical order, with the operation being
+dumped at the end, and all its dependencies (and their dependencies)
+printed in dependency order, upwards.
 
-    // Now, dump the current expression
-    expandExprDefinition(expr);
-}
+Note that operations do accept multiple types for each argument
+(think integerN, stringN, any numerical value, etc), so it's important
+to make sure the argument is compatible, but there's no way to
+enforce type safety with the current set of operators.
 
-void IRExpressionDumper::expandExprDefinition(IHqlExpression * expr)
-{
-    string.append('%').append(queryExtra(expr)->id).append(" = ");
+Note that this code is intentionally not throwing exceptions or asserting,
+since it will be largely used during debug sessions (step through or
+core analysis) and debuggers are not that comfortable with calls throwing
+exceptions or asserting.
 
-    if (expr->getAnnotationKind() != annotate_none)
-    {
-        // Like an alias, %n+1 = %n @annotation MORE - this will change soon
-        IHqlExpression * body = expr->queryBody(true);
-        expandExprUse(body); // should have been named already
-        string.append(' ');
-        appendAnnotation(expr);
-    }
-    else
-        appendOperation(expr);
+In case where an invalid tree might be produced (missing information),
+the dumper should print "unknown_*", so that you can continue debugging
+your program, and open an issue to fix the dumper or the expression tree
+in separate.
 
-    // Finalise
-    string.append(';').newline();
-}
+The test cases at the end of this file give some examples of the output that is expected.
 
-void IRExpressionDumper::expandExprUse(IHqlExpression * expr)
-{
-    string.append("%");
-    if (visited(expr))
-        string.append(queryExtra(expr)->id);
-    else
-        string.append("unknown_node");
-    return;
-}
+*/
 
-void IRExpressionDumper::appendAnnotation(IHqlExpression * expr)
-{
-    switch (expr->getAnnotationKind())
-    {
-    case annotate_symbol:
-        string.append("@symbol ").append(expr->queryName()->getAtomNamePtr());
-        break;
-    case annotate_location:
-        string.append("@location \"").append(expr->querySourcePath()->getNamePtr());
-        string.append("\":").append(expr->getStartLine());
-        break;
-    case annotate_meta:
-        string.append("@meta");
-        break;
-    case annotate_warning:
-        string.append("@warning");
-        break;
-    case annotate_parsemeta:
-        string.append("@parsemeta");
-        break;
-    case annotate_max:
-        string.append("@max");
-        break;
-    case annotate_javadoc:
-        string.append("@javadoc");
-        break;
-    default:
-        string.append("@unknown_annotation");
-        break;
-    }
-}
+// -------------------------------------------------------------------------------------------------------------------
 
-void IRExpressionDumper::appendOperation(IHqlExpression * expr)
-{
-    appendType(expr);
-    node_operator op = expr->getOperator();
-    string.append(' ').append(getOperatorText(op));
+#define EXPAND_CASE(prefix,suffix) case prefix##_##suffix: return #suffix
 
-    switch(op)
-    {
-    // Symbols that have value associated
-    case no_constant:
-        {
-            string.append(' ');
-            expr->queryValue()->generateECL(string);
-            break;
-        }
-    // Symbols that have a name
-    case no_field:
-    case no_attr:
-    case no_attr_expr:
-        {
-            _ATOM name = expr->queryName();
-            string.append(' ').append(name->str());
-            break;
-        }
-    // Other operations should have more data printed
-    }
-
-    // Now, populate arguments
-    bool comma = false;
-    unsigned max = expr->numChildren();
-    if (max)
-    {
-        string.append('(');
-        for (unsigned i=0; i < max; i++)
-        {
-            IHqlExpression * child = expr->queryChild(i);
-            if (comma)
-                string.append(", ");
-            expandExprUse(child); // should have been named already
-            comma = true;
-        }
-        string.append(')');
-    }
-}
-
-void IRExpressionDumper::appendType(IHqlExpression * expr)
-{
-    ITypeInfo * type = expr->queryType();
-    if (type)
-    {
-        // "unsigned" does not fully qualify an integer type
-        if ((isIntegralType(type) || isDecimalType(type)) && !type->isSigned())
-            string.append("unsigned ");
-        string.append(getTypeText(type->getTypeCode()));
-
-        // Type length (for integers and strings)
-        if ((isStringType(type) || isUnicodeType(type)) && type->getStringLen() != UNKNOWN_LENGTH)
-            string.append(type->getStringLen());
-        else if (isNumericType(type) && type->getSize() != UNKNOWN_LENGTH)
-        {
-            string.append(type->getSize());
-            if (type->getPrecision())
-                string.append("_").append(type->getPrecision());
-        }
-    }
-    else
-        string.append("no_type");
-}
-
-bool IRExpressionDumper::visited(IHqlExpression * expr)
-{
-    IRExtra * match = static_cast<IRExtra *>(expr->queryTransformExtra());
-    return (match != NULL);
-}
-
-IRExpressionDumper::IRExtra * IRExpressionDumper::queryExtra(IHqlExpression * expr)
-{
-    IRExtra * match = static_cast<IRExtra *>(expr->queryTransformExtra());
-    if (match)
-        return match;
-
-    IRExtra * extra = new IRExtra(++lastUsedId);
-    expr->setTransformExtraOwned(extra);
-    return extra;
-}
-
-// --------------------------------------------------------------- Common functions
-static const char * getOperatorText(node_operator op)
+const char * getOperatorIRText(node_operator op)
 {
     switch(op)
     {
-    DUMP_CASE(no,band);
-    DUMP_CASE(no,bor);
-    DUMP_CASE(no,bxor);
-    DUMP_CASE(no,mul);
-    DUMP_CASE(no,div);
-    DUMP_CASE(no,modulus);
-    DUMP_CASE(no,exp);
-    DUMP_CASE(no,round);
-    DUMP_CASE(no,roundup);
-    DUMP_CASE(no,truncate);
-    DUMP_CASE(no,power);
-    DUMP_CASE(no,ln);
-    DUMP_CASE(no,sin);
-    DUMP_CASE(no,cos);
-    DUMP_CASE(no,tan);
-    DUMP_CASE(no,asin);
-    DUMP_CASE(no,acos);
-    DUMP_CASE(no,atan);
-    DUMP_CASE(no,atan2);
-    DUMP_CASE(no,sinh);
-    DUMP_CASE(no,cosh);
-    DUMP_CASE(no,tanh);
-    DUMP_CASE(no,log10);
-    DUMP_CASE(no,sqrt);
-    DUMP_CASE(no,negate);
-    DUMP_CASE(no,sub);
-    DUMP_CASE(no,add);
-    DUMP_CASE(no,addfiles);
-    DUMP_CASE(no,merge);
-    DUMP_CASE(no,concat);
-    DUMP_CASE(no,eq);
-    DUMP_CASE(no,ne);
-    DUMP_CASE(no,lt);
-    DUMP_CASE(no,le);
-    DUMP_CASE(no,gt);
-    DUMP_CASE(no,ge);
-    DUMP_CASE(no,order);
-    DUMP_CASE(no,unicodeorder);
-    DUMP_CASE(no,not);
-    DUMP_CASE(no,and);
-    DUMP_CASE(no,or);
-    DUMP_CASE(no,xor);
-    DUMP_CASE(no,notin);
-    DUMP_CASE(no,in);
-    DUMP_CASE(no,notbetween);
-    DUMP_CASE(no,between);
-    DUMP_CASE(no,comma);
-    DUMP_CASE(no,compound);
-    DUMP_CASE(no,count);
-    DUMP_CASE(no,counter);
-    DUMP_CASE(no,countgroup);
-    DUMP_CASE(no,distribution);
-    DUMP_CASE(no,max);
-    DUMP_CASE(no,min);
-    DUMP_CASE(no,sum);
-    DUMP_CASE(no,ave);
-    DUMP_CASE(no,variance);
-    DUMP_CASE(no,covariance);
-    DUMP_CASE(no,correlation);
-    DUMP_CASE(no,map);
-    DUMP_CASE(no,if);
-    DUMP_CASE(no,mapto);
-    DUMP_CASE(no,constant);
-    DUMP_CASE(no,field);
-    DUMP_CASE(no,exists);
-    DUMP_CASE(no,existsgroup);
-    DUMP_CASE(no,select);
-    DUMP_CASE(no,table);
-    DUMP_CASE(no,temptable);
-    DUMP_CASE(no,workunit_dataset);
-    DUMP_CASE(no,scope);
-    DUMP_CASE(no,remotescope);
-    DUMP_CASE(no,mergedscope);
-    DUMP_CASE(no,privatescope);
-    DUMP_CASE(no,list);
-    DUMP_CASE(no,selectnth);
-    DUMP_CASE(no,filter);
-    DUMP_CASE(no,param);
-    DUMP_CASE(no,within);
-    DUMP_CASE(no,notwithin);
-    DUMP_CASE(no,index);
-    DUMP_CASE(no,all);
-    DUMP_CASE(no,left);
-    DUMP_CASE(no,right);
-    DUMP_CASE(no,outofline);
-    DUMP_CASE(no,dedup);
-    DUMP_CASE(no,enth);
-    DUMP_CASE(no,sample);
-    DUMP_CASE(no,sort);
-    DUMP_CASE(no,shuffle);
-    DUMP_CASE(no,sorted);
-    DUMP_CASE(no,choosen);
-    DUMP_CASE(no,choosesets);
-    DUMP_CASE(no,buildindex);
-    DUMP_CASE(no,output);
-    DUMP_CASE(no,record);
-    DUMP_CASE(no,fetch);
-    DUMP_CASE(no,compound_fetch);
-    DUMP_CASE(no,join);
-    DUMP_CASE(no,selfjoin);
-    DUMP_CASE(no,newusertable);
-    DUMP_CASE(no,usertable);
-    DUMP_CASE(no,aggregate);
-    DUMP_CASE(no,which);
-    DUMP_CASE(no,case);
-    DUMP_CASE(no,choose);
-    DUMP_CASE(no,rejected);
-    DUMP_CASE(no,evaluate);
-    DUMP_CASE(no,cast);
-    DUMP_CASE(no,implicitcast);
-    DUMP_CASE(no,external);
-    DUMP_CASE(no,externalcall);
-    DUMP_CASE(no,macro);
-    DUMP_CASE(no,failure);
-    DUMP_CASE(no,success);
-    DUMP_CASE(no,recovery);
-    DUMP_CASE(no,sql);
-    DUMP_CASE(no,flat);
-    DUMP_CASE(no,csv);
-    DUMP_CASE(no,xml);
-    DUMP_CASE(no,when);
-    DUMP_CASE(no,priority);
-    DUMP_CASE(no,rollup);
-    DUMP_CASE(no,iterate);
-    DUMP_CASE(no,assign);
-    DUMP_CASE(no,asstring);
-    DUMP_CASE(no,assignall);
-    DUMP_CASE(no,update);
-    DUMP_CASE(no,alias);
-    DUMP_CASE(no,denormalize);
-    DUMP_CASE(no,denormalizegroup);
-    DUMP_CASE(no,normalize);
-    DUMP_CASE(no,group);
-    DUMP_CASE(no,grouped);
-    DUMP_CASE(no,unknown);
-    DUMP_CASE(no,any);
-    DUMP_CASE(no,is_null);
-    DUMP_CASE(no,is_valid);
-    DUMP_CASE(no,abs);
-    DUMP_CASE(no,substring);
-    DUMP_CASE(no,newaggregate);
-    DUMP_CASE(no,trim);
-    DUMP_CASE(no,realformat);
-    DUMP_CASE(no,intformat);
-    DUMP_CASE(no,regex_find);
-    DUMP_CASE(no,regex_replace);
-    DUMP_CASE(no,current_date);
-    DUMP_CASE(no,current_time);
-    DUMP_CASE(no,current_timestamp);
-    DUMP_CASE(no,cogroup);
-    DUMP_CASE(no,cosort);
-    DUMP_CASE(no,sortlist);
-    DUMP_CASE(no,recordlist);
-    DUMP_CASE(no,transformlist);
-    DUMP_CASE(no,transformebcdic);
-    DUMP_CASE(no,transformascii);
-    DUMP_CASE(no,hqlproject);
-    DUMP_CASE(no,dataset_from_transform);
-    DUMP_CASE(no,newtransform);
-    DUMP_CASE(no,transform);
-    DUMP_CASE(no,attr);
-    DUMP_CASE(no,attr_expr);
-    DUMP_CASE(no,attr_link);
-    DUMP_CASE(no,self);
-    DUMP_CASE(no,selfref);
-    DUMP_CASE(no,thor);
-    DUMP_CASE(no,distribute);
-    DUMP_CASE(no,distributed);
-    DUMP_CASE(no,keyeddistribute);
-    DUMP_CASE(no,rank);
-    DUMP_CASE(no,ranked);
-    DUMP_CASE(no,ordered);
-    DUMP_CASE(no,hash);
-    DUMP_CASE(no,hash32);
-    DUMP_CASE(no,hash64);
-    DUMP_CASE(no,hashmd5);
-    DUMP_CASE(no,none);
-    DUMP_CASE(no,notnot);
-    DUMP_CASE(no,range);
-    DUMP_CASE(no,rangeto);
-    DUMP_CASE(no,rangefrom);
-    DUMP_CASE(no,service);
-    DUMP_CASE(no,mix);
-    DUMP_CASE(no,funcdef);
-    DUMP_CASE(no,wait);
-    DUMP_CASE(no,notify);
-    DUMP_CASE(no,event);
-    DUMP_CASE(no,persist);
-    DUMP_CASE(no,omitted);
-    DUMP_CASE(no,setconditioncode);
-    DUMP_CASE(no,selectfields);
-    DUMP_CASE(no,quoted);
-    DUMP_CASE(no,variable);
-    DUMP_CASE(no,bnot);
-    DUMP_CASE(no,charlen);
-    DUMP_CASE(no,sizeof);
-    DUMP_CASE(no,offsetof);
-    DUMP_CASE(no,postinc);
-    DUMP_CASE(no,postdec);
-    DUMP_CASE(no,preinc);
-    DUMP_CASE(no,predec);
-    DUMP_CASE(no,pselect);
-    DUMP_CASE(no,address);
-    DUMP_CASE(no,deref);
-    DUMP_CASE(no,nullptr);
-    DUMP_CASE(no,decimalstack);
-    DUMP_CASE(no,typetransfer);
-    DUMP_CASE(no,apply);
-    DUMP_CASE(no,pipe);
-    DUMP_CASE(no,cloned);
-    DUMP_CASE(no,cachealias);
-    DUMP_CASE(no,joined);
-    DUMP_CASE(no,lshift);
-    DUMP_CASE(no,rshift);
-    DUMP_CASE(no,colon);
-    DUMP_CASE(no,global);
-    DUMP_CASE(no,stored);
-    DUMP_CASE(no,checkpoint);
-    DUMP_CASE(no,compound_indexread);
-    DUMP_CASE(no,compound_diskread);
-    DUMP_CASE(no,translated);
-    DUMP_CASE(no,ifblock);
-    DUMP_CASE(no,crc);
-    DUMP_CASE(no,random);
-    DUMP_CASE(no,childdataset);
-    DUMP_CASE(no,envsymbol);
-    DUMP_CASE(no,null);
-    DUMP_CASE(no,ensureresult);
-    DUMP_CASE(no,getresult);
-    DUMP_CASE(no,setresult);
-    DUMP_CASE(no,extractresult);
-    DUMP_CASE(no,type);
-    DUMP_CASE(no,position);
-    DUMP_CASE(no,bound_func);
-    DUMP_CASE(no,bound_type);
-    DUMP_CASE(no,hint);
-    DUMP_CASE(no,metaactivity);
-    DUMP_CASE(no,loadxml);
-    DUMP_CASE(no,fieldmap);
-    DUMP_CASE(no,template_context);
-    DUMP_CASE(no,nofold);
-    DUMP_CASE(no,nohoist);
-    DUMP_CASE(no,fail);
-    DUMP_CASE(no,filepos);
-    DUMP_CASE(no,file_logicalname);
-    DUMP_CASE(no,alias_project);
-    DUMP_CASE(no,alias_scope);
-    DUMP_CASE(no,sequential);
-    DUMP_CASE(no,parallel);
-    DUMP_CASE(no,actionlist);
-    DUMP_CASE(no,nolink);
-    DUMP_CASE(no,workflow);
-    DUMP_CASE(no,workflow_action);
-    DUMP_CASE(no,failcode);
-    DUMP_CASE(no,failmessage);
-    DUMP_CASE(no,eventname);
-    DUMP_CASE(no,eventextra);
-    DUMP_CASE(no,independent);
-    DUMP_CASE(no,keyindex);
-    DUMP_CASE(no,newkeyindex);
-    DUMP_CASE(no,keyed);
-    DUMP_CASE(no,split);
-    DUMP_CASE(no,subgraph);
-    DUMP_CASE(no,dependenton);
-    DUMP_CASE(no,spill);
-    DUMP_CASE(no,setmeta);
-    DUMP_CASE(no,throughaggregate);
-    DUMP_CASE(no,joincount);
-    DUMP_CASE(no,countcompare);
-    DUMP_CASE(no,limit);
-    DUMP_CASE(no,fromunicode);
-    DUMP_CASE(no,tounicode);
-    DUMP_CASE(no,keyunicode);
-    DUMP_CASE(no,parse);
-    DUMP_CASE(no,newparse);
-    DUMP_CASE(no,skip);
-    DUMP_CASE(no,matched);
-    DUMP_CASE(no,matchtext);
-    DUMP_CASE(no,matchlength);
-    DUMP_CASE(no,matchposition);
-    DUMP_CASE(no,matchunicode);
-    DUMP_CASE(no,matchrow);
-    DUMP_CASE(no,matchutf8);
-    DUMP_CASE(no,pat_select);
-    DUMP_CASE(no,pat_index);
-    DUMP_CASE(no,pat_const);
-    DUMP_CASE(no,pat_pattern);
-    DUMP_CASE(no,pat_follow);
-    DUMP_CASE(no,pat_first);
-    DUMP_CASE(no,pat_last);
-    DUMP_CASE(no,pat_repeat);
-    DUMP_CASE(no,pat_instance);
-    DUMP_CASE(no,pat_anychar);
-    DUMP_CASE(no,pat_token);
-    DUMP_CASE(no,pat_imptoken);
-    DUMP_CASE(no,pat_set);
-    DUMP_CASE(no,pat_checkin);
-    DUMP_CASE(no,pat_x_before_y);
-    DUMP_CASE(no,pat_x_after_y);
-    DUMP_CASE(no,pat_before_y);
-    DUMP_CASE(no,pat_after_y);
-    DUMP_CASE(no,pat_beginpattern);
-    DUMP_CASE(no,pat_endpattern);
-    DUMP_CASE(no,pat_checklength);
-    DUMP_CASE(no,pat_use);
-    DUMP_CASE(no,pat_validate);
-    DUMP_CASE(no,topn);
-    DUMP_CASE(no,outputscalar);
-    DUMP_CASE(no,penalty);
-    DUMP_CASE(no,rowdiff);
-    DUMP_CASE(no,wuid);
-    DUMP_CASE(no,featuretype);
-    DUMP_CASE(no,pat_guard);
-    DUMP_CASE(no,xmltext);
-    DUMP_CASE(no,xmlunicode);
-    DUMP_CASE(no,xmlproject);
-    DUMP_CASE(no,newxmlparse);
-    DUMP_CASE(no,xmlparse);
-    DUMP_CASE(no,xmldecode);
-    DUMP_CASE(no,xmlencode);
-    DUMP_CASE(no,pat_featureparam);
-    DUMP_CASE(no,pat_featureactual);
-    DUMP_CASE(no,pat_featuredef);
-    DUMP_CASE(no,evalonce);
-    DUMP_CASE(no,distributer);
-    DUMP_CASE(no,impure);
-    DUMP_CASE(no,addsets);
-    DUMP_CASE(no,rowvalue);
-    DUMP_CASE(no,pat_case);
-    DUMP_CASE(no,pat_nocase);
-    DUMP_CASE(no,evaluate_stmt);
-    DUMP_CASE(no,return_stmt);
-    DUMP_CASE(no,activetable);
-    DUMP_CASE(no,preload);
-    DUMP_CASE(no,createset);
-    DUMP_CASE(no,assertkeyed);
-    DUMP_CASE(no,assertwild);
-    DUMP_CASE(no,httpcall);
-    DUMP_CASE(no,soapcall);
-    DUMP_CASE(no,soapcall_ds);
-    DUMP_CASE(no,newsoapcall);
-    DUMP_CASE(no,newsoapcall_ds);
-    DUMP_CASE(no,soapaction_ds);
-    DUMP_CASE(no,newsoapaction_ds);
-    DUMP_CASE(no,temprow);
-    DUMP_CASE(no,projectrow);
-    DUMP_CASE(no,createrow);
-    DUMP_CASE(no,activerow);
-    DUMP_CASE(no,newrow);
-    DUMP_CASE(no,catch);
-    DUMP_CASE(no,reference);
-    DUMP_CASE(no,callback);
-    DUMP_CASE(no,keyedlimit);
-    DUMP_CASE(no,keydiff);
-    DUMP_CASE(no,keypatch);
-    DUMP_CASE(no,returnresult);
-    DUMP_CASE(no,id2blob);
-    DUMP_CASE(no,blob2id);
-    DUMP_CASE(no,anon);
-    DUMP_CASE(no,cppbody);
-    DUMP_CASE(no,sortpartition);
-    DUMP_CASE(no,define);
-    DUMP_CASE(no,globalscope);
-    DUMP_CASE(no,forcelocal);
-    DUMP_CASE(no,typedef);
-    DUMP_CASE(no,matchattr);
-    DUMP_CASE(no,pat_production);
-    DUMP_CASE(no,guard);
-    DUMP_CASE(no,datasetfromrow);
-    DUMP_CASE(no,assertconstant);
-    DUMP_CASE(no,clustersize);
-    DUMP_CASE(no,compound_disknormalize);
-    DUMP_CASE(no,compound_diskaggregate);
-    DUMP_CASE(no,compound_diskcount);
-    DUMP_CASE(no,compound_diskgroupaggregate);
-    DUMP_CASE(no,compound_indexnormalize);
-    DUMP_CASE(no,compound_indexaggregate);
-    DUMP_CASE(no,compound_indexcount);
-    DUMP_CASE(no,compound_indexgroupaggregate);
-    DUMP_CASE(no,compound_childread);
-    DUMP_CASE(no,compound_childnormalize);
-    DUMP_CASE(no,compound_childaggregate);
-    DUMP_CASE(no,compound_childcount);
-    DUMP_CASE(no,compound_childgroupaggregate);
-    DUMP_CASE(no,compound_selectnew);
-    DUMP_CASE(no,compound_inline);
-    DUMP_CASE(no,setworkflow_cond);
-    DUMP_CASE(no,recovering);
-    DUMP_CASE(no,nothor);
-    DUMP_CASE(no,call);
-    DUMP_CASE(no,getgraphresult);
-    DUMP_CASE(no,setgraphresult);
-    DUMP_CASE(no,assert);
-    DUMP_CASE(no,assert_ds);
-    DUMP_CASE(no,namedactual);
-    DUMP_CASE(no,combine);
-    DUMP_CASE(no,combinegroup);
-    DUMP_CASE(no,rows);
-    DUMP_CASE(no,rollupgroup);
-    DUMP_CASE(no,regroup);
-    DUMP_CASE(no,inlinetable);
-    DUMP_CASE(no,spillgraphresult);
-    DUMP_CASE(no,enum);
-    DUMP_CASE(no,pat_or);
-    DUMP_CASE(no,loop);
-    DUMP_CASE(no,loopbody);
-    DUMP_CASE(no,cluster);
-    DUMP_CASE(no,forcenolocal);
-    DUMP_CASE(no,allnodes);
-    DUMP_CASE(no,last_op);
-    DUMP_CASE(no,pat_compound);
-    DUMP_CASE(no,pat_begintoken);
-    DUMP_CASE(no,pat_endtoken);
-    DUMP_CASE(no,pat_begincheck);
-    DUMP_CASE(no,pat_endcheckin);
-    DUMP_CASE(no,pat_endchecklength);
-    DUMP_CASE(no,pat_beginseparator);
-    DUMP_CASE(no,pat_endseparator);
-    DUMP_CASE(no,pat_separator);
-    DUMP_CASE(no,pat_beginvalidate);
-    DUMP_CASE(no,pat_endvalidate);
-    DUMP_CASE(no,pat_dfa);
-    DUMP_CASE(no,pat_singlechar);
-    DUMP_CASE(no,pat_beginrecursive);
-    DUMP_CASE(no,pat_endrecursive);
-    DUMP_CASE(no,pat_utf8single);
-    DUMP_CASE(no,pat_utf8lead);
-    DUMP_CASE(no,pat_utf8follow);
-    DUMP_CASE(no,sequence);
-    DUMP_CASE(no,forwardscope);
-    DUMP_CASE(no,virtualscope);
-    DUMP_CASE(no,concretescope);
-    DUMP_CASE(no,purevirtual);
-    DUMP_CASE(no,internalvirtual);
-    DUMP_CASE(no,delayedselect);
-    DUMP_CASE(no,libraryselect);
-    DUMP_CASE(no,libraryscope);
-    DUMP_CASE(no,libraryscopeinstance);
-    DUMP_CASE(no,libraryinput);
-    DUMP_CASE(no,process);
-    DUMP_CASE(no,thisnode);
-    DUMP_CASE(no,graphloop);
-    DUMP_CASE(no,rowset);
-    DUMP_CASE(no,loopcounter);
-    DUMP_CASE(no,getgraphloopresult);
-    DUMP_CASE(no,setgraphloopresult);
-    DUMP_CASE(no,rowsetindex);
-    DUMP_CASE(no,rowsetrange);
-    DUMP_CASE(no,assertstepped);
-    DUMP_CASE(no,assertsorted);
-    DUMP_CASE(no,assertgrouped);
-    DUMP_CASE(no,assertdistributed);
-    DUMP_CASE(no,datasetlist);
-    DUMP_CASE(no,mergejoin);
-    DUMP_CASE(no,nwayjoin);
-    DUMP_CASE(no,nwaymerge);
-    DUMP_CASE(no,stepped);
-    DUMP_CASE(no,getgraphloopresultset);
-    DUMP_CASE(no,attrname);
-    DUMP_CASE(no,nonempty);
-    DUMP_CASE(no,filtergroup);
-    DUMP_CASE(no,rangecommon);
-    DUMP_CASE(no,section);
-    DUMP_CASE(no,nobody);
-    DUMP_CASE(no,deserialize);
-    DUMP_CASE(no,serialize);
-    DUMP_CASE(no,eclcrc);
-    DUMP_CASE(no,pure);
-    DUMP_CASE(no,pseudods);
-    DUMP_CASE(no,top);
-    DUMP_CASE(no,uncommoned_comma);
-    DUMP_CASE(no,nameof);
-    DUMP_CASE(no,processing);
-    DUMP_CASE(no,merge_pending);
-    DUMP_CASE(no,merge_nomatch);
-    DUMP_CASE(no,toxml);
-    DUMP_CASE(no,catchds);
-    DUMP_CASE(no,readspill);
-    DUMP_CASE(no,writespill);
-    DUMP_CASE(no,commonspill);
-    DUMP_CASE(no,forcegraph);
-    DUMP_CASE(no,sectioninput);
-    DUMP_CASE(no,related);
-    DUMP_CASE(no,definesideeffect);
-    DUMP_CASE(no,executewhen);
-    DUMP_CASE(no,callsideeffect);
-    DUMP_CASE(no,fromxml);
-    DUMP_CASE(no,preservemeta);
-    DUMP_CASE(no,normalizegroup);
-    DUMP_CASE(no,indirect);
-    DUMP_CASE(no,selectindirect);
-    DUMP_CASE(no,isomitted);
-    DUMP_CASE(no,getenv);
-    DUMP_CASE(no,once);
-    DUMP_CASE(no,persist_check);
-    DUMP_CASE(no,create_initializer);
-    DUMP_CASE(no,owned_ds);
-    DUMP_CASE(no,complex);
-    DUMP_CASE(no,assign_addfiles);
-    DUMP_CASE(no,debug_option_value);
-    DUMP_CASE(no,dataset_alias);
-    DUMP_CASE(no,childquery);
-    DUMP_CASE(no,selectmap);
-    DUMP_CASE(no,createdictionary);
-    DUMP_CASE(no,indict);
-    DUMP_CASE(no,countdict);
-    DUMP_CASE(no,chooseds);
-
-    case no_unused6:
-    case no_unused13: case no_unused14: case no_unused15:
-    case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
-    case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
-    case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
-    case no_unused50: case no_unused52:
-    case no_unused100:
-    case no_unused101:
-        return "unused";
+    EXPAND_CASE(no,none);
+    EXPAND_CASE(no,scope);
+    EXPAND_CASE(no,list);
+    EXPAND_CASE(no,mul);
+    EXPAND_CASE(no,div);
+    EXPAND_CASE(no,modulus);
+    EXPAND_CASE(no,negate);
+    EXPAND_CASE(no,add);
+    EXPAND_CASE(no,sub);
+    EXPAND_CASE(no,eq);
+    EXPAND_CASE(no,ne);
+    EXPAND_CASE(no,lt);
+    EXPAND_CASE(no,le);
+    EXPAND_CASE(no,gt);
+    EXPAND_CASE(no,ge);
+    EXPAND_CASE(no,not);
+    EXPAND_CASE(no,notnot);
+    EXPAND_CASE(no,and);
+    EXPAND_CASE(no,or);
+    EXPAND_CASE(no,xor);
+    EXPAND_CASE(no,concat);
+    EXPAND_CASE(no,notin);
+    EXPAND_CASE(no,in);
+    EXPAND_CASE(no,notbetween);
+    EXPAND_CASE(no,between);
+    EXPAND_CASE(no,comma);
+    EXPAND_CASE(no,count);
+    EXPAND_CASE(no,countgroup);
+    EXPAND_CASE(no,selectmap);
+    EXPAND_CASE(no,exists);
+    EXPAND_CASE(no,within);
+    EXPAND_CASE(no,notwithin);
+    EXPAND_CASE(no,param);
+    EXPAND_CASE(no,constant);
+    EXPAND_CASE(no,field);
+    EXPAND_CASE(no,map);
+    EXPAND_CASE(no,if);
+    EXPAND_CASE(no,max);
+    EXPAND_CASE(no,min);
+    EXPAND_CASE(no,sum);
+    EXPAND_CASE(no,ave);
+    EXPAND_CASE(no,maxgroup);
+    EXPAND_CASE(no,mingroup);
+    EXPAND_CASE(no,sumgroup);
+    EXPAND_CASE(no,avegroup);
+    EXPAND_CASE(no,exp);
+    EXPAND_CASE(no,power);
+    EXPAND_CASE(no,round);
+    EXPAND_CASE(no,roundup);
+    EXPAND_CASE(no,range);
+    EXPAND_CASE(no,rangeto);
+    EXPAND_CASE(no,rangefrom);
+    EXPAND_CASE(no,substring);
+    EXPAND_CASE(no,transform);
+    EXPAND_CASE(no,rollup);
+    EXPAND_CASE(no,iterate);
+    EXPAND_CASE(no,hqlproject);
+    EXPAND_CASE(no,assign);
+    EXPAND_CASE(no,assignall);
+    EXPAND_CASE(no,asstring);
+    EXPAND_CASE(no,group);
+    EXPAND_CASE(no,cogroup);
+    EXPAND_CASE(no,cosort);
+    EXPAND_CASE(no,truncate);
+    EXPAND_CASE(no,ln);
+    EXPAND_CASE(no,log10);
+    EXPAND_CASE(no,sin);
+    EXPAND_CASE(no,cos);
+    EXPAND_CASE(no,tan);
+    EXPAND_CASE(no,asin);
+    EXPAND_CASE(no,acos);
+    EXPAND_CASE(no,atan);
+    EXPAND_CASE(no,atan2);
+    EXPAND_CASE(no,sinh);
+    EXPAND_CASE(no,cosh);
+    EXPAND_CASE(no,tanh);
+    EXPAND_CASE(no,sqrt);
+    EXPAND_CASE(no,evaluate);
+    EXPAND_CASE(no,choose);
+    EXPAND_CASE(no,which);
+    EXPAND_CASE(no,rejected);
+    EXPAND_CASE(no,mapto);
+    EXPAND_CASE(no,record);
+    EXPAND_CASE(no,service);
+    EXPAND_CASE(no,index);
+    EXPAND_CASE(no,all);
+    EXPAND_CASE(no,left);
+    EXPAND_CASE(no,right);
+    EXPAND_CASE(no,outofline);
+    EXPAND_CASE(no,cast);
+    EXPAND_CASE(no,implicitcast);
+    EXPAND_CASE(no,once);
+    EXPAND_CASE(no,csv);
+    EXPAND_CASE(no,sql);
+    EXPAND_CASE(no,thor);
+    EXPAND_CASE(no,flat);
+    EXPAND_CASE(no,pipe);
+    EXPAND_CASE(no,mix);
+    EXPAND_CASE(no,selectnth);
+    EXPAND_CASE(no,stored);
+    EXPAND_CASE(no,failure);
+    EXPAND_CASE(no,success);
+    EXPAND_CASE(no,recovery);
+    EXPAND_CASE(no,external);
+    EXPAND_CASE(no,funcdef);
+    EXPAND_CASE(no,externalcall);
+    EXPAND_CASE(no,wait);
+    EXPAND_CASE(no,event);
+    EXPAND_CASE(no,persist);
+    EXPAND_CASE(no,buildindex);
+    EXPAND_CASE(no,output);
+    EXPAND_CASE(no,omitted);
+    EXPAND_CASE(no,when);
+    EXPAND_CASE(no,setconditioncode);
+    EXPAND_CASE(no,priority);
+    EXPAND_CASE(no,intformat);
+    EXPAND_CASE(no,realformat);
+    EXPAND_CASE(no,abs);
+    EXPAND_CASE(no,nofold);
+    EXPAND_CASE(no,table);
+    EXPAND_CASE(no,keyindex);
+    EXPAND_CASE(no,temptable);
+    EXPAND_CASE(no,usertable);
+    EXPAND_CASE(no,choosen);
+    EXPAND_CASE(no,filter);
+    EXPAND_CASE(no,fetch);
+    EXPAND_CASE(no,join);
+    EXPAND_CASE(no,joined);
+    EXPAND_CASE(no,sort);
+    EXPAND_CASE(no,sorted);
+    EXPAND_CASE(no,sortlist);
+    EXPAND_CASE(no,dedup);
+    EXPAND_CASE(no,enth);
+    EXPAND_CASE(no,sample);
+    EXPAND_CASE(no,selectfields);
+    EXPAND_CASE(no,persist_check);
+    EXPAND_CASE(no,create_initializer);
+    EXPAND_CASE(no,owned_ds);
+    EXPAND_CASE(no,complex);
+    EXPAND_CASE(no,assign_addfiles);
+    EXPAND_CASE(no,debug_option_value);
+    EXPAND_CASE(no,hash);
+    EXPAND_CASE(no,hash32);
+    EXPAND_CASE(no,hash64);
+    EXPAND_CASE(no,crc);
+    EXPAND_CASE(no,return_stmt);
+    EXPAND_CASE(no,update);
+    EXPAND_CASE(no,shuffle);
+    EXPAND_CASE(no,chooseds);
+    EXPAND_CASE(no,alias);
+    EXPAND_CASE(no,datasetfromdictionary);
+    EXPAND_CASE(no,unused20);
+    EXPAND_CASE(no,unused21);
+    EXPAND_CASE(no,unused22);
+    EXPAND_CASE(no,unused23);
+    EXPAND_CASE(no,unused24);
+    EXPAND_CASE(no,dataset_from_transform);
+    EXPAND_CASE(no,childquery);
+    EXPAND_CASE(no,unknown);
+    EXPAND_CASE(no,createdictionary);
+    EXPAND_CASE(no,indict);
+    EXPAND_CASE(no,countdict);
+    EXPAND_CASE(no,any);
+    EXPAND_CASE(no,unused100);
+    EXPAND_CASE(no,unused101);
+    EXPAND_CASE(no,unused25);
+    EXPAND_CASE(no,unused28);
+    EXPAND_CASE(no,unused29);
+    EXPAND_CASE(no,unused30);
+    EXPAND_CASE(no,unused31);
+    EXPAND_CASE(no,unused32);
+    EXPAND_CASE(no,unused33);
+    EXPAND_CASE(no,unused34);
+    EXPAND_CASE(no,unused35);
+    EXPAND_CASE(no,unused36);
+    EXPAND_CASE(no,unused37);
+    EXPAND_CASE(no,unused38);
+    EXPAND_CASE(no,is_null);
+    EXPAND_CASE(no,dataset_alias);
+    EXPAND_CASE(no,unused40);
+    EXPAND_CASE(no,unused41);
+    EXPAND_CASE(no,unused52);
+    EXPAND_CASE(no,trim);
+    EXPAND_CASE(no,position);
+    EXPAND_CASE(no,charlen);
+    EXPAND_CASE(no,unused42);
+    EXPAND_CASE(no,unused43);
+    EXPAND_CASE(no,unused44);
+    EXPAND_CASE(no,unused45);
+    EXPAND_CASE(no,unused46);
+    EXPAND_CASE(no,unused47);
+    EXPAND_CASE(no,unused48);
+    EXPAND_CASE(no,unused49);
+    EXPAND_CASE(no,unused50);
+    EXPAND_CASE(no,nullptr);
+    EXPAND_CASE(no,sizeof);
+    EXPAND_CASE(no,offsetof);
+    EXPAND_CASE(no,current_date);
+    EXPAND_CASE(no,current_time);
+    EXPAND_CASE(no,current_timestamp);
+    EXPAND_CASE(no,variable);
+    EXPAND_CASE(no,libraryselect);
+    EXPAND_CASE(no,case);
+    EXPAND_CASE(no,band);
+    EXPAND_CASE(no,bor);
+    EXPAND_CASE(no,bxor);
+    EXPAND_CASE(no,bnot);
+    EXPAND_CASE(no,postinc);
+    EXPAND_CASE(no,postdec);
+    EXPAND_CASE(no,preinc);
+    EXPAND_CASE(no,predec);
+    EXPAND_CASE(no,pselect);
+    EXPAND_CASE(no,address);
+    EXPAND_CASE(no,deref);
+    EXPAND_CASE(no,order);
+    EXPAND_CASE(no,hint);
+    EXPAND_CASE(no,attr);
+    EXPAND_CASE(no,self);
+    EXPAND_CASE(no,rank);
+    EXPAND_CASE(no,ranked);
+    EXPAND_CASE(no,mergedscope);
+    EXPAND_CASE(no,ordered);
+    EXPAND_CASE(no,typetransfer);
+    EXPAND_CASE(no,decimalstack);
+    EXPAND_CASE(no,type);
+    EXPAND_CASE(no,apply);
+    EXPAND_CASE(no,ifblock);
+    EXPAND_CASE(no,translated);
+    EXPAND_CASE(no,addfiles);
+    EXPAND_CASE(no,distribute);
+    EXPAND_CASE(no,macro);
+    EXPAND_CASE(no,cloned);
+    EXPAND_CASE(no,cachealias);
+    EXPAND_CASE(no,lshift);
+    EXPAND_CASE(no,rshift);
+    EXPAND_CASE(no,colon);
+    EXPAND_CASE(no,setworkflow_cond);
+    EXPAND_CASE(no,recovering);
+    EXPAND_CASE(no,unused15);
+    EXPAND_CASE(no,random);
+    EXPAND_CASE(no,select);
+    EXPAND_CASE(no,normalize);
+    EXPAND_CASE(no,counter);
+    EXPAND_CASE(no,distributed);
+    EXPAND_CASE(no,grouped);
+    EXPAND_CASE(no,denormalize);
+    EXPAND_CASE(no,transformebcdic);
+    EXPAND_CASE(no,transformascii);
+    EXPAND_CASE(no,childdataset);
+    EXPAND_CASE(no,envsymbol);
+    EXPAND_CASE(no,null);
+    EXPAND_CASE(no,quoted);
+    EXPAND_CASE(no,bound_func);
+    EXPAND_CASE(no,bound_type);
+    EXPAND_CASE(no,metaactivity);
+    EXPAND_CASE(no,fail);
+    EXPAND_CASE(no,filepos);
+    EXPAND_CASE(no,aggregate);
+    EXPAND_CASE(no,distribution);
+    EXPAND_CASE(no,newusertable);
+    EXPAND_CASE(no,newaggregate);
+    EXPAND_CASE(no,newtransform);
+    EXPAND_CASE(no,fromunicode);
+    EXPAND_CASE(no,tounicode);
+    EXPAND_CASE(no,keyunicode);
+    EXPAND_CASE(no,loadxml);
+    EXPAND_CASE(no,isomitted);
+    EXPAND_CASE(no,fieldmap);
+    EXPAND_CASE(no,template_context);
+    EXPAND_CASE(no,ensureresult);
+    EXPAND_CASE(no,getresult);
+    EXPAND_CASE(no,setresult);
+    EXPAND_CASE(no,is_valid);
+    EXPAND_CASE(no,alias_project);
+    EXPAND_CASE(no,alias_scope);
+    EXPAND_CASE(no,global);
+    EXPAND_CASE(no,eventname);
+    EXPAND_CASE(no,sequential);
+    EXPAND_CASE(no,parallel);
+    EXPAND_CASE(no,writespill);
+    EXPAND_CASE(no,readspill);
+    EXPAND_CASE(no,nolink);
+    EXPAND_CASE(no,workflow);
+    EXPAND_CASE(no,workflow_action);
+    EXPAND_CASE(no,commonspill);
+    EXPAND_CASE(no,choosesets);
+    EXPAND_CASE(no,regex_find);
+    EXPAND_CASE(no,regex_replace);
+    EXPAND_CASE(no,workunit_dataset);
+    EXPAND_CASE(no,failcode);
+    EXPAND_CASE(no,failmessage);
+    EXPAND_CASE(no,independent);
+    EXPAND_CASE(no,keyed);
+    EXPAND_CASE(no,compound);
+    EXPAND_CASE(no,checkpoint);
+    EXPAND_CASE(no,split);
+    EXPAND_CASE(no,spill);
+    EXPAND_CASE(no,subgraph);
+    EXPAND_CASE(no,dependenton);
+    EXPAND_CASE(no,setmeta);
+    EXPAND_CASE(no,throughaggregate);
+    EXPAND_CASE(no,joincount);
+    EXPAND_CASE(no,merge_nomatch);
+    EXPAND_CASE(no,countcompare);
+    EXPAND_CASE(no,limit);
+    EXPAND_CASE(no,evaluate_stmt);
+    EXPAND_CASE(no,notify);
+    EXPAND_CASE(no,parse);
+    EXPAND_CASE(no,newparse);
+    EXPAND_CASE(no,skip);
+    EXPAND_CASE(no,matched);
+    EXPAND_CASE(no,matchtext);
+    EXPAND_CASE(no,matchlength);
+    EXPAND_CASE(no,matchposition);
+    EXPAND_CASE(no,pat_select);
+    EXPAND_CASE(no,pat_const);
+    EXPAND_CASE(no,pat_pattern);
+    EXPAND_CASE(no,pat_follow);
+    EXPAND_CASE(no,pat_first);
+    EXPAND_CASE(no,pat_last);
+    EXPAND_CASE(no,pat_repeat);
+    EXPAND_CASE(no,pat_instance);
+    EXPAND_CASE(no,pat_anychar);
+    EXPAND_CASE(no,pat_token);
+    EXPAND_CASE(no,pat_imptoken);
+    EXPAND_CASE(no,pat_set);
+    EXPAND_CASE(no,pat_checkin);
+    EXPAND_CASE(no,pat_x_before_y);
+    EXPAND_CASE(no,pat_x_after_y);
+    EXPAND_CASE(no,xml);
+    EXPAND_CASE(no,compound_fetch);
+    EXPAND_CASE(no,pat_index);
+    EXPAND_CASE(no,pat_beginpattern);
+    EXPAND_CASE(no,pat_endpattern);
+    EXPAND_CASE(no,pat_checklength);
+    EXPAND_CASE(no,topn);
+    EXPAND_CASE(no,outputscalar);
+    EXPAND_CASE(no,matchunicode);
+    EXPAND_CASE(no,pat_validate);
+    EXPAND_CASE(no,unused83);
+    EXPAND_CASE(no,existsgroup);
+    EXPAND_CASE(no,pat_use);
+    EXPAND_CASE(no,unused13);
+    EXPAND_CASE(no,penalty);
+    EXPAND_CASE(no,rowdiff);
+    EXPAND_CASE(no,wuid);
+    EXPAND_CASE(no,featuretype);
+    EXPAND_CASE(no,pat_guard);
+    EXPAND_CASE(no,xmltext);
+    EXPAND_CASE(no,xmlunicode);
+    EXPAND_CASE(no,newxmlparse);
+    EXPAND_CASE(no,xmlparse);
+    EXPAND_CASE(no,xmldecode);
+    EXPAND_CASE(no,xmlencode);
+    EXPAND_CASE(no,pat_featureparam);
+    EXPAND_CASE(no,pat_featureactual);
+    EXPAND_CASE(no,pat_featuredef);
+    EXPAND_CASE(no,evalonce);
+    EXPAND_CASE(no,unused14);
+    EXPAND_CASE(no,merge);
+    EXPAND_CASE(no,keyeddistribute);
+    EXPAND_CASE(no,distributer);
+    EXPAND_CASE(no,impure);
+    EXPAND_CASE(no,attr_link);
+    EXPAND_CASE(no,attr_expr);
+    EXPAND_CASE(no,addsets);
+    EXPAND_CASE(no,rowvalue);
+    EXPAND_CASE(no,newkeyindex);
+    EXPAND_CASE(no,pat_case);
+    EXPAND_CASE(no,pat_nocase);
+    EXPAND_CASE(no,activetable);
+    EXPAND_CASE(no,preload);
+    EXPAND_CASE(no,createset);
+    EXPAND_CASE(no,assertkeyed);
+    EXPAND_CASE(no,assertwild);
+    EXPAND_CASE(no,recordlist);
+    EXPAND_CASE(no,hashmd5);
+    EXPAND_CASE(no,soapcall);
+    EXPAND_CASE(no,soapcall_ds);
+    EXPAND_CASE(no,newsoapcall);
+    EXPAND_CASE(no,newsoapcall_ds);
+    EXPAND_CASE(no,soapaction_ds);
+    EXPAND_CASE(no,newsoapaction_ds);
+    EXPAND_CASE(no,temprow);
+    EXPAND_CASE(no,activerow);
+    EXPAND_CASE(no,catch);
+    EXPAND_CASE(no,unused80);
+    EXPAND_CASE(no,reference);
+    EXPAND_CASE(no,callback);
+    EXPAND_CASE(no,keyedlimit);
+    EXPAND_CASE(no,keydiff);
+    EXPAND_CASE(no,keypatch);
+    EXPAND_CASE(no,returnresult);
+    EXPAND_CASE(no,id2blob);
+    EXPAND_CASE(no,blob2id);
+    EXPAND_CASE(no,anon);
+    EXPAND_CASE(no,projectrow);
+    EXPAND_CASE(no,cppbody);
+    EXPAND_CASE(no,sortpartition);
+    EXPAND_CASE(no,define);
+    EXPAND_CASE(no,globalscope);
+    EXPAND_CASE(no,forcelocal);
+    EXPAND_CASE(no,typedef);
+    EXPAND_CASE(no,matchattr);
+    EXPAND_CASE(no,pat_production);
+    EXPAND_CASE(no,guard);
+    EXPAND_CASE(no,datasetfromrow);
+    EXPAND_CASE(no,createrow);
+    EXPAND_CASE(no,selfref);
+    EXPAND_CASE(no,unicodeorder);
+    EXPAND_CASE(no,assertconstant);
+    EXPAND_CASE(no,compound_selectnew);
+    EXPAND_CASE(no,nothor);
+    EXPAND_CASE(no,newrow);
+    EXPAND_CASE(no,clustersize);
+    EXPAND_CASE(no,call);
+    EXPAND_CASE(no,compound_diskread);
+    EXPAND_CASE(no,compound_disknormalize);
+    EXPAND_CASE(no,compound_diskaggregate);
+    EXPAND_CASE(no,compound_diskcount);
+    EXPAND_CASE(no,compound_diskgroupaggregate);
+    EXPAND_CASE(no,compound_indexread);
+    EXPAND_CASE(no,compound_indexnormalize);
+    EXPAND_CASE(no,compound_indexaggregate);
+    EXPAND_CASE(no,compound_indexcount);
+    EXPAND_CASE(no,compound_indexgroupaggregate);
+    EXPAND_CASE(no,compound_childread);
+    EXPAND_CASE(no,compound_childnormalize);
+    EXPAND_CASE(no,compound_childaggregate);
+    EXPAND_CASE(no,compound_childcount);
+    EXPAND_CASE(no,compound_childgroupaggregate);
+    EXPAND_CASE(no,compound_inline);
+    EXPAND_CASE(no,getgraphresult);
+    EXPAND_CASE(no,setgraphresult);
+    EXPAND_CASE(no,assert);
+    EXPAND_CASE(no,assert_ds);
+    EXPAND_CASE(no,namedactual);
+    EXPAND_CASE(no,combine);
+    EXPAND_CASE(no,rows);
+    EXPAND_CASE(no,rollupgroup);
+    EXPAND_CASE(no,regroup);
+    EXPAND_CASE(no,combinegroup);
+    EXPAND_CASE(no,inlinetable);
+    EXPAND_CASE(no,transformlist);
+    EXPAND_CASE(no,variance);
+    EXPAND_CASE(no,covariance);
+    EXPAND_CASE(no,correlation);
+    EXPAND_CASE(no,vargroup);
+    EXPAND_CASE(no,covargroup);
+    EXPAND_CASE(no,corrgroup);
+    EXPAND_CASE(no,denormalizegroup);
+    EXPAND_CASE(no,xmlproject);
+    EXPAND_CASE(no,spillgraphresult);
+    EXPAND_CASE(no,enum);
+    EXPAND_CASE(no,pat_or);
+    EXPAND_CASE(no,loop);
+    EXPAND_CASE(no,loopbody);
+    EXPAND_CASE(no,cluster);
+    EXPAND_CASE(no,forcenolocal);
+    EXPAND_CASE(no,allnodes);
+    EXPAND_CASE(no,unused6);
+    EXPAND_CASE(no,matchrow);
+    EXPAND_CASE(no,sequence);
+    EXPAND_CASE(no,selfjoin);
+    EXPAND_CASE(no,remotescope);
+    EXPAND_CASE(no,privatescope);
+    EXPAND_CASE(no,virtualscope);
+    EXPAND_CASE(no,concretescope);
+    EXPAND_CASE(no,purevirtual);
+    EXPAND_CASE(no,internalvirtual);
+    EXPAND_CASE(no,delayedselect);
+    EXPAND_CASE(no,pure);
+    EXPAND_CASE(no,libraryscope);
+    EXPAND_CASE(no,libraryscopeinstance);
+    EXPAND_CASE(no,libraryinput);
+    EXPAND_CASE(no,pseudods);
+    EXPAND_CASE(no,process);
+    EXPAND_CASE(no,matchutf8);
+    EXPAND_CASE(no,thisnode);
+    EXPAND_CASE(no,graphloop);
+    EXPAND_CASE(no,rowset);
+    EXPAND_CASE(no,loopcounter);
+    EXPAND_CASE(no,getgraphloopresult);
+    EXPAND_CASE(no,setgraphloopresult);
+    EXPAND_CASE(no,rowsetindex);
+    EXPAND_CASE(no,rowsetrange);
+    EXPAND_CASE(no,assertstepped);
+    EXPAND_CASE(no,assertsorted);
+    EXPAND_CASE(no,assertgrouped);
+    EXPAND_CASE(no,assertdistributed);
+    EXPAND_CASE(no,mergejoin);
+    EXPAND_CASE(no,datasetlist);
+    EXPAND_CASE(no,nwayjoin);
+    EXPAND_CASE(no,nwaymerge);
+    EXPAND_CASE(no,stepped);
+    EXPAND_CASE(no,existslist);
+    EXPAND_CASE(no,countlist);
+    EXPAND_CASE(no,maxlist);
+    EXPAND_CASE(no,minlist);
+    EXPAND_CASE(no,sumlist);
+    EXPAND_CASE(no,getgraphloopresultset);
+    EXPAND_CASE(no,forwardscope);
+    EXPAND_CASE(no,pat_before_y);
+    EXPAND_CASE(no,pat_after_y);
+    EXPAND_CASE(no,extractresult);
+    EXPAND_CASE(no,attrname);
+    EXPAND_CASE(no,nonempty);
+    EXPAND_CASE(no,processing);
+    EXPAND_CASE(no,filtergroup);
+    EXPAND_CASE(no,rangecommon);
+    EXPAND_CASE(no,section);
+    EXPAND_CASE(no,nobody);
+    EXPAND_CASE(no,deserialize);
+    EXPAND_CASE(no,serialize);
+    EXPAND_CASE(no,eclcrc);
+    EXPAND_CASE(no,top);
+    EXPAND_CASE(no,uncommoned_comma);
+    EXPAND_CASE(no,nameof);
+    EXPAND_CASE(no,catchds);
+    EXPAND_CASE(no,file_logicalname);
+    EXPAND_CASE(no,toxml);
+    EXPAND_CASE(no,sectioninput);
+    EXPAND_CASE(no,forcegraph);
+    EXPAND_CASE(no,eventextra);
+    EXPAND_CASE(no,unused81);
+    EXPAND_CASE(no,related);
+    EXPAND_CASE(no,executewhen);
+    EXPAND_CASE(no,definesideeffect);
+    EXPAND_CASE(no,callsideeffect);
+    EXPAND_CASE(no,fromxml);
+    EXPAND_CASE(no,actionlist);
+    EXPAND_CASE(no,preservemeta);
+    EXPAND_CASE(no,normalizegroup);
+    EXPAND_CASE(no,indirect);
+    EXPAND_CASE(no,selectindirect);
+    EXPAND_CASE(no,nohoist);
+    EXPAND_CASE(no,merge_pending);
+    EXPAND_CASE(no,httpcall);
+    EXPAND_CASE(no,getenv);
     }
-    return "unknown_op";
+
+    return "<unknown>";
 }
 
-static const char * getTypeText(type_t type)
+const char * getTypeIRText(type_t type)
 {
     switch(type)
     {
-    DUMP_CASE(type,boolean);
-    DUMP_CASE(type,int);
-    DUMP_CASE(type,real);
-    DUMP_CASE(type,decimal);
-    DUMP_CASE(type,string);
-    DUMP_CASE(type,date);
-    DUMP_CASE(type,bitfield);
-    DUMP_CASE(type,char);
-    DUMP_CASE(type,enumerated);
-    DUMP_CASE(type,record);
-    DUMP_CASE(type,varstring);
-    DUMP_CASE(type,blob);
-    DUMP_CASE(type,data);
-    DUMP_CASE(type,pointer);
-    DUMP_CASE(type,class);
-    DUMP_CASE(type,array);
-    DUMP_CASE(type,table);
-    DUMP_CASE(type,set);
-    DUMP_CASE(type,row);
-    DUMP_CASE(type,groupedtable);
-    DUMP_CASE(type,void);
-    DUMP_CASE(type,alien);
-    DUMP_CASE(type,swapint);
-    DUMP_CASE(type,none);
-    DUMP_CASE(type,packedint);
-    DUMP_CASE(type,qstring);
-    DUMP_CASE(type,unicode);
-    DUMP_CASE(type,any);
-    DUMP_CASE(type,varunicode);
-    DUMP_CASE(type,pattern);
-    DUMP_CASE(type,rule);
-    DUMP_CASE(type,token);
-    DUMP_CASE(type,feature);
-    DUMP_CASE(type,event);
-    DUMP_CASE(type,null);
-    DUMP_CASE(type,scope);
-    DUMP_CASE(type,utf8);
-    DUMP_CASE(type,transform);
-    DUMP_CASE(type,ifblock);
-    DUMP_CASE(type,function);
-    DUMP_CASE(type,sortlist);
-    DUMP_CASE(type,dictionary);
+    EXPAND_CASE(type,boolean);
+    EXPAND_CASE(type,int);
+    EXPAND_CASE(type,real);
+    EXPAND_CASE(type,decimal);
+    EXPAND_CASE(type,string);
+    EXPAND_CASE(type,date);
+    EXPAND_CASE(type,bitfield);
+    EXPAND_CASE(type,char);
+    EXPAND_CASE(type,enumerated);
+    EXPAND_CASE(type,record);
+    EXPAND_CASE(type,varstring);
+    EXPAND_CASE(type,blob);
+    EXPAND_CASE(type,data);
+    EXPAND_CASE(type,pointer);
+    EXPAND_CASE(type,class);
+    EXPAND_CASE(type,array);
+    EXPAND_CASE(type,table);
+    EXPAND_CASE(type,set);
+    EXPAND_CASE(type,row);
+    EXPAND_CASE(type,groupedtable);
+    EXPAND_CASE(type,void);
+    EXPAND_CASE(type,alien);
+    case type_swapint: return "swap";
+    EXPAND_CASE(type,none);
+    EXPAND_CASE(type,packedint);
+    EXPAND_CASE(type,qstring);
+    EXPAND_CASE(type,unicode);
+    EXPAND_CASE(type,any);
+    EXPAND_CASE(type,varunicode);
+    EXPAND_CASE(type,pattern);
+    EXPAND_CASE(type,rule);
+    EXPAND_CASE(type,token);
+    EXPAND_CASE(type,feature);
+    EXPAND_CASE(type,event);
+    EXPAND_CASE(type,null);
+    EXPAND_CASE(type,scope);
+    EXPAND_CASE(type,utf8);
+    EXPAND_CASE(type,transform);
+    EXPAND_CASE(type,ifblock);
+    EXPAND_CASE(type,function);
+    EXPAND_CASE(type,sortlist);
+    EXPAND_CASE(type,dictionary);
+    EXPAND_CASE(type,alias);
 
-    case type_unused1:
     case type_unused2:
     case type_unused3:
     case type_unused4:
     case type_unused5:
         return "unused";
     }
-    return "unknown_type";
+    return "<unknown>";
+}
+
+// -----------------------------------------------------------------
+
+// The class performing the building is repsonsible for mapping its internal representation to and from the types
+// returned by the builder interface
+
+typedef memsize_t id_t;
+typedef id_t typeid_t;
+typedef id_t exprid_t;
+typedef UnsignedArray IdArray;
+
+inline type_t getRequiredTypeCode(node_operator op)
+{
+    switch (op)
+    {
+    //These always have the same type
+    case no_assign:
+    case no_output:
+    case no_sequential:
+    case no_parallel:
+    case no_apply:
+        return type_void;
+    case no_attr:
+    case no_attr_expr:
+    case no_attr_link:
+        return type_null;
+
+    //These must never have the type
+    case no_record:
+    case no_privatescope:
+    case no_scope:
+        return type_alias; // type is an alias if itself.
+    }
+    return type_none;
+}
+
+struct ConstantBuilderInfo
+{
+public:
+    ConstantBuilderInfo() : tc(type_none), type(0) {}
+
+public:
+    type_t tc;
+    typeid_t type;
+
+    union
+    {
+        unsigned __int64 intValue;
+        double realValue;
+        struct
+        {
+            size32_t size;
+            const void * data;
+        } dataValue;
+    };
+};
+
+struct SimpleTypeBuilderInfo
+{
+public:
+    SimpleTypeBuilderInfo() : length(0), isSigned(false), precision(0), locale(NULL) {}
+
+public:
+    size32_t length;
+    size32_t precision;
+    bool isSigned;
+    const char * locale; // locale or code page
+};
+
+struct CompoundTypeBuilderInfo
+{
+public:
+    CompoundTypeBuilderInfo() : baseType(0) {}
+
+public:
+    id_t baseType;
+};
+
+class TypeAnnotationBuilderInfo
+{
+public:
+    TypeAnnotationBuilderInfo() : type(0), otherExpr(0) {}
+
+public:
+    typeid_t type;
+    exprid_t otherExpr;
+};
+
+class ExprBuilderInfo
+{
+public:
+    ExprBuilderInfo() : type(0), name(NULL), sequence(0) {}
+
+    inline void addOperand(exprid_t id) { args.append((unsigned)id); }
+
+public:
+    typeid_t type;
+    _ATOM name;
+    unsigned __int64 sequence;
+    IdArray args;
+};
+
+class ExprAnnotationBuilderInfo
+{
+public:
+    ExprAnnotationBuilderInfo() : expr(0), name(NULL), value(0), col(0), warning(NULL), tree(NULL) {}
+
+public:
+    exprid_t expr;
+    const char * name;
+    IECLError * warning;
+    IPropertyTree * tree;
+    unsigned value;
+    unsigned col;
+    IdArray args;
+};
+
+
+interface IEclBuilder
+{
+public:
+    virtual typeid_t addSimpleType(type_t tc, const SimpleTypeBuilderInfo & info) = 0;
+    virtual typeid_t addExprType(type_t tc, exprid_t expr) = 0;
+    virtual typeid_t addCompoundType(type_t tc, const CompoundTypeBuilderInfo & info) = 0;
+    virtual typeid_t addUnknownType(type_t tc) = 0;
+    virtual typeid_t addTypeAnnotation(typemod_t kind, const TypeAnnotationBuilderInfo & info) = 0;
+
+    virtual exprid_t addExpr(node_operator op, const ExprBuilderInfo & info) = 0;
+    virtual exprid_t addConstantExpr(const ConstantBuilderInfo & info) = 0;
+    virtual exprid_t addExprAnnotation(annotate_kind annot, const ExprAnnotationBuilderInfo & info) = 0;
+
+    virtual void addReturn(exprid_t) = 0;
+};
+
+//--------------------------------------------------------------------------------------------------------------------
+//- Binary
+//--------------------------------------------------------------------------------------------------------------------
+
+class IdMapper
+{
+public:
+    void addMapping(id_t src, id_t target)
+    {
+        while (targetIds.ordinality() < src)
+            targetIds.append(0);
+        if (targetIds.ordinality() > src)
+        {
+            assertex(targetIds.item(src) == 0);
+            targetIds.replace(target, (unsigned)src);
+        }
+        else
+            targetIds.append(target);
+    }
+    id_t lookup(id_t src) const
+    {
+        if (src == 0)
+            return 0;
+        assertex(targetIds.isItem(src));
+        return targetIds.item(src);
+    }
+
+protected:
+    UnsignedArray targetIds;
+};
+
+//Hardly worth having as a base class at the moment - more for documentation
+class CIRPlayer
+{
+public:
+    CIRPlayer(IEclBuilder * _target) : target(_target)
+    {
+    }
+
+protected:
+    IEclBuilder * target;
+};
+
+class BinaryIRPlayer : public CIRPlayer
+{
+    enum {
+        IntLengthMask = 0x3f,
+        SignedMask = 0x80,
+    };
+
+    //Needs to be in a binary format class so shared with writer
+    enum
+    {
+        ElementNone,
+        ElementType,
+        ElementExpr,
+        ElementReturn,
+    };
+
+public:
+    BinaryIRPlayer(ISimpleReadStream * _in, IEclBuilder * _target) : CIRPlayer(_target), in(_in)
+    {
+    }
+
+    void process();
+
+protected:
+
+    bool processTypeOrExpr();
+    exprid_t processExpr();
+    typeid_t processType();
+    void processReturn();
+
+//Processing for specific types.
+    typeid_t readType();
+    typeid_t readSimpleType(type_t tc);
+    typeid_t readTableType();
+    exprid_t readExpr();
+
+//Processing for expressions
+
+
+//Mapping helpers
+    void addMapping(typeid_t srcId, typeid_t tgtId) { idMapper.addMapping(srcId, tgtId); }
+    exprid_t mapExprToTarget(exprid_t srcId) const { return idMapper.lookup(srcId); }
+    typeid_t mapTypeToTarget(typeid_t srcId) const { return idMapper.lookup(srcId); }
+
+protected:
+    //Candidates for being wrapped in a class together with in
+    template <class X>
+    inline void read(X & x) const { in->read(sizeof(x), &x); }
+    template <class X>
+    void readPacked(X & value) const { read(value); }
+    _ATOM readName();
+
+    exprid_t BinaryIRPlayer::readId() const;
+
+private:
+    Owned<ISimpleReadStream> in;
+    IdMapper idMapper;
+    unsigned seq;
+};
+
+void BinaryIRPlayer::process()
+{
+    seq = 1;
+    loop
+    {
+        byte element;
+        read(element);
+        switch (element)
+        {
+        case ElementNone:
+            return;
+        case ElementType:
+            processType();
+            break;
+        case ElementExpr:
+            processExpr();
+            break;
+        case ElementReturn:
+            processReturn();
+            break;
+        }
+    }
+}
+
+typeid_t BinaryIRPlayer::processType()
+{
+    typeid_t id = readType();
+    addMapping(seq++, id);
+    return id;
+}
+
+exprid_t BinaryIRPlayer::processExpr()
+{
+    exprid_t id = readExpr();
+    addMapping(seq++, id);
+    return id;
+}
+
+exprid_t BinaryIRPlayer::readId() const
+{
+    exprid_t id;
+    readPacked(id);
+    return mapExprToTarget(id);
+}
+
+
+//Functions for reading types and processing them
+typeid_t BinaryIRPlayer::readType()
+{
+    type_t tc;
+    read(tc);
+    switch (tc)
+    {
+    case type_none:
+        return 0;
+    case type_alias:
+        {
+            unsigned refid;
+            readPacked(refid);
+            return mapTypeToTarget(refid);
+        };
+    case type_int:
+        return readSimpleType(tc);
+    case type_table:
+        return readTableType();
+    default:
+        return target->addUnknownType(tc);
+    }
+    throwUnexpected();
+}
+
+typeid_t BinaryIRPlayer::readSimpleType(type_t tc)
+{
+    SimpleTypeBuilderInfo info;
+    switch (tc)
+    {
+    case type_int:
+        {
+            //MORE: Worry about packing the binary representation later
+            //(or should it be done by passing through zip)
+            read(info.length);
+            read(info.isSigned);
+            break;
+        }
+    case type_data:
+        readPacked(info.length);
+        break;
+    default:
+        throwUnexpected();
+    }
+
+    return target->addSimpleType(tc, info);
+}
+
+typeid_t BinaryIRPlayer::readTableType()
+{
+    UNIMPLEMENTED;
+    return 0;
+}
+
+//Functions for reading expressions and processing them
+exprid_t BinaryIRPlayer::readExpr()
+{
+    node_operator op;
+    read(op);
+    if (op == no_none)
+        return 0;
+
+    ExprBuilderInfo info;
+    info.type = readId();
+    info.name = readName();
+    loop
+    {
+        exprid_t id = readId();
+        if (!id)
+            break;
+        info.addOperand(id);
+    }
+    return target->addExpr(op, info);
+}
+
+void BinaryIRPlayer::processReturn()
+{
+    exprid_t id = readId();
+    target->addReturn(id);
+}
+
+_ATOM BinaryIRPlayer::readName()
+{
+    return NULL;
+}
+
+//MORE: Compress the binary format
+//--------------------------------------------------------------------------------------------------------------------
+//- Text
+//--------------------------------------------------------------------------------------------------------------------
+
+enum
+{
+    TIRexpandSimpleTypes    = 0x00000001,
+    TIRexpandAttributes     = 0x00000002,
+    TIRstripAnnotatations   = 0x00000004,
+};
+class TextIRBuilder : public CInterfaceOf<IEclBuilder>
+{
+    class Definition
+    {
+    public:
+        Definition(const char * prefix, id_t _id, bool expandInline) : id(_id)
+        {
+            if (!expandInline)
+                idText.append("%").append(prefix).append(id);
+        }
+
+        inline bool expandInline() const { return idText.length() == 0; }
+
+    public:
+        StringBuffer idText;
+        id_t id;
+    };
+
+public:
+    TextIRBuilder(unsigned _options) : options(_options) {}
+
+    virtual typeid_t addSimpleType(type_t tc, const SimpleTypeBuilderInfo & info)
+    {
+        bool expandInline = (options & TIRexpandSimpleTypes) != 0;
+        Definition def("t", nextId(), expandInline);
+
+        startDefinition(def, "type");
+        appendTypeText(tc, info);
+        finishDefinition(def);
+        return def.id;
+    }
+
+    virtual typeid_t addExprType(type_t tc, exprid_t expr)
+    {
+        Definition def("t", nextId(), false);
+
+        startDefinition(def, "type");
+        line.append(getTypeIRText(tc)).append("(");
+        appendId(expr).append(")");
+        finishDefinition(def);
+
+        return def.id;
+    }
+
+    virtual typeid_t addCompoundType(type_t tc, const CompoundTypeBuilderInfo & info)
+    {
+        Definition def("t", nextId(), false);
+
+        startDefinition(def, "type");
+        line.append(getTypeIRText(tc)).append("(");
+        appendId(info.baseType).append(")");
+        finishDefinition(def);
+
+        return def.id;
+    }
+
+
+    virtual typeid_t addUnknownType(type_t tc)
+    {
+        Definition def("t", nextId(), false);
+
+        startDefinition(def, "type");
+        line.append("unknown:").append(getTypeIRText(tc));
+        finishDefinition(def);
+
+        return def.id;
+    }
+
+    virtual typeid_t addTypeAnnotation(typemod_t kind, const TypeAnnotationBuilderInfo & info)
+    {
+        if (options & TIRstripAnnotatations)
+            return info.type;
+
+        Definition def("t", nextId(), false);
+
+        startDefinition(def, "type");
+        appendId(info.type).append(" {");
+        switch (kind)
+        {
+        case typemod_const:
+            line.append("const");
+            break;
+        case typemod_ref:
+            line.append("reference");
+            break;
+        case typemod_wrapper:
+            line.append("wrapper");
+            break;
+        case typemod_builder:
+            line.append("builder");
+            break;
+        case typemod_original:
+            line.append("original(");
+            appendId(info.otherExpr);
+            line.append(")");
+            break;
+        case typemod_member:
+            line.append("member");
+            break;
+        case typemod_serialized:
+            line.append("serialized");
+            break;
+        case typemod_outofline:
+            line.append("outofline");
+            break;
+        case typemod_attr:
+            line.append("attr(");
+            appendId(info.otherExpr);
+            line.append(")");
+            break;
+        case typemod_indirect:
+            line.append("indirect(");
+            appendId(info.otherExpr);
+            line.append(")");
+            break;
+        }
+        line.append("}");
+        finishDefinition(def);
+
+        return def.id;
+    }
+
+    virtual exprid_t addExpr(node_operator op, const ExprBuilderInfo & info)
+    {
+        bool expandInline = false;
+        const char * prefix = "e";
+        switch (op)
+        {
+        case no_attr:
+        case no_attr_expr:
+            expandInline = (options & TIRexpandAttributes) != 0;
+            break;
+        case no_assign:
+            prefix = "as";
+            break;
+        }
+        Definition def(prefix, nextId(), expandInline);
+
+        startDefinition(def, NULL);
+        appendExprText(op, info);
+        finishDefinition(def);
+
+        return def.id;
+    }
+
+    virtual exprid_t addConstantExpr(const ConstantBuilderInfo & info)
+    {
+        Definition def("c", nextId(), false);
+
+        startDefinition(def, NULL);
+        line.append("constant ");
+        appendConstantText(info);
+        finishDefinition(def);
+
+        return def.id;
+    }
+
+    virtual exprid_t addExprAnnotation(annotate_kind annot, const ExprAnnotationBuilderInfo & info)
+    {
+        if (options & TIRstripAnnotatations)
+            return info.expr;
+
+        Definition def("e", nextId(), false);
+
+        startDefinition(def, NULL);
+        appendId(info.expr);
+        line.append(" {");
+        switch (annot)
+        {
+        case annotate_symbol:
+            line.append("symbol ").append(info.name);
+            if (info.value & ob_exported)
+                line.append("exported");
+            else if (info.value & ob_shared)
+                line.append("shared");
+            break;
+        case annotate_location:
+            line.append("location '").append(info.name);
+            line.append("'");
+            if (info.value)
+            {
+                line.append(",").append(info.value);
+                if (info.col)
+                    line.append(",").append(info.col);
+            }
+            break;
+        case annotate_meta:
+            {
+                line.append("meta(");
+                ForEachItemIn(i, info.args)
+                {
+                    if (i!= 0)
+                        line.append(",");
+                    appendId(info.args.item(i));
+                }
+                line.append(")");
+                break;
+            }
+        case annotate_warning:
+            {
+                IECLError * warning = info.warning;
+                StringBuffer msg;
+                warning->errorMessage(msg);
+                const char * filename = warning->getFilename();
+                line.append("warning ");
+                line.append("(");
+                if (filename)
+                {
+                    line.append("'");
+                    appendStringAsCPP(line, strlen(filename), filename, false);
+                    line.append("'");
+                }
+                line.append(",").append(warning->getLine());
+                line.append(",").append(warning->getColumn());
+                line.append(",").append(warning->errorCode());
+                line.append(",'");
+                appendStringAsCPP(line, msg.length(), msg.str(), false);
+                line.append("'");
+                line.append(",").append(warning->errorAudience());
+                line.append(",").append(warning->isError());
+                line.append(")");
+                break;
+            }
+        case annotate_parsemeta:
+            line.append("parsemeta");
+            break;
+        case annotate_javadoc:
+            line.append("javadoc ");
+            toXML(info.tree, line);
+            break;
+        default:
+            line.append("unknown");
+            break;
+        }
+        line.append("}");
+        finishDefinition(def);
+
+        return def.id;
+    }
+
+    virtual void addReturn(exprid_t id)
+    {
+        line.append("return ");
+        appendId(id);
+
+        finishLine();
+    }
+
+protected:
+    inline id_t nextId() const { return ids.ordinality()+1; }
+
+    id_t createId(const char * prefix)
+    {
+        id_t nextId = ids.ordinality()+1;
+        StringBuffer idText;
+        idText.append("%").append(prefix).append(nextId);
+        ids.append(idText.str());
+        return nextId;
+    }
+
+    id_t addId(const char * text)
+    {
+        id_t nextId = ids.ordinality()+1;
+        ids.append(text);
+        return nextId;
+    }
+
+    void appendTypeText(type_t tc, const SimpleTypeBuilderInfo & info)
+    {
+        const char * irText = getTypeIRText(tc);
+        switch (tc)
+        {
+        case type_boolean:
+        case type_date:
+        case type_char:
+        case type_event:
+        case type_null:
+        case type_void:
+        case type_sortlist:
+        case type_any:
+            line.append(irText);
+            return;
+        case type_int:
+        case type_swapint:
+            {
+                if (!info.isSigned)
+                    line.append("u");
+                line.append(irText);
+                line.append(info.length);
+                return;
+            }
+        case type_real:
+        case type_data:
+        case type_qstring:
+            line.append(irText);
+            if (info.length != UNKNOWN_LENGTH)
+                line.append(info.length);
+            return;
+        case type_decimal:
+        case type_packedint:
+        case type_bitfield:
+        case type_enumerated:
+            return;
+        case type_string:
+        case type_unicode:
+        case type_utf8:
+        case type_varstring:
+            line.append(irText);
+            if (info.length != UNKNOWN_LENGTH)
+                line.append(info.length);
+            line.append("(").append(info.locale).append(")");
+            return;
+        }
+        line.append(irText).append("(").append(info.length).append(",").append(info.precision).append(",").append(info.isSigned).append(")");
+    }
+
+    void appendExprText(node_operator op, const ExprBuilderInfo & info)
+    {
+        line.append(getOperatorIRText(op));
+        if (info.name)
+            line.append("#").append(info.name);
+        if (info.sequence)
+            line.append("[seq(").append(info.sequence).append(")]");
+
+        if (info.args.ordinality())
+        {
+            line.append("(");
+            ForEachItemIn(i, info.args)
+            {
+                if (i)
+                    line.append(",");
+                appendId(info.args.item(i));
+            }
+            line.append(")");
+        }
+        type_t tc = getRequiredTypeCode(op);
+        if (tc == type_none)
+        {
+            line.append(" : ");
+            appendId(info.type);
+        }
+    }
+
+    void appendConstantText(const ConstantBuilderInfo & info)
+    {
+        switch (info.tc)
+        {
+        case type_boolean:
+            line.append(info.intValue ? "true" : "false");
+            break;
+        case type_int:
+        case type_swapint:
+            {
+                if (true)//info.isSigned)
+                    line.append((__int64)info.intValue);
+                else
+                    line.append((unsigned __int64)info.intValue);
+                break;
+            }
+        case type_real:
+            {
+                line.append(info.realValue);
+                break;
+            }
+        case type_decimal:
+        case type_packedint:
+        case type_string:
+        case type_bitfield:
+        case type_enumerated:
+        case type_varstring:
+        case type_data:
+        case type_qstring:
+            {
+                line.append("D");
+                appendStringAsQuotedCPP(line, info.dataValue.size, (const char *)info.dataValue.data, false);
+                break;
+            }
+        }
+
+        line.append(" : ");
+        appendId(info.type);
+    }
+
+    StringBuffer & appendId(id_t id)
+    {
+        if (id)
+            line.append(ids.item((unsigned)id-1));
+        else
+            line.append("<null>");
+        return line;
+    }
+
+    void startDefinition(Definition & def, const char * prefix)
+    {
+        if (!def.expandInline())
+        {
+            line.append(def.idText).append(" = ");
+            if (prefix)
+                line.append(prefix).append(" ");
+        }
+    }
+
+    void finishDefinition(Definition & def)
+    {
+        assertex(def.id == ids.ordinality()+1);
+
+        if (!def.expandInline())
+        {
+            ids.append(def.idText);
+            finishLine();
+        }
+        else
+            ids.append(line.str());
+        line.clear();
+    }
+
+    virtual void finishLine() = 0;
+
+protected:
+    unsigned options;
+    StringBuffer line;
+    StringArray ids;
+};
+
+class StringTextIRBuilder : public TextIRBuilder
+{
+public:
+    const char * queryText() { return line.str(); }
+
+protected:
+    virtual void finishLine()
+    {
+        if (line.length())
+        {
+            line.append(";");
+            output.append(line);
+            line.clear();
+        }
+    }
+
+protected:
+    StringBuffer output;
+};
+
+class DblgLogIRBuilder : public TextIRBuilder
+{
+public:
+    DblgLogIRBuilder(unsigned _options) : TextIRBuilder(_options) {}
+
+protected:
+    virtual void finishLine()
+    {
+        if (line.length())
+        {
+            DBGLOG("%s;", line.str());
+            line.clear();
+        }
+    }
+};
+
+class FileIRBuilder : public TextIRBuilder
+{
+public:
+    FileIRBuilder(unsigned _options, FILE * _file) : TextIRBuilder(_options), file(_file) {}
+
+protected:
+    virtual void finishLine()
+    {
+        if (line.length())
+        {
+            fputs(line.str(), file);
+            fputs(";\n", file);
+            line.clear();
+        }
+    }
+
+protected:
+    FILE * file;
+};
+
+class StringBufferIRBuilder : public TextIRBuilder
+{
+public:
+    StringBufferIRBuilder(StringBuffer & _target, unsigned _options) : TextIRBuilder(_options), target(_target) {}
+
+protected:
+    virtual void finishLine()
+    {
+        if (line.length())
+        {
+            target.append(line).append(";\n");
+            line.clear();
+        }
+    }
+
+protected:
+    StringBuffer & target;
+};
+
+class StringArrayIRBuilder : public TextIRBuilder
+{
+public:
+    StringArrayIRBuilder(StringArray & _target, unsigned _options) : TextIRBuilder(_options), target(_target) {}
+
+protected:
+    virtual void finishLine()
+    {
+        if (line.length())
+        {
+            line.append(";");
+            target.append(line.str());
+            line.clear();
+        }
+    }
+
+protected:
+    StringArray & target;
+};
+//--------------------------------------------------------------------------------------------------------------------
+//- XML
+//--------------------------------------------------------------------------------------------------------------------
+
+
+//--------------------------------------------------------------------------------------------------------------------
+
+
+//--------------------------------------------------------------------------------------------------------------------
+//- Expression trees
+//--------------------------------------------------------------------------------------------------------------------
+
+class ExpressionIRBuilder : public CInterfaceOf<IEclBuilder>
+{
+public:
+    virtual typeid_t addSimpleType(type_t tc, const SimpleTypeBuilderInfo & info)
+    {
+        return 0;
+    }
+
+    virtual typeid_t addExprType(type_t tc, exprid_t expr)
+    {
+        return 0;
+    }
+    virtual typeid_t addCompoundType(type_t tc, const CompoundTypeBuilderInfo & info)
+    {
+        return 0;
+    }
+    virtual typeid_t addUnknownType(type_t tc)
+    {
+        return saveItem(makeNullType());
+    }
+
+    virtual typeid_t addTypeAnnotation(typemod_t kind, const TypeAnnotationBuilderInfo & info)
+    {
+        return 0;
+    }
+
+    virtual exprid_t addExpr(node_operator op, const ExprBuilderInfo & info)
+    {
+        return 0;
+    }
+
+    virtual exprid_t addConstantExpr(const ConstantBuilderInfo & info)
+    {
+        UNIMPLEMENTED;
+        return 0;
+    }
+
+    virtual exprid_t addExprAnnotation(annotate_kind annot, const ExprAnnotationBuilderInfo & info)
+    {
+        UNIMPLEMENTED;
+        return 0;
+    }
+
+    virtual void addReturn(exprid_t id)
+    {
+        IHqlExpression * expr = idToExpr(id);
+        results.append(*LINK(expr));
+    }
+
+    IHqlExpression * getExpression() { return createCompound(results); }
+
+protected:
+    id_t saveItem(IInterface * next)
+    {
+        values.append(*next);
+        return values.ordinality();
+    }
+
+    IHqlExpression * idToExpr(id_t id)
+    {
+        if (id == 0)
+            return NULL;
+        IInterface & cur = values.item(id-1);
+        return static_cast<IHqlExpression *>(&cur);
+    }
+
+protected:
+    Array values;
+    HqlExprArray results;
+};
+
+//--------------------------------------------------------------------------------------------------------------------
+
+class ExpressionId : public CInterfaceOf<IInterface>
+{
+public:
+    ExpressionId(id_t _id) : id(_id) {}
+
+public:
+    const id_t id;
+};
+
+class ExpressionIRPlayer : public CIRPlayer
+{
+public:
+    ExpressionIRPlayer(IEclBuilder * _target) : CIRPlayer(_target), seq(0)
+    {
+        lockTransformMutex();
+    }
+    ~ExpressionIRPlayer()
+    {
+        unlockTransformMutex();
+    }
+
+    void play(IHqlExpression * expr);
+
+protected:
+    id_t processType(ITypeInfo * type);
+    id_t doProcessType(ITypeInfo * expr);
+
+    id_t processExpr(IHqlExpression * expr);
+    id_t doProcessExpr(IHqlExpression * expr);
+    id_t doProcessConstant(IHqlExpression * expr);
+    id_t doProcessAnnotation(IHqlExpression * expr);
+
+protected:
+    CopyArray types;
+    UnsignedArray typeIds;
+    unsigned seq;
+};
+
+void ExpressionIRPlayer::play(IHqlExpression * expr)
+{
+    id_t id = processExpr(expr);
+    target->addReturn(id);
+}
+
+//----
+
+id_t ExpressionIRPlayer::processType(ITypeInfo * type)
+{
+    if (!type)
+        return 0;
+
+    unsigned match = types.find(*type);
+    if (match != NotFound)
+        return typeIds.item(match);
+
+    id_t nextId = doProcessType(type);
+
+    types.append(*type);
+    typeIds.append(nextId);
+    return nextId;
+}
+
+id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
+{
+    typemod_t mod = type->queryModifier();
+    if (mod == typemod_none)
+    {
+        type_t tc = type->getTypeCode();
+        SimpleTypeBuilderInfo info;
+
+        switch (tc)
+        {
+        case type_boolean:
+        case type_date:
+        case type_char:
+        case type_event:
+        case type_null:
+        case type_void:
+        case type_sortlist:
+        case type_any:
+            break;
+        case type_int:
+        case type_swapint:
+        case type_real:
+        case type_decimal:
+        case type_packedint:
+            info.length = type->getSize();
+            info.isSigned = type->isSigned();
+            info.precision = type->getPrecision();
+            break;
+        case type_unicode:
+        case type_varunicode:
+        case type_utf8:
+            info.length = type->getStringLen();
+            info.locale = type->queryLocale()->str();
+            break;;
+        case type_string:
+        case type_varstring:
+            info.length = type->getStringLen();
+            info.locale = type->queryCharset()->queryName()->str();
+            break;
+        case type_bitfield:
+            return target->addUnknownType(tc);
+        case type_record:
+        case type_scope:
+        case type_alien:
+        case type_enumerated:
+            return target->addExprType(tc, processExpr(queryExpression(type)));
+        case type_data:
+        case type_qstring:
+            info.length = type->getStringLen();
+            return target->addUnknownType(tc);
+        case type_set:
+        case type_row:
+        case type_pattern:
+        case type_rule:
+        case type_token:
+        case type_transform:
+        case type_table:    // more??
+        case type_groupedtable:
+            {
+                CompoundTypeBuilderInfo info;
+                info.baseType = processType(type->queryChildType());
+                return target->addCompoundType(tc, info);
+            }
+        case type_function:
+            return target->addUnknownType(tc);
+        case type_dictionary:
+            return target->addUnknownType(tc);
+        case type_none:
+        case type_ifblock:
+        case type_alias:
+        case type_blob:
+        case type_pointer:
+        case type_class:
+        case type_array:
+        case type_feature:
+            throwUnexpected();
+            break;
+        default:
+            UNIMPLEMENTED;
+        }
+
+        return target->addSimpleType(tc, info);
+    }
+    else
+    {
+        TypeAnnotationBuilderInfo info;
+        info.type = processType(type->queryTypeBase());
+        switch (mod)
+        {
+        case typemod_original:
+        case typemod_attr:
+        case typemod_indirect:
+            {
+                IHqlExpression * expr = static_cast<IHqlExpression *>(type->queryModifierExtra());
+                info.otherExpr = processExpr(expr);
+                break;
+            }
+        }
+        return target->addTypeAnnotation(mod, info);
+    }
+}
+
+//----
+
+id_t ExpressionIRPlayer::processExpr(IHqlExpression * expr)
+{
+    if (!expr)
+        return 0;
+
+    IInterface * match = expr->queryTransformExtra();
+    if (match)
+    {
+        if (match == expr)
+            throwUnexpected();
+        return static_cast<ExpressionId *>(match)->id;
+    }
+    expr->setTransformExtraUnlinked(expr);
+
+    id_t nextId = doProcessExpr(expr);
+    expr->setTransformExtra(new ExpressionId(nextId));
+    return nextId;
+}
+
+id_t ExpressionIRPlayer::doProcessExpr(IHqlExpression * expr)
+{
+    IHqlExpression * body = expr->queryBody(true);
+    if (body != expr)
+        return doProcessAnnotation(expr);
+
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_constant:
+        return doProcessConstant(expr);
+    }
+
+    ExprBuilderInfo info;
+    switch (op)
+    {
+    case no_externalcall:
+    case no_record:
+    case no_left:
+    case no_self:
+    case no_selfref:
+    case no_right:
+        break;
+    default:
+        info.name = expr->queryName();
+        break;
+    }
+
+    ForEachChild(i, expr)
+        info.args.append(processExpr(expr->queryChild(i)));
+
+    if (getRequiredTypeCode(op) == type_none)
+        info.type = processType(expr->queryType());
+    info.sequence = expr->querySequenceExtra();
+
+    return target->addExpr(op, info);
+}
+
+id_t ExpressionIRPlayer::doProcessConstant(IHqlExpression * expr)
+{
+    IValue * value = expr->queryValue();
+    assertex(value);
+    ITypeInfo * type = expr->queryType();
+    ConstantBuilderInfo info;
+    info.tc = type->getTypeCode();
+    info.type = processType(type);
+
+    switch (info.tc)
+    {
+    case type_boolean:
+        info.intValue = value->getBoolValue();
+        break;
+    case type_int:
+    case type_swapint:
+        info.intValue = value->getIntValue();
+        break;
+    case type_real:
+        info.realValue = value->getRealValue();
+        break;
+    case type_decimal:
+    case type_packedint:
+    case type_string:
+    case type_bitfield:
+    case type_enumerated:
+    case type_varstring:
+    case type_data:
+    case type_qstring:
+        info.dataValue.size = value->getSize();
+        info.dataValue.data = value->queryValue();
+        break;
+    }
+
+    return target->addConstantExpr(info);
+}
+
+id_t ExpressionIRPlayer::doProcessAnnotation(IHqlExpression * expr)
+{
+    annotate_kind kind = expr->getAnnotationKind();
+    IHqlExpression * body = expr->queryBody(true);
+
+    ExprAnnotationBuilderInfo info;
+    Owned<IPropertyTree> javadoc;
+    info.expr = processExpr(body);
+    switch (kind)
+    {
+    case annotate_symbol:
+        {
+            IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(expr->queryAnnotation());
+            info.name = expr->queryName()->str();
+            info.value = annotation->isExported() ? ob_exported : annotation->isShared() ? ob_shared : 0;
+            break;
+        }
+    case annotate_location:
+        info.name = expr->querySourcePath()->str();
+        info.value = expr->getStartLine();
+        info.col = expr->getStartColumn();
+        break;
+    case annotate_meta:
+        //MORE: How do you get at the parameters???
+        break;
+    case annotate_warning:
+        info.warning = queryAnnotatedWarning(expr);
+        break;
+    case annotate_parsemeta:
+        //This isn't even used.
+        break;
+    case annotate_javadoc:
+        javadoc.setown(expr->getDocumentation());
+        info.tree = javadoc;
+        break;
+    }
+
+    return target->addExprAnnotation(kind, info);
 }
 
 // --------------------------------------------------------------- Exported functions
-extern HQL_API void dump_ir(IHqlExpression * expr)
+
+unsigned defaultDumpOptions = TIRexpandSimpleTypes|TIRexpandAttributes;
+
+extern HQL_API void testIR(IHqlExpression * expr)
 {
-    IRExpressionDumper dumper;
-    printf("\nIR Expression Dumper\n====================\n\n");
-    printf("%s", dumper.dump(expr));
+    ExpressionIRBuilder output;
+    ExpressionIRPlayer reader(&output);
+    reader.play(expr);
+
+    OwnedHqlExpr result = output.getExpression();
+    assertex(expr == result);
 }
 
-extern HQL_API void dump_ir(HqlExprArray list)
+extern HQL_API void dump_ir(IHqlExpression * expr)
 {
-    IRExpressionDumper dumper;
     printf("\nIR Expression Dumper\n====================\n");
-    ForEachItemIn(i, list)
-    {
-        printf("\n%s", dumper.dump(&list.item(i)));
-    }
+    FileIRBuilder output(defaultDumpOptions, stdout);
+    ExpressionIRPlayer reader(&output);
+    reader.play(expr);
 }
+
+extern HQL_API void dump_ir(const HqlExprArray & exprs)
+{
+    printf("\nIR Expression Dumper\n====================\n");
+    FileIRBuilder output(defaultDumpOptions, stdout);
+    ExpressionIRPlayer reader(&output);
+    ForEachItemIn(i, exprs)
+        reader.play(&exprs.item(i));
+}
+
+extern HQL_API void dbglogIR(IHqlExpression * expr)
+{
+    DblgLogIRBuilder output(defaultDumpOptions);
+    ExpressionIRPlayer reader(&output);
+    reader.play(expr);
+}
+
+
+extern HQL_API void dbglogIR(const HqlExprArray & exprs)
+{
+    DblgLogIRBuilder output(defaultDumpOptions);
+    ExpressionIRPlayer reader(&output);
+    ForEachItemIn(i, exprs)
+        reader.play(&exprs.item(i));
+}
+
+extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpression * expr)
+{
+    StringBufferIRBuilder output(target, options);
+    ExpressionIRPlayer reader(&output);
+    reader.play(expr);
+}
+
+static void getIRText(StringArray & target, unsigned options, IHqlExpression * expr)
+{
+    StringArrayIRBuilder output(target, options);
+    ExpressionIRPlayer reader(&output);
+    reader.play(expr);
+}
+
+} // end namespace
+
+
+#ifdef _USE_CPPUNIT
+#include "unittests.hpp"
+
+namespace EclIR
+{
+
+// These test queries illustrate the kind of output that is expected from the IR generation
+static const char * const testQuery1 = 
+"r := RECORD\n"
+"  unsigned id;\n"
+"END;\n"
+"\n"
+"r t(unsigned value) := TRANSFORM\n"
+"  SELF.id := value;\n"
+"END;\n"
+"\n"
+"ds := DATASET([t(10), t(1 + 10)]);\n"
+"OUTPUT(ds);\n";
+
+static const char * const expectedIR1 [] = {
+"%t1 = type uint8;",
+"%e2 = field#id : %t1;",
+"%e3 = record(%e2);",
+"%t4 = type record(%e3);",
+"%t5 = type row(%t4);",
+"%e6 = self(%e3) : %t5;",
+"%e7 = select(%e6,%e2) : %t1;",
+"%c8 = constant 10 : %t1;",
+"%as9 = assign(%e7,%c8);",
+"%e10 = %as9 {location '',6,3};",
+"%e11 = %e3 {symbol r};",
+"%t12 = type %t4 {original(%e11)};",
+"%t13 = type transform(%t12);",
+"%e14 = transform(%e10) : %t13;",
+"%e15 = %e14 {symbol t};",
+"%t16 = type int8;",
+"%c17 = constant 1 : %t16;",
+"%c18 = constant 10 : %t16;",
+"%e19 = add(%c17,%c18) : %t16;",
+"%e20 = implicitcast(%e19) : %t1;",
+"%as21 = assign(%e7,%e20);",
+"%e22 = %as21 {location '',6,3};",
+"%e23 = transform(%e22) : %t13;",
+"%e24 = %e23 {symbol t};",
+"%t25 = type null;",
+"%e26 = transformlist(%e15,%e24) : %t25;",
+"%t27 = type table(%t5);",
+"%e28 = inlinetable(%e26,%e3) : %t27;",
+"%e29 = %e28 {location '',9,7};",
+"%e30 = %e29 {symbol ds};",
+"%e31 = null : <null>;",
+"%e32 = selectfields(%e30,%e31) : %t27;",
+"%t33 = type uint4;",
+"%c34 = constant 3219609901 : %t33;",
+"%e35 = attr#always;",
+"%e36 = attr#update(%c34,%e35);",
+"%e37 = output(%e32,%e36);",
+"%e38 = %e37 {location '',10,1};",
+"%e39 = %e38 {location '',10,1};",
+"return %e39;",
+NULL
+};
+
+class EclIRTests : public CppUnit::TestFixture  
+{
+    CPPUNIT_TEST_SUITE( EclIRTests );
+        CPPUNIT_TEST(testExprToText);
+    CPPUNIT_TEST_SUITE_END();
+
+public:
+    void compareStringArrays(const StringArray & left, const char * const right[], unsigned test)
+    {
+        for (unsigned i=0;;i++)
+        {
+            const char * leftLine = left.isItem(i) ? left.item(i) : NULL;
+            const char * rightLine = right[i];
+            if (!leftLine && !rightLine)
+                return;
+            if (!rightLine)
+            {
+                printf("Test %u@%u: Extra item on left: %s", test, i, leftLine);
+                ASSERT(false);
+            }
+            else if (!leftLine)
+            {
+                printf("Test %u@%u: Extra item on right: %s", test, i, rightLine);
+                ASSERT(false);
+            }
+            else
+            {
+                if (strcmp(leftLine, rightLine) != 0)
+                {
+                    printf("Test %u@%u: Line mismatch: [%s],[%s]", test, i, leftLine, rightLine);
+                    ASSERT(false);
+                }
+            }
+        }
+    }
+    void testExprToText()
+    {
+        OwnedHqlExpr query = parseQuery(testQuery1, NULL);
+        StringArray ir;
+        getIRText(ir, 0, query);
+        compareStringArrays(ir, expectedIR1, __LINE__);
+    }
+};
+
+CPPUNIT_TEST_SUITE_REGISTRATION( EclIRTests );
+CPPUNIT_TEST_SUITE_NAMED_REGISTRATION( EclIRTests, "EclIRTests" );
+
+} // end namespace
+#endif // USE_CPPUNIT

@@ -38,6 +38,7 @@
 #include "hqlvalid.hpp"
 #include "hqlerror.hpp"
 #include "hqlalias.hpp"
+#include "hqlir.hpp"
 
 #define TraceExprPrintLog(x, expr) TOSTRLOG(MCdebugInfo(300), unknownJob, x, (expr)->toString);
 //Following are for code that currently cause problems, but are probably a good idea
@@ -12343,6 +12344,9 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     traceExpressions("before normalize", exprs);
     normalizeHqlTree(*this, exprs);
     DEBUG_TIMER("EclServer: tree transform: normalize", msTick()-time1);
+
+    if (wu()->getDebugValueBool("dumpIR", false))
+        EclIR::dump_ir(exprs);
 
     checkNormalized(exprs);
 #ifdef PICK_ENGINE_EARLY

@@ -62,7 +62,7 @@ enum type_vals
     type_real           = 2, 
     type_decimal        = 3, 
     type_string         = 4, 
-type_unused1            = 5, 
+    type_alias          = 5, // This is only used when serializing expression graphs
     type_date           = 6, 
 type_unused2            = 7, 
 type_unused3            = 8, 
@@ -104,6 +104,8 @@ type_unused5            = 29,
     type_function       = 44,
     type_sortlist       = 45,
     type_dictionary     = 46,
+
+    type_max,
 
     type_modifier       = 0xff,     // used by getKind()
     type_unsigned       = 0x100,  // combined with some of the above, when returning summary type information. Not returned by getTypeCode()

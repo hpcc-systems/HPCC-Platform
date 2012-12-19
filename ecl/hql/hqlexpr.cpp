@@ -6839,6 +6839,14 @@ bool isImport(IHqlExpression * expr)
     return symbol && ((symbol->getSymbolFlags() & ob_import) != 0);
 }
 
+IECLError * queryAnnotatedWarning(const IHqlExpression * expr)
+{
+    assertex(expr->getAnnotationKind() == annotate_warning);
+    const CHqlWarningAnnotation * cast = static_cast<const CHqlWarningAnnotation *>(expr);
+    return cast->queryWarning();
+}
+
+
 //==============================================================================================================
 
 

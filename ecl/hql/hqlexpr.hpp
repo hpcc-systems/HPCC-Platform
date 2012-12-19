@@ -1582,6 +1582,8 @@ extern HQL_API bool isExported(IHqlExpression * expr);
 extern HQL_API bool isShared(IHqlExpression * expr);
 extern HQL_API bool isImport(IHqlExpression * expr);
 
+extern HQL_API IECLError * queryAnnotatedWarning(const IHqlExpression * expr);
+
 extern HQL_API bool isPublicSymbol(IHqlExpression * expr);
 extern HQL_API ITypeInfo * getSumAggType(IHqlExpression * arg);
 extern HQL_API ITypeInfo * getSumAggType(ITypeInfo * argType);
