@@ -13388,12 +13388,12 @@ public:
         ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
         loop
         {
-            const void * in = input->nextInGroup();
+            OwnedConstRoxieRow in = input->nextInGroup();
             if (!in)
             {
                 recordCount = 0;
                 if (numProcessedLastGroup == processed)
-                    in = input->nextInGroup();
+                    in.setown(input->nextInGroup());
                 if (!in)
                 {
                     numProcessedLastGroup = processed;
@@ -13409,7 +13409,6 @@ public:
                     outSize = ((IHThorCountProjectArg &) basehelper).transform(rowBuilder, in, ++recordCount);
                 else
                     outSize = ((IHThorProjectArg &) basehelper).transform(rowBuilder, in);
-                ReleaseRoxieRow(in);
                 if (outSize)
                 {
                     processed++;
