@@ -631,7 +631,11 @@ void TransferServer::deserializeAction(MemoryBuffer & msg, unsigned action)
         msg.read(transferBufferSize);
     if (msg.remaining()) 
         msg.read(encryptKey).read(decryptKey);
-
+    if (msg.remaining())
+    {
+        srcFormat.deserializeExtra(msg, 1);
+        tgtFormat.deserializeExtra(msg, 1);
+    }
 
     LOG(MCdebugProgress, unknownJob, "throttle(%d), transferBufferSize(%d)", throttleNicSpeed, transferBufferSize);
     PROGLOG("compressedInput(%d), compressedOutput(%d), copyCompressed(%d)", compressedInput?1:0, compressOutput?1:0, copyCompressed?1:0);
