@@ -227,8 +227,23 @@ void FileFormat::deserialize(MemoryBuffer & in)
         ::deserialize(in, separate);
         ::deserialize(in, quote);
         ::deserialize(in, terminate);
-        ::deserialize(in, escape);
         ::deserialize(in, rowTag);
+        break;
+    }
+}
+
+
+void FileFormat::deserializeExtra(MemoryBuffer & in, unsigned version)
+{
+    switch (type)
+    {
+    case FFTcsv:
+    case FFTutf:
+    case FFTutf8: case FFTutf8n:
+    case FFTutf16: case FFTutf16be: case FFTutf16le:
+    case FFTutf32: case FFTutf32be: case FFTutf32le:
+        if (version == 1)
+            ::deserialize(in, escape);
         break;
     }
 }
@@ -386,8 +401,22 @@ void FileFormat::serialize(MemoryBuffer & out) const
         ::serialize(out, separate);
         ::serialize(out, quote);
         ::serialize(out, terminate);
-        ::serialize(out, escape);
         ::serialize(out, rowTag);
+        break;
+    }
+}
+
+void FileFormat::serializeExtra(MemoryBuffer & out, unsigned version) const
+{
+    switch (type)
+    {
+    case FFTcsv:
+    case FFTutf:
+    case FFTutf8: case FFTutf8n:
+    case FFTutf16: case FFTutf16be: case FFTutf16le:
+    case FFTutf32: case FFTutf32be: case FFTutf32le:
+        if (version == 1)
+            ::serialize(out, escape);
         break;
     }
 }
