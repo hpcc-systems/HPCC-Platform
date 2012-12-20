@@ -360,6 +360,9 @@ bool FileTransferThread::performTransfer()
         msg.append(sprayer.encryptKey);
         msg.append(sprayer.decryptKey);
 
+        sprayer.srcFormat.serializeExtra(msg, 1);
+        sprayer.tgtFormat.serializeExtra(msg, 1);
+
         if (!catchWriteBuffer(socket, msg))
             throwError1(RFSERR_TimeoutWaitConnect, url.str());
 
