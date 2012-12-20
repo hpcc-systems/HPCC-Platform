@@ -6,24 +6,24 @@ zero := nofold(0);
 
 ds := DATASET([{ 'A' }], {string1 f {DEFAULT('B')}});
 
-//ds[0];      // should be constant folded
-//ds[zero];   // should NOT be
+ds[0];      // should be constant folded
+ds[zero];   // should NOT be
 
 dsn := DATASET([], {string1 f {DEFAULT('B')}});
-//dsn[0];     // should be constant folded
-//dsn[zero];  // can also be
+dsn[0];     // should be constant folded
+dsn[zero];  // can also be
 
 // 2. when looking up in a dictionary
 
 dict := DICTIONARY([{ 1 => 'A' }], { unsigned1 v => string1 f {DEFAULT('B')}});
 
-//dict[0];      // Might one day be constant folded
-//dict[zero];   // should NOT be
+dict[0];      // Might one day be constant folded
+dict[zero];   // should NOT be
 
 dictn := DICTIONARY([], { unsigned1 v => string1 f {DEFAULT('B')}});   // Bit useless !
 
-//dictn[0];      // Might be constant folded
-//dictn[zero];   // Might be constant folded
+dictn[0];      // Might be constant folded
+dictn[zero];   // Might be constant folded
 
 // 3. When assigning self := []
 
