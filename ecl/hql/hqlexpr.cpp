@@ -2870,8 +2870,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     }
 
     node_operator op = expr->getOperator();
-    if (op == no_null)
-        return createNullExpr(type);
+    assertex (op != no_null);
 
     IValue * value = expr->queryValue();
     if (value && type->assignableFrom(exprType))    // this last condition is unnecessary, but changes some persist crcs if removed
@@ -12856,6 +12855,11 @@ extern HQL_API IHqlExpression * createNullExpr(ITypeInfo * type)
 
 extern HQL_API IHqlExpression * createNullExpr(IHqlExpression * expr)
 {
+    if (expr->getOperator()==no_select)
+        return createNullExpr(expr->queryChild(1));
+    IHqlExpression * defaultValue = queryPropertyChild(expr, defaultAtom, 0);
+    if (defaultValue)
+        return LINK(defaultValue);
     return createNullExpr(expr->queryType());
 }
 
@@ -12886,23 +12890,22 @@ extern HQL_API IHqlExpression * createPureVirtual(ITypeInfo * type)
         return createValue(no_purevirtual, makeIntType(8, true));
 }
 
-extern HQL_API bool isNullExpr(IHqlExpression * expr, ITypeInfo * type)
+extern HQL_API bool isNullExpr(IHqlExpression * expr, IHqlExpression * field)
 {
     ITypeInfo * exprType = expr->queryType();
-    if (exprType->getTypeCode() != type->getTypeCode())
+    ITypeInfo * fieldType = field->queryType();
+    if (exprType->getTypeCode() != fieldType->getTypeCode())
         return false;
 
     IValue * value = expr->queryValue();
-    switch (type->getTypeCode())
+    switch (fieldType->getTypeCode())
     {
     case type_boolean:
-        return (value && value->getBoolValue() == false);
     case type_int:
     case type_swapint:
     case type_date:
     case type_enumerated:
     case type_bitfield:
-        return (value && value->getIntValue() == 0);
     case type_data:
     case type_string:
     case type_varstring:
@@ -12917,8 +12920,8 @@ extern HQL_API bool isNullExpr(IHqlExpression * expr, ITypeInfo * type)
         {
             if (!value)
                 return false;
-            OwnedHqlExpr null = createNullExpr(type);
-            OwnedHqlExpr castValue = ensureExprType(expr, type);
+            OwnedHqlExpr null = createNullExpr(field);
+            OwnedHqlExpr castValue = ensureExprType(expr, fieldType);
             return null->queryBody() == castValue->queryBody();
         }
     case type_row:

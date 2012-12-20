@@ -656,6 +656,7 @@ CRON                { RETURNSYM(CRON); }
 CSV                 { RETURNSYM(CSV); }
 DATASET             { RETURNSYM(DATASET); }
 DEDUP               { RETURNSYM(DEDUP); }
+DEFAULT             { RETURNSYM(DEFAULT); }
 DEFINE              { RETURNSYM(DEFINE); }
 DENORMALIZE         { RETURNSYM(DENORMALIZE); }
 DEPRECATED          { RETURNSYM(DEPRECATED); }

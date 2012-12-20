@@ -4542,7 +4542,7 @@ IHqlExpression * queryNullDsSelect(__int64 & selectIndex, IHqlExpression * value
     IValue * index = ds->queryChild(1)->queryValue();
     if (!index)
         return NULL;
-    if (!isNullExpr(other, value->queryType()))
+    if (!isNullExpr(other, value))
         return NULL;
     selectIndex = index->getIntValue();
     return ds->queryChild(0);

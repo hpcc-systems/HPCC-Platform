@@ -5316,7 +5316,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                     castValue.setown(ensureExprType(src, type));
                 }
                 else
-                    castValue.setown(createNullExpr(type));
+                    castValue.setown(createNullExpr(expr));
             }
             assigns.append(*createAssign(LINK(target), LINK(castValue)));
             mapper.setMapping(target, castValue);

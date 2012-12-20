@@ -453,7 +453,7 @@ inline void doSerializeRowset(IRowSerializerTarget & out, IOutputRowSerializer *
     for (unsigned i=0; i < count; i++)
     {
         byte *row = rows[i];
-        if (row)   // When serializing a dictionary, there may be nulls in the rowset. These can be skipped (we rehash on deserialize)
+        if (row)
         {
             serializer->serialize(out, rows[i]);
             if (isGrouped)
@@ -461,6 +461,10 @@ inline void doSerializeRowset(IRowSerializerTarget & out, IOutputRowSerializer *
                 byte eogPending = (i+1 < count) && (rows[i+1] == NULL);
                 out.put(1, &eogPending);
             }
+        }
+        else
+        {
+            assert(isGrouped); // should not be seeing NULLs otherwise - should not use this function for DICTIONARY
         }
     }
 }
