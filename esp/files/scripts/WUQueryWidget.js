@@ -27,7 +27,6 @@ define([
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
-    
 
     "dojox/grid/EnhancedGrid",
     "dojox/grid/enhanced/plugins/Pagination",
@@ -100,12 +99,10 @@ define([
             this.inherited(arguments);
             this.refreshActionState();
             this.initWorkunitsGrid();
-               
-            
+
             var pMenu;
             var context = this;
-            
-            
+
             pMenu = new Menu({
                 targetNodeIds: [this.id + "WorkunitsGrid"]
           });
@@ -211,15 +208,12 @@ define([
         },
         _onDeschedule: function (event) {
         },
-        
         _onFilterApply: function (event) {
             this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
             this.refreshGrid();
-            if (domClass.contains("iconFilter", "hidden")){             
-             domClass.add("iconFilter", "iconFilter")
+            if (domClass.contains(this.id + "IconFilter", "hidden")) {
+                domClass.add(this.id + "IconFilter", "iconFilter")
             }
-
-            
         },
         _onFilterClear: function(event) {
             this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
@@ -234,9 +228,9 @@ define([
             dom.byId(this.id + "FromTime").value = "";
             dom.byId(this.id + "ToDate").value = "";
             dom.byId(this.id + "LastNDays").value = "";            
-            domClass.remove("iconFilter", "iconFilter");
-            /*if (domClass.contains("iconFilter", "iconFilter")){             
-             domClass.add("iconFilter", "hidden");
+            domClass.remove(this.id + "IconFilter", "iconFilter");
+            /*if (domClass.contains(this.id + "IconFilter", "iconFilter")){             
+             domClass.add(this.id + "IconFilter", "hidden");
             }*/
             this.refreshGrid();
         },
@@ -289,25 +283,24 @@ define([
 
         initWorkunitsGrid: function() {
             this.workunitsGrid.setStructure([
-			    {
-				    name: "P",
-				    field: "Protected",
-				    width: "20px",
-				    formatter: function (protected) {
-					    if (protected == true) {
-					        return "P";
-                            isProtected = true;
-					    }
-					    return "";
-				    }
-			    },
-			    { name: "Wuid", field: "Wuid", width: "12" },
-			    { name: "Owner", field: "Owner", width: "8" },
-			    { name: "Job Name", field: "Jobname", width: "16" },
-			    { name: "Cluster", field: "Cluster", width: "8" },
-			    { name: "Roxie Cluster", field: "RoxieCluster", width: "8" },
-			    { name: "State", field: "State", width: "8" },
-			    { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
+                {
+                    name: "P",
+                    field: "Protected",
+                    width: "20px",
+                    formatter: function (protected) {
+                        if (protected == true) {
+                            return "P";
+                        }
+                        return "";
+                    }
+                },
+                { name: "Wuid", field: "Wuid", width: "12" },
+                { name: "Owner", field: "Owner", width: "8" },
+                { name: "Job Name", field: "Jobname", width: "16" },
+                { name: "Cluster", field: "Cluster", width: "8" },
+                { name: "Roxie Cluster", field: "RoxieCluster", width: "8" },
+                { name: "State", field: "State", width: "8" },
+                { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
             ]);
             var store = new WsWorkunits.WUQuery();
             var objStore = new ObjectStore({ objectStore: store });
@@ -350,11 +343,10 @@ define([
             var hasNotProtected = false;
             var hasFailed = false;
             var hasNotFailed = false;
-
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i] && selection[i].Protected && selection[i].Protected != "0") {
-                    hasProtected = true;                
+                    hasProtected = true;
                 } else {
                     hasNotProtected = true;
                 }
@@ -399,9 +391,6 @@ define([
                 Wuid: wuid
             });
             this.tabContainer.selectChild(wuTab);
-        },
-
-      
+        }
     });
-        
 });

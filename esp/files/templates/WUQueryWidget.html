@@ -13,7 +13,7 @@
                     <div id="${id}Reschedule" data-dojo-attach-event="onClick:_onReschedule" data-dojo-type="dijit.form.Button">Reschedule</div>
                     <div id="${id}Deschedule" data-dojo-attach-event="onClick:_onDeschedule" data-dojo-type="dijit.form.Button">Deschedule</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <img src="img/filterAdd.png" class="hidden" id="iconFilter"/>
+                    <img src="img/filterAdd.png" class="hidden" id="${id}IconFilter"/>
                     <div data-dojo-type="dijit.form.DropDownButton">
                         <span>Filter</span>
                         <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
@@ -70,7 +70,7 @@
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                </div>                
+                </div>
                 <div id="${id}WorkunitsGrid" data-dojo-props="region: 'center', plugins: { pagination: { pageSizes: [25, 50, 100, 'All'], defaultPageSize: 50, description: true, sizeSwitch: true, pageStepper: true, gotoButton: true, maxPageStep: 4, position: 'bottom' }
                     , indirectSelection: {
                         headerSelector: true,
@@ -78,7 +78,7 @@
                         styles: 'text-align: center;'
                     }
                 }" data-dojo-type="dojox.grid.EnhancedGrid">
-                </div>                
+                </div>
             </div>
             <div id="${id}Legacy" title="Legacy Web Page" data-dojo-type="dijit.layout.ContentPane">
             </div>
