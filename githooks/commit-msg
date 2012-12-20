@@ -38,7 +38,7 @@ Use git commit -s -t $1 to reopen previous message for editing\n"
   exit 1
 }
 
-[ $(cat "$1" | wc -L ) -le 80 ] || {
+[ $(grep -v '^#' "$1" | wc -L ) -le 80 ] || {
   echo >&2 "\n ERROR: Commit message lines too long (max 80 chars)."
   echo >&2 $usage
   exit 1

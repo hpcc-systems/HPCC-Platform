@@ -46,12 +46,14 @@ public:
     FileFormat(FileFormatType _type = FFTunknown, unsigned _recordSize = 0) { set(_type, _recordSize); maxRecordSize = 0;}
 
     void deserialize(MemoryBuffer & in);
+    void deserializeExtra(MemoryBuffer & in, unsigned version);
     bool equals(const FileFormat & other) const     { return (type == other.type) && (recordSize == other.recordSize); }
     unsigned getUnitSize() const;
     bool isUtf() const                              { return (type >= FFTutf) && (type <= FFTutf32le); }
     bool restore(IPropertyTree * props);
     void save(IPropertyTree * props);
     void serialize(MemoryBuffer & out) const;
+    void serializeExtra(MemoryBuffer & out, unsigned version) const;
     void set(FileFormatType _type, unsigned _recordSize = 0) { type = _type, recordSize = _recordSize; }
     void set(const FileFormat & src);
 

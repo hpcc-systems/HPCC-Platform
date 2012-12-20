@@ -718,6 +718,7 @@ struct HqlCppOptions
     bool                showSeqInGraph;
     bool                normalizeSelectorSequence;
     bool                transformCaseToChoose;
+    bool                removeXpathFromOutput;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

@@ -142,7 +142,13 @@ void UsedFieldSet::appendField(IHqlExpression & ownedField)
 
 void UsedFieldSet::clone(const UsedFieldSet & source)
 {
-    assertex(originalFields == source.originalFields);
+    if (originalFields != source.originalFields)
+    {
+        //In very rare circumstances it is possible to have non-identical records with identical structures
+        //A typical case is the same structure defined in two different places, using a symbol to specify a maximum
+        //length.  The locations of the symbols differ, so the records do not match exactly.
+        assertex(recordTypesMatch(queryOriginalRecord(), source.queryOriginalRecord()));
+    }
     ForEachItemIn(i, source.fields)
         appendField(OLINK(source.fields.item(i)));
 

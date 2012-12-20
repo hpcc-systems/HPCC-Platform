@@ -1710,6 +1710,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.showSeqInGraph,"showSeqInGraph",false),  // For tracking down why projects are not commoned up
         DebugOption(options.normalizeSelectorSequence,"normalizeSelectorSequence",false),  // For tracking down why projects are not commoned up
         DebugOption(options.transformCaseToChoose,"transformCaseToChoose",true),
+        DebugOption(options.removeXpathFromOutput,"removeXpathFromOutput",false),
     };
 
     //get options values from workunit

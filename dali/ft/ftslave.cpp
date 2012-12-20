@@ -83,6 +83,12 @@ bool processPartitionCommand(ISocket * masterSocket, MemoryBuffer & msg, MemoryB
     StringAttr decryptkey;
     if (msg.remaining())
         msg.read(decryptkey);
+    if (msg.remaining())
+    {
+        srcFormat.deserializeExtra(msg, 1);
+        tgtFormat.deserializeExtra(msg, 1);
+    }
+
     StringBuffer text;
     fullPath.getRemotePath(text);
     LOG(MCdebugProgress, unknownJob, "Process partition %d(%s)", whichInput, text.str());

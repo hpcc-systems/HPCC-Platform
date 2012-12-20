@@ -10771,7 +10771,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
             buildReturn(namectx, name, constUnknownVarStringType);
         }
 
-        Owned<IWUResult> result = createDatasetResultSchema(seq, name, record, true, false);
+        LinkedHqlExpr cleanedRecord = record;
+        if (options.removeXpathFromOutput)
+            cleanedRecord.setown(removePropertyFromFields(cleanedRecord, xpathAtom));
+
+        Owned<IWUResult> result = createDatasetResultSchema(seq, name, cleanedRecord, true, false);
         if (result)
         {
             result->setResultRowLimit(-1);
@@ -11093,7 +11097,6 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     }
 }
 
-
 void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * selector, IHqlExpression * selfSelect, IHqlExpression * leftSelect, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, bool needToClear)
 {
     ForEachChild(i, record)
@@ -11117,7 +11120,7 @@ void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression *
                 {
                     generateSerializeAssigns(ctx, cur->queryRecord(), selected, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear);
                 }
-                else if (needToClear)
+                else if (needToClear || mustInitializeField(cur))
                 {
                     //MORE: Might want to recurse if a record
                     Owned<IHqlExpression> self = tgtDataset.mapScalar(selected, selfSelect);

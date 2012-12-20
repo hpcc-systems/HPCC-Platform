@@ -4726,6 +4726,44 @@ IHqlExpression * removeVirtualFields(IHqlExpression * record)
     return record->clone(args);
 }
 
+static HqlTransformerInfo fieldPropertyRemoverInfo("FieldPropertyRemover");
+class FieldPropertyRemover : public NewHqlTransformer
+{
+public:
+    FieldPropertyRemover(_ATOM _name) : NewHqlTransformer(fieldPropertyRemoverInfo), name(_name) {}
+
+    virtual IHqlExpression * createTransformed(IHqlExpression * expr)
+    {
+        switch (expr->getOperator())
+        {
+        //By default fields within the following are not transformed...
+        case no_record:
+        case no_ifblock:
+        case no_select: // Ensure fields used by ifblocks get transformed
+            return completeTransform(expr);
+
+        case no_field:
+            {
+                OwnedHqlExpr transformed = transformField(expr);
+                while (transformed->hasProperty(name))
+                    transformed.setown(removeProperty(transformed, name));
+                return transformed.getClear();
+            }
+
+        default:
+            return NewHqlTransformer::createTransformed(expr);
+        }
+    }
+
+private:
+    _ATOM name;
+};
+
+IHqlExpression * removePropertyFromFields(IHqlExpression * expr, _ATOM name)
+{
+    FieldPropertyRemover remover(name);
+    return remover.transformRoot(expr);
+}
 
 #if 0
 void VirtualReplacer::createProjectAssignments(HqlExprArray & assigns, IHqlExpression * expr, IHqlExpression * tgtSelector, IHqlExpression * srcSelector, IHqlExpression * dataset)

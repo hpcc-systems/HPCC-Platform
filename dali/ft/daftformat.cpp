@@ -1245,6 +1245,9 @@ void CRemotePartitioner::callRemote()
             unsigned compatflags = 0;                   // compatibility flags (not yet used)
             msg.append(compatflags);
             msg.append(decryptKey);
+            //Add extra data at the end to provide backward compatibility
+            srcFormat.serializeExtra(msg, 1);
+            tgtFormat.serializeExtra(msg, 1);
 
             if (!catchWriteBuffer(socket, msg))
                 throwError1(RFSERR_TimeoutWaitConnect, url.str());
