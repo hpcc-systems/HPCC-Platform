@@ -2615,7 +2615,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     Owned<IHqlCppDatasetBuilder> builder;
     if (targetOutOfLine)
     {
-        if (target.queryType()->getTypeCode() == type_dictionary)
+        if (isDictionaryType(target.queryType()))
         {
             builder.setown(createLinkedDictionaryBuilder(record));
         }

@@ -314,6 +314,7 @@ inline bool isFixedSize(ITypeInfo * type) { return type && (type->getSize() != U
 inline bool isUnknownSize(ITypeInfo * type) { return type && (type->getSize() == UNKNOWN_LENGTH); }
 inline bool isAnyType(ITypeInfo * type) { return type && (type->getTypeCode() == type_any); }
 inline bool isDecimalType(ITypeInfo * type) { return type && (type->getTypeCode() == type_decimal); }
+inline bool isDictionaryType(ITypeInfo * type) { return type && (type->getTypeCode() == type_dictionary); }
 
 
 //If casting a value from type before to type after is the value preserved.
