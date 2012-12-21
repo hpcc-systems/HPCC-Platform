@@ -2870,7 +2870,6 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     }
 
     node_operator op = expr->getOperator();
-    assertex (op != no_null);
 
     IValue * value = expr->queryValue();
     if (value && type->assignableFrom(exprType))    // this last condition is unnecessary, but changes some persist crcs if removed

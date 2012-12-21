@@ -2270,31 +2270,28 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
             value = newValue;
         }
     }
-    if (attrs)
+    IHqlExpression * defaultAttr = queryPropertyInList(defaultAtom, attrs);
+    if (defaultAttr)
     {
-        HqlExprArray allAttrs;
-        attrs->unwindList(allAttrs, no_comma);
-        IHqlExpression * defaultAttr = queryProperty(defaultAtom, allAttrs);
-        if (defaultAttr)
+        IHqlExpression * defaultValue = defaultAttr->queryChild(0);
+        if (defaultValue)
         {
-            IHqlExpression * defaultValue = defaultAttr->queryChild(0);
-            if (defaultValue)
+            ITypeInfo * defvalueType = defaultValue->queryType();
+            if (defvalueType != expectedType)
             {
-                ITypeInfo * defvalueType = defaultValue->queryType();
-                if (defvalueType != expectedType)
+                if (!expectedType->assignableFrom(defvalueType->queryPromotedType()))
+                    canNotAssignTypeError(fieldType,defvalueType,errpos);
+                if (castLosesInformation(expectedType, defvalueType))
+                    reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", "Default value too large");
+                if (expectedType->getTypeCode() != type_row)
                 {
-                    if (!expectedType->assignableFrom(defvalueType->queryPromotedType()))
-                        canNotAssignTypeError(fieldType,defvalueType,errpos);
-                    if (castLosesInformation(expectedType, defvalueType))
-                        reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", "Default value too large");
-                    if (expectedType->getTypeCode() != type_row)
-                    {
-                        IHqlExpression * newValue = ensureExprType(defaultValue, expectedType);
-                        allAttrs.zap(*defaultAttr);
-                        allAttrs.append(*createAttribute(defaultAtom, newValue));
-                        attrs->Release();
-                        attrs = createComma(allAttrs);
-                    }
+                    HqlExprArray allAttrs;
+                    attrs->unwindList(allAttrs, no_comma);
+                    IHqlExpression * newValue = ensureExprType(defaultValue, expectedType);
+                    allAttrs.zap(*queryProperty(defaultAtom, allAttrs));
+                    allAttrs.append(*createAttribute(defaultAtom, newValue));
+                    attrs->Release();
+                    attrs = createComma(allAttrs);
                 }
             }
         }
