@@ -98,19 +98,30 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
 
             try
             {
-                while (xmlParser->next()) {
+                while (xmlParser->next())
+                {
                     if (lastMatch)
                     {
                         RtlDynamicRowBuilder row(allocator);
                         size32_t sz = xmlTransformer->transform(row, lastMatch, this);
                         lastMatch.clear();
-                        if (sz) {
+                        if (sz)
+                        {
                             localOffset = 0;
                             ++activity.diskProgress;
                             return row.finalizeRowClear(sz);
                         }
                     }
                 }
+            }
+            catch (IPTreeException *e)
+            {
+                StringBuffer context;
+                e->errorMessage(context).newline();
+                context.append("Logical filename = ").append(activity.logicalFilename).newline();
+                context.append("Physical file part = ").append(iFile->queryFilename()).newline();
+                context.append("offset = ").append(localOffset);
+                throw MakeStringException(e->errorCode(), "%s", context.str());
             }
             catch (IXMLReadException *e)
             {
