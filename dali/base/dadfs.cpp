@@ -3404,7 +3404,7 @@ public:
         detachLogic = true;
         try {
             detach(timeoutms);
-        } catch (IException *e) {
+        } catch (...) {
             detachLogic = false;
             throw;
         }
