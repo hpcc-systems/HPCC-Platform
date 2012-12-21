@@ -20702,7 +20702,7 @@ public:
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 map.setown(datafile->getFileMap());
-            bool isSimple = (map && map->getNumParts()==1);
+            bool isSimple = (map && map->getNumParts()==1 && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false));
             if (isLocal || isSimple)
             {
                 if (datafile)
@@ -21809,7 +21809,7 @@ public:
         if (keySet && keySet->length()==1 && !isLocal && (flags & (TIRlimitskips|TIRlimitcreates|TIRkeyedlimitskips|TIRkeyedlimitcreates))==0)
         {
             IKeyIndexBase *thisBase = keySet->queryKeyPart(0);
-            if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey())
+            if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey() && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false))
                 isSimple = true;
         }
         int cacheSize = _graphNode.getPropInt("hint[@name='cachehits']/@value", serverSideCacheSize);
@@ -24508,7 +24508,7 @@ public:
         if (keySet && keySet->length()==1 && !isSimple)
         {
             IKeyIndexBase *thisBase = keySet->queryKeyPart(0);
-            if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey())
+            if (thisBase->numParts()==1 && !thisBase->queryPart(0)->isTopLevelKey() && !_queryFactory.getDebugValueBool("disableLocalOptimizations", false))
                 isSimple = true;
             // MORE - if it's a variable filename then it MAY be simple, we don't know. Tough.
         }
