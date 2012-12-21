@@ -552,11 +552,9 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
                     </xsl:call-template>
                 </xsl:variable>
                 <xsl:variable name="pluginsFilePath" select="concat('file:///', $outputPath, $espServiceName, '_plugins.xml')"/>
-                <xsl:variable name="backSlash">&#92;</xsl:variable>
-                <xsl:variable name="pluginsFilePath2" select="translate($pluginsFilePath, $backSlash, '/')"/>
-                <xsl:variable name="pluginsRoot" select="document($pluginsFilePath2)"/>
+                <xsl:variable name="pluginsRoot" select="document($pluginsFilePath)"/>
                 <xsl:if test="not($pluginsRoot)">
-                  <xsl:message terminate="yes">The plugins file '<xsl:value-of select="$pluginsFilePath2"/>' was either not generated or failed to open!</xsl:message>
+                    <xsl:message terminate="yes">The plugins file '<xsl:value-of select="$pluginsFilePath"/>' was either not generated or failed to open!</xsl:message>
                 </xsl:if>
                 <xsl:variable name="pluginsNodes" select="$pluginsRoot/Plugins/Plugin/@destName"/>
                 <xsl:if test="not(function-available('set:distinct'))">
@@ -1162,7 +1160,7 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
         <xsl:param name="path"/>
         <xsl:if test="contains($path, '\')">
             <xsl:variable name="prefix" select="substring-before($path, '\')"/>
-            <xsl:value-of select="concat($prefix, '\')"/>
+            <xsl:value-of select="concat($prefix, '/')"/>
             <xsl:call-template name="GetPathName">
                 <xsl:with-param name="path" select="substring-after($path, '\')"/>
             </xsl:call-template>
