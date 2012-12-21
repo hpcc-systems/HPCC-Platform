@@ -5962,3 +5962,1066 @@ IPropertyTree *createPTree(const char *name, byte flags)
         return new LocalPTree(name, flags);
 }
 
+typedef enum _ptElementType
+{
+    elementTypeUnknown,
+    elementTypeNull,
+    elementTypeString,
+    elementTypeBool,
+    elementTypeInteger,
+    elementTypeReal,
+    elementTypeObject,
+    elementTypeArray
+} ptElementType;
+
+template <typename X>
+class CJSONReaderBase : public CInterface
+{
+    Linked<ISimpleReadStream> lstream;
+    ISimpleReadStream *stream;
+    bool bufOwned, nullTerm;
+    byte *buf, *bufPtr;
+    size32_t bufSize, bufRemaining;
+protected:
+    XmlReaderOptions readerOptions;
+    bool ignoreWhiteSpace, noRoot;
+    Linked<IPTreeNotifyEvent> iEvent;
+    offset_t curOffset;
+    unsigned line;
+    char nextChar;
+
+public:
+    CJSONReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions, size32_t _bufSize=0) : readerOptions(_readerOptions), iEvent(&_iEvent), bufSize(_bufSize)
+    {
+        if (!bufSize) bufSize = 0x8000;
+        buf = new byte[bufSize];
+        bufRemaining = 0;
+        curOffset = 0;
+        bufOwned = true;
+        nullTerm = false;
+        lstream.set(&_stream);
+        stream = &_stream; // for efficiency
+        init();
+    }
+    CJSONReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions) : readerOptions(_readerOptions), iEvent(&_iEvent)
+    {
+        bufSize = 0; // not used for direct reads
+        stream = NULL;  // not used for direct reads
+        bufRemaining = bufLength;
+        nullTerm = false;
+        buf = (byte *)_buf;
+        bufOwned = false;
+        init();
+    }
+    CJSONReaderBase(const void *_buf, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions) : readerOptions(_readerOptions), iEvent(&_iEvent)
+    {
+        bufSize = 0; // not used for direct reads
+        stream = NULL;  // not used for direct reads
+        curOffset = 0;
+        bufRemaining = 0;
+        nullTerm = true;
+        buf = (byte *)_buf;
+        bufOwned = false;
+        init();
+    }
+    ~CJSONReaderBase()
+    {
+        if (bufOwned)
+            delete [] buf;
+    }
+
+protected:
+    void init()
+    {
+        ignoreWhiteSpace = 0 != ((unsigned)readerOptions & (unsigned)xr_ignoreWhiteSpace);
+        noRoot = 0 != ((unsigned)readerOptions & (unsigned)xr_noRoot);
+        reset();
+    }
+    void reset()
+    {
+        bufPtr = buf;
+        nextChar = 0;
+        if (nullTerm || stream)
+            bufRemaining = 0;
+        curOffset = 0;
+        line = 0;
+    }
+    void rewind(size32_t n)
+    {
+        assertex(curOffset >= n);
+        if (!n) return;
+        curOffset -= n;
+        size32_t d = (size32_t)(bufPtr-buf);
+        if (n > d) n = d;
+        if (!nullTerm)
+            bufRemaining += n;
+        loop
+        {
+            --bufPtr;
+            if (!--n) break;
+            if (10 == *bufPtr) --line;
+        }
+    }
+    bool checkBOM()
+    {
+        bool unsupportedUnicode = false;
+        bool utf8 = false;
+        switch ((unsigned char)nextChar)
+        {
+        case 0xff:
+            readNext();
+            if (0xfe == (unsigned char)nextChar)
+                unsupportedUnicode = true;
+            break;
+        case 0xfe:
+            readNext();
+            if (0xff == (unsigned char)nextChar)
+                unsupportedUnicode = true;
+            break;
+        case 0xef:
+            readNext();
+            if (0xbb == (unsigned char)nextChar)
+            {
+                readNext();
+                if (0xbf == (unsigned char)nextChar)
+                    utf8 = true;
+            }
+            break;
+        default:
+            break;
+        }
+        if (utf8)
+            return true;
+        else if (unsupportedUnicode)
+            error("Unsupported unicode detected in BOM header", false);
+        return false;
+    }
+    void error(const char *msg=NULL, bool giveContext=true, XmlReadExcptCode code=XmlRead_syntax)
+    {
+        StringBuffer context;
+        if (giveContext)
+        {
+            size32_t bufPos = (size32_t)(bufPtr-buf);
+            unsigned preLen = std::min(40U, bufPos);
+            size32_t bR = bufRemaining;
+            if (nullTerm)
+            {
+                byte *tPtr = bufPtr;
+                while (bR<40)
+                {
+                    if ('\0' == *tPtr++) break;
+                    bR++;
+                }
+            }
+            unsigned postLen = std::min(80-preLen, bR);
+            const char *jsonContext = (const char *)(bufPtr - preLen);
+            context.append(preLen, jsonContext);
+            context.append("*ERROR*");
+            context.append(postLen, jsonContext+preLen);
+        }
+        throw createXmlReadException(code, msg, context.str(), line+1, curOffset);
+    }
+    inline void expecting(const char *str)
+    {
+        StringBuffer errorMsg("Expecting \"");
+        error(errorMsg.append(str).append("\"").str());
+    }
+    inline void eos()
+    {
+        error("String terminator hit");
+    }
+    void match(const char *txt, const char *msg=NULL)
+    {
+        const char *c = txt;
+        loop
+        {
+            if (*c == '\0') break;
+            readNext();
+            if (toupper(nextChar) != toupper(*c))
+            {
+                if (msg)
+                    error(msg);
+                throw c;
+            }
+            c++;
+        }
+    }
+    inline StringBuffer &appendChar(StringBuffer &id, char c)
+    {
+        int charlen = validJSONUtf8ChrLen(c);
+        if (!charlen)
+            error("invalid JSON character", true);
+        id.append(nextChar);
+        while (--charlen)
+        {
+            readNext();
+            id.append(nextChar);
+        }
+        return id;
+    }
+    void readString(StringBuffer &value)
+    {
+        readNext();
+        StringBuffer s;
+        bool decode=false;
+        while ('\"'!=nextChar)
+        {
+            if (nextChar=='\\')
+                decode=true;
+            appendChar(s, nextChar);
+            readNext();
+        }
+        size32_t r = s.length();
+        if (ignoreWhiteSpace)
+            s.trimRight();
+        if (decode)
+            _decodeJSON(r, s.str(), value, s.length()+1);
+        else
+            value.swapWith(s);
+    }
+    void readName(StringBuffer &name)
+    {
+        if ('\"'!=nextChar)
+            expecting("\"");
+        readString(name);
+        if (!name.length())
+            error("empty JSON id");
+        readNext();
+        skipWS();
+        if (':'!=nextChar)
+            expecting(":");
+        readNext();
+    }
+    ptElementType readValue(StringBuffer &value)
+    {
+        ptElementType type = elementTypeUnknown;
+        switch (nextChar)
+        {
+        case '\"':
+        {
+            readString(value);
+            type = elementTypeString;
+            break;
+        }
+        case 't':
+            match("rue", "Bad value");
+            value.append("true");
+            type = elementTypeBool;
+            break;
+        case 'f':
+            match("alse", "Bad value");
+            value.append("false");
+            type = elementTypeBool;
+            break;
+        case 'n':
+            match("ull", "Bad value");
+            type = elementTypeNull;
+            break;
+        default:
+            if (!isdigit(nextChar))
+                error("Bad value");
+            type = elementTypeInteger;
+            while (isdigit(nextChar) || '.'==nextChar)
+            {
+                if ('.'==nextChar)
+                    type = elementTypeReal;
+                value.append(nextChar);
+                readNext();
+            }
+            rewind(1);
+
+            break;
+        }
+        return type;
+    }
+    inline void readNext()
+    {
+        if (!readNextToken())
+            error("End of stream encountered whilst parsing", true, XmlRead_EOS);
+        curOffset++;
+    }
+    inline bool checkReadNext()
+    {
+        if (!readNextToken())
+            return false;
+        curOffset++;
+        return true;
+    }
+    inline bool readNextToken();
+    inline bool checkSkipWS()
+    {
+        while (isspace(nextChar))
+            if (!checkReadNext())
+                return false;
+        return true;
+    }
+    inline void skipWS()
+    {
+        while (isspace(nextChar))
+            readNext();
+    }
+
+    const char *_decodeJSON(unsigned read, const char *startMark, StringBuffer &ret, unsigned len)
+    {
+        const char *errMark = NULL;
+        try { return decodeJSON(startMark, ret, len, &errMark); }
+        catch (IException *e)
+        {
+            if (errMark)
+            {
+                if (read>(unsigned)(errMark-startMark))
+                    rewind((unsigned)(read - (errMark-startMark)));
+                else
+                    rewind((unsigned)(errMark-startMark));
+            }
+            StringBuffer errMsg;
+            e->errorMessage(errMsg);
+            e->Release();
+            error(errMsg.str());
+        }
+        return NULL; // will never get here.
+    }
+};
+
+class CJSONStream { public: }; // only used to ensure different template definitions.
+class CJSONBuffer { public: };
+class CJSONString { public: };
+
+template <> inline bool CJSONReaderBase<CJSONStream>::readNextToken()
+{
+    // do own buffering, to have reasonable error context.
+    if (0 == bufRemaining)
+    {
+        size32_t _bufRemaining = stream->read(bufSize, buf);
+        if (!_bufRemaining)
+            return false;
+        bufRemaining = _bufRemaining;
+        bufPtr = buf;
+    }
+    --bufRemaining;
+    nextChar = *bufPtr++;
+    if ('\n' == nextChar)
+        line++;
+    return true;
+}
+
+template <> inline bool CJSONReaderBase<CJSONBuffer>::readNextToken()
+{
+    if (0 == bufRemaining)
+        return false;
+    --bufRemaining;
+    nextChar = *bufPtr++;
+    if ('\n' == nextChar)
+        line++;
+    return true;
+}
+
+template <> inline bool CJSONReaderBase<CJSONString>::readNextToken()
+{
+    nextChar = *bufPtr++;
+    if ('\0' == nextChar)
+    {
+        --bufPtr;
+        return false;
+    }
+    if ('\n' == nextChar)
+        line++;
+    return true;
+}
+
+template <class X>
+class CJSONReader : public CJSONReaderBase<X>, implements IXMLReader
+{
+    typedef CJSONReaderBase<X> PARENT;
+    using PARENT::checkBOM;
+    using PARENT::rewind;
+    using PARENT::readNext;
+    using PARENT::readValue;
+    using PARENT::readName;
+    using PARENT::checkReadNext;
+    using PARENT::checkSkipWS;
+    using PARENT::expecting;
+    using PARENT::error;
+    using PARENT::eos;
+    using PARENT::_decodeJSON;
+
+    using PARENT::skipWS;
+    using PARENT::nextChar;
+    using PARENT::curOffset;
+    using PARENT::noRoot;
+    using PARENT::ignoreWhiteSpace;
+    using PARENT::iEvent;
+
+//    StringBuffer tmpStr;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CJSONReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0)
+        : PARENT(stream, iEvent, readerOptions, bufSize)
+    {
+        init();
+    }
+    CJSONReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
+        : PARENT(buf, bufLength, iEvent, readerOptions)
+    {
+        init();
+    }
+    CJSONReader(const void *buf, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
+        : PARENT(buf, iEvent, readerOptions)
+    {
+        init();
+    }
+    void init()
+    {
+        reset();
+    }
+    void reset()
+    {
+        PARENT::reset();
+    }
+    void readValueNotify(const char *name, bool skipAttributes)
+    {
+        StringBuffer value;
+        readValue(value);
+        if ('@'==*name)
+        {
+            if (!skipAttributes)
+                iEvent->newAttribute(name, value.str());
+            return;
+        }
+
+        iEvent->beginNode(name, curOffset);
+        iEvent->beginNodeContent(name);
+        iEvent->endNode(name, value.length(), value.str(), false, curOffset);
+
+    }
+    void readArray(const char *name)
+    {
+        if ('@'==*name)
+            name++;
+        readNext();
+        skipWS();
+        while (']' != nextChar)
+        {
+            switch (nextChar)
+            {
+            case '[':
+                iEvent->beginNode(name, curOffset);
+                iEvent->beginNodeContent(name);
+                readArray(name);
+                iEvent->endNode(name, 0, "", false, curOffset);
+                break;
+            case '{':
+                readObject(name);
+                break;
+            default:
+                readValueNotify(name, true);
+                break;
+            }
+            readNext();
+            skipWS();
+            if (','==nextChar)
+                readNext();
+            else if (']'!=nextChar)
+                error("expected ',' or ']'");
+            skipWS();
+        }
+    }
+    void readChild(const char *name, bool skipAttributes)
+    {
+        skipWS();
+        switch (nextChar)
+        {
+        case '}':
+            {
+            VStringBuffer msg("named item with no value defined %s [%d]", name, (int) curOffset);
+            error(msg.str());
+            }
+            break;
+        case '{':
+            readObject(name);
+            break;
+        case '[':
+            readArray(name);
+            break;
+        default:
+            readValueNotify(name, skipAttributes);
+            break;
+        }
+    }
+
+    void readObject(const char *name)
+    {
+        if ('@'==*name)
+            name++;
+        iEvent->beginNode(name, curOffset);
+        readNext();
+        skipWS();
+        bool attributesFinalized=false;
+        while ('}' != nextChar)
+        {
+            StringBuffer tagName;
+            readName(tagName);
+            //internal convention so we can convert to and from xml
+            //values at top of object with names starting with '@' become ptree attributes
+            if (*tagName.str()!='@')
+                attributesFinalized=true;
+            readChild(tagName.str(), attributesFinalized);
+            readNext();
+            skipWS();
+            if (','==nextChar)
+                readNext();
+            else if ('}'!=nextChar)
+                error("expected ',' or '}'");
+            skipWS();
+        }
+        iEvent->endNode(name, 0, "", false, curOffset);
+    }
+    void loadJSON()
+    {
+        if (!checkReadNext())
+            return;
+        if (checkBOM() && !checkReadNext())
+            return;
+        if (!checkSkipWS())
+            return;
+        if (noRoot)
+        {
+            StringBuffer tagName;
+            loop
+            {
+                switch (nextChar)
+                {
+                case '\"':  //treat named objects like we're in a noroot object
+                    readName(tagName.clear());
+                    readChild(tagName.str(), true);
+                    break;
+                case '{':  //treat unnamed objects like we're in a noroot array
+                    readObject("__item__");
+                    break;
+                case '[':  //treat unnamed arrays like we're in a noroot array
+                    iEvent->beginNode("__item__", curOffset);
+                    readArray("__item__");
+                    iEvent->endNode("__item__", 0, "", false, curOffset);
+                    break;
+                default:
+                    expecting("{[ or \"");
+                }
+                if (!checkReadNext() || !checkSkipWS())
+                    break;
+                if (','!=nextChar)
+                    expecting(",");
+                readNext();
+                skipWS();
+            }
+        }
+        else
+        {
+            if ('{' == nextChar)
+                readObject("__root__");
+            else if ('[' == nextChar)
+            {
+                iEvent->beginNode("__root__", curOffset);
+                readArray("__item__");
+                iEvent->endNode("__root__", 0, "", false, curOffset);
+            }
+            else
+                error("expected '{' or '['");
+            if (checkReadNext() && checkSkipWS())
+                error("trailing content after JSON closed");
+        }
+    }
+
+// IXMLReader
+    virtual void load() { loadJSON(); }
+    virtual offset_t queryOffset() { return curOffset; }
+};
+
+template <class X>
+class CPullJSONReader : public CJSONReaderBase<X>, implements IPullXMLReader
+{
+    typedef CJSONReaderBase<X> PARENT;
+    using PARENT::checkBOM;
+    using PARENT::rewind;
+    using PARENT::readNext;
+    using PARENT::readValue;
+    using PARENT::readName;
+    using PARENT::checkReadNext;
+    using PARENT::checkSkipWS;
+    using PARENT::expecting;
+    using PARENT::error;
+    using PARENT::eos;
+    using PARENT::_decodeJSON;
+
+    using PARENT::skipWS;
+    using PARENT::nextChar;
+    using PARENT::curOffset;
+    using PARENT::noRoot;
+    using PARENT::ignoreWhiteSpace;
+    using PARENT::iEvent;
+
+    class CStateInfo : public CInterface
+    {
+    public:
+        CStateInfo()
+        {
+            tag.ensureCapacity(15);
+            type = elementTypeUnknown;
+            childCount = 0;
+            wnsTag = NULL;
+        }
+        inline void reset()
+        {
+            wnsTag = NULL;
+            tag.clear();
+            tagText.clear();
+            type = elementTypeUnknown;
+            childCount = 0;
+        }
+
+        StringBuffer tag;
+        StringBuffer tagText;
+        ptElementType type;
+        const char *wnsTag;
+        unsigned childCount;
+    };
+    CopyCIArrayOf<CStateInfo> stack, freeStateInfo;
+
+    CStateInfo *stateInfo;
+
+    enum ParseStates { headerStart, nameStart, valueStart, itemStart, objAttributes, itemContent, itemEnd } state;
+    bool endOfRoot;
+    StringBuffer tag, value;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CPullJSONReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0)
+        : CJSONReaderBase<X>(stream, iEvent, readerOptions, bufSize)
+    {
+        init();
+    }
+    CPullJSONReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
+        : CJSONReaderBase<X>(buf, bufLength, iEvent, readerOptions)
+    {
+        init();
+    }
+    CPullJSONReader(const void *buf, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
+        : CJSONReaderBase<X>(buf, iEvent, readerOptions)
+    {
+        init();
+    }
+
+    ~CPullJSONReader()
+    {
+        ForEachItemIn(i, stack)
+            delete &stack.item(i);
+        ForEachItemIn(i2, freeStateInfo)
+            delete &freeStateInfo.item(i2);
+    }
+
+    void init()
+    {
+        state = headerStart;
+        stateInfo = NULL;
+        endOfRoot = false;
+    }
+
+    inline void checkDelimiter(const char *msg=",")
+    {
+        if (stateInfo && stateInfo->childCount > 0)
+        {
+            if (','!=nextChar)
+                expecting(msg);
+            readNext();
+            skipWS();
+        }
+    }
+
+    inline ptElementType getParentType()
+    {
+        if (stack.ordinality()<2)
+            return stateInfo->type;
+        return ((CStateInfo *)&stack.tos(1))->type;
+    }
+
+    void beginNode(const char *name, offset_t offset, ptElementType jsonType, bool notify=true)
+    {
+        if (stateInfo)
+            stateInfo->childCount++;
+        if (freeStateInfo.ordinality())
+        {
+            stateInfo = &freeStateInfo.pop();
+            stateInfo->reset();
+        }
+        else
+            stateInfo = new CStateInfo;
+        stack.append(*stateInfo);
+        stateInfo->type=jsonType;
+        if (name)
+            stateInfo->tag.set(name);
+        else
+            stateInfo->tag.swapWith(tag);
+        stateInfo->wnsTag = stateInfo->tag.str();
+        if (!notify)
+            return;
+        try
+        {
+            iEvent->beginNode(stateInfo->wnsTag, offset);
+        }
+        catch (IPTreeException *pe)
+        {
+            if (PTreeExcpt_InvalidTagName == pe->errorCode())
+            {
+                pe->Release();
+                StringBuffer msg("Expecting valid start tag, but got \"");
+                error(msg.append(name).append("\"").str());
+            }
+            throw;
+        }
+    }
+
+    inline const char *arrayItemName()
+    {
+        if (stack.ordinality()>1)
+            return stateInfo->wnsTag;
+        return "__item__";
+    }
+
+    bool arrayItem(offset_t offset)
+    {
+        skipWS();
+        switch (nextChar)
+        {
+        case ']':
+            state=itemContent;
+            if (stack.ordinality()>1)
+                readNext();
+            if (!endNode(curOffset, getParentType()==elementTypeArray))
+                return false;
+            break;
+        case '{':
+            state=objAttributes;
+            readNext();
+            beginNode(arrayItemName(), offset, elementTypeObject);
+            break;
+        case '[':
+            state=valueStart;
+            readNext();
+            beginNode(arrayItemName(), offset, elementTypeArray, true);
+            break;
+        default:
+            state=valueStart;
+            ptElementType type = readValue(value.clear());
+            readNext();
+            beginNode(arrayItemName(), offset, type, true);
+            stateInfo->tagText.swapWith(value);
+            break;
+        }
+        return true;
+    }
+
+    void namedItem()
+    {
+        readName(tag.clear());
+        skipWS();
+        switch (nextChar)
+        {
+        case '}':
+            error("unexpected object close marker");
+        case ']':
+            error("unexpected array close marker");
+        case '{':
+            state=objAttributes;
+            readNext();
+            beginNode(NULL, curOffset, elementTypeObject);
+            break;
+        case '[':
+            readNext();
+            beginNode(NULL, curOffset, elementTypeArray, false); //false because items present events, not the array
+            arrayItem(curOffset); //so process the first item so every next() has event
+            break;
+        default:
+            state=valueStart;
+            ptElementType type = readValue(value.clear());
+            readNext();
+            beginNode(NULL, curOffset, type);
+            stateInfo->tagText.swapWith(value);
+            break;
+        }
+    }
+    void rootItem()
+    {
+        if ('\"'==nextChar)
+            namedItem();
+        else if ('{'==nextChar || '['==nextChar)
+            arrayItem(curOffset);
+        else
+            expecting("[{ or \"");
+    }
+    bool rootNext()
+    {
+        if (!noRoot || !checkReadNext() || !checkSkipWS())
+            return false;
+        if (','!=nextChar)
+            expecting(",");
+        return true;
+    }
+    void newAttribute()
+    {
+        readName(tag.clear());
+        skipWS();
+        readValue(value.clear());
+        readNext();
+        stateInfo->childCount++;
+        iEvent->newAttribute(tag.str(), value.str());
+    }
+    bool endNode(offset_t offset, bool notify=true)
+    {
+        bool more = true;
+        if (stack.ordinality()<2)
+        {
+            state = headerStart;
+            more = rootNext();
+        }
+        if (notify)
+        {
+            if (stateInfo->type==elementTypeNull)
+                iEvent->endNode(stateInfo->wnsTag, 0, "", false, offset);
+            else
+                iEvent->endNode(stateInfo->wnsTag, stateInfo->tagText.length(), stateInfo->tagText.toCharArray(), false, offset);
+        }
+        freeStateInfo.append(*stateInfo);
+        stack.pop();
+        stateInfo = (stack.ordinality()) ? &stack.tos() : NULL;
+        return more;
+    }
+
+    // IPullXMLReader
+    virtual void load()
+    {
+        while (next()) {}
+    }
+
+    virtual offset_t queryOffset() { return curOffset; }
+
+
+    virtual bool next()
+    {
+        skipWS();
+        switch (state)
+        {
+            case headerStart:
+            {
+                if (!checkReadNext())
+                    return false;
+                if (checkBOM())
+                    if (!checkReadNext())
+                        return false;
+                if (!checkSkipWS())
+                    return false;
+                if (noRoot)
+                    rootItem();
+                else
+                {
+                    switch (nextChar)
+                    {
+                    case '{':
+                        state=objAttributes;
+                        readNext();
+                        beginNode("__root__", curOffset, elementTypeObject);
+                        break;
+                    case '[':
+                        state=valueStart;
+                        readNext();
+                        beginNode("__root__", curOffset, elementTypeArray);
+                        break;
+                    default:
+                        expecting("{ or [");
+                        break;
+                    }
+                }
+                break;
+            }
+            case nameStart:
+                namedItem();
+                break;
+            case objAttributes:
+            {
+                if ('}'==nextChar)
+                {
+                    state=itemEnd;
+                    iEvent->beginNodeContent(stateInfo->wnsTag);
+                    break;
+                }
+                checkDelimiter(", or }");
+                if (nextChar != '\"')
+                    expecting("\"");
+                readNext();
+                bool att = '@' == nextChar;
+                rewind(2);
+                readNext();
+                if (att)
+                    newAttribute();
+                else
+                {
+                    state=itemContent;
+                    stateInfo->childCount=0;
+                    iEvent->beginNodeContent(stateInfo->wnsTag);
+                }
+                break;
+            }
+            case valueStart:
+                state=itemContent;
+                iEvent->beginNodeContent(stateInfo->wnsTag);
+                break;
+            case itemContent:
+            {
+                switch (stateInfo->type)
+                {
+                    case elementTypeBool:
+                    case elementTypeString:
+                    case elementTypeInteger:
+                    case elementTypeReal:
+                    case elementTypeNull:
+                        return endNode(curOffset);
+                        break;
+                    case elementTypeArray:
+                        if (']'!=nextChar)
+                            checkDelimiter(", or ]");
+                        return arrayItem(curOffset);
+                    case elementTypeObject:
+                        if ('}'!=nextChar)
+                        {
+                            checkDelimiter(", or }");
+                            namedItem();
+                        }
+                        else
+                        {
+                            if (stack.ordinality()>1)
+                                readNext();
+                            return endNode(curOffset);
+                        }
+                        break;
+                }
+                break;
+            }
+            case itemEnd:
+            {
+                if (!stack.length())
+                {
+                    if (!noRoot || !rootNext())
+                        return false;
+                    readNext();
+                    skipWS();
+                    rootItem();
+                }
+                else
+                {
+                    readNext();
+                    state = itemContent;
+                    return endNode(curOffset);
+                }
+                break;
+            }
+        }
+        return true;
+    }
+
+    virtual void reset()
+    {
+        CJSONReaderBase<X>::reset();
+        stack.kill();
+        init();
+    }
+};
+
+IXMLReader *createJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize)
+{
+    class CJSONStreamReader : public CJSONReader<CJSONStream>
+    {
+    public:
+        CJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0) : CJSONReader<CJSONStream>(stream, iEvent, readerOptions, bufSize) { }
+    };
+    return new CJSONStreamReader(stream, iEvent, readerOptions, bufSize);
+}
+
+IXMLReader *createJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
+{
+    class CJSONStringReader : public CJSONReader<CJSONString>
+    {
+    public:
+        CJSONStringReader(const void *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CJSONReader<CJSONString>(json, iEvent, readerOptions) { }
+    };
+    if (NULL == json)
+        throw createXmlReadException(XmlRead_syntax, "Null string passed to createJSONStringReader", NULL, 0, 0);
+    return new CJSONStringReader(json, iEvent, readerOptions);
+}
+
+IXMLReader *createJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
+{
+    class CJSONBufferReader : public CJSONReader<CJSONBuffer>
+    {
+    public:
+        CJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CJSONReader<CJSONBuffer>(buf, bufLength, iEvent, readerOptions) { }
+    };
+    return new CJSONBufferReader(buf, bufLength, iEvent, readerOptions);
+}
+
+
+IPullXMLReader *createPullJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize)
+{
+    class CJSONStreamReader : public CPullJSONReader<CJSONStream>
+    {
+    public:
+        CJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0) : CPullJSONReader<CJSONStream>(stream, iEvent, readerOptions, bufSize) { }
+    };
+    return new CJSONStreamReader(stream, iEvent, readerOptions, bufSize);
+}
+
+IPullXMLReader *createPullJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
+{
+    class CJSONStringReader : public CPullJSONReader<CJSONString>
+    {
+    public:
+        CJSONStringReader(const void *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CPullJSONReader<CJSONString>(json, iEvent, readerOptions) { }
+    };
+    return new CJSONStringReader(json, iEvent, readerOptions);
+}
+
+IPullXMLReader *createPullJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
+{
+    class CJSONBufferReader : public CPullJSONReader<CJSONBuffer>
+    {
+    public:
+        CJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CPullJSONReader<CJSONBuffer>(buf, bufLength, iEvent, readerOptions) { }
+    };
+    return new CJSONBufferReader(buf, bufLength, iEvent, readerOptions);
+}
+
+IPropertyTree *createPTreeFromJSONString(const char *json, byte flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
+{
+    Owned<IPTreeMaker> _iMaker;
+    if (!iMaker)
+    {
+        iMaker = new CPTreeMaker(flags);
+        _iMaker.setown(iMaker);
+    }
+    Owned<IXMLReader> reader = createJSONStringReader(json, *iMaker, readFlags);
+    reader->load();
+    return LINK(iMaker->queryRoot());
+}
+
+IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte flags, XmlReaderOptions readFlags, IPTreeMaker *iMaker)
+{
+    Owned<IPTreeMaker> _iMaker;
+    if (!iMaker)
+    {
+        iMaker = new CPTreeMaker(flags);
+        _iMaker.setown(iMaker);
+    }
+    Owned<IXMLReader> reader = createJSONBufferReader(json, len, *iMaker, readFlags);
+    reader->load();
+    return LINK(iMaker->queryRoot());
+}
