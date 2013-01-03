@@ -13,11 +13,11 @@
                     <div id="${id}Reschedule" data-dojo-attach-event="onClick:_onReschedule" data-dojo-type="dijit.form.Button">Reschedule</div>
                     <div id="${id}Deschedule" data-dojo-attach-event="onClick:_onDeschedule" data-dojo-type="dijit.form.Button">Deschedule</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <img src="img/filterAdd.png" class="hidden" id="${id}IconFilter"/>
+                    <img id="${id}IconFilter" src="img/filterAdd.png"/>
                     <div data-dojo-type="dijit.form.DropDownButton">
                         <span>Filter</span>
                         <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
-                            <form class="smallForm">
+                            <form id="${id}filterForm" class="smallForm">
                                 <ul>
                                     <li> 
                                         <label for="${id}Owner">Owner:</label>
@@ -42,7 +42,10 @@
                                     <li>
                                         <label for="${id}LogicalFile">Logical File:</label>
                                         <input id="${id}LogicalFile" data-dojo-props="trim: true, placeHolder:'*::somefile'" data-dojo-type="dijit.form.TextBox"/>
-                                        <select id="${id}LogicalFileSearchType" name="${id}LogicalFileSearchType" style="width: 8em" data-dojo-type="dijit.form.Select">
+                                    </li>
+                                    <li>
+                                        <label>Label</label>
+                                        <select id="${id}LogicalFileSearchType" name="${id}LogicalFileSearchType" data-dojo-type="dijit.form.Select">
                                             <option value="Created">Created</option>
                                             <option value="Used" selected="selected">Used</option>
                                         </select>
@@ -50,7 +53,7 @@
                                     <li> 
                                         <label for="${id}FromDate">From:</label>
                                         <img src="img/cal.gif" alt="calendar"/>
-                                        <input id="${id}FromDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox"/>
+                                        <input id="${id}FromDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox"/>                                       
                                         <input id="${id}FromTime" class="smallCombo" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox"/>
                                     </li>
                                     <li> 
