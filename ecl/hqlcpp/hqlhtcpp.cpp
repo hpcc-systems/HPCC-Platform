@@ -4643,7 +4643,11 @@ void HqlCppTranslator::noteResultAccessed(BuildCtx & ctx, IHqlExpression * seq, 
         ForEachItemIn(i, internalResults)
         {
             if (internalResults.item(i).noteUse(name, graph))
-                break;
+            {
+                //Can't currently break because the same result might be generated more than once
+                //if an expression ends up in two different graphs.
+                //break;
+            }
         }
     }
 }
