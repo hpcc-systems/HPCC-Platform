@@ -59,8 +59,12 @@ extern HQL_API void dbglogIR(IHqlExpression * expr);
 extern HQL_API void dbglogIR(ITypeInfo * type);
 extern HQL_API void dbglogIR(const HqlExprArray & exprs);
 
-//This is not thread safe, as is only designed to be called from within a debugger
+extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpression * expr);
+extern HQL_API void getIRText(StringArray & target, unsigned options, IHqlExpression * expr);
+
+//These functions are not thread safe, they are only designed to be called from within a debugger
 extern HQL_API const char * getIRText(IHqlExpression * expr);
+extern HQL_API const char * getIRText(ITypeInfo * type);
 
 } // namespace EclIR
 

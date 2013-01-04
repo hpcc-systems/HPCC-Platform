@@ -2101,7 +2101,7 @@ extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpre
     reader.play(expr);
 }
 
-static void getIRText(StringArray & target, unsigned options, IHqlExpression * expr)
+extern HQL_API void getIRText(StringArray & target, unsigned options, IHqlExpression * expr)
 {
     StringArrayIRBuilder output(target, options);
     ExpressionIRPlayer reader(&output);
@@ -2113,6 +2113,13 @@ extern HQL_API const char * getIRText(IHqlExpression * expr)
 {
     StringBufferIRBuilder output(staticDebuggingStringBuffer, defaultDumpOptions);
     playIR(output, expr, NULL, NULL);
+    return staticDebuggingStringBuffer.str();
+}
+
+extern HQL_API const char * getIRText(ITypeInfo * type)
+{
+    StringBufferIRBuilder output(staticDebuggingStringBuffer, defaultDumpOptions);
+    playIR(output, NULL, NULL, type);
     return staticDebuggingStringBuffer.str();
 }
 
