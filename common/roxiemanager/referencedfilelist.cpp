@@ -399,11 +399,13 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
     ForEach(*graphs)
     {
         Owned <IPropertyTree> xgmml = graphs->query().getXGMMLTree(false);
-        Owned<IPropertyTreeIterator> iter = xgmml->getElements("//node[att/@name='_fileName']");
+        Owned<IPropertyTreeIterator> iter = xgmml->getElements("//node[att/@name='_*ileName']");
         ForEach(*iter)
         {
             IPropertyTree &node = iter->query();
             const char *logicalName = node.queryProp("att[@name='_fileName']/@value");
+            if (!logicalName)
+                logicalName = node.queryProp("att[@name='_indexFileName']/@value");
             if (!logicalName)
                 continue;
             ThorActivityKind kind = (ThorActivityKind) node.getPropInt("att[@name='_kind']/@value", TAKnone);
