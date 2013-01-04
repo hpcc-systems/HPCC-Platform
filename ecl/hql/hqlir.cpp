@@ -1721,6 +1721,7 @@ public:
     }
 
     void play(IHqlExpression * expr);
+    void play(ITypeInfo * type);
 
 protected:
     id_t processType(ITypeInfo * type);
@@ -1740,6 +1741,12 @@ protected:
 void ExpressionIRPlayer::play(IHqlExpression * expr)
 {
     id_t id = processExpr(expr);
+    target->addReturn(id);
+}
+
+void ExpressionIRPlayer::play(ITypeInfo * type)
+{
+    id_t id = processType(type);
     target->addReturn(id);
 }
 
@@ -1819,14 +1826,13 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_transform:
         case type_table:    // more??
         case type_groupedtable:
+        case type_dictionary:
             {
                 CompoundTypeBuilderInfo info;
                 info.baseType = processType(type->queryChildType());
                 return target->addCompoundType(tc, info);
             }
         case type_function:
-            return target->addUnknownType(tc);
-        case type_dictionary:
             return target->addUnknownType(tc);
         case type_none:
         case type_ifblock:
@@ -2013,37 +2019,79 @@ extern HQL_API void testIR(IHqlExpression * expr)
     assertex(expr == result);
 }
 
-extern HQL_API void dump_ir(IHqlExpression * expr)
+//-- Dump the IR for the expression(s)/type to stdout ----------------------------------------------------------------
+
+static void playIR(IEclBuilder & output, IHqlExpression * expr, const HqlExprArray * exprs, ITypeInfo * type)
+{
+    ExpressionIRPlayer reader(&output);
+    if (expr)
+        reader.play(expr);
+    if (exprs)
+    {
+        ForEachItemIn(i, *exprs)
+            reader.play(&exprs->item(i));
+    }
+    if (type)
+        reader.play(type);
+}
+
+static void dump_ir(IHqlExpression * expr, const HqlExprArray * exprs, ITypeInfo * type)
 {
     printf("\nIR Expression Dumper\n====================\n");
     FileIRBuilder output(defaultDumpOptions, stdout);
-    ExpressionIRPlayer reader(&output);
-    reader.play(expr);
+    playIR(output, expr, exprs, type);
+}
+
+extern HQL_API void dump_ir(IHqlExpression * expr)
+{
+    dump_ir(expr, NULL, NULL);
 }
 
 extern HQL_API void dump_ir(const HqlExprArray & exprs)
 {
-    printf("\nIR Expression Dumper\n====================\n");
+    dump_ir(NULL, &exprs, NULL);
+}
+
+extern HQL_API void dump_ir(ITypeInfo * type)
+{
+    dump_ir(NULL, NULL, type);
+}
+
+extern HQL_API void dump_ir(ITypeInfo * type1, ITypeInfo * type2)
+{
     FileIRBuilder output(defaultDumpOptions, stdout);
     ExpressionIRPlayer reader(&output);
-    ForEachItemIn(i, exprs)
-        reader.play(&exprs.item(i));
+    reader.play(type1);
+    reader.play(type2);
 }
+
+extern HQL_API void dump_ir(IHqlExpression * expr1, IHqlExpression * expr2)
+{
+    FileIRBuilder output(defaultDumpOptions, stdout);
+    ExpressionIRPlayer reader(&output);
+    reader.play(expr1);
+    reader.play(expr2);
+}
+
+//-- Dump the IR for the expression(s)/type to DBGLOG ----------------------------------------------------------------
 
 extern HQL_API void dbglogIR(IHqlExpression * expr)
 {
     DblgLogIRBuilder output(defaultDumpOptions);
-    ExpressionIRPlayer reader(&output);
-    reader.play(expr);
+    playIR(output, expr, NULL, NULL);
 }
 
 
 extern HQL_API void dbglogIR(const HqlExprArray & exprs)
 {
     DblgLogIRBuilder output(defaultDumpOptions);
-    ExpressionIRPlayer reader(&output);
-    ForEachItemIn(i, exprs)
-        reader.play(&exprs.item(i));
+    playIR(output, NULL, &exprs, NULL);
+}
+
+extern HQL_API void dbglogIR(ITypeInfo * type)
+{
+    DblgLogIRBuilder output(defaultDumpOptions);
+    playIR(output, NULL, NULL, type);
 }
 
 extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpression * expr)
@@ -2053,11 +2101,26 @@ extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpre
     reader.play(expr);
 }
 
-static void getIRText(StringArray & target, unsigned options, IHqlExpression * expr)
+extern HQL_API void getIRText(StringArray & target, unsigned options, IHqlExpression * expr)
 {
     StringArrayIRBuilder output(target, options);
     ExpressionIRPlayer reader(&output);
     reader.play(expr);
+}
+
+static StringBuffer staticDebuggingStringBuffer;
+extern HQL_API const char * getIRText(IHqlExpression * expr)
+{
+    StringBufferIRBuilder output(staticDebuggingStringBuffer, defaultDumpOptions);
+    playIR(output, expr, NULL, NULL);
+    return staticDebuggingStringBuffer.str();
+}
+
+extern HQL_API const char * getIRText(ITypeInfo * type)
+{
+    StringBufferIRBuilder output(staticDebuggingStringBuffer, defaultDumpOptions);
+    playIR(output, NULL, NULL, type);
+    return staticDebuggingStringBuffer.str();
 }
 
 } // end namespace
