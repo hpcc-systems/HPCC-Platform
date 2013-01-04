@@ -48,9 +48,23 @@ extern HQL_API const char * getOperatorIRText(node_operator op);
 extern HQL_API const char * getTypeIRText(type_t type);
 
 extern HQL_API void dump_ir(IHqlExpression * expr);
+extern HQL_API void dump_ir(ITypeInfo * type);
 extern HQL_API void dump_ir(const HqlExprArray & exprs);
+
+//The following are useful for finding the differences between two types or expressions - the output between the two returns
+extern HQL_API void dump_ir(ITypeInfo * type1, ITypeInfo * type2);
+extern HQL_API void dump_ir(IHqlExpression * expr1, IHqlExpression * expr2);
+
 extern HQL_API void dbglogIR(IHqlExpression * expr);
+extern HQL_API void dbglogIR(ITypeInfo * type);
 extern HQL_API void dbglogIR(const HqlExprArray & exprs);
+
+extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpression * expr);
+extern HQL_API void getIRText(StringArray & target, unsigned options, IHqlExpression * expr);
+
+//These functions are not thread safe, they are only designed to be called from within a debugger
+extern HQL_API const char * getIRText(IHqlExpression * expr);
+extern HQL_API const char * getIRText(ITypeInfo * type);
 
 } // namespace EclIR
 
