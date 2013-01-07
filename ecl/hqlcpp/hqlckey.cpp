@@ -622,31 +622,50 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
 {
     IHqlExpression * rhs = expr->queryChild(1);
     IHqlExpression * rhsRecord = rhs->queryRecord();
-    OwnedHqlExpr serializedRhsRecord = getSerializedForm(rhsRecord);
+    IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);
 
-    //Map the file position field in the file to the incoming parameter
-    //MORE: This doesn't cope with local/global file position distinctions.
-    OwnedHqlExpr fileposVar = createVariable("_filepos", makeIntType(8, false));
+    OwnedHqlExpr originalRight = createSelector(no_right, rhsRecord, joinSeq);
+    OwnedHqlExpr serializedRhsRecord = getSerializedForm(rhsRecord);
+    OwnedHqlExpr serializedRight = createSelector(no_right, serializedRhsRecord, joinSeq);
 
     OwnedHqlExpr joinDataset = createDataset(no_anon, LINK(extractJoinFieldsRecord));
-    OwnedHqlExpr newTransform = replaceMemorySelectorWithSerializedSelector(transform, rhsRecord, no_right, joinSeq);
-    OwnedHqlExpr oldRight = createSelector(no_right, serializedRhsRecord, joinSeq);
-    OwnedHqlExpr newRight = createSelector(no_right, joinDataset, joinSeq);
-    OwnedHqlExpr fileposExpr = getFilepos(newRight, false);
+    OwnedHqlExpr extractedRight = createSelector(no_right, extractJoinFieldsRecord, joinSeq);
 
+    OwnedHqlExpr newTransform = LINK(transform);
+
+    //The RIGHT passed into the transform does not match the format of the key.
+    //In particular all fields will be serialized, and unused fields are likely to be removed.
+    //So any references in the transform to RIGHT and fields from RIGHT need to be mapped accordingly.
+    //If ROWS(RIGHT) is used, and RIGHT needs to be deserialized, then it needs to be mapped first.
+    if (expr->getOperator() == no_denormalizegroup)
+    {
+        assertex(extractedRight == serializedRight);    // no fields are currently projected out.  Needs to change if they ever are.
+        if (extractedRight != originalRight)
+        {
+            //References to ROWS(originalRight) need to be replaced with DESERIALIZE(ROWS(serializedRight))
+            OwnedHqlExpr originalRows = createDataset(no_rows, LINK(originalRight), LINK(rowsid));
+            OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(extractedRight), LINK(rowsid));
+            OwnedHqlExpr deserializedRows = ensureDeserialized(rowsExpr, rhsRecord->queryType());
+            newTransform.setown(replaceExpression(newTransform, originalRows, deserializedRows));
+        }
+    }
+
+    newTransform.setown(replaceMemorySelectorWithSerializedSelector(newTransform, rhsRecord, no_right, joinSeq));
+
+    OwnedHqlExpr fileposExpr = getFilepos(extractedRight, false);
     if (extractJoinFieldsTransform)
     {
         IHqlExpression * fileposField = isFullJoin() ? queryVirtualFileposField(file->queryRecord()) : queryLastField(key->queryRecord());
         if (fileposField && (expr->getOperator() != no_denormalizegroup))
         {
             HqlMapTransformer fileposMapper;
-            OwnedHqlExpr select = createSelectExpr(LINK(oldRight), LINK(fileposField));
+            OwnedHqlExpr select = createSelectExpr(LINK(serializedRight), LINK(fileposField));
             OwnedHqlExpr castFilepos = ensureExprType(fileposExpr, fileposField->queryType());
             fileposMapper.setMapping(select, castFilepos);
             newTransform.setown(fileposMapper.transformRoot(newTransform));
         }
 
-        newTransform.setown(replaceSelector(newTransform, oldRight, newRight));
+        newTransform.setown(replaceSelector(newTransform, serializedRight, extractedRight));
     }
     else
     {
@@ -665,9 +684,12 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
     {
         //Last parameter is false since implementation of group keyed denormalize in roxie passes in pointers to the serialized slave data
         bool rowsAreLinkCounted = false;
-        translator.bindRows(ctx, no_right, joinSeq, expr->queryProperty(_rowsid_Atom), joinDataset, "numRows", "rows", rowsAreLinkCounted);
+        translator.bindRows(ctx, no_right, joinSeq, rowsid, joinDataset, "numRows", "rows", rowsAreLinkCounted);
     }
 
+    //Map the file position field in the file to the incoming parameter
+    //MORE: This doesn't cope with local/global file position distinctions.
+    OwnedHqlExpr fileposVar = createVariable("_filepos", makeIntType(8, false));
     ctx.associateExpr(fileposExpr, fileposVar);
     translator.doBuildTransformBody(ctx, newTransform, selfCursor);
 
