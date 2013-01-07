@@ -48,6 +48,7 @@
 #include "workunit.hpp"
 #include "hqlrepository.hpp"
 #include "hqldesc.hpp"
+#include "hqlir.hpp"
 
 //This nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 
@@ -2748,8 +2749,8 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
         return LINK(expr);
 
     ITypeInfo * exprType = queryUnqualifiedType(qualifiedType);
-    type = queryUnqualifiedType(type);
-    if (exprType == type)
+//    type = queryUnqualifiedType(type);
+    if (exprType == queryUnqualifiedType(type))
         return LINK(expr);
 
     type_t tc = type->getTypeCode();
@@ -2870,7 +2871,13 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     }
 
     node_operator op = expr->getOperator();
-    assertex (op != no_null);
+    if (op == no_null)
+    {
+        assertex(expr->queryRecord());
+        //The no_null can differ from the expected type by (i) link counting (ii) record annotations
+        assertex(recordTypesMatch(type, exprType));
+        return createNullExpr(type);
+    }
 
     IValue * value = expr->queryValue();
     if (value && type->assignableFrom(exprType))    // this last condition is unnecessary, but changes some persist crcs if removed
