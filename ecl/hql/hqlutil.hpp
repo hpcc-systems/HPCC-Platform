@@ -158,6 +158,7 @@ extern HQL_API IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlEx
 extern HQL_API IHqlExpression * replaceOwnedProperty(IHqlExpression * expr, IHqlExpression * ownedProeprty);
 extern HQL_API IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...);
 extern HQL_API IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name);
+extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, _ATOM name);
 extern HQL_API bool hasOperand(IHqlExpression * expr, IHqlExpression * child);
 
 extern HQL_API unsigned numRealChildren(IHqlExpression * expr);

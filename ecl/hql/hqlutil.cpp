@@ -4196,6 +4196,13 @@ IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...)
 }
 
 
+extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, _ATOM name)
+{
+    IHqlExpression * match = donor->queryProperty(name);
+    if (match)
+        attrs.append(*LINK(match));
+}
+
 IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name)
 {
     return appendOwnedOperand(expr, LINK(donor->queryProperty(name)));

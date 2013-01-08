@@ -2270,31 +2270,31 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
             value = newValue;
         }
     }
-    if (attrs)
+
+    IHqlExpression * defaultAttr = queryPropertyInList(defaultAtom, attrs);
+    if (defaultAttr)
     {
-        HqlExprArray allAttrs;
-        attrs->unwindList(allAttrs, no_comma);
-        IHqlExpression * defaultAttr = queryProperty(defaultAtom, allAttrs);
-        if (defaultAttr)
+        IHqlExpression * defaultValue = defaultAttr->queryChild(0);
+        if (defaultValue)
         {
-            IHqlExpression * defaultValue = defaultAttr->queryChild(0);
-            if (defaultValue)
+            ITypeInfo * defvalueType = defaultValue->queryType();
+            if (defvalueType != expectedType)
             {
-                ITypeInfo * defvalueType = defaultValue->queryType();
-                if (defvalueType != expectedType)
+                if (!expectedType->assignableFrom(defvalueType->queryPromotedType()))
+                    canNotAssignTypeError(fieldType,defvalueType,errpos);
+                IValue * constValue = defaultValue->queryValue();
+                if (constValue && (constValue->rangeCompare(expectedType) > 0))
+                    reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", "Default value too large");
+                if (expectedType->getTypeCode() != type_row)
                 {
-                    if (!expectedType->assignableFrom(defvalueType->queryPromotedType()))
-                        canNotAssignTypeError(fieldType,defvalueType,errpos);
-                    if (castLosesInformation(expectedType, defvalueType))
-                        reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", "Default value too large");
-                    if (expectedType->getTypeCode() != type_row)
-                    {
-                        IHqlExpression * newValue = ensureExprType(defaultValue, expectedType);
-                        allAttrs.zap(*defaultAttr);
-                        allAttrs.append(*createAttribute(defaultAtom, newValue));
-                        attrs->Release();
-                        attrs = createComma(allAttrs);
-                    }
+                    HqlExprArray allAttrs;
+                    attrs->unwindList(allAttrs, no_comma);
+
+                    IHqlExpression * newValue = ensureExprType(defaultValue, expectedType);
+                    allAttrs.zap(*defaultAttr);
+                    allAttrs.append(*createExprAttribute(defaultAtom, newValue));
+                    attrs->Release();
+                    attrs = createComma(allAttrs);
                 }
             }
         }
@@ -2364,6 +2364,7 @@ void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, IHqlExpressio
         attrs = extractAttrsFromExpr(value);
 
     ITypeInfo * type = makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL);
+
     IHqlExpression *newField = createField(name, type, value, attrs);
     addToActiveRecord(newField);
     record->Release();
@@ -6193,6 +6194,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
             }
             return NULL;
         }
+        break;
     }
 
 //  if (formal->hasProperty(constAtom) && funcdef && !isExternalFunction(funcdef))
@@ -7875,7 +7877,8 @@ void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & p
                 break;
         }
 
-        fields.append(*createField(implicitFieldName, makeIntType(8, false), createConstant(I64C(0)), createAttribute(_implicitFpos_Atom)));
+        ITypeInfo * fileposType = makeIntType(8, false);
+        fields.append(*createField(implicitFieldName, fileposType, createConstant(I64C(0)), createAttribute(_implicitFpos_Atom)));
         payloadCount++;
     }
 

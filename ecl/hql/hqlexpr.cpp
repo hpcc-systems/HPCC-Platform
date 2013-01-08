@@ -2749,7 +2749,6 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
         return LINK(expr);
 
     ITypeInfo * exprType = queryUnqualifiedType(qualifiedType);
-//    type = queryUnqualifiedType(type);
     if (exprType == queryUnqualifiedType(type))
         return LINK(expr);
 
@@ -14170,7 +14169,7 @@ static void simplifyRecordTypes(HqlExprArray & fields, IHqlExpression * cur, boo
 
             ITypeInfo * type = cur->queryType();
             Owned<ITypeInfo> targetType;
-            OwnedHqlExpr attrs;
+            HqlExprArray attrs;
             switch (type->getTypeCode())
             {
             case type_groupedtable:
@@ -14194,9 +14193,10 @@ static void simplifyRecordTypes(HqlExprArray & fields, IHqlExpression * cur, boo
                     if (countAttr || cur->hasProperty(sizeofAtom))
                         forceSimplify = true;
 
-                    attrs.set(maxCountAttr);
+                    if (maxCountAttr)
+                        attrs.append(*LINK(maxCountAttr));
                     if (countAttr && !maxCountAttr && countAttr->queryChild(0)->queryValue())
-                        attrs.setown(createAttribute(maxCountAtom, LINK(countAttr->queryChild(0))));
+                        attrs.append(*createAttribute(maxCountAtom, LINK(countAttr->queryChild(0))));
                     break;
                 }
             case type_set:
@@ -14223,15 +14223,15 @@ static void simplifyRecordTypes(HqlExprArray & fields, IHqlExpression * cur, boo
                 break;
             }
 
-            IHqlExpression * xmlAttr = cur->queryProperty(xpathAtom);
-            if (xmlAttr)
-                attrs.setown(createComma(attrs.getClear(), LINK(xmlAttr)));
-
             LinkedHqlExpr newField = cur;
             if (forceSimplify || type != targetType)
             {
                 needsTransform = true;
-                newField.setown(createField(cur->queryName(), targetType.getLink(), NULL, attrs.getClear()));
+                //MORE xmldefault, default
+                inheritAttribute(attrs, cur, xpathAtom);
+                inheritAttribute(attrs, cur, xmlDefaultAtom);
+                inheritAttribute(attrs, cur, defaultAtom);
+                newField.setown(createField(cur->queryName(), targetType.getLink(), attrs));
             }
             fields.append(*LINK(newField));
             break;

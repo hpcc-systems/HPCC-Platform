@@ -320,7 +320,7 @@ IHqlExpression * UsedFieldSet::createFilteredAssign(IHqlExpression * field, IHql
     {
         if (exceptions && exceptions->contains(*field))
         {
-            newValue.setown(createNullExpr(field));
+            newValue.setown(createNullExpr(newField ? newField.get() : field));
         }
     }
 
@@ -428,6 +428,8 @@ void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
             {
                 HqlExprArray args;
                 unwindChildren(args, &cur);
+                //MORE: Any default will now have the wrong type => remove it for the moment (ideally it would be projected)
+                removeProperty(args, defaultAtom);
                 OwnedHqlExpr newField = createField(cur.queryName(), makeRowType(newRecord->getType()), args);
                 recordFields.append(*newField.getClear());
             }

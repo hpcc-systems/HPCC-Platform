@@ -4406,7 +4406,7 @@ fieldAttr
                         }
     | DEFAULT '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(defaultAtom, $3.getExpr()), $1);
+                            $$.setExpr(createExprAttribute(defaultAtom, $3.getExpr()), $1);
                         }
     | STRING_CONST
                         {
