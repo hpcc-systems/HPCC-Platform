@@ -2052,10 +2052,15 @@ public:
     }
     virtual IConstWorkUnit* secOpenWorkUnit(const char *wuid, bool lock, ISecManager *secmgr=NULL, ISecUser *secuser=NULL)
     {
+        StringBuffer wuidStr(wuid);
+        wuidStr.trim();
+        if (!wuidStr.length())
+            return NULL;
+
         if (workUnitTraceLevel > 1)
-            PrintLog("openWorkUnit %s", wuid);
+            PrintLog("openWorkUnit %s", wuidStr.str());
         StringBuffer wuRoot;
-        getXPath(wuRoot, wuid);
+        getXPath(wuRoot, wuidStr.str());
         IRemoteConnection* conn = sdsManager->connect(wuRoot.str(), session, lock ? RTM_LOCK_READ|RTM_LOCK_SUB : 0, SDS_LOCK_TIMEOUT);
         if (conn)
         {
@@ -2073,7 +2078,7 @@ public:
         else
         {
             if (workUnitTraceLevel > 0)
-                PrintLog("openWorkUnit %s not found", wuid);
+                PrintLog("openWorkUnit %s not found", wuidStr.str());
             return NULL;
         }
     }
