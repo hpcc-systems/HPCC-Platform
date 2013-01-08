@@ -564,7 +564,7 @@ IValue *createStringValue(const char *val, ITypeInfo *type)
 IValue *createStringValue(const char *val, ITypeInfo *type, int srcLength, ICharsetInfo *srcCharset)
 {
     ITranslationInfo * translation = queryDefaultTranslation(type->queryCharset(), srcCharset);
-    int tgtLength = type->getSize();
+    size32_t tgtLength = type->getSize();
     if (tgtLength == UNKNOWN_LENGTH)
     {
         ITypeInfo * newType = getStretchedType(srcLength, type);
@@ -669,7 +669,7 @@ int UnicodeValue::compare(IValue * to)
 
 int UnicodeValue::compare(const void *mem)
 {
-    int len = type->getStringLen();
+    size32_t len = type->getStringLen();
     return rtlCompareUnicodeUnicode(len, (const UChar *)val.get(), len, (const UChar *)mem, type->queryLocale()->str());
 }
 
@@ -1096,7 +1096,7 @@ int Utf8Value::compare(IValue * to)
 
 int Utf8Value::compare(const void *mem)
 {
-    int len = type->getStringLen();
+    size32_t len = type->getStringLen();
     return rtlCompareUtf8Utf8(len, (const char *)val.get(), len, (const char *)mem, type->queryLocale()->str());
 }
 
@@ -1194,8 +1194,8 @@ IValue *DataValue::castTo(ITypeInfo *t)
     if (tc == type_any)
         return LINK(this);
 
-    int osize = type->getSize();
-    int nsize = t->getSize();
+    size32_t osize = type->getSize();
+    size32_t nsize = t->getSize();
     switch (tc)
     {
     case type_data:
@@ -1610,7 +1610,7 @@ const void * IntValue::queryValue() const
 
 void IntValue::toMem(void *target)
 {
-    int size = type->getSize();
+    size32_t size = type->getSize();
     const byte * data = getAddressValue();
     
     if (type->isSwappedEndian())
@@ -1935,7 +1935,7 @@ void RealValue::toMem(void *target)
 {
     RealUnion u;
 
-    int size = type->getSize();
+    size32_t size = type->getSize();
     switch (size)
     {
     case 4:
@@ -1952,7 +1952,7 @@ unsigned RealValue::getHash(unsigned initval)
 {
     RealUnion u;
 
-    int size = type->getSize();
+    size32_t size = type->getSize();
     switch (size)
     {
     case 4:
@@ -1978,7 +1978,7 @@ const char *RealValue::generateCPP(StringBuffer &s, CompilerType compiler)
 
 const char *RealValue::getStringValue(StringBuffer &s)
 {
-    int size = type->getSize();
+    size32_t size = type->getSize();
     if (size==4)
         return s.append((float) val);
     else
