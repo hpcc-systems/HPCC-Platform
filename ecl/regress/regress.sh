@@ -130,7 +130,7 @@ if [[ $eclcc != '' ]]; then
         ## Compile all regressions
         echo "* Compiling all regression tests"
         echo
-        time make -j $np > /dev/null
+        time make -k -j $np > /dev/null
     fi
 fi
 
