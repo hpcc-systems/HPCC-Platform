@@ -3750,6 +3750,8 @@ static void createExpanded(HqlExprArray & fields, IHqlExpression * expr)
                 {
                     HqlExprArray attrs;
                     unwindChildren(attrs, expr);
+                    //MORE: Any default will now have the wrong type => remove it for the moment (ideally it would be projected)
+                    removeProperty(attrs, defaultAtom);
                     fields.append(*createField(expr->queryName(), LINK(expandedType), attrs));
                 }
             }

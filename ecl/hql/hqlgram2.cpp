@@ -1490,7 +1490,9 @@ void HqlGram::doAddAssignment(IHqlExpression * transform, IHqlExpression * _fiel
 void HqlGram::appendTransformAssign(IHqlExpression * transform, IHqlExpression * to, IHqlExpression * _from, const attribute& errpos)
 {
     LinkedHqlExpr from = _from;
-    if (from->isConstant())
+    if (isNull(from))
+        from.setown(createNullExpr(to));
+    else if (from->isConstant())
         from.setown(ensureExprType(from, to->queryType()));
     if (to->isDataset() && !recordTypesMatch(from, to))
     {
@@ -1959,7 +1961,7 @@ void HqlGram::doCheckAssignedNormalizeTransform(HqlExprArray * assigns, IHqlExpr
                         if (cur->hasProperty(virtualAtom))
                         {
                             reportWarning(ERR_TRANS_NOVALUE4FIELD, errpos.pos, "Transform does not supply a value for field \"%s\"", fldName.str());
-                            OwnedHqlExpr null = createNullExpr(cur->queryType());
+                            OwnedHqlExpr null = createNullExpr(cur);
                             if (assigns)
                                 assigns->append(*createAssign(LINK(targetSelected), LINK(null)));
                             else
@@ -2269,6 +2271,35 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
         }
     }
 
+    IHqlExpression * defaultAttr = queryPropertyInList(defaultAtom, attrs);
+    if (defaultAttr)
+    {
+        IHqlExpression * defaultValue = defaultAttr->queryChild(0);
+        if (defaultValue)
+        {
+            ITypeInfo * defvalueType = defaultValue->queryType();
+            if (defvalueType != expectedType)
+            {
+                if (!expectedType->assignableFrom(defvalueType->queryPromotedType()))
+                    canNotAssignTypeError(fieldType,defvalueType,errpos);
+                IValue * constValue = defaultValue->queryValue();
+                if (constValue && (constValue->rangeCompare(expectedType) > 0))
+                    reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "%s", "Default value too large");
+                if (expectedType->getTypeCode() != type_row)
+                {
+                    HqlExprArray allAttrs;
+                    attrs->unwindList(allAttrs, no_comma);
+
+                    IHqlExpression * newValue = ensureExprType(defaultValue, expectedType);
+                    allAttrs.zap(*defaultAttr);
+                    allAttrs.append(*createExprAttribute(defaultAtom, newValue));
+                    attrs->Release();
+                    attrs = createComma(allAttrs);
+                }
+            }
+        }
+    }
+
     switch (fieldType->getTypeCode())
     {
     case type_any:
@@ -2333,6 +2364,7 @@ void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, IHqlExpressio
         attrs = extractAttrsFromExpr(value);
 
     ITypeInfo * type = makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL);
+
     IHqlExpression *newField = createField(name, type, value, attrs);
     addToActiveRecord(newField);
     record->Release();
@@ -6162,6 +6194,7 @@ IHqlExpression * HqlGram::checkParameter(const attribute * errpos, IHqlExpressio
             }
             return NULL;
         }
+        break;
     }
 
 //  if (formal->hasProperty(constAtom) && funcdef && !isExternalFunction(funcdef))
@@ -6646,7 +6679,7 @@ IHqlExpression * HqlGram::checkOutputRecord(IHqlExpression *record, const attrib
                     allConstant = false;                                        // no point reporting this as well.
 
                     HqlExprArray args;
-                    args.append(*createNullExpr(field->queryType()));
+                    args.append(*createNullExpr(field));
                     newField.setown(field->clone(args));
                 }
 
@@ -7844,7 +7877,8 @@ void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & p
                 break;
         }
 
-        fields.append(*createField(implicitFieldName, makeIntType(8, false), createConstant(I64C(0)), createAttribute(_implicitFpos_Atom)));
+        ITypeInfo * fileposType = makeIntType(8, false);
+        fields.append(*createField(implicitFieldName, fileposType, createConstant(I64C(0)), createAttribute(_implicitFpos_Atom)));
         payloadCount++;
     }
 

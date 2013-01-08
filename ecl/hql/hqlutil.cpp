@@ -4196,6 +4196,13 @@ IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...)
 }
 
 
+extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, _ATOM name)
+{
+    IHqlExpression * match = donor->queryProperty(name);
+    if (match)
+        attrs.append(*LINK(match));
+}
+
 IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name)
 {
     return appendOwnedOperand(expr, LINK(donor->queryProperty(name)));
@@ -5316,7 +5323,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                     castValue.setown(ensureExprType(src, type));
                 }
                 else
-                    castValue.setown(createNullExpr(type));
+                    castValue.setown(createNullExpr(expr));
             }
             assigns.append(*createAssign(LINK(target), LINK(castValue)));
             mapper.setMapping(target, castValue);
