@@ -747,6 +747,11 @@ inline type_t getRequiredTypeCode(node_operator op)
     case no_record:
     case no_privatescope:
     case no_scope:
+    case no_virtualscope:
+    case no_concretescope:
+    case no_remotescope:
+    case no_libraryscope:
+    case no_type:
         return type_alias; // type is an alias if itself.
     }
     return type_none;
@@ -1988,8 +1993,16 @@ id_t ExpressionIRPlayer::doProcessAnnotation(IHqlExpression * expr)
         info.col = expr->getStartColumn();
         break;
     case annotate_meta:
-        //MORE: How do you get at the parameters???
-        break;
+        {
+            for (unsigned i=0;; i++)
+            {
+                IHqlExpression * arg = expr->queryAnnotationParameter(i);
+                if (!arg)
+                    break;
+                info.args.append(processExpr(arg));
+            }
+            break;
+        }
     case annotate_warning:
         info.warning = queryAnnotatedWarning(expr);
         break;
