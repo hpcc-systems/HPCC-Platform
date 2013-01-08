@@ -135,18 +135,16 @@ public:
 
     virtual int secure_accept();
     virtual int secure_connect();
-    
+
     virtual int wait_read(unsigned timeoutms);
     virtual void read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs);
+    virtual void readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms);
     virtual size32_t write(void const* buf, size32_t size);
+
+    void readTimeout(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout, bool useSeconds);
 
     //The following are the functions from ISocket that haven't been implemented.
 
-    virtual void   readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,
-                           unsigned timeoutms)
-    {
-        throw MakeStringException(-1, "not implemented");
-    }
 
     virtual void   read(void* buf, size32_t size)
     {
@@ -632,37 +630,53 @@ int CSecureSocket::wait_read(unsigned timeoutms)
     return m_socket->wait_read(timeoutms);
 }
 
+inline unsigned socketTime(bool useSeconds)
+{
+    if (useSeconds)
+    {
+        time_t timenow;
+        return (unsigned) time(&timenow);
+    }
+    return msTick();
+}
 
-void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs)
+inline unsigned socketTimeRemaining(bool useSeconds, unsigned start, unsigned timeout)
+{
+    unsigned elapsed = socketTime(useSeconds) - start;
+    if (elapsed < timeout)
+    {
+        unsigned timeleft = timeout - elapsed;
+        if (useSeconds)
+            timeleft *= 1000;
+        return timeleft;
+    }
+    return 0;
+}
+
+void CSecureSocket::readTimeout(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeout, bool useSeconds)
 {
     size_read = 0;
     unsigned start;
     unsigned timeleft;
 
-    if (timeoutsecs != WAIT_FOREVER) {
-        time_t timenow;
-        time(&timenow);
-        start = (unsigned)timenow;
-        timeleft = timeoutsecs;
+    if (timeout != WAIT_FOREVER) {
+        start = socketTime(useSeconds);
+        timeleft = timeout;
+        if (useSeconds)
+            timeleft *= 1000;
     }
 
     do {
         int rc;
-        if (timeoutsecs != WAIT_FOREVER) {
-            rc = wait_read(timeleft*1000);
+        if (timeout != WAIT_FOREVER) {
+            rc = wait_read(timeleft);
             if (rc < 0) {
                 THROWSECURESOCKETEXCEPTION("wait_read error"); 
             }
             if (rc == 0) {
                 THROWSECURESOCKETEXCEPTION("timeout expired"); 
             }
-            time_t timenow;
-            time(&timenow);
-            time_t elapsed = (unsigned)timenow-start;
-            if (elapsed<timeoutsecs)
-                timeleft = timeoutsecs-elapsed;
-            else
-                timeleft = 0;
+            timeleft = socketTimeRemaining(useSeconds, start, timeout);
         }
 
         rc = SSL_read(m_ssl, (char*)buf + size_read, max_size - size_read);
@@ -687,6 +701,17 @@ void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32
             break;
         }
     } while (size_read < min_size);
+}
+
+
+void CSecureSocket::readtms(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read, unsigned timeoutms)
+{
+    readTimeout(buf, min_size, max_size, size_read, timeoutms, false);
+}
+
+void CSecureSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &size_read,unsigned timeoutsecs)
+{
+    readTimeout(buf, min_size, max_size, size_read, timeoutsecs, true);
 }
 
 size32_t CSecureSocket::write(void const* buf, size32_t size)
