@@ -107,12 +107,16 @@ private:
 
 public:
     SoapParam(nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil), value(0){}
-    SoapParam(inittype val, nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil), value(val){}
+    SoapParam(inittype val, nilBehavior nb=nilIgnore, bool httpNil=true) : BaseEspParam(nb, httpNil)
+    {
+        set(val);
+    }
 
     cpptype getValue() const {return value;}
     operator cpptype () {return value;}
     const cpptype * operator ->() const {return &value;}
-    void operator=(cpptype val) { value = val; isNil=false;};
+    void set(cpptype val) { value = val; isNil=false;};
+    void operator=(cpptype val) { set(val); };
 
     void copy(SoapParam<cpptype, inittype> &from)
     {
@@ -227,7 +231,10 @@ private:
 
 public:
     SoapStringParam(nilBehavior nb=nilIgnore) : BaseEspParam(nb, true), encodeNewlines(false) {}
-    SoapStringParam(const char * val, nilBehavior nb=nilIgnore) : BaseEspParam(nb, !val), encodeNewlines(false) {}
+    SoapStringParam(const char * val, nilBehavior nb=nilIgnore) : BaseEspParam(nb, !val), encodeNewlines(false)
+    {
+        set(val);
+    }
 
     virtual ~SoapStringParam(){}
 
