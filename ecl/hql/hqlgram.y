@@ -161,6 +161,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   DATASET
   __DEBUG__
   DEDUP
+  DEFAULT
   DEFINE
   DENORMALIZE
   DEPRECATED
@@ -4402,6 +4403,10 @@ fieldAttr
     | XMLDEFAULT '(' constExpression ')'
                         {
                             $$.setExpr(createAttribute(xmlDefaultAtom, $3.getExpr()), $1);
+                        }
+    | DEFAULT '(' constExpression ')'
+                        {
+                            $$.setExpr(createExprAttribute(defaultAtom, $3.getExpr()), $1);
                         }
     | STRING_CONST
                         {

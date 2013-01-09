@@ -751,7 +751,7 @@ void CChildLinkedDatasetColumnInfo::setColumn(HqlCppTranslator & translator, Bui
     boundTarget.expr.setown(convertAddressToValue(addressData, queryType()));
 
     if (value->getOperator() == no_null)
-        value.setown(createNullExpr(resultType));
+        value.setown(createNullExpr(column));
     
     translator.buildDatasetAssign(ctx, boundTarget, value);
 }

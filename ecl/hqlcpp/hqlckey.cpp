@@ -362,8 +362,7 @@ void KeyedJoinInfo::buildClearRecord(BuildCtx & ctx, RecordSelectIterator & rawI
         OwnedHqlExpr rawSelect = rawIter.get();
         OwnedHqlExpr keySelect = keyIter.get();
 
-        ITypeInfo * keyFieldType = keySelect->queryType();
-        OwnedHqlExpr null = createNullExpr(keyFieldType);
+        OwnedHqlExpr null = createNullExpr(keySelect);
         OwnedHqlExpr keyNull = (rawIter.isInsideIfBlock() || (rawIter.isInsideNested() && isInPayload())) ? LINK(null) : getHozedKeyValue(null);
         OwnedHqlExpr folded = foldHqlExpression(keyNull);
         translator.buildAssign(ctx, rawSelect, folded);

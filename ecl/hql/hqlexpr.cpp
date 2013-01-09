@@ -48,6 +48,7 @@
 #include "workunit.hpp"
 #include "hqlrepository.hpp"
 #include "hqldesc.hpp"
+#include "hqlir.hpp"
 
 //This nearly works - but there are still some examples which have problems - primarily libraries, old parameter syntax, enums and other issues.
 
@@ -2748,8 +2749,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
         return LINK(expr);
 
     ITypeInfo * exprType = queryUnqualifiedType(qualifiedType);
-    type = queryUnqualifiedType(type);
-    if (exprType == type)
+    if (exprType == queryUnqualifiedType(type))
         return LINK(expr);
 
     type_t tc = type->getTypeCode();
@@ -2871,7 +2871,12 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
 
     node_operator op = expr->getOperator();
     if (op == no_null)
+    {
+        assertex(expr->queryRecord());
+        //The no_null can differ from the expected type by (i) link counting (ii) record annotations
+        assertex(recordTypesMatch(type, exprType));
         return createNullExpr(type);
+    }
 
     IValue * value = expr->queryValue();
     if (value && type->assignableFrom(exprType))    // this last condition is unnecessary, but changes some persist crcs if removed
@@ -12856,6 +12861,11 @@ extern HQL_API IHqlExpression * createNullExpr(ITypeInfo * type)
 
 extern HQL_API IHqlExpression * createNullExpr(IHqlExpression * expr)
 {
+    if (expr->getOperator()==no_select)
+        return createNullExpr(expr->queryChild(1));
+    IHqlExpression * defaultValue = queryPropertyChild(expr, defaultAtom, 0);
+    if (defaultValue)
+        return LINK(defaultValue);
     return createNullExpr(expr->queryType());
 }
 
@@ -12886,23 +12896,22 @@ extern HQL_API IHqlExpression * createPureVirtual(ITypeInfo * type)
         return createValue(no_purevirtual, makeIntType(8, true));
 }
 
-extern HQL_API bool isNullExpr(IHqlExpression * expr, ITypeInfo * type)
+extern HQL_API bool isNullExpr(IHqlExpression * expr, IHqlExpression * field)
 {
     ITypeInfo * exprType = expr->queryType();
-    if (exprType->getTypeCode() != type->getTypeCode())
+    ITypeInfo * fieldType = field->queryType();
+    if (exprType->getTypeCode() != fieldType->getTypeCode())
         return false;
 
     IValue * value = expr->queryValue();
-    switch (type->getTypeCode())
+    switch (fieldType->getTypeCode())
     {
     case type_boolean:
-        return (value && value->getBoolValue() == false);
     case type_int:
     case type_swapint:
     case type_date:
     case type_enumerated:
     case type_bitfield:
-        return (value && value->getIntValue() == 0);
     case type_data:
     case type_string:
     case type_varstring:
@@ -12917,8 +12926,8 @@ extern HQL_API bool isNullExpr(IHqlExpression * expr, ITypeInfo * type)
         {
             if (!value)
                 return false;
-            OwnedHqlExpr null = createNullExpr(type);
-            OwnedHqlExpr castValue = ensureExprType(expr, type);
+            OwnedHqlExpr null = createNullExpr(field);
+            OwnedHqlExpr castValue = ensureExprType(expr, fieldType);
             return null->queryBody() == castValue->queryBody();
         }
     case type_row:
@@ -14160,7 +14169,7 @@ static void simplifyRecordTypes(HqlExprArray & fields, IHqlExpression * cur, boo
 
             ITypeInfo * type = cur->queryType();
             Owned<ITypeInfo> targetType;
-            OwnedHqlExpr attrs;
+            HqlExprArray attrs;
             switch (type->getTypeCode())
             {
             case type_groupedtable:
@@ -14184,9 +14193,10 @@ static void simplifyRecordTypes(HqlExprArray & fields, IHqlExpression * cur, boo
                     if (countAttr || cur->hasProperty(sizeofAtom))
                         forceSimplify = true;
 
-                    attrs.set(maxCountAttr);
+                    if (maxCountAttr)
+                        attrs.append(*LINK(maxCountAttr));
                     if (countAttr && !maxCountAttr && countAttr->queryChild(0)->queryValue())
-                        attrs.setown(createAttribute(maxCountAtom, LINK(countAttr->queryChild(0))));
+                        attrs.append(*createAttribute(maxCountAtom, LINK(countAttr->queryChild(0))));
                     break;
                 }
             case type_set:
@@ -14213,15 +14223,15 @@ static void simplifyRecordTypes(HqlExprArray & fields, IHqlExpression * cur, boo
                 break;
             }
 
-            IHqlExpression * xmlAttr = cur->queryProperty(xpathAtom);
-            if (xmlAttr)
-                attrs.setown(createComma(attrs.getClear(), LINK(xmlAttr)));
-
             LinkedHqlExpr newField = cur;
             if (forceSimplify || type != targetType)
             {
                 needsTransform = true;
-                newField.setown(createField(cur->queryName(), targetType.getLink(), NULL, attrs.getClear()));
+                //MORE xmldefault, default
+                inheritAttribute(attrs, cur, xpathAtom);
+                inheritAttribute(attrs, cur, xmlDefaultAtom);
+                inheritAttribute(attrs, cur, defaultAtom);
+                newField.setown(createField(cur->queryName(), targetType.getLink(), attrs));
             }
             fields.append(*LINK(newField));
             break;

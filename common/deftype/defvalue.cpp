@@ -100,23 +100,28 @@ int rangeCompare(double value, ITypeInfo * targetType)
     }
     else
     {
+        if (value < 0)
+            return -1;
         switch (targetType->getTypeCode())
         {
         case type_decimal:
-            if (value < 0)
-                return -1;
             if (value >= powerOfTen[targetType->getDigits()-targetType->getPrecision()])
                 return +1;
             break;
         case type_int:
         case type_swapint:
-            if (value < 0)
-                return -1;
             if (value > (double)maxUIntValue[targetType->getSize()])
                 return +1;
             break;
         case type_packedint:
             return rangeCompare(value, targetType->queryPromotedType());
+        case type_bitfield:
+            {
+                unsigned __int64 maxValue = (1 << targetType->getBitSize()) - 1;
+                if (value > maxValue)
+                    return +1;
+                break;
+            }
         }
     }
     return 0;

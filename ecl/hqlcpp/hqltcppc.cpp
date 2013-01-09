@@ -2619,6 +2619,8 @@ void CXmlColumnInfo::buildColumnAssign(HqlCppTranslator & translator, BuildCtx &
     {
         _ATOM func = NULL;
         IHqlExpression * defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+        if (!defaultValue)
+            defaultValue = queryPropertyChild(column, defaultAtom, 0);
 
         switch (type->getTypeCode())
         {
@@ -2763,6 +2765,8 @@ IHqlExpression * CXmlColumnInfo::getXmlSetExpr(HqlCppTranslator & translator, Bu
     builder->buildDeclare(ctx);
 
     LinkedHqlExpr defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+    if (!defaultValue)
+        defaultValue.set(queryPropertyChild(column, defaultAtom, 0));
     bool defaultIsAllValue = defaultValue && (defaultValue->getOperator() == no_all);
     if (checkForAll)
     {
@@ -2802,6 +2806,8 @@ IHqlExpression * CXmlColumnInfo::getCallExpr(HqlCppTranslator & translator, Buil
     Linked<ITypeInfo> type = queryPhysicalType();
     _ATOM func = NULL;
     IHqlExpression * defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+    if (!defaultValue)
+        defaultValue = queryPropertyChild(column, defaultAtom, 0);
 
     switch (type->getTypeCode())
     {
