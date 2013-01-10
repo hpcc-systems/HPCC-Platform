@@ -24,6 +24,7 @@ define([
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+    "dijit/Dialog",
 
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
@@ -43,9 +44,10 @@ define([
     "dijit/form/Button",
     "dijit/Toolbar",
     "dijit/TooltipDialog",
-    "dijit/TitlePane"
+    "dijit/TitlePane",
+    
 ], function (declare, dom, domClass, Memory, ObjectStore,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog,
                 EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, Workunit,
                 template) {
     return declare("WUDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -151,6 +153,10 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
+            onSaveConfirm = new Dialog({
+                title: "Saved",
+                content: "Workunit Saved"
+            });
         },
 
         resize: function (args) {
@@ -179,6 +185,7 @@ define([
                     context.monitor();
                 }
             });
+            onSaveConfirm.show();
         },
         _onReload: function (event) {
             this.monitor();

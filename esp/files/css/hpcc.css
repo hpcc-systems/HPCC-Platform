@@ -14,7 +14,6 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
-
 /*ELEMENT STYLES***************/
 html, body {
     background: white;
@@ -107,6 +106,8 @@ form h2{
     padding:5px 0;
 }
 
+
+
 /*IDs************************/
 
 #myProgressBar{
@@ -187,7 +188,7 @@ margin-left:-20px;
     background:rgb(244,244,244);
     padding:10px;
     margin:10px 0;
-    border:solid 1px rgb(214,214,214); 
+    border:solid 1px rgb(214,214,214);
 }
 
 .pageOverlay{
@@ -199,6 +200,23 @@ margin-left:-20px;
     position: absolute;
     z-index: 1001;
 }
+
+.Highlight{
+    background: #E2F1FD;
+    padding: 5px;
+    margin-bottom: 10px;
+    border:solid 1px rgb(181, 188, 199);
+}
+
+#appLayoutHighlight input[type="radio"] {
+
+}
+.dojoxGridNoData{
+    color:rgb(220, 229, 237);
+    font-size:22px;
+    text-decoration: none;
+}
+
 
 .CodeMirror {
 }
