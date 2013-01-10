@@ -1,4 +1,4 @@
-<div class="${baseClass}">
+<div class="${ba seClass}">
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
             <div id="${id}Workunits" style="width: 100%; height: 100%" data-dojo-props='title:"Workunits"' data-dojo-type="dijit.layout.BorderContainer">
@@ -8,7 +8,7 @@
                     <div id="${id}SetToFailed" data-dojo-attach-event="onClick:_onSetToFailed" data-dojo-type="dijit.form.Button">Set To Failed</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Protect" data-dojo-attach-event="onClick:_onProtect" data-dojo-type="dijit.form.Button">Protect</div>
-                    <div id="${id}Unprotect" data-dojo-attach-event="onClick:_onUnprotect" data-dojo-type="dijit.form.Button">Unprotect</div>
+                    <div id="${id}Unprotect" data-dojo-attach-event="onClick:_onUnprotect" data-dojo-type="dijit.form.Button">Un-Protect</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Reschedule" data-dojo-attach-event="onClick:_onReschedule" data-dojo-type="dijit.form.Button">Reschedule</div>
                     <div id="${id}Deschedule" data-dojo-attach-event="onClick:_onDeschedule" data-dojo-type="dijit.form.Button">Deschedule</div>
@@ -41,7 +41,8 @@
                                     </li>
                                     <li>
                                         <label for="${id}LogicalFile">Logical File:</label>
-                                        <input id="${id}LogicalFile" data-dojo-props="trim: true, placeHolder:'*::somefile'" data-dojo-type="dijit.form.TextBox"/>
+                                        <input id="${id}LogicalFile" data-dojo-props="trim: true,
+                                        placeHolder:'*::somefile'" data-dojo-type="dijit.form.TextBox"/>
                                     </li>
                                     <li>
                                         <label>Label</label>
@@ -53,14 +54,16 @@
                                     <li> 
                                         <label for="${id}FromDate">From:</label>
                                         <img src="img/cal.gif" alt="calendar"/>
-                                        <input id="${id}FromDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox"/>                                       
-                                        <input id="${id}FromTime" class="smallCombo" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox"/>
+                                        <input id="${id}FromDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'"data-dojo-type="dijit.form.DateTextBox"/>
+                                        <input id="${id}FromTime" class="smallCombo" data-dojo-props="trim: true,
+                                        placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox"/>
                                     </li>
                                     <li> 
                                         <label for="${id}ToDate">To:</label>
                                         <img src="img/cal.gif" alt="calendar"/>
-                                        <input id="${id}ToDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox"/>
-                                        <input id="${id}ToTime"  data-dojo-props="trim: true, placeHolder:'7:30 PM'" data-dojo-type="dijit.form.TimeTextBox"/>
+                                        <input id="${id}ToDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'"data-dojo-type="dijit.form.DateTextBox"/>
+                                        <input id="${id}ToTime"  data-dojo-props="trim: true, placeHolder:'7:30 PM'"
+                                        data-dojo-type="dijit.form.TimeTextBox"/>
                                     </li>
                                     <li> 
                                         <label for="${id}LastNDays">Last N Days:</label>
@@ -74,7 +77,8 @@
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 </div>
-                <div id="${id}WorkunitsGrid" data-dojo-props="region: 'center', plugins: { pagination: { pageSizes: [25, 50, 100, 'All'], defaultPageSize: 50, description: true, sizeSwitch: true, pageStepper: true, gotoButton: true, maxPageStep: 4, position: 'bottom' }
+                <div id="${id}WorkunitsGrid" data-dojo-props="region: 'center', plugins: { pagination: { pageSizes: [25, 50, 100, 'All'], defaultPageSize: 50, description: true, sizeSwitch: true, pageStepper: true,
+                gotoButton: true, maxPageStep: 4, position: 'bottom' }
                     , indirectSelection: {
                         headerSelector: true,
                         width: '20px',
