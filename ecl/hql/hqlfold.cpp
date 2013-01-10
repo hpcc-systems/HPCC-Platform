@@ -3410,7 +3410,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 if (leftIsNull)
                     cvtRightProject = true;
                 else if (rightIsNull)
+                {
                     cvtLeftProject = true;
+                    reason = "JOIN(ds,<empty>)";
+                }
             }
 
             //JOIN with false condition - can occur once constants are folded.
@@ -3429,16 +3432,37 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 
             //JOIN, left outer, keep(1) with no reference to RIGHT in the transform => convert to a project!
             //again can occur once the implicit project has started getting to work.
-            //May need to worry about limit side-effects....
-            if (isSpecificJoin(expr, leftouterAtom) && matchesConstantValue(queryPropertyChild(expr, keepAtom, 0), 1))
+            if (!cvtLeftProject)
             {
-                IHqlExpression * selSeq = querySelSeq(expr);
-                OwnedHqlExpr right = createSelector(no_right, rhs, selSeq);
-                IHqlExpression * transform = expr->queryChild(3);
-                if (!exprReferencesDataset(transform, right))
+                const char * potentialLeftProjectReason = NULL;
+                if (isSpecificJoin(expr, leftouterAtom))
                 {
-                    cvtLeftProject = true;
-                    reason = "JOIN(,LEFT OUTER,KEEP(1))";
+                    if (matchesConstantValue(queryPropertyChild(expr, keepAtom, 0), 1))
+                        potentialLeftProjectReason = "JOIN(,LEFT OUTER,KEEP(1))";
+                    else if (expr->hasProperty(lookupAtom) && !expr->hasProperty(manyAtom))
+                        potentialLeftProjectReason = "JOIN(,LEFT OUTER,SINGLE LOOKUP)";
+                    else if (hasNoMoreRowsThan(expr, 1))
+                        potentialLeftProjectReason = "JOIN(<single-row>,LEFT OUTER)";
+                }
+
+                if (potentialLeftProjectReason)
+                {
+                    //This cannot match if the transform contains a skip - since that would
+                    IHqlExpression * selSeq = querySelSeq(expr);
+                    OwnedHqlExpr right = createSelector(no_right, rhs, selSeq);
+                    IHqlExpression * transform = expr->queryChild(3);
+                    if (!exprReferencesDataset(transform, right))
+                    {
+                        cvtLeftProject = true;
+                        reason = potentialLeftProjectReason;
+                    }
+
+                    if (cvtLeftProject && (expr->getOperator() == no_denormalize))
+                    {
+                        //Denormalize with no match will not call the transform, so we can't convert that to a project
+                        if (containsSkip(transform))
+                            cvtLeftProject = false;
+                    }
                 }
             }
 
@@ -3460,10 +3484,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 args.append(*newTransform.getClear());
                 args.append(*LINK(selSeq));
                 OwnedHqlExpr ret = createDataset(no_hqlproject, args);
-                if (reason)
-                    DBGLOG("Folder: Replace %s with PROJECT", reason);
-                else
-                    DBGLOG("Folder: Replace JOIN(ds,<empty>) with PROJECT");
+                DBGLOG("Folder: Replace %s with PROJECT", reason);
                 return ret.getClear();
             }
 
