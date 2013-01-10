@@ -3654,13 +3654,16 @@ void XmlSchemaBuilder::addSchemaPrefix()
                     "<xs:element name=\"Row\">"
                         "<xs:complexType>"
                             "<xs:sequence>\n");
+    attributes.append(*new StringBufferItem);
 }
 
 
 void XmlSchemaBuilder::addSchemaSuffix()
 {
-    xml.append(             "</xs:sequence>"
-                        "</xs:complexType>"
+    xml.append(             "</xs:sequence>");
+    xml.append(attributes.tos());
+    attributes.pop();
+    xml.append(         "</xs:complexType>"
                     "</xs:element>\n"
                 "</xs:sequence>"
             "</xs:complexType>"
