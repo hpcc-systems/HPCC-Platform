@@ -52,6 +52,14 @@ extern jlib_decl void disableThreadSEH();
 
 extern jlib_decl unsigned threadLogID();  // for use in logging
 
+// A function registered via addThreadTermFunc will be called when the thread that registered that function
+// terminates. Such a function should call on to the previously registered function (if any) - generally you
+// would expect to store that value in thread-local storage.
+// This can be used to ensure that thread-specific objects can be properly destructed.
+
+typedef void (*ThreadTermFunc)();
+extern jlib_decl ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm);
+
 class jlib_decl Thread : public CInterface, public IThread
 {
 private:
@@ -175,31 +183,6 @@ public:
     void For(unsigned num,unsigned maxatonce,bool abortFollowingException=false,bool shuffled=false);
     virtual void Do(unsigned idx=0)=0;
 };
-
-// Thread local storage - use MAKETHREADLOCALIINTERFACE macro to get a thread local type
-
-template <class CLASS, class CLASSINIT = CLASS, class MAP = MapBetween<ThreadId, ThreadId, CLASS, CLASSINIT> >
-class ThreadLocalOf : public MAP
-{
-public:
-    CLASS * query()
-    {
-        CLASS * find = threadMap.getValue(GetCurrentThreadId());
-        if(find) return find;
-        threadMap.setValue(GetCurrentThreadId(), CLASSINIT());
-        return threadMap.getValue(GetCurrentThreadId());
-    }
-    operator CLASS & ()
-    {
-        return *query();
-    }
-private:
-    MAP threadMap;
-};
-
-#define MAKETHREADLOCALIINTERFACE(C, CI, NAME)                                                      \
-typedef ThreadLocalOf<C, CI> NAME
-
 
 // ---------------------------------------------------------------------------
 // Thread Pools

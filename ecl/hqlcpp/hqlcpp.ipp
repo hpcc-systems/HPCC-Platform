@@ -1108,6 +1108,8 @@ public:
 
     bool expandFunctionPrototype(StringBuffer & s, IHqlExpression * funcdef);
     void expandFunctionPrototype(BuildCtx & ctx, IHqlExpression * funcdef);
+    void buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpression * bodycode, const char *proto);
+    void buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpression * bodycode, const char *proto);
     void buildFunctionDefinition(IHqlExpression * funcdef);
     void assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & expr);
     void assignCastUnknownLength(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & pure);

@@ -804,6 +804,19 @@ const char * cppSystemText[]  = {
     "   _linkcounted_ row(dummyRecord) dictionaryLookup(boolean meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup';",
     "    boolean dictionaryLookupExists(boolean meta, _linkcounted_ dictionary dict, row key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExists';",
 
+    // Marshalling parameters to external languages
+    "   bindSignedParam(const varstring name, integer val) : method,entrypoint='bindSignedParam';",
+    "   bindUnsignedParam(const varstring name, unsigned val) : method,entrypoint='bindUnsignedParam';",
+    "   bindStringParam(const varstring name, const string val) : method,entrypoint='bindStringParam';",
+    "   bindVStringParam(const varstring name, const varstring val) : method,entrypoint='bindvStringParam';",  // Not yet used
+    "   bindRealParam(const varstring name, real val) : method,entrypoint='bindRealParam';",
+
+    "   real getRealResult() : method,entrypoint='getRealResult';",
+    "   integer getSignedResult() : method,entrypoint='getSignedResult';",
+    "   string getStringResult() : method,entrypoint='getStringResult';",
+    "   unsigned getUnsignedResult() : method,entrypoint='getUnsignedResult';",
+
+    "   compileEmbeddedScript(const varstring script) : method,entrypoint='compileEmbeddedScript';",
     "   END;",
     NULL };
 

@@ -729,4 +729,29 @@ ECLRTL_API unsigned rtlDelayReturn(unsigned value, unsigned sleepTime);
 
 ECLRTL_API bool rtlGPF();
 
+//-----------------------------------------------------------------------------
+
+interface IEmbedFunctionContext : extends IInterface
+{
+    virtual void bindRealParam(const char *name, double val) = 0;
+    virtual void bindSignedParam(const char *name, __int64 val) = 0;
+    virtual void bindUnsignedParam(const char *name, unsigned __int64 val) = 0;
+    virtual void bindStringParam(const char *name, size32_t len, const char *val) = 0;
+    virtual void bindVStringParam(const char *name, const char *val) = 0;
+
+    virtual double getRealResult() = 0;
+    virtual __int64 getSignedResult() = 0;
+    virtual unsigned __int64 getUnsignedResult() = 0;
+    virtual void getStringResult(size32_t &len, char * &result) = 0;
+
+    virtual void compileEmbeddedScript(const char *script) = 0;
+    virtual void callFunction() = 0;
+};
+
+interface IEmbedContext : extends IInterface
+{
+    virtual IEmbedFunctionContext *createFunctionContext() = 0;
+    // MORE - add syntax checked here!
+};
+
 #endif

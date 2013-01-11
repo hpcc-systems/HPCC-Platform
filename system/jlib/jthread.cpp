@@ -54,6 +54,15 @@ MODULE_EXIT()
     delete exceptionHandlers;
 }
 
+__thread ThreadTermFunc threadTerminationHook;
+
+ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm)
+{
+    ThreadTermFunc old = threadTerminationHook;
+    threadTerminationHook = onTerm;
+    return old;
+}
+
 void addThreadExceptionHandler(IExceptionHandler *handler)
 {
     assertex(exceptionHandlers); // have to ensure MODULE_INIT has appropriate priority.
@@ -95,6 +104,8 @@ void *Thread::_threadmain(void *v)
     t->tidlog = threadLogID();
 #endif
     int ret = t->begin();
+    if (threadTerminationHook)
+        (*threadTerminationHook)();
     char *&threadname = t->cthreadname.threadname;
     if (threadname) {
         memsize_t l=strlen(threadname);

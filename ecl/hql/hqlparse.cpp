@@ -2051,6 +2051,12 @@ unsigned HqlLex::getTypeSize(unsigned lengthTypeName)
     return UNKNOWN_LENGTH;
 }
 
+void HqlLex::enterEmbeddedMode()
+{
+    doEnterEmbeddedMode(scanner);
+    inCpp = true;
+}
+
 int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
 {
     loop

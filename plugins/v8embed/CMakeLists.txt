@@ -13,16 +13,39 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-add_subdirectory (auditlib)
-add_subdirectory (debugservices)
-add_subdirectory (fileservices)
-add_subdirectory (logging)
-add_subdirectory (parselib)
-add_subdirectory (stringlib)
-add_subdirectory (unicodelib)
-add_subdirectory (workunitservices)
-if ("${BUILD_LEVEL}" STREQUAL "COMMUNITY")
-  add_subdirectory (proxies)
-endif ()
 
-add_subdirectory (v8embed)
+
+# Component: v8embed
+
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for v8embed
+#####################################################
+
+set ( toolsdir "${HPCC_SOURCE_DIR}/tools" )
+
+
+project( v8embed )
+
+set (    SRCS
+         v8embed.cpp
+    )
+
+include_directories (
+         ./../../system/include
+         ./../../rtl/eclrtl
+         ./../../rtl/include
+         ./../../system/jlib
+    )
+
+ADD_DEFINITIONS( -D_USRDLL -DV8EMBED_EXPORTS )
+
+HPCC_ADD_LIBRARY( v8embed SHARED ${SRCS} )
+install ( TARGETS v8embed DESTINATION plugins )
+
+target_link_libraries ( v8embed
+    v8
+    eclrtl
+    jlib
+    )

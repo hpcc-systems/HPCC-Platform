@@ -137,6 +137,7 @@ typedef memsize_t rowsize_t;
 #define LoadSucceeded(h)           ((unsigned)h >= 32)
 #define GetSharedObjectError()     GetLastError()
 #define strtok_r(a,b,c)             j_strtok_r(a,b,c)
+#define __thread __declspec(thread)
 
 typedef unsigned __int64 off64_t;
 typedef int socklen_t;

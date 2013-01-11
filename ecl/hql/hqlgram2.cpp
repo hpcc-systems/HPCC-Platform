@@ -831,11 +831,23 @@ IHqlExpression * HqlGram::convertToOutOfLineFunction(const ECLlocation & errpos,
     return LINK(expr);
 }
 
-IHqlExpression * HqlGram::processCppBody(const attribute & errpos, IHqlExpression * cpp)
+IHqlExpression * HqlGram::processCppBody(const attribute & errpos, IHqlExpression * cpp, IHqlExpression * language)
 {
     HqlExprArray args;
     cpp->unwindList(args, no_comma);
-
+    if (language)
+    {
+        IHqlScope *pluginScope = language->queryScope();
+        OwnedHqlExpr getEmbedContextFunc = pluginScope->lookupSymbol(getEmbedContextAtom, LSFsharedOK, lookupCtx);
+        if (!getEmbedContextFunc)
+            reportError(ERR_PluginNoScripting, errpos, "Module %s does not export getEmbedContext() function", language->queryName()->getAtomNamePtr());
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(cppAtom, LSFsharedOK, lookupCtx);
+        if (syntaxCheckFunc)
+        {
+            // MORE - create an expression that calls it, and const fold it, I guess....
+        }
+        args.append(*createAttribute(languageAtom, getEmbedContextFunc.getClear()));
+    }
     Linked<ITypeInfo> type = current_type;
     if (!type)
         type.setown(makeVoidType());
