@@ -24,7 +24,6 @@ using namespace v8;
     Isolate* isolate = Isolate::New();
     {
         v8::Isolate::Scope iscope(isolate);
-        v8::V8::Initialize();
         // Create a stack-allocated handle scope.
         HandleScope handle_scope;
         Persistent<Context> context = Context::New();
@@ -50,7 +49,7 @@ using namespace v8;
         String::AsciiValue ascii(result);
         const char *chars= *ascii;
         __lenResult = strlen(chars);
-        __result = new char(__lenResult);
+        __result = (char *)rtlMalloc(__lenResult);
         memcpy(__result, chars, __lenResult);
     }
     isolate->Dispose();

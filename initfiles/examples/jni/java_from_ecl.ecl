@@ -135,7 +135,7 @@ static void resolveJNIMethods()
 
     __lenResult = env->GetStringUTFLength(result);
     const char * chars =  env->GetStringUTFChars(result, NULL);
-    __result = new char(__lenResult);
+    __result = (char *)rtlMalloc(__lenResult);
     memcpy(__result, chars, __lenResult);
     env->ReleaseStringUTFChars(result, chars);
 // }

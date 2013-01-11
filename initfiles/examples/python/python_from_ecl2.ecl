@@ -119,7 +119,7 @@ public:
      __lenResult = PyString_Size(pResult);
     const char * chars =  PyString_AsString(pResult);
     checkPythonError();
-    __result = new char(__lenResult);
+    __result = (char *)rtlMalloc(__lenResult);
     memcpy(__result, chars, __lenResult);
 }
 ENDC++;
