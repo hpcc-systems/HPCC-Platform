@@ -288,9 +288,12 @@ define([
         },
 
         _onRenderSVG: function () {
-            this._showDialog({
-                title: "Rendered SVG", 
-                content: this.main.getSVG()
+            var context = this
+            this.main.localLayout(function (svg) {
+                context._showDialog({
+                    title: "Rendered SVG",
+                    content: svg
+                });
             });
         },
 

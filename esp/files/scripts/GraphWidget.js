@@ -160,6 +160,16 @@ require([
                 return this.xgmml;
             },
 
+            localLayout: function(callback) {
+                var context = this;
+                require(
+                  ["hpcc/viz"],
+                  function (viz) {
+                      callback(Viz(context.dot, "svg"));
+                  }
+                );
+            },
+
             displayProperties: function (item, place) {
                 var props = this.plugin.getProperties(item);
                 if (props.id) {
