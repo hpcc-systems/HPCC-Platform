@@ -451,6 +451,163 @@ void activatePackageMapInfo(const char *target, const char *packageMap, bool act
     }
 }
 
+bool validatePackageMapInfo(IPropertyTree *packageInfo, const char *target, StringBuffer &info)
+{
+    bool ret = true;
+    Owned<IRemoteConnection> querySets = querySDS().connect("/QuerySets/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (!querySets)
+        throw MakeStringException(PKG_NONE_DEFINED, "No querysets defined");
+
+    StringBuffer xpath;
+    xpath.append("QuerySet[@id='").append(target).append("']");
+
+    IPropertyTree *root = querySets->queryRoot();
+    IPropertyTree* querySet = root->queryPropTree(xpath);
+    StringAttrMapping queryNames;
+    StringAttrMapping queryIds;
+
+    StringArray pkgNames;
+    StringAttrMapping queryPkgIds;
+    StringAttrMapping dataPkgIds;
+    if (querySet)
+    {
+        Owned<IPropertyTreeIterator> iter = querySet->getElements("Query");
+        ForEach(*iter)
+        {
+            IPropertyTree &item = iter->query();
+            queryNames.setValue(item.queryProp("@name"), "Name");
+            queryIds.setValue(item.queryProp("@id"),item.queryProp("@name"));
+        }
+    }
+
+    Owned<IPropertyTreeIterator> iter = packageInfo->getElements("*");
+    ForEach(*iter)
+    {
+        IPropertyTree &item = iter->query();
+        Owned<IPropertyTreeIterator> super_iter = item.getElements("SuperFile");
+        if (super_iter->first())
+        {
+            const char *id = super_iter->query().queryProp("@id");
+            if (dataPkgIds.find(id) == 0)
+                dataPkgIds.setValue(id, "dataPkgId");
+            else
+            {
+                info.appendf("package id %s defined more than once\n", id);
+                ret = false;
+            }
+            ForEach(*super_iter)
+            {
+                if (!super_iter->query().hasProp("SubFile"))
+                {
+                    info.appendf("SuperFile %s has no subfiles", super_iter->query().queryProp("@id"));
+                    ret = false;
+                }
+            }
+        }
+        else
+        {
+            if (item.hasProp("Base"))
+            {
+                const char *id = item.queryProp("@id");
+                if (queryPkgIds.find(id) == 0)
+                    queryPkgIds.setValue(id, "queryPkgId");
+                else
+                {
+                    info.appendf("package id %s defined more than once\n", id);
+                    ret = false;
+                }
+            }
+        }
+
+        if (item.hasProp("@queries"))
+            pkgNames.append(item.queryProp("@queries"));
+    }
+
+    HashIterator pkg_iter(queryPkgIds);
+    StringBuffer err;
+    for (pkg_iter.first(); pkg_iter.isValid(); pkg_iter.next())
+    {
+        IMapping &cur = pkg_iter.query();
+        StringAttr *val = queryPkgIds.mapToValue(&cur);
+
+        const char *id = (const char*)cur.getKey();
+        if (queryIds.find(id) == 0)
+        {
+            info.appendf("id %s not found in queryset\n", id);
+            ret = false;
+        }
+    }
+
+    HashIterator qryName_iter(queryNames);
+    HashIterator qryId_iter(queryIds);
+    ForEachItemIn(idx, pkgNames)
+    {
+        const char *pkgname = pkgNames.item(idx);
+        bool foundit = false;
+
+        for (qryName_iter.first(); qryName_iter.isValid(); qryName_iter.next())
+        {
+            IMapping &cur = qryName_iter.query();
+            StringAttr *val = queryNames.mapToValue(&cur);
+            if (WildMatch((const char*)cur.getKey(), pkgname, true))
+            {
+                foundit = true;
+                break;
+            }
+        }
+        if (!foundit)
+        {
+            for (qryId_iter.first(); qryId_iter.isValid(); qryId_iter.next())
+            {
+                IMapping &cur = qryId_iter.query();
+                StringAttr *val = queryIds.mapToValue(&cur);
+                if (WildMatch((const char *)cur.getKey(), pkgname, true))
+                {
+                    foundit = true;
+                    break;
+                }
+            }
+        }
+        if (!foundit)
+        {
+            info.appendf("could not find %s in the queryset\n", pkgname);
+            ret = false;
+        }
+    }
+
+    for (qryId_iter.first(); qryId_iter.isValid(); qryId_iter.next())
+    {
+        IMapping &cur = qryId_iter.query();
+        StringAttr *item = queryNames.mapToValue(&cur);
+        const char *queryId = (const char*)cur.getKey();
+
+        bool foundit = false;
+        if (queryPkgIds.find(queryId) != 0)
+        {
+            foundit = true;
+            break;
+        }
+        else
+        {
+            const char *name = item->get();
+            ForEachItemIn(qidx1, pkgNames)
+            {
+                if (WildMatch(name, pkgNames.item(qidx1), true))
+                {
+                    foundit = true;
+                    break;
+                }
+            }
+        }
+        if (!foundit)
+        {
+            info.appendf("could not find %s in the package map\n", queryId);
+            ret = false;
+        }
+    }
+    return ret;
+}
+
 bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
@@ -533,6 +690,18 @@ bool CWsPackageProcessEx::onGetPackage(IEspContext &context, IEspGetPackageReque
     StringAttr process(req.getProcess());
     StringBuffer info;
     getPkgInfo(req.getTarget(), process.length() ? process.get() : "*", info);
+    resp.setInfo(info);
+    return true;
+}
+
+bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePackageRequest &req, IEspValidatePackageResponse &resp)
+{
+    resp.updateStatus().setCode(0);
+    Owned<IPropertyTree> packageTree = createPTreeFromXMLString(req.getInfo());
+
+    StringBuffer info;
+    if (validatePackageMapInfo(packageTree, req.getTarget(), info))
+        info.append(" No package map issues found");
     resp.setInfo(info);
     return true;
 }
