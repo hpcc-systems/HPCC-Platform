@@ -421,6 +421,9 @@
                         </xsl:when>
                         <xsl:otherwise>
                             <data>
+                                <xsl:if test="number($escapeResults) and not(starts-with($rowSchema/@name, '__html__'))">
+                                    <xsl:attribute name="escape">1</xsl:attribute>
+                                </xsl:if>
                                 <xsl:for-each select="$matchingData|$matchingData2">
                                     <xsl:value-of select="."/>
                                     <xsl:if test="position()!=last()">, </xsl:if>
