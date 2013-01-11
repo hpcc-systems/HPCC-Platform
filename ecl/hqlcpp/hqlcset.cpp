@@ -721,8 +721,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
     IHqlExpression *record = ds->queryRecord();
 
     StringBuffer lookupHelperName;
-    OwnedHqlExpr dict = createDictionary(no_null, LINK(record));
-    translator.buildDictionaryHashClass(record, dict, lookupHelperName);
+    translator.buildDictionaryHashClass(record, lookupHelperName);
     CHqlBoundTarget target;
     target.expr.set(tempRow->queryBound());
 
@@ -743,8 +742,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     IHqlExpression *record = ds->queryRecord();
 
     StringBuffer lookupHelperName;
-    OwnedHqlExpr dict = createDictionary(no_null, LINK(record));
-    translator.buildDictionaryHashClass(record, dict, lookupHelperName);
+    translator.buildDictionaryHashClass(record, lookupHelperName);
 
     HqlExprArray args;
     args.append(*createQuoted(lookupHelperName, makeBoolType()));
@@ -1416,10 +1414,10 @@ BoundRow * DatasetBuilderBase::buildCreateRow(BuildCtx & ctx)
     return translator.bindSelf(ctx, dataset, builderName);
 }
 
-BoundRow * DatasetBuilderBase::buildDeserializeRow(BuildCtx & ctx, IHqlExpression * serializedInput)
+BoundRow * DatasetBuilderBase::buildDeserializeRow(BuildCtx & ctx, IHqlExpression * serializedInput, _ATOM serializeForm)
 {
     StringBuffer serializerInstanceName;
-    translator.ensureRowSerializer(serializerInstanceName, ctx, record, deserializerAtom);
+    translator.ensureRowSerializer(serializerInstanceName, ctx, record, serializeForm, deserializerAtom);
 
     StringBuffer s;
     s.append(instanceName).append(".deserializeRow(*");
@@ -1797,8 +1795,7 @@ void LinkedDictionaryBuilder::buildDeclare(BuildCtx & ctx)
     translator.ensureRowAllocator(allocatorName, ctx, record, curActivityId);
 
     StringBuffer lookupHelperName;
-    OwnedHqlExpr dict = createDictionary(no_null, record.getLink()); // MORE - is the actual dict not available?
-    translator.buildDictionaryHashClass(record, dict, lookupHelperName);
+    translator.buildDictionaryHashClass(record, lookupHelperName);
 
     decl.append("RtlLinkedDictionaryBuilder ").append(instanceName).append("(");
     decl.append(allocatorName).append(", &").append(lookupHelperName);

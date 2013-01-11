@@ -42,9 +42,11 @@ extern HQL_API _ATOM assertConstAtom;
 extern HQL_API _ATOM atAtom;
 extern HQL_API _ATOM atmostAtom;
 extern HQL_API _ATOM _attrAligned_Atom;
+extern HQL_API _ATOM _attrDiskSerializedForm_Atom;
+extern HQL_API _ATOM _attrInternalSerializedForm_Atom;
 extern HQL_API _ATOM _attrLocationIndependent_Atom;
+extern HQL_API _ATOM _attrMemorySerializedForm_Atom;
 extern HQL_API _ATOM _attrRecordCount_Atom;
-extern HQL_API _ATOM _attrSerializedForm_Atom;
 extern HQL_API _ATOM _attrSize_Atom;
 extern HQL_API _ATOM _attrUnadorned_Atom;
 extern HQL_API _ATOM aveAtom;
@@ -386,7 +388,9 @@ enum
 {
     EAnone,
     EArecordCount,
-    EAserializedForm,
+    EAdiskserializedForm,
+    EAinternalserializedForm,
+    EAmemoryserializedForm,
     EAsize,
     EAaligned,
     EAunadorned,

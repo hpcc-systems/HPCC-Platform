@@ -160,7 +160,7 @@ protected:
     IHqlExpression * cloneExprInClass(CtxCollection & ctxs, IHqlExpression * expr);
     void createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, IHqlExpression * value, CHqlBoundExpr & tgt);
     void doCallNestedHelpers(const char * member, const char * acticity);
-    void ensureSerialized(CtxCollection & ctxs, const CHqlBoundTarget & tgt);
+    void ensureSerialized(CtxCollection & ctxs, const CHqlBoundTarget & tgt, _ATOM serializeForm);
 
 protected:
     CtxCollection onCreate;

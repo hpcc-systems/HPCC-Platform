@@ -485,9 +485,9 @@ void CHThorDiskWriteActivity::open()
     // Open an output file...
     file.setown(createIFile(filename));
     inputMeta.set(input->queryOutputMeta());
-    serializedOutputMeta.set(input->queryOutputMeta()->querySerializedMeta());//returns outputMeta if serialization not needed
+    serializedOutputMeta.set(input->queryOutputMeta()->querySerializedDiskMeta());//returns outputMeta if serialization not needed
 
-    Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedMeta();
+    Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedDiskMeta();
     if(grouped)
         groupedMeta.setown(createDeltaRecordSize(groupedMeta, +1));
     blockcompressed = checkIsCompressed(helper.getFlags(), serializedOutputMeta.getFixedSize(), grouped);//TDWnewcompress for new compression, else check for row compression
@@ -1262,7 +1262,7 @@ public:
     {
         groupSignalled = true; // i.e. don't start with a NULL row
         CHThorSimpleActivityBase::ready();
-        rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+        rowDeserializer.setown(rowAllocator->createDiskDeserializer(agent.queryCodeContext()));
         readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
         openPipe(helper.getPipeProgram());
     }
@@ -1432,8 +1432,8 @@ public:
         // From the create() in roxie
 
         inputMeta.set(input->queryOutputMeta());
-        rowSerializer.setown(inputMeta.createRowSerializer(agent.queryCodeContext(), activityId));
-        rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+        rowSerializer.setown(inputMeta.createDiskSerializer(agent.queryCodeContext(), activityId));
+        rowDeserializer.setown(rowAllocator->createDiskDeserializer(agent.queryCodeContext()));
         writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
 
         // From the start() in roxie
@@ -1613,7 +1613,7 @@ public:
     {
         CHThorActivityBase::ready();
         inputMeta.set(input->queryOutputMeta());
-        rowSerializer.setown(inputMeta.createRowSerializer(agent.queryCodeContext(), activityId));
+        rowSerializer.setown(inputMeta.createDiskSerializer(agent.queryCodeContext(), activityId));
         writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
 
         firstRead = true;
@@ -5785,8 +5785,8 @@ void CHThorWorkUnitWriteActivity::execute()
     __int64 initialRows = rows;
 
     Owned<IOutputRowSerializer> rowSerializer;
-    if (input->queryOutputMeta()->getMetaFlags() & MDFneedserialize)
-        rowSerializer.setown( input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId) );
+    if (input->queryOutputMeta()->getMetaFlags() & MDFneedserializedisk)
+        rowSerializer.setown( input->queryOutputMeta()->createDiskSerializer(agent.queryCodeContext(), activityId) );
 
     int seq = helper.getSequence();
     bool toStdout = (seq >= 0) && agent.queryWriteResultsToStdout();
@@ -5914,7 +5914,7 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
     size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit) * 0x100000;
     MemoryBuffer rowdata;
     CThorDemoRowSerializer out(rowdata);
-    Owned<IOutputRowSerializer> serializer = input->queryOutputMeta()->createRowSerializer(agent.queryCodeContext(), activityId);
+    Owned<IOutputRowSerializer> serializer = input->queryOutputMeta()->createDiskSerializer(agent.queryCodeContext(), activityId);
     rtlSerializeDictionary(out, serializer, builder.getcount(), builder.queryrows());
     if(outputLimit && (rowdata.length()  > outputLimit))
     {
@@ -6619,7 +6619,7 @@ void CHThorWorkunitReadActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
 
-    rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+    rowDeserializer.setown(rowAllocator->createDiskDeserializer(agent.queryCodeContext()));
 
     if(first)
     {
@@ -7427,7 +7427,7 @@ void CHThorRawIteratorActivity::ready()
     helper.queryDataset(lenData, data);
     resultBuffer.setBuffer(lenData, const_cast<void *>(data), false);
     eogPending = false;
-    rowDeserializer.setown(rowAllocator->createRowDeserializer(agent.queryCodeContext()));
+    rowDeserializer.setown(rowAllocator->createDiskDeserializer(agent.queryCodeContext()));
 }
 
 void CHThorRawIteratorActivity::done()
@@ -7782,7 +7782,7 @@ void CHThorDiskReadBaseActivity::gatherInfo(IFileDescriptor * fileDesc)
         grouped = ((helper.getFlags() & TDXgrouped) != 0);
     }
 
-    diskMeta.set(helper.queryDiskRecordSize()->querySerializedMeta());
+    diskMeta.set(helper.queryDiskRecordSize()->querySerializedDiskMeta());
     if (grouped)
         diskMeta.setown(new CSuffixedOutputMeta(+1, diskMeta));
     if (outputMeta.isFixedSize())
@@ -8081,8 +8081,8 @@ void CHThorBinaryDiskReadBase::ready()
         diskMeta.set(outputMeta);
     segMonitors.kill();
     segHelper.createSegmentMonitors(this);
-    prefetcher.setown(diskMeta->createRowPrefetcher(agent.queryCodeContext(), activityId));
-    deserializer.setown(diskMeta->createRowDeserializer(agent.queryCodeContext(), activityId));
+    prefetcher.setown(diskMeta->createDiskPrefetcher(agent.queryCodeContext(), activityId));
+    deserializer.setown(diskMeta->createDiskDeserializer(agent.queryCodeContext(), activityId));
 }
 
 bool CHThorBinaryDiskReadBase::openNext()
@@ -9252,10 +9252,12 @@ public:
     virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
     virtual unsigned getMetaFlags()                         { return 0; }
     virtual void destruct(byte * self)  {}
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual IOutputMetaData * querySerializedMeta() { return this; }
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
 };
 

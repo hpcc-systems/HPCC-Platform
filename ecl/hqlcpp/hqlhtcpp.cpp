@@ -1509,7 +1509,7 @@ void HqlCppTranslator::queryAddResultDependancy(ABoundActivity & whoAmIActivity,
 
 bool HqlCppTranslator::tempRowRequiresFinalize(IHqlExpression * record) const
 {
-    if (recordRequiresSerialization(record) || options.finalizeAllRows)
+    if (recordRequiresDestructor(record) || options.finalizeAllRows)
         return true;
     if (options.finalizeAllVariableRows && isVariableSizeRecord(record))
         return true;
@@ -2732,15 +2732,15 @@ void DatasetSelector::modifyOp(BuildCtx & ctx, IHqlExpression * expr, node_opera
 }
 
 
-void DatasetSelector::buildDeserialize(BuildCtx & ctx, IHqlExpression * helper)
+void DatasetSelector::buildDeserialize(BuildCtx & ctx, IHqlExpression * helper, _ATOM serializeForm)
 {
-    column->buildDeserialize(translator, ctx, this, helper);
+    column->buildDeserialize(translator, ctx, this, helper, serializeForm);
 }
 
 
-void DatasetSelector::buildSerialize(BuildCtx & ctx, IHqlExpression * helper)
+void DatasetSelector::buildSerialize(BuildCtx & ctx, IHqlExpression * helper, _ATOM serializeForm)
 {
-    column->buildSerialize(translator, ctx, this, helper);
+    column->buildSerialize(translator, ctx, this, helper, serializeForm);
 }
 
 /* In selector: not linked. Return: linked */
@@ -3402,7 +3402,7 @@ IHqlExpression * HqlCppTranslator::createRowAllocator(BuildCtx & ctx, IHqlExpres
 }
 
 
-void HqlCppTranslator::buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression * record, const char * serializerName)
+void HqlCppTranslator::buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression * record, const char * serializerName, _ATOM serializeForm)
 {
     StringBuffer s;
     GlobalClassBuilder serializer(*this, ctx, serializerName, "COutputRowSerializer", "IOutputRowSerializer");
@@ -3426,10 +3426,10 @@ void HqlCppTranslator::buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression *
         OwnedHqlExpr size = getRecordSize(row->querySelector());
         CHqlBoundExpr boundSize;
         buildExpr(serializectx, size, boundSize);
-        if (recordRequiresSerialization(record))
+        if (recordRequiresSerialization(record, serializeForm))
         {
             Owned<IReferenceSelector> selector = buildActiveRow(serializectx, row->querySelector());
-            selector->buildSerialize(serializectx, helper);
+            selector->buildSerialize(serializectx, helper, serializeForm);
         }
         else
         {
@@ -3446,7 +3446,7 @@ void HqlCppTranslator::buildMetaSerializerClass(BuildCtx & ctx, IHqlExpression *
     serializer.completeClass(RowMetaPrio);
 }
 
-void HqlCppTranslator::buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression * record, const char * deserializerName)
+void HqlCppTranslator::buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression * record, const char * deserializerName, _ATOM serializeForm)
 {
     StringBuffer s;
     GlobalClassBuilder deserializer(*this, ctx, deserializerName, "COutputRowDeserializer", "IOutputRowDeserializer");
@@ -3470,7 +3470,7 @@ void HqlCppTranslator::buildMetaDeserializerClass(BuildCtx & ctx, IHqlExpression
 
         OwnedHqlExpr helper = createVariable("in", makeBoolType());
         Owned<IReferenceSelector> selector = buildActiveRow(deserializectx, row->querySelector());
-        selector->buildDeserialize(deserializectx, helper);
+        selector->buildDeserialize(deserializectx, helper, serializeForm);
         buildReturnRecordSize(deserializectx, row);
     }
 
@@ -4014,7 +4014,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
     contextAvailable = false;
     metas.append(*search.getLink());
     StringBuffer s;
-    StringBuffer serializerName, deserializerName, prefetcherName;
+    StringBuffer serializerName, deserializerName, prefetcherName, internalSerializerName, internalDeserializerName;
 
     StringBuffer endText;
 
@@ -4034,8 +4034,15 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
     {
         if (recordRequiresDestructor(record))
             flags |= MDFneeddestruct;
-        if (recordRequiresSerialization(record))
-            flags |= MDFneedserialize;
+        if (recordRequiresSerialization(record, diskAtom))
+            flags |= MDFneedserializedisk;
+        if (recordRequiresSerialization(record, internalAtom))
+            flags |= MDFneedserializeinternal;
+
+        const unsigned serializeFlags = (flags & MDFneedserializemask);
+        if ((serializeFlags == MDFneedserializemask) && !recordSerializationDiffers(record, diskAtom, internalAtom))
+            flags |= MDFdiskmatchesinternal;
+
         if (maxRecordSizeUsesDefault(record))
             flags |= MDFunknownmaxlength;
         useTypeForXML = true;
@@ -4055,21 +4062,36 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
     {
         //Serialization classes need to be generated for all meta information - because they may be called by parent row classes
         //however, the CFixedOutputMetaData base class contains a default implementation - reducing the required code.
-        if (map && (!map->isFixedWidth() || (flags & MDFneedserialize)))
+        if (map && (!map->isFixedWidth() || (flags & MDFneedserializemask)))
         {
             //Base class provides a default variable width implementation
-            if (flags & MDFneedserialize)
+            if (flags & MDFneedserializedisk)
             {
                 serializerName.append("s").append(instance.metaName);
-                buildMetaSerializerClass(declarectx, record, serializerName.str());
+                buildMetaSerializerClass(declarectx, record, serializerName.str(), diskAtom);
             }
+            bool needInternalSerializer = ((flags & MDFneedserializeinternal) && recordSerializationDiffers(record, diskAtom, internalAtom));
+
+            if (needInternalSerializer)
+            {
+                internalSerializerName.append("si").append(instance.metaName);
+                buildMetaSerializerClass(declarectx, record, internalSerializerName.str(), internalAtom);
+            }
+
+            //MORE:
             //still generate a deserialize for the variable width case because it offers protection
             //against accessing out of bounds data
             deserializerName.append("d").append(instance.metaName);
-            buildMetaDeserializerClass(declarectx, record, deserializerName.str());
+            buildMetaDeserializerClass(declarectx, record, deserializerName.str(), diskAtom);
+
+            if (needInternalSerializer)
+            {
+                internalDeserializerName.append("di").append(instance.metaName);
+                buildMetaDeserializerClass(declarectx, record, internalDeserializerName.str(), internalAtom);
+            }
 
             //The base class implements prefetch using the serialized meta so no need to generate...
-            if (!(flags & MDFneedserialize))
+            if (!(flags & MDFneedserializemask))
             {
                 prefetcherName.append("p").append(instance.metaName);
                 if (!buildMetaPrefetcherClass(declarectx, record, prefetcherName))
@@ -4143,19 +4165,19 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
             }
 
             if (record)
-                generateMetaRecordSerialize(metactx, record, serializerName.str(), deserializerName.str(), prefetcherName.str());
+                generateMetaRecordSerialize(metactx, record, serializerName.str(), deserializerName.str(), internalSerializerName.str(), internalDeserializerName.str(), prefetcherName.str());
 
             if (flags != (MDFhasserialize|MDFhasxml))
                 doBuildUnsignedFunction(metactx, "getMetaFlags", flags);
 
-            if (flags & MDFneedserialize)
+            if (flags & MDFneedserializedisk)
             {
-                OwnedHqlExpr serializedRecord = getSerializedForm(record);
+                OwnedHqlExpr serializedRecord = getSerializedForm(record, diskAtom);
 
                 MetaInstance serializedMeta(*this, serializedRecord, false);
                 buildMetaInfo(serializedMeta);
                 StringBuffer s;
-                s.append("virtual IOutputMetaData * querySerializedMeta() { return &").append(serializedMeta.queryInstanceObject()).append("; }");
+                s.append("virtual IOutputMetaData * querySerializedDiskMeta() { return &").append(serializedMeta.queryInstanceObject()).append("; }");
                 metactx.addQuoted(s);
             }
         }
@@ -4325,7 +4347,7 @@ protected:
 
 
 
-void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpression * record, const char * serializerName, const char * deserializerName, const char * prefetcherName)
+void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpression * record, const char * diskSerializerName, const char * diskDeserializerName, const char * internalSerializerName, const char * internalDeserializerName, const char * prefetcherName)
 {
     OwnedHqlExpr dataset = createDataset(no_null, LINK(record));
 
@@ -4348,30 +4370,50 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
         builder.walkRecord(walkctx, dataset, record);
     }
 
-    if (serializerName && *serializerName)
+    if (diskSerializerName && *diskSerializerName)
     {
         BuildCtx serializectx(ctx);
-        serializectx.addQuotedCompound("virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId)");
+        serializectx.addQuotedCompound("virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId)");
 
         StringBuffer s;
-        s.append("return cr").append(serializerName).append("(ctx, activityId);");
+        s.append("return cr").append(diskSerializerName).append("(ctx, activityId);");
         serializectx.addQuoted(s);
     }
 
-    if (deserializerName && *deserializerName)
+    if (diskDeserializerName && *diskDeserializerName)
     {
         BuildCtx deserializectx(ctx);
-        deserializectx.addQuotedCompound("virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId)");
+        deserializectx.addQuotedCompound("virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId)");
 
         StringBuffer s;
-        s.append("return cr").append(deserializerName).append("(ctx, activityId);");
+        s.append("return cr").append(diskDeserializerName).append("(ctx, activityId);");
+        deserializectx.addQuoted(s);
+    }
+
+    if (internalSerializerName && *internalSerializerName)
+    {
+        BuildCtx serializectx(ctx);
+        serializectx.addQuotedCompound("virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId)");
+
+        StringBuffer s;
+        s.append("return cr").append(internalSerializerName).append("(ctx, activityId);");
+        serializectx.addQuoted(s);
+    }
+
+    if (internalDeserializerName && *internalDeserializerName)
+    {
+        BuildCtx deserializectx(ctx);
+        deserializectx.addQuotedCompound("virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)");
+
+        StringBuffer s;
+        s.append("return cr").append(internalDeserializerName).append("(ctx, activityId);");
         deserializectx.addQuoted(s);
     }
 
     if (prefetcherName && *prefetcherName)
     {
         BuildCtx deserializectx(ctx);
-        deserializectx.addQuotedCompound("virtual CSourceRowPrefetcher * createRawRowPrefetcher(unsigned activityId)");
+        deserializectx.addQuotedCompound("virtual CSourceRowPrefetcher * doCreateDiskPrefetcher(unsigned activityId)");
 
         StringBuffer s;
         s.append("return new ").append(prefetcherName).append("(activityId);");
@@ -4417,7 +4459,7 @@ void HqlCppTranslator::buildMetaForSerializedRecord(StringBuffer & name, IHqlExp
         buildMetaForRecord(name, record);
 }
 
-void HqlCppTranslator::ensureRowSerializer(StringBuffer & serializerName, BuildCtx & ctx, IHqlExpression * record, _ATOM kind)
+void HqlCppTranslator::ensureRowSerializer(StringBuffer & serializerName, BuildCtx & ctx, IHqlExpression * record, _ATOM format, _ATOM kind)
 {
     OwnedHqlExpr marker = createAttribute(serializerInstanceMarkerAtom, LINK(record->queryBody()), createAttribute(kind));
     HqlExprAssociation * match = ctx.queryMatchExpr(marker);
@@ -4435,20 +4477,25 @@ void HqlCppTranslator::ensureRowSerializer(StringBuffer & serializerName, BuildC
     getInvariantMemberContext(ctx, &declarectx, &callctx, true, false);
 
     StringBuffer s;
-    if (kind == serializerAtom)
-        s.append("Owned<IOutputRowSerializer> ").append(uid).append(";");
-    else
-        s.append("Owned<IOutputRowDeserializer> ").append(uid).append(";");
+    const char * kindText = (kind == serializerAtom) ? "Serializer" : "Deserializer";
+
+    s.append("Owned<IOutputRow").append(kindText).append("> ").append(uid).append(";");
     declarectx->addQuoted(s);
 
     MetaInstance meta(*this, record, false);
     buildMetaInfo(meta);
 
     s.clear().append(uid).append(".setown(").append(meta.queryInstanceObject());
-    if (kind == serializerAtom)
-        s.append(".createRowSerializer");
+
+    if (format == diskAtom)
+        s.append(".createDisk").append(kindText);
+    else if (format == internalAtom)
+        s.append(".createInternal").append(kindText);
     else
-        s.append(".createRowDeserializer");
+    {
+        UNIMPLEMENTED;
+    }
+
     s.append("(ctx, ");
     OwnedHqlExpr activityId = getCurrentActivityId(ctx);
     generateExprCpp(s, activityId);
@@ -4486,7 +4533,7 @@ void HqlCppTranslator::ensureRowPrefetcher(StringBuffer & prefetcherName, BuildC
     buildMetaInfo(meta);
 
     s.clear().append(uid).append(".setown(").append(meta.queryInstanceObject());
-    s.append(".createRowPrefetcher(ctx, ");
+    s.append(".createDiskPrefetcher(ctx, ");
     OwnedHqlExpr activityId = getCurrentActivityId(ctx);
     generateExprCpp(s, activityId);
     s.append("));");
@@ -4498,10 +4545,10 @@ void HqlCppTranslator::ensureRowPrefetcher(StringBuffer & prefetcherName, BuildC
 }
 
 
-IHqlExpression * HqlCppTranslator::createRowSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM kind)
+IHqlExpression * HqlCppTranslator::createSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM form, _ATOM kind)
 {
     StringBuffer serializerName;
-    ensureRowSerializer(serializerName, ctx, record, kind);
+    ensureRowSerializer(serializerName, ctx, record, form, kind);
     return createQuoted(serializerName.str(), makeBoolType());
 }
 
@@ -4703,7 +4750,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
 
                 //NB: The result type will be overridden when this function is bound
                 ensureSerialized = false;
-                args.append(*createRowSerializer(ctx, record, deserializerAtom));
+                args.append(*createSerializer(ctx, record, diskAtom, deserializerAtom));
                 overrideType.setown(setLinkCountedAttr(type, true));
                 func = getResultDictionaryAtom;
             }
@@ -4718,7 +4765,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
                 {
                     ensureSerialized = false;
                     args.append(*createRowAllocator(ctx, record));
-                    args.append(*createRowSerializer(ctx, record, deserializerAtom));
+                    args.append(*createSerializer(ctx, record, internalAtom, deserializerAtom));
                     args.append(*createConstant(isGrouped(expr)));
                     overrideType.setown(setLinkCountedAttr(overrideType, true));
                     func = getResultRowsetAtom;
@@ -4734,7 +4781,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
             }
 
             if (ensureSerialized && record)
-                record.setown(getSerializedForm(record));
+                record.setown(getSerializedForm(record, diskAtom));
 
             if (record && (seqValue == ResultSequenceStored))
             {
@@ -4771,7 +4818,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
             if (ttc == type_dictionary)
             {
                 StringBuffer lookupHelperName;
-                buildDictionaryHashClass(expr->queryRecord(), expr, lookupHelperName);
+                buildDictionaryHashClass(expr->queryRecord(), lookupHelperName);
 
                 lookupHelperName.insert(0, "&");    // MORE: Should this be passed by reference instead - it isn't optional
                 args.append(*createQuoted(lookupHelperName.str(), makeBoolType()));
@@ -4974,7 +5021,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
     case type_row:
         {
             CHqlBoundExpr boundLength;
-            OwnedHqlExpr serialized = ::ensureSerialized(value);
+            OwnedHqlExpr serialized = ::ensureSerialized(value, diskAtom);
             func = setResultRawAtom;
             Owned<IReferenceSelector> ds = buildNewRow(ctx, serialized);
             OwnedHqlExpr size = createSizeof(ds->queryExpr());
@@ -5321,7 +5368,7 @@ void HqlCppTranslator::buildHashOfExprsClass(BuildCtx & ctx, const char * name, 
 }
 
 
-void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, IHqlExpression *dictionary, StringBuffer &funcName)
+void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBuffer &funcName)
 {
     BuildCtx declarectx(*code, declareAtom);
     OwnedHqlExpr attr = createAttribute(lookupAtom, LINK(record));
@@ -5334,8 +5381,13 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, IHqlExpr
         appendUniqueId(lookupHelperName.append("lu"), getConsistentUID(record));
 
         BuildCtx classctx(declarectx);
+        //I suspect all the priorities should be killed.  This is here because you can have meta functions accessing the
+        //dictionary hash functions.
+        classctx.setNextPriority(RowMetaPrio);
+
         beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
         HqlExprArray keyedFields;
+        OwnedHqlExpr dictionary = createDataset(no_null, LINK(record));
         IHqlExpression * payload = record->queryProperty(_payload_Atom);
         unsigned payloadSize = payload ? (unsigned)getIntValue(payload->queryChild(0)) : 0;
         unsigned max = record->numChildren() - payloadSize;
@@ -5366,7 +5418,7 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, IHqlExpr
 void HqlCppTranslator::buildDictionaryHashMember(BuildCtx & ctx, IHqlExpression *dictionary, const char * memberName)
 {
     StringBuffer lookupHelperName;
-    buildDictionaryHashClass(dictionary->queryRecord(), dictionary, lookupHelperName);
+    buildDictionaryHashClass(dictionary->queryRecord(), lookupHelperName);
 
     BuildCtx funcctx(ctx);
     StringBuffer s;
@@ -6616,7 +6668,7 @@ void HqlCppTranslator::buildRootActivity(BuildCtx & ctx, IHqlExpression * expr)
 
 void HqlCppTranslator::buildRecordSerializeExtract(BuildCtx & ctx, IHqlExpression * memoryRecord)
 {
-    OwnedHqlExpr serializedRecord = getSerializedForm(memoryRecord);
+    OwnedHqlExpr serializedRecord = getSerializedForm(memoryRecord, diskAtom);
     OwnedHqlExpr serializedDataset = createDataset(no_null, LINK(serializedRecord));
     OwnedHqlExpr memoryDataset = createDataset(no_anon, LINK(memoryRecord));
 
@@ -6647,7 +6699,7 @@ void HqlCppTranslator::buildRecordSerializeExtract(BuildCtx & ctx, IHqlExpressio
         BoundRow * left = bindTableCursor(ctx, memoryDataset, "left");
         OwnedHqlExpr rhs = ensureActiveRow(left->querySelector());
 
-        OwnedHqlExpr serializedRow = ::ensureSerialized(rhs);
+        OwnedHqlExpr serializedRow = ::ensureSerialized(rhs, diskAtom); // Ensure this is always accessed as disk serialized
 
         buildAssign(ctx, self->querySelector(), serializedRow);
         buildReturnRecordSize(ctx, self);
@@ -7075,7 +7127,7 @@ void HqlCppTranslator::doBuildSerialize(BuildCtx & ctx, _ATOM name, IHqlExpressi
     callProcedure(ctx, name, args);
 }
 
-void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildCtx & serializectx, BuildCtx & deserializectx, const char * inBufferName, const char * outBufferName)
+void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildCtx & serializectx, BuildCtx & deserializectx, const char * inBufferName, const char * outBufferName, _ATOM serializeForm)
 {
     CHqlBoundExpr value;
     value.setFromTarget(variable);
@@ -7133,10 +7185,15 @@ void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildC
                 IHqlExpression * record = ::queryRecord(type);
                 if (hasLinkCountedModifier(type))
                 {
-                    deserializeArgs.append(*createRowSerializer(deserializectx, record, deserializerAtom));
+                    deserializeArgs.append(*createSerializer(deserializectx, record, serializeForm, deserializerAtom));
 
-                    serializeArgs.append(*createRowSerializer(serializectx, record, serializerAtom));
-                    if (tc == type_groupedtable)
+                    serializeArgs.append(*createSerializer(serializectx, record, serializeForm, serializerAtom));
+                    if (tc == type_dictionary)
+                    {
+                        serializeName = serializeDictionaryXAtom;
+                        deserializeName = deserializeDictionaryXAtom;
+                    }
+                    else if (tc == type_groupedtable)
                     {
                         serializeName = serializeGroupedRowsetXAtom;
                         deserializeName = deserializeGroupedRowsetXAtom;
@@ -7149,8 +7206,12 @@ void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildC
                 }
                 else
                 {
-                    assertex(!recordRequiresSerialization(record));
-                    if (tc == type_groupedtable)
+                    assertex(!recordRequiresSerialization(record, serializeForm));
+                    if (tc == type_dictionary)
+                    {
+                        throwUnexpected();
+                    }
+                    else if (tc == type_groupedtable)
                     {
                         serializeName = serializeGroupedDatasetXAtom;
                         deserializeName = deserializeGroupedDatasetXAtom;
@@ -7169,13 +7230,13 @@ void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildC
                 IHqlExpression * record = ::queryRecord(type);
                 assertex(hasWrapperModifier(type));
 
-                serializeArgs.append(*createRowSerializer(serializectx, record, serializerAtom));
+                serializeArgs.append(*createSerializer(serializectx, record, serializeForm, serializerAtom));
                 serializeArgs.append(*createVariable(outBufferName, makeBoolType()));
                 buildFunctionCall(serializectx, serializeRowAtom, serializeArgs);
 
 
                 deserializeArgs.append(*createRowAllocator(deserializectx, record));
-                deserializeArgs.append(*createRowSerializer(deserializectx, record, deserializerAtom));
+                deserializeArgs.append(*createSerializer(deserializectx, record, serializeForm, deserializerAtom));
                 deserializeArgs.append(*createVariable(inBufferName, makeBoolType()));
                 Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
                 OwnedHqlExpr call = bindFunctionCall(deserializeRowAtom, deserializeArgs, resultType);
@@ -7572,7 +7633,7 @@ void HqlCppTranslator::doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, 
             case type_record:
             case type_row:
                 {
-                    OwnedHqlExpr record = getSerializedForm(child->queryRecord());
+                    OwnedHqlExpr record = getSerializedForm(child->queryRecord(), diskAtom);
                     ColumnToOffsetMap * map = queryRecordOffsetMap(record);
                     if (map->isFixedWidth())
                         size = map->getFixedRecordSize();
@@ -7610,7 +7671,7 @@ void HqlCppTranslator::doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, 
             case type_record:
             case type_row:
                 {
-                    OwnedHqlExpr record = getSerializedForm(child->queryRecord());
+                    OwnedHqlExpr record = getSerializedForm(child->queryRecord(), diskAtom);
                     size = getMinRecordSize(record);
                 }
                 break;
@@ -7690,7 +7751,7 @@ void HqlCppTranslator::doBuildExprSizeof(BuildCtx & ctx, IHqlExpression * expr, 
             case type_row:
                 {
                     e->Release();
-                    OwnedHqlExpr record = getSerializedForm(child->queryRecord());
+                    OwnedHqlExpr record = getSerializedForm(child->queryRecord(), diskAtom);
                     ColumnToOffsetMap * map = queryRecordOffsetMap(record);
                     if (map->isFixedWidth())
                     {
@@ -9523,7 +9584,7 @@ void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * datase
     StringBuffer s;
 
     //Ensure the ECL for the record reflects its serialized form, not the internal form
-    OwnedHqlExpr record = getSerializedForm(dataset->queryRecord());
+    OwnedHqlExpr record = getSerializedForm(dataset->queryRecord(), diskAtom);
     appendUniqueId(eclFuncName.append("ecl"), getConsistentUID(record));
 
     BuildCtx declarectx(*code, declareAtom);
@@ -9559,7 +9620,7 @@ void HqlCppTranslator::buildRecordEcl(BuildCtx & subctx, IHqlExpression * datase
 void HqlCppTranslator::buildFormatCrcFunction(BuildCtx & ctx, const char * name, IHqlExpression * dataset, IHqlExpression * expr, unsigned payloadDelta)
 {
     IHqlExpression * payload = expr ? expr->queryProperty(_payload_Atom) : NULL;
-    OwnedHqlExpr exprToCrc = getSerializedForm(dataset->queryRecord());
+    OwnedHqlExpr exprToCrc = getSerializedForm(dataset->queryRecord(), diskAtom);
     unsigned payloadSize = 1;
     if (payload)
         payloadSize = (unsigned)getIntValue(payload->queryChild(0)) + payloadDelta;
@@ -9779,7 +9840,7 @@ IDefRecordElement * HqlCppTranslator::createMetaRecord(IHqlExpression * record)
 
 IHqlExpression * HqlCppTranslator::getSerializedLayoutFunction(IHqlExpression * record, unsigned numKeyedFields)
 {
-    OwnedHqlExpr serializedRecord = getSerializedForm(record);
+    OwnedHqlExpr serializedRecord = getSerializedForm(record, diskAtom);
     OwnedHqlExpr search = createAttribute(indexLayoutMarkerAtom, LINK(serializedRecord), getSizetConstant(numKeyedFields));
 
     BuildCtx declarectx(*code, declareAtom);
@@ -10345,7 +10406,7 @@ void HqlCppTranslator::doAddSchemaFields(IHqlExpression * record, MemoryBuffer &
 
 void HqlCppTranslator::getRecordECL(IHqlExpression * deserializedRecord, StringBuffer & eclText)
 {
-    OwnedHqlExpr record = getSerializedForm(deserializedRecord);
+    OwnedHqlExpr record = getSerializedForm(deserializedRecord, diskAtom);
     if ((options.maxRecordSize != MAX_RECORD_SIZE) && maxRecordSizeUsesDefault(record))
     {
         //Add an explicit record size if default max record size
@@ -10417,7 +10478,7 @@ IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenc
     result->setResultSchemaRaw(schema.length(), schema.toByteArray());
     result->setResultScalar(false);
 
-    OwnedHqlExpr serialRecord = getSerializedForm(record);
+    OwnedHqlExpr serialRecord = getSerializedForm(record, diskAtom);
     OwnedHqlExpr ds = createDataset(no_anon, LINK(serialRecord));
     MetaInstance meta(*this, serialRecord, false);
     buildMetaInfo(meta);
@@ -10429,7 +10490,7 @@ IWUResult * HqlCppTranslator::createDatasetResultSchema(IHqlExpression * sequenc
     if (createTransformer)
     {
         OwnedHqlExpr noVirtualRecord = removeVirtualAttributes(serialRecord);
-        Owned<IHqlExpression> transformedRecord = getSimplifiedRecord(noVirtualRecord, false);
+        Owned<IHqlExpression> transformedRecord = getFileViewerRecord(noVirtualRecord, false);
         if (transformedRecord)
         {
             OwnedHqlExpr ds = createDataset(no_anon, LINK(noVirtualRecord));
@@ -11131,7 +11192,7 @@ void HqlCppTranslator::generateSortCompare(BuildCtx & nestedctx, BuildCtx & ctx,
     }
 }
 
-void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * selector, IHqlExpression * selfSelect, IHqlExpression * leftSelect, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, bool needToClear)
+void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression * record, IHqlExpression * selector, IHqlExpression * selfSelect, IHqlExpression * leftSelect, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, bool needToClear, node_operator serializeOp, _ATOM serialForm)
 {
     ForEachChild(i, record)
     {
@@ -11146,13 +11207,22 @@ void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression *
                 {
                     Owned<IHqlExpression> self = tgtDataset.mapScalar(&tgtSelects.item(matchIndex), selfSelect);
                     Owned<IHqlExpression> left = srcDataset.mapScalar(&srcSelects.item(matchIndex), leftSelect);
+                    if (self->queryType() != left->queryType())
+                    {
+                        HqlExprArray args;
+                        args.append(*LINK(left));
+                        if (serializeOp == no_deserialize)
+                            args.append(*LINK(self->queryRecord()));
+                        args.append(*createAttribute(serialForm));
+                        left.setown(createWrapper(serializeOp, self->queryType(), args));
+                    }
                     buildAssign(ctx, self, left);
                     //Note, we could stop here if needToClear and all fields have been assigned, and all the following fields are fixed width.
                     // but not really sure it is worth it.
                 }
                 else if (cur->isDatarow())
                 {
-                    generateSerializeAssigns(ctx, cur->queryRecord(), selected, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear);
+                    generateSerializeAssigns(ctx, cur->queryRecord(), selected, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear, serializeOp, serialForm);
                 }
                 else if (needToClear || mustInitializeField(cur))
                 {
@@ -11163,19 +11233,19 @@ void HqlCppTranslator::generateSerializeAssigns(BuildCtx & ctx, IHqlExpression *
                 break;
             }
         case no_record:
-            generateSerializeAssigns(ctx, cur, selector, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear);
+            generateSerializeAssigns(ctx, cur, selector, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear, serializeOp, serialForm);
             break;
         case no_ifblock:
             //Filter on target...
             UNIMPLEMENTED;
-            generateSerializeAssigns(ctx, cur->queryChild(1), selector, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear);
+            generateSerializeAssigns(ctx, cur->queryChild(1), selector, selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, needToClear, serializeOp, serialForm);
             break;
         }
     }
 }
 
 
-void HqlCppTranslator::generateSerializeFunction(BuildCtx & ctx, const char * funcName, bool serialize, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects)
+void HqlCppTranslator::generateSerializeFunction(BuildCtx & ctx, const char * funcName, const DatasetReference & srcDataset, const DatasetReference & tgtDataset, HqlExprArray & srcSelects, HqlExprArray & tgtSelects, node_operator serializeOp, _ATOM serialForm)
 {
     StringBuffer s;
 
@@ -11193,8 +11263,9 @@ void HqlCppTranslator::generateSerializeFunction(BuildCtx & ctx, const char * fu
     IHqlExpression * selfSelect = tgtCursor->querySelector();
     IHqlExpression * record = tgtDataset.queryDataset()->queryRecord();
 
-    generateSerializeAssigns(r2kctx, record, tgtDataset.querySelector(), selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, !isFixedRecordSize(record));
+    generateSerializeAssigns(r2kctx, record, tgtDataset.querySelector(), selfSelect, leftSelect, srcDataset, tgtDataset, srcSelects, tgtSelects, !isFixedRecordSize(record), serializeOp, serialForm);
 
+    const bool serialize = (serializeOp == no_serialize);
     BoundRow * recordCursor = serialize ? srcCursor : tgtCursor;
     OwnedHqlExpr recordSize = getRecordSize(recordCursor->querySelector());
     OwnedHqlExpr recordSizeVar = createVariable("thisRecordSize", LINK(unsignedType));
@@ -11234,7 +11305,7 @@ void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator 
                     break;
                 }
 
-                OwnedHqlExpr serializedField = getSerializedForm(value->queryChild(1));
+                OwnedHqlExpr serializedField = getSerializedForm(value->queryChild(1), diskAtom); // Could be internal, but may require serialized compare
                 OwnedHqlExpr mappedSelect = dataset.mapScalar(value,queryActiveTableSelector());
                 keyFields.append(*LINK(serializedField));
                 keySelects.append(*createSelectExpr(LINK(mappedSelect->queryChild(0)), LINK(serializedField)));
@@ -11274,8 +11345,8 @@ void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator 
 
             DatasetReference keyActiveRef(keyDataset, no_activetable, NULL);
 
-            generateSerializeFunction(classctx, "recordToKey", true, dataset, keyActiveRef, datasetSelects, keySelects);
-            generateSerializeFunction(classctx, "keyToRecord", false, keyActiveRef, dataset, keySelects, datasetSelects);
+            generateSerializeFunction(classctx, "recordToKey", dataset, keyActiveRef, datasetSelects, keySelects, no_serialize, diskAtom);
+            generateSerializeFunction(classctx, "keyToRecord", keyActiveRef, dataset, keySelects, datasetSelects, no_deserialize, diskAtom);
             buildMetaMember(classctx, keyRecord, false, "queryRecordSize");
 
             endNestedClass();
@@ -14532,10 +14603,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
     //MORE: I don't have any examples that trigger this code as far as I know...
     _ATOM func = serialize ? rtlSerializeToBuilderAtom : rtlDeserializeToBuilderAtom;
     _ATOM kind = serialize ? serializerAtom : deserializerAtom;
+    _ATOM serializeForm = serialize ? expr->queryChild(2)->queryName() : expr->queryChild(1)->queryName();
 
     IHqlExpression * record = expr->queryRecord();
     HqlExprArray args;
-    args.append(*createRowSerializer(ctx, record, kind));
+    args.append(*createSerializer(ctx, record, serializeForm, kind));
     args.append(*ensureActiveRow(dataset));
     Owned<ITypeInfo> type = makeTransformType(record->getType());
     OwnedHqlExpr call = bindFunctionCall(func, args, type);
@@ -15783,7 +15855,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
     buildCompareClass(instance->nestedctx, "compare", sortlist, DatasetReference(dataset));
 
     IHqlExpression * record = dataset->queryRecord();
-    OwnedHqlExpr serializedRecord = getSerializedForm(record);
+    _ATOM serializeType = diskAtom; //MORE: Does this place a dependency on the implementation?
+    OwnedHqlExpr serializedRecord = getSerializedForm(record, serializeType);
     if (!targetRoxie())
     {
         if (record != serializedRecord)
@@ -15793,7 +15866,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             OwnedHqlExpr selSeq = createSelectorSequence();
             OwnedHqlExpr leftSelector = createSelector(no_left, dataset, selSeq);
             OwnedHqlExpr mappedSortlist = replaceSelector(sortlist, dataset, leftSelector);
-            OwnedHqlExpr serializedSortlist = replaceMemorySelectorWithSerializedSelector(mappedSortlist, record, no_left, selSeq);
+            OwnedHqlExpr serializedSortlist = replaceMemorySelectorWithSerializedSelector(mappedSortlist, record, no_left, selSeq, serializeType);
             OwnedHqlExpr serializedDataset = createDataset(no_null, LINK(serializedRecord));
             DatasetReference serializedRef(serializedDataset, no_left, selSeq);
             try
@@ -17279,7 +17352,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetResult(BuildCtx & ctx, IHql
 
     noteResultDefined(ctx, instance, sequence, name, isRoot);
     if (attribute->isDatarow())
-        attribute.setown(::ensureSerialized(attribute));
+        attribute.setown(::ensureSerialized(attribute, diskAtom));
 
     if (kind == TAKremoteresult)
     {
@@ -17723,7 +17796,7 @@ IHqlExpression * HqlCppTranslator::createRecordInheritMaxLength(HqlExprArray & f
         if (!max && hasMaxLength(record))
         {
             //maxlength inherited somewhere...
-            OwnedHqlExpr serializedDonorRecord = getSerializedForm(record);
+            OwnedHqlExpr serializedDonorRecord = getSerializedForm(record, diskAtom);
             ColumnToOffsetMap * map = queryRecordOffsetMap(serializedDonorRecord);
             max.setown(createAttribute(maxLengthAtom, getSizetConstant(map->getMaxSize())));
         }
@@ -17736,7 +17809,7 @@ IHqlExpression * HqlCppTranslator::createRecordInheritMaxLength(HqlExprArray & f
     fields.trunc(prevLength);
     if (max)
     {
-        OwnedHqlExpr serialized = getSerializedForm(ret);
+        OwnedHqlExpr serialized = getSerializedForm(ret, diskAtom);
         if (isFixedRecordSize(serialized))
             ret.setown(createRecord(fields));
     }

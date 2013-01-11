@@ -207,7 +207,7 @@ public:
     {
         if (!childQueries.length())
             logctx.setDebuggerActive(false);
-        if (meta.needsDestruct() || meta.needsSerialize() || childQueries.length())
+        if (meta.needsDestruct() || meta.needsSerializeDisk() || childQueries.length())
         {
             Owned<IRoxieSlaveContext> queryContext = queryFactory.createSlaveContext(logctx, packet);
             ForEachItemIn(idx, childQueries)
@@ -323,7 +323,7 @@ protected:
 
     virtual bool needsRowAllocator()
     {
-        return meta.needsSerialize() || meta.isVariableSize();
+        return meta.needsSerializeDisk() || meta.isVariableSize();
     }
 
     virtual void onCreate()
@@ -340,8 +340,8 @@ protected:
             queryContext.setown(basefactory->createChildQueries(basehelper, childGraphs, NULL, logctx, packet));
         if (!queryContext)
             queryContext.setown(basefactory->createSlaveContext(logctx, packet));
-        if (meta.needsSerialize())
-            serializer.setown(meta.createRowSerializer(queryContext->queryCodeContext(), basefactory->queryId()));
+        if (meta.needsSerializeDisk())
+            serializer.setown(meta.createDiskSerializer(queryContext->queryCodeContext(), basefactory->queryId()));
         if (needsRowAllocator())
             rowAllocator.setown(getRowAllocator(meta.queryOriginal(), basefactory->queryId()));
         unsigned parentExtractSize;
@@ -1365,7 +1365,7 @@ public:
     UnkeyedVariableRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskReadActivity &_owner, IDirectReader *_reader)
       : UnkeyedRecordProcessor(_cursor, _owner, _reader), deserializeSource(_reader)
     {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createRowPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
+        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
@@ -1821,7 +1821,7 @@ public:
     UnkeyedNormalizeRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskNormalizeActivity &_owner, IDirectReader *_reader) 
         : NormalizeRecordProcessor(_cursor, _owner), reader(_reader), deserializeSource(_reader)
     {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createRowPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
+        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
@@ -2100,7 +2100,7 @@ public:
     UnkeyedVariableCountRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskCountActivity &_owner, IDirectReader *_reader)
         : UnkeyedCountRecordProcessor(_cursor, _owner, _reader), deserializeSource(reader)
     {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createRowPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
+        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
     }
 
     // This version is used for variable size rows 
@@ -2320,10 +2320,10 @@ public:
     {
         helper = (IHThorDiskAggregateArg *) basehelper;
         onCreate();
-        if (meta.needsSerialize())
+        if (meta.needsSerializeDisk())
         {
             // MORE - avoiding serializing to dummy would be more efficient...
-            deserializer.setown(meta.createRowDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
+            deserializer.setown(meta.createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
         }
         CRoxieDiskAggregateActivity *part0 = new CRoxieDiskAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, numParallel, false);
         parts.append(*part0);
@@ -2581,7 +2581,7 @@ public:
     UnkeyedVariableAggregateRecordProcessor(IInMemoryIndexCursor *_cursor, CRoxieDiskAggregateActivity &_owner, IDirectReader *_reader) 
         : UnkeyedAggregateRecordProcessor(_cursor, _owner, _reader), deserializeSource(_reader)
     {
-        prefetcher.setown(owner.diskSize.queryOriginal()->createRowPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
+        prefetcher.setown(owner.diskSize.queryOriginal()->createDiskPrefetcher(owner.queryContext->queryCodeContext(), owner.basefactory->queryId()));
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
@@ -2716,10 +2716,10 @@ public:
     {
         onCreate();
         resultAggregator.start(rowAllocator);
-        if (meta.needsSerialize())
+        if (meta.needsSerializeDisk())
         {
             // MORE - avoiding serializing to dummy would be more efficient...
-            deserializer.setown(meta.createRowDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
+            deserializer.setown(meta.createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
         }
         CRoxieDiskGroupAggregateActivity *part0 = new CRoxieDiskGroupAggregateActivity(_logctx, _packet, _hFactory, _aFactory, _manager, 0, numParallel, false);
         parts.append(*part0);
@@ -2941,7 +2941,7 @@ public:
                                                  ICodeContext *ctx, unsigned activityId)
     : UnkeyedGroupAggregateRecordProcessor(_cursor, _results, _helper, _reader), deserializeSource(_reader)
     {
-        prefetcher.setown(helper.queryDiskRecordSize()->createRowPrefetcher(ctx, activityId));
+        prefetcher.setown(helper.queryDiskRecordSize()->createDiskPrefetcher(ctx, activityId));
     }
 
     virtual void doQuery(IMessagePacker *output, unsigned processed, unsigned __int64 rowLimit, unsigned __int64 stopAfter)
@@ -4355,7 +4355,7 @@ public:
         IHThorFetchContext * fetchContext = static_cast<IHThorFetchContext *>(helper->selectInterface(TAIfetchcontext_1));
         IOutputMetaData *diskMeta = fetchContext->queryDiskRecordSize();
         diskAllocator.setown(getRowAllocator(diskMeta, basefactory->queryId()));
-        rowDeserializer.setown(diskMeta->createRowDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
+        rowDeserializer.setown(diskMeta->createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId()));
     }
 
     virtual size32_t doFetch(ARowBuilder & rowBuilder, offset_t pos, offset_t rawpos, void *inputData)
@@ -4995,7 +4995,7 @@ bool CRoxieKeyedJoinFetchActivity::process()
     unsigned skipped = 0;
     unsigned __int64 rowLimit = helper->getRowLimit();
     unsigned totalSizeSent = 0;
-    Owned<IOutputRowDeserializer> rowDeserializer = helper->queryDiskRecordSize()->createRowDeserializer(queryContext->queryCodeContext(), basefactory->queryId());
+    Owned<IOutputRowDeserializer> rowDeserializer = helper->queryDiskRecordSize()->createDiskDeserializer(queryContext->queryCodeContext(), basefactory->queryId());
     Owned<IEngineRowAllocator> diskAllocator = getRowAllocator(helper->queryDiskRecordSize(), basefactory->queryId());
     RtlDynamicRowBuilder diskRowBuilder(diskAllocator);
 

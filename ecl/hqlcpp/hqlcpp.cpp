@@ -4120,7 +4120,7 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
     case type_table:
     case type_groupedtable:
         {
-            if (recordRequiresSerialization(::queryRecord(exprType)) || hasLinkCountedModifier(_exprType))
+            if (recordRequiresLinkCount(::queryRecord(exprType)) || hasLinkCountedModifier(_exprType))
             {
                 assertex(format != FormatBlockedDataset);
                 format = FormatLinkedDataset;
@@ -8066,6 +8066,13 @@ void HqlCppTranslator::doBuildAssignCompareElement(BuildCtx & ctx, EvaluateCompa
     switch (tc)
     {
     case type_dictionary:
+        {
+            //You can't iterate dictionaries, so convert to datasets first.  A bit of a silly comparison anyway
+            OwnedHqlExpr dsLeft = createDataset(no_datasetfromdictionary, LINK(left));
+            OwnedHqlExpr dsRight = createDataset(no_datasetfromdictionary, LINK(right));
+            doBuildAssignCompareTable(ctx, info, dsLeft, dsRight);
+            return;
+        }
     case type_table:
     case type_groupedtable:
         doBuildAssignCompareTable(ctx, info, left, right);
@@ -8829,7 +8836,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
             }
             else
             {
-                OwnedHqlExpr serialized = ::ensureSerialized(elem);
+                OwnedHqlExpr serialized = ::ensureSerialized(elem, diskAtom);
                 buildDataset(ctx, serialized, bound, FormatBlockedDataset);
                 length.setown(getBoundSize(bound));
                 ptr.setown(getPointer(bound.expr));

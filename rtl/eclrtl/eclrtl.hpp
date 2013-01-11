@@ -537,6 +537,7 @@ ECLRTL_API UChar * deserializeVUnicodeX(MemoryBuffer &in);
 ECLRTL_API void deserializeQStrX(size32_t & len, char * & data, MemoryBuffer &out);
 ECLRTL_API void deserializeRowsetX(size32_t & count, byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
 ECLRTL_API void deserializeGroupedRowsetX(size32_t & count, byte * * & data, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
+ECLRTL_API void deserializeDictionaryX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer &in);
 
 ECLRTL_API byte * rtlDeserializeRow(IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, const void * src);
 ECLRTL_API byte * rtlDeserializeBufferRow(IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, MemoryBuffer & buffer);
@@ -552,6 +553,7 @@ ECLRTL_API void serializeQStrX(size32_t len, const char * data, MemoryBuffer &ou
 ECLRTL_API void serializeRowsetX(size32_t count, byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
 ECLRTL_API void serializeGroupedRowsetX(size32_t count, byte * * data, IOutputRowSerializer * serializer, MemoryBuffer &out);
 ECLRTL_API void serializeRow(const void * row, IOutputRowSerializer * serializer, MemoryBuffer & out);
+ECLRTL_API void serializeDictionaryX(size32_t count, byte * * rows, IOutputRowSerializer * serializer, MemoryBuffer & buffer);
 
 ECLRTL_API void serializeFixedString(unsigned len, const char *field, MemoryBuffer &out);
 ECLRTL_API void serializeLPString(unsigned len, const char *field, MemoryBuffer &out);

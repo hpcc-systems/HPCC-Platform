@@ -73,6 +73,8 @@
 #define WRN_EXPORT_IGNORED          1048
 #define WRN_RECORDMANYFIELDS        1049
 #define WRN_RESERVED_FUTURE         1050 /* Identifier likely to be reserved in future versions */
+#define WRN_SILLY_EXISTS            1051
+
 //#define ECL_WARN_END          1100
 
 ///////////////////////////////////////////////////////////////////////////////

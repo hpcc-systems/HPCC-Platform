@@ -616,6 +616,7 @@ ITypeInfo * HqlTransformerBase::transformType(ITypeInfo * type)
     case type_token:
     case type_groupedtable:
     case type_table:
+    case type_dictionary:
         {
             ITypeInfo * childType = type->queryChildType();
             OwnedITypeInfo newChildType = safeTransformType(childType);

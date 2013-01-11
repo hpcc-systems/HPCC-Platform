@@ -473,6 +473,7 @@ public:
     IHqlExpression * createSortExpr(node_operator op, attribute & dsAttr, const attribute & orderAttr, HqlExprArray & args);
     IHqlExpression * createIffDataset(IHqlExpression * record, IHqlExpression * value);
 
+    bool isSingleValuedExpressionList(const attribute & attr);
     bool convertAllToAttribute(attribute &atr);
     IHqlExpression * convertToOutOfLineFunction(const ECLlocation & errpos, IHqlExpression  * expr);
 

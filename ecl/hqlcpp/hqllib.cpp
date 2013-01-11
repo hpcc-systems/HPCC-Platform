@@ -119,9 +119,10 @@ unsigned HqlCppLibrary::getHash(const HqlExprArray & values, unsigned crc) const
         case type_row:
         case type_table:
         case type_groupedtable:
+        case type_dictionary:
             {
                 OwnedHqlExpr normalizedRecord = normalizeRecord(translator, cur.queryRecord());
-                OwnedHqlExpr serialized = getSerializedForm(normalizedRecord);
+                OwnedHqlExpr serialized = getSerializedForm(normalizedRecord, diskAtom);
                 unsigned recordCrc = getExpressionCRC(serialized);
                 crc = hashc((const byte *)&tc, sizeof(tc), crc);
                 crc = hashc((const byte *)&recordCrc, sizeof(recordCrc), crc);

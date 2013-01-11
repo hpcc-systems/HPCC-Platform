@@ -279,7 +279,7 @@ static IHqlExpression * createFileposCall(HqlCppTranslator & translator, _ATOM n
 
 void VirtualFieldsInfo::gatherVirtualFields(IHqlExpression * _record, bool ignoreVirtuals, bool ensureSerialized)
 {
-    OwnedHqlExpr record = ensureSerialized ? getSerializedForm(_record) : LINK(_record);
+    OwnedHqlExpr record = ensureSerialized ? getSerializedForm(_record, diskAtom) : LINK(_record);
     if (record != _record)
         requiresDeserialize = true;
 
@@ -494,7 +494,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
                 //Simplest would be to move getSerializedForm code + call that first.
                 if (cur->hasProperty(_linkCounted_Atom))
                 {
-                    newField = getSerializedForm(cur);
+                    newField = getSerializedForm(cur, diskAtom);
                     assertex(newField != cur);
                 }
                 else
@@ -1272,7 +1272,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
         {
             IHqlExpression * record = expr->queryRecord();
             assertex(fieldInfo.virtualsAtEnd);
-            assertex(!recordRequiresSerialization(record));
+            assertex(!recordRequiresSerialization(record, diskAtom));
             CHqlBoundExpr bound;
             StringBuffer s;
             translator.getRecordSize(ctx, expr, bound);
@@ -1546,10 +1546,10 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
                 //and would mean the roxie/thor code required changing
                 if (translator.targetRoxie())
                 {
-                    OwnedHqlExpr serializedRhsRecord = getSerializedForm(memoryRhsRecord);
+                    OwnedHqlExpr serializedRhsRecord = getSerializedForm(memoryRhsRecord, diskAtom);
                     OwnedHqlExpr serializedRhs = createDataset(no_null, LINK(serializedRhsRecord));
                     rightCursor = translator.bindTableCursor(subctx, serializedRhs, "right", no_right, querySelSeq(expr));
-                    transform.setown(replaceMemorySelectorWithSerializedSelector(transform, memoryRhsRecord, no_right, querySelSeq(expr)));
+                    transform.setown(replaceMemorySelectorWithSerializedSelector(transform, memoryRhsRecord, no_right, querySelSeq(expr), diskAtom));
                 }
                 else
                 {
@@ -7045,7 +7045,7 @@ public:
         selSeq.set(querySelSeq(fetchExpr));
         fetchRhs = fetchExpr->queryChild(1);
         memoryRhsRecord = fetchRhs->queryRecord();
-        serializedRhsRecord.setown(getSerializedForm(memoryRhsRecord));
+        serializedRhsRecord.setown(getSerializedForm(memoryRhsRecord, diskAtom));
     }
 
     virtual void buildMembers(IHqlExpression * expr);

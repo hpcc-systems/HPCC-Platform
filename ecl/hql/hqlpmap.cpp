@@ -1137,15 +1137,19 @@ void RecordTransformCreator::createAssignments(HqlExprArray & assigns, IHqlExpre
 
             ITypeInfo * sourceType = source->queryType();
             ITypeInfo * targetType = target->queryType();
+            type_t tc = targetType->getTypeCode();
+
+            if (source->isDictionary())
+                source.setown(createDataset(no_datasetfromdictionary, source.getClear()));
+
             if (!recordTypesMatch(sourceType, targetType))
             {
-                type_t tc = sourceType->getTypeCode();
                 if (tc == type_record || tc == type_row)
                 {
                     OwnedHqlExpr tform = createMappingTransform(no_transform, target->queryRecord(), source);
                     source.setown(createRow(no_createrow, tform.getClear()));
                 }
-                else if ((tc == type_table) || (tc == type_groupedtable))
+                else if ((tc == type_table) || (tc == type_groupedtable) || (tc == type_dictionary))
                 {
                     //self.target := project(srcSelect, transform(...));
                     OwnedHqlExpr seq = createSelectorSequence();
@@ -1154,6 +1158,9 @@ void RecordTransformCreator::createAssignments(HqlExprArray & assigns, IHqlExpre
                     source.setown(createDataset(no_hqlproject, LINK(source), createComma(LINK(transform), LINK(seq))));
                 }
             }
+
+            if (tc == type_dictionary)
+                source.setown(createDictionary(no_createdictionary, source.getClear()));
 
             assigns.append(*createAssign(LINK(target), LINK(source)));
             break;
@@ -1193,14 +1200,14 @@ IHqlExpression * createRecordMappingTransform(node_operator op, IHqlExpression *
 }
 
 
-IHqlExpression * replaceMemorySelectorWithSerializedSelector(IHqlExpression * expr, IHqlExpression * memoryRecord, node_operator side, IHqlExpression * selSeq)
+IHqlExpression * replaceMemorySelectorWithSerializedSelector(IHqlExpression * expr, IHqlExpression * memoryRecord, node_operator side, IHqlExpression * selSeq, _ATOM serializeVariety)
 {
     if (!expr) 
         return NULL;
 
     assertex(side);
     assertex(memoryRecord->isRecord());
-    OwnedHqlExpr serializedRecord = getSerializedForm(memoryRecord);
+    OwnedHqlExpr serializedRecord = getSerializedForm(memoryRecord, serializeVariety);
     if (memoryRecord == serializedRecord)
         return LINK(expr);
 

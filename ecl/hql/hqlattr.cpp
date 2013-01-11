@@ -763,11 +763,21 @@ static unsigned guessSize(unsigned minLen, unsigned maxLen)
 }
 
 
-static IHqlExpression * querySerializedForm(IHqlExpression * expr)
+static IHqlExpression * querySerializedForm(IHqlExpression * expr, _ATOM variation)
 {
     if (expr)
     {
-        IHqlExpression * attr = expr->queryAttribute(_attrSerializedForm_Atom);
+        _ATOM attrName;
+        if (variation == diskAtom)
+            attrName = _attrDiskSerializedForm_Atom;
+        else if (variation == internalAtom)
+            attrName = _attrInternalSerializedForm_Atom;
+        else if (variation == memoryAtom)
+            attrName = _attrMemorySerializedForm_Atom;
+        else
+            throwUnexpected();
+
+        IHqlExpression * attr = expr->queryAttribute(attrName);
         if (attr)
             return attr;
     }
@@ -779,7 +789,7 @@ static HqlTransformerInfo serializedRecordCreatorInfo("SerializedRecordCreator")
 class SerializedRecordCreator : public QuickHqlTransformer
 {
 public:
-    SerializedRecordCreator() : QuickHqlTransformer(serializedRecordCreatorInfo, NULL) {}
+    SerializedRecordCreator(_ATOM _variety) : QuickHqlTransformer(serializedRecordCreatorInfo, NULL), variety(_variety) {}
 
     virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
     {
@@ -797,11 +807,20 @@ public:
         }
         return QuickHqlTransformer::createTransformedBody(expr);
     }
+
+    virtual ITypeInfo * transformType(ITypeInfo * type)
+    {
+        Owned<ITypeInfo> transformed = QuickHqlTransformer::transformType(type);
+        return getSerializedForm(transformed, variety);
+    }
+
+protected:
+    _ATOM variety;
 };
 
-static IHqlExpression * evaluateSerializedRecord(IHqlExpression * expr)
+static IHqlExpression * evaluateSerializedRecord(IHqlExpression * expr, _ATOM variation)
 {
-    SerializedRecordCreator transformer;
+    SerializedRecordCreator transformer(variation);
     return transformer.transform(expr);
 }
 
@@ -825,17 +844,17 @@ public:
 
 //-- Attribute: serialized form -------------------------------------------------------------------------------
 
-static IHqlExpression * evaluateAttrSerializedForm(IHqlExpression * expr)
+static IHqlExpression * evaluateAttrSerializedForm(IHqlExpression * expr, _ATOM attr, _ATOM variation)
 {
     if (expr->getOperator() == no_record || expr->getOperator() == no_field)
     {
-        OwnedHqlExpr serialized = evaluateSerializedRecord(expr);
+        OwnedHqlExpr serialized = evaluateSerializedRecord(expr, variation);
         if (serialized != expr)
         {
             //Tag serialized form so don't re-evaluated
-            meta.addAttribute(serialized, _attrSerializedForm_Atom, serialized);
+            meta.addAttribute(serialized, attr, serialized);
         }
-        return meta.addAttribute(expr, _attrSerializedForm_Atom, serialized);
+        return meta.addAttribute(expr, attr, serialized);
     }
     return NULL;
 }
@@ -1221,12 +1240,12 @@ static IHqlExpression * evaluateAttrSize(IHqlExpression * expr)
 }
 
 
-IHqlExpression * getSerializedForm(IHqlExpression * expr)
+IHqlExpression * getSerializedForm(IHqlExpression * expr, _ATOM variation)
 {
-    return LINK(querySerializedForm(expr));
+    return LINK(querySerializedForm(expr, variation));
 }
 
-ITypeInfo * getSerializedForm(ITypeInfo * type)
+ITypeInfo * getSerializedForm(ITypeInfo * type, _ATOM variation)
 {
     if (!type)
         return NULL;
@@ -1235,21 +1254,33 @@ ITypeInfo * getSerializedForm(ITypeInfo * type)
     case type_record:
         {
             IHqlExpression * record = queryRecord(queryUnqualifiedType(type));
-            OwnedHqlExpr serializedRecord = getSerializedForm(record);
+            IHqlExpression * serializedRecord = querySerializedForm(record, variation);
             if (record == serializedRecord)
                 return LINK(type);
-            return cloneModifiers(type, serializedRecord->queryType());
+            return cloneModifiers(type, serializedRecord->getType());
         }
     case type_row:
     case type_transform:
     case type_table:
     case type_groupedtable:
         {
+            //MORE: If (variant == internalAtom) consider using a format that prefixes the dataset with a count instead of a size
             OwnedITypeInfo noOutOfLineType = removeModifier(type, typemod_outofline);
             OwnedITypeInfo noLinkCountType = removeProperty(noOutOfLineType, _linkCounted_Atom);
             ITypeInfo * childType = noLinkCountType->queryChildType();
-            OwnedITypeInfo newChild = getSerializedForm(childType);
+            OwnedITypeInfo newChild = getSerializedForm(childType, variation);
             return replaceChildType(noLinkCountType, newChild);
+        }
+    case type_dictionary:
+        {
+            OwnedITypeInfo noOutOfLineType = removeModifier(type, typemod_outofline);
+            OwnedITypeInfo noLinkCountType = removeProperty(noOutOfLineType, _linkCounted_Atom);
+            ITypeInfo * childType = noLinkCountType->queryChildType();
+            OwnedITypeInfo newChild = getSerializedForm(childType, variation);
+            if (variation == internalAtom)
+                return replaceChildType(noLinkCountType, newChild);
+            OwnedITypeInfo datasetType = makeTableType(LINK(newChild), NULL, NULL, NULL);
+            return cloneModifiers(noLinkCountType, datasetType);
         }
     }
     return LINK(type);
@@ -1274,6 +1305,7 @@ HqlCachedAttributeTransformer::HqlCachedAttributeTransformer(HqlTransformerInfo 
 : QuickHqlTransformer(_transformInfo, NULL), attrName(_attrName)
 {
 }
+
 
 IHqlExpression * HqlCachedAttributeTransformer::transform(IHqlExpression * expr)
 {
@@ -3202,10 +3234,14 @@ bool maxRecordSizeCanBeDerived(IHqlExpression * record)
 //---------------------------------------------------------------------------------
 
 
-bool recordRequiresSerialization(IHqlExpression * expr)
+bool recordRequiresSerialization(IHqlExpression * expr, _ATOM serializeForm)
 {
-    if (recordRequiresDestructor(expr))
+    if (!expr)
+        return false;
+
+    if (querySerializedForm(expr, serializeForm) != expr)
         return true;
+
     return false;
 }
 
@@ -3214,11 +3250,24 @@ bool recordRequiresDestructor(IHqlExpression * expr)
     if (!expr)
         return false;
 
-    //true if the serialized form is different
-    IHqlExpression * serialized = expr->queryAttribute(_attrSerializedForm_Atom);
-    return serialized && (serialized != expr->queryBody());
+    //true if the internal serialized form is different
+    if (querySerializedForm(expr, internalAtom) != expr)
+        return true;
+
+    return false;
 }
 
+bool recordRequiresLinkCount(IHqlExpression * expr)
+{
+    //MORE: This should strictly speaking check if any of the child fields are link counted.
+    //This function is a sufficient proxy at the moment
+    return recordRequiresDestructor(expr);
+}
+
+bool recordSerializationDiffers(IHqlExpression * expr, _ATOM serializeForm1, _ATOM serializeForm2)
+{
+    return querySerializedForm(expr, serializeForm1) != querySerializedForm(expr, serializeForm2);
+}
 
 //---------------------------------------------------------------------------------
 
@@ -3627,8 +3676,12 @@ IHqlExpression * CHqlExpression::queryAttribute(_ATOM propName)
     {
     case EArecordCount:
         return evaluateAttrRecordCount(this);
-    case EAserializedForm:
-        return evaluateAttrSerializedForm(this);
+    case EAdiskserializedForm:
+        return evaluateAttrSerializedForm(this, _attrDiskSerializedForm_Atom, diskAtom);
+    case EAinternalserializedForm:
+        return evaluateAttrSerializedForm(this, _attrInternalSerializedForm_Atom, internalAtom);
+    case EAmemoryserializedForm:
+        return evaluateAttrSerializedForm(this, _attrMemorySerializedForm_Atom, memoryAtom);
     case EAsize:
         return evaluateAttrSize(this);
     case EAaligned:

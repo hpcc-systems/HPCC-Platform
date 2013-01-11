@@ -332,7 +332,7 @@ class ECLRTL_API CSimpleSourceRowPrefetcher : public ISourceRowPrefetcher, publi
 public:
     CSimpleSourceRowPrefetcher(IOutputMetaData & _meta, ICodeContext * _ctx, unsigned _activityId)
     {
-        deserializer.setown(_meta.querySerializedMeta()->createRowDeserializer(_ctx, _activityId));
+        deserializer.setown(_meta.querySerializedDiskMeta()->createDiskDeserializer(_ctx, _activityId));
         rowAllocator.setown(_ctx->getRowAllocator(&_meta, _activityId));
     }
 
@@ -363,7 +363,6 @@ public:
     inline void appendEOG() { appendOwn(NULL); }
     byte * createRow();
     void cloneRow(size32_t len, const void * ptr);
-    void deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped);
     void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
     void expand(size32_t required);
     void resize(size32_t required);
@@ -407,10 +406,10 @@ public:
     void finalizeRow(size32_t len);
     inline RtlDynamicRowBuilder & rowBuilder() { return builder; }
     void cloneRow(size32_t len, const void * ptr);
+    void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
+
     /*
         Not clear which if any of these we will want...
-    void deserialize(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in, bool isGrouped);
-    void deserializeRow(IOutputRowDeserializer & deserializer, IRowDeserializerSource & in);
     void expand(size32_t required);
     void resize(size32_t required);
     void finalizeRows();
@@ -443,11 +442,15 @@ extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo,
 extern ECLRTL_API void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, byte * * rows);
 
 
-extern ECLRTL_API void rtlDeserializeRowset(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
-extern ECLRTL_API void rtlDeserializeRowset(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
-extern ECLRTL_API void rtlSerializeRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
-extern ECLRTL_API void rtlSerializeRowset(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+//Functions that are used to convert between the serialized and internal memory format
+//functions containing child also serialize the length of the dataset, functions without it pass it independently
 
+extern ECLRTL_API void rtlDeserializeChildRowset(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
+extern ECLRTL_API void rtlDeserializeChildGroupRowset(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
+extern ECLRTL_API void rtlSerializeChildRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlSerializeChildGroupRowset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+
+//Functions for converting between rowsets and complete datasets (where length is known)
 extern ECLRTL_API void rtlDataset2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src, bool isGrouped);
 extern ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows, bool isGrouped);
 
@@ -456,14 +459,23 @@ extern ECLRTL_API void rtlGroupedDataset2RowsetX(size32_t & count, byte * * & ro
 extern ECLRTL_API void rtlRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
 extern ECLRTL_API void rtlGroupedRowset2DatasetX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
 
-extern ECLRTL_API void rtlSerializeDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
-extern ECLRTL_API void rtlDictionary2RowsetX(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
-extern ECLRTL_API void rtlRowset2DictionaryX(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
-
-extern ECLRTL_API size32_t rtlDeserializeRow(size32_t lenOut, void * out, IOutputRowDeserializer * deserializer, const void * src);
-extern ECLRTL_API size32_t rtlSerializeRow(size32_t lenOut, void * out, IOutputRowSerializer * serializer, const void * src);
 extern ECLRTL_API size32_t rtlDeserializeToBuilder(ARowBuilder & builder, IOutputRowDeserializer * deserializer, const void * src);
 extern ECLRTL_API size32_t rtlSerializeToBuilder(ARowBuilder & builder, IOutputRowSerializer * serializer, const void * src);
+
+//Dictionary serialization/deserialization
+extern ECLRTL_API void rtlDeserializeDictionary(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, size32_t lenSrc, const void * src);
+extern ECLRTL_API void rtlDeserializeDictionaryFromDataset(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, size32_t lenSrc, const void * src);
+extern ECLRTL_API void rtlSerializeDictionary(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlSerializeDictionaryToDataset(unsigned & tlen, void * & tgt, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+
+extern ECLRTL_API void rtlSerializeDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlSerializeDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+
+//Dictionary serialization/deserialization to a stream - includes length prefix
+extern ECLRTL_API void rtlDeserializeChildDictionary(size32_t & count, byte * * & rowset, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, IRowDeserializerSource & in);
+extern ECLRTL_API void rtlDeserializeChildDictionaryFromDataset(size32_t & count, byte * * & rowset, IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, IHThorHashLookupInfo & hashInfo, IRowDeserializerSource & in);
+extern ECLRTL_API void rtlSerializeChildDictionary(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
+extern ECLRTL_API void rtlSerializeChildDictionaryToDataset(IRowSerializerTarget & out, IOutputRowSerializer * serializer, size32_t count, byte * * rows);
 
 //---------------------------------------------------------------------------
 

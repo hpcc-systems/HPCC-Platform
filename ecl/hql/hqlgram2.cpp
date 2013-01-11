@@ -2358,6 +2358,8 @@ void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, IHqlExpressio
     if (!name)
         name = createUnnamedFieldName();
     checkFieldnameValid(errpos, name);
+    if (value && !recordTypesMatch(record, value))
+        reportError(ERR_TYPEMISMATCH_DATASET, errpos, "Dataset expression has a different record from the field");
     if (queryPropertyInList(virtualAtom, attrs))
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
@@ -2375,6 +2377,8 @@ void HqlGram::addDictionaryField(const attribute &errpos, _ATOM name, IHqlExpres
     if (!name)
         name = createUnnamedFieldName();
     checkFieldnameValid(errpos, name);
+    if (value && !recordTypesMatch(record, value))
+        reportError(ERR_TYPEMISMATCH_DATASET, errpos, "Dataset expression has a different record from the field");
     if (queryPropertyInList(virtualAtom, attrs))
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
@@ -3839,6 +3843,16 @@ IHqlExpression * HqlGram::addDatasetSelector(IHqlExpression * lhs, IHqlExpressio
     return ret;
 }
 
+bool HqlGram::isSingleValuedExpressionList(const attribute & attr)
+{
+    IHqlExpression * expr = attr.queryExpr();
+    if (expr->getOperator() == no_comma)
+        return false;
+    if (expr->isList())
+        return false;
+    return true;
+}
+
 IHqlExpression * HqlGram::createListFromExprArray(const attribute & errpos, HqlExprArray & args)
 {
     ITypeInfo * retType = promoteToSameType(args, errpos, NULL, true);
@@ -5273,7 +5287,7 @@ void expandRecord(HqlExprArray & fields, IHqlExpression * selector, IHqlExpressi
     case no_field:
         {
             OwnedHqlExpr subSelector = createSelectExpr(LINK(selector), LINK(expr));
-            if (expr->queryRecord() && !expr->isDataset())
+            if (expr->queryRecord() && !expr->isDataset() && !expr->isDictionary())
                 expandRecord(fields, subSelector, expr->queryRecord());
             else
             {
@@ -6771,9 +6785,9 @@ void HqlGram::reportIndexFieldType(IHqlExpression * expr, bool isKeyed, const at
     StringBuffer s;
     getFriendlyTypeStr(expr, s);
     if (isKeyed)
-        reportError(ERR_INDEX_BADTYPE, errpos, "INDEX does not support keyed fields of type %s", s.str());
+        reportError(ERR_INDEX_BADTYPE, errpos, "INDEX does not currently support keyed fields of type '%s'", s.str());
     else
-        reportError(ERR_INDEX_BADTYPE, errpos, "INDEX does not support fields of type %s", s.str());
+        reportError(ERR_INDEX_BADTYPE, errpos, "INDEX does not currently support fields of type '%s'", s.str());
 }
 
 void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool insideNestedRecord, const attribute & errpos)
