@@ -152,6 +152,14 @@ require([
                 return this.plugin.version;
             },
 
+            getSVG: function () {
+                return this.plugin.getSVG();
+            },
+
+            getXGMML: function () {
+                return this.xgmml;
+            },
+
             displayProperties: function (item, place) {
                 var props = this.plugin.getProperties(item);
                 if (props.id) {

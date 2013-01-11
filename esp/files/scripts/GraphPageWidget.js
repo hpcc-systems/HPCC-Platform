@@ -35,6 +35,7 @@ define([
     "dijit/Dialog",
 
     "dojox/grid/DataGrid",
+    "dojox/html/entities",
 
     "hpcc/GraphWidget",
     "hpcc/ESPWorkunit",
@@ -43,10 +44,14 @@ define([
 
     "dojo/text!../templates/GraphPageWidget.html",
 
+    "dijit/PopupMenuItem",
+    "dijit/Menu",
+    "dijit/MenuItem",
     "dijit/form/TextBox"
 ], function (declare, lang, sniff, array, dom, domConstruct, on, has, Memory, ObjectStore,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
-            DataGrid, GraphWidget, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
+            DataGrid, entities,
+            GraphWidget, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
             template) {
     return declare("GraphPageWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -90,6 +95,8 @@ define([
             this.main.watchSplitter(splitter);
             this.overview.watchSplitter(splitter);
             this.local.watchSplitter(splitter);
+
+            this.main.watchSelect(registry.byId(this.id + "AdvancedMenu"));
         },
 
         resize: function (args) {
@@ -248,13 +255,8 @@ define([
             this._doFind(true);
         },
 
-        _onAbout: function () {
-            myDialog = new Dialog({
-                title: "About HPCC Systems Graph Control",
-                content: "Version:  " + this.main.getVersion() + "<br>"
-                + this.main.getResourceLinks(),
-                style: "width: 320px"
-            });
+        _showDialog: function(params) {
+            myDialog = new Dialog(params);
             if (has("chrome")) {
                 this.main.hide();
                 this.overview.hide();
@@ -268,6 +270,35 @@ define([
                 });
             }
             myDialog.show();
+        },
+
+        _onAbout: function () {
+            this._showDialog({
+                title: "About HPCC Systems Graph Control",
+                content: "Version:  " + this.main.getVersion() + "<br>" + this.main.getResourceLinks(),
+                style: "width: 320px"
+            });
+        },
+
+        _onGetSVG: function () {
+            this._showDialog({
+                title: "SVG Source", 
+                content: entities.encode(this.main.getSVG())
+            });
+        },
+
+        _onRenderSVG: function () {
+            this._showDialog({
+                title: "Rendered SVG", 
+                content: this.main.getSVG()
+            });
+        },
+
+        _onGetXGMML: function () {
+            this._showDialog({
+                title: "XGMML", 
+                content: entities.encode(this.main.getXGMML())
+            });
         },
 
         init: function (params) {

@@ -233,6 +233,15 @@ margin-left:-20px;
     vertical-align: middle;
 }
 
+.iconFilter{
+    background-image: url("../img/filterAdd.png"); 
+    width: 16px;
+    height: 16px;
+    border:none;
+    display:inline-block;
+    vertical-align: middle;
+}
+
 .iconRefresh {
     background-image: url("../img/refresh2.png"); 
     width: 16px;
