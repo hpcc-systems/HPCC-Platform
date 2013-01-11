@@ -67,13 +67,13 @@ inrec := RECORD
 infile1 := DATASET([{'a', 'b'}, {'c', 'd'}], inrec);
 infile2 := DATASET([{'e', 'f'}, {'g', 'h'}], inrec);
 
-// Output record has just one string, filled in from the result of the java function
+// Output record has just one string, filled in from the result of the JavaScript function
 outrec := RECORD
             string c;
           END;
 
 outrec t(inrec L) := TRANSFORM
-  SELF.c := jseval('a + b', L.f1, L.f2)  // Evaluates python expression to concatenate strings
+  SELF.c := jseval('a + b', L.f1, L.f2)  // Evaluates JavaScript expression to concatenate strings
 END;
 
 outfile := project(infile1, t(LEFT))+project(infile2, t(LEFT));  // threaded concat operation

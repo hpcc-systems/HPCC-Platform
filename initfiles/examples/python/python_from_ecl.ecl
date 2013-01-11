@@ -163,7 +163,7 @@ inrec := RECORD
 infile1 := DATASET([{'a', 'b'}, {'c', 'd'}], inrec);
 infile2 := DATASET([{'e', 'f'}, {'g', 'h'}], inrec);
 
-// Output record has just one string, filled in from the result of the java function
+// Output record has just one string, filled in from the result of the python function
 outrec := RECORD
             string c;
           END;

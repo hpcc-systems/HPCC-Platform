@@ -1,7 +1,7 @@
 /* Example of calling Python from ECL code via embedded C++
 *
 * This example evalues a python expression within an ECL transform
-* Because the python will be compiled every timr the expression is evaluated, it
+* Because the python will be compiled every time the expression is evaluated, it
 * is likely to be less efficient than calling external python code as in the example
 * python_from_ecl
 *
@@ -137,7 +137,7 @@ inrec := RECORD
 infile1 := DATASET([{'a', 'b'}, {'c', 'd'}], inrec);
 infile2 := DATASET([{'e', 'f'}, {'g', 'h'}], inrec);
 
-// Output record has just one string, filled in from the result of the java function
+// Output record has just one string, filled in from the result of the python function
 outrec := RECORD
             string c;
           END;
