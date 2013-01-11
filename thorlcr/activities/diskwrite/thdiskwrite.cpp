@@ -36,7 +36,7 @@ public:
         CWriteMasterBase::init();
 
         IHThorDiskWriteArg *helper=(IHThorDiskWriteArg *)queryHelper();
-        IOutputMetaData *irecsize = helper->queryDiskRecordSize()->querySerializedMeta();
+        IOutputMetaData *irecsize = helper->queryDiskRecordSize()->querySerializedDiskMeta();
         IPropertyTree &props = fileDesc->queryProperties();
         if (0 != (helper->getFlags() & TDXgrouped))
             props.setPropBool("@grouped", true);

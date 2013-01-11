@@ -1061,7 +1061,7 @@ void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRow
         MemoryBuffer datasetBuffer;
         MemoryBuffer2IDataVal result(datasetBuffer);
         r->getResultRaw(result, NULL, NULL);
-        rtlDictionary2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray());
+        rtlDeserializeDictionary(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray());
     );
 }
 

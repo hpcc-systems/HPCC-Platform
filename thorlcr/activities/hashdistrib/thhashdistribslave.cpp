@@ -749,7 +749,7 @@ public:
         pullBufferSize = DISTRIBUTE_PULL_BUFFER_SIZE;
         selfstopped = false;
         pull = false;
-        fixedEstSize = meta->querySerializedMeta()->getFixedSize();
+        fixedEstSize = meta->querySerializedDiskMeta()->getFixedSize();
         rowManager = activity->queryJob().queryRowManager();
 
         allowSpill = activity->getOptBool(THOROPT_HDIST_SPILL, true);

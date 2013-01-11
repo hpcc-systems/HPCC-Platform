@@ -181,13 +181,21 @@ public:
     {
         return idStr.append(activityId); // MORE - may want more context info in here
     }
-    virtual IOutputRowSerializer *createRowSerializer(ICodeContext *ctx)
+    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx)
     {
-        return meta.createRowSerializer(ctx, activityId);
+        return meta.createDiskSerializer(ctx, activityId);
     }
-    virtual IOutputRowDeserializer *createRowDeserializer(ICodeContext *ctx)
+    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx)
     {
-        return meta.createRowDeserializer(ctx, activityId);
+        return meta.createDiskDeserializer(ctx, activityId);
+    }
+    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx)
+    {
+        return meta.createInternalSerializer(ctx, activityId);
+    }
+    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx)
+    {
+        return meta.createInternalDeserializer(ctx, activityId);
     }
 
 protected:
@@ -553,12 +561,14 @@ protected:
         virtual void toXML(const byte * self, IXmlWriter & out) {}
         virtual unsigned getVersion() const { return 0; }
         virtual unsigned getMetaFlags() { return 0; }
-        virtual IOutputMetaData * querySerializedMeta() { return this; }
+        virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
 
         virtual void destruct(byte * self) {}
-        virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-        virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-        virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+        virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+        virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+        virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+        virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+        virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
         virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
 
         size32_t minSize;

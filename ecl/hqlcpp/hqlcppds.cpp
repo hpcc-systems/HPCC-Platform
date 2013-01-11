@@ -127,7 +127,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowDeserializeRow(BuildCtx & ctx, 
 
     HqlExprArray args;  
     args.append(*createRowAllocator(ctx, record));
-    args.append(*createRowSerializer(ctx, record, deserializerAtom));
+    args.append(*createDiskSerializer(ctx, record, deserializerAtom));
     args.append(*LINK(srcRow));
     Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
     OwnedHqlExpr call = bindFunctionCall(rtlDeserializeRowAtom, args, resultType);
@@ -1818,7 +1818,7 @@ void HqlCppTranslator::buildAssignSerializedDataset(BuildCtx & ctx, const CHqlBo
     assertex(recordTypesMatch(target.queryType(), serializedType));
 
     HqlExprArray args;
-    args.append(*createRowSerializer(ctx, expr->queryRecord(), serializerAtom));
+    args.append(*createDiskSerializer(ctx, expr->queryRecord(), serializerAtom));
     args.append(*LINK(expr));
     OwnedHqlExpr call = bindFunctionCall(rowset2DatasetXAtom, args);
     buildExprAssign(ctx, target, call);
@@ -1841,7 +1841,7 @@ void HqlCppTranslator::buildAssignLinkedDataset(BuildCtx & ctx, const CHqlBoundT
 
     IHqlExpression * record = ::queryRecord(target.queryType());
     HqlExprArray args;
-    args.append(*createRowSerializer(ctx, record, deserializerAtom));
+    args.append(*createDiskSerializer(ctx, record, deserializerAtom));
     args.append(*LINK(expr));
     OwnedHqlExpr call = bindFunctionCall(isGrouped(expr) ? groupedDataset2RowsetXAtom : dataset2RowsetXAtom, args, target.queryType());
     buildExprAssign(ctx, target, call);
@@ -3913,7 +3913,7 @@ void HqlCppTranslator::doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSe
     assertex(selfCursor->queryBuilder());
     {
         HqlExprArray args;
-        args.append(*createRowSerializer(ctx, unserializedRecord, serializerAtom));
+        args.append(*createDiskSerializer(ctx, unserializedRecord, serializerAtom));
         args.append(*LINK(srcRow));
 
         Owned<ITypeInfo> type = makeTransformType(expr->queryRecord()->getType());

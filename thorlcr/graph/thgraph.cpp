@@ -2772,7 +2772,7 @@ IOutputRowSerializer * CActivityBase::queryRowSerializer()
 {
     if (CABserializerlock.lock()) {
         if (!rowSerializer)
-            rowSerializer.setown(queryRowMetaData()->createRowSerializer(queryCodeContext(),queryActivityId()));
+            rowSerializer.setown(queryRowMetaData()->createDiskSerializer(queryCodeContext(),queryActivityId()));
         CABserializerlock.unlock();
     }
     return rowSerializer;
@@ -2782,7 +2782,7 @@ IOutputRowDeserializer * CActivityBase::queryRowDeserializer()
 {
     if (CABdeserializerlock.lock()) {
         if (!rowDeserializer)
-            rowDeserializer.setown(queryRowMetaData()->createRowDeserializer(queryCodeContext(),queryActivityId()));
+            rowDeserializer.setown(queryRowMetaData()->createDiskDeserializer(queryCodeContext(),queryActivityId()));
         CABdeserializerlock.unlock();
     }
     return rowDeserializer;

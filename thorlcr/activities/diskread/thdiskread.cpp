@@ -40,7 +40,7 @@ public:
             Owned<IException> e = MakeActivityWarning(&container, TE_GroupMismatch, "DFS and code generated group info. differs: DFS(%s), CodeGen(%s), using DFS info", isGrouped?"grouped":"ungrouped", codeGenGrouped?"grouped":"ungrouped");
             container.queryJob().fireException(e);
         }
-        IOutputMetaData *recordSize = helper->queryDiskRecordSize()->querySerializedMeta();
+        IOutputMetaData *recordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta();
         if (recordSize->isFixedSize()) // fixed size
         {
             if (0 != fileDesc->queryProperties().getPropInt("@recordSize"))

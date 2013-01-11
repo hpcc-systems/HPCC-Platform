@@ -3661,7 +3661,7 @@ public:
         colocalArg = _colocalArg;
         if (meta.needsSerialize())
         {
-            deserializer.setown(meta.createRowDeserializer(_ctx->queryCodeContext(), activity.queryId()));
+            deserializer.setown(meta.createDiskDeserializer(_ctx->queryCodeContext(), activity.queryId()));
             rowAllocator.setown(ctx->queryCodeContext()->getRowAllocator(meta.queryOriginal(), activity.queryId()));
         }
         if (ctx->queryDebugContext() && ctx->queryDebugContext()->getExecuteSequentially())
@@ -5015,7 +5015,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        rowDeserializer.setown(rowAllocator->createRowDeserializer(ctx->queryCodeContext()));
+        rowDeserializer.setown(rowAllocator->createDiskDeserializer(ctx->queryCodeContext()));
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8715,7 +8715,7 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        rowDeserializer.setown(rowAllocator->createRowDeserializer(ctx->queryCodeContext()));
+        rowDeserializer.setown(rowAllocator->createDiskDeserializer(ctx->queryCodeContext()));
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -8826,8 +8826,8 @@ public:
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        rowSerializer.setown(inputMeta.createRowSerializer(ctx->queryCodeContext(), activityId));
-        rowDeserializer.setown(rowAllocator->createRowDeserializer(ctx->queryCodeContext()));
+        rowSerializer.setown(inputMeta.createDiskSerializer(ctx->queryCodeContext(), activityId));
+        rowDeserializer.setown(rowAllocator->createDiskDeserializer(ctx->queryCodeContext()));
         writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
     }
 
@@ -9017,7 +9017,7 @@ public:
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
         inputMeta.set(input->queryOutputMeta());
-        rowSerializer.setown(inputMeta.createRowSerializer(ctx->queryCodeContext(), activityId));
+        rowSerializer.setown(inputMeta.createDiskSerializer(ctx->queryCodeContext(), activityId));
         writeTransformer.setown(createPipeWriteXformHelper(helper.getPipeFlags(), helper.queryXmlOutput(), helper.queryCsvOutput(), rowSerializer));
     }
 
@@ -14409,10 +14409,12 @@ public:
     virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
     virtual unsigned getMetaFlags()                         { return 0; }
     virtual void destruct(byte * self)  {}
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual IOutputMetaData * querySerializedMeta() { return this; }
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
 };
 
@@ -19265,7 +19267,7 @@ public:
         if (serverContext->outputResultsToWorkUnit()||(response && response->isRaw))
         {
             createRowAllocator();
-            rowSerializer.setown(rowAllocator->createRowSerializer(ctx->queryCodeContext()));
+            rowSerializer.setown(rowAllocator->createDiskSerializer(ctx->queryCodeContext()));
         }
         __int64 initialProcessed = processed;
         RtlLinkedDatasetBuilder builder(rowAllocator);
@@ -19744,7 +19746,7 @@ public:
                 {
                     reader.setown(manager->createReader(0, 0, 1));
                     deserializeSource.setStream(reader);
-                    prefetcher.setown(diskSize.queryOriginal()->createRowPrefetcher(ctx->queryCodeContext(), activityId));
+                    prefetcher.setown(diskSize.queryOriginal()->createDiskPrefetcher(ctx->queryCodeContext(), activityId));
                 }
                 helper.setCallback(reader ? reader->queryThorDiskCallback() : cursor);
             }
@@ -28576,7 +28578,7 @@ public:
         size32_t count = counts.item(id);
 
         MemoryBuffer result;
-        Owned<IOutputRowSerializer> rowSerializer = meta->createRowSerializer(codectx, 0); // NOTE - we don't have a meaningful activity id. Only used for error reporting.
+        Owned<IOutputRowSerializer> rowSerializer = meta->createDiskSerializer(codectx, 0); // NOTE - we don't have a meaningful activity id. Only used for error reporting.
         bool grouped = meta->isGrouped();
         for (size32_t idx = 0; idx<count; idx++)
         {
@@ -29905,7 +29907,7 @@ public:
             eof = false;
             eogPending = false;
             bufferBase = NULL;
-            rowDeserializer.setown(rowAllocator->createRowDeserializer(parent->queryCodeContext()));
+            rowDeserializer.setown(rowAllocator->createDiskDeserializer(parent->queryCodeContext()));
             bufferStream.setown(createMemoryBufferSerialStream(blockBuffer));
             rowSource.setStream(bufferStream);
         }
@@ -32313,10 +32315,12 @@ public:
     virtual unsigned getVersion() const                     { return OUTPUTMETADATA_VERSION; }
     virtual unsigned getMetaFlags()                         { return 0; }
     virtual void destruct(byte * self)  {}
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
-    virtual IOutputMetaData * querySerializedMeta() { return NULL; }
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputMetaData * querySerializedDiskMeta() { return NULL; }
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) { return NULL; }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) {}
 } testMeta;
 

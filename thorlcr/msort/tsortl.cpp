@@ -187,10 +187,10 @@ public:
         socket->set_block_mode(BF_SYNC_TRANSFER_PULL,0,DEFAULTTIMEOUT*1000);
         stopped = false;
         initbuf = true;
-        size32_t maxsz = rowif->queryRowMetaData()->querySerializedMeta()->getRecordSize(NULL);
+        size32_t maxsz = rowif->queryRowMetaData()->querySerializedDiskMeta()->getRecordSize(NULL);
         // bit of a guess - TBD better (using ISerialStream?)
-        if (maxsz<rowif->queryRowMetaData()->querySerializedMeta()->getMinRecordSize())
-            maxsz=rowif->queryRowMetaData()->querySerializedMeta()->getMinRecordSize();
+        if (maxsz<rowif->queryRowMetaData()->querySerializedDiskMeta()->getMinRecordSize())
+            maxsz=rowif->queryRowMetaData()->querySerializedDiskMeta()->getMinRecordSize();
 
         if (maxsz>bufsize)
             preallocated = maxsz;
