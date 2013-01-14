@@ -146,6 +146,6 @@ output(normalize(titles, streamedNames(left.title), transform(right)));
 
 // Project
 
-output(table(titles, { title, ': ', dataset blockedNames(title), '\n' } ));
-output(table(titles, { title, ': ', dataset linkedNames(title) , '\n' } ));
-output(table(titles, { title, ': ', dataset streamedNames(title), '\n' } ));
+output(table(titles, { title, ': ', dataset blockedNames := blockedNames(title), '\n' } ));
+output(table(titles, { title, ': ', dataset linkedNames := linkedNames(title) , '\n' } ));
+output(table(titles, { title, ': ', dataset streamedNames := streamedNames(title), '\n' } ));
