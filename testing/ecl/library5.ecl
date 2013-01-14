@@ -64,6 +64,6 @@ addressTable := dataset([
         {'Smith','Baby', 2}]}
     ], addressRecord);
     
-output(addressTable, { dataset filterDataset(ds, 'Halliday').matches });
-output(addressTable, { dataset filterDataset(ds, 'Halliday').others });
+output(addressTable, { dataset matches := filterDataset(ds, 'Halliday').matches });
+output(addressTable, { dataset others := filterDataset(ds, 'Halliday').others });
 

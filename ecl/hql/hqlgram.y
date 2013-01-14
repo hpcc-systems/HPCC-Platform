@@ -4233,22 +4233,12 @@ fieldDef
                             IHqlExpression * value = $5.getExpr();
                             parser->addDatasetField($2, $2.getName(), LINK(value->queryRecord()), value, $3.getExpr());
                         }
-    | DATASET dataSet
-                        {
-                            parser->reportWarning(ERR_DEPRECATED, $1.pos, "DATASET <dataset> syntax is deprecated.  Use DATASET id := <dataset> instead");
-                            IHqlExpression *value = $2.getExpr();
-                            _ATOM name = parser->createFieldNameFromExpr(value);
-                            parser->addDatasetField($1, name, LINK(queryOriginalRecord(value)), value, NULL);
-                            $$.clear();
-                        }
     | UNKNOWN_ID optFieldAttrs ASSIGN dataSet
                         {
                             IHqlExpression * value = $4.getExpr();
                             parser->addDatasetField($1, $1.getName(), LINK(value->queryRecord()), value, $2.getExpr());
                             $$.clear();
                         }
-
-
     | DICTIONARY '(' recordDef ')' knownOrUnknownId optFieldAttrs
                         {
                             $$.clear($1);
