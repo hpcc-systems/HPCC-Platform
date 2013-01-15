@@ -5,11 +5,11 @@
   <chapterinfo>
     <date id="DateVer">DEVELOPER NON-GENERATED VERSION</date>
 
-    <releaseinfo id="FooterInfo">© 2012 HPCC Systems. All rights
+    <releaseinfo id="FooterInfo">© 2013 HPCC Systems. All rights
     reserved</releaseinfo>
 
     <copyright id="Copyright">
-      <year>2012 HPCC Systems. All rights reserved</year>
+      <year>2013 HPCC Systems. All rights reserved</year>
     </copyright>
   </chapterinfo>
 
@@ -23,7 +23,7 @@
     serve one purpose and that is to store the chapterinfo the above sections
     that are being used by several other documents.</para>
 
-    <para id="CHMVer">2012 Version 3.x</para>
+    <para id="CHMVer">2013 Version 3.x</para>
 
     <para>The following line is the code to be put into the document you wish
     to include the above version info in:</para>
