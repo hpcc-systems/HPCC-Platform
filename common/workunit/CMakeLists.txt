@@ -32,7 +32,8 @@ set (    SRCS
          workunit.hpp 
          wuerror.hpp
          wujobq.hpp
-         package.hpp
+         package.h
+         pkgimpl.hpp
     )
 
 include_directories ( 
