@@ -273,10 +273,11 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
             bool someLeft=false;
             do
             {
-                if (0 != headerLinesRemaining[which])
-                    someLeft = true;
                 msgMb.append(which);
-                msgMb.append(headerLinesRemaining[which]);
+                unsigned &remaining = getHeaderLines(which);
+                if (0 != remaining)
+                    someLeft = true;
+                msgMb.append(remaining);
                 which = sentHeaderLines->scanInvert(which+1, false);
             }
             while (which < subFiles);
