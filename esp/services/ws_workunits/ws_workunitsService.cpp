@@ -40,7 +40,7 @@
 #include "thorplugin.hpp"
 #include "roxiecontrol.hpp"
 
-#include "package.hpp"
+#include "package.h"
 
 #ifdef _USE_ZLIB
 #include "zcrypt.hpp"
@@ -1713,36 +1713,37 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
             getArchivedWUInfo(context, wuid.str(), resp);
         else
         {
-            //The access is checked here because getArchivedWUInfo() has its own access check.
-            ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
-
-            unsigned flags=0;
-            if (req.getTruncateEclTo64k())
-                flags|=WUINFO_TruncateEclTo64k;
-            if (req.getIncludeExceptions())
-                flags|=WUINFO_IncludeExceptions;
-            if (req.getIncludeGraphs())
-                flags|=WUINFO_IncludeGraphs;
-            if (req.getIncludeSourceFiles())
-                flags|=WUINFO_IncludeSourceFiles;
-            if (req.getIncludeResults())
-                flags|=WUINFO_IncludeResults;
-            if (req.getIncludeVariables())
-                flags|=WUINFO_IncludeVariables;
-            if (req.getIncludeTimers())
-                flags|=WUINFO_IncludeTimers;
-            if (req.getIncludeDebugValues())
-                flags|=WUINFO_IncludeDebugValues;
-            if (req.getIncludeApplicationValues())
-                flags|=WUINFO_IncludeApplicationValues;
-            if (req.getIncludeWorkflows())
-                flags|=WUINFO_IncludeWorkflows;
-            if (!req.getSuppressResultSchemas())
-                flags|=WUINFO_IncludeEclSchemas;
-            if (req.getIncludeXmlSchemas())
-                flags|=WUINFO_IncludeXmlSchema;
             try
             {
+                //The access is checked here because getArchivedWUInfo() has its own access check.
+                ensureWsWorkunitAccess(context, wuid.str(), SecAccess_Read);
+
+                unsigned flags=0;
+                if (req.getTruncateEclTo64k())
+                    flags|=WUINFO_TruncateEclTo64k;
+                if (req.getIncludeExceptions())
+                    flags|=WUINFO_IncludeExceptions;
+                if (req.getIncludeGraphs())
+                    flags|=WUINFO_IncludeGraphs;
+                if (req.getIncludeSourceFiles())
+                    flags|=WUINFO_IncludeSourceFiles;
+                if (req.getIncludeResults())
+                    flags|=WUINFO_IncludeResults;
+                if (req.getIncludeVariables())
+                    flags|=WUINFO_IncludeVariables;
+                if (req.getIncludeTimers())
+                    flags|=WUINFO_IncludeTimers;
+                if (req.getIncludeDebugValues())
+                    flags|=WUINFO_IncludeDebugValues;
+                if (req.getIncludeApplicationValues())
+                    flags|=WUINFO_IncludeApplicationValues;
+                if (req.getIncludeWorkflows())
+                    flags|=WUINFO_IncludeWorkflows;
+                if (!req.getSuppressResultSchemas())
+                    flags|=WUINFO_IncludeEclSchemas;
+                if (req.getIncludeXmlSchemas())
+                    flags|=WUINFO_IncludeXmlSchema;
+
                 WsWuInfo winfo(context, wuid.str());
                 winfo.getInfo(resp.updateWorkunit(), flags);
 

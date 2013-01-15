@@ -90,7 +90,8 @@ else
         fi
     fi
     sort $instancedir/slaves | uniq > $instancedir/uslaves
-    $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${comp_base} $PATH_PRE $THORMASTER:$THORMASTERPORT'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries 2>&1 | egrep -v "no process killed"
+    nslaves=`cat $instancedir/uslaves.start | wc -l`
+    $deploydir/frunssh $instancedir/uslaves "/bin/sh -c '$deploydir/stop_slaves ${comp_base} $PATH_PRE $THORMASTER:$THORMASTERPORT'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$nslaves 2>&1 | egrep -v "no process killed"
     echo slaves stopped
 fi
 

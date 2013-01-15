@@ -1241,7 +1241,12 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                         returnStr.appendf("<Message><Value>%s</Value></Message>",errorStr.str());
                         DBGLOG("%s", errorStr.str());
                     }
-                    else 
+                    else if (!deleted)
+                    {
+                        returnStr.appendf("<Message><Value>Logical File %s not deleted. No error message.</Value></Message>",logicalFileName.str());
+                        DBGLOG("Logical File %s not deleted. No error message.\n",logicalFileName.str());
+                    }
+                    else
                     {
                         PrintLog("Deleted Logical File: %s\n",logicalFileName.str());
                         returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>",logicalFileName.str());
@@ -1252,7 +1257,15 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                     df.clear(); 
                     deleted = queryDistributedFileDirectory().removeEntry(logicalFileName.str(), userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT); // this can remove clusters also
                     if (deleted)
+                    {
+                        PrintLog("Detached File: %s\n",logicalFileName.str());
                         returnStr.appendf("<Message><Value>Detached File %s</Value></Message>", logicalFileName.str());
+                    }
+                    else
+                    {
+                        returnStr.appendf("<Message><Value>File %s not detached.</Value></Message>",logicalFileName.str());
+                        DBGLOG("File %s not detached.\n",logicalFileName.str());
+                    }
                 }
 
                 if (!deleted)

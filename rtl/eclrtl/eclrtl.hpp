@@ -50,7 +50,6 @@
 #endif
 
 typedef unsigned char byte;
-typedef unsigned __int64 hash64_t;
 interface IEngineRowAllocator;
 interface IOutputMetaData;
 interface IOutputRowSerializer;
