@@ -158,7 +158,7 @@
             </xsl:attribute>
           </xsl:if>
           <xsl:attribute name="backupComputer">
-            <xsl:value-of select="@backupComputer"/>
+            <xsl:value-of select="/Environment/Hardware/Computer[@name=current()/@backupComputer]/@netAddress"/>
           </xsl:attribute>
         </xsl:if>
         <xsl:attribute name="asyncBackup">
