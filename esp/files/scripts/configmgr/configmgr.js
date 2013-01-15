@@ -3280,7 +3280,11 @@ function onMenuItemClickHandleComputer(p_sType, p_aArgs, p_oValue) {
     }
     
     var type =( menuItemName === "New Range..." ) ? 0 : 3;
-    top.document.navDT.promptNewRange(recSet.getRecord(i).getData('domain_extra'), recSet.getRecord(i).getData('computerType_extra'), type);
+
+    if (recSet.getRecord(i) != null)
+      top.document.navDT.promptNewRange(recSet.getRecord(i).getData('domain_extra'), recSet.getRecord(i).getData('computerType_extra'), type);
+    else
+      top.document.navDT.promptNewRange([], [], type);
     return;
   }
 
