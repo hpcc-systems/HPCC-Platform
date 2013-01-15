@@ -21,7 +21,7 @@
 
 #include "jlib.hpp"
 #include "workunit.hpp"
-#include "package.hpp"
+#include "package.h"
 #include "dadfs.hpp"
 #include "dfuutil.hpp"
 
