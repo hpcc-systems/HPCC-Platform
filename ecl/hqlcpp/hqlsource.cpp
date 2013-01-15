@@ -1359,7 +1359,24 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
                     if (!returnIfFilterFails)
                         translator.buildFilter(ctx, test);
                     else
-                        translator.buildFilteredReturn(ctx, test, failedFilterValue);
+                    {
+                        LinkedHqlExpr mismatchReturnValue = failedFilterValue;
+                        //If the output row has already been generated, then returning at this point will leak any
+                        //child datasets. To avoid that we explicitly call the destructor on the output row.
+                        if (recordRequiresDestructor(expr->queryRecord()))
+                        {
+                            if (lastTransformer && lastTransformer->queryNormalizedSelector() == expr->queryNormalizedSelector())
+                            {
+                                StringBuffer s;
+                                translator.buildMetaForRecord(s, expr->queryRecord());
+                                s.append(".destruct(crSelf.row())");
+                                OwnedHqlExpr cleanupAction = createQuoted(s.str(), makeVoidType());
+                                //Create a compound expression (destroy-old, return-value)
+                                mismatchReturnValue.setown(createCompound(LINK(cleanupAction), LINK(mismatchReturnValue)));
+                            }
+                        }
+                        translator.buildFilteredReturn(ctx, test, mismatchReturnValue);
+                    }
                 }
             }
         }
