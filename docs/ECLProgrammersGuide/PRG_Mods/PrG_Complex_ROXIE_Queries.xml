@@ -73,7 +73,7 @@ END;</programlisting>
     from the function that uses it.</para>
   </sect2>
 
-  <sect2 id="Keyed_Joins">
+  <sect2 id="PG_Keyed_Joins">
     <title>Keyed Joins</title>
 
     <para>Although the FETCH function was specifically designed for indexed
