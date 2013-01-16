@@ -287,7 +287,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         PointerIArrayOf<CSendBucket> buckets;
         UnsignedArray candidates;
         size32_t totalSz;
-        bool senderFull, doDedup;
+        bool senderFull, doDedup, aborted;
         Semaphore senderFullSem;
         Linked<IException> exception;
         OwnedMalloc<bool> senderFinished;
@@ -309,11 +309,12 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             numFinished = 0;
             dedupSamples = dedupSuccesses = 0;
             doDedup = owner.doDedup;
-            writerPool.setown(createThreadPool("HashDist writer pool", this, &owner, owner.writerPoolSize, 5*60*1000));
+            writerPool.setown(createThreadPool("HashDist writer pool", this, this, owner.writerPoolSize, 5*60*1000));
             self = owner.activity->queryJob().queryMyRank()-1;
             for (n=0; n<owner.numnodes; n++)
                 pendingBuckets.append(new CSendBucketQueue);
             numActiveWriters = 0;
+            aborted = false;
         }
 
         void dedup(CSendBucket *sendBucket)
@@ -592,6 +593,8 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                             }
                         }
                     }
+                    if (aborted)
+                        break;
                     const void *row = input->ungroupedNextRow();
                     if (!row)
                         break;
@@ -619,22 +622,25 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             }
             catch (IException *e)
             {
-                ActPrintLog(owner.activity, e, "HDIST: sendloop");
+                ActPrintLog(owner.activity, e, "HDIST: sender.process");
                 owner.fireException(e);
             }
 
             ActPrintLog(owner.activity, "Distribute send finishing");
-            // send remainder
-            Owned<IShuffledIterator> iter = createShuffledIterator(owner.numnodes);
-            ForEach(*iter)
+            if (!aborted)
             {
-                unsigned dest=iter->get();
-                Owned<CSendBucket> bucket = getBucketClear(dest);
-                HDSendPrintLog4("Looking at last bucket(%d): %d, size = %d", dest, bucket.get()?bucket->queryDestination():0, bucket.get()?bucket->querySize():-1);
-                if (bucket && bucket->querySize())
+                // send remainder
+                Owned<IShuffledIterator> iter = createShuffledIterator(owner.numnodes);
+                ForEach(*iter)
                 {
-                    HDSendPrintLog3("Sending last bucket(s): %d, size = %d", bucket->queryDestination(), bucket->querySize());
-                    add(bucket.getClear());
+                    unsigned dest=iter->get();
+                    Owned<CSendBucket> bucket = getBucketClear(dest);
+                    HDSendPrintLog4("Looking at last bucket(%d): %d, size = %d", dest, bucket.get()?bucket->queryDestination():0, bucket.get()?bucket->querySize():-1);
+                    if (bucket && bucket->querySize())
+                    {
+                        HDSendPrintLog3("Sending last bucket(s): %d, size = %d", bucket->queryDestination(), bucket->querySize());
+                        add(bucket.getClear());
+                    }
                 }
             }
             ActPrintLog(owner.activity, "HDIST: waiting for threads");
@@ -652,8 +658,12 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     // IExceptionHandler impl.
         virtual bool fireException(IException *e)
         {
-            if (!exception.get())
+            if (!aborted)
+            {
                 exception.set(e);
+                aborted = true;
+                senderFullSem.signal(); // send regardless, because senderFull could be about to be set.
+            }
             return owner.fireException(e);
         }
         friend class CWriteHandler;
