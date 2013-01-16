@@ -152,6 +152,24 @@ require([
                 return this.plugin.version;
             },
 
+            getSVG: function () {
+                return this.plugin.getSVG();
+            },
+
+            getXGMML: function () {
+                return this.xgmml;
+            },
+
+            localLayout: function(callback) {
+                var context = this;
+                require(
+                  ["hpcc/viz"],
+                  function (viz) {
+                      callback(Viz(context.dot, "svg"));
+                  }
+                );
+            },
+
             displayProperties: function (item, place) {
                 var props = this.plugin.getProperties(item);
                 if (props.id) {
@@ -286,8 +304,8 @@ require([
             },
 
             getResourceLinks: function () {
-                return "<a href=\"http://hpccsystems.com/download/free-community-edition/graph-control\" target=\"_blank\">Binary Installs</a><br>" +
-                "<a href=\"https://github.com/hpcc-systems/GraphControl\" target=\"_blank\">Source Code</a><br><br>" + 
+                return "<a href=\"http://hpccsystems.com/download/free-community-edition/graph-control\" target=\"_blank\">Binary Installs</a><br/>" +
+                "<a href=\"https://github.com/hpcc-systems/GraphControl\" target=\"_blank\">Source Code</a><br/><br/>" +
                 "<a href=\"http://hpccsystems.com\" target=\"_blank\">HPCC Systems</a>"
             },
 
