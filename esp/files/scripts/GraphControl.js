@@ -143,23 +143,27 @@ define([
 		},
 
 		centerOn: function (globalID) {
-			var item = this.obj.getItem(globalID);
-			this.obj.centerOnItem(item, true);
-			var items = [item];
-			this.obj.setSelected(items, true);
+			if (this.obj) {
+				var item = this.obj.getItem(globalID);
+				this.obj.centerOnItem(item, true);
+				var items = [item];
+				this.obj.setSelected(items, true);
+			}
 		},
 
 		watchSelect: function (select) {
-			if (sniff("chrome") && select) {
-				var context = this;
+			if (this.obj) {
+				if (sniff("chrome") && select) {
+					var context = this;
 
-				aspect.before(select, "openDropDown", function () {
-					dojo.style(context.obj, "height", "0px");
-				});
+					aspect.before(select, "openDropDown", function () {
+						dojo.style(context.obj, "height", "0px");
+					});
 
-				aspect.after(select, "closeDropDown", function (focus) {
-					dojo.style(context.obj, "height", "100%");
-				});
+					aspect.after(select, "closeDropDown", function (focus) {
+						dojo.style(context.obj, "height", "100%");
+					});
+				}
 			}
 		},
 
