@@ -20,7 +20,6 @@ define([
     "dojo/date",
     "dojo/on",
 
-    "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
@@ -29,6 +28,7 @@ define([
     "dojox/grid/enhanced/plugins/Pagination",
     "dojox/grid/enhanced/plugins/IndirectSelection",
 
+    "hpcc/_TabContainerWidget",
     "hpcc/WsWorkunits",
     "hpcc/WUDetailsWidget",
 
@@ -45,50 +45,25 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog"
 ], function (declare, dom, ObjectStore, date, on,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 EnhancedGrid, Pagination, IndirectSelection,
-                WsWorkunits, WUDetailsWidget,
+                _TabContainerWidget, WsWorkunits, WUDetailsWidget,
                 template) {
-    return declare("WUQueryWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("WUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "WUQueryWidget",
-        borderContainer: null,
-        tabContainer: null,
+        workunitsTab: null,
         workunitsGrid: null,
         legacyPane: null,
         legacyPaneLoaded: false,
 
         tabMap: [],
 
-        buildRendering: function (args) {
-            this.inherited(arguments);
-        },
-
         postCreate: function (args) {
             this.inherited(arguments);
-            this.borderContainer = registry.byId(this.id + "BorderContainer");
-            this.tabContainer = registry.byId(this.id + "TabContainer");
+            this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
-            this.legacyPane = registry.byId(this.id + "Legacy");
-
-            var context = this;
-            this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (nval.id == context.id + "Workunits") {
-                } else if (nval.id == context.id + "Legacy") {
-                    if (!context.legacyPaneLoaded) {
-                        context.legacyPaneLoaded = true;
-                        context.legacyPane.set("content", dojo.create("iframe", {
-                            src: "/WsWorkunits/WUQuery",
-                            style: "border: 0; width: 100%; height: 100%"
-                        }));
-                    }
-                } else {
-                    if (!nval.initalized) {
-                        nval.init(nval.params);
-                    }
-                }
-                context.selectedTab = nval;
-            });
+            this.legacyPane = registry.byId(this.id + "_Legacy");
         },
 
         startup: function (args) {
@@ -97,26 +72,20 @@ define([
             this.initWorkunitsGrid();
         },
 
-        resize: function (args) {
-            this.inherited(arguments);
-            this.borderContainer.resize();
-        },
-
-        layout: function (args) {
-            this.inherited(arguments);
-        },
-
-        destroy: function (args) {
-            this.inherited(arguments);
-        },
-
         //  Hitched actions  ---
         _onOpen: function (event) {
             var selections = this.workunitsGrid.selection.getSelected();
+            var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                this.ensurePane(selections[i].Wuid, {
+                var tab = this.ensurePane(this.id + "_" + selections[i].Wuid, {
                     Wuid: selections[i].Wuid
                 });
+                if (i == 0) {
+                    firstTab = tab;
+                }
+            }
+            if (firstTab) {
+                this.selectChild(firstTab);
             }
         },
         _onDelete: function (event) {
@@ -218,7 +187,30 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (params.Wuid) {
+            if (this.initalized)
+                return;
+            this.initalized = true;
+
+            this.selectChild(this.workunitsTab, true);
+        },
+
+        initTab: function () {
+            var currSel = this.getSelectedChild();
+            if (currSel && !currSel.initalized) {
+                if (currSel.id == this.workunitsTab.id) {
+                } else if (currSel.id == this.legacyPane.id) {
+                    if (!this.legacyPaneLoaded) {
+                        this.legacyPaneLoaded = true;
+                        this.legacyPane.set("content", dojo.create("iframe", {
+                            src: "/WsWorkunits/WUQuery",
+                            style: "border: 0; width: 100%; height: 100%"
+                        }));
+                    }
+                } else {
+                    if (!currSel.initalized) {
+                        currSel.init(currSel.params);
+                    }
+                }
             }
         },
 
@@ -312,7 +304,7 @@ define([
                 var context = this;
                 retVal = new WUDetailsWidget({
                     id: id,
-                    title: id,
+                    title: params.Wuid,
                     closable: true,
                     onClose: function () {
                         delete context.tabMap[id];
@@ -321,16 +313,16 @@ define([
                     params: params
                 });
                 this.tabMap[id] = retVal;
-                this.tabContainer.addChild(retVal, 2);
+                this.addChild(retVal, 2);
             }
             return retVal;
         },
 
         onRowDblClick: function (wuid) {
-            var wuTab = this.ensurePane(wuid, {
+            var wuTab = this.ensurePane(this.id + "_" + wuid, {
                 Wuid: wuid
             });
-            this.tabContainer.selectChild(wuTab);
+            this.selectChild(wuTab);
         }
     });
 });

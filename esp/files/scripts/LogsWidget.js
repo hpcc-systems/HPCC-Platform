@@ -139,6 +139,10 @@ define([
             },
             //  Plugin wrapper  ---
             init: function (params) {
+                if (this.initalized)
+                    return;
+                this.initalized = true;
+
                 this.wu = new ESPWorkunit({
                     Wuid: params.Wuid
                 });

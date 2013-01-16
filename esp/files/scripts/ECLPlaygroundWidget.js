@@ -75,7 +75,7 @@ define([
             var context = this;
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.targetSelectWidget = registry.byId(this.id + "TargetSelect");
-            this.resultsWidget = registry.byId(this.id + "Results");
+            this.resultsWidget = registry.byId(this.id + "_Results");
             this.resultsWidget.onErrorClick = function (line, col) {
                 context.editorControl.setCursor(line, col);
             };
@@ -88,6 +88,10 @@ define([
         },
 
         init: function (params) {
+            if (this.initalized)
+                return;
+            this.initalized = true;
+
             if (params.Wuid) {
                 this.hideTitle();
             }

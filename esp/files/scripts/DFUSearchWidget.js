@@ -158,6 +158,10 @@ define([
 
         //  Implementation  ---
         init: function (params) {
+            if (this.initalized)
+                return;
+            this.initalized = true;
+
             //dom.byId("showWuid").innerHTML = params.Wuid;
             if (params.Wuid) {
                 //dom.byId(this.id + "Wuid").innerHTML = params.Wuid;

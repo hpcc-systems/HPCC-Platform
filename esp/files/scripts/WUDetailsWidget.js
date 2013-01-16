@@ -20,11 +20,11 @@ define([
     "dojo/store/Memory",
     "dojo/data/ObjectStore",
 
-    "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
+    "hpcc/_TabContainerWidget",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/SampleSelectWidget",
@@ -45,14 +45,13 @@ define([
     "dijit/TooltipDialog",
     "dijit/TitlePane"
 ], function (declare, dom, domClass, Memory, ObjectStore,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, Workunit,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                _TabContainerWidget, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, Workunit,
                 template) {
-    return declare("WUDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("WUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "WUDetailsWidget",
-        borderContainer: null,
-        tabContainer: null,
+        summaryWidget: null,
         resultsWidget: null,
         resultsWidgetLoaded: false,
         filesWidget: null,
@@ -76,94 +75,20 @@ define([
         wu: null,
         prevState: "",
 
-        buildRendering: function (args) {
-            this.inherited(arguments);
-        },
-
         postCreate: function (args) {
             this.inherited(arguments);
-            this.borderContainer = registry.byId(this.id + "BorderContainer");
-            this.tabContainer = registry.byId(this.id + "TabContainer");
-            this.resultsWidget = registry.byId(this.id + "Results");
-            this.filesWidget = registry.byId(this.id + "Files");
-            this.timersWidget = registry.byId(this.id + "Timers");
-            this.graphsWidget = registry.byId(this.id + "Graphs");
-            this.sourceWidget = registry.byId(this.id + "Source");
-            this.logsWidget = registry.byId(this.id + "Logs");
-            this.playgroundWidget = registry.byId(this.id + "Playground");
-            this.xmlWidget = registry.byId(this.id + "XML");
+            this.summaryWidget = registry.byId(this.id + "_Summary");
+            this.resultsWidget = registry.byId(this.id + "_Results");
+            this.filesWidget = registry.byId(this.id + "_Files");
+            this.timersWidget = registry.byId(this.id + "_Timers");
+            this.graphsWidget = registry.byId(this.id + "_Graphs");
+            this.sourceWidget = registry.byId(this.id + "_Source");
+            this.logsWidget = registry.byId(this.id + "_Logs");
+            this.playgroundWidget = registry.byId(this.id + "_Playground");
+            this.xmlWidget = registry.byId(this.id + "_XML");
+            this.legacyPane = registry.byId(this.id + "_Legacy");
+
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
-            this.legacyPane = registry.byId(this.id + "Legacy");
-
-            var context = this;
-            this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (nval.id == context.id + "Results" && !context.resultsWidgetLoaded) {
-                    context.resultsWidgetLoaded = true;
-                    context.resultsWidget.init({
-                        Wuid: context.wu.Wuid
-                    });
-                } else if (nval.id == context.id + "Files" && !context.filesWidgetLoaded) {
-                    context.filesWidgetLoaded = true;
-                    context.filesWidget.init({
-                        Wuid: context.wu.Wuid,
-                        SourceFiles: true
-                    });
-                } else if (nval.id == context.id + "Timers" && !context.timersWidgetLoaded) {
-                    context.timersWidgetLoaded = true;
-                    context.timersWidget.init({
-                        Wuid: context.wu.Wuid
-                    });
-                } else if (nval.id == context.id + "Graphs" && !context.graphsWidgetLoaded) {
-                    context.graphsWidgetLoaded = true;
-                    context.graphsWidget.init({
-                        Wuid: context.wu.Wuid
-                    });
-                } else if (nval.id == context.id + "Source" && !context.sourceWidgetLoaded) {
-                    context.sourceWidgetLoaded = true;
-                    context.sourceWidget.init({
-                        Wuid: context.wu.Wuid
-                    });
-                } else if (nval.id == context.id + "Logs" && !context.logsWidgetLoaded) {
-                    context.logsWidgetLoaded = true;
-                    context.logsWidget.init({
-                        Wuid: context.wu.Wuid
-                    });
-                } else if (nval.id == context.id + "Playground" && !context.playgroundWidgetLoaded) {
-                    context.playgroundWidgetLoaded = true;
-                    context.playgroundWidget.init({
-                        Wuid: context.wu.Wuid,
-                        Target: context.wu.WUInfoResponse.Cluster
-                    });
-                } else if (nval.id == context.id + "XML" && !context.xmlWidgetLoaded) {
-                    context.xmlWidgetLoaded = true;
-                    context.xmlWidget.init({
-                        Wuid: context.wu.Wuid
-                    });
-                } else if (nval.id == context.id + "Legacy" && !context.legacyPaneLoaded) {
-                    context.legacyPaneLoaded = true;
-                    context.legacyPane.set("content", dojo.create("iframe", {
-                        src: "/WsWorkunits/WUInfo?Wuid=" + context.wu.Wuid + "&IncludeExceptions=0&IncludeGraphs=0&IncludeSourceFiles=0&IncludeResults=0&IncludeVariables=0&IncludeTimers=0&IncludeDebugValues=0&IncludeApplicationValues=0&IncludeWorkflows&SuppressResultSchemas=1",
-                        style: "border: 0; width: 100%; height: 100%"
-                    }));
-                }
-            });
-        },
-
-        startup: function (args) {
-            this.inherited(arguments);
-        },
-
-        resize: function (args) {
-            this.inherited(arguments);
-            this.borderContainer.resize();
-        },
-
-        layout: function (args) {
-            this.inherited(arguments);
-        },
-
-        destroy: function (args) {
-            this.inherited(arguments);
         },
 
         //  Hitched actions  ---
@@ -229,10 +154,10 @@ define([
         init: function (params) {
             if (this.initalized)
                 return;
-
             this.initalized = true;
+
             if (params.Wuid) {
-                registry.byId(this.id + "Summary").set("title", params.Wuid);
+                this.summaryWidget.set("title", params.Wuid);
 
                 dom.byId(this.id + "Wuid").innerHTML = params.Wuid;
                 this.wu = new Workunit({
@@ -241,6 +166,63 @@ define([
                 this.monitor();
             }
             this.infoGridWidget.init(params);
+            this.selectChild(this.summaryWidget, true);
+        },
+
+        initTab: function () {
+            if (!this.wu) {
+                return
+            }
+            var currSel = this.getSelectedChild();
+            if (currSel.id == this.resultsWidget.id && !this.resultsWidgetLoaded) {
+                this.resultsWidgetLoaded = true;
+                this.resultsWidget.init({
+                    Wuid: this.wu.Wuid
+                });
+            } else if (currSel.id == this.filesWidget.id && !this.filesWidgetLoaded) {
+                this.filesWidgetLoaded = true;
+                this.filesWidget.init({
+                    Wuid: this.wu.Wuid,
+                    SourceFiles: true
+                });
+            } else if (currSel.id == this.timersWidget.id && !this.timersWidgetLoaded) {
+                this.timersWidgetLoaded = true;
+                this.timersWidget.init({
+                    Wuid: this.wu.Wuid
+                });
+            } else if (currSel.id == this.graphsWidget.id && !this.graphsWidgetLoaded) {
+                this.graphsWidgetLoaded = true;
+                this.graphsWidget.init({
+                    Wuid: this.wu.Wuid
+                });
+            } else if (currSel.id == this.sourceWidget.id && !this.sourceWidgetLoaded) {
+                this.sourceWidgetLoaded = true;
+                this.sourceWidget.init({
+                    Wuid: this.wu.Wuid
+                });
+            } else if (currSel.id == this.logsWidget.id && !this.logsWidgetLoaded) {
+                this.logsWidgetLoaded = true;
+                this.logsWidget.init({
+                    Wuid: this.wu.Wuid
+                });
+            } else if (currSel.id == this.playgroundWidget.id && !this.playgroundWidgetLoaded) {
+                this.playgroundWidgetLoaded = true;
+                this.playgroundWidget.init({
+                    Wuid: this.wu.Wuid,
+                    Target: this.wu.WUInfoResponse.Cluster
+                });
+            } else if (currSel.id == this.xmlWidget.id && !this.xmlWidgetLoaded) {
+                this.xmlWidgetLoaded = true;
+                this.xmlWidget.init({
+                    Wuid: this.wu.Wuid
+                });
+            } else if (currSel.id == this.legacyPane.id && !this.legacyPaneLoaded) {
+                this.legacyPaneLoaded = true;
+                this.legacyPane.set("content", dojo.create("iframe", {
+                    src: "/WsWorkunits/WUInfo?Wuid=" + this.wu.Wuid + "&IncludeExceptions=0&IncludeGraphs=0&IncludeSourceFiles=0&IncludeResults=0&IncludeVariables=0&IncludeTimers=0&IncludeDebugValues=0&IncludeApplicationValues=0&IncludeWorkflows&SuppressResultSchemas=1",
+                    style: "border: 0; width: 100%; height: 100%"
+                }));
+            }
         },
 
         monitor: function () {
@@ -286,7 +268,7 @@ define([
             registry.byId(this.id + "Description").set("readOnly", !this.wu.isComplete());
             registry.byId(this.id + "Protected").set("readOnly", !this.wu.isComplete());
 
-            registry.byId(this.id + "Summary").set("iconClass",this.wu.getStateIconClass());
+            this.summaryWidget.set("iconClass",this.wu.getStateIconClass());
             domClass.remove(this.id + "StateIdImage");
             domClass.add(this.id + "StateIdImage", this.wu.getStateIconClass());
 

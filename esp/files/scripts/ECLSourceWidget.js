@@ -68,6 +68,10 @@ define([
 
             //  Plugin wrapper  ---
             init: function (params) {
+                if (this.initalized)
+                    return;
+                this.initalized = true;
+
                 this.editor = CodeMirror.fromTextArea(document.getElementById(this.id + "EclCode"), {
                     tabMode: "indent",
                     matchBrackets: true,

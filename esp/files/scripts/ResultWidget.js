@@ -120,6 +120,7 @@ define([
                 return;
             }
             this.initalized = true;
+
             this.result = params.result;
             //TODO:  Encapsulate this IF into ESPResult.js
             if (params.result && params.result.canShowResults()) {

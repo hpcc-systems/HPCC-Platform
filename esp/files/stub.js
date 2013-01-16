@@ -14,8 +14,10 @@
 #    limitations under the License.
 ############################################################################## */
 define([
+    "dojo/_base/lang",
     "dojo/_base/fx",
     "dojo/_base/window",
+    "dojo/_base/connect",
     "dojo/dom",
     "dojo/dom-style",
     "dojo/dom-geometry",
@@ -35,7 +37,7 @@ define([
     "hpcc/DFUWUDetailsWidget",
     "hpcc/DFUWUQueryWidget",
     "hpcc/LFDetailsWidget"
-], function (fx, baseWindow, dom, domStyle, domGeometry, ioQuery, ready,
+], function (lang, fx, baseWindow, connect, dom, domStyle, domGeometry, ioQuery, ready,
         ECLPlaygroundWidget, GraphPageWidget, ResultsWidget, TimingPageWidget, TimingTreeMapWidget, ECLSourceWidget, InfoGridWidget, WUQueryWidget, WUDetailsWidget, GetDFUWorkunitsWidget, DFUWUDetailsWidget, DFUWUQueryWidget, LFDetailsWidget
         ) {
 
@@ -44,7 +46,7 @@ define([
 
         //TODO:  Can we get rid of the required dependency above?
         var widget = new (eval(params.Widget))({
-            id: "appLayout",
+            id: "app",
             "class": "hpccApp"
         });
 
