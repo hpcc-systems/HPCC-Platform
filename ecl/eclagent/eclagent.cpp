@@ -505,8 +505,8 @@ public:
 
 //=======================================================================================
 
-EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bool _resetWorkflow, bool _noRetry, char const * _logname, const char *_allowedPipeProgs, IPropertyTree *queryXML, IProperties *_globals, IPropertyTree *_config)
-    : wuRead(wu), wuid(_wuid), checkVersion(_checkVersion), resetWorkflow(_resetWorkflow), noRetry(_noRetry), allowedPipeProgs(_allowedPipeProgs), globals(_globals), config(_config)
+EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bool _resetWorkflow, bool _noRetry, char const * _logname, const char *_allowedPipeProgs, IPropertyTree *_queryXML, IProperties *_globals, IPropertyTree *_config, ILogMsgHandler * _logMsgHandler)
+    : wuRead(wu), wuid(_wuid), checkVersion(_checkVersion), resetWorkflow(_resetWorkflow), noRetry(_noRetry), allowedPipeProgs(_allowedPipeProgs), globals(_globals), config(_config), logMsgHandler(_logMsgHandler)
 {
     isAborting = false;
     isStandAloneExe = false;
@@ -554,10 +554,10 @@ EclAgent::EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bo
         SCMStringBuffer jobName;
         debugContext->debugInitialize(wuid, wu->getJobName(jobName).str(), true);
     }
-    if (queryXML)
+    if (_queryXML)
     {
         Owned<IWorkUnit> w = updateWorkUnit();
-        w->setXmlParams(queryXML);
+        w->setXmlParams(_queryXML);
     }
     Owned<const IPropertyTree> xmlParams = wuRead->getXmlParams();
     if (xmlParams)
@@ -3096,12 +3096,13 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
     //Build log file specification
     StringBuffer logfilespec;
+    ILogMsgHandler * logMsgHandler = NULL;
     if (!standAloneExe)
     {
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(agentTopology, "eclagent");
         lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
         lf->setCreateAliasFile(false);
-        lf->beginLogging();
+        logMsgHandler = lf->beginLogging();
         PROGLOG("Logging to %s", lf->queryLogFileSpec());
         logfilespec.set(lf->queryLogFileSpec());
     }
@@ -3311,7 +3312,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
             if (w)
             {
-                EclAgent agent(w, wuid.str(), globals->getPropInt("IGNOREVERSION", 0)==0, globals->getPropBool("WFRESET", false), globals->getPropBool("NORETRY", false), logfilespec.str(), globals->queryProp("allowedPipePrograms"), query.getClear(), globals, agentTopology);
+                EclAgent agent(w, wuid.str(), globals->getPropInt("IGNOREVERSION", 0)==0, globals->getPropBool("WFRESET", false), globals->getPropBool("NORETRY", false), logfilespec.str(), globals->queryProp("allowedPipePrograms"), query.getClear(), globals, agentTopology, logMsgHandler);
                 const bool isRemoteWorkunit = (daliServers.length() != 0);
                 const bool resolveFilesLocally = !isRemoteWorkunit || globals->getPropBool("USELOCALFILES", false);
                 const bool writeResultsToStdout = !isRemoteWorkunit || globals->getPropBool("RESULTSTOSTDOUT", false);
