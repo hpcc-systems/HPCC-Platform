@@ -1976,7 +1976,7 @@ public:
                     p++;
                     f = 0;
                 }
-                if (p<subfilecounts->item(subfile)) {
+                if (p<subfilecounts->item(f)) {
                     if (!superpartnum) {
                         subfile = f;
                         subpartnum = p;
