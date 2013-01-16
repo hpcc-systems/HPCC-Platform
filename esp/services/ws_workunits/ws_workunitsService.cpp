@@ -3713,7 +3713,7 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
     wu->commit();
     wu.clear();
 
-    submitWsWorkunit(context, wuid.str(), req.getCluster(), NULL, 0, true, false, NULL, NULL, &req.getDebugValues());
+    submitWsWorkunit(context, wuid.str(), req.getCluster(), NULL, 0, true, false, false, NULL, NULL, &req.getDebugValues());
     waitForWorkUnitToCompile(wuid.str(), req.getWait());
 
     WsWuInfo winfo(context, wuid.str());
