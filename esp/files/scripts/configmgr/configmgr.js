@@ -2677,7 +2677,7 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
       "ThorClusterMaster": [
                                { text: "Add Slaves...", onclick: { fn: onMenuItemClickThorTopology} },
                                { text: "Add Spares...", onclick: { fn: onMenuItemClickThorTopology} },
-                               { text: "Swap Master",   onclick:  { fn: onMenuItemClickThorTopologySwapMaster} },
+                               { text: "Replace Master",   onclick:  { fn: onMenuItemClickThorTopologySwapMaster} },
                             ],
       "ThorClusterSlave": [
                                { text: "Add Spares...", onclick: { fn: onMenuItemClickThorTopology} }
