@@ -4,7 +4,7 @@
 <sect1 id="Smart_Stepping">
   <title><emphasis role="bold">Smart Stepping</emphasis></title>
 
-  <sect2 id="Overview">
+  <sect2 id="PG_Overview">
     <title>Overview</title>
 
     <para>Smart Stepping is a set of indexing techniques that, taken together,
