@@ -65,7 +65,7 @@
             <xs:attribute name="filesBasedn" type="xs:string" use="optional" default="ou=Files,ou=ecl">
                 <xs:annotation>
                     <xs:appinfo>
-                        <tooltip>base location for ldap file scopes</tooltip>
+                        <viewType>hidden</viewType>
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
