@@ -30,6 +30,7 @@ ulimit -n 8192
 killed(){
     dalistop .
     rm -f ${SENTINEL}
+    rm $PID_NAME
     exit 255
 }
 
@@ -37,6 +38,7 @@ trap "killed" SIGINT SIGTERM SIGKILL
 daserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
+rm $PID_NAME
 
 while [ -e ${SENTINEL} ]; do
     sleep 5
@@ -44,5 +46,6 @@ while [ -e ${SENTINEL} ]; do
         daserver 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
+        rm $PID_NAME
     fi
 done

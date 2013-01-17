@@ -37,6 +37,7 @@ killed (){
     sleep 2
     killall -9 agentexec eclagent 1>/dev/null 2>&1 
     sleep 2
+    rm $PID_NAME
     exit 255
 }
 
@@ -47,6 +48,7 @@ ulimit -c unlimited
 agentexec 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
+rm $PID_NAME
 
 while [ -e ${SENTINEL} ]; do
     sleep 1
@@ -54,6 +56,7 @@ while [ -e ${SENTINEL} ]; do
         agentexec 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
+        rm $PID_NAME
     fi
 done
 

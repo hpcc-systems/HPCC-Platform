@@ -44,6 +44,7 @@ killed(){
     rm -f ${SENTINEL}
     killall -9 dafilesrv 2> /dev/null
     sleep 2
+    rm $PID_NAME
     exit 255
 }
 ulimit -n $handlelimit
@@ -51,6 +52,7 @@ trap "killed" SIGINT SIGTERM SIGKILL
 dafilesrv -L $log -I ${INSTANCE_NAME} &
 echo $! > $PID_NAME
 wait
+rm $PID_NAME
 
 while [ -e ${SENTINEL} ]; do
     sleep 5
@@ -58,5 +60,6 @@ while [ -e ${SENTINEL} ]; do
         dafilesrv -L $log -I ${INSTANCE_NAME} &
         echo $! > $PID_NAME
         wait
+        rm $PID_NAME
     fi
 done

@@ -52,6 +52,7 @@ killed() {
     sleep 5
     killall -9 roxie
     sleep 2
+    rm $PID_NAME
     exit 255
 }
 
@@ -59,6 +60,7 @@ trap "killed" SIGINT SIGTERM SIGKILL
 nohup roxie --topology=RoxieTopology.xml --logfile=$logfilename --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
 echo $! > $PID_NAME 
 wait
+rm $PID_NAME
 
 # Automatically restart roxie when it dies
 while [ -e ${SENTINEL} ]; do
@@ -68,5 +70,6 @@ while [ -e ${SENTINEL} ]; do
     nohup roxie --topology=RoxieTopology.xml --logfile=$logfilename --restarts=$restarts --stdlog=0 2>>$logfilename.stderr 1>>$logfilename.stdout &
     echo $! > $PID_NAME
     wait
+    rm $PID_NAME
 done
 

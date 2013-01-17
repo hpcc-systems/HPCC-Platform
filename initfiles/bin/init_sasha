@@ -51,6 +51,7 @@ killed() {
         fi
     fi
     sleep 2
+    rm $PID_NAME
     exit 255
 }
 
@@ -58,6 +59,7 @@ trap "killed" SIGINT SIGTERM SIGKILL
 saserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
+rm $PID_NAME
 
 while [ -e ${SENTINEL} ]; do
     sleep 5
@@ -65,5 +67,6 @@ while [ -e ${SENTINEL} ]; do
         saserver 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
+        rm $PID_NAME
     fi
 done
