@@ -32,8 +32,8 @@ killed() {
 
     rm -f ${SENTINEL}
     pidwait_fn `cat ${PID_NAME}` 3
-    sleep 2
     rm $PID_NAME
+    sleep 2
     exit 255
 }
 

@@ -43,8 +43,8 @@ rm -f ${SENTINEL}
 killed(){
     rm -f ${SENTINEL}
     killall -9 dafilesrv 2> /dev/null
-    sleep 2
     rm $PID_NAME
+    sleep 2
     exit 255
 }
 ulimit -n $handlelimit

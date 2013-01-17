@@ -28,8 +28,8 @@ rm -f ${SENTINEL}
 killed(){
     rm -f ${SENTINEL}
     killall -9 eclscheduler
-    sleep
     rm $PID_NAME
+    sleep
     exit 255
 }
 

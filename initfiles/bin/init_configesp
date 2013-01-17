@@ -33,8 +33,8 @@ SNMPID=$$
 killed() {
     rm -f ${SENTINEL}
     killall -9 configesp 2>/dev/null
-    sleep 1
     rm $PID_NAME
+    sleep 1
     exit 255
 }
 

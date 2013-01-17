@@ -36,8 +36,8 @@ killed (){
     killall eclagent
     sleep 2
     killall -9 agentexec eclagent 1>/dev/null 2>&1 
-    sleep 2
     rm $PID_NAME
+    sleep 2
     exit 255
 }
 

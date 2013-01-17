@@ -50,8 +50,8 @@ killed() {
             kill -9 $pid
         fi
     fi
-    sleep 2
     rm $PID_NAME
+    sleep 2
     exit 255
 }
 

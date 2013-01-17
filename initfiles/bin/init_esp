@@ -34,8 +34,8 @@ killed() {
     killall esp 1>/dev/null 2>/dev/null
     sleep 15
     killall -9 esp 1>/dev/null 2>/dev/null 
-    sleep 2
     rm $PID_NAME
+    sleep 2
     exit 255
 }
 
