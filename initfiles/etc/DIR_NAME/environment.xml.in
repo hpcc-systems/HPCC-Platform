@@ -320,7 +320,6 @@
   <DaliServerProcess build="${projname}_${version}-${stagever}"
                      buildSet="dali"
                      environment="${CONFIG_DIR}/${ENV_XML_FILE}"
-                     filesBasedn="ou=Files,ou=ecl"
                      name="mydali"
                      recoverFromIncErrors="true">
    <Instance computer="localhost"
@@ -594,7 +593,6 @@
               name="EclWatch"
               pluginsPath="${PLUGINS_PATH}"
               syntaxCheckQueue=""
-              filesBasedn="ou=Files,ou=ecl"
               viewTimeout="1000"
               warnIfCpuLoadOver="95"
               warnIfFreeMemoryUnder="5"

@@ -561,12 +561,10 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
         <EspService name="{$serviceName}" type="{$serviceType}" plugin="{$servicePlugin}">
             <xsl:variable name="ldapservername" select="$bindingNode/../Authentication/@ldapServer"/>
             <xsl:choose>
-                <xsl:when test="string(@filesBasedn) != ''">
-                    <Files basedn="{@filesBasedn}"/>
+                <xsl:when test="$ldapservername != ''">
+                <xsl:variable name="filesbasedn" select="/Environment/Software/LDAPServerProcess[@name=$ldapservername]/@filesBasedn"/>
+                <Files basedn="{$filesbasedn}"/>
                 </xsl:when>
-                <xsl:otherwise>
-                    <Files basedn="ou=Files,ou=ecl"/>
-                </xsl:otherwise>
             </xsl:choose>
             <Resources>
                 <xsl:for-each select="../EspProcess[Authentication/@ldapServer=$ldapservername]/EspBinding">
