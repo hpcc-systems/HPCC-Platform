@@ -26,3 +26,4 @@ if ("${BUILD_LEVEL}" STREQUAL "COMMUNITY")
 endif ()
 
 add_subdirectory (v8embed)
+add_subdirectory (pyembed)
