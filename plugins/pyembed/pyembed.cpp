@@ -39,8 +39,10 @@ static const char * EclDefinition =
     "  boolean getEmbedContext():cpp,pure,namespace='pyembed',entrypoint='getEmbedContext',prototype='IEmbedContext* getEmbedContext()';\n"
     "  boolean syntaxCheck(const varstring src):cpp,pure,namespace='pyembed',entrypoint='syntaxCheck';\n"
     "END;"
-    "export getEmbedContext := Language.getEmbedContext;"
-    "export syntaxCheck := Language.syntaxCheck;";
+    "EXPORT getEmbedContext := Language.getEmbedContext;"
+    "EXPORT syntaxCheck := Language.syntaxCheck;"
+    "EXPORT boolean supportsImport := false;"
+    "EXPORT boolean supportsScript := true;";
 
 extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
@@ -79,6 +81,8 @@ public:
     inline operator PyObject *() const    { return ptr; }
     inline void clear()                     { if (ptr) Py_DECREF(ptr); ptr = NULL; }
     inline void setown(PyObject *_ptr)      { clear(); ptr = _ptr; }
+    inline void set(PyObject *_ptr)         { clear(); ptr = _ptr; if (ptr) Py_INCREF(ptr);}
+    inline PyObject **ref() { clear(); return &ptr; }
 };
 
 // call checkPythonError to throw an exception if Python error state is set
@@ -88,9 +92,13 @@ static void checkPythonError()
     PyObject* err = PyErr_Occurred();
     if (err)
     {
+        OwnedPyObject pType, pValue, pTraceBack;
+        PyErr_Fetch(pType.ref(), pType.ref(), pType.ref());
         OwnedPyObject errStr = PyObject_Str(err);
+        OwnedPyObject valStr = PyObject_Str(pValue);
         PyErr_Clear();
-        rtlFail(0, PyString_AsString(errStr));
+        VStringBuffer errMessage("%s: %s", PyString_AsString(errStr), PyString_AsString(valStr));
+        rtlFail(0, errMessage.str());
     }
 }
 
@@ -113,6 +121,28 @@ public:
     }
 };
 
+// Use a global object to ensure that the Python interpreter is initialized on main thread
+
+static class Python27GlobalState
+{
+public:
+    Python27GlobalState()
+    {
+        // Initialize the Python Interpreter
+        Py_Initialize();
+        PyEval_InitThreads();
+        tstate = PyEval_SaveThread();
+    }
+    ~Python27GlobalState()
+    {
+        PyEval_RestoreThread(tstate);
+        // Finish the Python Interpreter
+        Py_Finalize();
+    }
+protected:
+    PyThreadState *tstate;
+} globalState;
+
 // There is a singleton PythonThreadContext per thread. This allows us to
 // ensure that we can make repeated calls to a Python function efficiently.
 
@@ -124,42 +154,12 @@ public:
     PythonThreadContext()
     {
         threadState = PyEval_SaveThread();
-        locals.setown(PyDict_New());
-        globals.setown(PyDict_New());
     }
     ~PythonThreadContext()
     {
-        locals.clear();
-        globals.clear();
+        PyEval_RestoreThread(threadState);
         script.clear();
         result.clear();
-        PyEval_RestoreThread(threadState);
-    }
-
-    inline void bindRealParam(const char *name, double val)
-    {
-        OwnedPyObject vval = PyFloat_FromDouble(val);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    inline void bindSignedParam(const char *name, __int64 val)
-    {
-        OwnedPyObject vval = PyLong_FromLongLong(val);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    inline void bindUnsignedParam(const char *name, unsigned __int64 val)
-    {
-        OwnedPyObject vval = PyLong_FromUnsignedLongLong(val);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    inline void bindStringParam(const char *name, size32_t len, const char *val)
-    {
-        OwnedPyObject vval = PyString_FromStringAndSize(val, len);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    inline void bindVStringParam(const char *name, const char *val)
-    {
-        OwnedPyObject vval = PyString_FromString(val);
-        PyDict_SetItemString(locals, name, vval);
     }
 
     inline double getRealResult()
@@ -191,22 +191,44 @@ public:
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
             prevtext.clear();
+            // Try compiling as a eval first... if that fails, try as a script.
             script.setown(Py_CompileString(text, "", Py_eval_input));
+            if (!script)
+            {
+                PyErr_Clear();
+                StringBuffer wrapped;
+                wrapPythonText(wrapped, text);
+                script.setown(Py_CompileString(wrapped, "<embed>", Py_file_input));
+            }
             checkPythonError();
             prevtext.set(text);
         }
 
     }
-    inline void callFunction()
+    inline void callFunction(PyObject *locals, PyObject *globals)
     {
-        checkPythonError();
         result.setown(PyEval_EvalCode((PyCodeObject *) script.get(), locals, globals));
         checkPythonError();
+        if (!result || result == Py_None)
+            result.set(PyDict_GetItemString(locals, "__result__"));
+        if (!result || result == Py_None)
+            result.set(PyDict_GetItemString(globals, "__result__"));
     }
 private:
+    static StringBuffer &wrapPythonText(StringBuffer &out, const char *in)
+    {
+        out.append("def __user__():\n  ");
+        char c;
+        while ((c = *in++) != '\0')
+        {
+            out.append(c);
+            if (c=='\n')
+                out.append("  ");
+        }
+        out.append("\n__result__ = __user__()\n");
+        return out;
+    }
     GILstateWrapper GILState;
-    OwnedPyObject locals;
-    OwnedPyObject globals;
     OwnedPyObject script;
     OwnedPyObject result;
     StringAttr prevtext;
@@ -223,6 +245,9 @@ public:
     : sharedCtx(_sharedCtx)
     {
         PyEval_RestoreThread(sharedCtx->threadState);
+        locals.setown(PyDict_New());
+        globals.setown(PyDict_New());
+        PyDict_SetItemString(locals, "__builtins__", PyEval_GetBuiltins( ));  // required for import to work
     }
     ~Python27EmbedFunctionContext()
     {
@@ -230,23 +255,28 @@ public:
     }
     virtual void bindRealParam(const char *name, double val)
     {
-        return sharedCtx->bindRealParam(name, val);
+        OwnedPyObject vval = PyFloat_FromDouble(val);
+        PyDict_SetItemString(locals, name, vval);
     }
     virtual void bindSignedParam(const char *name, __int64 val)
     {
-        return sharedCtx->bindSignedParam(name, val);
+        OwnedPyObject vval = PyLong_FromLongLong(val);
+        PyDict_SetItemString(locals, name, vval);
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
     {
-        return sharedCtx->bindUnsignedParam(name, val);
+        OwnedPyObject vval = PyLong_FromUnsignedLongLong(val);
+        PyDict_SetItemString(locals, name, vval);
     }
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
     {
-        return sharedCtx->bindStringParam(name, len, val);
+        OwnedPyObject vval = PyString_FromStringAndSize(val, len);
+        PyDict_SetItemString(locals, name, vval);
     }
     virtual void bindVStringParam(const char *name, const char *val)
     {
-        return sharedCtx->bindVStringParam(name, val);
+        OwnedPyObject vval = PyString_FromString(val);
+        PyDict_SetItemString(locals, name, vval);
     }
 
     virtual double getRealResult()
@@ -266,16 +296,22 @@ public:
         sharedCtx->getStringResult(__len, __result);
     }
 
+    virtual void importFunction(const char *text)
+    {
+        UNIMPLEMENTED; // TBD
+    }
     virtual void compileEmbeddedScript(const char *text)
     {
         sharedCtx->compileEmbeddedScript(text);
     }
     virtual void callFunction()
     {
-        sharedCtx->callFunction();
+        sharedCtx->callFunction(locals, globals);
     }
 private:
     PythonThreadContext *sharedCtx;
+    OwnedPyObject locals;
+    OwnedPyObject globals;
 };
 
 __thread PythonThreadContext* threadContext;  // We reuse per thread, for speed
@@ -288,23 +324,9 @@ static void releaseContext()
         (*threadHookChain)();
 }
 
-static class Python27EmbedContext : public CInterfaceOf<IEmbedContext>
+class Python27EmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    Python27EmbedContext()
-    {
-        // Initialize the Python Interpreter
-        Py_Initialize();
-        PyEval_InitThreads();
-        tstate = PyEval_SaveThread();
-        Link();  // Deliberately 'leak' in order to avoid freeing this global object prematurely
-    }
-    ~Python27EmbedContext()
-    {
-        PyEval_RestoreThread(tstate);
-        // Finish the Python Interpreter
-        Py_Finalize();
-    }
     virtual IEmbedFunctionContext *createFunctionContext()
     {
         if (!threadContext)
@@ -314,13 +336,11 @@ public:
         }
         return new Python27EmbedFunctionContext(threadContext);
     }
-protected:
-    PyThreadState *tstate;
-} theEmbedContext;
+};
 
 extern IEmbedContext* getEmbedContext()
 {
-    return LINK(&theEmbedContext);
+    return new Python27EmbedContext;
 }
 
 extern bool syntaxCheck(const char *script)

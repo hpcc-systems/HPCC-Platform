@@ -912,7 +912,7 @@ goodObject
     | transform
     | complexType
     | macro
-    | cppBodyText
+    | embedBody
     | eventObject
     | compoundAttribute
     | abstractModule
@@ -1003,24 +1003,33 @@ macro
                         }
     ;
 
-cppBodyText
+embedBody
     : CPPBODY           {
-                            OwnedHqlExpr cpp = $1.getExpr();
-                            $$.setExpr(parser->processCppBody($1, cpp, NULL), $1);
+                            OwnedHqlExpr embeddedCppText = $1.getExpr();
+                            $$.setExpr(parser->processEmbedBody($1, embeddedCppText, NULL, NULL), $1);
                         }
     | embedPrefix CPPBODY
                         {
                             OwnedHqlExpr language = $1.getExpr();
-                            OwnedHqlExpr cpp = $2.getExpr();
-                            $$.setExpr(parser->processCppBody($2, cpp, language), $1);
+                            OwnedHqlExpr embedText = $2.getExpr();
+                            $$.setExpr(parser->processEmbedBody($2, embedText, language, NULL), $1);
                         }
     | EMBED '(' abstractModule ',' expression ')'
                         {
                             parser->normalizeExpression($5, type_string, true);
                             OwnedHqlExpr language = $3.getExpr();
-                            OwnedHqlExpr cpp = $5.getExpr();
-                            $$.setExpr(parser->processCppBody($5, cpp, language), $1);
+                            OwnedHqlExpr embedText = $5.getExpr();
+                            $$.setExpr(parser->processEmbedBody($5, embedText, language, NULL), $1);
                         }
+    | IMPORT '(' abstractModule ',' expression attribs ')'
+                        {
+                            parser->normalizeExpression($5, type_string, true);
+                            OwnedHqlExpr language = $3.getExpr();
+                            OwnedHqlExpr funcname = $5.getExpr();
+                            OwnedHqlExpr attribs = createComma(createAttribute(importAtom), $6.getExpr());
+                            $$.setExpr(parser->processEmbedBody($6, funcname, language, attribs), $1);
+                        }
+    
     ;
 
 embedPrefix

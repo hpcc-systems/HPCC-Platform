@@ -831,23 +831,29 @@ IHqlExpression * HqlGram::convertToOutOfLineFunction(const ECLlocation & errpos,
     return LINK(expr);
 }
 
-IHqlExpression * HqlGram::processCppBody(const attribute & errpos, IHqlExpression * cpp, IHqlExpression * language)
+IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpression * embedText, IHqlExpression * language, IHqlExpression *attribs)
 {
     HqlExprArray args;
-    cpp->unwindList(args, no_comma);
+    embedText->unwindList(args, no_comma);
     if (language)
     {
         IHqlScope *pluginScope = language->queryScope();
         OwnedHqlExpr getEmbedContextFunc = pluginScope->lookupSymbol(getEmbedContextAtom, LSFsharedOK, lookupCtx);
         if (!getEmbedContextFunc)
             reportError(ERR_PluginNoScripting, errpos, "Module %s does not export getEmbedContext() function", language->queryName()->getAtomNamePtr());
-        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(cppAtom, LSFsharedOK, lookupCtx);
-        if (syntaxCheckFunc)
+        bool isImport = queryPropertyInList(importAtom, attribs) != NULL;
+        OwnedHqlExpr checkSupport = pluginScope->lookupSymbol(isImport ? supportsImportAtom : supportsScriptAtom, LSFsharedOK, lookupCtx);
+        if (!matchesBoolean(checkSupport, true))
+            reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", language->queryName()->getAtomNamePtr(), isImport ? "import" : "script");
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckAtom, LSFsharedOK, lookupCtx);
+        if (syntaxCheckFunc && !importAtom)
         {
             // MORE - create an expression that calls it, and const fold it, I guess....
         }
         args.append(*createAttribute(languageAtom, getEmbedContextFunc.getClear()));
     }
+    if (attribs)
+        attribs->unwindList(args, no_comma);
     Linked<ITypeInfo> type = current_type;
     if (!type)
         type.setown(makeVoidType());
@@ -865,21 +871,21 @@ IHqlExpression * HqlGram::processCppBody(const attribute & errpos, IHqlExpressio
         {
         case type_row:
         case type_record:
-            result.setown(createRow(no_cppbody, args));
+            result.setown(createRow(no_embedbody, args));
             break;
         case type_table:
         case type_groupedtable:
-            result.setown(createDataset(no_cppbody, args));
+            result.setown(createDataset(no_embedbody, args));
             break;
         case type_transform:
-            result.setown(createValue(no_cppbody, makeTransformType(LINK(record->queryType())), args));
+            result.setown(createValue(no_embedbody, makeTransformType(LINK(record->queryType())), args));
             break;
         default:
             throwUnexpected();
         }
     }
     else
-        result.setown(createValue(no_cppbody, LINK(type), args));
+        result.setown(createValue(no_embedbody, LINK(type), args));
 
     result.setown(createLocationAnnotation(result.getClear(), errpos.pos));
 

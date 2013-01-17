@@ -346,6 +346,8 @@ _ATOM storedAtom;
 _ATOM streamedAtom;
 _ATOM _streaming_Atom;
 _ATOM successAtom;
+_ATOM supportsImportAtom;
+_ATOM supportsScriptAtom;
 _ATOM sysAtom;
 _ATOM tempAtom;
 _ATOM templateAtom;
@@ -739,6 +741,8 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(streamed);
     MAKESYSATOM(streaming);
     MAKEATOM(success);
+    MAKEATOM(supportsImport);
+    MAKEATOM(supportsScript);
     MAKEATOM(sys);
     MAKEATOM(temp);
     MAKEATOM(template);

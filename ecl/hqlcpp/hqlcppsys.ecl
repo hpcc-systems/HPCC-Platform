@@ -817,6 +817,7 @@ const char * cppSystemText[]  = {
     "   unsigned getUnsignedResult() : method,entrypoint='getUnsignedResult';",
 
     "   compileEmbeddedScript(const varstring script) : method,entrypoint='compileEmbeddedScript';",
+    "   import(const varstring script) : method,entrypoint='importFunction';",
     "   END;",
     NULL };
 

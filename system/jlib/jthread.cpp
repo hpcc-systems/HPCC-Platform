@@ -104,8 +104,6 @@ void *Thread::_threadmain(void *v)
     t->tidlog = threadLogID();
 #endif
     int ret = t->begin();
-    if (threadTerminationHook)
-        (*threadTerminationHook)();
     char *&threadname = t->cthreadname.threadname;
     if (threadname) {
         memsize_t l=strlen(threadname);
@@ -266,6 +264,8 @@ int Thread::begin()
         handleException(MakeStringException(0, "Unknown exception in Thread %s", getName()));
     }
 #endif
+    if (threadTerminationHook)
+        (*threadTerminationHook)();
 #ifdef _WIN32
 #ifndef _DEBUG
     CloseHandle(hThread);   // leak handle when debugging, 
@@ -554,6 +554,7 @@ void CThreadedPersistent::main()
         try
         {
             owner->main();
+            // Note we do NOT call the thread reset hook here - these threads are expected to be able to preserve state, I think
         }
         catch (IException *e)
         {
@@ -805,6 +806,8 @@ public:
                 handleException(MakeStringException(0, "Unknown exception in Thread from pool %s", parent.poolname.get()));
             }
 #endif
+            if (threadTerminationHook)
+                (*threadTerminationHook)();    // Reset any pre-thread state.
         } while (parent.notifyStopped(this));
         return 0;
     }

@@ -1267,8 +1267,8 @@ public:
     void doBuildExprCountDict(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCount(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCounter(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
-    void doBuildExprCppBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
     void doBuildExprDivide(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
+    void doBuildExprEmbedBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
     void doBuildExprEvaluate(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprExists(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprFailCode(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

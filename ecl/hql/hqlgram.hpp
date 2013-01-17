@@ -542,7 +542,7 @@ public:
     IHqlExpression * processAlienType(const attribute & errpos);
     IHqlExpression * processIndexBuild(attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr);
     IHqlExpression * processCompoundFunction(attribute & result, bool outOfLine);
-    IHqlExpression * processCppBody(const attribute & errpos, IHqlExpression * cpp, IHqlExpression * language);
+    IHqlExpression * processEmbedBody(const attribute & errpos, IHqlExpression * embedText, IHqlExpression * language, IHqlExpression *attribs);
     void processEnum(attribute & idAttr, IHqlExpression * value);
     void processError(bool full);
     void processLoadXML(attribute & a1, attribute * a2);

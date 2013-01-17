@@ -39,7 +39,9 @@ static const char * EclDefinition =
     "  boolean syntaxCheck(const varstring src):cpp,pure,namespace='javascriptLanguageHelper',entrypoint='syntaxCheck';\n"
     "END;"
     "export getEmbedContext := Language.getEmbedContext;"
-    "export syntaxCheck := Language.syntaxCheck;";
+    "export syntaxCheck := Language.syntaxCheck;"
+    "EXPORT boolean supportsImport := false;"
+    "EXPORT boolean supportsScript := true;";
 
 extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 {
@@ -144,6 +146,10 @@ public:
         v8::Handle<v8::String> source = v8::String::New(text);
         v8::Handle<v8::Script> lscript = v8::Script::Compile(source);
         script = v8::Persistent<v8::Script>::New(lscript);
+    }
+    virtual void importFunction(const char *text)
+    {
+        UNIMPLEMENTED; // Not sure if meaningful for js
     }
     virtual void callFunction()
     {

@@ -350,6 +350,8 @@ extern HQL_API _ATOM storedAtom;
 extern HQL_API _ATOM streamedAtom;
 extern HQL_API _ATOM _streaming_Atom;
 extern HQL_API _ATOM successAtom;
+extern HQL_API _ATOM supportsImportAtom;
+extern HQL_API _ATOM supportsScriptAtom;
 extern HQL_API _ATOM sysAtom;
 extern HQL_API _ATOM tempAtom;
 extern HQL_API _ATOM templateAtom;

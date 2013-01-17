@@ -744,6 +744,7 @@ interface IEmbedFunctionContext : extends IInterface
     virtual unsigned __int64 getUnsignedResult() = 0;
     virtual void getStringResult(size32_t &len, char * &result) = 0;
 
+    virtual void importFunction(const char *function) = 0;
     virtual void compileEmbeddedScript(const char *script) = 0;
     virtual void callFunction() = 0;
 };

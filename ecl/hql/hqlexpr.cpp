@@ -1303,7 +1303,7 @@ const char *getOpString(node_operator op)
     case no_id2blob: return "no_id2blob";
     case no_blob2id: return "no_blob2id";
     case no_anon: return "no_anon";
-    case no_cppbody: return "no_cppbody";
+    case no_embedbody: return "no_embedbody";
     case no_sortpartition: return "no_sortpartition";
     case no_define: return "DEFINE";
     case no_globalscope: return "GLOBAL";
@@ -1562,7 +1562,7 @@ bool checkConstant(node_operator op)
     case no_priority:
     case no_event:
     case no_independent:
-    case no_cppbody:
+    case no_embedbody:
     case no_translated:
     case no_assertkeyed:            // not sure about this - might be better to implement in the constant folder
     case no_assertstepped:
@@ -1785,7 +1785,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_externalcall:                       // None in the sense it is generally used for.
     case no_alias:
     case no_id2blob:
-    case no_cppbody:
+    case no_embedbody:
     case no_datasetfromrow:
     case no_datasetfromdictionary:
     case no_createrow:
@@ -2197,7 +2197,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_externalcall:                       // None in the sense it is generally used for.
     case no_alias:
     case no_id2blob:
-    case no_cppbody:
+    case no_embedbody:
     case no_datasetfromrow:
     case no_datasetfromdictionary:
     case no_param:
@@ -2488,7 +2488,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_newsoapcall_ds:
     case no_alias:
     case no_id2blob:
-    case no_cppbody:
+    case no_embedbody:
     case no_externalcall:
     case no_projectrow:
     case no_datasetfromrow:
@@ -3469,7 +3469,7 @@ void CHqlExpression::updateFlagsAfterOperands()
             {
                 infoFlags2 |= HEF2containsCall;
                 IHqlExpression * bodycode = body->queryChild(0);
-                if (bodycode->getOperator() == no_cppbody)
+                if (bodycode->getOperator() == no_embedbody)
                 {
                     if (bodycode->queryProperty(actionAtom))
                         infoFlags |= HEFvolatile;
@@ -3486,7 +3486,7 @@ void CHqlExpression::updateFlagsAfterOperands()
                 infoFlags |= HEFvolatile;
             break;
         }
-    case no_cppbody:
+    case no_embedbody:
         {
             if (queryProperty(actionAtom))
                 infoFlags |= HEFvolatile;
@@ -4527,7 +4527,7 @@ IHqlExpression *CHqlExpressionWithType::clone(HqlExprArray &newkids)
     {
     case no_outofline:
         return createWrapper(op, newkids);
-    case no_cppbody:
+    case no_embedbody:
         {
             if (queryType()->getTypeCode() == type_transform)
             {
@@ -10993,7 +10993,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_xmlproject:
     case no_temptable:
     case no_id2blob:
-    case no_cppbody:
+    case no_embedbody:
         type.setown(makeTableType(makeRowType(createRecordType(&parms.item(1))), NULL, NULL, NULL));
         if (queryProperty(_linkCounted_Atom, parms))
             type.setown(setLinkCountedAttr(type, true));
@@ -11901,7 +11901,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
                 type = makeRowType(LINK(fieldType));
             break;
         }
-    case no_cppbody:
+    case no_embedbody:
     case no_id2blob:
     case no_temprow:
     case no_projectrow:         // arg(1) is actually a transform

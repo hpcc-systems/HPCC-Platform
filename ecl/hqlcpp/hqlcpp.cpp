@@ -3268,8 +3268,8 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_blob2id:
         doBuildExprBlobToId(ctx, expr, tgt);
         return;
-    case no_cppbody:
-        doBuildExprCppBody(ctx, expr, &tgt);
+    case no_embedbody:
+        doBuildExprEmbedBody(ctx, expr, &tgt);
         return;
     case no_null:
         tgt.length.setown(getSizetConstant(0));
@@ -3597,8 +3597,8 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_assert:
         doBuildStmtAssert(ctx, expr);
         return;
-    case no_cppbody:
-        doBuildExprCppBody(ctx, expr, NULL);
+    case no_embedbody:
+        doBuildExprEmbedBody(ctx, expr, NULL);
         return;
     case no_setworkflow_cond:
         {
@@ -7235,7 +7235,7 @@ void HqlCppTranslator::processCppBodyDirectives(IHqlExpression * expr)
     }
 }
 
-void HqlCppTranslator::doBuildExprCppBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt)
+void HqlCppTranslator::doBuildExprEmbedBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt)
 {
     if (!allowEmbeddedCpp())
         throwError(HQLERR_EmbeddedCppNotAllowed);
@@ -11419,6 +11419,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     assertex(outofline->getOperator() == no_outofline);
     IHqlExpression * bodyCode = outofline->queryChild(0);
     IHqlExpression *language = queryPropertyChild(bodyCode, languageAtom, 0);
+    bool isImport = bodyCode->hasProperty(importAtom);
 
     funcctx.addQuotedCompound(proto);
 
@@ -11432,7 +11433,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     HqlExprArray scriptArgs;
     scriptArgs.append(*LINK(ctxVar));
     scriptArgs.append(*LINK(bodyCode->queryChild(0)));
-    buildFunctionCall(funcctx, compileEmbeddedScriptAtom, scriptArgs);
+    buildFunctionCall(funcctx, isImport ? importAtom : compileEmbeddedScriptAtom, scriptArgs);
     IHqlExpression *formals = funcdef->queryChild(1);
     ForEachChild(i, formals)
     {
@@ -11501,7 +11502,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
     }
     expandFunctionPrototype(proto, funcdef);
 
-    if (bodyCode->getOperator() == no_cppbody)
+    if (bodyCode->getOperator() == no_embedbody)
     {
         if (!allowEmbeddedCpp())
             throwError(HQLERR_EmbeddedCppNotAllowed);

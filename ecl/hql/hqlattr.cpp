@@ -406,7 +406,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_null:
     case no_globalscope:
     case no_nothor:
-    case no_cppbody:
+    case no_embedbody:
     case no_alias_scope:
     case no_evalonce:
     case no_forcelocal:
