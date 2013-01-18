@@ -1175,19 +1175,34 @@ void StringAttr::setown(const char * _text)
   text = (char *)_text;
 }
 
+void StringAttr::toLowerCase()
+{
+    if (text)
+    {
+        char * cur = text;
+        char next;
+        while ((next = *cur) != 0)
+        {
+            if (isupper(next))
+                *cur = tolower(next);
+            cur++;
+        }
+    }
+}
+
 void StringAttr::toUpperCase()
 {
-  if (text)
-  {
-    char * cur = text;
-    char next;
-    while ((next = *cur) != 0)
+    if (text)
     {
-      if (islower(next))
-        *cur = toupper(next);
-      cur++;
+        char * cur = text;
+        char next;
+        while ((next = *cur) != 0)
+        {
+            if (islower(next))
+              *cur = toupper(next);
+            cur++;
+        }
     }
-  }
 }
 
 
