@@ -30,12 +30,7 @@ ulimit -n 8192
 SNMPID=$$
 
 killed() {
-    rm -f ${SENTINEL}
-    killall esp 1>/dev/null 2>/dev/null
-    sleep 15
-    killall -9 esp 1>/dev/null 2>/dev/null 
-    rm $PID_NAME
-    sleep 2
+    kill_process ${SENTINEL} ${PID_NAME} 15
     exit 255
 }
 

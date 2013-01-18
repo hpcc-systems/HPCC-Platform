@@ -34,7 +34,6 @@ ulimit -n 8192
 which_pidof
 
 killed() {
-    rm -f ${SENTINEL}
     pid=`${PIDOF} saserver`
     if [ -n "$pid" ]; then
         sasha server=. action=stop
@@ -50,8 +49,7 @@ killed() {
             kill -9 $pid
         fi
     fi
-    rm $PID_NAME
-    sleep 2
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 

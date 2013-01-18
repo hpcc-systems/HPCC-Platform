@@ -41,10 +41,7 @@ export SENTINEL="dafilesrv.sentinel"
 rm -f ${SENTINEL}
 
 killed(){
-    rm -f ${SENTINEL}
-    killall -9 dafilesrv 2> /dev/null
-    rm $PID_NAME
-    sleep 2
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 ulimit -n $handlelimit

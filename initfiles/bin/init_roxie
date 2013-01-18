@@ -47,12 +47,7 @@ killed() {
     if [ -n "$1" ]; then
         cd $1
     fi
-    rm -f ${SENTINEL}
-    killall roxie
-    sleep 5
-    killall -9 roxie
-    rm $PID_NAME
-    sleep 2
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 

@@ -26,10 +26,7 @@ export SENTINEL="eclscheduler.sentinel"
 rm -f ${SENTINEL}
 
 killed(){
-    rm -f ${SENTINEL}
-    killall -9 eclscheduler
-    rm $PID_NAME
-    sleep
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 

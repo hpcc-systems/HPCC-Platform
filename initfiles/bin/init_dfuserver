@@ -30,11 +30,9 @@ ulimit -n 8192
 ulimit -s 512
 
 killed() {
-    rm -f ${SENTINEL}
     dfuserver stop=1
     sleep 5
-    killall -9 dfuserver
-    rm $PID_NAME
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 

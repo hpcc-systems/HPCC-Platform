@@ -29,8 +29,7 @@ ulimit -n 8192
 
 killed(){
     dalistop .
-    rm -f ${SENTINEL}
-    rm $PID_NAME
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 

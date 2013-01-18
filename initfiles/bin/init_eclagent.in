@@ -30,14 +30,7 @@ rm -f ${SENTINEL}
 rm -f ${PID_DIR}/hthortemp/*
 
 killed (){
-    rm -f ${SENTINEL}
-
-    killall agentexec
-    killall eclagent
-    sleep 2
-    killall -9 agentexec eclagent 1>/dev/null 2>&1 
-    rm $PID_NAME
-    sleep 2
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 
