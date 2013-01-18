@@ -1549,7 +1549,7 @@ void CTpWrapper::getMachineList(double clientVersion,
 
         StringBuffer path;
         path.appendf("Software/ThorCluster[@name=\"%s\"]", clusterName);
-        IPropertyTree* cluster= root->getPropTree(path.str());
+        Owned<IPropertyTree> cluster= root->getPropTree(path.str());
         if (!cluster)
             throw MakeStringExceptionDirect(ECLWATCH_CANNOT_GET_ENV_INFO, MSG_FAILED_GET_ENVIRONMENT_INFO);
 
@@ -1570,11 +1570,11 @@ void CTpWrapper::getMachineList(double clientVersion,
             return;
 
         unsigned processNumber = 0;
-        INodeIterator &gi = *nodeGroup->getIterator();
-        ForEach(gi)
+        Owned<INodeIterator> gi = nodeGroup->getIterator();
+        ForEach(*gi)
         {
             StringBuffer netAddress;
-            gi.query().endpoint().getIpText(netAddress);
+            gi->query().endpoint().getIpText(netAddress);
             if (netAddress.length() == 0)
             {
                 WARNLOG("Net address not found for a node in node group %s", groupName.str());
@@ -1609,7 +1609,7 @@ void CTpWrapper::getMachineList(double clientVersion,
                         machineInfo.setAvailable("Unknown");
                         break;
                 }
-                IConstDomainInfo * pDomain = pMachineInfo->getDomain();
+                Owned<IConstDomainInfo> pDomain = pMachineInfo->getDomain();
                 if (pDomain != 0)
                 {
                     SCMStringBuffer sName;
@@ -1701,7 +1701,6 @@ void CTpWrapper::getMachineList(const char* MachineType,
                         machineInfo.setDirectory(Directory);
 
                     MachineList.append(machineInfo);
-
                 }
             } while (machines->next());
         }
@@ -1835,7 +1834,7 @@ void CTpWrapper::setMachineInfo(const char* name,const char* type,IEspTpMachine&
                     machine.setAvailable("Unknown");
                     break;
             }
-            IConstDomainInfo * pDomain = pMachineInfo->getDomain();
+            Owned<IConstDomainInfo> pDomain = pMachineInfo->getDomain();
             if (pDomain != 0)
             {
                 SCMStringBuffer sName;
