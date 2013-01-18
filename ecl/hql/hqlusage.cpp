@@ -386,21 +386,42 @@ IHqlExpression * SourceFieldUsage::queryFilename() const
     return NULL;
 }
 
-IPropertyTree * SourceFieldUsage::createReport() const
+const char * SourceFieldUsage::queryFilenameText() const
 {
-    bool sourceIsKey = isKey(source);
-    Owned<IPropertyTree> entry = createPTree(sourceIsKey ? "index" : "dataset");
-    IHqlExpression * filename = queryFilename();
-    if (filename)
+    if (!cachedFilenameEcl.get())
     {
+        IHqlExpression * filename = queryFilename();
+        assertex(filename);
+
         StringBuffer nameText;
         getExprECL(filename, nameText);
-        entry->setProp("@name", nameText);
+        cachedFilenameEcl.set(nameText.str(), nameText.length());
     }
+    return cachedFilenameEcl.get();
+}
+
+IPropertyTree * SourceFieldUsage::createReport(bool includeFieldDetail, const IPropertyTree * exclude) const
+{
+    bool sourceIsKey = isKey(source);
+    const char * type = sourceIsKey ? "index" : "dataset";
+    const char * nameText = queryFilenameText();
+
+    if (exclude)
+    {
+        StringBuffer xpath;
+        xpath.append(type).append("[@name=\"");
+        xpath.append(nameText);
+        xpath.append("\"]");
+        if (exclude->hasProp(xpath))
+            return NULL;
+    }
+
+    Owned<IPropertyTree> entry = createPTree(type);
+    entry->setProp("@name", nameText);
 
     unsigned numFields = 0;
     unsigned numFieldsUsed = 0;
-    expandSelects(entry, source->queryRecord(), queryActiveTableSelector(), usedAll, numFields, numFieldsUsed);
+    expandSelects(entry, source->queryRecord(), queryActiveTableSelector(), usedAll, includeFieldDetail, numFields, numFieldsUsed);
     if (isKey(source))
     {
         IHqlExpression * original = queryPropertyChild(source, _original_Atom, 0);
@@ -412,7 +433,8 @@ IPropertyTree * SourceFieldUsage::createReport() const
             numFields++;
             if (usedFilepos || usedAll)
             {
-                addSelect(entry, lastField, true);
+                if (includeFieldDetail)
+                    addSelect(entry, lastField, true);
                 numFieldsUsed++;
             }
         }
@@ -424,7 +446,7 @@ IPropertyTree * SourceFieldUsage::createReport() const
 }
 
 
-void SourceFieldUsage::expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, unsigned & numFields, unsigned & numFieldsUsed) const
+void SourceFieldUsage::expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, bool includeFieldDetail, unsigned & numFields, unsigned & numFieldsUsed) const
 {
     bool seenAll = true;
     ForEachChild(i, record)
@@ -438,14 +460,15 @@ void SourceFieldUsage::expandSelects(IPropertyTree * xml, IHqlExpression * recor
                 bool thisUsed = allUsed || selects.contains(*selected);
                 if (cur->isDatarow())
                 {
-                    expandSelects(xml, cur->queryRecord(), selected, thisUsed, numFields, numFieldsUsed);
+                    expandSelects(xml, cur->queryRecord(), selected, thisUsed, includeFieldDetail, numFields, numFieldsUsed);
                 }
                 else
                 {
                     numFields++;
                     if (thisUsed)
                     {
-                        addSelect(xml, selected, thisUsed);
+                        if (includeFieldDetail)
+                            addSelect(xml, selected, thisUsed);
                         numFieldsUsed++;
                     }
                     else
@@ -458,12 +481,12 @@ void SourceFieldUsage::expandSelects(IPropertyTree * xml, IHqlExpression * recor
                 break;
             }
         case no_record:
-            expandSelects(xml, cur, selector, allUsed, numFields, numFieldsUsed);
+            expandSelects(xml, cur, selector, allUsed, includeFieldDetail, numFields, numFieldsUsed);
             break;
         case no_ifblock:
             //MORE: Theoretically if any of the fields within the ifblock are used, then the fields
             //used in the ifblock condition are also used.  Needs to be handled by a preprocessing step.
-            expandSelects(xml, cur->queryChild(1), selector, allUsed, numFields, numFieldsUsed);
+            expandSelects(xml, cur->queryChild(1), selector, allUsed, includeFieldDetail, numFields, numFieldsUsed);
             break;
         }
     }

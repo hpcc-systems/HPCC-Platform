@@ -5614,6 +5614,10 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         if (!buildCode(query, NULL, false))
             return false;
 
+        //Return early if iteratively generating the field usage statistics
+        if (getDebugFlag("generateFullFieldUsage", false))
+            return false;
+
     #ifdef _GATHER_USAGE_STATS
         if (getDebugFlag("dumpActivityCounts", false))
             dumpActivityCounts();
@@ -5783,21 +5787,34 @@ double HqlCppTranslator::getComplexity(HqlExprArray & exprs)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void HqlCppTranslator::reportFieldUsage(const char * filename)
+static int compareTrackedSourceByName(CInterface * * _left, CInterface * * _right)
+{
+    SourceFieldUsage & left = static_cast<SourceFieldUsage &>(**_left);
+    SourceFieldUsage & right = static_cast<SourceFieldUsage &>(**_right);
+
+    const char * leftName = left.queryFilenameText();
+    const char * rightName = right.queryFilenameText();
+    return stricmp(leftName, rightName);
+}
+
+IPropertyTree * HqlCppTranslator::gatherFieldUsage(const char * varient, const IPropertyTree * exclude)
 {
     Owned<IPropertyTree> sources = createPTree("usedsources");
+    sources->setProp("@varient", varient);
+    trackedSources.sort(compareTrackedSourceByName);
     ForEachItemIn(i, trackedSources)
     {
-        IPropertyTree * next = trackedSources.item(i).createReport();
-        sources->addPropTree(next->queryName(), next);
+        IPropertyTree * next = trackedSources.item(i).createReport(options.reportFieldUsage, exclude);
+        if (next)
+            sources->addPropTree(next->queryName(), next);
     }
 
-    saveXML(filename, sources);
+    return sources.getClear();
 }
 
 SourceFieldUsage * HqlCppTranslator::querySourceFieldUsage(IHqlExpression * expr)
 {
-    if (!options.reportFieldUsage || !expr)
+    if (!(options.reportFieldUsage || options.reportFileUsage) || !expr)
         return NULL;
 
     if (expr->hasProperty(_spill_Atom) || expr->hasProperty(jobTempAtom))
@@ -5830,19 +5847,32 @@ void HqlCppTranslator::noteAllFieldsUsed(IHqlExpression * expr)
         match->noteAll();
 }
 
-void HqlCppTranslator::generateStatistics(const char * targetDir)
+void HqlCppTranslator::writeFieldUsage(const char * targetDir, IPropertyTree * source, const char * variant)
 {
-    if (options.reportFieldUsage && trackedSources.ordinality())
+    if (source)
     {
         StringBuffer fullname;
-        addDirectoryPrefix(fullname, targetDir).append(soName).append("_fieldusage.xml");
+        addDirectoryPrefix(fullname, targetDir).append(soName).append("_fieldusage");
+        if (variant)
+            fullname.append("_").append(variant);
+        fullname.append(".xml");
 
-        reportFieldUsage(fullname);
+        saveXML(fullname, source);
 
         Owned<IWUQuery> query = wu()->updateQuery();
         associateLocalFile(query, FileTypeXml, fullname, "FieldUsage", 0);
 
         ctxCallback->registerFile(fullname.str(), "FieldUsage");
+    }
+}
+
+
+void HqlCppTranslator::generateStatistics(const char * targetDir, const char * varient)
+{
+    if ((options.reportFieldUsage || options.reportFileUsage) && trackedSources.ordinality())
+    {
+        Owned<IPropertyTree> sources = gatherFieldUsage(varient, NULL);
+        writeFieldUsage(targetDir, sources, NULL);
     }
 }
 

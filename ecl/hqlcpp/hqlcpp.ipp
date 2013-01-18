@@ -713,6 +713,7 @@ struct HqlCppOptions
     bool                implicitGroupHashAggregate;  // convert aggreate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
     bool                implicitGroupHashDedup;
     bool                reportFieldUsage;
+    bool                reportFileUsage;
     bool                shuffleLocalJoinConditions;
     bool                projectNestedTables;
     bool                showSeqInGraph;
@@ -904,7 +905,7 @@ public:
     void useFunction(IHqlExpression * funcdef);
     void useLibrary(const char * libname);
     void finalizeResources();
-    void generateStatistics(const char * targetDir);
+    void generateStatistics(const char * targetDir, const char * varient);
 
             unsigned getHints()                             { return hints; }
     inline  bool checkForRowOverflow() const                { return options.checkRowOverflow; }
@@ -943,6 +944,9 @@ public:
     //Either isIndependentMaybeShared is set - which case the item inserted into the initctx can have no dependencies
     //or isIndependentMaybeShared is false, and the code that is inserted is never implicitly shared.
     bool getInvariantMemberContext(BuildCtx & ctx, BuildCtx * * declarectx, BuildCtx * * initctx, bool isIndependentMaybeShared, bool invariantEachStart);
+
+    IPropertyTree * gatherFieldUsage(const char * varient, const IPropertyTree * exclude);
+    void writeFieldUsage(const char * targetDir, IPropertyTree * xml, const char * variant);
 
 public:
     BoundRow * bindSelf(BuildCtx & ctx, IHqlExpression * dataset, const char * builder);
@@ -1833,7 +1837,6 @@ protected:
     void initOptions();
     void postProcessOptions();
     SourceFieldUsage * querySourceFieldUsage(IHqlExpression * expr);
-    void reportFieldUsage(const char * filename);
     void noteAllFieldsUsed(IHqlExpression * expr);
 
 public:

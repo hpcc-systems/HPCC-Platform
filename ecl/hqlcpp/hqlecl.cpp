@@ -96,6 +96,8 @@ protected:
     void expandCode(const char * templateName, const char * ext, IHqlCppInstance * code, bool multiFile, unsigned pass, CompilerType compiler);
     void flushResources();
     bool generateCode(HqlQueryContext & query);
+    bool generateFullFieldUsageStatistics(HqlCppTranslator & translator, IHqlExpression * query);
+    IPropertyTree * generateSingleFieldUsageStatistics(IHqlExpression * expr, const char * variety, const IPropertyTree * exclude);
     void insertStandAloneCode();
     void setWuState(bool ok);
     inline bool abortRequested();
@@ -246,6 +248,116 @@ bool HqlDllGenerator::generatePackage(const char * packageName)
     return false;
 }
 
+static bool isSetMeta(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_compound:
+    case no_comma:
+        return isSetMeta(expr->queryChild(0)) && isSetMeta(expr->queryChild(1));
+    case no_setmeta:
+        return true;
+    default:
+        return false;
+    }
+}
+
+IPropertyTree * HqlDllGenerator::generateSingleFieldUsageStatistics(IHqlExpression * expr, const char * variety, const IPropertyTree * exclude)
+{
+    //Generate each into a new workunit
+//    Owned<IWorkUnit> localWu = createLocalWorkUnit();
+    IWorkUnit * localWu = wu;
+    //Generate the code into a new instance each time so it doesn't hang around eating memory
+    Owned<IHqlCppInstance> localCode = createCppInstance(localWu, wuname);
+
+
+    HqlQueryContext query;
+    query.expr.set(expr);
+
+    resetUniqueId();
+    wu->resetBeforeGeneration();
+    HqlCppTranslator translator(errs, wuname, localCode, targetClusterType, ctxCallback);
+
+    try
+    {
+        translator.buildCpp(*localCode, query);
+        return translator.gatherFieldUsage(variety, exclude);
+    }
+    catch (IException * e)
+    {
+        if (e->errorCode() != HQLERR_ErrorAlreadyReported)
+        {
+            unsigned errcode = e->errorCode() ? e->errorCode() : 1;
+            StringBuffer s;
+            errs->reportError(errcode, e->errorMessage(s).str(), NULL, 0, 0, 1);
+        }
+        e->Release();
+        return NULL;
+    }
+    catch (RELEASE_CATCH_ALL)
+    {
+        errs->reportError(99, "Unknown error", NULL, 0, 0, 1);
+        return NULL;
+    }
+}
+
+bool HqlDllGenerator::generateFullFieldUsageStatistics(HqlCppTranslator & translator, IHqlExpression* query)
+{
+    LinkedHqlExpr savedQuery = query;
+
+    //Strip any #options etc. and check that the query consists of a single OUTPUT() action
+    while ((savedQuery->getOperator() == no_compound) && isSetMeta(savedQuery->queryChild(0)))
+        savedQuery.set(savedQuery->queryChild(1));
+
+    if (savedQuery->getOperator() != no_output)
+        throw MakeStringException(0, "#option('GenerateFullFieldUsage') requires the query to be a single OUTPUT()");
+
+    Owned<IPropertyTree> allFields = createPTree("usage");
+    IHqlExpression * dataset = savedQuery->queryChild(0);
+
+    //First calculate which files are used if no fields are extracted from the output i.e. shared by all output fields
+    //Use COUNT(dataset) as the query to test that
+    OwnedHqlExpr countDataset = createValue(no_count, makeIntType(8, false), LINK(dataset));
+    Owned<IPropertyTree> countFilesUsed = generateSingleFieldUsageStatistics(countDataset, "__shared__", NULL);
+    if (countFilesUsed)
+        allFields->addPropTree(countFilesUsed->queryName(), LINK(countFilesUsed));
+
+    //Now project the output dataset down to a single field, and generate the file/field dependencies for each of those
+    OwnedHqlExpr selSeq = createUniqueSelectorSequence();
+    OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
+    RecordSelectIterator iter(dataset->queryRecord(), left);
+    ForEach(iter)
+    {
+        IHqlExpression * cur = iter.query();
+        IHqlExpression * field = cur->queryChild(1);
+        OwnedHqlExpr record = createRecord(field);
+        OwnedHqlExpr self = getSelf(record);
+        OwnedHqlExpr assign = createAssign(createSelectExpr(LINK(self), LINK(field)), LINK(cur));
+        OwnedHqlExpr transform = createValue(no_transform, makeTransformType(record->getType()), LINK(assign), NULL);
+
+        HqlExprArray args;
+        args.append(*LINK(dataset));
+        args.append(*LINK(transform));
+        args.append(*LINK(selSeq));
+        OwnedHqlExpr project = createDataset(no_hqlproject,args);
+        OwnedHqlExpr projectedOutput = replaceChildDataset(savedQuery, project, 0);
+
+        StringBuffer variety;
+        getExprIdentifier(variety, cur);
+
+        //Generate each into a new property tree, and only include fields not shared by all other output fields.
+        Owned<IPropertyTree> filesUsed = generateSingleFieldUsageStatistics(projectedOutput, variety.str(), countFilesUsed);
+        if (filesUsed)
+            allFields->addPropTree(filesUsed->queryName(), LINK(filesUsed));
+
+        //Generate progress so far
+        translator.writeFieldUsage(targetDir, allFields, NULL);
+    }
+
+    translator.writeFieldUsage(targetDir, allFields, NULL);
+    return false;
+}
+
 bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 {
     noOutput = true;
@@ -258,6 +370,14 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
         HqlCppTranslator translator(errs, wuname, code, targetClusterType, ctxCallback);
         processMetaCommands(translator, wu, query, ctxCallback);
 
+        if (wu->getDebugValueBool("generateFullFieldUsage", false))
+        {
+            //Ensure file information is generated.  It only partially works with field information at the moment.
+            //(The merging/difference logic would need to improve, but would be relatively simple if it was useful.)
+            wu->setDebugValueInt("reportFileUsage", 1, true);
+            return generateFullFieldUsageStatistics(translator, query.expr);
+        }
+
         bool ok = false;
         try
         {
@@ -266,7 +386,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
                 wu->setState(WUStateCompleted);
                 return true;
             }
-            translator.generateStatistics(targetDir);
+            translator.generateStatistics(targetDir, NULL);
             translator.finalizeResources();
             translator.expandFunctions(true);
         }
