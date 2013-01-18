@@ -23,10 +23,13 @@ PID_NAME="$PID/`basename $PWD`.pid"
 INIT_PID_NAME="$PID/init_`basename $PWD`.pid"
 echo $$ > $INIT_PID_NAME
 
+export SENTINEL="thor.sentinel"
+rm -f ${SENTINEL}
+
 killed() {
         echo "Stopping"
         $deploydir/stop_thor $deploydir
-        rm $PID_NAME
+        kill_process ${SENTINEL} ${PID_NAME} 3
         exit 255
 }
 
