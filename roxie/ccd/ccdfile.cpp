@@ -1015,10 +1015,10 @@ public:
                         if (popped->isAlive())
                         {
                             next.set(popped);
-                            atomic_dec(&numFilesToProcess);    // must decrement counter for SNMP accuracy
                             if (next)
                                 currentTodoFile.append(next->queryFilename());
                         }
+                        atomic_dec(&numFilesToProcess);    // must decrement counter for SNMP accuracy
                     }
                 }
                 if (next)
