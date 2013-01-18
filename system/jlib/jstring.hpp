@@ -252,6 +252,7 @@ public:
     void         set(const char * _text);
     void         setown(const char * _text);
     void         set(const char * _text, unsigned _len);
+    void         toLowerCase();
     void         toUpperCase();
     
 private:

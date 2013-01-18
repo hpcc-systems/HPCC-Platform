@@ -404,6 +404,8 @@ public:
     CClusterInfo(const char *_name,IGroup *_group,const ClusterPartDiskMapSpec &_mspec,IGroupResolver *resolver,const char *_roxielabel)
         : name(_name),group(_group), roxielabel(_roxielabel)
     {
+        name.toLowerCase();
+        roxielabel.toLowerCase();
         mspec =_mspec;
         checkClusterName(resolver);
     }
@@ -507,6 +509,7 @@ public:
     void setGroupName(const char *_name)
     {
         name.set(_name);
+        name.toLowerCase();
     }
 
     void setGroup(IGroup *_group)
@@ -538,6 +541,7 @@ public:
     void setRoxieLabel(const char *_label)
     {
         roxielabel.set(_label);
+        roxielabel.toLowerCase();
     }
 
     const char *queryRoxieLabel()
@@ -549,7 +553,7 @@ public:
     {
         const char * label = queryRoxieLabel();
         if (label)
-            return  ret.append(label);
+            return ret.append(label);
         return getGroupName(ret,NULL);
     }
 
@@ -1879,7 +1883,8 @@ public:
         unsigned done = 0;
         StringBuffer cname;
         ForEachItemIn(i,names) {
-            const char *name = names.item(i);
+            StringAttr name = names.item(i);
+            name.toLowerCase();
             for (unsigned j=done;j<clusters.ordinality();j++) {
                 clusters.item(j).getClusterLabel(cname.clear());
                 if (strcmp(cname.str(),name)==0) {
