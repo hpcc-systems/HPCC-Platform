@@ -31,7 +31,7 @@ interface ILazyFileIO : extends IFileIO
 {
     virtual const char *queryFilename() = 0;
     virtual void checkOpen() = 0;
-    virtual bool IsShared() const = 0;
+    virtual bool isAlive() const = 0;
     virtual void addSource(IFile *source) = 0;
     virtual bool isRemote() = 0;
     virtual offset_t getSize() = 0;
@@ -66,8 +66,6 @@ interface IRoxieFileCache : extends IInterface
 {
     virtual ILazyFileIO *lookupFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const char *baseIndexFileName, ILazyFileIO *patchFile, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &deployedLocationInfo, offset_t size, const CDateTime &modified, bool memFile, bool isRemote, bool startFileCopy, bool doForegroundCopy, unsigned crc, bool isCompressed, const char *lookupDali) = 0;
     virtual IFileIO *lookupDllFile(const char* dllname, const char *localLocation, const StringArray &remoteNames, unsigned crc, bool isRemote) = 0;
-    virtual IFileIO *lookupPluginFile(const char* dllname, const char *localLocation) = 0;
-    virtual void flushUnused(bool deleteFiles, bool cleanUpOneTimeQueries) = 0;
     virtual RoxieFileStatus fileUpToDate(IFile *f, RoxieFileType fileType, offset_t size, const CDateTime &modified, unsigned crc, const char* id, bool isCompressed) = 0;
     virtual int numFilesToCopy() = 0;
     virtual void closeExpired(bool remote) = 0;

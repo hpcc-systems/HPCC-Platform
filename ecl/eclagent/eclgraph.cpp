@@ -982,6 +982,7 @@ void EclSubGraph::execute(const byte * parentExtract)
             wu->setTimerInfo(timer.str(), NULL, msTick()-startTime, 1, 0);
         }
     }
+    agent->updateWULogfile();//Update workunit logfile name in case of rollover
 }
 
 
@@ -1718,6 +1719,31 @@ void EclAgent::executeThorGraph(const char * graphName)
     while (resubmit); // if pause interrupted job (i.e. with pausenow action), resubmit graph
 }
 
+//In case of logfile rollover, update workunit logfile name(s) stored
+//in SDS/WorkUnits/{WUID}/Process/EclAgent/myeclagent<log>
+void EclAgent::updateWULogfile()
+{
+    if (logMsgHandler && config->hasProp("@name"))
+    {
+        StringBuffer logname;
+        bool ok = logMsgHandler->getLogName(logname);
+        if (ok)
+        {
+            RemoteFilename rlf;
+            rlf.setLocalPath(logname);
+            rlf.getRemotePath(logname.clear());
+
+            Owned <IWorkUnit> w = updateWorkUnit();
+            w->addProcess("EclAgent", config->queryProp("@name"), logname.str());
+        }
+        else
+        {
+            DBGLOG("ERROR: Unable to query logfile name");
+            assertex(ok);
+        }
+    }
+}
+
 void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract)
 {
     assertex(parentExtractSize == 0);
@@ -1745,12 +1771,12 @@ void EclAgent::executeGraph(const char * graphName, bool realThor, size32_t pare
             if (guillotineTimeout)
                 abortmonitor->setGuillotineTimeout(guillotineTimeout);
             activeGraph->execute(NULL);
+            updateWULogfile();//Update workunit logfile name in case of rollover
             if (guillotineTimeout)
                 abortmonitor->setGuillotineTimeout(0);
             if (debugContext)
                 debugContext->checkBreakpoint(DebugStateGraphEnd, NULL, graphName);
             activeGraph.clear();
-
             if (debugContext)
             {
                 if (isAborting)

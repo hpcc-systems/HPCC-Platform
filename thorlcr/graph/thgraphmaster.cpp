@@ -1268,16 +1268,57 @@ CJobMaster::~CJobMaster()
     tmpHandler.clear();
 }
 
+static IException *createBCastException(unsigned slave, const char *errorMsg)
+{
+    // think this should always be fatal, could check link down here, or in general and flag as _shutdown.
+    StringBuffer msg("General failure communicating to slave");
+    if (slave)
+        msg.append("(").append(slave).append(") ");
+    else
+        msg.append("s ");
+    Owned<IThorException> e = MakeThorException(0, "%s", msg.append(" [").append(errorMsg).append("]").str());
+    e->setAction(tea_shutdown);
+    return e.getClear();
+}
+
 void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, mptag_t *_replyTag, bool sendOnly)
 {
     mptag_t replyTag = createReplyTag();
     msg.setReplyTag(replyTag);
-    if (!queryJobComm().send(msg, RANK_ALL_OTHER, mptag, timeout))
+    if (globals->getPropBool("@broadcastSendAsync", true)) // only here in case of problems/debugging.
     {
-        // think this should always be fatal, could check link down here, or in general and flag as _shutdown.
-        StringBuffer msg("General failure communicating to slaves [");
-        Owned<IThorException> e = MakeThorException(0, "%s", msg.append(errorMsg).append("]").str());
-        e->setAction(tea_shutdown);
+        class CSendAsyncfor : public CAsyncFor
+        {
+            CJobMaster &job;
+            CMessageBuffer &msg;
+            mptag_t mptag;
+            unsigned timeout;
+            StringAttr errorMsg;
+        public:
+            CSendAsyncfor(CJobMaster &_job, CMessageBuffer &_msg, mptag_t _mptag, unsigned _timeout, const char *_errorMsg)
+                : job(_job), msg(_msg), mptag(_mptag), timeout(_timeout), errorMsg(_errorMsg)
+            {
+            }
+            void Do(unsigned i)
+            {
+                if (!job.queryJobComm().send(msg, i+1, mptag, timeout))
+                    throw createBCastException(i+1, errorMsg);
+            }
+        } afor(*this, msg, mptag, timeout, errorMsg);
+        try
+        {
+            afor.For(querySlaves(), querySlaves());
+        }
+        catch (IException *e)
+        {
+            EXCLOG(e, "broadcastSendAsync");
+            abort(e);
+            throw;
+        }
+    }
+    else if (!queryJobComm().send(msg, RANK_ALL_OTHER, mptag, timeout))
+    {
+        Owned<IException> e = createBCastException(0, errorMsg);
         EXCLOG(e, NULL);
         abort(e);
         throw e.getClear();
@@ -1286,6 +1327,7 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
     if (_replyTag)
         *_replyTag = replyTag;
     unsigned respondents = 0;
+    Owned<IBitSet> bitSet = createBitSet();
     loop
     {
         rank_t sender;
@@ -1294,7 +1336,21 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
         {
             if (_replyTag) _replyTag = NULL;
             StringBuffer tmpStr;
-            Owned<IException> e = MakeThorFatal(NULL, 0, "%s - Timeout receiving from slaves", errorMsg?tmpStr.append(": ").append(errorMsg).str():"");
+            if (errorMsg)
+                tmpStr.append(": ").append(errorMsg).append(" - ");
+            tmpStr.append("Timeout receiving from slaves - no reply from: [");
+            unsigned s = bitSet->scan(0, false);
+            assertex(s<querySlaves()); // must be at least one
+            tmpStr.append(s+1);
+            loop
+            {
+                s = bitSet->scan(s+1, false);
+                if (s>=querySlaves())
+                    break;
+                tmpStr.append(",").append(s+1);
+            }
+            tmpStr.append("]");
+            Owned<IException> e = MakeThorFatal(NULL, 0, " %s", tmpStr.str());
             EXCLOG(e, NULL);
             throw e.getClear();
         }
@@ -1308,6 +1364,7 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
             throw e.getClear();
         }
         ++respondents;
+        bitSet->set((unsigned)sender-1);
         if (respondents == querySlaveGroup().ordinality())
             break;
     }

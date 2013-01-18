@@ -674,11 +674,13 @@ public:
         return clusternames.ordinality();
     }
 
-    unsigned find(const char *clustername)
+    unsigned find(const char *_clusterName)
     {
+        StringAttr clusterName = _clusterName;
+        clusterName.toLowerCase();
         StringBuffer name;
         ForEachItem(i)  {
-            if (strcmp(item(i).getClusterLabel(name.clear()).str(),clustername)==0) 
+            if (strcmp(item(i).getClusterLabel(name.clear()).str(),clusterName)==0)
                 return i;
             if (singleclusteroverride)
                 break;
@@ -2933,17 +2935,21 @@ public:
         clusters.kill();
     }
 
-    IFileDescriptor *getFileDescriptor(const char *clustername)
+    IFileDescriptor *getFileDescriptor(const char *_clusterName)
     {
         CriticalBlock block (sect);
         Owned<IFileDescriptor> fdesc = deserializeFileDescriptorTree(root,&queryNamedGroupStore(),0);
         fdesc->setTraceName(logicalName.get());
         StringArray cnames;
-        if (clustername&&*clustername)
-            cnames.append(clustername);
+        if (_clusterName&&*_clusterName)
+        {
+            StringAttr clusterName = _clusterName;
+            clusterName.toLowerCase();
+            cnames.append(clusterName);
+        }
         else
             getClusterNames(cnames);
-        fdesc->setClusterOrder(cnames,clustername&&*clustername);
+        fdesc->setClusterOrder(cnames,_clusterName&&*_clusterName);
         return fdesc.getClear();
     }
 
@@ -3091,10 +3097,8 @@ public:
         CClustersLockedSection cls(CDistributedFileBase<IDistributedFile>::logicalName);
         reloadClusters();
         if (findCluster(clustername)!=NotFound) {
-            if (findCluster(clustername)!=NotFound) {
-                IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterAlreadyExists,clustername);
-                throw e;
-            }
+            IDFS_Exception *e = new CDFS_Exception(DFSERR_ClusterAlreadyExists,clustername);
+            throw e;
         }
         Owned<IClusterInfo> cluster = createClusterInfo(clustername,NULL,mspec,&queryNamedGroupStore());
         if (cluster->queryGroup(&queryNamedGroupStore())) {
@@ -7881,7 +7885,7 @@ class CInitGroups
                 throwUnexpected();
         }
         if (altName)
-            gname.clear().append(altName);
+            gname.clear().append(altName).toLowerCase();
 
         VStringBuffer xpath("Group[@name=\"%s\"]", gname.str());
         IPropertyTree *existingClusterGroup = groupsconnlock.conn->queryRoot()->queryPropTree(xpath.str()); // 'live' cluster group
@@ -7955,13 +7959,15 @@ public:
         defaultTimeout = _defaultTimeout;
     }
 
-    bool doClusterGroup(CgCmd cmd, const char *clusterName, const char *type, bool spares, SocketEndpointArray *eps, StringBuffer &messages)
+    bool doClusterGroup(CgCmd cmd, const char *_clusterName, const char *type, bool spares, SocketEndpointArray *eps, StringBuffer &messages)
     {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software", myProcessSession(), RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (!conn)
             return false;
-        if (!clusterName || !*clusterName)
+        if (!_clusterName || !*_clusterName)
             return false;
+        StringAttr clusterName = _clusterName;
+        clusterName.toLowerCase();
         if (!type || !*type)
             return false;
         bool ret = true;
@@ -7970,10 +7976,10 @@ public:
         StringBuffer errMsg;
         const char *clusterType = type;
         if (loadMachineMap()) {
-            VStringBuffer xpath("%s[@name=\"%s\"]", type, clusterName);
+            VStringBuffer xpath("%s[@name=\"%s\"]", type, clusterName.get());
             clusters.setown(root->getElements(xpath.str()));
             if (!clusters || !clusters->first()) {
-                VStringBuffer errMsg("Could not find type %s, %s cluster", type, clusterName);
+                VStringBuffer errMsg("Could not find type %s, %s cluster", type, clusterName.get());
                 WARNLOG("%s", errMsg.str());
                 messages.append(errMsg).newline();
                 ret = false;
@@ -8061,7 +8067,7 @@ public:
                     }
                 }
                 if (clusters->next()) {
-                    VStringBuffer errMsg("resetThorGroup: more than one cluster named: %s", clusterName);
+                    VStringBuffer errMsg("resetThorGroup: more than one cluster named: %s", clusterName.get());
                     WARNLOG("%s", errMsg.str());
                     messages.append(errMsg).newline();
                     ret = false;

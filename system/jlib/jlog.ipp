@@ -604,7 +604,7 @@ public:
     int                       flush() { CriticalBlock block(crit); return fflush(handle); }
     char const *              disable();
     void                      enable();
-    bool                      getLogName(StringBuffer &name) const { name.append(filename); return true; }
+    bool                      getLogName(StringBuffer &name) const { CriticalBlock block(crit); name.append(filename); return true; }
 protected:
     void                      checkRollover() const;
     void                      doRollover(bool daily, const char *forceName = NULL) const;

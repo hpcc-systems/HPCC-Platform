@@ -26,9 +26,7 @@ export SENTINEL="eclscheduler.sentinel"
 rm -f ${SENTINEL}
 
 killed(){
-    rm -f ${SENTINEL}
-    killall -9 eclscheduler
-    sleep
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 
@@ -36,6 +34,7 @@ trap "killed" SIGINT SIGTERM SIGKILL
 eclscheduler 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
+rm $PID_NAME
 
 while [ -e ${SENTINEL} ]; do
     sleep 5
@@ -43,6 +42,7 @@ while [ -e ${SENTINEL} ]; do
         eclscheduler 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
+        rm $PID_NAME
     fi
 done
 

@@ -253,7 +253,9 @@ public:
     {
         return ctx->queryWuid();
     }
-    
+
+    virtual void updateWULogfile()                  { return ctx->updateWULogfile(); }
+
 protected:
     IAgentContext * ctx;
 };
@@ -385,6 +387,7 @@ private:
     SafePluginMap *pluginMap;
     IProperties *globals;
     IPropertyTree *config;
+    ILogMsgHandler *logMsgHandler;
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
 
@@ -444,7 +447,7 @@ private:
 public:
     IMPLEMENT_IINTERFACE;
 
-    EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bool _resetWorkflow, bool _noRetry, char const * _logname, const char *_allowedPipeProgs, IPropertyTree *queryXML, IProperties *globals, IPropertyTree *config);
+    EclAgent(IConstWorkUnit *wu, const char *_wuid, bool _checkVersion, bool _resetWorkflow, bool _noRetry, char const * _logname, const char *_allowedPipeProgs, IPropertyTree *_queryXML, IProperties *_globals, IPropertyTree *_config, ILogMsgHandler * _logMsgHandler);
     ~EclAgent();
 
     void setBlocked();
@@ -677,6 +680,8 @@ public:
     
     IGroup *getHThorGroup(StringBuffer &out);
     
+    virtual void updateWULogfile();
+
 };
 
 //---------------------------------------------------------------------------
