@@ -26,17 +26,7 @@ export SENTINEL="eclccserver.sentinel"
 rm -f ${SENTINEL}
 
 killed() {
-    PATH_PRE=`type -path hpcc_setenv`
-    source ${PATH_PRE}
-    PID_NAME="$PID/`basename $PWD`.pid"
-
-    if [ -e ${SENTINEL} ]; then
-            rm -f ${SENTINEL}
-            if [ -e ${PID_NAME} ]; then
-                    pidwait_fn `cat ${PID_NAME}` 3
-            fi
-    fi
-    sleep 2
+    kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
 }
 
@@ -44,6 +34,7 @@ trap "killed" SIGINT SIGTERM SIGKILL
 eclccserver 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
+rm $PID_NAME
 
 while [ -e ${SENTINEL} ]; do
     sleep 5
@@ -51,6 +42,7 @@ while [ -e ${SENTINEL} ]; do
         eclccserver 1>/dev/null 2>/dev/null & 
         echo $! > $PID_NAME
         wait
+        rm $PID_NAME
     fi
 done
 
