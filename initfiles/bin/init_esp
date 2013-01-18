@@ -30,11 +30,7 @@ ulimit -n 8192
 SNMPID=$$
 
 killed() {
-    rm -f ${SENTINEL}
-    killall esp 1>/dev/null 2>/dev/null
-    sleep 15
-    killall -9 esp 1>/dev/null 2>/dev/null 
-    sleep 2
+    kill_process ${SENTINEL} ${PID_NAME} 15
     exit 255
 }
 
@@ -42,11 +38,13 @@ trap "killed" SIGINT SIGTERM SIGKILL
 esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &
 echo $! > $PID_NAME
 wait
+rm $PID_NAME
 while [ -e ${SENTINEL} ]; do
     sleep 5
     if [ -e ${SENTINEL} ]; then
         esp snmpid=$SNMPID 1>/dev/null 2>/dev/null &
         echo $! > $PID_NAME
         wait
+        rm $PID_NAME
     fi
 done
