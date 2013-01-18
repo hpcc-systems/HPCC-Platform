@@ -63,16 +63,18 @@ void RtlDatasetBuilder::ensure(size32_t required)
     if (required > maxSize)
     {
         maxSize = getNextSize(maxSize, required);
-        buffer = (byte *)realloc(buffer, maxSize);
-        if (!buffer)
+        byte * newbuffer = (byte *)realloc(buffer, maxSize);
+        if (!newbuffer)
             throw MakeStringException(-1, "Failed to allocate temporary dataset (requesting %d bytes)", maxSize);
+        buffer = newbuffer;
     }
+    self = buffer + totalSize;
 }
 
 byte * RtlDatasetBuilder::ensureCapacity(size32_t required, const char * fieldName)
 {
     ensure(totalSize + required);
-    return buffer + totalSize;
+    return self; // self is updated by ensure()
 }
 
 void RtlDatasetBuilder::flushDataset()
