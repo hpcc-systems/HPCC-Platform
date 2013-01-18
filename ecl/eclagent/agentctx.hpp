@@ -105,6 +105,8 @@ struct IAgentContext : extends IGlobalCodeContext
     virtual unsigned __int64 queryStopAfter() = 0;
     
     virtual const char *queryWuid() = 0;
+
+    virtual void updateWULogfile() = 0;
 };
 
 #endif // AGENTCTX_HPP_INCL
