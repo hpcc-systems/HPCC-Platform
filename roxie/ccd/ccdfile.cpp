@@ -398,7 +398,7 @@ public:
     virtual offset_t appendFile(IFile *file,offset_t pos,offset_t len) { throwUnexpected(); return 0; }
 
     virtual const char *queryFilename() { return logical->queryFilename(); }
-    virtual bool IsShared() const { return CInterface::IsShared(); }
+    virtual bool isAlive() const { return CInterface::isAlive(); }
     virtual int getLinkCount() const { return CInterface::getLinkCount(); }
     virtual RoxieFileType getFileType() { return fileType; }
 
@@ -515,7 +515,7 @@ typedef MapStringTo<StringArrayPtr> MapStringToDiffFileUsage;
 
 class CRoxieFileCache : public CInterface, implements ICopyFileProgress, implements IRoxieFileCache
 {
-    ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
+    mutable ICopyArrayOf<ILazyFileIO> todo; // Might prefer a queue but probably doesn't really matter.
     InterruptableSemaphore toCopy;
     InterruptableSemaphore toClose;
     mutable CopyMapStringToMyClass<ILazyFileIO> files;
@@ -1011,10 +1011,14 @@ public:
                         break;
                     if (todo.ordinality())
                     {
-                        next.set(&todo.pop());
+                        ILazyFileIO *popped = &todo.pop();
+                        if (popped->isAlive())
+                        {
+                            next.set(popped);
+                            if (next)
+                                currentTodoFile.append(next->queryFilename());
+                        }
                         atomic_dec(&numFilesToProcess);    // must decrement counter for SNMP accuracy
-                        if (next)
-                            currentTodoFile.append(next->queryFilename());
                     }
                 }
                 if (next)
@@ -1131,6 +1135,13 @@ public:
         ILazyFileIO *goer = files.getValue(filename);
         if (goer == file)
             files.remove(filename);
+        ForEachItemInRev(idx, todo)
+        {
+            if (file == &todo.item(idx))
+            {
+                todo.remove(idx);
+            }
+        }
     }
 
     virtual ILazyFileIO *lookupFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const char *baseIndexFileName,  ILazyFileIO *patchFile, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &deployedLocationInfo, offset_t size, const CDateTime &modified, bool memFile, bool isRemote, bool startFileCopy, bool doForegroundCopy, unsigned crc, bool isCompressed, const char *lookupDali)
@@ -1140,45 +1151,30 @@ public:
         {
             CriticalBlock b(crit);
             ILazyFileIO *f = files.getValue(localLocation);
-            if (f)
+            if (f && f->isAlive())
             {
                 if ((size != -1 && size != f->getSize()) ||
                     (!modified.isNull() && !modified.equals(*f->queryDateTime(), false)))
                 {
-                    if (!f->IsShared())
+                    StringBuffer modifiedDt;
+                    if (!modified.isNull())
+                        modified.getString(modifiedDt);
+                    StringBuffer fileDt;
+                    f->queryDateTime()->getString(fileDt);
+                    if (fileErrorList.find(id) == 0)
                     {
-                        // kill it
-                        files.remove(localLocation);
-                        ForEachItemInRev(idx, todo)
+                        switch (fileType)
                         {
-                            if (f == &todo.item(idx))
-                            {
-                                todo.remove(idx);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        StringBuffer modifiedDt;
-                        if (!modified.isNull())
-                            modified.getString(modifiedDt);
-                        StringBuffer fileDt;
-                        f->queryDateTime()->getString(fileDt);
-                        if (fileErrorList.find(id) == 0)
-                        {
-                            switch (fileType)
-                            {
-                                case ROXIE_KEY:
-                                    fileErrorList.setValue(id, "Key");
-                                    break;
+                            case ROXIE_KEY:
+                                fileErrorList.setValue(id, "Key");
+                                break;
 
-                                case ROXIE_FILE:
-                                    fileErrorList.setValue(id, "File");
-                                    break;
-                            }
+                            case ROXIE_FILE:
+                                fileErrorList.setValue(id, "File");
+                                break;
                         }
-                        throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %"I64F"d %"I64F"d  Date = %s  %s", id, size, f->getSize(), modifiedDt.str(), fileDt.str());
                     }
+                    throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %"I64F"d %"I64F"d  Date = %s  %s", id, size, f->getSize(), modifiedDt.str(), fileDt.str());
                 }
                 else
                     return LINK(f);
@@ -1252,7 +1248,7 @@ public:
         {
             CriticalBlock b(crit);
             ret = files.getValue(localLocation);
-            if (ret)
+            if (ret && ret->isAlive())
             {
                 if (crc)
                 {
@@ -1299,26 +1295,6 @@ public:
         return ret;
     }
 
-    virtual IFileIO *lookupPluginFile(const char* dllname, const char *localLocation)
-    {
-        // plugins should be copied via deployment tool, not by roxie, so they should already be copied to the node - error if not
-        ILazyFileIO *ret;
-        {
-            CriticalBlock b(crit);
-            ret = files.getValue(localLocation);
-            if (ret) // already opened, valid and increase LINK count
-            {
-                // MORE - need to check version label
-                return LINK(ret);
-            }
-            
-            ret = openPlugin(dllname, localLocation);
-            files.setValue(localLocation, ret);
-        }
-        ret->checkOpen();
-        return ret;
-    }
-
     virtual void closeExpired(bool remote)
     {
         // This schedules a close at the next available opportunity
@@ -1343,7 +1319,7 @@ public:
         ForEach(h)
         {
             ILazyFileIO *f = files.mapToValue(&h.query());
-            if (f->isOpen() && f->isRemote()==remote && !f->isCopying())
+            if (f->isAlive() && f->isOpen() && f->isRemote()==remote && !f->isCopying())
             {
                 unsigned age = msTick() - f->getLastAccessed();
                 if (age > maxFileAge[remote])
@@ -1430,80 +1406,6 @@ public:
         }
     }
 
-    virtual void flushUnused(bool deleteFiles, bool cleanUpOneTimeQueries)
-    {
-        CriticalBlock b(crit);
-        // Everything currently in the queue should be removed if it is only in the queue and the cache.
-        ForEachItemInRev(idx, todo)
-        {
-            ILazyFileIO *f = &todo.item(idx);
-            if (f)  // make sure it hasn't already been blanked out by prior call to flushUnused
-            {
-                if (!f->IsShared())
-                    todo.remove(idx);
-            }
-        }
-
-        IArrayOf<ILazyFileIO> goers;
-        HashIterator h(files);
-        StringAttrMapping metaFileGoers;
-
-        ForEach(h)
-        {
-            // checking if file is shared, but count is 1 and names match - if so it means the only use of this file 
-            // is the copy, so we can remove the file
-            ILazyFileIO *f = files.mapToValue(&h.query());
-            if (!f->IsShared())
-                goers.append(*LINK(f));
-            else if (f->getLinkCount() == 2 && (stricmp(f->queryFilename(), currentTodoFile.str()) == 0) && deleteFiles)
-            {
-                // cannot be in the middle of copying a dll so don't worry about cleanUpOneTimeQueries
-                // this file is in the middle of being copied, get rid of it...
-                needToDeleteFile = true;
-                goers.append(*LINK(f));
-
-                DBGLOG("NAME = %s", f->queryFilename());
-            }
-        }
-
-        ForEachItemInRev(idx1, goers)
-        {
-            ILazyFileIO *item = &goers.item(idx1);
-            StringBuffer goer(item->queryFilename());
-
-            RoxieFileType type = item->getFileType();
-
-            if (cleanUpOneTimeQueries)  // only want to delete dlls
-            {
-                if (type != ROXIE_WU_DLL)
-                    continue;
-            }
-            
-            if (!files.remove(goer))
-                DBGLOG("ERROR - file was not removed from cache %s", goer.str());
-            else if (deleteFiles || type == ROXIE_WU_DLL)  // always want to delete WU dlls
-            {
-                bool isRemote = item->isRemote();
-
-                goers.remove(idx1);   // remove so we can delete the file if needed
-                if ((!isRemote) && (type != ROXIE_PLUGIN_DLL))
-                {
-                    DBGLOG("trying to delete - file %s", goer.str());
-                    try
-                    {
-                        OwnedIFile unneededFile = createIFile(goer.str());
-                        unneededFile->remove();
-                    }
-                    catch (IException *E)
-                    {
-                        EXCLOG(MCoperatorError, E, "While trying to delete a file");
-                        E->Release();
-                    }
-                }
-            }
-        }
-    }
-    
     int numFilesToCopy()
     {
         CriticalBlock b(crit);
