@@ -165,8 +165,8 @@ protected:
     v8::Persistent<v8::Value> result;
 };
 
-__thread V8JavascriptEmbedFunctionContext * theFunctionContext;  // We reuse per thread, for speed
-__thread ThreadTermFunc threadHookChain;
+static __thread V8JavascriptEmbedFunctionContext * theFunctionContext;  // We reuse per thread, for speed
+static __thread ThreadTermFunc threadHookChain;
 
 static void releaseContext()
 {
@@ -182,8 +182,9 @@ public:
     {
         Link();  // Deliberately 'leak' in order to avoid freeing this global object
     }
-    virtual IEmbedFunctionContext *createFunctionContext()
+    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
     {
+        assertex(!isImport);
         if (!theFunctionContext)
         {
             theFunctionContext = new V8JavascriptEmbedFunctionContext;

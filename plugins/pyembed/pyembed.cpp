@@ -41,7 +41,7 @@ static const char * EclDefinition =
     "END;"
     "EXPORT getEmbedContext := Language.getEmbedContext;"
     "EXPORT syntaxCheck := Language.syntaxCheck;"
-    "EXPORT boolean supportsImport := false;"
+    "EXPORT boolean supportsImport := true;"
     "EXPORT boolean supportsScript := true;";
 
 extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
@@ -82,7 +82,8 @@ public:
     inline void clear()                     { if (ptr) Py_DECREF(ptr); ptr = NULL; }
     inline void setown(PyObject *_ptr)      { clear(); ptr = _ptr; }
     inline void set(PyObject *_ptr)         { clear(); ptr = _ptr; if (ptr) Py_INCREF(ptr);}
-    inline PyObject **ref() { clear(); return &ptr; }
+    inline PyObject *getLink()              { if (ptr) Py_INCREF(ptr); return ptr;}
+    inline PyObject **ref()                 { return &ptr; }
 };
 
 // call checkPythonError to throw an exception if Python error state is set
@@ -159,34 +160,46 @@ public:
     {
         PyEval_RestoreThread(threadState);
         script.clear();
-        result.clear();
     }
 
-    inline double getRealResult()
+    inline PyObject * importFunction(const char *text)
     {
-        assertex(result);
-        return (__int64) PyFloat_AsDouble(result);
-    }
-    inline __int64 getSignedResult()
-    {
-        assertex(result);
-        return (__int64) PyLong_AsLongLong(result);
-    }
-    inline unsigned __int64 getUnsignedResult()
-    {
-        return (__int64) PyLong_AsUnsignedLongLong(result);
-    }
-    inline void getStringResult(size32_t &__len, char * &__result)
-    {
-        assertex(result);
-        __len = PyString_Size(result);
-        const char * chars =  PyString_AsString(result);
-        checkPythonError();
-        __result = (char *)rtlMalloc(__len);
-        memcpy(__result, chars, __len);
+        if (!prevtext || strcmp(text, prevtext) != 0)
+        {
+            prevtext.clear();
+            // Name should be in the form module.function
+            const char *funcname = strrchr(text, '.');
+            if (!funcname)
+                rtlFail(0, "Expected module.function");
+            StringBuffer modname(funcname-text, text);
+            funcname++;  // skip the '.'
+            // If the modname is preceded by a path, add it to the python path before importing
+            const char *pathsep = strrchr(modname, PATHSEPCHAR);
+            if (pathsep)
+            {
+                StringBuffer path(pathsep-modname, modname);
+                modname.remove(0, 1+pathsep-modname);
+                PyObject *sys_path = PySys_GetObject("path");
+                OwnedPyObject new_path = PyString_FromString(path);
+                if (sys_path)
+                {
+                    PyList_Append(sys_path, new_path);
+                    checkPythonError();
+                }
+            }
+            module.setown(PyImport_ImportModule(modname));
+            checkPythonError();
+            PyObject *dict = PyModule_GetDict(module);  // this is a borrowed reference and does not need to be released
+            script.set(PyDict_GetItemString(dict, funcname));
+            checkPythonError();
+            if (!script || !PyCallable_Check(script))
+                rtlFail(0, "Object is not callable");
+            prevtext.set(text);
+        }
+        return script.getLink();
     }
 
-    inline void compileEmbeddedScript(const char *text)
+    inline PyObject *compileEmbeddedScript(const char *text)
     {
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
@@ -203,16 +216,7 @@ public:
             checkPythonError();
             prevtext.set(text);
         }
-
-    }
-    inline void callFunction(PyObject *locals, PyObject *globals)
-    {
-        result.setown(PyEval_EvalCode((PyCodeObject *) script.get(), locals, globals));
-        checkPythonError();
-        if (!result || result == Py_None)
-            result.set(PyDict_GetItemString(locals, "__result__"));
-        if (!result || result == Py_None)
-            result.set(PyDict_GetItemString(globals, "__result__"));
+        return script.getLink();
     }
 private:
     static StringBuffer &wrapPythonText(StringBuffer &out, const char *in)
@@ -229,8 +233,8 @@ private:
         return out;
     }
     GILstateWrapper GILState;
+    OwnedPyObject module;
     OwnedPyObject script;
-    OwnedPyObject result;
     StringAttr prevtext;
 };
 
@@ -238,10 +242,10 @@ private:
 // This takes care of ensuring that the Python GIL is locked while we are executing python code,
 // and released when we are not
 
-class Python27EmbedFunctionContext : public CInterfaceOf<IEmbedFunctionContext>
+class Python27EmbedContextBase : public CInterfaceOf<IEmbedFunctionContext>
 {
 public:
-    Python27EmbedFunctionContext(PythonThreadContext *_sharedCtx)
+    Python27EmbedContextBase(PythonThreadContext *_sharedCtx)
     : sharedCtx(_sharedCtx)
     {
         PyEval_RestoreThread(sharedCtx->threadState);
@@ -249,9 +253,52 @@ public:
         globals.setown(PyDict_New());
         PyDict_SetItemString(locals, "__builtins__", PyEval_GetBuiltins( ));  // required for import to work
     }
-    ~Python27EmbedFunctionContext()
+    ~Python27EmbedContextBase()
     {
         sharedCtx->threadState = PyEval_SaveThread();
+    }
+
+    virtual double getRealResult()
+    {
+        assertex(result);
+        return (__int64) PyFloat_AsDouble(result);
+    }
+    virtual __int64 getSignedResult()
+    {
+        assertex(result);
+        return (__int64) PyLong_AsLongLong(result);
+    }
+    virtual unsigned __int64 getUnsignedResult()
+    {
+        return (__int64) PyLong_AsUnsignedLongLong(result);
+    }
+    virtual void getStringResult(size32_t &__len, char * &__result)
+    {
+        assertex(result);
+        __len = PyString_Size(result);
+        const char * chars =  PyString_AsString(result);
+        checkPythonError();
+        __result = (char *)rtlMalloc(__len);
+        memcpy(__result, chars, __len);
+    }
+
+protected:
+    PythonThreadContext *sharedCtx;
+    OwnedPyObject locals;
+    OwnedPyObject globals;
+    OwnedPyObject result;
+    OwnedPyObject script;
+};
+
+class Python27EmbedScriptContext : public Python27EmbedContextBase
+{
+public:
+    Python27EmbedScriptContext(PythonThreadContext *_sharedCtx, const char *options)
+    : Python27EmbedContextBase(_sharedCtx)
+    {
+    }
+    ~Python27EmbedScriptContext()
+    {
     }
     virtual void bindRealParam(const char *name, double val)
     {
@@ -279,43 +326,86 @@ public:
         PyDict_SetItemString(locals, name, vval);
     }
 
-    virtual double getRealResult()
+    virtual void importFunction(const char *text)
     {
-        return sharedCtx->getRealResult();
+        throwUnexpected();
     }
-    virtual __int64 getSignedResult()
+    virtual void compileEmbeddedScript(const char *text)
     {
-        return sharedCtx->getSignedResult();
+        script.setown(sharedCtx->compileEmbeddedScript(text));
     }
-    virtual unsigned __int64 getUnsignedResult()
+
+    virtual void callFunction()
     {
-        return sharedCtx->getUnsignedResult();
+        result.setown(PyEval_EvalCode((PyCodeObject *) script.get(), locals, globals));
+        checkPythonError();
+        if (!result || result == Py_None)
+            result.set(PyDict_GetItemString(locals, "__result__"));
+        if (!result || result == Py_None)
+            result.set(PyDict_GetItemString(globals, "__result__"));
     }
-    virtual void getStringResult(size32_t &__len, char * &__result)
+};
+
+class Python27EmbedImportContext : public Python27EmbedContextBase
+{
+public:
+    Python27EmbedImportContext(PythonThreadContext *_sharedCtx, const char *options)
+    : Python27EmbedContextBase(_sharedCtx)
     {
-        sharedCtx->getStringResult(__len, __result);
+        argcount = 0;
+    }
+    ~Python27EmbedImportContext()
+    {
+    }
+    virtual void bindRealParam(const char *name, double val)
+    {
+        addArg(PyFloat_FromDouble(val));
+    }
+    virtual void bindSignedParam(const char *name, __int64 val)
+    {
+        addArg(PyLong_FromLongLong(val));
+    }
+    virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
+    {
+        addArg(PyLong_FromUnsignedLongLong(val));
+    }
+    virtual void bindStringParam(const char *name, size32_t len, const char *val)
+    {
+        addArg(PyString_FromStringAndSize(val, len));
+    }
+    virtual void bindVStringParam(const char *name, const char *val)
+    {
+        addArg(PyString_FromString(val));
     }
 
     virtual void importFunction(const char *text)
     {
-        UNIMPLEMENTED; // TBD
+        script.setown(sharedCtx->importFunction(text));
     }
     virtual void compileEmbeddedScript(const char *text)
     {
-        sharedCtx->compileEmbeddedScript(text);
+        throwUnexpected();
     }
     virtual void callFunction()
     {
-        sharedCtx->callFunction(locals, globals);
+        result.setown(PyObject_CallObject(script, args));
+        checkPythonError();
     }
 private:
-    PythonThreadContext *sharedCtx;
-    OwnedPyObject locals;
-    OwnedPyObject globals;
+    void addArg(PyObject *arg)
+    {
+        if (argcount)
+            _PyTuple_Resize(args.ref(), argcount+1);
+        else
+            args.setown(PyTuple_New(1));
+        PyTuple_SET_ITEM((PyTupleObject *) args.get(), argcount++, arg);  // Note - 'steals' the arg reference
+    }
+    int argcount;
+    OwnedPyObject args;
 };
 
-__thread PythonThreadContext* threadContext;  // We reuse per thread, for speed
-__thread ThreadTermFunc threadHookChain;
+static __thread PythonThreadContext* threadContext;  // We reuse per thread, for speed
+static __thread ThreadTermFunc threadHookChain;
 
 static void releaseContext()
 {
@@ -327,14 +417,17 @@ static void releaseContext()
 class Python27EmbedContext : public CInterfaceOf<IEmbedContext>
 {
 public:
-    virtual IEmbedFunctionContext *createFunctionContext()
+    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
     {
         if (!threadContext)
         {
             threadContext = new PythonThreadContext;
             threadHookChain = addThreadTermFunc(releaseContext);
         }
-        return new Python27EmbedFunctionContext(threadContext);
+        if (isImport)
+            return new Python27EmbedImportContext(threadContext, options);
+        else
+            return new Python27EmbedScriptContext(threadContext, options);
     }
 };
 

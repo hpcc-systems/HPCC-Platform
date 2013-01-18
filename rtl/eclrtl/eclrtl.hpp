@@ -751,7 +751,7 @@ interface IEmbedFunctionContext : extends IInterface
 
 interface IEmbedContext : extends IInterface
 {
-    virtual IEmbedFunctionContext *createFunctionContext() = 0;
+    virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options) = 0;
     // MORE - add syntax checked here!
 };
 

@@ -13,18 +13,41 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-add_subdirectory (auditlib)
-add_subdirectory (debugservices)
-add_subdirectory (fileservices)
-add_subdirectory (logging)
-add_subdirectory (parselib)
-add_subdirectory (stringlib)
-add_subdirectory (unicodelib)
-add_subdirectory (workunitservices)
-if ("${BUILD_LEVEL}" STREQUAL "COMMUNITY")
-  add_subdirectory (proxies)
-endif ()
 
-add_subdirectory (v8embed)
-add_subdirectory (pyembed)
-add_subdirectory (javaembed)
+
+# Component: javaembed
+
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for javaembed
+#####################################################
+
+set ( toolsdir "${HPCC_SOURCE_DIR}/tools" )
+
+project( javaembed )
+
+find_package(JNI)
+
+set (    SRCS
+         javaembed.cpp
+    )
+
+include_directories (
+         ${JNI_INCLUDE_DIRS}
+         ./../../system/include
+         ./../../rtl/eclrtl
+         ./../../rtl/include
+         ./../../system/jlib
+    )
+
+ADD_DEFINITIONS( -D_USRDLL -DJAVAEMBED_EXPORTS )
+
+HPCC_ADD_LIBRARY( javaembed SHARED ${SRCS} )
+install ( TARGETS javaembed DESTINATION plugins )
+
+target_link_libraries ( javaembed
+    ${JNI_LIBRARIES}
+    eclrtl
+    jlib
+    )

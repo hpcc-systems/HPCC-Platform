@@ -11427,7 +11427,31 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
     OwnedHqlExpr pluginPtr = createQuoted("Owned<IEmbedContext> __plugin", makeBoolType());
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
-    funcctx.addQuoted("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContext();");
+    StringBuffer createParam;
+    createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContext(");
+    createParam.append(isImport ? "true" : "false");
+    StringBuffer attrParam;
+    ForEachChild(idx, bodyCode)
+    {
+        IHqlExpression *child = bodyCode->queryChild(idx);
+        if (child->isAttribute() && child->queryName() != languageAtom && child->queryName() != importAtom)
+        {
+            attrParam.append(",");
+            attrParam.append(child->queryName());
+            StringBuffer attrValue;
+            if (getStringValue(attrValue, child->queryChild(0)).length())
+            {
+                attrParam.append('=');
+                appendStringAsCPP(attrParam, attrValue.length(), attrValue.str(), true);
+            }
+        }
+    }
+    if (attrParam.length())
+        createParam.append(",\"").append(attrParam.str()+1).append('"');
+    else
+        createParam.append(",NULL");
+    createParam.append(");");
+    funcctx.addQuoted(createParam);
     OwnedHqlExpr ctxVar = createVariable("__ctx", makeBoolType());
 
     HqlExprArray scriptArgs;
