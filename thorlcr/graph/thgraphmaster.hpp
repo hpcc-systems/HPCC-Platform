@@ -53,6 +53,7 @@ interface IJobManager : extends IInterface
     virtual IDeMonServer *queryDeMonServer() = 0;
     virtual void fatal(IException *e) = 0;
     virtual void addCachedSo(const char *name) = 0;
+    virtual void updateWorkUnitLog(IWorkUnit &workunit) = 0;
 };
 
 interface ILoadedDllEntry;
