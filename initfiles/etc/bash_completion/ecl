@@ -89,12 +89,12 @@ _ecl_opts_queries()
             echo "--help list copy config"
             ;;
         copy)
-            echo -n "--no-reload --wait= --timeLimit= --warnTimeLimit= --memoryLimit= --daliip= "
+            echo -n "--no-reload --wait= --timeLimit= --warnTimeLimit= --memoryLimit= --priority= --daliip= "
             _ecl_opts_common
             ;;
         config)
             echo -n "-t= --target= --no-files --daliip= -A --activate --no-reload "
-            echo -n "-O --overwrite --wait= --timeLimit= --warnTimeLimit= --memoryLimit= "
+            echo -n "-O --overwrite --wait= --timeLimit= --warnTimeLimit= --memoryLimit= --priority= "
             _ecl_opts_common
             ;;
         list)
@@ -166,7 +166,7 @@ _ecl_opts_core_file()
                 _ecl_opts_common
                 ;;
             publish)
-                echo -n "-A --activate --no-reload --timeLimit= --warnTimeLimit= --memoryLimit= --daliip= "
+                echo -n "-A --activate --no-reload --timeLimit= --warnTimeLimit= --memoryLimit= --priority= --daliip= "
                 _ecl_opts_deploy
                 _ecl_opts_common
                 ;;
