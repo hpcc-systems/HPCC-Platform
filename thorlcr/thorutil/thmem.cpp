@@ -1705,48 +1705,7 @@ ILargeMemLimitNotify *createMultiThorResourceMutex(const char *grpname,CSDSServe
     return new cMultiThorResourceMutex(grpname,_status);
 }
 
-#pragma pack(push,1) // hashing on members, so ensure contiguous
-struct ThorAllocatorKey
-{
-    IOutputMetaData *meta;
-    unsigned activityId;
-    ThorAllocatorKey(IOutputMetaData *_meta, unsigned &_activityId) : meta(_meta), activityId(_activityId) { }
-    bool operator==(ThorAllocatorKey const &other) const
-    {
-        return (meta == other.meta) && (activityId == other.activityId);
-    }
-};
-#pragma pack(pop)
 
-class CThorAllocatorCacheItem : public OwningHTMapping<IEngineRowAllocator, ThorAllocatorKey>
-{
-    Linked<IOutputMetaData> meta;
-public:
-    CThorAllocatorCacheItem(IEngineRowAllocator *allocator, ThorAllocatorKey &key)
-        : OwningHTMapping<IEngineRowAllocator, ThorAllocatorKey>(*allocator, key)
-    {
-        meta.set(key.meta);
-    }
-};
-
-class CThorAllocatorCache : private OwningSimpleHashTableOf<CThorAllocatorCacheItem, ThorAllocatorKey>
-{
-public:
-    inline IEngineRowAllocator *find(IOutputMetaData *meta, unsigned activityId) const
-    {
-        ThorAllocatorKey key(meta, activityId);
-        CThorAllocatorCacheItem *container = OwningSimpleHashTableOf::find(key);
-        if (!container)
-            return NULL;
-        return &container->queryElement();
-    }
-    inline bool add(IEngineRowAllocator *allocator, IOutputMetaData *meta, unsigned activityId)
-    {
-        ThorAllocatorKey key(meta, activityId);
-        CThorAllocatorCacheItem *container = new CThorAllocatorCacheItem(allocator, key);
-        return replace(*container);
-    }
-};
 class CThorAllocator : public CSimpleInterface, implements IRtlRowCallback, implements IThorAllocator, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:

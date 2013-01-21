@@ -341,7 +341,7 @@ public:
 
 
 class CHThorDebugContext;
-class EclAgent : public CInterface, implements IAgentContext, implements ICodeContext, implements roxiemem::IRowAllocatorCache
+class EclAgent : public CInterface, implements IAgentContext, implements ICodeContext, implements IRowAllocatorMetaActIdCacheCallback
 {
 private:
     friend class EclAgentWorkflowMachine;
@@ -377,8 +377,7 @@ private:
     StringArray clusterNames;
     unsigned int clusterWidth;
     Owned<IDistributedFileTransaction> superfiletransaction;
-    mutable IArrayOf<IEngineRowAllocator> allAllocators;
-    mutable SpinLock allAllocatorsLock;                 
+    mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<EclGraph> activeGraph;
     Owned<IRecordLayoutTranslatorCache> rltCache;
     Owned<CHThorDebugContext> debugContext;
@@ -613,65 +612,11 @@ public:
     }
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
-        // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
-        SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator * ret = createHThorRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality());
-        LINK(ret);
-        allAllocators.append(*ret);
-        return ret;
+        return allocatorMetaCache->ensure(meta, activityId);
     }
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
     {
         convertRowToXML(lenResult, result, info, row, flags);
-    }
-
-    // interface IRowAllocatorCache
-    virtual unsigned getActivityId(unsigned cacheId) const
-    {
-        SpinBlock b(allAllocatorsLock);
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        if (allAllocators.isItem(allocatorIndex))
-            return allAllocators.item(allocatorIndex).queryActivityId();
-        else
-        {
-            //assert(false);
-            return 12345678; // Used for tracing, better than a crash...
-        }
-    }
-    virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
-    {
-        SpinBlock b(allAllocatorsLock);
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        if (allAllocators.isItem(allocatorIndex))
-            return allAllocators.item(allocatorIndex).getId(out);
-        else
-        {
-            assert(false);
-            return out.append("unknown"); // Used for tracing, better than a crash...
-        }
-    }
-    virtual void onDestroy(unsigned cacheId, void *row) const 
-    {
-        IEngineRowAllocator *allocator;
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        {
-            SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
-            if (allAllocators.isItem(allocatorIndex))
-                allocator = &allAllocators.item(allocatorIndex);
-            else
-            {
-                assert(false);
-                return;
-            }
-        }
-        allocator->queryOutputMeta()->destruct((byte *) row);
-    }
-    virtual void checkValid(unsigned cacheId, const void *row) const
-    {
-        if (!RoxieRowCheckValid(cacheId, row))
-        {
-            //MORE: Throw an exception?
-        }
     }
     virtual const char *queryAllowedPipePrograms()
     {
@@ -682,6 +627,11 @@ public:
     
     virtual void updateWULogfile();
 
+// roxiemem::IRowAllocatorMetaActIdCacheCallback
+    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id) const
+    {
+        return createRoxieRowAllocator(*rowManager, meta, activityId, id, roxiemem::RHFnone);
+    }
 };
 
 //---------------------------------------------------------------------------
