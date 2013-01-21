@@ -81,6 +81,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_TIME_LIMIT "--timeLimit"
 #define ECLOPT_MEMORY_LIMIT "--memoryLimit"
 #define ECLOPT_WARN_TIME_LIMIT "--warnTimeLimit"
+#define ECLOPT_PRIORITY "--priority"
 
 #define ECLOPT_RESULT_LIMIT "--limit"
 #define ECLOPT_RESULT_LIMIT_INI "resultLimit"
@@ -117,6 +118,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_VERBOSE_S "-v"
 
 bool isValidMemoryValue(const char *value);
+bool isValidPriorityValue(const char *value);
 
 bool extractEclCmdOption(StringBuffer & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);
 bool extractEclCmdOption(StringAttr & option, IProperties * globals, const char * envName, const char * propertyName, const char * defaultPrefix, const char * defaultSuffix);

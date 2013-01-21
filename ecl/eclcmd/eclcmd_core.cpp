@@ -337,6 +337,8 @@ public:
                 continue;
             if (iter.matchOption(optMemoryLimit, ECLOPT_MEMORY_LIMIT))
                 continue;
+            if (iter.matchOption(optPriority, ECLOPT_PRIORITY))
+                continue;
             if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
             {
                 activateSet=true;
@@ -369,6 +371,11 @@ public:
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
         {
             fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            return false;
+        }
+        if (optPriority.length() && !isValidPriorityValue(optPriority))
+        {
+            fprintf(stderr, "invalid --priority value of %s.\n\n", optPriority.get());
             return false;
         }
         return true;
@@ -408,6 +415,8 @@ public:
             req->setWarnTimeLimit(optWarnTimeLimit);
         if (!optMemoryLimit.isEmpty())
             req->setMemoryLimit(optMemoryLimit);
+        if (!optPriority.isEmpty())
+            req->setPriority(optPriority);
 
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
         const char *id = resp->getQueryId();
@@ -455,6 +464,8 @@ public:
             "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
             "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
             "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
+            "   --priority=<val>       set the priority for this query. Value can be LOW,\n"
+            "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
         EclCmdWithEclTarget::usage();
@@ -463,6 +474,7 @@ private:
     StringAttr optName;
     StringAttr optDaliIP;
     StringAttr optMemoryLimit;
+    StringAttr optPriority;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;
