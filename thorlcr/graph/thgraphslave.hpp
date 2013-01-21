@@ -70,7 +70,7 @@ public:
 
     unsigned __int64 &getTotalCyclesRef() { return totalCycles; }
     unsigned __int64 queryLocalCycles() const;
-    unsigned __int64 queryTotalCycles() const;
+    virtual unsigned __int64 queryTotalCycles() const; // some acts. may calculate accumulated total from inputs (e.g. splitter)
     virtual void serializeStats(MemoryBuffer &mb);
 };
 

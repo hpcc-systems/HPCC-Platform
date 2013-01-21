@@ -691,6 +691,7 @@ public:
     }
     CATCH_NEXTROW()
     {
+        ActivityTimer t(totalCycles, timeActivities, NULL);
         if (eoi) 
             return NULL;
         if (RCMAX != keyedLimitCount)
