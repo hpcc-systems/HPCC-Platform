@@ -381,6 +381,56 @@ static inline void updateMemoryLimitSetting(IPropertyTree *queryTree, const char
         queryTree->setPropInt64("@memoryLimit", limit);
 }
 
+enum QueryPriority {
+    QueryPriorityNone = -1,
+    QueryPriorityLow = 0,
+    QueryPriorityHigh = 1,
+    QueryPrioritySLA = 2,
+    QueryPriorityInvalid = 3
+};
+
+static inline const char *getQueryPriorityName(int value)
+{
+    switch (value)
+    {
+    case QueryPriorityLow:
+        return "LOW";
+    case QueryPriorityHigh:
+        return "HIGH";
+    case QueryPrioritySLA:
+        return "SLA";
+    case QueryPriorityNone:
+        return "NONE";
+    }
+    return "INVALID";
+}
+static inline void updateQueryPriority(IPropertyTree *queryTree, const char *value)
+{
+    if (!value || !*value || !queryTree)
+        return;
+    int priority = QueryPriorityInvalid;
+    if (strieq("LOW", value))
+        priority=QueryPriorityLow;
+    else if (strieq("HIGH", value))
+        priority=QueryPriorityHigh;
+    else if (strieq("SLA", value))
+        priority=QueryPrioritySLA;
+    else if (strieq("NONE", value))
+        priority=QueryPriorityNone;
+
+    switch (priority)
+    {
+    case QueryPriorityInvalid:
+        break;
+    case QueryPriorityNone:
+        queryTree->removeProp("@priority");
+        break;
+    default:
+        queryTree->setPropInt("@priority", priority);
+        break;
+    }
+}
+
 void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *target, const char *queryid, bool overwrite)
 {
     if (!target || !*target)
@@ -481,12 +531,13 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     StringBuffer queryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
     addQueryToQuerySet(wu, target.str(), queryName.str(), NULL, activate, queryId);
-    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull())
+    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || !req.getWarnTimeLimit_isNull() || req.getPriority())
     {
         Owned<IPropertyTree> queryTree = getQueryById(target.str(), queryId, false);
         updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
         updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
         updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
+        updateQueryPriority(queryTree, req.getPriority());
     }
     wu->commit();
     wu.clear();
@@ -550,6 +601,8 @@ void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryIn
         queryInfo->setTimeLimit(query->getPropInt("@timeLimit"));
     if (query->hasProp("@warnTimeLimit"))
         queryInfo->setWarnTimeLimit(query->getPropInt("@warnTimeLimit"));
+    if (query->hasProp("@priority"))
+        queryInfo->setPriority(getQueryPriorityName(query->getPropInt("@priority")));
     if (queriesOnCluster)
     {
         IArrayOf<IEspClusterQueryState> clusters;
@@ -878,6 +931,7 @@ bool CWsWorkunitsEx::onWUQueryConfig(IEspContext &context, IEspWUQueryConfigRequ
         if (queryTree)
         {
             updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
+            updateQueryPriority(queryTree, req.getPriority());
             updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
             updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
         }
@@ -1093,10 +1147,11 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
     StringBuffer targetQueryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
     addQueryToQuerySet(wu, target, queryName.str(), NULL, activate, targetQueryId);
-    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull())
+    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull() || req.getPriority())
     {
         Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);
         updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
+        updateQueryPriority(queryTree, req.getPriority());
         updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
         updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
     }
