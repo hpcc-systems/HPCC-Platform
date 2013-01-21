@@ -338,7 +338,7 @@ define([
         },
 
         loadVertices: function () {
-            var vertices = this.main.plugin.getVerticesWithProperties();
+            var vertices = this.main.getVerticesWithProperties();
 
             var layoutMap = [];
             for (var i = 0; i < vertices.length; ++i) {
@@ -369,7 +369,7 @@ define([
         },
 
         loadEdges: function () {
-            var edges = this.main.plugin.getEdgesWithProperties();
+            var edges = this.main.getEdgesWithProperties();
 
             var layoutMap = [];
             for (var i = 0; i < edges.length; ++i) {

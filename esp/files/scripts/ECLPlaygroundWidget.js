@@ -135,7 +135,7 @@ define([
             this.graphControl.onSelectionChanged = function (items) {
                 context.editorControl.clearHighlightLines();
                 for (var i = 0; i < items.length; ++i) {
-                    var props = context.graphControl.plugin.getProperties(items[i]);
+                    var props = context.graphControl.getProperties(items[i]);
                     if (props.definition) {
                         var startPos = props.definition.indexOf("(");
                         var endPos = props.definition.lastIndexOf(")");
