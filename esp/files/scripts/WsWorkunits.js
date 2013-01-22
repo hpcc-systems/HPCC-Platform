@@ -149,11 +149,10 @@ define([
             var context = this;
             if (this.isComplete == true) {
                 var request = {};
-                request['Wuid'] = this.wuid;
-                if (this.cluster && this.name) {
-                    request['Cluster'] = this.cluster;
+                if (this.name) {
                     request['LogicalName'] = this.name;
                 } else {
+                    request['Wuid'] = this.wuid;
                     request['Sequence'] = this.sequence;
                 }
                 request['Start'] = options.start;
