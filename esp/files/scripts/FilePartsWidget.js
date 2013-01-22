@@ -74,6 +74,10 @@ define([
 
             //  Plugin wrapper  ---
             init: function (params) {
+                if (this.initalized)
+                    return;
+                this.initalized = true;
+
                 var memory = new Memory({ data: params.fileParts });
                 this.store = new ObjectStore({ objectStore: memory });
                 this.filePartsGrid.setStore(this.store);

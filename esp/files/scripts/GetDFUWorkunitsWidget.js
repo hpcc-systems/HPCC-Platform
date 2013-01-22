@@ -214,6 +214,9 @@ define([
 
         //  Implementation  ---
         init: function (params) {
+            if (this.initalized)
+                return;
+            this.initalized = true;
         },
 
         initWorkunitsGrid: function() {

@@ -20,7 +20,6 @@ define([
     "dojo/date",
     "dojo/on",
 
-    "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
@@ -29,6 +28,7 @@ define([
     "dojox/grid/enhanced/plugins/Pagination",
     "dojox/grid/enhanced/plugins/IndirectSelection",
 
+    "hpcc/_TabContainerWidget",
     "hpcc/WsDfu",
     "hpcc/LFDetailsWidget",
 
@@ -45,50 +45,25 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog"
 ], function (declare, dom, ObjectStore, date, on,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 EnhancedGrid, Pagination, IndirectSelection,
-                WsDfu, LFDetailsWidget,
+                _TabContainerWidget, WsDfu, LFDetailsWidget,
                 template) {
-    return declare("DFUWUQueryWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("DFUWUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "DFUWUQueryWidget",
-        borderContainer: null,
-        tabContainer: null,
+        workunitsTab: null,
         workunitsGrid: null,
         legacyPane: null,
         legacyPaneLoaded: false,
 
         tabMap: [],
 
-        buildRendering: function (args) {
-            this.inherited(arguments);
-        },
-
         postCreate: function (args) {
             this.inherited(arguments);
-            this.borderContainer = registry.byId(this.id + "BorderContainer");
-            this.tabContainer = registry.byId(this.id + "TabContainer");
+            this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
-            this.legacyPane = registry.byId(this.id + "Legacy");
-
-            var context = this;
-            this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (nval.id == context.id + "Workunits") {
-                } else if (nval.id == context.id + "Legacy") {
-                    if (!context.legacyPaneLoaded) {
-                        context.legacyPaneLoaded = true;
-                        context.legacyPane.set("content", dojo.create("iframe", {
-                            src: "/WsDfu/DFUQuery",
-                            style: "border: 0; width: 100%; height: 100%"
-                        }));
-                    }
-                } else {
-                    if (!nval.initalized) {
-                        nval.init(nval.params);
-                    }
-                }
-                context.selectedTab = nval;
-            });
+            this.legacyPane = registry.byId(this.id + "_Legacy");
         },
 
         startup: function (args) {
@@ -97,26 +72,20 @@ define([
             this.initWorkunitsGrid();
         },
 
-        resize: function (args) {
-            this.inherited(arguments);
-            this.borderContainer.resize();
-        },
-
-        layout: function (args) {
-            this.inherited(arguments);
-        },
-
-        destroy: function (args) {
-            this.inherited(arguments);
-        },
-
         //  Hitched actions  ---
         _onOpen: function (event) {
             var selections = this.workunitsGrid.selection.getSelected();
+            var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                this.ensurePane(selections[i].Name, {
+                var tab = this.ensurePane(this.id + "_" + selections[i].Name, {
                     Name: selections[i].Name
                 });
+                if (i == 0) {
+                    firstTab = tab;
+                }
+            }
+            if (firstTab) {
+                this.selectChild(firstTab, true);
             }
         },
         _onDelete: function (event) {
@@ -191,6 +160,31 @@ define([
 
         //  Implementation  ---
         init: function (params) {
+            if (this.initalized)
+                return;
+            this.initalized = true;
+
+            this.selectChild(this.workunitsTab, true);
+        },
+
+        initTab: function() {
+            var currSel = this.getSelectedChild();
+            if (currSel && !currSel.initalized) {
+                if (currSel.id == this.workunitsTab.id) {
+                } else if (currSel.id == this.legacyPane.id) {
+                    if (!this.legacyPaneLoaded) {
+                        this.legacyPaneLoaded = true;
+                        this.legacyPane.set("content", dojo.create("iframe", {
+                            src: "/WsDfu/DFUQuery",
+                            style: "border: 0; width: 100%; height: 100%"
+                        }));
+                    }
+                } else {
+                    if (!currSel.initalized) {
+                        currSel.init(currSel.params);
+                    }
+                }
+            }
         },
 
         initWorkunitsGrid: function() {
@@ -283,12 +277,16 @@ define([
         },
 
         ensurePane: function (id, params) {
+            var obj = id.split("::");
+            id = obj.join("");
+            obj = id.split(".");
+            id = obj.join("");
             var retVal = this.tabMap[id];
             if (!retVal) {
                 var context = this;
                 retVal = new LFDetailsWidget({
-                    Name: id,
-                    title: id,
+                    id: id,
+                    title: params.Name,
                     closable: true,
                     onClose: function () {
                         delete context.tabMap[id];
@@ -297,16 +295,16 @@ define([
                     params: params
                 });
                 this.tabMap[id] = retVal;
-                this.tabContainer.addChild(retVal, 2);
+                this.addChild(retVal, 2);
             }
             return retVal;
         },
 
         onRowDblClick: function (name) {
-            var wuTab = this.ensurePane(name, {
+            var wuTab = this.ensurePane(this.id + "_" + name, {
                 Name: name
             });
-            this.tabContainer.selectChild(wuTab);
+            this.selectChild(wuTab);
         }
     });
 });

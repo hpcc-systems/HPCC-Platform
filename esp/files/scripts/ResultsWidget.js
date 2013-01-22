@@ -18,21 +18,21 @@ define([
     "dojo/_base/lang",
     "dojo/dom",
 
-    "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
+    "hpcc/_TabContainerWidget",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/ResultsWidget.html",
 
     "dijit/layout/TabContainer"
 ], function (declare, lang, dom, 
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                ESPWorkunit, 
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                _TabContainerWidget, ESPWorkunit,
                 template) {
-    return declare("ResultsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("ResultsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "ResultsWidget",
 
@@ -41,45 +41,14 @@ define([
         tabMap: [],
         selectedTab: null,
 
-        buildRendering: function (args) {
-            this.inherited(arguments);
-        },
-
-        postCreate: function (args) {
-            this.inherited(arguments);
-            this._initControls();
-        },
-
-        startup: function (args) {
-            this.inherited(arguments);
-        },
-
-        resize: function (args) {
-            this.inherited(arguments);
-            //this.borderContainer.resize();
-            this.tabContainer.resize();
-        },
-
-        layout: function (args) {
-            this.inherited(arguments);
-        },
-
-        //  Implementation  ---
         onErrorClick: function (line, col) {
         },
 
-        _initControls: function () {
-            var context = this;
-            //this.borderContainer = registry.byId(this.id + "BorderContainer");
-            this.tabContainer = registry.byId(this.id + "TabContainer");
-
-            var context = this;
-            this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (!nval.initalized) {
-                    nval.init(nval.params);
-                }
-                context.selectedTab = nval;
-            });
+        initTab: function () {
+            var currSel = this.getSelectedChild();
+            if (currSel && !currSel.initalized) {
+                currSel.init(currSel.params);
+            }
         },
 
         ensurePane: function (id, params) {
@@ -105,11 +74,16 @@ define([
                     });
                 }
                 this.tabMap[id] = retVal;
-                this.tabContainer.addChild(retVal);
+                this.addChild(retVal);
             }
+            return retVal;
         },
 
         init: function (params) {
+            if (this.initalized)
+                return;
+            this.initalized = true;
+
             if (params.Wuid) {
                 this.wu = new ESPWorkunit({
                     Wuid: params.Wuid
@@ -121,35 +95,43 @@ define([
                         context.wu.getInfo({
                             onGetWUExceptions: function (exceptions) {
                                 if (params.ShowErrors && exceptions.length) {
-                                    context.ensurePane(context.id + "exceptions", {
+                                    context.ensurePane(context.id + "_exceptions", {
                                         Wuid: params.Wuid,
                                         onErrorClick: context.onErrorClick,
                                         exceptions: exceptions
                                     });
+                                    context.initTab();
                                 }
                             },
                             onGetSourceFiles: function (sourceFiles) {
                                 if (params.SourceFiles) {
                                     for (var i = 0; i < sourceFiles.length; ++i) {
-                                        context.ensurePane(context.id + "logicalFile_" + i, {
+                                        var tab = context.ensurePane(context.id + "_logicalFile" + i, {
                                             Name: sourceFiles[i].Name,
                                             Cluster: sourceFiles[i].FileCluster
                                         });
+                                        if (i == 0) {
+                                            context.initTab();
+                                        }
                                     }
                                 }
                             },
                             onGetResults: function (results) {
                                 if (!params.SourceFiles) {
                                     for (var i = 0; i < results.length; ++i) {
-                                        context.ensurePane(context.id + "result_" + i, {
+                                        var tab = context.ensurePane(context.id + "_result" + i, {
                                             result: results[i]
                                         });
+                                        if (i == 0) {
+                                            context.initTab();
+                                        }
                                     }
                                 }
                             }
                         });
-                        if (context.selectedTab) {
-                            context.selectedTab.refresh();
+                        var currSel = context.getSelectedChild();
+                        if (currSel) {
+                            currSel.refresh();
                         }
                     }
                 });
@@ -157,11 +139,7 @@ define([
         },
 
         clear: function () {
-            var tabs = this.tabContainer.getChildren();
-            for (var i = 0; i < tabs.length; ++i) {
-                this.tabContainer.removeChild(tabs[i]);
-                tabs[i].destroyRecursive();
-            }
+            this.removeAllChildren();
             this.tabMap = [];
             this.selectedTab = null;
         },

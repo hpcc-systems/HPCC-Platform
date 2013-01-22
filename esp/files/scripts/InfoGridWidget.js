@@ -141,6 +141,10 @@ define([
             },
 
             init: function (params) {
+                if (this.initalized)
+                    return;
+                this.initalized = true;
+
                 if (params.onErrorClick) {
                     this.onErrorClick = params.onErrorClick;
                 }
