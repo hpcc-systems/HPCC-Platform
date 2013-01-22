@@ -65,6 +65,10 @@ define([
 
             //  Plugin wrapper  ---
             init: function (params) {
+                if (this.initalized)
+                    return;
+                this.initalized = true;
+
                 var context = this;
                 this.timingGrid.init(params);
                 this.timingGrid.onClick = function (items) {

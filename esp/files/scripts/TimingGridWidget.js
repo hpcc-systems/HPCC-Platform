@@ -89,6 +89,10 @@ define([
             },
 
             init: function (params) {
+                if (this.initalized)
+                    return;
+                this.initalized = true;
+
                 this.defaultQuery = "*";
                 if (params.query) {
                     this.defaultQuery = params.query;

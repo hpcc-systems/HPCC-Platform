@@ -59,6 +59,10 @@ require([
         },
 
         init: function (params) {
+            if (this.initalized)
+                return;
+            this.initalized = true;
+
             if (params.Target) {
                 this._value = params.Target;
             }

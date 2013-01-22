@@ -169,6 +169,10 @@ form h2{
     display: none !important;
 }
 
+.hpccApp {
+    height: 100%;
+}
+
 .toolTip{
 width:500px;
 }

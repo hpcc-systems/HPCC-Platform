@@ -34,7 +34,8 @@
     <!-- load dojo and provide config via dojoConfig global -->
     <script>
         var dojoConfig = (function () {
-            var base = location.href.split("/");
+            var baseLHS = location.href.split("#");
+            var base = baseLHS[0].split("/");
             base.pop();
             base = base.join("/");
 

@@ -18,11 +18,11 @@ define([
     "dojo/_base/lang",
     "dojo/dom",
 
-    "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
+    "hpcc/_TabContainerWidget",
     "hpcc/ESPWorkunit",
     "hpcc/GraphPageWidget",
 
@@ -30,55 +30,23 @@ define([
 
     "dijit/layout/TabContainer"
 ], function (declare, lang, dom, 
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                ESPWorkunit, GraphPageWidget,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                _TabContainerWidget, ESPWorkunit, GraphPageWidget,
                 template) {
-    return declare("GraphsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("GraphsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "GraphsWidget",
 
-        //borderContainer: null,
-        tabContainer: null,
         tabMap: [],
-        selectedTab: null,
 
-        buildRendering: function (args) {
-            this.inherited(arguments);
-        },
-
-        postCreate: function (args) {
-            this.inherited(arguments);
-            this._initControls();
-        },
-
-        startup: function (args) {
-            this.inherited(arguments);
-        },
-
-        resize: function (args) {
-            this.inherited(arguments);
-            this.tabContainer.resize();
-        },
-
-        layout: function (args) {
-            this.inherited(arguments);
-        },
-
-        //  Implementation  ---
         onErrorClick: function (line, col) {
         },
 
-        _initControls: function () {
-            var context = this;
-            this.tabContainer = registry.byId(this.id + "TabContainer");
-
-            var context = this;
-            this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (!nval.initalized) {
-                    nval.init(nval.params);
-                }
-                context.selectedTab = nval;
-            });
+        initTab: function () {
+            var currSel = this.getSelectedChild();
+            if (currSel && !currSel.initalized) {
+                currSel.init(currSel.params);
+            }
         },
 
         ensurePane: function (id, params) {
@@ -93,11 +61,15 @@ define([
                     });
                 }
                 this.tabMap[id] = retVal;
-                this.tabContainer.addChild(retVal);
+                this.addChild(retVal);
             }
         },
 
         init: function (params) {
+            if (this.initalized)
+                return;
+            this.initalized = true;
+
             if (params.Wuid) {
                 this.wu = new ESPWorkunit({
                     Wuid: params.Wuid
@@ -109,9 +81,12 @@ define([
                         context.wu.getInfo({
                             onGetGraphs: function (graphs) {
                                 for (var i = 0; i < graphs.length; ++i) {
-                                    context.ensurePane(context.id + "graph_" + i, {
+                                    context.ensurePane(context.id + "_graph" + i, {
                                         graph: graphs[i]
                                     });
+                                    if (i == 0) {
+                                        context.initTab();
+                                    }
                                 }
                             }
                         });
