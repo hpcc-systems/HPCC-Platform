@@ -40,6 +40,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_SERVER_INI "eclWatchIP"
 #define ECLOPT_SERVER_ENV "ECL_WATCH_IP"
 #define ECLOPT_SERVER_DEFAULT "."
+#define ECLOPT_SSL "--ssl"
+#define ECLOPT_SSL_S "-ssl"
 
 #define ECLOPT_PORT "--port"
 #define ECLOPT_PORT_INI "eclWatchPort"
@@ -173,7 +175,7 @@ class EclCmdCommon : public CInterface, implements IEclCommand
 {
 public:
     IMPLEMENT_IINTERFACE;
-    EclCmdCommon() : optVerbose(false)
+    EclCmdCommon() : optVerbose(false), optSSL(false)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -185,6 +187,7 @@ public:
             "   --help                 display usage information for the given command\n"
             "   -v, --verbose          output additional tracing information\n"
             "   -s, --server=<ip>      ip of server running ecl services (eclwatch)\n"
+            "   -ssl, --ssl            use SSL to secure the connection to the server\n"
             "   --port=<port>          ecl services port\n"
             "   -u, --username=<name>  username for accessing ecl services\n"
             "   -pw, --password=<pw>   password for accessing ecl services\n"
@@ -196,6 +199,7 @@ public:
     StringAttr optUsername;
     StringAttr optPassword;
     bool optVerbose;
+    bool optSSL;
 };
 
 class EclCmdWithEclTarget : public EclCmdCommon
@@ -253,5 +257,32 @@ public:
 };
 
 void outputMultiExceptions(const IMultiException &me);
+
+class EclCmdURL : public StringBuffer
+{
+public:
+    EclCmdURL(const char *service, const char *ip, const char *port, bool ssl)
+    {
+        set("http");
+        if (ssl)
+            append('s');
+        append("://").append(ip).append(':').append(port).append('/').append(service);
+    }
+};
+
+template <class Iface> Iface *intClient(Iface *client, EclCmdCommon &cmd, const char *service)
+{
+    if(cmd.optServer.isEmpty())
+        throw MakeStringException(-1, "Server IP not specified");
+
+    EclCmdURL url(service, cmd.optServer, cmd.optPort, cmd.optSSL);
+    client->addServiceUrl(url.str());
+    if (cmd.optUsername.length())
+        client->setUsernameToken(cmd.optUsername, cmd.optPassword, NULL);
+
+    return client;
+}
+
+#define createCmdClient(SN, cmd) intClient<IClient##SN>(create##SN##Client(), cmd, #SN);
 
 #endif
