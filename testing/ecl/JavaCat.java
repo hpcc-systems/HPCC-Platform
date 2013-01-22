@@ -1,5 +1,15 @@
 public class JavaCat
 {
+  public static int add1(int a)
+  {
+    return a + 1;
+  }
+  public static String add2(String a)
+  {
+    return a + '1';
+  }
+
+
   public static int add(int a, int b)
   {
     return a + b;

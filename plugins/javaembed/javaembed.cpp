@@ -70,18 +70,23 @@ public:
     JavaGlobalState()
     {
         JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
-        JavaVMOption* options = new JavaVMOption[2];
+        JavaVMOption* options = new JavaVMOption[3];
         options[0].optionString = (char *) "-Djava.class.path=.";
-        options[1].optionString = (char *) "-verbose:jni";
+        options[1].optionString = (char *) "-verbosegc";
+        options[2].optionString = (char *) "-verbose:jni";
         vm_args.version = JNI_VERSION_1_6;
-        vm_args.nOptions = 1;  // set to 2 if you want the verbose...
+#ifdef _DEBUG
+        vm_args.nOptions = 1;  // set to 3 if you want the verbose...
+#else
+        vm_args.nOptions = 1;
+#endif
         vm_args.options = options;
         vm_args.ignoreUnrecognized = false;
         /* load and initialize a Java VM, return a JNI interface pointer in env */
         JNIEnv *env;       /* receives pointer to native method interface */
         JNI_CreateJavaVM(&javaVM, (void**)&env, &vm_args);
 
-        delete options;
+        delete [] options;
     }
     ~JavaGlobalState()
     {
@@ -109,7 +114,7 @@ public:
     {
     }
 
-    inline jmethodID importFunction(const char *text)
+    inline void importFunction(const char *text)
     {
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
@@ -123,7 +128,7 @@ public:
             funcname++;  // skip the '.'
             StringBuffer methodname(signature-funcname, funcname);
             signature++; // skip the ':'
-            javaClass = JNIenv->FindClass(classname);
+            javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->FindClass(classname));
             if (!javaClass)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s", classname.str());
             javaMethodID = JNIenv->GetStaticMethodID(javaClass, methodname, signature);
@@ -135,7 +140,6 @@ public:
             returnType.set(returnSig);
             prevtext.set(text);
         }
-        return NULL;
     }
     inline void callFunction(jvalue &result, const jvalue * args)
     {
@@ -146,7 +150,7 @@ public:
         case 'J': result.j = JNIenv->CallStaticLongMethodA(javaClass, javaMethodID, args); break;
         case 'F': result.f = JNIenv->CallStaticFloatMethodA(javaClass, javaMethodID, args); break;
         case 'D': result.d = JNIenv->CallStaticDoubleMethodA(javaClass, javaMethodID, args); break;
-        case 'L': result.l = JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args); break;
+        case 'L': result.l = JNIenv->NewGlobalRef(JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args)); break;
         case 'I': // Others are all smaller ints, so we can use this for all
         default: result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
         }
@@ -189,6 +193,23 @@ public:
             throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
     }
+    bool getBooleanResult(jvalue &result)
+    {
+        switch (returnType.get()[0])
+        {
+        case 'Z': return result.z;
+        case 'L':
+            {
+                // Result should be of class 'Boolean'
+                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "booleanValue", "()Z");  // this could probably be cached?
+                if (!getVal)
+                    throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+                return JNIenv->CallBooleanMethod(result.l, getVal);
+            }
+        default:
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        }
+    }
 private:
     StringAttr returnType;
     StringAttr prevtext;
@@ -211,6 +232,10 @@ public:
     {
     }
 
+    virtual bool getBooleanResult()
+    {
+        return sharedCtx->getBooleanResult(result);
+    }
     virtual double getRealResult()
     {
         return sharedCtx->getDoubleResult(result);
@@ -228,11 +253,17 @@ public:
         jstring sresult = (jstring) result.l;
         __len = sharedCtx->JNIenv->GetStringUTFLength(sresult);
         const char * chars =  sharedCtx->JNIenv->GetStringUTFChars(sresult, NULL);
-        __result = new char(__len);
+        __result = (char *)rtlMalloc(__len);
         memcpy(__result, chars, __len);
         sharedCtx->JNIenv->ReleaseStringUTFChars(sresult, chars);
     }
 
+    virtual void bindBooleanParam(const char *name, bool val)
+    {
+        jvalue v;
+        v.z = val;
+        addArg(v);
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         jvalue v;

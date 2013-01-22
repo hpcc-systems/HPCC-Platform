@@ -805,12 +805,14 @@ const char * cppSystemText[]  = {
     "    boolean dictionaryLookupExists(boolean meta, _linkcounted_ dictionary dict, row key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExists';",
 
     // Marshalling parameters to external languages
+    "   bindBooleanParam(const varstring name, boolean val) : method,entrypoint='bindBooleanParam';",
+    "   bindRealParam(const varstring name, real val) : method,entrypoint='bindRealParam';",
     "   bindSignedParam(const varstring name, integer val) : method,entrypoint='bindSignedParam';",
     "   bindUnsignedParam(const varstring name, unsigned val) : method,entrypoint='bindUnsignedParam';",
     "   bindStringParam(const varstring name, const string val) : method,entrypoint='bindStringParam';",
     "   bindVStringParam(const varstring name, const varstring val) : method,entrypoint='bindvStringParam';",  // Not yet used
-    "   bindRealParam(const varstring name, real val) : method,entrypoint='bindRealParam';",
 
+    "   boolean getBooleanResult() : method,entrypoint='getBooleanResult';",
     "   real getRealResult() : method,entrypoint='getRealResult';",
     "   integer getSignedResult() : method,entrypoint='getSignedResult';",
     "   string getStringResult() : method,entrypoint='getStringResult';",

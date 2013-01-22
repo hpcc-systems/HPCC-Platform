@@ -11482,6 +11482,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         case type_real:
             bindFunc = bindRealParamAtom;
             break;
+        case type_boolean:
+            bindFunc = bindBooleanParamAtom;
+            break;
         default:
             UNIMPLEMENTED;
         }
@@ -11501,6 +11504,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         break;
     case type_real:
         returnFunc = getRealResultAtom;
+        break;
+    case type_boolean:
+        returnFunc = getBooleanResultAtom;
         break;
     default:
         UNIMPLEMENTED;

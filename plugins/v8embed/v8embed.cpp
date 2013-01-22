@@ -83,6 +83,11 @@ public:
         isolate->Dispose();
     }
 
+    virtual void bindBooleanParam(const char *name, bool val)
+    {
+        v8::HandleScope handle_scope;
+        context->Global()->Set(v8::String::New(name), v8::Boolean::New(val));
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         v8::HandleScope handle_scope;
@@ -111,6 +116,12 @@ public:
         context->Global()->Set(v8::String::New(name), v8::String::New(val));
     }
 
+    virtual bool getBooleanResult()
+    {
+        assertex (!result.IsEmpty());
+        v8::HandleScope handle_scope;
+        return result->BooleanValue();
+    }
     virtual double getRealResult()
     {
         assertex (!result.IsEmpty());

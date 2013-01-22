@@ -258,6 +258,13 @@ public:
         sharedCtx->threadState = PyEval_SaveThread();
     }
 
+    virtual bool getBooleanResult()
+    {
+        assertex(result);
+        if (!PyBool_Check(result))
+            throw MakeStringException(MSGAUD_user, 0, "pyembed: Type mismatch on result");
+        return result == Py_True;
+    }
     virtual double getRealResult()
     {
         assertex(result);
@@ -299,6 +306,11 @@ public:
     }
     ~Python27EmbedScriptContext()
     {
+    }
+    virtual void bindBooleanParam(const char *name, bool val)
+    {
+        OwnedPyObject vval = PyBool_FromLong(val ? 1 : 0);
+        PyDict_SetItemString(locals, name, vval);
     }
     virtual void bindRealParam(const char *name, double val)
     {
@@ -356,6 +368,10 @@ public:
     }
     ~Python27EmbedImportContext()
     {
+    }
+    virtual void bindBooleanParam(const char *name, bool val)
+    {
+        addArg(PyBool_FromLong(val ? 1 : 0));
     }
     virtual void bindRealParam(const char *name, double val)
     {

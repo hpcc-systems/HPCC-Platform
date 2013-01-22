@@ -733,12 +733,14 @@ ECLRTL_API bool rtlGPF();
 
 interface IEmbedFunctionContext : extends IInterface
 {
+    virtual void bindBooleanParam(const char *name, bool val) = 0;
     virtual void bindRealParam(const char *name, double val) = 0;
     virtual void bindSignedParam(const char *name, __int64 val) = 0;
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val) = 0;
     virtual void bindStringParam(const char *name, size32_t len, const char *val) = 0;
     virtual void bindVStringParam(const char *name, const char *val) = 0;
 
+    virtual bool getBooleanResult() = 0;
     virtual double getRealResult() = 0;
     virtual __int64 getSignedResult() = 0;
     virtual unsigned __int64 getUnsignedResult() = 0;
