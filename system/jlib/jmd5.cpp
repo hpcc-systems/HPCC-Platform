@@ -515,7 +515,7 @@ void apr_rand_salt(char* salt)
     apr_base64_encode(b64Salt, intSalt, SALT_LEN);
     apr_cpystrn(salt, b64Salt, SALT_LEN);
 #else
-    std::strcpy(salt, NULL);
+    salt[0] = (char) NULL;
 #endif
 }
 
