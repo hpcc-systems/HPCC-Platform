@@ -218,12 +218,7 @@ public:
 
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
-        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
-        client->addServiceUrl(url.str());
-        if (optUsername.length())
-            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUMultiQuerySetDetailsRequest> req = client->createWUMultiQuerysetDetailsRequest();
         req->setQuerySetName(optQuerySet.get());
         req->setClusterName(optTargetCluster.get());
@@ -351,12 +346,7 @@ public:
 
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
-        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
-        client->addServiceUrl(url.str());
-        if (optUsername.length())
-            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQuerySetCopyQueryRequest> req = client->createWUQuerysetCopyQueryRequest();
         req->setSource(optSourceQueryPath.get());
         req->setTarget(optTargetQuerySet.get());
@@ -498,12 +488,7 @@ public:
 
     virtual int processCMD()
     {
-        Owned<IClientWsWorkunits> client = createWsWorkunitsClient();
-        VStringBuffer url("http://%s:%s/WsWorkunits", optServer.sget(), optPort.sget());
-        client->addServiceUrl(url.str());
-        if (optUsername.length())
-            client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
-
+        Owned<IClientWsWorkunits> client = createCmdClient(WsWorkunits, *this);
         Owned<IClientWUQueryConfigRequest> req = client->createWUQueryConfigRequest();
         req->setTarget(optTargetCluster.get());
         req->setQueryId(optQueryId.get());

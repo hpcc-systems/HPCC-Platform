@@ -299,6 +299,8 @@ eclCmdOptionMatchIndicator EclCmdCommon::matchCommandLineOption(ArgvIterator &it
         return EclCmdOptionMatch;
     if (iter.matchFlag(optVerbose, ECLOPT_VERBOSE) || iter.matchFlag(optVerbose, ECLOPT_VERBOSE_S))
         return EclCmdOptionMatch;
+    if (iter.matchFlag(optSSL, ECLOPT_SSL) || iter.matchFlag(optSSL, ECLOPT_SSL_S))
+        return EclCmdOptionMatch;
 
     StringAttr tempArg;
     if (iter.matchOption(tempArg, "-brk"))
