@@ -79,8 +79,82 @@ define([
         }
     });
 
+    var DropZoneFiles = declare(ESPBase, {
+        idProperty: "NetAddress",
+
+        constructor: function (options) {
+            declare.safeMixin(this, options);
+        },
+
+        getIdentity: function (object) {
+            return object[this.idProperty];
+        },
+
+        query: function (query, options) {
+            var request = {};
+            lang.mixin(request, options.query);
+            if (options.start) {
+                //  Not supported  ---
+            }
+            if (options.count) {
+                //  Not supported  ---
+            }
+            if (options.sort) {
+                //  Not supported  ---
+            }
+            request['rawxml_'] = "1";
+
+            var results = xhr.get({
+                url: this.getBaseURL("FileSpray") + "/DropZoneFiles.json",
+                handleAs: "json",
+                content: request
+            });
+
+            var deferredResults = new Deferred();
+            deferredResults.total = results.then(function (response) {
+                if (lang.exists("DropZoneFilesResponse.Files.PhysicalFileStruct.length", response)) {
+                    return response.DropZoneFilesResponse.Files.PhysicalFileStruct.length;
+                }
+                return 0;
+            });
+            Deferred.when(results, function (response) {
+                var files = [];
+                if (lang.exists("DropZoneFilesResponse.Files.PhysicalFileStruct", response)) {
+                    files = response.DropZoneFilesResponse.Files.PhysicalFileStruct;
+                }
+                deferredResults.resolve(files);
+            });
+
+            return QueryResults(deferredResults);
+        }
+    });
+
     return {
         GetDFUWorkunits: GetDFUWorkunits,
+        DropZoneFiles: DropZoneFiles,
+
+        GetDropZones: function (callback) {
+            var request = {
+                DirectoryOnly: true
+            };
+
+            var espBase = new ESPBase();
+            xhr.post({
+                url: espBase.getBaseURL("FileSpray") + "/DropZoneFiles.json",
+                handleAs: "json",
+                content: request,
+                load: function (response) {
+                    if (callback && callback.load) {
+                        callback.load(response.DropZoneFilesResponse.DropZones.DropZone);
+                    }
+                },
+                error: function (e) {
+                    if (callback && callback.error) {
+                        callback.error(e);
+                    }
+                }
+            });
+        },
 
         WUAction: function (items, actionType, callback) {
             var request = {
@@ -92,7 +166,6 @@ define([
             }
 
             var espBase = new ESPBase();
-            var context = this;
             xhr.post({
                 url: espBase.getBaseURL("FileSpray") + "/DFUWorkunitsAction.json",
                 handleAs: "json",
