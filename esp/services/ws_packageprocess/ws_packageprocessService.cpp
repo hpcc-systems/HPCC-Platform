@@ -310,42 +310,22 @@ void listPkgInfo(const char *target, const char *process, IArrayOf<IConstPackage
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process %s", (process && *process) ? process : "*");
 
     StringBuffer xpath("PackageMap");
-    if (!target || !*target)
-    {
-        Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements("PackageMap");
-        ForEach(*iter)
-        {
-            Owned<IEspPackageListMapData> res = createPackageListMapData("", "");
-            IPropertyTree &item = iter->query();
-            StringBuffer xpath;
-            const char *id = item.queryProp("@id");
-            if (id)
-            {
-                xpath.append("PackageMap[@id='").append(id).append("']");
-                IPropertyTree *mapTree = root->queryPropTree(xpath);
-                Owned<IEspPackageListMapData> res = createPackageListMapData("", "");
-                getPackageListInfo(mapTree, res);
-                results->append(*res.getClear());
-            }
-        }
-    }
-    else
-    {
+    if (target && *target)
         xpath.appendf("[@querySet='%s']", target);
-        Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements(xpath.str());
-        ForEach(*iter)
+    Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements(xpath.str());
+    ForEach(*iter)
+    {
+        IPropertyTree &item = iter->query();
+        const char *id = item.queryProp("@id");
+        if (id)
         {
-            IPropertyTree &item = iter->query();
-            const char *id = item.queryProp("@id");
-            if (id)
-            {
-                StringBuffer xpath;
-                xpath.append("PackageMap[@id='").append(id).append("']");
-                IPropertyTree *mapTree = root->queryPropTree(xpath);
-                Owned<IEspPackageListMapData> res = createPackageListMapData("", "");
-                getPackageListInfo(mapTree, res);
-                results->append(*res.getClear());
-            }
+            StringBuffer xpath;
+            xpath.append("PackageMap[@id='").append(id).append("']");
+            IPropertyTree *mapTree = root->queryPropTree(xpath);
+            Owned<IEspPackageListMapData> res = createPackageListMapData("", "");
+            res->setActive(item.getPropBool("@active"));
+            getPackageListInfo(mapTree, res);
+            results->append(*res.getClear());
         }
     }
 }

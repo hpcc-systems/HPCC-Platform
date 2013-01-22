@@ -98,6 +98,7 @@ ESPstruct PackageListMapData
     string Id;
     string Target;
     ESParray<ESPstruct PackageListData> PkgListData;
+    boolean Active;
 };
 
 ESPresponse [exceptions_inline] ListPackageResponse
