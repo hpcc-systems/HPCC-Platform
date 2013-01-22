@@ -1,13 +1,9 @@
 /* Example of calling Python from ECL code via embedded C++
 *
-* This example uses the following code in python_cat.py:
-*
-* def cat(a, b):
-*   return a + b
-*
-* Note that you may need to change the line that sets the Python sys.path, if you extend this
-* code to use other python examples, or it you are running on a system other than a standard HPCC
-* install on Linux
+* This example evalues a python expression within an ECL transform
+* Because the python will be compiled every time the expression is evaluated, it
+* is likely to be less efficient than calling external python code as in the example
+* python_from_ecl
 *
 */
 
@@ -17,7 +13,7 @@
 // Embedded C++ that makes a call to a Python function
 
 
-string cat(varstring a, varstring b) := BEGINC++
+string pythonCat(varstring a, varstring b) := BEGINC++
 
 // This section of the code should probably move to a plugin, or somesuch
 
@@ -43,7 +39,6 @@ public:
         Py_Initialize();
         PyEval_InitThreads();
         pythonInitialized = true;
-        resolvePythonFunctions();
         tstate = PyEval_SaveThread();
     }
     ~PythonInitializer()
@@ -55,28 +50,6 @@ public:
         // Finish the Python Interpreter
         if (pythonInitialized)
             Py_Finalize();
-    }
-
-    void resolvePythonFunctions()
-    {
-        PySys_SetPath("/opt/HPCCSystems/examples/python/");    // Set this to where you want to pick up python_cat.py from
-        pModule = PyImport_ImportModule("python_cat");
-        if (pModule == NULL)
-        {
-            PyErr_Print();
-        }
-        else
-        {
-            // pDict is a borrowed reference
-            PyObject *pDict = PyModule_GetDict(pModule);
-            // pFunc_cat is also a borrowed reference
-            pFunc_cat = PyDict_GetItemString(pDict, "cat");
-            if (!pFunc_cat || !PyCallable_Check(pFunc_cat))
-            {
-                PyErr_Print();
-                pFunc_cat = NULL;
-            }
-        }
     }
 
 };
@@ -135,14 +108,16 @@ public:
 
 #body
 
-// extern  void user1(size32_t & __lenResult,char * & __result,const char * a,const char * b) {
+// extern  void user1(size32_t & __lenResult,char * & __result, const char *a, const char *b) {
 {
-    if (!pFunc_cat)
-       rtlFail(0, "Could not resolve python functions");
     GILstateWrapper gstate;
-    OwnedPyObject pArgs = Py_BuildValue("s,s", a, b);
-    checkPythonError();
-    OwnedPyObject pResult = PyObject_CallObject(pFunc_cat, pArgs);
+    static OwnedPyObject pythonCode = Py_CompileString("a+b", "user1", Py_eval_input);
+
+    OwnedPyObject locals = PyDict_New ();
+    OwnedPyObject globals = PyDict_New ();
+    PyDict_SetItemString(locals, "a", PyString_FromString(a));
+    PyDict_SetItemString(locals, "b", PyString_FromString(b));
+    OwnedPyObject pResult = PyEval_EvalCode((PyCodeObject *) pythonCode.get(), locals, globals);
     checkPythonError();
      __lenResult = PyString_Size(pResult);
     const char * chars =  PyString_AsString(pResult);
@@ -169,7 +144,7 @@ outrec := RECORD
           END;
 
 outrec t(inrec L) := TRANSFORM
-  SELF.c := cat(L.f1, L.f2)  // Calls Python function
+  SELF.c := pythonCat(L.f1, L.f2)  // Evaluates python expression to concatenate strings
 END;
 
 outfile := project(infile1, t(LEFT))+project(infile2, t(LEFT));  // threaded concat operation

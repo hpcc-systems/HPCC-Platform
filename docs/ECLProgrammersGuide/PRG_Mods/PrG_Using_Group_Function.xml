@@ -85,7 +85,7 @@ OUTPUT(i2);
     the second.</para>
   </sect2>
 
-  <sect2 id="Performance_Considerations">
+  <sect2 id="PG_Performance_Considerations">
     <title>Performance Considerations</title>
 
     <para>There is also a major performance advantage to using the GROUP

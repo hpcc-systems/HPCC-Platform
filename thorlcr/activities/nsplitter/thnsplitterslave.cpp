@@ -27,17 +27,20 @@ class NSplitterSlaveActivity;
 
 class CSplitterOutputBase : public CSimpleInterface, implements IRowStream
 {
+protected:
+    unsigned __int64 totalCycles;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+    CSplitterOutputBase() { totalCycles = 0; }
 
     virtual void start() = 0;
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info) = 0;
+    virtual unsigned __int64 queryTotalCycles() const { return totalCycles; }
 };
 
 class CSplitterOutput : public CSplitterOutputBase
 {
     NSplitterSlaveActivity &activity;
-    unsigned __int64 totalCycles;
 
     unsigned output;
     rowcount_t rec, max;
@@ -49,33 +52,10 @@ public:
 
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info);
 
-    void addCycles(unsigned __int64 elapsedCycles);
     virtual void start();
     virtual void stop();
     virtual const void *nextRow();
-    unsigned __int64 queryTotalCycles() const;
 };
-
-#ifdef TIME_ACTIVITIES
-struct Timer : public ActivityTimer
-{
-    CSplitterOutput &output;
-    unsigned __int64 elapsedCycles;
-    inline Timer(CSplitterOutput &_output, const bool &enabled) : ActivityTimer(elapsedCycles, enabled, NULL), output(_output) { }
-    inline ~Timer()
-    {
-        if (enabled)
-            output.addCycles(elapsedCycles);
-    }
-};
-#else
-//optimized away completely?
-struct Timer
-{
-    inline Timer(CSplitterOutput &_output, const bool &enabled) { }
-};
-#endif
-
 
 
 //
@@ -90,7 +70,6 @@ class NSplitterSlaveActivity : public CSlaveActivity
     CriticalSection startLock;
     unsigned nstopped;
     rowcount_t recsReady;
-    SpinLock timingLock;
     IThorDataLink *input;
     bool grouped;
     Owned<IException> startException, writeAheadException;
@@ -180,10 +159,15 @@ class NSplitterSlaveActivity : public CSlaveActivity
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
         CInputWrapper(NSplitterSlaveActivity &_activity, IThorDataLink *_input) : activity(_activity), input(_input) { }
-        virtual const void *nextRow() { return input->nextRow(); }
+        virtual const void *nextRow()
+        {
+            ActivityTimer t(totalCycles, activity.queryTimeActivities(), NULL);
+            return input->nextRow();
+        }
         virtual void stop() { input->stop(); }
         virtual void start()
         {
+            ActivityTimer s(totalCycles, activity.queryTimeActivities(), NULL);
             input->start();
         }
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
@@ -235,6 +219,12 @@ class NSplitterSlaveActivity : public CSlaveActivity
             else
                 activity->inputs.item(0)->getMetaInfo(info);
             info.canStall = !activity->spill;
+        }
+        virtual unsigned __int64 queryTotalCycles() const
+        {
+            if (!input)
+                return 0;
+            return input->queryTotalCycles();
         }
     };
 public:
@@ -327,6 +317,7 @@ public:
     }
     inline void more(rowcount_t &max)
     {
+        ActivityTimer t(totalCycles, queryTimeActivities(), NULL);
         writer.more(max);
     }
     void prepareInput(unsigned output)
@@ -427,6 +418,17 @@ public:
         if (smartBuf)
             smartBuf->cancel();
     }
+    unsigned __int64 queryTotalCycles() const
+    {
+        unsigned __int64 _totalCycles = totalCycles; // more() time
+        ForEachItemIn(o, outputs)
+        {
+            CDelayedInput *delayedInput = (CDelayedInput *)outputs.item(o);
+            _totalCycles += delayedInput->queryTotalCycles();
+        }
+        return _totalCycles;
+    }
+
 friend class CInputWrapper;
 friend class CSplitterOutput;
 friend class CWriter;
@@ -439,20 +441,12 @@ CSplitterOutput::CSplitterOutput(NSplitterSlaveActivity &_activity, unsigned _ou
    : activity(_activity), output(_output)
 {
     rec = max = 0;
-    totalCycles = 0;
-}
-
-void CSplitterOutput::addCycles(unsigned __int64 elapsedCycles)
-{
-    totalCycles += elapsedCycles; // per output
-    SpinBlock b(activity.timingLock);
-    activity.getTotalCyclesRef() += elapsedCycles; // Splitter act aggregate time.
 }
 
 // IThorDataLink
 void CSplitterOutput::start()
 {
-    Timer s(*this, activity.queryTimeActivities());
+    ActivityTimer s(totalCycles, activity.queryTimeActivities(), NULL);
     rec = max = 0;
     activity.prepareInput(output);
     if (activity.startException)
@@ -468,9 +462,9 @@ void CSplitterOutput::stop()
 
 const void *CSplitterOutput::nextRow()
 {
-    Timer t(*this, activity.queryTimeActivities());
     if (rec == max)
         activity.more(max);
+    ActivityTimer t(totalCycles, activity.queryTimeActivities(), NULL);
     const void *row = activity.nextRow(output); // pass ptr to max if need more
     ++rec;
     return row;
@@ -481,12 +475,6 @@ void CSplitterOutput::getMetaInfo(ThorDataLinkMetaInfo &info)
 {
     CThorDataLink::calcMetaInfoSize(info, activity.inputs.item(0));
 }
-
-unsigned __int64 CSplitterOutput::queryTotalCycles() const
-{
-    return totalCycles;
-}
-
 
 CActivityBase *createNSplitterSlave(CGraphElementBase *container)
 {

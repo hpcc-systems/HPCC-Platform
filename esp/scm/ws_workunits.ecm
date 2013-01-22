@@ -1070,6 +1070,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     string memoryLimit;
     nonNegativeInteger TimeLimit(0);
     nonNegativeInteger WarnTimeLimit(0);
+    string Priority;
     string RemoteDali;
 };
 
@@ -1095,6 +1096,7 @@ ESPrequest [nil_remove] WUQueryConfigRequest
     string memoryLimit;
     nonNegativeInteger TimeLimit(0);
     nonNegativeInteger WarnTimeLimit(0);
+    string Priority;
 };
 
 ESPStruct WUQueryConfigResult
@@ -1141,6 +1143,7 @@ ESPStruct [nil_remove] QuerySetQuery
     string memoryLimit;
     nonNegativeInteger timeLimit;
     nonNegativeInteger warnTimeLimit;
+    string priority;
 };
 
 ESPStruct QuerySetAlias
@@ -1290,6 +1293,7 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     string memoryLimit;
     nonNegativeInteger TimeLimit(0);
     nonNegativeInteger WarnTimeLimit(0);
+    string priority;
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse

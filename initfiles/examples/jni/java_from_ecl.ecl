@@ -20,12 +20,16 @@
 *
 *   javap -s -p javacat
 *
-* To compile this ECL example, you need to link the JNI libraries:
-*
-* eclcc calljava.ecl -Wc,-I/usr/lib/jvm/java-6-openjdk/include/ -Wl,-L/usr/lib/jvm/java-6-openjdk/jre/lib/amd64/server/ \
-*    -Wl,-L/usr/lib/jvm/java-6-openjdk/jre/lib/amd64/ -Wl,-ljawt -Wl,-ljvm -target=roxie
+* Note that a JVM - once loaded - cannot be successfully unloaded. Therefore this code will work
+* for repeated workunits on hthor, but on Thor and Roxie you will only be able to run once before
+* needing to restart the Thor/Roxie cluster. Moving the code into a plugin will help resolve that.
 *
 */
+
+// Set the compiler/linker options needed to ensure that the jvm is linked
+
+#option ('compileOptions', '-I/usr/lib/jvm/java-6-openjdk/include/');
+#option ('linkOptions', '-L/usr/lib/jvm/java-6-openjdk/jre/lib/amd64/server/ -L/usr/lib/jvm/java-6-openjdk/jre/lib/amd64/ -Wl,-rpath,/usr/lib/jvm/java-6-openjdk/jre/lib/amd64/ -Wl,-rpath,/usr/lib/jvm/java-6-openjdk/jre/lib/amd64/server/');
 
 // Embedded C++ that makes a JNI call
 
@@ -35,6 +39,8 @@ string cat(varstring a, varstring b) := BEGINC++
 
 #include <jni.h>
 #include <assert.h>
+#option library jawt
+#option library jvm
 
 static JavaVM *javaVM;       /* denotes a Java VM */
 static pthread_once_t jni_init_flag = PTHREAD_ONCE_INIT;  /* Ensures initialized just once */
@@ -44,17 +50,28 @@ static void initJNI()
     assert (!javaVM);
     JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
     JavaVMOption* options = new JavaVMOption[2];
-    options[0].optionString = "-Djava.class.path=.";
-    options[1].optionString = "-verbose:jni";
+    char classPath[2048];
+    strcpy(classPath,"-Djava.class.path=.:/opt/HPCCSystems/examples/jni");
+    const char *oldPath = getenv("CLASSPATH");
+    if (oldPath && *oldPath)
+    {
+        strcat(classPath, ":");
+        strcat(classPath, oldPath);
+    }
+    options[0].optionString = classPath;
+    options[1].optionString = (char *) "-verbose:jni";
     vm_args.version = JNI_VERSION_1_6;
     vm_args.nOptions = 1;  // set to 2 if you want the verbose...
     vm_args.options = options;
     vm_args.ignoreUnrecognized = false;
     /* load and initialize a Java VM, return a JNI interface pointer in env */
     JNIEnv *env;       /* receives pointer to native method interface */
-    JNI_CreateJavaVM(&javaVM, (void**)&env, &vm_args);
-
+    jint res =JNI_CreateJavaVM(&javaVM, (void**)&env, &vm_args);
     delete options;
+    if (res < 0)
+    {
+        rtlFail(res, "Couldn't create JVM");
+    }
 }
 
 static JNIEnv *getJNIEnvironment()
@@ -109,6 +126,8 @@ static void resolveJNIMethods()
     pthread_once(&jni_resolve_flag, resolveJNIMethods);
 
     JNIEnv *env = getJNIEnvironment();
+    if (!env || !JavaCat || !JavaCat_cat)
+        rtlFail(0, "Failed to resolve JNI functions");
     jstring jstrA = env->NewStringUTF(a);
     jstring jstrB = env->NewStringUTF(b);
     jstring result = (jstring) env->CallStaticObjectMethod(JavaCat, JavaCat_cat, jstrA, jstrB);
@@ -116,7 +135,7 @@ static void resolveJNIMethods()
 
     __lenResult = env->GetStringUTFLength(result);
     const char * chars =  env->GetStringUTFChars(result, NULL);
-    __result = new char(__lenResult);
+    __result = (char *)rtlMalloc(__lenResult);
     memcpy(__result, chars, __lenResult);
     env->ReleaseStringUTFChars(result, chars);
 // }

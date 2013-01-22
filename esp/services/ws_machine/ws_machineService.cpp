@@ -1174,6 +1174,7 @@ void Cws_machineEx::readStorageData(const char* response, CMachineInfoThreadPara
     if (!pStr)
         DBGLOG("Storage information not found on %s", pParam->m_machineData.getNetworkAddress());
 
+    bool isTitleLine = true;
     CIArrayOf<CStorageData>& storage = pParam->m_machineData.getStorage();
     while (pStr)
     {
@@ -1188,6 +1189,12 @@ void Cws_machineEx::readStorageData(const char* response, CMachineInfoThreadPara
         {
             buf.append(pStr);
             pStr = NULL;
+        }
+
+        if (isTitleLine)
+        {
+            isTitleLine = false;
+            continue;
         }
 
         if (buf.length() > 0)
