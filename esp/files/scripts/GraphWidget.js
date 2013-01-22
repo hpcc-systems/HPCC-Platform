@@ -251,7 +251,7 @@ require([
                     } catch (e) { }
                     return false;
                 } else {
-                    for (var i = 0, p = navigator._plugins, l = p.length; i < l; i++) {
+                    for (var i = 0, p = navigator.plugins, l = p.length; i < l; i++) {
                         if (p[i].name.indexOf("HPCCSystemsGraphViewControl") > -1) {
                             return true;
                         }
