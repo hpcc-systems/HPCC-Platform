@@ -102,7 +102,7 @@
          <xsl:when test="$authMethod='ldap' or $authMethod='ldaps'">
             <Authenticate method="LdapSecurity" config="ldapserver">
             <xsl:copy-of select="$bindingNode/@resourcesBasedn"/> <!--if binding has an ldap resourcebasedn specified then copy it out -->
-            
+
             <xsl:for-each select="$bindingNode/Authenticate">
                <Location path="{@path}" resource="{@resource}" access="{@access}"/>
             </xsl:for-each>
@@ -110,9 +110,13 @@
             <xsl:for-each select="$bindingNode/AuthenticateFeature[@authenticate='Yes']">
                <Feature name="{@name}" path="{@path}" resource="{@resource}" required="{@access}" description="{@description}"/>
             </xsl:for-each>
-            
             </Authenticate>
          </xsl:when>
+        <xsl:when test="$authMethod='htpasswd'">
+          <Authenticate method="htpasswd">
+            <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$bindingNode/../Authentication/@htpasswdFile"/> </xsl:attribute>
+          </Authenticate>
+        </xsl:when>
       </xsl:choose>
     </xsl:template>
 

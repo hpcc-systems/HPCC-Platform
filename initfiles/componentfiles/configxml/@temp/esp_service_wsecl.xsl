@@ -214,6 +214,11 @@
                </xsl:for-each>                              
             </Authenticate>
          </xsl:when>
+         <xsl:when test="$authMethod='htpasswd'">
+           <Authenticate method="htpasswd">
+             <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$bindingNode/../Authentication/@htpasswdFile"/> </xsl:attribute>
+           </Authenticate>
+         </xsl:when>
       </xsl:choose>
    </xsl:template>
    

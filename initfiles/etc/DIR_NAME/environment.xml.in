@@ -423,7 +423,8 @@
               name="myesp"
               perfReportDelay="60"
               portalurl="${PORTALURL}">
-   <Authentication ldapAuthMethod="kerberos"
+   <Authentication htpasswd="./etc/HPCCSystems/.htpasswd"
+                   ldapAuthMethod="kerberos"
                    ldapConnections="10"
                    ldapServer=""
                    method="none"/>
