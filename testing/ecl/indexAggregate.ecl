@@ -18,7 +18,7 @@
 //UseStandardFiles
 
 // Test a case that needs serialize due to child dataset...
-table(sqSimplePersonBookIndex, { dataset sqSimplePersonBookIndex.books, sqSimplePersonBookIndex.surname, count(group) });
+table(sqSimplePersonBookIndex, { dataset books := sqSimplePersonBookIndex.books, sqSimplePersonBookIndex.surname, count(group) });
 
 // ... and a case that doesn't
 table(sqSimplePersonBookIndex, { sqSimplePersonBookIndex.surname, count(group) });

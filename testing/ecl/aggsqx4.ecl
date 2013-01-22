@@ -26,10 +26,10 @@
 pr:= table(sqHousePersonBookDs.persons, { fullname := trim(surname) + ', ' + trim(forename), aage });
 
 //Filtered Aggregate on a projected table.
-output(sqHousePersonBookDs, { dataset sort(table(pr(aage > 20), { aage, max(group, fullname) }, aage, few), aage) } );
+output(sqHousePersonBookDs, { dataset people := sort(table(pr(aage > 20), { aage, max(group, fullname) }, aage, few), aage) } );
 
 //Aggregate on a projected table that can't be merged
 pr2:= table(sqHousePersonBookDs.persons, { surname, forename, aage, unsigned8 seq := (random() % 100) / 2000 + aage; });
 
 //Filtered Aggregate on a projected table.
-output(sqHousePersonBookDs, { dataset sort(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few),surname) });
+output(sqHousePersonBookDs, { dataset people := sort(table(pr2(seq > 10), { surname, ave(group, aage) }, surname, few),surname) });

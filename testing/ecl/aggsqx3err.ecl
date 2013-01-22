@@ -25,4 +25,4 @@
 
 //A mistyped query, but interesting never the less - needs to access a stored variable from the child.
 secondBookNameX := (string20)sort(sqNamesTable5.books, name)[2].name;
-output(sqHousePersonBookDs, { dataset table(persons, { secondBookNameX, sumage := sum(group, aage) }, secondBookNameX, few)});
+output(sqHousePersonBookDs, { dataset people := table(persons, { secondBookNameX, sumage := sum(group, aage) }, secondBookNameX, few)});

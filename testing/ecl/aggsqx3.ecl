@@ -24,19 +24,19 @@
 #option ('countIndex',false)
 
 //Simple disk aggregate
-output(preload(sqHousePersonBookDs), { dataset sort(table(persons, { surname, sum(group, aage) }, surname, few), surname)});
+output(preload(sqHousePersonBookDs), { dataset people := sort(table(persons, { surname, sum(group, aage) }, surname, few), surname)});
 
 //Filtered disk aggregate, which also requires a beenProcessed flag
-output(sqHousePersonBookDs, { dataset sort(table(persons(surname != 'Halliday'), { max(group, aage), surname }, surname, few), surname)});
+output(sqHousePersonBookDs, { dataset people := sort(table(persons(surname != 'Halliday'), { max(group, aage), surname }, surname, few), surname)});
 
 //check literals are assigned
-output(sqHousePersonBookDs, { dataset sort(table(persons(forename = 'Gavin'), { 'Count: ', count(group), 'Name: ', surname }, surname, few), surname) });
+output(sqHousePersonBookDs, { dataset people := sort(table(persons(forename = 'Gavin'), { 'Count: ', count(group), 'Name: ', surname }, surname, few), surname) });
 
 //Sub query needs serializing or repeating....
 
 // A simple inline subquery
-output(sqHousePersonBookDs, { dataset sort(table(persons, { cnt := count(books), sumage := sum(group, aage) }, count(books), few), cnt)});
+output(sqHousePersonBookDs, { dataset people := sort(table(persons, { cnt := count(books), sumage := sum(group, aage) }, count(books), few), cnt)});
 
 //A not-so-simple out of line subquery
 secondBookName := (string20)sort(sqHousePersonBookDs.persons.books, name)[2].name;
-output(sqHousePersonBookDs, { dataset sort(table(persons, { sbn := secondBookName, sumage := sum(group, aage) }, secondBookName, few), sbn)});
+output(sqHousePersonBookDs, { dataset people := sort(table(persons, { sbn := secondBookName, sumage := sum(group, aage) }, secondBookName, few), sbn)});

@@ -18,7 +18,7 @@
 //UseStandardFiles
 
 // Test a case that needs serialize due to child dataset...
-sort(table(sqSimplePersonBookds, { dataset sqSimplePersonBookDs.books, sqSimplePersonBookDs.surname, sqSimplePersonBookDs.forename, count(group) }, sqSimplePersonBookDs.surname, few), surname, forename);
+sort(table(sqSimplePersonBookds, { dataset books := sqSimplePersonBookDs.books, sqSimplePersonBookDs.surname, sqSimplePersonBookDs.forename, count(group) }, sqSimplePersonBookDs.surname, few), surname, forename);
 
 // ... and a case that doesn't
 sort(table(sqSimplePersonBookds, { sqSimplePersonBookDs.surname, sqSimplePersonBookDs.forename, count(group) }, sqSimplePersonBookDs.surname, few), surname, forename);
