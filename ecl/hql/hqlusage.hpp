@@ -63,20 +63,24 @@ public:
     inline void noteAll() { usedAll = true; }
     inline void noteFilepos() { usedFilepos = true; }
 
-    IHqlExpression * queryFilename() const;
+    const char * queryFilenameText() const;
     inline bool matches(IHqlExpression * search) const { return source == search; }
     inline bool seenAll() const { return usedAll; }
 
-    IPropertyTree * createReport() const;
+    IPropertyTree * createReport(bool includeFieldDetail, const IPropertyTree * exclude) const;
 
 protected:
-    void expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, unsigned & numFields, unsigned & numFieldsUsed) const;
+    void expandSelects(IPropertyTree * xml, IHqlExpression * record, IHqlExpression * selector, bool allUsed, bool includeFieldDetail, unsigned & numFields, unsigned & numFieldsUsed) const;
+    IHqlExpression * queryFilename() const;
 
 protected:
     LinkedHqlExpr source;
     HqlExprArray selects;
     bool usedAll;
     bool usedFilepos;
+
+private:
+    mutable StringAttr cachedFilenameEcl;
 };
 
 

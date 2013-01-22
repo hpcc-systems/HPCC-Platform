@@ -6972,6 +6972,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
 
     buildInstancePrefix(instance);
 
+    //MORE: Improve when we support projecting xml instead of reading all
+    SourceFieldUsage * fieldUsage = querySourceFieldUsage(tableExpr);
+    if (fieldUsage && !fieldUsage->seenAll())
+        fieldUsage->noteAll();
+
     //---- virtual const char * getFileName() { return "x.d00"; } ----
     buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(tableExpr));
     buildEncryptHelper(instance->startctx, tableExpr->queryProperty(encryptAtom));
