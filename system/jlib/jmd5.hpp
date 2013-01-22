@@ -111,6 +111,28 @@ jlib_decl void md5_string2(const char* inpstring, StringBuffer& outstring);
 /* Takes in a filename and returns the md5 sum of the file */
 jlib_decl void md5_filesum(const char* filename, StringBuffer& outstring);
 
+
+/* The following functions are APR related and if APR is not present,
+   they will be null ops with a null return.*/
+
+enum apr_enum {
+    APR_MD5_NULL=-1,
+    APR_MD5_TRUE=0,
+    APR_MD5_FALSE=1
+};
+
+typedef apr_enum apr_ret_t;
+
+/* Generate a random APR Salt.*/
+jlib_decl void apr_rand_salt(char* salt);
+
+/* Generates an APR MD5 of a string. */
+jlib_decl void apr_md5_string(StringBuffer& inpstring, StringBuffer& outstring);
+
+/* Validates an APR MD5 string against a provided plain text string. */
+jlib_decl apr_ret_t apr_md5_validate(StringBuffer& inpstring, StringBuffer& aprmd5string);
+
+
 #ifdef __cplusplus
 }  /* end extern "C" */
 #endif
