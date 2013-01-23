@@ -1586,7 +1586,7 @@ bool CWsWorkunitsEx::onWUGetDependancyTrees(IEspContext& context, IEspWUGetDepen
 
         MemoryBuffer temp;
         MemoryBuffer2IDataVal xmlresult(temp);
-        Owned<IConstWUResult> result = wu->getResultBySequence(0);
+        Owned<IConstWUResult> result = cw->getResultBySequence(0);
         if (result)
         {
             result->getResultRaw(xmlresult, NULL, NULL);
