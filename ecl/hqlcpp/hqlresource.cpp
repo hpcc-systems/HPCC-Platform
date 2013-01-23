@@ -2577,6 +2577,8 @@ static bool isPotentialCompoundSteppedIndexRead(IHqlExpression * expr)
         case no_compound_indexread:
         case no_newkeyindex:
             return true;
+        case no_getgraphloopresult:
+            return true; // Could be an index read in another graph iteration, so don't combine
         case no_keyedlimit:
         case no_preload:
         case no_filter:
