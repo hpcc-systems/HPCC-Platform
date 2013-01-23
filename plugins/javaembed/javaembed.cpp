@@ -20,6 +20,7 @@
 #include "eclrtl.hpp"
 #include "jexcept.hpp"
 #include "jthread.hpp"
+#include "jmutex.hpp"
 #include "hqlplugins.hpp"
 
 #ifdef _WIN32
@@ -62,7 +63,12 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 
 namespace javaembed {
 
-// Use a global object to ensure that the Java VM  is initialized on main thread
+// Use a global object to ensure that the Java VM  is initialized once only.
+// We create it lazily for two reasons:
+// 1. So that we only get a JVM if we need onr (even if we have loaded the plugin)
+// 2. It's important for the JVM to be initialized AFTER we have set up signal handlers, as it
+//    likes to set its own (in particular, it seems to intercept and ignore some SIGSEGV during the
+//    garbage collection).
 
 static class JavaGlobalState
 {
@@ -72,11 +78,11 @@ public:
         JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
         JavaVMOption* options = new JavaVMOption[3];
         options[0].optionString = (char *) "-Djava.class.path=.";
-        options[1].optionString = (char *) "-verbosegc";
+        options[1].optionString = (char *) "-Xcheck:jni";
         options[2].optionString = (char *) "-verbose:jni";
         vm_args.version = JNI_VERSION_1_6;
 #ifdef _DEBUG
-        vm_args.nOptions = 1;  // set to 3 if you want the verbose...
+        vm_args.nOptions = 2;  // set to 3 if you want the verbose...
 #else
         vm_args.nOptions = 1;
 #endif
@@ -93,7 +99,16 @@ public:
         // We don't attempt to destroy the Java VM, as it's buggy...
     }
     JavaVM *javaVM;       /* denotes a Java VM */
-} globalState;
+} *globalState = NULL;
+
+static CriticalSection globalStateCrit;
+static JavaGlobalState *queryGlobalState()
+{
+    CriticalBlock b(globalStateCrit);
+    if (!globalState)
+        globalState = new JavaGlobalState;
+    return globalState;
+}
 
 // There is a singleton JavaThreadContext per thread. This allows us to
 // ensure that we can make repeated calls to a Java function efficiently.
@@ -105,13 +120,15 @@ public:
 public:
     JavaThreadContext()
     {
-        jint res = globalState.javaVM->AttachCurrentThread((void **) &JNIenv, NULL);
+        jint res = queryGlobalState()->javaVM->AttachCurrentThread((void **) &JNIenv, NULL);
         assertex(res >= 0);
         javaClass = NULL;
         javaMethodID = NULL;
     }
     ~JavaThreadContext()
     {
+        if (javaClass)
+            JNIenv->DeleteGlobalRef(javaClass);
     }
 
     inline void importFunction(const char *text)
@@ -128,6 +145,8 @@ public:
             funcname++;  // skip the '.'
             StringBuffer methodname(signature-funcname, funcname);
             signature++; // skip the ':'
+            if (javaClass)
+                JNIenv->DeleteGlobalRef(javaClass);
             javaClass = (jclass) JNIenv->NewGlobalRef(JNIenv->FindClass(classname));
             if (!javaClass)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve class name %s", classname.str());
@@ -150,7 +169,7 @@ public:
         case 'J': result.j = JNIenv->CallStaticLongMethodA(javaClass, javaMethodID, args); break;
         case 'F': result.f = JNIenv->CallStaticFloatMethodA(javaClass, javaMethodID, args); break;
         case 'D': result.d = JNIenv->CallStaticDoubleMethodA(javaClass, javaMethodID, args); break;
-        case 'L': result.l = JNIenv->NewGlobalRef(JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args)); break;
+        case 'L': result.l = JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args); break;
         case 'I': // Others are all smaller ints, so we can use this for all
         default: result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
         }
@@ -166,7 +185,7 @@ public:
         case 'L':
             {
                 // Result should be of class 'Number'
-                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "longValue", "()J");  // this could probably be cached?
+                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "longValue", "()J");
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
                 return JNIenv->CallLongMethod(result.l, getVal);
@@ -184,7 +203,7 @@ public:
         case 'L':
             {
                 // Result should be of class 'Number'
-                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "doubleValue", "()D");  // this could probably be cached?
+                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "doubleValue", "()D");
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
                 return JNIenv->CallDoubleMethod(result.l, getVal);
@@ -201,7 +220,7 @@ public:
         case 'L':
             {
                 // Result should be of class 'Boolean'
-                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "booleanValue", "()Z");  // this could probably be cached?
+                jmethodID getVal = JNIenv->GetMethodID(JNIenv->GetObjectClass(result.l), "booleanValue", "()Z");
                 if (!getVal)
                     throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
                 return JNIenv->CallBooleanMethod(result.l, getVal);

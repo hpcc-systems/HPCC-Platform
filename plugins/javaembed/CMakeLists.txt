@@ -46,7 +46,19 @@ ADD_DEFINITIONS( -D_USRDLL -DJAVAEMBED_EXPORTS )
 HPCC_ADD_LIBRARY( javaembed SHARED ${SRCS} )
 install ( TARGETS javaembed DESTINATION plugins )
 
+# We link against jsig so that signals are chained from the jvm
+
+get_filename_component(JAVA_LIBRARY_PATH ${JAVA_AWT_LIBRARY} PATH)
+if (APPLE)
+    set(JSIG_LIBRARY ${JAVA_LIBRARY_PATH}/libjsig.dylib)
+elseif (WIN32)
+    set(JSIG_LIBRARY ${JAVA_LIBRARY_PATH}/jsig.dll)
+else()
+    set(JSIG_LIBRARY ${JAVA_LIBRARY_PATH}/libjsig.so)
+endif()
+
 target_link_libraries ( javaembed
+    ${JSIG_LIBRARY}
     ${JNI_LIBRARIES}
     eclrtl
     jlib
