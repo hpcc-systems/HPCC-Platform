@@ -43,24 +43,26 @@
 
 //#define NO_CATCHALL
 
-PointerArray *exceptionHandlers = NULL;
-MODULE_INIT(INIT_PRIORITY_JTHREAD)
-{
-    exceptionHandlers = new PointerArray();
-    return true;
-}
-MODULE_EXIT()
-{
-    delete exceptionHandlers;
-}
-
-__thread ThreadTermFunc threadTerminationHook;
+static __thread ThreadTermFunc threadTerminationHook;
 
 ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm)
 {
     ThreadTermFunc old = threadTerminationHook;
     threadTerminationHook = onTerm;
     return old;
+}
+
+PointerArray *exceptionHandlers = NULL;
+MODULE_INIT(INIT_PRIORITY_JTHREAD)
+{
+    if (threadTerminationHook)
+        (*threadTerminationHook)();  // May be too late :(
+    exceptionHandlers = new PointerArray();
+    return true;
+}
+MODULE_EXIT()
+{
+    delete exceptionHandlers;
 }
 
 void addThreadExceptionHandler(IExceptionHandler *handler)

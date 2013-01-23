@@ -122,28 +122,6 @@ public:
     }
 };
 
-// Use a global object to ensure that the Python interpreter is initialized on main thread
-
-static class Python27GlobalState
-{
-public:
-    Python27GlobalState()
-    {
-        // Initialize the Python Interpreter
-        Py_Initialize();
-        PyEval_InitThreads();
-        tstate = PyEval_SaveThread();
-    }
-    ~Python27GlobalState()
-    {
-        PyEval_RestoreThread(tstate);
-        // Finish the Python Interpreter
-        Py_Finalize();
-    }
-protected:
-    PyThreadState *tstate;
-} globalState;
-
 // There is a singleton PythonThreadContext per thread. This allows us to
 // ensure that we can make repeated calls to a Python function efficiently.
 
@@ -179,7 +157,7 @@ public:
             {
                 StringBuffer path(pathsep-modname, modname);
                 modname.remove(0, 1+pathsep-modname);
-                PyObject *sys_path = PySys_GetObject("path");
+                PyObject *sys_path = PySys_GetObject((char *) "path");
                 OwnedPyObject new_path = PyString_FromString(path);
                 if (sys_path)
                 {
@@ -238,6 +216,42 @@ private:
     StringAttr prevtext;
 };
 
+static __thread PythonThreadContext* threadContext;  // We reuse per thread, for speed
+static __thread ThreadTermFunc threadHookChain;
+
+static void releaseContext()
+{
+    delete threadContext;
+    threadContext = NULL;
+    if (threadHookChain)
+        (*threadHookChain)();
+}
+
+// Use a global object to ensure that the Python interpreter is initialized on main thread
+
+static class Python27GlobalState
+{
+public:
+    Python27GlobalState()
+    {
+        // Initialize the Python Interpreter
+        Py_Initialize();
+        PyEval_InitThreads();
+        tstate = PyEval_SaveThread();
+    }
+    ~Python27GlobalState()
+    {
+        if (threadContext)
+            delete threadContext;   // The one on the main thread won't get picked up by the thread hook mechanism
+        threadContext = NULL;
+        PyEval_RestoreThread(tstate);
+        // Finish the Python Interpreter
+        Py_Finalize();
+    }
+protected:
+    PyThreadState *tstate;
+} globalState;
+
 // Each call to a Python function will use a new Python27EmbedFunctionContext object
 // This takes care of ensuring that the Python GIL is locked while we are executing python code,
 // and released when we are not
@@ -251,10 +265,15 @@ public:
         PyEval_RestoreThread(sharedCtx->threadState);
         locals.setown(PyDict_New());
         globals.setown(PyDict_New());
-        PyDict_SetItemString(locals, "__builtins__", PyEval_GetBuiltins( ));  // required for import to work
+        PyDict_SetItemString(locals, "__builtins__", PyEval_GetBuiltins());  // required for import to work
     }
     ~Python27EmbedContextBase()
     {
+        // We need to clear these before calling savethread, or we won't own the GIL
+        locals.clear();
+        globals.clear();
+        result.clear();
+        script.clear();
         sharedCtx->threadState = PyEval_SaveThread();
     }
 
@@ -419,16 +438,6 @@ private:
     int argcount;
     OwnedPyObject args;
 };
-
-static __thread PythonThreadContext* threadContext;  // We reuse per thread, for speed
-static __thread ThreadTermFunc threadHookChain;
-
-static void releaseContext()
-{
-    delete threadContext;
-    if (threadHookChain)
-        (*threadHookChain)();
-}
 
 class Python27EmbedContext : public CInterfaceOf<IEmbedContext>
 {
