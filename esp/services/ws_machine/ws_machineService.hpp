@@ -714,6 +714,7 @@ private:
     set<string>                 m_excludePartitionPatterns;
     StringBuffer                m_machineInfoFile;
     BoolHash                    m_legacyFilters;
+    Mutex                       mutex_machine_info_table;
 };
 
 //---------------------------------------------------------------------------------------------
