@@ -2060,7 +2060,8 @@ void EclAgent::doProcess()
 void EclAgent::runProcess(IEclProcess *process)
 {
     assertex(rowManager==NULL);
-    rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), this, false)); 
+    allocatorMetaCache.setown(createRowAllocatorCache(this));
+    rowManager.setown(roxiemem::createRowManager(0, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
     setHThorRowManager(rowManager.get());
     rtlSetReleaseRowHook(queryHThorRtlRowCallback());
 
@@ -2098,7 +2099,7 @@ void EclAgent::runProcess(IEclProcess *process)
 #ifdef _DEBUG_LEAKS
     rowManager.clear();//Early release of rowManager, so activity IDs of leaked blocks are available
 #endif
-    allAllocators.kill();//release meta before libraries unloaded
+    allocatorMetaCache.clear(); //release meta before libraries unloaded
     queryLibraries.kill();
 
     if (debugContext)
