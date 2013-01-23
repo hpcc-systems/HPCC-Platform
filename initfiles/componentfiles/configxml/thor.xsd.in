@@ -147,6 +147,13 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="slaveDaliClient" type="xs:boolean" use="optional" default="false">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Set to true if thor slaves require dali connectivity</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
           </xs:complexType>
         </xs:element>
         <xs:element name="SwapNode">
