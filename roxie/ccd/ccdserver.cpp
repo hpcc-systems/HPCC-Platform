@@ -27616,11 +27616,10 @@ public:
 
 };
 
-class CSlaveContext : public CInterface, implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements roxiemem::IRowAllocatorCache
+class CSlaveContext : public CInterface, implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:
-    mutable IArrayOf<IEngineRowAllocator> allAllocators;
-    mutable SpinLock allAllocatorsLock;
+    mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<IRowManager> rowManager; // NOTE: the order of destruction here is significant. For leak check to work destroy this BEFORE allAllocators, but after most other things
     Owned <IDebuggableContext> debugContext;
     const IQueryFactory *factory;
@@ -27733,7 +27732,9 @@ public:
         }
 
         aborted = false;
-        rowManager.setown(roxiemem::createRowManager(_memoryLimit, this, logctx, this, false));
+
+        allocatorMetaCache.setown(createRowAllocatorCache(this));
+        rowManager.setown(roxiemem::createRowManager(_memoryLimit, this, logctx, allocatorMetaCache, false));
         //MORE: If checking heap required then should have
         //rowManager.setown(createCheckingHeap(rowManager)) or something similar.
     }
@@ -28273,71 +28274,14 @@ public:
     virtual char *getPlatform() { throwUnexpected(); } 
     virtual char *getEnv(const char *name, const char *defaultValue) const { throwUnexpected(); } 
 
-    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
+    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
-        // MORE - may need to do some caching/commoning up here otherwise GRAPH in a child query may use too many
-        SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator * ret = createRoxieRowAllocator(*rowManager, meta, activityId, allAllocators.ordinality(), roxiemem::RHFnone);
-        LINK(ret);
-        allAllocators.append(*ret);
-        return ret;
+        return allocatorMetaCache->ensure(meta, activityId);
     }
+
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
     {
         convertRowToXML(lenResult, result, info, row, flags);
-    }
-
-    // interface IRowAllocatorCache
-    virtual unsigned getActivityId(unsigned cacheId) const
-    {
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(allocatorIndex))
-            return allAllocators.item(allocatorIndex).queryActivityId();
-        else
-        {
-            //assert(false);
-            return 12345678; // Used for tracing, better than a crash...
-        }
-    }
-    virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const
-    {
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        SpinBlock b(allAllocatorsLock);
-        if (allAllocators.isItem(allocatorIndex))
-            return allAllocators.item(allocatorIndex).getId(out);
-        else
-        {
-            assert(false);
-            return out.append("unknown"); // Used for tracing, better than a crash...
-        }
-    }
-    virtual void onDestroy(unsigned cacheId, void *row) const 
-    {
-        IEngineRowAllocator *allocator;
-        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
-        {
-            SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
-            if (allAllocators.isItem(allocatorIndex))
-                allocator = &allAllocators.item(allocatorIndex);
-            else
-            {
-                assert(false);
-                return;
-            }
-        }
-        if (!RoxieRowCheckValid(cacheId, row))
-        {
-            //MORE: Give an error, but don't throw an exception!
-        }
-        allocator->queryOutputMeta()->destruct((byte *) row);
-    }
-    virtual void checkValid(unsigned cacheId, const void *row) const
-    {
-        if (!RoxieRowCheckValid(cacheId, row))
-        {
-            //MORE: Throw an exception?
-        }
     }
 
     virtual IWorkUnit *updateWorkUnit() const
@@ -28351,6 +28295,12 @@ public:
     virtual IConstWorkUnit *queryWorkUnit() const
     {
         return workUnit;
+    }
+
+// roxiemem::IRowAllocatorMetaActIdCacheCallback
+    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id) const
+    {
+        return createRoxieRowAllocator(*rowManager, meta, activityId, id, roxiemem::RHFnone);
     }
 };
 
