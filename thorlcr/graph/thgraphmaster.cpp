@@ -2355,6 +2355,8 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
             fatalHandler->clear();
     }
     fatalHandler.clear();
+    Owned<IWorkUnit> wu = &job.queryWorkUnit().lock();
+    queryJobManager().updateWorkUnitLog(*wu);
 }
 
 void CMasterGraph::sendGraph()

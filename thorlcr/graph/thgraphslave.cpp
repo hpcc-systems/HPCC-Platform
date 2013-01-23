@@ -265,9 +265,10 @@ unsigned __int64 CSlaveActivity::queryLocalCycles() const
                 break;
         }
     }
-    if (totalCycles < inputCycles) // not sure how/if possible, but guard against
+    unsigned __int64 _totalCycles = queryTotalCycles();
+    if (_totalCycles < inputCycles) // not sure how/if possible, but guard against
         return 0;
-    return totalCycles-inputCycles;
+    return _totalCycles-inputCycles;
 }
 
 unsigned __int64 CSlaveActivity::queryTotalCycles() const

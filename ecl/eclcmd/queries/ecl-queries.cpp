@@ -192,10 +192,16 @@ public:
                 line.appendN(41 - line.length(), ' ');
             line.append(' ').append(query.getWarnTimeLimit());
         }
-        if (query.getMemoryLimit())
+        if (query.getPriority())
         {
             if (line.length() < 48)
                 line.appendN(48 - line.length(), ' ');
+            line.append(' ').append(query.getPriority());
+        }
+        if (query.getMemoryLimit())
+        {
+            if (line.length() < 53)
+                line.appendN(53 - line.length(), ' ');
             line.append(' ').append(query.getMemoryLimit());
         }
         fputs(line.append('\n').str(), stdout);
@@ -207,9 +213,9 @@ public:
         if (qs.getQuerySetName())
             fprintf(stdout, "\nQuerySet: %s\n", qs.getQuerySetName());
         fputs("\n", stdout);
-        fputs("                                   Time   Warn   Memory\n", stdout);
-        fputs("Flags Query Id                     Limit  Limit  Limit\n", stdout);
-        fputs("----- ---------------------------- ------ ------ ----------\n", stdout);
+        fputs("                                   Time   Warn   Pri  Memory\n", stdout);
+        fputs("Flags Query Id                     Limit  Limit       Limit\n", stdout);
+        fputs("----- ---------------------------- ------ ------ ---- ----------\n", stdout);
 
         IArrayOf<IConstQuerySetQuery> &queries = qs.getQueries();
         ForEachItemIn(id, queries)
@@ -316,6 +322,8 @@ public:
                 continue;
             if (iter.matchOption(optMemoryLimit, ECLOPT_MEMORY_LIMIT))
                 continue;
+            if (iter.matchOption(optPriority, ECLOPT_PRIORITY))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -338,6 +346,11 @@ public:
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
         {
             fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            return false;
+        }
+        if (optPriority.length() && !isValidPriorityValue(optPriority))
+        {
+            fprintf(stderr, "invalid --priority value of %s.\n\n", optPriority.get());
             return false;
         }
 
@@ -364,6 +377,8 @@ public:
             req->setWarnTimeLimit(optWarnTimeLimit);
         if (!optMemoryLimit.isEmpty())
             req->setMemoryLimit(optMemoryLimit);
+        if (!optPriority.isEmpty())
+            req->setPriority(optPriority);
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
         if (resp->getExceptions().ordinality())
@@ -403,6 +418,8 @@ public:
             "   --warnTimeLimit=<sec>  Value to set for query warnTimeLimit configuration\n"
             "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
             "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
+            "   --priority=<val>       set the priority for this query. Value can be LOW,\n"
+            "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -413,6 +430,7 @@ private:
     StringAttr optTargetCluster;
     StringAttr optDaliIP;
     StringAttr optMemoryLimit;
+    StringAttr optPriority;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;
@@ -464,6 +482,8 @@ public:
                 continue;
             if (iter.matchOption(optMemoryLimit, ECLOPT_MEMORY_LIMIT))
                 continue;
+            if (iter.matchOption(optPriority, ECLOPT_PRIORITY))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -481,6 +501,11 @@ public:
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
         {
             fprintf(stderr, "invalid --memoryLimit value of %s.\n\n", optMemoryLimit.get());
+            return false;
+        }
+        if (optPriority.length() && !isValidPriorityValue(optPriority))
+        {
+            fprintf(stderr, "invalid --priority value of %s.\n\n", optPriority.get());
             return false;
         }
         return true;
@@ -501,6 +526,8 @@ public:
             req->setWarnTimeLimit(optWarnTimeLimit);
         if (!optMemoryLimit.isEmpty())
             req->setMemoryLimit(optMemoryLimit);
+        if (!optPriority.isEmpty())
+            req->setPriority(optPriority);
 
         Owned<IClientWUQueryConfigResponse> resp = client->WUQueryConfig(req);
         if (resp->getExceptions().ordinality())
@@ -531,6 +558,8 @@ public:
             "   --warnTimeLimit=<sec>  Value to set for query warnTimeLimit configuration\n"
             "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
             "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
+            "   --priority=<val>       set the priority for this query. Value can be LOW,\n"
+            "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -539,6 +568,7 @@ private:
     StringAttr optTargetCluster;
     StringAttr optQueryId;
     StringAttr optMemoryLimit;
+    StringAttr optPriority;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;

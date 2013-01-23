@@ -132,6 +132,21 @@ bool isValidMemoryValue(const char *value)
     return false;
 }
 
+bool isValidPriorityValue(const char *value)
+{
+    if (!value || !*value)
+        return false;
+    if (strieq("LOW", value))
+        return true;
+    if (strieq("HIGH", value))
+        return true;
+    if (strieq("SLA", value))
+        return true;
+    if (strieq("NONE", value))
+        return true;
+    return false;
+}
+
 //=========================================================================================
 
 #define PE_OFFSET_LOCATION_IN_DOS_SECTION 0x3C

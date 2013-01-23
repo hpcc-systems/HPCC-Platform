@@ -85,6 +85,7 @@ public:
     virtual IDeMonServer *queryDeMonServer() { return demonServer; }
     virtual void fatal(IException *e);
     virtual void addCachedSo(const char *name);
+    virtual void updateWorkUnitLog(IWorkUnit &workunit);
 };
 
 // CJobManager impl.
@@ -164,6 +165,16 @@ void CJobManager::fatal(IException *e)
     kill(getpid(), SIGKILL);
 #endif
 }
+
+void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
+{
+    StringBuffer log, logUrl;
+    logHandler->getLogName(log);
+    createUNCFilename(log, logUrl, false);
+    workunit.addProcess("Thor", globals->queryProp("@name"), logUrl.str());
+}
+
+
 
 
 #define IDLE_RESTART_PERIOD (8*60) // 8 hours
@@ -642,12 +653,9 @@ bool CJobManager::executeGraph(IConstWorkUnit &workunit, const char *graphName, 
     {
         Owned<IWorkUnit> wu = &workunit.lock();
         wu->setTracingValue("ThorBuild", BUILD_TAG);
-        StringBuffer log, logUrl;
-        logHandler->getLogName(log);
-        createUNCFilename(log, logUrl, false);
-        wu->addProcess("Thor", globals->queryProp("@name"), logUrl.str());
         StringBuffer tsStr("Thor - ");
         wu->setTimeStamp(tsStr.append(graphName).str(), GetCachedHostName(), "Started");
+        updateWorkUnitLog(*wu);
     }
     Owned<IException> exception;
     SCMStringBuffer wuid;

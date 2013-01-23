@@ -250,8 +250,7 @@ public:
             for (unsigned i=0; i<num; i++)
             {
                 IConstPackageListMapData& req = pkgMapInfo.item(i);
-                const char *id = req.getId();
-                printf("\nPackage Name = %s\n", id);
+                printf("\nPackage Name = %s  active = %d\n", req.getId(), req.getActive());
                 IArrayOf<IConstPackageListData> &pkgInfo = req.getPkgListData();
 
                 unsigned int numPkgs = pkgInfo.ordinality();

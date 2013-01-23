@@ -424,6 +424,7 @@ protected:
     bool spillMultiCondition;
     bool spotThroughAggregate;
     bool insideNeverSplit;
+    bool insideSteppedNeverSplit;
     bool sequential;
     CResourceOptions options;
     HqlExprArray rootConditions;
