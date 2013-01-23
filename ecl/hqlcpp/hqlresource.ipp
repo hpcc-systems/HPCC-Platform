@@ -422,6 +422,7 @@ protected:
     bool spillMultiCondition;
     bool spotThroughAggregate;
     bool insideNeverSplit;
+    bool insideSteppedNeverSplit;
     CResourceOptions options;
     HqlExprArray rootConditions;
     HqlExprCopyArray activeSelectors;

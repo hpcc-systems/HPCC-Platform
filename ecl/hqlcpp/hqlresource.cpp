@@ -1735,6 +1735,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     targetClusterType = _targetClusterType; 
     clusterSize = _clusterSize ? _clusterSize : FIXED_CLUSTER_SIZE;
     insideNeverSplit = false;
+    insideSteppedNeverSplit = false;
     options.mangleSpillNameWithWuid = false;
     options.minimizeSpillSize = _translatorOptions.minimizeSpillSize;
 
@@ -2554,14 +2555,71 @@ protected:
 };
 
 
+static bool isPotentialCompoundSteppedIndexRead(IHqlExpression * expr)
+{
+    loop
+    {
+        switch (expr->getOperator())
+        {
+        case no_compound_diskread:
+        case no_compound_disknormalize:
+        case no_compound_diskaggregate:
+        case no_compound_diskcount:
+        case no_compound_diskgroupaggregate:
+        case no_compound_childread:
+        case no_compound_childnormalize:
+        case no_compound_childaggregate:
+        case no_compound_childcount:
+        case no_compound_childgroupaggregate:
+        case no_compound_selectnew:
+        case no_compound_inline:
+            return false;
+        case no_compound_indexread:
+        case no_newkeyindex:
+            return true;
+        case no_keyedlimit:
+        case no_preload:
+        case no_filter:
+        case no_hqlproject:
+        case no_newusertable:
+        case no_limit:
+        case no_sorted:
+        case no_preservemeta:
+        case no_distributed:
+        case no_grouped:
+        case no_stepped:
+        case no_section:
+        case no_sectioninput:
+        case no_dataset_alias:
+            break;
+        case no_choosen:
+            {
+                IHqlExpression * arg2 = expr->queryChild(2);
+                if (arg2 && !arg2->isPure())
+                    return false;
+                break;
+            }
+        default:
+            return false;
+        }
+        expr = expr->queryChild(0);
+    }
+}
 
 bool EclResourcer::findSplitPoints(IHqlExpression * expr)
 {
     ResourcerInfo * info = queryResourceInfo(expr);
     bool savedInsideNeverSplit = insideNeverSplit;
+    bool savedInsideSteppedNeverSplit = insideSteppedNeverSplit;
+    if (insideSteppedNeverSplit && info)
+    {
+        if (!isPotentialCompoundSteppedIndexRead(expr) && (expr->getOperator() != no_datasetlist))
+            insideSteppedNeverSplit = false;
+    }
+
     if (info && info->numUses)
     {
-        if (insideNeverSplit)
+        if (insideNeverSplit || insideSteppedNeverSplit)
             info->neverSplit = true;
         if (info->isAlreadyInScope && (info->numUses == 0) && expr->isDatarow())
         {
@@ -2585,7 +2643,7 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
     {
         info = queryCreateResourceInfo(expr);
         info->numUses++;
-        if (insideNeverSplit)
+        if (insideNeverSplit || insideSteppedNeverSplit)
             info->neverSplit = true;
 
         bool isActivity = true;
@@ -2657,7 +2715,7 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
         case no_mergejoin:
         case no_nwayjoin:
             if (options.preventSteppedSplit)
-                insideNeverSplit = true;
+                insideSteppedNeverSplit = true;
             break;
         case no_compound_diskread:
         case no_compound_disknormalize:
@@ -2684,6 +2742,7 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
         if (!type || type->isScalar())
         {
             insideNeverSplit = savedInsideNeverSplit;
+            insideSteppedNeverSplit = savedInsideSteppedNeverSplit;
             return false;
         }
 
@@ -2716,12 +2775,14 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
                     findSplitPoints(cur);
                 }
                 insideNeverSplit = savedInsideNeverSplit;
+                insideSteppedNeverSplit = savedInsideSteppedNeverSplit;
                 gatherChildSplitPoints(expr, alwaysHoistChild, info, first, last);
                 break;
             }
         }
 
         insideNeverSplit = false;
+        insideSteppedNeverSplit = false;
         ForEachItemIn(i2, info->childDependents)
         {
             IHqlExpression & cur = info->childDependents.item(i2);
@@ -2738,6 +2799,7 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
     }
 
     insideNeverSplit = savedInsideNeverSplit;
+    insideSteppedNeverSplit = savedInsideSteppedNeverSplit;
     return info->containsActivity;
 }
 
