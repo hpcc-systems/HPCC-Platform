@@ -2,10 +2,18 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ldap_config">
-  <title>Configuring HPCC to use LDAP Authentication</title>
+  <title>Configuring HPCC for Authentication</title>
 
-  <para>This section details the steps to connect your HPCC platform to an
-  existing LDAP Server to enable user security.</para>
+  <para>This section details the steps to connect your HPCC platform to use
+  authentication. There are two ways to use authentication with your HPCC
+  system. One way is to use an implementation of .htaccess and the other is to
+  use an LDAP Server to enable user security. </para>
+
+  <para>The htaccess authentication is very basic and only serves as either
+  authenticate a user or not. LDAP authentication is more robust, that can not
+  only authenticate users, but add granularity to the authentication. You will
+  need to decide which of these methods is best for your environment and
+  implement the one that is appropriate for you.</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <?dbfo keep-together="always"?>
@@ -28,50 +36,88 @@
   </informaltable>
 
   <sect2>
-    <title>Connect to Configuration Manager</title>
+    <title>Using htaccess authentication.</title>
 
-    <para>In order to change the configuration for HPCC components, connect to
-    the Configuration Manager.</para>
+    <para>This section contains the information to install and implement
+    htaccess authentication.</para>
 
-    <orderedlist numeration="arabic">
+    <para>***Adde more information for htaccess***</para>
+
+    <para>Getting and installing the HTACCESS PACKAGE. Not really sure about
+    the details here but I am assuming that we are going to do something along
+    the following lines; </para>
+
+    <orderedlist>
       <listitem>
-        <para>Stop all HPCC Components, if they are running.</para>
+        <para>Get the HT ACCESS Installation package... Provide location and
+        details where package is available. </para>
       </listitem>
 
       <listitem>
-        <para>Verify that they are stopped. You can use a single command, such
-        as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        <para>Install the package to your system</para>
       </listitem>
 
       <listitem>
-        <para>Start Configuration Manager.</para>
-
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
-      </listitem>
-
-      <listitem>
-        <para>Connect to the Configuration Manager web interface.</para>
-
-        <para>(using the url of
-        http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
-        <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address of
-        the node running Configuration Manager)</para>
-      </listitem>
-
-      <listitem>
-        <para>Select the <emphasis role="bold">Advanced View</emphasis> radio
-        button.</para>
-      </listitem>
-
-      <listitem>
-        <para>Use the drop list to select the XML configuration file.</para>
+        <para>configure the package or program as specified by that package
+        instructions. </para>
       </listitem>
     </orderedlist>
 
-    <para><emphasis role="bold">Note:</emphasis> Configuration Manager
-    <emphasis role="bold">never</emphasis> works on the active configuration
-    file. After you finish editing you will have to copy the environment.xml
-    to the active location and push it out to all nodes.</para>
+    <para></para>
+  </sect2>
+
+  <sect2>
+    <title>LDAP Authentication</title>
+
+    <para>This section contains the information to install and implement LDAP
+    based authentication.</para>
+
+    <sect3>
+      <title>Connect to Configuration Manager</title>
+
+      <para>In order to change the configuration for HPCC components, connect
+      to the Configuration Manager.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Stop all HPCC Components, if they are running.</para>
+        </listitem>
+
+        <listitem>
+          <para>Verify that they are stopped. You can use a single command,
+          such as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Start Configuration Manager.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Connect to the Configuration Manager web interface.</para>
+
+          <para>(using the url of
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          of the node running Configuration Manager)</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">Advanced View</emphasis>
+          radio button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use the drop list to select the XML configuration file.</para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Note:</emphasis> Configuration Manager
+      <emphasis role="bold">never</emphasis> works on the active configuration
+      file. After you finish editing you will have to copy the environment.xml
+      to the active location and push it out to all nodes.</para>
+    </sect3>
   </sect2>
 
   <sect2>
@@ -307,7 +353,7 @@
               LDAP Server, in our example it is:
               <emphasis>ldapserver.</emphasis></para>
 
-              <para>Confirm the change when prompted. </para>
+              <para>Confirm the change when prompted.</para>
             </listitem>
 
             <listitem>
