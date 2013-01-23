@@ -35,7 +35,9 @@ fi
 # this must match jsocket hard limit
 export handlelimit=32768
 
+echo `date` Initializing dafilesrv setup
 sudo /etc/init.d/hpcc-init -c dafilesrv setup
+echo `date` Dafilesrv setup done
 mkdir -p $instancedir
 mkdir -p `dirname $logredirect`
 exec >>$logredirect 2>&1
