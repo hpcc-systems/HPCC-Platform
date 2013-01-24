@@ -82,7 +82,7 @@ public:
         options[2].optionString = (char *) "-verbose:jni";
         vm_args.version = JNI_VERSION_1_6;
 #ifdef _DEBUG
-        vm_args.nOptions = 2;  // set to 3 if you want the verbose...
+        vm_args.nOptions = 1;  // set to 3 if you want the verbose...
 #else
         vm_args.nOptions = 1;
 #endif
@@ -137,9 +137,11 @@ public:
         {
             prevtext.clear();
             // Name should be in the form class.method:signature
-            const char *signature = strchr(text, ':');
             const char *funcname = strchr(text, '.');
-            if (!signature || !funcname)
+            if (!funcname)
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text);
+            const char *signature = strchr(funcname, ':');
+            if (!signature)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text);
             StringBuffer classname(funcname-text, text);
             funcname++;  // skip the '.'
@@ -174,7 +176,7 @@ public:
         default: result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
         }
     }
-    __int64 getSignedResult(jvalue & result)
+    inline __int64 getSignedResult(jvalue & result)
     {
         switch (returnType.get()[0])
         {
@@ -194,7 +196,7 @@ public:
             throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
     }
-    double getDoubleResult(jvalue &result)
+    inline double getDoubleResult(jvalue &result)
     {
         switch (returnType.get()[0])
         {
@@ -212,7 +214,7 @@ public:
             throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
     }
-    bool getBooleanResult(jvalue &result)
+    inline bool getBooleanResult(jvalue &result)
     {
         switch (returnType.get()[0])
         {
@@ -228,6 +230,15 @@ public:
         default:
             throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
+    }
+    inline void getStringResult(jvalue &result, size32_t &__len, char * &__result)
+    {
+        jstring sresult = (jstring) result.l;
+        __len = JNIenv->GetStringUTFLength(sresult);
+        const char * chars =  JNIenv->GetStringUTFChars(sresult, NULL);
+        __result = (char *)rtlMalloc(__len);
+        memcpy(__result, chars, __len);
+        JNIenv->ReleaseStringUTFChars(sresult, chars);
     }
 private:
     StringAttr returnType;
@@ -269,12 +280,7 @@ public:
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
     {
-        jstring sresult = (jstring) result.l;
-        __len = sharedCtx->JNIenv->GetStringUTFLength(sresult);
-        const char * chars =  sharedCtx->JNIenv->GetStringUTFChars(sresult, NULL);
-        __result = (char *)rtlMalloc(__len);
-        memcpy(__result, chars, __len);
-        sharedCtx->JNIenv->ReleaseStringUTFChars(sresult, chars);
+        sharedCtx->getStringResult(result, __len, __result);
     }
 
     virtual void bindBooleanParam(const char *name, bool val)

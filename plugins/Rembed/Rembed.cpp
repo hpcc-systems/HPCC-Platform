@@ -41,7 +41,7 @@ static const char * EclDefinition =
     "END;"
     "EXPORT getEmbedContext := Language.getEmbedContext;"
     "EXPORT syntaxCheck := Language.syntaxCheck;"
-    "EXPORT boolean supportsImport := true;"
+    "EXPORT boolean supportsImport := false;"
     "EXPORT boolean supportsScript := true;";
 
 extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
@@ -177,7 +177,7 @@ public:
 
     virtual void importFunction(const char *text)
     {
-        UNIMPLEMENTED;
+        throwUnexpected();
     }
     virtual void compileEmbeddedScript(const char *text)
     {

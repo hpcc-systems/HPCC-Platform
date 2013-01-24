@@ -838,19 +838,22 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
     if (language)
     {
         IHqlScope *pluginScope = language->queryScope();
-        OwnedHqlExpr getEmbedContextFunc = pluginScope->lookupSymbol(getEmbedContextAtom, LSFsharedOK, lookupCtx);
+        OwnedHqlExpr getEmbedContextFunc = pluginScope->lookupSymbol(getEmbedContextAtom, LSFpublic, lookupCtx);
+        _ATOM moduleName = language->queryName();
+        if (!moduleName)
+            moduleName = unnamedAtom;
         if (!getEmbedContextFunc)
-            reportError(ERR_PluginNoScripting, errpos, "Module %s does not export getEmbedContext() function", language->queryName()->getAtomNamePtr());
+            reportError(ERR_PluginNoScripting, errpos, "Module %s does not export getEmbedContext() function", moduleName->getAtomNamePtr());
         bool isImport = queryPropertyInList(importAtom, attribs) != NULL;
-        OwnedHqlExpr checkSupport = pluginScope->lookupSymbol(isImport ? supportsImportAtom : supportsScriptAtom, LSFsharedOK, lookupCtx);
+        OwnedHqlExpr checkSupport = pluginScope->lookupSymbol(isImport ? supportsImportAtom : supportsScriptAtom, LSFpublic, lookupCtx);
         if (!matchesBoolean(checkSupport, true))
-            reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", language->queryName()->getAtomNamePtr(), isImport ? "import" : "script");
-        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckAtom, LSFsharedOK, lookupCtx);
+            reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", moduleName->getAtomNamePtr(), isImport ? "import" : "script");
+        OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckAtom, LSFpublic, lookupCtx);
         if (syntaxCheckFunc && !importAtom)
         {
             // MORE - create an expression that calls it, and const fold it, I guess....
         }
-        args.append(*createAttribute(languageAtom, getEmbedContextFunc.getClear()));
+        args.append(*createExprAttribute(languageAtom, getEmbedContextFunc.getClear()));
     }
     if (attribs)
         attribs->unwindList(args, no_comma);

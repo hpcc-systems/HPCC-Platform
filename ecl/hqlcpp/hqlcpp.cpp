@@ -7242,7 +7242,7 @@ void HqlCppTranslator::doBuildExprEmbedBody(BuildCtx & ctx, IHqlExpression * exp
 
     processCppBodyDirectives(expr);
     IHqlExpression *languageAttr = expr->queryProperty(languageAtom);
-    if (languageAtom)
+    if (languageAttr)
     {
         UNIMPLEMENTED;  // It's not clear if this can ever happen - perhaps a parameterless function that used EMBED ?
     }
@@ -11425,7 +11425,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
 
     HqlExprArray noargs;
     OwnedHqlExpr getPlugin = bindFunctionCall(language, noargs);
-    OwnedHqlExpr pluginPtr = createQuoted("Owned<IEmbedContext> __plugin", makeBoolType());
+    OwnedHqlExpr pluginPtr = createQuoted("Owned<IEmbedContext> __plugin", makeBoolType());  // Not really bool - at some point ECL may support without this aliasing...
     buildAssignToTemp(funcctx, pluginPtr, getPlugin);
     StringBuffer createParam;
     createParam.append("Owned<IEmbedFunctionContext> __ctx = __plugin->createFunctionContext(");
