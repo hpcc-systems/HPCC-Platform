@@ -405,9 +405,9 @@ public:
                 if (strchr(ip.str(), ':') == 0)
                     ip.appendf(":%d", ROXIE_SERVER_PORT);
 
-                IPropertyTree *t = sendRoxieControlQuery(xpath.str(), false, ip.str());
+                Owned<IPropertyTree> t = sendRoxieControlQuery(xpath.str(), false, ip.str());
                 if (t)
-                    tree->addPropTree("Endpoint", t->queryPropTree("Endpoint"));
+                    tree->addPropTree("Endpoint", t->getBranch("Endpoint"));
             }
             return tree;
         }
