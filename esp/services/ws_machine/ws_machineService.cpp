@@ -1421,6 +1421,8 @@ void Cws_machineEx::setMachineInfo(IEspContext& context, CMachineInfoThreadParam
         if (pParam->m_options.getGetSoftwareInfo() && process.getType() && strieq(process.getType(), eqEclAgent))
             pMachineInfo1.setown(static_cast<IEspMachineInfoEx*>(new CMachineInfoEx("")));
         setProcessInfo(context, pParam, response, error, process, idx<1, pMachineInfo, pMachineInfo1);
+
+        synchronized block(mutex_machine_info_table);
         pParam->m_machineInfoTable.append(*pMachineInfo.getLink());
         if (pMachineInfo1)
             pParam->m_machineInfoTable.append(*pMachineInfo1.getLink());
