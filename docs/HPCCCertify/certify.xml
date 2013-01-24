@@ -33,8 +33,7 @@
 
       <para><!--Release Information is used for running footers only. The ID attribute in version.xml is FooterInfo
 Date is used as the dateline/version number in the title page. The ID attribute in version.xml is DateVer--><!--
-Copyright is used for the copyright line on title page. The ID attribute is CopyRight-->
-      </para>
+Copyright is used for the copyright line on title page. The ID attribute is CopyRight--></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -172,7 +171,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
         <listitem>
           <para>Remove any items that might be left from previous
-          certifications. Search and remove any old, Workunits, DFU Workunits,
+          certifications. Search and remove any old Workunits, DFU Workunits,
           data files, and published queries.</para>
         </listitem>
 
@@ -297,15 +296,19 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         information about each component. The component name, the condition,
         the component state, how long the component has been up and running,
         the amount of disk usage, memory usage and other information is
-        available at a glance. If there are any failed components, they are
-        highlighted in orange, indicating they are not ready.</para>
+        available at a glance.</para>
+
+        <?hard-pagebreak ?>
+
+        <para>If there are any failed components, they are highlighted in
+        orange, indicating they are not ready.</para>
 
         <figure>
           <title>Failed Component</title>
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/CS-1912.jpg" vendor="eclwatchSS" />
+              <imagedata fileref="images/CS-sysfail.jpg" vendor="eclwatchSS" />
             </imageobject>
           </mediaobject>
         </figure>
@@ -408,6 +411,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
               </tbody>
             </tgroup>
           </informaltable></para>
+
+        <?hard-pagebreak ?>
 
         <para>If there are any failed components, they are highlighted in
         orange, indicating they are not ready.</para>
@@ -562,7 +567,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                   contents.</para>
 
                   <para><figure>
-                      <title>Sample ECL files</title>
+                      <title>ECL Files in _Certification</title>
 
                       <mediaobject>
                         <imageobject>
@@ -649,7 +654,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CSimg11.jpg" />
+                <imagedata fileref="images/CS-img11-2.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -787,7 +792,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                   sign next to it to open it and view the contents.</para>
 
                   <para><figure>
-                      <title>Sample files</title>
+                      <title>ECL Certify_DR File</title>
 
                       <mediaobject>
                         <imageobject>
@@ -1326,7 +1331,7 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
 
         <listitem>
           <para>Click the + sign next to <emphasis
-          role="bold">roxie</emphasis>, to expand the folder</para>
+          role="bold">roxie</emphasis>, to expand it</para>
         </listitem>
 
         <listitem>
@@ -1349,7 +1354,8 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
         </listitem>
 
         <listitem>
-          <para>Press the submit button at the bottom of the form.</para>
+          <para>Press the <emphasis role="bold">Submit</emphasis> button at
+          the bottom of the form.</para>
         </listitem>
       </orderedlist>
 
@@ -1686,12 +1692,12 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
                                vendor="eclwatchSS" />
                   </imageobject>
                 </mediaobject>
-              </figure> Once the spray is complete, we can proceed.</para>
+              </figure></para>
           </listitem>
         </orderedlist>
       </sect2>
 
-      <sect2 id="SPRAY_RESULTS">
+      <sect2 id="SPRAY_RESULTS" role="brk">
         <title>EXPECTED RESULTS</title>
 
         <orderedlist>
