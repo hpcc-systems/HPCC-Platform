@@ -1021,14 +1021,20 @@ class MultiPacketHandler // TAG_SYS_MULTI
     CriticalSection sect;
     unsigned lastErrMs;
 
-    void logError(unsigned code, MultiPacketHeader &mhdr, CMessageBuffer &msg)
+    void logError(unsigned code, MultiPacketHeader &mhdr, CMessageBuffer &msg, MultiPacketHeader *otherMhdr)
     {
         unsigned ms = msTick();
         if ((ms-lastErrMs) > 1000) // avoid logging too much
         {
             StringBuffer errorMsg("sender=");
             msg.getSender().getUrlStr(errorMsg).newline();
+            msg.append("This header: ");
             mhdr.getDetails(errorMsg).newline();
+            if (otherMhdr)
+            {
+                msg.append("Other header: ");
+                otherMhdr->getDetails(errorMsg).newline();
+            }
             msg.getDetails(errorMsg);
             LOG(MCerror, unknownJob, "MultiPacketHandler: protocol error (%d) %s", code, errorMsg.str());
         }
@@ -1055,7 +1061,7 @@ public:
         }
         if (mhdr.idx==0) {
             if ((mhdr.ofs!=0)||(recv!=NULL)) {
-                logError(1, mhdr, *msg);
+                logError(1, mhdr, *msg, recv?&recv->info:NULL);
                 delete msg;
                 return NULL;
             }
@@ -1073,7 +1079,7 @@ public:
                  (recv->info.idx+1!=mhdr.idx)||
                  (recv->info.total!=mhdr.total)||
                  (mhdr.ofs+mhdr.size>mhdr.total)) {
-                logError(2, mhdr, *msg);
+                logError(2, mhdr, *msg, recv?&recv->info:NULL);
                 delete msg;
                 return NULL;
             }
@@ -1084,7 +1090,7 @@ public:
         recv->info = mhdr;
         if (mhdr.idx+1==mhdr.numparts) {
             if (mhdr.ofs+mhdr.size!=mhdr.total) {
-                logError(3, mhdr, *msg);
+                logError(3, mhdr, *msg, NULL);
                 return NULL;
             }
             msg = recv->msg;
