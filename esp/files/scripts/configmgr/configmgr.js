@@ -1824,7 +1824,7 @@ function createEnvXmlView(allrows, compName, subRecordIndex) {
         var record = top.document.rightDT.getRecordSet().getRecord(top.document.rightDT.getSelectedRows()[0]);
         var pp = parseParamsForXPath(record.getData('params'), "", "", false, true);
 
-        var xmlStr = "<XmlArgs><Setting operation=\"add\" params= \"" + pp + "\" attrib= \"" + (menuitem.element.outerText.trimRight() == 'Add Tag' ? name : "@" + name) + "\"/></XmlArgs>";
+        var xmlStr = "<XmlArgs><Setting operation=\"add\" params= \"" + pp + "\" attrib= \"" + (menuitem.element.outerText == 'Add Tag' ? name : "@" + name) + "\"/></XmlArgs>";
 
         YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleAttributeAdd', {
           success: function(o) {
