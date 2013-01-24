@@ -106,7 +106,7 @@ static JavaGlobalState *queryGlobalState()
 {
     CriticalBlock b(globalStateCrit);
     if (!globalState)
-        globalState = new JavaGlobalState;
+        globalState = new JavaGlobalState;  // Never released. But we don't care - JavaVM does not work if you destroy and try to recreate
     return globalState;
 }
 

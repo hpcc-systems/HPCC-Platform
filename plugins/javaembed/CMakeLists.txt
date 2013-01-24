@@ -23,11 +23,12 @@
 #    Cmake Input File for javaembed
 #####################################################
 
-set ( toolsdir "${HPCC_SOURCE_DIR}/tools" )
-
 project( javaembed )
 
 find_package(JNI)
+if (NOT JNI_FOUND)
+  message(FATAL_ERROR "MAKE_JAVAEMBED requested but JNI libraries not found")
+endif()
 
 set (    SRCS
          javaembed.cpp
@@ -44,6 +45,12 @@ include_directories (
 ADD_DEFINITIONS( -D_USRDLL -DJAVAEMBED_EXPORTS )
 
 HPCC_ADD_LIBRARY( javaembed SHARED ${SRCS} )
+if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
+  message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+else()
+  set_target_properties( javaembed PROPERTIES NO_SONAME 1 )
+endif()
+
 install ( TARGETS javaembed DESTINATION plugins )
 
 # We link against jsig so that signals are chained from the jvm

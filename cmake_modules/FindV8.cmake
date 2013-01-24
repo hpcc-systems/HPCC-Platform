@@ -13,24 +13,29 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-add_subdirectory (auditlib)
-add_subdirectory (debugservices)
-add_subdirectory (fileservices)
-add_subdirectory (logging)
-add_subdirectory (parselib)
-add_subdirectory (stringlib)
-add_subdirectory (unicodelib)
-add_subdirectory (workunitservices)
-if ("${BUILD_LEVEL}" STREQUAL "COMMUNITY")
-  add_subdirectory (proxies)
-endif ()
 
-if (MAKE_V8EMBED)
-  add_subdirectory (v8embed)
-endif ()
-if (MAKE_PYEMBED)
-  add_subdirectory (pyembed)
-endif ()
-if (MAKE_JAVAEMBED)
-  add_subdirectory (javaembed)
-endif()
+# - Try to find the V8 JavaScript library
+# Once done this will define
+#
+#  V8_FOUND - system has the b8 javascript library
+#  V8_INCLUDE_DIR - the V8 include directory
+#  V8_LIBRARIES - The libraries needed to use V8
+
+IF (NOT V8_FOUND)
+  IF (WIN32)
+    SET (v8_lib "libv8")
+  ELSE()
+    SET (v8_lib "v8")
+  ENDIF()
+
+  FIND_PATH (V8_INCLUDE_DIR NAMES v8.h)
+  FIND_LIBRARY (V8_LIBRARIES NAMES ${v8_lib})
+
+  include(FindPackageHandleStandardArgs)
+  find_package_handle_standard_args(v8 DEFAULT_MSG
+    V8_LIBRARIES
+    V8_INCLUDE_DIR
+  )
+
+  MARK_AS_ADVANCED(V8_INCLUDE_DIR V8_LIBRARIES)
+ENDIF()
