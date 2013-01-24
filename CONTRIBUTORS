@@ -2,6 +2,9 @@
 Guide for Contributors
 ======================
 
+Upon contributing code, you agree to the HPCC Systems Contribution Agreement at
+http://hpccsystems.com/sites/default/files/pdf/hpcc_contributor_agreement.pdf
+
 Our preferred method for accepting contributions is via GitHub pull requests. We
 might in the future (when we are more expert on Git) be able to accept patch
 files via other means, but at present GitHub is all we are set up to deal with.
@@ -148,10 +151,6 @@ should always have been explained by the maintainers and it should usually be po
 to address them without starting from scratch. We are fairly strict about most of the
 above rules (and extremely strict about some of them) so it's not unusual for a new
 contributor to have a few pull-requests rejected the first time they are submitted.
-
-Note that before we can accept a change from you, we will need to have a signed copy of
-the contributory agreement on file (unless you are a LexisNexis employee) - see
-http://hpccsystems.com/sites/default/files/pdf/hpcc_contributor_agreement.pdf
 
 Commit messages
 ===============
