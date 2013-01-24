@@ -74,6 +74,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(MAKE_PYEMBED "Make the plugin for Python embedding" ON)
   option(MAKE_V8EMBED "Make the plugin for V8 JavaScript embedding" ON)
   option(MAKE_JAVAEMBED "Make the plugin for Java embedding" ON)
+  option(MAKE_REMBED "Make the plugin for R embedding" ON)
 
   if ( USE_XALAN AND USE_LIBXSLT )
       set(USE_XALAN OFF)
