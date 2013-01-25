@@ -671,7 +671,6 @@ void CWsWorkunitsEx::init(IPropertyTree *cfg, const char *process, const char *s
         ERRLOG("No Dali Connection Active.");
         throw MakeStringException(-1, "No Dali Connection Active. Please Specify a Dali to connect to in you configuration file");
     }
-    setPasswordsFromSDS();
 
     DBGLOG("Initializing %s service [process = %s]", service, process);
 

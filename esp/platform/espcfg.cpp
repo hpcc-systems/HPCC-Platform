@@ -350,7 +350,6 @@ void CEspConfig::initDali(const char *servers)
         // Initialize client process
         if (!initClientProcess(serverGroup, DCR_EspServer))
             throw MakeStringException(0, "Could not initialize dali client");
-        setPasswordsFromSDS();
 
         serverstatus = new CSDSServerStatus("ESPserver");
     }
