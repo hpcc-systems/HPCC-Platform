@@ -38,7 +38,7 @@ CWizardInputs::CWizardInputs(const char* xmlArg,const char *service,
                              IPropertyTree * cfg, 
                              MapStringTo<StringBuffer>* dirMap): m_service(service), 
                              m_cfg(cfg), m_overrideDirs(dirMap), m_roxieOnDemand(true),
-                             m_supportNodes(0)
+                             m_ldapServer(false), m_supportNodes(0)
 {
   m_pXml.setown(createPTreeFromXMLString(xmlArg && *xmlArg ? xmlArg : "<XmlArgs/>"));
 }
@@ -113,6 +113,11 @@ void CWizardInputs::setEnvironment()
     m_thorSlavesPerNode = 1;
 
   m_roxieOnDemand = m_pXml->getPropBool("@roxieOnDemand", true);
+
+  if (!strcmp(m_pXml->queryProp("@ldapserver"), "1"))
+    m_ldapServer = true;
+  else
+    m_ldapServer = false;
 
   xpath.clear().appendf("Software/EspProcess/EspService[@name='%s']/LocalConfFile", m_service.str());
   const char* pConfFile = m_cfg->queryProp(xpath.str());
@@ -589,8 +594,18 @@ void CWizardInputs::generateSoftwareTree(IPropertyTree* pNewEnvTree)
       IPropertyTree* pBuildSet = &buildSetInsts->query();
       const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
 
-      if (strcmp(firstComp, buildSetName))
+      if (strcmp(firstComp, buildSetName) && strcmp(buildSetName,"ldapServer") )
         addComponentToSoftware(pNewEnvTree, &buildSetInsts->query());
+    }
+
+    if (m_ldapServer)
+    {
+        const char* pComp = "ldapServer";
+        xpath.clear().appendf("./%s/%s/%s/[@name=\"%s\"]", XML_TAG_PROGRAMS, XML_TAG_BUILD, XML_TAG_BUILDSET, pComp);
+        IPropertyTree* pLdapBuildSet = m_buildSetTree->queryPropTree(xpath.str());
+
+        if (pLdapBuildSet)
+          addComponentToSoftware(pNewEnvTree, pLdapBuildSet);
     }
 
     getEspBindingInformation(pNewEnvTree);
@@ -1130,7 +1145,7 @@ void CWizardInputs::addComponentToSoftware(IPropertyTree* pNewEnvTree, IProperty
   StringBuffer deployable = pBuildSet->queryProp("@"TAG_DEPLOYABLE);
   unsigned numOfIpNeeded = 1;
 
-  if (m_doNotGenComp.find(buildSetName) != NotFound )
+  if (m_doNotGenComp.find(buildSetName) != NotFound && strcmp(buildSetName,"ldapServer"))
     return;
 
   if (processName && *processName && buildSetName && * buildSetName && xsdFileName && *xsdFileName)

@@ -55,7 +55,7 @@ bool validateInteger(const char *str,int &out)
 
 void usage()
 {
-  const char* version = "1.1";
+  const char* version = "1.2";
   printf("HPCC Systems environment generator. version %s. Usage:\n", version);
   puts("   envgen -env <environment file> -ip <ip addr> [options]");
   puts("");
@@ -71,6 +71,7 @@ void usage()
   puts("          Allowed formats are ");
   puts("          X.X.X.X;");
   puts("          X.X.X.X-XXX;");
+  puts("   -ldapserver : include LDAP server in configuration");
   puts("   -supportnodes <number of support nodes>: Number of nodes to be used");
   puts("           for non-Thor and non-Roxie components. If not specified or ");
   puts("           specified as 0, thor and roxie nodes may overlap with support");
@@ -113,7 +114,7 @@ int main(int argc, char** argv)
   const char* in_ipfilename;
   StringBuffer ipAddrs;
   int roxieNodes=0, thorNodes=0, slavesPerNode=1, supportNodes=0;
-  bool roxieOnDemand = true;
+  bool roxieOnDemand = true, ldapserver = false;
   MapStringTo<StringBuffer> dirMap;
   StringArray overrides;
 
@@ -133,6 +134,11 @@ int main(int argc, char** argv)
     {
       i++;
       out_envname = argv[i++];
+    }
+    else if (stricmp(argv[i], "-ldapserver") == 0)
+    {
+      ldapserver = true;
+      i++;
     }
     else if (stricmp(argv[i], "-supportnodes") == 0)
     {
@@ -255,8 +261,7 @@ int main(int argc, char** argv)
     const char* pServiceName = "WsDeploy_wsdeploy_esp";
     Owned<IPropertyTree> pCfg = createPTreeFromXMLFile(ENVGEN_PATH_TO_ESP_CONFIG);
 
-    optionsXml.appendf("<XmlArgs supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", supportNodes, roxieNodes,
-      thorNodes, slavesPerNode, roxieOnDemand?"true":"false", ipAddrs.str());
+    optionsXml.appendf("<XmlArgs ldapserver=\"%d\" supportNodes=\"%d\" roxieNodes=\"%d\" thorNodes=\"%d\" slavesPerNode=\"%d\" roxieOnDemand=\"%s\" ipList=\"%s\"/>", ldapserver, supportNodes, roxieNodes, thorNodes, slavesPerNode, roxieOnDemand?"true":"false", ipAddrs.str());
 
     buildEnvFromWizard(optionsXml, pServiceName, pCfg, envXml, &dirMap);
 
