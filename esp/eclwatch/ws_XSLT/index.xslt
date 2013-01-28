@@ -707,7 +707,7 @@
             <xsl:choose>
                 <xsl:when test="$clusterType = 'THOR'">1</xsl:when>
                 <xsl:when test="($countThorClusters &lt; 1) and ($clusterType = 'ROXIE')">1</xsl:when>
-                <xsl:when test="($countThorClusters &lt; 1) and ($counRoxieClusters &lt; 1) and ($clusterType = 'HTHOR')">1</xsl:when>
+                <xsl:when test="($countThorClusters &lt; 1) and ($countRoxieClusters &lt; 1) and ($clusterType = 'HTHOR')">1</xsl:when>
                 <xsl:otherwise>0</xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
