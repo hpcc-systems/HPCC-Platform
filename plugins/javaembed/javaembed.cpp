@@ -20,7 +20,6 @@
 #include "eclrtl.hpp"
 #include "jexcept.hpp"
 #include "jthread.hpp"
-#include "jmutex.hpp"
 #include "hqlplugins.hpp"
 
 #ifdef _WIN32
@@ -64,11 +63,16 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
 namespace javaembed {
 
 // Use a global object to ensure that the Java VM  is initialized once only.
-// We create it lazily for two reasons:
-// 1. So that we only get a JVM if we need onr (even if we have loaded the plugin)
+// We would like to create it lazily for two reasons:
+// 1. So that we only get a JVM if we need one (even if we have loaded the plugin)
 // 2. It's important for the JVM to be initialized AFTER we have set up signal handlers, as it
 //    likes to set its own (in particular, it seems to intercept and ignore some SIGSEGV during the
 //    garbage collection).
+// Unfortunately, it seems that the design of the JNI interface is such that JNI_CreateJavaVM has to be called on the 'main thread'.
+// So we can't achieve 1, and 2 requires that we create via the INIT_MODLE mechanism (rather than just a static object), and that
+// any engines that call InitModuleObjects() or load plugins dynamically do so AFTER setting any signal handlers or calling
+// EnableSEHtoExceptionMapping
+//
 
 static class JavaGlobalState
 {
@@ -99,15 +103,17 @@ public:
         // We don't attempt to destroy the Java VM, as it's buggy...
     }
     JavaVM *javaVM;       /* denotes a Java VM */
-} *globalState = NULL;
+} *globalState;
 
-static CriticalSection globalStateCrit;
-static JavaGlobalState *queryGlobalState()
+MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    CriticalBlock b(globalStateCrit);
-    if (!globalState)
-        globalState = new JavaGlobalState;  // Never released. But we don't care - JavaVM does not work if you destroy and try to recreate
-    return globalState;
+    globalState = new JavaGlobalState;
+    return true;
+}
+MODULE_EXIT()
+{
+    delete globalState;
+    globalState = NULL;
 }
 
 // There is a singleton JavaThreadContext per thread. This allows us to
@@ -120,7 +126,7 @@ public:
 public:
     JavaThreadContext()
     {
-        jint res = queryGlobalState()->javaVM->AttachCurrentThread((void **) &JNIenv, NULL);
+        jint res = globalState->javaVM->AttachCurrentThread((void **) &JNIenv, NULL);
         assertex(res >= 0);
         javaClass = NULL;
         javaMethodID = NULL;
