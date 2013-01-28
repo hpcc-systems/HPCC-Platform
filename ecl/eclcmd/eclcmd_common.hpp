@@ -72,6 +72,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format
+#define ECLOPT_SNAPSHOT "--snapshot"
+#define ECLOPT_SNAPSHOT_S "-sn"
 #define ECLOPT_ECL_ONLY "--ecl-only"
 
 #define ECLOPT_WAIT "--wait"
@@ -214,6 +216,7 @@ public:
         EclCmdCommon::usage();
         fprintf(stdout,
             "   --main=<definition>    definition to use from legacy ECL repository\n"
+            "   --snapshot,-sn=<label> snapshot label to use from legacy ECL repository\n"
             "   --ecl-only             send ecl text to hpcc without generating archive\n"
             "   --limit=<limit>        sets the result limit for the query, defaults to 100\n"
             "   -f<option>[=value]     set an ECL option (equivalent to #option)\n"
@@ -230,6 +233,7 @@ public:
     StringBuffer optImpPath;
     StringAttr optManifest;
     StringAttr optAttributePath;
+    StringAttr optSnapshot;
     IArrayOf<IEspNamedValue> debugValues;
     unsigned optResultLimit;
     bool optNoArchive;

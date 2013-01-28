@@ -181,6 +181,8 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         req->setResultLimit(cmd.optResultLimit);
     if (cmd.optAttributePath.length())
         req->setQueryMainDefinition(cmd.optAttributePath);
+    if (cmd.optSnapshot.length())
+        req->setSnapshot(cmd.optSnapshot);
     if (cmd.debugValues.length())
     {
         req->setDebugValues(cmd.debugValues);

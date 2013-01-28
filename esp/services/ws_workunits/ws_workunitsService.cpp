@@ -3707,6 +3707,8 @@ void deployEclOrArchive(IEspContext &context, IEspWUDeployWorkunitRequest & req,
     }
     if (req.getQueryMainDefinition())
         wu.setQueryMain(req.getQueryMainDefinition());
+    if (req.getSnapshot())
+        wu->setSnapshot(req.getSnapshot());
     if (!req.getResultLimit_isNull())
         wu->setResultLimit(req.getResultLimit());
 
