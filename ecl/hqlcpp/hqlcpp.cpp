@@ -11476,6 +11476,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             bindFunc = paramType->isSigned() ? bindSignedParamAtom : bindUnsignedParamAtom;
             break;
         case type_varstring:
+            bindFunc = bindVStringParamAtom;
+            break;
         case type_string:
             bindFunc = bindStringParamAtom;
             break;
@@ -11484,6 +11486,12 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             break;
         case type_boolean:
             bindFunc = bindBooleanParamAtom;
+            break;
+        case type_utf8:
+            bindFunc = bindUtf8ParamAtom;
+            break;
+        case type_unicode:
+            bindFunc = bindUnicodeParamAtom;
             break;
         default:
             UNIMPLEMENTED;
@@ -11507,6 +11515,12 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         break;
     case type_boolean:
         returnFunc = getBooleanResultAtom;
+        break;
+    case type_unicode:
+        returnFunc = getUnicodeResultAtom;
+        break;
+    case type_utf8:
+        returnFunc = getUTF8ResultAtom;
         break;
     default:
         UNIMPLEMENTED;

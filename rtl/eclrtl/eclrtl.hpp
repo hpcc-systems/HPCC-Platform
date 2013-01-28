@@ -739,12 +739,16 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val) = 0;
     virtual void bindStringParam(const char *name, size32_t len, const char *val) = 0;
     virtual void bindVStringParam(const char *name, const char *val) = 0;
+    virtual void bindUTF8Param(const char *name, size32_t chars, const char *val) = 0;
+    virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val) = 0;
 
     virtual bool getBooleanResult() = 0;
     virtual double getRealResult() = 0;
     virtual __int64 getSignedResult() = 0;
     virtual unsigned __int64 getUnsignedResult() = 0;
     virtual void getStringResult(size32_t &len, char * &result) = 0;
+    virtual void getUTF8Result(size32_t &chars, char * &result) = 0;
+    virtual void getUnicodeResult(size32_t &chars, UChar * &result) = 0;
 
     virtual void importFunction(const char *function) = 0;
     virtual void compileEmbeddedScript(const char *script) = 0;

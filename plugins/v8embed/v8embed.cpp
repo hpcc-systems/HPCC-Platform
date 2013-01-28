@@ -115,6 +115,16 @@ public:
         v8::HandleScope handle_scope;
         context->Global()->Set(v8::String::New(name), v8::String::New(val));
     }
+    virtual void bindUTF8Param(const char *name, size32_t chars, const char *val)
+    {
+        v8::HandleScope handle_scope;
+        context->Global()->Set(v8::String::New(name), v8::String::New(val, chars));   // more - should this be chars or bytes?
+    }
+    virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val)
+    {
+        v8::HandleScope handle_scope;
+        context->Global()->Set(v8::String::New(name), v8::String::New(val, chars));   // more - should this be chars or bytes?
+    }
 
     virtual bool getBooleanResult()
     {
@@ -140,15 +150,31 @@ public:
         v8::HandleScope handle_scope;
         return v8::Integer::Cast(*result)->Value();
     }
-    virtual void getStringResult(size32_t &__len, char * &__result)
+    virtual void getStringResult(size32_t &__chars, char * &__result)
     {
-        assertex (!result.IsEmpty());
-        v8::HandleScope handle_scope;   // May not strictly be needed?
+        assertex (!result.IsEmpty() && result->IsString());
+        v8::HandleScope handle_scope;
+        v8::Handle<v8::String> s = result->ToString();
         v8::String::AsciiValue ascii(result);
-        const char *chars= *ascii;
-        __len = strlen(chars);
-        __result = (char *)rtlMalloc(__len);
-        memcpy(__result, chars, __len);
+        rtlStrToStrX(__chars, __result, ascii.length(), *ascii);
+    }
+    virtual void getUTF8Result(size32_t &__chars, char * &__result)
+    {
+        assertex (!result.IsEmpty() && result->IsString());
+        v8::HandleScope handle_scope;
+        v8::Handle<v8::String> s = result->ToString();
+        v8::String::Utf8Value utf8(result);
+        unsigned numchars = rtlUtf8Length(utf8.length(), *utf8);
+        rtlUtf8ToUtf8X(__chars, __result, numchars, *utf8);
+    }
+    virtual void getUnicodeResult(size32_t &__chars, UChar * &__result)
+    {
+        assertex (!result.IsEmpty() && result->IsString());
+        v8::HandleScope handle_scope;
+        v8::Handle<v8::String> s = result->ToString();
+        v8::String::Utf8Value utf8(result);
+        unsigned numchars = rtlUtf8Length(utf8.length(), *utf8);
+        rtlUtf8ToUnicodeX(__chars, __result, numchars, *utf8);
     }
 
     virtual void compileEmbeddedScript(const char *text)

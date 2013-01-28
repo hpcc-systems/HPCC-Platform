@@ -5,10 +5,14 @@ javascript.Language.syntaxcheck('1+2');
 integer add1(integer val) := EMBED(javascript) val+1; ENDEMBED;
 string add2(string val) := EMBED(javascript) val+'1'; ENDEMBED;
 string add3(varstring val) := EMBED(javascript) val+'1'; ENDEMBED;
+utf8 add4(utf8 val) := EMBED(javascript) val+'1'; ENDEMBED;
+unicode add5(unicode val) := EMBED(javascript) val+'1'; ENDEMBED;
 
 add1(10);
 add2('Hello');
 add3('World');
+add4(U'Leovenaðes');
+add5(U'Стоял');
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));

@@ -65,7 +65,7 @@ else()
 endif()
 
 target_link_libraries ( javaembed
-    ${JSIG_LIBRARY}
+#    ${JSIG_LIBRARY}
     ${JNI_LIBRARIES}
     eclrtl
     jlib

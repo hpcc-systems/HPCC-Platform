@@ -5,6 +5,7 @@ Python.Language.syntaxcheck('1+2');
 integer add1(integer val) := EMBED(Python)
 val+1
 ENDEMBED;
+
 string add2(string val) := EMBED(Python)
 val+'1'
 ENDEMBED;
@@ -13,9 +14,29 @@ string add3(varstring val) := EMBED(Python)
 val+'1'
 ENDEMBED;
 
+utf8 add4(utf8 val) := EMBED(Python)
+val+'1'
+ENDEMBED;
+
+unicode add5(unicode val) := EMBED(Python)
+val+'1'
+ENDEMBED;
+
+utf8 add6(utf8 val) := EMBED(Python)
+return val+'1'
+ENDEMBED;
+
+unicode add7(unicode val) := EMBED(Python)
+return val+'1'
+ENDEMBED;
+
 add1(10);
 add2('Hello');
 add3('World');
+add4(U'Leovenaðes');
+add5(U'Стоял');
+add6(U'Leovenaðes');
+add7(U'Стоял');
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
