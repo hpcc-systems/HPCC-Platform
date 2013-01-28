@@ -72,7 +72,7 @@ class IndexWriteSlaveActivity  : public ProcessSlaveActivity, public ISmartBuffe
     bool buildTlk, inputStopped, active;
     bool sizeSignalled;
     bool isLocal, singlePartKey, reportOverflow, fewcapwarned, refactor;
-    unsigned __int64 initTotalCount, totalCount;
+    unsigned __int64 totalCount;
 
     size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
     MemoryBuffer rowBuff;
@@ -95,25 +95,30 @@ class IndexWriteSlaveActivity  : public ProcessSlaveActivity, public ISmartBuffe
             stopInput(input);
         }
     }
+    void init()
+    {
+        inputStopped = false;
+        sizeSignalled = false;
+        totalCount = 0;
+        lastRowSize = firstRowSize = 0;
+        replicateDone = 0;
+        fewcapwarned = false;
+        needFirstRow = true;
+        receivingTag2 = false;
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     IndexWriteSlaveActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
     {
         helper = static_cast <IHThorIndexWriteArg *> (queryHelper());
-        sizeSignalled = false;
-        initTotalCount = totalCount = 0;
-        maxDiskRecordSize = lastRowSize = firstRowSize = 0;
-        replicateDone = 0;
+        init();
+        maxDiskRecordSize = 0;
         active = false;
         isLocal = false;
         buildTlk = true;
         singlePartKey = false;
-        fewcapwarned = false;
-        inputStopped = false;
         refactor = false;
-        needFirstRow = true;
-        receivingTag2 = false;
         enableTlkPart0 = (0 != container.queryJob().getWorkUnitValueInt("enableTlkPart0", globals->getPropBool("@enableTlkPart0", true)));
         reInit = (0 != (TIWvarfilename & helper->getFlags()));
     }
@@ -292,6 +297,7 @@ public:
     void process()
     {
         ActPrintLog("INDEXWRITE: Start");
+        init();
 
         ThorDataLinkMetaInfo info;
         inputs.item(0)->getMetaInfo(info);
