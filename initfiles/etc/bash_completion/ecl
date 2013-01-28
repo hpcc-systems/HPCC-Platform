@@ -150,7 +150,7 @@ _ecl_opts_packagemap()
 
 _ecl_opts_deploy()
 {
-    echo -n "-t= --target= -n= --name= --main= --ecl-only --limit= "
+    echo -n "-t= --target= -n= --name= --main= --ecl-only --limit= --snapshot= -sn="
     echo -n "--wait= --manifest= "
 }
 

@@ -306,6 +306,7 @@ ESPrequest [nil_remove] WUDeployWorkunitRequest
     binary Object;
     int ResultLimit;
     string QueryMainDefinition;
+    string Snapshot;
     ESParray<ESPstruct NamedValue> DebugValues;
 };
 
