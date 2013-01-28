@@ -357,6 +357,7 @@ static __thread ThreadTermFunc threadHookChain;
 static void releaseContext()
 {
     delete threadContext;
+    threadContext = NULL;
     if (threadHookChain)
         (*threadHookChain)();
 }

@@ -191,7 +191,6 @@ class V8JavascriptEmbedContext : public CInterfaceOf<IEmbedContext>
 public:
     V8JavascriptEmbedContext()
     {
-        Link();  // Deliberately 'leak' in order to avoid freeing this global object
     }
     virtual IEmbedFunctionContext *createFunctionContext(bool isImport, const char *options)
     {
