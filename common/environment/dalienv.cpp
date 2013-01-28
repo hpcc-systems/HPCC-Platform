@@ -155,7 +155,7 @@ bool SDSPasswordProvider::getPassword(const IpAddress & ip, StringBuffer & usern
 }
 
 static CriticalSection passwordProviderCrit;
-static SDSPasswordProvider * passwordProvider;
+static SDSPasswordProvider * passwordProvider = NULL;
 MODULE_INIT(INIT_PRIORITY_ENV_ENVIRONMENT)
 {
     return true;
@@ -169,8 +169,11 @@ MODULE_EXIT()
 void __stdcall setPasswordsFromSDS()
 {
     CriticalBlock block(passwordProviderCrit);
-    passwordProvider = new SDSPasswordProvider();
-    setPasswordProvider(passwordProvider);
+    if (passwordProvider == NULL)
+    {
+        passwordProvider = new SDSPasswordProvider();
+        setPasswordProvider(passwordProvider);
+    }
 }
 
 void __stdcall resetPasswordsFromSDS()
