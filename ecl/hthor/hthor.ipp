@@ -301,7 +301,7 @@ protected:
     virtual void setFormat(IFileDescriptor * desc);
     virtual bool isFixedWidth() 
     { 
-        return (input->queryOutputMeta()->querySerializedMeta()->isFixedSize());
+        return (input->queryOutputMeta()->querySerializedDiskMeta()->isFixedSize());
     }
 
     void resolve();

@@ -766,8 +766,8 @@ const char * cppSystemText[]  = {
     "   walkIndirectMetaMember(row _x, boolean _visitor) : omethod,entrypoint='walkIndirectMembers';",
     "   _linkcounted_ dataset linkdataset2linkdataset(_linkcounted_ dataset _x) : include,allocator(false),context,entrypoint='linkdataset2linkdataset';",
 
-    "   unsigned4 rtlSerializeRow(unsigned4 _outLen, dummyRecord _out, boolean _serializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlSerializeRow';",
     "   dummyRecord rtlSerializeToBuilder(boolean _serializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlSerializeToBuilder';",
+    "   dummyRecord rtlDeserializeToBuilder(boolean _serializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlDeserializeToBuilder';",
     "   _linkcounted_ row(dummyRecord) rtlDeserializeRow(boolean _allocator, boolean _deserializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlDeserializeRow';",
 
     "   releaseRow(row _x) : include,entrypoint='rtlReleaseRow';",
@@ -775,26 +775,26 @@ const char * cppSystemText[]  = {
     "   linkRow(row _x) : include,entrypoint='rtlLinkRow';",
     "   _linkcounted_ dataset linkRowset(_linkcounted_ dataset _x) : include,allocator(false),entrypoint='rtlLinkRowset';",
 
-    "   _linkcounted_ dataset deserializerRowsetHelper(boolean _deserializer, boolean _input) : eclrtl,include,entrypoint='rtlDeserializeRowset';",
-    "   serializerRowsetHelper(boolean _output, boolean _serializer, _linkcounted_ dataset _x) : eclrtl,include,entrypoint='rtlSerializeRowset';",
+    "   _linkcounted_ dataset deserializeChildRowsetFromStream(boolean _deserializer, boolean _input) : eclrtl,include,entrypoint='rtlDeserializeChildRowset';",
+    "   serializeChildRowsetToStream(boolean _output, boolean _serializer, _linkcounted_ dataset _x) : eclrtl,include,entrypoint='rtlSerializeChildRowset';",
 
+//Methods of IRowDeserializerSource
     "   row(dummyRecord) deserializerPeek(unsigned4 _maxSize) : omethod,entrypoint='peek';",
     "   unsigned4 deserializerBeginNested() : omethod,entrypoint='beginNested';",
     "   boolean deserializerFinishedNested(unsigned4 pos) : omethod,entrypoint='finishedNested';",
-
     "   unsigned4 deserializerReadN(data _target) : omethod,entrypoint='read';",
     "   unsigned4 deserializerReadSize() : omethod,entrypoint='readSize';",
     "   unsigned4 deserializerReadPackedInt(data _target) : omethod,entrypoint='readPackedInt';",
     "   unsigned4 deserializerReadUtf8(boolean rowBuilder, unsigned4 offset, unsigned4 fixedSize, unsigned4 len) : omethod,entrypoint='readUtf8';",
     "   unsigned4 deserializerReadVStr(boolean rowBuilder, unsigned4 offset, unsigned4 fixedSize) : omethod,entrypoint='readVStr';",
     "   unsigned4 deserializerReadVUni(boolean rowBuilder, unsigned4 offset, unsigned4 fixedSize) : omethod,entrypoint='readVUni';",
-
     "   deserializerSkipN(unsigned4 _size) : omethod,entrypoint='skip';",
     "   deserializerSkipPacketInt() : omethod,entrypoint='skipPackedInt';",
     "   deserializerSkipUtf8(unsigned4 _size) : omethod,entrypoint='skipUtf8';",
     "   deserializerSkipVStr() : omethod,entrypoint='skipVStr';",
     "   deserializerSkipVUni() : omethod,entrypoint='skipVUni';",
 
+//Methods of IRowSerializerTarget
     "   serializerPut(const data _target) : omethod,entrypoint='put';",
     "   unsigned4 serializerBeginNested() : omethod,entrypoint='beginNested';",
     "   serializerEndNested(unsigned4 pos) : omethod,entrypoint='endNested';",

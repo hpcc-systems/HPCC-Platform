@@ -2368,7 +2368,7 @@ public:
     {
         CHThorFetchActivityBase::ready();
         rowLimit = helper.getRowLimit();
-        rowDeserializer.setown(helper.queryDiskRecordSize()->createRowDeserializer(agent.queryCodeContext(), activityId));
+        rowDeserializer.setown(helper.queryDiskRecordSize()->createDiskDeserializer(agent.queryCodeContext(), activityId));
         diskAllocator.setown(agent.queryCodeContext()->getRowAllocator(helper.queryDiskRecordSize(), activityId));
     }
 
@@ -2527,7 +2527,7 @@ public:
     {
         CHThorFetchActivityBase::ready();
         rowLimit = helper.getRowLimit();
-        rowDeserializer.setown(helper.queryDiskRecordSize()->createRowDeserializer(agent.queryCodeContext(), activityId));
+        rowDeserializer.setown(helper.queryDiskRecordSize()->createDiskDeserializer(agent.queryCodeContext(), activityId));
     }
 
     virtual void onLimitExceeded()
@@ -3412,7 +3412,7 @@ public:
         }
         if (needsDiskRead)
         {
-            rowDeserializer.setown(helper.queryDiskRecordSize()->createRowDeserializer(agent.queryCodeContext(), activityId));
+            rowDeserializer.setown(helper.queryDiskRecordSize()->createDiskDeserializer(agent.queryCodeContext(), activityId));
             diskAllocator.setown(agent.queryCodeContext()->getRowAllocator(helper.queryDiskRecordSize(), activityId));
         }
     }

@@ -1010,7 +1010,7 @@ public:
     IHqlExpression * createRecordInheritMaxLength(HqlExprArray & fields, IHqlExpression * donor);
     void ensureRowSerializer(StringBuffer & serializerName, BuildCtx & ctx, IHqlExpression * record, _ATOM kind);
     void ensureRowPrefetcher(StringBuffer & prefetcherName, BuildCtx & ctx, IHqlExpression * record);
-    IHqlExpression * createRowSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM kind);
+    IHqlExpression * createDiskSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM kind);
 
     AliasKind buildExprInCorrectContext(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, bool evaluateLocally);
     ParentExtract * createExtractBuilder(BuildCtx & ctx, PEtype type, IHqlExpression * graphId, IHqlExpression * expr, bool doDeclare);

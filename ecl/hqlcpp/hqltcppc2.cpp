@@ -679,9 +679,9 @@ void CChildLinkedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translat
     boundTarget.expr.setown(convertAddressToValue(addressData, queryType()));
 
     HqlExprArray args;
-    args.append(*translator.createRowSerializer(ctx, record, deserializerAtom));
+    args.append(*translator.createDiskSerializer(ctx, record, deserializerAtom));
     args.append(*LINK(helper));
-    OwnedHqlExpr call = translator.bindFunctionCall(deserializerRowsetHelperAtom, args, queryType());
+    OwnedHqlExpr call = translator.bindFunctionCall(deserializeChildRowsetFromStreamAtom, args, queryType());
     translator.buildExprAssign(ctx, boundTarget, call);
 }
 
@@ -701,9 +701,9 @@ void CChildLinkedDatasetColumnInfo::buildSerialize(HqlCppTranslator & translator
 
     HqlExprArray args;
     args.append(*LINK(helper));
-    args.append(*translator.createRowSerializer(ctx, record, serializerAtom));
+    args.append(*translator.createDiskSerializer(ctx, record, serializerAtom));
     args.append(*LINK(selector->queryExpr()));
-    OwnedHqlExpr call = translator.bindTranslatedFunctionCall(serializerRowsetHelperAtom, args);
+    OwnedHqlExpr call = translator.bindTranslatedFunctionCall(serializeChildRowsetToStreamAtom, args);
     translator.buildStmt(ctx, call);
 }
 

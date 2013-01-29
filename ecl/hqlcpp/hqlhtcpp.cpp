@@ -4155,7 +4155,7 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
                 MetaInstance serializedMeta(*this, serializedRecord, false);
                 buildMetaInfo(serializedMeta);
                 StringBuffer s;
-                s.append("virtual IOutputMetaData * querySerializedMeta() { return &").append(serializedMeta.queryInstanceObject()).append("; }");
+                s.append("virtual IOutputMetaData * querySerializedDiskMeta() { return &").append(serializedMeta.queryInstanceObject()).append("; }");
                 metactx.addQuoted(s);
             }
         }
@@ -4351,7 +4351,7 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
     if (serializerName && *serializerName)
     {
         BuildCtx serializectx(ctx);
-        serializectx.addQuotedCompound("virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId)");
+        serializectx.addQuotedCompound("virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId)");
 
         StringBuffer s;
         s.append("return cr").append(serializerName).append("(ctx, activityId);");
@@ -4361,7 +4361,7 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
     if (deserializerName && *deserializerName)
     {
         BuildCtx deserializectx(ctx);
-        deserializectx.addQuotedCompound("virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId)");
+        deserializectx.addQuotedCompound("virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId)");
 
         StringBuffer s;
         s.append("return cr").append(deserializerName).append("(ctx, activityId);");
@@ -4371,7 +4371,7 @@ void HqlCppTranslator::generateMetaRecordSerialize(BuildCtx & ctx, IHqlExpressio
     if (prefetcherName && *prefetcherName)
     {
         BuildCtx deserializectx(ctx);
-        deserializectx.addQuotedCompound("virtual CSourceRowPrefetcher * createRawRowPrefetcher(unsigned activityId)");
+        deserializectx.addQuotedCompound("virtual CSourceRowPrefetcher * doCreateDiskPrefetcher(unsigned activityId)");
 
         StringBuffer s;
         s.append("return new ").append(prefetcherName).append("(activityId);");
@@ -4446,9 +4446,9 @@ void HqlCppTranslator::ensureRowSerializer(StringBuffer & serializerName, BuildC
 
     s.clear().append(uid).append(".setown(").append(meta.queryInstanceObject());
     if (kind == serializerAtom)
-        s.append(".createRowSerializer");
+        s.append(".createDiskSerializer");
     else
-        s.append(".createRowDeserializer");
+        s.append(".createDiskDeserializer");
     s.append("(ctx, ");
     OwnedHqlExpr activityId = getCurrentActivityId(ctx);
     generateExprCpp(s, activityId);
@@ -4486,7 +4486,7 @@ void HqlCppTranslator::ensureRowPrefetcher(StringBuffer & prefetcherName, BuildC
     buildMetaInfo(meta);
 
     s.clear().append(uid).append(".setown(").append(meta.queryInstanceObject());
-    s.append(".createRowPrefetcher(ctx, ");
+    s.append(".createDiskPrefetcher(ctx, ");
     OwnedHqlExpr activityId = getCurrentActivityId(ctx);
     generateExprCpp(s, activityId);
     s.append("));");
@@ -4498,7 +4498,7 @@ void HqlCppTranslator::ensureRowPrefetcher(StringBuffer & prefetcherName, BuildC
 }
 
 
-IHqlExpression * HqlCppTranslator::createRowSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM kind)
+IHqlExpression * HqlCppTranslator::createDiskSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM kind)
 {
     StringBuffer serializerName;
     ensureRowSerializer(serializerName, ctx, record, kind);
@@ -4703,7 +4703,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
 
                 //NB: The result type will be overridden when this function is bound
                 ensureSerialized = false;
-                args.append(*createRowSerializer(ctx, record, deserializerAtom));
+                args.append(*createDiskSerializer(ctx, record, deserializerAtom));
                 overrideType.setown(setLinkCountedAttr(type, true));
                 func = getResultDictionaryAtom;
             }
@@ -4718,7 +4718,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
                 {
                     ensureSerialized = false;
                     args.append(*createRowAllocator(ctx, record));
-                    args.append(*createRowSerializer(ctx, record, deserializerAtom));
+                    args.append(*createDiskSerializer(ctx, record, deserializerAtom));
                     args.append(*createConstant(isGrouped(expr)));
                     overrideType.setown(setLinkCountedAttr(overrideType, true));
                     func = getResultRowsetAtom;
@@ -7133,9 +7133,9 @@ void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildC
                 IHqlExpression * record = ::queryRecord(type);
                 if (hasLinkCountedModifier(type))
                 {
-                    deserializeArgs.append(*createRowSerializer(deserializectx, record, deserializerAtom));
+                    deserializeArgs.append(*createDiskSerializer(deserializectx, record, deserializerAtom));
 
-                    serializeArgs.append(*createRowSerializer(serializectx, record, serializerAtom));
+                    serializeArgs.append(*createDiskSerializer(serializectx, record, serializerAtom));
                     if (tc == type_groupedtable)
                     {
                         serializeName = serializeGroupedRowsetXAtom;
@@ -7169,13 +7169,13 @@ void HqlCppTranslator::ensureSerialized(const CHqlBoundTarget & variable, BuildC
                 IHqlExpression * record = ::queryRecord(type);
                 assertex(hasWrapperModifier(type));
 
-                serializeArgs.append(*createRowSerializer(serializectx, record, serializerAtom));
+                serializeArgs.append(*createDiskSerializer(serializectx, record, serializerAtom));
                 serializeArgs.append(*createVariable(outBufferName, makeBoolType()));
                 buildFunctionCall(serializectx, serializeRowAtom, serializeArgs);
 
 
                 deserializeArgs.append(*createRowAllocator(deserializectx, record));
-                deserializeArgs.append(*createRowSerializer(deserializectx, record, deserializerAtom));
+                deserializeArgs.append(*createDiskSerializer(deserializectx, record, deserializerAtom));
                 deserializeArgs.append(*createVariable(inBufferName, makeBoolType()));
                 Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
                 OwnedHqlExpr call = bindFunctionCall(deserializeRowAtom, deserializeArgs, resultType);
@@ -14535,7 +14535,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
 
     IHqlExpression * record = expr->queryRecord();
     HqlExprArray args;
-    args.append(*createRowSerializer(ctx, record, kind));
+    args.append(*createDiskSerializer(ctx, record, kind));
     args.append(*ensureActiveRow(dataset));
     Owned<ITypeInfo> type = makeTransformType(record->getType());
     OwnedHqlExpr call = bindFunctionCall(func, args, type);
