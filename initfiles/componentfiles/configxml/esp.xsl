@@ -104,8 +104,13 @@
                         <xsl:with-param name="accurintSecurity" select="@AccurintSecurity"/>
                         <xsl:with-param name="localDomain" select="/Environment/Hardware/Computer[@name=$computerName]/@domain"/>
                     </xsl:call-template>
+                 </xsl:if>
+                 <xsl:if test="@method='htpasswd'">
+                    <xsl:call-template name="dohtpasswdSecurity">
+                        <xsl:with-param name="method" select="@method"/>
+                        <xsl:with-param name="htpasswdFile" select="@htpasswdFile"/>
+                    </xsl:call-template>
                 </xsl:if>
-
             </xsl:for-each>
             
             <xsl:variable name="maxRequestEntityLength">
@@ -368,6 +373,14 @@
         </xsl:for-each>
     </xsl:template>
     
+    <xsl:template name="dohtpasswdSecurity">
+        <xsl:param name="method"/>
+        <xsl:param name="htpasswdFile"/>
+        <xsl:element name="htpasswdSecurity">
+            <xsl:attribute name="method"> <xsl:value-of select="$method"/> </xsl:attribute>
+            <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$htpasswdFile"/> </xsl:attribute>
+        </xsl:element>
+    </xsl:template>
     
     <xsl:template name="doAccurintSecurity">
         <xsl:param name="method"/>
