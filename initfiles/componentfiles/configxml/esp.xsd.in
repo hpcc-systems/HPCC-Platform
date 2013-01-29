@@ -240,8 +240,16 @@
                                     <xs:enumeration value="ldap"/>
                                     <xs:enumeration value="ldaps"/>
                                     <xs:enumeration value="remotens"/>
+                                    <xs:enumeration value="htpasswd"/>
                                 </xs:restriction>
                             </xs:simpleType>
+                        </xs:attribute>
+                        <xs:attribute name="htpasswdFile" type="xs:string" use="optional" default="/etc/HPCCSystems/.htpasswd">
+                            <xs:annotation>
+                                <xs:appinfo>
+                                    <tooltip>The location of the file to use for htpasswd authentication.</tooltip>
+                                </xs:appinfo>
+                            </xs:annotation>
                         </xs:attribute>
                         <xs:attribute name="ldapServer" type="ldapServerType" use="optional">
                             <xs:annotation>

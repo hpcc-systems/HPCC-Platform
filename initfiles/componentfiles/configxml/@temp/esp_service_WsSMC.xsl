@@ -658,6 +658,11 @@ This is required by its binding with ESP service '<xsl:value-of select="$espServ
             </xsl:if>         
          </Authenticate>
       </xsl:when>
+      <xsl:when test="$authMethod='htpasswd'">
+        <Authenticate method="htpasswd">
+          <xsl:attribute name="htpasswdFile"> <xsl:value-of select="$bindingNode/../Authentication/@htpasswdFile"/> </xsl:attribute>
+        </Authenticate>
+      </xsl:when>
         </xsl:choose>
     </xsl:template>
 
