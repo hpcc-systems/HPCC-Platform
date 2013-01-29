@@ -118,12 +118,12 @@ public:
     virtual void bindUTF8Param(const char *name, size32_t chars, const char *val)
     {
         v8::HandleScope handle_scope;
-        context->Global()->Set(v8::String::New(name), v8::String::New(val, chars));   // more - should this be chars or bytes?
+        context->Global()->Set(v8::String::New(name), v8::String::New(val, rtlUtf8Size(chars, val)));
     }
     virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val)
     {
         v8::HandleScope handle_scope;
-        context->Global()->Set(v8::String::New(name), v8::String::New(val, chars));   // more - should this be chars or bytes?
+        context->Global()->Set(v8::String::New(name), v8::String::New(val, chars));
     }
 
     virtual bool getBooleanResult()
@@ -154,7 +154,6 @@ public:
     {
         assertex (!result.IsEmpty() && result->IsString());
         v8::HandleScope handle_scope;
-        v8::Handle<v8::String> s = result->ToString();
         v8::String::AsciiValue ascii(result);
         rtlStrToStrX(__chars, __result, ascii.length(), *ascii);
     }
@@ -162,7 +161,6 @@ public:
     {
         assertex (!result.IsEmpty() && result->IsString());
         v8::HandleScope handle_scope;
-        v8::Handle<v8::String> s = result->ToString();
         v8::String::Utf8Value utf8(result);
         unsigned numchars = rtlUtf8Length(utf8.length(), *utf8);
         rtlUtf8ToUtf8X(__chars, __result, numchars, *utf8);
@@ -171,7 +169,6 @@ public:
     {
         assertex (!result.IsEmpty() && result->IsString());
         v8::HandleScope handle_scope;
-        v8::Handle<v8::String> s = result->ToString();
         v8::String::Utf8Value utf8(result);
         unsigned numchars = rtlUtf8Length(utf8.length(), *utf8);
         rtlUtf8ToUnicodeX(__chars, __result, numchars, *utf8);

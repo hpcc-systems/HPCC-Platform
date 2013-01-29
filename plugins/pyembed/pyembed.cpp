@@ -302,32 +302,47 @@ public:
     virtual void getStringResult(size32_t &__chars, char * &__result)
     {
         assertex(result && result != Py_None);
-        const char * text =  PyString_AsString(result);
-        checkPythonError();
-        size_t lenBytes = PyString_Size(result);
-        rtlUtf8ToStrX(__chars, __result, lenBytes, text);
+        if (PyString_Check(result))
+        {
+            const char * text =  PyString_AsString(result);
+            checkPythonError();
+            size_t lenBytes = PyString_Size(result);
+            rtlStrToStrX(__chars, __result, lenBytes, text);
+        }
+        else
+            rtlFail(0, "Python type mismatch - return value was not a string");
     }
     virtual void getUTF8Result(size32_t &__chars, char * &__result)
     {
         assertex(result && result != Py_None);
-        OwnedPyObject utf8 = PyUnicode_AsUTF8String(result);
-        checkPythonError();
-        size_t lenBytes = PyString_Size(utf8);
-        const char * text =  PyString_AsString(utf8);
-        checkPythonError();
-        size32_t numchars = rtlUtf8Length(lenBytes, text);
-        rtlUtf8ToUtf8X(__chars, __result, numchars, text);
+        if (PyUnicode_Check(result))
+        {
+            OwnedPyObject utf8 = PyUnicode_AsUTF8String(result);
+            checkPythonError();
+            size_t lenBytes = PyString_Size(utf8);
+            const char * text =  PyString_AsString(utf8);
+            checkPythonError();
+            size32_t numchars = rtlUtf8Length(lenBytes, text);
+            rtlUtf8ToUtf8X(__chars, __result, numchars, text);
+        }
+        else
+            rtlFail(0, "Python type mismatch - return value was not a unicode string");
     }
     virtual void getUnicodeResult(size32_t &__chars, UChar * &__result)
     {
         assertex(result && result != Py_None);
-        OwnedPyObject utf8 = PyUnicode_AsUTF8String(result);
-        checkPythonError();
-        size_t lenBytes = PyString_Size(utf8);
-        const char * text =  PyString_AsString(utf8);
-        checkPythonError();
-        size32_t numchars = rtlUtf8Length(lenBytes, text);
-        rtlUtf8ToUnicodeX(__chars, __result, numchars, text);
+        if (PyUnicode_Check(result))
+        {
+            OwnedPyObject utf8 = PyUnicode_AsUTF8String(result);
+            checkPythonError();
+            size_t lenBytes = PyString_Size(utf8);
+            const char * text =  PyString_AsString(utf8);
+            checkPythonError();
+            size32_t numchars = rtlUtf8Length(lenBytes, text);
+            rtlUtf8ToUnicodeX(__chars, __result, numchars, text);
+        }
+        else
+            rtlFail(0, "Python type mismatch - return value was not a unicode string");
     }
 
 

@@ -33,10 +33,12 @@ ENDEMBED;
 add1(10);
 add2('Hello');
 add3('World');
-add4(U'Leovenaðes');
+add4(U'Oh là là Straße');
 add5(U'Стоял');
-add6(U'Leovenaðes');
+add6(U'Oh là là Straße');
 add7(U'Стоял');
+
+add2('Oh là là Straße');  // Passing latin chars - should be untranslated
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
