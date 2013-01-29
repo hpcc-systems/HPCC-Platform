@@ -2826,11 +2826,12 @@ void ProgressInfo::processInfo() // reimplement as counts have special flags (i.
     if (max)
     {
         unsigned count = counts.ordinality();
-        avg = tot/count;
-        if (avg)
+        double _avg = (double)tot/count;
+        if (_avg)
         {
-            hi = (unsigned)((100 * (max-avg))/avg);
-            lo = (unsigned)((100 * (avg-min))/avg);
+            hi = (unsigned)(100.0 * (((double)max-_avg)/_avg));
+            lo = (unsigned)(100.0 * ((_avg-(double)min)/_avg));
+            avg = (unsigned __int64)_avg;
         }
     }
 }
