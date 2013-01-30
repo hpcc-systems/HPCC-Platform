@@ -8,6 +8,14 @@ public class JavaCat
   {
     return a + '1';
   }
+  public static char addChar(char a)
+  {
+    return ++a;
+  }
+  public static int testThrow(int a) throws Exception
+  {
+    throw new Exception("Exception from Java");
+  }
 
 
   public static int add(int a, int b)

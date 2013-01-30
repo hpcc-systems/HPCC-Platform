@@ -8,6 +8,8 @@ string add3(varstring val) := EMBED(javascript) val+'1'; ENDEMBED;
 utf8 add4(utf8 val) := EMBED(javascript) val+'1'; ENDEMBED;
 unicode add5(unicode val) := EMBED(javascript) val+'1'; ENDEMBED;
 
+integer testThrow(integer val) := EMBED(javascript) throw new Error("Error from JavaScript"); ENDEMBED;
+
 
 add1(10);
 add2('Hello');
@@ -16,6 +18,17 @@ add4(U'Oh là là Straße');
 add5(U'Стоял');
 
 add2('Oh là là Straße');  // Passing latin chars - should be untranslated
+
+// Test exception throwing/catching
+d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
+
+d t := transform
+  self.a := FAILCODE;
+  self.m := FAILMESSAGE;
+  self := [];
+end;
+
+catch(d(testThrow(a) = a), onfail(t));
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));

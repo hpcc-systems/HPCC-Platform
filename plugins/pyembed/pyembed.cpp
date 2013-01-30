@@ -94,11 +94,10 @@ static void checkPythonError()
     if (err)
     {
         OwnedPyObject pType, pValue, pTraceBack;
-        PyErr_Fetch(pType.ref(), pType.ref(), pType.ref());
-        OwnedPyObject errStr = PyObject_Str(err);
+        PyErr_Fetch(pType.ref(), pValue.ref(), pTraceBack.ref());
         OwnedPyObject valStr = PyObject_Str(pValue);
         PyErr_Clear();
-        VStringBuffer errMessage("%s: %s", PyString_AsString(errStr), PyString_AsString(valStr));
+        VStringBuffer errMessage("pyembed: %s", PyString_AsString(valStr));
         rtlFail(0, errMessage.str());
     }
 }

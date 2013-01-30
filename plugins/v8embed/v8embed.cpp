@@ -189,7 +189,14 @@ public:
     {
         assertex (!script.IsEmpty());
         v8::HandleScope handle_scope;
+        v8::TryCatch tryCatch;
         result = v8::Persistent<v8::Value>::New(script->Run());
+        v8::Handle<v8::Value> exception = tryCatch.Exception();
+        if (!exception.IsEmpty())
+        {
+            v8::String::AsciiValue msg(exception);
+            throw MakeStringException(MSGAUD_user, 0, "v8embed: %s", *msg);
+        }
     }
 
 protected:

@@ -81,7 +81,10 @@ public:
     {
         JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
         JavaVMOption* options = new JavaVMOption[3];
-        options[0].optionString = (char *) "-Djava.class.path=.";
+        const char* origPath = getenv("CLASSPATH");
+        StringBuffer newPath;
+        newPath.append("-Djava.class.path=").append(origPath).append(ENVSEPCHAR).append(".");
+        options[0].optionString = (char *) newPath.str();
         options[1].optionString = (char *) "-Xcheck:jni";
         options[2].optionString = (char *) "-verbose:jni";
         vm_args.version = JNI_VERSION_1_6;
@@ -137,6 +140,20 @@ public:
             JNIenv->DeleteGlobalRef(javaClass);
     }
 
+    void checkException()
+    {
+        jthrowable exception = JNIenv->ExceptionOccurred();
+        if (exception)
+        {
+            JNIenv->ExceptionClear();
+            jclass throwableClass = JNIenv->FindClass("java/lang/Throwable");
+            jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
+            jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
+            const char *text = JNIenv->GetStringUTFChars(cause, 0);
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: %s", prevtext.get(), text);
+        }
+    }
+
     inline void importFunction(const char *text)
     {
         if (!prevtext || strcmp(text, prevtext) != 0)
@@ -165,14 +182,16 @@ public:
             assertex(returnSig);
             returnSig++;
             returnType.set(returnSig);
+            argsig.set(signature);
             prevtext.set(text);
         }
     }
     inline void callFunction(jvalue &result, const jvalue * args)
     {
+        JNIenv->ExceptionClear();
         switch (returnType.get()[0])
         {
-        case 'C': UNIMPLEMENTED; // jchar has no real ecl equivalent
+        case 'C': result.c = JNIenv->CallStaticCharMethodA(javaClass, javaMethodID, args); break;
         case 'B': result.z = JNIenv->CallStaticBooleanMethodA(javaClass, javaMethodID, args); break;
         case 'J': result.j = JNIenv->CallStaticLongMethodA(javaClass, javaMethodID, args); break;
         case 'F': result.f = JNIenv->CallStaticFloatMethodA(javaClass, javaMethodID, args); break;
@@ -181,6 +200,7 @@ public:
         case 'I': // Others are all smaller ints, so we can use this for all
         default: result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
         }
+        checkException();
     }
     inline __int64 getSignedResult(jvalue & result)
     {
@@ -239,32 +259,73 @@ public:
     }
     inline void getStringResult(jvalue &result, size32_t &__len, char * &__result)
     {
-        jstring sresult = (jstring) result.l;
-        size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
-        const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
-        size32_t chars = rtlUtf8Length(size, text);
-        rtlUtf8ToStrX(__len, __result, chars, text);
-        JNIenv->ReleaseStringUTFChars(sresult, text);
+        switch (returnType.get()[0])
+        {
+        case 'C': // Single char returned, prototyped as STRING or STRING1 in ECL
+            rtlUnicodeToStrX(__len, __result, 1, &result.c);
+            break;
+        case 'L':
+        {
+            jstring sresult = (jstring) result.l;
+            size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
+            const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
+            size32_t chars = rtlUtf8Length(size, text);
+            rtlUtf8ToStrX(__len, __result, chars, text);
+            JNIenv->ReleaseStringUTFChars(sresult, text);
+            break;
+        }
+        default:
+            throwUnexpected();
+        }
     }
     inline void getUTF8Result(jvalue &result, size32_t &__chars, char * &__result)
     {
-        jstring sresult = (jstring) result.l;
-        size_t size = JNIenv->GetStringUTFLength(sresult); // Returns length in bytes (not chars)
-        const char * text =  JNIenv->GetStringUTFChars(sresult, NULL);
-        rtlUtf8ToUtf8X(__chars, __result, rtlUtf8Length(size, text), text);
-        JNIenv->ReleaseStringUTFChars(sresult, text);
+        switch (returnType.get()[0])
+        {
+        case 'C': // Single jchar returned, prototyped as UTF8 in ECL
+            rtlUnicodeToUtf8X(__chars, __result, 1, &result.c);
+            break;
+        case 'L':
+        {
+            jstring sresult = (jstring) result.l;
+            size_t size = JNIenv->GetStringUTFLength(sresult); // Returns length in bytes (not chars)
+            const char * text =  JNIenv->GetStringUTFChars(sresult, NULL);
+            rtlUtf8ToUtf8X(__chars, __result, rtlUtf8Length(size, text), text);
+            JNIenv->ReleaseStringUTFChars(sresult, text);
+            break;
+        }
+        default:
+            throwUnexpected();
+        }
     }
     inline void getUnicodeResult(jvalue &result, size32_t &__chars, UChar * &__result)
     {
-        jstring sresult = (jstring) result.l;
-        size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
-        const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
-        size32_t chars = rtlUtf8Length(size, text);
-        rtlUtf8ToUnicodeX(__chars, __result, chars, text);
-        JNIenv->ReleaseStringUTFChars(sresult, text);
+        switch (returnType.get()[0])
+        {
+        case 'C': // Single jchar returned, prototyped as UNICODE or UNICODE1 in ECL
+            rtlUnicodeToUnicodeX(__chars, __result, 1, &result.c);
+            break;
+        case 'L':
+        {
+            jstring sresult = (jstring) result.l;
+            size_t size = JNIenv->GetStringUTFLength(sresult);  // in bytes
+            const char *text =  JNIenv->GetStringUTFChars(sresult, NULL);
+            size32_t chars = rtlUtf8Length(size, text);
+            rtlUtf8ToUnicodeX(__chars, __result, chars, text);
+            JNIenv->ReleaseStringUTFChars(sresult, text);
+            break;
+        }
+        default:
+            throwUnexpected();
+        }
+    }
+    inline const char *querySignature()
+    {
+        return argsig.get();
     }
 private:
     StringAttr returnType;
+    StringAttr argsig;
     StringAttr prevtext;
     jclass javaClass;
     jmethodID javaMethodID;
@@ -280,6 +341,7 @@ public:
     : sharedCtx(_sharedCtx)
     {
         argcount = 0;
+        argsig = NULL;
     }
     ~JavaEmbedImportContext()
     {
@@ -317,6 +379,9 @@ public:
 
     virtual void bindBooleanParam(const char *name, bool val)
     {
+        if (*argsig != 'B')
+            typeError("BOOLEAN");
+        argsig++;
         jvalue v;
         v.z = val;
         addArg(v);
@@ -324,13 +389,43 @@ public:
     virtual void bindRealParam(const char *name, double val)
     {
         jvalue v;
-        v.d = val;
+        switch(*argsig)
+        {
+        case 'D':
+            v.d = val;
+            break;
+        case 'F':
+            v.f = val;
+            break;
+        default:
+            typeError("REAL");
+            break;
+        }
+        argsig++;
         addArg(v);
     }
     virtual void bindSignedParam(const char *name, __int64 val)
     {
         jvalue v;
-        v.j = val;
+        switch(*argsig)
+        {
+        case 'I':
+            v.i = val;
+            break;
+        case 'J':
+            v.j = val;
+            break;
+        case 'S':
+            v.s = val;
+            break;
+        case 'B':
+            v.b = val;
+            break;
+        default:
+            typeError("INTEGER");
+            break;
+        }
+        argsig++;
         addArg(v);
     }
     virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
@@ -340,43 +435,91 @@ public:
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
     {
         jvalue v;
-        unsigned unicodeChars;
-        UChar *unicode;
-        rtlStrToUnicodeX(unicodeChars, unicode, len, val);
-        v.l = sharedCtx->JNIenv->NewString(unicode, unicodeChars);
-        rtlFree(unicode);
+        switch(*argsig)
+        {
+        case 'C':
+            rtlStrToUnicode(1, &v.c, len, val);
+            argsig++;
+            break;
+        case 'L':
+            if (strncmp(argsig, "Ljava/lang/String;", 18) == 0)
+            {
+                argsig += 18;
+                unsigned unicodeChars;
+                UChar *unicode;
+                rtlStrToUnicodeX(unicodeChars, unicode, len, val);
+                v.l = sharedCtx->JNIenv->NewString(unicode, unicodeChars);
+                rtlFree(unicode);
+                break;
+            }
+            // fall into ...
+        default:
+            typeError("STRING");
+            break;
+        }
         addArg(v);
     }
     virtual void bindVStringParam(const char *name, const char *val)
     {
-        jvalue v;
-        unsigned unicodeChars;
-        UChar *unicode;
-        rtlStrToUnicodeX(unicodeChars, unicode, strlen(val), val);
-        v.l = sharedCtx->JNIenv->NewString(unicode, unicodeChars);
-        rtlFree(unicode);
-        addArg(v);
+        bindStringParam(name, strlen(val), val);
     }
     virtual void bindUTF8Param(const char *name, size32_t numchars, const char *val)
     {
         jvalue v;
-        unsigned unicodeChars;
-        UChar *unicode;
-        rtlUtf8ToUnicodeX(unicodeChars, unicode, numchars, val);
-        v.l = sharedCtx->JNIenv->NewString(unicode, unicodeChars);
-        rtlFree(unicode);
+        switch(*argsig)
+        {
+        case 'C':
+            rtlUtf8ToUnicode(1, &v.c, numchars, val);
+            argsig++;
+            break;
+        case 'L':
+            if (strncmp(argsig, "Ljava/lang/String;", 18) == 0)
+            {
+                argsig += 18;
+                unsigned unicodeChars;
+                UChar *unicode;
+                rtlUtf8ToUnicodeX(unicodeChars, unicode, numchars, val);
+                v.l = sharedCtx->JNIenv->NewString(unicode, unicodeChars);
+                rtlFree(unicode);
+                break;
+            }
+            // fall into ...
+        default:
+            typeError("UTF8");
+            break;
+        }
         addArg(v);
     }
     virtual void bindUnicodeParam(const char *name, size32_t numchars, const UChar *val)
     {
         jvalue v;
-        v.l = sharedCtx->JNIenv->NewString(val, numchars);
+        switch(*argsig)
+        {
+        case 'C':
+            rtlUnicodeToUnicode(1, &v.c, numchars, val);
+            argsig++;
+            break;
+        case 'L':
+            if (strncmp(argsig, "Ljava/lang/String;", 18) == 0)
+            {
+                argsig += 18;
+                v.l = sharedCtx->JNIenv->NewString(val, numchars);
+                break;
+            }
+            // fall into ...
+        default:
+            typeError("UNICODE");
+            break;
+        }
         addArg(v);
     }
 
     virtual void importFunction(const char *text)
     {
         sharedCtx->importFunction(text);
+        argsig = sharedCtx->querySignature();
+        assertex(*argsig == '(');
+        argsig++;
     }
     virtual void callFunction()
     {
@@ -391,6 +534,37 @@ protected:
     JavaThreadContext *sharedCtx;
     jvalue result;
 private:
+    void typeError(const char *ECLtype)
+    {
+        const char *javaType;
+        int javaLen = 0;
+        switch (*argsig)
+        {
+        case 'Z': javaType = "boolean"; break;
+        case 'B': javaType = "byte"; break;
+        case 'C': javaType = "char"; break;
+        case 'S': javaType = "short"; break;
+        case 'I': javaType = "int"; break;
+        case 'J': javaType = "long"; break;
+        case 'F': javaType = "float"; break;
+        case 'D': javaType = "double"; break;
+        case 'L':
+            {
+                javaType = argsig+1;
+                const char *semi = strchr(argsig, ';');
+                if (semi)
+                    javaLen = semi - javaType;
+                break;
+            }
+        case ')':
+            throw MakeStringException(0, "javaembed: Too many ECL parameters passed for Java signature %s", sharedCtx->querySignature());
+        default:
+            throw MakeStringException(0, "javaembed: Unrecognized character %c in java signature %s", *argsig, sharedCtx->querySignature());
+        }
+        if (!javaLen)
+            javaLen = strlen(argsig);
+        throw MakeStringException(0, "javaembed: ECL type %s cannot be passed to Java type %.*s", ECLtype, javaLen, javaType);
+    }
     void addArg(jvalue &arg)
     {
         assertex(argcount < MAX_JNI_ARGS);
@@ -399,6 +573,7 @@ private:
     }
     jvalue args[MAX_JNI_ARGS];
     int argcount;
+    const char *argsig;
 };
 
 static __thread JavaThreadContext* threadContext;  // We reuse per thread, for speed

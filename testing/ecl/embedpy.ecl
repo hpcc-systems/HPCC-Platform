@@ -30,6 +30,10 @@ unicode add7(unicode val) := EMBED(Python)
 return val+'1'
 ENDEMBED;
 
+integer testThrow(integer val) := EMBED(Python)
+raise Exception('Error from Python')
+ENDEMBED;
+
 add1(10);
 add2('Hello');
 add3('World');
@@ -39,6 +43,17 @@ add6(U'Oh là là Straße');
 add7(U'Стоял');
 
 add2('Oh là là Straße');  // Passing latin chars - should be untranslated
+
+// Can't catch an expression(only a dataset)
+d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
+
+d t := transform
+  self.a := FAILCODE;
+  self.m := FAILMESSAGE;
+  self := [];
+end;
+
+catch(d(testThrow(a) = a), onfail(t));
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));

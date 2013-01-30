@@ -5,12 +5,29 @@ string add2(string val) := IMPORT(java, 'JavaCat.add2:(Ljava/lang/String;)Ljava/
 string add3(varstring val) := IMPORT(java, 'JavaCat.add2:(Ljava/lang/String;)Ljava/lang/String;');
 utf8 add4(utf8 val) := IMPORT(java, 'JavaCat.add2:(Ljava/lang/String;)Ljava/lang/String;');
 unicode add5(unicode val) := IMPORT(java, 'JavaCat.add2:(Ljava/lang/String;)Ljava/lang/String;');
+integer testThrow(integer p) := IMPORT(java, 'JavaCat.testThrow:(I)I');
+
+string addChar(string c) := IMPORT(java, 'JavaCat.addChar:(C)C');
+string cat(string s1, string s2) := IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;');
 
 add1(10);
 add2('Hello');
 add3('World');
 add4(U'Leovenaðes');
 add5(U'Стоял');
+addChar('A');
+
+cat('Hello', ' world');
+// Can't catch an expression(only a dataset)
+d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
+
+d t := transform
+  self.a := FAILCODE;
+  self.m := FAILMESSAGE;
+  self := [];
+end;
+
+catch(d(testThrow(a) = a), onfail(t));
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
