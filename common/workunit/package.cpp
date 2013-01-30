@@ -28,6 +28,12 @@
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
+//wrap the hashing function here to simplify template dependencies
+hash64_t pkgHash64Data(size32_t len, const void *buf, hash64_t hval)
+{
+    return rtlHash64Data(len, buf, hval);
+}
+
 CPackageNode::CPackageNode(IPropertyTree *p)
 {
     if (p)
