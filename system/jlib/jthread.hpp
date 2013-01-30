@@ -56,6 +56,9 @@ extern jlib_decl unsigned threadLogID();  // for use in logging
 // terminates. Such a function should call on to the previously registered function (if any) - generally you
 // would expect to store that value in thread-local storage.
 // This can be used to ensure that thread-specific objects can be properly destructed.
+// Note that threadpools also call the thread termination hook when each thread's main function terminates,
+// so the hook function should clear any variables if necessary rather than assuming that they will be cleared
+// at thread startup time.
 
 typedef void (*ThreadTermFunc)();
 extern jlib_decl ThreadTermFunc addThreadTermFunc(ThreadTermFunc onTerm);

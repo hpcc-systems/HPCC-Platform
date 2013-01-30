@@ -154,18 +154,20 @@ public:
         }
     }
 
-    inline void importFunction(const char *text)
+    inline void importFunction(size32_t lenChars, const char *utf)
     {
+        size32_t bytes = rtlUtf8Size(lenChars, utf);
+        StringBuffer text(bytes, utf);
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
             prevtext.clear();
             // Name should be in the form class.method:signature
             const char *funcname = strchr(text, '.');
             if (!funcname)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text);
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text.str());
             const char *signature = strchr(funcname, ':');
             if (!signature)
-                throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text);
+                throw MakeStringException(MSGAUD_user, 0, "javaembed: Invalid import name %s - Expected classname.methodname:signature", text.str());
             StringBuffer classname(funcname-text, text);
             funcname++;  // skip the '.'
             StringBuffer methodname(signature-funcname, funcname);
@@ -179,7 +181,7 @@ public:
             if (!javaMethodID)
                 throw MakeStringException(MSGAUD_user, 0, "javaembed: Failed to resolve method name %s with signature %s", methodname.str(), signature);
             const char *returnSig = strrchr(signature, ')');
-            assertex(returnSig);
+            assertex(returnSig);  // Otherwise how did Java accept it??
             returnSig++;
             returnType.set(returnSig);
             argsig.set(signature);
@@ -514,9 +516,9 @@ public:
         addArg(v);
     }
 
-    virtual void importFunction(const char *text)
+    virtual void importFunction(size32_t lenChars, const char *utf)
     {
-        sharedCtx->importFunction(text);
+        sharedCtx->importFunction(lenChars, utf);
         argsig = sharedCtx->querySignature();
         assertex(*argsig == '(');
         argsig++;
@@ -526,7 +528,7 @@ public:
         sharedCtx->callFunction(result, args);
     }
 
-    virtual void compileEmbeddedScript(const char *script)
+    virtual void compileEmbeddedScript(size32_t lenChars, const char *script)
     {
         throwUnexpected();  // The java language helper supports only imported functions, not embedding java code in ECL.
     }

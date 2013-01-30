@@ -135,11 +135,11 @@ public:
     }
     virtual __int64 getSignedResult()
     {
-        return ::Rcpp::as<long int>(result); // MORE - is this the best R can do ?
+        return ::Rcpp::as<long int>(result); // Should really be long long, but RInside does not support that
     }
     virtual unsigned __int64 getUnsignedResult()
     {
-        return ::Rcpp::as<unsigned long int>(result); // MORE - is this the best R can do ?
+        return ::Rcpp::as<unsigned long int>(result); // Should really be long long, but RInside does not support that
     }
     virtual void getStringResult(size32_t &__len, char * &__result)
     {
@@ -148,11 +148,11 @@ public:
     }
     virtual void getUTF8Result(size32_t &chars, char * &result)
     {
-        UNIMPLEMENTED;
+        throw MakeStringException(MSGAUD_user, 0, "Rembed: %s: Unicode/UTF8 results not supported", func.c_str());
     }
     virtual void getUnicodeResult(size32_t &chars, UChar * &result)
     {
-        UNIMPLEMENTED;
+        throw MakeStringException(MSGAUD_user, 0, "Rembed: %s: Unicode/UTF8 results not supported", func.c_str());
     }
 
     virtual void bindBooleanParam(const char *name, bool val)
@@ -189,13 +189,13 @@ public:
         UNIMPLEMENTED;
     }
 
-    virtual void importFunction(const char *text)
+    virtual void importFunction(size32_t lenChars, const char *utf)
     {
         throwUnexpected();
     }
-    virtual void compileEmbeddedScript(const char *text)
+    virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
-        func = text;
+        func.assign(utf, rtlUtf8Size(lenChars, utf));
     }
 
     virtual void callFunction()

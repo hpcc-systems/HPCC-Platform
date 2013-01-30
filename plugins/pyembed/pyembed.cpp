@@ -139,8 +139,10 @@ public:
         script.clear();
     }
 
-    inline PyObject * importFunction(const char *text)
+    inline PyObject * importFunction(size32_t lenChars, const char *utf)
     {
+        size32_t bytes = rtlUtf8Size(lenChars, utf);
+        StringBuffer text(bytes, utf);
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
             prevtext.clear();
@@ -176,8 +178,10 @@ public:
         return script.getLink();
     }
 
-    inline PyObject *compileEmbeddedScript(const char *text)
+    inline PyObject *compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
+        size32_t bytes = rtlUtf8Size(lenChars, utf);
+        StringBuffer text(bytes, utf);
         if (!prevtext || strcmp(text, prevtext) != 0)
         {
             prevtext.clear();
@@ -412,13 +416,13 @@ public:
         rtlFree(unicode);
     }
 
-    virtual void importFunction(const char *text)
+    virtual void importFunction(size32_t lenChars, const char *text)
     {
         throwUnexpected();
     }
-    virtual void compileEmbeddedScript(const char *text)
+    virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
-        script.setown(sharedCtx->compileEmbeddedScript(text));
+        script.setown(sharedCtx->compileEmbeddedScript(lenChars, utf));
     }
 
     virtual void callFunction()
@@ -485,11 +489,11 @@ public:
         rtlFree(unicode);
     }
 
-    virtual void importFunction(const char *text)
+    virtual void importFunction(size32_t lenChars, const char *utf)
     {
-        script.setown(sharedCtx->importFunction(text));
+        script.setown(sharedCtx->importFunction(lenChars, utf));
     }
-    virtual void compileEmbeddedScript(const char *text)
+    virtual void compileEmbeddedScript(size32_t len, const char *text)
     {
         throwUnexpected();
     }

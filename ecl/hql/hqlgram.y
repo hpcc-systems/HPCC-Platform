@@ -1016,14 +1016,14 @@ embedBody
                         }
     | EMBED '(' abstractModule ',' expression ')'
                         {
-                            parser->normalizeExpression($5, type_string, true);
+                            parser->normalizeExpression($5, type_stringorunicode, true);
                             OwnedHqlExpr language = $3.getExpr();
                             OwnedHqlExpr embedText = $5.getExpr();
                             $$.setExpr(parser->processEmbedBody($5, embedText, language, NULL), $1);
                         }
     | IMPORT '(' abstractModule ',' expression attribs ')'
                         {
-                            parser->normalizeExpression($5, type_string, true);
+                            parser->normalizeExpression($5, type_stringorunicode, true);
                             OwnedHqlExpr language = $3.getExpr();
                             OwnedHqlExpr funcname = $5.getExpr();
                             OwnedHqlExpr attribs = createComma(createAttribute(importAtom), $6.getExpr());

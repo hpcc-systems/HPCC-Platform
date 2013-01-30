@@ -750,8 +750,8 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void getUTF8Result(size32_t &chars, char * &result) = 0;
     virtual void getUnicodeResult(size32_t &chars, UChar * &result) = 0;
 
-    virtual void importFunction(const char *function) = 0;
-    virtual void compileEmbeddedScript(const char *script) = 0;
+    virtual void importFunction(size32_t len, const char *function) = 0;
+    virtual void compileEmbeddedScript(size32_t len, const char *script) = 0;
     virtual void callFunction() = 0;
 };
 

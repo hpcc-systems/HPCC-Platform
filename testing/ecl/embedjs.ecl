@@ -6,7 +6,7 @@ integer add1(integer val) := EMBED(javascript) val+1; ENDEMBED;
 string add2(string val) := EMBED(javascript) val+'1'; ENDEMBED;
 string add3(varstring val) := EMBED(javascript) val+'1'; ENDEMBED;
 utf8 add4(utf8 val) := EMBED(javascript) val+'1'; ENDEMBED;
-unicode add5(unicode val) := EMBED(javascript) val+'1'; ENDEMBED;
+unicode add5(unicode val) := EMBED(javascript, U' val+\' at Oh là là Straße\';');
 
 integer testThrow(integer val) := EMBED(javascript) throw new Error("Error from JavaScript"); ENDEMBED;
 

@@ -14,10 +14,10 @@
  <Row><Result_5>Oh là là Straße1</Result_5></Row>
 </Dataset>
 <Dataset name='Result 6'>
- <Row><Result_6>Стоял1</Result_6></Row>
+ <Row><Result_6>Стоял at Oh là là Straße</Result_6></Row>
 </Dataset>
 <Dataset name='Result 7'>
- <Row><Result_7>Oh l&#253; l&#253; Stra&#253;e1</Result_7></Row>
+ <Row><Result_7>Oh l&#224; l&#224; Stra&#223;e1</Result_7></Row>
 </Dataset>
 <Dataset name='Result 8'>
  <Row><a>0</a><m>v8embed: Error: Error from JavaScript</m></Row>

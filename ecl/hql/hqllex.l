@@ -1488,7 +1488,7 @@ FUNCTIONMACRO|MACRO {
                         yyless(CUR_TOKEN_LENGTH - delta);
                         lexer->yyPosition -= delta;
                         lexer->yyColumn -= delta;
-                        OwnedHqlExpr cppText = createConstant(createStringValue(lexer->yyBuffer+startpos, len));
+                        OwnedHqlExpr cppText = createConstant(createUnicodeValue(lexer->yyBuffer+startpos, len, "", true, false));
                         OwnedHqlExpr annotated = createLocationAnnotation(cppText.getClear(), returnToken.pos);
                         OwnedHqlExpr options = extractCppBodyAttrs(len, lexer->yyBuffer+startpos);
                         returnToken.setExpr(createComma(annotated.getClear(), options.getClear()));

@@ -7247,7 +7247,7 @@ void HqlCppTranslator::doBuildExprEmbedBody(BuildCtx & ctx, IHqlExpression * exp
         UNIMPLEMENTED;  // It's not clear if this can ever happen - perhaps a parameterless function that used EMBED ?
     }
     StringBuffer text;
-    expr->queryChild(0)->queryValue()->getStringValue(text);
+    expr->queryChild(0)->queryValue()->getUTF8Value(text);
     text.setLength(cleanupEmbeddedCpp(text.length(), (char*)text.str()));
     OwnedHqlExpr quoted = createQuoted(text.str(), expr->getType());
 
@@ -11319,7 +11319,8 @@ static IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlEx
     ForEachChild(i, formals)
     {
         IHqlExpression * param = formals->queryChild(i);
-        simpleTransformer.setMapping(param, createActualFromFormal(param));
+        OwnedHqlExpr formal = createActualFromFormal(param);
+        simpleTransformer.setMapping(param, formal);
     }
 
     return simpleTransformer.transformRoot(expr);
@@ -11372,7 +11373,7 @@ void HqlCppTranslator::buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpress
         cppBody = bodyCode->queryChild(1);
 
     StringBuffer text;
-    cppBody->queryValue()->getStringValue(text);
+    cppBody->queryValue()->getUTF8Value(text);
     //remove #option, and remove /r so we don't end up with mixed format end of lines.
     text.setLength(cleanupEmbeddedCpp(text.length(), (char*)text.str()));
 
@@ -11494,7 +11495,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             bindFunc = bindUnicodeParamAtom;
             break;
         default:
-            UNIMPLEMENTED;
+            StringBuffer typeText;
+            getFriendlyTypeStr(paramType, typeText);
+            throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
         }
         args.append(*createActualFromFormal(param));
         buildFunctionCall(funcctx, bindFunc, args);
@@ -11523,7 +11526,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         returnFunc = getUTF8ResultAtom;
         break;
     default:
-        UNIMPLEMENTED;
+        StringBuffer typeText;
+        getFriendlyTypeStr(returnType, typeText);
+        throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
     }
     noargs.append(*LINK(ctxVar));
     OwnedHqlExpr call = bindFunctionCall(returnFunc, noargs);

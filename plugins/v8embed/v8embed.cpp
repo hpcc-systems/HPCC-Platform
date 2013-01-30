@@ -107,13 +107,15 @@ public:
     }
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
     {
-        v8::HandleScope handle_scope;
-        context->Global()->Set(v8::String::New(name), v8::String::New(val, len));
+        size32_t utfCharCount;
+        char *utfText;
+        rtlStrToUtf8X(utfCharCount, utfText, len, val);
+        bindUTF8Param(name, utfCharCount, utfText);
+        rtlFree(utfText);
     }
     virtual void bindVStringParam(const char *name, const char *val)
     {
-        v8::HandleScope handle_scope;
-        context->Global()->Set(v8::String::New(name), v8::String::New(val));
+        bindStringParam(name, strlen(val), val);
     }
     virtual void bindUTF8Param(const char *name, size32_t chars, const char *val)
     {
@@ -174,14 +176,14 @@ public:
         rtlUtf8ToUnicodeX(__chars, __result, numchars, *utf8);
     }
 
-    virtual void compileEmbeddedScript(const char *text)
+    virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)
     {
         v8::HandleScope handle_scope;
-        v8::Handle<v8::String> source = v8::String::New(text);
+        v8::Handle<v8::String> source = v8::String::New(utf, rtlUtf8Size(lenChars, utf));
         v8::Handle<v8::Script> lscript = v8::Script::Compile(source);
         script = v8::Persistent<v8::Script>::New(lscript);
     }
-    virtual void importFunction(const char *text)
+    virtual void importFunction(size32_t lenChars, const char *utf)
     {
         UNIMPLEMENTED; // Not sure if meaningful for js
     }

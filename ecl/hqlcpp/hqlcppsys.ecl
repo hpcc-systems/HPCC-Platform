@@ -822,8 +822,8 @@ const char * cppSystemText[]  = {
     "   utf8 getUTF8Result() : method,entrypoint='getUTF8Result';",
     "   unicode getUnicodeResult() : method,entrypoint='getUnicodeResult';",
 
-    "   compileEmbeddedScript(const varstring script) : method,entrypoint='compileEmbeddedScript';",
-    "   import(const varstring script) : method,entrypoint='importFunction';",
+    "   compileEmbeddedScript(const utf8 script) : method,entrypoint='compileEmbeddedScript';",
+    "   import(const utf8 script) : method,entrypoint='importFunction';",
     "   END;",
     NULL };
 
