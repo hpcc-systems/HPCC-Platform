@@ -111,6 +111,7 @@ void usage(const char *exe)
   printf("  getxref <destxmlfile>           -- get all XREF information\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
   printf("  unlock <xpath or logicalfile>   --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
+  printf("  xmlsize <filename> [<percentage>] --  analyse size usage in xml file, display individual items above 'percentage' \n");
   printf("\n");
   printf("Common options\n");
   printf("  server=<dali-server-ip>         -- server ip\n");
@@ -1905,6 +1906,209 @@ static void getxref(const char *dst)
     conn->close();
 }
 
+struct CTreeItem : public CInterface
+{
+    String *tail;
+    CTreeItem *parent;
+    unsigned index;
+    unsigned startOffset;
+    unsigned endOffset;
+    unsigned adjust;
+    bool supressidx;
+    CTreeItem(CTreeItem *_parent, String *_tail, unsigned _index, unsigned _startOffset)
+    {
+        parent = LINK(_parent);
+        startOffset = _startOffset;
+        endOffset = 0;
+        adjust = 0;
+        index = _index;
+        supressidx = true;
+        tail = _tail;
+    }
+    ~CTreeItem()
+    {
+        if (parent)
+            parent->Release();
+        ::Release(tail);
+    }
+    void getXPath(StringBuffer &xpath)
+    {
+        if (parent)
+            parent->getXPath(xpath);
+        xpath.append('/').append(tail->toCharArray());
+        if ((index!=0)||tail->IsShared())
+            xpath.append('[').append(index+1).append(']');
+    }
+    unsigned size() { return endOffset?(endOffset-startOffset):0; }
+    unsigned adjustedSize(bool &adjusted) { adjusted = (adjust!=0); return size()-adjust; }
+};
+
+class CXMLSizesParser : public CInterface
+{
+    Owned<IPullXMLReader> xmlReader;
+    XmlReaderOptions xmlOptions;
+    double pc;
+
+    class CParse : public CInterface, implements IPTreeNotifyEvent
+    {
+        CIArrayOf<CTreeItem> stack;
+        String * levtail;
+        CIArrayOf<CTreeItem> arr;
+        unsigned limit;
+        __int64 totalSize;
+
+        static int _sortF(CInterface **_left, CInterface **_right)
+        {
+            CTreeItem **left = (CTreeItem **)_left;
+            CTreeItem **right = (CTreeItem **)_right;
+            return ((*right)->size() - (*left)->size());
+        }
+    public:
+
+        IMPLEMENT_IINTERFACE;
+
+        CParse(unsigned __int64 _totalSize, double limitpc) : totalSize(_totalSize)
+        {
+            levtail = NULL;
+            limit = (unsigned)((double)totalSize*limitpc/100.0);
+        }
+        void reset()
+        {
+            stack.kill();
+        }
+
+// IPTreeNotifyEvent
+        virtual void beginNode(const char *tag, offset_t startOffset)
+        {
+            String *tail = levtail;
+            if (levtail&&(0 == strcmp(tag, levtail->toCharArray())))
+                tail->Link();
+            else
+                tail = new String(tag);
+            levtail = NULL;     // opening new child
+            CTreeItem *parent = stack.empty()?NULL:&stack.tos();
+            CTreeItem *item = new CTreeItem(parent, tail, tail->getLinkCount(), startOffset);
+            stack.append(*item);
+        }
+        virtual void newAttribute(const char *tag, const char *value)
+        {
+        }
+        virtual void beginNodeContent(const char *tag)
+        {
+        }
+        virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset)
+        {
+            CTreeItem *tos = &stack.tos();
+            assertex(tos);
+            tos->endOffset = endOffset;
+            bool adjusted;
+            unsigned sz = tos->adjustedSize(adjusted);
+            if (sz>=limit)
+            {
+                CTreeItem *parent = tos->parent;
+                while (parent) {
+                    parent->adjust += sz;
+                    parent = parent->parent;
+                }
+                tos->Link();
+                arr.append(*tos);
+                levtail = tos->tail;
+            }
+            else
+                levtail = NULL;
+            stack.pop();
+        }
+
+        void printFullResults()
+        {
+            arr.sort(_sortF);
+            ForEachItemIn(m, arr)
+            {
+                CTreeItem &match = arr.item(m);
+                StringBuffer xpath;
+                match.getXPath(xpath);
+                printf("xpath=%s, size=%d\n", xpath.str(), match.size());
+            }
+        }
+        void printResultTree()
+        {
+            if (!totalSize)
+                return;
+            StringBuffer res;
+            ForEachItemIn(i, arr) {
+                CTreeItem &item = arr.item(i);
+                bool adjusted;
+                unsigned sz = item.adjustedSize(adjusted);
+                if (sz>=limit) {
+                    res.clear();
+                    item.getXPath(res);
+                    if (adjusted)
+                        res.append(" (rest)");
+                    res.padTo(40);
+                    res.appendf(" %10d(%5.2f%%)",sz,((float)sz*100.0)/(float)totalSize);
+                    printf("%s\n",res.str());
+                }
+            }
+        }
+    } *parser;
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CXMLSizesParser(const char *fName, XmlReaderOptions _xmlOptions=xr_none, double _pc=1.0) : xmlOptions(_xmlOptions), pc(_pc) { go(fName); }
+    ~CXMLSizesParser() { ::Release(parser); }
+
+    void go(const char *fName)
+    {
+        OwnedIFile ifile = createIFile(fName);
+        OwnedIFileIO ifileio = ifile->open(IFOread);
+        if (!ifileio)
+            throw MakeStringException(0, "Failed to open: %s", ifile->queryFilename());
+        parser = new CParse(ifileio->size(), pc);
+        Owned<IIOStream> stream = createIOStream(ifileio);
+        xmlReader.setown(createPullXMLStreamReader(*stream, *parser, xmlOptions));
+    }
+
+    void printResultTree()
+    {
+        parser->printResultTree();
+    }
+
+    virtual bool next()
+    {
+        return xmlReader->next();
+    }
+
+    virtual void reset()
+    {
+        parser->reset();
+        xmlReader->reset();
+    }
+};
+
+static void xmlSize(const char *filename, double pc)
+{
+
+    try
+    {
+        OwnedIFile iFile = createIFile(filename);
+        if (!iFile->exists())
+            OUTLOG("File '%s' not found", filename);
+        else
+        {
+            Owned<CXMLSizesParser> parser = new CXMLSizesParser((filename&&*filename)?filename:"dalisds.xml", xr_none, pc);
+            while (parser->next())
+                ;
+            parser->printResultTree();
+        }
+    }
+    catch (IException *e)
+    {
+        pexception("xmlSize", e);
+        e->Release();
+    }
+}
+
 //=============================================================================
 
 static bool begins(const char *&ln,const char *pat)
@@ -2171,232 +2375,244 @@ int main(int argc, char* argv[])
     unsigned daliconnectelapsed;
     StringBuffer daliserv;
     if (!ret) {
-        if (!props->getProp("server",daliserv.clear())) {
-            ERRLOG("Dali server not specified");
-            return 1;
-        }
-        try {
-            SocketEndpoint ep(daliserv.str(),DALI_SERVER_PORT);
-            SocketEndpointArray epa;
-            epa.append(ep);
-            Owned<IGroup> group = createIGroup(epa);
-            unsigned start = msTick();
-            initClientProcess(group, DCR_Util);
-            daliconnectelapsed = msTick()-start;
-        }
-        catch (IException *e) {
-            EXCLOG(e,"daliadmin initClientProcess");
-            e->Release();
-            ret = 254;
-        }
-    }
-    if (!ret) {
-        try {
-            Owned<IUserDescriptor> userDesc;
-            if (props->getProp("user",tmps.clear())) {
-                userDesc.setown(createUserDescriptor());
-                StringBuffer ps;
-                props->getProp("password",ps);
-                userDesc->set(tmps.str(),ps.str());
-                queryDistributedFileDirectory().setDefaultUser(userDesc);
-            }
-            daliConnectTimeoutMs = 1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT);
-            unsigned np = params.ordinality()-1;
-            const char *cmd = params.item(0);
-            if (stricmp(cmd,"export")==0) {
-                CHECKPARAMS(2,2);
-                _export_(params.item(1),params.item(2));
-            }   
-            else if (stricmp(cmd,"import")==0) {
-                CHECKPARAMS(2,2);
-                import(params.item(1),params.item(2),false);
-            }   
-            else if (stricmp(cmd,"importadd")==0) {
-                CHECKPARAMS(2,2);
-                import(params.item(1),params.item(2),true);
-            }
-            else if (stricmp(cmd,"delete")==0) {
-                CHECKPARAMS(1,1);
-                _delete_(params.item(1),true);
-            }
-            else if (stricmp(cmd,"set")==0) {
-                CHECKPARAMS(2,2);
-                set(params.item(1),params.item(2));
-            }
-            else if (stricmp(cmd,"get")==0) {
-                CHECKPARAMS(1,1);
-                get(params.item(1));
-            }
-            else if (stricmp(cmd,"bget")==0) {
-                CHECKPARAMS(2,2);
-                bget(params.item(1),params.item(2));
-            }
-            else if (stricmp(cmd,"wget")==0) {
-                CHECKPARAMS(1,1);
-                wget(params.item(1));
-            }
-            else if (stricmp(cmd,"xget")==0) {
-                CHECKPARAMS(1,1);
-                wget(params.item(1));
-            }
-            else if (stricmp(cmd,"add")==0) {
-                CHECKPARAMS(2,2);
-                add(params.item(1),params.item(2));
-            }
-            else if (stricmp(cmd,"delv")==0) {
-                CHECKPARAMS(1,1);
-                delv(params.item(1));
-            }
-            else if (stricmp(cmd,"count")==0) {
-                CHECKPARAMS(1,1);
-                count(params.item(1));
-            }
-            else if (stricmp(cmd,"dfsfile")==0) {
-                CHECKPARAMS(1,1);
-                dfsfile(params.item(1),userDesc);
-            }
-            else if (stricmp(cmd,"dfspart")==0) {
-                CHECKPARAMS(2,2);
-                dfspart(params.item(1),userDesc,atoi(params.item(2)));
-            }
-            else if (stricmp(cmd,"dfscsv")==0) {
-                CHECKPARAMS(1,1);
-                dfscsv(params.item(1),userDesc);
-            }
-            else if (stricmp(cmd,"dfsgroup")==0) {
+        const char *cmd = params.item(0);
+        unsigned np = params.ordinality()-1;
+
+        if (!props->getProp("server",daliserv.clear()))
+        {
+            // external commands
+
+            if (stricmp(cmd,"xmlsize")==0)
+            {
                 CHECKPARAMS(1,2);
-                dfsgroup(params.item(1),(np>1)?params.item(2):NULL);
+                xmlSize(params.item(1), np>1?atof(params.item(2)):1.0);
             }
-            else if (stricmp(cmd,"dfsmap")==0) {
-                CHECKPARAMS(1,1);
-                dfsmap(params.item(1), userDesc);
-            }
-            else if (stricmp(cmd,"dfsexist")==0) {
-                CHECKPARAMS(1,1);
-                ret = dfsexists(params.item(1),userDesc);
-            }
-            else if (stricmp(cmd,"dfsparents")==0) {
-                CHECKPARAMS(1,1);
-                dfsparents(params.item(1),userDesc);
-            }
-            else if (stricmp(cmd,"dfsunlink")==0) {
-                CHECKPARAMS(1,1);
-                dfsunlink(params.item(1),userDesc);
-            }
-            else if (stricmp(cmd,"dfsverify")==0) {
-                CHECKPARAMS(1,1);
-                ret = dfsverify(params.item(1),NULL,userDesc);
-            }
-            else if (stricmp(cmd,"setprotect")==0) {
-                CHECKPARAMS(2,2);
-                setprotect(params.item(1),params.item(2),userDesc);
-            }
-            else if (stricmp(cmd,"unprotect")==0) {
-                CHECKPARAMS(2,2);
-                unprotect(params.item(1),params.item(2),userDesc);
-            }
-            else if (stricmp(cmd,"listprotect")==0) {
-                CHECKPARAMS(0,2);
-                listprotect((np>1)?params.item(1):"*",(np>2)?params.item(2):"*");
-
-            }
-            else if (stricmp(cmd,"checksuperfile")==0) {
-                CHECKPARAMS(1,1);
-                bool fix = props->getPropBool("fix");
-                checksuperfile(params.item(1),fix);
-            }
-            else if (stricmp(cmd,"checksubfile")==0) {
-                CHECKPARAMS(1,1);
-                checksubfile(params.item(1));
-            }
-            else if (stricmp(cmd,"listexpires")==0) {
-                CHECKPARAMS(0,1);
-                listexpires((np>1)?params.item(1):"*",userDesc);
-            }
-            else if (stricmp(cmd,"listrelationships")==0) {
-                CHECKPARAMS(2,2);
-                listrelationships(params.item(1),params.item(2));
-            }
-            else if (stricmp(cmd,"dfsperm")==0) {
-                if (!userDesc.get()) 
-                    throw MakeStringException(-1,"dfsperm requires username to be set (user=)");
-                CHECKPARAMS(1,1);
-                ret = dfsperm(params.item(1),userDesc);
-            }
-            else if (stricmp(cmd,"dfscompratio")==0) {
-                CHECKPARAMS(1,1);
-                dfscompratio(params.item(1),userDesc);
-            }
-            else if (stricmp(cmd,"dfsscopes")==0) {
-                CHECKPARAMS(0,1);
-                dfsscopes((np>1)?params.item(1):"*",userDesc);
-            }
-            else if (stricmp(cmd,"cleanscopes")==0) {
-                CHECKPARAMS(0,0);
-                cleanscopes(userDesc);
-            }
-            else if (stricmp(cmd,"listworkunits")==0) {
-                CHECKPARAMS(0,3);
-                listworkunits((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
-            }
-            else if (stricmp(cmd,"listmatches")==0) {
-                CHECKPARAMS(0,3);
-                listmatches((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
-            }
-            else if (stricmp(cmd,"workunittimings")==0) {
-                CHECKPARAMS(1,1);
-                workunittimings(params.item(1));
-            }
-            else if (stricmp(cmd,"serverlist")==0) {
-                CHECKPARAMS(1,1);
-                serverlist(params.item(1));
-            }
-            else if (stricmp(cmd,"clusterlist")==0) {
-                CHECKPARAMS(1,1);
-                clusterlist(params.item(1));
-            }
-            else if (stricmp(cmd,"auditlog")==0) {
-                CHECKPARAMS(2,3);
-                auditlog(params.item(1),params.item(2),(np>2)?params.item(3):NULL);
-            }
-            else if (stricmp(cmd,"coalesce")==0) {
-                CHECKPARAMS(0,0);
-                coalesce();
-            }
-            else if (stricmp(cmd,"mpping")==0) {
-                CHECKPARAMS(1,1);
-                mpping(params.item(1));
-            }
-            else if (stricmp(cmd,"daliping")==0) {
-                CHECKPARAMS(0,1);
-                daliping(daliserv.str(),daliconnectelapsed,(np>0)?atoi(params.item(1)):1);
-            }
-            else if (stricmp(cmd,"getxref")==0) {
-                CHECKPARAMS(1,1);
-                getxref(params.item(1));
-            }
-            else if (stricmp(cmd,"dalilocks")==0) {
-                CHECKPARAMS(0,2);
-                bool filesonly = false;
-                if (np&&(stricmp(params.item(np),"files")==0)) {
-                    filesonly = true;
-                    np--;
-                }
-                dalilocks(np>0?params.item(1):NULL,filesonly);
-            }
-            else if (stricmp(cmd,"unlock")==0) {
-                CHECKPARAMS(1,1);
-                unlock(params.item(1));
-            }
-
-            else 
+            else
                 ERRLOG("Unknown command %s",cmd);
+            return 0;
         }
-        catch (IException *e) {
-            EXCLOG(e,"daliadmin");
-            e->Release();
+        else
+        {
+            try {
+                SocketEndpoint ep(daliserv.str(),DALI_SERVER_PORT);
+                SocketEndpointArray epa;
+                epa.append(ep);
+                Owned<IGroup> group = createIGroup(epa);
+                unsigned start = msTick();
+                initClientProcess(group, DCR_Util);
+                daliconnectelapsed = msTick()-start;
+            }
+            catch (IException *e) {
+                EXCLOG(e,"daliadmin initClientProcess");
+                e->Release();
+                ret = 254;
+            }
+            if (!ret) {
+                try {
+                    Owned<IUserDescriptor> userDesc;
+                    if (props->getProp("user",tmps.clear())) {
+                        userDesc.setown(createUserDescriptor());
+                        StringBuffer ps;
+                        props->getProp("password",ps);
+                        userDesc->set(tmps.str(),ps.str());
+                        queryDistributedFileDirectory().setDefaultUser(userDesc);
+                    }
+                    daliConnectTimeoutMs = 1000 * props->getPropInt("timeout", DEFAULT_DALICONNECT_TIMEOUT);
+                    if (stricmp(cmd,"export")==0) {
+                        CHECKPARAMS(2,2);
+                        _export_(params.item(1),params.item(2));
+                    }
+                    else if (stricmp(cmd,"import")==0) {
+                        CHECKPARAMS(2,2);
+                        import(params.item(1),params.item(2),false);
+                    }
+                    else if (stricmp(cmd,"importadd")==0) {
+                        CHECKPARAMS(2,2);
+                        import(params.item(1),params.item(2),true);
+                    }
+                    else if (stricmp(cmd,"delete")==0) {
+                        CHECKPARAMS(1,1);
+                        _delete_(params.item(1),true);
+                    }
+                    else if (stricmp(cmd,"set")==0) {
+                        CHECKPARAMS(2,2);
+                        set(params.item(1),params.item(2));
+                    }
+                    else if (stricmp(cmd,"get")==0) {
+                        CHECKPARAMS(1,1);
+                        get(params.item(1));
+                    }
+                    else if (stricmp(cmd,"bget")==0) {
+                        CHECKPARAMS(2,2);
+                        bget(params.item(1),params.item(2));
+                    }
+                    else if (stricmp(cmd,"wget")==0) {
+                        CHECKPARAMS(1,1);
+                        wget(params.item(1));
+                    }
+                    else if (stricmp(cmd,"xget")==0) {
+                        CHECKPARAMS(1,1);
+                        wget(params.item(1));
+                    }
+                    else if (stricmp(cmd,"add")==0) {
+                        CHECKPARAMS(2,2);
+                        add(params.item(1),params.item(2));
+                    }
+                    else if (stricmp(cmd,"delv")==0) {
+                        CHECKPARAMS(1,1);
+                        delv(params.item(1));
+                    }
+                    else if (stricmp(cmd,"count")==0) {
+                        CHECKPARAMS(1,1);
+                        count(params.item(1));
+                    }
+                    else if (stricmp(cmd,"dfsfile")==0) {
+                        CHECKPARAMS(1,1);
+                        dfsfile(params.item(1),userDesc);
+                    }
+                    else if (stricmp(cmd,"dfspart")==0) {
+                        CHECKPARAMS(2,2);
+                        dfspart(params.item(1),userDesc,atoi(params.item(2)));
+                    }
+                    else if (stricmp(cmd,"dfscsv")==0) {
+                        CHECKPARAMS(1,1);
+                        dfscsv(params.item(1),userDesc);
+                    }
+                    else if (stricmp(cmd,"dfsgroup")==0) {
+                        CHECKPARAMS(1,2);
+                        dfsgroup(params.item(1),(np>1)?params.item(2):NULL);
+                    }
+                    else if (stricmp(cmd,"dfsmap")==0) {
+                        CHECKPARAMS(1,1);
+                        dfsmap(params.item(1), userDesc);
+                    }
+                    else if (stricmp(cmd,"dfsexist")==0) {
+                        CHECKPARAMS(1,1);
+                        ret = dfsexists(params.item(1),userDesc);
+                    }
+                    else if (stricmp(cmd,"dfsparents")==0) {
+                        CHECKPARAMS(1,1);
+                        dfsparents(params.item(1),userDesc);
+                    }
+                    else if (stricmp(cmd,"dfsunlink")==0) {
+                        CHECKPARAMS(1,1);
+                        dfsunlink(params.item(1),userDesc);
+                    }
+                    else if (stricmp(cmd,"dfsverify")==0) {
+                        CHECKPARAMS(1,1);
+                        ret = dfsverify(params.item(1),NULL,userDesc);
+                    }
+                    else if (stricmp(cmd,"setprotect")==0) {
+                        CHECKPARAMS(2,2);
+                        setprotect(params.item(1),params.item(2),userDesc);
+                    }
+                    else if (stricmp(cmd,"unprotect")==0) {
+                        CHECKPARAMS(2,2);
+                        unprotect(params.item(1),params.item(2),userDesc);
+                    }
+                    else if (stricmp(cmd,"listprotect")==0) {
+                        CHECKPARAMS(0,2);
+                        listprotect((np>1)?params.item(1):"*",(np>2)?params.item(2):"*");
+
+                    }
+                    else if (stricmp(cmd,"checksuperfile")==0) {
+                        CHECKPARAMS(1,1);
+                        bool fix = props->getPropBool("fix");
+                        checksuperfile(params.item(1),fix);
+                    }
+                    else if (stricmp(cmd,"checksubfile")==0) {
+                        CHECKPARAMS(1,1);
+                        checksubfile(params.item(1));
+                    }
+                    else if (stricmp(cmd,"listexpires")==0) {
+                        CHECKPARAMS(0,1);
+                        listexpires((np>1)?params.item(1):"*",userDesc);
+                    }
+                    else if (stricmp(cmd,"listrelationships")==0) {
+                        CHECKPARAMS(2,2);
+                        listrelationships(params.item(1),params.item(2));
+                    }
+                    else if (stricmp(cmd,"dfsperm")==0) {
+                        if (!userDesc.get())
+                            throw MakeStringException(-1,"dfsperm requires username to be set (user=)");
+                        CHECKPARAMS(1,1);
+                        ret = dfsperm(params.item(1),userDesc);
+                    }
+                    else if (stricmp(cmd,"dfscompratio")==0) {
+                        CHECKPARAMS(1,1);
+                        dfscompratio(params.item(1),userDesc);
+                    }
+                    else if (stricmp(cmd,"dfsscopes")==0) {
+                        CHECKPARAMS(0,1);
+                        dfsscopes((np>1)?params.item(1):"*",userDesc);
+                    }
+                    else if (stricmp(cmd,"cleanscopes")==0) {
+                        CHECKPARAMS(0,0);
+                        cleanscopes(userDesc);
+                    }
+                    else if (stricmp(cmd,"listworkunits")==0) {
+                        CHECKPARAMS(0,3);
+                        listworkunits((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
+                    }
+                    else if (stricmp(cmd,"listmatches")==0) {
+                        CHECKPARAMS(0,3);
+                        listmatches((np>0)?params.item(1):NULL,(np>1)?params.item(2):NULL,(np>2)?params.item(3):NULL);
+                    }
+                    else if (stricmp(cmd,"workunittimings")==0) {
+                        CHECKPARAMS(1,1);
+                        workunittimings(params.item(1));
+                    }
+                    else if (stricmp(cmd,"serverlist")==0) {
+                        CHECKPARAMS(1,1);
+                        serverlist(params.item(1));
+                    }
+                    else if (stricmp(cmd,"clusterlist")==0) {
+                        CHECKPARAMS(1,1);
+                        clusterlist(params.item(1));
+                    }
+                    else if (stricmp(cmd,"auditlog")==0) {
+                        CHECKPARAMS(2,3);
+                        auditlog(params.item(1),params.item(2),(np>2)?params.item(3):NULL);
+                    }
+                    else if (stricmp(cmd,"coalesce")==0) {
+                        CHECKPARAMS(0,0);
+                        coalesce();
+                    }
+                    else if (stricmp(cmd,"mpping")==0) {
+                        CHECKPARAMS(1,1);
+                        mpping(params.item(1));
+                    }
+                    else if (stricmp(cmd,"daliping")==0) {
+                        CHECKPARAMS(0,1);
+                        daliping(daliserv.str(),daliconnectelapsed,(np>0)?atoi(params.item(1)):1);
+                    }
+                    else if (stricmp(cmd,"getxref")==0) {
+                        CHECKPARAMS(1,1);
+                        getxref(params.item(1));
+                    }
+                    else if (stricmp(cmd,"dalilocks")==0) {
+                        CHECKPARAMS(0,2);
+                        bool filesonly = false;
+                        if (np&&(stricmp(params.item(np),"files")==0)) {
+                            filesonly = true;
+                            np--;
+                        }
+                        dalilocks(np>0?params.item(1):NULL,filesonly);
+                    }
+                    else if (stricmp(cmd,"unlock")==0) {
+                        CHECKPARAMS(1,1);
+                        unlock(params.item(1));
+                    }
+                    else
+                        ERRLOG("Unknown command %s",cmd);
+                }
+                catch (IException *e) {
+                    EXCLOG(e,"daliadmin");
+                    e->Release();
+                }
+                closedownClientProcess();
+            }
         }
-        closedownClientProcess();
     }
     setDaliServixSocketCaching(false);
     setNodeCaching(false);
