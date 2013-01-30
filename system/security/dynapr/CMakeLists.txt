@@ -13,12 +13,34 @@
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
 ################################################################################
-IF (USE_OPENLDAP)
-HPCC_ADD_SUBDIRECTORY (LdapSecurity)
-ENDIF(USE_OPENLDAP)
-HPCC_ADD_SUBDIRECTORY (securesocket)
-HPCC_ADD_SUBDIRECTORY (test "PLATFORM")
-if (USE_ZLIB)
-  HPCC_ADD_SUBDIRECTORY (zcrypt "PLATFORM")
-endif()
-HPCC_ADD_SUBDIRECTORY (dynapr "PLATFORM")
+
+
+# Component: dynapr
+#####################################################
+# Description:
+# ------------
+#    Cmake Input File for dynapr
+#####################################################
+
+project( dynapr )
+
+set (    SRCS
+         apr.cpp
+         aprshared.cpp
+         apushared.cpp
+         dynshared.cpp
+    )
+
+include_directories (
+         .
+         ./../../include
+         ./../../jlib
+    )
+
+ADD_DEFINITIONS( -DDYNAPR_EXPORTS -D_USRDLL )
+
+HPCC_ADD_LIBRARY( dynapr SHARED ${SRCS} )
+install ( TARGETS dynapr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+target_link_libraries ( dynapr
+         jlib
+    )
