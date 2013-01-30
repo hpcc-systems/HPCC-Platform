@@ -5713,7 +5713,7 @@ IHqlExpression * WorkflowTransformer::transformInternalFunction(IHqlExpression *
     OwnedHqlExpr namedFuncDef = newFuncDef->clone(funcdefArgs);
     inheritDependencies(namedFuncDef);
 
-    if (ecl->getOperator() == no_cppbody)
+    if (ecl->getOperator() == no_embedbody)
         return namedFuncDef.getClear();
 
     WorkflowItem * item = new WorkflowItem(namedFuncDef);

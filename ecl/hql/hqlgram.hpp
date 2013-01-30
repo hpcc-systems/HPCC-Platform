@@ -542,7 +542,7 @@ public:
     IHqlExpression * processAlienType(const attribute & errpos);
     IHqlExpression * processIndexBuild(attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr);
     IHqlExpression * processCompoundFunction(attribute & result, bool outOfLine);
-    IHqlExpression * processCppBody(const attribute & errpos, IHqlExpression * cpp);
+    IHqlExpression * processEmbedBody(const attribute & errpos, IHqlExpression * embedText, IHqlExpression * language, IHqlExpression *attribs);
     void processEnum(attribute & idAttr, IHqlExpression * value);
     void processError(bool full);
     void processLoadXML(attribute & a1, attribute * a2);
@@ -998,6 +998,7 @@ class HqlLex
         HqlLex(HqlGram *gram, IFileContents * _text, IXmlScope *xmlScope, IHqlExpression *macroExpr);
         ~HqlLex();   
 
+        void enterEmbeddedMode();
         static int doyyFlex(YYSTYPE & returnToken, yyscan_t yyscanner, HqlLex * lexer, bool lookup, const short * activeState);
         static int lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lookup, const short * activeState, const char * tokenText);
 
@@ -1078,6 +1079,7 @@ class HqlLex
         void init(IFileContents * _text);
 
     private:
+        static void doEnterEmbeddedMode(yyscan_t yyscanner);
         void declareXmlSymbol(const YYSTYPE & errpos, const char *name);
         StringBuffer &lookupXmlSymbol(const YYSTYPE & errpos, const char *name, StringBuffer &value);
         void setXmlSymbol(const YYSTYPE & errpos, const char *name, const char *value, bool append);

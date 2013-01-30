@@ -576,7 +576,7 @@ bool CseSpotter::checkPotentialCSE(IHqlExpression * expr, CseSpotterInfo * extra
     case no_soapcall:
     case no_newsoapcall:
     case no_id2blob:
-    case no_cppbody:
+    case no_embedbody:
     case no_rows:
         return false;
 

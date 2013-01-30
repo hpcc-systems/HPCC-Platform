@@ -71,6 +71,7 @@ int main(int argc, const char *argv[])
     }
     else
     {
+        EnableSEHtoExceptionMapping();
         InitModuleObjects();
         int ret = 0;
         try

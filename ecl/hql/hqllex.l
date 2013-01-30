@@ -673,6 +673,7 @@ ECLCRC              { RETURNSYM(ECLCRC); }
 ELSE                { RETURNSYM(ELSE); }
 ELSIF               { RETURNSYM(ELSEIF); }
 ELSEIF              { RETURNSYM(ELSEIF); }
+EMBED               { RETURNSYM(EMBED); }
 EMBEDDED            { RETURNSYM(EMBEDDED); }
 _EMPTY_             { RETURNSYM(_EMPTY_); }
 ENCODING            { RETURNSYM(ENCODING); }
@@ -1375,6 +1376,7 @@ OUT                 { RETURNSYM(TOK_OUT); }
 CONST               { RETURNSYM(TOK_CONST); }
 ENDMACRO            { setupdatepos; return(ENDMACRO); }
 ENDC\+\+            { setupdatepos; return(ENDCPP); }
+ENDEMBED            { setupdatepos; return(ENDEMBED); }
 ENCRYPTED           {
                         setupdatepos; 
                         if (!lookup || !LOOKUPSYM(ENCRYPTED) || lexer->macroGathering)
@@ -1458,18 +1460,21 @@ FUNCTIONMACRO|MACRO {
                         BEGIN(CPP);
                         lexer->inCpp = true;
                     }
-<CPP>[^\n]*"ENDC++"[^\n]*  { 
+<CPP>[^\n]*("ENDC++"|"ENDEMBED")[^\n]*  {
                         lexer->inCpp = false;
                         int endpos = lexer->yyPosition;
                         //skip to the position of ENDC++ on the line (case insensitive)
-                        while (memicmp(lexer->yyBuffer+endpos, "ENDC++", 6) != 0)
+                        while (memicmp(lexer->yyBuffer+endpos, "ENDC++", 6) != 0 && memicmp(lexer->yyBuffer+endpos, "ENDEMBED", 8) != 0)
                             endpos++;
-                        const int lastpos = endpos+6;
+                        const int lastpos = endpos + (tolower(lexer->yyBuffer[endpos+3])=='c' ? 6 : 8);
                             
                         updatepos1; 
                         BEGIN(0);
-                        int beginpos = returnToken.pos.position;
-                        int startpos = beginpos + 8;
+                        int startpos = returnToken.pos.position;
+                        if (endpos-startpos >= 8 && memicmp(lexer->yyBuffer+startpos, "BEGINC++", 8)==0)
+                            startpos += 8;
+                        else
+                            startpos += 1;  // Skip the ) of EMBED(xxx)
 
                         // keep the orginal format info (like blanks, newlines)
                         while (endpos != startpos && (lexer->yyBuffer[endpos-1] == 13 || lexer->yyBuffer[endpos-1] == 10))
@@ -1483,7 +1488,7 @@ FUNCTIONMACRO|MACRO {
                         yyless(CUR_TOKEN_LENGTH - delta);
                         lexer->yyPosition -= delta;
                         lexer->yyColumn -= delta;
-                        OwnedHqlExpr cppText = createConstant(createStringValue(lexer->yyBuffer+startpos, len));
+                        OwnedHqlExpr cppText = createConstant(createUnicodeValue(lexer->yyBuffer+startpos, len, "", true, false));
                         OwnedHqlExpr annotated = createLocationAnnotation(cppText.getClear(), returnToken.pos);
                         OwnedHqlExpr options = extractCppBodyAttrs(len, lexer->yyBuffer+startpos);
                         returnToken.setExpr(createComma(annotated.getClear(), options.getClear()));
@@ -1941,3 +1946,8 @@ FUNCTIONMACRO|MACRO {
 
 .                   { setupdatepos; return (CUR_TOKEN_TEXT[0]); }
 %%
+void HqlLex::doEnterEmbeddedMode(yyscan_t yyscanner)
+{
+   struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
+   BEGIN(CPP);
+}

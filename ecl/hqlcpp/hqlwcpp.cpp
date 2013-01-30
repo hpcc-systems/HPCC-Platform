@@ -590,7 +590,15 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     if (body->hasProperty(includeAtom) || body->hasProperty(ctxmethodAtom) || body->hasProperty(gctxmethodAtom) || body->hasProperty(methodAtom) || body->hasProperty(sysAtom) || body->hasProperty(omethodAtom))
         return false;
 
-    enum { ServiceApi, RtlApi, BcdApi, CApi, LocalApi } api = ServiceApi;
+    IHqlExpression *proto = body->queryProperty(prototypeAtom);
+    if (proto)
+    {
+        StringBuffer s;
+        getStringValue(s, proto->queryChild(0));
+        out.append(s);
+        return true;
+    }
+    enum { ServiceApi, RtlApi, BcdApi, CApi, CppApi, LocalApi } api = ServiceApi;
     bool isVirtual = funcdef->hasProperty(virtualAtom);
     bool isLocal = body->hasProperty(localAtom);
     if (body->hasProperty(eclrtlAtom))
@@ -599,16 +607,18 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
         api = BcdApi;
     else if (body->hasProperty(cAtom))
         api = CApi;
+    else if (body->hasProperty(cppAtom))
+        api = CppApi;
     else if (isLocal || isVirtual)
         api = LocalApi;
 
     if (isVirtual)
         out.append("virtual");
     else
-        out.append("extern ");
+        out.append("extern");
 
     if ((api == ServiceApi) || api == CApi)
-        out.append("\"C\" ");
+        out.append(" \"C\" ");
 
     switch (api)
     {
@@ -1119,6 +1129,11 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 {
                     generateExprCpp(expr->queryChild(firstArg)).append(".");
                     ++firstArg;
+                }
+                if (props->hasProperty(namespaceAtom))
+                {
+                    getProperty(props, namespaceAtom, out);
+                    out.append("::");
                 }
                 getProperty(props, entrypointAtom, out);
                 out.append('(');

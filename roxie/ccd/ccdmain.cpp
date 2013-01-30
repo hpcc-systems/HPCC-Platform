@@ -433,6 +433,10 @@ public:
 
 int STARTQUERY_API start_query(int argc, const char *argv[])
 {
+    EnableSEHtoExceptionMapping();
+    setTerminateOnSEH();
+    init_signals();
+    // We need to do the above BEFORE we call InitModuleObjects
     InitModuleObjects();
     getDaliServixPort();
     init_signals();
@@ -492,8 +496,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 #endif
     srand( (unsigned)time( NULL ) );
     ccdChannels = createPTree("Channels");
-    EnableSEHtoExceptionMapping();
-    setTerminateOnSEH();
 
     char currentDirectory[_MAX_DIR];
     if (!getcwd(currentDirectory, sizeof(currentDirectory)))

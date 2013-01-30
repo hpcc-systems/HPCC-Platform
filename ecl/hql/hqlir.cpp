@@ -513,7 +513,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,blob2id);
     EXPAND_CASE(no,anon);
     EXPAND_CASE(no,projectrow);
-    EXPAND_CASE(no,cppbody);
+    EXPAND_CASE(no,embedbody);
     EXPAND_CASE(no,sortpartition);
     EXPAND_CASE(no,define);
     EXPAND_CASE(no,globalscope);
@@ -2124,14 +2124,14 @@ extern HQL_API void getIRText(StringArray & target, unsigned options, IHqlExpres
 static StringBuffer staticDebuggingStringBuffer;
 extern HQL_API const char * getIRText(IHqlExpression * expr)
 {
-    StringBufferIRBuilder output(staticDebuggingStringBuffer, defaultDumpOptions);
+    StringBufferIRBuilder output(staticDebuggingStringBuffer.clear(), defaultDumpOptions);
     playIR(output, expr, NULL, NULL);
     return staticDebuggingStringBuffer.str();
 }
 
 extern HQL_API const char * getIRText(ITypeInfo * type)
 {
-    StringBufferIRBuilder output(staticDebuggingStringBuffer, defaultDumpOptions);
+    StringBufferIRBuilder output(staticDebuggingStringBuffer.clear(), defaultDumpOptions);
     playIR(output, NULL, NULL, type);
     return staticDebuggingStringBuffer.str();
 }
