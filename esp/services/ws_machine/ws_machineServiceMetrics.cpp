@@ -657,7 +657,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
                 ip[ip0 - ep] = 0;
             }
 
-            CMetricsParam* pMetricsParam = new CMetricsParam(ip);
+            Owned<CMetricsParam> pMetricsParam = new CMetricsParam(ip);
             Owned<IPropertyTreeIterator> metrics = endpoint.getElements("Metrics/Metric");
             ForEach(*metrics)
             {
@@ -705,7 +705,7 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
 
                 processValue(name, value, bShow, fieldInfoMap, pMetricsParam->m_fieldMap);
             }
-            fieldMapArray.append(*::LINK(pMetricsParam));
+            fieldMapArray.append(*pMetricsParam.getLink());
         }
 
         int count=fieldMapArray.ordinality();
@@ -774,7 +774,6 @@ bool Cws_machineEx::onGetMetrics(IEspContext &context, IEspMetricsRequest &req,
         }
 
         resp.setMetrics(xml);
-
 #endif
         double version = context.getClientVersion();
         if (version > 1.05)

@@ -156,7 +156,7 @@ void Cws_machineEx::init(IPropertyTree *cfg, const char *process, const char *se
     if (!pEnvironmentRoot)
         throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO, "Failed to get environment information.");
 
-    IPropertyTree* pEnvSettings = pEnvironmentRoot->getPropTree("EnvSettings");
+    Owned<IPropertyTree> pEnvSettings = pEnvironmentRoot->getPropTree("EnvSettings");
     if (pEnvSettings)
     {
         pEnvSettings->getProp("configs", environmentConfData.m_configsPath.clear());

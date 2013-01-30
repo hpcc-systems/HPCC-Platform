@@ -1018,7 +1018,9 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
         StringBuffer logDir;
         Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
         Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
-        constEnv->getPTree().getProp("EnvSettings/log", logDir);
+        Owned<IPropertyTree> logTree = &constEnv->getPTree();
+        if (logTree)
+             logTree->getProp("EnvSettings/log", logDir);
         if (logDir.length() > 0)
         {
             Owned<IStringIterator> debugs = cw->getLogs("Thor");
