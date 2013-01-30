@@ -80,6 +80,7 @@
 #include "jfile.hpp"
 #include "jlog.hpp"
 #include <string.h>
+#include <cstdlib>
 
 #undef BYTE_ORDER   /* 1 = big-endian, -1 = little-endian, 0 = unknown */
 #ifdef ARCH_IS_BIG_ENDIAN
@@ -484,4 +485,99 @@ void md5_filesum(const char* filename, StringBuffer& outstring)
     digeststr[32]='\0';
 
     outstring.append(digeststr);
+}
+
+#ifdef _USE_APR
+
+#include "jmutex.hpp"
+
+#include <apr.h>
+#include <apr_strings.h>
+#include <apr_base64.h>
+#include <apr_general.h>
+#include <apr_md5.h>
+
+#define APR_WANT_STDIO
+#include <apr_want.h>
+
+#define MAX_STRING_LEN 256
+#define SALT_LEN 9
+
+static CriticalSection critsec;
+
+#include <iostream>
+
+using namespace std;
+
+class apr_wrap
+{
+public:
+    apr_wrap()
+    {
+        apr_initialize();
+    }
+    ~apr_wrap()
+    {
+        apr_terminate();
+    }
+};
+
+#endif
+
+void apr_rand_salt(char* const salt)
+{
+#ifdef _USE_APR
+    apr_status_t rv;
+    char intSalt[SALT_LEN];
+    char b64Salt[apr_base64_encode_len(SALT_LEN)];
+    apr_base64_encode(b64Salt, intSalt, SALT_LEN);
+    rv = apr_generate_random_bytes((unsigned char*) intSalt, SALT_LEN - 1);
+    intSalt[SALT_LEN - 1] = '\0';
+    apr_base64_encode(b64Salt, intSalt, SALT_LEN);
+    apr_cpystrn(salt, b64Salt, SALT_LEN);
+#else
+    salt[0] = (char) NULL;
+#endif
+}
+
+void apr_md5_string(StringBuffer& inpstring, StringBuffer& outstring)
+{
+#ifdef _USE_APR
+    char salt[SALT_LEN];
+    char saltedAprMd5[MAX_STRING_LEN];
+
+    CriticalBlock block(critsec);
+    apr_wrap i_apr;
+    apr_initialize();
+    apr_rand_salt(salt);
+    apr_md5_encode(inpstring.str(), salt, saltedAprMd5, sizeof(saltedAprMd5));
+    outstring.append(saltedAprMd5);
+#else
+    outstring.clear();
+#endif
+}
+
+apr_ret_t apr_md5_validate(StringBuffer& inpstring, StringBuffer& aprmd5string)
+{
+#ifdef _USE_APR
+    apr_status_t result;
+
+    CriticalBlock block(critsec);
+    apr_wrap i_apr;
+    result = apr_password_validate(inpstring.str(), aprmd5string.str());
+    if (result == APR_SUCCESS)
+    {
+        apr_terminate();
+        return APR_MD5_TRUE;
+    }
+    else
+    {
+        apr_terminate();
+        return APR_MD5_FALSE;
+    }
+    return APR_MD5_NULL;
+#else
+    //For non-apr always return -1 for NULL.
+    return APR_MD5_NULL;
+#endif
 }
