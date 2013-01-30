@@ -129,6 +129,11 @@ public:
     {
         return ::Rcpp::as<bool>(result);
     }
+    virtual void getDataResult(size32_t &__len, void * &__result)
+    {
+        std::vector<byte> vval = ::Rcpp::as<std::vector<byte> >(result);;
+        rtlStrToDataX(__len, __result, vval.size(), vval.data());
+    }
     virtual double getRealResult()
     {
         return ::Rcpp::as<double>(result);
@@ -158,6 +163,13 @@ public:
     virtual void bindBooleanParam(const char *name, bool val)
     {
         R[name] = val;
+    }
+    virtual void bindDataParam(const char *name, size32_t len, const void *val)
+    {
+        std::vector<byte> vval;
+        const byte *cval = (const byte *) val;
+        vval.assign(cval, cval+len);
+        R[name] = vval;
     }
     virtual void bindRealParam(const char *name, double val)
     {

@@ -9,7 +9,7 @@ utf8 add4(utf8 val) := EMBED(javascript) val+'1'; ENDEMBED;
 unicode add5(unicode val) := EMBED(javascript, U' val+\' at Oh là là Straße\';');
 
 integer testThrow(integer val) := EMBED(javascript) throw new Error("Error from JavaScript"); ENDEMBED;
-
+data testData(data val) := EMBED(javascript) val[0] = val[0] + 1; val; ENDEMBED;
 
 add1(10);
 add2('Hello');
@@ -29,6 +29,7 @@ d t := transform
 end;
 
 catch(d(testThrow(a) = a), onfail(t));
+testdata(D'aa');
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));

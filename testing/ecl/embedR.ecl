@@ -8,8 +8,14 @@ string cat(varstring what, string who) := EMBED(R)
 paste(what,who)
 ENDEMBED;
 
+data testData(data val) := EMBED(R)
+val[1] = val[2];
+val;
+ENDEMBED;
+
 add1(10);
 cat('Hello', 'World');
+testData(D'ab');
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));

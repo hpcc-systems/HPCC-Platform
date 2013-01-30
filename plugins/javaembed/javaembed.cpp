@@ -194,13 +194,18 @@ public:
         switch (returnType.get()[0])
         {
         case 'C': result.c = JNIenv->CallStaticCharMethodA(javaClass, javaMethodID, args); break;
-        case 'B': result.z = JNIenv->CallStaticBooleanMethodA(javaClass, javaMethodID, args); break;
+        case 'Z': result.z = JNIenv->CallStaticBooleanMethodA(javaClass, javaMethodID, args); break;
         case 'J': result.j = JNIenv->CallStaticLongMethodA(javaClass, javaMethodID, args); break;
         case 'F': result.f = JNIenv->CallStaticFloatMethodA(javaClass, javaMethodID, args); break;
         case 'D': result.d = JNIenv->CallStaticDoubleMethodA(javaClass, javaMethodID, args); break;
+        case 'I': result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
+        case 'S': result.s = JNIenv->CallStaticShortMethodA(javaClass, javaMethodID, args); break;
+        case 'B': result.s = JNIenv->CallStaticByteMethodA(javaClass, javaMethodID, args); break;
+
+        case '[':
         case 'L': result.l = JNIenv->CallStaticObjectMethodA(javaClass, javaMethodID, args); break;
-        case 'I': // Others are all smaller ints, so we can use this for all
-        default: result.i = JNIenv->CallStaticIntMethodA(javaClass, javaMethodID, args); break;
+
+        default: throwUnexpected();
         }
         checkException();
     }
@@ -258,6 +263,15 @@ public:
         default:
             throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
+    }
+    inline void getDataResult(jvalue &result, size32_t &__len, void * &__result)
+    {
+        if (strcmp(returnType, "[B")!=0)
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
+        jbyteArray array = (jbyteArray) result.l;
+        __len = JNIenv->GetArrayLength(array);
+        __result = rtlMalloc(__len);
+        JNIenv->GetByteArrayRegion(array, 0, __len, (jbyte *) __result);
     }
     inline void getStringResult(jvalue &result, size32_t &__len, char * &__result)
     {
@@ -353,6 +367,10 @@ public:
     {
         return sharedCtx->getBooleanResult(result);
     }
+    virtual void getDataResult(size32_t &__len, void * &__result)
+    {
+        sharedCtx->getDataResult(result, __len, __result);
+    }
     virtual double getRealResult()
     {
         return sharedCtx->getDoubleResult(result);
@@ -386,6 +404,17 @@ public:
         argsig++;
         jvalue v;
         v.z = val;
+        addArg(v);
+    }
+    virtual void bindDataParam(const char *name, size32_t len, const void *val)
+    {
+        if (argsig[0] != '[' || argsig[1] != 'B')
+            typeError("DATA");
+        argsig += 2;
+        jvalue v;
+        jbyteArray javaData = sharedCtx->JNIenv->NewByteArray(len);
+        sharedCtx->JNIenv->SetByteArrayRegion(javaData, 0, len, (jbyte *) val);
+        v.l = javaData;
         addArg(v);
     }
     virtual void bindRealParam(const char *name, double val)

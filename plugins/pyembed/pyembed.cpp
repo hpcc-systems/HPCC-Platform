@@ -287,6 +287,13 @@ public:
             throw MakeStringException(MSGAUD_user, 0, "pyembed: Type mismatch on result");
         return result == Py_True;
     }
+    virtual void getDataResult(size32_t &__chars, void * &__result)
+    {
+        assertex(result && result != Py_None);
+        if (!PyByteArray_Check(result))
+            throw MakeStringException(MSGAUD_user, 0, "pyembed: Type mismatch on result");
+        rtlStrToDataX(__chars, __result, PyByteArray_Size(result), PyByteArray_AsString(result));
+    }
     virtual double getRealResult()
     {
         assertex(result && result != Py_None);
@@ -372,6 +379,11 @@ public:
         OwnedPyObject vval = PyBool_FromLong(val ? 1 : 0);
         PyDict_SetItemString(locals, name, vval);
     }
+    virtual void bindDataParam(const char *name, size32_t len, const void *val)
+    {
+        OwnedPyObject vval = PyByteArray_FromStringAndSize((const char *) val, len);
+        PyDict_SetItemString(locals, name, vval);
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         OwnedPyObject vval = PyFloat_FromDouble(val);
@@ -450,6 +462,10 @@ public:
     virtual void bindBooleanParam(const char *name, bool val)
     {
         addArg(PyBool_FromLong(val ? 1 : 0));
+    }
+    virtual void bindDataParam(const char *name, size32_t len, const void *val)
+    {
+        addArg(PyByteArray_FromStringAndSize((const char *) val, len));
     }
     virtual void bindRealParam(const char *name, double val)
     {

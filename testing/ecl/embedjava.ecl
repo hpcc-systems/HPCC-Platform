@@ -9,6 +9,7 @@ integer testThrow(integer p) := IMPORT(java, 'JavaCat.testThrow:(I)I');
 
 string addChar(string c) := IMPORT(java, 'JavaCat.addChar:(C)C');
 string cat(string s1, string s2) := IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;');
+data testData(data indata) := IMPORT(java, 'JavaCat.testData:([B)[B');
 
 add1(10);
 add2('Hello');
@@ -28,6 +29,7 @@ d t := transform
 end;
 
 catch(d(testThrow(a) = a), onfail(t));
+testData(d'aa');
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));

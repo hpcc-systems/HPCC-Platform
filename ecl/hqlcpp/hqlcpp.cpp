@@ -11494,6 +11494,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         case type_unicode:
             bindFunc = bindUnicodeParamAtom;
             break;
+        case type_data:
+            bindFunc = bindDataParamAtom;
+            break;
         default:
             StringBuffer typeText;
             getFriendlyTypeStr(paramType, typeText);
@@ -11524,6 +11527,9 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         break;
     case type_utf8:
         returnFunc = getUTF8ResultAtom;
+        break;
+    case type_data:
+        returnFunc = getDataResultAtom;
         break;
     default:
         StringBuffer typeText;

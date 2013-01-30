@@ -88,6 +88,17 @@ public:
         v8::HandleScope handle_scope;
         context->Global()->Set(v8::String::New(name), v8::Boolean::New(val));
     }
+    virtual void bindDataParam(const char *name, size32_t len, const void *val)
+    {
+        v8::HandleScope handle_scope;
+        v8::Local<v8::Array> array = v8::Array::New(len);
+        const byte *vval = (const byte *) val;
+        for (int i = 0; i < len; i++)
+        {
+            array->Set(v8::Number::New(i), v8::Integer::New(vval[i])); // feels horridly inefficient, but seems to be the expected approach
+        }
+        context->Global()->Set(v8::String::New(name), array);
+    }
     virtual void bindRealParam(const char *name, double val)
     {
         v8::HandleScope handle_scope;
@@ -133,6 +144,19 @@ public:
         assertex (!result.IsEmpty());
         v8::HandleScope handle_scope;
         return result->BooleanValue();
+    }
+    virtual void getDataResult(size32_t &__len, void * &__result)
+    {
+        assertex (!result.IsEmpty() && result->IsArray());
+        v8::HandleScope handle_scope;
+        v8::Handle<v8::Array> array = v8::Handle<v8::Array>::Cast(result);
+        __len = array->Length();
+        __result = rtlMalloc(__len);
+        byte *bresult = (byte *) __result;
+        for (size32_t i = 0; i < __len; i++)
+        {
+            bresult[i] = v8::Integer::Cast(*array->Get(i))->Value(); // feels horridly inefficient, but seems to be the expected approach
+        }
     }
     virtual double getRealResult()
     {

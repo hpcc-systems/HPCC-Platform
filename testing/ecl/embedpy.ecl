@@ -34,6 +34,11 @@ integer testThrow(integer val) := EMBED(Python)
 raise Exception('Error from Python')
 ENDEMBED;
 
+data testData(data val) := EMBED(Python)
+val[0] = val[0] + 1
+return val
+ENDEMBED;
+
 add1(10);
 add2('Hello');
 add3('World');
@@ -54,6 +59,7 @@ d t := transform
 end;
 
 catch(d(testThrow(a) = a), onfail(t));
+testData(D'aa');
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));

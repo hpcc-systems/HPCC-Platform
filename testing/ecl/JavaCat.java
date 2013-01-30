@@ -17,6 +17,11 @@ public class JavaCat
     throw new Exception("Exception from Java");
   }
 
+  public static byte[] testData(byte [] indata)
+  {
+    indata[0]++;
+    return indata;
+  }
 
   public static int add(int a, int b)
   {

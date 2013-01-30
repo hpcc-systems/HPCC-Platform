@@ -806,6 +806,7 @@ const char * cppSystemText[]  = {
 
     // Marshalling parameters to external languages
     "   bindBooleanParam(const varstring name, boolean val) : method,entrypoint='bindBooleanParam';",
+    "   bindDataParam(const varstring name, data val) : method,entrypoint='bindDataParam';",
     "   bindRealParam(const varstring name, real val) : method,entrypoint='bindRealParam';",
     "   bindSignedParam(const varstring name, integer val) : method,entrypoint='bindSignedParam';",
     "   bindUnsignedParam(const varstring name, unsigned val) : method,entrypoint='bindUnsignedParam';",
@@ -815,6 +816,7 @@ const char * cppSystemText[]  = {
     "   bindUnicodeParam(const varstring name, const unicode val) : method,entrypoint='bindUnicodeParam';",
 
     "   boolean getBooleanResult() : method,entrypoint='getBooleanResult';",
+    "   data getDataResult() : method,entrypoint='getDataResult';",
     "   real getRealResult() : method,entrypoint='getRealResult';",
     "   integer getSignedResult() : method,entrypoint='getSignedResult';",
     "   string getStringResult() : method,entrypoint='getStringResult';",

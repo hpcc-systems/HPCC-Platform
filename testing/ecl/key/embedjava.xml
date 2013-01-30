@@ -23,14 +23,17 @@
  <Row><a>0</a><m>javaembed: In method JavaCat.testThrow:(I)I: java.lang.Exception: Exception from Java</m></Row>
 </Dataset>
 <Dataset name='Result 9'>
- <Row><Result_9>46875625000</Result_9></Row>
+ <Row><Result_9>6261</Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><Result_10>328126500000</Result_10></Row>
+ <Row><Result_10>46875625000</Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><Result_11>46875625000</Result_11></Row>
+ <Row><Result_11>328126500000</Result_11></Row>
 </Dataset>
 <Dataset name='Result 12'>
- <Row><Result_12>328126500000</Result_12></Row>
+ <Row><Result_12>46875625000</Result_12></Row>
+</Dataset>
+<Dataset name='Result 13'>
+ <Row><Result_13>328126500000</Result_13></Row>
 </Dataset>
