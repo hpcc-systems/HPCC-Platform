@@ -1899,16 +1899,18 @@ void HqlCppTranslator::buildAssignDeserializedDataset(BuildCtx & ctx, const CHql
 
 void HqlCppTranslator::buildDeserializedDataset(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * expr, CHqlBoundExpr & tgt, _ATOM serializeForm)
 {
+#ifdef _DEBUG
+    OwnedITypeInfo serializedType = getSerializedForm(type, serializeForm);
+    assertex(recordTypesMatch(expr->queryType(), serializedType));
+#endif
+
+    ITypeInfo * const exprType = expr->queryType();
+    assertex(!hasLinkedRow(exprType));
+
     CHqlBoundTarget target;
     createTempFor(ctx, type, target, typemod_none, FormatLinkedDataset);
 
-    if (hasLinkedRow(expr->queryType()))
-    {
-        throwUnexpected();
-        buildDatasetAssign(ctx, target, expr); // ???
-    }
-    else
-        buildAssignDeserializedDataset(ctx, target, expr, serializeForm);
+    buildAssignDeserializedDataset(ctx, target, expr, serializeForm);
 
     tgt.setFromTarget(target);
 }
@@ -2104,17 +2106,31 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             return;
         }
     case no_serialize:
-        if (isDummySerializeDeserialize(expr))
-            doBuildDataset(ctx, expr->queryChild(0)->queryChild(0), tgt, format);
-        else
-            buildSerializedDataset(ctx, expr->queryChild(0), tgt, expr->queryChild(1)->queryName());
-        return;
+        {
+            IHqlExpression * deserialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(1)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                doBuildDataset(ctx, deserialized->queryChild(0), tgt, format);
+            else if (!typeRequiresDeserialization(deserialized->queryType(), serializeForm))
+                //Optimize creating a serialized version of a dataset if the record is the same serialized and unserialized
+                buildDataset(ctx, deserialized, tgt, FormatNatural);
+            else
+                buildSerializedDataset(ctx, deserialized, tgt, serializeForm);
+            return;
+        }
     case no_deserialize:
-        if (isDummySerializeDeserialize(expr))
-            doBuildDataset(ctx, expr->queryChild(0)->queryChild(0), tgt, format);
-        else
-            buildDeserializedDataset(ctx, expr->queryType(), expr->queryChild(0), tgt, expr->queryChild(2)->queryName());
-        return;
+        {
+            IHqlExpression * serialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(2)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                doBuildDataset(ctx, serialized->queryChild(0), tgt, format);
+            else if (!typeRequiresDeserialization(expr->queryType(), serializeForm))
+                //Optimize creating a deserialized version of a dataset if the record is the same serialized and unserialized
+                buildDataset(ctx, serialized, tgt, FormatNatural);
+            else
+                buildDeserializedDataset(ctx, expr->queryType(), serialized, tgt, serializeForm);
+            return;
+        }
     case no_datasetfromrow:
         {
             IHqlExpression * row = expr->queryChild(0);

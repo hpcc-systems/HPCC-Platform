@@ -3269,6 +3269,27 @@ bool recordSerializationDiffers(IHqlExpression * expr, _ATOM serializeForm1, _AT
     return querySerializedForm(expr, serializeForm1) != querySerializedForm(expr, serializeForm2);
 }
 
+extern HQL_API bool typeRequiresDeserialization(ITypeInfo * type, _ATOM serializeForm)
+{
+    Owned<ITypeInfo> serializedType = getSerializedForm(type, serializeForm);
+
+    if (queryUnqualifiedType(serializedType) == queryUnqualifiedType(type))
+        return false;
+
+    type_t stc = serializedType->getTypeCode();
+    if (stc != type->getTypeCode())
+        return true;
+
+    if (stc == type_table)
+    {
+        if (recordTypesMatch(serializedType, type))
+            return false;
+        return true;
+    }
+
+    return true;
+}
+
 //---------------------------------------------------------------------------------
 
 IHqlExpression * queryRecordCountInfo(IHqlExpression * expr)

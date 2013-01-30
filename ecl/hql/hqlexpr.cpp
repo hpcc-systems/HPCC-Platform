@@ -12482,8 +12482,9 @@ IHqlExpression * ensureSerialized(IHqlExpression * expr, _ATOM serialForm)
 
 IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, _ATOM serialForm)
 {
+    assertex(type->getTypeCode() != type_record);
     Owned<ITypeInfo> serialType = getSerializedForm(type, serialForm);
-    if (type == serialType)
+    if (queryUnqualifiedType(type) == queryUnqualifiedType(serialType))
         return LINK(expr);
 
     assertRecordTypesMatch(expr->queryType(), serialType);

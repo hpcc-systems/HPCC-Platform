@@ -644,7 +644,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
             //References to ROWS(originalRight) need to be replaced with DESERIALIZE(ROWS(serializedRight))
             OwnedHqlExpr originalRows = createDataset(no_rows, LINK(originalRight), LINK(rowsid));
             OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(extractedRight), LINK(rowsid));
-            OwnedHqlExpr deserializedRows = ensureDeserialized(rowsExpr, rhsRecord->queryType(), diskAtom);
+            OwnedHqlExpr deserializedRows = ensureDeserialized(rowsExpr, rhs->queryType(), diskAtom);
             newTransform.setown(replaceExpression(newTransform, originalRows, deserializedRows));
         }
     }

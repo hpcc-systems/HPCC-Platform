@@ -1480,7 +1480,8 @@ void HqlGram::doAddAssignment(IHqlExpression * transform, IHqlExpression * _fiel
         getFriendlyTypeStr(rhsType,msg).append(" to ");
         getFriendlyTypeStr(fldType,msg).append(" (field ");
         getFldName(field,msg).append(")");
-        reportError(ERR_TYPE_INCOMPATIBLE,errpos, "%s", msg.str()); 
+        reportError(ERR_TYPE_INCOMPATIBLE,errpos, "%s", msg.str());
+        rhs.setown(createNullExpr(field));
     }
 
     appendTransformAssign(transform, field, rhs, errpos);
