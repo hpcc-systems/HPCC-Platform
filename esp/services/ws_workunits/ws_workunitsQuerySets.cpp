@@ -531,13 +531,15 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     StringBuffer queryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
     addQueryToQuerySet(wu, target.str(), queryName.str(), NULL, activate, queryId);
-    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || !req.getWarnTimeLimit_isNull() || req.getPriority())
+    if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || !req.getWarnTimeLimit_isNull() || req.getPriority() || req.getComment())
     {
         Owned<IPropertyTree> queryTree = getQueryById(target.str(), queryId, false);
         updateMemoryLimitSetting(queryTree, req.getMemoryLimit());
         updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
         updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
         updateQueryPriority(queryTree, req.getPriority());
+        if (req.getComment())
+            queryTree->setProp("@comment", req.getComment());
     }
     wu->commit();
     wu.clear();
@@ -603,6 +605,8 @@ void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryIn
         queryInfo->setWarnTimeLimit(query->getPropInt("@warnTimeLimit"));
     if (query->hasProp("@priority"))
         queryInfo->setPriority(getQueryPriorityName(query->getPropInt("@priority")));
+    if (query->hasProp("@comment"))
+        queryInfo->setComment(query->queryProp("@comment"));
     if (queriesOnCluster)
     {
         IArrayOf<IEspClusterQueryState> clusters;
@@ -934,6 +938,8 @@ bool CWsWorkunitsEx::onWUQueryConfig(IEspContext &context, IEspWUQueryConfigRequ
             updateQueryPriority(queryTree, req.getPriority());
             updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
             updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
+            if (req.getComment())
+                queryTree->setProp("@comment", req.getComment());
         }
 
         results.append(*result.getClear());
@@ -1154,6 +1160,8 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         updateQueryPriority(queryTree, req.getPriority());
         updateQuerySetting(req.getTimeLimit_isNull(), queryTree, "@timeLimit", req.getTimeLimit());
         updateQuerySetting(req.getWarnTimeLimit_isNull(), queryTree, "@warnTimeLimit", req.getWarnTimeLimit());
+        if (req.getComment())
+            queryTree->setProp("@comment", req.getComment());
     }
     wu.clear();
 

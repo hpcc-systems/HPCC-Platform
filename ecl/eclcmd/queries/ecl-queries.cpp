@@ -204,6 +204,12 @@ public:
                 line.appendN(53 - line.length(), ' ');
             line.append(' ').append(query.getMemoryLimit());
         }
+        if (query.getComment())
+        {
+            if (line.length() < 64)
+                line.appendN(64 - line.length(), ' ');
+            line.append(' ').append(query.getComment());
+        }
         fputs(line.append('\n').str(), stdout);
     }
 
@@ -213,9 +219,9 @@ public:
         if (qs.getQuerySetName())
             fprintf(stdout, "\nQuerySet: %s\n", qs.getQuerySetName());
         fputs("\n", stdout);
-        fputs("                                   Time   Warn   Pri  Memory\n", stdout);
-        fputs("Flags Query Id                     Limit  Limit       Limit\n", stdout);
-        fputs("----- ---------------------------- ------ ------ ---- ----------\n", stdout);
+        fputs("                                   Time   Warn        Memory\n", stdout);
+        fputs("Flags Query Id                     Limit  Limit  Pri  Limit      Comment\n", stdout);
+        fputs("----- ---------------------------- ------ ------ ---- ---------- ------------\n", stdout);
 
         IArrayOf<IConstQuerySetQuery> &queries = qs.getQueries();
         ForEachItemIn(id, queries)
@@ -324,6 +330,8 @@ public:
                 continue;
             if (iter.matchOption(optPriority, ECLOPT_PRIORITY))
                 continue;
+            if (iter.matchOption(optComment, ECLOPT_COMMENT))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -379,6 +387,8 @@ public:
             req->setMemoryLimit(optMemoryLimit);
         if (!optPriority.isEmpty())
             req->setPriority(optPriority);
+        if (optComment.get()) //allow empty
+            req->setComment(optComment);
 
         Owned<IClientWUQuerySetCopyQueryResponse> resp = client->WUQuerysetCopyQuery(req);
         if (resp->getExceptions().ordinality())
@@ -420,6 +430,7 @@ public:
             "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
             "   --priority=<val>       set the priority for this query. Value can be LOW,\n"
             "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
+            "   --comment=<string>     Set the comment associated with this query\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -431,6 +442,7 @@ private:
     StringAttr optDaliIP;
     StringAttr optMemoryLimit;
     StringAttr optPriority;
+    StringAttr optComment;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;
@@ -484,6 +496,8 @@ public:
                 continue;
             if (iter.matchOption(optPriority, ECLOPT_PRIORITY))
                 continue;
+            if (iter.matchOption(optComment, ECLOPT_COMMENT))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -528,6 +542,8 @@ public:
             req->setMemoryLimit(optMemoryLimit);
         if (!optPriority.isEmpty())
             req->setPriority(optPriority);
+        if (optComment.get()) //allow empty
+            req->setComment(optComment);
 
         Owned<IClientWUQueryConfigResponse> resp = client->WUQueryConfig(req);
         if (resp->getExceptions().ordinality())
@@ -560,6 +576,7 @@ public:
             "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
             "   --priority=<val>       set the priority for this query. Value can be LOW,\n"
             "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
+            "   --comment=<string>     Set the comment associated with this query\n"
             " Common Options:\n",
             stdout);
         EclCmdCommon::usage();
@@ -569,6 +586,7 @@ private:
     StringAttr optQueryId;
     StringAttr optMemoryLimit;
     StringAttr optPriority;
+    StringAttr optComment;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;

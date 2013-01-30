@@ -181,6 +181,8 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         req->setResultLimit(cmd.optResultLimit);
     if (cmd.optAttributePath.length())
         req->setQueryMainDefinition(cmd.optAttributePath);
+    if (cmd.optSnapshot.length())
+        req->setSnapshot(cmd.optSnapshot);
     if (cmd.debugValues.length())
     {
         req->setDebugValues(cmd.debugValues);
@@ -335,6 +337,8 @@ public:
                 continue;
             if (iter.matchOption(optPriority, ECLOPT_PRIORITY))
                 continue;
+            if (iter.matchOption(optComment, ECLOPT_COMMENT))
+                continue;
             if (iter.matchFlag(optNoActivate, ECLOPT_NO_ACTIVATE))
             {
                 activateSet=true;
@@ -408,6 +412,8 @@ public:
             req->setMemoryLimit(optMemoryLimit);
         if (!optPriority.isEmpty())
             req->setPriority(optPriority);
+        if (optComment.get()) //allow empty
+            req->setComment(optComment);
 
         Owned<IClientWUPublishWorkunitResponse> resp = client->WUPublishWorkunit(req);
         const char *id = resp->getQueryId();
@@ -457,6 +463,7 @@ public:
             "                          format <mem> as 500000B, 550K, 100M, 10G, 1T etc.\n"
             "   --priority=<val>       set the priority for this query. Value can be LOW,\n"
             "                          HIGH, SLA, NONE. NONE will clear current setting.\n"
+            "   --comment=<string>     Set the comment associated with this query\n"
             "   --wait=<ms>            Max time to wait in milliseconds\n",
             stdout);
         EclCmdWithEclTarget::usage();
@@ -466,6 +473,7 @@ private:
     StringAttr optDaliIP;
     StringAttr optMemoryLimit;
     StringAttr optPriority;
+    StringAttr optComment;
     unsigned optMsToWait;
     unsigned optTimeLimit;
     unsigned optWarnTimeLimit;

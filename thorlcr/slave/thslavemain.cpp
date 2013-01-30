@@ -309,32 +309,37 @@ int main( int argc, char *argv[]  )
         {
 #define ISDALICLIENT // JCSMORE plugins *can* access dali - though I think we should probably prohibit somehow.
 #ifdef ISDALICLIENT
-            const char *daliServers = globals->queryProp("@DALISERVERS");
-            if (!daliServers)
+            bool daliClient = globals->getPropBool("Debug/@slaveDaliClient");
+            PROGLOG("Slave is%s a Dali client", daliClient?"":" NOT");
+            if (daliClient)
             {
-                LOG(MCerror, thorJob, "No Dali server list specified\n");
-                return 1;
-            }
-            Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
-            unsigned retry = 0;
-            loop {
-                try {
-                    LOG(MCdebugProgress, thorJob, "calling initClientProcess");
-                    initClientProcess(serverGroup,DCR_ThorSlave, getFixedPort(TPORT_mp));
-                    break;
+                const char *daliServers = globals->queryProp("@DALISERVERS");
+                if (!daliServers)
+                {
+                    LOG(MCerror, thorJob, "No Dali server list specified\n");
+                    return 1;
                 }
-                catch (IJSOCK_Exception *e) {
-                    if ((e->errorCode()!=JSOCKERR_port_in_use))
-                        throw;
-                    FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
-                    if (retry++>10)
-                        throw;
-                    e->Release();
-                    LOG(MCdebugProgress, thorJob, "Retrying");
-                    Sleep(retry*2000);
+                Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
+                unsigned retry = 0;
+                loop {
+                    try {
+                        LOG(MCdebugProgress, thorJob, "calling initClientProcess");
+                        initClientProcess(serverGroup,DCR_ThorSlave, getFixedPort(TPORT_mp));
+                        break;
+                    }
+                    catch (IJSOCK_Exception *e) {
+                        if ((e->errorCode()!=JSOCKERR_port_in_use))
+                            throw;
+                        FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
+                        if (retry++>10)
+                            throw;
+                        e->Release();
+                        LOG(MCdebugProgress, thorJob, "Retrying");
+                        Sleep(retry*2000);
+                    }
                 }
+                setPasswordsFromSDS();
             }
-            setPasswordsFromSDS();
 #endif
             IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
             if (daFileSrvHook) // probably always installed
@@ -449,8 +454,11 @@ int main( int argc, char *argv[]  )
     roxiemem::releaseRoxieHeap();
 
 #ifdef ISDALICLIENT
-    closeEnvironment();
-    closedownClientProcess();   // dali client closedown
+    if (globals->getPropBool("Debug/@slaveDaliClient"))
+    {
+        closeEnvironment();
+        closedownClientProcess();   // dali client closedown
+    }
 #endif
 
 #ifdef USE_MP_LOG
