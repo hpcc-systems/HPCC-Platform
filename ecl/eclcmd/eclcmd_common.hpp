@@ -82,6 +82,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_MEMORY_LIMIT "--memoryLimit"
 #define ECLOPT_WARN_TIME_LIMIT "--warnTimeLimit"
 #define ECLOPT_PRIORITY "--priority"
+#define ECLOPT_COMMENT "--comment"
 
 #define ECLOPT_RESULT_LIMIT "--limit"
 #define ECLOPT_RESULT_LIMIT_INI "resultLimit"
