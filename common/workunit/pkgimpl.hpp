@@ -175,8 +175,8 @@ public:
         {
             const self *p = dynamic_cast<const self *>(base);
             bases.append(const_cast<self &>(*LINK(p)));   // should really be an arrayof<const base> but that would require some fixing in jlib
-            TYPE::hash = rtlHash64Data(sizeof(p->hash), &p->hash, TYPE::hash);
-            mergeEnvironment(p);
+            TYPE::hash = pkgHash64Data(sizeof(p->hash), &p->hash, TYPE::hash);
+            TYPE::mergeEnvironment(p);
         }
     }
 
@@ -230,7 +230,7 @@ public:
         if (*superFileName=='~')
             superFileName++;
         StringBuffer xpath;
-        if (hasProp(TYPE::makeSuperFileXPath(xpath, superFileName)))
+        if (TYPE::hasProp(TYPE::makeSuperFileXPath(xpath, superFileName)))
             return true;
         ForEachItemIn(idx, bases)
         {
