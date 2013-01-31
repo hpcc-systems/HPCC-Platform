@@ -423,6 +423,7 @@ ECLRTL_API void rtlWriteInt6(void * data, unsigned __int64 value);
 ECLRTL_API void rtlWriteInt7(void * data, unsigned __int64 value);
 inline void rtlWriteInt8(void * data, unsigned value) { *(unsigned __int64 *)data = value; }
 inline void rtlWriteSize32t(void * data, unsigned value) { *(size32_t *)data = value; }
+ECLRTL_API void rtlWriteInt(void * self, __int64 val, unsigned length);
 
 inline int rtlReadSwapInt1(const void * data) { return *(signed char *)data; }
 ECLRTL_API int rtlReadSwapInt2(const void * data);
@@ -742,6 +743,8 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void bindUTF8Param(const char *name, size32_t chars, const char *val) = 0;
     virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val) = 0;
 
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData) = 0;
+
     virtual bool getBooleanResult() = 0;
     virtual void getDataResult(size32_t &len, void * &result) = 0;
     virtual double getRealResult() = 0;
@@ -750,6 +753,7 @@ interface IEmbedFunctionContext : extends IInterface
     virtual void getStringResult(size32_t &len, char * &result) = 0;
     virtual void getUTF8Result(size32_t &chars, char * &result) = 0;
     virtual void getUnicodeResult(size32_t &chars, UChar * &result) = 0;
+    virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize) = 0;
 
     virtual void importFunction(size32_t len, const char *function) = 0;
     virtual void compileEmbeddedScript(size32_t len, const char *script) = 0;

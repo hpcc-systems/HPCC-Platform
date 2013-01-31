@@ -849,7 +849,7 @@ IHqlExpression * HqlGram::processEmbedBody(const attribute & errpos, IHqlExpress
         if (!matchesBoolean(checkSupport, true))
             reportError(ERR_PluginNoScripting, errpos, "Module %s does not support %s", moduleName->getAtomNamePtr(), isImport ? "import" : "script");
         OwnedHqlExpr syntaxCheckFunc = pluginScope->lookupSymbol(syntaxCheckAtom, LSFpublic, lookupCtx);
-        if (syntaxCheckFunc && !importAtom)
+        if (syntaxCheckFunc && !isImport)
         {
             // MORE - create an expression that calls it, and const fold it, I guess....
         }
@@ -9996,6 +9996,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ECLCRC: msg.append("ECLCRC"); break;
     case ELSE: msg.append("ELSE"); break;
     case ELSEIF: msg.append("ELSEIF"); break;
+    case EMBED: msg.append("EMBED"); break;
     case EMBEDDED: msg.append("EMBEDDED"); break;
     case _EMPTY_: msg.append("_EMPTY_"); break;
     case ENCODING: msg.append("ENCODING"); break;
@@ -10003,6 +10004,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case ENCRYPTED: msg.append("ENCRYPTED"); break;
     case END: msg.append("END"); break;
     case ENDCPP: msg.append("ENDCPP"); break;
+    case ENDEMBED: msg.append("ENDEMBED"); break;
     case ENTH: msg.append("ENTH"); break;
     case ENUM: msg.append("ENUM"); break;
     case TOK_ERROR: msg.append("ERROR"); break;

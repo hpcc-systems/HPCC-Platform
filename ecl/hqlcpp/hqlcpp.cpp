@@ -11320,8 +11320,8 @@ static IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlEx
     ForEachChild(i, formals)
     {
         IHqlExpression * param = formals->queryChild(i);
-        OwnedHqlExpr formal = createActualFromFormal(param);
-        simpleTransformer.setMapping(param, formal);
+        OwnedHqlExpr actual = createActualFromFormal(param);
+        simpleTransformer.setMapping(param, actual);
     }
 
     return simpleTransformer.transformRoot(expr);
@@ -11498,6 +11498,11 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         case type_data:
             bindFunc = bindDataParamAtom;
             break;
+        case type_set:
+            bindFunc = bindSetParamAtom;
+            args.append(*createIntConstant(paramType->queryChildType()->getTypeCode()));
+            args.append(*createIntConstant(paramType->queryChildType()->getSize()));
+            break;
         default:
             StringBuffer typeText;
             getFriendlyTypeStr(paramType, typeText);
@@ -11508,6 +11513,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     }
     funcctx.addQuoted("__ctx->callFunction();");
     _ATOM returnFunc;
+    HqlExprArray retargs;
+    retargs.append(*LINK(ctxVar));
     switch (returnType->getTypeCode())
     {
     case type_int:
@@ -11532,13 +11539,17 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     case type_data:
         returnFunc = getDataResultAtom;
         break;
+    case type_set:
+        returnFunc = getSetResultAtom;
+        retargs.append(*createIntConstant(returnType->queryChildType()->getTypeCode()));
+        retargs.append(*createIntConstant(returnType->queryChildType()->getSize()));
+        break;
     default:
         StringBuffer typeText;
         getFriendlyTypeStr(returnType, typeText);
         throwError1(HQLERR_EmbeddedTypeNotSupported_X, typeText.str());
     }
-    noargs.append(*LINK(ctxVar));
-    OwnedHqlExpr call = bindFunctionCall(returnFunc, noargs);
+    OwnedHqlExpr call = bindFunctionCall(returnFunc, retargs);
     doBuildUserFunctionReturn(funcctx, returnType, call);
 }
 

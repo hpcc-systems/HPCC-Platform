@@ -395,7 +395,10 @@ public:
     {
         sharedCtx->getUnicodeResult(result, __chars, __result);
     }
-
+    virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
+    {
+        UNIMPLEMENTED;
+    }
 
     virtual void bindBooleanParam(const char *name, bool val)
     {
@@ -543,6 +546,10 @@ public:
             break;
         }
         addArg(v);
+    }
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    {
+        UNIMPLEMENTED;
     }
 
     virtual void importFunction(size32_t lenChars, const char *utf)

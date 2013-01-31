@@ -131,7 +131,7 @@ public:
     }
     virtual void getDataResult(size32_t &__len, void * &__result)
     {
-        std::vector<byte> vval = ::Rcpp::as<std::vector<byte> >(result);;
+        std::vector<byte> vval = ::Rcpp::as<std::vector<byte> >(result);
         rtlStrToDataX(__len, __result, vval.size(), vval.data());
     }
     virtual double getRealResult()
@@ -158,6 +158,10 @@ public:
     virtual void getUnicodeResult(size32_t &chars, UChar * &result)
     {
         throw MakeStringException(MSGAUD_user, 0, "Rembed: %s: Unicode/UTF8 results not supported", func.c_str());
+    }
+    virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
+    {
+        UNIMPLEMENTED;
     }
 
     virtual void bindBooleanParam(const char *name, bool val)
@@ -200,6 +204,12 @@ public:
     {
         UNIMPLEMENTED;
     }
+
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    {
+        UNIMPLEMENTED;
+    }
+
 
     virtual void importFunction(size32_t lenChars, const char *utf)
     {

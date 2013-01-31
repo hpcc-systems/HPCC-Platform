@@ -138,6 +138,10 @@ public:
         v8::HandleScope handle_scope;
         context->Global()->Set(v8::String::New(name), v8::String::New(val, chars));
     }
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    {
+        UNIMPLEMENTED;
+    }
 
     virtual bool getBooleanResult()
     {
@@ -198,6 +202,10 @@ public:
         v8::String::Utf8Value utf8(result);
         unsigned numchars = rtlUtf8Length(utf8.length(), *utf8);
         rtlUtf8ToUnicodeX(__chars, __result, numchars, *utf8);
+    }
+    virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
+    {
+        UNIMPLEMENTED;
     }
 
     virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)

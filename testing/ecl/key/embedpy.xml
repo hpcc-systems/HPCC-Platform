@@ -32,14 +32,41 @@
  <Row><Result_11>6261</Result_11></Row>
 </Dataset>
 <Dataset name='Result 12'>
- <Row><Result_12>46875625000</Result_12></Row>
+ <Row><Result_12><Item>1</Item><Item>2</Item><Item>3</Item></Result_12></Row>
 </Dataset>
 <Dataset name='Result 13'>
- <Row><Result_13>328126500000</Result_13></Row>
+ <Row><Result_13><Item>green</Item><Item>red</Item><Item>yellow</Item></Result_13></Row>
 </Dataset>
 <Dataset name='Result 14'>
- <Row><Result_14>46875625000</Result_14></Row>
+ <Row><Result_14><Item>one     </Item><Item>three   </Item><Item>two     </Item></Result_14></Row>
 </Dataset>
 <Dataset name='Result 15'>
- <Row><Result_15>328126500000</Result_15></Row>
+ <Row><Result_15><Item>Oh</Item><Item>Straße</Item><Item>là</Item></Result_15></Row>
+</Dataset>
+<Dataset name='Result 16'>
+ <Row><Result_16><Item>Deux</Item><Item>Trois</Item><Item>Un</Item></Result_16></Row>
+</Dataset>
+<Dataset name='Result 17'>
+ <Row><Result_17><Item>Dos</Item><Item>Tre</Item><Item>Uno</Item></Result_17></Row>
+</Dataset>
+<Dataset name='Result 18'>
+ <Row><Result_18><Item>On</Item><Item>Straße</Item><Item>der</Item></Result_18></Row>
+</Dataset>
+<Dataset name='Result 19'>
+ <Row><Result_19><Item>Aus     </Item><Item>Straße  </Item><Item>zum     </Item></Result_19></Row>
+</Dataset>
+<Dataset name='Result 20'>
+ <Row><Result_20><Item>417573</Item><Item>7A756D</Item><Item>537472616465</Item></Result_20></Row>
+</Dataset>
+<Dataset name='Result 21'>
+ <Row><Result_21>46875625000</Result_21></Row>
+</Dataset>
+<Dataset name='Result 22'>
+ <Row><Result_22>328126500000</Result_22></Row>
+</Dataset>
+<Dataset name='Result 23'>
+ <Row><Result_23>46875625000</Result_23></Row>
+</Dataset>
+<Dataset name='Result 24'>
+ <Row><Result_24>328126500000</Result_24></Row>
 </Dataset>

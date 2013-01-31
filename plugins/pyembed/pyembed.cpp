@@ -17,10 +17,12 @@
 
 #include "platform.h"
 #include "Python.h"
-#include "eclrtl.hpp"
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
+#include "deftype.hpp"
+#include "eclrtl.hpp"
+#include "eclrtl_imp.hpp"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -149,7 +151,7 @@ public:
             // Name should be in the form module.function
             const char *funcname = strrchr(text, '.');
             if (!funcname)
-                rtlFail(0, "Expected module.function");
+                rtlFail(0, "pyembed: Expected module.function");
             StringBuffer modname(funcname-text, text);
             funcname++;  // skip the '.'
             // If the modname is preceded by a path, add it to the python path before importing
@@ -172,7 +174,7 @@ public:
             script.set(PyDict_GetItemString(dict, funcname));
             checkPythonError();
             if (!script || !PyCallable_Check(script))
-                rtlFail(0, "Object is not callable");
+                rtlFail(0, "pyembed: Object is not callable");
             prevtext.set(text);
         }
         return script.getLink();
@@ -282,22 +284,22 @@ public:
 
     virtual bool getBooleanResult()
     {
-        assertex(result);
+        assertex(result && result != Py_None);
         if (!PyBool_Check(result))
-            throw MakeStringException(MSGAUD_user, 0, "pyembed: Type mismatch on result");
+            rtlFail(0, "pyembed: Type mismatch on result - value is not BOOLEAN ");
         return result == Py_True;
     }
     virtual void getDataResult(size32_t &__chars, void * &__result)
     {
         assertex(result && result != Py_None);
         if (!PyByteArray_Check(result))
-            throw MakeStringException(MSGAUD_user, 0, "pyembed: Type mismatch on result");
+            rtlFail(0, "pyembed: Type mismatch on result - value is not a bytearray");
         rtlStrToDataX(__chars, __result, PyByteArray_Size(result), PyByteArray_AsString(result));
     }
     virtual double getRealResult()
     {
         assertex(result && result != Py_None);
-        return (__int64) PyFloat_AsDouble(result);
+        return PyFloat_AsDouble(result);
     }
     virtual __int64 getSignedResult()
     {
@@ -320,7 +322,7 @@ public:
             rtlStrToStrX(__chars, __result, lenBytes, text);
         }
         else
-            rtlFail(0, "Python type mismatch - return value was not a string");
+            rtlFail(0, "pyembed: type mismatch - return value was not a string");
     }
     virtual void getUTF8Result(size32_t &__chars, char * &__result)
     {
@@ -336,7 +338,7 @@ public:
             rtlUtf8ToUtf8X(__chars, __result, numchars, text);
         }
         else
-            rtlFail(0, "Python type mismatch - return value was not a unicode string");
+            rtlFail(0, "pyembed: type mismatch - return value was not a unicode string");
     }
     virtual void getUnicodeResult(size32_t &__chars, UChar * &__result)
     {
@@ -352,11 +354,288 @@ public:
             rtlUtf8ToUnicodeX(__chars, __result, numchars, text);
         }
         else
-            rtlFail(0, "Python type mismatch - return value was not a unicode string");
+            rtlFail(0, "pyembed: type mismatch - return value was not a unicode string");
+    }
+    virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
+    {
+        assertex(result && result != Py_None);
+        if (!PyList_Check(result))
+            rtlFail(0, "pyembed: type mismatch - return value was not a list");
+        Py_ssize_t numResults = PyList_Size(result);
+        rtlRowBuilder out;
+        byte *outData = NULL;
+        size32_t outBytes = 0;
+        if (elemSize != UNKNOWN_LENGTH)
+        {
+            out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
+            outData = out.getbytes();
+        }
+        for (int i = 0; i < numResults; i++)
+        {
+            PyObject *elem = PyList_GetItem(result, i); // note - borrowed reference
+            switch ((type_t) elemType)
+            {
+            case type_int:
+                rtlWriteInt(outData, PyLong_AsLongLong(elem), elemSize);
+                break;
+            case type_real:
+                if (!PyFloat_Check(elem))
+                    rtlFail(0, "pyembed: type mismatch - return value in list was not a REAL");
+                if (elemSize == sizeof(double))
+                    * (double *) outData = (double) PyFloat_AsDouble(elem);
+                else
+                {
+                    assertex(elemSize == sizeof(float));
+                    * (float *) outData = (float) PyFloat_AsDouble(elem);
+                }
+                break;
+            case type_boolean:
+                assertex(elemSize == sizeof(bool));
+                if (!PyBool_Check(elem))
+                    rtlFail(0, "pyembed: type mismatch - return value in list was not a BOOLEAN");
+                * (bool *) outData = (result == Py_True);
+                break;
+            case type_string:
+            case type_varstring:
+            {
+                if (!PyString_Check(elem))
+                    rtlFail(0, "pyembed: type mismatch - return value in list was not a STRING");
+                const char * text =  PyString_AsString(elem);
+                checkPythonError();
+                size_t lenBytes = PyString_Size(elem);
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    if (elemType == type_string)
+                    {
+                        out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                        outData = out.getbytes() + outBytes;
+                        * (size32_t *) outData = lenBytes;
+                        rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                        outBytes += lenBytes + sizeof(size32_t);
+                    }
+                    else
+                    {
+                        out.ensureAvailable(outBytes + lenBytes + 1);
+                        outData = out.getbytes() + outBytes;
+                        rtlStrToVStr(0, outData, lenBytes, text);
+                        outBytes += lenBytes + 1;
+                    }
+                }
+                else
+                {
+                    if (elemType == type_string)
+                        rtlStrToStr(elemSize, outData, lenBytes, text);
+                    else
+                        rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
+                }
+                break;
+            }
+            case type_unicode:
+            case type_utf8:
+            {
+                if (!PyUnicode_Check(elem))
+                    rtlFail(0, "pyembed: type mismatch - return value in list was not a unicode STRING");
+                OwnedPyObject utf8 = PyUnicode_AsUTF8String(elem);
+                checkPythonError();
+                size_t lenBytes = PyString_Size(utf8);
+                const char * text =  PyString_AsString(utf8);
+                checkPythonError();
+                size32_t numchars = rtlUtf8Length(lenBytes, text);
+                if (elemType == type_utf8)
+                {
+                    assertex (elemSize == UNKNOWN_LENGTH);
+                    out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                    outData = out.getbytes() + outBytes;
+                    * (size32_t *) outData = numchars;
+                    rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                    outBytes += lenBytes + sizeof(size32_t);
+                }
+                else
+                {
+                    if (elemSize == UNKNOWN_LENGTH)
+                    {
+                        out.ensureAvailable(outBytes + numchars*sizeof(UChar) + sizeof(size32_t));
+                        outData = out.getbytes() + outBytes;
+                        // You can't assume that number of chars in utf8 matches number in unicode16 ...
+                        size32_t numchars16;
+                        rtlDataAttr unicode16;
+                        rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+                        * (size32_t *) outData = numchars16;
+                        rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
+                        outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
+                    }
+                    else
+                        rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
+                }
+                break;
+            }
+            case type_data:
+            {
+                if (!PyByteArray_Check(elem))
+                    rtlFail(0, "pyembed: type mismatch - return value in list was not a bytearray");
+                size_t lenBytes = PyByteArray_Size(elem);  // Could check does not overflow size32_t
+                const char *data = PyByteArray_AsString(elem);
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                    outData = out.getbytes() + outBytes;
+                    * (size32_t *) outData = lenBytes;
+                    rtlStrToData(lenBytes, outData+sizeof(size32_t), lenBytes, data);
+                    outBytes += lenBytes + sizeof(size32_t);
+                }
+                else
+                    rtlStrToData(elemSize, outData, lenBytes, data);
+                break;
+            }
+            default:
+                rtlFail(0, "pyembed: type mismatch - unsupported return type");
+            }
+            checkPythonError();
+            if (elemSize != UNKNOWN_LENGTH)
+            {
+                outData += elemSize;
+                outBytes += elemSize;
+            }
+        }
+        __isAllResult = false;
+        __resultBytes = outBytes;
+        __result = out.detachdata();
     }
 
+    virtual void bindBooleanParam(const char *name, bool val)
+    {
+        addArg(name, PyBool_FromLong(val ? 1 : 0));
+    }
+    virtual void bindDataParam(const char *name, size32_t len, const void *val)
+    {
+        addArg(name, PyByteArray_FromStringAndSize((const char *) val, len));
+    }
+    virtual void bindRealParam(const char *name, double val)
+    {
+        addArg(name, PyFloat_FromDouble(val));
+    }
+    virtual void bindSignedParam(const char *name, __int64 val)
+    {
+        addArg(name, PyLong_FromLongLong(val));
+    }
+    virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
+    {
+        addArg(name, PyLong_FromUnsignedLongLong(val));
+    }
+    virtual void bindStringParam(const char *name, size32_t len, const char *val)
+    {
+        addArg(name, PyString_FromStringAndSize(val, len));
+    }
+    virtual void bindVStringParam(const char *name, const char *val)
+    {
+        addArg(name, PyString_FromString(val));
+    }
+    virtual void bindUTF8Param(const char *name, size32_t chars, const char *val)
+    {
+        size32_t sizeBytes = rtlUtf8Size(chars, val);
+        PyObject *vval = PyUnicode_FromStringAndSize(val, sizeBytes);   // NOTE - requires size in bytes not chars
+        checkPythonError();
+        addArg(name, vval);   // NOTE - requires size in bytes not chars
+    }
+
+    virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val)
+    {
+        // You don't really know what size Py_UNICODE is (varies from system to system), so go via utf8
+        unsigned unicodeChars;
+        char *unicode;
+        rtlUnicodeToUtf8X(unicodeChars, unicode, chars, val);
+        size32_t sizeBytes = rtlUtf8Size(unicodeChars, unicode);
+        PyObject *vval = PyUnicode_FromStringAndSize(unicode, sizeBytes);   // NOTE - requires size in bytes not chars
+        checkPythonError();
+        addArg(name, vval);
+        rtlFree(unicode);
+    }
+    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    {
+        if (isAll)
+            rtlFail(0, "pyembed: Cannot pass ALL");
+        type_t typecode = (type_t) elemType;
+        const byte *inData = (const byte *) setData;
+        const byte *endData = inData + totalBytes;
+        OwnedPyObject vval = PyList_New(0);
+        while (inData < endData)
+        {
+            OwnedPyObject thisElem;
+            size32_t thisSize = elemSize;
+            switch (typecode)
+            {
+            case type_int:
+                thisElem.setown(PyLong_FromLongLong(rtlReadInt(inData, elemSize)));
+                break;
+            case type_varstring:
+            {
+                size32_t numChars = strlen((const char *) inData);
+                thisElem.setown(PyString_FromStringAndSize((const char *) inData, numChars));
+                if (elemSize == UNKNOWN_LENGTH)
+                    thisSize = numChars + 1;
+                break;
+            }
+            case type_string:
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    thisSize = * (size32_t *) inData;
+                    inData += sizeof(size32_t);
+                }
+                thisElem.setown(PyString_FromStringAndSize((const char *) inData, thisSize));
+                break;
+            case type_real:
+                if (elemSize == sizeof(double))
+                    thisElem.setown(PyFloat_FromDouble(* (double *) inData));
+                else
+                    thisElem.setown(PyFloat_FromDouble(* (float *) inData));
+                break;
+            case type_boolean:
+                assertex(elemSize == sizeof(bool));
+                thisElem.setown(PyBool_FromLong(*(bool*)inData ? 1 : 0));
+                break;
+            case type_unicode:
+            {
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    thisSize = (* (size32_t *) inData) * sizeof(UChar); // NOTE - it's in chars...
+                    inData += sizeof(size32_t);
+                }
+                unsigned unicodeChars;
+                rtlDataAttr unicode;
+                rtlUnicodeToUtf8X(unicodeChars, unicode.refstr(), thisSize / sizeof(UChar), (const UChar *) inData);
+                size32_t sizeBytes = rtlUtf8Size(unicodeChars, unicode.getstr());
+                thisElem.setown(PyUnicode_FromStringAndSize(unicode.getstr(), sizeBytes));   // NOTE - requires size in bytes not chars
+                checkPythonError();
+                break;
+            }
+            case type_utf8:
+            {
+                assertex (elemSize == UNKNOWN_LENGTH);
+                size32_t numChars = * (size32_t *) inData;
+                inData += sizeof(size32_t);
+                thisSize = rtlUtf8Size(numChars, inData);
+                thisElem.setown(PyUnicode_FromStringAndSize((const char *) inData, thisSize));   // NOTE - requires size in bytes not chars
+                break;
+            }
+            case type_data:
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    thisSize = * (size32_t *) inData;
+                    inData += sizeof(size32_t);
+                }
+                thisElem.setown(PyByteArray_FromStringAndSize((const char *) inData, thisSize));
+                break;
+            }
+            checkPythonError();
+            inData += thisSize;
+            PyList_Append(vval, thisElem);
+        }
+        addArg(name, vval.getLink());
+    }
 
 protected:
+    virtual void addArg(const char *name, PyObject *arg) = 0;
+
     PythonThreadContext *sharedCtx;
     OwnedPyObject locals;
     OwnedPyObject globals;
@@ -373,59 +652,6 @@ public:
     }
     ~Python27EmbedScriptContext()
     {
-    }
-    virtual void bindBooleanParam(const char *name, bool val)
-    {
-        OwnedPyObject vval = PyBool_FromLong(val ? 1 : 0);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    virtual void bindDataParam(const char *name, size32_t len, const void *val)
-    {
-        OwnedPyObject vval = PyByteArray_FromStringAndSize((const char *) val, len);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    virtual void bindRealParam(const char *name, double val)
-    {
-        OwnedPyObject vval = PyFloat_FromDouble(val);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    virtual void bindSignedParam(const char *name, __int64 val)
-    {
-        OwnedPyObject vval = PyLong_FromLongLong(val);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
-    {
-        OwnedPyObject vval = PyLong_FromUnsignedLongLong(val);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    virtual void bindStringParam(const char *name, size32_t len, const char *val)
-    {
-        OwnedPyObject vval = PyString_FromStringAndSize(val, len);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    virtual void bindVStringParam(const char *name, const char *val)
-    {
-        OwnedPyObject vval = PyString_FromString(val);
-        PyDict_SetItemString(locals, name, vval);
-    }
-    virtual void bindUTF8Param(const char *name, size32_t chars, const char *val)
-    {
-        size32_t sizeBytes = rtlUtf8Size(chars, val);
-        OwnedPyObject vval = PyUnicode_FromStringAndSize(val, sizeBytes);   // NOTE - requires size in bytes not chars
-        PyDict_SetItemString(locals, name, vval);
-    }
-    virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val)
-    {
-        // You don't really know what size Py_UNICODE is (varies from system to system), so go via utf8
-        unsigned unicodeChars;
-        char *unicode;
-        rtlUnicodeToUtf8X(unicodeChars, unicode, chars, val);
-        size32_t sizeBytes = rtlUtf8Size(unicodeChars, unicode);
-        OwnedPyObject vval = PyUnicode_FromStringAndSize(unicode, sizeBytes);   // NOTE - requires size in bytes not chars
-        checkPythonError();
-        PyDict_SetItemString(locals, name, vval);
-        rtlFree(unicode);
     }
 
     virtual void importFunction(size32_t lenChars, const char *text)
@@ -446,6 +672,14 @@ public:
         if (!result || result == Py_None)
             result.set(PyDict_GetItemString(globals, "__result__"));
     }
+protected:
+    virtual void addArg(const char *name, PyObject *arg)
+    {
+        assertex(arg);
+        PyDict_SetItemString(locals, name, arg);
+        Py_DECREF(arg);
+        checkPythonError();
+    }
 };
 
 class Python27EmbedImportContext : public Python27EmbedContextBase
@@ -458,51 +692,6 @@ public:
     }
     ~Python27EmbedImportContext()
     {
-    }
-    virtual void bindBooleanParam(const char *name, bool val)
-    {
-        addArg(PyBool_FromLong(val ? 1 : 0));
-    }
-    virtual void bindDataParam(const char *name, size32_t len, const void *val)
-    {
-        addArg(PyByteArray_FromStringAndSize((const char *) val, len));
-    }
-    virtual void bindRealParam(const char *name, double val)
-    {
-        addArg(PyFloat_FromDouble(val));
-    }
-    virtual void bindSignedParam(const char *name, __int64 val)
-    {
-        addArg(PyLong_FromLongLong(val));
-    }
-    virtual void bindUnsignedParam(const char *name, unsigned __int64 val)
-    {
-        addArg(PyLong_FromUnsignedLongLong(val));
-    }
-    virtual void bindStringParam(const char *name, size32_t len, const char *val)
-    {
-        addArg(PyString_FromStringAndSize(val, len));
-    }
-    virtual void bindVStringParam(const char *name, const char *val)
-    {
-        addArg(PyString_FromString(val));
-    }
-    virtual void bindUTF8Param(const char *name, size32_t chars, const char *val)
-    {
-        size32_t sizeBytes = rtlUtf8Size(chars, val);
-        addArg(PyUnicode_FromStringAndSize(val, sizeBytes));   // NOTE - requires size in bytes not chars
-    }
-    virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val)
-    {
-        // You don't really know what size Py_UNICODE is (varies from system to system), so go via utf8
-        unsigned unicodeChars;
-        char *unicode;
-        rtlUnicodeToUtf8X(unicodeChars, unicode, chars, val);
-        size32_t sizeBytes = rtlUtf8Size(unicodeChars, unicode);
-        PyObject *vval = PyUnicode_FromStringAndSize(unicode, sizeBytes);   // NOTE - requires size in bytes not chars
-        checkPythonError();
-        addArg(vval);
-        rtlFree(unicode);
     }
 
     virtual void importFunction(size32_t lenChars, const char *utf)
@@ -519,7 +708,7 @@ public:
         checkPythonError();
     }
 private:
-    void addArg(PyObject *arg)
+    virtual void addArg(const char *name, PyObject *arg)
     {
         if (argcount)
             _PyTuple_Resize(args.ref(), argcount+1);
