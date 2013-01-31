@@ -804,6 +804,28 @@ const char * cppSystemText[]  = {
     "   _linkcounted_ row(dummyRecord) dictionaryLookup(boolean meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup';",
     "    boolean dictionaryLookupExists(boolean meta, _linkcounted_ dictionary dict, row key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExists';",
 
+    // Marshalling parameters to external languages
+    "   bindBooleanParam(const varstring name, boolean val) : method,entrypoint='bindBooleanParam';",
+    "   bindDataParam(const varstring name, data val) : method,entrypoint='bindDataParam';",
+    "   bindRealParam(const varstring name, real val) : method,entrypoint='bindRealParam';",
+    "   bindSignedParam(const varstring name, integer val) : method,entrypoint='bindSignedParam';",
+    "   bindUnsignedParam(const varstring name, unsigned val) : method,entrypoint='bindUnsignedParam';",
+    "   bindStringParam(const varstring name, const string val) : method,entrypoint='bindStringParam';",
+    "   bindVStringParam(const varstring name, const varstring val) : method,entrypoint='bindVStringParam';",
+    "   bindUTF8Param(const varstring name, const utf8 val) : method,entrypoint='bindUTF8Param';",
+    "   bindUnicodeParam(const varstring name, const unicode val) : method,entrypoint='bindUnicodeParam';",
+
+    "   boolean getBooleanResult() : method,entrypoint='getBooleanResult';",
+    "   data getDataResult() : method,entrypoint='getDataResult';",
+    "   real getRealResult() : method,entrypoint='getRealResult';",
+    "   integer getSignedResult() : method,entrypoint='getSignedResult';",
+    "   string getStringResult() : method,entrypoint='getStringResult';",
+    "   unsigned getUnsignedResult() : method,entrypoint='getUnsignedResult';",
+    "   utf8 getUTF8Result() : method,entrypoint='getUTF8Result';",
+    "   unicode getUnicodeResult() : method,entrypoint='getUnicodeResult';",
+
+    "   compileEmbeddedScript(const utf8 script) : method,entrypoint='compileEmbeddedScript';",
+    "   import(const utf8 script) : method,entrypoint='importFunction';",
     "   END;",
     NULL };
 

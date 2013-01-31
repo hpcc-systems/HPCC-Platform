@@ -5417,7 +5417,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_libraryinput:
     case no_translated:
     case no_id2blob:
-    case no_cppbody:
+    case no_embedbody:
     case no_pipe:
     case no_keyindex:
     case no_newkeyindex:

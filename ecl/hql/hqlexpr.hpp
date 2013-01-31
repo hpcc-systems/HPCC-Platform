@@ -595,7 +595,7 @@ enum _node_operator {
         no_blob2id,
         no_anon,
         no_projectrow,
-        no_cppbody,
+        no_embedbody,
         no_sortpartition,
         no_define,
         no_globalscope,

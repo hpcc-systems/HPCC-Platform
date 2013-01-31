@@ -418,6 +418,7 @@
 #define HQLERR_CannotSubmitMacroX   2388
 #define HQLERR_CannotBeGrouped      2389
 #define HQLERR_CannotAccessShared   2390
+#define ERR_PluginNoScripting       2391
 
 #define ERR_ASSERTION_FAILS         100000
 

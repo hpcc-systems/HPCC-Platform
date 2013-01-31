@@ -1112,6 +1112,8 @@ public:
 
     bool expandFunctionPrototype(StringBuffer & s, IHqlExpression * funcdef);
     void expandFunctionPrototype(BuildCtx & ctx, IHqlExpression * funcdef);
+    void buildCppFunctionDefinition(BuildCtx &funcctx, IHqlExpression * bodycode, const char *proto);
+    void buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpression * bodycode, const char *proto);
     void buildFunctionDefinition(IHqlExpression * funcdef);
     void assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & expr);
     void assignCastUnknownLength(BuildCtx & ctx, const CHqlBoundTarget & target, CHqlBoundExpr & pure);
@@ -1269,8 +1271,8 @@ public:
     void doBuildExprCountDict(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCount(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprCounter(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
-    void doBuildExprCppBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
     void doBuildExprDivide(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
+    void doBuildExprEmbedBody(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr * tgt);
     void doBuildExprEvaluate(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprExists(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void doBuildExprFailCode(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

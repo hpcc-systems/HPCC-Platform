@@ -2051,6 +2051,12 @@ unsigned HqlLex::getTypeSize(unsigned lengthTypeName)
     return UNKNOWN_LENGTH;
 }
 
+void HqlLex::enterEmbeddedMode()
+{
+    doEnterEmbeddedMode(scanner);
+    inCpp = true;
+}
+
 int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
 {
     loop
@@ -2102,7 +2108,7 @@ int HqlLex::yyLex(YYSTYPE & returnToken, bool lookup, const short * activeState)
             if (inComment)
                 reportError(returnToken, ERR_COMMENT_UNENDED,"Comment is not terminated");
             else if (inCpp)
-                reportError(returnToken, ERR_COMMENT_UNENDED,"BEGINC++ is not terminated");
+                reportError(returnToken, ERR_COMMENT_UNENDED,"BEGINC++ or EMBED is not terminated");
             if (hashendDepths.ordinality())
             {
                 StringBuffer msg("Unexpected EOF: ");

@@ -206,6 +206,7 @@
 #define HQLERR_SkipInsideCreateRow              4184
 #define HQLERR_KeyedJoinNoRightIndex_X          4185
 #define HQLERR_ScalarOutputWithinApply          4186
+#define HQLERR_EmbeddedTypeNotSupported_X       4187
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -484,7 +485,7 @@
 #define HQLERR_SkipInsideCreateRow_Text         "SKIP inside a ROW(<transform>) not supported.  It is only allowed in a DATASET transform."
 #define HQLERR_ScalarOutputWithinApply_Text     "A scalar output within an APPLY is undefined and may fail.  Use OUTPUT(dataset,EXTEND) instead."
 #define HQLERR_KeyedJoinNoRightIndex_X_Text     "Right dataset (%s) for a keyed join isn't a key"
-
+#define HQLERR_EmbeddedTypeNotSupported_X_Text  "Type %s not supported for embedded/external scripts"
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
 #define HQLWRN_RecursiveDependendencies_Text    "Recursive filename dependency"
