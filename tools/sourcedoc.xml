@@ -38,5 +38,4 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="testsocket/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="vkey/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="wuget/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="xmlsize/sourcedoc.xml"/>
 </section>
