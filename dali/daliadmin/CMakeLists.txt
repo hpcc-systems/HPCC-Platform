@@ -37,6 +37,7 @@ include_directories (
          ./../../system/include 
          ./../../system/jlib 
          ./../ft 
+         ./../../common/workunit
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )
@@ -48,5 +49,6 @@ target_link_libraries ( daliadmin
          mp 
          remote 
          dalibase 
+         workunit
     )
 

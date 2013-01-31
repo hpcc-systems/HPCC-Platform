@@ -43,6 +43,8 @@
 
 #include "rmtfile.hpp"
 
+#include "workunit.hpp"
+
 #ifdef _WIN32
 #include <conio.h>
 #else
@@ -111,6 +113,8 @@ void usage(const char *exe)
   printf("  getxref <destxmlfile>           -- get all XREF information\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
   printf("  unlock <xpath or logicalfile>   --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
+  printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
+  printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
   printf("\n");
   printf("Common options\n");
   printf("  server=<dali-server-ip>         -- server ip\n");
@@ -2059,6 +2063,53 @@ static void unlock(const char *pattern)
     }
 }
 
+static void wuidCompress(const char *match, const char *type, bool compress)
+{
+    if (0 != stricmp("graph", type))
+    {
+        WARNLOG("Currently, only type=='graph' supported.");
+        return;
+    }
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory();
+    Owned<IConstWorkUnitIterator> iter = factory->getWorkUnitsByXPath(match);
+    ForEach(*iter)
+    {
+        IConstWorkUnit &wuid = iter->query();
+
+        StringArray graphNames;
+        Owned<IConstWUGraphIterator> graphIter = &wuid.getGraphs(GraphTypeAny);
+        ForEach(*graphIter)
+        {
+            SCMStringBuffer graphName;
+            IConstWUGraph &graph = graphIter->query();
+            Owned<IPropertyTree> xgmml = graph.getXGMMLTreeRaw();
+            if (compress != xgmml->hasProp("graphBin"))
+            {
+                graph.getName(graphName);
+                graphNames.append(graphName.s.str());
+            }
+        }
+
+        if (graphNames.ordinality())
+        {
+            SCMStringBuffer wuidName;
+            wuid.getWuid(wuidName);
+            StringAttr msg;
+            msg.set(compress?"Compressing":"Uncompressing");
+            PROGLOG("%s graphs for workunit: %s", msg.get(), wuidName.s.str());
+            Owned<IWorkUnit> wWuid = &wuid.lock();
+            ForEachItemIn(n, graphNames)
+            {
+                Owned<IWUGraph> wGraph = wWuid->updateGraph(graphNames.item(n));
+                PROGLOG("%s graph: %s", msg.get(), graphNames.item(n));
+                // get/set - will convert to/from new format (binary compress blob)
+                Owned<IPropertyTree> xgmml = wGraph->getXGMMLTree(false);
+                wGraph->setXGMMLTree(xgmml.getClear(), compress);
+            }
+        }
+    }
+}
+
 
 //=============================================================================
 
@@ -2388,7 +2439,14 @@ int main(int argc, char* argv[])
                 CHECKPARAMS(1,1);
                 unlock(params.item(1));
             }
-
+            else if (stricmp(cmd,"wuidCompress")==0) {
+                CHECKPARAMS(2,2);
+                wuidCompress(params.item(1), params.item(2), true);
+            }
+            else if (stricmp(cmd,"wuidDecompress")==0) {
+                CHECKPARAMS(2,2);
+                wuidCompress(params.item(1), params.item(2), false);
+            }
             else 
                 ERRLOG("Unknown command %s",cmd);
         }

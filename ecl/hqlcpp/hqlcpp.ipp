@@ -474,11 +474,14 @@ typedef CIArrayOf<BuildCtx> BuildCtxArray;
 struct GeneratedGraphInfo : public CInterface
 {
 public:
-    GeneratedGraphInfo(const char * _name, IPropertyTree * _graph) : name(_name), graph(_graph) {}
+    GeneratedGraphInfo(const char * _name, const char *_label) : name(_name), label(_label)
+    {
+        xgmml.setown(createPTree("graph"));
+    }
 
 public:
-    StringAttr name;
-    Linked<IPropertyTree> graph;
+    StringAttr name, label;
+    Owned<IPropertyTree> xgmml;
 };
 
 enum SubGraphType { SubGraphRoot, SubGraphRemote, SubGraphChild, SubGraphLoop };
@@ -1833,7 +1836,7 @@ public:
     //MORE: At some point the global getUniqueId() should be killed so there are only local references.
     inline unsigned __int64 getUniqueId() { return ::getUniqueId(); } //{ return ++nextUid; }
     inline StringBuffer & getUniqueId(StringBuffer & target) { return appendUniqueId(target, getUniqueId()); }
-    inline unsigned curGraphSequence() const { return activeGraphName ? graphSeqNumber : 0; }
+    inline unsigned curGraphSequence() const { return activeGraph ? graphSeqNumber : 0; }
 
 public:
     void traceExpression(const char * title, IHqlExpression * expr, unsigned level=500);
@@ -1866,12 +1869,11 @@ protected:
     ClusterType         targetClusterType;
     bool contextAvailable;
     unsigned maxSequence;
-    StringAttr          activeGraphName;
     unsigned            startCursorSet;
     bool                requireTable;
     BuildCtx *          activeGraphCtx;
     HqlExprArray        metas;
-    Owned<IPropertyTree> graph;
+    Owned<GeneratedGraphInfo> activeGraph;
     unsigned            graphSeqNumber;
     StringAttr          graphLabel;
     NlpParseContext *   nlpParse;               // Not linked so it can try and stay opaque.

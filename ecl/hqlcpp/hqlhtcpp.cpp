@@ -805,7 +805,7 @@ protected:
 
 void HqlCppTranslator::optimizeBuildActionList(BuildCtx & ctx, IHqlExpression * exprs)
 {
-    if ((exprs->getOperator() != no_actionlist) || !graph)
+    if ((exprs->getOperator() != no_actionlist) || !activeGraph)
     {
         buildStmt(ctx, exprs);
         return;
@@ -5597,8 +5597,9 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
         {
             GeneratedGraphInfo & cur = graphs.item(i2);
             Owned<IWUGraph> wug = wu()->updateGraph(cur.name);
-            wug->setXGMMLTree(cur.graph.getClear());
+            wug->setXGMMLTree(cur.xgmml.getClear());
             wug->setType(GraphTypeActivities);
+            wug->setLabel(cur.label);
         }
 
         code->processIncludes();
@@ -6834,7 +6835,7 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, A
 #if 0
     StringBuffer edgeText;
     edgeText.append("edge[@id=\").append(idText).append("\"]");
-    if (graph->hasProp(edgePath))
+    if (activeGraph->xgmml->hasProp(edgePath))
         return;
 #endif
 
@@ -6878,7 +6879,7 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, A
 
     addGraphAttributeInt(edge, "_sourceActivity", sourceActivity->queryActivityId());
     addGraphAttributeInt(edge, "_targetActivity", sinkActivity->queryActivityId());
-    graph->addPropTree("edge", edge);
+    activeGraph->xgmml->addPropTree("edge", edge);
 }
 
 void HqlCppTranslator::buildClearRecord(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * record, int direction)
@@ -8749,7 +8750,7 @@ unsigned HqlCppTranslator::doBuildThorChildSubGraph(BuildCtx & ctx, IHqlExpressi
             graphId = activeSubgraph->graphId;
     }
     else
-        node = graph->addPropTree("node", node);
+        node = activeGraph->xgmml->addPropTree("node", node);
 
     node->setPropInt("@id", thisId);
 
@@ -8810,7 +8811,7 @@ unsigned HqlCppTranslator::doBuildThorSubGraph(BuildCtx & ctx, IHqlExpression * 
     BuildCtx graphctx(ctx);
     graphctx.addGroup();
 
-    bool needToCreateGraph = !graph;
+    bool needToCreateGraph = !activeGraph;
     if (!graphTag && outputLibraryId)
         graphTag = outputLibraryId;
     if (needToCreateGraph)
@@ -8827,7 +8828,7 @@ unsigned HqlCppTranslator::doBuildThorSubGraph(BuildCtx & ctx, IHqlExpression * 
 
 void HqlCppTranslator::beginGraph(const char * _graphName)
 {
-    if (activeGraphName)
+    if (activeGraph)
         throwError(HQLERR_NestedThorNodes);
 
     graphSeqNumber++;
@@ -8836,30 +8837,23 @@ void HqlCppTranslator::beginGraph(const char * _graphName)
         graphName.append("graph").append(graphSeqNumber);
     else
         graphName.append(_graphName);
-    activeGraphName.set(graphName.str());
 
-    graph.setown(createPTree("graph"));
-    if (graphLabel)
-    {
-        graph->setProp("@label", graphLabel);
-        graphLabel.clear();
-    }
+    activeGraph.setown(new GeneratedGraphInfo(graphName, graphLabel));
+    graphLabel.clear();
+
     if (insideLibrary())
-        graph->setPropBool("@library", true);
+        activeGraph->xgmml->setPropBool("@library", true);
 }
 
 
 void HqlCppTranslator::endGraph()
 {
-    graphs.append(* new GeneratedGraphInfo(activeGraphName, graph));
-    graph.clear();
-    activeGraphName.set(NULL);
+    graphs.append(*activeGraph.getClear());
 }
 
 void HqlCppTranslator::clearGraph()
 {
-    graph.clear();
-    activeGraphName.clear();
+    activeGraph.clear();
 }
 
 
@@ -9029,7 +9023,7 @@ void HqlCppTranslator::doBuildThorGraph(BuildCtx & ctx, IHqlExpression * expr)
             Owned<SubGraphInfo> graphInfo;
             if (graphTag)
             {
-                graphInfo.setown(new SubGraphInfo(graph, 0, 0, graphTag, SubGraphRoot));
+                graphInfo.setown(new SubGraphInfo(activeGraph->xgmml, 0, 0, graphTag, SubGraphRoot));
                 graphctx.associate(*graphInfo);
             }
 
@@ -9040,7 +9034,7 @@ void HqlCppTranslator::doBuildThorGraph(BuildCtx & ctx, IHqlExpression * expr)
             graphctx.removeAssociation(graphInfo);
 
             HqlExprArray args;
-            args.append(*createConstant(activeGraphName));
+            args.append(*createConstant(activeGraph->name));
             args.append(*createConstant(targetThor()));
             args.append(*createConstant(0));
             args.append(*createValue(no_nullptr, makeReferenceModifier(makeRowType(queryNullRecord()->getType()))));
@@ -17520,7 +17514,7 @@ void HqlCppTranslator::buildActivityFramework(ActivityInstance * instance)
 
 void HqlCppTranslator::buildActivityFramework(ActivityInstance * instance, bool alwaysExecuted)
 {
-    instance->createGraphNode(graph, alwaysExecuted);
+    instance->createGraphNode(activeGraph->xgmml, alwaysExecuted);
     if (options.trackDuplicateActivities)
     {
         IHqlExpression * search = instance->dataset;
