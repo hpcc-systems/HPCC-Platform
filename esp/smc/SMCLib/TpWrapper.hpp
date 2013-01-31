@@ -166,6 +166,7 @@ public:
     void getTpDaliServers(IArrayOf<IConstTpDali>& list);
     void getTpEclServers(IArrayOf<IConstTpEclServer>& ServiceList);
     void getTpEclCCServers(IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);
+    void getTpEclCCServers(IPropertyTree* environmentSoftware, IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);
     void getTpEclAgents(IArrayOf<IConstTpEclAgent>& list, const char* name = NULL);
     void getTpEclSchedulers(IArrayOf<IConstTpEclScheduler>& ServiceList, const char* name = NULL);
     void getTpEspServers(IArrayOf<IConstTpEspServer>& list);
