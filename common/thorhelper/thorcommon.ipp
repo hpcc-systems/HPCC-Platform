@@ -116,7 +116,7 @@ public:
 //v1 member functions (can be called on any interface)
     inline unsigned getMetaFlags() const                    { return metaFlags; }
     inline bool needsDestruct() const                       { return (metaFlags & MDFneeddestruct) != 0; }
-    inline bool needsSerializeDisk() const                 { return (metaFlags & MDFneedserializedisk) != 0; }
+    inline bool needsSerializeDisk() const                  { return (metaFlags & MDFneedserializedisk) != 0; }
     inline void destruct(byte * self)
     {
         if (metaFlags & MDFneeddestruct)

@@ -9975,6 +9975,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case DATASET: msg.append("DATASET"); break;
     case __DEBUG__: msg.append("__DEBUG__"); break;
     case DEDUP: msg.append("DEDUP"); break;
+    case DEFAULT: msg.append("DEFAULT"); break;
     case DEFINE: msg.append("DEFINE"); break;
     case DENORMALIZE: msg.append("DENORMALIZE"); break;
     case DEPRECATED: msg.append("DEPRECATED"); break;

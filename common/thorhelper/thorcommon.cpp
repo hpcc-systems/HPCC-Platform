@@ -515,8 +515,7 @@ IOutputRowDeserializer * CachedOutputMetaData::createDiskDeserializer(ICodeConte
         return meta->createDiskDeserializer(ctx, activityId);
     if (isFixedSize())
         return new CSimpleFixedRowDeserializer(getFixedSize());
-    assertex(!"createDiskDeserializer variable meta has no serializer");
-    //return new CSimpleVariableRowDeserializer(this);
+    UNIMPLEMENTED_X("createDiskDeserializer variable meta has no serializer");
     return NULL;
 }
 
@@ -536,8 +535,7 @@ IOutputRowDeserializer * CachedOutputMetaData::createInternalDeserializer(ICodeC
         return meta->createInternalDeserializer(ctx, activityId);
     if (isFixedSize())
         return new CSimpleFixedRowDeserializer(getFixedSize());
-    assertex(!"createInternalDeserializer variable meta has no serializer");
-    //return new CSimpleVariableRowDeserializer(this);
+    UNIMPLEMENTED_X("createInternalDeserializer variable meta has no serializer");
     return NULL;
 }
 

@@ -8722,7 +8722,13 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
     IHqlExpression * cursor = queryDatasetCursor(ds);
     if (cursor->isDataset())
     {
-        if (expr->isDataset() || expr->isDictionary())
+        if (expr->isDictionary())
+        {
+            StringBuffer exprText;
+            VStringBuffer msg("dictionary %s must be explicitly NORMALIZED", getECL(expr, exprText));
+            reportError(msg, false);
+        }
+        else if (expr->isDataset())
         {
             if (!isValidNormalizeSelector(cursor))
             {
