@@ -22,12 +22,10 @@
 #include "jutil.hpp"
 #include "dynshared.hpp"
 
-ApuShared::ApuShared()
+ApuShared::ApuShared() : DynInit("ApuShared")
 {
-    setName("ApuShared");
     lib_name.append(SharedObjectPrefix).append(APRUTIL).append(SharedObjectExtension);
     so = new SharedObject();
-    setInit(false);
 }
 
 void ApuShared::init()

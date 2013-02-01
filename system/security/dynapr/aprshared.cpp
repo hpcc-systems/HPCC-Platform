@@ -22,12 +22,10 @@
 #include "jutil.hpp"
 #include "dynshared.hpp"
 
-AprShared::AprShared()
+AprShared::AprShared() : DynInit("AprShared")
 {
-    setName("AprShared");
     lib_name.append(SharedObjectPrefix).append(APR).append(SharedObjectExtension);
     so = new SharedObject();
-    setInit(false);
 }
 
 void AprShared::init()

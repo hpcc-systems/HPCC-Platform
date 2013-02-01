@@ -50,7 +50,7 @@ class DYNAPR_API Apr : public CInterface, public DynInit
 {
 public:
     IMPLEMENT_IINTERFACE;
-    Apr();
+    Apr() :  DynInit("Apr") {}
     virtual ~Apr();
     void init();
     void apr_md5_string(StringBuffer& inpstring, StringBuffer& outstring);
@@ -60,12 +60,9 @@ private:
     Owned<AprShared> apr;
     Owned<ApuShared> apu;
 
-    void rand_salt(char * const salt);
+    void rand_salt_string(char * salt, int saltLen);
 
 };
-
-static Apr *aprInt = NULL;
-static CSingletonLock slock;
 
 extern "C" DYNAPR_API Apr * newAprObject();
 extern "C" DYNAPR_API void destroyAprObject();

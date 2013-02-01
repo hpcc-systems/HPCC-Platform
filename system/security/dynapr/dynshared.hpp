@@ -25,11 +25,17 @@
 class DynInit
 {
 public:
+    DynInit(const char* _name=NULL) : name(_name)
+    {
+        init_s = false;
+    }
+
+    virtual ~DynInit() {}
     virtual void init() = 0;
     inline void checkInit()
     {
         if ( !init_s )
-            throw MakeStringException(-1, "Class not initialized [%s].", name->str());
+            throw MakeStringException(-1, "Class not initialized [%s].", name);
     }
 
     inline void setInit(bool status=false)
@@ -37,19 +43,11 @@ public:
         init_s=status;
     }
 
-    inline bool queryInit()
-    {
-        return init_s;
-    }
-
-    inline void setName(const char* _name)
-    {
-        name= new StringBuffer(_name);
-    }
-
 private:
+    const char *name;
+
+protected:
     bool init_s;
-    StringBuffer *name;
 
 };
 
