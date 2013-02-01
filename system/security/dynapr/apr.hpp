@@ -19,6 +19,7 @@
 #define APR_H
 
 #include "jlib.hpp"
+#include "jmutex.hpp"
 #include "jstring.hpp"
 #include "dynshared.hpp"
 #include "aprshared.hpp"
@@ -63,6 +64,10 @@ private:
 
 };
 
+static Apr *aprInt = NULL;
+static CSingletonLock slock;
+
 extern "C" DYNAPR_API Apr * newAprObject();
+extern "C" DYNAPR_API void destroyAprObject();
 
 #endif

@@ -26,6 +26,17 @@
 #define MAX_STRING_LEN 256
 #define SALT_LEN 9
 
+MODULE_INIT(INIT_PRIORITY_STANDARD)
+{
+    newAprObject();
+    return true;
+}
+
+MODULE_EXIT()
+{
+    destroyAprObject();
+}
+
 Apr::Apr()
 {
     setName("Apr");
@@ -94,6 +105,22 @@ extern "C"
 {
     DYNAPR_API Apr * newAprObject()
     {
-        return new Apr();
+        if (slock.lock())
+        {
+            if (!aprInt)
+                aprInt = new Apr();
+            slock.unlock();
+        }
+        return aprInt;
+    }
+
+    DYNAPR_API void destroyAprObject()
+    {
+        if (slock.lock())
+        {
+            delete aprInt;
+            aprInt = NULL;
+            slock.unlock();
+        }
     }
 }
