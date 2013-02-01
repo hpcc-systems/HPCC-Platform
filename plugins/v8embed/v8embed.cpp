@@ -17,10 +17,12 @@
 
 #include "platform.h"
 #include "v8.h"
-#include "eclrtl.hpp"
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
+#include "deftype.hpp"
+#include "eclrtl.hpp"
+#include "eclrtl_imp.hpp"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -119,10 +121,9 @@ public:
     virtual void bindStringParam(const char *name, size32_t len, const char *val)
     {
         size32_t utfCharCount;
-        char *utfText;
-        rtlStrToUtf8X(utfCharCount, utfText, len, val);
-        bindUTF8Param(name, utfCharCount, utfText);
-        rtlFree(utfText);
+        rtlDataAttr utfText;
+        rtlStrToUtf8X(utfCharCount, utfText.refstr(), len, val);
+        bindUTF8Param(name, utfCharCount, utfText.getstr());
     }
     virtual void bindVStringParam(const char *name, const char *val)
     {
@@ -140,7 +141,119 @@ public:
     }
     virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
     {
-        UNIMPLEMENTED;
+        if (isAll)
+            rtlFail(0, "v8embed: Cannot pass ALL");
+        v8::HandleScope handle_scope;
+        type_t typecode = (type_t) elemType;
+        const byte *inData = (const byte *) setData;
+        const byte *endData = inData + totalBytes;
+        int numElems;
+        if (elemSize == UNKNOWN_LENGTH)
+        {
+            numElems = 0;
+            // Will need 2 passes to work out how many elements there are in the set :(
+            while (inData < endData)
+            {
+                int thisSize;
+                switch (elemType)
+                {
+                case type_varstring:
+                    thisSize = strlen((const char *) inData) + 1;
+                    break;
+                case type_string:
+                    thisSize = * (size32_t *) inData + sizeof(size32_t);
+                    break;
+                case type_unicode:
+                    thisSize = (* (size32_t *) inData) * sizeof(UChar) + sizeof(size32_t);
+                    break;
+                case type_utf8:
+                    thisSize = rtlUtf8Size(* (size32_t *) inData, inData + sizeof(size32_t)) + sizeof(size32_t);;
+                    break;
+                default:
+                    rtlFail(0, "v8embed: Unsupported parameter type");
+                    break;
+                }
+                inData += thisSize;
+                numElems++;
+            }
+            inData = (const byte *) setData;
+        }
+        else
+            numElems = totalBytes / elemSize;
+        v8::Local<v8::Array> array = v8::Array::New(numElems);
+        v8::Handle<v8::Value> thisItem;
+        size32_t thisSize = elemSize;
+        for (int idx = 0; idx < numElems; idx++)
+        {
+            switch (typecode)
+            {
+            case type_int:
+                thisItem = v8::Integer::New(rtlReadInt(inData, elemSize));
+                break;
+            case type_unsigned:
+                thisItem = v8::Integer::NewFromUnsigned(rtlReadUInt(inData, elemSize));
+                break;
+            case type_varstring:
+            {
+                size32_t numChars = strlen((const char *) inData);
+                size32_t utfCharCount;
+                rtlDataAttr utfText;
+                rtlStrToUtf8X(utfCharCount, utfText.refstr(), numChars, (const char *) inData);
+                thisItem = v8::String::New(utfText.getstr(), rtlUtf8Size(utfCharCount, utfText.getstr()));
+                if (elemSize == UNKNOWN_LENGTH)
+                    thisSize = numChars + 1;
+                break;
+            }
+            case type_string:
+            {
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    thisSize = * (size32_t *) inData;
+                    inData += sizeof(size32_t);
+                }
+                size32_t utfCharCount;
+                rtlDataAttr utfText;
+                rtlStrToUtf8X(utfCharCount, utfText.refstr(), thisSize, (const char *) inData);
+                thisItem = v8::String::New(utfText.getstr(), rtlUtf8Size(utfCharCount, utfText.getstr()));
+                break;
+            }
+            case type_real:
+                if (elemSize == sizeof(double))
+                    thisItem = v8::Number::New(* (double *) inData);
+                else
+                    thisItem = v8::Number::New(* (float *) inData);
+                break;
+            case type_boolean:
+                assertex(elemSize == sizeof(bool));
+                thisItem = v8::Boolean::New(* (bool *) inData);
+                break;
+            case type_unicode:
+            {
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    thisSize = (* (size32_t *) inData) * sizeof(UChar); // NOTE - it's in chars...
+                    inData += sizeof(size32_t);
+                }
+                thisItem = v8::String::New((const UChar *) inData, thisSize/sizeof(UChar));
+                break;
+            }
+            case type_utf8:
+            {
+                assertex (elemSize == UNKNOWN_LENGTH);
+                size32_t numChars = * (size32_t *) inData;
+                inData += sizeof(size32_t);
+                thisSize = rtlUtf8Size(numChars, inData);
+                thisItem = v8::String::New((const char *) inData, thisSize);
+                break;
+            }
+            default:
+                rtlFail(0, "v8embed: Unsupported parameter type");
+                break;
+            }
+            inData += thisSize;
+            array->Set(v8::Number::New(idx), thisItem);
+        }
+        context->Global()->Set(v8::String::New(name), array);
     }
 
     virtual bool getBooleanResult()
@@ -205,7 +318,130 @@ public:
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
     {
-        UNIMPLEMENTED;
+        assertex (!result.IsEmpty());
+        if (!result->IsArray())
+            rtlFail(0, "v8embed: type mismatch - return value was not an array");
+        v8::HandleScope handle_scope;
+        v8::Handle<v8::Array> array = v8::Handle<v8::Array>::Cast(result);
+        size_t numResults = array->Length();
+        rtlRowBuilder out;
+        byte *outData = NULL;
+        size32_t outBytes = 0;
+        if (elemSize != UNKNOWN_LENGTH)
+        {
+            out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
+            outData = out.getbytes();
+        }
+        for (int i = 0; i < numResults; i++)
+        {
+            v8::Local<v8::Value> elem = array->Get(i);
+            if (elem.IsEmpty())
+                rtlFail(0, "v8embed: type mismatch - empty value in returned array");
+            switch ((type_t) elemType)
+            {
+            case type_int:
+                rtlWriteInt(outData, v8::Integer::Cast(*elem)->Value(), elemSize);
+                break;
+            case type_unsigned:
+                rtlWriteInt(outData, v8::Integer::Cast(*elem)->Value(), elemSize);
+                break;
+            case type_real:
+                if (elemSize == sizeof(double))
+                    * (double *) outData = (double) v8::Number::Cast(*elem)->Value();
+                else
+                {
+                    assertex(elemSize == sizeof(float));
+                    * (float *) outData = (float) v8::Number::Cast(*elem)->Value();
+                }
+                break;
+            case type_boolean:
+                assertex(elemSize == sizeof(bool));
+                * (bool *) outData = elem->BooleanValue();
+                break;
+            case type_string:
+            case type_varstring:
+            {
+                if (!elem->IsString())
+                    rtlFail(0, "v8embed: type mismatch - return value in list was not a STRING");
+                v8::String::AsciiValue ascii(elem);
+                const char * text =  *ascii;
+                size_t lenBytes = ascii.length();
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    if (elemType == type_string)
+                    {
+                        out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                        outData = out.getbytes() + outBytes;
+                        * (size32_t *) outData = lenBytes;
+                        rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                        outBytes += lenBytes + sizeof(size32_t);
+                    }
+                    else
+                    {
+                        out.ensureAvailable(outBytes + lenBytes + 1);
+                        outData = out.getbytes() + outBytes;
+                        rtlStrToVStr(0, outData, lenBytes, text);
+                        outBytes += lenBytes + 1;
+                    }
+                }
+                else
+                {
+                    if (elemType == type_string)
+                        rtlStrToStr(elemSize, outData, lenBytes, text);
+                    else
+                        rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
+                }
+                break;
+            }
+            case type_unicode:
+            case type_utf8:
+            {
+                if (!elem->IsString())
+                    rtlFail(0, "v8embed: type mismatch - return value in list was not a STRING");
+                v8::String::Utf8Value utf8(elem);
+                size_t lenBytes = utf8.length();
+                const char * text =  *utf8;
+                size32_t numchars = rtlUtf8Length(lenBytes, text);
+                if (elemType == type_utf8)
+                {
+                    assertex (elemSize == UNKNOWN_LENGTH);
+                    out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                    outData = out.getbytes() + outBytes;
+                    * (size32_t *) outData = numchars;
+                    rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                    outBytes += lenBytes + sizeof(size32_t);
+                }
+                else
+                {
+                    if (elemSize == UNKNOWN_LENGTH)
+                    {
+                        out.ensureAvailable(outBytes + numchars*sizeof(UChar) + sizeof(size32_t));
+                        outData = out.getbytes() + outBytes;
+                        // You can't assume that number of chars in utf8 matches number in unicode16 ...
+                        size32_t numchars16;
+                        rtlDataAttr unicode16;
+                        rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+                        * (size32_t *) outData = numchars16;
+                        rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
+                        outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
+                    }
+                    else
+                        rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
+                }
+                break;
+            }
+            default:
+                rtlFail(0, "v8embed: type mismatch - unsupported return type");
+            }
+            if (elemSize != UNKNOWN_LENGTH)
+            {
+                outData += elemSize;
+                outBytes += elemSize;
+            }
+        }
+        __isAllResult = false;
+        __resultBytes = outBytes;
+        __result = out.detachdata();
     }
 
     virtual void compileEmbeddedScript(size32_t lenChars, const char *utf)

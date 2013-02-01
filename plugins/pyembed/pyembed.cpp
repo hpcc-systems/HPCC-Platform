@@ -378,6 +378,9 @@ public:
             case type_int:
                 rtlWriteInt(outData, PyLong_AsLongLong(elem), elemSize);
                 break;
+            case type_unsigned:
+                rtlWriteInt(outData, PyLong_AsUnsignedLongLong(elem), elemSize);
+                break;
             case type_real:
                 if (!PyFloat_Check(elem))
                     rtlFail(0, "pyembed: type mismatch - return value in list was not a REAL");
@@ -566,6 +569,9 @@ public:
             {
             case type_int:
                 thisElem.setown(PyLong_FromLongLong(rtlReadInt(inData, elemSize)));
+                break;
+            case type_unsigned:
+                thisElem.setown(PyLong_FromUnsignedLongLong(rtlReadUInt(inData, elemSize)));
                 break;
             case type_varstring:
             {

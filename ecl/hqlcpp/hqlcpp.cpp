@@ -11499,10 +11499,16 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
             bindFunc = bindDataParamAtom;
             break;
         case type_set:
+        {
             bindFunc = bindSetParamAtom;
-            args.append(*createIntConstant(paramType->queryChildType()->getTypeCode()));
-            args.append(*createIntConstant(paramType->queryChildType()->getSize()));
+            ITypeInfo *childType = paramType->queryChildType();
+            type_t typeCode = childType->getTypeCode();
+            if (childType->isInteger() && !childType->isSigned())
+                typeCode = type_unsigned;
+            args.append(*createIntConstant(typeCode));
+            args.append(*createIntConstant(childType->getSize()));
             break;
+        }
         default:
             StringBuffer typeText;
             getFriendlyTypeStr(paramType, typeText);
@@ -11540,10 +11546,16 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         returnFunc = getDataResultAtom;
         break;
     case type_set:
+    {
         returnFunc = getSetResultAtom;
-        retargs.append(*createIntConstant(returnType->queryChildType()->getTypeCode()));
+        ITypeInfo *childType = returnType->queryChildType();
+        type_t typeCode = childType->getTypeCode();
+        if (childType->isInteger() && !childType->isSigned())
+            typeCode = type_unsigned;
+        retargs.append(*createIntConstant(typeCode));
         retargs.append(*createIntConstant(returnType->queryChildType()->getSize()));
         break;
+    }
     default:
         StringBuffer typeText;
         getFriendlyTypeStr(returnType, typeText);
