@@ -248,8 +248,6 @@ static bool isOptionTooLate(const char * name)
     if (stricmp(name, "importAllModules") == 0) return true;
     if (stricmp(name, "importImplicitModules") == 0) return true;
     if (stricmp(name, "noCache") == 0) return true;
-    if (stricmp(name, "linkOptions") == 0) return true;
-    if (stricmp(name, "compileOptions") == 0) return true;
     return false;
 }
 
