@@ -17,10 +17,12 @@
 
 #include "platform.h"
 #include <jni.h>
-#include "eclrtl.hpp"
 #include "jexcept.hpp"
 #include "jthread.hpp"
 #include "hqlplugins.hpp"
+#include "deftype.hpp"
+#include "eclrtl.hpp"
+#include "eclrtl_imp.hpp"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -119,6 +121,12 @@ MODULE_EXIT()
     globalState = NULL;
 }
 
+static void checkType(type_t javatype, size32_t javasize, type_t ecltype, size32_t eclsize)
+{
+    if (javatype != ecltype || javasize != eclsize)
+        throw MakeStringException(0, "javaembed: Type mismatch"); // MORE - could provide some details!
+}
+
 // There is a singleton JavaThreadContext per thread. This allows us to
 // ensure that we can make repeated calls to a Java function efficiently.
 
@@ -150,7 +158,9 @@ public:
             jmethodID throwableToString = JNIenv->GetMethodID(throwableClass, "toString", "()Ljava/lang/String;");
             jstring cause = (jstring) JNIenv->CallObjectMethod(exception, throwableToString);
             const char *text = JNIenv->GetStringUTFChars(cause, 0);
-            throw MakeStringException(MSGAUD_user, 0, "javaembed: In method %s: %s", prevtext.get(), text);
+            VStringBuffer message("javaembed: In method %s: %s", prevtext.get(), text);
+            JNIenv->ReleaseStringUTFChars(cause, text);
+            rtlFail(0, message.str());
         }
     }
 
@@ -291,7 +301,7 @@ public:
             break;
         }
         default:
-            throwUnexpected();
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
     }
     inline void getUTF8Result(jvalue &result, size32_t &__chars, char * &__result)
@@ -311,7 +321,7 @@ public:
             break;
         }
         default:
-            throwUnexpected();
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
     }
     inline void getUnicodeResult(jvalue &result, size32_t &__chars, UChar * &__result)
@@ -332,13 +342,146 @@ public:
             break;
         }
         default:
-            throwUnexpected();
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result");
         }
+    }
+    inline void getSetResult(jvalue &result, bool & __isAllResult, size32_t & __resultBytes, void * & __result, int _elemType, size32_t elemSize)
+    {
+        if (returnType.get()[0] != '[')
+            throw MakeStringException(MSGAUD_user, 0, "javaembed: Type mismatch on result (array expected)");
+        type_t elemType = (type_t) _elemType;
+        jarray array = (jarray) result.l;
+        int numResults = JNIenv->GetArrayLength(array);
+        rtlRowBuilder out;
+        byte *outData = NULL;
+        size32_t outBytes = 0;
+        if (elemSize != UNKNOWN_LENGTH)
+        {
+            out.ensureAvailable(numResults * elemSize); // MORE - check for overflow?
+            outData = out.getbytes();
+        }
+        switch(returnType.get()[1])
+        {
+        case 'Z':
+            checkType(type_boolean, sizeof(jboolean), elemType, elemSize);
+            JNIenv->GetBooleanArrayRegion((jbooleanArray) array, 0, numResults, (jboolean *) outData);
+            break;
+        case 'B':
+            checkType(type_int, sizeof(jbyte), elemType, elemSize);
+            JNIenv->GetByteArrayRegion((jbyteArray) array, 0, numResults, (jbyte *) outData);
+            break;
+        case 'C':
+            // we COULD map to a set of string1, but is there any point?
+            throw MakeStringException(0, "javaembed: Return type mismatch (char[] not supported)");
+            break;
+        case 'S':
+            checkType(type_int, sizeof(jshort), elemType, elemSize);
+            JNIenv->GetShortArrayRegion((jshortArray) array, 0, numResults, (jshort *) outData);
+            break;
+        case 'I':
+            checkType(type_int, sizeof(jint), elemType, elemSize);
+            JNIenv->GetIntArrayRegion((jintArray) array, 0, numResults, (jint *) outData);
+            break;
+        case 'J':
+            checkType(type_int, sizeof(jlong), elemType, elemSize);
+            JNIenv->GetLongArrayRegion((jlongArray) array, 0, numResults, (jlong *) outData);
+            break;
+        case 'F':
+            checkType(type_real, sizeof(jfloat), elemType, elemSize);
+            JNIenv->GetFloatArrayRegion((jfloatArray) array, 0, numResults, (jfloat *) outData);
+            break;
+        case 'D':
+            checkType(type_real, sizeof(jdouble), elemType, elemSize);
+            JNIenv->GetDoubleArrayRegion((jdoubleArray) array, 0, numResults, (jdouble *) outData);
+            break;
+        case 'L':
+            if (strcmp(returnType, "[Ljava/lang/String;") == 0)
+            {
+                for (int i = 0; i < numResults; i++)
+                {
+                    jstring elem = (jstring) JNIenv->GetObjectArrayElement((jobjectArray) array, i);
+                    size_t lenBytes = JNIenv->GetStringUTFLength(elem);  // in bytes
+                    const char *text =  JNIenv->GetStringUTFChars(elem, NULL);
+
+                    switch (elemType)
+                    {
+                    case type_string:
+                        if (elemSize == UNKNOWN_LENGTH)
+                        {
+                            out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                            outData = out.getbytes() + outBytes;
+                            * (size32_t *) outData = lenBytes;
+                            rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                            outBytes += lenBytes + sizeof(size32_t);
+                        }
+                        else
+                            rtlStrToStr(elemSize, outData, lenBytes, text);
+                        break;
+                    case type_varstring:
+                        if (elemSize == UNKNOWN_LENGTH)
+                        {
+                            out.ensureAvailable(outBytes + lenBytes + 1);
+                            outData = out.getbytes() + outBytes;
+                            rtlStrToVStr(0, outData, lenBytes, text);
+                            outBytes += lenBytes + 1;
+                        }
+                        else
+                            rtlStrToVStr(elemSize, outData, lenBytes, text);  // Fixed size null terminated strings... weird.
+                        break;
+                    case type_utf8:
+                    case type_unicode:
+                    {
+                        size32_t numchars = rtlUtf8Length(lenBytes, text);
+                        if (elemType == type_utf8)
+                        {
+                            assertex (elemSize == UNKNOWN_LENGTH);
+                            out.ensureAvailable(outBytes + lenBytes + sizeof(size32_t));
+                            outData = out.getbytes() + outBytes;
+                            * (size32_t *) outData = numchars;
+                            rtlStrToStr(lenBytes, outData+sizeof(size32_t), lenBytes, text);
+                            outBytes += lenBytes + sizeof(size32_t);
+                        }
+                        else
+                        {
+                            if (elemSize == UNKNOWN_LENGTH)
+                            {
+                                out.ensureAvailable(outBytes + numchars*sizeof(UChar) + sizeof(size32_t));
+                                outData = out.getbytes() + outBytes;
+                                // You can't assume that number of chars in utf8 matches number in unicode16 ...
+                                size32_t numchars16;
+                                rtlDataAttr unicode16;
+                                rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+                                * (size32_t *) outData = numchars16;
+                                rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
+                                outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
+                            }
+                            else
+                                rtlUtf8ToUnicode(elemSize / sizeof(UChar), (UChar *) outData, numchars, text);
+                        }
+                        break;
+                    }
+                    default:
+                        JNIenv->ReleaseStringUTFChars(elem, text);
+                        throw MakeStringException(0, "javaembed: Return type mismatch (ECL string type expected)");
+                    }
+                    JNIenv->ReleaseStringUTFChars(elem, text);
+                    if (elemSize != UNKNOWN_LENGTH)
+                        outData += elemSize;
+                }
+            }
+            else
+                throw MakeStringException(0, "javaembed: Return type mismatch (%s[] not supported)", returnType.get()+2);
+            break;
+        }
+        __isAllResult = false;
+        __resultBytes = elemSize == UNKNOWN_LENGTH ? outBytes : elemSize * numResults;
+        __result = out.detachdata();
     }
     inline const char *querySignature()
     {
         return argsig.get();
     }
+
 private:
     StringAttr returnType;
     StringAttr argsig;
@@ -397,7 +540,7 @@ public:
     }
     virtual void getSetResult(bool & __isAllResult, size32_t & __resultBytes, void * & __result, int elemType, size32_t elemSize)
     {
-        UNIMPLEMENTED;
+        sharedCtx->getSetResult(result, __isAllResult, __resultBytes, __result, elemType, elemSize);
     }
 
     virtual void bindBooleanParam(const char *name, bool val)
@@ -547,9 +690,160 @@ public:
         }
         addArg(v);
     }
-    virtual void bindSetParam(const char *name, int elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
+    virtual void bindSetParam(const char *name, int _elemType, size32_t elemSize, bool isAll, size32_t totalBytes, void *setData)
     {
-        UNIMPLEMENTED;
+        jvalue v;
+        if (*argsig != '[')
+            typeError("SET");
+        argsig++;
+        type_t elemType = (type_t) _elemType;
+        int numElems = totalBytes / elemSize;
+        switch(*argsig)
+        {
+        case 'Z':
+            checkType(type_boolean, sizeof(jboolean), elemType, elemSize);
+            v.l = sharedCtx->JNIenv->NewBooleanArray(numElems);
+            sharedCtx->JNIenv->SetBooleanArrayRegion((jbooleanArray) v.l, 0, numElems, (jboolean *) setData);
+            break;
+        case 'B':
+            checkType(type_int, sizeof(jbyte), elemType, elemSize);
+            v.l = sharedCtx->JNIenv->NewByteArray(numElems);
+            sharedCtx->JNIenv->SetByteArrayRegion((jbyteArray) v.l, 0, numElems, (jbyte *) setData);
+            break;
+        case 'C':
+            // we COULD map to a set of string1, but is there any point?
+            typeError("");
+            break;
+        case 'S':
+            checkType(type_int, sizeof(jshort), elemType, elemSize);
+            v.l = sharedCtx->JNIenv->NewShortArray(numElems);
+            sharedCtx->JNIenv->SetShortArrayRegion((jshortArray) v.l, 0, numElems, (jshort *) setData);
+            break;
+        case 'I':
+            checkType(type_int, sizeof(jint), elemType, elemSize);
+            v.l = sharedCtx->JNIenv->NewIntArray(numElems);
+            sharedCtx->JNIenv->SetIntArrayRegion((jintArray) v.l, 0, numElems, (jint *) setData);
+            break;
+        case 'J':
+            checkType(type_int, sizeof(jlong), elemType, elemSize);
+            v.l = sharedCtx->JNIenv->NewLongArray(numElems);
+            sharedCtx->JNIenv->SetLongArrayRegion((jlongArray) v.l, 0, numElems, (jlong *) setData);
+            break;
+        case 'F':
+            checkType(type_real, sizeof(jfloat), elemType, elemSize);
+            v.l = sharedCtx->JNIenv->NewFloatArray(numElems);
+            sharedCtx->JNIenv->SetFloatArrayRegion((jfloatArray) v.l, 0, numElems, (jfloat *) setData);
+            break;
+        case 'D':
+            checkType(type_real, sizeof(jdouble), elemType, elemSize);
+            v.l = sharedCtx->JNIenv->NewDoubleArray(numElems);
+            sharedCtx->JNIenv->SetDoubleArrayRegion((jdoubleArray) v.l, 0, numElems, (jdouble *) setData);
+            break;
+        case 'L':
+            if (strncmp(argsig, "Ljava/lang/String;", 18) == 0)
+            {
+                argsig += 17;  // Yes, 17, because we increment again at the end of the case
+                const byte *inData = (const byte *) setData;
+                const byte *endData = inData + totalBytes;
+                if (elemSize == UNKNOWN_LENGTH)
+                {
+                    numElems = 0;
+                    // Will need 2 passes to work out how many elements there are in the set :(
+                    while (inData < endData)
+                    {
+                        int thisSize;
+                        switch (elemType)
+                        {
+                        case type_varstring:
+                            thisSize = strlen((const char *) inData) + 1;
+                            break;
+                        case type_string:
+                            thisSize = * (size32_t *) inData + sizeof(size32_t);
+                            break;
+                        case type_unicode:
+                            thisSize = (* (size32_t *) inData) * sizeof(UChar) + sizeof(size32_t);
+                            break;
+                        case type_utf8:
+                            thisSize = rtlUtf8Size(* (size32_t *) inData, inData + sizeof(size32_t)) + sizeof(size32_t);;
+                            break;
+                        default:
+                            typeError("STRING");
+                        }
+                        inData += thisSize;
+                        numElems++;
+                    }
+                    inData = (const byte *) setData;
+                }
+                int idx = 0;
+                v.l = sharedCtx->JNIenv->NewObjectArray(numElems, sharedCtx->JNIenv->FindClass("java/lang/String"), NULL);
+                while (inData < endData)
+                {
+                    jstring thisElem;
+                    size32_t thisSize = elemSize;
+                    switch (elemType)
+                    {
+                    case type_varstring:
+                    {
+                        size32_t numChars = strlen((const char *) inData);
+                        unsigned unicodeChars;
+                        rtlDataAttr unicode;
+                        rtlStrToUnicodeX(unicodeChars, unicode.refustr(), numChars, (const char *) inData);
+                        thisElem = sharedCtx->JNIenv->NewString(unicode.getustr(), unicodeChars);
+                        if (elemSize == UNKNOWN_LENGTH)
+                            thisSize = numChars + 1;
+                        break;
+                    }
+                    case type_string:
+                    {
+                        if (elemSize == UNKNOWN_LENGTH)
+                        {
+                            thisSize = * (size32_t *) inData;
+                            inData += sizeof(size32_t);
+                        }
+                        unsigned unicodeChars;
+                        rtlDataAttr unicode;
+                        rtlStrToUnicodeX(unicodeChars, unicode.refustr(), thisSize, (const char *) inData);
+                        thisElem = sharedCtx->JNIenv->NewString(unicode.getustr(), unicodeChars);
+                        break;
+                    }
+                    case type_unicode:
+                    {
+                        if (elemSize == UNKNOWN_LENGTH)
+                        {
+                            thisSize = (* (size32_t *) inData) * sizeof(UChar); // NOTE - it's in chars...
+                            inData += sizeof(size32_t);
+                        }
+                        thisElem = sharedCtx->JNIenv->NewString((const UChar *) inData, thisSize / sizeof(UChar));
+                        //checkJPythonError();
+                        break;
+                    }
+                    case type_utf8:
+                    {
+                        assertex (elemSize == UNKNOWN_LENGTH);
+                        size32_t numChars = * (size32_t *) inData;
+                        inData += sizeof(size32_t);
+                        unsigned unicodeChars;
+                        rtlDataAttr unicode;
+                        rtlUtf8ToUnicodeX(unicodeChars, unicode.refustr(), numChars, (const char *) inData);
+                        thisElem = sharedCtx->JNIenv->NewString(unicode.getustr(), unicodeChars);
+                        thisSize = rtlUtf8Size(numChars, inData);
+                        break;
+                    }
+                    default:
+                        typeError("STRING");
+                    }
+                    sharedCtx->checkException();
+                    inData += thisSize;
+                    sharedCtx->JNIenv->SetObjectArrayElement((jobjectArray) v.l, idx, thisElem);
+                    idx++;
+                }
+            }
+            else
+                typeError("");
+            break;
+        }
+        argsig++;
+        addArg(v);
     }
 
     virtual void importFunction(size32_t lenChars, const char *utf)
@@ -572,6 +866,7 @@ protected:
     JavaThreadContext *sharedCtx;
     jvalue result;
 private:
+
     void typeError(const char *ECLtype)
     {
         const char *javaType;
@@ -586,6 +881,7 @@ private:
         case 'J': javaType = "long"; break;
         case 'F': javaType = "float"; break;
         case 'D': javaType = "double"; break;
+        case '[': javaType = "array"; break;
         case 'L':
             {
                 javaType = argsig+1;
