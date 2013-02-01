@@ -7344,6 +7344,7 @@ protected:
     bool expandAssignElement(IHqlExpression * expr);
 
     bool processElement(IHqlExpression * expr, IHqlExpression * parentSelector);
+    bool processFieldValue(IHqlExpression * optField, ITypeInfo * lhsType, IHqlExpression * rhs);
     bool processRecord(IHqlExpression * record, IHqlExpression * parentSelector);
 
     IHqlExpression * queryMatchingAssign(IHqlExpression * self, IHqlExpression * search);
@@ -7414,6 +7415,150 @@ IHqlExpression * ConstantRowCreator::queryMatchingAssign(IHqlExpression * self, 
     throwUnexpected();
 }
 
+bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * lhsType, IHqlExpression * rhs)
+{
+    size32_t lenLhs = lhsType->getStringLen();
+    size32_t sizeLhs  = lhsType->getSize();
+    node_operator rhsOp = rhs->getOperator();
+
+    switch (lhsType->getTypeCode())
+    {
+    case type_packedint:
+        if (!rhs->queryValue())
+            return false;
+        //MORE: Could handle this...
+        return false;
+    case type_set:
+        if (isNullList(rhs))
+        {
+            out.append(false);
+            rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
+            return true;
+        }
+        if (rhsOp == no_all)
+        {
+            out.append(true);
+            rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
+            return true;
+        }
+        if (rhsOp == no_list)
+        {
+            ITypeInfo * elemType = lhsType->queryChildType();
+            out.append(false);
+            unsigned patchOffset = out.length();
+            out.reserve(sizeof(size32_t));
+            const size_t startOffset = out.length();
+            ForEachChild(i, rhs)
+            {
+                if (!processFieldValue(NULL, elemType, rhs->queryChild(i)))
+                    return false;
+            }
+            const size_t setLength = out.length() - startOffset;
+            out.writeDirect(patchOffset, sizeof(size32_t), &setLength);
+            byte * patchPos = (byte *)out.bufferBase() + patchOffset;
+            rtlWriteSize32t(patchPos, setLength);
+            return true;
+        }
+        return false;
+    case type_row:
+        if (rhsOp == no_null)
+            return createConstantNullRow(out, queryOriginalRecord(lhsType));
+        if (rhsOp == no_createrow)
+            return createConstantRow(out, rhs->queryChild(0));
+        return false;
+    case type_dictionary:
+    case type_table:
+    case type_groupedtable:
+        {
+            assertex(optLhs);
+            IHqlExpression * field = optLhs->queryChild(1);
+            if (!field->hasProperty(countAtom) && !field->hasProperty(sizeofAtom))
+            {
+                if (rhsOp == no_null)
+                {
+                    if (field->hasProperty(_linkCounted_Atom))
+                    {
+                        rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
+                        memset(out.reserve(sizeof(byte * *)), 0, sizeof(byte * *));
+                    }
+                    else
+                        rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
+                    return true;
+                }
+                //MORE: Could expand if doesn't have linkcounted, but less likely these days.
+            }
+            return false;
+        }
+    }
+
+    if ((lenLhs != UNKNOWN_LENGTH) && (lenLhs > maxSensibleInlineElementSize))
+        return false;
+
+    OwnedHqlExpr castRhs = ensureExprType(rhs, lhsType);
+    IValue * castValue = castRhs->queryValue();
+    if (!castValue)
+        return false;
+    
+    if (optLhs && mapper)
+        mapper->setMapping(optLhs, castRhs);
+
+    ITypeInfo * castValueType = castValue->queryType();
+    size32_t lenValue = castValueType->getStringLen();
+    assertex(lenLhs == UNKNOWN_LENGTH || lenLhs == lenValue);
+
+    switch (lhsType->getTypeCode())
+    {
+    case type_boolean:
+    case type_int:
+    case type_swapint:
+    case type_real:
+    case type_decimal:
+        {
+            void * temp = out.reserve(sizeLhs);
+            castValue->toMem(temp);
+            return true;
+        }
+    case type_data:
+    case type_string:
+        {
+            if (lenLhs == UNKNOWN_LENGTH)
+                rtlWriteInt4(out.reserve(sizeof(size32_t)), lenValue);
+            castValue->toMem(out.reserve(lenValue));
+            return true;
+        }
+    case type_varstring:
+        {
+            //Move to else
+            if (sizeLhs == UNKNOWN_LENGTH)
+            {
+                void * target = out.reserve(lenValue+1);
+                castValue->toMem(target);
+            }
+            else
+            {
+                //Disabled for the moment to prevent the size of generated expressions getting too big.
+                if (sizeLhs > 40)
+                    return false;
+                void * target = out.reserve(sizeLhs);
+                memset(target, ' ', sizeLhs);   // spaces expand better in the c++
+                castValue->toMem(target);
+            }
+            return true;
+        }
+    case type_unicode:
+    case type_qstring:
+        {
+            if (lenLhs == UNKNOWN_LENGTH)
+                rtlWriteInt4(out.reserve(sizeof(size32_t)), lenValue);
+            castValue->toMem(out.reserve(castValueType->getSize()));
+            return true;
+        }
+    //MORE:
+    //type_varunicode
+    //type_packedint
+    }
+    return false;
+}
 
 bool ConstantRowCreator::processElement(IHqlExpression * expr, IHqlExpression * parentSelector)
 {
@@ -7443,128 +7588,7 @@ bool ConstantRowCreator::processElement(IHqlExpression * expr, IHqlExpression * 
             if (!match || (match->getOperator() != no_assign))
                 return false;
 
-            ITypeInfo * lhsType = expr->queryType();
-            size32_t lenLhs = lhsType->getStringLen();
-            size32_t sizeLhs  = lhsType->getSize();
-            IHqlExpression * rhs = match->queryChild(1);
-            node_operator rhsOp = rhs->getOperator();
-
-            switch (lhsType->getTypeCode())
-            {
-            case type_packedint:
-                if (!rhs->queryValue())
-                    return false;
-                //MORE: Could handle this...
-                return false;
-            case type_set:
-                if (isNullList(rhs))
-                {
-                    out.append(false);
-                    rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
-                    return true;
-                }
-                if (rhsOp == no_all)
-                {
-                    out.append(true);
-                    rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
-                    return true;
-                }
-                return false;
-            case type_row:
-                if (rhsOp == no_null)
-                    return createConstantNullRow(out, queryOriginalRecord(lhsType));
-                if (rhsOp == no_createrow)
-                    return createConstantRow(out, rhs->queryChild(0));
-                return false;
-            case type_dictionary:
-            case type_table:
-            case type_groupedtable:
-                if (!expr->hasProperty(countAtom) && !expr->hasProperty(sizeofAtom))
-                {
-                    if (rhsOp == no_null)
-                    {
-                        if (expr->hasProperty(_linkCounted_Atom))
-                        {
-                            rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
-                            memset(out.reserve(sizeof(byte * *)), 0, sizeof(byte * *));
-                        }
-                        else
-                            rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
-                        return true;
-                    }
-                    //MORE: Could expand if doesn't have linkcounted, but less likely these days.
-                }
-                return false;
-            }
-
-            if ((lenLhs != UNKNOWN_LENGTH) && (lenLhs > maxSensibleInlineElementSize))
-                return false;
-
-            OwnedHqlExpr castRhs = ensureExprType(rhs, lhsType);
-            IValue * castValue = castRhs->queryValue();
-            if (!castValue)
-                return false;
-            
-            IHqlExpression * lhs = match->queryChild(0);
-            if (mapper)
-                mapper->setMapping(lhs, castRhs);
-
-            ITypeInfo * castValueType = castValue->queryType();
-            size32_t lenValue = castValueType->getStringLen();
-            assertex(lenLhs == UNKNOWN_LENGTH || lenLhs == lenValue);
-
-            switch (lhsType->getTypeCode())
-            {
-            case type_boolean:
-            case type_int:
-            case type_swapint:
-            case type_real:
-            case type_decimal:
-                {
-                    void * temp = out.reserve(sizeLhs);
-                    castValue->toMem(temp);
-                    return true;
-                }
-            case type_data:
-            case type_string:
-                {
-                    if (lenLhs == UNKNOWN_LENGTH)
-                        rtlWriteInt4(out.reserve(sizeof(size32_t)), lenValue);
-                    castValue->toMem(out.reserve(lenValue));
-                    return true;
-                }
-            case type_varstring:
-                {
-                    //Move to else
-                    if (sizeLhs == UNKNOWN_LENGTH)
-                    {
-                        void * target = out.reserve(lenValue+1);
-                        castValue->toMem(target);
-                    }
-                    else
-                    {
-                        //Disabled for the moment to prevent the size of generated expressions getting too big.
-                        if (sizeLhs > 40)
-                            return false;
-                        void * target = out.reserve(sizeLhs);
-                        memset(target, ' ', sizeLhs);   // spaces expand better in the c++
-                        castValue->toMem(target);
-                    }
-                    return true;
-                }
-            case type_unicode:
-            case type_qstring:
-                {
-                    if (lenLhs == UNKNOWN_LENGTH)
-                        rtlWriteInt4(out.reserve(sizeof(size32_t)), lenValue);
-                    castValue->toMem(out.reserve(castValueType->getSize()));
-                    return true;
-                }
-            //MORE:
-            //type_varunicode
-            //type_packedint
-            }
-            return false;
+            return processFieldValue(match->queryChild(0), expr->queryType(), match->queryChild(1));
         }
     default:
         return true;
