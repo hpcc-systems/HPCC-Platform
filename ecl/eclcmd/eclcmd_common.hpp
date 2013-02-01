@@ -66,6 +66,7 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_DONT_COPY_FILES "--no-files"
 
+#define ECLOPT_INACTIVE "--inactive"
 #define ECLOPT_NO_ACTIVATE "--no-activate"
 #define ECLOPT_ACTIVATE "--activate"
 #define ECLOPT_ACTIVATE_S "-A"

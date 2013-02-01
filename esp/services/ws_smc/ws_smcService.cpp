@@ -493,12 +493,17 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         SecAccessFlags access;
         bool fullAccess=(context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full);
 
+        Owned<IRemoteConnection> connEnv = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+        IPropertyTree* envRoot = connEnv->queryRoot();
+        if (!envRoot)
+            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
+
         IArrayOf<IEspThorCluster> ThorClusters;
         IArrayOf<IEspHThorCluster> HThorClusters;
         IArrayOf<IEspRoxieCluster> RoxieClusters;
 
         CConstWUClusterInfoArray clusters;
-        getEnvironmentClusterInfo(clusters);
+        getEnvironmentClusterInfo(envRoot, clusters);
         ForEachItemIn(c, clusters)
         {
             IConstWUClusterInfo &cluster = clusters.item(c);
@@ -593,7 +598,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         IArrayOf<IEspServerJobQueue> serverJobQueues;
         IArrayOf<IConstTpEclServer> eclccservers;
         CTpWrapper dummy;
-        dummy.getTpEclCCServers(eclccservers);
+        dummy.getTpEclCCServers(envRoot->queryBranch("Software"), eclccservers);
         ForEachItemIn(x1, eclccservers)
         {
             IConstTpEclServer& eclccserver = eclccservers.item(x1);
@@ -634,13 +639,9 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             }
         }
 
-        Owned<IPropertyTree> pEnvRoot = dummy.getEnvironment("");
-        if (!pEnvRoot)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_ENV_INFO,"Failed to get environment information.");
-
         StringBuffer dirxpath;
-        dirxpath.append("Software/DfuServerProcess");
-        Owned<IPropertyTreeIterator> services = pEnvRoot->getElements(dirxpath);
+        dirxpath.appendf("Software/%s", eqDfu);
+        Owned<IPropertyTreeIterator> services = envRoot->getElements(dirxpath);
 
         if (services->first())
         {

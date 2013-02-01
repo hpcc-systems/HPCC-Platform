@@ -33,7 +33,7 @@ void JavaHashTableOf<ELEMENT>::onRemove(void * et)
 template <class ELEMENT>
 bool JavaHashTableOf<ELEMENT>::addOwn(ELEMENT & donor)
 {
-    if(add(donor))
+    if(this->add(donor))
     {
         donor.Release();
         return true;
@@ -44,7 +44,7 @@ bool JavaHashTableOf<ELEMENT>::addOwn(ELEMENT & donor)
 template <class ELEMENT>
 bool JavaHashTableOf<ELEMENT>::replaceOwn(ELEMENT & donor)
 {
-    if(replace(donor))
+    if(this->replace(donor))
     {
         donor.Release();
         return true;

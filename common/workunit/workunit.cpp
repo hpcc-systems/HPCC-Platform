@@ -4240,11 +4240,20 @@ unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters)
     Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
     if (!conn)
         return 0;
-    Owned<IPropertyTreeIterator> clusterIter = conn->queryRoot()->getElements("Software/Topology/Cluster");
+
+    return getEnvironmentClusterInfo(conn->queryRoot(), clusters);
+}
+
+unsigned getEnvironmentClusterInfo(IPropertyTree* environmentRoot, CConstWUClusterInfoArray &clusters)
+{
+    if (!environmentRoot)
+        return 0;
+
+    Owned<IPropertyTreeIterator> clusterIter = environmentRoot->getElements("Software/Topology/Cluster");
     ForEach(*clusterIter)
     {
         IPropertyTree &node = clusterIter->query();
-        Owned<IConstWUClusterInfo> cluster = getTargetClusterInfo(conn->queryRoot(), &node);
+        Owned<IConstWUClusterInfo> cluster = getTargetClusterInfo(environmentRoot, &node);
         clusters.append(*cluster.getClear());
     }
     return clusters.ordinality();

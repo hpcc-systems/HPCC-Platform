@@ -84,11 +84,12 @@ private:
 #define QUERYLIST_SHOW_ACTIVE               0x02
 #define QUERYLIST_SHOW_SUSPENDED            0x04
 #define QUERYLIST_SHOW_CLUSTER_SUSPENDED    0x08
+#define QUERYLIST_SHOW_INACTIVE             (QUERYLIST_SHOW_UNFLAGGED | QUERYLIST_SHOW_SUSPENDED | QUERYLIST_SHOW_CLUSTER_SUSPENDED)
 
 class EclCmdQueriesList : public EclCmdCommon
 {
 public:
-    EclCmdQueriesList() : flags(0)
+    EclCmdQueriesList() : flags(0), optInactive(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -110,6 +111,8 @@ public:
             if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
                 continue;
             if (iter.matchOption(optTargetCluster, ECLOPT_TARGET)||iter.matchOption(optTargetCluster, ECLOPT_TARGET_S))
+                continue;
+            if (iter.matchFlag(optInactive, ECLOPT_INACTIVE))
                 continue;
             StringAttr temp;
             if (iter.matchOption(temp, ECLOPT_SHOW))
@@ -144,6 +147,16 @@ public:
     }
     virtual bool finalizeOptions(IProperties *globals)
     {
+        if (optInactive)
+        {
+            if (flags)
+            {
+                fputs("--show and --inactive should not be used together.\n\n", stderr);
+                return false;
+            }
+
+            flags = QUERYLIST_SHOW_INACTIVE;
+        }
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
         return true;
@@ -261,6 +274,7 @@ public:
             "   <queryset>             name of queryset to get list of queries for\n"
             "   -t, --target=<val>     target cluster to get list of published queries for\n"
             "   --show=<flags>         show only queries with matching flags\n"
+            "   --inactive             show only queries that do not have an active alias\n"
             " Flags:\n"
             "   A                      query is active\n"
             "   S                      query is suspended in queryset\n"
@@ -274,6 +288,7 @@ private:
     StringAttr optTargetCluster;
     StringAttr optQuerySet;
     unsigned flags;
+    bool optInactive;
 };
 
 class EclCmdQueriesCopy : public EclCmdCommon
