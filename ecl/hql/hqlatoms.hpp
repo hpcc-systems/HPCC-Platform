@@ -45,7 +45,6 @@ extern HQL_API _ATOM _attrAligned_Atom;
 extern HQL_API _ATOM _attrDiskSerializedForm_Atom;
 extern HQL_API _ATOM _attrInternalSerializedForm_Atom;
 extern HQL_API _ATOM _attrLocationIndependent_Atom;
-extern HQL_API _ATOM _attrMemorySerializedForm_Atom;
 extern HQL_API _ATOM _attrRecordCount_Atom;
 extern HQL_API _ATOM _attrSize_Atom;
 extern HQL_API _ATOM _attrUnadorned_Atom;
@@ -390,7 +389,6 @@ enum
     EArecordCount,
     EAdiskserializedForm,
     EAinternalserializedForm,
-    EAmemoryserializedForm,
     EAsize,
     EAaligned,
     EAunadorned,

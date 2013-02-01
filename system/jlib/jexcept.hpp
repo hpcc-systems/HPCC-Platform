@@ -141,6 +141,7 @@ void jlib_decl setTerminateOnSEH(bool set=true);
 
 #define makeUnexpectedException()  MakeStringException(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
 #define throwUnexpected()          throw MakeStringException(9999, "Internal Error at %s(%d)", __FILE__, __LINE__)
+#define throwUnexpectedX(x)        throw MakeStringException(9999, "Internal Error '" x "' at %s(%d)", __FILE__, __LINE__)
 #define assertThrow(x)             assertex(x)
 
 #define UNIMPLEMENTED throw MakeStringException(-1, "UNIMPLEMENTED feature at %s(%d)", __FILE__, __LINE__)

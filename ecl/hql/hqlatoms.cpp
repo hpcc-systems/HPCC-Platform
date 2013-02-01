@@ -42,7 +42,6 @@ _ATOM _attrAligned_Atom;
 _ATOM _attrDiskSerializedForm_Atom;
 _ATOM _attrInternalSerializedForm_Atom;
 _ATOM _attrLocationIndependent_Atom;
-_ATOM _attrMemorySerializedForm_Atom;
 _ATOM _attrRecordCount_Atom;
 _ATOM _attrSize_Atom;
 _ATOM _attrUnadorned_Atom;
@@ -425,7 +424,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKESYSATOM(attrRecordCount)->setAttrId(EArecordCount);
     MAKESYSATOM(attrDiskSerializedForm)->setAttrId(EAdiskserializedForm);
     MAKESYSATOM(attrInternalSerializedForm)->setAttrId(EAinternalserializedForm);
-    MAKESYSATOM(attrMemorySerializedForm)->setAttrId(EAmemoryserializedForm);
     MAKESYSATOM(attrSize)->setAttrId(EAsize);
     MAKESYSATOM(attrUnadorned)->setAttrId(EAunadorned);
     MAKEATOM(ave);

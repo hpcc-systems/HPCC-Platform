@@ -41,7 +41,6 @@ inline bool isFixedSizeRecord(IHqlExpression * record) { return !isVariableSizeR
 
 extern HQL_API bool recordRequiresLinkCount(IHqlExpression * expr);
 extern HQL_API bool recordRequiresDestructor(IHqlExpression * expr);
-//extern HQL_API bool recordRequiresSerialization(IHqlExpression * expr);
 extern HQL_API bool recordRequiresSerialization(IHqlExpression * expr, _ATOM serializeForm);
 extern HQL_API bool typeRequiresDeserialization(ITypeInfo * type, _ATOM serializeForm); // or can we use the serialized form directly
 extern HQL_API bool recordSerializationDiffers(IHqlExpression * expr, _ATOM serializeForm1, _ATOM serializeForm2);

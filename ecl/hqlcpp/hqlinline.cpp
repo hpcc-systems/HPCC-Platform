@@ -1508,7 +1508,7 @@ void ClassEvalContext::createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, I
     const _ATOM serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
     CHqlBoundTarget tempTarget;
     translator.buildTempExpr(*ctxs.evalctx, ctxs.declarectx, tempTarget, value, FormatNatural, false);
-    ensureSerialized(ctxs, tempTarget, serializeForm);  // MORE: Check modifying this changes the serialized data
+    ensureSerialized(ctxs, tempTarget, serializeForm);
 
     tgt.setFromTarget(tempTarget);
     ctxs.declarectx.associateExpr(value, tgt);

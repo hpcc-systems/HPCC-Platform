@@ -4492,9 +4492,7 @@ void HqlCppTranslator::ensureRowSerializer(StringBuffer & serializerName, BuildC
     else if (format == internalAtom)
         s.append(".createInternal").append(kindText);
     else
-    {
-        UNIMPLEMENTED;
-    }
+        throwUnexpected();
 
     s.append("(ctx, ");
     OwnedHqlExpr activityId = getCurrentActivityId(ctx);

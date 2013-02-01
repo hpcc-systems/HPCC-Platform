@@ -772,8 +772,6 @@ static IHqlExpression * querySerializedForm(IHqlExpression * expr, _ATOM variati
             attrName = _attrDiskSerializedForm_Atom;
         else if (variation == internalAtom)
             attrName = _attrInternalSerializedForm_Atom;
-        else if (variation == memoryAtom)
-            attrName = _attrMemorySerializedForm_Atom;
         else
             throwUnexpected();
 
@@ -3701,8 +3699,6 @@ IHqlExpression * CHqlExpression::queryAttribute(_ATOM propName)
         return evaluateAttrSerializedForm(this, _attrDiskSerializedForm_Atom, diskAtom);
     case EAinternalserializedForm:
         return evaluateAttrSerializedForm(this, _attrInternalSerializedForm_Atom, internalAtom);
-    case EAmemoryserializedForm:
-        return evaluateAttrSerializedForm(this, _attrMemorySerializedForm_Atom, memoryAtom);
     case EAsize:
         return evaluateAttrSize(this);
     case EAaligned:

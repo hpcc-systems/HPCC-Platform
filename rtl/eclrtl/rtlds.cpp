@@ -963,7 +963,8 @@ extern ECLRTL_API byte * rtlDeserializeBufferRow(IEngineRowAllocator * rowAlloca
 
 extern ECLRTL_API byte * rtlDeserializeRow(IEngineRowAllocator * rowAllocator, IOutputRowDeserializer * deserializer, const void * src)
 {
-    Owned<ISerialStream> stream = createMemorySerialStream(src, 0x7fffffff);
+    const size32_t unknownSourceLength = 0x7fffffff;
+    Owned<ISerialStream> stream = createMemorySerialStream(src, unknownSourceLength);
     CThorStreamDeserializerSource source(stream);
 
     RtlDynamicRowBuilder rowBuilder(rowAllocator);
@@ -974,7 +975,8 @@ extern ECLRTL_API byte * rtlDeserializeRow(IEngineRowAllocator * rowAllocator, I
 
 extern ECLRTL_API size32_t rtlDeserializeToBuilder(ARowBuilder & builder, IOutputRowDeserializer * deserializer, const void * src)
 {
-    Owned<ISerialStream> stream = createMemorySerialStream(src, 0x7fffffff);
+    const size32_t unknownSourceLength = 0x7fffffff;
+    Owned<ISerialStream> stream = createMemorySerialStream(src, unknownSourceLength);
     CThorStreamDeserializerSource source(stream);
     return deserializer->deserialize(builder, source);
 }
