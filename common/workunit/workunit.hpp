@@ -1150,6 +1150,7 @@ extern WORKUNIT_API bool validateTargetClusterName(const char *clustname);
 extern WORKUNIT_API IConstWUClusterInfo* getTargetClusterInfo(const char *clustname);
 typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
 extern WORKUNIT_API unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters);
+extern WORKUNIT_API unsigned getEnvironmentClusterInfo(IPropertyTree* environmentRoot, CConstWUClusterInfoArray &clusters);
 extern WORKUNIT_API void getRoxieProcessServers(const char *process, SocketEndpointArray &servers);
 
 
