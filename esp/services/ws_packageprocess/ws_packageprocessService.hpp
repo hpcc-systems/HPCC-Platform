@@ -50,6 +50,7 @@ public:
     virtual bool onActivatePackage(IEspContext &context, IEspActivatePackageRequest &req, IEspActivatePackageResponse &resp);
     virtual bool onDeActivatePackage(IEspContext &context, IEspDeActivatePackageRequest &req, IEspDeActivatePackageResponse &resp);
     virtual bool onListPackage(IEspContext &context, IEspListPackageRequest &req, IEspListPackageResponse &resp);
+    virtual bool onListPackageMapInfo(IEspContext &context, IEspListPackageMapInfoRequest &req, IEspListPackageMapInfoResponse &resp);
     virtual bool onGetPackage(IEspContext &context, IEspGetPackageRequest &req, IEspGetPackageResponse &resp);
 };
 

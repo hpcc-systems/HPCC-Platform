@@ -329,6 +329,56 @@ void listPkgInfo(const char *target, const char *process, IArrayOf<IConstPackage
         }
     }
 }
+void listPkgMapInfo(const char *id, IArrayOf<IConstPackageMapInfoData>* results)
+{
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    if (!globalLock)
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali /PackageMaps");
+    IPropertyTree *root = globalLock->queryRoot();
+    StringBuffer xpath("PackageMap");
+    if (id && *id)
+        xpath.appendf("[@id='%s']", id);
+    Owned<IPropertyTreeIterator> iter = root->getElements(xpath.str());
+    ForEach(*iter)
+    {
+        IPropertyTree &item = iter->query();
+        Owned<IEspPackageMapInfoData> res = createPackageMapInfoData("", "");
+        res->setId(item.queryProp("@id"));
+
+        IArrayOf<IEspSuperFileInfo> super_results;
+        IArrayOf<IEspPkgInfo> pkgInfo;
+
+        Owned<IPropertyTreeIterator> pkg_iter = item.getElements("Package");
+        ForEach(*pkg_iter)
+        {
+            IPropertyTree &pkg_item = pkg_iter->query();
+            Owned<IEspPkgInfo> pkg_res = createPkgInfo("", "");
+            pkg_res->setId(pkg_item.queryProp("@id"));
+            pkg_res->setQueries(pkg_item.queryProp("@queries"));
+            pkg_res->setDaliip(pkg_item.queryProp("@daliip"));
+
+            Owned<IPropertyTreeIterator> super_iter = pkg_item.getElements("SuperFile");
+            ForEach(*super_iter)
+            {
+                Owned<IEspSuperFileInfo> super_res = createSuperFileInfo("", "");
+                IPropertyTree &superFile = super_iter->query();
+                super_res->setId(superFile.queryProp("@id"));
+
+                Owned<IPropertyTreeIterator> sub_iter = superFile.getElements("SubFile");
+                StringArray subNames;
+                ForEach(*sub_iter)
+                    subNames.append(sub_iter->query().queryProp("@value"));
+                super_res->setSubFiles(subNames);
+                super_results.append(*super_res.getClear());
+            }
+            pkg_res->setSuperFileContents(super_results);
+            pkgInfo.append(*pkg_res.getClear());
+        }
+
+        res->setPackageInfo(pkgInfo);
+        results->append(*res.getClear());
+    }
+}
 void getPkgInfo(const char *target, const char *process, StringBuffer &info)
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
@@ -504,6 +554,16 @@ bool CWsPackageProcessEx::onListPackage(IEspContext &context, IEspListPackageReq
     StringAttr process(req.getProcess());
     listPkgInfo(req.getTarget(), process.length() ? process.get() : "*", &results);
     resp.setPkgListMapData(results);
+    return true;
+}
+
+bool CWsPackageProcessEx::onListPackageMapInfo(IEspContext &context, IEspListPackageMapInfoRequest &req, IEspListPackageMapInfoResponse &resp)
+{
+    resp.updateStatus().setCode(0);
+    IArrayOf<IConstPackageMapInfoData> results;
+    StringAttr id(req.getId());
+    listPkgMapInfo(req.getId(), &results);
+    resp.setPkgMapInfoData(results);
     return true;
 }
 

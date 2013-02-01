@@ -107,6 +107,37 @@ ESPresponse [exceptions_inline] ListPackageResponse
     ESParray<ESPstruct PackageListMapData> PkgListMapData;
 };
 
+ESPrequest ListPackageMapInfoRequest
+{
+    string Id;
+};
+
+ESPstruct SuperFileInfo
+{
+    string Id;
+    ESParray<string> SubFiles;
+};
+
+ESPstruct PkgInfo
+{
+    string Id;
+    string Queries;
+    string Daliip;
+    ESParray<ESPstruct SuperFileInfo> SuperFileContents;
+};
+
+ESPstruct PackageMapInfoData
+{
+    string Id;
+    ESParray<ESPstruct PkgInfo> PackageInfo;
+};
+
+ESPresponse [exceptions_inline] ListPackageMapInfoResponse
+{
+    ESPstruct BasePackageStatus status;
+    ESParray<ESPstruct PackageMapInfoData> PkgMapInfoData;
+};
+
 ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
@@ -115,6 +146,7 @@ ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("
     ESPmethod ActivatePackage(ActivatePackageRequest, ActivatePackageResponse);
     ESPmethod DeActivatePackage(DeActivatePackageRequest, DeActivatePackageResponse);
     ESPmethod ListPackage(ListPackageRequest, ListPackageResponse);
+    ESPmethod ListPackageMapInfo(ListPackageMapInfoRequest, ListPackageMapInfoResponse);
     ESPmethod GetPackage(GetPackageRequest, GetPackageResponse);
 };
 
