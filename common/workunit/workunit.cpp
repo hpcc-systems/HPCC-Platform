@@ -1774,23 +1774,47 @@ static int getEnum(IPropertyTree *p, const char *propname, mapEnums *map)
 
 class CConstWUArrayIterator : public CInterface, implements IConstWorkUnitIterator
 {
-    IArrayOf<IConstWorkUnit> w;
-    CArrayIteratorOf<IConstWorkUnit,IConstWorkUnitIterator> it;
+    IArrayOf<IPropertyTree> trees;
+    Owned<IConstWorkUnit> cur;
+    unsigned curTreeNum;
+    Linked<IRemoteConnection> conn;
+    Linked<ISecManager> secmgr;
+    Linked<ISecUser> secuser;
+
+    void setCurrent()
+    {
+        cur.setown(new CLocalWorkUnit(LINK(conn), LINK(&trees.item(curTreeNum)), secmgr, secuser));
+    }
 public:
     IMPLEMENT_IINTERFACE;
-    CConstWUArrayIterator(IRemoteConnection *conn, IArrayOf<IPropertyTree> &trees, ISecManager *secmgr=NULL, ISecUser *secuser=NULL) 
-        : it(w)
+    CConstWUArrayIterator(IRemoteConnection *_conn, IArrayOf<IPropertyTree> &_trees, ISecManager *_secmgr=NULL, ISecUser *_secuser=NULL)
+        : conn(_conn), secmgr(_secmgr), secuser(_secuser)
     {
-        ForEachItemIn(i,trees) {
-            IPropertyTree &tree = trees.item(i);
-            tree.Link();
-            w.append(*(IConstWorkUnit *) new CLocalWorkUnit(LINK(conn), &tree, secmgr, secuser));
-        }
+        ForEachItemIn(t, _trees)
+            trees.append(*LINK(&_trees.item(t)));
+        curTreeNum = 0;
     }
-    bool first() { return it.first(); }
-    bool isValid() { return it.isValid(); }
-    bool next() { return it.next(); }
-    IConstWorkUnit & query() { return it.query();}
+    bool first()
+    {
+        curTreeNum = 0;
+        return next();
+    }
+    bool isValid()
+    {
+        return (NULL != cur.get());
+    }
+    bool next()
+    {
+        if (curTreeNum >= trees.ordinality())
+        {
+            cur.clear();
+            return false;
+        }
+        setCurrent();
+        ++curTreeNum;
+        return true;
+    }
+    IConstWorkUnit & query() { return *cur; }
 };
 //==========================================================================================
 
@@ -2169,7 +2193,7 @@ public:
             Owned<IPropertyTreeIterator> iter(queryDaliServerVersion().compare(serverVersionNeeded) < 0 ? 
                 conn->queryRoot()->getElements(xpath) : 
                 conn->getElements(xpath));
-            return new CConstWUIterator(conn, NULL, iter, secmgr, secuser);
+            return new CConstWUIterator(conn, iter, secmgr, secuser);
         }
         else
             return NULL;
@@ -2261,7 +2285,7 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IRemoteConnection> conn=getElementsPaged( "WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
+        Owned<IRemoteConnection> conn=getElementsPaged("WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
             secmgr?sc:NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results,total);
         return new CConstWUArrayIterator(conn, results, secmgr, secuser);
     }
@@ -2334,50 +2358,84 @@ private:
     }
     class CConstWUIterator : public CInterface, implements IConstWorkUnitIterator
     {
-        IArrayOf<IConstWorkUnit> w;
-        CArrayIteratorOf<IConstWorkUnit,IConstWorkUnitIterator> it;
+        Owned<IConstWorkUnit> cur;
+        Linked<IRemoteConnection> conn;
+        Linked<IPropertyTreeIterator> ptreeIter;
+        Linked<ISecManager> secmgr;
+        Linked<ISecUser> secuser;
+        Owned<ISecResourceList> scopes;
+
+        void setCurrent()
+        {
+            cur.setown(new CLocalWorkUnit(LINK(conn), LINK(&ptreeIter->query()), secmgr, secuser));
+        }
+        bool getNext() // scan for a workunit with permissions
+        {
+            if (!scopes)
+            {
+                setCurrent();
+                return true;
+            }
+            do
+            {
+                const char *scopeName = ptreeIter->query().queryProp("@scope");
+                if (!scopeName || !*scopeName || checkWuScopeListSecAccess(scopeName, scopes, SecAccess_Read, "iterating", false, false))
+                {
+                    setCurrent();
+                    return true;
+                }
+            }
+            while (ptreeIter->next());
+            cur.clear();
+            return false;
+        }
     public:
         IMPLEMENT_IINTERFACE;
-        CConstWUIterator() : it(w)
-        {
-        }
-        CConstWUIterator(IRemoteConnection *conn, IPropertyTree *, IPropertyTreeIterator *_it, ISecManager *secmgr=NULL, ISecUser *secuser=NULL) : it(w)
+        CConstWUIterator(IRemoteConnection *_conn, IPropertyTreeIterator *_ptreeIter, ISecManager *_secmgr=NULL, ISecUser *_secuser=NULL)
+            : conn(_conn), ptreeIter(_ptreeIter), secmgr(_secmgr), secuser(_secuser)
         {
             UniqueScopes us;
-            Owned<ISecResourceList> scopes;
             if (secmgr /* && secmgr->authTypeRequired(RT_WORKUNIT_SCOPE) tbd */)
             {
                 scopes.setown(secmgr->createResourceList("wuscopes"));
-                for (_it->first(); _it->isValid(); _it->next())
+                ForEach(*ptreeIter)
                 {
-                    const char *scopename = _it->query().queryProp("@scope");
-                    if (scopename && *scopename && !us.getValue(scopename))
+                    const char *scopeName = ptreeIter->query().queryProp("@scope");
+                    if (scopeName && *scopeName && !us.getValue(scopeName))
                     {
-                        scopes->addResource(scopename);
-                        us.setValue(scopename, true);
+                        scopes->addResource(scopeName);
+                        us.setValue(scopeName, true);
                     }
                 }
                 if (scopes->count())
-                {
                     secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, scopes);
-                    if (checkWuScopeListSecAccess(NULL, scopes, SecAccess_Read, "iterating", false, false))
-                        scopes.clear(); //if no scopes restricted, no need to check later
-                }
                 else
                     scopes.clear();
             }
-            for (_it->first(); _it->isValid(); _it->next())
-            {
-                IPropertyTree *rp = &_it->query();
-                const char *scopename=rp->queryProp("@scope");
-                if (!scopename || !*scopename || !scopes || checkWuScopeListSecAccess(rp->queryProp("@scope"), scopes, SecAccess_Read, "iterating", false, false))
-                    w.append(*(IConstWorkUnit *) new CLocalWorkUnit(LINK(conn), LINK(rp), secmgr, secuser));
-            }
         }
-        bool first() { return it.first(); }
-        bool isValid() { return it.isValid(); }
-        bool next() { return it.next(); }
-        IConstWorkUnit & query() { return it.query();}
+        bool first()
+        {
+            if (!ptreeIter->first())
+            {
+                cur.clear();
+                return false;
+            }
+            return getNext();
+        }
+        bool isValid()
+        {
+            return (NULL != cur.get());
+        }
+        bool next()
+        {
+            if (!ptreeIter->next())
+            {
+                cur.clear();
+                return false;
+            }
+            return getNext();
+        }
+        IConstWorkUnit & query() { return *cur; }
     };
     IRemoteConnection* connect(const char *xpath, unsigned flags)
     {
