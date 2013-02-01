@@ -191,14 +191,26 @@ public:
             break;
         }
         case type_int:
-            if (elemSize == sizeof(byte))
-                FETCH_ARRAY(byte)
-            else if (elemSize == sizeof(short))
+            /* if (elemSize == sizeof(signed char))  // rcpp does not seem to support...
+                FETCH_ARRAY(signed char)
+            else */ if (elemSize == sizeof(short))
                 FETCH_ARRAY(short)
             else if (elemSize == sizeof(int))
                 FETCH_ARRAY(int)
             else if (elemSize == sizeof(long))    // __int64 / long long does not work...
                 FETCH_ARRAY(long)
+            else
+                rtlFail(0, "Rembed: Unsupported result type");
+            break;
+        case type_unsigned:
+            if (elemSize == sizeof(byte))
+                FETCH_ARRAY(byte)
+            else if (elemSize == sizeof(unsigned short))
+                FETCH_ARRAY(unsigned short)
+            else if (elemSize == sizeof(unsigned int))
+                FETCH_ARRAY(unsigned int)
+            else if (elemSize == sizeof(unsigned long))    // __int64 / long long does not work...
+                FETCH_ARRAY(unsigned long)
             else
                 rtlFail(0, "Rembed: Unsupported result type");
             break;
@@ -266,6 +278,7 @@ public:
         }
         default:
             rtlFail(0, "REmbed: Unsupported result type");
+            break;
         }
     }
 
@@ -393,6 +406,7 @@ public:
         }
         default:
             rtlFail(0, "REmbed: Unsupported parameter type");
+            break;
         }
     }
 

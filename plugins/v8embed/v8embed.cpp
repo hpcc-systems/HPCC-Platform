@@ -167,7 +167,7 @@ public:
                     thisSize = (* (size32_t *) inData) * sizeof(UChar) + sizeof(size32_t);
                     break;
                 case type_utf8:
-                    thisSize = rtlUtf8Size(* (size32_t *) inData, inData + sizeof(size32_t)) + sizeof(size32_t);;
+                    thisSize = rtlUtf8Size(* (size32_t *) inData, inData + sizeof(size32_t)) + sizeof(size32_t);
                     break;
                 default:
                     rtlFail(0, "v8embed: Unsupported parameter type");

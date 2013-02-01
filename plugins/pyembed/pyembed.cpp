@@ -538,7 +538,7 @@ public:
         size32_t sizeBytes = rtlUtf8Size(chars, val);
         PyObject *vval = PyUnicode_FromStringAndSize(val, sizeBytes);   // NOTE - requires size in bytes not chars
         checkPythonError();
-        addArg(name, vval);   // NOTE - requires size in bytes not chars
+        addArg(name, vval);
     }
 
     virtual void bindUnicodeParam(const char *name, size32_t chars, const UChar *val)

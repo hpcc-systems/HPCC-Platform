@@ -445,12 +445,12 @@ public:
                         {
                             if (elemSize == UNKNOWN_LENGTH)
                             {
-                                out.ensureAvailable(outBytes + numchars*sizeof(UChar) + sizeof(size32_t));
-                                outData = out.getbytes() + outBytes;
                                 // You can't assume that number of chars in utf8 matches number in unicode16 ...
                                 size32_t numchars16;
                                 rtlDataAttr unicode16;
                                 rtlUtf8ToUnicodeX(numchars16, unicode16.refustr(), numchars, text);
+                                out.ensureAvailable(outBytes + numchars16*sizeof(UChar) + sizeof(size32_t));
+                                outData = out.getbytes() + outBytes;
                                 * (size32_t *) outData = numchars16;
                                 rtlUnicodeToUnicode(numchars16, (UChar *) (outData+sizeof(size32_t)), numchars16, unicode16.getustr());
                                 outBytes += numchars16*sizeof(UChar) + sizeof(size32_t);
