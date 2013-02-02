@@ -904,8 +904,8 @@
             </td>
             <td>
               <form action="/WsWorkunits/WUResubmit?Wuids_i1={$wuid}" method="post">
-                <input type="submit" name="Resubmit" value="Resubmit" class="sbutton" title="Resubmit workunit">
-                  <xsl:if test="number(AccessFlag) &lt; 7 or State!='aborted' and State!='failed' and State!='completed' and State!='archived'">
+                <input type="submit" name="Recover" value="Recover" class="sbutton" title="Attempt to resume running workunit from where it stopped">
+                  <xsl:if test="number(AccessFlag) &lt; 7 or State!='aborted' and State!='failed'">
                     <xsl:attribute name="disabled">disabled</xsl:attribute>
                   </xsl:if>
                 </input>
@@ -913,7 +913,7 @@
             </td>
             <td>
               <form action="/WsWorkunits/WUResubmit?Wuids_i1={$wuid}&amp;ResetWorkflow=1" method="post">
-                <input type="submit" name="RestartWU" value="Restart" title="Clean and rerun the workunit" class="sbutton">
+                <input type="submit" name="Resubmit" value="Resubmit" title="Clean and rerun the workunit" class="sbutton">
                   <xsl:if test="number(AccessFlag) &lt; 7 or State!='aborted' and State!='failed' and State!='completed' and State!='archived'">
                     <xsl:attribute name="disabled">disabled</xsl:attribute>
                   </xsl:if>
