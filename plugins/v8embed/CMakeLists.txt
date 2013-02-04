@@ -40,6 +40,7 @@ include_directories (
          ./../../system/include
          ./../../rtl/eclrtl
          ./../../rtl/include
+         ./../../common/deftype
          ./../../system/jlib
     )
 

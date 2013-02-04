@@ -815,6 +815,8 @@ const char * cppSystemText[]  = {
     "   bindUTF8Param(const varstring name, const utf8 val) : method,entrypoint='bindUTF8Param';",
     "   bindUnicodeParam(const varstring name, const unicode val) : method,entrypoint='bindUnicodeParam';",
 
+    "   bindSetParam(const varstring name, integer4 typeCode, unsigned4 elemSize, const set of any val) : method,entrypoint='bindSetParam';",
+
     "   boolean getBooleanResult() : method,entrypoint='getBooleanResult';",
     "   data getDataResult() : method,entrypoint='getDataResult';",
     "   real getRealResult() : method,entrypoint='getRealResult';",
@@ -823,6 +825,8 @@ const char * cppSystemText[]  = {
     "   unsigned getUnsignedResult() : method,entrypoint='getUnsignedResult';",
     "   utf8 getUTF8Result() : method,entrypoint='getUTF8Result';",
     "   unicode getUnicodeResult() : method,entrypoint='getUnicodeResult';",
+
+    "   set of any getSetResult(integer4 typeCode, unsigned4 elemSize) : method,entrypoint='getSetResult';",
 
     "   compileEmbeddedScript(const utf8 script) : method,entrypoint='compileEmbeddedScript';",
     "   import(const utf8 script) : method,entrypoint='importFunction';",

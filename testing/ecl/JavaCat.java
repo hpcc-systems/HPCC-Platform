@@ -66,4 +66,17 @@ public class JavaCat
   {
     return a + b;
   }
+
+  public static int testArrays(boolean[] b, short[] s, int[] i, double[] d)
+  {
+    return b.length + s.length + i.length + d.length;
+  }
+
+  public static String[] testStringArray(String[] in)
+  {
+    String t = in[0];
+    in[0] = in[1];
+    in[1] = t;
+    return in;
+  }
 }

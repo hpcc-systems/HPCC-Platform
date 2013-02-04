@@ -41,6 +41,7 @@ include_directories (
          ./../../system/include
          ./../../rtl/eclrtl
          ./../../rtl/include
+         ./../../common/deftype
          ./../../system/jlib
     )
 
@@ -57,7 +58,6 @@ else()
 endif()
 
 install ( TARGETS pyembed DESTINATION plugins )
-
 if (debug_python)
   target_link_libraries ( pyembed ${PYTHON_DEBUG_LIBRARY} )
 else()
