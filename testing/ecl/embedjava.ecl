@@ -10,6 +10,14 @@ integer testThrow(integer p) := IMPORT(java, 'JavaCat.testThrow:(I)I');
 string addChar(string c) := IMPORT(java, 'JavaCat.addChar:(C)C');
 string cat(string s1, string s2) := IMPORT(java, 'JavaCat.cat:(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;');
 data testData(data indata) := IMPORT(java, 'JavaCat.testData:([B)[B');
+integer testArrays(set of boolean b, set of integer2 s, set of integer4 i, set of real8 d) := IMPORT(java, 'JavaCat.testArrays:([Z[S[I[D)I');
+set of string testStringArray1(set of string s) := IMPORT(java, 'JavaCat.testStringArray:([Ljava/lang/String;)[Ljava/lang/String;');
+set of varstring testStringArray2(set of varstring s) := IMPORT(java, 'JavaCat.testStringArray:([Ljava/lang/String;)[Ljava/lang/String;');
+set of string8 testStringArray3(set of string8 s) := IMPORT(java, 'JavaCat.testStringArray:([Ljava/lang/String;)[Ljava/lang/String;');
+set of varstring8 testStringArray4(set of varstring8 s) := IMPORT(java, 'JavaCat.testStringArray:([Ljava/lang/String;)[Ljava/lang/String;');
+set of utf8 testStringArray5(set of utf8 s) := IMPORT(java, 'JavaCat.testStringArray:([Ljava/lang/String;)[Ljava/lang/String;');
+set of unicode8 testStringArray6(set of unicode8 s) := IMPORT(java, 'JavaCat.testStringArray:([Ljava/lang/String;)[Ljava/lang/String;');
+set of unicode testStringArray7(set of unicode s) := IMPORT(java, 'JavaCat.testStringArray:([Ljava/lang/String;)[Ljava/lang/String;');
 
 add1(10);
 add2('Hello');
@@ -30,6 +38,15 @@ end;
 
 catch(d(testThrow(a) = a), onfail(t));
 testData(d'aa');
+testArrays([true],[2,3],[4,5,6,7],[8.0,9.0]);
+testArrays([],[],[],[]);
+testStringArray1(['one', 'two', 'three']);
+testStringArray2(['one', 'two', 'three']);
+testStringArray3(['one', 'two', 'three']);
+testStringArray4(['one', 'two', 'three']);
+testStringArray5(['one', 'two', 'three']);
+testStringArray6(['one', 'two', 'three']);
+testStringArray7(['one', 'two', 'three']);
 
 s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
 s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
