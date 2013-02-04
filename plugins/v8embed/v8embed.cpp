@@ -481,9 +481,16 @@ static __thread ThreadTermFunc threadHookChain;
 
 static void releaseContext()
 {
-    ::Release(theFunctionContext);
+    if (theFunctionContext)
+    {
+        ::Release(theFunctionContext);
+        theFunctionContext = NULL;
+    }
     if (threadHookChain)
+    {
         (*threadHookChain)();
+        threadHookChain = NULL;
+    }
 }
 
 class V8JavascriptEmbedContext : public CInterfaceOf<IEmbedContext>
