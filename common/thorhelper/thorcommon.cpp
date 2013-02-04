@@ -499,25 +499,42 @@ void CThorDemoRowSerializer::endNested(size32_t sizePos)
 
 
 
-IOutputRowSerializer * CachedOutputMetaData::createRowSerializer(ICodeContext * ctx, unsigned activityId) const
+IOutputRowSerializer * CachedOutputMetaData::createDiskSerializer(ICodeContext * ctx, unsigned activityId) const
 {
-    if (metaFlags & (MDFhasserialize|MDFneedserialize))
-        return meta->createRowSerializer(ctx, activityId);
+    if (metaFlags & (MDFhasserialize|MDFneedserializedisk))
+        return meta->createDiskSerializer(ctx, activityId);
     if (isFixedSize())
         return new CSimpleFixedRowSerializer(getFixedSize());
     return new CSimpleVariableRowSerializer(this);
 }
 
 
-IOutputRowDeserializer * CachedOutputMetaData::createRowDeserializer(ICodeContext * ctx, unsigned activityId) const
+IOutputRowDeserializer * CachedOutputMetaData::createDiskDeserializer(ICodeContext * ctx, unsigned activityId) const
 {
-    if (metaFlags & (MDFhasserialize|MDFneedserialize))
-        return meta->createRowDeserializer(ctx, activityId);
+    if (metaFlags & (MDFhasserialize|MDFneedserializedisk))
+        return meta->createDiskDeserializer(ctx, activityId);
     if (isFixedSize())
         return new CSimpleFixedRowDeserializer(getFixedSize());
-    assertex(!"createRowDeserializer variable meta has no serializer");
-    //return new CSimpleVariableRowDeserializer(this);
-    return NULL;
+    throwUnexpectedX("createDiskDeserializer variable meta has no serializer");
+}
+
+IOutputRowSerializer * CachedOutputMetaData::createInternalSerializer(ICodeContext * ctx, unsigned activityId) const
+{
+    if (metaFlags & (MDFhasserialize|MDFneedserializeinternal))
+        return meta->createInternalSerializer(ctx, activityId);
+    if (isFixedSize())
+        return new CSimpleFixedRowSerializer(getFixedSize());
+    return new CSimpleVariableRowSerializer(this);
+}
+
+
+IOutputRowDeserializer * CachedOutputMetaData::createInternalDeserializer(ICodeContext * ctx, unsigned activityId) const
+{
+    if (metaFlags & (MDFhasserialize|MDFneedserializeinternal))
+        return meta->createInternalDeserializer(ctx, activityId);
+    if (isFixedSize())
+        return new CSimpleFixedRowDeserializer(getFixedSize());
+    throwUnexpectedX("createInternalDeserializer variable meta has no serializer");
 }
 
 void CSizingSerializer::put(size32_t len, const void * ptr)
@@ -585,7 +602,7 @@ size32_t cloneRow(ARowBuilder & rowBuilder, const void * row, IOutputMetaData * 
     size32_t rowSize = meta->getRecordSize(row);        // TBD could be better?
     byte * self = rowBuilder.ensureCapacity(rowSize, NULL);
     memcpy(self, row, rowSize);
-    if (meta->getMetaFlags() & MDFneedserialize)
+    if (meta->getMetaFlags() & MDFneeddestruct)
     {
         ChildRowLinkerWalker walker;
         meta->walkIndirectMembers(self, walker);
@@ -1090,7 +1107,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
         {
             if (serializerlock.lock()) {
                 if (!serializer&&meta) 
-                    serializer.setown(meta->createRowSerializer(context,actid));
+                    serializer.setown(meta->createDiskSerializer(context,actid));
                 serializerlock.unlock();
             }
             return serializer;
@@ -1099,7 +1116,7 @@ IRowInterfaces *createRowInterfaces(IOutputMetaData *meta, unsigned actid, ICode
         {
             if (deserializerlock.lock()) {
                 if (!deserializer&&meta) 
-                    deserializer.setown(meta->createRowDeserializer(context,actid));
+                    deserializer.setown(meta->createDiskDeserializer(context,actid));
                 deserializerlock.unlock();
             }
             return deserializer;
@@ -1171,7 +1188,7 @@ public:
             strm.setown(createFileSerialStream(fileio,_ofs,_len,(size32_t)-1, _tallycrc?&crccb:NULL));
         else
             strm.setown(createFileSerialStream(mmfile,_ofs,_len,_tallycrc?&crccb:NULL));
-        prefetcher.setown(rowif->queryRowMetaData()->createRowPrefetcher(rowif->queryCodeContext(), rowif->queryActivityId()));
+        prefetcher.setown(rowif->queryRowMetaData()->createDiskPrefetcher(rowif->queryCodeContext(), rowif->queryActivityId()));
         if (prefetcher)
             prefetchBuffer.setStream(strm);
         source.setStream(strm);
@@ -1541,7 +1558,7 @@ IExtRowWriter *createRowWriter(IFile *iFile, IRowInterfaces *rowIf, unsigned fla
     OwnedIFileIO iFileIO;
     if (TestRwFlag(flags, rw_compress))
     {
-        size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedMeta()->getFixedSize();
+        size32_t fixedSize = rowIf->queryRowMetaData()->querySerializedDiskMeta()->getFixedSize();
         if (fixedSize && TestRwFlag(flags, rw_grouped))
             ++fixedSize; // row writer will include a grouping byte
         iFileIO.setown(createCompressedFileWriter(iFile, fixedSize, TestRwFlag(flags, rw_extend), TestRwFlag(flags, rw_compressblkcrc), compressor, TestRwFlag(flags, rw_fastlz)));

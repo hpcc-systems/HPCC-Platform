@@ -1566,6 +1566,10 @@ public:
     ~CHqlDictionary();
 
     virtual IHqlExpression *clone(HqlExprArray &newkids);
+    virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);
+    
+protected:
+    OwnedHqlExpr normalized;
 };
 
 

@@ -39,10 +39,13 @@ extern HQL_API bool increasesRowSize(IHqlExpression * expr);
 extern HQL_API bool isVariableSizeRecord(IHqlExpression * record);
 inline bool isFixedSizeRecord(IHqlExpression * record) { return !isVariableSizeRecord(record); }
 
+extern HQL_API bool recordRequiresLinkCount(IHqlExpression * expr);
 extern HQL_API bool recordRequiresDestructor(IHqlExpression * expr);
-extern HQL_API bool recordRequiresSerialization(IHqlExpression * expr);
-extern HQL_API IHqlExpression * getSerializedForm(IHqlExpression * expr);
-extern HQL_API ITypeInfo * getSerializedForm(ITypeInfo * type);
+extern HQL_API bool recordRequiresSerialization(IHqlExpression * expr, _ATOM serializeForm);
+extern HQL_API bool typeRequiresDeserialization(ITypeInfo * type, _ATOM serializeForm); // or can we use the serialized form directly
+extern HQL_API bool recordSerializationDiffers(IHqlExpression * expr, _ATOM serializeForm1, _ATOM serializeForm2);
+extern HQL_API IHqlExpression * getSerializedForm(IHqlExpression * expr, _ATOM variation);
+extern HQL_API ITypeInfo * getSerializedForm(ITypeInfo * type, _ATOM variation);
 extern HQL_API IHqlExpression * getPackedRecord(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getUnadornedExpr(IHqlExpression * expr);
 

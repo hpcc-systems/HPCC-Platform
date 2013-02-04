@@ -74,16 +74,6 @@ size32_t RtlTypeInfoBase::toXML(const byte * self, const byte * selfrow, const R
     return 0;
 }
 
-void RtlTypeInfoBase::serialize(IRtlFieldTypeSerializer & out) const 
-{
-    rtlFailUnexpected();
-}
-
-void RtlTypeInfoBase::deserialize(IRtlFieldTypeDeserializer & in) 
-{
-    rtlFailUnexpected();
-}
-
 const char * RtlTypeInfoBase::queryLocale() const 
 {
     return NULL; 

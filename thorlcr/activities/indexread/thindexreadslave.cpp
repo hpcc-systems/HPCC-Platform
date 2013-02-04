@@ -166,7 +166,7 @@ public:
     {
         helper = (IHThorIndexReadBaseArg *)container->queryHelper();
         localKey = false;
-        fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedMeta()->getFixedSize(); // 0 if variable and unused
+        fixedDiskRecordSize = helper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // 0 if variable and unused
         progress = 0;
         reInit = 0 != (helper->getFlags() & (TIRvarfilename|TIRdynamicfilename));
     }

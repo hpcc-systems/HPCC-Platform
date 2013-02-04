@@ -1817,8 +1817,10 @@ class COutputMetaWithChildRow : public CSimpleInterface, implements IOutputMetaD
     Linked<IEngineRowAllocator> childAllocator;
     IOutputMetaData *childMeta;
     size32_t extraSz;
-    Owned<IOutputRowSerializer> serializer;
-    Owned<IOutputRowDeserializer> deserializer;
+    Owned<IOutputRowSerializer> diskSerializer;
+    Owned<IOutputRowDeserializer> diskDeserializer;
+    Owned<IOutputRowSerializer> internalSerializer;
+    Owned<IOutputRowDeserializer> internalDeserializer;
     Owned<ISourceRowPrefetcher> prefetcher;
 
     class CSerializer : public CSimpleInterface, implements IOutputRowSerializer
@@ -1924,25 +1926,37 @@ public:
     {
         OwnedConstThorRow childRow = *(const void **)(self+extraSz);
     }
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId)
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId)
     {
-        if (!serializer)
-            serializer.setown(new CSerializer(childMeta->createRowSerializer(ctx, activityId), extraSz));
-        return LINK(serializer);
+        if (!diskSerializer)
+            diskSerializer.setown(new CSerializer(childMeta->createDiskSerializer(ctx, activityId), extraSz));
+        return LINK(diskSerializer);
     }
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId)
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId)
     {
-        if (!deserializer)
-            deserializer.setown(new CDeserializer(childMeta->createRowDeserializer(ctx, activityId), childAllocator, extraSz));
-        return LINK(deserializer);
+        if (!diskDeserializer)
+            diskDeserializer.setown(new CDeserializer(childMeta->createDiskDeserializer(ctx, activityId), childAllocator, extraSz));
+        return LINK(diskDeserializer);
     }
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId)
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
     {
         if (!prefetcher)
-            prefetcher.setown(new CPrefetcher(childMeta->createRowPrefetcher(ctx, activityId), extraSz));
+            prefetcher.setown(new CPrefetcher(childMeta->createDiskPrefetcher(ctx, activityId), extraSz));
         return LINK(prefetcher);
     }
-    virtual IOutputMetaData * querySerializedMeta() { return this; }
+    virtual IOutputMetaData * querySerializedDiskMeta() { return this; }
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId)
+    {
+        if (!internalSerializer)
+            internalSerializer.setown(new CSerializer(childMeta->createInternalSerializer(ctx, activityId), extraSz));
+        return LINK(internalSerializer);
+    }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
+    {
+        if (!internalDeserializer)
+            internalDeserializer.setown(new CDeserializer(childMeta->createInternalDeserializer(ctx, activityId), childAllocator, extraSz));
+        return LINK(internalDeserializer);
+    }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) 
     {
         //GH: I think this is what it should do, please check
@@ -1960,19 +1974,21 @@ class COutputMetaWithExtra : public CSimpleInterface, implements IOutputMetaData
 {
     Linked<IOutputMetaData> meta;
     size32_t metaSz;
-    Owned<IOutputRowSerializer> serializer;
-    Owned<IOutputRowDeserializer> deserializer;
+    Owned<IOutputRowSerializer> diskSerializer;
+    Owned<IOutputRowDeserializer> diskDeserializer;
+    Owned<IOutputRowSerializer> internalSerializer;
+    Owned<IOutputRowDeserializer> internalDeserializer;
     Owned<ISourceRowPrefetcher> prefetcher;
     Owned<IOutputMetaData> serializedmeta;
 
-    class CSerialization : public CSimpleInterface, implements IOutputRowSerializer
+    class CSerializer : public CSimpleInterface, implements IOutputRowSerializer
     {
         Owned<IOutputRowSerializer> serializer;
         size32_t metaSz;
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CSerialization(IOutputRowSerializer *_serializer, size32_t _metaSz) : serializer(_serializer), metaSz(_metaSz)
+        CSerializer(IOutputRowSerializer *_serializer, size32_t _metaSz) : serializer(_serializer), metaSz(_metaSz)
         {
         }
         virtual void serialize(IRowSerializerTarget &out, const byte *self)
@@ -2047,33 +2063,45 @@ public:
 //The following can only be called if getMetaDataVersion >= 1, may seh otherwise.  Creating a different interface was too painful
     virtual unsigned getMetaFlags() { return meta->getMetaFlags(); }
     virtual void destruct(byte * self) { meta->destruct(self); }
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId)
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId)
     {
-        if (!serializer)
-            serializer.setown(new CSerialization(meta->createRowSerializer(ctx, activityId), metaSz));
-        return LINK(serializer);
+        if (!diskSerializer)
+            diskSerializer.setown(new CSerializer(meta->createDiskSerializer(ctx, activityId), metaSz));
+        return LINK(diskSerializer);
     }
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId)
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId)
     {
-        if (!deserializer)
-            deserializer.setown(new CDeserializer(meta->createRowDeserializer(ctx, activityId), metaSz));
-        return LINK(deserializer);
+        if (!diskDeserializer)
+            diskDeserializer.setown(new CDeserializer(meta->createDiskDeserializer(ctx, activityId), metaSz));
+        return LINK(diskDeserializer);
     }
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId)
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId)
     {
         if (!prefetcher)
-            prefetcher.setown(new CPrefetcher(meta->createRowPrefetcher(ctx, activityId), metaSz));
+            prefetcher.setown(new CPrefetcher(meta->createDiskPrefetcher(ctx, activityId), metaSz));
         return LINK(prefetcher);
     }
-    virtual IOutputMetaData * querySerializedMeta() 
+    virtual IOutputMetaData * querySerializedDiskMeta() 
     { 
-        IOutputMetaData *sm = meta->querySerializedMeta();
+        IOutputMetaData *sm = meta->querySerializedDiskMeta();
         if (sm==meta.get())
             return this;
         if (!serializedmeta.get())
             serializedmeta.setown(new COutputMetaWithExtra(sm,metaSz));
         return serializedmeta.get();
     } 
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId)
+    {
+        if (!internalSerializer)
+            internalSerializer.setown(new CSerializer(meta->createInternalSerializer(ctx, activityId), metaSz));
+        return LINK(internalSerializer);
+    }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
+    {
+        if (!internalDeserializer)
+            internalDeserializer.setown(new CDeserializer(meta->createInternalDeserializer(ctx, activityId), metaSz));
+        return LINK(internalDeserializer);
+    }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
     {
         meta->walkIndirectMembers(self, visitor);

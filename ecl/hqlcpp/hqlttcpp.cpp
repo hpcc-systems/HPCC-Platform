@@ -7289,7 +7289,7 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
                         }
                         if (rowOp == no_createrow)
                             break;
-                        if (!isInlineTrivialDataset(row) && !isContextDependent(row) && !transformed->isDataset())
+                        if (!isInlineTrivialDataset(row) && !isContextDependent(row) && !transformed->isDataset() && !transformed->isDictionary())
                         {
                             if (isIndependentOfScope(row))
                                 return hoist(expr, transformed);
@@ -8460,7 +8460,7 @@ IHqlExpression * HqlLinkedChildRowTransformer::ensureInputSerialized(IHqlExpress
 {
     LinkedHqlExpr dataset = expr->queryChild(0);
     IHqlExpression * record = dataset->queryRecord();
-    OwnedHqlExpr serializedRecord = getSerializedForm(record);
+    OwnedHqlExpr serializedRecord = getSerializedForm(record, diskAtom);
 
     //If the dataset requires serialization, it is much more efficient to serialize before the sort, than to serialize after.
     if (record == serializedRecord)
@@ -8722,7 +8722,13 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
     IHqlExpression * cursor = queryDatasetCursor(ds);
     if (cursor->isDataset())
     {
-        if (expr->isDataset() || expr->isDictionary())
+        if (expr->isDictionary())
+        {
+            StringBuffer exprText;
+            VStringBuffer msg("dictionary %s must be explicitly NORMALIZED", getECL(expr, exprText));
+            reportError(msg, false);
+        }
+        else if (expr->isDataset())
         {
             if (!isValidNormalizeSelector(cursor))
             {
@@ -8745,7 +8751,7 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
     IHqlExpression * field = expr->queryChild(1);
     if (ds->isDataset())
     {
-        if (!expr->isDataset() && !expr->isDatarow())
+        if (!expr->isDataset() && !expr->isDatarow() && !expr->isDictionary())
         {
             //If the left is a dataset, and the right isn't a dataset or a datarow then this doesn't make sense - it is an illegal
             return createSelectExpr(newDs.getClear(), LINK(field));

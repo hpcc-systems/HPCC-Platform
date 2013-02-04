@@ -54,7 +54,6 @@ static IHqlExpression * cacheEmbeddedAttr;
 static IHqlExpression * cacheInlineAttr;
 static IHqlExpression * cacheLinkCountedAttr;
 static IHqlExpression * cacheReferenceAttr;
-static IHqlExpression * cacheSerializedFormAttr;
 static IHqlExpression * cacheStreamedAttr;
 static IHqlExpression * cacheUnadornedAttr;
 static IHqlExpression * matchxxxPseudoFile;
@@ -83,7 +82,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     cacheInlineAttr = createAttribute(inlineAtom);
     cacheLinkCountedAttr = createAttribute(_linkCounted_Atom);
     cacheReferenceAttr = createAttribute(referenceAtom);
-    cacheSerializedFormAttr = createAttribute(_attrSerializedForm_Atom);
     cacheStreamedAttr = createAttribute(streamedAtom);
     cacheUnadornedAttr = createAttribute(_attrUnadorned_Atom);
     matchxxxPseudoFile = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(matchxxxPseudoFileAtom));
@@ -110,7 +108,6 @@ MODULE_EXIT()
     cacheInlineAttr->Release();
     cacheLinkCountedAttr->Release();
     cacheReferenceAttr->Release();
-    cacheSerializedFormAttr->Release();
     cacheStreamedAttr->Release();
     cacheUnadornedAttr->Release();
     matchxxxPseudoFile->Release();
@@ -196,11 +193,6 @@ IHqlExpression * queryRequiresDestructorAttr(bool value)
     return cacheRequiresDestructorAttr[TFI(value)];
 }
 #endif
-
-IHqlExpression * querySerializedFormAttr()
-{
-    return cacheSerializedFormAttr;
-}
 
 IHqlExpression * queryUnadornedAttr()
 {
@@ -5275,10 +5267,14 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                             castValue.setown(createRow(no_createrow, LINK(transform)));
                         }
                     }
+                    if (target->isDictionary() && !castValue->isDictionary())
+                        castValue.setown(createDictionary(no_createdictionary, castValue.getClear()));
                 }
                 else
                 {
-                    if (expr->isDataset())
+                    if (expr->isDictionary())
+                        castValue.setown(createDictionary(no_null, LINK(record)));
+                    else if (expr->isDataset())
                         castValue.setown(createDataset(no_null, LINK(record)));
                     else
                         castValue.setown(createRow(no_null, LINK(record)));

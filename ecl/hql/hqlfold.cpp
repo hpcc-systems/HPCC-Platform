@@ -3242,7 +3242,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             if (child->isRecord())
             {
                 //Need to be careful to use the serialized record - otherwise record size can be inconsistent
-                OwnedHqlExpr record = getSerializedForm(child);
+                OwnedHqlExpr record = getSerializedForm(child, diskAtom);
                 if (expr->hasProperty(maxAtom))
                 {
                     if (maxRecordSizeCanBeDerived(record))
