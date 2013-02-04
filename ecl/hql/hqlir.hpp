@@ -54,6 +54,7 @@ extern HQL_API void dump_ir(const HqlExprArray & exprs);
 //The following are useful for finding the differences between two types or expressions - the output between the two returns
 extern HQL_API void dump_ir(ITypeInfo * type1, ITypeInfo * type2);
 extern HQL_API void dump_ir(IHqlExpression * expr1, IHqlExpression * expr2);
+extern HQL_API void dump_irn(unsigned n, ...);
 
 extern HQL_API void dbglogIR(IHqlExpression * expr);
 extern HQL_API void dbglogIR(ITypeInfo * type);
