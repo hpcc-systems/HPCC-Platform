@@ -116,20 +116,22 @@ public:
 //v1 member functions (can be called on any interface)
     inline unsigned getMetaFlags() const                    { return metaFlags; }
     inline bool needsDestruct() const                       { return (metaFlags & MDFneeddestruct) != 0; }
-    inline bool needsSerialize() const                      { return (metaFlags & MDFneedserialize) != 0; }
+    inline bool needsSerializeDisk() const                  { return (metaFlags & MDFneedserializedisk) != 0; }
     inline void destruct(byte * self)
     {
         if (metaFlags & MDFneeddestruct)
             meta->destruct(self);
     }
 
-    IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) const;
-    IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) const;
+    IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) const;
+    IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) const;
+    IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) const;
+    IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) const;
 
-    inline IOutputMetaData * querySerializedMeta() const
+    inline IOutputMetaData * querySerializedDiskMeta() const
     {
-        if (metaFlags & MDFneedserialize)
-            return meta->querySerializedMeta();
+        if (metaFlags & MDFneedserializedisk)
+            return meta->querySerializedDiskMeta();
         return meta;
     }
 
@@ -338,7 +340,7 @@ public:
     {
         offset = _offset;
         original = _original;
-        IOutputMetaData * originalSerialized = _original->querySerializedMeta();
+        IOutputMetaData * originalSerialized = _original->querySerializedDiskMeta();
         if (originalSerialized != original)
             serializedMeta.setown(new CPrefixedOutputMeta(_offset, originalSerialized));
     }
@@ -368,23 +370,31 @@ public:
 
     virtual unsigned getMetaFlags() { return original->getMetaFlags(); }
     virtual void destruct(byte * self) { original->destruct(self+offset); }
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId)
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId)
     {
-        return new CPrefixedRowSerializer(offset, original->createRowSerializer(ctx, activityId));
+        return new CPrefixedRowSerializer(offset, original->createDiskSerializer(ctx, activityId));
     }
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) 
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) 
     {
-        return new CPrefixedRowDeserializer(offset, original->createRowDeserializer(ctx, activityId));
+        return new CPrefixedRowDeserializer(offset, original->createDiskDeserializer(ctx, activityId));
     }
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) 
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) 
     {
-        return new CPrefixedRowPrefetcher(offset, original->createRowPrefetcher(ctx, activityId));
+        return new CPrefixedRowPrefetcher(offset, original->createDiskPrefetcher(ctx, activityId));
     }
-    virtual IOutputMetaData * querySerializedMeta()
+    virtual IOutputMetaData * querySerializedDiskMeta()
     {
         if (serializedMeta)
             return serializedMeta.get();
         return this;
+    }
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId)
+    {
+        return new CPrefixedRowSerializer(offset, original->createInternalSerializer(ctx, activityId));
+    }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
+    {
+        return new CPrefixedRowDeserializer(offset, original->createInternalDeserializer(ctx, activityId));
     }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
     {
@@ -463,7 +473,7 @@ public:
     CSuffixedOutputMeta(size32_t _offset, IOutputMetaData *_original) : original(_original)
     {
         offset = _offset;
-        IOutputMetaData * originalSerialized = _original->querySerializedMeta();
+        IOutputMetaData * originalSerialized = _original->querySerializedDiskMeta();
         if (originalSerialized != original)
             serializedMeta.setown(new CSuffixedOutputMeta(_offset, originalSerialized));
     }
@@ -491,23 +501,31 @@ public:
 
     virtual unsigned getMetaFlags() { return original->getMetaFlags(); }
     virtual void destruct(byte * self) { original->destruct(self); }
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId)
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId)
     {
-        return new CSuffixedRowSerializer(offset, original->createRowSerializer(ctx, activityId));
+        return new CSuffixedRowSerializer(offset, original->createDiskSerializer(ctx, activityId));
     }
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) 
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) 
     {
-        return new CSuffixedRowDeserializer(offset, original->createRowDeserializer(ctx, activityId));
+        return new CSuffixedRowDeserializer(offset, original->createDiskDeserializer(ctx, activityId));
     }
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) 
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) 
     {
-        return new CSuffixedRowPrefetcher(offset, original->createRowPrefetcher(ctx, activityId));
+        return new CSuffixedRowPrefetcher(offset, original->createDiskPrefetcher(ctx, activityId));
     }
-    virtual IOutputMetaData * querySerializedMeta()
+    virtual IOutputMetaData * querySerializedDiskMeta()
     {
         if (serializedMeta)
             return serializedMeta.get();
         return this;
+    }
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId)
+    {
+        return new CSuffixedRowSerializer(offset, original->createInternalSerializer(ctx, activityId));
+    }
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId)
+    {
+        return new CSuffixedRowDeserializer(offset, original->createInternalDeserializer(ctx, activityId));
     }
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor)
     {

@@ -155,7 +155,7 @@ protected:
                 if (!keyIndex)
                     throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", indexBaseHelper->getFileName());
             
-                unsigned maxSize = indexBaseHelper->queryDiskRecordSize()->querySerializedMeta()->getRecordSize(NULL); // used only if fixed
+                unsigned maxSize = indexBaseHelper->queryDiskRecordSize()->querySerializedDiskMeta()->getRecordSize(NULL); // used only if fixed
                 Owned <IKeyManager> tlk = createKeyManager(keyIndex, maxSize, NULL);
                 indexBaseHelper->createSegmentMonitors(tlk);
                 tlk->finishSegmentMonitors();

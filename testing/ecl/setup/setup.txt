@@ -53,6 +53,11 @@ DG_MemFileName       := '~REGRESS::' + filePrefix + '::DG_MemFile';
 DG_IntegerDatasetName:= '~REGRESS::' + filePrefix + '::DG_IntegerFile';
 DG_IntegerIndexName  := '~REGRESS::' + filePrefix + '::DG_IntegerIndex';
 
+DG_DsFilename        := '~REGRESS::' + filePrefix + '::SerialLibraryDs';
+DG_DictFilename      := '~REGRESS::' + filePrefix + '::SerialLibraryDict';
+DG_DictKeyFilename   := '~REGRESS::' + filePrefix + '::SerialLibraryKeyDict';
+DG_BookKeyFilename   := '~REGRESS::' + filePrefix + '::SerialBookKey';
+
 //record structures
 DG_FetchRecord := RECORD
   INTEGER8 sequence;
@@ -247,6 +252,51 @@ t_hhfile := DATASET('t_hhfile', RECORD
   unsigned integer4 houseNumber;
 END, THOR);
 
+
+//----------------------------- Definitions for testing dictionary serialization -----------------
+
+serialTest := MODULE
+    
+    EXPORT wordRec := { string word; };
+    
+    //A DATASET nested two levels deep
+    EXPORT bookDsRec := RECORD
+      string title;
+      DATASET(wordRec) words;
+    END;
+    
+    EXPORT libraryDsRec := RECORD
+      string owner;
+      DATASET(bookDsRec) books;
+    END;
+    
+    
+    // Same for a DICTIONARY
+    EXPORT bookDictRec := RECORD
+      string title
+      =>
+      DICTIONARY(wordRec) words;
+    END;
+    
+    EXPORT libraryDictRec := RECORD
+      string owner
+      =>
+      DICTIONARY(bookDictRec) books;
+    END;
+    
+    EXPORT libraryDictionaryFile := DATASET(DG_DictFilename, LibraryDictRec, THOR);
+    
+    EXPORT libraryDatasetFile := DATASET(DG_DsFilename, LibraryDsRec, THOR);
+    
+    EXPORT bookIndex := INDEX({ string20 title }, { dataset(wordRec) words }, DG_BookKeyFilename);
+    
+    EXPORT DsFilename := DG_DsFilename;
+    
+    EXPORT DictFilename := DG_DictFilename;
+    
+    EXPORT BookKeyFilename := DG_BookKeyFilename;
+    
+END; /* serial */
 
 //----------------------------- Child query related definitions ----------------------------------
 

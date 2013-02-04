@@ -69,7 +69,7 @@ public:
         if (_helper)
             baseHelper.set(_helper);
         helper = (IHThorDiskReadArg *)queryHelper();
-        IOutputMetaData *diskRowMeta = queryDiskRowInterfaces()->queryRowMetaData()->querySerializedMeta();
+        IOutputMetaData *diskRowMeta = queryDiskRowInterfaces()->queryRowMetaData()->querySerializedDiskMeta();
         isFixedDiskWidth = diskRowMeta->isFixedSize();
         diskRowMinSz = diskRowMeta->getMinRecordSize();
         helper->createSegmentMonitors(this);

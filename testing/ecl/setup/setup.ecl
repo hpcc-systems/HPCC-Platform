@@ -146,6 +146,46 @@ sequential(
 );
 #end
 
+//******************************** Dictionary dataset creation code ***********************
+
+libraryDs := DATASET([
+    { 'gavin',
+        [{'the hobbit',
+            [{'gandalf'},{'rivendell'},{'dragon'},{'dwarves'},{'elves'}]},
+         {'eragon',
+            [{'eragon'},{'dragon'},{'spine'},{'elves'},{'dwarves'},{'krull'}]}
+        ]},
+    { 'jim',
+        [{'complete diy',
+            [{'heating'},{'electrics'},{'nuclear reactors'},{'spaceships'}]},
+        {'cheeses',
+            [{'cheddar'},{'parmesan'},{'stilton'},{'wensleydale'}]}
+        ]}], SerialTest.libraryDsRec);
+        
+libraryDictDs := DATASET([
+    { 'gavin' =>
+        [{'the hobbit' =>
+            [{'gandalf'},{'rivendell'},{'dragon'},{'dwarves'},{'elves'}]},
+         {'eragon' =>
+            [{'eragon'},{'dragon'},{'spine'},{'elves'},{'dwarves'},{'krull'}]}
+        ]},
+    { 'jim' =>
+        [{'complete diy' =>
+            [{'heating'},{'electrics'},{'nuclear reactors'},{'spaceships'}]},
+        {'cheeses' =>
+            [{'cheddar'},{'parmesan'},{'stilton'},{'wensleydale'}]}
+        ]}], SerialTest.libraryDictRec);
+        
+OUTPUT(libraryDs,,DG_DsFilename,OVERWRITE);
+
+OUTPUT(libraryDictDs,,DG_DictFilename,OVERWRITE);
+
+allBooks := SerialTest.libraryDatasetFile.books;
+
+createBookIndex := INDEX(allBooks, { string20 title := title }, { dataset(SerialTest.wordRec) words := words }, DG_BookKeyFilename);
+
+BUILD(createBookIndex, overwrite);
+
 //******************************** Child query setup code ***********************
 
 udecimal8 baseDate := 20050101;

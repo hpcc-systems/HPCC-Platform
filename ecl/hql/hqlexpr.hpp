@@ -1473,8 +1473,8 @@ extern HQL_API IHqlExpression * queryTable(IHqlExpression * dataset);
 extern HQL_API node_operator queryTableMode(IHqlExpression * expr);
 
 // Code for producing simplified records that the file viewer can cope with
-extern HQL_API ITypeInfo * getSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized);
-extern HQL_API IHqlExpression * getSimplifiedRecord(IHqlExpression * record, bool isKey);
+extern HQL_API ITypeInfo * getSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, _ATOM serialForm);
+extern HQL_API IHqlExpression * getFileViewerRecord(IHqlExpression * record, bool isKey);
 extern HQL_API IHqlExpression * getRecordMappingTransform(node_operator op, IHqlExpression * tgt, IHqlExpression * src, IHqlExpression * sourceSelector);
 extern HQL_API IHqlExpression * getSimplifiedTransform(IHqlExpression * tgt, IHqlExpression * src, IHqlExpression * sourceSelector);
 extern HQL_API IHqlExpression * removeVirtualAttributes(IHqlExpression * record);
@@ -1510,8 +1510,8 @@ extern HQL_API bool isActivityIndependentOfScope(IHqlExpression * expr);
 extern HQL_API bool exprReferencesDataset(IHqlExpression * expr, IHqlExpression * dataset);
 extern HQL_API bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, IHqlExpression * expr);
 extern HQL_API bool canEvaluateInScope(const HqlExprCopyArray & activeScopes, const HqlExprCopyArray & required);
-extern HQL_API IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type);
-extern HQL_API IHqlExpression * ensureSerialized(IHqlExpression * expr);
+extern HQL_API IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, _ATOM serialForm);
+extern HQL_API IHqlExpression * ensureSerialized(IHqlExpression * expr, _ATOM serialForm);
 extern HQL_API bool isDummySerializeDeserialize(IHqlExpression * expr);
 
 extern HQL_API unsigned getRepeatMax(IHqlExpression * expr);
@@ -1565,6 +1565,7 @@ extern HQL_API bool hasUninheritedAttribute(IHqlExpression * field);
 extern HQL_API IHqlExpression * extractChildren(IHqlExpression * value);
 extern HQL_API IHqlExpression * queryOnlyField(IHqlExpression * record);
 extern HQL_API bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right);
+extern HQL_API bool assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right);
 extern HQL_API bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right);
 extern HQL_API bool recordTypesMatchIgnorePayload(IHqlExpression *left, IHqlExpression *right);
 extern HQL_API IHqlExpression * queryOriginalRecord(IHqlExpression * expr);

@@ -18,9 +18,15 @@
 #define HQLCPPSYS_HPP
 
 const char * cppSystemText[]  = {
-
-    //NB: entrypoint needs to be specified because the identifiers aren't case sensitive.
+    //Definition of all the system functions that are explicitly called by the code generator
+    //Should consider moving this to a reserved module within the ecllibrary.
     "shared dummyRecord := { string1 x };",
+
+    //typedefs to clarify the prototypes.  One day these will become real classes.
+    "shared IOutputRowSerializer := boolean;",
+    "shared IOutputRowDeserializer := boolean;",
+    "shared IHThorHashLookupInfo := boolean;",
+    
     "export InternalCppService := SERVICE",
     //  searchTableStringN(unsigned4 num, string table, string search) : library='eclrtl';
     //  memcpy(void * target, void * src, unsigned len);
@@ -399,6 +405,7 @@ const char * cppSystemText[]  = {
     "   deserializeRaw(data field, boolean o) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeRaw';",
     "   data deserializeDataX(boolean o) :  eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeDataX';",
     "   dataset deserializeDatasetX(boolean o) :    eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeDataX';",
+    "   _linkcounted_ dictionary deserializeDictionaryX(boolean _deserializer, boolean _input) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeDictionaryX';",
     "   grouped dataset deserializeGroupedDatasetX(boolean o) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeDataX';",
     "   _linkcounted_ dataset deserializeRowsetX(boolean _deserializer, boolean _input) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeRowsetX';",
     "   _linkcounted_ grouped dataset deserializeGroupedRowsetX(boolean _deserializer, boolean _input) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeGroupedRowsetX';",
@@ -422,6 +429,7 @@ const char * cppSystemText[]  = {
     "   serializeRaw(const data field, boolean o) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='serializeRaw';",
     "   serializeDataX(const data value, boolean o) :   eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='serializeDataX';",
     "   serializeDatasetX(dataset value, boolean o) :   eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='serializeDataX';",
+    "   serializeDictionaryX(linkcounted dictionary value, boolean _ser, boolean o) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='serializeDictionaryX';",
     "   serializeGroupedDatasetX(grouped dataset value, boolean o) :    eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='serializeDataX';",
     "   serializeRowsetX(_array_ dataset value, boolean _ser, boolean o) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='serializeRowsetX';",
     "   serializeGroupedRowsetX(_array_ grouped dataset value, boolean _ser, boolean o) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='serializeGroupedRowsetX';",
@@ -766,8 +774,8 @@ const char * cppSystemText[]  = {
     "   walkIndirectMetaMember(row _x, boolean _visitor) : omethod,entrypoint='walkIndirectMembers';",
     "   _linkcounted_ dataset linkdataset2linkdataset(_linkcounted_ dataset _x) : include,allocator(false),context,entrypoint='linkdataset2linkdataset';",
 
-    "   unsigned4 rtlSerializeRow(unsigned4 _outLen, dummyRecord _out, boolean _serializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlSerializeRow';",
     "   dummyRecord rtlSerializeToBuilder(boolean _serializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlSerializeToBuilder';",
+    "   dummyRecord rtlDeserializeToBuilder(boolean _serializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlDeserializeToBuilder';",
     "   _linkcounted_ row(dummyRecord) rtlDeserializeRow(boolean _allocator, boolean _deserializer, dummyRecord _in) : eclrtl,include,entrypoint='rtlDeserializeRow';",
 
     "   releaseRow(row _x) : include,entrypoint='rtlReleaseRow';",
@@ -775,26 +783,37 @@ const char * cppSystemText[]  = {
     "   linkRow(row _x) : include,entrypoint='rtlLinkRow';",
     "   _linkcounted_ dataset linkRowset(_linkcounted_ dataset _x) : include,allocator(false),entrypoint='rtlLinkRowset';",
 
-    "   _linkcounted_ dataset deserializerRowsetHelper(boolean _deserializer, boolean _input) : eclrtl,include,entrypoint='rtlDeserializeRowset';",
-    "   serializerRowsetHelper(boolean _output, boolean _serializer, _linkcounted_ dataset _x) : eclrtl,include,entrypoint='rtlSerializeRowset';",
+    "   _linkcounted_ dataset deserializeChildRowsetFromStream(boolean _deserializer, boolean _input) : eclrtl,include,entrypoint='rtlDeserializeChildRowset';",
+    "   serializeChildRowsetToStream(boolean _output, boolean _serializer, _linkcounted_ dataset _x) : eclrtl,include,entrypoint='rtlSerializeChildRowset';",
 
+    "   linkcounted dictionary deserializeChildDictionaryFromStream(boolean _deserializer, boolean _input) : eclrtl,include,entrypoint='rtlDeserializeChildDictionary';",
+    "   linkcounted dictionary deserializeChildDictionaryFromDatasetFromStream(boolean _deserializer, boolean _hasher, boolean _input) : eclrtl,include,entrypoint='rtlDeserializeChildDictionaryFromDataset';",
+    "   serializeChildDictionaryToStream(boolean _output, boolean _serializer, _linkcounted_ dictionary _x) : eclrtl,include,entrypoint='rtlSerializeChildDictionary';",
+    "   serializeChildDictionaryToDatasetToStream(boolean _output, boolean _serializer, _linkcounted_ dictionary _x) : eclrtl,include,entrypoint='rtlSerializeChildDictionaryToDataset';",
+
+    "   dictionary rtlSerializeDictionary(IOutputRowSerializer _ser, linkcounted dictionary x) : eclrtl,include,library='eclrtl',entrypoint='rtlSerializeDictionary';",
+    "   dataset rtlSerializeDictionaryToDataset(IOutputRowSerializer _ser, linkcounted dictionary x) : eclrtl,include,library='eclrtl',entrypoint='rtlSerializeDictionaryToDataset';",
+    "   linkcounted dictionary rtlDeserializeDictionary(IOutputRowDeserializer _ser, dictionary x) : eclrtl,include,library='eclrtl',entrypoint='rtlDeserializeDictionary';",
+    "   linkcounted dictionary rtlDeserializeDictionaryFromDataset(IOutputRowDeserializer _ser, IHThorHashLookupInfo _hashInfo, dataset x) : eclrtl,include,library='eclrtl',entrypoint='rtlDeserializeDictionaryFromDataset';",
+
+
+//Methods of IRowDeserializerSource
     "   row(dummyRecord) deserializerPeek(unsigned4 _maxSize) : omethod,entrypoint='peek';",
     "   unsigned4 deserializerBeginNested() : omethod,entrypoint='beginNested';",
     "   boolean deserializerFinishedNested(unsigned4 pos) : omethod,entrypoint='finishedNested';",
-
     "   unsigned4 deserializerReadN(data _target) : omethod,entrypoint='read';",
     "   unsigned4 deserializerReadSize() : omethod,entrypoint='readSize';",
     "   unsigned4 deserializerReadPackedInt(data _target) : omethod,entrypoint='readPackedInt';",
     "   unsigned4 deserializerReadUtf8(boolean rowBuilder, unsigned4 offset, unsigned4 fixedSize, unsigned4 len) : omethod,entrypoint='readUtf8';",
     "   unsigned4 deserializerReadVStr(boolean rowBuilder, unsigned4 offset, unsigned4 fixedSize) : omethod,entrypoint='readVStr';",
     "   unsigned4 deserializerReadVUni(boolean rowBuilder, unsigned4 offset, unsigned4 fixedSize) : omethod,entrypoint='readVUni';",
-
     "   deserializerSkipN(unsigned4 _size) : omethod,entrypoint='skip';",
     "   deserializerSkipPacketInt() : omethod,entrypoint='skipPackedInt';",
     "   deserializerSkipUtf8(unsigned4 _size) : omethod,entrypoint='skipUtf8';",
     "   deserializerSkipVStr() : omethod,entrypoint='skipVStr';",
     "   deserializerSkipVUni() : omethod,entrypoint='skipVUni';",
 
+//Methods of IRowSerializerTarget
     "   serializerPut(const data _target) : omethod,entrypoint='put';",
     "   unsigned4 serializerBeginNested() : omethod,entrypoint='beginNested';",
     "   serializerEndNested(unsigned4 pos) : omethod,entrypoint='endNested';",

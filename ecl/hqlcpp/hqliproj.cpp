@@ -456,7 +456,7 @@ void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
     if (canPack)
         finalRecord.setown(getPackedRecord(finalRecord));
 
-    OwnedHqlExpr serializedRecord = getSerializedForm(finalRecord);
+    OwnedHqlExpr serializedRecord = getSerializedForm(finalRecord, diskAtom);
     if (maxRecordSizeUsesDefault(serializedRecord))
     {
         HqlExprArray recordFields;
@@ -468,7 +468,7 @@ void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
         else
         {
             bool isKnownSize, useDefaultRecordSize;
-            OwnedHqlExpr oldSerializedRecord = getSerializedForm(originalRecord);
+            OwnedHqlExpr oldSerializedRecord = getSerializedForm(originalRecord, diskAtom);
             unsigned oldRecordSize = getMaxRecordSize(oldSerializedRecord, 0, isKnownSize, useDefaultRecordSize);
             if (!useDefaultRecordSize)
                 recordFields.append(*createAttribute(maxLengthAtom, getSizetConstant(oldRecordSize)));

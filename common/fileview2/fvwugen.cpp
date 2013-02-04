@@ -75,7 +75,7 @@ IHqlExpression * addOutput(IHqlExpression * dataset)
 IHqlExpression * addSimplifyProject(IHqlExpression * dataset)
 {
     IHqlExpression * record = dataset->queryRecord();
-    IHqlExpression * projectRecord = getSimplifiedRecord(record, false);
+    IHqlExpression * projectRecord = getFileViewerRecord(record, false);
     if (!projectRecord)
         return LINK(dataset);
 

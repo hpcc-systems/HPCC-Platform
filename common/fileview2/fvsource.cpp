@@ -1053,7 +1053,7 @@ bool FVDataSource::setReturnedInfoFromResult()
     bool isKey = false;
     bool isGrouped = false;     // this isn't strictly true...it could be true for an internal result, but no current flag to test
     returnedMeta.setown(new DataSourceMetaData(returnedRecord, 0, true, isGrouped, 0));
-    transformedRecord.setown(getSimplifiedRecord(returnedRecord, isKey));
+    transformedRecord.setown(getFileViewerRecord(returnedRecord, isKey));
 
     if (!transformedRecord)
     {
@@ -1196,7 +1196,7 @@ IFvDataSourceMetaData * createMetaData(IConstWUResult * wuResult)
     if (!record)
         throw MakeStringException(ERR_FILEVIEW_FIRST+4, "Could not process result schema [%s]", s.str());
 
-    OwnedHqlExpr simplifiedRecord = getSimplifiedRecord(record, false);
+    OwnedHqlExpr simplifiedRecord = getFileViewerRecord(record, false);
     bool isGrouped = false;     // more not sure this is strictly true...
     if (!simplifiedRecord)
         return new DataSourceMetaData(record, 0, true, isGrouped, 0);

@@ -624,7 +624,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
     IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);
 
     OwnedHqlExpr originalRight = createSelector(no_right, rhsRecord, joinSeq);
-    OwnedHqlExpr serializedRhsRecord = getSerializedForm(rhsRecord);
+    OwnedHqlExpr serializedRhsRecord = getSerializedForm(rhsRecord, diskAtom);
     OwnedHqlExpr serializedRight = createSelector(no_right, serializedRhsRecord, joinSeq);
 
     OwnedHqlExpr joinDataset = createDataset(no_anon, LINK(extractJoinFieldsRecord));
@@ -644,12 +644,12 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
             //References to ROWS(originalRight) need to be replaced with DESERIALIZE(ROWS(serializedRight))
             OwnedHqlExpr originalRows = createDataset(no_rows, LINK(originalRight), LINK(rowsid));
             OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(extractedRight), LINK(rowsid));
-            OwnedHqlExpr deserializedRows = ensureDeserialized(rowsExpr, rhsRecord->queryType());
+            OwnedHqlExpr deserializedRows = ensureDeserialized(rowsExpr, rhs->queryType(), diskAtom);
             newTransform.setown(replaceExpression(newTransform, originalRows, deserializedRows));
         }
     }
 
-    newTransform.setown(replaceMemorySelectorWithSerializedSelector(newTransform, rhsRecord, no_right, joinSeq));
+    newTransform.setown(replaceMemorySelectorWithSerializedSelector(newTransform, rhsRecord, no_right, joinSeq, diskAtom));
 
     OwnedHqlExpr fileposExpr = getFilepos(extractedRight, false);
     if (extractJoinFieldsTransform)
@@ -770,9 +770,9 @@ IHqlExpression * KeyedJoinInfo::optimizeTransfer(HqlExprArray & fields, HqlExprA
                 }
 
                 IHqlExpression * matchField = &fields.item(match);
-                OwnedHqlExpr serializedField = getSerializedForm(matchField);
+                OwnedHqlExpr serializedField = getSerializedForm(matchField, diskAtom);
                 OwnedHqlExpr result = createSelectExpr(getActiveTableSelector(), LINK(serializedField));
-                return ensureDeserialized(result, matchField->queryType());
+                return ensureDeserialized(result, matchField->queryType(), diskAtom);
             }
             break;
         }
@@ -829,7 +829,7 @@ void KeyedJoinInfo::optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExp
             if (newFilter && (newExtraFilter || !hasExtra) && fields.ordinality() < getFieldCount(dataset->queryRecord()))
             {
                 OwnedHqlExpr extractedRecord = translator.createRecordInheritMaxLength(fields, dataset);
-                OwnedHqlExpr serializedRecord = getSerializedForm(extractedRecord);
+                OwnedHqlExpr serializedRecord = getSerializedForm(extractedRecord, diskAtom);
                 targetDataset.setown(createDataset(no_anon, LINK(serializedRecord), NULL));
 
                 HqlExprArray assigns;
@@ -837,8 +837,8 @@ void KeyedJoinInfo::optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExp
                 ForEachItemIn(i, fields)
                 {
                     IHqlExpression * curField = &fields.item(i);
-                    OwnedHqlExpr serializedField = getSerializedForm(curField);
-                    OwnedHqlExpr value = ensureSerialized(&values.item(i));
+                    OwnedHqlExpr serializedField = getSerializedForm(curField, diskAtom);
+                    OwnedHqlExpr value = ensureSerialized(&values.item(i), diskAtom);
                     assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(serializedField)), LINK(value)));
                 }
                 targetTransform.setown(createValue(no_newtransform, makeTransformType(serializedRecord->getType()), assigns));
@@ -849,15 +849,15 @@ void KeyedJoinInfo::optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExp
                     extraFilter->setown(replaceSelector(newExtraFilter, queryActiveTableSelector(), leftSelect));
 
             }
-            else if (recordRequiresSerialization(record))
+            else if (recordRequiresSerialization(record, diskAtom))
             {
-                OwnedHqlExpr serializedRecord = getSerializedForm(record);
+                OwnedHqlExpr serializedRecord = getSerializedForm(record, diskAtom);
                 targetDataset.setown(createDataset(no_anon, LINK(serializedRecord)));
                 targetTransform.setown(createRecordMappingTransform(no_transform, serializedRecord, oldLeft));
 
-                filter.setown(replaceMemorySelectorWithSerializedSelector(filter, record, no_left, joinSeq));
+                filter.setown(replaceMemorySelectorWithSerializedSelector(filter, record, no_left, joinSeq, diskAtom));
                 if (hasExtra)
-                    extraFilter->setown(replaceMemorySelectorWithSerializedSelector(*extraFilter, record, no_left, joinSeq));
+                    extraFilter->setown(replaceMemorySelectorWithSerializedSelector(*extraFilter, record, no_left, joinSeq, diskAtom));
             }
             else
                 targetDataset.set(dataset);
@@ -991,7 +991,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
                 doExtract = true;
         }
 
-        if (recordRequiresSerialization(rightRecord))
+        if (recordRequiresSerialization(rightRecord, diskAtom))
             doExtract = true;
     }
 
@@ -1004,7 +1004,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         {
             if (!extractedRecord)
                 extractedRecord.setown(translator.createRecordInheritMaxLength(fieldsAccessed, rawRhs));
-            extractJoinFieldsRecord.setown(getSerializedForm(extractedRecord));
+            extractJoinFieldsRecord.setown(getSerializedForm(extractedRecord, diskAtom));
             OwnedHqlExpr self = getSelf(extractJoinFieldsRecord);
             OwnedHqlExpr memorySelf = getSelf(extractedRecord);
 
@@ -1040,7 +1040,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
                         OwnedHqlExpr tgt = createSelectExpr(LINK(self), LINK(curSerializedField));
                         OwnedHqlExpr src = createSelectExpr(LINK(memorySelf), LINK(curMemoryField));
                         OwnedHqlExpr mappedSrc = fieldMapper.expandFields(src, memorySelf, left, rawRhs);
-                        assigns.append(*createAssign(tgt.getClear(), ensureSerialized(mappedSrc)));
+                        assigns.append(*createAssign(tgt.getClear(), ensureSerialized(mappedSrc, diskAtom)));
                     }
                 }
             }

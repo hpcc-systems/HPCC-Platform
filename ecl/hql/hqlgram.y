@@ -6286,6 +6286,9 @@ primexpr1
                         }
     | EXISTS '(' expressionList ')'
                         {
+                            if (parser->isSingleValuedExpressionList($3))
+                                parser->reportWarning(WRN_SILLY_EXISTS,$1.pos,"EXISTS() on a scalar expression is always true, was this intended?");
+
                             OwnedHqlExpr list = parser->createListFromExpressionList($3);
                             $$.setExpr(createValue(no_existslist, makeBoolType(), LINK(list)));
                             $$.setPosition($1);
@@ -11001,6 +11004,7 @@ sortItem
                             $$.setExpr(createValue(no_negate, makeVoidType(), e));
                             $$.setPosition($1);
                         }
+    | dictionary
     | FEW               {   $$.setExpr(createAttribute(fewAtom));   }
     | MANY              {   $$.setExpr(createAttribute(manyAtom));  }
     | MERGE             {   $$.setExpr(createAttribute(mergeAtom)); }

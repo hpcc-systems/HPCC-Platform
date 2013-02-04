@@ -576,7 +576,6 @@ protected:
 
 extern HQL_API IHqlExpression * queryDefaultMaxRecordLengthExpr();
 extern HQL_API IHqlExpression * getFixedSizeAttr(unsigned size);
-extern HQL_API IHqlExpression * querySerializedFormAttr();
 extern HQL_API IHqlExpression * queryAlignedAttr();
 extern HQL_API IHqlExpression * queryLinkCountedAttr();
 extern HQL_API IHqlExpression * queryUnadornedAttr();

@@ -273,8 +273,8 @@ public:
     virtual void setRow(BuildCtx & ctx, IReferenceSelector * rhs);
     virtual IReferenceSelector * select(BuildCtx & ctx, IHqlExpression * selectExpr);
 
-    virtual void buildDeserialize(BuildCtx & ctx, IHqlExpression * helper);
-    virtual void buildSerialize(BuildCtx & ctx, IHqlExpression * helper);
+    virtual void buildDeserialize(BuildCtx & ctx, IHqlExpression * helper, _ATOM serializeForm);
+    virtual void buildSerialize(BuildCtx & ctx, IHqlExpression * helper, _ATOM serializeForm);
 
 private:
     DatasetSelector(DatasetSelector * _parent, BoundRow * _cursor, AColumnInfo * _column, IHqlExpression * _path);

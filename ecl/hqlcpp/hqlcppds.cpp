@@ -119,6 +119,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowDeserializeRow(BuildCtx & ctx, 
 {
     IHqlExpression * srcRow = expr->queryChild(0);
     IHqlExpression * record = expr->queryRecord();
+    _ATOM serializeForm = expr->queryChild(2)->queryName();
 
     Owned<BoundRow> tempRow = declareLinkedRow(ctx, expr, false);
 
@@ -127,7 +128,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowDeserializeRow(BuildCtx & ctx, 
 
     HqlExprArray args;  
     args.append(*createRowAllocator(ctx, record));
-    args.append(*createRowSerializer(ctx, record, deserializerAtom));
+    args.append(*createSerializer(ctx, record, serializeForm, deserializerAtom));
     args.append(*LINK(srcRow));
     Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
     OwnedHqlExpr call = bindFunctionCall(rtlDeserializeRowAtom, args, resultType);
@@ -455,14 +456,15 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
         }
     case no_getresult:
         {
+            _ATOM serializeForm = diskAtom;  // What if we start using internal in the engines?
             IHqlExpression * seqAttr = expr->queryProperty(sequenceAtom);
             IHqlExpression * nameAttr = expr->queryProperty(namedAtom);
             IHqlExpression * record = expr->queryRecord();
-            OwnedHqlExpr serializedRecord = getSerializedForm(record);
+            OwnedHqlExpr serializedRecord = getSerializedForm(record, serializeForm);
 
             OwnedHqlExpr temp = createDatasetF(no_getresult, LINK(serializedRecord), LINK(seqAttr), LINK(nameAttr), NULL);
             OwnedHqlExpr row = createRow(no_selectnth, LINK(temp), createComma(getSizetConstant(1), createAttribute(noBoundCheckAtom)));
-            row.setown(ensureDeserialized(row, expr->queryType()));
+            row.setown(ensureDeserialized(row, expr->queryType(), serializeForm));
             return buildNewRow(ctx, row);
         }
     case no_matchattr:
@@ -1812,50 +1814,103 @@ IHqlExpression * createGetResultFromWorkunitDataset(IHqlExpression * expr)
     return createDataset(no_getresult, LINK(expr->queryRecord()), createComma(LINK(expr->queryProperty(sequenceAtom)), name));
 }
 
-void HqlCppTranslator::buildAssignSerializedDataset(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+void HqlCppTranslator::buildAssignSerializedDataset(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, _ATOM serializeForm)
 {
-    OwnedITypeInfo serializedType = getSerializedForm(expr->queryType());
+    OwnedITypeInfo serializedType = getSerializedForm(expr->queryType(), serializeForm);
     assertex(recordTypesMatch(target.queryType(), serializedType));
 
     HqlExprArray args;
-    args.append(*createRowSerializer(ctx, expr->queryRecord(), serializerAtom));
+    args.append(*createSerializer(ctx, expr->queryRecord(), serializeForm, serializerAtom));
     args.append(*LINK(expr));
-    OwnedHqlExpr call = bindFunctionCall(rowset2DatasetXAtom, args);
+
+    _ATOM func;
+    if (target.expr->isDictionary())
+    {
+        assertex(serializeForm == internalAtom);
+        func = rtlSerializeDictionaryAtom;
+    }
+    else if (expr->isDictionary())
+    {
+        assertex(serializeForm == diskAtom);
+        func = rtlSerializeDictionaryToDatasetAtom;
+    }
+    else
+    {
+        if (isGrouped(expr))
+            func = groupedRowset2DatasetXAtom;
+        else
+            func = rowset2DatasetXAtom;
+    }
+
+
+    OwnedHqlExpr call = bindFunctionCall(func, args);
     buildExprAssign(ctx, target, call);
 }
 
-void HqlCppTranslator::buildSerializedDataset(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
+void HqlCppTranslator::buildSerializedDataset(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, _ATOM serializeForm)
 {
     CHqlBoundTarget target;
-    OwnedITypeInfo serializedType = getSerializedForm(expr->queryType());
+    OwnedITypeInfo serializedType = getSerializedForm(expr->queryType(), serializeForm);
     createTempFor(ctx, serializedType, target, typemod_none, FormatBlockedDataset);
-    buildAssignSerializedDataset(ctx, target, expr);
+    buildAssignSerializedDataset(ctx, target, expr, serializeForm);
     tgt.setFromTarget(target);
 }
 
 
-void HqlCppTranslator::buildAssignLinkedDataset(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
+void HqlCppTranslator::buildAssignDeserializedDataset(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, _ATOM serializeForm)
 {
-    OwnedITypeInfo serializedType = getSerializedForm(target.queryType());
+    OwnedITypeInfo serializedType = getSerializedForm(target.queryType(), serializeForm);
     assertex(recordTypesMatch(serializedType, expr->queryType()));
 
+    _ATOM func;
     IHqlExpression * record = ::queryRecord(target.queryType());
     HqlExprArray args;
-    args.append(*createRowSerializer(ctx, record, deserializerAtom));
+    args.append(*createSerializer(ctx, record, serializeForm, deserializerAtom));
+    if (target.expr->isDictionary())
+    {
+        if (serializeForm == internalAtom)
+        {
+            assertex(expr->isDictionary());
+            func = rtlDeserializeDictionaryAtom;
+        }
+        else if (serializeForm == diskAtom)
+        {
+            assertex(expr->isDataset());
+            func = rtlDeserializeDictionaryFromDatasetAtom;
+            StringBuffer lookupHelperName;
+            buildDictionaryHashClass(record, lookupHelperName);
+            args.append(*createQuoted(lookupHelperName.str(), makeBoolType()));
+        }
+        else
+            throwUnexpected();
+    }
+    else
+    {
+        if (isGrouped(expr))
+            func = groupedDataset2RowsetXAtom;
+        else
+            func = dataset2RowsetXAtom;
+    }
+
     args.append(*LINK(expr));
-    OwnedHqlExpr call = bindFunctionCall(isGrouped(expr) ? groupedDataset2RowsetXAtom : dataset2RowsetXAtom, args, target.queryType());
+    OwnedHqlExpr call = bindFunctionCall(func, args, target.queryType());
     buildExprAssign(ctx, target, call);
 }
 
-void HqlCppTranslator::buildLinkedDataset(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * expr, CHqlBoundExpr & tgt)
+void HqlCppTranslator::buildDeserializedDataset(BuildCtx & ctx, ITypeInfo * type, IHqlExpression * expr, CHqlBoundExpr & tgt, _ATOM serializeForm)
 {
+#ifdef _DEBUG
+    OwnedITypeInfo serializedType = getSerializedForm(type, serializeForm);
+    assertex(recordTypesMatch(expr->queryType(), serializedType));
+#endif
+
+    ITypeInfo * const exprType = expr->queryType();
+    assertex(!hasLinkedRow(exprType));
+
     CHqlBoundTarget target;
     createTempFor(ctx, type, target, typemod_none, FormatLinkedDataset);
 
-    if (hasLinkedRow(expr->queryType()))
-        buildDatasetAssign(ctx, target, expr);
-    else
-        buildAssignLinkedDataset(ctx, target, expr);
+    buildAssignDeserializedDataset(ctx, target, expr, serializeForm);
 
     tgt.setFromTarget(target);
 }
@@ -1863,6 +1918,7 @@ void HqlCppTranslator::buildLinkedDataset(BuildCtx & ctx, ITypeInfo * type, IHql
 
 void HqlCppTranslator::ensureDatasetFormat(BuildCtx & ctx, ITypeInfo * type, CHqlBoundExpr & tgt, ExpressionFormat format)
 {
+    const _ATOM serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
     switch (format)
     {
     case FormatBlockedDataset:
@@ -1870,7 +1926,8 @@ void HqlCppTranslator::ensureDatasetFormat(BuildCtx & ctx, ITypeInfo * type, CHq
         {
             OwnedHqlExpr deserializedExpr = tgt.getTranslatedExpr();
             LinkedHqlExpr savedCount = tgt.count;
-            buildSerializedDataset(ctx, deserializedExpr, tgt);
+            assertex(!deserializedExpr->isDictionary());
+            buildSerializedDataset(ctx, deserializedExpr, tgt, serializeForm);
             if (savedCount && !isFixedWidthDataset(deserializedExpr))
                 tgt.count.set(savedCount);
             return;
@@ -1880,7 +1937,13 @@ void HqlCppTranslator::ensureDatasetFormat(BuildCtx & ctx, ITypeInfo * type, CHq
         if (!hasLinkCountedModifier(tgt.queryType()))
         {
             OwnedHqlExpr serializedExpr = tgt.getTranslatedExpr();
-            buildLinkedDataset(ctx, type, serializedExpr, tgt);
+            if (recordTypesMatch(type, tgt.queryType()))
+            {
+                //source is an array of rows, or a simple dataset that doesn't need any transformation
+                buildTempExpr(ctx, serializedExpr, tgt, FormatLinkedDataset);
+            }
+            else
+                buildDeserializedDataset(ctx, type, serializedExpr, tgt, serializeForm);
             return;
         }
         break;
@@ -1888,7 +1951,7 @@ void HqlCppTranslator::ensureDatasetFormat(BuildCtx & ctx, ITypeInfo * type, CHq
         if (!isArrayRowset(tgt.queryType()))
         {
             OwnedHqlExpr serializedExpr = tgt.getTranslatedExpr();
-            buildLinkedDataset(ctx, type, serializedExpr, tgt);
+            buildDeserializedDataset(ctx, type, serializedExpr, tgt, serializeForm);
             return;
         }
         break;
@@ -2043,17 +2106,31 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             return;
         }
     case no_serialize:
-        if (isDummySerializeDeserialize(expr))
-            doBuildDataset(ctx, expr->queryChild(0)->queryChild(0), tgt, format);
-        else
-            buildSerializedDataset(ctx, expr->queryChild(0), tgt);
-        return;
+        {
+            IHqlExpression * deserialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(1)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                doBuildDataset(ctx, deserialized->queryChild(0), tgt, format);
+            else if (!typeRequiresDeserialization(deserialized->queryType(), serializeForm))
+                //Optimize creating a serialized version of a dataset if the record is the same serialized and unserialized
+                buildDataset(ctx, deserialized, tgt, FormatNatural);
+            else
+                buildSerializedDataset(ctx, deserialized, tgt, serializeForm);
+            return;
+        }
     case no_deserialize:
-        if (isDummySerializeDeserialize(expr))
-            doBuildDataset(ctx, expr->queryChild(0)->queryChild(0), tgt, format);
-        else
-            buildLinkedDataset(ctx, expr->queryType(), expr->queryChild(0), tgt);
-        return;
+        {
+            IHqlExpression * serialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(2)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                doBuildDataset(ctx, serialized->queryChild(0), tgt, format);
+            else if (!typeRequiresDeserialization(expr->queryType(), serializeForm))
+                //Optimize creating a deserialized version of a dataset if the record is the same serialized and unserialized
+                buildDataset(ctx, serialized, tgt, FormatNatural);
+            else
+                buildDeserializedDataset(ctx, expr->queryType(), serialized, tgt, serializeForm);
+            return;
+        }
     case no_datasetfromrow:
         {
             IHqlExpression * row = expr->queryChild(0);
@@ -2137,7 +2214,8 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             Owned<IHqlCppDatasetBuilder> builder;
 
             IHqlExpression * record = expr->queryRecord();
-            OwnedHqlExpr serializedRecord = getSerializedForm(record);
+            const _ATOM serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
+            OwnedHqlExpr serializedRecord = getSerializedForm(record, serializeForm);
             if (format == FormatNatural)
             {
                 if (record != serializedRecord)
@@ -2329,13 +2407,13 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         if (isDummySerializeDeserialize(expr))
             buildDatasetAssign(ctx, target, expr->queryChild(0)->queryChild(0));
         else
-            buildAssignSerializedDataset(ctx, target, expr->queryChild(0));
+            buildAssignSerializedDataset(ctx, target, expr->queryChild(0), expr->queryChild(1)->queryName());
         return;
     case no_deserialize:
         if (isDummySerializeDeserialize(expr))
             buildDatasetAssign(ctx, target, expr->queryChild(0)->queryChild(0));
         else
-            buildAssignLinkedDataset(ctx, target, expr->queryChild(0));
+            buildAssignDeserializedDataset(ctx, target, expr->queryChild(0), expr->queryChild(2)->queryName());
         return;
     case no_select:
         {
@@ -2413,17 +2491,18 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
             bool sourceOutOfLine = isArrayRowset(exprType);
             if (sourceOutOfLine != targetOutOfLine)
             {
-                OwnedITypeInfo serializedSourceType = getSerializedForm(exprType);
-                OwnedITypeInfo serializedTargetType = getSerializedForm(to);
+                _ATOM serializeFormat = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
+                OwnedITypeInfo serializedSourceType = getSerializedForm(exprType, serializeFormat);
+                OwnedITypeInfo serializedTargetType = getSerializedForm(to, serializeFormat);
                 if (queryUnqualifiedType(serializedSourceType) == queryUnqualifiedType(serializedTargetType))
                 {
                     if (targetOutOfLine)
                     {
-                        buildAssignLinkedDataset(ctx, target, expr);
+                        buildAssignDeserializedDataset(ctx, target, expr, serializeFormat);
                     }
                     else
                     {
-                        buildAssignSerializedDataset(ctx, target, expr);
+                        buildAssignSerializedDataset(ctx, target, expr, serializeFormat);
                     }
                     return;
                 }
@@ -3899,6 +3978,7 @@ void HqlCppTranslator::doBuildRowAssignProjectRow(BuildCtx & ctx, IReferenceSele
 void HqlCppTranslator::doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
 {
     IHqlExpression * srcRow = expr->queryChild(0);
+    _ATOM serializeForm = expr->queryChild(1)->queryName();
 
     Owned<IReferenceSelector> source = buildNewRow(ctx, srcRow);
 
@@ -3913,7 +3993,7 @@ void HqlCppTranslator::doBuildRowAssignSerializeRow(BuildCtx & ctx, IReferenceSe
     assertex(selfCursor->queryBuilder());
     {
         HqlExprArray args;
-        args.append(*createRowSerializer(ctx, unserializedRecord, serializerAtom));
+        args.append(*createSerializer(ctx, unserializedRecord, serializeForm, serializerAtom));
         args.append(*LINK(srcRow));
 
         Owned<ITypeInfo> type = makeTransformType(expr->queryRecord()->getType());
@@ -4002,7 +4082,7 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
 
     //if record structures are identical, then we must just be able to block copy the information across.
     bool useMemcpy = (sourceRecord == targetRecord) && source->isBinary() && !source->isConditional() && 
-                     !recordRequiresSerialization(sourceRecord);
+                     !recordRequiresLinkCount(sourceRecord);
 
     if (useMemcpy)
     {
@@ -4588,7 +4668,7 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
         }
     }
 
-    bool useLinkCounted = recordRequiresSerialization(expr->queryRecord()) || options.tempDatasetsUseLinkedRows;
+    bool useLinkCounted = recordRequiresLinkCount(expr->queryRecord()) || options.tempDatasetsUseLinkedRows;
 
     OwnedHqlExpr call = buildGetLocalResult(ctx, expr, useLinkCounted);
     switch (expr->queryType()->getTypeCode())

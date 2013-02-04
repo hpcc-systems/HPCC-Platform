@@ -30,8 +30,8 @@ It should only contain pure interface definitions or inline functions.
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      140
-#define MIN_ACTIVITY_INTERFACE_VERSION  138             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      141
+#define MIN_ACTIVITY_INTERFACE_VERSION  141             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -211,8 +211,10 @@ interface IEngineRowAllocator : extends IInterface
     virtual IOutputMetaData * queryOutputMeta() = 0;
     virtual unsigned queryActivityId() = 0;
     virtual StringBuffer &getId(StringBuffer &) = 0;
-    virtual IOutputRowSerializer *createRowSerializer(ICodeContext *ctx = NULL) = 0;
-    virtual IOutputRowDeserializer *createRowDeserializer(ICodeContext *ctx) = 0;
+    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) = 0;
+    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) = 0;
+    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) = 0;
+    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) = 0;
 };
 
 interface IRowSerializerTarget
@@ -295,8 +297,6 @@ interface RtlITypeInfo
     virtual size32_t size(const byte * self, const byte * selfrow) const = 0;
     virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const = 0;  // returns the size
     virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & out) const = 0;
-    virtual void serialize(IRtlFieldTypeSerializer & out) const = 0;
-    virtual void deserialize(IRtlFieldTypeDeserializer & in) = 0;
 
     virtual const char * queryLocale() const = 0;
     virtual const RtlFieldInfo * const * queryFields() const = 0;               // null terminated list
@@ -360,9 +360,13 @@ enum
     MDFgrouped              = 0x0001,
     MDFhasxml               = 0x0002,
     MDFneeddestruct         = 0x0004,
-    MDFneedserialize        = 0x0008,
+    MDFneedserializedisk    = 0x0008,
     MDFunknownmaxlength     = 0x0010,               // max length couldn't be determined from the record structure
     MDFhasserialize         = 0x0020,
+    MDFneedserializeinternal= 0x0040,
+    MDFdiskmatchesinternal  = 0x0080,
+
+    MDFneedserializemask    = (MDFneedserializedisk|MDFneedserializeinternal),
 };
 
 interface IIndirectMemberVisitor
@@ -382,14 +386,18 @@ interface IOutputMetaData : public IRecordSize
     virtual unsigned getVersion() const = 0;
     virtual unsigned getMetaFlags() = 0;
     virtual const RtlTypeInfo * queryTypeInfo() const { return NULL; }                                          // non null for meta from generated code
-    virtual IOutputMetaData * querySerializedMeta() = 0;
 
     virtual void destruct(byte * self) = 0;
-    virtual IOutputRowSerializer * createRowSerializer(ICodeContext * ctx, unsigned activityId) = 0;        // ctx is currently allowed to be NULL
-    virtual IOutputRowDeserializer * createRowDeserializer(ICodeContext * ctx, unsigned activityId) = 0;
-    virtual ISourceRowPrefetcher * createRowPrefetcher(ICodeContext * ctx, unsigned activityId) = 0;
-    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}            // from and to are *hints* for the range of fields to call through with
 
+    virtual IOutputMetaData * querySerializedDiskMeta() = 0;
+    virtual IOutputRowSerializer * createDiskSerializer(ICodeContext * ctx, unsigned activityId) = 0;        // ctx is currently allowed to be NULL
+    virtual IOutputRowDeserializer * createDiskDeserializer(ICodeContext * ctx, unsigned activityId) = 0;
+    virtual ISourceRowPrefetcher * createDiskPrefetcher(ICodeContext * ctx, unsigned activityId) = 0;
+
+    virtual IOutputRowSerializer * createInternalSerializer(ICodeContext * ctx, unsigned activityId) = 0;        // ctx is currently allowed to be NULL
+    virtual IOutputRowDeserializer * createInternalDeserializer(ICodeContext * ctx, unsigned activityId) = 0;
+
+    virtual void process(const byte * self, IFieldProcessor & target, unsigned from, unsigned to) {}            // from and to are *hints* for the range of fields to call through with
     virtual void walkIndirectMembers(const byte * self, IIndirectMemberVisitor & visitor) = 0;
 };
 
