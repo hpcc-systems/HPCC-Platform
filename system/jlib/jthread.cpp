@@ -267,7 +267,10 @@ int Thread::begin()
     }
 #endif
     if (threadTerminationHook)
+    {
         (*threadTerminationHook)();
+        threadTerminationHook = NULL;
+    }
 #ifdef _WIN32
 #ifndef _DEBUG
     CloseHandle(hThread);   // leak handle when debugging, 
@@ -809,7 +812,10 @@ public:
             }
 #endif
             if (threadTerminationHook)
+            {
                 (*threadTerminationHook)();    // Reset any pre-thread state.
+                threadTerminationHook = NULL;
+            }
         } while (parent.notifyStopped(this));
         return 0;
     }

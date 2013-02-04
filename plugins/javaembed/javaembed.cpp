@@ -915,10 +915,16 @@ static __thread ThreadTermFunc threadHookChain;
 
 static void releaseContext()
 {
-    delete threadContext;
-    threadContext = NULL;
+    if (threadContext)
+    {
+        delete threadContext;
+        threadContext = NULL;
+    }
     if (threadHookChain)
+    {
         (*threadHookChain)();
+        threadHookChain = NULL;
+    }
 }
 
 class JavaEmbedContext : public CInterfaceOf<IEmbedContext>
