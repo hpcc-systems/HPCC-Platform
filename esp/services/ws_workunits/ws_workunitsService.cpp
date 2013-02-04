@@ -214,11 +214,9 @@ void submitWsWorkunit(IEspContext& context, IConstWorkUnit* cw, const char* clus
     }
 
     if (resetWorkflow)
-    {
         wu->resetWorkflow();
-        if (!compile)
-            wu->schedule();
-    }
+    if (!compile)
+        wu->schedule();
 
     if (resetVariables)
     {
