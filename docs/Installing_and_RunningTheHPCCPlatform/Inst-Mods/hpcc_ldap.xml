@@ -4,16 +4,20 @@
 <sect1 id="ldap_config">
   <title>Configuring HPCC for Authentication</title>
 
-  <para>This section details the steps to connect your HPCC platform to use
+  <para>This section details the steps to configure your HPCC platform to use
   authentication. There are two ways to use authentication with your HPCC
-  system. One way is to use an implementation of .htaccess and the other is to
-  use an LDAP Server to enable user security. </para>
+  system: simple htpassword authentication or LDAP.</para>
 
-  <para>The htaccess authentication is very basic and only serves as either
-  authenticate a user or not. LDAP authentication is more robust, that can not
-  only authenticate users, but add granularity to the authentication. You will
-  need to decide which of these methods is best for your environment and
-  implement the one that is appropriate for you.</para>
+  <para>The htpassword authentication method is basic password authentication.
+  It only serves to either authenticate a user and grant access or not.</para>
+
+  <para>LDAP authentication offers more features and options. LDAP can not
+  only authenticate users, but adds granularity to the authentication. LDAP
+  allows you to control grouped access to features, functions, and
+  files.</para>
+
+  <para>You should consider your system needs and decide which of these
+  methods is appropriate for your environment.</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <?dbfo keep-together="always"?>
@@ -36,41 +40,160 @@
   </informaltable>
 
   <sect2>
-    <title>Using htaccess authentication.</title>
+    <title>Using htpassword authentication</title>
 
-    <para>This section contains the information to install and implement
-    htaccess authentication.</para>
+    <para>htpasswd provides basic password authentication to the entire
+    system. This section contains the information to install and implement
+    htpasswd authentication.</para>
 
-    <para>***Adde more information for htaccess***</para>
+    <sect3>
+      <title>Connect to Configuration Manager</title>
 
-    <para>Getting and installing the HTACCESS PACKAGE. Not really sure about
-    the details here but I am assuming that we are going to do something along
-    the following lines; </para>
+      <para>In order to change the configuration for HPCC components, connect
+      to the Configuration Manager.</para>
 
-    <orderedlist>
-      <listitem>
-        <para>Get the HT ACCESS Installation package... Provide location and
-        details where package is available. </para>
-      </listitem>
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Stop all HPCC Components, if they are running.</para>
+        </listitem>
 
-      <listitem>
-        <para>Install the package to your system</para>
-      </listitem>
+        <listitem>
+          <para>Verify that they are stopped. You can use a single command,
+          such as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
 
-      <listitem>
-        <para>configure the package or program as specified by that package
-        instructions. </para>
-      </listitem>
-    </orderedlist>
+        <listitem>
+          <para>Start Configuration Manager.</para>
 
-    <para></para>
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Connect to the Configuration Manager web interface.</para>
+
+          <para>(using the url of
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          of the node running Configuration Manager)</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">Advanced View</emphasis>
+          radio button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use the drop list to select the XML configuration file.
+          <variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>Configuration Manager <emphasis
+                  role="bold">never</emphasis> works on the active
+                  configuration file. After you finish editing you will have
+                  to copy the environment.xml to the active location and push
+                  it out to all nodes.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </listitem>
+
+        <listitem>
+          <para>Check the <emphasis role="bold">Write Access</emphasis>
+          box.</para>
+
+          <para>Default access is read-only. Many options are only available
+          when write-access is enabled.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3>
+      <title>Enabling htpasswd authentication in HPCC</title>
+
+      <orderedlist continuation="continues">
+        <listitem>
+          <para>Select <emphasis role="bold">Esp - myesp</emphasis> in the
+          Navigator panel on the left hand side.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>If you have more than one ESP Server, you would only use
+                one of them for authentication.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Select the <emphasis role="bold">Authentication</emphasis>
+          tab<graphic fileref="../../images/gs-ht01.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">htpasswdFile</emphasis>
+          entry, set the value option to the location of the htpasswd
+          file.</para>
+
+          <para>If the file does not already exist you must create one, see
+          the following section <emphasis>User administration with
+          htpasswd</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">method</emphasis>
+          entry.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Click on the value column drop list to display the choices for
+          method. <graphic fileref="../../images/gs-ht02.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Choose <emphasis role="bluebold">htpasswd</emphasis> from the
+          drop list.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the disk icon to save.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3>
+      <title>User administration with htpasswd</title>
+
+      <para>Users and passwords are kept in the htpasswd file. The htpasswd
+      file needs to exist on the ESP Node that you have enabled authentication
+      on.</para>
+
+      <para>You can use the htpasswd utility to administer users.</para>
+
+      <para>You may already have htpasswd on your system, as it is a part of
+      some Linux distributions. Check your Linux distribution to see if you
+      already have it. You can get the htpasswd utility from The Apache
+      Software Foundation.</para>
+
+      <para>For more information about using htpasswd see: <ulink
+      url="http://httpd.apache.org/docs/2.2/programs/htpasswd.html">http://httpd.apache.org/docs/2.2/programs/htpasswd.html</ulink>.</para>
+    </sect3>
   </sect2>
 
-  <sect2>
-    <title>LDAP Authentication</title>
+  <sect2 role="brk">
+    <title>Using LDAP Authentication</title>
 
     <para>This section contains the information to install and implement LDAP
-    based authentication.</para>
+    based authentication. LDAP Authentication provides the most options for
+    securing your system, or parts of your system.</para>
 
     <sect3>
       <title>Connect to Configuration Manager</title>
