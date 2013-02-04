@@ -29,7 +29,7 @@ IF (NOT XALAN_FOUND)
     SET (xalan_libs "xalan-c")
   ENDIF()
 
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
       IF (${ARCH64BIT} EQUAL 1)
         SET (osdir "linux64_gcc4.1.1")

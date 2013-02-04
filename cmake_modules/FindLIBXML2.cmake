@@ -29,7 +29,7 @@ if (NOT LIBXML2_FOUND)
     SET (libxml2_libs "xml2 libxml2")
   ENDIF()
 
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
       IF (${ARCH64BIT} EQUAL 1)
         SET (osdir "linux64_gcc4.1.1")

@@ -33,7 +33,7 @@ IF (NOT OPENLDAP_FOUND)
     SET (ldap_inc "ldap.h")
   ENDIF()
 
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
       IF (${ARCH64BIT} EQUAL 1)
         SET (osincdir "openldap/linux64_gcc4.1.1/include")
