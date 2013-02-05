@@ -174,14 +174,18 @@
 
       <para>Users and passwords are kept in the htpasswd file. The htpasswd
       file needs to exist on the ESP Node that you have enabled authentication
-      on.</para>
+      on. The default location is: <emphasis
+      role="bold">/etc/HPCCSystems/.htpasswd</emphasis> on the ESP node that
+      has been configured to authenticate, but it is configurable. </para>
 
-      <para>You can use the htpasswd utility to administer users.</para>
+      <para>You can use the htpasswd utility to create the .htpasswd file to
+      administer users.</para>
 
-      <para>You may already have htpasswd on your system, as it is a part of
-      some Linux distributions. Check your Linux distribution to see if you
-      already have it. You can get the htpasswd utility from The Apache
-      Software Foundation.</para>
+      <para>You may already have the htpasswd utility on your system, as it is
+      a part of some Linux distributions. Check your Linux distribution to see
+      if you already have it. If you do not have it you should download the
+      httpd tools for your distribution from The Apache Software
+      Foundation.</para>
 
       <para>For more information about using htpasswd see: <ulink
       url="http://httpd.apache.org/docs/2.2/programs/htpasswd.html">http://httpd.apache.org/docs/2.2/programs/htpasswd.html</ulink>.</para>
