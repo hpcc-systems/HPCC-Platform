@@ -23,7 +23,7 @@
 #  ICU_LIBRARIES - The libraries needed to use ICU
 
 IF (NOT ICU_FOUND)
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
       IF (${ARCH64BIT} EQUAL 1)
         SET (osdir "linux64_gcc4.1.1")

@@ -29,7 +29,7 @@ IF (NOT ZLIB_FOUND)
     SET (zlib_lib "z")
   ENDIF()
 
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
       IF (${ARCH64BIT} EQUAL 1)
         SET (osdir "linux64_gcc4.1.1")
