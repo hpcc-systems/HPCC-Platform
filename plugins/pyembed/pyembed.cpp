@@ -164,7 +164,7 @@ public:
                 OwnedPyObject new_path = PyString_FromString(path);
                 if (sys_path)
                 {
-                    PyList_Append(sys_path, new_path);
+                    PyList_Insert(sys_path, 0, new_path);
                     checkPythonError();
                 }
             }

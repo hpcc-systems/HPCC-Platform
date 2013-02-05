@@ -378,6 +378,8 @@ static int doMain(int argc, const char *argv[])
 
 int main(int argc, const char *argv[])
 {
+    EnableSEHtoExceptionMapping();
+    setTerminateOnSEH(true);
     InitModuleObjects();
     queryStderrLogMsgHandler()->setMessageFields(0);
     // Turn logging down (we turn it back up if -v option seen)
