@@ -32,7 +32,7 @@ IF (NOT BOOST_REGEX_FOUND)
   ELSEIF(WIN32)
     SET (boost_regex_lib "libboost_regex-vc90-mt.lib") # note - this may not be the lib we need, but should be in same place as it...
   ENDIF()
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
       IF (${ARCH64BIT} EQUAL 1)
         SET (osdir "linux-x86_64-gcc4")

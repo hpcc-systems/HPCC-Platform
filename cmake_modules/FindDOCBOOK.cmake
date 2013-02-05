@@ -27,7 +27,7 @@ if (NOT XSLTPROC_FOUND)
     SET (xsltproc_n "xsltproc")
   ENDIF()
 
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (UNIX)
       IF (${ARCH64BIT} EQUAL 1)
         SET (osdir "linux64_gcc4.1.1")

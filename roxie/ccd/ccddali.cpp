@@ -557,11 +557,11 @@ public:
                     serverStatus->queryProperties()->setProp("@cluster", roxieName.str());
                     serverStatus->commitProperties();
                     initCache();
+                    isConnected = true;
                     ForEachItemIn(idx, watchers)
                     {
                         watchers.item(idx).onReconnect();
                     }
-                    isConnected = true;
                 }
                 catch(IException *e)
                 {

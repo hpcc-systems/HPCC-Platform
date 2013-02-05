@@ -23,7 +23,7 @@ CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/ftslave_linux.xsd.in ${CMAKE_CURRENT_
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/roxie.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/roxie.xsd)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/thor.xsd.in ${CMAKE_CURRENT_BINARY_DIR}/thor.xsd)
 
-if ( ${HPCC_PROJECT} STREQUAL "community" )
+if ( "${HPCC_PROJECT}" STREQUAL "community" )
     configure_file("buildsetCC.xml.in" "buildset.xml")
 endif()
 

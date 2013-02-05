@@ -20,7 +20,7 @@
 #  BINUTILS_FOUND - system has the BinUtils library BINUTILS_INCLUDE_DIR - the BinUtils include directory BINUTILS_LIBRARIES - The libraries needed 
 #  to use BinUtils
 IF (NOT BINUTILS_FOUND)
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     IF (${ARCH64BIT} EQUAL 1)
       SET (osdir "linux64_gcc4.1.1")
     ELSE()

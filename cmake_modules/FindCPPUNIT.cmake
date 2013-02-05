@@ -29,7 +29,7 @@ IF (NOT CPPUNIT_FOUND)
     SET (cppunit_dll "cppunit")
   ENDIF()
 
-  IF (NOT ${EXTERNALS_DIRECTORY} STREQUAL "")
+  IF (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
   
     IF (UNIX)
       IF (${ARCH64BIT} EQUAL 1)
