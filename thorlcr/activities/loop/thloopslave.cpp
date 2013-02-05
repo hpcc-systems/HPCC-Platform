@@ -708,8 +708,6 @@ public:
 
 class CLocalResultWriteActivity : public CLocalResultWriteActivityBase
 {
-    IHThorLocalResultWriteArg *helper;
-
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -734,6 +732,65 @@ activityslaves_decl CActivityBase *createLocalResultSpillSlave(CGraphElementBase
     return new CLocalResultSpillActivity(container);
 }
 
+
+class CDictionaryResultWriteActivity : public ProcessSlaveActivity
+{
+    IHThorDictionaryResultWriteArg *helper;
+protected:
+    IThorDataLink *input;
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CDictionaryResultWriteActivity(CGraphElementBase *_container) : ProcessSlaveActivity(_container)
+    {
+        helper = (IHThorDictionaryResultWriteArg *)queryHelper();
+        input = NULL;
+    }
+    virtual void process()
+    {
+        input = inputs.item(0);
+        startInput(input);
+        processed = THORDATALINK_STARTED;
+
+        RtlLinkedDictionaryBuilder builder(queryRowAllocator(), helper->queryHashLookupInfo());
+        loop
+        {
+            const void *row = input->nextRow();
+            if (!row)
+            {
+                row = input->nextRow();
+                if (!row)
+                    break;
+            }
+            builder.appendOwn(row);
+        }
+        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        IThorResult *result = graph->createResult(*this, helper->querySequence(), this, !queryGraph().isLocalChild());
+        Owned<IRowWriter> resultWriter = result->getWriter();
+        size32_t dictSize = builder.getcount();
+        byte ** dictRows = builder.queryrows();
+        for (size32_t row = 0; row < dictSize; row++)
+        {
+            byte *thisRow = dictRows[row];
+            if (thisRow)
+                LinkThorRow(thisRow);
+            resultWriter->putRow(thisRow);
+        }
+    }
+    void endProcess()
+    {
+        if (processed & THORDATALINK_STARTED)
+        {
+            stopInput(input);
+            processed |= THORDATALINK_STOPPED;
+        }
+    }
+};
+
+CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container)
+{
+    return new CDictionaryResultWriteActivity(container);
+}
 
 
 activityslaves_decl CActivityBase *createGraphLoopSlave(CGraphElementBase *container)

@@ -35,51 +35,51 @@ protected:
     int flushThreshold;
     unsigned workunitWriteLimit, totalSize;
     bool appendOutput;
-    IHThorWorkUnitWriteArg *helper;
+    StringAttr resultName;
+    unsigned resultSeq;
 
 public:
     CWorkUnitWriteMasterBase(CMasterGraphElement * info) : CMasterActivity(info)
     {
-        helper = (IHThorWorkUnitWriteArg *)queryHelper();
         numResults = 0;
         totalSize = 0;
-        appendOutput = 0 != (POFextend & helper->getFlags());
-        flushThreshold = globals->getPropInt("@output_flush_threshold", -1);
+        resultSeq = 0;
+        appendOutput = false;
+        flushThreshold = -1;
         workunitWriteLimit = 0;
         mpTag = container.queryJob().allocateMPTag(); // used by local too
     }
     void init()
     {
         workunitWriteLimit = (unsigned)container.queryJob().getWorkUnitValueInt("outputLimit", DEFAULT_WUIDWRITE_LIMIT) * 0x100000;
-        if (appendOutput)
-        {
-            Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
-            Owned<IWUResult> result = updateWorkUnitResult(wu, helper->queryName(), helper->getSequence());
-            numResults = validRC(result->getResultRowCount());
-        }
     }
     virtual void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
         dst.append((int)mpTag);
     }
-    void flushResults(bool complete=false)
+    void addResult(rowcount_t resultCount, MemoryBuffer &resultData, bool complete)
+    {
+        Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
+        Owned<IWUResult> result = updateWorkUnitResult(wu, resultName, resultSeq);
+        if (appendOutput)
+            result->addResultRaw(resultData.length(), resultData.toByteArray(), ResultFormatRaw);
+        else
+            result->setResultRaw(resultData.length(), resultData.toByteArray(), ResultFormatRaw);
+        result->setResultRowCount(resultCount);
+        result->setResultTotalRowCount(resultCount);
+        resultData.clear();
+        if (complete)
+            result->setResultStatus(ResultStatusCalculated);
+        appendOutput = true;
+    }
+    virtual void flushResults(bool complete=false)
     {
         if (resultData.length() || complete)
         {
-            Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
-            Owned<IWUResult> result = updateWorkUnitResult(wu, helper->queryName(), helper->getSequence());
-            ActPrintLog("WORKUNITWRITE: flushing result");
-            if (appendOutput)
-                result->addResultRaw(resultData.length(), resultData.toByteArray(), ResultFormatRaw);
-            else
-                result->setResultRaw(resultData.length(), resultData.toByteArray(), ResultFormatRaw);
-            appendOutput = true;
-            result->setResultRowCount(numResults);
-            result->setResultTotalRowCount(numResults);
+            ActPrintLog("flushing result");
+            addResult(numResults, resultData, complete);
             resultData.clear();
-            if (complete)
-                result->setResultStatus(ResultStatusCalculated);
-            ActPrintLog("WORKUNITWRITE: result flushed");
+            ActPrintLog("result flushed");
         }
     }
     virtual void abort()
@@ -89,10 +89,10 @@ public:
     }
 };
 
-class CWorkUnitWriteActivityMaster : public CWorkUnitWriteMasterBase
+class CWorkUnitWriteGlobalMasterBase : public CWorkUnitWriteMasterBase
 {
 public:
-    CWorkUnitWriteActivityMaster(CMasterGraphElement * info) : CWorkUnitWriteMasterBase(info)
+    CWorkUnitWriteGlobalMasterBase(CMasterGraphElement * info) : CWorkUnitWriteMasterBase(info)
     {
     }
     void process()
@@ -114,15 +114,14 @@ public:
                 unsigned numGot;
                 mb.read(numGot);
                 unsigned l=mb.remaining();
-                if (workunitWriteLimit && resultData.length()+l > workunitWriteLimit)
+                if (workunitWriteLimit && totalSize+resultData.length()+l > workunitWriteLimit)
                 {
                     StringBuffer errMsg("Dataset too large to output to workunit (limit ");
                     errMsg.append(workunitWriteLimit/0x100000).append(") megabytes, in result (");
-                    const char *name = helper->queryName();
-                    if (name)
-                        errMsg.append("name=").append(name);
+                    if (resultName.length())
+                        errMsg.append("name=").append(resultName);
                     else
-                        errMsg.append("sequence=").append(helper->getSequence());
+                        errMsg.append("sequence=").append(resultSeq);
                     errMsg.append(")");
                     throw MakeThorException(TE_WorkUnitWriteLimitExceeded, "%s", errMsg.str());
                 }
@@ -134,8 +133,30 @@ public:
                     flushResults();
             }
         }
-
         flushResults(true);
+    }
+};
+
+class CWorkUnitWriteActivityMaster : public CWorkUnitWriteGlobalMasterBase
+{
+    IHThorWorkUnitWriteArg *helper;
+public:
+    CWorkUnitWriteActivityMaster(CMasterGraphElement * info) : CWorkUnitWriteGlobalMasterBase(info)
+    {
+        helper = (IHThorWorkUnitWriteArg *)queryHelper();
+        appendOutput = 0 != (POFextend & helper->getFlags());
+        flushThreshold = globals->getPropInt("@output_flush_threshold", -1);
+        resultName.set(helper->queryName());
+        resultSeq = helper->getSequence();
+    }
+    void init()
+    {
+        if (appendOutput)
+        {
+            Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
+            Owned<IWUResult> result = updateWorkUnitResult(wu, resultName, resultSeq);
+            numResults = validRC(result->getResultRowCount());
+        }
     }
 };
 
@@ -199,9 +220,16 @@ class CWorkUnitWriteLocalActivityMaster : public CWorkUnitWriteMasterBase
     };
     Owned<CMessageHandler> messageHandler;
     unsigned sent;
+    IHThorWorkUnitWriteArg *helper;
+
 public:
     CWorkUnitWriteLocalActivityMaster(CMasterGraphElement * info) : CWorkUnitWriteMasterBase(info)
     {
+        helper = (IHThorWorkUnitWriteArg *)queryHelper();
+        appendOutput = 0 != (POFextend & helper->getFlags());
+        flushThreshold = globals->getPropInt("@output_flush_threshold", -1);
+        resultName.set(helper->queryName());
+        resultSeq = helper->getSequence();
         sent = 0;
     }
     void getData(unsigned sender)
@@ -215,14 +243,17 @@ public:
         unsigned numGot;
         msg.read(numGot);
         unsigned l=msg.remaining();
-        if (workunitWriteLimit && resultData.length()+l > workunitWriteLimit)
+        if (workunitWriteLimit && totalSize+resultData.length()+l > workunitWriteLimit)
             throw MakeThorException(TE_WorkUnitWriteLimitExceeded, "Dataset too large to output to workunit (limit %d megabytes)", workunitWriteLimit/0x100000);
         resultData.append(l, msg.readDirect(l));
         numResults += numGot;
 
         // NB if 0 == numGot - then final packet from sender
         if (0 == numGot || (-1 != flushThreshold && resultData.length() >= (unsigned)flushThreshold))
+        {
+            totalSize += resultData.length();
             flushResults(0 == numGot);
+        }
     }
     virtual void handleSlaveMessage(CMessageBuffer &msg)
     {
@@ -242,4 +273,53 @@ CActivityBase *createWorkUnitWriteActivityMaster(CMasterGraphElement *container)
         return new CWorkUnitWriteLocalActivityMaster(container);
     else
         return new CWorkUnitWriteActivityMaster(container);
+}
+
+// ==================================
+
+class CDictionaryWorkunitWriteActivityMaster : public CWorkUnitWriteGlobalMasterBase
+{
+    IHThorDictionaryWorkUnitWriteArg *helper;
+public:
+    CDictionaryWorkunitWriteActivityMaster(CMasterGraphElement * info) : CWorkUnitWriteGlobalMasterBase(info)
+    {
+        helper = (IHThorDictionaryWorkUnitWriteArg *)queryHelper();
+        resultName.set(helper->queryName());
+        resultSeq = helper->getSequence();
+    }
+    virtual void flushResults(bool complete=false)
+    {
+        assertex(complete);
+        ActPrintLog("dictionary result");
+        Owned<IRowInterfaces> rowIf = createRowInterfaces(container.queryInput(0)->queryHelper()->queryOutputMeta(),queryActivityId(),queryCodeContext());
+        IOutputRowDeserializer *deserializer = rowIf->queryRowDeserializer();
+        CMessageBuffer mb;
+        Owned<ISerialStream> stream = createMemoryBufferSerialStream(resultData);
+        CThorStreamDeserializerSource rowSource;
+        rowSource.setStream(stream);
+
+        RtlLinkedDictionaryBuilder builder(queryRowAllocator(), helper->queryHashLookupInfo());
+        while (!rowSource.eos())
+        {
+            RtlDynamicRowBuilder rowBuilder(queryRowAllocator());
+            size32_t sz = deserializer->deserialize(rowBuilder, rowSource);
+            const void *row = rowBuilder.finalizeRowClear(sz);
+            builder.appendOwn(row);
+        }
+
+        size32_t usedCount = rtlDictionaryCount(builder.getcount(), builder.queryrows());
+        MemoryBuffer rowData;
+        CThorDemoRowSerializer out(rowData);
+        rtlSerializeDictionary(out, rowIf->queryRowSerializer(), builder.getcount(), builder.queryrows());
+        addResult(usedCount, rowData, complete);
+        resultData.clear();
+        ActPrintLog("dictionary flushed");
+    }
+};
+
+
+
+CActivityBase *createDictionaryWorkunitWriteMaster(CMasterGraphElement *container)
+{
+    return new CDictionaryWorkunitWriteActivityMaster(container);
 }

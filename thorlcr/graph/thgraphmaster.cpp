@@ -547,6 +547,8 @@ void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte 
         case TAKkeyedjoin:
         case TAKworkunitwrite:
         case TAKworkunitread:
+        case TAKdictionaryworkunitwrite:
+        case TAKdictionaryresultwrite:
             ok = true;
             break;
         default:
@@ -1005,6 +1007,7 @@ public:
     }
     virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
     {
+        tcount = 0;
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Dictionary", "dictionary",
             MemoryBuffer datasetBuffer;

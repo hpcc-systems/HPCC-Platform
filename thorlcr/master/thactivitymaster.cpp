@@ -270,6 +270,16 @@ public:
             case TAKworkunitwrite:
                 ret = createWorkUnitWriteActivityMaster(this);
                 break;
+            case TAKdictionaryworkunitwrite:
+                ret = createDictionaryWorkunitWriteMaster(this);
+                break;
+            case TAKdictionaryresultwrite:
+                if (!queryOwner().queryOwner() || queryOwner().isGlobal()) // don't need dictionary in master if in local child query
+                    ret = createDictionaryResultActivityMaster(this);
+                else
+                    ret = new CMasterActivity(this);
+                break;
+                break;
             case TAKremoteresult:
                 ret = createResultActivityMaster(this);
                 break;
