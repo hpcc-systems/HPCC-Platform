@@ -255,6 +255,8 @@ CActivityBase *createChildGroupAggregateSlave(CGraphElementBase *container);
 CActivityBase *createChildThroughNormalizeSlave(CGraphElementBase *container);
 CActivityBase *createWhenSlave(CGraphElementBase *container);
 CActivityBase *createIfActionSlave(CGraphElementBase *container);
+CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container);
+CActivityBase *createDictionaryResultWriteSlave(CGraphElementBase *container);
 
 
 class CGenericSlaveGraphElement : public CSlaveGraphElement
@@ -460,6 +462,12 @@ public:
                 break;
             case TAKworkunitwrite:
                 ret = createWorkUnitWriteSlave(this);
+                break;
+            case TAKdictionaryworkunitwrite:
+                ret = createDictionaryWorkunitWriteSlave(this);
+                break;
+            case TAKdictionaryresultwrite:
+                ret = createDictionaryResultWriteSlave(this);
                 break;
             case TAKfunnel:
                 ret = createFunnelSlave(this);

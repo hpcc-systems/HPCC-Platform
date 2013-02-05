@@ -547,6 +547,8 @@ void CMasterGraphElement::doCreateActivity(size32_t parentExtractSz, const byte 
         case TAKkeyedjoin:
         case TAKworkunitwrite:
         case TAKworkunitread:
+        case TAKdictionaryworkunitwrite:
+        case TAKdictionaryresultwrite:
             ok = true;
             break;
         default:
@@ -1004,14 +1006,13 @@ public:
     }
     virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
     {
+        tcount = 0;
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Dictionary", "dictionary",
             MemoryBuffer datasetBuffer;
             MemoryBuffer2IDataVal result(datasetBuffer);
-            Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
-            Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
-            r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
-            throwUnexpected();
+            r->getResultRaw(result, NULL, NULL);
+            rtlDeserializeDictionary(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray());
         );
     }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)

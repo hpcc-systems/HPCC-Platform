@@ -25,5 +25,6 @@ CActivityBase *createLoopActivityMaster(CMasterGraphElement *container);
 CActivityBase *createLocalResultActivityMaster(CMasterGraphElement *container);
 CActivityBase *createGraphLoopActivityMaster(CMasterGraphElement *container);
 CActivityBase *createGraphLoopResultActivityMaster(CMasterGraphElement *container);
+CActivityBase *createDictionaryResultActivityMaster(CMasterGraphElement *container);
 
 #endif
