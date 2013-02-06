@@ -285,6 +285,100 @@ private:
     StringAttr optTarget;
 };
 
+class EclCmdPackageMapInfoList : public EclCmdCommon
+{
+public:
+    EclCmdPackageMapInfoList()
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optId.isEmpty())
+                    optId.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
+
+        Owned<IClientListPackageMapInfoRequest> request = packageProcessClient->createListPackageMapInfoRequest();
+        request->setId(optId);
+
+        Owned<IClientListPackageMapInfoResponse> resp = packageProcessClient->ListPackageMapInfo(request);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+        else
+        {
+            IArrayOf<IConstPackageMapInfoData> &pkgMapInfo = resp->getPkgMapInfoData();
+            unsigned int num = pkgMapInfo.ordinality();
+
+            for (unsigned i=0; i<num; i++)
+            {
+                IConstPackageMapInfoData& req = pkgMapInfo.item(i);
+                printf("\nPackage Map = %s\n", req.getId());
+
+                IArrayOf<IConstPkgInfo> &pkg = req.getPackageInfo();
+                unsigned numpkgs = pkg.ordinality();
+                for (unsigned j=0; j < numpkgs; j++)
+                {
+                    IConstPkgInfo& pkgInfo = pkg.item(j);
+                    printf("\tPackage Name = %s  querySet = %s   daliIp = %s\n", pkgInfo.getId(), pkgInfo.getQueries(), pkgInfo.getDaliip());
+
+                    IArrayOf<IConstSuperFileInfo> &superInfo = pkgInfo.getSuperFileContents();
+                    unsigned numsuper = superInfo.ordinality();
+                    for (unsigned k=0; k < numsuper; k++)
+                    {
+                        IConstSuperFileInfo& info = superInfo.item(k);
+                        printf("\t\tSuperFile Name = %s\n", info.getId());
+
+                        StringArray &subFiles = info.getSubFiles();
+                        ForEachItemIn(x, subFiles)
+                        {
+                            const char* subName = subFiles.item(x);
+                            printf("\t\t\tSubFile Name = %s\n", subFiles.item(x));
+                        }
+                    }
+                }
+            }
+        }
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+                    "\n"
+                    "The 'listmapinfo' command will list package map information for the target cluster \n"
+                    "\n"
+                    "ecl package listmapinfo <target> \n"
+                " Options:\n"
+                "   <id>               name of package map to use when retrieving package map information\n",
+                stdout);
+    EclCmdCommon::usage();
+}
+private:
+
+StringAttr optId;
+};
+
 class EclCmdPackageInfo: public EclCmdCommon
 {
 public:
@@ -578,6 +672,8 @@ IEclCommand *createPackageSubCommand(const char *cmdname)
         return new EclCmdPackageInfo();
     if (strieq(cmdname, "list"))
         return new EclCmdPackageList();
+    if (strieq(cmdname, "listmapinfo"))
+        return new EclCmdPackageMapInfoList();
     return NULL;
 }
 
@@ -601,6 +697,7 @@ public:
             "      activate     activate a package map\n"
             "      deactivate   deactivate a package map (package map will not get loaded)\n"
             "      list         list loaded package map names\n"
+            "      listset      list loaded package set names\n"
             "      info         return active package map information\n"
         );
     }
