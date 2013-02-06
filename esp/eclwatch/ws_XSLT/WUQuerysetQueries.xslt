@@ -238,7 +238,7 @@
                 LoadAliases = function() {
                   var aliasColumnDefs = [
                     {key:"Name", sortable:true, resizeable:true},
-                    {key:"Id", sortable:true, resizeable:true}
+                    {key:"Id", sortable:true, resizeable:true, formatter: formatLinkDetails}
                   ];
 
                   var aliasDataSource = new YAHOO.util.DataSource(querysetAliases);
@@ -252,7 +252,6 @@
 
                   aliasDataTable.subscribe("rowMouseoverEvent", aliasDataTable.onEventHighlightRow);   
                   aliasDataTable.subscribe("rowMouseoutEvent", aliasDataTable.onEventUnhighlightRow);   
-                  aliasDataTable.subscribe("rowClickEvent", aliasDataTable.onEventSelectRow);   
 
                   return {
                     oqDS: aliasDataSource,
