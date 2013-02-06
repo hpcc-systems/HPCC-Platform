@@ -8748,7 +8748,7 @@ public:
                         continue;
                     wfItem->setEvent(eventName, eventText);
                     wfItem->setState(WFStateReqd);
-                    resetDepState(workflow, *wfItem);
+                    resetDependentsState(workflow, *wfItem);
                 }
             }
         }
@@ -8772,20 +8772,34 @@ public:
     }
 
 private:
-    void resetDepState(IWorkflowItemArray * workflow, IRuntimeWorkflowItem & item) const
+    void resetItemStateAndDependents(IWorkflowItemArray * workflow, unsigned wfid) const
+    {
+        if (wfid)
+            resetItemStateAndDependents(workflow, workflow->queryWfid(wfid));
+    }
+
+    void resetItemStateAndDependents(IWorkflowItemArray * workflow, IRuntimeWorkflowItem & item) const
+    {
+        switch(item.queryState())
+        {
+        case WFStateDone:
+        case WFStateFail:
+            {
+                item.setState(WFStateNull);
+                resetItemStateAndDependents(workflow, item.queryPersistWfid());
+                resetDependentsState(workflow, item);
+                break;
+            }
+        }
+    }
+
+    void resetDependentsState(IWorkflowItemArray * workflow, IRuntimeWorkflowItem & item) const
     {
         Owned<IWorkflowDependencyIterator> iter(item.getDependencies());
         for(iter->first(); iter->isValid(); iter->next())
         {
             IRuntimeWorkflowItem & dep = workflow->queryWfid(iter->query());
-            switch(dep.queryState())
-            {
-            case WFStateDone:
-            case WFStateFail:
-                dep.setState(WFStateNull);
-                resetDepState(workflow, dep);
-                break;
-            }
+            resetItemStateAndDependents(workflow, dep);
         }
     }
 
