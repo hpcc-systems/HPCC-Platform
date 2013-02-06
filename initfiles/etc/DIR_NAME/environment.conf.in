@@ -3,6 +3,7 @@
 [DEFAULT]
 configs=${CONFIG_DIR}
 path=${INSTALL_DIR}
+classpath=${INSTALL_DIR}/classes
 runtime=${RUNTIME_PATH}
 lock=${LOCK_PATH}
 pid=${PID_PATH}

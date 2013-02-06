@@ -23,6 +23,8 @@
 #include "deftype.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
+#include "jprop.hpp"
+#include "build-config.h"
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)
@@ -85,7 +87,18 @@ public:
         JavaVMOption* options = new JavaVMOption[3];
         const char* origPath = getenv("CLASSPATH");
         StringBuffer newPath;
-        newPath.append("-Djava.class.path=").append(origPath).append(ENVSEPCHAR).append(".");
+        newPath.append("-Djava.class.path=").append(origPath);
+        StringBuffer envConf;
+        envConf.append(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
+        Owned<IProperties> conf = createProperties(envConf.str(), true);
+        if (conf && conf->hasProp("classpath"))
+        {
+            newPath.append(ENVSEPCHAR);
+            conf->getProp("classpath", newPath);
+        }
+        newPath.append(ENVSEPCHAR).append(".");
+
+
         options[0].optionString = (char *) newPath.str();
         options[1].optionString = (char *) "-Xcheck:jni";
         options[2].optionString = (char *) "-verbose:jni";
