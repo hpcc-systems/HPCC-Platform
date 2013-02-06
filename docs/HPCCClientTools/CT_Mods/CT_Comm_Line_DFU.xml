@@ -44,8 +44,8 @@
                 <entry><emphasis>operation</emphasis></entry>
 
                 <entry>One of the following actions: spray, despray, copy,
-                dkc, remove, rename, list, add, addsuper, removesuper,
-                listsuper, savexml, status, abort, resubmit, monitor</entry>
+                remove, rename, list, add, addsuper, removesuper, listsuper,
+                savexml, status, abort, resubmit, monitor</entry>
               </row>
 
               <row>
@@ -120,7 +120,7 @@
 
                   <entry>Optional. A boolean flag (0 | 1) indicating whether
                   to overwrite any existing file of the same name. If omitted,
-                  the default is 0. </entry>
+                  the default is 0.</entry>
                 </row>
 
                 <row>
@@ -724,54 +724,6 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <programlisting>C:\&gt;dfuplus action=copy srcname=RTTEMP::timezones.txt
           dstname=srcname=RTTEMP::COPY::timezones.txt dstcluster=thor</programlisting>
-        </sect3>
-
-        <sect3>
-          <title>DKC Operations:</title>
-
-          <para>The <emphasis role="bold">dkc</emphasis>
-          <emphasis>operation</emphasis> desprays INDEX files, combining file
-          parts from all the nodes of the cluster (including the master node)
-          into a single file on the landing zone.</para>
-
-          <para>These <emphasis>options </emphasis>are used by the <emphasis
-          role="bold">dkc</emphasis> <emphasis>operation</emphasis>:</para>
-
-          <informaltable colsep="0" frame="none" rowsep="0">
-            <tgroup cols="2">
-              <colspec align="left" colwidth="122.40pt" />
-
-              <colspec />
-
-              <tbody>
-                <row>
-                  <entry><emphasis><emphasis>srcname</emphasis></emphasis></entry>
-
-                  <entry>The logical name of the source file.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis><emphasis>dstip</emphasis></emphasis></entry>
-
-                  <entry>The IP address of the destination machine.</entry>
-                </row>
-
-                <row>
-                  <entry><emphasis><emphasis>dstfile</emphasis>
-                  </emphasis></entry>
-
-                  <entry>The path to the destination file.</entry>
-                </row>
-              </tbody>
-            </tgroup>
-          </informaltable>
-
-          <para>Example:</para>
-
-          <programlisting>C:\&gt;dfuplus action=dkc srcname=RTTEMP::Test_IDX
-           dstip=10.150.50.14 dstfile=c:\import\despray\Test_IDX</programlisting>
-
-          <para></para>
         </sect3>
 
         <sect3>
