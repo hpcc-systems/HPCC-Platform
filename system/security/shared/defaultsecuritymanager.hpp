@@ -82,6 +82,8 @@ public:
     virtual bool createUserScopes() { return false; }
 };
 
+//----------------------------------------------------------------------
+
 class CLocalSecurityManager : public CDefaultSecurityManager
 {
 public:
@@ -93,8 +95,4 @@ protected:
     virtual bool IsPasswordValid(ISecUser& sec_user);
 };
 
-
 #endif // DEFAULTSECURITY_INCL
-//end
-
-

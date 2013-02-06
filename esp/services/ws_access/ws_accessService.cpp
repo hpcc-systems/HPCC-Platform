@@ -3613,7 +3613,7 @@ int Cws_accessSoapBindingEx::onGetForm(IEspContext &context, CHttpRequest* reque
                         "<title>Security Not Enabled</title>"
                     "</head>"
                     "<body>"
-                        "<p style=\"text-align:centre;\">In order to use this feature, authentication should be enabled.");
+                        "<p style=\"text-align:centre;\">This feature is only available when system is configured to use LDAP authentication.");
             page.append("</p></body>"
                 "</html>");
 

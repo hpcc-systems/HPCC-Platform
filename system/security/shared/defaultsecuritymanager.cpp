@@ -20,7 +20,6 @@
 #include "defaultsecuritymanager.hpp"
 #include "authmap.ipp"
 
-
 //#ifdef _WIN32
 CDefaultSecurityManager::CDefaultSecurityManager(const char *serviceName, const char *config) : CBaseSecurityManager(serviceName,config)
 {
@@ -103,4 +102,3 @@ IAuthMap * CLocalSecurityManager::createAuthMap(IPropertyTree * authconfig)
 
     return authmap;
 }
-

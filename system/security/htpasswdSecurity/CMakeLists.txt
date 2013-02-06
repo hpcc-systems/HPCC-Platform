@@ -15,46 +15,40 @@
 ################################################################################
 
 
-# Component: LdapSecurity 
+# Component: LdapSecurity
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for LdapSecurity
+#    Cmake Input File for htpasswdSecurity
 #####################################################
 
-project( LdapSecurity ) 
+project( htpasswdSecurity )
 
-set (    SRCS 
-         ../shared/authmap.cpp 
-         ../shared/caching.cpp 
+set (    SRCS
+         ../shared/authmap.cpp
+         ../shared/caching.cpp
          ../shared/basesecurity.cpp
          ../shared/defaultsecuritymanager.cpp
-         aci.cpp 
-         ldapconnection.cpp 
-         ldapsecurity.cpp 
-         permissions.cpp 
+         ./htpasswdSecurity.cpp
     )
 
-include_directories ( 
-         ./../../include 
-         ./../shared 
-         ./../../jlib 
-         ./../../../esp/platform 
+include_directories (
+         ./../../include
+         ./../shared
+         ./../../jlib
+         ./../../../esp/platform
 #         ./../../security/dynapr
-	     ./../../../dali/base
-	     ./../../../system/mp
-         ${OPENLDAP_INCLUDE_DIR}
+         ./../../../dali/base
     )
 
-ADD_DEFINITIONS( -DLDAPSECURITY_EXPORTS -D_USRDLL )
+ADD_DEFINITIONS( -DHTPASSWDSECURITY_EXPORTS -D_USRDLL )
 
-HPCC_ADD_LIBRARY( LdapSecurity SHARED ${SRCS} )
-install ( TARGETS LdapSecurity RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
-target_link_libraries ( LdapSecurity
+HPCC_ADD_LIBRARY( htpasswdSecurity SHARED ${SRCS} )
+install ( TARGETS htpasswdSecurity RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
+target_link_libraries ( htpasswdSecurity
          jlib
-#         dynapr
          dalibase
-         ${OPENLDAP_LIBRARIES}
+#         ${OPENLDAP_LIBRARIES}
     )
 
 
