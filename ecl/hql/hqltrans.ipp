@@ -17,7 +17,7 @@
 #ifndef __HQLTRANS_IPP_
 #define __HQLTRANS_IPP_
 
-//Optionto change all transform infos so they are allocated from an extending heap owned by the transformer
+//Option to change all transform infos so they are allocated from an extending heap owned by the transformer
 //and then thrown away in a single lump.  It would save lots of small allocations
 //#define OPTIMIZE_TRANSFORM_ALLOCATOR
 #ifdef OPTIMIZE_TRANSFORM_ALLOCATOR
@@ -583,6 +583,47 @@ g) Always works on body, not on named symbol
 This provides a mechanism for handling the code correctly, but also allowing the transform to be context independent.
 Flags provided to the constructor indicate which options for transforming are used.
 */
+
+/*
+ Notes on short-circuiting transformations:
+
+ Say you have a transform that maps SKIP expressions, e.g., converting SKIP to a function call.
+
+ It would be sensible to optimize the transformation so you don't recurse over expressions that can never be
+ transformed. Naively you might a test inside createTransformed() to see if the current expression contains a SKIP,
+ and if it does not then short-circuit the transformation by returning LINK(expr) instead of walking the entire
+ expression.
+
+ Unfortunately that will not work in general....
+ The problem is that an expression representing a reference to a field from a dataset e.g., ds.myfield, will not be
+ marked as containing a SKIP, even if the definition of "ds" does contain a SKIP.  When "ds" is transformed it will
+ generate a new IHqlExpression.  The selector in ds.myfield will need to be updated to point to the new definition of,
+ ds, but if it has been short-circuited that reference will not be updated.  You will end up with a reference to a
+ dataset that is no longer valid - causing a generation error.
+
+ More importantly, a similar issue occurs when trying to short circuit expressions that aren't dependent on a
+ particular selector (e.g., field expansion/collapsing, constant propagation.)
+
+ There are two possible solutions:
+
+ * Recursively check selectors whether they contain SKIP.
+   - Unfortunately this could become quite expensive, and it is only some expressions which will be likely to benefit
+     from it.  It would tend to increase the time for most queries, but significantly reduce the time for some extreme
+     examples.  It may still be worthwhile though (e.g., it would cut 50% off some pathological examples.)
+
+ * Change the representation of a dataset selector.
+   - Currently the "normalized selector" for a dataset is used in a select expression.  If this was changed to use a
+     new selector similar to LEFT/RIGHT (e.g., TOP) which was based on a unique sequence number then there would be no
+     need to remap the reference to the dataset within a select expression.
+     This change could lead to a significant reduction in the number of expressions which are recreated when an
+     expression graph is transformed (purely because the dataset has changed.)
+
+     The disadvantage is you will inherit the issues with creating unique ids that LEFT/RIGHT currently have,
+     although I don't think there will be any increase in memory consumption, there may be a minor reduction in
+     accidental common sub expressions.
+     (For implementing we would assert each table had a single unique id to catch all places where it might be lost.)
+
+ */
 
 //---------------------------------------------------------------------------------------------------------------------
 
