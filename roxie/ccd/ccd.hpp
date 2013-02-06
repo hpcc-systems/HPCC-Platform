@@ -399,6 +399,7 @@ extern bool useTreeCopy;
 extern XmlReaderOptions defaultXmlReadFlags;
 extern bool mergeSlaveStatistics;
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
+extern bool preloadOnceData;
 
 extern unsigned udpMulticastBufferSize;
 extern size32_t diskReadBufferSize;

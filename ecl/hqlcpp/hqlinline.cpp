@@ -1330,6 +1330,8 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
         return !translator.isCurrentActiveGraph(ctx, expr->queryChild(0));
     case no_getgraphresult:
         return !translator.isCurrentActiveGraph(ctx, expr->queryChild(1));
+    case no_getresult:
+        return !matchesConstantValue(queryPropertyChild(expr, sequenceAtom, 0), ResultSequenceOnce);
     case no_failcode:
     case no_failmessage:
     case no_fail:

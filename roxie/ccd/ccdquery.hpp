@@ -71,6 +71,13 @@ interface IActivityGraph : extends IInterface
 interface IRoxiePackage;
 interface IDeserializedResultStore;
 
+interface ISharedOnceContext : extends IInterface
+{
+    virtual IPropertyTree &queryOnceContext(const IQueryFactory *queryFactory, const IRoxieContextLogger &_logctx) const = 0;
+    virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
+    virtual void checkOnceDone(const IQueryFactory *queryFactory, const IRoxieContextLogger &_logctx) const = 0;
+};
+
 interface IQueryFactory : extends IInterface
 {
     virtual IRoxieSlaveContext *createSlaveContext(const SlaveContextLogger &logctx, IRoxieQueryPacket *packet) const = 0;
@@ -93,10 +100,11 @@ interface IQueryFactory : extends IInterface
     virtual ILoadedDllEntry *queryDll() const = 0;
     virtual bool getEnableFieldTranslation() const = 0;
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
+    virtual ISharedOnceContext *querySharedOnceContext() const = 0;
+    virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
+    virtual IPropertyTree &queryOnceContext(const IRoxieContextLogger &logctx) const = 0;
 
     virtual const IRoxiePackage &queryPackage() const = 0;
-    virtual IPropertyTree &queryOnceContext() const = 0;
-    virtual IDeserializedResultStore &queryOnceResultStore() const = 0;
     virtual void getActivityMetrics(StringBuffer &reply) const = 0;
 
     virtual IPropertyTree *cloneQueryXGMML() const = 0;

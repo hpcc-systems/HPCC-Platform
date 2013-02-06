@@ -683,6 +683,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="preloadOnceData" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Evaluate : ONCE sections of queries at query load time</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="remoteFilesExpire" type="xs:integer" use="optional" default="3600000">
       <xs:annotation>
         <xs:appinfo>
