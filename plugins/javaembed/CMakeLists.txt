@@ -41,6 +41,7 @@ include_directories (
          ./../../rtl/include
          ./../../common/deftype
          ./../../system/jlib
+         ${CMAKE_BINARY_DIR}
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DJAVAEMBED_EXPORTS )
