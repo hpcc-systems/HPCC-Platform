@@ -107,7 +107,7 @@ define([
                     cell.Row = [cell.Row];
                 }
 
-                for (i = 0; i < cell.Row.length; ++i) {
+                for (var i = 0; i < cell.Row.length; ++i) {
                     if (i == 0) {
                         var tr = domConstruct.create("tr", null, table);
                         for (key in cell.Row[i]) {
@@ -115,7 +115,7 @@ define([
                         }
                     }
                     var tr = domConstruct.create("tr", null, table);
-                    for (key in cell.Row[i]) {
+                    for (var key in cell.Row[i]) {
                         if (cell.Row[i][key]) {
                             if (cell.Row[i][key].Row) {
                                 var td = domConstruct.create("td", null, tr);
