@@ -85,7 +85,6 @@ class CBroadcaster : public CSimpleInterface
     CActivityBase &activity;
     mptag_t mpTag;
     unsigned myNode, slaves;
-    Owned<IBitSet> slavesStopped;
     IBCastReceive *recvInterface;
     Semaphore allDoneSem;
     CriticalSection allDoneLock, bcastOtherCrit;
@@ -95,22 +94,22 @@ class CBroadcaster : public CSimpleInterface
     class CRecv : implements IThreaded
     {
         CBroadcaster &broadcaster;
-        CThreaded threaded;
+        CThreadedPersistent threaded;
     public:
-        CRecv(CBroadcaster &_broadcaster) : threaded("CBroadcaster::CRecv"), broadcaster(_broadcaster)
+        CRecv(CBroadcaster &_broadcaster) : threaded("CBroadcaster::CRecv", this), broadcaster(_broadcaster)
         {
         }
-        void start() { threaded.init(this); }
+        void start() { threaded.start(); }
     // IThreaded
         virtual void main() { broadcaster.recvLoop(); }
     } receiver;
     class CSend : implements IThreaded
     {
         CBroadcaster &broadcaster;
-        CThreaded threaded;
+        CThreadedPersistent threaded;
         SimpleInterThreadQueueOf<CSendItem, true> broadcastQueue;
     public:
-        CSend(CBroadcaster &_broadcaster) : threaded("CBroadcaster::CSend"), broadcaster(_broadcaster)
+        CSend(CBroadcaster &_broadcaster) : threaded("CBroadcaster::CSend", this), broadcaster(_broadcaster)
         {
         }
         ~CSend()
@@ -121,7 +120,7 @@ class CBroadcaster : public CSimpleInterface
         {
             broadcastQueue.enqueue(sendItem); // will block if queue full
         }
-        void start() { threaded.init(this); }
+        void start() { threaded.start(); }
         void stop()
         {
             broadcastQueue.stop();
@@ -235,6 +234,9 @@ class CBroadcaster : public CSimpleInterface
             mptag_t replyTag = msg.getReplyTag();
             CMessageBuffer ackMsg;
             Owned<CSendItem> sendItem = new CSendItem(msg);
+#ifdef _TRACEBROADCAST
+            ActPrintLog(&activity, "Broadcast node %d received from node %d size %d, code=%d", myNode, (unsigned)sendRank, sendItem->length(), (unsigned)sendItem->queryCode());
+#endif
             comm.send(ackMsg, sendRank, replyTag); // send ack
             sender.addBlock(sendItem.getLink());
             assertex(myNode != sendItem->queryOrigin());
@@ -309,6 +311,12 @@ public:
             allDoneWaiting = true;
         }
         allDoneSem.wait();
+    }
+    void end()
+    {
+        waitReceiverDone();
+        sender.stop();
+        // NB: receiver will have already stopped
     }
     void cancel()
     {
@@ -427,12 +435,12 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
      */
     class CRowProcessor : implements IThreaded
     {
-        CThreaded threaded;
+        CThreadedPersistent threaded;
         CLookupJoinActivity &owner;
         bool stopped;
         SimpleInterThreadQueueOf<CSendItem, true> blockQueue;
     public:
-        CRowProcessor(CLookupJoinActivity &_owner) : threaded("CRowProcessor"), owner(_owner)
+        CRowProcessor(CLookupJoinActivity &_owner) : threaded("CRowProcessor", this), owner(_owner)
         {
             stopped = false;
             blockQueue.setLimit(MAX_QUEUE_BLOCKS);
@@ -448,7 +456,7 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
             }
             wait();
         }
-        void start() { threaded.init(this); }
+        void start() { threaded.start(); }
         void wait() { threaded.join(); }
         void addBlock(CSendItem *sendItem)
         {
@@ -469,7 +477,17 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
         }
     } rowProcessor;
 
-
+    void clearRHS()
+    {
+        ht.kill();
+        rhs.kill();
+        ForEachItemIn(a, rhsNodeRows)
+        {
+            CThorExpandingRowArray *rows = rhsNodeRows.item(a);
+            if (rows)
+                rows->kill();
+        }
+    }
 protected:
     joinkind_t joinKind;
     StringAttr joinStr;
@@ -701,12 +719,13 @@ public:
     {
         if (!gotRHS)
             getRHS(true);
-        rhs.kill();
+        clearRHS();
         stopRightInput();
         stopInput(left);
         dataLinkStop();
         left.clear();
         right.clear();
+        broadcaster.reset();
     }
     inline bool match(const void *lhs, const void *rhsrow)
     {
@@ -1197,7 +1216,7 @@ public:
                 rowProcessor.start();
                 broadcaster.start(this, mpTag, stopping);
                 sendRHS();
-                broadcaster.waitReceiverDone();
+                broadcaster.end();
                 rowProcessor.wait();
             }
             else if (!stopping)
