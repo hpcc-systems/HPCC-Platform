@@ -240,6 +240,8 @@ public:
                 }
                 continue;
             }
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
         }
         return true;
     }
@@ -331,6 +333,8 @@ public:
                 }
                 continue;
             }
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
         }
         return true;
     }
