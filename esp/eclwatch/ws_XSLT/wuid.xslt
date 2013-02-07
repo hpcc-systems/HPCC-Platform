@@ -187,6 +187,7 @@
 
                 thorProcessChanged(thorProcessDropDown.options[thorProcessDropDown.selectedIndex].value);
 
+                UpdateAutoRefresh();
                 return;
             }
 
