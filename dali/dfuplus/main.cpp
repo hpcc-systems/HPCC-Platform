@@ -34,7 +34,7 @@ void handleSyntax()
     StringBuffer out;
 
     out.append("Usage:\n");
-    out.append("    dfuplus action=[spray|replicate|despray|copy|dkc|remove|rename|list|\n");
+    out.append("    dfuplus action=[spray|replicate|despray|copy|remove|rename|list|\n");
     out.append("                    addsuper|removesuper|listsuper|copysuper|dafilesrv|\n");
     out.append("                    savexml|add|status|abort|resubmit|monitor] {<options>}\n");
     out.append("    general options:\n");
@@ -56,7 +56,7 @@ void handleSyntax()
     out.append("        encrypt=<password> -- optional, encrypt target\n");
     out.append("        decrypt=<password> -- optional, decrypt source\n");
     out.append("        push=0|1 -- optional override pull/push default\n");
-    out.append("        jobname=<jobname> -- specify the jobname for spray, despray, dkc, copy, rename and replicate.\n");
+    out.append("        jobname=<jobname> -- specify the jobname for spray, despray, copy, rename and replicate.\n");
     out.append("    spray options:\n");
     out.append("        srcip=<source-machine-ip>\n");
     out.append("        srcfile=<source-file-path>\n");
@@ -102,10 +102,6 @@ void handleSyntax()
     out.append("        diffkeysrc=<old-key-name>   -- use keydiff/keypatch (src old name)\n");
     out.append("        diffkeydst=<old-key-name>   -- use keydiff/keypatch (dst old name)\n");
     out.append("        multicopy=0|1   -- each destination part gets whole file\n");
-    out.append("    dkc options:\n");
-    out.append("        srcname=<source-logical-name>\n");
-    out.append("        dstip=<destination-machine-ip>\n");
-    out.append("        dstfile=<destination-file-path>\n");
     out.append("    remove options:\n");
     out.append("        name=<logical-name>\n");
     out.append("        names=<multiple-logical-names-separated-by-comma>\n");
