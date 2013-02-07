@@ -468,7 +468,6 @@ extern _ATOM processFieldBeginRowAtom;
 extern _ATOM processFieldEndSetAtom;
 extern _ATOM processFieldEndDatasetAtom;
 extern _ATOM processFieldEndRowAtom;
-extern _ATOM prototypeAtom;
 extern _ATOM queryFailCodeAtom;
 extern _ATOM queryLocalFailCodeAtom;
 extern _ATOM queryLocalResultAtom;
