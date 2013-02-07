@@ -843,6 +843,7 @@
                 preabortKeyedJoinsThreshold="100"
                 preferredSubnet=""
                 preferredSubnetMask=""
+                preloadOnceData="true"
                 remoteFilesExpire="3600000"
                 resolveFilesInPackage="false"
                 roxieMulticastEnabled="true"

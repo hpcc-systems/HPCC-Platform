@@ -155,6 +155,7 @@ interface IRoxieSlaveContext : extends IRoxieContextLogger
     virtual IWorkUnit *updateWorkUnit() const = 0;
     virtual IConstWorkUnit *queryWorkUnit() const = 0;
     virtual IRoxieServerContext *queryServerContext() = 0;
+    virtual IWorkUnitRowReader *getWorkunitRowReader(const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped) = 0;
 };
 
 interface IRoxieServerContext : extends IInterface
@@ -164,7 +165,6 @@ interface IRoxieServerContext : extends IInterface
     virtual void setResultXml(const char *name, unsigned sequence, const char *xml) = 0;
     virtual void appendResultDeserialized(const char *name, unsigned sequence, size32_t count, byte **data, bool extend, IOutputMetaData *meta) = 0;
     virtual void appendResultRawContext(const char *name, unsigned sequence, int len, const void * data, int numRows, bool extend, bool saveInContext) = 0;
-    virtual IWorkUnitRowReader *getWorkunitRowReader(const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped) = 0;
     virtual roxiemem::IRowManager &queryRowManager() = 0;
 
     virtual void process() = 0;

@@ -179,6 +179,73 @@ extern void addXrefLibraryInfo(IPropertyTree &reply, const char *libraryName)
 }
 
 //----------------------------------------------------------------------------------------------
+// Class CSharedOnceContext manages the context for a query's ONCE code, which is shared between
+// all slave and server contexts on a node
+//----------------------------------------------------------------------------------------------
+
+class CSharedOnceContext : public CInterfaceOf<ISharedOnceContext>
+{
+public:
+    CSharedOnceContext()
+    {
+    }
+
+    ~CSharedOnceContext()
+    {
+    }
+
+    virtual IDeserializedResultStore &queryOnceResultStore() const
+    {
+        assertex(onceResultStore!= NULL);
+        return *onceResultStore;
+    }
+
+    virtual IPropertyTree &queryOnceContext(const IQueryFactory *factory, const IRoxieContextLogger &logctx) const
+    {
+        checkOnceDone(factory, logctx);
+        assertex(onceContext != NULL);
+        return *onceContext;
+    }
+
+    virtual void checkOnceDone(const IQueryFactory *factory, const IRoxieContextLogger &logctx) const
+    {
+        CriticalBlock b(onceCrit);
+        if (!onceContext)
+        {
+            onceContext.setown(createPTree());
+            onceResultStore.setown(createDeserializedResultStore());
+            Owned <IRoxieServerContext> ctx = createOnceServerContext(factory, logctx);
+            onceManager.set(&ctx->queryRowManager());
+            try
+            {
+                ctx->process();
+                ctx->done(false);
+            }
+            catch (IException *E)
+            {
+                ctx->done(true);
+                onceException.setown(E);
+            }
+            catch (...)
+            {
+                ctx->done(true);
+                onceException.setown(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception in ONCE code"));
+            }
+        }
+        if (onceException)
+            throw onceException.getLink();
+    }
+
+protected:
+    mutable CriticalSection onceCrit;
+    mutable Owned<roxiemem::IRowManager> onceManager; // release AFTER resultStore
+    mutable Owned<IPropertyTree> onceContext;
+    mutable Owned<IDeserializedResultStore> onceResultStore;
+    mutable Owned<IException> onceException;
+
+};
+
+//----------------------------------------------------------------------------------------------
 // Class CQueryFactory is the main implementation of IQueryFactory, combining a IQueryDll and a
 // package context into an object that can quickly create a the query context that executes a specific
 // instance of a Roxie query. 
@@ -191,6 +258,7 @@ class CQueryFactory : public CInterface, implements IQueryFactory, implements IR
 protected:
     const IRoxiePackage &package;
     Owned<const IQueryDll> dll;
+    Linked<ISharedOnceContext> sharedOnceContext;
     MapStringToActivityArray graphMap;
     StringAttr id;
     StringBuffer errorMessage;
@@ -744,8 +812,8 @@ public:
     IMPLEMENT_IINTERFACE;
     unsigned channelNo;
 
-    CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo)
-        : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue)
+    CQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext)
+        : id(_id), package(_package), dll(_dll), channelNo(_channelNo), hashValue(_hashValue), sharedOnceContext(_sharedOnceContext)
     {
         package.Link();
         isSuspended = false;
@@ -870,6 +938,23 @@ public:
     virtual hash64_t queryHash() const
     {
         return hashValue;
+    }
+
+    virtual ISharedOnceContext *querySharedOnceContext() const
+    {
+        return sharedOnceContext;
+    }
+
+    virtual IDeserializedResultStore &queryOnceResultStore() const
+    {
+        assertex(sharedOnceContext);
+        return sharedOnceContext->queryOnceResultStore();
+    }
+
+    virtual IPropertyTree &queryOnceContext(const IRoxieContextLogger &logctx) const
+    {
+        assertex(sharedOnceContext);
+        return sharedOnceContext->queryOnceContext(this, logctx);
     }
 
     virtual const char *loadResource(unsigned id)
@@ -1111,14 +1196,6 @@ public:
         throwUnexpected();   // only implemented in derived slave class
     }
 
-    virtual IPropertyTree &queryOnceContext() const
-    {
-        throwUnexpected();   // only implemented in derived server class
-    }
-    virtual IDeserializedResultStore &queryOnceResultStore() const
-    {
-        throwUnexpected();   // only implemented in derived server class
-    }
     virtual IRoxieServerContext *createContext(IPropertyTree *xml, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, XmlReaderOptions xmlReadFlags) const
     {
         throwUnexpected();   // only implemented in derived server class
@@ -1147,6 +1224,21 @@ public:
     }
 
 protected:
+    IPropertyTree *queryWorkflowTree() const
+    {
+        assertex(dll->queryWorkUnit());
+        return dll->queryWorkUnit()->queryWorkflowTree();
+    }
+
+    bool hasOnceSection() const
+    {
+        IPropertyTree *workflow = queryWorkflowTree();
+        if (workflow)
+            return workflow->hasProp("Item[@mode='once']");
+        else
+            return false;
+    }
+
     void checkSuspended() const
     {
         if (isSuspended)
@@ -1171,35 +1263,14 @@ extern IQueryFactory *getQueryFactory(hash64_t hashvalue, unsigned channel)
 
 class CRoxieServerQueryFactory : public CQueryFactory
 {
-    // Parts of query factory is only interesting on the server - once support, workflow support, and tracking of total query times
+    // Parts of query factory is only interesting on the server - workflow support, and tracking of total query times
 
 protected:
-    mutable CriticalSection onceCrit;
-    mutable Owned<roxiemem::IRowManager> onceManager; // release AFTER resultStore
-    mutable Owned<IPropertyTree> onceContext;
-    mutable Owned<IDeserializedResultStore> onceResultStore;
-    mutable Owned<IException> onceException;
-
     Owned<IQueryStatsAggregator> queryStats;
 
-    IPropertyTree *queryWorkflowTree() const
-    {
-        assertex(dll->queryWorkUnit());
-        return dll->queryWorkUnit()->queryWorkflowTree();
-    }
-
-    bool hasOnceSection() const
-    {
-        IPropertyTree *workflow = queryWorkflowTree();
-        if (workflow)
-            return workflow->hasProp("Item[@mode='once']");
-        else
-            return false;
-    }
-
 public:
-    CRoxieServerQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue)
-        : CQueryFactory(_id, _dll, _package, _hashValue, 0)
+    CRoxieServerQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, ISharedOnceContext *_sharedOnceContext)
+        : CQueryFactory(_id, _dll, _package, _hashValue, 0, _sharedOnceContext)
     {
         queryStats.setown(createQueryStatsAggregator(id.get(), statsExpiryTime));
     }
@@ -1243,61 +1314,15 @@ public:
         return activities;
     }
 
-    virtual IDeserializedResultStore &queryOnceResultStore() const
-    {
-        assertex(onceResultStore!= NULL);
-        return *onceResultStore;
-    }
-
-    virtual IPropertyTree &queryOnceContext() const
-    {
-        assertex(onceContext != NULL);
-        return *onceContext;
-    }
-
-    virtual void checkOnceDone(const IRoxieContextLogger &_logctx) const
-    {
-        if (hasOnceSection())
-        {
-            CriticalBlock b(onceCrit);
-            if (!onceContext)
-            {
-                onceContext.setown(createPTree());
-                onceResultStore.setown(createDeserializedResultStore());
-                Owned <IRoxieServerContext> ctx = createOnceServerContext(this, _logctx);
-                onceManager.set(&ctx->queryRowManager());
-                try
-                {
-                    ctx->process();
-                    ctx->done(false);
-                }
-                catch (IException *E)
-                {
-                    ctx->done(true);
-                    onceException.setown(E);
-                }
-                catch (...)
-                {
-                    ctx->done(true);
-                    onceException.setown(MakeStringException(ROXIE_INTERNAL_ERROR, "Unknown exception in ONCE code"));
-                }
-            }
-            if (onceException)
-                throw onceException.getLink();
-        }
-    }
-
     virtual IRoxieServerContext *createContext(IPropertyTree *context, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, const IRoxieContextLogger &_logctx, XmlReaderOptions _xmlReadFlags) const
     {
         checkSuspended();
-        checkOnceDone(_logctx);
         return createRoxieServerContext(context, this, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, _xmlReadFlags);
     }
 
     virtual IRoxieServerContext *createContext(IConstWorkUnit *wu, const IRoxieContextLogger &_logctx) const
     {
         checkSuspended();
-        checkOnceDone(_logctx);
         return createWorkUnitServerContext(wu, this, _logctx);
     }
 
@@ -1328,8 +1353,18 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
         ::Release(dll);
         return cached;
     }
-    Owned<CRoxieServerQueryFactory> newFactory = new CRoxieServerQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue);
+    Owned<ISharedOnceContext> sharedOnceContext;
+    assertex(dll->queryWorkUnit());
+    IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
+    if (workflow && workflow->hasProp("Item[@mode='once']"))
+        sharedOnceContext.setown(new CSharedOnceContext);
+    Owned<CRoxieServerQueryFactory> newFactory = new CRoxieServerQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, sharedOnceContext);
     newFactory->load(stateInfo);
+    if (sharedOnceContext && preloadOnceData)
+    {
+        Owned<StringContextLogger> logctx = new StringContextLogger(id); // NB may get linked by the onceContext
+        sharedOnceContext->checkOnceDone(newFactory, *logctx);
+    }
     return newFactory.getClear();
 }
 
@@ -1517,8 +1552,8 @@ class CSlaveQueryFactory : public CQueryFactory
     }
 
 public:
-    CSlaveQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo)
-        : CQueryFactory(_id, _dll, _package, _hashValue, _channelNo)
+    CSlaveQueryFactory(const char *_id, const IQueryDll *_dll, const IRoxiePackage &_package, hash64_t _hashValue, unsigned _channelNo, ISharedOnceContext *_sharedOnceContext)
+        : CQueryFactory(_id, _dll, _package, _hashValue, _channelNo, _sharedOnceContext)
     {
     }
 
@@ -1578,7 +1613,8 @@ IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, con
         ::Release(dll);
         return cached;
     }
-    Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel);
+    Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo); // Should always find a cached one
+    Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, serverFactory->querySharedOnceContext());
     newFactory->load(stateInfo);
     return newFactory.getClear();
 }

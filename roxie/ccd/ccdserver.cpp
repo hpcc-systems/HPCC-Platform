@@ -390,6 +390,10 @@ public:
     {
         return ctx->queryServerContext();
     }
+    virtual IWorkUnitRowReader *getWorkunitRowReader(const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
+    {
+        return ctx->getWorkunitRowReader(name, sequence, xmlTransformer, rowAllocator, isGrouped);
+    }
 protected:
     IRoxieSlaveContext * ctx;
 };
@@ -5375,20 +5379,17 @@ class CRoxieServerWorkUnitReadActivity : public CRoxieServerActivity
 {
     IHThorWorkunitReadArg &helper;
     Owned<IWorkUnitRowReader> wuReader; // MORE - can we use IRoxieInput instead?
-    IRoxieServerContext *serverContext;
 
 public:
     CRoxieServerWorkUnitReadActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorWorkunitReadArg &)basehelper)
     {
-        serverContext = NULL;
     }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent)
     {
         CRoxieServerActivity::onCreate(_ctx, _colocalParent);
-        serverContext = ctx->queryServerContext();
-        if (!serverContext)
+        if (!ctx->queryServerContext())
         {
             throw MakeStringException(ROXIE_INTERNAL_ERROR, "Workunit read activity cannot be executed in slave context");
         }
@@ -5398,7 +5399,7 @@ public:
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         IXmlToRowTransformer * xmlTransformer = helper.queryXmlTransformer();
-        wuReader.setown(serverContext->getWorkunitRowReader(helper.queryName(), helper.querySequence(), xmlTransformer, rowAllocator, meta.isGrouped()));
+        wuReader.setown(ctx->getWorkunitRowReader(helper.queryName(), helper.querySequence(), xmlTransformer, rowAllocator, meta.isGrouped()));
         // MORE _ should that be in onCreate?
     }
 
@@ -27618,6 +27619,350 @@ public:
 
 };
 
+//---------------------------------------------------------------------------------------
+
+typedef byte *row_t;
+typedef row_t * rowset_t;
+
+class DeserializedDataReader : public CInterface, implements IWorkUnitRowReader
+{
+    const rowset_t data;
+    size32_t count;
+    unsigned idx;
+public:
+    IMPLEMENT_IINTERFACE;
+    DeserializedDataReader(size32_t _count, rowset_t _data)
+    : data(_data), count(_count)
+    {
+        idx = 0;
+    }
+    virtual const void * nextInGroup()
+    {
+        if (idx < count)
+        {
+            const void *row = data[idx];
+            if (row)
+                LinkRoxieRow(row);
+            idx++;
+            return row;
+        }
+        return NULL;
+    }
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt)
+    {
+        tcount = count;
+        if (data)
+            rtlLinkRowset(data);
+        tgt = data;
+    }
+};
+
+class CDeserializedResultStore : public CInterface, implements IDeserializedResultStore
+{
+    PointerArrayOf<row_t> stored;
+    UnsignedArray counts;
+    PointerIArrayOf<IOutputMetaData> metas;
+    mutable SpinLock lock;
+public:
+    IMPLEMENT_IINTERFACE;
+    ~CDeserializedResultStore()
+    {
+        ForEachItemIn(idx, stored)
+        {
+            rowset_t rows = stored.item(idx);
+            if (rows)
+            {
+                rtlReleaseRowset(counts.item(idx), (byte**) rows);
+            }
+        }
+    }
+    virtual int addResult(size32_t count, rowset_t data, IOutputMetaData *meta)
+    {
+        SpinBlock b(lock);
+        stored.append(data);
+        counts.append(count);
+        metas.append(meta);
+        return stored.ordinality()-1;
+    }
+    virtual void queryResult(int id, size32_t &count, rowset_t &data) const
+    {
+        count = counts.item(id);
+        data = stored.item(id);
+    }
+    virtual IWorkUnitRowReader *createDeserializedReader(int id) const
+    {
+        return new DeserializedDataReader(counts.item(id), stored.item(id));
+    }
+    virtual void serialize(unsigned & tlen, void * & tgt, int id, ICodeContext *codectx) const
+    {
+        IOutputMetaData *meta = metas.item(id);
+        rowset_t data = stored.item(id);
+        size32_t count = counts.item(id);
+
+        MemoryBuffer result;
+        Owned<IOutputRowSerializer> rowSerializer = meta->createDiskSerializer(codectx, 0); // NOTE - we don't have a meaningful activity id. Only used for error reporting.
+        bool grouped = meta->isGrouped();
+        for (size32_t idx = 0; idx<count; idx++)
+        {
+            const byte *row = data[idx];
+            if (grouped && idx)
+                result.append(row == NULL);
+            if (row)
+            {
+                CThorDemoRowSerializer serializerTarget(result);
+                rowSerializer->serialize(serializerTarget, row);
+            }
+        }
+        tlen = result.length();
+        tgt= result.detach();
+    }
+};
+
+extern IDeserializedResultStore *createDeserializedResultStore()
+{
+    return new CDeserializedResultStore;
+}
+
+class WorkUnitRowReaderBase : public CInterface, implements IWorkUnitRowReader
+{
+protected:
+    Linked<IEngineRowAllocator> rowAllocator;
+    bool isGrouped;
+
+public:
+    IMPLEMENT_IINTERFACE;
+    WorkUnitRowReaderBase(IEngineRowAllocator *_rowAllocator, bool _isGrouped)
+        : rowAllocator(_rowAllocator), isGrouped(_isGrouped)
+    {
+
+    }
+
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt)
+    {
+        bool atEOG = true;
+        RtlLinkedDatasetBuilder builder(rowAllocator);
+        loop
+        {
+            const void *ret = nextInGroup();
+            if (!ret)
+            {
+                if (atEOG || !isGrouped)
+                    break;
+                atEOG = true;
+            }
+            else
+                atEOG = false;
+            builder.appendOwn(ret);
+        }
+        tcount = builder.getcount();
+        tgt = builder.linkrows();
+    }
+};
+
+class RawDataReader : public WorkUnitRowReaderBase
+{
+protected:
+    const IRoxieContextLogger &logctx;
+    byte *bufferBase;
+    MemoryBuffer blockBuffer;
+    Owned<ISerialStream> bufferStream;
+    CThorStreamDeserializerSource rowSource;
+    bool eof;
+    bool eogPending;
+    Owned<IOutputRowDeserializer> rowDeserializer;
+
+    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base) = 0;
+
+    bool reload()
+    {
+        free(bufferBase);
+        size32_t lenData;
+        bufferBase = NULL;
+        void *tempData, *base;
+        eof = !nextBlock(lenData, tempData, base);
+        bufferBase = (byte *) base;
+        blockBuffer.setBuffer(lenData, tempData, false);
+        return !eof;
+    }
+
+public:
+    RawDataReader(ICodeContext *codeContext, IEngineRowAllocator *_rowAllocator, bool _isGrouped, const IRoxieContextLogger &_logctx)
+        : WorkUnitRowReaderBase(_rowAllocator, _isGrouped), logctx(_logctx)
+    {
+        eof = false;
+        eogPending = false;
+        bufferBase = NULL;
+        rowDeserializer.setown(rowAllocator->createDiskDeserializer(codeContext));
+        bufferStream.setown(createMemoryBufferSerialStream(blockBuffer));
+        rowSource.setStream(bufferStream);
+    }
+    ~RawDataReader()
+    {
+        if (bufferBase)
+            free(bufferBase);
+    }
+    virtual const void *nextInGroup()
+    {
+        if (eof)
+            return NULL;
+        if (rowSource.eos() && !reload())
+            return NULL;
+        if (eogPending)
+        {
+            eogPending = false;
+            return NULL;
+        }
+#if 0
+        // MORE - think a bit about what happens on incomplete rows - I think deserializer will throw an exception?
+        unsigned thisSize = meta.getRecordSize(data+cursor);
+        if (thisSize > lenData-cursor)
+        {
+            CTXLOG("invalid stored dataset - incomplete row at end");
+            throw MakeStringException(ROXIE_DATA_ERROR, "invalid stored dataset - incomplete row at end");
+        }
+#endif
+        RtlDynamicRowBuilder rowBuilder(rowAllocator);
+        size32_t size = rowDeserializer->deserialize(rowBuilder, rowSource);
+        if (isGrouped)
+            rowSource.read(sizeof(bool), &eogPending);
+        atomic_inc(&rowsIn);
+        return rowBuilder.finalizeRowClear(size);
+    }
+};
+
+class InlineRawDataReader : public RawDataReader
+{
+    Linked<IPropertyTree> xml;
+public:
+    InlineRawDataReader(ICodeContext *codeContext, IEngineRowAllocator *_rowAllocator, bool _isGrouped, const IRoxieContextLogger &_logctx, IPropertyTree *_xml)
+        : RawDataReader(codeContext, _rowAllocator, _isGrouped, _logctx), xml(_xml)
+    {
+    }
+
+    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base)
+    {
+        base = tgt = NULL;
+        if (xml)
+        {
+            MemoryBuffer result;
+            xml->getPropBin(NULL, result);
+            tlen = result.length();
+            base = tgt = result.detach();
+            xml.clear();
+            return tlen != 0;
+        }
+        else
+        {
+            tlen = 0;
+            return false;
+        }
+    }
+};
+
+class StreamedRawDataReader : public RawDataReader
+{
+    SafeSocket &client;
+    StringAttr id;
+    offset_t offset;
+public:
+    StreamedRawDataReader(ICodeContext *codeContext, IEngineRowAllocator *_rowAllocator, bool _isGrouped, const IRoxieContextLogger &_logctx, SafeSocket &_client, const char *_id)
+        : RawDataReader(codeContext, _rowAllocator, _isGrouped, _logctx), client(_client), id(_id)
+    {
+        offset = 0;
+    }
+
+    virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base)
+    {
+        try
+        {
+#ifdef FAKE_EXCEPTIONS
+            if (offset > 0x10000)
+                throw MakeStringException(ROXIE_INTERNAL_ERROR, "TEST EXCEPTION");
+#endif
+            // Go request from the socket
+            MemoryBuffer request;
+            request.reserve(sizeof(size32_t));
+            request.append('D');
+            offset_t loffset = offset;
+            _WINREV(loffset);
+            request.append(sizeof(loffset), &loffset);
+            request.append(strlen(id)+1, id);
+            size32_t len = request.length() - sizeof(size32_t);
+            len |= 0x80000000;
+            _WINREV(len);
+            *(size32_t *) request.toByteArray() = len;
+            client.write(request.toByteArray(), request.length());
+
+            // Note: I am the only thread reading (we only support a single input dataset in roxiepipe mode)
+            MemoryBuffer reply;
+            client.readBlock(reply, readTimeout);
+            tlen = reply.length();
+            // MORE - not very robust!
+            // skip past block header
+            if (tlen > 0)
+            {
+                tgt = base = reply.detach();
+                tgt = ((char *)base) + 9;
+                tgt = strchr((char *)tgt, '\0') + 1;
+                tlen -= ((char *)tgt - (char *)base);
+                offset += tlen;
+            }
+            else
+                tgt = base = NULL;
+
+            return tlen != 0;
+        }
+        catch (IException *E)
+        {
+            StringBuffer text;
+            E->errorMessage(text);
+            int errCode = E->errorCode();
+            E->Release();
+            IException *ee = MakeStringException(MSGAUD_internal, errCode, "%s", text.str());
+            logctx.logOperatorException(ee, __FILE__, __LINE__, "Exception caught in RawDataReader::nextBlock");
+            throw ee;
+        }
+        catch (...)
+        {
+            logctx.logOperatorException(NULL, __FILE__, __LINE__, "Unknown exception caught in RawDataReader::nextBlock");
+            throw;
+        }
+    }
+};
+
+class InlineXmlDataReader : public WorkUnitRowReaderBase
+{
+    Linked<IPropertyTree> xml;
+    Owned <XmlColumnProvider> columns;
+    Owned<IPropertyTreeIterator> rows;
+    IXmlToRowTransformer &rowTransformer;
+public:
+    IMPLEMENT_IINTERFACE;
+    InlineXmlDataReader(IXmlToRowTransformer &_rowTransformer, IPropertyTree *_xml, IEngineRowAllocator *_rowAllocator, bool _isGrouped)
+        : WorkUnitRowReaderBase(_rowAllocator, _isGrouped), xml(_xml), rowTransformer(_rowTransformer)
+    {
+        columns.setown(new XmlDatasetColumnProvider);
+        rows.setown(xml->getElements("Row")); // NOTE - the 'hack for Gordon' as found in thorxmlread is not implemented here. Does it need to be ?
+        rows->first();
+    }
+
+    virtual const void *nextInGroup()
+    {
+        if (rows->isValid())
+        {
+            columns->setRow(&rows->query());
+            rows->next();
+            RtlDynamicRowBuilder rowBuilder(rowAllocator);
+            NullDiskCallback callback;
+            size_t outSize = rowTransformer.transform(rowBuilder, columns, &callback);
+            return rowBuilder.finalizeRowClear(outSize);
+        }
+        return NULL;
+    }
+};
+
+//---------------------------------------------------------------------------------------
+
 class CSlaveContext : public CInterface, implements IRoxieSlaveContext, implements ICodeContext, implements roxiemem::ITimeLimiter, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:
@@ -27725,6 +28070,10 @@ public:
         ctxFetchPreload = 0;
         ctxPrefetchProjectPreload = 0;
         traceActivityTimes = _traceActivityTimes;
+        temporaries = NULL;
+        deserializedResultStore = NULL;
+        rereadResults = NULL;
+        xmlStoredDatasetReadFlags = xr_none;
         if (_debuggerActive)
         {
             CSlaveDebugContext *slaveDebugContext = new CSlaveDebugContext(this, logctx, *header);
@@ -27739,6 +28088,12 @@ public:
         rowManager.setown(roxiemem::createRowManager(_memoryLimit, this, logctx, allocatorMetaCache, false));
         //MORE: If checking heap required then should have
         //rowManager.setown(createCheckingHeap(rowManager)) or something similar.
+    }
+    ~CSlaveContext()
+    {
+        ::Release(rereadResults);
+        ::Release(temporaries);
+        ::Release(deserializedResultStore);
     }
 
     // interface IRoxieServerContext
@@ -27833,7 +28188,7 @@ public:
         return logctx.isBlind();
     }
 
-    virtual unsigned queryTraceLevel() const 
+    virtual unsigned queryTraceLevel() const
     {
         return logctx.queryTraceLevel();
     }
@@ -27843,7 +28198,7 @@ public:
         if (traceActivityTimes)
         {
             StringBuffer text, prefix;
-            text.appendf("%s outputIdx %d processed %d total %d us local %d us", 
+            text.appendf("%s outputIdx %d processed %d total %d us local %d us",
                 getActivityText(activity->getKind()), _idx, _processed, (unsigned) (cycle_to_nanosec(_totalCycles)/1000), (unsigned)(cycle_to_nanosec(_localCycles)/1000));
             activityContext.getLogPrefix(prefix);
             CTXLOGa(LOG_TIMING, prefix.str(), text.str());
@@ -27914,7 +28269,7 @@ public:
             lastWuAbortCheck = msTick();
         }
     }
-    
+
     virtual void notifyAbort(IException *E)
     {
         CriticalBlock b(abortLock);
@@ -27973,10 +28328,10 @@ public:
     virtual void noteChildGraph(unsigned id, IActivityGraph *childGraph)
     {
         if (queryTraceLevel() > 10)
-            CTXLOG("CSlaveContext %p noteChildGraph %d=%p", this, id, childGraph); 
+            CTXLOG("CSlaveContext %p noteChildGraph %d=%p", this, id, childGraph);
         childGraphs.setValue(id, childGraph);
     }
-    
+
     virtual IActivityGraph *getLibraryGraph(const LibraryCallFactoryExtra &extra, IRoxieServerActivity *parentActivity)
     {
         if (extra.embedded)
@@ -28080,7 +28435,7 @@ public:
                 endGraph(true);
             CTXLOG("Done cleaning up");
             throw;
-        }           
+        }
         catch (...)
         {
             CTXLOG("Exception thrown in query - cleaning up");
@@ -28088,7 +28443,7 @@ public:
                 endGraph(true);
             CTXLOG("Done cleaning up");
             throw;
-        }           
+        }
         endGraph(false);
     }
 
@@ -28123,7 +28478,7 @@ public:
         totSlavesReplyLen += len;
     }
     
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) 
+    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg)
     {
         throwUnexpected();
     }
@@ -28145,7 +28500,7 @@ public:
         throwUnexpected();
     }
 
-    virtual const char *loadResource(unsigned id) 
+    virtual const char *loadResource(unsigned id)
     {
         ILoadedDllEntry *dll = factory->queryDll();
         return (const char *) dll->getResource(id);
@@ -28164,13 +28519,13 @@ public:
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
     {
-        // On a slave, we need to request info using our own header (not the one passed in) and need to get global rather than just local info 
+        // On a slave, we need to request info using our own header (not the one passed in) and need to get global rather than just local info
         // (possibly we could get just local if the channel matches but not sure there is any point)
         Owned<const IResolvedFile> dFile = resolveLFN(lfn, isOpt);
         if (dFile)
         {
             MemoryBuffer mb;
-            mb.append(sizeof(RoxiePacketHeader), &header); 
+            mb.append(sizeof(RoxiePacketHeader), &header);
             mb.append(lfn);
             dFile->serializePartial(mb, header.channel, isLocal);
             ((RoxiePacketHeader *) mb.toByteArray())->activityId = ROXIE_FILECALLBACK;
@@ -28219,7 +28574,7 @@ public:
     // The following from ICodeContext should never be executed in slave activity. If we are on Roxie server (or in child query on slave), they will be implemented by more derived CRoxieServerContext class
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
-    virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); } 
+    virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) { throwUnexpected(); }
     virtual void setResultInt(const char *name, unsigned sequence, __int64 value) { throwUnexpected(); }
     virtual void setResultRaw(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
     virtual void setResultReal(const char * stepname, unsigned sequence, double value) { throwUnexpected(); }
@@ -28230,27 +28585,12 @@ public:
     virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { throwUnexpected(); }
     virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { throwUnexpected(); }
 
-    virtual bool getResultBool(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual __int64 getResultInt(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual double getResultReal(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual char *getResultVarString(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { throwUnexpected(); }
     virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { throwUnexpected(); }
-
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) { throwUnexpected(); }
 
     virtual char *getWuid() { throwUnexpected(); }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual char *getDaliServers() { throwUnexpected(); } 
+    virtual char *getDaliServers() { throwUnexpected(); }
 
     virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { throwUnexpected(); }
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
@@ -28273,8 +28613,8 @@ public:
     virtual char *getGroupName() { throwUnexpected(); }
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
     virtual unsigned getPriority() const { throwUnexpected(); }
-    virtual char *getPlatform() { throwUnexpected(); } 
-    virtual char *getEnv(const char *name, const char *defaultValue) const { throwUnexpected(); } 
+    virtual char *getPlatform() { throwUnexpected(); }
+    virtual char *getEnv(const char *name, const char *defaultValue) const { throwUnexpected(); }
 
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
@@ -28304,6 +28644,421 @@ public:
     {
         return createRoxieRowAllocator(*rowManager, meta, activityId, id, roxiemem::RHFnone);
     }
+
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    {
+        try
+        {
+            Owned<IWorkUnitRowReader> wuReader = getWorkunitRowReader(stepname, sequence, xmlTransformer, _rowAllocator, isGrouped);
+            wuReader->getResultRowset(tcount, tgt);
+        }
+        catch (IException * e)
+        {
+            StringBuffer text;
+            e->errorMessage(text);
+            e->Release();
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\".  [%s]", stepname, text.str());
+        }
+        catch (...)
+        {
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\"", stepname);
+        }
+    }
+
+    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+    {
+        try
+        {
+            Owned<IWorkUnitRowReader> wuReader = getWorkunitRowReader(stepname, sequence, xmlTransformer, _rowAllocator, false);
+            wuReader->getResultRowset(tcount, tgt);
+        }
+        catch (IException * e)
+        {
+            StringBuffer text;
+            e->errorMessage(text);
+            e->Release();
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\".  [%s]", stepname, text.str());
+        }
+        catch (...)
+        {
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\"", stepname);
+        }
+    }
+
+    virtual bool getResultBool(const char * name, unsigned sequence)
+    {
+        CriticalBlock b(contextCrit);
+        return useContext(sequence).getPropBool(name);
+    }
+
+    static unsigned hex2digit(char c)
+    {
+        // MORE - what about error cases?
+        if (c >= 'a')
+            return (c - 'a' + 10);
+        else if (c >= 'A')
+            return (c - 'A' + 10);
+        return (c - '0');
+    }
+    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence)
+    {
+        MemoryBuffer result;
+        CriticalBlock b(contextCrit);
+        const char *val = useContext(sequence).queryProp(name);
+        if (val)
+        {
+            loop
+            {
+                char c0 = *val++;
+                if (!c0)
+                    break;
+                char c1 = *val++;
+                if (!c1)
+                    break; // Shouldn't really happen - we expect even length
+                unsigned c2 = (hex2digit(c0) << 4) | hex2digit(c1);
+                result.append((unsigned char) c2);
+            }
+        }
+        tlen = result.length();
+        tgt = result.detach();
+    }
+    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence)
+    {
+        if (isSpecialResultSequence(sequence))
+        {
+            MemoryBuffer m;
+            CriticalBlock b(contextCrit);
+            useContext(sequence).getPropBin(stepname, m);
+            if (m.length())
+            {
+                assertex(m.length() == tlen);
+                m.read(tlen, tgt);
+            }
+            else
+                memset(tgt, 0, tlen);
+        }
+        else
+        {
+            StringBuffer x;
+            {
+                CriticalBlock b(contextCrit);
+                useContext(sequence).getProp(stepname, x);
+            }
+            Decimal d;
+            d.setString(x.length(), x.str());
+            if (isSigned)
+                d.getDecimal(tlen, precision, tgt);
+            else
+                d.getUDecimal(tlen, precision, tgt);
+        }
+    }
+    virtual __int64 getResultInt(const char * name, unsigned sequence)
+    {
+        CriticalBlock b(contextCrit);
+        const char *val = useContext(sequence).queryProp(name);
+        if (val)
+        {
+            // NOTE - we use this rather than getPropInt64 since it handles uint64 values up to MAX_UINT better (for our purposes)
+            return rtlStrToInt8(strlen(val), val);
+        }
+        else
+            return 0;
+    }
+    virtual double getResultReal(const char * name, unsigned sequence)
+    {
+        CriticalBlock b(contextCrit);
+        IPropertyTree &ctx = useContext(sequence);
+        double ret = 0;
+        if (ctx.hasProp(name))
+        {
+            if (ctx.isBinary(name))
+            {
+                MemoryBuffer buf;
+                ctx.getPropBin(name, buf);
+                buf.read(ret);
+            }
+            else
+            {
+                const char *val = ctx.queryProp(name);
+                if (val)
+                    ret = atof(val);
+            }
+        }
+        return ret;
+    }
+    virtual void getResultSet(bool & tisAll, unsigned & tlen, void * & tgt, const char *stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    {
+        try
+        {
+            CriticalBlock b(contextCrit);
+            IPropertyTree &ctx = useContext(sequence);
+            IPropertyTree *val = ctx.queryPropTree(stepname);
+            doExtractRawResultX(tlen, tgt, val, sequence, xmlTransformer, csvTransformer, true);
+            tisAll = val ? val->getPropBool("@isAll", false) : false;
+        }
+        catch (IException * e)
+        {
+            StringBuffer text;
+            e->errorMessage(text);
+            e->Release();
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve set \"%s\".  [%s]", stepname, text.str());
+        }
+        catch (...)
+        {
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve set \"%s\"", stepname);
+        }
+    }
+    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char *stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    {
+        try
+        {
+            CriticalBlock b(contextCrit);
+            IPropertyTree &ctx = useContext(sequence);
+            IPropertyTree *val = ctx.queryPropTree(stepname);
+            doExtractRawResultX(tlen, tgt, val, sequence, xmlTransformer, csvTransformer, false);
+        }
+        catch (IException * e)
+        {
+            StringBuffer text;
+            e->errorMessage(text);
+            e->Release();
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\".  [%s]", stepname, text.str());
+        }
+        catch (...)
+        {
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\"", stepname);
+        }
+    }
+    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence)
+    {
+        MemoryBuffer x;
+        bool isBinary;
+        {
+            CriticalBlock b(contextCrit);
+            IPropertyTree &ctx = useContext(sequence);
+            isBinary = ctx.isBinary(name);
+            ctx.getPropBin(name, x);
+        }
+        if (isBinary)  // No utf8 translation if previously set via setResultString
+        {
+            tlen = x.length();
+            tgt = (char *) x.detach();
+        }
+        else
+            rtlUtf8ToStrX(tlen, tgt, rtlUtf8Length(x.length(), x.toByteArray()), x.toByteArray());
+    }
+    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence)
+    {
+        MemoryBuffer x;
+        bool isBinary;
+        {
+            CriticalBlock b(contextCrit);
+            IPropertyTree &ctx = useContext(sequence);
+            isBinary = ctx.isBinary(name);
+            ctx.getPropBin(name, x);
+        }
+        if (isBinary)
+            rtlStrToStr(tlen, tgt, x.length(), x.toByteArray());
+        else
+            rtlUtf8ToStr(tlen, tgt, rtlUtf8Length(x.length(), x.toByteArray()), x.toByteArray());
+    }
+    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence)
+    {
+        StringBuffer x;
+        {
+            CriticalBlock b(contextCrit);
+            useContext(sequence).getProp(name, x);
+        }
+        tgt = rtlCodepageToVUnicodeX(x.length(), x.str(), "utf-8");
+        tlen = rtlUnicodeStrlen(tgt);
+    }
+    virtual char *getResultVarString(const char * name, unsigned sequence)
+    {
+        CriticalBlock b(contextCrit);
+        IPropertyTree &ctx = useContext(sequence);
+        bool isBinary = ctx.isBinary(name);
+        if (isBinary)
+        {
+            StringBuffer s;
+            ctx.getProp(name, s);
+            return s.detach();
+        }
+        else
+        {
+            MemoryBuffer x;
+            ctx.getPropBin(name, x);
+            return rtlUtf8ToVStr(rtlUtf8Length(x.length(), x.toByteArray()), x.toByteArray());
+        }
+    }
+    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence)
+    {
+        StringBuffer x;
+        CriticalBlock b(contextCrit);
+        useContext(sequence).getProp(name, x);
+        return rtlVCodepageToVUnicodeX(x.str(), "utf-8");
+    }
+
+protected:
+    mutable CriticalSection contextCrit;
+    Owned<IPropertyTree> context;
+    IPropertyTree *temporaries;
+    IPropertyTree *rereadResults;
+    XmlReaderOptions xmlStoredDatasetReadFlags;
+    CDeserializedResultStore *deserializedResultStore;
+
+    IPropertyTree &useContext(unsigned sequence)
+    {
+        checkAbort();
+        switch (sequence)
+        {
+        case ResultSequenceStored:
+            if (context)
+                return *context;
+            else
+                throw MakeStringException(ROXIE_CODEGEN_ERROR, "Code generation error - attempting to access stored variable on slave");
+        case ResultSequencePersist:
+            throwUnexpected();  // Do not expect to see in Roxie
+        case ResultSequenceInternal:
+            {
+                CriticalBlock b(contextCrit);
+                if (!temporaries)
+                    temporaries = createPTree();
+                return *temporaries;
+            }
+        case ResultSequenceOnce:
+            {
+                return factory->queryOnceContext(logctx);
+            }
+        default:
+            {
+                CriticalBlock b(contextCrit);
+                if (!rereadResults)
+                    rereadResults = createPTree();
+                return *rereadResults;
+            }
+        }
+    }
+
+    IDeserializedResultStore &useResultStore(unsigned sequence)
+    {
+        checkAbort();
+        switch (sequence)
+        {
+        case ResultSequenceOnce:
+            return factory->queryOnceResultStore();
+        default:
+            // No need to have separate stores for other temporaries...
+            CriticalBlock b(contextCrit);
+            if (!deserializedResultStore)
+                deserializedResultStore = new CDeserializedResultStore;
+            return *deserializedResultStore;
+        }
+    }
+
+    void doExtractRawResultX(unsigned & tlen, void * & tgt, IPropertyTree *val, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, bool isSet)
+    {
+        tgt = NULL;
+        tlen = 0;
+        if (val)
+        {
+            if (val->isBinary())
+            {
+                MemoryBuffer m;
+                val->getPropBin(NULL, m);
+                tlen = m.length();
+                tgt= m.detach();
+            }
+            else
+            {
+                const char *format = val->queryProp("@format");
+                if (!format || strcmp(format, "xml")==0)
+                {
+                    assertex(xmlTransformer);
+                    Variable2IDataVal result(&tlen, &tgt);
+                    CXmlToRawTransformer rawTransformer(*xmlTransformer, xmlStoredDatasetReadFlags);
+                    rawTransformer.transformTree(result, *val, !isSet);
+                }
+                else if (strcmp(format, "deserialized")==0)
+                {
+                    IDeserializedResultStore &resultStore = useResultStore(sequence);
+                    resultStore.serialize(tlen, tgt, val->getPropInt("@id", -1), queryCodeContext());
+                }
+                else if (strcmp(format, "csv")==0)
+                {
+                    // MORE - never tested this code.....
+                    assertex(csvTransformer);
+                    Variable2IDataVal result(&tlen, &tgt);
+                    MemoryBuffer m;
+                    val->getPropBin(NULL, m);
+                    CCsvToRawTransformer rawCsvTransformer(*csvTransformer);
+                    rawCsvTransformer.transform(result, m.length(), m.toByteArray(), !isSet);
+                }
+                else
+                    throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "no transform function available");
+            }
+        }
+    }
+
+    virtual IWorkUnitRowReader *createStreamedRawRowReader(IEngineRowAllocator *rowAllocator, bool isGrouped, const char *id)
+    {
+        throwUnexpected();  // Should only see on server
+    }
+    virtual IWorkUnitRowReader *getWorkunitRowReader(const char *stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
+    {
+        try
+        {
+            CriticalBlock b(contextCrit);
+            IPropertyTree &ctx = useContext(sequence);
+            IPropertyTree *val = ctx.queryPropTree(stepname);
+            if (val)
+            {
+                const char *id = val->queryProp("@id");
+                const char *format = val->queryProp("@format");
+                if (id)
+                {
+                    if (!format || strcmp(format, "raw") == 0)
+                    {
+                        return createStreamedRawRowReader(rowAllocator, isGrouped, id);
+                    }
+                    else if (strcmp(format, "deserialized") == 0)
+                    {
+                        IDeserializedResultStore &resultStore = useResultStore(sequence);
+                        return resultStore.createDeserializedReader(atoi(id));
+                    }
+                    else
+                        throwUnexpected();
+                }
+                else
+                {
+                    if (!format || strcmp(format, "xml") == 0)
+                    {
+                        if (xmlTransformer)
+                            return new InlineXmlDataReader(*xmlTransformer, val, rowAllocator, isGrouped);
+                    }
+                    else if (strcmp(format, "raw") == 0)
+                    {
+                        return new InlineRawDataReader(queryCodeContext(), rowAllocator, isGrouped, logctx, val);
+                    }
+                    else
+                        throwUnexpected();
+                }
+            }
+        }
+        catch (IException * e)
+        {
+            StringBuffer text;
+            e->errorMessage(text);
+            e->Release();
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s.  [%s]", stepname, text.str());
+        }
+        catch (...)
+        {
+            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
+        }
+        throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
+    }
+
+
 };
 
 IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *packet)
@@ -28316,7 +29071,7 @@ class CRoxieServerDebugContext : extends CBaseServerDebugContext
     // Some questions:
     // 1. Do we let all threads go even when say step? Probably... (may allow a thread to be suspended at some point)
     // 2. Doesn't that then make a bit of a mockery of step (when there are multiple threads active)... I _think_ it actually means we DON'T try to wait for all
-    //    threads to hit a stop, but allow any that hit stop while we are paused to be queued up to be returned by step.... perhaps actually stop them in critsec rather than 
+    //    threads to hit a stop, but allow any that hit stop while we are paused to be queued up to be returned by step.... perhaps actually stop them in critsec rather than
     //    semaphore and it all becomes easier to code... Anything calling checkBreakPoint while program state is "in debugger" will block on that critSec.
     // 3. I think we need to recheck breakpoints on Roxie server but just check not deleted
 public:
@@ -28414,14 +29169,14 @@ public:
             }
         }
         MemoryBuffer mb;
-        mb.append(sizeof(RoxiePacketHeader), &header); 
+        mb.append(sizeof(RoxiePacketHeader), &header);
         StringBuffer debugIdString;
         debugIdString.appendf(".debug.%x", debugSequence);
         mb.append(debugIdString.str());
         serialize(mb);
 
         Owned<IRoxieQueryPacket> reply = createRoxiePacket(mb);
-        reply->queryHeader().activityId = ROXIE_DEBUGCALLBACK;;
+        reply->queryHeader().activityId = ROXIE_DEBUGCALLBACK;
         reply->queryHeader().retries = 0;
         return reply.getClear();
     }
@@ -28449,126 +29204,18 @@ public:
 
 };
 
-typedef byte *row_t;
-typedef row_t * rowset_t;
-
-class DeserializedDataReader : public CInterface, implements IWorkUnitRowReader
-{
-    const rowset_t data;
-    size32_t count;
-    unsigned idx;
-public:
-    IMPLEMENT_IINTERFACE;
-    DeserializedDataReader(size32_t _count, rowset_t _data)
-    : data(_data), count(_count)
-    {
-        idx = 0;
-    }
-    virtual const void * nextInGroup() 
-    {
-        if (idx < count)
-        {
-            const void *row = data[idx];
-            if (row)
-                LinkRoxieRow(row);
-            idx++;
-            return row;
-        }
-        return NULL;
-    }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt)
-    {
-        tcount = count;
-        if (data)
-            rtlLinkRowset(data);
-        tgt = data;
-    }
-};
-
-class CDeserializedResultStore : public CInterface, implements IDeserializedResultStore 
-{
-    PointerArrayOf<row_t> stored;
-    UnsignedArray counts;
-    PointerIArrayOf<IOutputMetaData> metas;
-    mutable SpinLock lock;
-public:
-    IMPLEMENT_IINTERFACE;
-    ~CDeserializedResultStore()
-    {
-        ForEachItemIn(idx, stored)
-        {
-            rowset_t rows = stored.item(idx);
-            if (rows)
-            {
-                rtlReleaseRowset(counts.item(idx), (byte**) rows);
-            }
-        }
-    }
-    virtual int addResult(size32_t count, rowset_t data, IOutputMetaData *meta)
-    {
-        SpinBlock b(lock);
-        stored.append(data);
-        counts.append(count);
-        metas.append(meta);
-        return stored.ordinality()-1;
-    }
-    virtual void queryResult(int id, size32_t &count, rowset_t &data) const
-    {
-        count = counts.item(id);
-        data = stored.item(id);
-    }
-    virtual IWorkUnitRowReader *createDeserializedReader(int id) const
-    {
-        return new DeserializedDataReader(counts.item(id), stored.item(id));
-    }
-    virtual void serialize(unsigned & tlen, void * & tgt, int id, ICodeContext *codectx) const
-    {
-        IOutputMetaData *meta = metas.item(id);
-        rowset_t data = stored.item(id);
-        size32_t count = counts.item(id);
-
-        MemoryBuffer result;
-        Owned<IOutputRowSerializer> rowSerializer = meta->createDiskSerializer(codectx, 0); // NOTE - we don't have a meaningful activity id. Only used for error reporting.
-        bool grouped = meta->isGrouped();
-        for (size32_t idx = 0; idx<count; idx++)
-        {
-            const byte *row = data[idx];
-            if (grouped && idx)
-                result.append(row == NULL);
-            if (row)
-            {
-                CThorDemoRowSerializer serializerTarget(result);
-                rowSerializer->serialize(serializerTarget, row);
-            }
-        }
-        tlen = result.length();
-        tgt= result.detach();
-    }
-};
-
-extern IDeserializedResultStore *createDeserializedResultStore()
-{
-    return new CDeserializedResultStore;
-}
-
 class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext, implements IGlobalCodeContext
 {
     const IQueryFactory *serverQueryFactory;
-    mutable CriticalSection contextCrit;
     CriticalSection daliUpdateCrit;
-    Owned<IPropertyTree> context;
-    IPropertyTree *temporaries;
-    CDeserializedResultStore *deserializedResultStore;
-    IPropertyTree *rereadResults;
     Owned<IRoxiePackage> dynamicPackage;
-    
+
     bool isXml;
     bool isRaw;
     bool isBlocked;
     bool isHttp;
     bool sendHeartBeats;
     bool trim;
-    XmlReaderOptions xmlStoredDatasetReadFlags;
     unsigned warnTimeLimit;
     unsigned lastSocketCheckTime;
     unsigned lastHeartBeat;
@@ -28577,7 +29224,7 @@ protected:
     Owned<WorkflowMachine> workflow;
     SafeSocket *client;
 
-    void doPostProcess()  
+    void doPostProcess()
     {
         CriticalBlock b(resultsCrit); // Probably not needed
         if (!isRaw && !isBlocked)
@@ -28593,7 +29240,7 @@ protected:
         if (probeQuery)
         {
             FlushingStringBuffer response(client, isBlocked, true, false, isHttp, *this);
-            
+
             // create output stream
             response.startDataset("_Probe", NULL, (unsigned) -1);  // initialize it
 
@@ -28610,54 +29257,6 @@ protected:
             }
         }
     }
-    IDeserializedResultStore &useResultStore(unsigned sequence)
-    {
-        checkAbort();
-        switch (sequence)
-        {
-        case ResultSequenceOnce:
-            return factory->queryOnceResultStore();
-        default:
-            // No need to have separate stores for other temporaries...
-            CriticalBlock b(contextCrit);
-            if (!deserializedResultStore)
-                deserializedResultStore = new CDeserializedResultStore;
-            return *deserializedResultStore;
-        }
-    }
-    IPropertyTree &useContext(unsigned sequence)
-    {
-        checkAbort();
-        switch (sequence)
-        {
-        case ResultSequenceStored:
-            if (context)
-                return *context;
-            else
-                throw MakeStringException(ROXIE_CODEGEN_ERROR, "Code generation error - attempting to access stored variable on slave");
-        case ResultSequencePersist:
-            throwUnexpected();  // Do not expect to see in Roxie
-        case ResultSequenceInternal:
-            {
-                CriticalBlock b(contextCrit);
-                if (!temporaries)
-                    temporaries = createPTree();
-                return *temporaries;
-            }
-        case ResultSequenceOnce:
-            {
-                return factory->queryOnceContext();
-            }
-        default:
-            {
-                CriticalBlock b(contextCrit);
-                if (!rereadResults)
-                    rereadResults = createPTree();
-                return *rereadResults;
-            }
-        }
-    }
-
     void addWuException(IException *E)
     {
         if (workUnit)
@@ -28668,9 +29267,6 @@ protected:
     {
         client = NULL;
         totSlavesReplyLen = 0;
-        temporaries = NULL;
-        deserializedResultStore = NULL;
-        rereadResults = NULL;
         isXml = true;
         isRaw = false;
         isBlocked = false;
@@ -28694,7 +29290,6 @@ protected:
         ctxFetchPreload = defaultFetchPreload;
         ctxPrefetchProjectPreload = defaultPrefetchProjectPreload;
 
-        xmlStoredDatasetReadFlags = xr_none;
         traceActivityTimes = false;
     }
 
@@ -28790,7 +29385,7 @@ public:
         {
             IRoxieDaliHelper *daliHelper = checkDaliConnection();
             assertex(daliHelper );
-            workUnit.setown(daliHelper->attachWorkunit(wuid, _factory->queryDll())); 
+            workUnit.setown(daliHelper->attachWorkunit(wuid, _factory->queryDll()));
             if (!workUnit)
                 throw MakeStringException(ROXIE_DALI_ERROR, "Failed to open workunit %s", wuid);
             startWorkUnit();
@@ -28824,9 +29419,6 @@ public:
     ~CRoxieServerContext()
     {
         dynamicPackage.clear(); // do this before disconnect from dali
-        ::Release(rereadResults);
-        ::Release(temporaries);
-        ::Release(deserializedResultStore);
     }
 
     virtual roxiemem::IRowManager &queryRowManager()
@@ -28863,7 +29455,7 @@ public:
         {
             if (socketCheckInterval)
             {
-                if (ticksNow - lastSocketCheckTime > socketCheckInterval) 
+                if (ticksNow - lastSocketCheckTime > socketCheckInterval)
                 {
                     CriticalBlock b(abortLock);
                     if (!client->checkConnection())
@@ -29110,7 +29702,7 @@ public:
         }
 
     }
-    virtual void appendResultRawContext(const char *name, unsigned sequence, int len, const void * data, int numRows, bool extend, bool saveInContext) 
+    virtual void appendResultRawContext(const char *name, unsigned sequence, int len, const void * data, int numRows, bool extend, bool saveInContext)
     {
         if (saveInContext)
         {
@@ -29162,7 +29754,7 @@ public:
                     UNIMPLEMENTED;
             }
         }
-        
+
         if (workUnit)
         {
             try
@@ -29219,12 +29811,12 @@ public:
                     {
                         SimpleOutputWriter x;
                         transformer->toXML(isAll, len, (const byte *) data, x);
-                        r->appendf("%s]", x.str()); 
+                        r->appendf("%s]", x.str());
                     }
                 }
             }
         }
-        
+
         if (workUnit)
         {
             try
@@ -29246,7 +29838,7 @@ public:
             }
         }
     }
-    virtual void setResultXml(const char *name, unsigned sequence, const char *xml) 
+    virtual void setResultXml(const char *name, unsigned sequence, const char *xml)
     {
         CriticalBlock b(contextCrit);
         useContext(sequence).setPropTree(name, createPTreeFromXMLString(xml, ipt_caseInsensitive));
@@ -29531,246 +30123,18 @@ public:
     {
         setResultUnicode(name, sequence, rtlUnicodeStrlen(value), value);
     }
-    virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *data, unsigned numRows, bool extend) 
-    { 
+    virtual void setResultDataset(const char * name, unsigned sequence, size32_t len, const void *data, unsigned numRows, bool extend)
+    {
         appendResultRawContext(name, sequence, len, data, numRows, extend, true);
     }
-    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence)
+
+    virtual IWorkUnitRowReader *createStreamedRawRowReader(IEngineRowAllocator *rowAllocator, bool isGrouped, const char *id)
     {
-        if (isSpecialResultSequence(sequence))
-        {
-            MemoryBuffer m;
-            CriticalBlock b(contextCrit);
-            useContext(sequence).getPropBin(stepname, m);
-            if (m.length())
-            {
-                assertex(m.length() == tlen);
-                m.read(tlen, tgt);
-            }
-            else
-                memset(tgt, 0, tlen);
-        }
-        else
-        {
-            StringBuffer x;
-            {
-                CriticalBlock b(contextCrit);
-                useContext(sequence).getProp(stepname, x);
-            }
-            Decimal d;
-            d.setString(x.length(), x.str());
-            if (isSigned)
-                d.getDecimal(tlen, precision, tgt);
-            else
-                d.getUDecimal(tlen, precision, tgt);
-        }
-    }
-    virtual bool getResultBool(const char * name, unsigned sequence)
-    {
-        CriticalBlock b(contextCrit);
-        return useContext(sequence).getPropBool(name);
-    }
-    static unsigned hex2digit(char c)
-    {
-        // MORE - what about error cases?
-        if (c >= 'a')
-            return (c - 'a' + 10);
-        else if (c >= 'A')
-            return (c - 'A' + 10);
-        return (c - '0');
-    }
-    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence)
-    {
-        MemoryBuffer result;
-        CriticalBlock b(contextCrit);
-        const char *val = useContext(sequence).queryProp(name);
-        if (val)
-        {
-            loop
-            {
-                char c0 = *val++;
-                if (!c0)
-                    break;
-                char c1 = *val++;
-                if (!c1)
-                    break; // Shouldn't really happen - we expect even length
-                unsigned c2 = (hex2digit(c0) << 4) | hex2digit(c1);
-                result.append((unsigned char) c2);
-            }
-        }
-        tlen = result.length();
-        tgt = result.detach();
+        return new StreamedRawDataReader(this, rowAllocator, isGrouped, logctx, *client, id);
     }
 
-    void doExtractRawResultX(unsigned & tlen, void * & tgt, IPropertyTree *val, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, bool isSet)
+    virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence)
     {
-        tgt = NULL;
-        tlen = 0;
-        if (val)
-        {
-            if (val->isBinary())
-            {
-                MemoryBuffer m;
-                val->getPropBin(NULL, m);
-                tlen = m.length();
-                tgt= m.detach();
-            }
-            else 
-            {
-                const char *format = val->queryProp("@format");
-                if (!format || strcmp(format, "xml")==0)
-                {
-                    assertex(xmlTransformer);
-                    Variable2IDataVal result(&tlen, &tgt);
-                    CXmlToRawTransformer rawTransformer(*xmlTransformer, xmlStoredDatasetReadFlags);
-                    rawTransformer.transformTree(result, *val, !isSet);
-                }
-                else if (strcmp(format, "deserialized")==0)
-                {
-                    IDeserializedResultStore &resultStore = useResultStore(sequence);
-                    resultStore.serialize(tlen, tgt, val->getPropInt("@id", -1), queryCodeContext());
-                }
-                else if (strcmp(format, "csv")==0)
-                {
-                    // MORE - never tested this code.....
-                    assertex(csvTransformer);
-                    Variable2IDataVal result(&tlen, &tgt);
-                    MemoryBuffer m;
-                    val->getPropBin(NULL, m);
-                    CCsvToRawTransformer rawCsvTransformer(*csvTransformer);
-                    rawCsvTransformer.transform(result, m.length(), m.toByteArray(), !isSet);
-                }
-                else
-                    throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "no transform function available");
-            }
-        }
-    }
-
-    void doExtractRawResultF(unsigned tlen, void * tgt, IPropertyTree *val, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, bool isSet)
-    {
-        if (!val)
-            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "no value for result");
-        if (val->isBinary())
-        {
-            try
-            {
-                //Slightly weird usage - provide the buffer to MemoryBuffer to avoid an allocation and extra copy
-                MemoryBuffer m;
-                m.setBuffer(tlen, tgt, false);
-                m.setLength(0);
-                val->getPropBin(NULL, m);
-            }
-            catch (IException * e)
-            {
-                e->Release();
-                throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "result larger that expected");
-            }
-        }
-        else if (xmlTransformer)
-        {
-            Fixed2IDataVal result(tlen, tgt);
-            CXmlToRawTransformer rawTransformer(*xmlTransformer, xmlStoredDatasetReadFlags);
-            rawTransformer.transformTree(result, *val, !isSet);
-        }
-        else if (csvTransformer)
-        {
-            // MORE - never tested this code.....
-            Fixed2IDataVal result(tlen, tgt);
-            MemoryBuffer m;
-            val->getPropBin(NULL, m);
-            CCsvToRawTransformer rawCsvTransformer(*csvTransformer);
-            rawCsvTransformer.transform(result, m.length(), m.toByteArray(), !isSet);
-        }
-        else
-            throw MakeStringException(ROXIE_UNIMPLEMENTED_ERROR, "no transform function available");
-    }
-
-    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char *stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
-    {
-        try
-        {
-            CriticalBlock b(contextCrit);
-            IPropertyTree &ctx = useContext(sequence);
-            IPropertyTree *val = ctx.queryPropTree(stepname);
-            doExtractRawResultX(tlen, tgt, val, sequence, xmlTransformer, csvTransformer, false);
-        }
-        catch (IException * e)
-        {
-            StringBuffer text;
-            e->errorMessage(text);
-            e->Release();
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\".  [%s]", stepname, text.str());
-        }
-        catch (...)
-        {
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\"", stepname);
-        }
-    }
-
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) 
-    {
-        try
-        {
-            Owned<IWorkUnitRowReader> wuReader = getWorkunitRowReader(stepname, sequence, xmlTransformer, _rowAllocator, isGrouped);
-            wuReader->getResultRowset(tcount, tgt);
-        }
-        catch (IException * e)
-        {
-            StringBuffer text;
-            e->errorMessage(text);
-            e->Release();
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\".  [%s]", stepname, text.str());
-        }
-        catch (...)
-        {
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\"", stepname);
-        }
-    }
-
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
-    {
-        try
-        {
-            Owned<IWorkUnitRowReader> wuReader = getWorkunitRowReader(stepname, sequence, xmlTransformer, _rowAllocator, false);
-            wuReader->getResultRowset(tcount, tgt);
-        }
-        catch (IException * e)
-        {
-            StringBuffer text;
-            e->errorMessage(text);
-            e->Release();
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\".  [%s]", stepname, text.str());
-        }
-        catch (...)
-        {
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value \"%s\"", stepname);
-        }
-    }
-    virtual void getResultSet(bool & tisAll, unsigned & tlen, void * & tgt, const char *stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
-    {
-        try
-        {
-            CriticalBlock b(contextCrit);
-            IPropertyTree &ctx = useContext(sequence);
-            IPropertyTree *val = ctx.queryPropTree(stepname);
-            doExtractRawResultX(tlen, tgt, val, sequence, xmlTransformer, csvTransformer, true);
-            tisAll = val ? val->getPropBool("@isAll", false) : false;
-        }
-        catch (IException * e)
-        {
-            StringBuffer text;
-            e->errorMessage(text);
-            e->Release();
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve set \"%s\".  [%s]", stepname, text.str());
-        }
-        catch (...)
-        {
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve set \"%s\"", stepname);
-        }
-    }
-
-    virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) 
-    { 
         CriticalBlock b(contextCrit);
         IPropertyTree &tree = useContext(sequence);
         if (name)
@@ -29786,297 +30150,6 @@ public:
             output->outputString(0, NULL, NULL); // Hack upon hack...
             output->outputQuoted(hack.str());
         }
-    }
-
-    class WorkUnitRowReaderBase : public CInterface, implements IWorkUnitRowReader
-    {
-    protected:
-        Linked<IEngineRowAllocator> rowAllocator;
-        bool isGrouped;
-
-    public:
-        IMPLEMENT_IINTERFACE;
-        WorkUnitRowReaderBase(IEngineRowAllocator *_rowAllocator, bool _isGrouped)
-            : rowAllocator(_rowAllocator), isGrouped(_isGrouped)
-        {
-
-        }
-
-        virtual void getResultRowset(size32_t & tcount, byte * * & tgt)
-        {
-            bool atEOG = true;
-            RtlLinkedDatasetBuilder builder(rowAllocator);
-            loop
-            {
-                const void *ret = nextInGroup();
-                if (!ret)
-                {
-                    if (atEOG || !isGrouped)
-                        break;
-                    atEOG = true;
-                }
-                else
-                    atEOG = false;
-                builder.appendOwn(ret);
-            }
-            tcount = builder.getcount();
-            tgt = builder.linkrows();
-        }
-    };
-
-    class RawDataReader : public WorkUnitRowReaderBase
-    {
-    protected:
-        const IRoxieContextLogger &logctx;
-        byte *bufferBase;
-        MemoryBuffer blockBuffer;
-        Owned<ISerialStream> bufferStream;
-        CThorStreamDeserializerSource rowSource;
-        bool eof;
-        bool eogPending;
-        Owned<IOutputRowDeserializer> rowDeserializer;
-
-        virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base) = 0;
-
-        bool reload()
-        {
-            free(bufferBase);
-            size32_t lenData;
-            bufferBase = NULL;
-            void *tempData, *base;
-            eof = !nextBlock(lenData, tempData, base);
-            bufferBase = (byte *) base;
-            blockBuffer.setBuffer(lenData, tempData, false);
-            return !eof;
-        }
-
-    public:
-        RawDataReader(CRoxieServerContext *parent, IEngineRowAllocator *_rowAllocator, bool _isGrouped)
-            : WorkUnitRowReaderBase(_rowAllocator, _isGrouped), logctx(*parent)
-        {
-            eof = false;
-            eogPending = false;
-            bufferBase = NULL;
-            rowDeserializer.setown(rowAllocator->createDiskDeserializer(parent->queryCodeContext()));
-            bufferStream.setown(createMemoryBufferSerialStream(blockBuffer));
-            rowSource.setStream(bufferStream);
-        }
-        ~RawDataReader() 
-        {
-            if (bufferBase)
-                free(bufferBase);
-        }
-        virtual const void *nextInGroup()
-        {
-            if (eof)
-                return NULL;
-            if (rowSource.eos() && !reload())
-                return NULL;
-            if (eogPending)
-            {
-                eogPending = false;
-                return NULL;
-            }
-#if 0
-            // MORE - think a bit about what happens on incomplete rows - I think deserializer will throw an exception?
-            unsigned thisSize = meta.getRecordSize(data+cursor);
-            if (thisSize > lenData-cursor)
-            {
-                CTXLOG("invalid stored dataset - incomplete row at end");
-                throw MakeStringException(ROXIE_DATA_ERROR, "invalid stored dataset - incomplete row at end");
-            }
-#endif      
-            RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            size32_t size = rowDeserializer->deserialize(rowBuilder, rowSource);
-            if (isGrouped)
-                rowSource.read(sizeof(bool), &eogPending);
-            atomic_inc(&rowsIn);
-            return rowBuilder.finalizeRowClear(size);
-        }
-    };
-
-    class InlineRawDataReader : public RawDataReader
-    {
-        Linked<IPropertyTree> xml;
-    public:
-        InlineRawDataReader(CRoxieServerContext *parent, IEngineRowAllocator *_rowAllocator, bool _isGrouped, IPropertyTree *_xml)
-            : RawDataReader(parent, _rowAllocator, _isGrouped), xml(_xml)
-        {
-        }
-
-        virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base)
-        {
-            base = tgt = NULL;
-            if (xml)
-            {
-                MemoryBuffer result;
-                xml->getPropBin(NULL, result);
-                tlen = result.length();
-                base = tgt = result.detach();
-                xml.clear();
-                return tlen != 0;
-            }
-            else
-            {
-                tlen = 0;
-                return false;
-            }
-        }
-    };
-
-    class StreamedRawDataReader : public RawDataReader
-    {
-        SafeSocket &client;
-        StringAttr id;
-        offset_t offset;
-    public:
-        StreamedRawDataReader(CRoxieServerContext *parent, IEngineRowAllocator *_rowAllocator, bool _isGrouped, SafeSocket &_client, const char *_id)
-            : RawDataReader(parent, _rowAllocator, _isGrouped), client(_client), id(_id)
-        {
-            offset = 0;
-        }
-
-        virtual bool nextBlock(unsigned & tlen, void * & tgt, void * & base)
-        {
-            try
-            {
-#ifdef FAKE_EXCEPTIONS
-                if (offset > 0x10000)
-                    throw MakeStringException(ROXIE_INTERNAL_ERROR, "TEST EXCEPTION");
-#endif
-                // Go request from the socket
-                MemoryBuffer request;
-                request.reserve(sizeof(size32_t));
-                request.append('D');
-                offset_t loffset = offset;
-                _WINREV(loffset);
-                request.append(sizeof(loffset), &loffset);
-                request.append(strlen(id)+1, id);
-                size32_t len = request.length() - sizeof(size32_t);
-                len |= 0x80000000;
-                _WINREV(len);
-                *(size32_t *) request.toByteArray() = len;
-                client.write(request.toByteArray(), request.length());
-
-                // Note: I am the only thread reading (we only support a single input dataset in roxiepipe mode)
-                MemoryBuffer reply;
-                client.readBlock(reply, readTimeout);
-                tlen = reply.length();
-                // MORE - not very robust!
-                // skip past block header
-                if (tlen > 0)
-                {
-                    tgt = base = reply.detach();
-                    tgt = ((char *)base) + 9;
-                    tgt = strchr((char *)tgt, '\0') + 1;
-                    tlen -= ((char *)tgt - (char *)base);
-                    offset += tlen;
-                }
-                else
-                    tgt = base = NULL;
-
-                return tlen != 0;
-            }
-            catch (IException *E)
-            {
-                StringBuffer text;
-                E->errorMessage(text);
-                int errCode = E->errorCode();
-                E->Release();
-                IException *ee = MakeStringException(MSGAUD_internal, errCode, "%s", text.str());
-                logctx.logOperatorException(ee, __FILE__, __LINE__, "Exception caught in RawDataReader::nextBlock");
-                throw ee;
-            }
-            catch (...)
-            {
-                logctx.logOperatorException(NULL, __FILE__, __LINE__, "Unknown exception caught in RawDataReader::nextBlock");
-                throw;
-            }
-        }
-    };
-
-    class InlineXmlDataReader : public WorkUnitRowReaderBase
-    {
-        Linked<IPropertyTree> xml;
-        Owned <XmlColumnProvider> columns;
-        Owned<IPropertyTreeIterator> rows;
-        IXmlToRowTransformer &rowTransformer;
-    public:
-        IMPLEMENT_IINTERFACE;
-        InlineXmlDataReader(IXmlToRowTransformer &_rowTransformer, IPropertyTree *_xml, IEngineRowAllocator *_rowAllocator, bool _isGrouped)
-            : WorkUnitRowReaderBase(_rowAllocator, _isGrouped), xml(_xml), rowTransformer(_rowTransformer)
-        {
-            columns.setown(new XmlDatasetColumnProvider);
-            rows.setown(xml->getElements("Row")); // NOTE - the 'hack for Gordon' as found in thorxmlread is not implemented here. Does it need to be ?
-            rows->first();
-        }
-
-        virtual const void *nextInGroup()
-        {
-            if (rows->isValid())
-            {
-                columns->setRow(&rows->query());
-                rows->next();
-                RtlDynamicRowBuilder rowBuilder(rowAllocator);
-                NullDiskCallback callback;
-                size_t outSize = rowTransformer.transform(rowBuilder, columns, &callback);
-                return rowBuilder.finalizeRowClear(outSize);
-            }
-            return NULL;
-        }
-    };
-
-    virtual IWorkUnitRowReader *getWorkunitRowReader(const char *stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, IEngineRowAllocator *rowAllocator, bool isGrouped)
-    {
-        try
-        {
-            CriticalBlock b(contextCrit);
-            IPropertyTree &ctx = useContext(sequence);
-            IPropertyTree *val = ctx.queryPropTree(stepname);
-            if (val)
-            {
-                const char *id = val->queryProp("@id");
-                const char *format = val->queryProp("@format");
-                if (id)
-                {
-                    if (!format || strcmp(format, "raw") == 0)
-                        return new StreamedRawDataReader(this, rowAllocator, isGrouped, *client, id);
-                    else if (strcmp(format, "deserialized") == 0)
-                    {
-                        IDeserializedResultStore &resultStore = useResultStore(sequence);
-                        return resultStore.createDeserializedReader(atoi(id));
-                    }
-                    else
-                        throwUnexpected();
-                }
-                else
-                {
-                    if (!format || strcmp(format, "xml") == 0)
-                    {
-                        if (xmlTransformer)
-                            return new InlineXmlDataReader(*xmlTransformer, val, rowAllocator, isGrouped);
-                    }
-                    else if (strcmp(format, "raw") == 0)
-                    {
-                        return new InlineRawDataReader(this, rowAllocator, isGrouped, val);
-                    }
-                    else
-                        throwUnexpected();
-                }
-            }
-        }
-        catch (IException * e)
-        {
-            StringBuffer text;
-            e->errorMessage(text);
-            e->Release();
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s.  [%s]", stepname, text.str());
-        }
-        catch (...)
-        {
-            throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
-        }
-        throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
     }
 
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
@@ -30151,108 +30224,7 @@ public:
     {
         return NULL; // TBD - Richard, where do user credentials for a roxie query come from
     }
-    virtual __int64 getResultInt(const char * name, unsigned sequence)
-    {
-        CriticalBlock b(contextCrit);
-        const char *val = useContext(sequence).queryProp(name);
-        if (val)
-        {
-            // NOTE - we use this rather than getPropInt64 since it handles uint64 values up to MAX_UINT better (for our purposes)
-            return rtlStrToInt8(strlen(val), val);
-        }
-        else
-            return 0;
-    }
-    virtual double getResultReal(const char * name, unsigned sequence)
-    {
-        CriticalBlock b(contextCrit);
-        IPropertyTree &ctx = useContext(sequence);
-        double ret = 0;
-        if (ctx.hasProp(name))
-        {
-            if (ctx.isBinary(name))
-            {
-                MemoryBuffer buf;
-                ctx.getPropBin(name, buf);
-                buf.read(ret);
-            }
-            else
-            {
-                const char *val = ctx.queryProp(name);
-                if (val)
-                    ret = atof(val);
-            }
-        }
-        return ret;
-    }
-    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence)
-    {
-        MemoryBuffer x;
-        bool isBinary;
-        {
-            CriticalBlock b(contextCrit);
-            IPropertyTree &ctx = useContext(sequence);
-            isBinary = ctx.isBinary(name);
-            ctx.getPropBin(name, x);
-        }
-        if (isBinary)  // No utf8 translation if previously set via setResultString
-        {
-            tlen = x.length();
-            tgt = (char *) x.detach();
-        }
-        else
-            rtlUtf8ToStrX(tlen, tgt, rtlUtf8Length(x.length(), x.toByteArray()), x.toByteArray());
-    }
-    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence)
-    {
-        MemoryBuffer x;
-        bool isBinary;
-        {
-            CriticalBlock b(contextCrit);
-            IPropertyTree &ctx = useContext(sequence);
-            isBinary = ctx.isBinary(name);
-            ctx.getPropBin(name, x);
-        }
-        if (isBinary)
-            rtlStrToStr(tlen, tgt, x.length(), x.toByteArray());
-        else
-            rtlUtf8ToStr(tlen, tgt, rtlUtf8Length(x.length(), x.toByteArray()), x.toByteArray());
-    }
-    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence)
-    {
-        StringBuffer x;
-        {
-            CriticalBlock b(contextCrit);
-            useContext(sequence).getProp(name, x);
-        }
-        tgt = rtlCodepageToVUnicodeX(x.length(), x.str(), "utf-8");
-        tlen = rtlUnicodeStrlen(tgt);
-    }
-    virtual char *getResultVarString(const char * name, unsigned sequence)
-    {
-        CriticalBlock b(contextCrit);
-        IPropertyTree &ctx = useContext(sequence);
-        bool isBinary = ctx.isBinary(name);
-        if (isBinary)
-        {
-            StringBuffer s;
-            ctx.getProp(name, s);
-            return s.detach();
-        }
-        else
-        {
-            MemoryBuffer x;
-            ctx.getPropBin(name, x);
-            return rtlUtf8ToVStr(rtlUtf8Length(x.length(), x.toByteArray()), x.toByteArray());
-        }
-    }
-    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence)
-    {
-        StringBuffer x;
-        CriticalBlock b(contextCrit);
-        useContext(sequence).getProp(name, x);
-        return rtlVCodepageToVUnicodeX(x.str(), "utf-8");
-    }
+
     virtual bool isResult(const char * name, unsigned sequence) 
     {
         CriticalBlock b(contextCrit);
@@ -30296,7 +30268,6 @@ public:
     virtual void finishPersist() { throwUnexpected(); }
     virtual void clearPersist(const char * logicalName) { throwUnexpected(); }
     virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) { throwUnexpected(); }
-    virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) { throwUnexpected(); }
     virtual unsigned getRecoveringCount() { throwUnexpected(); }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }

@@ -112,6 +112,7 @@ bool debugPermitted = true;
 bool checkCompleted = true;
 unsigned preabortKeyedJoinsThreshold = 100;
 unsigned preabortIndexReadsThreshold = 100;
+bool preloadOnceData;
 
 unsigned memoryStatsInterval = 0;
 memsize_t defaultMemoryLimit;
@@ -683,6 +684,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         blindLogging = topology->getPropBool("@blindLogging", false);
         if (!blindLogging)
             logExcessiveSeeks = true;
+        preloadOnceData = topology->getPropBool("@preloadOnceData", true);
         linuxYield = topology->getPropBool("@linuxYield", false);
         traceSmartStepping = topology->getPropBool("@traceSmartStepping", false);
         useMemoryMappedIndexes = topology->getPropBool("@useMemoryMappedIndexes", false);
