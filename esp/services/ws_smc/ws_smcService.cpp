@@ -206,10 +206,8 @@ bool isInWuList(IArrayOf<IEspActiveWorkunit>& aws, const char* wuid)
     return bFound;
 }
 
-void addQueuedWorkUnits(const char *queueName, IJobQueue *queue, IArrayOf<IEspActiveWorkunit> &aws, IEspContext &context, const char *serverName, const char *instanceName)
+void addQueuedWorkUnits(const char *queueName, CJobQueueContents &contents, IArrayOf<IEspActiveWorkunit> &aws, IEspContext &context, const char *serverName, const char *instanceName)
 {
-    CJobQueueContents contents;
-    queue->copyItems(contents);
     Owned<IJobQueueIterator> iter = contents.getIterator();
     unsigned count=0;
     ForEach(*iter)
@@ -240,44 +238,32 @@ void addQueuedWorkUnits(const char *queueName, IJobQueue *queue, IArrayOf<IEspAc
     }
 }
 
-const char *getQueueState(IJobQueue *queue, int runningJobsInQueue, int *colorTypePtr)
+void CWsSMCEx::getQueueState(int runningJobsInQueue, StringBuffer& queueState, int& colorType)
 {
-    int qStatus = 1;
-    const char *queueState = NULL;
-    if (queue->stopped())
-    {
-        queueState = "stopped";
-        qStatus = 3;
-    }
-    else if (queue->paused())
-    {
-        queueState = "paused";
-        qStatus = 2;
-    }
+    bool queuePausedOrStopped = false;
+    if ((queueState.length() > 0) && (strieq(queueState.str(),"stopped") || strieq(queueState.str(),"paused")))
+        queuePausedOrStopped = true;
     else
-        queueState = "running";
-    if (NULL != colorTypePtr)
+        queueState.set("running");
+
+    if (NotFound == runningJobsInQueue)
     {
-        int &color_type = *colorTypePtr;
-        color_type = 6;
-        if (NotFound == runningJobsInQueue)
-        {
-            if (qStatus > 1)
-                color_type = 3;
-            else
-                color_type = 5;
-        }
-        else if (runningJobsInQueue > 0)
-        {
-            if (qStatus > 1)
-                color_type = 1;
-            else
-                color_type = 4;
-        }
-        else if (qStatus > 1)
-            color_type = 2;
+        if (queuePausedOrStopped)
+            colorType = 3; //show bullet_white.png
+        else
+            colorType = 5; //show bullet_error.png
     }
-    return queueState;
+    else if (runningJobsInQueue > 0)
+    {
+        if (queuePausedOrStopped)
+            colorType = 1; //show bullet_orange.png
+        else
+            colorType = 4; //show bullet_green.png
+    }
+    else if (queuePausedOrStopped)
+        colorType = 2; //show bullet_yellow.png
+
+    return;
 }
 
 bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp)
@@ -517,16 +503,20 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 str.clear();
                 const char *queueName = cluster.getThorQueue(str).str();
                 returnCluster->setQueueName(queueName);
-                Owned<IJobQueue> queue = createJobQueue(queueName);
-                addQueuedWorkUnits(queueName, queue, aws, context, "ThorMaster", NULL);
 
+                StringBuffer queueState;
+                CJobQueueContents contents;
+                Owned<IJobQueue> queue = createJobQueue(queueName);
+                queue->copyItemsAndState(contents, queueState);
+                addQueuedWorkUnits(queueName, contents, aws, context, "ThorMaster", NULL);
+
+                int colorType = 6; //show bullet_green.png
                 int serverID = runningQueueNames.find(queueName);
                 int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                int color_type;
-                const char *queueState = getQueueState(queue, numRunningJobsInQueue, &color_type);
-                returnCluster->setQueueStatus(queueState);
+                getQueueState(numRunningJobsInQueue, queueState, colorType);
+                returnCluster->setQueueStatus(queueState.str());
                 if (version > 1.06)
-                    returnCluster->setQueueStatus2(color_type);
+                    returnCluster->setQueueStatus2(colorType);
                 if (version > 1.10)
                     returnCluster->setClusterSize(cluster.getSize());
 
@@ -544,15 +534,18 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     returnCluster->setQueueName(cluster.getAgentQueue(str).str());
                     str.clear();
                     const char *queueName = cluster.getAgentQueue(str).str();
+                    StringBuffer queueState;
+                    CJobQueueContents contents;
                     Owned<IJobQueue> queue = createJobQueue(queueName);
-                    addQueuedWorkUnits(queueName, queue, aws, context, "RoxieServer", NULL);
+                    queue->copyItemsAndState(contents, queueState);
+                    addQueuedWorkUnits(queueName, contents, aws, context, "RoxieServer", NULL);
 
-                    int color_type;
+                    int colorType = 6; //show bullet_green.png
                     int serverID = runningQueueNames.find(queueName);
                     int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                    const char *queueState = getQueueState(queue, numRunningJobsInQueue, &color_type);
-                    returnCluster->setQueueStatus(queueState);
-                    returnCluster->setQueueStatus2(color_type);
+                    getQueueState(numRunningJobsInQueue, queueState, colorType);
+                    returnCluster->setQueueStatus(queueState.str());
+                    returnCluster->setQueueStatus2(colorType);
                     if (version > 1.10)
                         returnCluster->setClusterSize(cluster.getSize());
 
@@ -568,15 +561,18 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 returnCluster->setQueueName(cluster.getAgentQueue(str).str());
                 str.clear();
                 const char *queueName = cluster.getAgentQueue(str).str();
+                StringBuffer queueState;
+                CJobQueueContents contents;
                 Owned<IJobQueue> queue = createJobQueue(queueName);
-                addQueuedWorkUnits(queueName, queue, aws, context, "HThorServer", NULL);
+                queue->copyItemsAndState(contents, queueState);
+                addQueuedWorkUnits(queueName, contents, aws, context, "HThorServer", NULL);
 
-                int color_type;
+                int colorType = 6; //show bullet_green.png
                 int serverID = runningQueueNames.find(queueName);
                 int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                const char *queueState = getQueueState(queue, numRunningJobsInQueue, &color_type);
-                returnCluster->setQueueStatus(queueState);
-                returnCluster->setQueueStatus2(color_type);
+                getQueueState(numRunningJobsInQueue, queueState, colorType);
+                returnCluster->setQueueStatus(queueState.str());
+                returnCluster->setQueueStatus2(colorType);
                 HThorClusters.append(*returnCluster);
             }
         }
@@ -616,10 +612,11 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 targetClusters->str(targetCluster);
 
                 StringBuffer queueName;
-                getClusterEclCCServerQueueName(queueName, targetCluster.str());
-                QueueWrapper queue(queueName.str());
+                StringBuffer queueState;
                 CJobQueueContents contents;
-                queue->copyItems(contents);
+                getClusterEclCCServerQueueName(queueName, targetCluster.str());
+                Owned<IJobQueue> queue = createJobQueue(queueName);
+                queue->copyItemsAndState(contents, queueState);
                 unsigned count=0;
                 Owned<IJobQueueIterator> iter = contents.getIterator();
                 ForEach(*iter) 
@@ -635,7 +632,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     aws.append(*wu.getLink());
                 }
 
-                addServerJobQueue(serverJobQueues, queueName, serverName, "ECLCCserver");
+                addServerJobQueue(serverJobQueues, queueName, queueState.str(), serverName, "ECLCCserver");
             }
         }
 
@@ -772,6 +769,24 @@ void CWsSMCEx::addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const 
         jobQueue->setQueueStatus("stopped");
     else if (queue->paused())
         jobQueue->setQueueStatus("paused");
+    else
+        jobQueue->setQueueStatus("running");
+
+    jobQueues.append(*jobQueue.getClear());
+}
+
+void CWsSMCEx::addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* queueState, const char* serverName, const char* serverType)
+{
+    if (!queueName || !*queueName || !serverName || !*serverName || !serverType || !*serverType)
+        return;
+
+    Owned<IEspServerJobQueue> jobQueue = createServerJobQueue("", "");
+    jobQueue->setQueueName(queueName);
+    jobQueue->setServerName(serverName);
+    jobQueue->setServerType(serverType);
+
+    if (queueState && (strieq(queueState,"stopped") || strieq(queueState,"paused")))
+        jobQueue->setQueueStatus(queueState);
     else
         jobQueue->setQueueStatus("running");
 

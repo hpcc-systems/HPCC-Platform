@@ -1158,6 +1158,24 @@ public:
         return ret;
     }
 
+    void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state)
+    {
+        assertex(qdata);
+        Cconnlockblock block(this,false);
+        assertex(qdata->root);
+
+        StringBuffer path;
+        for (unsigned i=0;;i++) {
+            IPropertyTree *item = qdata->root->queryPropTree(getItemPath(path.clear(),i).str());
+            if (!item)
+                break;
+            contents.append(*new CJobQueueItem(item));
+        }
+
+        const char *st = qdata->root->queryProp("@state");
+        if (st&&*st)
+            state.set(st);
+    }
 
     unsigned takeItems(sQueueData &qd,CJobQueueContents &dest)
     {
@@ -1956,4 +1974,3 @@ extern bool WORKUNIT_API switchWorkUnitQueue(IWorkUnit* wu, const char *cluster)
 
     return wu->switchThorQueue(cluster, &switcher);
 }
-

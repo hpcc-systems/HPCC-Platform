@@ -91,6 +91,7 @@ interface IJobQueue: extends IInterface
     virtual unsigned findRank(const char *wuid)=0;
     virtual unsigned copyItems(CJobQueueContents &dest)=0;  // takes a snapshot copy of the entire queue (returns number copied)
     virtual bool getLastDequeuedInfo(StringAttr &wuid, CDateTime &enqueuedt, int &priority)=0;
+    virtual void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state)=0;
 
 
 //manipulation
