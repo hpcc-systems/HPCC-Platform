@@ -30,10 +30,6 @@
 #define DEFTYPE_API
 #endif
 
-#ifdef _DEBUG
-    #define ENABLE_TYPET_ENUM_TYPE
-#endif
-
 #define CHEAP_UCHAR_DEF
 #ifdef _WIN32
 typedef wchar_t UChar;
@@ -136,11 +132,7 @@ enum typemod_t
 #define INFINITE_LENGTH         0xFFFFFFF0
 #define UNKNOWN_LENGTH          0xFFFFFFF1
 
-#ifdef ENABLE_TYPET_ENUM_TYPE
-    typedef enum type_vals type_t;
-#else
-    typedef unsigned char type_t;
-#endif
+typedef enum type_vals type_t;
 
 //MORE: Something like this should replace caseSensitive for strings...
 interface ICollationInfo;
