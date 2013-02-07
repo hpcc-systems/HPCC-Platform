@@ -417,13 +417,27 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_fromxml:
         return doBuildRowFromXML(ctx, expr);
     case no_serialize:
-        if (isDummySerializeDeserialize(expr))
-            return buildNewRow(ctx, expr->queryChild(0)->queryChild(0));
-        return doBuildRowViaTemp(ctx, expr);
+        {
+            IHqlExpression * deserialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(1)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                return buildNewRow(ctx, deserialized->queryChild(0));
+            else if (!typeRequiresDeserialization(deserialized->queryType(), serializeForm))
+                return buildNewRow(ctx, deserialized);
+            else
+                return doBuildRowViaTemp(ctx, expr);
+        }
     case no_deserialize:
-        if (isDummySerializeDeserialize(expr))
-            return buildNewRow(ctx, expr->queryChild(0)->queryChild(0));
-        return doBuildRowDeserializeRow(ctx, expr);
+        {
+            IHqlExpression * serialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(2)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                return buildNewRow(ctx, serialized->queryChild(0));
+            else if (!typeRequiresDeserialization(expr->queryType(), serializeForm))
+                return buildNewRow(ctx, serialized);
+            else
+                return doBuildRowDeserializeRow(ctx, expr);
+        }
     case no_deref:
         {
             //Untested
@@ -2404,17 +2418,29 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         }
         break;
     case no_serialize:
-        if (isDummySerializeDeserialize(expr))
-            buildDatasetAssign(ctx, target, expr->queryChild(0)->queryChild(0));
-        else
-            buildAssignSerializedDataset(ctx, target, expr->queryChild(0), expr->queryChild(1)->queryName());
-        return;
+        {
+            IHqlExpression * deserialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(1)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                buildDatasetAssign(ctx, target, deserialized->queryChild(0));
+            else if (!typeRequiresDeserialization(deserialized->queryType(), serializeForm))
+                buildDatasetAssign(ctx, target, deserialized);
+            else
+                buildAssignSerializedDataset(ctx, target, deserialized, serializeForm);
+            return;
+        }
     case no_deserialize:
-        if (isDummySerializeDeserialize(expr))
-            buildDatasetAssign(ctx, target, expr->queryChild(0)->queryChild(0));
-        else
-            buildAssignDeserializedDataset(ctx, target, expr->queryChild(0), expr->queryChild(2)->queryName());
-        return;
+        {
+            IHqlExpression * serialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(2)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                buildDatasetAssign(ctx, target, serialized->queryChild(0));
+            else if (!typeRequiresDeserialization(expr->queryType(), serializeForm))
+                buildDatasetAssign(ctx, target, serialized);
+            else
+                buildAssignDeserializedDataset(ctx, target, serialized, serializeForm);
+            return;
+        }
     case no_select:
         {
             bool isNew;
@@ -4029,11 +4055,17 @@ void HqlCppTranslator::buildRowAssign(BuildCtx & ctx, IReferenceSelector * targe
         doBuildRowAssignNullRow(ctx, target, expr);
         return;
     case no_serialize:
-        if (isDummySerializeDeserialize(expr))
-            buildRowAssign(ctx, target, expr->queryChild(0)->queryChild(0));
-        else
-            doBuildRowAssignSerializeRow(ctx, target, expr);
-        return;
+        {
+            IHqlExpression * deserialized = expr->queryChild(0);
+            _ATOM serializeForm = expr->queryChild(1)->queryName();
+            if (isDummySerializeDeserialize(expr))
+                buildRowAssign(ctx, target, deserialized->queryChild(0));
+            else if (!typeRequiresDeserialization(deserialized->queryType(), serializeForm))
+                buildRowAssign(ctx, target, deserialized);
+            else
+                doBuildRowAssignSerializeRow(ctx, target, expr);
+            return;
+        }
     case no_if:
         {
             //Assigning a variable size record can mean that references to self need recalculating outside of the condition,
