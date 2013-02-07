@@ -468,7 +468,6 @@ _ATOM processFieldBeginRowAtom;
 _ATOM processFieldEndSetAtom;
 _ATOM processFieldEndDatasetAtom;
 _ATOM processFieldEndRowAtom;
-_ATOM prototypeAtom;
 _ATOM qstr2BoolAtom;
 _ATOM qstr2DataAtom;
 _ATOM qstr2DataXAtom;
@@ -1188,7 +1187,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(processFieldEndSet);
     MAKEATOM(processFieldEndDataset);
     MAKEATOM(processFieldEndRow);
-    MAKEATOM(prototype);
     MAKEATOM(qstr2Bool);
     MAKEATOM(qstr2Data);
     MAKEATOM(qstr2DataX);
