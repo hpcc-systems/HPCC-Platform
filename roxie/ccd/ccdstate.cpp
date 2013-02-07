@@ -1384,6 +1384,10 @@ private:
                 bool clearAll = control->getPropBool("@clearAll", true);
                 clearKeyStoreCache(clearAll);
             }
+            else if (stricmp(queryName, "control:closedown")==0)
+            {
+                closedown();
+            }
             else if (stricmp(queryName, "control:closeExpired")==0)
             {
                 queryFileCache().closeExpired(false);
