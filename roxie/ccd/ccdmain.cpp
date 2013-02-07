@@ -250,6 +250,13 @@ public:
     }
 } waiter;
 
+void closedown()
+{
+    Owned<IFile> sentinelFile = createSentinelTarget();
+    removeSentinelFile(sentinelFile);
+    waiter.onAbort();
+}
+
 void getAccessList(const char *aclName, IPropertyTree *topology, IPropertyTree *serverInfo)
 {
     StringBuffer xpath;
