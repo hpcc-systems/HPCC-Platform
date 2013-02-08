@@ -2103,8 +2103,7 @@ public:
         while (!stopped)
         {
             const void * row = getRow();
-            if(row)
-                releaseHThorRow(row);
+            releaseHThorRow(row);
         }
         clearQueue();
         waitForThreads();
@@ -3373,9 +3372,6 @@ public:
     {
         clearQueue();
         waitForThreads();
-        if (defaultRight)
-            releaseHThorRow(defaultRight);
-        defaultRight.getClear();
         rtlFree(activityRecordMetaBuff);
     }
 

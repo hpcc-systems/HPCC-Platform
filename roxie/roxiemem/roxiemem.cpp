@@ -89,6 +89,7 @@ const unsigned maxLeakReport = 4;
 #endif
 
 static char *heapBase;
+static char *heapEnd;   // Equal to heapBase + (heapTotalPages * page size)
 static unsigned *heapBitmap;
 static unsigned heapBitmapSize;
 static unsigned heapTotalPages; // derived from heapBitmapSize - here for code clarity
@@ -151,6 +152,7 @@ static void initializeHeap(unsigned pages, unsigned largeBlockGranularity, ILarg
         HEAPERROR("RoxieMemMgr: Unable to create heap");
     }
 #endif
+    heapEnd = heapBase + memsize;
     heapBitmap = new unsigned [heapBitmapSize];
     memset(heapBitmap, 0xff, heapBitmapSize*sizeof(unsigned));
     heapLargeBlocks = 1;
@@ -177,6 +179,7 @@ extern void releaseRoxieHeap()
         free(heapBase);
 #endif
         heapBase = NULL;
+        heapEnd = NULL;
     }
 }
 
@@ -700,6 +703,72 @@ static inline unsigned getRealActivityId(unsigned allocatorId, const IRowAllocat
     else
         return allocatorId & MAX_ACTIVITY_ID;
 }
+
+static inline bool isValidRoxiePtr(const void *_ptr)
+{
+    const char *ptr = (const char *) _ptr;
+    return ptr >= heapBase && ptr < heapEnd;
+}
+
+void HeapletBase::release(const void *ptr)
+{
+    if (isValidRoxiePtr(ptr))
+    {
+        HeapletBase *h = findBase(ptr);
+        h->noteReleased(ptr);
+    }
+}
+
+void HeapletBase::link(const void *ptr)
+{
+    if (isValidRoxiePtr(ptr))
+    {
+        HeapletBase *h = findBase(ptr);
+        h->noteLinked(ptr);
+    }
+}
+
+bool HeapletBase::isShared(const void *ptr)
+{
+    if (isValidRoxiePtr(ptr))
+    {
+        HeapletBase *h = findBase(ptr);
+        return h->_isShared(ptr);
+    }
+    if (ptr)
+        return true;  // Objects outside the Roxie heap are implicitly 'infinitely shared'
+    // isShared(NULL) is an error
+    throwUnexpected();
+}
+
+memsize_t HeapletBase::capacity(const void *ptr)
+{
+    if (isValidRoxiePtr(ptr))
+    {
+        HeapletBase *h = findBase(ptr);
+        return h->_capacity();
+    }
+    throwUnexpected();   // should never ask about capacity of anything but a row you allocated from Roxie heap
+}
+
+void HeapletBase::setDestructorFlag(const void *ptr)
+{
+    dbgassertex(isValidRoxiePtr(ptr));
+    HeapletBase *h = findBase(ptr);
+    h->_setDestructorFlag(ptr);
+}
+
+bool HeapletBase::hasDestructor(const void *ptr)
+{
+    if (isValidRoxiePtr(ptr))
+    {
+        HeapletBase *h = findBase(ptr);
+        return h->_hasDestructor(ptr);
+    }
+    else
+        return false;
+}
+
 
 class BigHeapletBase : public HeapletBase
 {
@@ -3608,6 +3677,7 @@ protected:
         HeapPreserver()
         {
             _heapBase = heapBase;
+            _heapEnd = heapEnd;
             _heapBitmap = heapBitmap;
             _heapBitmapSize = heapBitmapSize;
             _heapTotalPages = heapTotalPages;
@@ -3617,6 +3687,7 @@ protected:
         ~HeapPreserver()
         {
             heapBase = _heapBase;
+            heapEnd = _heapEnd;
             heapBitmap = _heapBitmap;
             heapBitmapSize = _heapBitmapSize;
             heapTotalPages = _heapTotalPages;
@@ -3624,6 +3695,7 @@ protected:
             heapAllocated = _heapAllocated;
         }
         char *_heapBase;
+        char *_heapEnd;
         unsigned *_heapBitmap;
         unsigned _heapBitmapSize;
         unsigned _heapTotalPages;
