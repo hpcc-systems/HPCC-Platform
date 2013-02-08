@@ -51,8 +51,6 @@ public:
     virtual void getNavigationData(IEspContext &context, IPropertyTree & data)
     {
         IPropertyTree *folder = ensureNavFolder(data, "Roxie Queries", NULL, NULL, false, 7);
-        ensureNavLink(*folder, "Search Roxie Queries", "/WsRoxieQuery/RoxieQuerySearch", "Search Roxie Queries", NULL, NULL, 1);
-
         StringBuffer path = "/WsSMC/NotInCommunityEdition?form_";
         if (m_portalURL.length() > 0)
             path.appendf("&EEPortal=%s", m_portalURL.str());

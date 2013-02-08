@@ -129,6 +129,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/filerelationlist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUQuerysets.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/WUQuerysetQueries.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/WUQueryDetails.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefile.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/hpccresourcelist.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/dropzonefilelist.xslt

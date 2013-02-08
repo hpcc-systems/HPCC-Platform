@@ -1184,6 +1184,27 @@ ESPresponse [exceptions_inline] WUQuerySetDetailsResponse
     [min_ver("1.37")] ESParray<string> ClusterNames;
 };
 
+ESPrequest WUQueryDetailsRequest
+{
+    string QueryId;
+    string QuerySet;
+};
+
+ESPresponse [exceptions_inline] WUQueryDetailsResponse
+{
+    string QueryId;
+    string QuerySet;
+    string QueryName;
+    string Wuid;
+    string Dll;
+    bool Suspended;
+    string SuspendedBy;
+    string PublishedBy;
+    string Comment;
+
+    ESParray<string> LogicalFiles;
+};
+
 ESPrequest WUMultiQuerySetDetailsRequest
 {
     string  ClusterName;
@@ -1367,6 +1388,7 @@ ESPservice [
     ESPmethod [resp_xsl_default("/esp/xslt/WUPublishWorkunit.xslt")] WUPublishWorkunit(WUPublishWorkunitRequest, WUPublishWorkunitResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysets.xslt")] WUQuerysets(WUQuerysetsRequest, WUQuerysetsResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/WUQuerysetQueries.xslt")] WUQuerysetDetails(WUQuerySetDetailsRequest, WUQuerySetDetailsResponse);
+    ESPmethod [resp_xsl_default("/esp/xslt/WUQueryDetails.xslt")] WUQueryDetails(WUQueryDetailsRequest, WUQueryDetailsResponse);
     ESPmethod WUMultiQuerysetDetails(WUMultiQuerySetDetailsRequest, WUMultiQuerySetDetailsResponse);
     ESPmethod WUQuerysetQueryAction(WUQuerySetQueryActionRequest, WUQuerySetQueryActionResponse);
     ESPmethod WUQuerysetAliasAction(WUQuerySetAliasActionRequest, WUQuerySetAliasActionResponse);
