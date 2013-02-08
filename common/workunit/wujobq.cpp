@@ -1143,9 +1143,8 @@ public:
     }
 
 
-    unsigned copyItems(sQueueData &qd,CJobQueueContents &dest)
+    unsigned copyItemsImpl(sQueueData &qd,CJobQueueContents &dest)
     {
-        Cconnlockblock block(this,false);
         unsigned ret=0;
         StringBuffer path;
         for (unsigned i=0;;i++) {
@@ -1158,19 +1157,19 @@ public:
         return ret;
     }
 
+    unsigned copyItems(sQueueData &qd,CJobQueueContents &dest)
+    {
+        Cconnlockblock block(this,false);
+        return copyItemsImpl(qd,dest);
+    }
+
     void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state)
     {
         assertex(qdata);
         Cconnlockblock block(this,false);
         assertex(qdata->root);
 
-        StringBuffer path;
-        for (unsigned i=0;;i++) {
-            IPropertyTree *item = qdata->root->queryPropTree(getItemPath(path.clear(),i).str());
-            if (!item)
-                break;
-            contents.append(*new CJobQueueItem(item));
-        }
+        copyItemsImpl(*qdata,contents);
 
         const char *st = qdata->root->queryProp("@state");
         if (st&&*st)

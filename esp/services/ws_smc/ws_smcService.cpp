@@ -238,7 +238,7 @@ void addQueuedWorkUnits(const char *queueName, CJobQueueContents &contents, IArr
     }
 }
 
-void CWsSMCEx::getQueueState(int runningJobsInQueue, StringBuffer& queueState, int& colorType)
+void CWsSMCEx::getQueueState(int runningJobsInQueue, StringBuffer& queueState, BulletType& bulletType)
 {
     bool queuePausedOrStopped = false;
     if ((queueState.length() > 0) && (strieq(queueState.str(),"stopped") || strieq(queueState.str(),"paused")))
@@ -249,19 +249,19 @@ void CWsSMCEx::getQueueState(int runningJobsInQueue, StringBuffer& queueState, i
     if (NotFound == runningJobsInQueue)
     {
         if (queuePausedOrStopped)
-            colorType = 3; //show bullet_white.png
+            bulletType = bulletWhite; //show bullet_white.png
         else
-            colorType = 5; //show bullet_error.png
+            bulletType = bulletError; //show bullet_error.png
     }
     else if (runningJobsInQueue > 0)
     {
         if (queuePausedOrStopped)
-            colorType = 1; //show bullet_orange.png
+            bulletType = bulletOrange; //show bullet_orange.png
         else
-            colorType = 4; //show bullet_green.png
+            bulletType = bulletGreen; //show bullet_green.png
     }
     else if (queuePausedOrStopped)
-        colorType = 2; //show bullet_yellow.png
+        bulletType = bulletYellow; //show bullet_yellow.png
 
     return;
 }
@@ -510,13 +510,13 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 queue->copyItemsAndState(contents, queueState);
                 addQueuedWorkUnits(queueName, contents, aws, context, "ThorMaster", NULL);
 
-                int colorType = 6; //show bullet_green.png
+                BulletType bulletType = bulletGreen; //show bullet_green.png
                 int serverID = runningQueueNames.find(queueName);
                 int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                getQueueState(numRunningJobsInQueue, queueState, colorType);
+                getQueueState(numRunningJobsInQueue, queueState, bulletType);
                 returnCluster->setQueueStatus(queueState.str());
                 if (version > 1.06)
-                    returnCluster->setQueueStatus2(colorType);
+                    returnCluster->setQueueStatus2(bulletType);
                 if (version > 1.10)
                     returnCluster->setClusterSize(cluster.getSize());
 
@@ -540,12 +540,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     queue->copyItemsAndState(contents, queueState);
                     addQueuedWorkUnits(queueName, contents, aws, context, "RoxieServer", NULL);
 
-                    int colorType = 6; //show bullet_green.png
+                    BulletType bulletType = bulletGreen; //show bullet_green.png
                     int serverID = runningQueueNames.find(queueName);
                     int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                    getQueueState(numRunningJobsInQueue, queueState, colorType);
+                    getQueueState(numRunningJobsInQueue, queueState, bulletType);
                     returnCluster->setQueueStatus(queueState.str());
-                    returnCluster->setQueueStatus2(colorType);
+                    returnCluster->setQueueStatus2(bulletType);
                     if (version > 1.10)
                         returnCluster->setClusterSize(cluster.getSize());
 
@@ -567,12 +567,12 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 queue->copyItemsAndState(contents, queueState);
                 addQueuedWorkUnits(queueName, contents, aws, context, "HThorServer", NULL);
 
-                int colorType = 6; //show bullet_green.png
+                BulletType bulletType = bulletGreen; //show bullet_green.png
                 int serverID = runningQueueNames.find(queueName);
                 int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                getQueueState(numRunningJobsInQueue, queueState, colorType);
+                getQueueState(numRunningJobsInQueue, queueState, bulletType);
                 returnCluster->setQueueStatus(queueState.str());
-                returnCluster->setQueueStatus2(colorType);
+                returnCluster->setQueueStatus2(bulletType);
                 HThorClusters.append(*returnCluster);
             }
         }
