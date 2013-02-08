@@ -2010,7 +2010,11 @@ void EclAgent::doProcess()
         while (clusterNames.ordinality())
             restoreCluster();
         if (!queryResolveFilesLocally())
+        {
             w->deleteTempFiles(NULL, false, deleteJobTemps);
+            if (deleteJobTemps)
+                w->deleteTemporaries();
+        }
 
         wuRead.clear(); // have a write lock still, but don't want to leave dangling unlocked wuRead after releasing write lock
                         // or else something can delete whilst still referenced (e.g. on complete signal)
@@ -2263,7 +2267,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     if(!persist)
     {
         StringBuffer errmsg;
-        errmsg.append("Internal error in generated code: for wfid ").append(wfid).append(", persist CRC wfid ").append(item.queryPersistWfid()).append(" did not call returnPersitVersion");
+        errmsg.append("Internal error in generated code: for wfid ").append(wfid).append(", persist CRC wfid ").append(item.queryPersistWfid()).append(" did not call returnPersistVersion");
         throw MakeStringException(0, "%s", errmsg.str());
     }
     if(strcmp(name.str(), persist->logicalName.get()) != 0)

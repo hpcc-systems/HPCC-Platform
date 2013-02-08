@@ -863,6 +863,90 @@ bool CWsWorkunitsEx::onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQ
     return true;
 }
 
+bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRequest & req, IEspWUQueryDetailsResponse & resp)
+{
+    const char* querySet = req.getQuerySet();
+    const char* queryId = req.getQueryId();
+    if (!querySet || !*querySet)
+        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet not specified");
+    if (!queryId || !*queryId)
+        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "QueryId not specified");
+    resp.setQueryId(queryId);
+    resp.setQuerySet(querySet);
+
+    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
+
+    StringBuffer xpath;
+    xpath.clear().append("Query[@id='").append(queryId).append("']");
+    IPropertyTree *query = queryRegistry->queryPropTree(xpath);
+    if (!query)
+    {
+        DBGLOG("No matching Query");
+        return false;
+    }
+
+    resp.setQueryName(query->queryProp("@name"));
+    resp.setWuid(query->queryProp("@wuid"));
+    resp.setDll(query->queryProp("@dll"));
+    resp.setPublishedBy(query->queryProp("@publishedBy"));
+    resp.setSuspended(query->getPropBool("@suspended", false));
+    resp.setSuspendedBy(query->queryProp("@suspendedBy"));
+    resp.setComment(query->queryProp("@comment"));
+
+    StringArray logicalFiles;
+    getQueryFiles(queryId, querySet, logicalFiles);
+    if (logicalFiles.length())
+        resp.setLogicalFiles(logicalFiles);
+
+    return true;
+}
+
+bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, StringArray& logicalFiles)
+{
+    try
+    {
+        Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
+        if (!info || (info->getPlatform()!=RoxieCluster))
+            return false;
+
+        const SocketEndpointArray &eps = info->getRoxieServers();
+        if (eps.empty())
+            return false;
+
+        StringBuffer control;
+        control.appendf("<control:getQueryXrefInfo full='1'><Query id='%s'/></control:getQueryXrefInfo>",  query);
+        Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), 5);
+        Owned<IPropertyTree> result = sendRoxieControlQuery(sock, control.str(), 5);
+        if (!result)
+            return false;
+
+        Owned<IPropertyTreeIterator> files = result->getElements("Endpoint/Queries/Query/File");
+        ForEach (*files)
+        {
+            IPropertyTree &file = files->query();
+            const char* fileName = file.queryProp("@name");
+            if (fileName && *fileName)
+                logicalFiles.append(fileName);
+        }
+
+        return true;
+    }
+    catch(IMultiException *me)
+    {
+        StringBuffer err;
+        DBGLOG("ERROR control:getQueryXrefInfo roxie query info %s", me->errorMessage(err.append(me->errorCode()).append(' ')).str());
+        me->Release();
+        return false;
+    }
+    catch(IException *e)
+    {
+        StringBuffer err;
+        DBGLOG("ERROR control:getQueryXrefInfo roxie query info %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+        e->Release();
+        return false;
+    }
+}
+
 inline void verifyQueryActionAllowsWild(bool &allowWildChecked, CQuerySetQueryActionTypes action)
 {
     if (allowWildChecked)
