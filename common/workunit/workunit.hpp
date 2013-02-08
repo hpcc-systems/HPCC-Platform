@@ -985,6 +985,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setCodeVersion(unsigned version, const char * buildVersion, const char * eclVersion) = 0;
     virtual void setBilled(bool value) = 0;
     virtual void deleteTempFiles(const char * graph, bool deleteOwned, bool deleteJobOwned) = 0;
+    virtual void deleteTemporaries() = 0;
     virtual void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId) = 0;
     virtual void setCloneable(bool value) = 0;
     virtual void setIsClone(bool value) = 0;

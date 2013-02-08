@@ -744,6 +744,7 @@ public:
     void clearGraphProgress();
     void resetBeforeGeneration();
     void deleteTempFiles(const char *graph, bool deleteOwned, bool deleteJobOwned);
+    void deleteTemporaries();
     void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId);
     void setTimeScheduled(const IJlibDateTime &val);
 
@@ -1235,6 +1236,8 @@ public:
             { c->resetBeforeGeneration(); }
     virtual void deleteTempFiles(const char *graph, bool deleteOwned, bool deleteJobOwned)
             { c->deleteTempFiles(graph, deleteOwned, deleteJobOwned); }
+    virtual void deleteTemporaries()
+            { c->deleteTemporaries(); }
     virtual void addDiskUsageStats(__int64 avgNodeUsage, unsigned minNode, __int64 minNodeUsage, unsigned maxNode, __int64 maxNodeUsage, __int64 graphId)
             { c->addDiskUsageStats(avgNodeUsage, minNode, minNodeUsage, maxNode, maxNodeUsage, graphId); }
     virtual IPropertyTree * getDiskUsageStats()
@@ -5370,6 +5373,17 @@ void CLocalWorkUnit::loadTemporaries() const
         }
         temporariesCached = true;
     }
+}
+
+void CLocalWorkUnit::deleteTemporaries()
+{
+    CriticalBlock block(crit);
+    if (temporariesCached)
+    {
+        temporaries.kill();
+        temporariesCached = false;
+    }
+    p->removeProp("Temporaries");
 }
 
 IWUResult* CLocalWorkUnit::createResult()
