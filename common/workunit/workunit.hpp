@@ -207,6 +207,7 @@ interface IConstWUGraph : extends IInterface
     virtual IStringVal & getTypeName(IStringVal & ret) const = 0;
     virtual WUGraphType getType() const = 0;
     virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const = 0;
+    virtual IPropertyTree * getXGMMLTreeRaw() const = 0;
     virtual bool isValid() const = 0;
 };
 
@@ -214,8 +215,9 @@ interface IConstWUGraph : extends IInterface
 interface IWUGraph : extends IConstWUGraph
 {
     virtual void setXGMML(const char * text) = 0;
-    virtual void setXGMMLTree(IPropertyTree * tree) = 0;
+    virtual void setXGMMLTree(IPropertyTree * tree, bool compress=true) = 0;
     virtual void setName(const char * name) = 0;
+    virtual void setLabel(const char * name) = 0;
     virtual void setType(WUGraphType type) = 0;
 };
 
@@ -1168,9 +1170,9 @@ extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory();
 extern WORKUNIT_API IWorkUnitFactory * getSecWorkUnitFactory(ISecManager &secmgr, ISecUser &secuser);
 extern WORKUNIT_API IWorkUnitFactory * getWorkUnitFactory(ISecManager *secmgr, ISecUser *secuser);
 extern WORKUNIT_API ILocalWorkUnit* createLocalWorkUnit();
-extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str);
-extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str);
-extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags);
+extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack);
+extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack);
+extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, const char *username, const char *password);
 extern WORKUNIT_API void abortWorkUnit(const char *wuid);
 extern WORKUNIT_API void submitWorkUnit(const char *wuid, ISecManager *secmgr, ISecUser *secuser);

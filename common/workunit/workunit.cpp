@@ -509,8 +509,8 @@ template <>  struct CachedTags<CLocalWUAppValue, IConstWUAppValue>
 
 class CLocalWorkUnit : public CInterface, implements IConstWorkUnit , implements ISDSSubscription, implements IExtendedWUInterface
 {
-    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str);
-    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags);
+    friend StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool decodeGraphs);
+    friend void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool decodeGraphs);
 
     // NOTE - order is important - we need to construct connection before p and (especially) destruct after p
     Owned<IRemoteConnection> connection;
@@ -558,6 +558,7 @@ public:
     CLocalWorkUnit(IRemoteConnection *_conn, IPropertyTree* root, ISecManager *secmgr, ISecUser *secuser);
     ~CLocalWorkUnit();
     CLocalWorkUnit(const char *dummyWuid, const char *parentWuid, ISecManager *secmgr, ISecUser *secuser);
+    IPropertyTree *getUnpackedTree() const;
 
     ISecManager *querySecMgr(){return secMgr.get();}
     ISecUser *querySecUser(){return secUser.get();}
@@ -1629,15 +1630,18 @@ public:
 
 class CLocalWUGraph : public CInterface, implements IWUGraph
 {
+    const CLocalWorkUnit &owner;
     Owned<IPropertyTree> p;
+    mutable Owned<IPropertyTree> graph; // cached copy of graph xgmml
     mutable Linked<IConstWUGraphProgress> progress;
     StringAttr wuid;
+    unsigned wuidVersion;
 
     void mergeProgress(IPropertyTree &tree, IPropertyTree &progressTree, const unsigned &progressV) const;
 
 public:
     IMPLEMENT_IINTERFACE;
-    CLocalWUGraph(IPropertyTree *p, const char *wuid);
+    CLocalWUGraph(const CLocalWorkUnit &owner, IPropertyTree *p);
 
     virtual IStringVal & getXGMML(IStringVal & ret, bool mergeProgress) const;
     virtual IStringVal & getDOT(IStringVal & ret) const;
@@ -1646,12 +1650,14 @@ public:
     virtual IStringVal & getTypeName(IStringVal & ret) const;
     virtual WUGraphType getType() const;
     virtual IPropertyTree * getXGMMLTree(bool mergeProgress) const;
+    virtual IPropertyTree * getXGMMLTreeRaw() const;
     virtual bool isValid() const;
 
     virtual void setName(const char *str);
+    virtual void setLabel(const char *str);
     virtual void setType(WUGraphType type);
     virtual void setXGMML(const char *str);
-    virtual void setXGMMLTree(IPropertyTree * tree);
+    virtual void setXGMMLTree(IPropertyTree * tree, bool compress=true);
 };
 
 class CLocalWUActivity : public CInterface, implements IWUActivity
@@ -1888,7 +1894,7 @@ public:
     }
 };
 
-#define WUID_VERSION 1 // recorded in each wuid created, useful for bkwd compat. checks
+#define WUID_VERSION 2 // recorded in each wuid created, useful for bkwd compat. checks
 
 class CWorkUnitFactory : public CInterface, implements IWorkUnitFactory, implements IDaliClientShutdown
 {
@@ -2801,7 +2807,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
         return false;
 
     StringBuffer buf;
-    exportWorkUnitToXML(this, buf);
+    exportWorkUnitToXML(this, buf, false);
 
     StringBuffer extraWorkUnitXML;
     StringBuffer xpath("/GraphProgress/");
@@ -3028,7 +3034,7 @@ void CLocalWorkUnit::serialize(MemoryBuffer &tgt)
 {
     CriticalBlock block(crit);
     StringBuffer x;
-    tgt.append(exportWorkUnitToXML(this, x).str());
+    tgt.append(exportWorkUnitToXML(this, x, false).str());
 }
 
 void CLocalWorkUnit::deserialize(MemoryBuffer &src)
@@ -5394,7 +5400,7 @@ IWUResult* CLocalWorkUnit::createResult()
     if (!results.length())
         p->addPropTree("Results", createPTree("Results"));
     IPropertyTree *r = p->queryPropTree("Results");
-    IPropertyTree *s = r->addPropTree("Result", createPTreeFromXMLString("<Result fetchEntire='1'/>"));
+    IPropertyTree *s = r->addPropTree("Result", createPTree());
 
     s->Link();
     IWUResult* q = new CLocalWUResult(s); 
@@ -5883,6 +5889,28 @@ bool CLocalWorkUnit::switchThorQueue(const char *cluster, IQueueSwitcher *qs)
 
 //=================================================================================================
 
+IPropertyTree *CLocalWorkUnit::getUnpackedTree() const
+{
+    Owned<IPropertyTree> ret = createPTreeFromIPT(p);
+    Owned<IConstWUGraphIterator> graphIter = &getGraphs(GraphTypeAny);
+    ForEach(*graphIter)
+    {
+        IConstWUGraph &graph  = graphIter->query();
+        Owned<IPropertyTree> graphTree = graph.getXGMMLTree(false);
+        SCMStringBuffer gName;
+        graph.getName(gName);
+        StringBuffer xpath("Graphs/Graph[@name=\"");
+        xpath.append(gName.s).append("\"]/xgmml");
+        IPropertyTree *xgmml = ret->queryPropTree(xpath.str());
+        if (xgmml) // don't know of any reason it shouldn't exist
+        {
+            xgmml->removeProp("graphBin");
+            xgmml->setPropTree("graph", graphTree.getClear());
+        }
+    }
+    return ret.getClear();
+}
+
 void CLocalWorkUnit::loadGraphs() const
 {
     CriticalBlock block(crit);
@@ -5895,18 +5923,15 @@ void CLocalWorkUnit::loadGraphs() const
         }
         else
             cachedGraphs.set(p->queryPropTree("Graphs"));
-        if (cachedGraphs.get()) {
-            Owned<IPropertyTreeIterator> r = cachedGraphs->getElements("Graph");
-            for (r->first(); r->isValid(); r->next())
+        if (cachedGraphs.get())
+        {
+            Owned<IPropertyTreeIterator> iter = cachedGraphs->getElements("Graph");
+            ForEach(*iter)
             {
-                IPropertyTree *rp = &r->query();
-                rp->Link();
-
-                graphs.append(*new CLocalWUGraph(rp, p->queryName()));
+                IPropertyTree &graph = iter->query();
+                graphs.append(*new CLocalWUGraph(*this, LINK(&graph)));
             }
-
         }
-        
     }
 }
 
@@ -5919,8 +5944,12 @@ mapEnums graphTypes[] = {
    { GraphTypeSize,  NULL },
 };
 
-CLocalWUGraph::CLocalWUGraph(IPropertyTree *props, const char *_wuid) : p(props), wuid(_wuid)
+CLocalWUGraph::CLocalWUGraph(const CLocalWorkUnit &_owner, IPropertyTree *props) : p(props), owner(_owner)
 {
+    SCMStringBuffer str;
+    owner.getWuid(str);
+    wuid.set(str.s.str());
+    wuidVersion = owner.getWuidVersion();
 }
 
 IStringVal& CLocalWUGraph::getName(IStringVal &str) const
@@ -5931,9 +5960,17 @@ IStringVal& CLocalWUGraph::getName(IStringVal &str) const
 
 IStringVal& CLocalWUGraph::getLabel(IStringVal &str) const
 {
-    Owned<IPropertyTree> xgmml = getXGMMLTree(false);
-    str.set(xgmml->queryProp("@label"));
-    return str;
+    if (wuidVersion >= 2)
+    {
+        str.set(p->queryProp("@label"));
+        return str;
+    }
+    else
+    {
+        Owned<IPropertyTree> xgmml = getXGMMLTree(false);
+        str.set(xgmml->queryProp("@label"));
+        return str;
+    }
 }
 
 
@@ -6073,7 +6110,7 @@ IConstWUGraphIterator& CLocalWorkUnit::getGraphs(WUGraphType type) const
             }
         public:
             IMPLEMENT_IINTERFACE;
-            CConstWUGraphIterator(IConstWUGraphIterator *_base,WUGraphType _type)   
+            CConstWUGraphIterator(IConstWUGraphIterator *_base,WUGraphType _type)
                 : base(_base)
             {
                 type = _type;
@@ -6086,9 +6123,9 @@ IConstWUGraphIterator& CLocalWorkUnit::getGraphs(WUGraphType type) const
                     return true;
                 return next();
             }
-            bool next() 
+            bool next()
             {
-                while (base->next()) 
+                while (base->next())
                     if (match())
                         return true;
                 return false;
@@ -6134,9 +6171,9 @@ IWUGraph* CLocalWorkUnit::createGraph()
     if (!graphs.length())
         p->addPropTree("Graphs", createPTree("Graphs"));
     IPropertyTree *r = p->queryPropTree("Graphs");
-    IPropertyTree *s = r->addPropTree("Graph", createPTreeFromXMLString("<Graph fetchEntire='1'/>"));
+    IPropertyTree *s = r->addPropTree("Graph", createPTree());
     s->Link();
-    IWUGraph* q = new CLocalWUGraph(s, p->queryName());
+    IWUGraph* q = new CLocalWUGraph(*this, s);
     q->Link();
     graphs.append(*q);
     return q;
@@ -6149,7 +6186,7 @@ IWUGraph * CLocalWorkUnit::updateGraph(const char * name)
     IConstWUGraph *existing = getGraph(name);
     if (existing)
         return (IWUGraph *) existing;
-    IWUGraph * q = createGraph(); 
+    IWUGraph * q = createGraph();
     q->setName(name);
     return q;
 }
@@ -6172,17 +6209,29 @@ void CLocalWUGraph::setName(const char *str)
     progress.setown(new CConstGraphProgress(wuid, str));
 }
 
+void CLocalWUGraph::setLabel(const char *str)
+{
+    p->setProp("@label", str);
+}
+
 void CLocalWUGraph::setXGMML(const char *str)
 {
     setXGMMLTree(createPTreeFromXMLString(str));
 }
 
-void CLocalWUGraph::setXGMMLTree(IPropertyTree *graph)
+void CLocalWUGraph::setXGMMLTree(IPropertyTree *_graph, bool compress)
 {
-    assertex(strcmp(graph->queryName(), "graph")==0);
-    IPropertyTree *xgmml = createPTree("xgmml");
-    xgmml->setPropTree("graph", graph);
-    p->setPropTree("xgmml", xgmml);
+    assertex(strcmp(_graph->queryName(), "graph")==0);
+    IPropertyTree *xgmml = p->setPropTree("xgmml", createPTree());
+    if (compress)
+    {
+        MemoryBuffer mb;
+        _graph->serialize(mb);
+        xgmml->setPropBin("graphBin", mb.length(), mb.toByteArray());
+        graph.setown(_graph);
+    }
+    else
+        xgmml->setPropTree("graph", _graph);
 }
 
 void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progressTree, const unsigned &progressV) const
@@ -6264,15 +6313,30 @@ void CLocalWUGraph::mergeProgress(IPropertyTree &rootNode, IPropertyTree &progre
         mergeProgress(iter->query(), progressTree, progressV);
 }
 
+IPropertyTree * CLocalWUGraph::getXGMMLTreeRaw() const
+{
+    return p->getPropTree("xgmml");
+}
+
 IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
 {
+    if (!graph)
+    {
+        // NB: although graphBin introduced in wuidVersion==2,
+        // daliadmin can retrospectively compress existing graphs, so need to check for all versions
+        MemoryBuffer mb;
+        if (p->getPropBin("xgmml/graphBin", mb))
+            graph.setown(createPTree(mb));
+        else
+            graph.setown(p->getBranch("xgmml/graph"));
+        if (!graph)
+            return NULL;
+    }
     if (!doMergeProgress)
-        return p->getPropTree("xgmml/graph");
+        return graph.getLink();
     else
     {
-        IPropertyTree *src = p->queryPropTree("xgmml/graph");
-        if (!src) return NULL;
-        Owned<IPropertyTree> copy = createPTreeFromIPT(src);
+        Owned<IPropertyTree> copy = createPTreeFromIPT(graph);
         Owned<IConstWUGraphProgress> _progress;
         if (progress) _progress.set(progress);
         else
@@ -6283,13 +6347,14 @@ IPropertyTree * CLocalWUGraph::getXGMMLTree(bool doMergeProgress) const
         Owned<IPropertyTreeIterator> nodeIterator = copy->getElements("node");
         ForEach (*nodeIterator)
             mergeProgress(nodeIterator->query(), *progressTree, progressV);
-        return LINK(copy);
+        return copy.getClear();
     }
 }
 
 bool CLocalWUGraph::isValid() const
 {
-    return p->hasProp("xgmml/graph/node");
+    // JCSMORE - I can't really see why this is necessary, a graph cannot be empty.
+    return p->hasProp("xgmml/graph/node") || p->hasProp("xgmml/graphBin");
 }
 
 WUGraphType CLocalWUGraph::getType() const
@@ -7833,7 +7898,7 @@ extern WORKUNIT_API ILocalWorkUnit * createLocalWorkUnit()
     return ret;
 }
 
-extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str)
+extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, StringBuffer &str, bool unpack)
 {
     const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
     if (!w)
@@ -7843,20 +7908,27 @@ extern WORKUNIT_API StringBuffer &exportWorkUnitToXML(const IConstWorkUnit *wu, 
             w = wl->c;
     }
     if (w)
-        toXML(w->p, str, 0, XML_Format|XML_SortTags);
+    {
+        Linked<IPropertyTree> p;
+        if (unpack)
+            p.setown(w->getUnpackedTree());
+        else
+            p.set(w->p);
+        toXML(p, str, 0, XML_Format|XML_SortTags);
+    }
     else
         str.append("Unrecognized workunit format");
     return str;
 }
 
-extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str)
+extern WORKUNIT_API IStringVal& exportWorkUnitToXML(const IConstWorkUnit *wu, IStringVal &str, bool unpack)
 {
     StringBuffer x;
-    str.set(exportWorkUnitToXML(wu,x).str());
+    str.set(exportWorkUnitToXML(wu,x,unpack).str());
     return str;
 }
 
-extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags)
+extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const char * filename, unsigned extraXmlFlags, bool unpack)
 {
     const CLocalWorkUnit *w = QUERYINTERFACE(wu, const CLocalWorkUnit);
     if (!w)
@@ -7866,7 +7938,14 @@ extern WORKUNIT_API void exportWorkUnitToXMLFile(const IConstWorkUnit *wu, const
             w = wl->c;
     }
     if (w)
-        saveXML(filename, w->p, 0, XML_Format|XML_SortTags|extraXmlFlags);
+    {
+        Linked<IPropertyTree> p;
+        if (unpack)
+            p.setown(w->getUnpackedTree());
+        else
+            p.set(w->p);
+        saveXML(filename, p, 0, XML_Format|XML_SortTags|extraXmlFlags);
+    }
 }
 
 

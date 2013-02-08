@@ -70,7 +70,7 @@ bool dump(IConstWorkUnit &w, IProperties *globals)
     else if (stricmp(action, "dump")==0)
     {
         SCMStringBuffer xml;
-        exportWorkUnitToXML(&w, xml);
+        exportWorkUnitToXML(&w, xml, true);
         printf("%s\n", xml.str());
     }
     else if (stricmp(action, "temporaries")==0)
