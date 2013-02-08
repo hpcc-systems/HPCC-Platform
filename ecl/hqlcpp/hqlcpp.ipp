@@ -925,10 +925,10 @@ public:
     unsigned getSourceAggregateOptimizeFlags() const;
     inline void addGlobalOnWarning(IHqlExpression * setMetaExpr) { warningProcessor.addGlobalOnWarning(setMetaExpr); }
 
-    ClusterType getTargetClusterType() { return targetClusterType; }
-    inline bool targetRoxie() { return targetClusterType == RoxieCluster; }
-    inline bool targetHThor() { return targetClusterType == HThorCluster; }
-    inline bool targetThor() { return isThorCluster(targetClusterType); }
+    ClusterType getTargetClusterType() const { return targetClusterType; }
+    inline bool targetRoxie() const { return targetClusterType == RoxieCluster; }
+    inline bool targetHThor() const { return targetClusterType == HThorCluster; }
+    inline bool targetThor() const { return isThorCluster(targetClusterType); }
     inline IErrorReceiver * queryErrors() { return errors; }
     inline WarningProcessor & queryWarningProcessor() { return warningProcessor; }
 
@@ -1027,6 +1027,7 @@ public:
     void noteXpathUsed(IHqlExpression * expr);
 
     HqlCppOptions const & queryOptions() const { return options; }
+    bool needToSerializeToSlave(IHqlExpression * expr) const;
     ITimeReporter * queryTimeReporter() const { return timeReporter; }
 
     void updateClusterType();
