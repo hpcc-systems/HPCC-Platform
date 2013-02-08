@@ -36,9 +36,11 @@ define([
     "hpcc/GetDFUWorkunitsWidget",
     "hpcc/DFUWUDetailsWidget",
     "hpcc/DFUWUQueryWidget",
-    "hpcc/LFDetailsWidget"
+    "hpcc/LFDetailsWidget",
+    "hpcc/DropZonesWidget",
+    "hpcc/DropZoneWidget"
 ], function (lang, fx, baseWindow, connect, dom, domStyle, domGeometry, ioQuery, ready,
-        ECLPlaygroundWidget, GraphPageWidget, ResultsWidget, TimingPageWidget, TimingTreeMapWidget, ECLSourceWidget, InfoGridWidget, WUQueryWidget, WUDetailsWidget, GetDFUWorkunitsWidget, DFUWUDetailsWidget, DFUWUQueryWidget, LFDetailsWidget
+        ECLPlaygroundWidget, GraphPageWidget, ResultsWidget, TimingPageWidget, TimingTreeMapWidget, ECLSourceWidget, InfoGridWidget, WUQueryWidget, WUDetailsWidget, GetDFUWorkunitsWidget, DFUWUDetailsWidget, DFUWUQueryWidget, LFDetailsWidget, DropZonesWidget, DropZoneWidget
         ) {
 
     var initUi = function () {
