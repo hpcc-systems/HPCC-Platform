@@ -686,6 +686,188 @@ extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo,
     }
 }
 
+extern ECLRTL_API bool rtlDictionaryLookupExistsField(const IDictionarySearcher &searcher, size32_t tableSize, byte **table)
+{
+    if (!tableSize)
+        return false;
+
+    unsigned rowidx = searcher.hash() % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return false;
+        if (searcher.docompare(entry)==0)
+            return true;
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+DictSearchString::DictSearchString(size32_t _searchLen, const char *_searchFor)
+: searchLen(_searchLen), searchFor(_searchFor)
+{
+}
+
+unsigned DictSearchString::hash() const
+{
+    return rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, 0x811C9DC5);
+}
+int DictSearchString::docompare(const void * _right) const
+{
+    const char * right = (const char *) _right;
+    return rtlCompareStrStr(searchLen, searchFor, *(size32_t *)right, right+sizeof(size32_t));
+}
+
+DictSearchStringN::DictSearchStringN(size32_t _N, size32_t _searchLen, const char *_searchFor)
+: N(_N), DictSearchString(_searchLen, _searchFor)
+{
+}
+int DictSearchStringN::docompare(const void * _right) const
+{
+    const char * right = (const char *) _right;
+    return rtlCompareStrStr(searchLen, searchFor, N, right);
+}
+
+DictSearchVString::DictSearchVString(size32_t _searchLen, const char *_searchFor)
+: DictSearchString(_searchLen, _searchFor)
+{
+}
+int DictSearchVString::docompare(const void * _right) const
+{
+    const char * right = (const char *) _right;
+    return rtlCompareStrStr(searchLen, searchFor, strlen(right), right);
+}
+
+DictSearchUnicode::DictSearchUnicode(const char *_locale, size32_t _searchLenChars, const UChar *_searchFor)
+: locale(_locale), searchLenChars(_searchLenChars), searchFor(_searchFor)
+{
+}
+
+unsigned DictSearchUnicode::hash() const
+{
+    return rtlHash32Unicode(searchLenChars, searchFor, 0x811C9DC5);
+}
+int DictSearchUnicode::docompare(const void * _right) const
+{
+    const char * right = (const char *) _right;
+    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, *(size32_t *) right, (const UChar *) (right + sizeof(size32_t)), locale);
+}
+
+DictSearchUnicodeN::DictSearchUnicodeN(size32_t _N, const char *_locale, size32_t _searchLenChars, const UChar *_searchFor)
+: N(_N), DictSearchUnicode(_locale, _searchLenChars, _searchFor)
+{
+}
+int DictSearchUnicodeN::docompare(const void * _right) const
+{
+    const UChar * right = (const UChar *) _right;
+    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, N, right, locale);
+}
+
+DictSearchVUnicode::DictSearchVUnicode(const char *_locale, size32_t _searchLenChars, const UChar *_searchFor)
+: DictSearchUnicode(_locale, _searchLenChars, _searchFor)
+{
+}
+int DictSearchVUnicode::docompare(const void * _right) const
+{
+    const UChar * right = (const UChar *) _right;
+    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, rtlUnicodeStrlen(right), right, locale);
+}
+
+DictSearchUtf8::DictSearchUtf8(const char *_locale, size32_t _searchLenChars, const char *_searchFor)
+: locale(_locale), searchLenChars(_searchLenChars), searchFor(_searchFor)
+{
+}
+unsigned DictSearchUtf8::hash() const
+{
+    return rtlHash32Utf8(rtlTrimUtf8StrLen(searchLenChars,searchFor), searchFor, 0x811C9DC5);
+}
+int DictSearchUtf8::docompare(const void * _right) const
+{
+    const char * right = (const char *) _right;
+    return rtlCompareUtf8Utf8(searchLenChars, searchFor, *(size32_t *) right, right + sizeof(size32_t), locale);
+}
+
+
+unsigned DictSearchInteger8::hash() const
+{
+    return rtlHash32Data8(&searchFor, 0x811C9DC5);
+}
+
+int DictSearchInteger8::docompare(const void * right) const
+{
+    return (*(__int64 *)right) - searchFor;
+}
+
+int DictSearchInteger1::docompare(const void * right) const
+{
+    return (*(signed char *)right) - searchFor;
+}
+int DictSearchInteger2::docompare(const void * right) const
+{
+    return (*(signed short *)right) - searchFor;
+}
+int DictSearchInteger3::docompare(const void * right) const
+{
+    return rtlReadInt3(right) - searchFor;
+}
+int DictSearchInteger4::docompare(const void * right) const
+{
+    return (*(signed __int32 *)right) - searchFor;
+}
+int DictSearchInteger5::docompare(const void * right) const
+{
+    return rtlReadInt5(right) - searchFor;
+}
+int DictSearchInteger6::docompare(const void * right) const
+{
+    return rtlReadInt6(right) - searchFor;
+}
+int DictSearchInteger7::docompare(const void * right) const
+{
+    return rtlReadInt7(right) - searchFor;
+}
+
+unsigned DictSearchUnsigned8::hash() const
+{
+    return rtlHash32Data8(&searchFor, 0x811C9DC5);
+}
+
+int DictSearchUnsigned8::docompare(const void * right) const
+{
+    return (*(__uint64 *)right) - searchFor;
+}
+
+int DictSearchUnsigned1::docompare(const void * right) const
+{
+    return (*(unsigned char *)right) - searchFor;
+}
+int DictSearchUnsigned2::docompare(const void * right) const
+{
+    return (*(unsigned short *)right) - searchFor;
+}
+int DictSearchUnsigned3::docompare(const void * right) const
+{
+    return rtlReadUInt3(right) - searchFor;
+}
+int DictSearchUnsigned4::docompare(const void * right) const
+{
+    return (*(unsigned __int32 *)right) - searchFor;
+}
+int DictSearchUnsigned5::docompare(const void * right) const
+{
+    return rtlReadUInt5(right) - searchFor;
+}
+int DictSearchUnsigned6::docompare(const void * right) const
+{
+    return rtlReadUInt6(right) - searchFor;
+}
+int DictSearchUnsigned7::docompare(const void * right) const
+{
+    return rtlReadUInt7(right) - searchFor;
+}
+
 //---------------------------------------------------------------------------------------------------------------------
 // Serialization helper classes
 

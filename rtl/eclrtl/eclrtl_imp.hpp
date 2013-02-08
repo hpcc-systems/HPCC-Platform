@@ -310,4 +310,191 @@ inline unsigned rtlHash32Data8(const void *_buf, unsigned hval)
                 buf[7]);
 }
 
+interface IDictionarySearcher
+{
+    virtual unsigned hash() const =0;
+    virtual int docompare(const void * right) const =0;
+};
+
+class DictSearchString : implements IDictionarySearcher
+{
+public:
+    DictSearchString(size32_t _searchLen, const char *_searchFor);
+    virtual unsigned hash() const;
+    virtual int docompare(const void * _right) const;
+protected:
+    size32_t searchLen;
+    const char *searchFor;
+};
+
+class DictSearchStringN : public DictSearchString
+{
+public:
+    DictSearchStringN(size32_t _N, size32_t _searchLen, const char *_searchFor);
+    virtual int docompare(const void * _right) const;
+protected:
+    size32_t N;
+};
+
+class DictSearchVString : public DictSearchString
+{
+public:
+    DictSearchVString(size32_t _searchLen, const char *_searchFor);
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchUnicode : implements IDictionarySearcher
+{
+public:
+    DictSearchUnicode(const char *_locale, size32_t _searchLenChars, const UChar *_searchFor);
+    virtual unsigned hash() const;
+    virtual int docompare(const void * _right) const;
+protected:
+    const char *locale;
+    size32_t searchLenChars;
+    const UChar *searchFor;
+};
+
+class DictSearchUnicodeN : public DictSearchUnicode
+{
+public:
+    DictSearchUnicodeN(size32_t _N, const char *_locale, size32_t _searchLenChars, const UChar *_searchFor);
+    virtual int docompare(const void * _right) const;
+protected:
+    size32_t N;
+};
+
+class DictSearchVUnicode : public DictSearchUnicode
+{
+public:
+    DictSearchVUnicode(const char *_locale, size32_t _searchLenChars, const UChar *_searchFor);
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchUtf8 : implements IDictionarySearcher
+{
+public:
+    DictSearchUtf8(const char *_locale, size32_t _searchLenChars, const char *_searchFor);
+    virtual unsigned hash() const;
+    virtual int docompare(const void * _right) const;
+protected:
+    const char *locale;
+    size32_t searchLenChars;
+    const char *searchFor;
+};
+
+
+
+class DictSearchInteger8 : implements IDictionarySearcher
+{
+public:
+    inline DictSearchInteger8(__int64 _searchFor) : searchFor(_searchFor) {}
+    virtual unsigned hash() const;
+    virtual int docompare(const void * _right) const;
+protected:
+    __int64 searchFor;
+};
+
+class DictSearchInteger1 : public DictSearchInteger8
+{
+public:
+    inline DictSearchInteger1(__int64 _searchFor) : DictSearchInteger8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchInteger2 : public DictSearchInteger8
+{
+public:
+    inline DictSearchInteger2(__int64 _searchFor) : DictSearchInteger8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchInteger3 : public DictSearchInteger8
+{
+public:
+    inline DictSearchInteger3(__int64 _searchFor) : DictSearchInteger8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchInteger4 : public DictSearchInteger8
+{
+public:
+    inline DictSearchInteger4(__int64 _searchFor) : DictSearchInteger8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchInteger5 : public DictSearchInteger8
+{
+public:
+    inline DictSearchInteger5(__int64 _searchFor) : DictSearchInteger8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchInteger6 : public DictSearchInteger8
+{
+public:
+    inline DictSearchInteger6(__int64 _searchFor) : DictSearchInteger8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchInteger7 : public DictSearchInteger8
+{
+public:
+    inline DictSearchInteger7(__int64 _searchFor) : DictSearchInteger8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchUnsigned8 : implements IDictionarySearcher
+{
+public:
+    inline DictSearchUnsigned8(__uint64 _searchFor) : searchFor(_searchFor) {}
+    virtual unsigned hash() const;
+    virtual int docompare(const void * _right) const;
+protected:
+    __uint64 searchFor;
+};
+
+class DictSearchUnsigned1 : public DictSearchUnsigned8
+{
+public:
+    inline DictSearchUnsigned1(__uint64 _searchFor) : DictSearchUnsigned8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+
+class DictSearchUnsigned2 : public DictSearchUnsigned8
+{
+public:
+    inline DictSearchUnsigned2(__uint64 _searchFor) : DictSearchUnsigned8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+class DictSearchUnsigned3 : public DictSearchUnsigned8
+{
+public:
+    inline DictSearchUnsigned3(__uint64 _searchFor) : DictSearchUnsigned8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+class DictSearchUnsigned4 : public DictSearchUnsigned8
+{
+public:
+    inline DictSearchUnsigned4(__uint64 _searchFor) : DictSearchUnsigned8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+class DictSearchUnsigned5 : public DictSearchUnsigned8
+{
+public:
+    inline DictSearchUnsigned5(__uint64 _searchFor) : DictSearchUnsigned8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+class DictSearchUnsigned6 : public DictSearchUnsigned8
+{
+public:
+    inline DictSearchUnsigned6(__uint64 _searchFor) : DictSearchUnsigned8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
+class DictSearchUnsigned7 : public DictSearchUnsigned8
+{
+public:
+    inline DictSearchUnsigned7(__uint64 _searchFor) : DictSearchUnsigned8(_searchFor) {};
+    virtual int docompare(const void * _right) const;
+};
 #endif

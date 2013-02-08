@@ -91,6 +91,9 @@ public:
     virtual void buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt);
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) { throwUnexpected(); }
     virtual void buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
+protected:
+    void buildExprInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt);
+    void buildRowInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt);
 };
 
 class MultiLevelDatasetCursor : public BaseDatasetCursor

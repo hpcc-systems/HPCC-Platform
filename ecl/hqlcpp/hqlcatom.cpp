@@ -243,7 +243,9 @@ _ATOM destroyWRegexAtom;
 _ATOM destructMetaMemberAtom;
 _ATOM dictionaryCountAtom;
 _ATOM dictionaryLookupAtom;
+_ATOM dictionaryLookupFieldAtom;
 _ATOM dictionaryLookupExistsAtom;
+_ATOM dictionaryLookupExistsFieldAtom;
 _ATOM doNotifyAtom;
 _ATOM doNotifyTargetAtom;
 _ATOM ebcdic2asciiAtom;
@@ -727,6 +729,7 @@ _ATOM xmlEncodeStrAtom;
 _ATOM xmlEncodeUStrAtom;
 _ATOM xmlReadMarkerAtom;
 
+
 //===========================================================================
 
 //MORE: Need to change many MAKEATOM to MAKEID in this file, and most of the explicit calls should be removed/changed
@@ -963,7 +966,9 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(destructMetaMember);
     MAKEATOM(dictionaryCount);
     MAKEATOM(dictionaryLookup);
+    MAKEATOM(dictionaryLookupField);
     MAKEATOM(dictionaryLookupExists);
+    MAKEATOM(dictionaryLookupExistsField);
     MAKEATOM(doNotify);
     MAKEATOM(doNotifyTarget);
     MAKEATOM(ebcdic2ascii);

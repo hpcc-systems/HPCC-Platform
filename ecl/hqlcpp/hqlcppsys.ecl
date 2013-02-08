@@ -26,6 +26,7 @@ const char * cppSystemText[]  = {
     "shared IOutputRowSerializer := boolean;",
     "shared IOutputRowDeserializer := boolean;",
     "shared IHThorHashLookupInfo := boolean;",
+    "shared IDictionarySearcher := boolean;",
     
     "export InternalCppService := SERVICE",
     //  searchTableStringN(unsigned4 num, string table, string search) : library='eclrtl';
@@ -822,6 +823,32 @@ const char * cppSystemText[]  = {
     "    integer8 dictionaryCount(_linkcounted_ dictionary dict) : eclrtl,include,pure,entrypoint='rtlDictionaryCount';",
     "   _linkcounted_ row(dummyRecord) dictionaryLookup(boolean meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup';",
     "    boolean dictionaryLookupExists(boolean meta, _linkcounted_ dictionary dict, row key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExists';",
+    "    boolean dictionaryLookupExistsField(IDictionarySearcher search, _linkcounted_ dictionary dict) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExistsField';",
+    "    boolean DictSearchString(string searchval) : eclrtl,include,pure,entrypoint='DictSearchString';",
+    "    boolean DictSearchVString(string searchval) : eclrtl,include,pure,entrypoint='DictSearchVString';",
+    "    boolean DictSearchStringN(integer N, string searchval) : eclrtl,include,pure,entrypoint='DictSearchStringN';",
+
+    "    boolean DictSearchUnicode(const varstring locale, unicode searchval) : eclrtl,include,pure,entrypoint='DictSearchUnicode';",
+    "    boolean DictSearchVUnicode(const varstring locale, unicode searchval) : eclrtl,include,pure,entrypoint='DictSearchVUnicode';",
+    "    boolean DictSearchUnicodeN(integer N, const varstring locale, unicode searchval) : eclrtl,include,pure,entrypoint='DictSearchUnicodeN';",
+    "    boolean DictSearchUtf8(const varstring locale, utf8 searchval) : eclrtl,include,pure,entrypoint='DictSearchUtf8';",
+
+    "    boolean DictSearchInteger1(integer searchval) : eclrtl,include,pure,entrypoint='DictSearchInteger1';",
+    "    boolean DictSearchInteger2(integer searchval) : eclrtl,include,pure,entrypoint='DictSearchInteger2';",
+    "    boolean DictSearchInteger3(integer searchval) : eclrtl,include,pure,entrypoint='DictSearchInteger3';",
+    "    boolean DictSearchInteger4(integer searchval) : eclrtl,include,pure,entrypoint='DictSearchInteger4';",
+    "    boolean DictSearchInteger5(integer searchval) : eclrtl,include,pure,entrypoint='DictSearchInteger5';",
+    "    boolean DictSearchInteger6(integer searchval) : eclrtl,include,pure,entrypoint='DictSearchInteger6';",
+    "    boolean DictSearchInteger7(integer searchval) : eclrtl,include,pure,entrypoint='DictSearchInteger7';",
+    "    boolean DictSearchInteger8(integer searchval) : eclrtl,include,pure,entrypoint='DictSearchInteger8';",
+    "    boolean DictSearchUnsigned1(unsigned searchval) : eclrtl,include,pure,entrypoint='DictSearchUnsigned1';",
+    "    boolean DictSearchUnsigned2(unsigned searchval) : eclrtl,include,pure,entrypoint='DictSearchUnsigned2';",
+    "    boolean DictSearchUnsigned3(unsigned searchval) : eclrtl,include,pure,entrypoint='DictSearchUnsigned3';",
+    "    boolean DictSearchUnsigned4(unsigned searchval) : eclrtl,include,pure,entrypoint='DictSearchUnsigned4';",
+    "    boolean DictSearchUnsigned5(unsigned searchval) : eclrtl,include,pure,entrypoint='DictSearchUnsigned5';",
+    "    boolean DictSearchUnsigned6(unsigned searchval) : eclrtl,include,pure,entrypoint='DictSearchUnsigned6';",
+    "    boolean DictSearchUnsigned7(unsigned searchval) : eclrtl,include,pure,entrypoint='DictSearchUnsigned7';",
+    "    boolean DictSearchUnsigned8(unsigned searchval) : eclrtl,include,pure,entrypoint='DictSearchUnsigned8';",
 
     // Marshalling parameters to external languages
     "   bindBooleanParam(const varstring name, boolean val) : method,entrypoint='bindBooleanParam';",

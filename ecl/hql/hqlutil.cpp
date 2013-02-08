@@ -457,6 +457,12 @@ IHqlExpression * queryLastField(IHqlExpression * record)
     return NULL;
 }
 
+IHqlExpression * queryFirstField(IHqlExpression * record)
+{
+    unsigned idx = 0;
+    return queryNextRecordField(record, idx);
+}
+
 bool recordContainsBlobs(IHqlExpression * record)
 {
     ForEachChild(i, record)
@@ -5424,9 +5430,13 @@ IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & locat
 IHqlExpression *createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
 {
     OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
-    TempTableTransformer transformer(errors, location, true);
-    OwnedHqlExpr newTransform = transformer.createTempTableTransform(expr, record);
-    return createBoolExpr(no_indict, createRow(no_createrow, newTransform.getClear()), dict);
+    if (countTotalFields(record, true) != 1)
+        errors->reportError(ERR_TYPE_DIFFER, "Type mismatch", location.sourcePath->str(), location.lineno, location.column, location.position);
+    if (!queryFirstField(record)->queryType()->assignableFrom(expr->queryType()))
+        errors->reportError(ERR_TYPE_DIFFER, "Type mismatch", location.sourcePath->str(), location.lineno, location.column, location.position);
+    HqlExprArray args;
+    args.append(*LINK(expr));
+    return createBoolExpr(no_indict, createSortList(args), dict);
 }
 
 IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict)
