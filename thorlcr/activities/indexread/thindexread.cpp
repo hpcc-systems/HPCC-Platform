@@ -196,6 +196,12 @@ public:
         index.setown(queryThorFileManager().lookup(container.queryJob(), indexBaseHelper->getFileName(), false, 0 != (TIRoptional & indexBaseHelper->getFlags()), true));
         if (index)
         {
+            bool localKey = index->queryAttributes().getPropBool("@local");
+
+            if (container.queryLocalData() && !localKey)
+                throw MakeActivityException(this, 0, "Index Read cannot be LOCAL unless supplied index is local");
+
+
             nofilter = 0 != (TIRnofilter & indexBaseHelper->getFlags());
             if (index->queryAttributes().getPropBool("@local"))
                 nofilter = true;

@@ -92,7 +92,7 @@ public:
             unsigned numParts = 0;
             localKey = indexFile->queryAttributes().getPropBool("@local");
 
-            if (container.queryLocal() && !localKey)
+            if (container.queryLocalData() && !localKey)
                 throw MakeActivityException(this, 0, "Keyed Join cannot be LOCAL unless supplied index is local");
 
             checkFormatCrc(this, indexFile, helper->getIndexFormatCrc(), true);
