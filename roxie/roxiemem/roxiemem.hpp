@@ -124,82 +124,24 @@ public:
         return atomic_read(&count) < DEAD_PSEUDO_COUNT;        //only safe if Link() is called first
     }
 
-    static void release(const void *ptr)
+    static void release(const void *ptr);
+    static bool isShared(const void *ptr);
+    static void link(const void *ptr);
+    static memsize_t capacity(const void *ptr);
+
+    static void setDestructorFlag(const void *ptr);
+    static bool hasDestructor(const void *ptr);
+
+    static inline void releaseClear(const void *&ptr)
     {
-        if (ptr)
-        {
-            HeapletBase *h = findBase(ptr);
-            h->noteReleased(ptr);
-        }
+        release(ptr);
+        ptr = NULL;
     }
 
-    static bool isShared(const void *ptr)
+    static inline void releaseClear(void *&ptr)
     {
-        if (ptr)
-        {
-            HeapletBase *h = findBase(ptr);
-            return h->_isShared(ptr);
-        }
-        // isShared(NULL) or isShared on an object that shares a link-count is an error
-        throwUnexpected();
-    }
-
-    static memsize_t capacity(const void *ptr)
-    {
-        if (ptr)
-        {
-            HeapletBase *h = findBase(ptr);
-            //MORE: If capacity was always the size stored in the first word of the block this could be non virtual
-            //and the whole function could be inline.
-            return h->_capacity();
-        }
-        throwUnexpected();
-    }
-
-    static void setDestructorFlag(const void *ptr)
-    {
-        dbgassertex(ptr);
-        HeapletBase *h = findBase(ptr);
-        h->_setDestructorFlag(ptr);
-    }
-
-    static bool hasDestructor(const void *ptr)
-    {
-        dbgassertex(ptr);
-        HeapletBase *h = findBase(ptr);
-        return h->_hasDestructor(ptr);
-    }
-
-    static unsigned getAllocatorId(const void *ptr)
-    {
-        dbgassertex(ptr);
-        HeapletBase *h = findBase(ptr);
-        unsigned id = h->_rawAllocatorId(ptr);
-        return (id & ACTIVITY_MASK);
-    }
-
-    static void releaseClear(const void *&ptr)
-    {
-        if (ptr)
-        {
-            release(ptr);
-            ptr = NULL;
-        }
-    }
-
-    static void releaseClear(void *&ptr)
-    {
-        if (ptr)
-        {
-            release(ptr);
-            ptr = NULL;
-        }
-    }
-
-    static void link(const void *ptr)
-    {
-        HeapletBase *h = findBase(ptr);
-        h->noteLinked(ptr);
+        release(ptr);
+        ptr = NULL;
     }
 
     inline unsigned queryCount() const
