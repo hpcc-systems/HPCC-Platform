@@ -3370,9 +3370,15 @@ void HqlCppTranslator::ensureRowAllocator(StringBuffer & allocatorName, BuildCtx
     StringBuffer uid;
     getUniqueId(uid.append("alloc"));
 
-    BuildCtx * declarectx = &ctx;
-    BuildCtx * callctx = &ctx;
-    getInvariantMemberContext(ctx, &declarectx, &callctx, true, false);
+    BuildCtx subctx(ctx);
+    BuildCtx * declarectx = &subctx;
+    BuildCtx * callctx = &subctx;
+    if (!getInvariantMemberContext(ctx, &declarectx, &callctx, true, false))
+    {
+        //The following will not currently work because not all compound statements are correctly marked as
+        //complete/incomplete
+        //subctx.selectOutermostScope();
+    }
 
     StringBuffer s;
     s.append("Owned<IEngineRowAllocator> ").append(uid).append(";");

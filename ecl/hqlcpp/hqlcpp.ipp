@@ -720,6 +720,7 @@ struct HqlCppOptions
     bool                normalizeSelectorSequence;
     bool                transformCaseToChoose;
     bool                removeXpathFromOutput;
+    bool                canLinkConstantRows;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -828,6 +829,8 @@ public:
     IReferenceSelector * buildNewOrActiveRow(BuildCtx & ctx, IHqlExpression * expr, bool isNew);
     void buildRowAssign(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr);
     void buildRowAssign(BuildCtx & ctx, IReferenceSelector * target, IReferenceSelector * source);
+    BoundRow * ensureLinkCountedRow(BuildCtx & ctx, BoundRow * row);
+    IReferenceSelector * ensureLinkCountedRow(BuildCtx & ctx, IReferenceSelector * source);
 
 //Dataset processing.
     void buildAnyExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);

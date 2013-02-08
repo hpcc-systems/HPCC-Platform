@@ -1696,7 +1696,7 @@ bool LinkedDatasetBuilderBase::buildLinkRow(BuildCtx & ctx, BoundRow * sourceRow
         OwnedHqlExpr rowExpr = sourceExpr->isDataset() ? ensureActiveRow(sourceExpr) : LINK(sourceExpr);
         OwnedHqlExpr size = createSizeof(rowExpr);
         CHqlBoundExpr boundSize;
-        translator.buildExpr(ctx, size, boundSize);
+        translator.buildExpr(subctx, size, boundSize);
 
         StringBuffer s;
         s.append(instanceName).append(".cloneRow(");

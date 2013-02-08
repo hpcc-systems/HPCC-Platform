@@ -1712,6 +1712,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.normalizeSelectorSequence,"normalizeSelectorSequence",false),  // For tracking down why projects are not commoned up
         DebugOption(options.transformCaseToChoose,"transformCaseToChoose",true),
         DebugOption(options.removeXpathFromOutput,"removeXpathFromOutput",false),
+        DebugOption(options.canLinkConstantRows,"canLinkConstantRows",true),
     };
 
     //get options values from workunit
@@ -5849,17 +5850,12 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             }
         case type_row:
             {
+                Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
+
                 if (hasLinkCountedModifier(argType))
-                {
-                    doBuildAliasValue(ctx, castParam, bound);
-//                    buildTempExpr(ctx, castParam, bound, FormatLinkedDataset);
-                }
-                else
-                {
-                    Owned<IReferenceSelector> selector = buildNewRow(ctx, castParam);
-                    selector->buildAddress(ctx, bound);
-                }
-    //          buildExpr(ctx, castParam, bound);       // more this needs more work I think
+                    selector.setown(ensureLinkCountedRow(ctx, selector));
+
+                selector->buildAddress(ctx, bound);
                 break;
             }
         case type_set:
