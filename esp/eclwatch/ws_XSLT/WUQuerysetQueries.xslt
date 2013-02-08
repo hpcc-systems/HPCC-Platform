@@ -169,6 +169,12 @@
                   }
               };
 
+              var formatLinkDetails = function(elCell, oRecord, oColumn, sData) {
+                  if (sData != "") {
+                      elCell.innerHTML = "<a href=\"/WsWorkunits/WUQueryDetails?QueryId=" + sData + "&QuerySet=" + querySet + "\">" + sData + "</a>";
+                  }
+              };
+
               function reloadPage()
               {
                   var clusterSelect = document.getElementById('Clusters');
@@ -190,7 +196,7 @@
               YAHOO.util.Event.addListener(window, "load", function() {
                 LoadQueries = function() {
                   var queryColumnDefs = [
-                    {key:"Id", sortable:true, resizeable:true},
+                    {key:"Id", sortable:true, resizeable:true, formatter: formatLinkDetails},
                     {key:"Name", sortable:true, resizeable:true},
                     {key:"Wuid", sortable:true, resizeable:true},
                     {key:"Dll", sortable:true, resizeable:true},
@@ -198,7 +204,7 @@
                   ];
                   if (clusterName != '')
                     queryColumnDefs = [
-                        {key:"Id", sortable:true, resizeable:true},
+                        {key:"Id", sortable:true, resizeable:true, formatter: formatLinkDetails},
                         {key:"Name", sortable:true, resizeable:true},
                         {key:"Wuid", sortable:true, resizeable:true},
                         {key:"Dll", sortable:true, resizeable:true},
@@ -222,7 +228,6 @@
 
                   queryDataTable.subscribe("rowMouseoverEvent", queryDataTable.onEventHighlightRow);   
                   queryDataTable.subscribe("rowMouseoutEvent", queryDataTable.onEventUnhighlightRow);   
-                  queryDataTable.subscribe("rowClickEvent", queryDataTable.onEventSelectRow);   
 
                   return {
                     oqDS: queryDataSource,
@@ -233,7 +238,7 @@
                 LoadAliases = function() {
                   var aliasColumnDefs = [
                     {key:"Name", sortable:true, resizeable:true},
-                    {key:"Id", sortable:true, resizeable:true}
+                    {key:"Id", sortable:true, resizeable:true, formatter: formatLinkDetails}
                   ];
 
                   var aliasDataSource = new YAHOO.util.DataSource(querysetAliases);
@@ -247,7 +252,6 @@
 
                   aliasDataTable.subscribe("rowMouseoverEvent", aliasDataTable.onEventHighlightRow);   
                   aliasDataTable.subscribe("rowMouseoutEvent", aliasDataTable.onEventUnhighlightRow);   
-                  aliasDataTable.subscribe("rowClickEvent", aliasDataTable.onEventSelectRow);   
 
                   return {
                     oqDS: aliasDataSource,
