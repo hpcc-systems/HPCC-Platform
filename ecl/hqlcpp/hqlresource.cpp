@@ -2566,7 +2566,7 @@ protected:
         case no_thisnode:
             if (allNodesDepth == 0)
             {
-                if (expr->isDataset() || expr->isDatarow())
+                if (expr->isDataset() || expr->isDatarow() || expr->isDictionary())
                     noteDataset(expr, expr->queryChild(0), true);
                 else
                     noteScalar(expr, expr->queryChild(0));

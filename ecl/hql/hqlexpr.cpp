@@ -10065,6 +10065,7 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
     case no_catch:
     case no_colon:
     case no_globalscope:
+    case no_thisnode:
         type.set(parms.item(0).queryType());
         break;
     default:
@@ -13914,7 +13915,19 @@ HQL_API StringBuffer& getFriendlyTypeStr(ITypeInfo* type, StringBuffer& s)
                 s.append("<unknown>");
             break;
         }
-
+    case type_dictionary:
+        {
+            s.append(type->queryTypeName()).append(" of ");
+            ITypeInfo * chdType = queryRecordType(type);
+            if (chdType)
+            {
+                if (!queryOriginalName(chdType, s))
+                    chdType->getECLType(s);
+            }
+            else
+                s.append("<unknown>");
+            break;
+        }
     case type_record:
         s.append("Record ");
         if (!queryOriginalName(type, s))
