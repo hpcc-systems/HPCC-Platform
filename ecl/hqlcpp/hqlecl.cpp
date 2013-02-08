@@ -320,7 +320,7 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
 void HqlDllGenerator::addWorkUnitAsResource()
 {
     SCMStringBuffer wuXML;
-    exportWorkUnitToXML(wu, wuXML);
+    exportWorkUnitToXML(wu, wuXML, false);
     code->addCompressResource("WORKUNIT", wuXML.length(), wuXML.str(), NULL, 1000);
 }
 
