@@ -7117,7 +7117,10 @@ simpleDictionary
                             $$.setExpr(createDictionary(no_nohoist, $3.getExpr(), NULL));
                             $$.setPosition($1);
                         }
-
+    | THISNODE '(' dictionary ')'
+                        {
+                            $$.setExpr(createDictionary(no_thisnode, $3.getExpr()), $1);
+                        }
     | DICTIONARY '(' startTopFilter ',' recordDef ')' endTopFilter
                         {
                             OwnedHqlExpr dataset = $3.getExpr();
