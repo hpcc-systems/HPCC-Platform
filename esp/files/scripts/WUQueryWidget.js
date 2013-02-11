@@ -16,6 +16,7 @@
 define([
     "dojo/_base/declare",
     "dojo/dom",
+    "dojo/on",
     "dojo/dom-class",
     "dojo/data/ObjectStore",
     "dojo/date",
@@ -33,6 +34,7 @@ define([
     "dojox/grid/EnhancedGrid",
     "dojox/grid/enhanced/plugins/Pagination",
     "dojox/grid/enhanced/plugins/IndirectSelection",
+    "dojox/widget/Calendar",
 
     "hpcc/WsWorkunits",
     "hpcc/WUDetailsWidget",
@@ -43,16 +45,17 @@ define([
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
     "dijit/form/Textarea",
-    "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
+    "dijit/form/RadioButton",
     "dijit/form/Select",
     "dijit/Toolbar",
-    "dijit/TooltipDialog"
+    "dijit/TooltipDialog",
+    "dijit/form/DateTextBox"
     
-], function (declare, dom, domClass, ObjectStore, date, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
+], function (declare, dom, on, domClass, ObjectStore, date, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                EnhancedGrid, Pagination, IndirectSelection,
+                EnhancedGrid, Pagination, IndirectSelection, Calendar,
                 WsWorkunits, WUDetailsWidget,
                 template) {
     return declare("WUQueryWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -100,15 +103,21 @@ define([
         startup: function (args) {
             this.inherited(arguments);
             this.refreshActionState();
-            this.initWorkunitsGrid();                        
+            this.initWorkunitsGrid();
             domClass.add(this.id + "IconFilter", "hidden");
             
             validate = new Dialog({
-                title: "Missing fields",
+                title: "Missing Fields",
                 content: "Please make sure you have set at least one filter."
             });
-
+            var today = new Date();
+            var filterThreeDays = date.add(today, "day",- 3);
+            dijit.byId(this.id + "FromDate").set("value",filterThreeDays);
+            dijit.byId(this.id + "ToDate").set("value",today);
+            dijit.byId(this.id + "threeDays").set("checked",true);
         },
+
+
 
         resize: function (args) {
             this.inherited(arguments);
@@ -156,7 +165,7 @@ define([
             WsWorkunits.WUAction(this.workunitsGrid.selection.getSelected(), "Protect", {
                 load: function (response) {
                     context.refreshGrid(response);
-                }           
+                }
             });
         },
         _onUnprotect: function (event) {
@@ -184,7 +193,7 @@ define([
                dom.byId(this.id + "Cluster").value !== "" ||
                dom.byId(this.id + "State").value !== "" ||
                dom.byId(this.id + "ECL").value !== "" ||
-               dom.byId(this.id + "LogicalFile").value !== "" ||            
+               dom.byId(this.id + "LogicalFile").value !== "" ||
                dom.byId(this.id + "FromDate").value !== "" ||
                dom.byId(this.id + "FromTime").value !== "" ||
                dom.byId(this.id + "ToDate").value !== "" ||
@@ -192,10 +201,11 @@ define([
                ){
                 domClass.remove(this.id + "IconFilter", "hidden");
                 domClass.add(this.id + "IconFilter", "iconFilter");
+                dijit.byId(this.id+"FilterDropDown").closeDropDown();
+                this.refreshGrid();
             }else{
                 validate.show();
-            }     
-            this.refreshGrid();
+            }
         },
 
         _onFilterClear: function(event, supressGridRefresh) {
@@ -210,7 +220,12 @@ define([
             dom.byId(this.id + "FromDate").value = "";
             dom.byId(this.id + "FromTime").value = "";
             dom.byId(this.id + "ToDate").value = "";
-            dom.byId(this.id + "LastNDays").value = "";            
+            dom.byId(this.id + "LastNDays").value = "";
+            dijit.byId(this.id + "threeDays").set("checked",false);
+            dijit.byId(this.id + "thisWeek").set("checked",false);
+            dijit.byId(this.id + "specify").set("checked",false);
+            dijit.byId(this.id + "thisMonth").set("checked",false);
+            dijit.byId(this.id + "older").set("checked",false);
             domClass.remove(this.id + "IconFilter", "iconFilter");
             domClass.add(this.id + "IconFilter", "hidden");
             if (!supressGridRefresh) {
@@ -239,7 +254,7 @@ define([
                 retVal.StartDate = date.add(now, "day", dom.byId(this.id + "LastNDays").value * -1).toISOString();
                 retVal.EndDate = now.toISOString();
             }
-            return retVal;            
+            return retVal;
         },
 
         getISOString: function (dateField, timeField) {
@@ -265,6 +280,7 @@ define([
         initWorkunitsGrid: function() {
             var pMenu;
             var context = this;
+            
             
 
             pMenu = new Menu({
@@ -308,22 +324,43 @@ define([
             }));
             pMenu.addChild(new MenuSeparator());
             var pSubMenu = new Menu();
+            //var pSubMenuDate = new Menu();
+             /*for(var i = 0;i < today.getDay(); i++){
+                pSubMenuDate.addChild(new MenuItem({
+                    id: weekday[i],
+                    label: weekday[i],
+                    onClick: function (args) {
+                        /*dijit.byId(context.id + "FromDate").set("value",today);
+                        dijit.byId(context.id + "ToDate").set("value", today)
+                        context._onClickFilterApply();
+                    }
+                }));
+                pSubMenuDate.addChild(new MenuSeparator());
+            }*/
+            pSubMenu.addChild(new MenuItem({
+                id: "filterClear",
+                label: "Clear Filter",
+                onClick: function(){context._onFilterClear();}
+            }));
+            pSubMenu.addChild(new MenuSeparator());
             pSubMenu.addChild(new MenuItem({
                 id: "filterOwner",
                 onClick: function (args) {
-                    context._onFilterClear(null, true);                    
+                    context._onFilterClear(null, true);
                     dijit.byId(context.id + "Owner").set("value", dijit.byId("filterOwner").get("hpcc_value"));
                     context._onClickFilterApply();
                 }
             }));
+            pSubMenu.addChild(new MenuSeparator());
             pSubMenu.addChild(new MenuItem({
                 id: "filterJobname",
                 onClick: function (args) {
                     context._onFilterClear(null, true);
-                    dijit.byId(context.id + "Jobname").set("value", dijit.byId("filterJobname").get("hpcc_value"));                
+                    dijit.byId(context.id + "Jobname").set("value", dijit.byId("filterJobname").get("hpcc_value"));
                     context._onClickFilterApply();
                 }
             }));
+            pSubMenu.addChild(new MenuSeparator());
             pSubMenu.addChild(new MenuItem({
                 id: "filterCluster",
                 onClick: function (args) {
@@ -332,6 +369,7 @@ define([
                     context._onClickFilterApply();
                 }
             }));
+            pSubMenu.addChild(new MenuSeparator());
             pSubMenu.addChild(new MenuItem({
                 id: "filterState",
                 onClick: function (args) {
@@ -340,15 +378,75 @@ define([
                     context._onClickFilterApply();
                 }
             }));
+            pSubMenu.addChild(new MenuSeparator());
+            pSubMenu.addChild(new /*Popup*/MenuItem({
+                label: "Date",
+                //popup: pSubMenuDate,
+                onClick: function(args){
+                    //dojo.addClass(this.id + "Highlight", "Highlight");
+                    dijit.byId(context.id+"FilterDropDown").openDropDown();
+                    //dijit.byId(context.id + "FromDate").disabled = 'disabled';
+                    //dijit.byId(context.id + "ToDate").set("placeholder",today);
+                    //dijit.byId(context.id + "ToDate").disabled = 'disabled';
+                    //dijit.byId(context.id + "FromTime").disabled = 'disabled';
+                    //dijit.byId(context.id + "ToTime").disabled = 'disabled';
+
+                }
+            }));
+            
+            /*pSubMenuDate.addChild(new MenuItem({
+                id: "filterToday",
+                label: "Today",
+                onClick: function (args) {
+                    dijit.byId(context.id + "FromDate").set("value",today);
+                    dijit.byId(context.id + "ToDate").set("value", today)
+                    context._onClickFilterApply();
+                }
+            }));*/
+            /*pSubMenuDate.addChild(new MenuSeparator());*/
+            /*pSubMenuDate.addChild(new MenuItem({
+                id: "filterLastWeek",
+                label: "This Week",
+                onClick: function (args) {
+                    dijit.byId(context.id + "FromDate").set("value",filterThisWeek);
+                    dijit.byId(context.id + "ToDate").set("value", filterDate)
+                    context._onClickFilterApply();
+                    //console.log(date.difference(filterDate,filterThisWeekDate,"day"));
+                }
+            }));*/
+            /*pSubMenuDate.addChild(new MenuSeparator());
+            pSubMenuDate.addChild(new MenuItem({
+                id: "filterTwoWeeks",
+                label: "Two Weeks Ago",
+                onClick: function (args) {
+                    /*dijit.byId(context.id + "FromDate").set("value",filterLastWeek);
+                    dijit.byId(context.id + "ToDate").set("value", today);
+                    context._onClickFilterApply();
+                }
+            }));*/
+            /*pSubMenuDate.addChild(new MenuSeparator());
+            pSubMenuDate.addChild(new MenuItem({
+                id: "filterLastMonth",
+                label: "Last Month",
+                onClick: function (args) {
+                    dijit.byId(context.id + "FromDate").set("value",filterThisMonth);
+                    dijit.byId(context.id + "ToDate").set("value", today)
+                    context._onClickFilterApply();
+                }
+            }));*/
+            /*pSubMenuDate.addChild(new MenuSeparator());
+            pSubMenuDate.addChild(new MenuItem({
+                id: "filterOlder",
+                label: "Older",
+                onClick: function (args) {
+                    dijit.byId(context.id + "FromDate").set("value",filterStartDate);
+                    dijit.byId(context.id + "ToDate").set("value", today);
+                    context._onClickFilterApply();
+                }
+            }));*/
             pMenu.addChild(new PopupMenuItem({
                 label: "Filter By:",
                 popup: pSubMenu
-            }));
-            pMenu.addChild(new MenuSeparator());
-            pMenu.addChild(new MenuItem({
-                id: "filterClear",
-                label: "Clear Filter",
-                onClick: function(){context._onFilterClear();}
             }));
             pMenu.startup();
 
@@ -358,7 +456,7 @@ define([
                     field: "Protected",
                     width: "20px",
                     formatter: function (protected) {
-                        if (protected == true){                            
+                        if (protected == true){
                             return ("<img src='../files/img/locked.png'>");
                         }
                         return "";
@@ -372,10 +470,12 @@ define([
                 { name: "State", field: "State", width: "8" },
                 { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
             ]);
+
             var store = new WsWorkunits.WUQuery();
             var objStore = new ObjectStore({ objectStore: store });
             this.workunitsGrid.setStore(objStore);
             this.workunitsGrid.setQuery(this.getFilter());
+            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>No results? Please try another filter.</span>";
 
             var context = this;
             this.workunitsGrid.on("RowDblClick", function (evt) {
@@ -393,9 +493,10 @@ define([
                     var colField = evt.cell.field;
                     var item = this.getItem(idx);
                     var mystring = "item." + colField;
-                    context.onRowContextMenu(idx,item,colField,mystring);                   
+                    context.onRowContextMenu(idx,item,colField,mystring);
                 }
             }, true);
+            var today = new Date();
 
             dojo.connect(this.workunitsGrid.selection, 'onSelected', function (idx) {
                 context.refreshActionState();
@@ -403,6 +504,70 @@ define([
             dojo.connect(this.workunitsGrid.selection, 'onDeselected', function (idx) {
                 context.refreshActionState();
             });
+
+            dojo.connect(dijit.byId(context.id + "FromDate"), 'onClick', function(evt){
+
+            });
+
+            dojo.connect(dijit.byId(context.id + "ToDate"), 'onClick', function(evt){
+                //TODO var cal_1 = new dojox.widget.Calendar({}, dojo.byId("cal_1"));
+            });
+
+            dojo.connect(dijit.byId(context.id + "threeDays"), 'onClick', function(evt){
+                var filterThreeDays = date.add(today, "day",- 3);
+                dijit.byId(context.id + "FromDate").set("value",filterThreeDays);
+                dijit.byId(context.id + "ToDate").set("value",today);
+            });
+
+            dojo.connect(dijit.byId(context.id + "thisWeek"), 'onClick', function(evt){
+                var getToday = today.getDay();
+                var filterThisWeek = date.add(today, "day",- getToday)
+                dijit.byId(context.id + "FromDate").set("value",filterThisWeek);
+                dijit.byId(context.id + "ToDate").set("value",today);
+            });
+
+            /*dojo.connect(dijit.byId(context.id + "twoWeeks"), 'onClick', function(evt){
+                var getToday = today.getDay()*2;
+                alert(getToday)
+                //var filterTwoWeeks = date.add(today, "day",- 14);
+                dijit.byId(context.id + "FromDate").set("value",getToday);
+                dijit.byId(context.id + "ToDate").set("value",today);
+            });*/
+            dojo.connect(dijit.byId(context.id + "thisMonth"), 'onClick', function(evt){
+                var filterDaysGoneBy = today.getDate();
+                var filterThisMonth = date.add(today, "day",- filterDaysGoneBy + 1);
+                var filterDaysOfTheWeek = today.getDay();
+                dijit.byId(context.id + "FromDate").set("value",filterThisMonth);
+                dijit.byId(context.id + "ToDate").set("value",today);
+            });
+            dojo.connect(dijit.byId(context.id + "older"), 'onClick', function(evt){
+                var filterOlderDate = new Date(1970, 0, 1);
+                dijit.byId(context.id + "FromDate").set("value",filterOlderDate);
+                dijit.byId(context.id + "ToDate").set("value",today);
+            });
+            dojo.connect(dijit.byId(context.id + "specify"), 'onClick', function(evt){
+                dijit.byId(context.id +"FromDate").openDropDown();
+                dijit.byId(context.id + "ToDate").set("value",today);
+            });
+           
+            /*
+            var filterStartDate = new Date(1970, 0, 1);
+            
+            var weekday = new Array(7);
+            weekday[0]="Sunday";
+            weekday[1]="Monday";
+            weekday[2]="Tuesday";
+            weekday[3]="Wednesday";
+            weekday[4]="Thursday";
+            weekday[5]="Friday";
+            weekday[6]="Saturday";
+            var getNameOfDay = weekday[today.getDay()];
+
+            /*var filterDaysGoneBy = today.getDate();
+            var filterThisMonth = date.add(today, "day",- filterDaysGoneBy + 1);
+            var filterDaysOfTheWeek = today.getDay();
+
+            alert(filterDaysGoneBy);*/
 
             this.workunitsGrid.startup();
         },
