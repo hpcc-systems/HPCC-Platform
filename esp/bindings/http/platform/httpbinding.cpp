@@ -1447,7 +1447,8 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
         if ((netAddress.length() < 1) || (path.length() < 1))
             throw MakeStringException(-1, "Upload destination not specified.");
 
-        request->readContentToFile(netAddress, path);
+        StringArray fileNames;
+        request->readContentToFile(netAddress, path, fileNames);
         return onFinishUpload(ctx, request, response, serv, method);
     }
     catch (IException* e)
