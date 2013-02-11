@@ -1029,7 +1029,7 @@ CGraphBase::CGraphBase(CJobBase &_job) : job(_job)
 //  sentStartCtx = false;
     sentStartCtx = true; // JCSMORE - disable for now
     parentActivityId = 0;
-    created = connected = started = graphDone = aborted = prepared = false;
+    created = connected = started = graphDone = aborted = prepared = receiving = false;
     startBarrier = waitBarrier = doneBarrier = NULL;
     mpTag = waitBarrierTag = startBarrierTag = doneBarrierTag = TAG_NULL;
     executeReplyTag = TAG_NULL;
@@ -1154,6 +1154,18 @@ bool CGraphBase::fireException(IException *e)
     return job.fireException(e);
 }
 
+bool CGraphBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
+{
+    BooleanOnOff onOff(receiving);
+    return queryJob().queryJobComm().recv(mb, rank, mpTag, sender, timeout);
+}
+
+void CGraphBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
+{
+    if (receiving)
+        queryJob().queryJobComm().cancel(rank, mpTag);
+}
+
 bool CGraphBase::preStart(size32_t parentExtractSz, const byte *parentExtract)
 {
     Owned<IThorActivityIterator> iter = getTraverseIterator();
@@ -1242,13 +1254,15 @@ void CGraphBase::join()
 void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies)
 {
     if (isComplete()) return;
-    if (aborted) throw MakeGraphException(this, 0, "subgraph aborted");
+    if (queryAborted())
+        throw MakeGraphException(this, 0, "subgraph aborted(1)");
     if (!prepare(parentExtractSz, parentExtract, checkDependencies, false, false))
     {
         setComplete();
         return;
     }
-    if (aborted) throw MakeGraphException(this, 0, "subgraph aborted");
+    if (queryAborted())
+        throw MakeGraphException(this, 0, "subgraph aborted(2)");
     Owned<IException> exception;
     try
     {
@@ -1262,7 +1276,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         }
         if (!preStart(parentExtractSz, parentExtract)) return;
         start();
-        if (!wait(aborted?MEDIUMTIMEOUT:INFINITE)) // can't wait indefinetely, query may have aborted and stall, but prudent to wait a short time for underlying graphs to unwind.
+        if (!wait(aborted?MEDIUMTIMEOUT:INFINITE)) // can't wait indefinitely, query may have aborted and stall, but prudent to wait a short time for underlying graphs to unwind.
             GraphPrintLogEx(this, thorlog_null, MCuserWarning, "Graph wait cancelled, aborted=%s", aborted?"true":"false");
         graphDone = true;
     }
@@ -1599,24 +1613,28 @@ bool CGraphBase::wait(unsigned timeout)
 
 void CGraphBase::abort(IException *e)
 {
-    if (aborted) return;
-    crit.enter();
-    abortException.set(e);
-    aborted = true;
-    job.queryJobComm().cancel(0, mpTag);
+    if (aborted)
+        return;
 
-    if (0 == containers.count())
     {
-        Owned<IThorGraphIterator> iter = getChildGraphs();
-        ForEach(*iter)
+        CriticalBlock cb(crit);
+
+        abortException.set(e);
+        aborted = true;
+        cancelReceiveMsg(0, mpTag);
+
+        if (0 == containers.count())
         {
-            CGraphBase &graph = iter->query();
-            graph.abort(e);
+            Owned<IThorGraphIterator> iter = getChildGraphs();
+            ForEach(*iter)
+            {
+                CGraphBase &graph = iter->query();
+                graph.abort(e);
+            }
         }
     }
-    if (started)
+    if (started && !graphDone)
     {
-        crit.leave();
         Owned<IThorActivityIterator> iter = getTraverseIterator();
         ForEach (*iter)
         {
@@ -1629,8 +1647,6 @@ void CGraphBase::abort(IException *e)
         if (doneBarrier)
             doneBarrier->cancel();
     }
-    else
-        crit.leave();
 }
 
 void CGraphBase::GraphPrintLog(const char *format, ...)
