@@ -1231,7 +1231,7 @@ CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const c
 
     resumed = WUActionResume == workunit->getAction();
     fatalHandler.setown(new CFatalHandler(globals->getPropInt("@fatal_timeout", FATAL_TIMEOUT)));
-    querySent = false;
+    querySent = spillsSaved = false;
     nodeDiskUsageCached = false;
 
     StringBuffer pluginsDir;
@@ -1334,7 +1334,7 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
         CMessageBuffer msg;
         if (!queryJobComm().recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT))
         {
-            if (_replyTag) _replyTag = NULL;
+            if (_replyTag) *_replyTag = TAG_NULL;
             StringBuffer tmpStr;
             if (errorMsg)
                 tmpStr.append(": ").append(errorMsg).append(" - ");
@@ -1354,7 +1354,7 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
             EXCLOG(e, NULL);
             throw e.getClear();
         }
-        if (_replyTag) _replyTag = NULL;
+        if (_replyTag) *_replyTag = TAG_NULL;
         bool error;
         msg.read(error);
         if (error)
@@ -1493,6 +1493,56 @@ void CJobMaster::jobDone()
     broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "jobDone");
 }
 
+void CJobMaster::saveSpills()
+{
+    CriticalBlock b(spillCrit);
+    if (spillsSaved)
+        return;
+    spillsSaved = true;
+
+    PROGLOG("Paused, saving spills..");
+    assertex(!queryUseCheckpoints()); // JCSMORE - checkpoints probably need revisiting
+
+    unsigned numSavedSpills = 0;
+    // stash away spills ready for resume, make them owned by workunit in event of abort/delete
+    Owned<IFileUsageIterator> iter = queryTempHandler()->getIterator();
+    ForEach(*iter)
+    {
+        CFileUsageEntry &entry = iter->query();
+        StringAttr tmpName = entry.queryName();
+        Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
+        if (WUGraphComplete == graphProgress->queryNodeState(entry.queryGraphId()))
+        {
+            IArrayOf<IGroup> groups;
+            StringArray clusters;
+            fillClusterArray(*this, tmpName, clusters, groups);
+            Owned<IFileDescriptor> fileDesc = queryThorFileManager().create(*this, tmpName, clusters, groups, true, TDXtemporary|TDWnoreplicate);
+            fileDesc->queryProperties().setPropBool("@pausefile", true); // JCSMORE - mark to keep, may be able to distinguish via other means
+
+            IPropertyTree &props = fileDesc->queryProperties();
+            props.setPropBool("@owned", true);
+            bool blockCompressed=true; // JCSMORE, should come from helper really
+            if (blockCompressed)
+                props.setPropBool("@blockCompressed", true);
+
+            Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fileDesc);
+
+            // NB: This is renaming/moving from temp path
+
+            StringBuffer newName;
+            queryThorFileManager().addScope(*this, tmpName, newName, true, true);
+            verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
+
+            file->attach(newName,userDesc);
+
+            Owned<IWorkUnit> wu = &queryWorkUnit().lock();
+            wu->addFile(newName, &clusters, entry.queryUsage(), entry.queryKind(), queryGraphName());
+            ++numSavedSpills;
+        }
+    }
+    PROGLOG("Paused, %d spill(s) saved.", numSavedSpills);
+}
+
 bool CJobMaster::go()
 {
     class CWorkunitAbortHandler : public CInterface, implements IThreaded
@@ -1586,7 +1636,7 @@ bool CJobMaster::go()
             if (pause)
             {
                 PROGLOG("Pausing job%s", abort?" [now]":"");
-                job.stop(abort);
+                job.pause(abort);
             }
         }
     } workunitPauseHandler(*this, *workunit);
@@ -1668,45 +1718,7 @@ bool CJobMaster::go()
     graphProgress.clear();
 
     if (queryPausing())
-    {
-        assertex(!queryUseCheckpoints()); // JCSMORE - checkpoints probably need revisiting
-
-        // stash away spills ready for resume, make them owned by workunit in event of abort/delete
-        Owned<IFileUsageIterator> iter = queryTempHandler()->getIterator();
-        ForEach(*iter)
-        {
-            CFileUsageEntry &entry = iter->query();
-            StringAttr tmpName = entry.queryName();
-            Owned<IConstWUGraphProgress> graphProgress = getGraphProgress();
-            if (WUGraphComplete == graphProgress->queryNodeState(entry.queryGraphId()))
-            {
-                IArrayOf<IGroup> groups;
-                StringArray clusters;
-                fillClusterArray(*this, tmpName, clusters, groups);
-                Owned<IFileDescriptor> fileDesc = queryThorFileManager().create(*this, tmpName, clusters, groups, true, TDXtemporary|TDWnoreplicate);
-                fileDesc->queryProperties().setPropBool("@pausefile", true); // JCSMORE - mark to keep, may be able to distinguish via other means
-
-                IPropertyTree &props = fileDesc->queryProperties();
-                props.setPropBool("@owned", true);
-                bool blockCompressed=true; // JCSMORE, should come from helper really
-                if (blockCompressed)
-                    props.setPropBool("@blockCompressed", true);
-
-                Owned<IDistributedFile> file = queryDistributedFileDirectory().createNew(fileDesc);
-
-                // NB: This is renaming/moving from temp path
-
-                StringBuffer newName;
-                queryThorFileManager().addScope(*this, tmpName, newName, true, true);
-                verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
-
-                file->attach(newName,userDesc);
-
-                Owned<IWorkUnit> wu = &queryWorkUnit().lock();
-                wu->addFile(newName, &clusters, entry.queryUsage(), entry.queryKind(), queryGraphName());
-            }
-        }
-    }
+        saveSpills();
 
     Owned<IException> jobDoneException;
     try { jobDone(); }
@@ -1723,15 +1735,39 @@ bool CJobMaster::go()
     return allDone;
 }
 
-void CJobMaster::stop(bool doAbort)
+void CJobMaster::pause(bool doAbort)
 {
     pausing = true;
     if (doAbort)
     {
-        queryJobManager().replyException(*this, NULL); 
+        // reply will trigger DAMP_THOR_REPLY_PAUSED to agent, unless all graphs are already complete.
+        queryJobManager().replyException(*this, NULL);
+
+        // abort current graph asynchronously.
+        // After spill files have been saved, trigger timeout handler in case abort doesn't succeed.
         Owned<IException> e = MakeThorException(0, "Unable to recover from pausenow");
+        class CAbortThread : implements IThreaded
+        {
+            CJobMaster &owner;
+            CThreaded threaded;
+            Linked<IException> exception;
+        public:
+            CAbortThread(CJobMaster &_owner, IException *_exception) : owner(_owner), exception(_exception), threaded("SaveSpillThread", this)
+            {
+                threaded.start();
+            }
+            ~CAbortThread()
+            {
+                threaded.join();
+            }
+        // IThreaded
+            virtual void main()
+            {
+                owner.abort(exception);
+            }
+        } abortThread(*this, e);
+        saveSpills();
         fatalHandler->inform(e.getClear());
-        abort(e);
     }
 }
 
@@ -2061,7 +2097,7 @@ bool CMasterGraph::fireException(IException *e)
 void CMasterGraph::abort(IException *e)
 {
     if (aborted) return;
-    try{ CGraphBase::abort(e); }
+    try { CGraphBase::abort(e); }
     catch (IException *e)
     {
         GraphPrintLog(e, "Aborting master graph");
@@ -2069,7 +2105,7 @@ void CMasterGraph::abort(IException *e)
     }
     if (TAG_NULL != bcastTag)
         job.queryJobComm().cancel(0, bcastTag);
-    if (started)
+    if (started && !graphDone)
     {
         try
         {
@@ -2090,7 +2126,7 @@ void CMasterGraph::abort(IException *e)
     if (!queryOwner())
     {
         if (globals->getPropBool("@watchdogProgressEnabled"))
-            queryJobManager().queryDeMonServer()->endGraph(this, true);
+            queryJobManager().queryDeMonServer()->endGraph(this, !queryAborted());
     }
 }
 

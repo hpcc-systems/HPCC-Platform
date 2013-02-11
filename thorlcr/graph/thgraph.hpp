@@ -526,7 +526,7 @@ protected:
     Owned<IPropertyTree> node;
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
-    bool created, connected, started, aborted, graphDone, prepared, sequential;
+    bool created, connected, started, aborted, graphDone, prepared, sequential, receiving;
     bool reinit, sentInitData, sentStartCtx;
     CJobBase &job;
     graph_id graphId;
@@ -633,6 +633,8 @@ public:
     virtual void serializeCreateContexts(MemoryBuffer &mb);
     virtual void serializeStartContexts(MemoryBuffer &mb);
     void reset();
+    bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
+    void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
     void disconnectActivities()
     {
         CGraphElementIterator iter(containers);
