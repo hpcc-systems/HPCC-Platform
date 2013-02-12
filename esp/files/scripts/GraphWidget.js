@@ -158,7 +158,7 @@ require([
             },
 
             getSVG: function () {
-                return this.plugin.getSVG();
+                return this._plugin.getSVG();
             },
 
             getXGMML: function () {
