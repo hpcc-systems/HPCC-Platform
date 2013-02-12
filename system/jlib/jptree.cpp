@@ -3748,26 +3748,25 @@ IXMLReadException *createXmlReadException(int code, const char *msg, const char 
     return new CXMLReadException(code, msg, context, line, offset);
 }
 
-template <typename X>
-class CXMLReaderBase : public CInterface, implements IEntityHelper
+template <typename T>
+class CommonReaderBase : public CInterface
 {
     Linked<ISimpleReadStream> lstream;
     ISimpleReadStream *stream;
     bool bufOwned, nullTerm;
     byte *buf, *bufPtr;
     size32_t bufSize, bufRemaining;
-    StringAttrMapping entityTable;
 protected:
-    XmlReaderOptions xmlReaderOptions;
-    bool ignoreWhiteSpace, noRoot, ignoreNameSpaces;
+    XmlReaderOptions readerOptions;
+    bool ignoreWhiteSpace, noRoot;
     Linked<IPTreeNotifyEvent> iEvent;
     offset_t curOffset;
     unsigned line;
     char nextChar;
-    bool hadXMLDecl;
 
 public:
-    CXMLReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _xmlReaderOptions, size32_t _bufSize=0) : xmlReaderOptions(_xmlReaderOptions), iEvent(&_iEvent), bufSize(_bufSize)
+    CommonReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions, size32_t _bufSize=0) : 
+        readerOptions(_readerOptions), iEvent(&_iEvent), bufSize(_bufSize)
     {
         if (!bufSize) bufSize = 0x8000;
         buf = new byte[bufSize];
@@ -3777,9 +3776,9 @@ public:
         nullTerm = false;
         lstream.set(&_stream);
         stream = &_stream; // for efficiency
-        init();
     }
-    CXMLReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _xmlReaderOptions) : xmlReaderOptions(_xmlReaderOptions), iEvent(&_iEvent)
+    CommonReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions) :
+        readerOptions(_readerOptions), iEvent(&_iEvent)
     {
         bufSize = 0; // not used for direct reads
         stream = NULL;  // not used for direct reads
@@ -3787,9 +3786,9 @@ public:
         nullTerm = false;
         buf = (byte *)_buf;
         bufOwned = false;
-        init();
     }
-    CXMLReaderBase(const void *_buf, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _xmlReaderOptions) : xmlReaderOptions(_xmlReaderOptions), iEvent(&_iEvent)
+    CommonReaderBase(const void *_buf, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions) :
+        readerOptions(_readerOptions), iEvent(&_iEvent)
     {
         bufSize = 0; // not used for direct reads
         stream = NULL;  // not used for direct reads
@@ -3798,30 +3797,27 @@ public:
         nullTerm = true;
         buf = (byte *)_buf;
         bufOwned = false;
-        init();
     }
-    ~CXMLReaderBase()
+    ~CommonReaderBase()
     {
         if (bufOwned)
             delete [] buf;
     }
-
+    IMPLEMENT_IINTERFACE;
 protected:
-    void init()
+    virtual void init()
     {
-        ignoreWhiteSpace = 0 != ((unsigned)xmlReaderOptions & (unsigned)xr_ignoreWhiteSpace);
-        ignoreNameSpaces = 0 != ((unsigned)xmlReaderOptions & (unsigned)xr_ignoreNameSpaces);
-        noRoot = 0 != ((unsigned)xmlReaderOptions & (unsigned)xr_noRoot);
+        ignoreWhiteSpace = 0 != ((unsigned)readerOptions & (unsigned)xr_ignoreWhiteSpace);
+        noRoot = 0 != ((unsigned)readerOptions & (unsigned)xr_noRoot);
         reset();
     }
-    void reset()
+    virtual void reset()
     {
         bufPtr = buf;
         nextChar = 0;
         if (nullTerm || stream)
             bufRemaining = 0;
         curOffset = 0;
-        hadXMLDecl = false;
         line = 0;
     }
     void rewind(size32_t n)
@@ -3874,9 +3870,33 @@ protected:
             error("Unsupported unicode detected in BOM header", false);
         return false;
     }
+    inline void expecting(const char *str)
+    {
+        StringBuffer errorMsg("Expecting \"");
+        error(errorMsg.append(str).append("\"").str());
+    }
+    inline void eos()
+    {
+        error("String terminator hit");
+    }
+    void match(const char *txt, const char *msg=NULL)
+    {
+        const char *c = txt;
+        loop
+        {
+            if (*c == '\0') break;
+            readNext();
+            if (toupper(nextChar) != toupper(*c))
+            {
+                if (msg)
+                    error(msg);
+                throw c;
+            }
+            c++;
+        }
+    }
     void error(const char *msg=NULL, bool giveContext=true, XmlReadExcptCode code=XmlRead_syntax)
     {
-        // NB: there is little validation in parse, error can be late.
         StringBuffer context;
         if (giveContext)
         {
@@ -3893,33 +3913,129 @@ protected:
                 }
             }
             unsigned postLen = std::min(80-preLen, bR);
-            const char *xmlContext = (const char *)(bufPtr - preLen);
-            context.append(preLen, xmlContext);
+            const char *bufferContext = (const char *)(bufPtr - preLen);
+            context.append(preLen, bufferContext);
             context.append("*ERROR*");
-            context.append(postLen, xmlContext+preLen);
+            context.append(postLen, bufferContext+preLen);
         }
         throw createXmlReadException(code, msg, context.str(), line+1, curOffset);
     }
-    inline void expecting(const char *str)
+    inline void readNext()
     {
-        StringBuffer errorMsg("Expecting \"");
-        error(errorMsg.append(str).append("\"").str());
+        if (!readNextToken())
+            error("End of stream encountered whilst parsing", true, XmlRead_EOS);
+        curOffset++;
     }
-    inline void eos()
+    inline bool checkReadNext()
     {
-        error("String terminator hit");
+        if (!readNextToken())
+            return false;
+        curOffset++;
+        return true;
     }
-    void match(const char *txt)
+    inline bool readNextToken();
+    inline bool checkSkipWS()
     {
-        const char *c = txt;
-        loop
-        {
-            if (*c == '\0') break;
-            readNext();
-            if (toupper(nextChar) != toupper(*c))
-                throw c;
-            c++;
-        }
+        while (isspace(nextChar)) if (!checkReadNext()) return false;
+        return true;
+    }
+    inline void skipWS()
+    {
+        while (isspace(nextChar)) readNext();
+    }
+};
+
+class CInstStreamReader { public: }; // only used to ensure different template definitions.
+class CInstBufferReader { public: };
+class CInstStringReader { public: };
+
+template <> inline bool CommonReaderBase<CInstStreamReader>::readNextToken()
+{
+    // do own buffering, to have reasonable error context.
+    if (0 == bufRemaining)
+    {
+        size32_t _bufRemaining = stream->read(bufSize, buf);
+        if (!_bufRemaining)
+            return false;
+        bufRemaining = _bufRemaining;
+        bufPtr = buf;
+    }
+    --bufRemaining;
+    nextChar = *bufPtr++;
+    if (10 == nextChar)
+        line++;
+    return true;
+}
+
+template <> inline bool CommonReaderBase<CInstBufferReader>::readNextToken()
+{
+    if (0 == bufRemaining)
+        return false;
+    --bufRemaining;
+    nextChar = *bufPtr++;
+    if (10 == nextChar)
+        line++;
+    return true;
+}
+
+template <> inline bool CommonReaderBase<CInstStringReader>::readNextToken()
+{
+    nextChar = *bufPtr++;
+    if ('\0' == nextChar)
+    {
+        --bufPtr;
+        return false;
+    }
+    if (10 == nextChar)
+        line++;
+    return true;
+}
+
+template <typename X>
+class CXMLReaderBase : public CommonReaderBase<X>, implements IEntityHelper
+{
+    StringAttrMapping entityTable;
+protected:
+    bool ignoreNameSpaces;
+    bool hadXMLDecl;
+
+public:
+    typedef CommonReaderBase<X> COMMON;
+    using COMMON::nextChar;
+    using COMMON::readNext;
+    using COMMON::expecting;
+    using COMMON::match;
+    using COMMON::error;
+    using COMMON::skipWS;
+    using COMMON::rewind;
+    using COMMON::readerOptions;
+
+    CXMLReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _xmlReaderOptions, size32_t _bufSize=0)
+        : CommonReaderBase<X>(_stream, _iEvent, _xmlReaderOptions, _bufSize)
+    {
+    }
+    CXMLReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _xmlReaderOptions)
+        : CommonReaderBase<X>(_buf, bufLength, _iEvent, _xmlReaderOptions)
+    {
+    }
+    CXMLReaderBase(const void *_buf, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _xmlReaderOptions)
+        : CommonReaderBase<X>(_buf, _iEvent, _xmlReaderOptions)
+    {
+    }
+    ~CXMLReaderBase()
+    {
+    }
+    IMPLEMENT_IINTERFACE;
+protected:
+    virtual void init()
+    {
+        ignoreNameSpaces = 0 != ((unsigned) readerOptions & (unsigned)xr_ignoreNameSpaces);
+        COMMON::init();
+    }
+    virtual void reset()
+    {
+        hadXMLDecl = false;
+        COMMON::reset();
     }
     void readID(StringBuffer &id)
     {
@@ -4215,30 +4331,6 @@ protected:
         }
         error("Bad comment syntax");
     }
-    inline void readNext()
-    {
-        if (!readNextToken())
-            error("End of stream encountered whilst parsing", true, XmlRead_EOS);
-        curOffset++;
-    }
-    inline bool checkReadNext()
-    {
-        if (!readNextToken())
-            return false;
-        curOffset++;
-        return true;
-    }
-    inline bool readNextToken();
-    inline bool checkSkipWS()
-    {
-        while (isspace(nextChar)) if (!checkReadNext()) return false;
-        return true;
-    }
-    inline void skipWS()
-    {
-        while (isspace(nextChar)) readNext();
-    }
-
     const char *_decodeXML(unsigned read, const char *startMark, StringBuffer &ret, unsigned len)
     {
         const char *errMark = NULL;
@@ -4262,110 +4354,65 @@ protected:
     }
 };
 
-class CXMLStream { public: }; // only used to ensure different template definitions.
-class CXMLBuffer { public: }; 
-class CXMLString { public: }; 
-
-template <> inline bool CXMLReaderBase<CXMLStream>::readNextToken()
-{
-    // do own buffering, to have reasonable error context.
-    if (0 == bufRemaining)
-    {
-        size32_t _bufRemaining = stream->read(bufSize, buf);
-        if (!_bufRemaining)
-            return false;
-        bufRemaining = _bufRemaining;
-        bufPtr = buf;
-    }
-    --bufRemaining;
-    nextChar = *bufPtr++;
-    if (10 == nextChar)
-        line++;
-    return true;
-}
-
-template <> inline bool CXMLReaderBase<CXMLBuffer>::readNextToken()
-{
-    if (0 == bufRemaining)
-        return false;
-    --bufRemaining;
-    nextChar = *bufPtr++;
-    if (10 == nextChar)
-        line++;
-    return true;
-}
-
-template <> inline bool CXMLReaderBase<CXMLString>::readNextToken()
-{
-    nextChar = *bufPtr++;
-    if ('\0' == nextChar)
-    {
-        --bufPtr;
-        return false;
-    }
-    if (10 == nextChar)
-        line++;
-    return true;
-}
-
 
 template <class X>
 class CXMLReader : public CXMLReaderBase<X>, implements IXMLReader
 {
+    bool rootTerminated;
+    StringBuffer attrName, attrval;
+    StringBuffer tmpStr;
+
+public:
+    typedef CommonReaderBase<X> COMMON;
+    using COMMON::nextChar;
+    using COMMON::readNext;
+    using COMMON::expecting;
+    using COMMON::match;
+    using COMMON::error;
+    using COMMON::skipWS;
+    using COMMON::checkBOM;
+    using COMMON::checkReadNext;
+    using COMMON::checkSkipWS;
+    using COMMON::eos;
+    using COMMON::curOffset;
+    using COMMON::noRoot;
+    using COMMON::ignoreWhiteSpace;
+    using COMMON::iEvent;
     typedef CXMLReaderBase<X> PARENT;
-    using PARENT::checkBOM;
-    using PARENT::readNext;
-    using PARENT::checkReadNext;
-    using PARENT::checkSkipWS;
-    using PARENT::expecting;
-    using PARENT::error;
-    using PARENT::eos;
     using PARENT::parseDirective;
     using PARENT::parseOther;
     using PARENT::parsePI;
     using PARENT::parsePIOrDecl;
     using PARENT::parseComment;
     using PARENT::_decodeXML;
-
-    using PARENT::skipWS;
-    using PARENT::nextChar;
-    using PARENT::curOffset;
-    using PARENT::noRoot;
-    using PARENT::ignoreWhiteSpace;
     using PARENT::ignoreNameSpaces;
-    using PARENT::iEvent;
     using PARENT::hadXMLDecl;
 
-    bool rootTerminated;
-    StringBuffer attrName, attrval;
-    StringBuffer tmpStr;
-
-public:
     IMPLEMENT_IINTERFACE;
 
     CXMLReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions, size32_t bufSize=0)
         : PARENT(stream, iEvent, xmlReaderOptions, bufSize)
     {
-        init();
+        this->init();
     }
     CXMLReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions)
         : PARENT(buf, bufLength, iEvent, xmlReaderOptions)
     {
-        init();
+        this->init();
     }
     CXMLReader(const void *buf, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions)
         : PARENT(buf, iEvent, xmlReaderOptions)
     {
-        init();
+        this->init();
     }
 
-    void init()
+    virtual void init()
     {
         attrName.append('@');
-        reset();
+        PARENT::init();
     }
     
-    void reset()
+    virtual void reset()
     {
         PARENT::reset();
         rootTerminated = false;
@@ -4589,28 +4636,29 @@ restart:
 template <class X>
 class CPullXMLReader : public CXMLReaderBase<X>, implements IPullXMLReader
 {
+    typedef CommonReaderBase<X> COMMON;
+    using COMMON::nextChar;
+    using COMMON::readNext;
+    using COMMON::expecting;
+    using COMMON::match;
+    using COMMON::error;
+    using COMMON::skipWS;
+    using COMMON::checkBOM;
+    using COMMON::checkReadNext;
+    using COMMON::checkSkipWS;
+    using COMMON::eos;
+    using COMMON::curOffset;
+    using COMMON::noRoot;
+    using COMMON::ignoreWhiteSpace;
+    using COMMON::iEvent;
     typedef CXMLReaderBase<X> PARENT;
-    using PARENT::checkBOM;
-    using PARENT::readNext;
-    using PARENT::checkReadNext;
-    using PARENT::checkSkipWS;
-    using PARENT::expecting;
-    using PARENT::error;
-    using PARENT::eos;
     using PARENT::parseDirective;
     using PARENT::parseOther;
     using PARENT::parsePI;
     using PARENT::parsePIOrDecl;
     using PARENT::parseComment;
     using PARENT::_decodeXML;
-
-    using PARENT::skipWS;
-    using PARENT::nextChar;
-    using PARENT::curOffset;
-    using PARENT::noRoot;
-    using PARENT::ignoreWhiteSpace;
     using PARENT::ignoreNameSpaces;
-    using PARENT::iEvent;
     using PARENT::hadXMLDecl;
 
     class CStateInfo : public CInterface
@@ -5002,7 +5050,7 @@ public:
 
     virtual void reset()
     {
-        CXMLReaderBase<X>::reset();
+        PARENT::reset();
         stack.kill();
         init();
     }
@@ -5010,20 +5058,20 @@ public:
 
 IXMLReader *createXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions, size32_t bufSize)
 {
-    class CXMLStreamReader : public CXMLReader<CXMLStream>
+    class CXMLStreamReader : public CXMLReader<CInstStreamReader>
     {
     public:
-        CXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions, size32_t bufSize=0) : CXMLReader<CXMLStream>(stream, iEvent, xmlReaderOptions, bufSize) { }
+        CXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions, size32_t bufSize=0) : CXMLReader<CInstStreamReader>(stream, iEvent, xmlReaderOptions, bufSize) { }
     };
     return new CXMLStreamReader(stream, iEvent, xmlReaderOptions, bufSize);
 }
 
 IXMLReader *createXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions)
 {
-    class CXMLStringReader : public CXMLReader<CXMLString>
+    class CXMLStringReader : public CXMLReader<CInstStringReader>
     {
     public:
-        CXMLStringReader(const void *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions) : CXMLReader<CXMLString>(xml, iEvent, xmlReaderOptions) { }
+        CXMLStringReader(const void *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions) : CXMLReader<CInstStringReader>(xml, iEvent, xmlReaderOptions) { }
     };
     if (NULL == xml)
         throw createXmlReadException(XmlRead_syntax, "Null string passed to createXMLStringReader", NULL, 0, 0);
@@ -5032,10 +5080,10 @@ IXMLReader *createXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, Xm
 
 IXMLReader *createXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions)
 {
-    class CXMLBufferReader : public CXMLReader<CXMLBuffer>
+    class CXMLBufferReader : public CXMLReader<CInstBufferReader>
     {
     public:
-        CXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions) : CXMLReader<CXMLBuffer>(buf, bufLength, iEvent, xmlReaderOptions) { }
+        CXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions) : CXMLReader<CInstBufferReader>(buf, bufLength, iEvent, xmlReaderOptions) { }
     };
     return new CXMLBufferReader(buf, bufLength, iEvent, xmlReaderOptions);
 }
@@ -5043,30 +5091,30 @@ IXMLReader *createXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNot
 
 IPullXMLReader *createPullXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions, size32_t bufSize)
 {
-    class CXMLStreamReader : public CPullXMLReader<CXMLStream>
+    class CXMLStreamReader : public CPullXMLReader<CInstStreamReader>
     {
     public:
-        CXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions, size32_t bufSize=0) : CPullXMLReader<CXMLStream>(stream, iEvent, xmlReaderOptions, bufSize) { }
+        CXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions, size32_t bufSize=0) : CPullXMLReader<CInstStreamReader>(stream, iEvent, xmlReaderOptions, bufSize) { }
     };
     return new CXMLStreamReader(stream, iEvent, xmlReaderOptions, bufSize);
 }
 
 IPullXMLReader *createPullXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions)
 {
-    class CXMLStringReader : public CPullXMLReader<CXMLString>
+    class CXMLStringReader : public CPullXMLReader<CInstStringReader>
     {
     public:
-        CXMLStringReader(const void *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions) : CPullXMLReader<CXMLString>(xml, iEvent, xmlReaderOptions) { }
+        CXMLStringReader(const void *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions) : CPullXMLReader<CInstStringReader>(xml, iEvent, xmlReaderOptions) { }
     };
     return new CXMLStringReader(xml, iEvent, xmlReaderOptions);
 }
 
 IPullXMLReader *createPullXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions)
 {
-    class CXMLBufferReader : public CPullXMLReader<CXMLBuffer>
+    class CXMLBufferReader : public CPullXMLReader<CInstBufferReader>
     {
     public:
-        CXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions) : CPullXMLReader<CXMLBuffer>(buf, bufLength, iEvent, xmlReaderOptions) { }
+        CXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions) : CPullXMLReader<CInstBufferReader>(buf, bufLength, iEvent, xmlReaderOptions) { }
     };
     return new CXMLBufferReader(buf, bufLength, iEvent, xmlReaderOptions);
 }
@@ -5975,177 +6023,40 @@ typedef enum _ptElementType
 } ptElementType;
 
 template <typename X>
-class CJSONReaderBase : public CInterface
+class CJSONReaderBase : public CommonReaderBase<X>
 {
-    Linked<ISimpleReadStream> lstream;
-    ISimpleReadStream *stream;
-    bool bufOwned, nullTerm;
-    byte *buf, *bufPtr;
-    size32_t bufSize, bufRemaining;
-protected:
-    XmlReaderOptions readerOptions;
-    bool ignoreWhiteSpace, noRoot;
-    Linked<IPTreeNotifyEvent> iEvent;
-    offset_t curOffset;
-    unsigned line;
-    char nextChar;
-
 public:
-    CJSONReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions, size32_t _bufSize=0) : readerOptions(_readerOptions), iEvent(&_iEvent), bufSize(_bufSize)
+    typedef CommonReaderBase<X> COMMON;
+    using COMMON::init;
+    using COMMON::reset;
+    using COMMON::nextChar;
+    using COMMON::readNext;
+    using COMMON::expecting;
+    using COMMON::match;
+    using COMMON::error;
+    using COMMON::skipWS;
+    using COMMON::rewind;
+    using COMMON::ignoreWhiteSpace;
+
+    CJSONReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions, size32_t _bufSize=0) :
+      CommonReaderBase<X>(_stream, _iEvent, _readerOptions, _bufSize)
     {
-        if (!bufSize) bufSize = 0x8000;
-        buf = new byte[bufSize];
-        bufRemaining = 0;
-        curOffset = 0;
-        bufOwned = true;
-        nullTerm = false;
-        lstream.set(&_stream);
-        stream = &_stream; // for efficiency
-        init();
     }
-    CJSONReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions) : readerOptions(_readerOptions), iEvent(&_iEvent)
+    CJSONReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions) :
+        CommonReaderBase<X>(_buf, bufLength, _iEvent, _readerOptions)
     {
-        bufSize = 0; // not used for direct reads
-        stream = NULL;  // not used for direct reads
-        bufRemaining = bufLength;
-        nullTerm = false;
-        buf = (byte *)_buf;
-        bufOwned = false;
-        init();
     }
-    CJSONReaderBase(const void *_buf, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions) : readerOptions(_readerOptions), iEvent(&_iEvent)
+    CJSONReaderBase(const void *_buf, IPTreeNotifyEvent &_iEvent, XmlReaderOptions _readerOptions) :
+        CommonReaderBase<X>(_buf, _iEvent, _readerOptions)
     {
-        bufSize = 0; // not used for direct reads
-        stream = NULL;  // not used for direct reads
-        curOffset = 0;
-        bufRemaining = 0;
-        nullTerm = true;
-        buf = (byte *)_buf;
-        bufOwned = false;
-        init();
     }
     ~CJSONReaderBase()
     {
-        if (bufOwned)
-            delete [] buf;
     }
 
+    IMPLEMENT_IINTERFACE;
+
 protected:
-    void init()
-    {
-        ignoreWhiteSpace = 0 != ((unsigned)readerOptions & (unsigned)xr_ignoreWhiteSpace);
-        noRoot = 0 != ((unsigned)readerOptions & (unsigned)xr_noRoot);
-        reset();
-    }
-    void reset()
-    {
-        bufPtr = buf;
-        nextChar = 0;
-        if (nullTerm || stream)
-            bufRemaining = 0;
-        curOffset = 0;
-        line = 0;
-    }
-    void rewind(size32_t n)
-    {
-        assertex(curOffset >= n);
-        if (!n) return;
-        curOffset -= n;
-        size32_t d = (size32_t)(bufPtr-buf);
-        if (n > d) n = d;
-        if (!nullTerm)
-            bufRemaining += n;
-        loop
-        {
-            --bufPtr;
-            if (!--n) break;
-            if (10 == *bufPtr) --line;
-        }
-    }
-    bool checkBOM()
-    {
-        bool unsupportedUnicode = false;
-        bool utf8 = false;
-        switch ((unsigned char)nextChar)
-        {
-        case 0xff:
-            readNext();
-            if (0xfe == (unsigned char)nextChar)
-                unsupportedUnicode = true;
-            break;
-        case 0xfe:
-            readNext();
-            if (0xff == (unsigned char)nextChar)
-                unsupportedUnicode = true;
-            break;
-        case 0xef:
-            readNext();
-            if (0xbb == (unsigned char)nextChar)
-            {
-                readNext();
-                if (0xbf == (unsigned char)nextChar)
-                    utf8 = true;
-            }
-            break;
-        default:
-            break;
-        }
-        if (utf8)
-            return true;
-        else if (unsupportedUnicode)
-            error("Unsupported unicode detected in BOM header", false);
-        return false;
-    }
-    void error(const char *msg=NULL, bool giveContext=true, XmlReadExcptCode code=XmlRead_syntax)
-    {
-        StringBuffer context;
-        if (giveContext)
-        {
-            size32_t bufPos = (size32_t)(bufPtr-buf);
-            unsigned preLen = std::min(40U, bufPos);
-            size32_t bR = bufRemaining;
-            if (nullTerm)
-            {
-                byte *tPtr = bufPtr;
-                while (bR<40)
-                {
-                    if ('\0' == *tPtr++) break;
-                    bR++;
-                }
-            }
-            unsigned postLen = std::min(80-preLen, bR);
-            const char *jsonContext = (const char *)(bufPtr - preLen);
-            context.append(preLen, jsonContext);
-            context.append("*ERROR*");
-            context.append(postLen, jsonContext+preLen);
-        }
-        throw createXmlReadException(code, msg, context.str(), line+1, curOffset);
-    }
-    inline void expecting(const char *str)
-    {
-        StringBuffer errorMsg("Expecting \"");
-        error(errorMsg.append(str).append("\"").str());
-    }
-    inline void eos()
-    {
-        error("String terminator hit");
-    }
-    void match(const char *txt, const char *msg=NULL)
-    {
-        const char *c = txt;
-        loop
-        {
-            if (*c == '\0') break;
-            readNext();
-            if (toupper(nextChar) != toupper(*c))
-            {
-                if (msg)
-                    error(msg);
-                throw c;
-            }
-            c++;
-        }
-    }
     inline StringBuffer &appendChar(StringBuffer &id, char c)
     {
         int charlen = validJSONUtf8ChrLen(c);
@@ -6234,32 +6145,6 @@ protected:
         }
         return type;
     }
-    inline void readNext()
-    {
-        if (!readNextToken())
-            error("End of stream encountered whilst parsing", true, XmlRead_EOS);
-        curOffset++;
-    }
-    inline bool checkReadNext()
-    {
-        if (!readNextToken())
-            return false;
-        curOffset++;
-        return true;
-    }
-    inline bool readNextToken();
-    inline bool checkSkipWS()
-    {
-        while (isspace(nextChar))
-            if (!checkReadNext())
-                return false;
-        return true;
-    }
-    inline void skipWS()
-    {
-        while (isspace(nextChar))
-            readNext();
-    }
 
     const char *_decodeJSON(unsigned read, const char *startMark, StringBuffer &ret, unsigned len)
     {
@@ -6282,52 +6167,6 @@ protected:
         return NULL; // will never get here.
     }
 };
-
-class CJSONStream { public: }; // only used to ensure different template definitions.
-class CJSONBuffer { public: };
-class CJSONString { public: };
-
-template <> inline bool CJSONReaderBase<CJSONStream>::readNextToken()
-{
-    // do own buffering, to have reasonable error context.
-    if (0 == bufRemaining)
-    {
-        size32_t _bufRemaining = stream->read(bufSize, buf);
-        if (!_bufRemaining)
-            return false;
-        bufRemaining = _bufRemaining;
-        bufPtr = buf;
-    }
-    --bufRemaining;
-    nextChar = *bufPtr++;
-    if ('\n' == nextChar)
-        line++;
-    return true;
-}
-
-template <> inline bool CJSONReaderBase<CJSONBuffer>::readNextToken()
-{
-    if (0 == bufRemaining)
-        return false;
-    --bufRemaining;
-    nextChar = *bufPtr++;
-    if ('\n' == nextChar)
-        line++;
-    return true;
-}
-
-template <> inline bool CJSONReaderBase<CJSONString>::readNextToken()
-{
-    nextChar = *bufPtr++;
-    if ('\0' == nextChar)
-    {
-        --bufPtr;
-        return false;
-    }
-    if ('\n' == nextChar)
-        line++;
-    return true;
-}
 
 template <class X>
 class CJSONReader : public CJSONReaderBase<X>, implements IXMLReader
@@ -6360,25 +6199,17 @@ public:
     CJSONReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0)
         : PARENT(stream, iEvent, readerOptions, bufSize)
     {
-        init();
+        this->init();
     }
     CJSONReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
         : PARENT(buf, bufLength, iEvent, readerOptions)
     {
-        init();
+        this->init();
     }
     CJSONReader(const void *buf, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
         : PARENT(buf, iEvent, readerOptions)
     {
-        init();
-    }
-    void init()
-    {
-        reset();
-    }
-    void reset()
-    {
-        PARENT::reset();
+        this->init();
     }
     void readValueNotify(const char *name, bool skipAttributes)
     {
@@ -6600,17 +6431,17 @@ public:
     CPullJSONReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0)
         : CJSONReaderBase<X>(stream, iEvent, readerOptions, bufSize)
     {
-        init();
+        this->init();
     }
     CPullJSONReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
         : CJSONReaderBase<X>(buf, bufLength, iEvent, readerOptions)
     {
-        init();
+        this->init();
     }
     CPullJSONReader(const void *buf, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
         : CJSONReaderBase<X>(buf, iEvent, readerOptions)
     {
-        init();
+        this->init();
     }
 
     ~CPullJSONReader()
@@ -6621,11 +6452,12 @@ public:
             delete &freeStateInfo.item(i2);
     }
 
-    void init()
+    virtual void init()
     {
         state = headerStart;
         stateInfo = NULL;
         endOfRoot = false;
+        PARENT::init();
     }
 
     inline void checkDelimiter(const char *msg=",")
@@ -6931,7 +6763,7 @@ public:
 
     virtual void reset()
     {
-        CJSONReaderBase<X>::reset();
+        PARENT::reset();
         stack.kill();
         init();
     }
@@ -6939,20 +6771,20 @@ public:
 
 IXMLReader *createJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize)
 {
-    class CJSONStreamReader : public CJSONReader<CJSONStream>
+    class CJSONStreamReader : public CJSONReader<CInstStreamReader>
     {
     public:
-        CJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0) : CJSONReader<CJSONStream>(stream, iEvent, readerOptions, bufSize) { }
+        CJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0) : CJSONReader<CInstStreamReader>(stream, iEvent, readerOptions, bufSize) { }
     };
     return new CJSONStreamReader(stream, iEvent, readerOptions, bufSize);
 }
 
 IXMLReader *createJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
 {
-    class CJSONStringReader : public CJSONReader<CJSONString>
+    class CJSONStringReader : public CJSONReader<CInstStringReader>
     {
     public:
-        CJSONStringReader(const void *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CJSONReader<CJSONString>(json, iEvent, readerOptions) { }
+        CJSONStringReader(const void *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CJSONReader<CInstStringReader>(json, iEvent, readerOptions) { }
     };
     if (NULL == json)
         throw createXmlReadException(XmlRead_syntax, "Null string passed to createJSONStringReader", NULL, 0, 0);
@@ -6961,10 +6793,10 @@ IXMLReader *createJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, 
 
 IXMLReader *createJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
 {
-    class CJSONBufferReader : public CJSONReader<CJSONBuffer>
+    class CJSONBufferReader : public CJSONReader<CInstBufferReader>
     {
     public:
-        CJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CJSONReader<CJSONBuffer>(buf, bufLength, iEvent, readerOptions) { }
+        CJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CJSONReader<CInstBufferReader>(buf, bufLength, iEvent, readerOptions) { }
     };
     return new CJSONBufferReader(buf, bufLength, iEvent, readerOptions);
 }
@@ -6972,30 +6804,30 @@ IXMLReader *createJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNo
 
 IPullXMLReader *createPullJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize)
 {
-    class CJSONStreamReader : public CPullJSONReader<CJSONStream>
+    class CJSONStreamReader : public CPullJSONReader<CInstStreamReader>
     {
     public:
-        CJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0) : CPullJSONReader<CJSONStream>(stream, iEvent, readerOptions, bufSize) { }
+        CJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions, size32_t bufSize=0) : CPullJSONReader<CInstStreamReader>(stream, iEvent, readerOptions, bufSize) { }
     };
     return new CJSONStreamReader(stream, iEvent, readerOptions, bufSize);
 }
 
 IPullXMLReader *createPullJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
 {
-    class CJSONStringReader : public CPullJSONReader<CJSONString>
+    class CJSONStringReader : public CPullJSONReader<CInstStringReader>
     {
     public:
-        CJSONStringReader(const void *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CPullJSONReader<CJSONString>(json, iEvent, readerOptions) { }
+        CJSONStringReader(const void *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CPullJSONReader<CInstStringReader>(json, iEvent, readerOptions) { }
     };
     return new CJSONStringReader(json, iEvent, readerOptions);
 }
 
 IPullXMLReader *createPullJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions)
 {
-    class CJSONBufferReader : public CPullJSONReader<CJSONBuffer>
+    class CJSONBufferReader : public CPullJSONReader<CInstBufferReader>
     {
     public:
-        CJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CPullJSONReader<CJSONBuffer>(buf, bufLength, iEvent, readerOptions) { }
+        CJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions) : CPullJSONReader<CInstBufferReader>(buf, bufLength, iEvent, readerOptions) { }
     };
     return new CJSONBufferReader(buf, bufLength, iEvent, readerOptions);
 }
