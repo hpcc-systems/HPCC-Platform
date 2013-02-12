@@ -40,7 +40,7 @@ const char *joinActName[4] = { "LOOKUPJOIN", "ALLJOIN", "LOOKUPDENORMALIZE", "AL
 #define MAX_SEND_SIZE 0x100000 // 1MB
 #define MAX_QUEUE_BLOCKS 5
 
-enum broadcast_code { bcast_none, bcast_send, bcast_sendStopping, bcast_stop };
+enum broadcast_code { bcast_none, bcast_send, bcast_sendStopping, bcast_stop, bcast_done };
 class CSendItem : public CSimpleInterface
 {
     CMessageBuffer msg;
@@ -88,8 +88,8 @@ class CBroadcaster : public CSimpleInterface
     IBCastReceive *recvInterface;
     Semaphore allDoneSem;
     CriticalSection allDoneLock, bcastOtherCrit;
-    bool allDone, allDoneWaiting, allRequestStop, stopping;
-    Owned<IBitSet> slavesDone, slavesStopping;
+    bool allDone, allDoneWaiting, allRequestStop, stopping, stopRecv;
+    Owned<IBitSet> slavesDone, slavesStopping, allSlavesDone;
 
     class CRecv : implements IThreaded
     {
@@ -99,7 +99,20 @@ class CBroadcaster : public CSimpleInterface
         CRecv(CBroadcaster &_broadcaster) : threaded("CBroadcaster::CRecv", this), broadcaster(_broadcaster)
         {
         }
+        ~CRecv()
+        {
+            stop();
+        }
         void start() { threaded.start(); }
+        void stop()
+        {
+            broadcaster.cancelReceive();
+            threaded.join();
+        }
+        void wait()
+        {
+            threaded.join();
+        }
     // IThreaded
         virtual void main() { broadcaster.recvLoop(); }
     } receiver;
@@ -132,6 +145,12 @@ class CBroadcaster : public CSimpleInterface
             }
             threaded.join();
         }
+        void wait()
+        {
+            ActPrintLog(&broadcaster.activity, "CSend::wait(), messages to send: %d", broadcastQueue.ordinality());
+            addBlock(NULL);
+            threaded.join();
+        }
     // IThreaded
         virtual void main()
         {
@@ -142,6 +161,7 @@ class CBroadcaster : public CSimpleInterface
                     break;
                 broadcaster.broadcastToOthers(sendItem);
             }
+            ActPrintLog(&broadcaster.activity, "Sender stopped");
         }
     } sender;
 
@@ -205,7 +225,7 @@ class CBroadcaster : public CSimpleInterface
                 if (0 == sendRecv) // send
                 {
 #ifdef _TRACEBROADCAST
-                    ActPrintLog(&activity, "Broadcast node %d Sending to node %d size %d", myNode, t, sendLen);
+                    ActPrintLog(&activity, "Broadcast node %d Sending to node %d, origin %d, size %d, code=%d", myNode, t, origin, sendLen, (unsigned)sendItem->queryCode());
 #endif
                     CMessageBuffer &msg = sendItem->queryMsg();
                     msg.setReplyTag(rt); // simulate sendRecv
@@ -214,7 +234,7 @@ class CBroadcaster : public CSimpleInterface
                 else // recv reply
                 {
 #ifdef _TRACEBROADCAST
-                    ActPrintLog(&activity, "Broadcast node %d Sent to node %d size %d received ack", myNode, t, sendLen);
+                    ActPrintLog(&activity, "Broadcast node %d Sent to node %d, origin %d, size %d, code=%d - received ack", myNode, t, origin, sendLen, (unsigned)sendItem->queryCode());
 #endif
                     if (!activity.receiveMsg(replyMsg, t, rt))
                         break;
@@ -223,10 +243,15 @@ class CBroadcaster : public CSimpleInterface
         }
     }
     // called by CRecv thread
+    void cancelReceive()
+    {
+        stopRecv = true;
+        activity.cancelReceiveMsg(RANK_ALL, mpTag);
+    }
     void recvLoop()
     {
         CMessageBuffer msg;
-        while (!activity.queryAbortSoon())
+        while (!stopRecv && !activity.queryAbortSoon())
         {
             rank_t sendRank;
             if (!activity.receiveMsg(msg, RANK_ALL, mpTag, &sendRank))
@@ -235,28 +260,51 @@ class CBroadcaster : public CSimpleInterface
             CMessageBuffer ackMsg;
             Owned<CSendItem> sendItem = new CSendItem(msg);
 #ifdef _TRACEBROADCAST
-            ActPrintLog(&activity, "Broadcast node %d received from node %d size %d, code=%d", myNode, (unsigned)sendRank, sendItem->length(), (unsigned)sendItem->queryCode());
+            ActPrintLog(&activity, "Broadcast node %d received from node %d, origin node %d, size %d, code=%d", myNode, (unsigned)sendRank, sendItem->queryOrigin(), sendItem->length(), (unsigned)sendItem->queryCode());
 #endif
             comm.send(ackMsg, sendRank, replyTag); // send ack
             sender.addBlock(sendItem.getLink());
             assertex(myNode != sendItem->queryOrigin());
             switch (sendItem->queryCode())
             {
+                case bcast_done:
+                {
+                    allSlavesDone->set(sendItem->queryOrigin()-1, true);
+                    bool done = allSlavesDone->scan(0, false) == slaves;
+                    if (done)
+                    {
+                        ActPrintLog(&activity, "Receiver, all slaves done");
+                        // All slaves have broadcast done, receiver thread no longer needed
+                        // sender thread will still be forwarding 'bcast_done' packets to others
+                        return;
+                    }
+                    break;
+                }
                 case bcast_stop:
                 {
                     CriticalBlock b(allDoneLock);
                     if (slaveStop(sendItem->queryOrigin()-1) || allDone)
                     {
                         recvInterface->bCastReceive(NULL); // signal last
-                        return; // finished
+
+                        ActPrintLog(&activity, "recvLoop, received last slaveStop");
+
+                        // This slave is done, but will still be acting as a broadcast for others.
+                        allSlavesDone->set(myNode-1, true);
+
+                        // Tell all others that this slave is done
+                        Owned<CSendItem> sendItem = newSendItem(bcast_done);
+                        sender.addBlock(sendItem.getClear());
                     }
                     break;
                 }
                 case bcast_sendStopping:
+                {
                     slavesStopping->set(sendItem->queryOrigin()-1, true);
                     // allRequestStop=true, if I'm stopping and all others have requested also
                     allRequestStop = slavesStopping->scan(0, false) == slaves;
                     // fall through
+                }
                 case bcast_send:
                 {
                     if (!allRequestStop) // don't care if all stopping
@@ -271,11 +319,12 @@ class CBroadcaster : public CSimpleInterface
 public:
     CBroadcaster(CActivityBase &_activity) : activity(_activity), receiver(*this), sender(*this), comm(_activity.queryJob().queryJobComm())
     {
-        allDone = allDoneWaiting = allRequestStop = stopping = false;
+        allDone = allDoneWaiting = allRequestStop = stopping = stopRecv = false;
         myNode = activity.queryJob().queryMyRank();
         slaves = activity.queryJob().querySlaves();
         slavesDone.setown(createBitSet());
         slavesStopping.setown(createBitSet());
+        allSlavesDone.setown(createBitSet());
         mpTag = TAG_NULL;
         recvInterface = NULL;
     }
@@ -285,6 +334,7 @@ public:
         if (stopping)
             slavesStopping->set(myNode-1, true);
         recvInterface = _recvInterface;
+        stopRecv = false;
         mpTag = _mpTag;
         receiver.start();
         sender.start();
@@ -294,6 +344,7 @@ public:
         allDone = allDoneWaiting = allRequestStop = stopping = false;
         slavesDone->reset();
         slavesStopping->reset();
+        allSlavesDone->reset();
     }
     CSendItem *newSendItem(broadcast_code code)
     {
@@ -315,14 +366,15 @@ public:
     void end()
     {
         waitReceiverDone();
-        sender.stop();
-        // NB: receiver will have already stopped
+        receiver.wait();
+        sender.wait();
     }
     void cancel()
     {
         allDoneWaiting = false;
         allDone = true;
         sender.stop();
+        receiver.stop();
         allDoneSem.signal();
     }
     bool send(CSendItem *sendItem)
@@ -332,6 +384,7 @@ public:
     }
     void final()
     {
+        ActPrintLog(&activity, "CBroadcaster::final()");
         Owned<CSendItem> sendItem = newSendItem(bcast_stop);
         send(sendItem);
     }
