@@ -1,12 +1,13 @@
 define([
 	"dojo/_base/declare", // declare
 	"dojo/_base/lang", // lang.mixin
+    "dojo/dom",
     "dojo/hash",
     "dojo/router",
 
     "dijit/registry",
     "dijit/layout/_LayoutWidget"
-], function (declare, lang, hash, router,
+], function (declare, lang, dom, hash, router,
     registry, _LayoutWidget) {
 
     return declare("_TabContainerWidget", [_LayoutWidget], {
@@ -182,7 +183,10 @@ define([
             }
             var currSel = this.getSelectedChild();
             if (currSel != child) {
-                this._tabContainer.selectChild(child);
+                var nodeExists = dom.byId(child);
+                if (nodeExists) {
+                    this._tabContainer.selectChild(nodeExists);
+                }
             } else {
                 this.onNewTabSelection({
                     oldWidget: null,
