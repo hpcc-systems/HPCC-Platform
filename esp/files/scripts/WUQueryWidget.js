@@ -1,32 +1,40 @@
 /*##############################################################################
-#	HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#   HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
 #
-#	Licensed under the Apache License, Version 2.0 (the "License");
-#	you may not use this file except in compliance with the License.
-#	You may obtain a copy of the License at
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
 #
-#	   http://www.apache.org/licenses/LICENSE-2.0
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-#	Unless required by applicable law or agreed to in writing, software
-#	distributed under the License is distributed on an "AS IS" BASIS,
-#	WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#	See the License for the specific language governing permissions and
-#	limitations under the License.
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/array",
     "dojo/dom",
+    "dojo/on",
+    "dojo/dom-class",
     "dojo/data/ObjectStore",
     "dojo/date",
-    "dojo/on",
 
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+    "dijit/Menu",
+    "dijit/MenuItem",
+    "dijit/MenuSeparator",
+    "dijit/PopupMenuItem",
+    "dijit/Dialog",
 
     "dojox/grid/EnhancedGrid",
     "dojox/grid/enhanced/plugins/Pagination",
     "dojox/grid/enhanced/plugins/IndirectSelection",
+    "dojox/widget/Calendar",
 
     "hpcc/_TabContainerWidget",
     "hpcc/WsWorkunits",
@@ -41,23 +49,27 @@ define([
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
+    "dijit/form/RadioButton",
     "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
-], function (declare, dom, ObjectStore, date, on,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                EnhancedGrid, Pagination, IndirectSelection,
+], function (declare, array, dom, on, domClass, ObjectStore, date,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
+                EnhancedGrid, Pagination, IndirectSelection, Calendar,
                 _TabContainerWidget, WsWorkunits, WUDetailsWidget,
                 template) {
     return declare("WUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "WUQueryWidget",
+
         workunitsTab: null,
         workunitsGrid: null,
         legacyPane: null,
         legacyPaneLoaded: false,
 
         tabMap: [],
+
+        validateDialog: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -68,8 +80,20 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
-            this.refreshActionState();
             this.initWorkunitsGrid();
+            this.initFilter();
+            this.initContextMenu();
+            this.refreshActionState();
+        },
+
+        resize: function (args) {
+            this.inherited(arguments);
+
+            //  TODO:  This should not be needed
+            var context = this;
+            setTimeout(function () {
+                context.borderContainer.resize();
+            }, 100);
         },
 
         //  Hitched actions  ---
@@ -127,11 +151,21 @@ define([
         },
         _onDeschedule: function (event) {
         },
-        _onFilterApply: function (event) {
+        _onClickFilterApply: function (event) {
             this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
+
             this.refreshGrid();
         },
-        _onFilterClear: function(event) {
+        _onFilterApply: function (event) {
+            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
+            if (this.hasFilter()) {
+                registry.byId(this.id + "FilterDropDown").closeDropDown();
+                this.refreshGrid();
+            } else {
+                this.validateDialog.show();
+            }
+        },
+        _onFilterClear: function (event, supressGridRefresh) {
             this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
             dom.byId(this.id + "Owner").value = "";
             dom.byId(this.id + "Jobname").value = "";
@@ -144,7 +178,70 @@ define([
             dom.byId(this.id + "FromTime").value = "";
             dom.byId(this.id + "ToDate").value = "";
             dom.byId(this.id + "LastNDays").value = "";
-            this.refreshGrid();
+            if (!supressGridRefresh) {
+                this.refreshGrid();
+            }
+        },
+        _onRowDblClick: function (wuid) {
+            var wuTab = this.ensurePane(this.id + "_" + wuid, {
+                Wuid: wuid
+            });
+            this.selectChild(wuTab);
+        },
+        _onRowContextMenu: function (idx, item, colField, mystring) {
+            var selection = this.workunitsGrid.selection.getSelected();
+            var found = array.indexOf(selection, item);
+            if (found == -1) {
+                this.workunitsGrid.selection.deselectAll();
+                this.workunitsGrid.selection.setSelected(idx, true);
+            }
+
+            this.menuFilterOwner.set("disabled", false);
+            this.menuFilterJobname.set("disabled", false);
+            this.menuFilterCluster.set("disabled", false);
+            this.menuFilterState.set("disabled", false);
+
+            if (item) {
+                this.menuFilterOwner.set("label", "Owner:  " + item.Owner);
+                this.menuFilterOwner.set("hpcc_value", item.Owner);
+                this.menuFilterJobname.set("label", "Jobname:  " + item.Jobname);
+                this.menuFilterJobname.set("hpcc_value", item.Jobname);
+                this.menuFilterCluster.set("label", "Cluster:  " + item.Cluster);
+                this.menuFilterCluster.set("hpcc_value", item.Cluster);
+                this.menuFilterState.set("label", "State:  " + item.State);
+                this.menuFilterState.set("hpcc_value", item.State);
+            }
+
+            if (item.Owner == "") {
+                this.menuFilterOwner.set("disabled", true);
+                this.menuFilterOwner.set("label", "Owner:  " + "N/A");
+            }
+            if (item.Jobname == "") {
+                this.menuFilterJobname.set("disabled", true);
+                this.menuFilterJobname.set("label", "Jobname:  " + "N/A");
+            }
+            if (item.Cluster == "") {
+                this.menuFilterCluster.set("disabled", true);
+                this.menuFilterCluster.set("label", "Cluster:  " + "N/A");
+            }
+            if (item.State == "") {
+                this.menuFilterState.set("disabled", true);
+                this.menuFilterState.set("label", "State:  " + "N/A");
+            }
+        },
+
+        //  Implementation  ---
+        hasFilter: function () {
+            return dom.byId(this.id + "Owner").value !== "" ||
+               dom.byId(this.id + "Jobname").value !== "" ||
+               dom.byId(this.id + "Cluster").value !== "" ||
+               dom.byId(this.id + "State").value !== "" ||
+               dom.byId(this.id + "ECL").value !== "" ||
+               dom.byId(this.id + "LogicalFile").value !== "" ||
+               dom.byId(this.id + "FromDate").value !== "" ||
+               dom.byId(this.id + "FromTime").value !== "" ||
+               dom.byId(this.id + "ToDate").value !== "" ||
+               dom.byId(this.id + "LastNDays").value !== "";
         },
 
         getFilter: function () {
@@ -165,7 +262,7 @@ define([
             } else if (retVal.LastNDays != "") {
                 retVal["DateRB"] = "0";
                 var now = new Date();
-                retVal.StartDate = date.add(now, "day", dom.byId(this.id + "LastNDays").value * -1).toISOString();
+                retVal.StartDate = date.add(now, "day", retVal.LastNDays * -1).toISOString();
                 retVal.EndDate = now.toISOString();
             }
             return retVal;
@@ -214,41 +311,139 @@ define([
             }
         },
 
-        initWorkunitsGrid: function() {
+        addMenuItem: function (menu, details) {
+            var menuItem = new MenuItem(details);
+            menu.addChild(menuItem);
+            return menuItem;
+        },
+
+        initContextMenu: function () {
+            var context = this;
+            var pMenu = new Menu({
+                targetNodeIds: [this.id + "WorkunitsGrid"]
+            });
+            this.menuOpen = this.addMenuItem(pMenu, {
+                label: "Open",
+                onClick: function () { context._onOpen(); }
+            });
+            this.menuDelete = this.addMenuItem(pMenu, {
+                label: "Delete",
+                onClick: function () { context._onDelete(); }
+            });
+            this.menuSetToFailed = this.addMenuItem(pMenu, {
+                label: "Set To Failed",
+                onClick: function () { context._onSetToFailed(); }
+            });
+            pMenu.addChild(new MenuSeparator());
+            this.menuProtect = this.addMenuItem(pMenu, {
+                label: "Protect",
+                onClick: function () { context._onProtect(); }
+            });
+            this.menuUnprotect = this.addMenuItem(pMenu, {
+                label: "Unprotect",
+                onClick: function () { context._onUnprotect(); }
+            });
+            pMenu.addChild(new MenuSeparator());
+            this.menuReschedule = this.addMenuItem(pMenu, {
+                label: "Reschedule",
+                onClick: function () { context._onReschedule(); }
+            });
+            this.menuDeschedule = this.addMenuItem(pMenu, {
+                label: "Deschedule",
+                onClick: function () { context._onDeschedule(); }
+            });
+            pMenu.addChild(new MenuSeparator());
+            {
+                var pSubMenu = new Menu();
+                this.menuFilterOwner = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context._onFilterClear(null, true);
+                        registry.byId(context.id + "Owner").set("value", context.menuFilterOwner.get("hpcc_value"));
+                        context._onClickFilterApply();
+                    }
+                });
+                this.menuFilterJobname = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context._onFilterClear(null, true);
+                        registry.byId(context.id + "Jobname").set("value", context.menuFilterJobname.get("hpcc_value"));
+                        context._onClickFilterApply();
+                    }
+                });
+                this.menuFilterCluster = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context._onFilterClear(null, true);
+                        registry.byId(context.id + "Cluster").set("value", context.menuFilterCluster.get("hpcc_value"));
+                        context._onClickFilterApply();
+                    }
+                });
+                this.menuFilterState = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context._onFilterClear(null, true);
+                        registry.byId(context.id + "State").set("value", context.menuFilterState.get("hpcc_value"));
+                        context._onClickFilterApply();
+                    }
+                });
+                pSubMenu.addChild(new MenuSeparator());
+                this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
+                    label: "Clear",
+                    onClick: function () { context._onFilterClear(); }
+                });
+                pMenu.addChild(new PopupMenuItem({
+                    label: "Filter",
+                    popup: pSubMenu
+                }));
+            }
+            pMenu.startup();
+        },
+
+        initWorkunitsGrid: function () {
             this.workunitsGrid.setStructure([
-			    {
-				    name: "P",
-				    field: "Protected",
-				    width: "20px",
-				    formatter: function (protected) {
-					    if (protected == true) {
-					        return "P";
-					    }
-					    return "";
-				    }
-			    },
-			    { name: "Wuid", field: "Wuid", width: "12" },
-			    { name: "Owner", field: "Owner", width: "8" },
-			    { name: "Job Name", field: "Jobname", width: "16" },
-			    { name: "Cluster", field: "Cluster", width: "8" },
-			    { name: "Roxie Cluster", field: "RoxieCluster", width: "8" },
-			    { name: "State", field: "State", width: "8" },
-			    { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
+                {
+                    name: "<img src='../files/img/locked.png'>",
+                    field: "Protected",
+                    width: "16px",
+                    formatter: function (protected) {
+                        if (protected == true) {
+                            return ("<img src='../files/img/locked.png'>");
+                        }
+                        return "";
+                    }
+                },
+                { name: "Wuid", field: "Wuid", width: "12" },
+                { name: "Owner", field: "Owner", width: "8" },
+                { name: "Job Name", field: "Jobname", width: "16" },
+                { name: "Cluster", field: "Cluster", width: "8" },
+                { name: "Roxie Cluster", field: "RoxieCluster", width: "8" },
+                { name: "State", field: "State", width: "8" },
+                { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
             ]);
+
             var store = new WsWorkunits.WUQuery();
             var objStore = new ObjectStore({ objectStore: store });
             this.workunitsGrid.setStore(objStore);
             this.workunitsGrid.setQuery(this.getFilter());
+            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
 
             var context = this;
             this.workunitsGrid.on("RowDblClick", function (evt) {
-                if (context.onRowDblClick) {
+                if (context._onRowDblClick) {
                     var idx = evt.rowIndex;
                     var item = this.getItem(idx);
                     var Wuid = this.store.getValue(item, "Wuid");
-                    context.onRowDblClick(Wuid);
+                    context._onRowDblClick(Wuid);
                 }
             }, true);
+
+            this.workunitsGrid.on("RowContextMenu", function (evt) {
+                if (context._onRowContextMenu) {
+                    var idx = evt.rowIndex;
+                    var colField = evt.cell.field;
+                    var item = this.getItem(idx);
+                    var mystring = "item." + colField;
+                    context._onRowContextMenu(idx, item, colField, mystring);
+                }
+            }, true);
+            var today = new Date();
 
             dojo.connect(this.workunitsGrid.selection, 'onSelected', function (idx) {
                 context.refreshActionState();
@@ -256,8 +451,18 @@ define([
             dojo.connect(this.workunitsGrid.selection, 'onDeselected', function (idx) {
                 context.refreshActionState();
             });
-
             this.workunitsGrid.startup();
+        },
+
+        initFilter: function () {
+            this.validateDialog = new Dialog({
+                title: "Filter",
+                content: "No filter criteria specified."
+            });
+            dojo.connect(registry.byId(this.id + "FromDate"), 'onClick', function (evt) {
+            });
+            dojo.connect(registry.byId(this.id + "ToDate"), 'onClick', function (evt) {
+            });
         },
 
         refreshGrid: function (args) {
@@ -275,6 +480,7 @@ define([
             var hasNotProtected = false;
             var hasFailed = false;
             var hasNotFailed = false;
+            var hasFilter = this.hasFilter();
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
                 if (selection[i] && selection[i].Protected && selection[i].Protected != "0") {
@@ -296,6 +502,11 @@ define([
             registry.byId(this.id + "Unprotect").set("disabled", !hasProtected);
             registry.byId(this.id + "Reschedule").set("disabled", true);    //TODO
             registry.byId(this.id + "Deschedule").set("disabled", true);    //TODO
+
+            this.menuProtect.set("disabled", !hasNotProtected);
+            this.menuUnprotect.set("disabled", !hasProtected);
+
+            dom.byId(this.id + "IconFilter").src = hasFilter ? "img/filter.png" : "img/noFilter.png";
         },
 
         ensurePane: function (id, params) {
@@ -316,13 +527,7 @@ define([
                 this.addChild(retVal, 2);
             }
             return retVal;
-        },
-
-        onRowDblClick: function (wuid) {
-            var wuTab = this.ensurePane(this.id + "_" + wuid, {
-                Wuid: wuid
-            });
-            this.selectChild(wuTab);
         }
+
     });
 });
