@@ -672,7 +672,7 @@ bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
     if (currentMaxRows < requiredRows) // check, because may have expanded previously, but failed to allocate stableTable and set new maxRows
     {
         capacity = ((memsize_t)getNewSize(requiredRows)) * sizeof(void *);
-        CResizeRowCallback callback((void ** &)rows, capacity, *this);
+        CResizeRowCallback callback(*(void ***)(&rows), capacity, *this);
         if (!resizeRowTable((void **)rows, capacity, true, callback)) // callback will reset capacity
         {
             if (throwOnOom)
