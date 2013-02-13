@@ -31,7 +31,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para> </para>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -864,12 +864,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                       <entry><emphasis>checkScopeScans</emphasis></entry>
 
                       <entry>True or False</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis>filesBasedn</emphasis></entry>
-
-                      <entry>The Base File Type</entry>
                     </row>
 
                     <row>
@@ -1822,8 +1816,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <title>Esp - myesp AuthenticationTab</title>
 
             <para>This section describes the Esp - myesp Service
-            Authentication tab. LDAP is a feature only available in Enterprise
-            Edition.</para>
+            Authentication tab. </para>
 
             <para><graphic fileref="images/CM-img08-3.jpg"
             vendor="configmgrSS" /></para>

@@ -298,21 +298,6 @@ sudo cp server.key /var/lib/HPCCSystems/myesp/privatekey.cer
         </listitem>
 
         <listitem>
-          <para>When prompted about the FilesBaseDN, press the <emphasis
-          role="bold">OK</emphasis> button.</para>
-
-          <figure>
-            <title>FilesBaseDN</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="../../images/ssl-03.jpg" />
-              </imageobject>
-            </mediaobject>
-          </figure>
-        </listitem>
-
-        <listitem>
           <para>Select https from the protocol drop-list.</para>
 
           <figure>
