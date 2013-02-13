@@ -153,18 +153,7 @@ bool CEspHttpServer::rootAuth(IEspContext* ctx)
         return true;
 
     bool ret=false;
-    EspHttpBinding* thebinding=NULL;
-    int ordinality=m_apport->getBindingCount();
-    if (ordinality==1)
-    {
-        CEspBindingEntry *entry = m_apport->queryBindingItem(0);
-        thebinding = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
-    }
-    else if (m_defaultBinding)
-    {
-        thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
-    }
-
+    EspHttpBinding* thebinding=getBinding();
     if (thebinding)
     {
         thebinding->populateRequest(m_request.get());
@@ -175,10 +164,8 @@ bool CEspHttpServer::rootAuth(IEspContext* ctx)
             ISecUser *user = ctx->queryUser();
             if (user && user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED)
             {
-                DBGLOG("ESP password expired for %s", user->getName());
-                m_response->setContentType(HTTP_TYPE_TEXT_PLAIN);
-                m_response->setContent("Your ESP password has expired");
-                m_response->send();
+                m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
+                ret = true;
             }
             else
             {
@@ -244,6 +231,20 @@ static bool authenticateOptionalFailed(IEspContext& ctx, IEspHttpBinding* bindin
 #endif
 
     return false;
+}
+
+EspHttpBinding* CEspHttpServer::getBinding()
+{
+    EspHttpBinding* thebinding=NULL;
+    int ordinality=m_apport->getBindingCount();
+    if (ordinality==1)
+    {
+        CEspBindingEntry *entry = m_apport->queryBindingItem(0);
+        thebinding = (entry) ? dynamic_cast<EspHttpBinding*>(entry->queryBinding()) : NULL;
+    }
+    else if (m_defaultBinding)
+        thebinding=dynamic_cast<EspHttpBinding*>(m_defaultBinding.get());
+    return thebinding;
 }
 
 int CEspHttpServer::processRequest()
@@ -333,7 +334,11 @@ int CEspHttpServer::processRequest()
             {
                 if (!methodName.length())
                     return 0;
-                if (!rootAuth(ctx))
+#ifdef _USE_OPENLDAP
+                if (strieq(methodName.str(), "updatepasswordinput"))//process before authentication check
+                    return onUpdatePasswordInput(m_request.get(), m_response.get());
+#endif
+                if (!rootAuth(ctx) )
                     return 0;
                 if (methodName.charAt(methodName.length()-1)=='_')
                     methodName.setCharAt(methodName.length()-1, 0);
@@ -355,17 +360,14 @@ int CEspHttpServer::processRequest()
                     return onGetNavEvent(m_request.get(), m_response.get());
                 else if (!stricmp(methodName.str(), "soapreq"))
                     return onGetBuildSoapRequest(m_request.get(), m_response.get());
-#ifdef _USE_OPENLDAP
-                else if (strieq(methodName.str(), "updatepasswordinput"))
-                    return onUpdatePasswordInput(m_request.get(), m_response.get());
-#endif
             }
         }
 #ifdef _USE_OPENLDAP
         else if (strieq(method.str(), POST_METHOD) && strieq(serviceName.str(), "esp") && (methodName.length() > 0) && strieq(methodName.str(), "updatepassword"))
         {
-            if (!rootAuth(ctx))
-                return 0;
+            EspHttpBinding* thebinding = getBinding();
+            if (thebinding)
+                thebinding->populateRequest(m_request.get());
             return onUpdatePassword(m_request.get(), m_response.get());
         }
 #endif
