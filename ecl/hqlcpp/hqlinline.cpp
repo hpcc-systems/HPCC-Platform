@@ -303,8 +303,11 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     }
     case no_inlinetable:
         {
-            if (transformListContainsSkip(expr->queryChild(0)))
+            IHqlExpression * transforms = expr->queryChild(0);
+            if (transformListContainsSkip(transforms))
                 return 0;
+            if (isConstantDataset(expr))
+                return RETevaluate;
             return RETassign;
         }
     case no_createrow:

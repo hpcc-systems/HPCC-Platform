@@ -324,6 +324,7 @@ protected:
     size32_t suffix;
 };
 
+extern ECLRTL_API const void * rtlCloneRow(IEngineRowAllocator * rowAllocator, size32_t len, const void * row);
 
 //---------------------------------------------------------------------------
 
