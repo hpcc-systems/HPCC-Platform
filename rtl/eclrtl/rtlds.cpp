@@ -499,6 +499,24 @@ void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngine
     }
 }
 
+const void * rtlCloneRow(IEngineRowAllocator * rowAllocator, size32_t len, const void * row)
+{
+    RtlDynamicRowBuilder builder(rowAllocator);
+
+    byte * self = builder.ensureCapacity(len, NULL);
+    memcpy(self, row, len);
+
+    IOutputMetaData * meta = rowAllocator->queryOutputMeta();
+    if (meta->getMetaFlags() & MDFneeddestruct)
+    {
+        RtlChildRowLinkerWalker walker;
+        meta->walkIndirectMembers(self, walker);
+    }
+
+    return builder.finalizeRowClear(len);
+}
+
+
 
 //---------------------------------------------------------------------------
 

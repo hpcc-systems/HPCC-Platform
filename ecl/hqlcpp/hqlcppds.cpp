@@ -148,6 +148,8 @@ void HqlCppTranslator::buildConstRow(IHqlExpression * record, IHqlExpression * r
 
     //MORE: This probably needs to go in the header as well...
     Owned<ITypeInfo> rowType = makeConstantModifier(makeRowType(record->getType()));
+    if (options.canLinkConstantRows)
+        rowType.setown(setLinkCountedAttr(rowType, true));
 
     StringBuffer rowName;
     getUniqueId(rowName.append("r"));
@@ -633,6 +635,52 @@ IReferenceSelector * HqlCppTranslator::buildActiveRow(BuildCtx & ctx, IHqlExpres
     return NULL; //remove warning about control paths
 }
 
+BoundRow * HqlCppTranslator::ensureLinkCountedRow(BuildCtx & ctx, BoundRow * row)
+{
+    if (row->isLinkCounted())
+        return row;
+
+    OwnedHqlExpr srcRow = createTranslated(row->queryBound());
+    Owned<BoundRow> tempRow = declareLinkedRow(ctx, row->queryDataset(), false);
+
+    OwnedHqlExpr source = getPointer(row->queryBound());
+    BuildCtx subctx(ctx);
+    if (row->isConditional())
+        subctx.addFilter(source);
+
+    IHqlExpression * sourceExpr = row->querySelector();
+    OwnedHqlExpr rowExpr = sourceExpr->isDataset() ? ensureActiveRow(sourceExpr) : LINK(sourceExpr);
+    OwnedHqlExpr size = createSizeof(rowExpr);
+    CHqlBoundExpr boundSize;
+    buildExpr(subctx, size, boundSize);
+
+    StringBuffer allocatorName;
+    ensureRowAllocator(allocatorName, ctx, row->queryRecord(), getCurrentActivityId(subctx));
+
+    StringBuffer s;
+    s.append("rtlCloneRow(").append(allocatorName).append(",");
+    generateExprCpp(s, boundSize.expr).append(",");
+    generateExprCpp(s, source);
+    s.append(")");
+    OwnedHqlExpr call = createQuoted(s, tempRow->queryBound()->queryType());
+
+    subctx.addAssign(tempRow->queryBound(), call);
+
+    ctx.associate(*tempRow);
+    return tempRow;
+}
+
+IReferenceSelector * HqlCppTranslator::ensureLinkCountedRow(BuildCtx & ctx, IReferenceSelector * source)
+{
+    if (!source->isRoot() || !source->queryRootRow()->isLinkCounted())
+    {
+        BoundRow * row = source->getRow(ctx);
+        BoundRow * lcrRow = ensureLinkCountedRow(ctx, row);
+        assertex(row != lcrRow);
+        return createReferenceSelector(lcrRow, source->queryExpr());
+    }
+    return LINK(source);
+}
 
 //---------------------------------------------------------------------------
 
@@ -1142,7 +1190,8 @@ void HqlCppTranslator::doBuildAggregateList(BuildCtx & ctx, const CHqlBoundTarge
     }
 
     ITypeInfo * elemType = list->queryType()->queryChildType();
-    if (!elemType) elemType = defaultIntegralType;
+    if (!elemType)
+        elemType = defaultIntegralType;
 
     //Default implementation in terms of a dataset
     OwnedHqlExpr field = createField(valueAtom, LINK(elemType), NULL);
@@ -2184,6 +2233,12 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             ctx.associateExpr(expr, tgt);
             return;
         }
+    case no_if:
+        if (::canEvaluateInline(&ctx, expr->queryChild(1)) && ::canEvaluateInline(&ctx, expr->queryChild(2)))
+        {
+            buildTempExpr(ctx, expr, tgt, format);
+            return;
+        }
     }
 
     if (expr->isDictionary())
@@ -2331,7 +2386,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         {
             CHqlBoundExpr bound;
             buildDataset(ctx, expr, bound, isArrayRowset(target.queryType()) ? FormatLinkedDataset : FormatBlockedDataset);
-            if (hasWrapperModifier(target.queryType()))
+            if (hasWrapperModifier(target.queryType()) && hasLinkCountedModifier(target.queryType()))
             {
                 OwnedHqlExpr complex = bound.getComplexExpr();
                 ctx.addAssign(target.expr, complex);
@@ -2347,7 +2402,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     case no_inlinetable:
         {
             //This will typically generate a loop.  If few items then it is more efficient to expand the assigns/clones out.
-            if (expr->queryChild(0)->numChildren() > INLINE_TABLE_EXPAND_LIMIT)
+            if (options.canLinkConstantRows || (expr->queryChild(0)->numChildren() > INLINE_TABLE_EXPAND_LIMIT))
             {
                 CHqlBoundExpr bound;
                 if (doBuildDatasetInlineTable(ctx, expr, bound, FormatNatural))
@@ -2739,6 +2794,8 @@ bool HqlCppTranslator::doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression 
 
     Owned<ITypeInfo> tableType = makeConstantModifier(makeArrayType(LINK(rowType), maxRows));
     OwnedITypeInfo rowsType = makeOutOfLineModifier(makeTableType(LINK(rowType), NULL, NULL, NULL));
+    if (options.canLinkConstantRows)
+        rowsType.setown(setLinkCountedAttr(rowsType, true));
 
     OwnedHqlExpr table = declareCtx.getTempDeclare(tableType, values);
     if (options.spanMultipleCpp)
@@ -3859,7 +3916,7 @@ void HqlCppTranslator::doBuildRowAssignAggregateNext(BuildCtx & ctx, IReferenceS
             break;
         }
         if (targetSelect->queryType()->getSize() == UNKNOWN_LENGTH)
-           isVariableOffset = true;
+            isVariableOffset = true;
     }
     if (alreadyDoneExpr)
         buildAssignToTemp(ctx, alreadyDoneExpr, queryBoolExpr(true));
