@@ -40,7 +40,7 @@ const char *joinActName[4] = { "LOOKUPJOIN", "ALLJOIN", "LOOKUPDENORMALIZE", "AL
 #define MAX_SEND_SIZE 0x100000 // 1MB
 #define MAX_QUEUE_BLOCKS 5
 
-enum broadcast_code { bcast_none, bcast_send, bcast_sendStopping, bcast_stop, bcast_done };
+enum broadcast_code { bcast_none, bcast_send, bcast_sendStopping, bcast_stop };
 class CSendItem : public CSimpleInterface
 {
     CMessageBuffer msg;
@@ -89,7 +89,7 @@ class CBroadcaster : public CSimpleInterface
     Semaphore allDoneSem;
     CriticalSection allDoneLock, bcastOtherCrit;
     bool allDone, allDoneWaiting, allRequestStop, stopping, stopRecv;
-    Owned<IBitSet> slavesDone, slavesStopping, allSlavesDone;
+    Owned<IBitSet> slavesDone, slavesStopping;
 
     class CRecv : implements IThreaded
     {
@@ -267,34 +267,16 @@ class CBroadcaster : public CSimpleInterface
             assertex(myNode != sendItem->queryOrigin());
             switch (sendItem->queryCode())
             {
-                case bcast_done:
-                {
-                    allSlavesDone->set(sendItem->queryOrigin()-1, true);
-                    bool done = allSlavesDone->scan(0, false) == slaves;
-                    if (done)
-                    {
-                        ActPrintLog(&activity, "Receiver, all slaves done");
-                        // All slaves have broadcast done, receiver thread no longer needed
-                        // sender thread will still be forwarding 'bcast_done' packets to others
-                        return;
-                    }
-                    break;
-                }
                 case bcast_stop:
                 {
                     CriticalBlock b(allDoneLock);
                     if (slaveStop(sendItem->queryOrigin()-1) || allDone)
                     {
                         recvInterface->bCastReceive(NULL); // signal last
-
                         ActPrintLog(&activity, "recvLoop, received last slaveStop");
-
-                        // This slave is done, but will still be acting as a broadcast for others.
-                        allSlavesDone->set(myNode-1, true);
-
-                        // Tell all others that this slave is done
-                        Owned<CSendItem> sendItem = newSendItem(bcast_done);
-                        sender.addBlock(sendItem.getClear());
+                        // NB: this slave has nothing more to receive.
+                        // However the sender will still be re-broadcasting some packets, including these stop packets
+                        return;
                     }
                     break;
                 }
@@ -324,7 +306,6 @@ public:
         slaves = activity.queryJob().querySlaves();
         slavesDone.setown(createBitSet());
         slavesStopping.setown(createBitSet());
-        allSlavesDone.setown(createBitSet());
         mpTag = TAG_NULL;
         recvInterface = NULL;
     }
@@ -344,7 +325,6 @@ public:
         allDone = allDoneWaiting = allRequestStop = stopping = false;
         slavesDone->reset();
         slavesStopping->reset();
-        allSlavesDone->reset();
     }
     CSendItem *newSendItem(broadcast_code code)
     {
@@ -366,8 +346,8 @@ public:
     void end()
     {
         waitReceiverDone();
-        receiver.wait();
-        sender.wait();
+        receiver.wait(); // terminates when received stop from all others
+        sender.wait(); // terminates when any remaining packets, including final stop packets have been re-broadcast
     }
     void cancel()
     {
