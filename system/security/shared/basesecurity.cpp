@@ -548,7 +548,7 @@ bool CBaseSecurityManager::updateResources(ISecUser & user, ISecResourceList * r
     return true;
 }
 
-bool CBaseSecurityManager::updateUser(ISecUser& user, const char* newPassword)
+bool CBaseSecurityManager::updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword)
 {
     //("CBaseSecurityManager::updateUser");
     if(!newPassword)

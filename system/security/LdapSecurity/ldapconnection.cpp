@@ -1177,6 +1177,7 @@ public:
             StringBuffer hostbuf;
             m_ldapconfig->getLdapHost(hostbuf);
             int rc = LDAP_SERVER_DOWN;
+            char *ldap_errstring=NULL;
 
             for(int retries = 0; retries <= LDAPSEC_MAX_RETRIES; retries++)
             {
@@ -1192,6 +1193,8 @@ public:
 #endif
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+                    if(rc != LDAP_SUCCESS)
+                        ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
                     ldap_unbind(user_ld);
                 }
                 DBGLOG("finished LdapBind for user %s, rc=%d", username, rc);
@@ -1214,12 +1217,14 @@ public:
                     WARNLOG("Using automatically obtained LDAP Server %s", dc.str());
                     LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), dc.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
                     rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdnbuf.str(), m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+                    if(rc != LDAP_SUCCESS)
+                        ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
                     ldap_unbind(user_ld);
                 }
             }
             if(rc != LDAP_SUCCESS)
             {
-                if (user.getPasswordDaysRemaining() == -1)
+                if (user.getPasswordDaysRemaining() == -1 || strstr(ldap_errstring, "data 532"))//80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0.
                 {
                     DBGLOG("ESP Password Expired for user %s", username);
                     user.setAuthenticateStatus(AS_PASSWORD_EXPIRED);
@@ -2132,7 +2137,7 @@ public:
 
         StringBuffer userdn;
         getUserDN(username, userdn);
-        
+
         int rc = LDAP_SUCCESS;
 
         if(!type || !*type || stricmp(type, "names") == 0)
@@ -2611,15 +2616,51 @@ public:
         return true;
     }
 
-    virtual bool updateUser(ISecUser& user, const char* newPassword)
+    virtual bool queryPasswordStatus(ISecUser& user, const char* password)
+    {
+        char *ldap_errstring = NULL;
+        const char * username = user.getName();
+
+        StringBuffer userdn;
+        getUserDN(user.getName(), userdn);
+
+        StringBuffer hostbuf;
+        m_ldapconfig->getLdapHost(hostbuf);
+
+        LDAP* user_ld = LdapUtils::LdapInit(m_ldapconfig->getProtocol(), hostbuf.str(), m_ldapconfig->getLdapPort(), m_ldapconfig->getLdapSecurePort());
+        int rc = LdapUtils::LdapBind(user_ld, m_ldapconfig->getDomain(), username, password, userdn, m_ldapconfig->getServerType(), m_ldapconfig->getAuthMethod());
+        if(rc != LDAP_SUCCESS)
+            ldap_get_option(user_ld, LDAP_OPT_ERROR_STRING, &ldap_errstring);
+        ldap_unbind(user_ld);
+
+        //Error string ""80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0."
+        //is returned if pw valid but expired
+        if(rc == LDAP_SUCCESS || strstr(ldap_errstring, "data 532"))//
+            return true;
+        else
+            return false;
+    }
+
+    virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword)
     {
         const char* username = user.getName();
         if(!username || !*username)
             return false;
-        return updateUser(username, newPassword);
+
+        if (currPassword)
+        {
+            //User will not be authenticated if their password was expired,
+            //so check here that they provided a valid one in the "change
+            //password" form (use the one they type, not the one in the secuser)
+            bool validated = queryPasswordStatus(user, currPassword);
+            if (!validated)
+                throw MakeStringException(-1, "Password not changed, invalid credentials");
+        }
+
+        return updateUserPassword(username, newPassword);
     }
 
-    virtual bool updateUser(const char* username, const char* newPassword)
+    virtual bool updateUserPassword(const char* username, const char* newPassword)
     {
         if(!username || !*username)
             return false;
@@ -4898,7 +4939,7 @@ private:
         if(passwd == NULL || *passwd == '\0')
             passwd = "password";
 
-        updateUser(*tmpuser, passwd);
+        updateUserPassword(*tmpuser, passwd, NULL);
 
         //Add tempfile scope for this user (spill, paused and checkpoint
         //will be created under this user specific scope)

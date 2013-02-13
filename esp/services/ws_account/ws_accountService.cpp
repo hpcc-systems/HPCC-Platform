@@ -96,7 +96,7 @@ bool Cws_accountEx::onUpdateUser(IEspContext &context, IEspUpdateUserRequest & r
         bool ok = false;
         try
         {
-            ok = secmgr->updateUser(*user, newpass1);
+            ok = secmgr->updateUserPassword(*user, newpass1, oldpass);
         }
         catch(IException* e)
         {

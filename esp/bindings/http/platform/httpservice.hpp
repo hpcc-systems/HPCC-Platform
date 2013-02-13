@@ -48,6 +48,7 @@ protected:
     int m_MaxRequestEntityLength;
 
     int unsupported();
+    EspHttpBinding* getBinding();
 public:
     IMPLEMENT_IINTERFACE;
 
