@@ -1892,6 +1892,21 @@ void HqlCppTranslator::overrideOptionsForQuery()
     options.minimizeWorkunitTemporaries = !options.workunitTemporaries || getDebugFlag("minimizeWorkunitTemporaries", false);//options.resourceConditionalActions);
 }
 
+
+bool HqlCppTranslator::needToSerializeToSlave(IHqlExpression * expr) const
+{
+    if (targetThor())
+        return true;
+    switch (expr->getOperator())
+    {
+    case no_getresult:
+    case no_workunit_dataset:
+        return !matchesConstantValue(queryPropertyChild(expr, sequenceAtom, 0), ResultSequenceOnce);
+    default:
+        return true;
+    }
+}
+
 IHqlExpression *HqlCppTranslator::addBigLiteral(const char *lit, unsigned litLen)
 {
     unsigned resid = code->addStringResource(litLen, lit);

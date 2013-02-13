@@ -1331,7 +1331,8 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
     case no_getgraphresult:
         return !translator.isCurrentActiveGraph(ctx, expr->queryChild(1));
     case no_getresult:
-        return !matchesConstantValue(queryPropertyChild(expr, sequenceAtom, 0), ResultSequenceOnce);
+    case no_workunit_dataset:
+        return translator.needToSerializeToSlave(expr);
     case no_failcode:
     case no_failmessage:
     case no_fail:
@@ -1509,8 +1510,15 @@ void ClassEvalContext::createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, I
 
     const _ATOM serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
     CHqlBoundTarget tempTarget;
-    translator.buildTempExpr(*ctxs.evalctx, ctxs.declarectx, tempTarget, value, FormatNatural, false);
-    ensureSerialized(ctxs, tempTarget, serializeForm);
+    if (translator.needToSerializeToSlave(value))
+    {
+        translator.buildTempExpr(*ctxs.evalctx, ctxs.declarectx, tempTarget, value, FormatNatural, false);
+        ensureSerialized(ctxs, tempTarget, serializeForm);
+    }
+    else
+    {
+        translator.buildTempExpr(ctxs.clonectx, ctxs.declarectx, tempTarget, value, FormatNatural, false);
+    }
 
     tgt.setFromTarget(tempTarget);
     ctxs.declarectx.associateExpr(value, tgt);
