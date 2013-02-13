@@ -8591,9 +8591,9 @@ void HqlCppTranslator::doBuildAssignHashCrc(BuildCtx & ctx, const CHqlBoundTarge
     LinkedHqlExpr initialValue = queryZero();
     node_operator op = expr->getOperator();
     if (op == no_hash32)
-        initialValue.setown(createConstant(createIntValue(0x811C9DC5, 4, false)));
+        initialValue.setown(createConstant(createIntValue(HASH32_INIT, 4, false)));
     else if (op == no_hash64)
-        initialValue.setown(createConstant(createIntValue(I64C(0xcbf29ce484222325), 8, false)));
+        initialValue.setown(createConstant(createIntValue(HASH64_INIT, 8, false)));
 
     HashCodeCreator creator(*this, target, op, expr->hasProperty(internalAtom));
     creator.setInitialValue(initialValue);

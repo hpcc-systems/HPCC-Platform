@@ -697,7 +697,7 @@ extern ECLRTL_API bool rtlDictionaryLookupExistsField(const IDictionarySearcher 
         const void *entry = table[rowidx];
         if (!entry)
             return false;
-        if (searcher.docompare(entry)==0)
+        if (searcher.matches(entry))
             return true;
         rowidx++;
         if (rowidx==tableSize)
@@ -712,32 +712,32 @@ DictSearchString::DictSearchString(size32_t _searchLen, const char *_searchFor)
 
 unsigned DictSearchString::hash() const
 {
-    return rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, 0x811C9DC5);
+    return rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, HASH32_INIT);
 }
-int DictSearchString::docompare(const void * _right) const
+bool DictSearchString::matches(const void * _right) const
 {
     const char * right = (const char *) _right;
-    return rtlCompareStrStr(searchLen, searchFor, *(size32_t *)right, right+sizeof(size32_t));
+    return rtlCompareStrStr(searchLen, searchFor, *(size32_t *)right, right+sizeof(size32_t))==0;
 }
 
 DictSearchStringN::DictSearchStringN(size32_t _N, size32_t _searchLen, const char *_searchFor)
 : N(_N), DictSearchString(_searchLen, _searchFor)
 {
 }
-int DictSearchStringN::docompare(const void * _right) const
+bool DictSearchStringN::matches(const void * _right) const
 {
     const char * right = (const char *) _right;
-    return rtlCompareStrStr(searchLen, searchFor, N, right);
+    return rtlCompareStrStr(searchLen, searchFor, N, right)==0;
 }
 
 DictSearchVString::DictSearchVString(size32_t _searchLen, const char *_searchFor)
 : DictSearchString(_searchLen, _searchFor)
 {
 }
-int DictSearchVString::docompare(const void * _right) const
+bool DictSearchVString::matches(const void * _right) const
 {
     const char * right = (const char *) _right;
-    return rtlCompareStrStr(searchLen, searchFor, strlen(right), right);
+    return rtlCompareStrStr(searchLen, searchFor, strlen(right), right)==0;
 }
 
 DictSearchUnicode::DictSearchUnicode(const char *_locale, size32_t _searchLenChars, const UChar *_searchFor)
@@ -747,32 +747,32 @@ DictSearchUnicode::DictSearchUnicode(const char *_locale, size32_t _searchLenCha
 
 unsigned DictSearchUnicode::hash() const
 {
-    return rtlHash32Unicode(searchLenChars, searchFor, 0x811C9DC5);
+    return rtlHash32Unicode(rtlTrimUnicodeStrLen(searchLenChars, searchFor), searchFor, HASH32_INIT);
 }
-int DictSearchUnicode::docompare(const void * _right) const
+bool DictSearchUnicode::matches(const void * _right) const
 {
     const char * right = (const char *) _right;
-    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, *(size32_t *) right, (const UChar *) (right + sizeof(size32_t)), locale);
+    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, *(size32_t *) right, (const UChar *) (right + sizeof(size32_t)), locale)==0;
 }
 
 DictSearchUnicodeN::DictSearchUnicodeN(size32_t _N, const char *_locale, size32_t _searchLenChars, const UChar *_searchFor)
 : N(_N), DictSearchUnicode(_locale, _searchLenChars, _searchFor)
 {
 }
-int DictSearchUnicodeN::docompare(const void * _right) const
+bool DictSearchUnicodeN::matches(const void * _right) const
 {
     const UChar * right = (const UChar *) _right;
-    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, N, right, locale);
+    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, N, right, locale)==0;
 }
 
 DictSearchVUnicode::DictSearchVUnicode(const char *_locale, size32_t _searchLenChars, const UChar *_searchFor)
 : DictSearchUnicode(_locale, _searchLenChars, _searchFor)
 {
 }
-int DictSearchVUnicode::docompare(const void * _right) const
+bool DictSearchVUnicode::matches(const void * _right) const
 {
     const UChar * right = (const UChar *) _right;
-    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, rtlUnicodeStrlen(right), right, locale);
+    return rtlCompareUnicodeUnicode(searchLenChars, searchFor, rtlUnicodeStrlen(right), right, locale)==0;
 }
 
 DictSearchUtf8::DictSearchUtf8(const char *_locale, size32_t _searchLenChars, const char *_searchFor)
@@ -781,91 +781,91 @@ DictSearchUtf8::DictSearchUtf8(const char *_locale, size32_t _searchLenChars, co
 }
 unsigned DictSearchUtf8::hash() const
 {
-    return rtlHash32Utf8(rtlTrimUtf8StrLen(searchLenChars,searchFor), searchFor, 0x811C9DC5);
+    return rtlHash32Utf8(rtlTrimUtf8StrLen(searchLenChars,searchFor), searchFor, HASH32_INIT);
 }
-int DictSearchUtf8::docompare(const void * _right) const
+bool DictSearchUtf8::matches(const void * _right) const
 {
     const char * right = (const char *) _right;
-    return rtlCompareUtf8Utf8(searchLenChars, searchFor, *(size32_t *) right, right + sizeof(size32_t), locale);
+    return rtlCompareUtf8Utf8(searchLenChars, searchFor, *(size32_t *) right, right + sizeof(size32_t), locale)==0;
 }
 
 
 unsigned DictSearchInteger8::hash() const
 {
-    return rtlHash32Data8(&searchFor, 0x811C9DC5);
+    return rtlHash32Data8(&searchFor, HASH32_INIT);
 }
 
-int DictSearchInteger8::docompare(const void * right) const
+bool DictSearchInteger8::matches(const void * right) const
 {
-    return (*(__int64 *)right) - searchFor;
+    return (*(__int64 *)right) == searchFor;
 }
 
-int DictSearchInteger1::docompare(const void * right) const
+bool DictSearchInteger1::matches(const void * right) const
 {
-    return (*(signed char *)right) - searchFor;
+    return (*(signed char *)right) == searchFor;
 }
-int DictSearchInteger2::docompare(const void * right) const
+bool DictSearchInteger2::matches(const void * right) const
 {
-    return (*(signed short *)right) - searchFor;
+    return (*(signed short *)right) == searchFor;
 }
-int DictSearchInteger3::docompare(const void * right) const
+bool DictSearchInteger3::matches(const void * right) const
 {
-    return rtlReadInt3(right) - searchFor;
+    return rtlReadInt3(right) == searchFor;
 }
-int DictSearchInteger4::docompare(const void * right) const
+bool DictSearchInteger4::matches(const void * right) const
 {
-    return (*(signed __int32 *)right) - searchFor;
+    return (*(signed __int32 *)right) == searchFor;
 }
-int DictSearchInteger5::docompare(const void * right) const
+bool DictSearchInteger5::matches(const void * right) const
 {
-    return rtlReadInt5(right) - searchFor;
+    return rtlReadInt5(right) == searchFor;
 }
-int DictSearchInteger6::docompare(const void * right) const
+bool DictSearchInteger6::matches(const void * right) const
 {
-    return rtlReadInt6(right) - searchFor;
+    return rtlReadInt6(right) == searchFor;
 }
-int DictSearchInteger7::docompare(const void * right) const
+bool DictSearchInteger7::matches(const void * right) const
 {
-    return rtlReadInt7(right) - searchFor;
+    return rtlReadInt7(right) == searchFor;
 }
 
 unsigned DictSearchUnsigned8::hash() const
 {
-    return rtlHash32Data8(&searchFor, 0x811C9DC5);
+    return rtlHash32Data8(&searchFor, HASH32_INIT);
 }
 
-int DictSearchUnsigned8::docompare(const void * right) const
+bool DictSearchUnsigned8::matches(const void * right) const
 {
-    return (*(__uint64 *)right) - searchFor;
+    return (*(__uint64 *)right) == searchFor;
 }
 
-int DictSearchUnsigned1::docompare(const void * right) const
+bool DictSearchUnsigned1::matches(const void * right) const
 {
-    return (*(unsigned char *)right) - searchFor;
+    return (*(unsigned char *)right) == searchFor;
 }
-int DictSearchUnsigned2::docompare(const void * right) const
+bool DictSearchUnsigned2::matches(const void * right) const
 {
-    return (*(unsigned short *)right) - searchFor;
+    return (*(unsigned short *)right) == searchFor;
 }
-int DictSearchUnsigned3::docompare(const void * right) const
+bool DictSearchUnsigned3::matches(const void * right) const
 {
-    return rtlReadUInt3(right) - searchFor;
+    return rtlReadUInt3(right) == searchFor;
 }
-int DictSearchUnsigned4::docompare(const void * right) const
+bool DictSearchUnsigned4::matches(const void * right) const
 {
-    return (*(unsigned __int32 *)right) - searchFor;
+    return (*(unsigned __int32 *)right) == searchFor;
 }
-int DictSearchUnsigned5::docompare(const void * right) const
+bool DictSearchUnsigned5::matches(const void * right) const
 {
-    return rtlReadUInt5(right) - searchFor;
+    return rtlReadUInt5(right) == searchFor;
 }
-int DictSearchUnsigned6::docompare(const void * right) const
+bool DictSearchUnsigned6::matches(const void * right) const
 {
-    return rtlReadUInt6(right) - searchFor;
+    return rtlReadUInt6(right) == searchFor;
 }
-int DictSearchUnsigned7::docompare(const void * right) const
+bool DictSearchUnsigned7::matches(const void * right) const
 {
-    return rtlReadUInt7(right) - searchFor;
+    return rtlReadUInt7(right) == searchFor;
 }
 
 //---------------------------------------------------------------------------------------------------------------------

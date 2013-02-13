@@ -5429,10 +5429,10 @@ IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & locat
 
 IHqlExpression *createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
 {
-    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
-    if (countTotalFields(record, true) != 1)
+    OwnedHqlExpr keyRecord = getDictionaryKeyRecord(dict->queryRecord());
+    if (countTotalFields(keyRecord, true) != 1)
         errors->reportError(ERR_TYPE_DIFFER, "Type mismatch", location.sourcePath->str(), location.lineno, location.column, location.position);
-    if (!queryFirstField(record)->queryType()->assignableFrom(expr->queryType()))
+    if (!queryFirstField(keyRecord)->queryType()->assignableFrom(expr->queryType()))
         errors->reportError(ERR_TYPE_DIFFER, "Type mismatch", location.sourcePath->str(), location.lineno, location.column, location.position);
     HqlExprArray args;
     args.append(*LINK(expr));
