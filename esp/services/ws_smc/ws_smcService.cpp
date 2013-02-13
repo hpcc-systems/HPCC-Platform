@@ -246,22 +246,23 @@ void CWsSMCEx::getQueueState(int runningJobsInQueue, StringBuffer& queueState, B
     else
         queueState.set("running");
 
+    bulletType = bulletGreen;
     if (NotFound == runningJobsInQueue)
     {
         if (queuePausedOrStopped)
-            bulletType = bulletWhite; //show bullet_white.png
+            bulletType = bulletWhite;
         else
-            bulletType = bulletError; //show bullet_error.png
+            bulletType = bulletError;
     }
     else if (runningJobsInQueue > 0)
     {
         if (queuePausedOrStopped)
-            bulletType = bulletOrange; //show bullet_orange.png
+            bulletType = bulletOrange;
         else
-            bulletType = bulletGreen; //show bullet_green.png
+            bulletType = bulletGreen;
     }
     else if (queuePausedOrStopped)
-        bulletType = bulletYellow; //show bullet_yellow.png
+        bulletType = bulletYellow;
 
     return;
 }
@@ -510,7 +511,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 queue->copyItemsAndState(contents, queueState);
                 addQueuedWorkUnits(queueName, contents, aws, context, "ThorMaster", NULL);
 
-                BulletType bulletType = bulletGreen; //show bullet_green.png
+                BulletType bulletType = bulletGreen;
                 int serverID = runningQueueNames.find(queueName);
                 int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
                 getQueueState(numRunningJobsInQueue, queueState, bulletType);
@@ -540,7 +541,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     queue->copyItemsAndState(contents, queueState);
                     addQueuedWorkUnits(queueName, contents, aws, context, "RoxieServer", NULL);
 
-                    BulletType bulletType = bulletGreen; //show bullet_green.png
+                    BulletType bulletType = bulletGreen;
                     int serverID = runningQueueNames.find(queueName);
                     int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
                     getQueueState(numRunningJobsInQueue, queueState, bulletType);
@@ -567,7 +568,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 queue->copyItemsAndState(contents, queueState);
                 addQueuedWorkUnits(queueName, contents, aws, context, "HThorServer", NULL);
 
-                BulletType bulletType = bulletGreen; //show bullet_green.png
+                BulletType bulletType = bulletGreen;
                 int serverID = runningQueueNames.find(queueName);
                 int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
                 getQueueState(numRunningJobsInQueue, queueState, bulletType);

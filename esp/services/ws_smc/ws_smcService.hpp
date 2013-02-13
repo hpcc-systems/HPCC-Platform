@@ -24,7 +24,7 @@
 
 enum BulletType
 {
-    NONE = 0,
+    bulletNONE = 0,
     bulletOrange = 1,
     bulletYellow = 2,
     bulletWhite = 3,
