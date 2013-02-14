@@ -60,7 +60,7 @@
 <td>
 <br/>
 <br/>
-<a href="javascript:go('/ws_lnaccount/UpdateUserInput')">Change Password</a>
+<a href="javascript:go('/ws_account/UpdateUserInput')">Change Password</a>
 <br/>
 <a href="javascript:go('/WsSMC/Activity')">Home</a></td>
 </tr>
