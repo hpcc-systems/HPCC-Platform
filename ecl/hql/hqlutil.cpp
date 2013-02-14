@@ -5413,29 +5413,41 @@ IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
     return newrec->closeExpr();
 }
 
-IHqlExpression *getDictionarySearchRecord(IHqlExpression *record)
+IHqlExpression *recursiveStretchFields(IHqlExpression *record)
 {
-    // MORE - should probably use an attr to cache this?
-    IHqlExpression * payload = record->queryProperty(_payload_Atom);
-    unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
-    unsigned max = record->numChildren() - payloadSize;
     IHqlExpression *newrec = createRecord();
-    for (unsigned idx = 0; idx < max; idx++)
+    ForEachChild (idx, record)
     {
         IHqlExpression *child = record->queryChild(idx);
-        if (!child->isAttribute() || child->queryName()!=_payload_Atom)  // Strip off the payload attribute
+        if (child->getOperator()==no_field)
         {
-            if (child->getOperator()==no_field)
+            ITypeInfo *fieldType = child->queryType();
+            switch (fieldType->getTypeCode())
             {
-                ITypeInfo *fieldType = child->queryType();
+            case type_row:
+            {
+                OwnedHqlExpr childType = recursiveStretchFields(child->queryRecord());
+                newrec->addOperand(createField(child->queryName(), makeRowType(childType->getType()), NULL, NULL));
+                break;
+            }
+            default:
+            {
                 Owned<ITypeInfo> stretched = getMaxLengthType(fieldType);
                 newrec->addOperand(createField(child->queryName(), stretched.getClear(), NULL, NULL));
+                break;
             }
-            else
-                newrec->addOperand(LINK(child));
+            }
         }
+        else
+            newrec->addOperand(LINK(child));
     }
     return newrec->closeExpr();
+}
+
+IHqlExpression *getDictionarySearchRecord(IHqlExpression *record)
+{
+    OwnedHqlExpr keyrec = getDictionaryKeyRecord(record);
+    return recursiveStretchFields(keyrec);
 }
 
 IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)

@@ -74,3 +74,9 @@ u1 in ucoloru2code;
 u2 in ucoloru2code;
 u3 not in ucoloru2code;
 u4 not in ucoloru2code;
+
+'---';
+
+stringrecord := { string fcolor; };
+colorx2code := DICTIONARY(resistorCodes, { stringrecord s := row(transform(stringrecord, SELF.fcolor := color))  => value});
+ROW({ {c1} }, { stringrecord s } ) IN colorx2code;

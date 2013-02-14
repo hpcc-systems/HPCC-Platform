@@ -3176,7 +3176,7 @@ ITypeInfo * getMaxLengthType(ITypeInfo * type)
     case type_data:
         return getStretchedType(UNKNOWN_LENGTH, type);
     default:
-        throw MakeStringException(99, "Internal error: getMaxLengthType");
+        return LINK(type);
     }
     return NULL;
 }
