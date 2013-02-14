@@ -632,8 +632,8 @@ public:
     IHqlExpression * attachPendingWarnings(IHqlExpression * ownedExpr);
     IHqlExpression * attachMetaAttributes(IHqlExpression * ownedExpr, HqlExprArray & meta);
 
-    void addDatasetField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs);
-    void addDictionaryField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs);
+    void addDatasetField(const attribute &errpos, _ATOM name, ITypeInfo * type, IHqlExpression *value, IHqlExpression * attrs);
+    void addDictionaryField(const attribute &errpos, _ATOM name, ITypeInfo * type, IHqlExpression *value, IHqlExpression * attrs);
     void addField(const attribute &errpos, _ATOM name, ITypeInfo *type, IHqlExpression *value, IHqlExpression *attrs);
     void addFields(const attribute &errpos, IHqlExpression *record, IHqlExpression * dataset, bool clone);
     void addIfBlockToActive(const attribute &errpos, IHqlExpression * ifblock);

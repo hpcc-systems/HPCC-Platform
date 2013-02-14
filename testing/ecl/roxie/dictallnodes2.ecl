@@ -12,14 +12,15 @@ resistorCodes := dataset([{0, 'Black'},
 
 color2code := DICTIONARY(resistorCodes, { color => value});
 
+colourDictionary := dictionary(recordof(color2code));
+
 bands := DATASET([{'Red'},{'Yellow'},{'Blue'}], {string band}) : STORED('bands');
 
 valrec := RECORD
             unsigned1 value;
           END;
 
-//valrec getValue(bands L, dictionary(recordof(color2code)) mapping) := TRANSFORM
-valrec getValue(bands L, dictionary(recordof(dataset(color2code))) mapping) := TRANSFORM
+valrec getValue(bands L, colourDictionary mapping) := TRANSFORM
   SELF.value := mapping[L.band].value;
 END;
 
