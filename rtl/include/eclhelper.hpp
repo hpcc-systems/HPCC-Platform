@@ -187,7 +187,7 @@ public:
     virtual void processEndRow(const RtlFieldInfo * field) = 0;
 };
 
-// Functions for processing rows - creating, serializing, destorying etc.
+// Functions for processing rows - creating, serializing, destroying etc.
 interface IOutputRowSerializer;
 interface IOutputRowDeserializer;
 
@@ -2718,7 +2718,6 @@ interface IHThorHashLookupInfo
     virtual IHash * queryHash() = 0;
     virtual ICompare * queryCompare() = 0;
 };
-
 
 struct IHThorDictionaryWorkUnitWriteArg : public IHThorArg
 {

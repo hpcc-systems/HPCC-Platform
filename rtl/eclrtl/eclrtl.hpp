@@ -352,6 +352,9 @@ ECLRTL_API unsigned rtlRankedFromOrder(unsigned index, unsigned num, const void 
 
 ECLRTL_API void rtlEcho(unsigned len, const char * src);    // useful for testing.
 
+const unsigned int HASH32_INIT = 0x811C9DC5;
+const unsigned __int64 HASH64_INIT = I64C(0xcbf29ce484222325);
+
 ECLRTL_API unsigned rtlHashData( unsigned length, const void *_k, unsigned initval);
 ECLRTL_API unsigned rtlHashString( unsigned length, const char *_k, unsigned initval);
 ECLRTL_API unsigned rtlHashUnicode(unsigned length, UChar const * k, unsigned initval);

@@ -50,6 +50,7 @@ extern HQL_API IHqlExpression * insertChildDataset(IHqlExpression * expr, IHqlEx
 extern HQL_API IHqlExpression * swapDatasets(IHqlExpression * parent);
 extern HQL_API IHqlExpression * createCompare(node_operator op, IHqlExpression * l, IHqlExpression * r);    // handles cast insertion...
 extern HQL_API IHqlExpression * createRecord(IHqlExpression * field);
+extern HQL_API IHqlExpression * queryFirstField(IHqlExpression * record);
 extern HQL_API IHqlExpression * queryLastField(IHqlExpression * record);
 extern HQL_API IHqlExpression * queryLastNonAttribute(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryNextRecordField(IHqlExpression * recorhqlutid, unsigned & idx);

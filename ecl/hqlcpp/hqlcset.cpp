@@ -739,8 +739,97 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
 
 void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt)
 {
-    IHqlExpression *record = ds->queryRecord();
+    if (inExpr->queryChild(0)->getOperator() == no_sortlist)
+        buildExprInDataset(ctx, inExpr, tgt);
+    else
+        buildRowInDataset(ctx, inExpr, tgt);
+}
 
+void InlineLinkedDictionaryCursor::buildExprInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt)
+{
+    IHqlExpression *sortList = inExpr->queryChild(0);
+    IHqlExpression *record = ds->queryRecord();
+    IHqlExpression * payload = record->queryProperty(_payload_Atom);
+    if (payload && getIntValue(payload->queryChild(0))==1)
+    {
+        IHqlExpression *firstField = queryFirstField(record);
+        ITypeInfo *firstFieldType = firstField->queryType();
+        HqlExprArray args;
+        StringBuffer searchClassName;
+        switch (firstFieldType->getTypeCode())
+        {
+        case type_string:
+            searchClassName.append("DictSearchString");
+            if (firstFieldType->getStringLen() != UNKNOWN_LENGTH)
+            {
+                searchClassName.append("N");
+                args.append(*createIntConstant(firstFieldType->getStringLen()));
+            }
+            break;
+        case type_varstring:
+            searchClassName.append("DictSearchVString");
+            break;
+        case type_unicode:
+            searchClassName.append("DictSearchUnicode");
+            if (firstFieldType->getStringLen() != UNKNOWN_LENGTH)
+            {
+                searchClassName.append("N");
+                args.append(*createIntConstant(firstFieldType->getStringLen()));
+            }
+            args.append(*createConstant(firstFieldType->queryLocale()->getAtomNamePtr()));
+            break;
+        case type_varunicode:
+            searchClassName.append("DictSearchVUnicode");
+            args.append(*createConstant(firstFieldType->queryLocale()->getAtomNamePtr()));
+            break;
+        case type_utf8:
+            searchClassName.append("DictSearchUtf8");
+            args.append(*createConstant(firstFieldType->queryLocale()->getAtomNamePtr()));
+            break;
+        case type_int:
+            if (!firstFieldType->isSwappedEndian())
+            {
+                if (firstFieldType->isSigned())
+                    searchClassName.append("DictSearchSigned");
+                else
+                    searchClassName.append("DictSearchUnsigned");
+                searchClassName.append(firstFieldType->getSize());
+            }
+            break;
+        // Other types are not optimized - they are unlikely to be seen in real cases
+        }
+        if (searchClassName.length())
+        {
+            StringBuffer searchHelperName;
+            translator.getUniqueId(searchHelperName.append("sh"));
+            Owned<IHqlExpression> searchHelper = createVariable(searchHelperName, makeClassType(searchClassName));
+            IHqlExpression *searchValue = sortList->queryChild(0);
+            args.append(*LINK(searchValue));
+            CHqlBoundExpr bound;
+            OwnedHqlExpr constructor = translator.bindFunctionCall(createAtom(searchClassName), args, makeBoolType());
+            translator.buildExpr(ctx, constructor, bound);
+            ctx.addDeclare(searchHelper, bound.expr);
+
+            args.kill();
+            args.append(*createQuoted(searchHelperName, makeBoolType()));
+            args.append(*LINK(inExpr->queryChild(1)));
+            OwnedHqlExpr call = translator.bindFunctionCall(dictionaryLookupExistsFieldAtom, args, makeBoolType());
+            translator.buildExpr(ctx, call, tgt);
+            return;
+        }
+    }
+    // If we don't have an optimized version of the searcher, we need to generate code that looks like
+    // castValue = (cast) value;
+    // if (castValue != value)
+    //   match = false;
+    // else
+    //  ...do lookup via temporary row
+
+    UNIMPLEMENTED;
+}
+
+void InlineLinkedDictionaryCursor::buildRowInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt)
+{
     StringBuffer lookupHelperName;
     translator.buildDictionaryHashClass(record, lookupHelperName);
 
