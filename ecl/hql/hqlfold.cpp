@@ -1590,10 +1590,10 @@ static IHqlExpression * foldHashXX(IHqlExpression * expr)
     switch (op)
     {
     case no_hash32:
-        hashCode = 0x811C9DC5;
+        hashCode = HASH32_INIT;
         break;
     case no_hash64:
-        hashCode = I64C(0xcbf29ce484222325);
+        hashCode = HASH64_INIT;
         break;
     }
 

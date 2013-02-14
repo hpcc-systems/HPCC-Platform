@@ -820,8 +820,19 @@ const char * cppSystemText[]  = {
 
     // Dictionary support
     "    integer8 dictionaryCount(_linkcounted_ dictionary dict) : eclrtl,include,pure,entrypoint='rtlDictionaryCount';",
-    "   _linkcounted_ row(dummyRecord) dictionaryLookup(boolean meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup';",
-    "    boolean dictionaryLookupExists(boolean meta, _linkcounted_ dictionary dict, row key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExists';",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookup(IHThorHashLookupInfo meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup';",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupString(_linkcounted_ dictionary dict, const string key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupString';",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupSigned(_linkcounted_ dictionary dict, const integer key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupSigned';",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupUnsigned(_linkcounted_ dictionary dict, const unsigned key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupUnsigned';",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupSignedN(_linkcounted_ dictionary dict, const integer4 size, const integer key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupSignedN';",
+    "   _linkcounted_ row(dummyRecord) dictionaryLookupUnsignedN(_linkcounted_ dictionary dict, const integer4 size, const unsigned key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupUnsignedN';",
+
+    "   boolean dictionaryLookupExists(boolean meta, _linkcounted_ dictionary dict, row key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExists';",
+    "   boolean dictionaryLookupExistsString(_linkcounted_ dictionary dict, const string key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExistsString';",
+    "   boolean dictionaryLookupExistsSigned(_linkcounted_ dictionary dict, const integer key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExistsSigned';",
+    "   boolean dictionaryLookupExistsUnsigned(_linkcounted_ dictionary dict, const unsigned key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExistsUnsigned';",
+    "   boolean dictionaryLookupExistsSignedN(_linkcounted_ dictionary dict, const integer4 size, const integer key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExistsSignedN';",
+    "   boolean dictionaryLookupExistsUnsignedN(_linkcounted_ dictionary dict, const integer4 size, const unsigned key) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupExistsUnsignedN';",
 
     // Marshalling parameters to external languages
     "   bindBooleanParam(const varstring name, boolean val) : method,entrypoint='bindBooleanParam';",

@@ -683,6 +683,103 @@ extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size
     }
 }
 
+// Optimized cases for common single-field lookups
+
+extern ECLRTL_API byte *rtlDictionaryLookupString(size32_t tableSize, byte **table, size32_t searchLen, const char *searchFor, byte *defaultRow)
+{
+    if (!tableSize)
+        return (byte *) rtlLinkRow(defaultRow);
+    unsigned hash = rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const char *entry = (const char *) table[rowidx];
+        if (!entry)
+            return (byte *) rtlLinkRow(defaultRow);
+        if (rtlCompareStrStr(searchLen, searchFor, * (size32_t *) entry, entry+sizeof(size32_t))==0)
+            return (byte *) rtlLinkRow(entry);
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API byte *rtlDictionaryLookupSigned(size32_t tableSize, byte **table, __int64 searchFor, byte *defaultRow)
+{
+    if (!tableSize)
+        return (byte *) rtlLinkRow(defaultRow);
+    unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return (byte *) rtlLinkRow(defaultRow);
+        if (* (__int64 *) entry == searchFor)
+            return (byte *) rtlLinkRow(entry);
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API byte *rtlDictionaryLookupUnsigned(size32_t tableSize, byte **table, __uint64 searchFor, byte *defaultRow)
+{
+    if (!tableSize)
+        return (byte *) rtlLinkRow(defaultRow);
+    unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return (byte *) rtlLinkRow(defaultRow);
+        if (* (__uint64 *) entry == searchFor)
+            return (byte *) rtlLinkRow(entry);
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API byte *rtlDictionaryLookupSignedN(size32_t tableSize, byte **table, int size, __int64 searchFor, byte *defaultRow)
+{
+    if (!tableSize)
+        return (byte *) rtlLinkRow(defaultRow);
+    unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return (byte *) rtlLinkRow(defaultRow);
+        if (rtlReadInt(entry, size) == searchFor)
+            return (byte *) rtlLinkRow(entry);
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API byte *rtlDictionaryLookupUnsignedN(size32_t tableSize, byte **table, int size, __uint64 searchFor, byte *defaultRow)
+{
+    if (!tableSize)
+        return (byte *) rtlLinkRow(defaultRow);
+    unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return (byte *) rtlLinkRow(defaultRow);
+        if (rtlReadUInt(entry, size) == searchFor)
+            return (byte *) rtlLinkRow(entry);
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
 extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source)
 {
     if (!tableSize)
@@ -697,6 +794,103 @@ extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo,
         if (!entry)
             return false;
         if (compare->docompare(source, entry)==0)
+            return true;
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+// Optimized exists cases for common single-field lookups
+
+extern ECLRTL_API bool rtlDictionaryLookupExistsString(size32_t tableSize, byte **table, size32_t searchLen, const char *searchFor)
+{
+    if (!tableSize)
+        return false;
+    unsigned hash = rtlHash32Data(rtlTrimStrLen(searchLen, searchFor), searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const char *entry = (const char *) table[rowidx];
+        if (!entry)
+            return false;
+        if (rtlCompareStrStr(searchLen, searchFor, * (size32_t *) entry, entry+sizeof(size32_t))==0)
+            return true;
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API bool rtlDictionaryLookupExistsSigned(size32_t tableSize, byte **table, __int64 searchFor)
+{
+    if (!tableSize)
+        return false;
+    unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return false;
+        if (* (__int64 *) entry == searchFor)
+            return true;
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API bool rtlDictionaryLookupExistsUnsigned(size32_t tableSize, byte **table, __uint64 searchFor)
+{
+    if (!tableSize)
+        return false;
+    unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return false;
+        if (* (__uint64 *) entry == searchFor)
+            return true;
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API bool rtlDictionaryLookupExistsSignedN(size32_t tableSize, byte **table, int size, __int64 searchFor)
+{
+    if (!tableSize)
+        return false;
+    unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return false;
+        if (rtlReadInt(entry, size) == searchFor)
+            return true;
+        rowidx++;
+        if (rowidx==tableSize)
+            rowidx = 0;
+    }
+}
+
+extern ECLRTL_API bool rtlDictionaryLookupExistsUnsignedN(size32_t tableSize, byte **table, int size, __uint64 searchFor)
+{
+    if (!tableSize)
+        return false;
+    unsigned hash = rtlHash32Data8(&searchFor, HASH32_INIT);
+    unsigned rowidx = hash % tableSize;
+    loop
+    {
+        const void *entry = table[rowidx];
+        if (!entry)
+            return false;
+        if (rtlReadUInt(entry, size) == searchFor)
             return true;
         rowidx++;
         if (rowidx==tableSize)

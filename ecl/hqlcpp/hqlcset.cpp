@@ -719,19 +719,60 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
 {
     Owned<BoundRow> tempRow = translator.declareLinkedRow(ctx, mapExpr, false);
     IHqlExpression *record = ds->queryRecord();
-
-    StringBuffer lookupHelperName;
-    translator.buildDictionaryHashClass(record, lookupHelperName);
     CHqlBoundTarget target;
     target.expr.set(tempRow->queryBound());
-
     HqlExprArray args;
-    args.append(*createQuoted(lookupHelperName, makeBoolType()));
-    args.append(*LINK(mapExpr->queryChild(0)));
-    args.append(*LINK(mapExpr->queryChild(1)));
-    args.append(*::createRow(no_null, LINK(record)));
+    _ATOM lookupFunction = NULL;
+    IHqlExpression *dictionary = mapExpr->queryChild(0);
+    IHqlExpression *searchExpr = mapExpr->queryChild(1);
+
+    OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
+    OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
+    unsigned numKeyFields = getFlatFieldCount(keyRecord);
+    StringBuffer optimizedLookupFunc;
+    if (numKeyFields == 1)
+    {
+        // optimize some simple cases
+        IHqlExpression *firstField = queryFirstField(keyRecord);
+        ITypeInfo *type = firstField->queryType();
+        switch (type->getTypeCode())
+        {
+        case type_string:
+            if (type->getStringLen()==UNKNOWN_LENGTH && isAscii(type))
+                optimizedLookupFunc.append("dictionaryLookupString");
+            break;
+        case type_int:
+            if (!type->isSwappedEndian())
+            {
+                optimizedLookupFunc.appendf("dictionaryLookup%s", type->isSigned() ? "Signed" : "Unsigned");
+                if (type->getSize() != 8)
+                {
+                    optimizedLookupFunc.append("N");
+                    args.append(*createConstant((int) type->getSize()));
+                }
+            }
+            break;
+        }
+    }
+    if (optimizedLookupFunc.length())
+    {
+        args.add(*LINK(dictionary), 0);
+        args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
+        args.append(*::createRow(no_null, LINK(record))); // the default record
+        lookupFunction = createAtom(optimizedLookupFunc);
+    }
+    else
+    {
+        StringBuffer lookupHelperName;
+        translator.buildDictionaryHashClass(record, lookupHelperName);
+        args.append(*createQuoted(lookupHelperName, makeBoolType()));
+        args.append(*LINK(dictionary));
+        args.append(*LINK(searchExpr));
+        args.append(*::createRow(no_null, LINK(record))); // the default record
+        lookupFunction = dictionaryLookupAtom;
+    }
     Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
-    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryLookupAtom, args, resultType);
+    OwnedHqlExpr call = translator.bindFunctionCall(lookupFunction, args, resultType);
     translator.buildExprAssign(ctx, target, call);
     ctx.associate(*tempRow);
     return tempRow.getClear();
@@ -740,15 +781,55 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
 void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt)
 {
     IHqlExpression *record = ds->queryRecord();
-
-    StringBuffer lookupHelperName;
-    translator.buildDictionaryHashClass(record, lookupHelperName);
-
+    IHqlExpression *dictionary = inExpr->queryChild(1);
+    IHqlExpression *searchExpr = inExpr->queryChild(0);
     HqlExprArray args;
-    args.append(*createQuoted(lookupHelperName, makeBoolType()));
-    args.append(*LINK(inExpr->queryChild(1)));
-    args.append(*LINK(inExpr->queryChild(0)));
-    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryLookupExistsAtom, args, makeBoolType());
+
+    OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
+    OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
+    unsigned numKeyFields = getFlatFieldCount(keyRecord);
+    _ATOM lookupFunction = NULL;
+    StringBuffer optimizedLookupFunc;
+    if (numKeyFields == 1)
+    {
+        // optimize some simple cases
+        IHqlExpression *firstField = queryFirstField(keyRecord);
+        ITypeInfo *type = firstField->queryType();
+        switch (type->getTypeCode())
+        {
+        case type_string:
+            if (type->getStringLen()==UNKNOWN_LENGTH && isAscii(type))
+                optimizedLookupFunc.append("dictionaryLookupExistsString");
+            break;
+        case type_int:
+            if (!type->isSwappedEndian())
+            {
+                optimizedLookupFunc.appendf("dictionaryLookupExists%s", type->isSigned() ? "Signed" : "Unsigned");
+                if (type->getSize() != 8)
+                {
+                    optimizedLookupFunc.append("N");
+                    args.append(*createConstant((int) type->getSize()));
+                }
+            }
+            break;
+        }
+    }
+    if (optimizedLookupFunc.length())
+    {
+        args.add(*LINK(dictionary), 0);
+        args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
+        lookupFunction = createAtom(optimizedLookupFunc);
+    }
+    else
+    {
+        StringBuffer lookupHelperName;
+        translator.buildDictionaryHashClass(record, lookupHelperName);
+        args.append(*createQuoted(lookupHelperName, makeBoolType()));
+        args.append(*LINK(dictionary));
+        args.append(*LINK(searchExpr));
+        lookupFunction = dictionaryLookupExistsAtom;
+    }
+    OwnedHqlExpr call = translator.bindFunctionCall(lookupFunction, args, makeBoolType());
     translator.buildExpr(ctx, call, tgt);
 }
 

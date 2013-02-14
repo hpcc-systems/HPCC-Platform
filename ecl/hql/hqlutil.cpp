@@ -457,6 +457,12 @@ IHqlExpression * queryLastField(IHqlExpression * record)
     return NULL;
 }
 
+IHqlExpression * queryFirstField(IHqlExpression * record)
+{
+    unsigned idx = 0;
+    return queryNextRecordField(record, idx);
+}
+
 bool recordContainsBlobs(IHqlExpression * record)
 {
     ForEachChild(i, record)
