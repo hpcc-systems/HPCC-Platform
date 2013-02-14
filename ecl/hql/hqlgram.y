@@ -3936,6 +3936,12 @@ recordDef
                             $$.setExpr(LINK(queryOriginalRecord(ds)));
                             $$.setPosition($1);
                         }
+    | RECORDOF '(' dictionary ')'
+                        {
+                            OwnedHqlExpr ds = $3.getExpr();
+                            $$.setExpr(LINK(queryOriginalRecord(ds)));
+                            $$.setPosition($1);
+                        }
     | RECORDOF '(' dataRow ')'
                         {
                             OwnedHqlExpr ds = $3.getExpr();
