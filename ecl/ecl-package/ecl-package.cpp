@@ -96,6 +96,9 @@ public:
             usage();
             return false;
         }
+        if (optProcess.isEmpty())
+            optProcess.set("*");
+
         return true;
     }
     virtual int processCMD()
@@ -105,6 +108,7 @@ public:
         Owned<IClientActivatePackageRequest> request = packageProcessClient->createActivatePackageRequest();
         request->setTarget(optTarget);
         request->setPackageMap(optPackageMap);
+        request->setProcess(optProcess);
 
         Owned<IClientActivatePackageResponse> resp = packageProcessClient->ActivatePackage(request);
         if (resp->getExceptions().ordinality())
@@ -130,6 +134,7 @@ private:
 
     StringAttr optTarget;
     StringAttr optPackageMap;
+    StringAttr optProcess;
 };
 
 class EclCmdPackageDeActivate : public EclCmdCommon
@@ -183,6 +188,9 @@ public:
             usage();
             return false;
         }
+        if (optProcess.isEmpty())
+            optProcess.set("*");
+
         return true;
     }
     virtual int processCMD()
@@ -192,6 +200,7 @@ public:
         Owned<IClientDeActivatePackageRequest> request = packageProcessClient->createDeActivatePackageRequest();
         request->setTarget(optTarget);
         request->setPackageMap(optPackageMap);
+        request->setProcess(optProcess);
 
         Owned<IClientDeActivatePackageResponse> resp = packageProcessClient->DeActivatePackage(request);
         if (resp->getExceptions().ordinality())
@@ -216,6 +225,7 @@ private:
 
     StringAttr optTarget;
     StringAttr optPackageMap;
+    StringAttr optProcess;
 };
 
 class EclCmdPackageList : public EclCmdCommon
@@ -430,6 +440,9 @@ public:
             usage();
             return false;
         }
+
+        if (optProcess.isEmpty())
+            optProcess.set("*");
         return true;
     }
     virtual int processCMD()
@@ -441,6 +454,7 @@ public:
         Owned<IClientDeletePackageRequest> request = packageProcessClient->createDeletePackageRequest();
         request->setTarget(optTarget);
         request->setPackageMap(optPackageMap);
+        request->setProcess(optProcess);
 
         Owned<IClientDeletePackageResponse> resp = packageProcessClient->DeletePackage(request);
         if (resp->getExceptions().ordinality())
@@ -458,13 +472,14 @@ public:
                     "ecl packagemap delete <target> <packagemap>\n"
                     " Options:\n"
                     "   <target>               name of the target to use \n"
-                    "   <packagemap>           name of the package map to delete",
+                    "   <packagemap>           name of the package map to delete\n",
                     stdout);
         EclCmdCommon::usage();
     }
 private:
     StringAttr optPackageMap;
     StringAttr optTarget;
+    StringAttr optProcess;
 };
 
 class EclCmdPackageAdd : public EclCmdCommon
@@ -567,7 +582,7 @@ public:
                     " Options:\n"
                     "   -O, --overwrite             overwrite existing information\n"
                     "   -A, --activate              activate the package information\n"
-                    "   --daliip=<ip>               ip of the remote dali to use for logical file lookups"
+                    "   --daliip=<ip>               ip of the remote dali to use for logical file lookups\n"
 // NOT-YET          "  --packageprocessname         if not set use this package process name for all clusters"
                     "   <target>                    name of target to use when adding package map information\n"
                     "   <filename>                  name of file containing package map information\n",
