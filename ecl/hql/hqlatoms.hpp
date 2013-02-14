@@ -70,6 +70,7 @@ extern HQL_API _ATOM caseAtom;
 extern HQL_API _ATOM cardinalityAtom;
 extern HQL_API _ATOM checkinAtom;
 extern HQL_API _ATOM checkoutAtom;
+extern HQL_API _ATOM _childAttr_Atom;
 extern HQL_API _ATOM choosenAtom;
 extern HQL_API _ATOM clusterAtom;
 extern HQL_API _ATOM _colocal_Atom;

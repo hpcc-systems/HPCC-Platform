@@ -2375,41 +2375,76 @@ void HqlGram::addField(const attribute &errpos, _ATOM name, ITypeInfo *_type, IH
     addToActiveRecord(LINK(newField));
 }
 
-void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs)
+void HqlGram::addDatasetField(const attribute &errpos, _ATOM name, ITypeInfo * fieldType, IHqlExpression *value, IHqlExpression * attrs)
 {
     if (!name)
         name = createUnnamedFieldName();
     checkFieldnameValid(errpos, name);
-    if (value && !recordTypesMatch(record, value))
-        reportError(ERR_TYPEMISMATCH_DATASET, errpos, "Dataset expression has a different record from the field");
+
+    if (fieldType)
+    {
+        IHqlExpression * childAttrs = queryProperty(fieldType, _childAttr_Atom);
+        if (childAttrs)
+            attrs = createComma(LINK(childAttrs->queryChild(0)), attrs);
+    }
+
+    Owned<ITypeInfo> dsType = LINK(fieldType);
+    if (value)
+    {
+        ITypeInfo * valueType = value->queryType();
+        if (!dsType || queryRecord(dsType)->numChildren() == 0)
+        {
+            ITypeInfo * recordType = queryRecordType(valueType);
+            dsType.setown(makeTableType(makeRowType(LINK(recordType)), NULL, NULL, NULL));
+        }
+        else if (!dsType->assignableFrom(valueType))
+        {
+            canNotAssignTypeError(dsType,valueType,errpos);
+            value->Release();
+            value = NULL;
+        }
+    }
+    else
+    {
+        assertex(dsType && queryRecord(dsType));
+        checkRecordIsValid(errpos, queryRecord(dsType));
+    }
+
     if (queryPropertyInList(virtualAtom, attrs))
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
 
-    ITypeInfo * type = makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL);
-
-    IHqlExpression *newField = createField(name, type, value, attrs);
+    IHqlExpression *newField = createField(name, LINK(dsType), value, attrs);
     addToActiveRecord(newField);
-    record->Release();
 }
 
-void HqlGram::addDictionaryField(const attribute &errpos, _ATOM name, IHqlExpression * record, IHqlExpression *value, IHqlExpression * attrs)
+void HqlGram::addDictionaryField(const attribute &errpos, _ATOM name, ITypeInfo  * type, IHqlExpression *value, IHqlExpression * attrs)
 {
     if (!name)
         name = createUnnamedFieldName();
     checkFieldnameValid(errpos, name);
-    if (value && !recordTypesMatch(record, value))
-        reportError(ERR_TYPEMISMATCH_DATASET, errpos, "Dataset expression has a different record from the field");
+
+    Owned<ITypeInfo> dictType = LINK(type);
+    if (value)
+    {
+        ITypeInfo * valueType = value->queryType();
+        if (queryRecord(dictType)->numChildren() == 0)
+            dictType.set(value->queryType());
+        else if (!dictType->assignableFrom(valueType))
+         {
+             canNotAssignTypeError(dictType,valueType,errpos);
+             value->Release();
+             value = NULL;
+         }
+    }
     if (queryPropertyInList(virtualAtom, attrs))
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
     if (!attrs)
         attrs = extractAttrsFromExpr(value);
 
-    ITypeInfo * type = makeDictionaryType(makeRowType(createRecordType(record)));
-    IHqlExpression *newField = createField(name, type, value, attrs);
+    IHqlExpression *newField = createField(name, dictType.getClear(), value, attrs);
     addToActiveRecord(newField);
-    record->Release();
 }
 
 void HqlGram::addIfBlockToActive(const attribute &errpos, IHqlExpression * ifblock)
@@ -10307,7 +10342,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case HASH_STORED: msg.append("#STORED"); break;
     case HASH_LINK: msg.append("#LINK"); break;
     case HASH_WORKUNIT: msg.append("#WORKUNIT"); break;
-    case SIMPLE_TYPE: msg.append("<typename>"); break;
+    case SIMPLE_TYPE: msg.append("type-name"); break;
 
     case EQ: msg.append("="); break;
     case NE: msg.append("<>"); break;
@@ -10332,15 +10367,18 @@ static void getTokenText(StringBuffer & msg, int token)
     case ACTION_ID: msg.append("identifier"); break;
     case TRANSFORM_ID: msg.append("transform-name"); break;
     case ALIEN_ID: msg.append("type name"); break;
-    case TYPE_ID: msg.append("type name"); break;
-    case SET_TYPE_ID: msg.append("type name"); break;
-    case PATTERN_TYPE_ID: msg.append("type name"); break;
     case PATTERN_ID: msg.append("pattern-name"); break;
     case FEATURE_ID: msg.append("feature-name"); break;
     case EVENT_ID: msg.append("identifier"); break;
     case ENUM_ID: msg.append("identifier"); break;
     case LIST_DATASET_ID: msg.append("identifier"); break;
     case SORTLIST_ID: msg.append("field list"); break;
+
+    case TYPE_ID: msg.append("type name"); break;
+    case SET_TYPE_ID: msg.append("type name"); break;
+    case PATTERN_TYPE_ID: msg.append("type name"); break;
+    case DICTIONARY_TYPE_ID: msg.append("type name"); break;
+    case DATASET_TYPE_ID: msg.append("type name"); break;
 
     case ACTION_FUNCTION: msg.append("action"); break;
     case PATTERN_FUNCTION: msg.append("pattern"); break;
@@ -10446,13 +10484,14 @@ void HqlGram::simplifyExpected(int *expected)
     simplify(expected, DATA_CONST, REAL_CONST, STRING_CONST, INTEGER_CONST, UNICODE_CONST, 0);
     simplify(expected, VALUE_MACRO, DEFINITIONS_MACRO, 0);
     simplify(expected, DICTIONARY_ID, DICTIONARY_FUNCTION, DICTIONARY, 0);
-    simplify(expected, VALUE_ID, DATASET_ID, DICTIONARY_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, DICTIONARY_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, 0);
+    simplify(expected, VALUE_ID, DATASET_ID, DICTIONARY_ID, RECORD_ID, ACTION_ID, UNKNOWN_ID, SCOPE_ID, VALUE_FUNCTION, DATAROW_FUNCTION, DATASET_FUNCTION, DICTIONARY_FUNCTION, LIST_DATASET_FUNCTION, LIST_DATASET_ID, ALIEN_ID, TYPE_ID, SET_TYPE_ID, TRANSFORM_ID, TRANSFORM_FUNCTION, RECORD_FUNCTION, FEATURE_ID, EVENT_ID, EVENT_FUNCTION, SCOPE_FUNCTION, ENUM_ID, PATTERN_TYPE_ID, DICTIONARY_TYPE_ID, DATASET_TYPE_ID, 0);
     simplify(expected, LIBRARY, LIBRARY, SCOPE_FUNCTION, STORED, PROJECT, INTERFACE, MODULE, 0);
     simplify(expected, MATCHROW, MATCHROW, LEFT, RIGHT, IF, IFF, ROW, HTTPCALL, SOAPCALL, PROJECT, GLOBAL, NOFOLD, NOHOIST, ALLNODES, THISNODE, SKIP, DATAROW_FUNCTION, TRANSFER, RIGHT_NN, FROMXML, 0);
     simplify(expected, TRANSFORM_ID, TRANSFORM_FUNCTION, TRANSFORM, '@', 0);
     simplify(expected, RECORD, RECORDOF, RECORD_ID, RECORD_FUNCTION, SCOPE_ID, VALUE_MACRO, '{', '@', 0);
     simplify(expected, IFBLOCK, ANY, PACKED, BIG, LITTLE, 0);
     simplify(expected, SCOPE_ID, '$', 0);
+    simplify(expected, SIMPLE_TYPE, _ARRAY_, LINKCOUNTED, EMBEDDED, STREAMED, 0);
     simplify(expected, END, '}', 0);
 }
 
@@ -10503,9 +10542,6 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
     case ENUM_ID:
     case RECORD_ID:
     case ALIEN_ID:
-    case TYPE_ID:
-    case SET_TYPE_ID:
-    case PATTERN_TYPE_ID:
     case TRANSFORM_ID:
     case PATTERN_ID:
     case FEATURE_ID:
@@ -10522,6 +10558,11 @@ void HqlGram::syntaxError(const char *s, int token, int *expected)
     case SCOPE_FUNCTION:
     case TRANSFORM_FUNCTION:
     case LIST_DATASET_FUNCTION:
+    case TYPE_ID:
+    case SET_TYPE_ID:
+    case PATTERN_TYPE_ID:
+    case DATASET_TYPE_ID:
+    case DICTIONARY_TYPE_ID:
     {
         for (int j = 0; expected[j] ; j++)
         {
