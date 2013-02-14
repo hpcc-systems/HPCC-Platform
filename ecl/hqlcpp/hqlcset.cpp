@@ -738,18 +738,22 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
         switch (type->getTypeCode())
         {
         case type_string:
-            if (type->getStringLen()==UNKNOWN_LENGTH && isAscii(type))
-                optimizedLookupFunc.append("dictionaryLookupString");
-            break;
-        case type_int:
-            if (!type->isSwappedEndian())
+            if (isAscii(type))
             {
-                optimizedLookupFunc.appendf("dictionaryLookup%s", type->isSigned() ? "Signed" : "Unsigned");
-                if (type->getSize() != 8)
+                optimizedLookupFunc.append("dictionaryLookupString");
+                if (type->getStringLen()!=UNKNOWN_LENGTH)
                 {
                     optimizedLookupFunc.append("N");
-                    args.append(*createConstant((int) type->getSize()));
+                    args.append(*getSizetConstant(type->getStringLen()));
                 }
+            }
+            break;
+        case type_int:
+            optimizedLookupFunc.appendf("dictionaryLookup%s", type->isSigned() ? "Signed" : "Unsigned");
+            if (type->getSize() != 8)
+            {
+                optimizedLookupFunc.append("N");
+                args.append(*getSizetConstant(type->getSize()));
             }
             break;
         }
@@ -798,18 +802,22 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
         switch (type->getTypeCode())
         {
         case type_string:
-            if (type->getStringLen()==UNKNOWN_LENGTH && isAscii(type))
-                optimizedLookupFunc.append("dictionaryLookupExistsString");
-            break;
-        case type_int:
-            if (!type->isSwappedEndian())
+            if (isAscii(type))
             {
-                optimizedLookupFunc.appendf("dictionaryLookupExists%s", type->isSigned() ? "Signed" : "Unsigned");
-                if (type->getSize() != 8)
+                optimizedLookupFunc.append("dictionaryLookupExistsString");
+                if (type->getStringLen()!=UNKNOWN_LENGTH)
                 {
                     optimizedLookupFunc.append("N");
-                    args.append(*createConstant((int) type->getSize()));
+                    args.append(*getSizetConstant(type->getStringLen()));
                 }
+            }
+            break;
+        case type_int:
+            optimizedLookupFunc.appendf("dictionaryLookupExists%s", type->isSigned() ? "Signed" : "Unsigned");
+            if (type->getSize() != 8)
+            {
+                optimizedLookupFunc.append("N");
+                args.append(*getSizetConstant(type->getSize()));
             }
             break;
         }

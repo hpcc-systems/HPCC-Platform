@@ -5405,7 +5405,6 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
 
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
 {
-    // MORE - should probably use an attr to cache this?
     IHqlExpression * payload = record->queryProperty(_payload_Atom);
     unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
     unsigned max = record->numChildren() - payloadSize;
