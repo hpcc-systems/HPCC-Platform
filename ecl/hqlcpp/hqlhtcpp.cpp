@@ -5390,21 +5390,43 @@ void HqlCppTranslator::buildDictionaryHashClass(IHqlExpression *record, StringBu
         classctx.setNextPriority(RowMetaPrio);
 
         beginNestedClass(classctx, lookupHelperName, "IHThorHashLookupInfo");
-        HqlExprArray keyedFields;
-        OwnedHqlExpr dictionary = createDataset(no_null, LINK(record));
-        IHqlExpression * payload = record->queryProperty(_payload_Atom);
-        unsigned payloadSize = payload ? (unsigned)getIntValue(payload->queryChild(0)) : 0;
-        unsigned max = record->numChildren() - payloadSize;
-        for (unsigned idx = 0; idx < max; idx++)
+        OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
+        OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
+
+        HqlExprArray keyedSourceFields;
+        HqlExprArray keyedDictFields;
+        OwnedHqlExpr source = createDataset(no_null, LINK(searchRecord));
+        DatasetReference sourceRef(source, no_none, NULL);
+        OwnedHqlExpr dict = createDataset(no_null, LINK(record));
+        DatasetReference dictRef(dict, no_none, NULL);
+
+        ForEachChild(idx, searchRecord)
         {
-            IHqlExpression *child = record->queryChild(idx);
+            IHqlExpression *child = searchRecord->queryChild(idx);
             if (!child->isAttribute())
-                keyedFields.append(*createSelectExpr(LINK(dictionary->queryNormalizedSelector()), LINK(child)));
+                keyedSourceFields.append(*createSelectExpr(LINK(source->queryNormalizedSelector()), LINK(child)));
         }
-        OwnedHqlExpr keyedList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedFields);
-        DatasetReference dictRef(dictionary, no_none, NULL);
-        buildHashOfExprsClass(classctx, "Hash", keyedList, dictRef, false);
-        buildCompareMember(classctx, "Compare", keyedList, dictRef);
+        ForEachChild(idx2, keyRecord)
+        {
+            IHqlExpression *child = keyRecord->queryChild(idx2);
+            if (!child->isAttribute())
+                keyedDictFields.append(*createSelectExpr(LINK(dict->queryNormalizedSelector()), LINK(child)));
+        }
+        OwnedHqlExpr keyedSourceList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedSourceFields);
+        OwnedHqlExpr keyedDictList = createValueSafe(no_sortlist, makeSortListType(NULL), keyedDictFields);
+
+        buildHashOfExprsClass(classctx, "HashLookup", keyedSourceList, sourceRef, false);
+        buildHashOfExprsClass(classctx, "Hash", keyedDictList, dictRef, false);
+
+        OwnedHqlExpr seq = createDummySelectorSequence();
+        OwnedHqlExpr leftSelect = createSelector(no_left, source, seq);
+        OwnedHqlExpr rightSelect = createSelector(no_right, dict, seq);
+        IHqlExpression * left = sourceRef.mapCompound(keyedSourceList, leftSelect);
+        IHqlExpression * right = dictRef.mapCompound(keyedDictList, rightSelect);
+        OwnedHqlExpr compare = createValue(no_order, LINK(signedType), left, right);
+
+        buildCompareMemberLR(classctx, "CompareLookup", compare, source, dict, seq);
+        buildCompareMember(classctx, "Compare", keyedDictList, dictRef);
         endNestedClass();
 
         if (queryOptions().spanMultipleCpp)
