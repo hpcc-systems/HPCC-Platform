@@ -2717,6 +2717,8 @@ interface IHThorHashLookupInfo
 {
     virtual IHash * queryHash() = 0;
     virtual ICompare * queryCompare() = 0;
+    virtual IHash * queryHashLookup() = 0;
+    virtual ICompare * queryCompareLookup() = 0;
 };
 
 

@@ -285,6 +285,7 @@ extern DEFTYPE_API ITranslationInfo * queryDefaultTranslation(ICharsetInfo * tgt
 //---------------------------------------------------------------------------
 
 extern DEFTYPE_API ITypeInfo * getStretchedType(unsigned newLen, ITypeInfo * type);
+extern DEFTYPE_API ITypeInfo * getMaxLengthType(ITypeInfo * type);
 extern DEFTYPE_API ITypeInfo * getNumericType(ITypeInfo * type);
 extern DEFTYPE_API ITypeInfo * getStringType(ITypeInfo * type);
 extern DEFTYPE_API ITypeInfo * getVarStringType(ITypeInfo * type);

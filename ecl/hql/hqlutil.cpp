@@ -5413,9 +5413,34 @@ IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
     return newrec->closeExpr();
 }
 
+IHqlExpression *getDictionarySearchRecord(IHqlExpression *record)
+{
+    // MORE - should probably use an attr to cache this?
+    IHqlExpression * payload = record->queryProperty(_payload_Atom);
+    unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
+    unsigned max = record->numChildren() - payloadSize;
+    IHqlExpression *newrec = createRecord();
+    for (unsigned idx = 0; idx < max; idx++)
+    {
+        IHqlExpression *child = record->queryChild(idx);
+        if (!child->isAttribute() || child->queryName()!=_payload_Atom)  // Strip off the payload attribute
+        {
+            if (child->getOperator()==no_field)
+            {
+                ITypeInfo *fieldType = child->queryType();
+                Owned<ITypeInfo> stretched = getMaxLengthType(fieldType);
+                newrec->addOperand(createField(child->queryName(), stretched.getClear(), NULL, NULL));
+            }
+            else
+                newrec->addOperand(LINK(child));
+        }
+    }
+    return newrec->closeExpr();
+}
+
 IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * dict, IHqlExpression *values)
 {
-    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
+    OwnedHqlExpr record = getDictionarySearchRecord(dict->queryRecord());
     TempTableTransformer transformer(errors, location, true);
     OwnedHqlExpr newTransform = transformer.createTempTableTransform(values, record);
     return createRow(no_selectmap, dict, createRow(no_createrow, newTransform.getClear()));
@@ -5423,7 +5448,7 @@ IHqlExpression * createSelectMapRow(IErrorReceiver * errors, ECLlocation & locat
 
 IHqlExpression *createINDictExpr(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *expr, IHqlExpression *dict)
 {
-    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
+    OwnedHqlExpr record = getDictionarySearchRecord(dict->queryRecord());
     TempTableTransformer transformer(errors, location, true);
     OwnedHqlExpr newTransform = transformer.createTempTableTransform(expr, record);
     return createBoolExpr(no_indict, createRow(no_createrow, newTransform.getClear()), dict);
@@ -5431,10 +5456,10 @@ IHqlExpression *createINDictExpr(IErrorReceiver * errors, ECLlocation & location
 
 IHqlExpression *createINDictRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression *row, IHqlExpression *dict)
 {
-    OwnedHqlExpr record = getDictionaryKeyRecord(dict->queryRecord());
-    if (!record->queryType()->assignableFrom(row->queryType()))
-        errors->reportError(ERR_TYPE_DIFFER, "Type mismatch", location.sourcePath->str(), location.lineno, location.column, location.position);
-    return createBoolExpr(no_indict, row, dict);
+    OwnedHqlExpr record = getDictionarySearchRecord(dict->queryRecord());
+    Owned<ITypeInfo> rowType = makeRowType(record->getType());
+    OwnedHqlExpr castRow = ensureExprType(row, rowType);
+    return createBoolExpr(no_indict, castRow.getClear(), dict);
 }
 
 IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)

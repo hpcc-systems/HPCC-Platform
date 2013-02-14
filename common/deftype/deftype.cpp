@@ -3159,6 +3159,28 @@ ITypeInfo * getStretchedType(unsigned newLen, ITypeInfo * type)
     return NULL;
 }
 
+ITypeInfo * getMaxLengthType(ITypeInfo * type)
+{
+    switch (type->getTypeCode())
+    {
+    case type_boolean:
+        return LINK(type);
+    case type_int:
+        return makeIntType(8, type->isSigned());
+    case type_string:
+    case type_varstring:
+    case type_unicode:
+    case type_varunicode:
+    case type_utf8:
+    case type_qstring:
+    case type_data:
+        return getStretchedType(UNKNOWN_LENGTH, type);
+    default:
+        throw MakeStringException(99, "Internal error: getMaxLengthType");
+    }
+    return NULL;
+}
+
 ITypeInfo * getAsciiType(ITypeInfo * type)
 {
     ICharsetInfo * charset = type->queryCharset();

@@ -667,8 +667,8 @@ extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size
     if (!tableSize)
         return (byte *) rtlLinkRow(defaultRow);
 
-    IHash *hash  = hashInfo.queryHash();
-    ICompare *compare  = hashInfo.queryCompare();
+    IHash *hash  = hashInfo.queryHashLookup();
+    ICompare *compare  = hashInfo.queryCompareLookup();
     unsigned rowidx = hash->hash(source) % tableSize;
     loop
     {
@@ -688,8 +688,8 @@ extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo,
     if (!tableSize)
         return false;
 
-    IHash *hash  = hashInfo.queryHash();
-    ICompare *compare  = hashInfo.queryCompare();
+    IHash *hash  = hashInfo.queryHashLookup();
+    ICompare *compare  = hashInfo.queryCompareLookup();
     unsigned rowidx = hash->hash(source) % tableSize;
     loop
     {
