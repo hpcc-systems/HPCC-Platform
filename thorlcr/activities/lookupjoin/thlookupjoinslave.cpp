@@ -349,8 +349,8 @@ public:
     {
         allDoneWaiting = false;
         allDone = true;
-        sender.stop();
         receiver.stop();
+        sender.stop();
         allDoneSem.signal();
     }
     bool send(CSendItem *sendItem)
