@@ -99,10 +99,6 @@ class CBroadcaster : public CSimpleInterface
         CRecv(CBroadcaster &_broadcaster) : threaded("CBroadcaster::CRecv", this), broadcaster(_broadcaster)
         {
         }
-        ~CRecv()
-        {
-            stop();
-        }
         void start() { threaded.start(); }
         void stop()
         {
