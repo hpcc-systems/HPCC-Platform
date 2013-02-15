@@ -13,7 +13,7 @@
  <Row><people><Row><_unnamed_max_aage1>50</_unnamed_max_aage1><surname>Jones</surname></Row></people></Row>
 </Dataset>
 <Dataset name='Result 3'>
- <Row><people><Row><people>Count: </people><_unnamed_cnt_2>1</_unnamed_cnt_2><_unnamed_3>Name: </_unnamed_3><surname>Halliday</surname></Row></people></Row>
+ <Row><people><Row><_unnamed_1>Count: </_unnamed_1><_unnamed_cnt_2>1</_unnamed_cnt_2><_unnamed_3>Name: </_unnamed_3><surname>Halliday</surname></Row></people></Row>
  <Row><people></people></Row>
  <Row><people></people></Row>
  <Row><people></people></Row>
