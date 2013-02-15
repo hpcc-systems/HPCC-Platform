@@ -1053,7 +1053,7 @@ void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * s
     );
 }
 
-void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
 {
     tcount = 0;
     tgt = NULL;
@@ -1061,6 +1061,7 @@ void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRow
         MemoryBuffer datasetBuffer;
         MemoryBuffer2IDataVal result(datasetBuffer);
         r->getResultRaw(result, NULL, NULL);
+        Owned<IOutputRowDeserializer> deserializer = _rowAllocator->createDiskDeserializer(queryCodeContext());
         rtlDeserializeDictionary(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray());
     );
 }
