@@ -357,7 +357,8 @@ CGraphElementBase::CGraphElementBase(CGraphBase &_owner, IPropertyTree &_xgmml) 
     kind = (ThorActivityKind)xgmml->getPropInt("att[@name=\"_kind\"]/@value", TAKnone);
     sink = isActivitySink(kind);
     bool coLocal = xgmml->getPropBool("att[@name=\"coLocal\"]/@value", false);
-    isLocal = coLocal || xgmml->getPropBool("att[@name=\"local\"]/@value", false);
+    isLocalData = xgmml->getPropBool("att[@name=\"local\"]/@value", false); // local execute + local data access only
+    isLocal = isLocalData || coLocal; // local execute
     isGrouped = xgmml->getPropBool("att[@name=\"grouped\"]/@value", false);
     resultsGraph = NULL;
     ownerId = xgmml->getPropInt("att[@name=\"_parentActivity\"]/@value", 0);

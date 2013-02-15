@@ -253,7 +253,7 @@ protected:
     activity_id id, ownerId;
     StringAttr eclText;
     Owned<IPropertyTree> xgmml;
-    bool isLocal, isGrouped, sink, prepared, onCreateCalled, onStartCalled, onlyUpdateIfChanged, nullAct, log;
+    bool isLocal, isLocalData, isGrouped, sink, prepared, onCreateCalled, onStartCalled, onlyUpdateIfChanged, nullAct, log;
     Owned<CActivityBase> activity;
     CGraphBase *resultsGraph, *owner;
     CGraphDependencyArray dependsOn;
@@ -316,7 +316,12 @@ public:
     bool isSink() const { return sink; }
     inline bool doLogging() const { return log; }
     inline void setLogging(bool _log) { log = _log; }
-    bool queryLocal() const { return isLocal; }
+
+    // NB: in almost all cases queryLocal() == queryLocalData()
+    // an exception is e.g. a locally executing keyedjoin, accessing a global key
+    bool queryLocal() const { return isLocal; }  // executed in isolation on each slave
+    bool queryLocalData() const { return isLocalData; } // activity access local data only
+
     bool queryGrouped() const { return isGrouped; }
     bool queryLocalOrGrouped() { return isLocal || isGrouped; }
     CGraphElementBase *queryInput(unsigned index) const
