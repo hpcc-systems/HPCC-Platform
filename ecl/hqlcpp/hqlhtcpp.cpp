@@ -4754,7 +4754,6 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
 
                 //NB: The result type will be overridden when this function is bound
                 ensureSerialized = false;
-                args.append(*createSerializer(ctx, record, diskAtom, deserializerAtom));
                 overrideType.setown(setLinkCountedAttr(type, true));
                 func = getResultDictionaryAtom;
             }
