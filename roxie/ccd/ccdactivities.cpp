@@ -462,7 +462,7 @@ public:
         return queryContext->queryCodeContext()->loadResource(id);
     }
 
-    // Gets and sets should not happen - they can only happen in the main Roxie server context
+    // Sets should not happen - they can only happen in the main Roxie server context
 
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) { throwUnexpected(); }
@@ -477,21 +477,66 @@ public:
     virtual void setResultVarString(const char * name, unsigned sequence, const char * value) { throwUnexpected(); }
     virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) { throwUnexpected(); }
 
-    virtual bool getResultBool(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual __int64 getResultInt(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual double getResultReal(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual char *getResultVarString(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { throwUnexpected(); }
+    // Some gets are allowed though (e.g. for ONCE values)
+
+    virtual bool getResultBool(const char * name, unsigned sequence)
+    {
+        return queryContext->queryCodeContext()->getResultBool(name, sequence);
+    }
+    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence)
+    {
+        queryContext->queryCodeContext()->getResultData(tlen, tgt, name, sequence);
+    }
+    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence)
+    {
+        queryContext->queryCodeContext()->getResultDecimal(tlen, precision, isSigned, tgt, stepname, sequence);
+    }
+    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    {
+        queryContext->queryCodeContext()->getResultRaw(tlen, tgt, name, sequence, xmlTransformer, csvTransformer);
+    }
+    virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    {
+        queryContext->queryCodeContext()->getResultSet(isAll, tlen, tgt, name, sequence, xmlTransformer, csvTransformer);
+    }
+    virtual __int64 getResultInt(const char * name, unsigned sequence)
+    {
+        return queryContext->queryCodeContext()->getResultInt(name, sequence);
+    }
+    virtual double getResultReal(const char * name, unsigned sequence)
+    {
+        return queryContext->queryCodeContext()->getResultReal(name, sequence);
+    }
+    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence)
+    {
+        queryContext->queryCodeContext()->getResultString(tlen, tgt, name, sequence);
+    }
+    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence)
+    {
+        queryContext->queryCodeContext()->getResultStringF(tlen, tgt, name, sequence);
+    }
+    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence)
+    {
+        queryContext->queryCodeContext()->getResultUnicode(tlen, tgt, name, sequence);
+    }
+    virtual char *getResultVarString(const char * name, unsigned sequence)
+    {
+        return queryContext->queryCodeContext()->getResultVarString(name, sequence);
+    }
+    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence)
+    {
+        return queryContext->queryCodeContext()->getResultVarUnicode(name, sequence);
+    }
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    {
+        return queryContext->queryCodeContext()->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, deserializer, isGrouped, xmlTransformer, csvTransformer);
+    }
+    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher)
+    {
+        return queryContext->queryCodeContext()->getResultDictionary(tcount, tgt, _rowAllocator, name, sequence, deserializer, xmlTransformer, csvTransformer, hasher);
+    }
+
     virtual unsigned getResultHash(const char * name, unsigned sequence) { throwUnexpected(); }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IOutputRowDeserializer * deserializer, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) { throwUnexpected(); }
 
     // Not yet thought about these....
 
