@@ -2347,6 +2347,19 @@ actionStmt
                                 flags->unwindList(args, no_comma);
                             $$.setExpr(createValue(no_outputscalar, makeVoidType(), args), $1);
                         }
+    | OUTPUT '(' dictionary optOutputWuFlags ')'
+                        {
+                            parser->normalizeExpression($3);
+                            OwnedHqlExpr flags = $4.getExpr();
+                            if (queryPropertyInList(extendAtom, flags))
+                                parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on a dataset");
+                            HqlExprArray args;
+                            args.append(*createDataset(no_datasetfromdictionary, $3.getExpr()));
+                            if (flags)
+                                flags->unwindList(args, no_comma);
+                            $$.setExpr(createValue(no_output, makeVoidType(), args), $1);
+                            parser->processUpdateAttr($$);
+                        }
     | OUTPUT '(' dataRow optOutputWuFlags ')'
                         {
                             OwnedHqlExpr flags = $4.getExpr();
@@ -4831,6 +4844,20 @@ query
                             HqlExprArray args;
                             args.append(*select.getClear());
                             IHqlExpression * output = createValue(no_output, makeVoidType(), args);
+
+                            $$.setExpr(output, $1);
+                        }
+    | dictionary optfailure
+                        {
+                            IHqlExpression * expr = $1.getExpr();
+                            OwnedHqlExpr failure = $2.getExpr();
+
+                            HqlExprArray meta;
+                            expr = attachWorkflowOwn(meta, expr, failure, NULL);
+                            expr = parser->attachPendingWarnings(expr);
+                            expr = parser->attachMetaAttributes(expr, meta);
+
+                            IHqlExpression * output = createValue(no_output, makeVoidType(), createDataset(no_datasetfromdictionary, expr));
 
                             $$.setExpr(output, $1);
                         }
