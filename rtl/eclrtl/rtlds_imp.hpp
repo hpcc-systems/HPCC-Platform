@@ -438,7 +438,20 @@ protected:
 
 extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte **table);
 extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow);
+extern ECLRTL_API byte *rtlDictionaryLookupString(size32_t tableSize, byte **table, size32_t len, const char *source, byte *defaultRow);
+extern ECLRTL_API byte *rtlDictionaryLookupStringN(size32_t tableSize, byte **table, size32_t N, size32_t len, const char *source, byte *defaultRow);
+extern ECLRTL_API byte *rtlDictionaryLookupSigned(size32_t tableSize, byte **table, __int64 source, byte *defaultRow);
+extern ECLRTL_API byte *rtlDictionaryLookupUnsigned(size32_t tableSize, byte **table, __uint64 source, byte *defaultRow);
+extern ECLRTL_API byte *rtlDictionaryLookupSignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source, byte *defaultRow);
+extern ECLRTL_API byte *rtlDictionaryLookupUnsignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source, byte *defaultRow);
+
 extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsString(size32_t tableSize, byte **table, size32_t len, const char *source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsStringN(size32_t tableSize, byte **table, size32_t N, size32_t len, const char *source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsSigned(size32_t tableSize, byte **table, __int64 source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsUnsigned(size32_t tableSize, byte **table, __uint64 source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsSignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source);
+extern ECLRTL_API bool rtlDictionaryLookupExistsUnsignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source);
 
 extern ECLRTL_API void appendRowsToRowset(size32_t & targetCount, byte * * & targetRowset, IEngineRowAllocator * rowAllocator, size32_t count, byte * * rows);
 
