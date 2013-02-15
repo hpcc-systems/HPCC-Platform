@@ -22,6 +22,16 @@
 #include "TpWrapper.hpp"
 #include "WUXMLInfo.hpp"
 
+enum BulletType
+{
+    bulletNONE = 0,
+    bulletOrange = 1,
+    bulletYellow = 2,
+    bulletWhite = 3,
+    bulletGreen = 4,
+    bulletError = 5
+};
+
 class CWsSMCEx : public CWsSMC
 {
     long m_counter;
@@ -68,6 +78,8 @@ private:
     void addToThorClusterList(IArrayOf<IEspThorCluster>& clusters, IEspThorCluster* cluster, const char* sortBy, bool descending);
     void addToRoxieClusterList(IArrayOf<IEspRoxieCluster>& clusters, IEspRoxieCluster* cluster, const char* sortBy, bool descending);
     void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName, const char* serverType);
+    void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* queueState, const char* serverName, const char* serverType);
+    void getQueueState(int runningJobsInQueue, StringBuffer& queueState, BulletType& colorType);
 };
 
 
