@@ -3293,7 +3293,7 @@ void rtlStrToEStrX(unsigned & tlen, char * & tgt, unsigned slen, const char * sr
 //---------------------------------------------------------------------------
 // See http://www.isthe.com/chongo/tech/comp/fnv/index.html
 
-#define FNV1_64_INIT I64C(0xcbf29ce484222325)
+#define FNV1_64_INIT HASH64_INIT
 #define FNV_64_PRIME I64C(0x100000001b3U)
 
 
@@ -3341,7 +3341,7 @@ hash64_t rtlHash64VUnicode(UChar const * k, hash64_t initval)
 //---------------------------------------------------------------------------
 // See http://www.isthe.com/chongo/tech/comp/fnv/index.html
 
-#define FNV1_32_INIT 0x811C9DC5
+#define FNV1_32_INIT HASH32_INIT
 #define FNV_32_PRIME 0x1000193
 
 
