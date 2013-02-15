@@ -2209,6 +2209,31 @@ public:
                                                 ISecManager *secmgr, 
                                                 ISecUser *secuser)
     {
+        class cScopeChecker: implements ISortedElementsTreeFilter
+        {
+            UniqueScopes done;
+            ISecManager *secmgr;
+            ISecUser *secuser;
+        public:
+            cScopeChecker(ISecManager *_secmgr,ISecUser *_secuser)
+            {
+                secmgr = _secmgr;
+                secuser = _secuser;
+            }
+            bool isOK(IPropertyTree &tree)
+            {
+                const char *scopename = tree.queryProp("@scope");
+                if (!scopename||!*scopename)
+                    return true;
+                const bool *b = done.getValue(scopename);
+                if (b)
+                    return *b;
+                bool ret = checkWuScopeSecAccess(scopename,*secmgr,secuser,SecAccess_Read,"iterating",false,false);
+                done.setValue(scopename,ret);
+                return ret;
+            }
+        } sc(secmgr,secuser);
+
         StringBuffer query("*");
         StringBuffer so;
         StringAttr namefilterlo;
@@ -2248,8 +2273,8 @@ public:
             }
         }
         IArrayOf<IPropertyTree> results;
-        Owned<IRemoteConnection> conn=getElementsPaged( "WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
-            NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results);
+        Owned<IRemoteConnection> conn=getElementsPaged("WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
+            secmgr?&sc:NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results);
         return new CConstWUArrayIterator(conn, results, secmgr, secuser);
     }
 
@@ -2324,22 +2349,59 @@ private:
     class CConstWUIterator : public CInterface, implements IConstWorkUnitIterator
     {
         Owned<IConstWorkUnit> cur;
-        unsigned curTreeNum;
         Linked<IRemoteConnection> conn;
         Linked<IPropertyTreeIterator> ptreeIter;
         Linked<ISecManager> secmgr;
         Linked<ISecUser> secuser;
+        Owned<ISecResourceList> scopes;
 
         void setCurrent()
         {
             cur.setown(new CLocalWorkUnit(LINK(conn), LINK(&ptreeIter->query()), secmgr, secuser));
         }
-
+        bool getNext() // scan for a workunit with permissions
+        {
+            if (!scopes)
+            {
+                setCurrent();
+                return true;
+            }
+            do
+            {
+                const char *scopeName = ptreeIter->query().queryProp("@scope");
+                if (!scopeName || !*scopeName || checkWuScopeListSecAccess(scopeName, scopes, SecAccess_Read, "iterating", false, false))
+                {
+                    setCurrent();
+                    return true;
+                }
+            }
+            while (ptreeIter->next());
+            cur.clear();
+            return false;
+        }
     public:
         IMPLEMENT_IINTERFACE;
         CConstWUIterator(IRemoteConnection *_conn, IPropertyTreeIterator *_ptreeIter, ISecManager *_secmgr=NULL, ISecUser *_secuser=NULL)
             : conn(_conn), ptreeIter(_ptreeIter), secmgr(_secmgr), secuser(_secuser)
         {
+            UniqueScopes us;
+            if (secmgr /* && secmgr->authTypeRequired(RT_WORKUNIT_SCOPE) tbd */)
+            {
+                scopes.setown(secmgr->createResourceList("wuscopes"));
+                ForEach(*ptreeIter)
+                {
+                    const char *scopeName = ptreeIter->query().queryProp("@scope");
+                    if (scopeName && *scopeName && !us.getValue(scopeName))
+                    {
+                        scopes->addResource(scopeName);
+                        us.setValue(scopeName, true);
+                    }
+                }
+                if (scopes->count())
+                    secmgr->authorizeEx(RT_WORKUNIT_SCOPE, *secuser, scopes);
+                else
+                    scopes.clear();
+            }
         }
         bool first()
         {
@@ -2348,8 +2410,7 @@ private:
                 cur.clear();
                 return false;
             }
-            setCurrent();
-            return true;
+            return getNext();
         }
         bool isValid()
         {
@@ -2362,8 +2423,7 @@ private:
                 cur.clear();
                 return false;
             }
-            setCurrent();
-            return true;
+            return getNext();
         }
         IConstWorkUnit & query() { return *cur; }
     };
