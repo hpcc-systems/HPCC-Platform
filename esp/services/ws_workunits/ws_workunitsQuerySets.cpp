@@ -530,7 +530,7 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
 
     StringBuffer queryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
-    addQueryToQuerySet(wu, target.str(), queryName.str(), NULL, activate, queryId);
+    addQueryToQuerySet(wu, target.str(), queryName.str(), NULL, activate, queryId, context.queryUserId());
     if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || !req.getWarnTimeLimit_isNull() || req.getPriority() || req.getComment())
     {
         Owned<IPropertyTree> queryTree = getQueryById(target.str(), queryId, false);
@@ -1065,13 +1065,13 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
             switch (req.getAction())
             {
                 case CQuerySetQueryActionTypes_ToggleSuspend:
-                    setQuerySuspendedState(queryset, id, !queryIds->getPropBool(id));
+                    setQuerySuspendedState(queryset, id, !queryIds->getPropBool(id), context.queryUserId());
                     break;
                 case CQuerySetQueryActionTypes_Suspend:
-                    setQuerySuspendedState(queryset, id, true);
+                    setQuerySuspendedState(queryset, id, true, context.queryUserId());
                     break;
                 case CQuerySetQueryActionTypes_Unsuspend:
-                    setQuerySuspendedState(queryset, id, false);
+                    setQuerySuspendedState(queryset, id, false, NULL);
                     break;
                 case CQuerySetQueryActionTypes_Activate:
                 {
@@ -1236,7 +1236,7 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
 
     StringBuffer targetQueryId;
     WUQueryActivationOptions activate = (WUQueryActivationOptions)req.getActivate();
-    addQueryToQuerySet(wu, target, queryName.str(), NULL, activate, targetQueryId);
+    addQueryToQuerySet(wu, target, queryName.str(), NULL, activate, targetQueryId, context.queryUserId());
     if (req.getMemoryLimit() || !req.getTimeLimit_isNull() || ! req.getWarnTimeLimit_isNull() || req.getPriority())
     {
         Owned<IPropertyTree> queryTree = getQueryById(target, targetQueryId, false);

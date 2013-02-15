@@ -9033,7 +9033,7 @@ static void clearAliases(IPropertyTree * queryRegistry, const char * id)
     }
 }
 
-IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library)
+IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library, const char *userid)
 {
     StringBuffer lcName(name);
     lcName.toLowerCase();
@@ -9063,6 +9063,8 @@ IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, 
     newEntry->setPropInt("@seq", seq);
     if (library)
         newEntry->setPropBool("@isLibrary", true);
+    if (userid && *userid)
+        newEntry->setProp("@publishedBy", userid);
     return queryRegistry->addPropTree("Query", newEntry);
 }
 
@@ -9163,7 +9165,7 @@ extern WORKUNIT_API IPropertyTree * resolveQueryAlias(const char *queryset, cons
     return resolveQueryAlias(queryRegistry, alias);
 }
 
-void setQuerySuspendedState(IPropertyTree * queryRegistry, const char *id, bool suspend)
+void setQuerySuspendedState(IPropertyTree * queryRegistry, const char *id, bool suspend, const char *userid)
 {
     StringBuffer lcId(id);
     lcId.toLowerCase();
@@ -9173,10 +9175,19 @@ void setQuerySuspendedState(IPropertyTree * queryRegistry, const char *id, bool 
     IPropertyTree *tree = queryRegistry->queryPropTree(xpath);
     if (tree)
     {
+        if (tree->getPropBool("@suspended", false) == suspend)
+            return;
         if (suspend)
+        {
             tree->addPropBool("@suspended", true);
+            if (userid && *userid)
+                tree->addProp("@suspendedBy", userid);
+        }
         else
+        {
             tree->removeProp("@suspended");
+            tree->removeProp("@suspendedBy");
+        }
     }
     else
         throw MakeStringException((suspend)? QUERRREG_SUSPEND : QUERRREG_UNSUSPEND, "Modifying query suspended state failed.  Could not find query %s", id);
@@ -9303,7 +9314,7 @@ extern WORKUNIT_API IPropertyTree * getPackageSetRegistry(const char * wsEclId, 
     return conn->getRoot();
 }
 
-void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId)
+void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const char *queryName, IPropertyTree *packageInfo, WUQueryActivationOptions activateOption, StringBuffer &newQueryId, const char *userid)
 {
     StringBuffer cleanQueryName;
     appendUtf8XmlName(cleanQueryName, strlen(queryName), queryName);
@@ -9337,7 +9348,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
         }
     }
 
-    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit));
+    IPropertyTree *newEntry = addNamedQuery(queryRegistry, cleanQueryName, wuid.str(), dllName.str(), isLibrary(workunit), userid);
     newQueryId.append(newEntry->queryProp("@id"));
     workunit->setIsQueryService(true); //will check querysets before delete
     workunit->commit();
@@ -9350,7 +9361,7 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
         if (aliasTree)
         {
             if (activateOption == ACTIVATE_SUSPEND_PREVIOUS)
-                setQuerySuspendedState(queryRegistry, cleanQueryName, true);
+                setQuerySuspendedState(queryRegistry, cleanQueryName, true, userid);
             else 
                 removeNamedQuery(queryRegistry, aliasTree->queryProp("@id"));
         }
@@ -9374,10 +9385,10 @@ void addQuerySetAlias(const char *querySetName, const char *alias, const char *i
     setQueryAlias(queryRegistry, alias, id);
 }
 
-void setSuspendQuerySetQuery(const char *querySetName, const char *id, bool suspend)
+void setSuspendQuerySetQuery(const char *querySetName, const char *id, bool suspend, const char *userid)
 {
     Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySetName, true);
-    setQuerySuspendedState(queryRegistry, id, suspend);
+    setQuerySuspendedState(queryRegistry, id, suspend, userid);
 }
 
 void deleteQuerySetQuery(const char *querySetName, const char *id)

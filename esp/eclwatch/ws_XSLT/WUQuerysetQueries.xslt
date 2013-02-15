@@ -66,6 +66,25 @@
               var selectedRows = 0;
               var sortableTable = null;
 
+              function viewDetails(active) {
+                var selectedRows;
+                if (active)
+                    selectedRows = aliasDataTable.getSelectedRows();
+                else
+                    selectedRows = queryDataTable.getSelectedRows();
+                if (selectedRows.length > 1) {
+                    alert("Please select only one query for viewing Query Dertails.");
+                    return;
+                }
+
+                var record;
+                if (active)
+                    record = aliasDataTable.getRecord(selectedRows[0]);
+                else
+                    record = queryDataTable.getRecord(selectedRows[0]);
+                document.location.href = "/WsWorkunits/WUQueryDetails?QueryId=" + record.getData('Id') + "&QuerySet=" + querySet;
+              }
+
               function deleteQueries() {
                 actionWorkunits('Delete');
               }
@@ -169,12 +188,6 @@
                   }
               };
 
-              var formatLinkDetails = function(elCell, oRecord, oColumn, sData) {
-                  if (sData != "") {
-                      elCell.innerHTML = "<a href=\"/WsWorkunits/WUQueryDetails?QueryId=" + sData + "&QuerySet=" + querySet + "\">" + sData + "</a>";
-                  }
-              };
-
               function reloadPage()
               {
                   var clusterSelect = document.getElementById('Clusters');
@@ -196,7 +209,7 @@
               YAHOO.util.Event.addListener(window, "load", function() {
                 LoadQueries = function() {
                   var queryColumnDefs = [
-                    {key:"Id", sortable:true, resizeable:true, formatter: formatLinkDetails},
+                    {key:"Id", sortable:true, resizeable:true},
                     {key:"Name", sortable:true, resizeable:true},
                     {key:"Wuid", sortable:true, resizeable:true},
                     {key:"Dll", sortable:true, resizeable:true},
@@ -204,7 +217,7 @@
                   ];
                   if (clusterName != '')
                     queryColumnDefs = [
-                        {key:"Id", sortable:true, resizeable:true, formatter: formatLinkDetails},
+                        {key:"Id", sortable:true, resizeable:true},
                         {key:"Name", sortable:true, resizeable:true},
                         {key:"Wuid", sortable:true, resizeable:true},
                         {key:"Dll", sortable:true, resizeable:true},
@@ -228,6 +241,7 @@
 
                   queryDataTable.subscribe("rowMouseoverEvent", queryDataTable.onEventHighlightRow);   
                   queryDataTable.subscribe("rowMouseoutEvent", queryDataTable.onEventUnhighlightRow);   
+                  queryDataTable.subscribe("rowClickEvent", queryDataTable.onEventSelectRow);
 
                   return {
                     oqDS: queryDataSource,
@@ -238,7 +252,7 @@
                 LoadAliases = function() {
                   var aliasColumnDefs = [
                     {key:"Name", sortable:true, resizeable:true},
-                    {key:"Id", sortable:true, resizeable:true, formatter: formatLinkDetails}
+                    {key:"Id", sortable:true, resizeable:true}
                   ];
 
                   var aliasDataSource = new YAHOO.util.DataSource(querysetAliases);
@@ -252,6 +266,7 @@
 
                   aliasDataTable.subscribe("rowMouseoverEvent", aliasDataTable.onEventHighlightRow);   
                   aliasDataTable.subscribe("rowMouseoutEvent", aliasDataTable.onEventUnhighlightRow);   
+                  aliasDataTable.subscribe("rowClickEvent", aliasDataTable.onEventSelectRow);
 
                   return {
                     oqDS: aliasDataSource,
@@ -376,6 +391,11 @@
                                 <button type="button" name="ActivateButton" onclick="activateQueries();">Activate</button>
                             </em>
                           </span>
+                          <span id="DetailsButton1" class="yui-button yui-push-button">
+                            <em class="first-child">
+                                <button type="button" name="DetailsButton1" onclick="viewDetails(false);">Query Details</button>
+                            </em>
+                          </span>
                         </td>
                     </tr>
                 </table>
@@ -386,6 +406,11 @@
               <span id="DeleteAliasButton" class="yui-button yui-push-button">
                 <em class="first-child">
                   <button type="button" name="DeleteAliasButton" onclick="deleteAliases();">Delete</button>
+                </em>
+              </span>
+              <span id="DetailsButton" class="yui-button yui-push-button">
+                <em class="first-child">
+                  <button type="button" name="DetailsButton" onclick="viewDetails(true);">Query Details</button>
                 </em>
               </span>
             </div>

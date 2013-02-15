@@ -1006,8 +1006,7 @@ public:
     virtual void abort()
     {
         CIndexReadSlaveBase::abort();
-        if (receiving)
-            cancelReceiveMsg(0, mpTag);
+        cancelReceiveMsg(0, mpTag);
     }
 };
 
