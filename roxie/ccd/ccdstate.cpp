@@ -1286,6 +1286,12 @@ private:
             loadStandaloneQuery(standAloneDll, numChannels, "roxie");
         else
         {
+            // We want to kill the old packages, but not until we have created the new ones (i.e. at the end of this function)
+            // So that the query/dll caching will work for anything that is not affected by the changes
+            CIArrayOf<CRoxieQueryPackageManager> oldQueryPackages;
+            appendArray(oldQueryPackages, allQueryPackages);   // Note - this LOOKS unused but do not delete (see above)
+            allQueryPackages.kill();
+            stateHash = 0;
             ForEachItemIn(idx, allQuerySetNames)
             {
                 createQueryPackageManagers(numChannels, allQuerySetNames.item(idx));
@@ -1304,12 +1310,14 @@ private:
             ForEach(*ids)
             {
                 const char *id = ids->query().queryProp("@id");
-                if (!id)
-                    throw MakeStringException(ROXIE_MISSING_PARAMS, "Query name missing");
-                Owned<IQueryFactory> query = getQuery(id, logctx);
-                if (!query)
-                    throw MakeStringException(ROXIE_MISSING_PARAMS, "Query %s not found", id);
-                query->getQueryInfo(reply, full, logctx);
+                if (id)
+                {
+                    Owned<IQueryFactory> query = getQuery(id, logctx);
+                    if (query)
+                        query->getQueryInfo(reply, full, logctx);
+                    else
+                        reply.appendf(" <Query id=\"%s\" error=\"Query not found\"/>\n", id);
+                }
             }
         }
         else
@@ -2154,16 +2162,11 @@ private:
     {
         // Called from reload inside write lock block
         unsubscribe();
-        // We want to kill the old packages, but not until we have created the new ones (i.e. at the end of this function)
-        // So that the query/dll caching will work for anything that is not affected by the changes
-        CIArrayOf<CRoxieQueryPackageManager> oldQueryPackages;
-        appendArray(oldQueryPackages, allQueryPackages);
-        allQueryPackages.kill();
-        stateHash = 0;
 
         Owned<IDaliPackageWatcher> notifier = daliHelper->getPackageSetsSubscription(this);
         if (notifier)
             notifiers.append(*notifier.getClear());
+        bool packageLoaded = false;
         Owned<IPropertyTree> packageTree = daliHelper->getPackageSets();
         Owned<IPropertyTreeIterator> packageSets = packageTree->getElements("PackageSet");
         ForEach(*packageSets)
@@ -2194,6 +2197,7 @@ private:
                             Owned<IPropertyTree> xml = daliHelper->getPackageMap(packageMapId);
                             packageMap->load(xml);
                             createQueryPackageManager(numChannels, packageMap.getLink(), querySet);
+                            packageLoaded = true;
                             notifiers.append(*daliHelper->getPackageMapSubscription(packageMapId, this));
                         }
                         catch (IException *E)
@@ -2207,7 +2211,7 @@ private:
                 }
             }
         }
-        if (!allQueryPackages.length())
+        if (!packageLoaded)
         {
             if (traceLevel)
                 DBGLOG("Loading empty package for QuerySet %s", querySet);

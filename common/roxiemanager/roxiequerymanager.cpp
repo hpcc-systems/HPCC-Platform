@@ -139,7 +139,7 @@ private:
             IPropertyTree *pkgInfo = wuProcessor->queryPackageInfo();
             StringBuffer newQueryId;
             const char *qsName = resolveQuerySetName(querySetName);
-            addQueryToQuerySet(wu, qsName, queryName.str(), pkgInfo, activateOption, newQueryId);
+            addQueryToQuerySet(wu, qsName, queryName.str(), pkgInfo, activateOption, newQueryId, NULL);
 
             const char *queryComment = processingInfo.queryComment();
             if (queryComment)
@@ -441,7 +441,7 @@ public:
     {
         try
         {
-            setSuspendQuerySetQuery(resolveQuerySetName(querySetName), id, true);
+            setSuspendQuerySetQuery(resolveQuerySetName(querySetName), id, true, NULL);
             status.s.appendf("successfully suspended query %s", id);
         }
         catch(IException *e)
@@ -461,7 +461,7 @@ public:
     {
         try
         {
-            setSuspendQuerySetQuery(resolveQuerySetName(querySetName), id, false);
+            setSuspendQuerySetQuery(resolveQuerySetName(querySetName), id, false, NULL);
             status.s.appendf("successfully unsuspended query %s", id);
         }
         catch(IException *e)
