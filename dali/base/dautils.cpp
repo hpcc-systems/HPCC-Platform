@@ -1829,7 +1829,8 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
                                      __int64 *hint,
                                      const char *namefilterlo,
                                      const char *namefilterhi,
-                                     IArrayOf<IPropertyTree> &results)
+                                     IArrayOf<IPropertyTree> &results,
+                                     unsigned *total)
 {
     if (pagesize==0)
         return NULL;
@@ -1850,7 +1851,10 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
     if (!elem->conn)
         return NULL;
     unsigned n;
+    if (total)
+        *total = elem->totalres.ordinality();
     if (postfilter) {
+        unsigned numFiltered = 0;
         n = 0;
         ForEachItemIn(i,elem->totalres) {
             IPropertyTree &item = elem->totalres.item(i);
@@ -1859,11 +1863,20 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
                     item.Link();
                     results.append(item);
                     if (results.ordinality()>=pagesize)
-                        break;
+                    {
+                        // if total needed, need to iterate through all items
+                        if (NULL == total)
+                            break;
+                        startoffset = (unsigned)-1; // no more results needed
+                    }
                 }
                 n++;
             }
+            else
+                ++numFiltered;
         }
+        if (total)
+            *total -= numFiltered;
     }
     else {
         n = (elem->totalres.ordinality()>startoffset)?(elem->totalres.ordinality()-startoffset):0;

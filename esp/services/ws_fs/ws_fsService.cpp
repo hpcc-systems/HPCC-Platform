@@ -952,8 +952,8 @@ bool CFileSprayEx::onGetDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &
 
         IArrayOf<IEspDFUWorkunit> result;
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-        unsigned numWUs = factory->numWorkUnitsFiltered(filters, filterbuf.bufferBase());
-        Owned<IConstDFUWorkUnitIterator> itr = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), (int) displayFrom, (int) pagesize+1, req.getOwner(), &cachehint);
+        unsigned numWUs;
+        Owned<IConstDFUWorkUnitIterator> itr = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), (int) displayFrom, (int) pagesize+1, req.getOwner(), &cachehint, &numWUs);
 
         //unsigned actualCount = 0;
         itr->first();

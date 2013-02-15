@@ -2183,7 +2183,8 @@ public:
                                                 const char *queryowner, 
                                                 __int64 *cachehint,
                                                 ISecManager *secmgr, 
-                                                ISecUser *secuser)
+                                                ISecUser *secuser,
+                                                unsigned *total)
     {
         class cScopeChecker: implements ISortedElementsTreeFilter
         {
@@ -2249,7 +2250,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IRemoteConnection> conn=getElementsPaged( "WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
-            secmgr?&sc:NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results);
+            secmgr?&sc:NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results,total);
         return new CConstWUArrayIterator(conn, results, secmgr, secuser);
     }
 
@@ -2260,9 +2261,10 @@ public:
                                                 unsigned startoffset,
                                                 unsigned maxnum,
                                                 const char *queryowner, 
-                                                __int64 *cachehint)
+                                                __int64 *cachehint,
+                                                unsigned *total)
     {
-        return getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, NULL, NULL);
+        return getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, NULL, NULL, total);
     }
 
     virtual unsigned numWorkUnits()
@@ -2279,12 +2281,9 @@ public:
                                         ISecManager *secmgr, 
                                         ISecUser *secuser)
     {
-        Owned<IConstWorkUnitIterator> iter =  getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,secmgr,secuser);
-        // this is rather slow but necessarily so (for security check)
-        unsigned ret = 0;
-        ForEach(*iter)
-            ret++;
-        return ret;
+        unsigned total;
+        Owned<IConstWorkUnitIterator> iter =  getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,secmgr,secuser,&total);
+        return total;
     }
 
     virtual unsigned numWorkUnitsFiltered(WUSortField *filters,const void *filterbuf)
@@ -2494,9 +2493,10 @@ public:
                                                         unsigned startoffset,
                                                         unsigned maxnum,
                                                         const char *queryowner, 
-                                                        __int64 *cachehint)
+                                                        __int64 *cachehint,
+                                                        unsigned *total)
     {
-        return factory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, secMgr.get(), secUser.get());
+        return factory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, secMgr.get(), secUser.get(), total);
     }
 
     virtual unsigned numWorkUnits()
