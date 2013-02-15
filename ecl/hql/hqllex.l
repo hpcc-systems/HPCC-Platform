@@ -142,11 +142,17 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         token = isFunction ? TRANSFORM_FUNCTION : TRANSFORM_ID;
         break;
     case type_dictionary:
-        token = isFunction ? DICTIONARY_FUNCTION : DICTIONARY_ID;
+        if (op == no_typedef)
+            token = DICTIONARY_TYPE_ID;
+        else
+            token = isFunction ? DICTIONARY_FUNCTION : DICTIONARY_ID;
         break;
     case type_groupedtable:
     case type_table:
-        token = isFunction ? DATASET_FUNCTION : DATASET_ID;
+        if (op == no_typedef)
+            token = DATASET_TYPE_ID;
+        else
+            token = isFunction ? DATASET_FUNCTION : DATASET_ID;
         break;
     case type_record:
         token = isFunction ? RECORD_FUNCTION : RECORD_ID;
@@ -157,7 +163,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     case type_pattern:
     case type_rule:
     case type_token:
-        if (expr->getOperator() == no_typedef)
+        if (op == no_typedef)
             token = PATTERN_TYPE_ID;
         else
             token = isFunction ? PATTERN_FUNCTION : PATTERN_ID;
@@ -172,7 +178,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         token = isFunction ? SCOPE_FUNCTION : SCOPE_ID;
         break;
     case type_set:
-        if (expr->getOperator() == no_typedef)
+        if (op == no_typedef)
             token = SET_TYPE_ID;
         else
         {
@@ -189,11 +195,11 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
             {
                 token = ALIEN_ID;
             }
-            else if (expr->getOperator() == no_typedef)
+            else if (op == no_typedef)
             {
                 token = TYPE_ID;
             }                           
-            else if (expr->getOperator() == no_enum)
+            else if (op == no_enum)
             {
                 token = ENUM_ID;
             }                           

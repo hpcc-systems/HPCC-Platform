@@ -646,6 +646,8 @@ string          debug{maxlength(200)}
 #end
             END;
 
+searchDataset := DATASET(searchRecord);
+
 childMatchRecord := RECORD
 wordPosType         wpos;
 wordPosType         wip;
@@ -1333,7 +1335,7 @@ convertToUserOutput(dataset(matchRecord) results) := function
     return project(results, createUserOutput(left));
 end;
 
-ExecuteQuery(dataset(searchRecord) queryDefinition, dataset(matchRecord) initialResults = dataset([], matchRecord)) := function
+ExecuteQuery(searchDataset queryDefinition, dataset(matchRecord) initialResults = dataset([], matchRecord)) := function
 
 #if (useLocal=true)
     executionPlan := thisnode(global(queryDefinition, opt, few));           // Store globally for efficient access
@@ -1865,7 +1867,7 @@ end;
 
 //Calculate the maximum number of words in phrase each operator could have as it's children (for use in proximity)
 //easier to process since the graph is stored in reverse polish order
-doCalculateMaxWip(dataset(searchRecord) input) := function
+doCalculateMaxWip(searchDataset input) := function
 
     stageStackRecord := record
         dataset(wipRecord) wipStack{maxcount(MaxActions)};
@@ -1960,7 +1962,7 @@ ENDMACRO;
 //    b) Invert the list, and tag any atleasts that are going to be moved.
 //    c) Resort the list, remove any atleasts being moved, and wrap each IN with each of the atleasts being moved.
 
-transformAtLeast(dataset(searchRecord) parsed) := function
+transformAtLeast(searchDataset parsed) := function
 
     atleastRecord := RECORD
         termType atleastTerm;
@@ -2062,7 +2064,7 @@ end;
 //
 //    Need to move the NOT IN() operator down, so it surrounds items that are guaranteed to generate a single item
 
-transformNotIn(dataset(searchRecord) input) := function
+transformNotIn(searchDataset input) := function
 
     //Project to the structure that allows processing.
     processRecord := RECORD(searchRecord)
@@ -2160,7 +2162,7 @@ end;
 //    Note, PHRASE and PROXIMITY create single items, so they will work as expected.
 //    (a or b) BUTNOT (c) may have issues
 
-transformIn(dataset(searchRecord) input) := function
+transformIn(searchDataset input) := function
 
     //Project to the structure that allows processing.
     processRecord := RECORD(searchRecord)
@@ -2272,7 +2274,7 @@ inputRecord := { string query{maxlength(2048)}; };
 MaxResults := 10000;
 
 processedRecord := record(inputRecord)
-dataset(searchRecord) request{maxcount(MaxActions)};
+searchDataset request{maxcount(MaxActions)}; // you should be able to use a typedef to define a field.
 dataset(simpleUserOutputRecord) result{maxcount(MaxResults)};
         end;
 

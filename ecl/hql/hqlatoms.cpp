@@ -67,6 +67,7 @@ _ATOM cardinalityAtom;
 _ATOM caseAtom;
 _ATOM checkinAtom;
 _ATOM checkoutAtom;
+_ATOM _childAttr_Atom;
 _ATOM choosenAtom;
 _ATOM clusterAtom;
 _ATOM _colocal_Atom;
@@ -475,6 +476,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(case);
     MAKEATOM(checkin);
     MAKEATOM(checkout);
+    MAKESYSATOM(childAttr);
     MAKEATOM(choosen);
     MAKEATOM(cluster);
     MAKESYSATOM(colocal);

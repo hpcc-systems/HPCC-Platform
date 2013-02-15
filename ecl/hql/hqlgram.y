@@ -490,16 +490,19 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   UNKNOWN_ID
   RECORD_ID
   ALIEN_ID
-  TYPE_ID
-  SET_TYPE_ID
   TRANSFORM_ID
   PATTERN_ID
   FEATURE_ID
   EVENT_ID
   ENUM_ID
-  PATTERN_TYPE_ID
   LIST_DATASET_ID
   SORTLIST_ID
+
+  TYPE_ID
+  SET_TYPE_ID
+  PATTERN_TYPE_ID
+  DATASET_TYPE_ID
+  DICTIONARY_TYPE_ID
 
   DATAROW_FUNCTION
   DATASET_FUNCTION
@@ -733,11 +736,15 @@ explicitDatasetType1
                             $$.setType(makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL));
                             $$.setPosition($1);
                         }
-    | DATASET '(' recordDef ')'
+    | DATASET '(' recordDef childDatasetOptions ')'
                         {
                             OwnedHqlExpr record = $3.getExpr();
+                            OwnedHqlExpr options = $4.getExpr();
                             ITypeInfo * recordType = createRecordType(record);
-                            $$.setType(makeTableType(makeRowType(recordType), NULL, NULL, NULL));
+                            Owned<ITypeInfo> tableType = makeTableType(makeRowType(recordType), NULL, NULL, NULL);
+                            if (options)
+                                tableType.setown(makeAttributeModifier(LINK(tableType), createAttribute(_childAttr_Atom, LINK(options))));
+                            $$.setType(tableType.getClear());
                             $$.setPosition($1);
                         }
     | _ARRAY_ explicitDatasetType
@@ -763,6 +770,7 @@ explicitDatasetType1
                             $$.setType(makeAttributeModifier($2.getType(), getEmbeddedAttr()));
                             $$.setPosition($1);
                         }
+    | userTypedefDataset
     ;
 
 explicitDictionaryType
@@ -784,6 +792,7 @@ explicitDictionaryType
                             $$.setType(setLinkCountedAttr(dsType, true));
                             $$.setPosition($1);
                         }
+    | userTypedefDictionary
     ;
 
 
@@ -959,7 +968,8 @@ goodTypeObject
                             $$.setType(makeRuleType(record->getType()));
                             $$.setPosition($1);
                         }
-
+    | explicitDatasetType
+    | explicitDictionaryType
     ;
 
 badObject
@@ -3930,46 +3940,16 @@ recordDef
                             $$.setPosition($1);
                             parser->checkRecordIsValid($1, $$.queryExpr());
                         }
-    | RECORDOF '(' dataSet ')'
-                        {
-                            OwnedHqlExpr ds = $3.getExpr();
-                            $$.setExpr(LINK(queryOriginalRecord(ds)));
-                            $$.setPosition($1);
-                        }
-    | RECORDOF '(' dictionary ')'
-                        {
-                            OwnedHqlExpr ds = $3.getExpr();
-                            $$.setExpr(LINK(queryOriginalRecord(ds)));
-                            $$.setPosition($1);
-                        }
-    | RECORDOF '(' dataRow ')'
-                        {
-                            OwnedHqlExpr ds = $3.getExpr();
-                            $$.setExpr(LINK(queryOriginalRecord(ds)));
-                            $$.setPosition($1);
-                        }
-    | RECORDOF '(' transform ')'
-                        {
-                            OwnedHqlExpr ds = $3.getExpr();
-                            $$.setExpr(LINK(queryOriginalRecord(ds)));
-                            $$.setPosition($1);
-                        }
-    | RECORDOF '(' recordDef ')'
-                        {
-                            OwnedHqlExpr ds = $3.getExpr();
-                            $$.setExpr(LINK(queryOriginalRecord(ds)));
-                            $$.setPosition($1);
-                        }
-    | RECORDOF '(' anyFunction ')'
+    | RECORDOF '(' goodObject ')'
                         {
                             OwnedHqlExpr ds = $3.getExpr();
                             IHqlExpression * record = queryOriginalRecord(ds);
                             if (!record)
                             {
-                                parser->reportError(ERR_EXPECTED, $1, "The functional definition does not have a associated record");
+                                parser->reportError(ERR_EXPECTED, $3, "The argument does not have a associated record");
                                 record = queryNullRecord();
                             }
-                            else if (!record->isFullyBound())
+                            else if (ds->isFunction() && !record->isFullyBound())
                                 parser->reportError(ERR_EXPECTED, $1, "RECORDOF(function-definition), result record depends on the function parameters");
 
                             $$.setExpr(LINK(record));
@@ -4224,8 +4204,6 @@ fieldDef
 
                             //Syntactic oddity.  A record means a row of that record type.
                             OwnedITypeInfo type = makeAnyType();
-                            if (type->getTypeCode() == type_record)
-                                type.setown(makeRowType(type.getClear()));
                             parser->addField($2, $2.getName(), type.getClear(), value, $3.getExpr());
                         }
     | typeDef knownOrUnknownId '[' expression ']' optFieldAttrs defaultValue
@@ -4245,7 +4223,8 @@ fieldDef
                             }
 
                             IHqlExpression *value = $7.getExpr();
-                            parser->addDatasetField($2, $2.getName(), LINK(record), value, attrs.getClear());
+                            Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL);
+                            parser->addDatasetField($2, $2.getName(), datasetType, value, attrs.getClear());
                         }
     | setType knownOrUnknownId optFieldAttrs defaultValue
                         {
@@ -4255,52 +4234,30 @@ fieldDef
                             ITypeInfo *type = $1.getType();
                             parser->addField($2, $2.getName(), type, value, $3.getExpr());
                         }
-    | DATASET '(' recordDef childDatasetOptions ')' knownOrUnknownId optFieldAttrs
+    | explicitDatasetType knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
-                            parser->addDatasetField($6, $6.getName(), $3.getExpr(), NULL, createComma($4.getExpr(), $7.getExpr()));
-                        }
-    | DATASET '(' recordDef childDatasetOptions ')' knownOrUnknownId optFieldAttrs ASSIGN dataSet
-                        {
-                            $$.clear($1);
-                            parser->addDatasetField($6, $6.getName(), $3.getExpr(), $9.getExpr(), createComma($4.getExpr(), $7.getExpr()));
-                        }
-    | DATASET knownOrUnknownId optFieldAttrs ASSIGN dataSet
-                        {
-                            $$.clear($1);
-                            IHqlExpression * value = $5.getExpr();
-                            parser->addDatasetField($2, $2.getName(), LINK(value->queryRecord()), value, $3.getExpr());
+                            Owned<ITypeInfo> type = $1.getType();
+                            parser->addDatasetField($2, $2.getName(), type, $4.getExpr(), $3.getExpr());
                         }
     | UNKNOWN_ID optFieldAttrs ASSIGN dataSet
                         {
                             IHqlExpression * value = $4.getExpr();
-                            parser->addDatasetField($1, $1.getName(), LINK(value->queryRecord()), value, $2.getExpr());
+                            parser->addDatasetField($1, $1.getName(), NULL, value, $2.getExpr());
                             $$.clear();
                         }
-    | DICTIONARY '(' recordDef ')' knownOrUnknownId optFieldAttrs
+    | explicitDictionaryType knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
-                            parser->addDictionaryField($5, $5.getName(), $3.getExpr(), NULL, $6.getExpr());
-                        }
-    | DICTIONARY '(' recordDef ')' knownOrUnknownId optFieldAttrs ASSIGN dictionary
-                        {
-                            $$.clear($1);
-                            parser->addDictionaryField($5, $5.getName(), $3.getExpr(), $8.getExpr(), $6.getExpr());
-                        }
-    | DICTIONARY knownOrUnknownId optFieldAttrs ASSIGN dictionary
-                        {
-                            $$.clear($1);
-                            IHqlExpression * value = $5.getExpr();
-                            parser->addDictionaryField($2, $2.getName(), LINK(value->queryRecord()), value, $3.getExpr());
+                            Owned<ITypeInfo> type = $1.getType();
+                            parser->addDictionaryField($2, $2.getName(), type, $4.getExpr(), $3.getExpr());
                         }
     | UNKNOWN_ID optFieldAttrs ASSIGN dictionary
                         {
                             IHqlExpression * value = $4.getExpr();
-                            parser->addDictionaryField($1, $1.getName(), LINK(value->queryRecord()), value, $2.getExpr());
+                            parser->addDictionaryField($1, $1.getName(), value->queryType(), value, $2.getExpr());
                             $$.clear();
                         }
-
-
     | alienTypeInstance knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
@@ -4529,6 +4486,10 @@ defaultValue
                         {
                             $$.inherit($2);
                         }
+    | ASSIGN dictionary        
+                        {
+                            $$.inherit($2);
+                        }
     | ASSIGN abstractModule
                         {
                             $$.inherit($2);
@@ -4721,6 +4682,40 @@ userTypedefPattern
                         }
 
     | moduleScopeDot PATTERN_TYPE_ID leaveScope
+                        {
+                            $1.release();
+                            OwnedHqlExpr typedefExpr = $2.getExpr();
+                            $$.setType(getTypedefType(typedefExpr));
+                            $$.setPosition($1);
+                        }
+    ;
+
+
+userTypedefDataset
+    : DATASET_TYPE_ID   {
+                            OwnedHqlExpr typedefExpr = $1.getExpr();
+                            $$.setType(getTypedefType(typedefExpr));
+                            $$.setPosition($1);
+                        }
+
+    | moduleScopeDot DATASET_TYPE_ID leaveScope
+                        {
+                            $1.release();
+                            OwnedHqlExpr typedefExpr = $2.getExpr();
+                            $$.setType(getTypedefType(typedefExpr));
+                            $$.setPosition($1);
+                        }
+    ;
+
+
+userTypedefDictionary
+    : DICTIONARY_TYPE_ID   {
+                            OwnedHqlExpr typedefExpr = $1.getExpr();
+                            $$.setType(getTypedefType(typedefExpr));
+                            $$.setPosition($1);
+                        }
+
+    | moduleScopeDot DICTIONARY_TYPE_ID leaveScope
                         {
                             $1.release();
                             OwnedHqlExpr typedefExpr = $2.getExpr();
