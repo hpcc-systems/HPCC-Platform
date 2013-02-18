@@ -25,6 +25,7 @@ define([
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
+    "hpcc/ESPWorkunit",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/SampleSelectWidget",
@@ -32,7 +33,8 @@ define([
     "hpcc/ResultsWidget",
     "hpcc/InfoGridWidget",
     "hpcc/LogsWidget",
-    "hpcc/ESPWorkunit",
+    "hpcc/TimingPageWidget",
+    "hpcc/ECLPlaygroundWidget",
 
     "dojo/text!../templates/WUDetailsWidget.html",
 
@@ -46,7 +48,7 @@ define([
     "dijit/TitlePane"
 ], function (declare, dom, domClass, Memory, ObjectStore,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                _TabContainerWidget, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, Workunit,
+                _TabContainerWidget, Workunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,

@@ -19,7 +19,6 @@ define([
     "dojo/dom",
     "dojo/on",
     "dojo/dom-class",
-    "dojo/data/ObjectStore",
     "dojo/date",
 
     "dijit/_TemplatedMixin",
@@ -53,7 +52,7 @@ define([
     "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
-], function (declare, array, dom, on, domClass, ObjectStore, date,
+], function (declare, array, dom, on, domClass, date,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
                 EnhancedGrid, Pagination, IndirectSelection, Calendar,
                 _TabContainerWidget, WsWorkunits, WUDetailsWidget,
@@ -98,6 +97,7 @@ define([
 
         //  Hitched actions  ---
         _onOpen: function (event) {
+            //dojo.publish("hpcc/standbyForegroundShow");
             var selections = this.workunitsGrid.selection.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
@@ -111,6 +111,7 @@ define([
             if (firstTab) {
                 this.selectChild(firstTab);
             }
+            //dojo.publish("hpcc/standbyForegroundHide");
         },
         _onDelete: function (event) {
             if (confirm('Delete selected workunits?')) {
@@ -418,9 +419,7 @@ define([
                 { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
             ]);
 
-            var store = new WsWorkunits.WUQuery();
-            var objStore = new ObjectStore({ objectStore: store });
-            this.workunitsGrid.setStore(objStore);
+            this.workunitsGrid.setStore(WsWorkunits.CreateWUQueryObjectStore());
             this.workunitsGrid.setQuery(this.getFilter());
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
 

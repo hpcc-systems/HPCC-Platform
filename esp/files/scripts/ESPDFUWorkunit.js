@@ -16,11 +16,12 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/xhr",
-    "hpcc/ESPResult",
-    "hpcc/ESPBase"
-], function (declare, lang, xhr, ESPResult, ESPBase) {
-    return declare(ESPBase, {
+
+    "hpcc/FileSpray",
+    "hpcc/ESPResult"
+], function (declare, lang,
+    FileSpray, ESPResult) {
+    return declare(null, {
         Wuid: "",
 
         stateID: 0,
@@ -55,16 +56,12 @@ define([
         monitor: function (callback, monitorDuration) {
             if (!monitorDuration)
                 monitorDuration = 0;
-            var request = {
-            		wuid: this.Wuid
-            };
-            //	request['rawxml_'] = "1";
 
             var context = this;
-            xhr.post({
-                url: this.getBaseURL("FileSpray") + "/GetDFUWorkunit.json",
-                handleAs: "json",
-                content: request,
+            FileSpray.GetDFUWorkunit({
+                request: {
+                    wuid: this.Wuid
+                },
                 load: function (response) {
                 	var workunit = response.GetDFUWorkunitResponse.result;
                     context.stateID = workunit.State;
@@ -97,45 +94,14 @@ define([
                 }
             });
         },
-        fetchStructure: function (format, onFetchStructure) {
-            var request = {
-                Name: this.logicalName,
-                Format: format,
-                rawxml_: true
-            };
 
-            var context = this;
-            xhr.post({
-                url: this.getBaseURL("FileSpray") + "/DFUWUFile",
-                handleAs: "text",
-                content: request,
-                load: function (response) {
-                    onFetchStructure(response);
-                },
-                error: function (e) {
-                }
-            });
-        },
-        
-        fetchDEF: function (onFetchXML) {
-            this.fetchStructure("def", onFetchXML);
-        },
-        
         fetchXML: function (onFetchXML) {
-            var request = {                
-                Wuid: this.Wuid
-            };
-
-            var context = this;
-            xhr.post({
-                url: this.getBaseURL("FileSpray") + "/DFUWUFile",
-                handleAs: "text",
-                content: request,
+            FileSpray.DFUWUFile({
+                request: {
+                    Wuid: this.Wuid
+                },
                 load: function (response) {
                     onFetchXML(response);
-                },
-                error: function (e) {
-                    var d = 0;
                 }
             });
         },
@@ -181,10 +147,10 @@ define([
             };
 
             var context = this;
-            xhr.post({
-                url: this.getBaseURL("FileSpray") + "/GetDFUWorkunit.json",
-                handleAs: "json",
-                content: request,
+            FileSpray.GetDFUWorkunit({
+                request: {
+                    wuid: this.Wuid
+                },
                 load: function (response) {
                 	var workunit = response.GetDFUWorkunitResponse.result;
                     context.GetDFUWorkunitResponse = workunit;
@@ -192,8 +158,6 @@ define([
                     if (args.onGetAll) {
                         args.onGetAll(workunit);
                     }
-                },
-                error: function (e) {
                 }
             });
         },

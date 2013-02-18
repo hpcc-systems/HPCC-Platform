@@ -24,11 +24,10 @@ require([
     "dijit/form/Select",
     "dijit/registry",
 
-    "hpcc/ESPBase",
     "dojo/text!./templates/SampleSelectWidget.html"
 ], function (declare, xhr, dom,
                     _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, Select, registry,
-                    ESPBase, template) {
+                    template) {
     return declare("SampleSelectWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "SampleSelectWidget",

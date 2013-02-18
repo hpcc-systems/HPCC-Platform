@@ -16,11 +16,12 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/xhr",
+
     "hpcc/ESPResult",
-    "hpcc/ESPBase"
-], function (declare, lang, xhr, ESPResult, ESPBase) {
-    return declare(ESPBase, {
+    "hpcc/WsWorkunits"
+], function (declare, lang,
+    ESPResult, WsWorkunits) {
+    return declare(null, {
         Wuid: "",
 
         stateID: 0,
@@ -70,28 +71,25 @@ define([
         monitor: function (callback, monitorDuration) {
             if (!monitorDuration)
                 monitorDuration = 0;
-            var request = {
-                Wuid: this.Wuid,
-                TruncateEclTo64k: true,
-                IncludeExceptions: false,
-                IncludeGraphs: false,
-                IncludeSourceFiles: false,
-                IncludeResults: false,
-                IncludeResultsViewNames: false,
-                IncludeVariables: false,
-                IncludeTimers: false,
-                IncludeDebugValues: false,
-                IncludeApplicationValues: false,
-                IncludeWorkflows: false,
-                IncludeXmlSchemas: false,
-                SuppressResultSchemas: true
-            };
 
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUInfo.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUInfo({
+                request: {
+                    Wuid: this.Wuid,
+                    TruncateEclTo64k: true,
+                    IncludeExceptions: false,
+                    IncludeGraphs: false,
+                    IncludeSourceFiles: false,
+                    IncludeResults: false,
+                    IncludeResultsViewNames: false,
+                    IncludeVariables: false,
+                    IncludeTimers: false,
+                    IncludeDebugValues: false,
+                    IncludeApplicationValues: false,
+                    IncludeWorkflows: false,
+                    IncludeXmlSchemas: false,
+                    SuppressResultSchemas: true
+                },
                 load: function (response) {
                     if (lang.exists("WUInfoResponse.Workunit", response)) {
                         context.WUInfoResponse = response.WUInfoResponse.Workunit;
@@ -122,32 +120,23 @@ define([
                         }
                     }
                 },
-                error: function () {
+                error: function (repsonse) {
                     done = true;
                 }
             });
         },
         create: function (ecl) {
-            var request = {};
-            request['rawxml_'] = "1";
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUCreate.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUCreate({
                 load: function (response) {
                     context.Wuid = response.WUCreateResponse.Workunit.Wuid;
                     context.onCreate();
-                },
-                error: function () {
                 }
             });
         },
         update: function (request, appData, callback) {
             lang.mixin(request, {
-                Wuid: this.Wuid,
-                rawxml_: true
+                Wuid: this.Wuid
             });
             if (this.WUInfoResponse) {
                 lang.mixin(request, {
@@ -156,25 +145,14 @@ define([
                     DescriptionOrig: this.WUInfoResponse.Description,
                     ProtectedOrig: this.WUInfoResponse.Protected,
                     ScopeOrig: this.WUInfoResponse.Scope,
-                    ClusterOrig: this.WUInfoResponse.Cluster
+                    ClusterOrig: this.WUInfoResponse.Cluster,
+                    ApplicationValues: appData
                 });
-            }
-            if (appData) {
-                request['ApplicationValues.ApplicationValue.itemcount'] = appData.length;
-                var i = 0;
-                for (key in appData) {
-                    request['ApplicationValues.ApplicationValue.' + i + '.Application'] = "ESPWorkunit.js";
-                    request['ApplicationValues.ApplicationValue.' + i + '.Name'] = key;
-                    request['ApplicationValues.ApplicationValue.' + i + '.Value'] = appData[key];
-                    ++i;
-                }
             }
 
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUUpdate.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUUpdate({
+                request: request,
                 load: function (response) {
                     context.WUInfoResponse = lang.mixin(context.WUInfoResponse, response.WUUpdateResponse.Workunit);
                     context.onUpdate();
@@ -190,37 +168,25 @@ define([
             });
         },
         submit: function (target) {
-            var request = {
-                Wuid: this.Wuid,
-                Cluster: target
-            };
-            request['rawxml_'] = "1";
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUSubmit.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUSubmit({
+                request: {
+                    Wuid: this.Wuid,
+                    Cluster: target
+                },
                 load: function (response) {
                     context.onSubmit();
-                },
-                error: function (error) {
                 }
             });
         },
         _resubmit: function (clone, resetWorkflow, callback) {
-            var request = {
-                Wuids: this.Wuid,
-                CloneWorkunit: clone,
-                ResetWorkflow: resetWorkflow,
-                rawxml_: true
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUResubmit.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUResubmit({
+                request: {
+                    Wuids: this.Wuid,
+                    CloneWorkunit: clone,
+                    ResetWorkflow: resetWorkflow
+                },
                 load: function (response) {
                     if (callback && callback.load) {
                         callback.load(response);
@@ -243,17 +209,8 @@ define([
             this._resubmit(false, true, callback);
         },
         _action: function (action, callback) {
-            var request = {
-                Wuids: this.Wuid,
-                ActionType: action,
-                rawxml_: true
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUAction.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUAction([{ Wuid: this.Wuid }], action, {
                 load: function (response) {
                     if (callback && callback.load) {
                         callback.load(response);
@@ -273,50 +230,38 @@ define([
             this._action("Delete", callback);
         },
         publish: function (jobName) {
-            var request = {
-                Wuid: this.Wuid,
-                JobName: jobName,
-                Activate: 1,
-                UpdateWorkUnitName: 1,
-                Wait: 5000,
-                rawxml_: true
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUPublishWorkunit.json",
-                handleAs: "json",
-                content: request,
-                load: function (response) {
+            WsWorkunits.WUPublishWorkunit({
+                request: {
+                    Wuid: this.Wuid,
+                    JobName: jobName,
+                    Activate: 1,
+                    UpdateWorkUnitName: 1,
+                    Wait: 5000
                 },
-                error: function (e) {
+                load: function (response) {
                 }
             });
         },
         getInfo: function (args) {
-            var request = {
-                Wuid: this.Wuid,
-                TruncateEclTo64k: args.onGetText ? false : true,
-                IncludeExceptions: args.onGetWUExceptions ? true : false,
-                IncludeGraphs: args.onGetGraphs ? true : false,
-                IncludeSourceFiles: args.onGetSourceFiles ? true : false,
-                IncludeResults: args.onGetResults ? true : false,
-                IncludeResultsViewNames: false,
-                IncludeVariables: args.onGetVariables ? true : false,
-                IncludeTimers: args.onGetTimers ? true : false,
-                IncludeDebugValues: false,
-                IncludeApplicationValues: args.onGetApplicationValues ? true : false,
-                IncludeWorkflows: false,
-                IncludeXmlSchemas: args.onGetResults ? true : false,
-                SuppressResultSchemas: args.onGetResults ? false : true,
-                rawxml_: true
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUInfo.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUInfo({
+                request: {
+                    Wuid: this.Wuid,
+                    TruncateEclTo64k: args.onGetText ? false : true,
+                    IncludeExceptions: args.onGetWUExceptions ? true : false,
+                    IncludeGraphs: args.onGetGraphs ? true : false,
+                    IncludeSourceFiles: args.onGetSourceFiles ? true : false,
+                    IncludeResults: args.onGetResults ? true : false,
+                    IncludeResultsViewNames: false,
+                    IncludeVariables: args.onGetVariables ? true : false,
+                    IncludeTimers: args.onGetTimers ? true : false,
+                    IncludeDebugValues: false,
+                    IncludeApplicationValues: args.onGetApplicationValues ? true : false,
+                    IncludeWorkflows: false,
+                    IncludeXmlSchemas: args.onGetResults ? true : false,
+                    SuppressResultSchemas: args.onGetResults ? false : true
+                },
                 load: function (response) {
                     if (lang.exists("WUInfoResponse.Workunit", response)) {
                         context.WUInfoResponse = response.WUInfoResponse.Workunit;
@@ -405,8 +350,6 @@ define([
                             args.onGetAll(context.WUInfoResponse);
                         }
                     }
-                },
-                error: function (e) {
                 }
             });
         },
@@ -437,7 +380,7 @@ define([
                 case 2:
                 case 11:
                 case 15:
-                    return "iconRunning";                
+                    return "iconRunning";
                 case 4:
                 case 7:
                     return "iconFailed";
@@ -450,9 +393,9 @@ define([
                 case 16:
                     return "iconArchived";
                 case 6:
-                    return "iconAborting";                                
+                    return "iconAborting";
                 case 9:
-                    return "iconSubmitted";                
+                    return "iconSubmitted";
                 case 999:
                     return "iconDeleted";
             }
@@ -519,21 +462,15 @@ define([
                 return;
             }
 
-            var request = {
-                Wuid: this.Wuid,
-                Type: "XML"
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUFile.json",
-                handleAs: "text",
-                content: request,
+            WsWorkunits.WUFile({
+                request: {
+                    Wuid: this.Wuid,
+                    Type: "XML"
+                },
                 load: function (response) {
                     context.xml = response;
                     onFetchXML(response);
-                },
-                error: function (e) {
                 }
             });
         },
@@ -574,21 +511,15 @@ define([
             }
         },
         fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
-            var request = {};
-            request['Wuid'] = this.Wuid;
-            request['GraphName'] = this.graphs[idx].Name;
-            request['rawxml_'] = "1";
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUGetGraph.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUGetGraph({
+                request: {
+                    Wuid: this.Wuid,
+                    GraphName: this.graphs[idx].Name
+                },
                 load: function (response) {
                     context.graphs[idx].xgmml = response.WUGetGraphResponse.Graphs.ECLGraphEx[0].Graph;
                     onFetchGraphXgmml(context.graphs[idx].xgmml, context.graphs[idx].svg);
-                },
-                error: function () {
                 }
             });
         },

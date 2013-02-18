@@ -24,12 +24,11 @@ define([
     "dojox/xml/DomParser",
     "dojox/html/entities",
 
-    "hpcc/WsWorkunits",
-    "hpcc/ESPBase"
+    "hpcc/WsWorkunits"
 ], function (declare, Deferred, lang, ObjectStore, domConstruct,
             parser, DomParser, entities,
-            WsWorkunits, ESPBase) {
-    return declare(ESPBase, {
+            WsWorkunits) {
+    return declare(null, {
         store: null,
         Total: "-1",
 
