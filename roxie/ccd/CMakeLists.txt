@@ -28,22 +28,28 @@ project( ccd )
 
 set (   SRCS 
         ccdactivities.cpp 
-        ccddali.cpp 
+        ccddali.cpp
+        ccdcontext.cpp
+        ccddebug.cpp
         ccdserver.cpp 
         ccdfile.cpp 
         ccdkey.cpp 
-        ccdmain.cpp 
-        ccdquery.cpp 
-        ccdqueue.cpp 
+        ccdlistener.cpp
+        ccdmain.cpp
+        ccdquery.cpp
+        ccdqueue.cpp
         ccdsnmp.cpp 
         ccdstate.cpp 
          
         ccd.hpp
         ccdactivities.hpp
+        ccdcontext.hpp
+        ccddebug.hpp
         ccddali.hpp
         ccdserver.hpp
         ccdfile.hpp
         ccdkey.hpp
+        ccdlistener.hpp
         ccdquery.hpp
         ccdqueue.ipp
         ccdsnmp.hpp
