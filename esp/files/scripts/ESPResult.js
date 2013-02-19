@@ -18,30 +18,96 @@ define([
     "dojo/_base/Deferred",
     "dojo/_base/lang",
     "dojo/data/ObjectStore",
+    "dojo/store/util/QueryResults",
+    "dojo/store/Observable",
     "dojo/dom-construct",
 
     "dojox/xml/parser",
     "dojox/xml/DomParser",
     "dojox/html/entities",
 
+    "hpcc/ESPBase",
     "hpcc/WsWorkunits"
-], function (declare, Deferred, lang, ObjectStore, domConstruct,
+], function (declare, Deferred, lang, ObjectStore, QueryResults, Observable, domConstruct,
             parser, DomParser, entities,
-            WsWorkunits) {
-    return declare(null, {
+            ESPBase, WsWorkunits) {
+    var Store = declare(ESPBase, {
+        idProperty: "myInjectedRowNum",
+        wuid: "",
+        sequence: 0,
+        isComplete: false,
+
+        constructor: function (args) {
+            declare.safeMixin(this, args);
+        },
+
+        getIdentity: function (object) {
+            return object[this.idProperty];
+        },
+
+        queryWhenComplete: function (query, options, deferredResults) {
+            var context = this;
+            if (this.isComplete === true) {
+                var request = {};
+                if (this.name) {
+                    request['LogicalName'] = this.name;
+                } else {
+                    request['Wuid'] = this.wuid;
+                    request['Sequence'] = this.sequence;
+                }
+                request['Start'] = options.start;
+                request['Count'] = options.count;
+
+                var results = WsWorkunits.WUResult({
+                    request: request
+                });
+
+                Deferred.when(results, function (response) {
+                    if (lang.exists("WUResultResponse.Total", response)) {
+                        deferredResults.total.resolve(response.WUResultResponse.Total);
+                    } else {
+                        deferredResults.total.resolve(0);
+                    }
+
+                    var rows = [];
+                    if (lang.exists("WUResultResponse.Result", response)) {
+                        var xml = "<Result>" + response.WUResultResponse.Result + "</Result>";
+                        var domXml = parser.parse(xml);
+                        rows = context.getValues(domXml, "Row");
+                        for (var i = 0; i < rows.length; ++i) {
+                            rows[i].myInjectedRowNum = options.start + i + 1;
+                        }
+                    }
+                    deferredResults.resolve(rows);
+                });
+            } else {
+                setTimeout(function () {
+                    context.queryWhenComplete(query, options, deferredResults);
+                }, 100);
+            }
+        },
+        query: function (query, options) {
+            var deferredResults = new Deferred();
+            deferredResults.total = new Deferred();
+            this.queryWhenComplete(query, options, deferredResults);
+            return QueryResults(deferredResults);
+        }
+    });
+
+    var Result = declare(null, {
         store: null,
         Total: "-1",
 
         constructor: function (args) {
             declare.safeMixin(this, args);
             if (this.Sequence != null) {
-                this.store = new WsWorkunits.WUResult({
+                this.store = new Store({
                     wuid: this.Wuid,
                     sequence: this.Sequence,
                     isComplete: this.isComplete()
                 });
             } else {
-                this.store = new WsWorkunits.WUResult({
+                this.store = new Store({
                     wuid: this.Wuid,
                     cluster: this.Cluster,
                     name: this.Name,
@@ -206,29 +272,48 @@ define([
                 }
             ];
 
+            var dom = parser.parse(this.XmlSchema);
+            var dataset = this.getFirstSchemaNode(dom, "Dataset");
+            var innerStruct = this.getRowStructureFromSchema(dataset);
+            for (var i = 0; i < innerStruct.length; ++i) {
+                structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
+            }
+            return structure;
+        },
+
+        fetchStructure: function (callback) {
             if (this.XmlSchema) {
-                var dom = parser.parse(this.XmlSchema);
-                var dataset = this.getFirstSchemaNode(dom, "Dataset");
-                var innerStruct = this.getRowStructureFromSchema(dataset);
-                for (var i = 0; i < innerStruct.length; ++i) {
-                    structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
-                }
+                callback(this.getStructure());
             } else {
                 var context = this;
-                Deferred.when(this.store.query("*", {
-                    start: 0,
-                    count: 1,
-                    sync: true
-                }), function (rows) {
-                    if (rows.length) {
-                        var innerStruct = context.getRowStructureFromData(rows);
-                        for (var i = 0; i < innerStruct.length; ++i) {
-                            structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
+
+                var request = {};
+                if (this.Name) {
+                    request['LogicalName'] = this.Name;
+                } else {
+                    request['Wuid'] = this.Wuid;
+                    request['Sequence'] = this.Sequence;
+                }
+                request['Start'] = 0;
+                request['Count'] = 1;
+                WsWorkunits.WUResult({
+                    request: request,
+                    load: function (response) {
+                        if (lang.exists("WUResultResponse.Result", response)) {
+                            context.XmlSchema = "<Result>" + response.WUResultResponse.Result + "</Result>";
+                            callback(context.getStructure());
                         }
+                        /*
+                        if (rows.length) {
+                            var innerStruct = context.getRowStructureFromData(rows);
+                            for (var i = 0; i < innerStruct.length; ++i) {
+                                structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
+                            }
+                        }
+                        */
                     }
                 });
             }
-            return structure;
         },
 
         getRowWidth: function (parentNode) {
@@ -295,7 +380,7 @@ define([
         },
 
         getObjectStore: function () {
-            return ObjectStore({
+            return new ObjectStore({
                 objectStore: this.store
             });
         },
@@ -316,4 +401,17 @@ define([
             return retVal;
         }
     });
+
+    return {
+        CreateWUResultObjectStore: function (options) {
+            var store = new Store(options);
+            store = Observable(store);
+            var objStore = new ObjectStore({ objectStore: store });
+            return objStore;
+        },
+
+        Get: function (params) {
+            return new Result(params);
+        }
+    }
 });

@@ -50,8 +50,7 @@ define([
             return this.serverIP ? true : false;
         },
 
-        send: function(service, action, _params) {
-            dojo.publish("hpcc/standbyBackgroundShow");
+        _send: function(service, action, _params) {
             var params = lang.mixin({
                 load: function (response) {
                 },
@@ -61,7 +60,7 @@ define([
                 }
             }, _params);
             lang.mixin(params.request, {
-                rawxml_: "1"
+                rawxml_: true
             });
 
             var handleAs = params.handleAs ? params.handleAs : "json";
@@ -80,10 +79,28 @@ define([
                 });
             }
             return retVal.then(function (response) {
+                params.load(response);
+                return response;
+            },
+            function (error) {
+                params.error(error);
+                return error;
+            },
+            function (event) {
+                params.event(event);
+                return event;
+            });
+        },
+
+        send: function (service, action, params) {
+            dojo.publish("hpcc/standbyBackgroundShow");
+            var handleAs = params.handleAs ? params.handleAs : "json";
+            return this._send(service, action, params).then(function (response) {
                 if (handleAs == "json") {
                     if (lang.exists("Exceptions.Source", response)) {
                         var message = "<h3>" + response.Exceptions.Source + "</h3>";
                         if (lang.exists("Exceptions.Exception", response)) {
+                            exceptions = response.Exceptions.Exception;
                             for (var i = 0; i < response.Exceptions.Exception.length; ++i) {
                                 message += "<p>" + response.Exceptions.Exception[i].Message + "</p>";
                             }
@@ -95,8 +112,6 @@ define([
                         });
                     }
                 }
-                params.load(response);
-
                 dojo.publish("hpcc/standbyBackgroundHide");
                 return response;
             },
@@ -114,15 +129,8 @@ define([
                     type: "error",
                     duration: -1
                 });
-
-                params.error(error);
-
                 dojo.publish("hpcc/standbyBackgroundHide");
                 return error;
-            },
-            function (event) {
-                params.event(event);
-                return event;
             });
         },
 

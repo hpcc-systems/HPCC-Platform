@@ -143,14 +143,12 @@ define([
                     return;
                 this.initalized = true;
 
-                this.wu = new ESPWorkunit({
-                    Wuid: params.Wuid
-                });
+                this.wu = ESPWorkunit.Get(params.Wuid);
 
                 var context = this;
                 this.wu.monitor(function () {
                     context.wu.getInfo({
-                        onGetAll: function (response) {
+                        onAfterSend: function (response) {
                             context.logData = [];
                             if (response.HasArchiveQuery) {
                                 context.logData.push({

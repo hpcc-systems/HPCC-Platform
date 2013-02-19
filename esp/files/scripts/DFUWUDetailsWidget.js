@@ -291,9 +291,6 @@ define([
                 }
                 //start progress bar
 
-
-
-
                 //end progress bar
                 this.loaded = true;
             }
@@ -301,24 +298,18 @@ define([
             if (this.wu.isComplete()) {
                 this.wu.getInfo({
                     onGetResults: function (response) {
-
                     },
 
                     onGetSourceFiles: function (response) {
-
                     },
 
                     onGetTimers: function (response) {
-
                     },
 
                     onGetGraphs: function (response) {
-
                     },
 
                     onGetAll: function (response) {
-
-
                     }
                 });
             }

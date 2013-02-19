@@ -87,9 +87,8 @@ define([
             this.initalized = true;
 
             if (params.Wuid) {
-                this.wu = new ESPWorkunit({
-                    Wuid: params.Wuid
-                });
+                this.wu = ESPWorkunit.Get(params.Wuid);
+
                 var monitorCount = 4;
                 var context = this;
                 this.wu.monitor(function () {

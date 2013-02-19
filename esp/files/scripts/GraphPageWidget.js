@@ -48,7 +48,7 @@ define([
     "dijit/Menu",
     "dijit/MenuItem",
     "dijit/form/TextBox"
-], function (declare, lang, sniff, array, dom, domConstruct, on, has, Memory, ObjectStore,
+], function (declare, lang, sniff, arrayUtil, dom, domConstruct, on, has, Memory, ObjectStore,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
             DataGrid, entities,
             GraphWidget, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
@@ -126,7 +126,8 @@ define([
                 context.syncSelectionFrom(context.main);
             };
             this.main.onLayoutFinished = function () {
-                context.wu.setGraphSvg(context.graphName, context.main.svg);
+                //  TODO:  Could be too expensive  ---
+                //context.wu.setGraphSvg(context.graphName, context.main.svg);
             };
 
             this.overview = registry.byId(this.id + "MiniGraphWidget");
@@ -310,9 +311,7 @@ define([
             }
             this.initalized = true;
             this.graphName = params.GraphName;
-            this.wu = new ESPWorkunit({
-                Wuid: params.Wuid
-            });
+            this.wu = ESPWorkunit.Get(params.Wuid);
 
             var firstLoad = true;
             var context = this;
@@ -461,16 +460,16 @@ define([
                 this.timingTreeMap.setSelected(selItems);
             }
             if (sourceControl != this.verticesGrid && this.verticesGrid.store) {
-                for (var i = 0; i < this.verticesGrid.rowCount; ++i) {
-                    var row = this.verticesGrid.getItem(i);
-                    this.verticesGrid.selection.setSelected(i, (row._globalID && array.indexOf(selItems, row._globalID) != -1));
-                }
+                var context = this;
+                arrayUtil.forEach(this.verticesGrid.store.objectStore.data, function (item, idx) {
+                    context.verticesGrid.selection.setSelected(idx, (item._globalID && arrayUtil.indexOf(selItems, item._globalID) != -1));
+                });
             }
             if (sourceControl != this.edgesGrid && this.edgesGrid.store) {
-                for (var i = 0; i < this.edgesGrid.rowCount; ++i) {
-                    var row = this.edgesGrid.getItem(i);
-                    this.edgesGrid.selection.setSelected(i, (row._globalID && array.indexOf(selItems, row._globalID) != -1));
-                }
+                var context = this;
+                arrayUtil.forEach(this.edgesGrid.store.objectStore.data, function (item, idx) {
+                    context.edgesGrid.selection.setSelected(idx, (item._globalID && arrayUtil.indexOf(selItems, item._globalID) != -1));
+                });
             }
             if (sourceControl != this.main) {
                 this.main.setSelectedAsGlobalID(selItems);

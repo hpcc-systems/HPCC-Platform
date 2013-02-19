@@ -34,7 +34,7 @@ define([
     "dijit/form/CheckBox",
     "dojox/grid/DataGrid"
 ],
-    function (declare, array, 
+    function (declare, arrayUtil,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
             AndOrReadStore,
             ESPWorkunit,
@@ -149,9 +149,7 @@ define([
                     this.onErrorClick = params.onErrorClick;
                 }
                 
-                this.wu = new ESPWorkunit({
-                    Wuid: params.Wuid
-                });
+                this.wu = ESPWorkunit.Get(params.Wuid);
 
                 var context = this;
                 this.wu.monitor(function () {
@@ -192,11 +190,25 @@ define([
             setSelected: function (selItems) {
                 for (var i = 0; i < this.infoGrid.rowCount; ++i) {
                     var row = this.infoGrid.getItem(i);
-                    this.infoGrid.selection.setSelected(i, (row.SubGraphId && array.indexOf(selItems, row.SubGraphId) != -1));
+                    this.infoGrid.selection.setSelected(i, (row.SubGraphId && arrayUtil.indexOf(selItems, row.SubGraphId) != -1));
                 }
             },
 
             loadExceptions: function (exceptions) {
+                exceptions.sort(function (l, r) {
+                    if (l.Severity === r.Severity) {
+                        return 0;
+                    } else if (l.Severity === "Error") {
+                        return -1;
+                    } else if (r.Severity === "Error") {
+                        return 1;
+                    } else if (l.Severity === "Warning") {
+                        return -1;
+                    } else if (r.Severity === "Warning") {
+                        return 1;
+                    }
+                    return l.Severity > r.Severity;
+                });
                 var data = {
                     'items': exceptions
                 };

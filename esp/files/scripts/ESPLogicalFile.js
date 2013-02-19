@@ -70,7 +70,7 @@ define([
         processDFUInfoResponse: function(dfuInfoResponse, args) {
             var fileDetail = dfuInfoResponse.FileDetail;
             this.DFUInfoResponse = fileDetail;
-            this.result = new ESPResult(fileDetail);
+            this.result = ESPResult.Get(fileDetail);
 
             if (args.onGetAll) {
                 args.onGetAll(fileDetail);

@@ -17,6 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/dom",
     "dojo/dom-class",
+    "dojo/query",
     "dojo/store/Memory",
     "dojo/data/ObjectStore",
 
@@ -46,14 +47,15 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog",
     "dijit/TitlePane"
-], function (declare, dom, domClass, Memory, ObjectStore,
+], function (declare, dom, domClass, query, Memory, ObjectStore,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                _TabContainerWidget, Workunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
+                _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "WUDetailsWidget",
         summaryWidget: null,
+        summaryForm: null,
         resultsWidget: null,
         resultsWidgetLoaded: false,
         filesWidget: null,
@@ -90,6 +92,7 @@ define([
             this.xmlWidget = registry.byId(this.id + "_XML");
             this.legacyPane = registry.byId(this.id + "_Legacy");
 
+            this.summaryForm = registry.byId(this.id + "SummaryForm");
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
         },
 
@@ -99,57 +102,33 @@ define([
             var context = this;
             this.wu.update({
                 Description: dom.byId(context.id + "Description").value,
-                Jobname: dom.byId(context.id + "JobName").value,
+                Jobname: dom.byId(context.id + "Jobname").value,
                 Protected: protectedCheckbox.get("value")
-            }, null, {
-                load: function (response) {
-                    context.monitor();
-                }
-            });
+            }, null);
         },
-        _onReload: function (event) {
-            this.monitor();
+        _onRefresh: function (event) {
+            this.wu.refresh(true);
         },
         _onClone: function (event) {
-            this.wu.clone({
-                load: function (response) {
-                    //TODO
-                }
-            });
+            this.wu.clone();
         },
         _onDelete: function (event) {
-            this.wu.doDelete({
-                load: function (response) {
-                    //TODO
-                }
-            });
+            this.wu.doDelete();
         },
         _onResubmit: function (event) {
-            var context = this;
-            this.wu.resubmit({
-                load: function (response) {
-                    context.monitor();
-                }
-            });
+            this.wu.resubmit();
+        },
+        _onSetToFailed: function (event) {
+            this.wu.setToFailed();
         },
         _onAbort: function (event) {
-            var context = this;
-            this.wu.abort({
-                load: function (response) {
-                    context.monitor();
-                }
-            });
+            this.wu.abort();
         },
         _onRestart: function (event) {
-            var context = this;
-            this.wu.restart({
-                load: function (response) {
-                    context.monitor();
-                }
-            });
+            this.wu.restart();
         },
         _onPublish: function (event) {
-            this.wu.publish(dom.byId(this.id + "JobName2").value);
+            this.wu.publish(dom.byId(this.id + "Jobname2").value);
         },
 
         //  Implementation  ---
@@ -162,10 +141,16 @@ define([
                 this.summaryWidget.set("title", params.Wuid);
 
                 dom.byId(this.id + "Wuid").innerHTML = params.Wuid;
-                this.wu = new Workunit({
-                    Wuid: params.Wuid
+                this.wu = ESPWorkunit.Get(params.Wuid);
+                var data = this.wu.getData();
+                for (key in data) {
+                    this.updateInput(key, null, data[key]);
+                }
+                var context = this;
+                this.wu.watch(function (name, oldValue, newValue) {
+                    context.updateInput(name, oldValue, newValue);
                 });
-                this.monitor();
+                this.wu.refresh();
             }
             this.infoGridWidget.init(params);
             this.selectChild(this.summaryWidget, true);
@@ -211,7 +196,7 @@ define([
                 this.playgroundWidgetLoaded = true;
                 this.playgroundWidget.init({
                     Wuid: this.wu.Wuid,
-                    Target: this.wu.WUInfoResponse.Cluster
+                    Target: this.wu.Cluster
                 });
             } else if (currSel.id == this.xmlWidget.id && !this.xmlWidgetLoaded) {
                 this.xmlWidgetLoaded = true;
@@ -225,14 +210,6 @@ define([
                     style: "border: 0; width: 100%; height: 100%"
                 }));
             }
-        },
-
-        monitor: function () {
-            var prevState = "";
-            var context = this;
-            this.wu.monitor(function (workunit) {
-                context.monitorWorkunit(workunit);
-            });
         },
 
         resetPage: function () {
@@ -256,107 +233,130 @@ define([
             return text;
         },
 
-        monitorWorkunit: function (response) {
+        updateInput: function (name, oldValue, newValue) {
+            var input = query("input[id=" + this.id + name + "]", this.summaryForm)[0];
+            if (input) {
+                var dijitInput = registry.byId(this.id + name);
+                if (dijitInput) {
+                    dijitInput.set("value", newValue);
+                } else {
+                    input.value = newValue;
+                }
+            } else {
+                var div = query("div[id=" + this.id + name + "]", this.summaryForm)[0];
+                if (div) {
+                    div.innerHTML = newValue;
+                }
+            }
+            if (name === "Protected") {
+                dom.byId(this.id + "ProtectedImage").src = this.wu.getProtectedImage();
+            } else if (name === "Jobname") {
+                this.updateInput("Jobname2", oldValue, newValue);
+            } else if (name === "variable") {
+                registry.byId(context.id + "Variables").set("title", "Variables " + "(" + newValue.length + ")");
+                context.variablesGrid = registry.byId(context.id + "VariablesGrid");
+                context.variablesGrid.setStructure([
+                    { name: "Name", field: "Name", width: 16 },
+                    { name: "Type", field: "ColumnType", width: 10 },
+                    { name: "Default Value", field: "Value", width: 32 }
+                ]);
+                var memory = new Memory({ data: newValue });
+                var store = new ObjectStore({ objectStore: memory });
+                context.variablesGrid.setStore(store);
+                context.variablesGrid.setQuery({
+                    Name: "*"
+                });
+            } else if (name === "results") {
+                this.resultsWidget.set("title", "Outputs " + "(" + newValue.length + ")");
+                var tooltip = "";
+                for (var i = 0; i < newValue.length; ++i) {
+                    if (tooltip != "")
+                        tooltip += "\n";
+                    tooltip += newValue[i].Name;
+                    if (newValue[i].Value)
+                        tooltip += " " + newValue[i].Value;
+                }
+                this.resultsWidget.set("tooltip", tooltip);
+            } else if (name === "sourceFiles") {
+                this.filesWidget.set("title", "Inputs " + "(" + newValue.length + ")");
+                var tooltip = "";
+                for (var i = 0; i < newValue.length; ++i) {
+                    if (tooltip != "")
+                        tooltip += "\n";
+                    tooltip += newValue[i].Name;
+                }
+                this.filesWidget.set("tooltip", tooltip);
+            } else if (name === "timers") {
+                this.timersWidget.set("title", "Timers " + "(" + newValue.length + ")");
+                var tooltip = "";
+                for (var i = 0; i < newValue.length; ++i) {
+                    if (newValue[i].GraphName)
+                        continue;
+                    if (newValue[i].Name == "Process")
+                        dom.byId(this.id + "Time").innerHTML = newValue[i].Value;
+                    if (tooltip != "")
+                        tooltip += "\n";
+                    tooltip += newValue[i].Name;
+                    if (newValue[i].Value)
+                        tooltip += " " + newValue[i].Value;
+                }
+                this.timersWidget.set("tooltip", tooltip);
+            } else if (name === "graphs") {
+                this.graphsWidget.set("title", "Graphs " + "(" + newValue.length + ")");
+                var tooltip = "";
+                for (var i = 0; i < newValue.length; ++i) {
+                    if (tooltip != "")
+                        tooltip += "\n";
+                    tooltip += newValue[i].Name;
+                    if (newValue[i].Time)
+                        tooltip += " " + response[i].Time;
+                }
+                this.graphsWidget.set("tooltip", tooltip);
+            } else if (name === "StateID") {
+                this.refreshActionState();
+            } else if (name === "hasCompleted") {
+                this.checkIfComplete();
+            }
+        },
+
+        refreshActionState: function () {
             registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete());
-            //registry.byId(this.id + "Reload").set("disabled", this.wu.isComplete());
             registry.byId(this.id + "Clone").set("disabled", !this.wu.isComplete());
             registry.byId(this.id + "Delete").set("disabled", !this.wu.isComplete());
             registry.byId(this.id + "Abort").set("disabled", this.wu.isComplete());
             registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete());
             registry.byId(this.id + "Restart").set("disabled", !this.wu.isComplete());
             registry.byId(this.id + "Publish").set("disabled", !this.wu.isComplete());
-            
-            registry.byId(this.id + "JobName").set("readOnly", !this.wu.isComplete());
+
+            registry.byId(this.id + "Jobname").set("readOnly", !this.wu.isComplete());
             registry.byId(this.id + "Description").set("readOnly", !this.wu.isComplete());
             registry.byId(this.id + "Protected").set("readOnly", !this.wu.isComplete());
 
-            this.summaryWidget.set("iconClass",this.wu.getStateIconClass());
+            this.summaryWidget.set("iconClass", this.wu.getStateIconClass());
             domClass.remove(this.id + "StateIdImage");
             domClass.add(this.id + "StateIdImage", this.wu.getStateIconClass());
+        },
 
-            //dom.byId(this.id + "StateIdImage").title = response.State;
-            dom.byId(this.id + "ProtectedImage").src = this.wu.getProtectedImage();
-            dom.byId(this.id + "State").innerHTML = response.State;
-            dom.byId(this.id + "Owner").innerHTML = response.Owner;
-            dom.byId(this.id + "JobName").value = response.Jobname;
-            dom.byId(this.id + "JobName2").value = response.Jobname;
-            dom.byId(this.id + "Cluster").innerHTML = response.Cluster;
-
+        checkIfComplete: function() {
             var context = this;
-            if (this.wu.isComplete() || this.prevState != response.State) {
-                this.prevState = response.State;
+            if (this.wu.isComplete()) {
                 this.wu.getInfo({
                     onGetVariables: function (response) {
-                        registry.byId(context.id + "Variables").set("title", "Variables " + "(" + response.length + ")");
-                        context.variablesGrid = registry.byId(context.id + "VariablesGrid");
-                        context.variablesGrid.setStructure([
-                            { name: "Name", field: "Name", width: 16 },
-                            { name: "Type", field: "ColumnType", width: 10 },
-                            { name: "Default Value", field: "Value", width: 32 }
-                        ]);
-                        var memory = new Memory({ data: response });
-                        var store = new ObjectStore({ objectStore: memory });
-                        context.variablesGrid.setStore(store);
-                        context.variablesGrid.setQuery({
-                            Name: "*"
-                        });
                     },
 
                     onGetResults: function (response) {
-                        context.resultsWidget.set("title", "Outputs " + "(" + response.length + ")");
-                        var tooltip = "";
-                        for (var i = 0; i < response.length; ++i) {
-                            if (tooltip != "")
-                                tooltip += "\n";
-                            tooltip += response[i].Name;
-                            if (response[i].Value)
-                                tooltip += " " + response[i].Value;
-                        }
-                        context.resultsWidget.set("tooltip", tooltip);
                     },
 
                     onGetSourceFiles: function (response) {
-                        context.filesWidget.set("title", "Inputs " + "(" + response.length + ")");
-                        var tooltip = "";
-                        for (var i = 0; i < response.length; ++i) {
-                            if (tooltip != "")
-                                tooltip += "\n";
-                            tooltip += response[i].Name;
-                        }
-                        context.filesWidget.set("tooltip", tooltip);
                     },
 
                     onGetTimers: function (response) {
-                        context.timersWidget.set("title", "Timers " + "(" + response.length + ")");
-                        var tooltip = "";
-                        for (var i = 0; i < response.length; ++i) {
-                            if (response[i].GraphName)
-                                continue;
-                            if (response[i].Name == "Process")
-                                dom.byId(context.id + "Time").innerHTML = response[i].Value;
-                            if (tooltip != "")
-                                tooltip += "\n";
-                            tooltip += response[i].Name;
-                            if (response[i].Value)
-                                tooltip += " " + response[i].Value;
-                        }
-                        context.timersWidget.set("tooltip", tooltip);
                     },
 
                     onGetGraphs: function (response) {
-                        context.graphsWidget.set("title", "Graphs " + "(" + response.length + ")");
-                        var tooltip = "";
-                        for (var i = 0; i < response.length; ++i) {
-                            if (tooltip != "")
-                                tooltip += "\n";
-                            tooltip += response[i].Name;
-                            if (response[i].Time)
-                                tooltip += " " + response[i].Time;
-                        }
-                        context.graphsWidget.set("tooltip", tooltip);
                     },
 
-                    onGetAll: function (response) {
+                    onAfterSend: function (response) {
                         var helpersCount = 0;
                         if (response.Helpers && response.Helpers.ECLHelpFile) {
                             helpersCount += response.Helpers.ECLHelpFile.length;
@@ -369,15 +369,12 @@ define([
                         }
 
                         context.logsWidget.set("title", "Helpers " + "(" + helpersCount + ")");
-                        //dom.byId(context.id + "WUInfoResponse").innerHTML = context.objectToText(response);
-                        dom.byId(context.id + "Description").value = response.Description;
-                        dom.byId(context.id + "Action").innerHTML = response.ActionEx;
-                        dom.byId(context.id + "Scope").innerHTML = response.Scope;
-                        var protectedCheckbox = registry.byId(context.id + "Protected");
-                        protectedCheckbox.set("value", response.Protected);
                     }
                 });
             }
+        },
+
+        monitorWorkunit: function (response) {
         }
     });
 });
