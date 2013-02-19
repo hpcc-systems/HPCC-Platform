@@ -4634,7 +4634,8 @@ void HqlCppTranslator::doBuildExprCompare(BuildCtx & ctx, IHqlExpression * expr,
                     orderExpr.setown(bindTranslatedFunctionCall(func, args));
                 }
                 else if (options.optimizeString1Compare &&
-                    (tc == type_string || tc == type_data) && (leftType->getSize() == 1) &&
+                    ((tc == type_string && isAscii(leftType)) || tc == type_data) &&
+                    (leftType->getSize() == 1) && (rightType->getSize() == 1) &&
                     ((compareOp == no_eq) || (compareOp == no_ne)))
                 {
                     //Optimize equality/non equality of a single character string.  
