@@ -18,8 +18,16 @@
 #ifndef WUPACKAGE_H
 #define WUPACKAGE_H
 
+#include "errorlist.h"
 #include "dadfs.hpp"
 #include "workunit.hpp"
+
+// error codes
+#define PACKAGE_TARGET_NOT_FOUND      PACKAGE_ERROR_START
+#define PACKAGE_MISSING_ID            PACKAGE_ERROR_START+1
+#define PACKAGE_NO_SUBFILES           PACKAGE_ERROR_START+2
+#define PACKAGE_NOT_FOUND             PACKAGE_ERROR_START+3
+
 
 interface IHpccPackage : extends IInterface
 {
@@ -37,12 +45,16 @@ interface IHpccPackageMap : extends IInterface
     virtual const IHpccPackage *matchPackage(const char *name) const = 0;
     virtual const char *queryPackageId() const = 0;
     virtual bool isActive() const = 0;
+    virtual bool validate(IMultiException *me, StringArray &unmatchedQueries, StringArray &unusedPackages) const = 0;
 };
 
 interface IHpccPackageSet : extends IInterface
 {
      virtual const IHpccPackageMap *queryActiveMap(const char *queryset) const = 0;
 };
+
+extern WORKUNIT_API IHpccPackageMap *createPackageMapFromXml(const char *xml, const char *queryset, const char *id);
+extern WORKUNIT_API IHpccPackageMap *createPackageMapFromPtree(IPropertyTree *t, const char *queryset, const char *id);
 
 extern WORKUNIT_API IHpccPackageSet *createPackageSet(const char *process);
 extern WORKUNIT_API IPropertyTree * getPackageMapById(const char * id, bool readonly);

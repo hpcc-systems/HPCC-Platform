@@ -98,7 +98,7 @@ void CPackageNode::loadEnvironment()
         {
             StringBuffer s;
             toXML(&env, s);
-            throw MakeStringException(0, "PACKAGE_ERROR: Environment element missing id or value: %s", s.str());
+            throw MakeStringException(PACKAGE_MISSING_ID, "PACKAGE_ERROR: Environment element missing id or value: %s", s.str());
         }
     }
     Owned<IAttributeIterator> attrs = node->getAttributes();
@@ -110,6 +110,28 @@ void CPackageNode::loadEnvironment()
     }
 }
 
+bool CPackageNode::validate(IMultiException *me) const
+{
+    if (!node)
+        return true;
+    const char *packageId = node->queryProp("@id");
+    if (!packageId || !*packageId)
+        me->append(*MakeStringExceptionDirect(PACKAGE_MISSING_ID, "Package has no id attribute"));
+    Owned<IPropertyTreeIterator> files = node->getElements("SuperFile");
+    ForEach(*files)
+    {
+        IPropertyTree &super = files->query();
+        const char *superId = super.queryProp("@id");
+        if (!superId || !*superId)
+            me->append(*MakeStringExceptionDirect(PACKAGE_MISSING_ID, "SuperFile has no id attribute"));
+
+        if (!super.hasProp("SubFile"))
+            me->append(*MakeStringException(PACKAGE_NO_SUBFILES, "Warning: Package['%s']/SuperFile['%s'] has no SubFiles defined", packageId, superId ? superId : ""));
+    }
+    return true;
+}
+
+
 CHpccPackage *createPackage(IPropertyTree *p)
 {
     return new CHpccPackage(p);
@@ -118,6 +140,20 @@ CHpccPackage *createPackage(IPropertyTree *p)
 //================================================================================================
 // CPackageMap - an implementation of IPackageMap using a string map
 //================================================================================================
+
+IHpccPackageMap *createPackageMapFromPtree(IPropertyTree *t, const char *queryset, const char *id)
+{
+    Owned<CHpccPackageMap> pm = new CHpccPackageMap(id, queryset, true);
+    pm->load(t);
+    return pm.getClear();
+}
+
+IHpccPackageMap *createPackageMapFromXml(const char *xml, const char *queryset, const char *id)
+{
+    Owned<IPropertyTree> t = createPTreeFromXMLString(xml);
+    return createPackageMapFromPtree(t, queryset, id);
+}
+
 
 //================================================================================================
 // CHpccPackageSet - an implementation of IHpccPackageSet

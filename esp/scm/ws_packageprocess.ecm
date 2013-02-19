@@ -110,6 +110,29 @@ ESPresponse [exceptions_inline] ListPackageResponse
     ESParray<ESPstruct PackageListMapData> PkgListMapData;
 };
 
+ESPrequest ValidatePackageRequest
+{
+    string Info;
+    string Target;
+};
+
+ESPstruct ValidatePackageInfo
+{
+    ESParray<string> Unmatched;
+};
+
+ESPstruct ValidatePackageQueries
+{
+    ESParray<string> Unmatched;
+};
+
+ESPresponse [exceptions_inline] ValidatePackageResponse
+{
+    ESPstruct BasePackageStatus status;
+    ESPstruct ValidatePackageInfo packages;
+    ESPstruct ValidatePackageQueries queries;
+};
+
 ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
@@ -119,6 +142,7 @@ ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("
     ESPmethod DeActivatePackage(DeActivatePackageRequest, DeActivatePackageResponse);
     ESPmethod ListPackage(ListPackageRequest, ListPackageResponse);
     ESPmethod GetPackage(GetPackageRequest, GetPackageResponse);
+    ESPmethod ValidatePackage(ValidatePackageRequest, ValidatePackageResponse);
 };
 
 SCMexportdef(WsPackageProcess);

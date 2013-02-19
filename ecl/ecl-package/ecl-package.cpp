@@ -281,8 +281,8 @@ public:
             {
                 IConstPackageListMapData& req = pkgMapInfo.item(i);
                 printf("\nPackage Name = %s  active = %d\n", req.getId(), req.getActive());
-                IArrayOf<IConstPackageListData> &pkgInfo = req.getPkgListData();
 
+                IArrayOf<IConstPackageListData> &pkgInfo = req.getPkgListData();
                 unsigned int numPkgs = pkgInfo.ordinality();
                 for (unsigned int j = 0; j <numPkgs; j++)
                 {
@@ -600,6 +600,115 @@ private:
     StringAttr optDaliIP;
 };
 
+class EclCmdPackageValidate : public EclCmdCommon
+{
+public:
+    EclCmdPackageValidate()
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optTarget.isEmpty())
+                    optTarget.set(arg);
+                else if (optFileName.isEmpty())
+                    optFileName.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+        {
+            usage();
+            return false;
+        }
+        StringBuffer err;
+        if (optFileName.isEmpty())
+            err.append("\n ... Missing package file name\n\n");
+        else if (optTarget.isEmpty())
+            err.append("\n ... Specify a cluster name\n\n");
+
+        if (err.length())
+        {
+            fprintf(stdout, "%s", err.str());
+            usage();
+            return false;
+        }
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
+        StringBuffer pkgInfo;
+        pkgInfo.loadFile(optFileName);
+
+        fprintf(stdout, "\nvalidating packagemap file %s\n\n", optFileName.sget());
+
+        Owned<IClientValidatePackageRequest> request = packageProcessClient->createValidatePackageRequest();
+        request->setInfo(pkgInfo);
+        request->setTarget(optTarget);
+
+        Owned<IClientValidatePackageResponse> resp = packageProcessClient->ValidatePackage(request);
+        if (resp->getExceptions().ordinality()==0)
+            fputs("   No errors found\n", stdout);
+        else
+            outputMultiExceptions(resp->getExceptions());
+        StringArray &unmatchedQueries = resp->getQueries().getUnmatched();
+        if (unmatchedQueries.ordinality()>0)
+        {
+            fputs("\n   Queries without matching package:\n", stderr);
+            ForEachItemIn(i, unmatchedQueries)
+                fprintf(stderr, "      %s\n", unmatchedQueries.item(i));
+        }
+        StringArray &unusedPackages = resp->getPackages().getUnmatched();
+        if (unusedPackages.ordinality()>0)
+        {
+            fputs("\n   Packages without matching queries:\n", stderr);
+            ForEachItemIn(i, unusedPackages)
+                fprintf(stderr, "      %s\n", unusedPackages.item(i));
+        }
+
+        return 0;
+    }
+
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+                    "\n"
+                    "The 'validate' command will checkout the contents of the package map file \n"
+                    "\n"
+                    "ecl packagemap validate <target> <filename>\n"
+                    " Options:\n"
+                    "   <target>                    name of target to use when adding package map information\n"
+                    "   <filename>                  name of file containing package map information\n",
+                    stdout);
+
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optFileName;
+    StringAttr optTarget;
+};
 
 IEclCommand *createPackageSubCommand(const char *cmdname)
 {
@@ -617,7 +726,9 @@ IEclCommand *createPackageSubCommand(const char *cmdname)
         return new EclCmdPackageInfo();
     if (strieq(cmdname, "list"))
         return new EclCmdPackageList();
-    return NULL;
+    if (strieq(cmdname, "validate"))
+        return new EclCmdPackageValidate();
+return NULL;
 }
 
 //=========================================================================================
@@ -641,6 +752,7 @@ public:
             "      deactivate   deactivate a package map (package map will not get loaded)\n"
             "      list         list loaded package map names\n"
             "      info         return active package map information\n"
+            "      validate     validate information in the package map file \n"
         );
     }
 };
