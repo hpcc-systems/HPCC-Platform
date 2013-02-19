@@ -1948,6 +1948,10 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             }
             break;
         }
+    case no_indict:
+        if (isNull(expr->queryChild(1)))
+            return createConstant(false);
+        break;
     case no_in:
     case no_notin:
         {
@@ -3002,7 +3006,23 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
         {
             IHqlExpression * child = expr->queryChild(0);
             node_operator childOp = child->getOperator();
-            //MORE: Can't really optimize count of a dictionary since the input dataset may contain duplicates which will be removed.
+            // Can't optimize count of a dictionary in general, since the input dataset may contain duplicates which will be removed.
+            switch (child->getOperator())
+            {
+            case no_null:
+                return createConstant(0);
+            }
+            break;
+        }
+    case no_existsdict:
+        {
+            IHqlExpression * child = expr->queryChild(0);
+            node_operator childOp = child->getOperator();
+            switch (child->getOperator())
+            {
+            case no_null:
+                return createConstant(false);
+            }
             break;
         }
     case no_countlist:
@@ -3764,6 +3784,14 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_combinegroup:
         if (isNull(child) && isNull(expr->queryChild(1)))
             return replaceWithNull(expr);
+        break;
+    case no_createdictionary:
+        if (isNull(child))
+            return replaceWithNull(expr);
+        break;
+    case no_selectmap:
+        if (isNull(child))
+            return replaceWithNullRow(child);
         break;
     case no_selectnth:
 //      if (isNull(child) || isZero(expr->queryChild(1)))

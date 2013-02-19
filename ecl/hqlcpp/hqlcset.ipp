@@ -30,6 +30,7 @@ public:
     virtual void buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt);
     virtual void buildIterateMembers(BuildCtx & declarectx, BuildCtx & initctx);
     virtual void buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
+    virtual void buildExistsDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
 
 protected:
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) = 0;
@@ -91,6 +92,7 @@ public:
     virtual void buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt);
     virtual void buildIterateClass(BuildCtx & ctx, StringBuffer & cursorName, BuildCtx * initctx) { throwUnexpected(); }
     virtual void buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
+    virtual void buildExistsDict(BuildCtx & ctx, CHqlBoundExpr & tgt);
 };
 
 class MultiLevelDatasetCursor : public BaseDatasetCursor

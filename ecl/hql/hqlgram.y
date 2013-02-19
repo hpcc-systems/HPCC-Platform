@@ -5459,6 +5459,10 @@ primexpr1
                             $$.setExpr(createBoolExpr(no_exists, $3.getExpr(), $4.getExpr()));
                             $$.setPosition($1);
                         }
+    | EXISTS '(' dictionary ')'
+                        {
+                            $$.setExpr(createValue(no_existsdict, makeBoolType(), $3.getExpr()));
+                        }
     | MAP '(' mapSpec ',' expression ')'
                         {
                             parser->normalizeExpression($5);

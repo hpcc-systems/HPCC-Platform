@@ -820,6 +820,7 @@ const char * cppSystemText[]  = {
 
     // Dictionary support
     "    integer8 dictionaryCount(_linkcounted_ dictionary dict) : eclrtl,include,pure,entrypoint='rtlDictionaryCount';",
+    "    boolean dictionaryExists(_linkcounted_ dictionary dict) : eclrtl,include,pure,entrypoint='rtlDictionaryExists';",
     "   _linkcounted_ row(dummyRecord) dictionaryLookup(IHThorHashLookupInfo meta, _linkcounted_ dictionary dict, row key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookup';",
     "   _linkcounted_ row(dummyRecord) dictionaryLookupString(_linkcounted_ dictionary dict, const string key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupString';",
     "   _linkcounted_ row(dummyRecord) dictionaryLookupStringN(_linkcounted_ dictionary dict, const unsigned4 size, const string key, _linkcounted_ row defaultrow) : eclrtl,include,pure,entrypoint='rtlDictionaryLookupStringN';",

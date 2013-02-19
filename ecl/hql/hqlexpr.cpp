@@ -994,7 +994,7 @@ const char *getOpString(node_operator op)
     case no_mapto: return "=>";
     case no_constant: return "<constant>";
     case no_field: return "<field>";
-    case no_exists: case no_existslist: return "EXISTS";
+    case no_exists: case no_existslist: case no_existsdict: return "EXISTS";
     case no_existsgroup: return "EXISTS";
     case no_select: return ".";
     case no_table: return "DATASET";
@@ -1460,7 +1460,6 @@ const char *getOpString(node_operator op)
     case no_unused80:
     case no_unused81:
     case no_unused83:
-    case no_unused100:
     case no_unused101:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
