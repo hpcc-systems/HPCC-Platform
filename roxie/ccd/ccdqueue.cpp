@@ -24,6 +24,7 @@
 #include "jisem.hpp"
 #include "udplib.hpp"
 #include "ccd.hpp"
+#include "ccddebug.hpp"
 #include "ccdquery.hpp"
 #include "ccdstate.hpp"
 #include "ccdqueue.ipp"
