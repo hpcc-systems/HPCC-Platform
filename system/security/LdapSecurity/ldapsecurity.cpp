@@ -1078,16 +1078,16 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
     return feature_authmap;
 }
 
-bool CLdapSecManager::updateUser(ISecUser& user, const char* newPassword)
+bool CLdapSecManager::updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword)
 {
     // Authenticate User first
-    if(!authenticate(&user))
+    if(!authenticate(&user) && user.getAuthenticateStatus() != AS_PASSWORD_EXPIRED)
     {
         return false;
     }
 
     //Update password if authenticated
-    bool ok = m_ldap_client->updateUser(user, newPassword);
+    bool ok = m_ldap_client->updateUserPassword(user, newPassword, currPassword);
     if(ok && m_permissionsCache.isCacheEnabled() && !m_usercache_off)
     {
         m_permissionsCache.removeFromUserCache(user);
@@ -1104,9 +1104,9 @@ bool CLdapSecManager::updateUser(const char* type, ISecUser& user)
     return ok;
 }
 
-bool CLdapSecManager::updateUser(const char* username, const char* newPassword)
+bool CLdapSecManager::updateUserPassword(const char* username, const char* newPassword)
 {
-    return m_ldap_client->updateUser(username, newPassword);
+    return m_ldap_client->updateUserPassword(username, newPassword);
 }
 
 void CLdapSecManager::getAllGroups(StringArray & groups)
