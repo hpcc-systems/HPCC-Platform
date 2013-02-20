@@ -1546,11 +1546,11 @@ void EclAgent::executeThorGraph(const char * graphName)
                 while (!sem.wait(10000))
                 {
                     wu.forceReload();
-                    if (WUStatePaused != wu.getState())
+                    if (WUStatePaused != wu.getState() || wu.aborting())
                     {
                         SCMStringBuffer str;
                         wu.getStateDesc(str);
-                        PROGLOG("Aborting pause job %s, state changed to : %s", wuid.get(), str.str()); 
+                        PROGLOG("Aborting pause job %s, state : %s", wuid.get(), str.str());
                         ret = false;
                         break;
                     }
@@ -1564,7 +1564,7 @@ void EclAgent::executeThorGraph(const char * graphName)
         if (WUStatePaused == queryWorkUnit()->getState()) // check initial state - and wait if paused
         {
             if (!workunitResumeHandler.wait())
-                return;
+                throw new WorkflowException(0,"User abort requested", 0, WorkflowException::ABORT, MSGAUD_user);
         }
         {
             Owned <IWorkUnit> w = updateWorkUnit();

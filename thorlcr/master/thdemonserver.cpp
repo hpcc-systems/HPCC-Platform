@@ -81,7 +81,7 @@ private:
             e->Release();
         }
     }
-    inline void reportStatus(IWorkUnit *wu, CGraphBase &graph, unsigned startTime, bool finished, bool success=true)
+    void reportStatus(IWorkUnit *wu, CGraphBase &graph, unsigned startTime, bool finished, bool success=true)
     {
         const char *graphname = graph.queryJob().queryGraphName();
         StringBuffer timer;
@@ -115,7 +115,7 @@ private:
         }
     }
 
-    inline void reportGraph(bool finished, bool success=true)
+    void reportActiveGraphs(bool finished, bool success=true)
     {
         if (activeGraphs.ordinality())
         {
@@ -148,8 +148,31 @@ private:
             }
         }
     }
+    void reportGraph(CGraphBase *graph, bool finished, bool success, unsigned startTime)
+    {
+        try
+        {
+            IConstWorkUnit &currentWU = graph->queryJob().queryWorkUnit();
+            Owned<IConstWUGraphProgress> graphProgress = ((CJobMaster &)graph->queryJob()).getGraphProgress();
+            Owned<IWUGraphProgress> progress = graphProgress->update();
 
+            reportGraph(progress, graph, finished);
 
+            progress.clear(); // clear progress(lock) now, before attempting to get lock on wu, potentially delaying progress unlock.
+            graphProgress.clear();
+
+            Owned<IWorkUnit> wu = &currentWU.lock();
+            reportStatus(wu, *graph, startTime, finished, success);
+
+            queryServerStatus().commitProperties();
+        }
+        catch (IException *e)
+        {
+            StringBuffer s;
+            LOG(MCwarning, unknownJob, "Failed to update progress information: %s", e->errorMessage(s).str());
+            e->Release();
+        }
+    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -198,7 +221,7 @@ public:
         unsigned now=msTick();
         if (now-lastReport > 1000*reportRate)
         {
-            reportGraph(false);
+            reportActiveGraphs(false);
             lastReport = msTick();
         }
     }
@@ -206,9 +229,9 @@ public:
     {
         synchronized block(mutex);
         activeGraphs.append(*LINK(graph));
-        graphStarts.append(msTick());
-
-        reportGraph(false);
+        unsigned startTime = msTick();
+        graphStarts.append(startTime);
+        reportGraph(graph, false, true, startTime);
         const char *graphname = graph->queryJob().queryGraphName();
         if (memcmp(graphname,"graph",5)==0)
             graphname+=5;
@@ -221,18 +244,19 @@ public:
     void endGraph(CGraphBase *graph, bool success)
     {
         synchronized block(mutex);
-        reportGraph(true, success);
-        unsigned p = activeGraphs.find(*graph);
-        if (NotFound != p)
+        unsigned g = activeGraphs.find(*graph);
+        if (NotFound != g)
         {
-            activeGraphs.remove(p);
-            graphStarts.remove(p);
+            unsigned startTime = graphStarts.item(g);
+            reportGraph(graph, true, success, startTime);
+            activeGraphs.remove(g);
+            graphStarts.remove(g);
         }
     }
     void endGraphs()
     {
         synchronized block(mutex);
-        reportGraph(true, false);
+        reportActiveGraphs(true, false);
         activeGraphs.kill();
     }
 };

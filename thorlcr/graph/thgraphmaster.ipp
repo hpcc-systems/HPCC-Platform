@@ -103,13 +103,13 @@ class graphmaster_decl CJobMaster : public CJobBase
 {
     Linked<IConstWorkUnit> workunit;
     Owned<IFatalHandler> fatalHandler;
-    bool querySent, sendSo;
+    bool querySent, sendSo, spillsSaved;
     Int64Array nodeDiskUsage;
     bool nodeDiskUsageCached;
     StringArray createdFiles;
     CSlaveMessageHandler *slaveMsgHandler;
     SocketEndpoint agentEp;
-    CriticalSection sendQueryCrit;
+    CriticalSection sendQueryCrit, spillCrit;
 
     void initNodeDUCache();
 
@@ -126,8 +126,9 @@ public:
     IPropertyTree *prepareWorkUnitInfo();
     void sendQuery();
     void jobDone();
+    void saveSpills();
     bool go();
-    void stop(bool abort);
+    void pause(bool abort);
 
     virtual IConstWorkUnit &queryWorkUnit() const
     {
