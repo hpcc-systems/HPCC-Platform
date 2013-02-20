@@ -34,6 +34,7 @@
 #include "ccdstate.hpp"
 #include "ccdqueue.ipp"
 #include "ccdserver.hpp"
+#include "ccdlistener.hpp"
 #include "ccdsnmp.hpp"
 #include "thorplugin.hpp"
 

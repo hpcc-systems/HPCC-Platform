@@ -27,6 +27,7 @@
 #include "ccdquery.hpp"
 #include "ccdstate.hpp"
 #include "ccdqueue.ipp"
+#include "ccdlistener.hpp"
 #include "ccdfile.hpp"
 #include "ccdsnmp.hpp"
 

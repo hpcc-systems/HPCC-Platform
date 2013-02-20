@@ -22,6 +22,8 @@
 #include "ccdquery.hpp"
 #include "ccdstate.hpp"
 #include "ccdsnmp.hpp"
+#include "ccdserver.hpp"
+#include "ccdcontext.hpp"
 
 #include "thorplugin.hpp"
 #include "layouttrans.hpp"
