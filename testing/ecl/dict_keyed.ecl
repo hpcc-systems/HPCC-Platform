@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 ############################################################################## */
 
 //UseStandardFiles
+//UseIndexes
+//nothor
 
-inDs := DATASET(SerialTest.DictFilename, SerialTest.LibraryDictRec, THOR);
+d1 := dictionary([{'DAVID'}, {'CLAIRE'}, {'EBENEZER'}], { string20 fname});
 
-output(JOIN(inDs, SerialTest.bookIndex, KEYED(RIGHT.title IN SET(DATASET(LEFT.books),title))));
+output(DG_indexFile(dg_firstName IN d1));
