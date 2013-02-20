@@ -990,7 +990,7 @@ public:
             return r->getResultHash();
         );
     }
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {
         tgt = NULL;
         PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
@@ -999,6 +999,7 @@ public:
             Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
+            Owned<IOutputRowDeserializer> deserializer = _rowAllocator->createDiskDeserializer(this);
             rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);
         );
     }
@@ -1011,7 +1012,8 @@ public:
             Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
             Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
             r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
-            throwUnexpected();
+            Owned<IOutputRowDeserializer> deserializer = _rowAllocator->createDiskDeserializer(this);
+            rtlDeserializeDictionary(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray());
         );
     }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
