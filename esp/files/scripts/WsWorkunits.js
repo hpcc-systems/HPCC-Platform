@@ -16,8 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/xhr",
+    "dojo/_base/array",
     "dojo/_base/Deferred",
+    "dojo/data/ObjectStore",
     "dojo/store/util/QueryResults",
     "dojo/store/JsonRest", 
     "dojo/store/Memory", 
@@ -26,11 +27,12 @@ define([
     
     "dojox/xml/parser",    
 
-    "hpcc/ESPBase"
-], function (declare, lang, xhr, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
+    "hpcc/ESPBase",
+    "hpcc/ESPRequest"
+], function (declare, lang, arrayUtil, Deferred, ObjectStore, QueryResults, JsonRest, Memory, Cache, Observable,
     parser,
-    ESPBase) {
-    var WUQuery = declare(ESPBase, {
+    ESPBase, ESPRequest) {
+    var WUQueryStore = declare(ESPBase, {
         idProperty: "Wuid",
 
         constructor: function (options) {
@@ -52,12 +54,9 @@ define([
                 request['Sortby'] = options.sort[0].attribute;
                 request['Descending'] = options.sort[0].descending;
             }
-            request['rawxml_'] = "1";
 
-            var results = xhr.get({
-                url: this.getBaseURL("WsWorkunits") + "/WUQuery.json",
-                handleAs: "json",
-                content: request
+            var results = ESPRequest.send("WsWorkunits", "WUQuery", {
+                request: request
             });
 
             var deferredResults = new Deferred();
@@ -73,58 +72,6 @@ define([
                     workunits = response.WUQueryResponse.Workunits.ECLWorkunit;
                 }
                 deferredResults.resolve(workunits);
-            });
-
-            return QueryResults(deferredResults);
-        }
-    });
-
-    var WUResultTest = declare(ESPBase, {
-        idProperty: "myInjectedRowNum",
-        wuid: "",
-        sequence: 0,
-        isComplete: false,
-
-        constructor: function (args) {
-            declare.safeMixin(this, args);
-        },
-
-        getIdentity: function (object) {
-            return object[this.idProperty];
-        },
-
-        query: function (query, options) {
-            var request = {};
-            request['Wuid'] = this.wuid;
-            if (this.cluster && this.name) {
-                request['Cluster'] = this.cluster;
-                request['LogicalName'] = this.name;
-            } else {
-                request['Sequence'] = this.sequence;
-            }
-            request['Start'] = options.start;
-            request['Count'] = options.count;
-            request['rawxml_'] = "1";
-
-            var results = xhr.get({
-                url: this.getBaseURL("WsWorkunits") + "/WUResult.json",
-                handleAs: "json",
-                content: request
-            });
-
-            var deferredResults = new Deferred();
-            deferredResults.total = results.then(function (response) {
-                return response.WUResultResponse.Total;
-            });
-            var context = this;
-            Deferred.when(results, function (response) {
-                var resultXml = response.WUResultResponse.Result;
-                var domXml = parser.parse("<WUResultResponse>" + resultXml + "</WUResultResponse>");
-                var rows = context.getValues(domXml, "Row");
-                for (var i = 0; i < rows.length; ++i) {
-                    rows[i].myInjectedRowNum = options.start + i + 1;
-                }
-                deferredResults.resolve(rows);
             });
 
             return QueryResults(deferredResults);
@@ -157,19 +104,19 @@ define([
                 }
                 request['Start'] = options.start;
                 request['Count'] = options.count;
-                request['rawxml_'] = "1";
 
-                var results = xhr.post({
-                    url: this.getBaseURL("WsWorkunits") + "/WUResult",
-                    handleAs: "xml",
-                    content: request,
-                    sync: options.sync != null ? options.sync : false,
-                    load: function (domXml) {
+                var results = ESPRequest.send("WsWorkunits", "WUResult", {
+                    request: request
+                });
+                results.then(function (response) {
+                    if (lang.exists("WUResultResponse.Result", response)) {
+                        var xml = "<Result>" + response.WUResultResponse.Result + "</Result>";
+                        var domXml = parser.parse(xml);
                         var rows = context.getValues(domXml, "Row");
                         for (var i = 0; i < rows.length; ++i) {
                             rows[i].myInjectedRowNum = options.start + i + 1;
                         }
-                        rows.total = context.getValue(domXml, "Total");
+                        rows.total = response.WUResultResponse.Total;
                         //  TODO - Need to check why this happens only sometimes  (Suspect non XML from the server) ---
                         if (rows.total == null) {
                             var debug = context.flattenXml(domXml);
@@ -181,6 +128,7 @@ define([
                             deferredResults.resolve(rows);
                         }
                     }
+                    return response;
                 });
             } else {
                 setTimeout(function () {
@@ -205,32 +153,82 @@ define([
     });
 
     return {
-        WUQuery: WUQuery,
         WUResult: WUResult,
+        CreateWUResultObjectStore: function (options) {
+            var store = new WUResultStore(options);
+            var objStore = new ObjectStore({ objectStore: store });
+            return objStore;
+        },
 
-        WUAction: function (items, actionType, callback) {
+        CreateWUQueryObjectStore: function (options) {
+            var store = new WUQueryStore(options);
+            var objStore = new ObjectStore({ objectStore: store });
+            return objStore;
+        },
+
+        WUCreate: function (params) {
+            ESPRequest.send("WsWorkunits", "WUCreate", params);
+        },
+
+        WUUpdate: function (params) {
+            ESPRequest.flattenMap(params.request, "ApplicationValues")
+            ESPRequest.send("WsWorkunits", "WUUpdate", params);
+        },
+
+        WUSubmit: function (params) {
+            ESPRequest.send("WsWorkunits", "WUSubmit", params);
+        },
+
+        WUResubmit: function (params) {
+            ESPRequest.send("WsWorkunits", "WUResubmit", params);
+        },
+
+        WUPublishWorkunit: function (params) {
+            ESPRequest.send("WsWorkunits", "WUPublishWorkunit", params);
+        },
+
+        WUInfo: function (params) {
+            ESPRequest.send("WsWorkunits", "WUInfo", params);
+        },
+
+        WUGetGraph: function (params) {
+            ESPRequest.send("WsWorkunits", "WUGetGraph", params);
+        },
+
+        WUFile: function (params) {
+            lang.mixin(params, {
+                handleAs: "text"
+            });
+            ESPRequest.send("WsWorkunits", "WUFile", params);
+        },
+
+        WUAction: function (wuids, actionType, callback) {
             var request = {
+                Wuids: wuids,
                 ActionType: actionType
             };
+            ESPRequest.flattenArray(request, "Wuids");
 
-            for (var i = 0; i < items.length; ++i) {
-                request["Wuids_i" + i] = items[i].Wuid;
-            }
-
-            var espBase = new ESPBase();
-            var context = this;
-            xhr.post({
-                url: espBase.getBaseURL("WsWorkunits") + "/WUAction.json",
-                handleAs: "json",
-                content: request,
+            ESPRequest.send("WsWorkunits", "WUAction", {
+                request: request,
                 load: function (response) {
+                    if (lang.exists("WUActionResponse.ActionResults.WUActionResult", response)) {
+                        arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
+                            dojo.publish("hpcc/brToaster", {
+                                message: "<h4>" + item.Action + " "+ item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
+                                type: item.Result.indexOf("Failed:") === 0 ? "error" : "message",
+                                duration: -1
+                            });
+                        });
+                    }
+
                     if (callback && callback.load) {
                         callback.load(response);
                     }
                 },
-                error: function () {
+                error: function (err) {
                     if (callback && callback.error) {
-                        callback.error(e);
+                        callback.error(err);
                     }
                 }
             });

@@ -14,47 +14,99 @@
 #    limitations under the License.
 ############################################################################## */
 define([
-    "dojo/_base/lang",
     "dojo/_base/fx",
     "dojo/_base/window",
-    "dojo/_base/connect",
     "dojo/dom",
     "dojo/dom-style",
     "dojo/dom-geometry",
     "dojo/io-query",
+    "dojo/topic",
     "dojo/ready",
 
-    "hpcc/ECLPlaygroundWidget",
-    "hpcc/GraphPageWidget",
-    "hpcc/ResultsWidget",
-    "hpcc/TimingPageWidget",
-    "hpcc/TimingTreeMapWidget",
-    "hpcc/ECLSourceWidget",
-    "hpcc/InfoGridWidget",
-    "hpcc/WUQueryWidget",
-    "hpcc/WUDetailsWidget",
-    "hpcc/GetDFUWorkunitsWidget",
-    "hpcc/DFUWUDetailsWidget",
-    "hpcc/DFUWUQueryWidget",
-    "hpcc/LFDetailsWidget"
-], function (lang, fx, baseWindow, connect, dom, domStyle, domGeometry, ioQuery, ready,
-        ECLPlaygroundWidget, GraphPageWidget, ResultsWidget, TimingPageWidget, TimingTreeMapWidget, ECLSourceWidget, InfoGridWidget, WUQueryWidget, WUDetailsWidget, GetDFUWorkunitsWidget, DFUWUDetailsWidget, DFUWUQueryWidget, LFDetailsWidget
-        ) {
+    "dojox/widget/Toaster",
+    "dojox/widget/Standby"
+], function (fx, baseWindow, dom, domStyle, domGeometry, ioQuery, topic, ready,
+        Toaster, Standby) {
 
     var initUi = function () {
         var params = ioQuery.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)));
 
-        //TODO:  Can we get rid of the required dependency above?
-        var widget = new (eval(params.Widget))({
-            id: "app",
-            "class": "hpccApp"
-        });
+        require(
+            ["hpcc/" + params.Widget],
+            function (WidgetClass) {
+                var widget = new WidgetClass({
+                    id: "stub",
+                    "class": "hpccApp"
+                });
 
-        if (widget) {
-            widget.placeAt(dojo.body(), "last");
-            widget.startup();
-            widget.init(params);
-        }
+                var standbyBackground = new Standby({
+                    /*
+                    color: "red",
+                    image: "img/loading.gif",
+                    imageText: "Loading...",
+                    duration: 1,
+                    zIndex: 1000,
+                    */
+                    text: "",
+                    centerIndicator: "text",
+                    target: "stub"
+                });
+                dojo.body().appendChild(standbyBackground.domNode);
+                standbyBackground.startup();
+                standbyBackground.hpccShowCount = 0;
+
+                topic.subscribe("hpcc/standbyBackgroundShow", function () {
+                    if (standbyBackground.hpccShowCount++ == 0) {
+                        standbyBackground.show();
+                    }
+                });
+
+                topic.subscribe("hpcc/standbyBackgroundHide", function () {
+                    if (--standbyBackground.hpccShowCount <= 0) {
+                        standbyBackground.hpccShowCount = 0;
+                        standbyBackground.hide();
+                    }
+                });
+
+                var standbyForeground = new Standby({
+                    zIndex: 1000,
+                    target: "stub"
+                });
+                dojo.body().appendChild(standbyForeground.domNode);
+                standbyForeground.startup();
+                standbyForeground.hpccShowCount = 0;
+
+                topic.subscribe("hpcc/standbyForegroundShow", function () {
+                    standbyForeground.show();
+                    ++standbyForeground.hpccShowCount;
+                });
+
+                topic.subscribe("hpcc/standbyForegroundHide", function () {
+                    if (--standbyForeground.hpccShowCount <= 0) {
+                        standbyForeground.hpccShowCount = 0;
+                        standbyForeground.hide();
+                    }
+                });
+                var myToaster = new Toaster({
+                    id: 'hpcc_toaster',
+                    positionDirection: 'br-left',
+                    messageTopic: 'hpcc/brToaster'
+                });
+
+                if (widget) {
+                    widget.placeAt(dojo.body(), "last");
+                    widget.startup();
+                    widget.init(params);
+                }
+
+                /*
+                dojo.publish("hpccMessageTopic", {
+                    type: "warning",
+                    message:  "testing"
+                });
+                */
+            }
+        );
     },
 
     startLoading = function (targetNode) {

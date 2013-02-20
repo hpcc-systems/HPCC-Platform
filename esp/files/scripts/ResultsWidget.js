@@ -24,13 +24,15 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPWorkunit",
+    "hpcc/ResultWidget",
+    "hpcc/LFDetailsWidget",
 
     "dojo/text!../templates/ResultsWidget.html",
 
     "dijit/layout/TabContainer"
 ], function (declare, lang, dom, 
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                _TabContainerWidget, ESPWorkunit,
+                _TabContainerWidget, ESPWorkunit, ResultWidget, LFDetailsWidget,
                 template) {
     return declare("ResultsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,

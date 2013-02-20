@@ -16,13 +16,12 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/xhr",
 
-    "hpcc/ESPResult",
-    "hpcc/ESPBase"
-], function (declare, lang, xhr,
-        ESPResult, ESPBase) {
-    return declare(ESPBase, {
+    "hpcc/WsDfu",
+    "hpcc/ESPResult"
+], function (declare, lang,
+        WsDfu, ESPResult) {
+    return declare(null, {
         cluster: "",
         logicalName: "",
         result: [],
@@ -36,18 +35,14 @@ define([
         },
         save: function (description, args) {
             //WsDfu/DFUInfo?FileName=progguide%3A%3Aexampledata%3A%3Akeys%3A%3Apeople.lastname.firstname&UpdateDescription=true&FileDesc=%C2%A0123&Save+Description=Save+Description
-            var request = {
-                FileName: this.logicalName,
-                Cluster: this.cluster,
-                UpdateDescription: true,
-                FileDesc: description
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL("WsDfu") + "/DFUInfo.json",
-                handleAs: "json",
-                content: request,
+            WsDfu.DFUInfo({
+                request: {
+                    FileName: this.logicalName,
+                    Cluster: this.cluster,
+                    UpdateDescription: true,
+                    FileDesc: description
+                },
                 load: function (response) {
                     if (response.DFUInfoResponse) {
                         context.processDFUInfoResponse(response.DFUInfoResponse, args);
@@ -59,23 +54,16 @@ define([
         },
         getInfo: function (args) {
             //WsDfu/DFUInfo?Name=progguide::exampledata::keys::people.state.city.zip.lastname.firstname.payload&Cluster=hthor__myeclagent HTTP/1.1
-            var request = {
-                Name: this.logicalName,
-                Cluster: this.cluster
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL("WsDfu") + "/DFUInfo.json",
-                handleAs: "json",
-                content: request,
+            WsDfu.DFUInfo({
+                request:{
+                    Name: this.logicalName,
+                    Cluster: this.cluster
+                },
                 load: function (response) {
                     if (response.DFUInfoResponse) {
                         context.processDFUInfoResponse(response.DFUInfoResponse, args);
                     }
-                },
-                error: function (e) {
-                    var d = 0;
                 }
             });
         },
@@ -89,21 +77,14 @@ define([
             }
         },
         fetchStructure: function (format, onFetchStructure) {
-            var request = {
-                Name: this.logicalName,
-                Format: format,
-                rawxml_: true
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL("WsDfu") + "/DFUDefFile",
-                handleAs: "text",
-                content: request,
+            WsDfu.DFUDefFile({
+                request: {
+                    Name: this.logicalName,
+                    Format: format
+                },
                 load: function (response) {
                     onFetchStructure(response);
-                },
-                error: function (e) {
                 }
             });
         },
@@ -111,24 +92,7 @@ define([
             this.fetchStructure("def", onFetchXML);
         },
         fetchXML: function (onFetchXML) {
-            var request = {
-                Name: this.logicalName,
-                Format: "xml",
-                rawxml_: true
-            };
-
-            var context = this;
-            xhr.post({
-                url: this.getBaseURL("WsDfu") + "/DFUDefFile",
-                handleAs: "text",
-                content: request,
-                load: function (response) {
-                    onFetchXML(response);
-                },
-                error: function (e) {
-                    var d = 0;
-                }
-            });
+            this.fetchStructure("xml", onFetchXML);
         }
     });
 });

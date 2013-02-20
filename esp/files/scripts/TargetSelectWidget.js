@@ -15,7 +15,7 @@
 ############################################################################## */
 require([
     "dojo/_base/declare",
-    "dojo/_base/xhr",
+    "dojo/_base/lang",
     "dojo/dom",
 
     "dijit/layout/_LayoutWidget",
@@ -24,11 +24,13 @@ require([
     "dijit/form/Select",
     "dijit/registry",
 
-    "hpcc/ESPBase",
+    "hpcc/WsTopology",
+
     "dojo/text!./templates/TargetSelectWidget.html"
-], function (declare, xhr, dom,
-                    _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, Select, registry,
-                    ESPBase, template) {
+], function (declare, lang, dom,
+    _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, Select, registry,
+    WsTopology,
+    template) {
     return declare("TargetSelectWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "TargetSelectWidget",
@@ -85,42 +87,33 @@ require([
         },
 
         loadTargets: function () {
-            var base = new ESPBase({
-            });
-            var request = {
-                rawxml_: true
-            };
             var context = this;
-            xhr.post({
-                url: base.getBaseURL("WsTopology") + "/TpTargetClusterQuery",
-                handleAs: "xml",
-                content: request,
-                load: function (xmlDom) {
-                    var targetData = base.getValues(xmlDom, "TpTargetCluster");
-
-                    context.targetSelectControl.options = [];
-                    var has_hthor = false;
-                    for (var i = 0; i < targetData.length; ++i) {
-                        context.targetSelectControl.options.push({
-                            label: targetData[i].Name,
-                            value: targetData[i].Name
-                        });
-                        if (targetData[i].Name == "hthor") {
-                            has_hthor = true;
+            WsTopology.TpTargetClusterQuery({
+                load: function (response) {
+                    if (lang.exists("TpTargetClusterQueryResponse.TpTargetClusters.TpTargetCluster", response)) {
+                        var targetData = response.TpTargetClusterQueryResponse.TpTargetClusters.TpTargetCluster;
+                        context.targetSelectControl.options = [];
+                        var has_hthor = false;
+                        for (var i = 0; i < targetData.length; ++i) {
+                            context.targetSelectControl.options.push({
+                                label: targetData[i].Name,
+                                value: targetData[i].Name
+                            });
+                            if (targetData[i].Name == "hthor") {
+                                has_hthor = true;
+                            }
                         }
-                    }
 
-                    if (context._value == "") {
-                        if (has_hthor) {
-                            context.setValue("hthor");
+                        if (context._value == "") {
+                            if (has_hthor) {
+                                context.setValue("hthor");
+                            } else {
+                                context._value = context.targetSelectControl.options[0].value;
+                            }
                         } else {
-                            context._value = context.targetSelectControl.options[0].value;
+                            context.targetSelectControl.set("value", context._value);
                         }
-                    } else {
-                        context.targetSelectControl.set("value", context._value);
                     }
-                },
-                error: function () {
                 }
             });
         }

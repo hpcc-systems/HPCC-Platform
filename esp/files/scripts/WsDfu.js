@@ -17,12 +17,13 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/xhr",
     "dojo/_base/Deferred",
     "dojo/store/util/QueryResults",
-    "hpcc/ESPBase"
-], function (declare, lang, xhr, Deferred, QueryResults, ESPBase) {
-    var DFUQuery = declare(ESPBase, {
+
+    "hpcc/ESPRequest"
+], function (declare, lang, Deferred, QueryResults,
+    ESPRequest) {
+    var DFUQuery = declare(null, {
         idProperty: "Name",
 
         constructor: function (options) {
@@ -42,12 +43,9 @@ define([
                 request['Sortby'] = options.sort[0].attribute;
                 request['Descending'] = options.sort[0].descending;
             }
-            request['rawxml_'] = "1";
 
-            var results = xhr.get({
-                url: this.getBaseURL("WsDfu") + "/DFUQuery.json",
-                handleAs: "json",
-                content: request
+            var results = ESPRequest.send("WsDfu", "DFUQuery", {
+                request: request
             });
 
             var deferredResults = new Deferred();
@@ -69,48 +67,19 @@ define([
         }
     });
 
-    var DFUFileView = declare(ESPBase, {
-        idProperty: "Wuid",
-
-        constructor: function (options) {
-            declare.safeMixin(this, options);
-        },
-
-        getIdentity: function (object) {
-            return object[this.idProperty];
-        },
-
-        query: function (query, options) {
-            var request = {};
-            lang.mixin(request, options.query);
-            request['rawxml_'] = "1";
-
-            var results = xhr.get({
-                url: this.getBaseURL("WsDfu") + "/DFUFileView",
-                handleAs: "xml",
-                content: request
-            });
-
-            var context = this;
-            var parsedResults = results.then(function (domXml) {
-                var debug = context.getValues(domXml);
-                var data = context.getValues(domXml, "DFULogicalFile");
-                return data;
-            });
-
-            lang.mixin(parsedResults, {
-                total: Deferred.when(parsedResults, function (data) {
-                    return data ? data.length : 0;
-                })
-            });
-    
-            return QueryResults(parsedResults);
-        }
-    });
-
     return {
         DFUQuery: DFUQuery,
-        DFUFileView: DFUFileView
+
+        DFUInfo: function (params) {
+            ESPRequest.send("WsDfu", "DFUInfo", params);
+        },
+
+        DFUDefFile: function (params) {
+            lang.mixin(params, {
+                handleAs: "text"
+            });
+            ESPRequest.send("WsDfu", "DFUDefFile", params);
+        }
     };
 });
 

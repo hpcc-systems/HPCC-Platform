@@ -15,55 +15,62 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 ############################################################################## */
 define([
-	"dojo/_base/declare",
-	"dojo/_base/lang",
-	"dojo/_base/xhr",
-	"dojo/_base/Deferred",
-	"dojo/store/util/QueryResults",
-	"hpcc/ESPBase"
-], function (declare, lang, xhr, Deferred, QueryResults, ESPBase) {
-	var TpServiceQuery =  declare(ESPBase, {
-		idProperty: "Wuid",
+    "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/_base/xhr",
+    "dojo/_base/Deferred",
+    "dojo/store/util/QueryResults",
 
-		constructor: function (options) {
-			declare.safeMixin(this, options);
-		},
+    "hpcc/ESPBase",
+    "hpcc/ESPRequest"
+], function (declare, lang, xhr, Deferred, QueryResults,
+    ESPBase, ESPRequest) {
+    var TpServiceQuery =  declare(ESPBase, {
+        idProperty: "Wuid",
 
-		getIdentity: function (object) {
-			return object[this.idProperty];
-		},
+        constructor: function (options) {
+            declare.safeMixin(this, options);
+        },
 
-		query: function (query, options) {
-			var request = {
-					Type: "ALLSERVICES"
-			};
-			lang.mixin(request, options.query);
-			request['rawxml_'] = "1";
+        getIdentity: function (object) {
+            return object[this.idProperty];
+        },
 
-			var results = xhr.get({
-				url: this.getBaseURL("WsTopology") + "/TpServiceQuery",
-				handleAs: "xml",
-				content: request
-			});
+        query: function (query, options) {
+            var request = {
+                    Type: "ALLSERVICES"
+            };
+            lang.mixin(request, options.query);
+            request['rawxml_'] = "1";
 
-			var context = this;
-			var parsedResults = results.then(function (domXml) {
-				var data = context.getValues(domXml, "TpDropZone", ["TpMachine"]);
-				return data;
-			});
+            var results = xhr.get({
+                url: this.getBaseURL("WsTopology") + "/TpServiceQuery",
+                handleAs: "xml",
+                content: request
+            });
 
-			lang.mixin(parsedResults, {
-				total: Deferred.when(parsedResults, function (data) {
-					return data.length;
-				})
-			});
-	
-			return QueryResults(parsedResults);
-		}
-	});
+            var context = this;
+            var parsedResults = results.then(function (domXml) {
+                var data = context.getValues(domXml, "TpDropZone", ["TpMachine"]);
+                return data;
+            });
+
+            lang.mixin(parsedResults, {
+                total: Deferred.when(parsedResults, function (data) {
+                    return data.length;
+                })
+            });
+
+            return QueryResults(parsedResults);
+        }
+    });
 
 
-	return {
-		TpServiceQuery: TpServiceQuery
-	};
+    return {
+        TpServiceQuery: TpServiceQuery,
+
+        TpTargetClusterQuery: function (params) {
+            ESPRequest.send("WsTopology", "TpTargetClusterQuery", params);
+        }
+    };
 });
