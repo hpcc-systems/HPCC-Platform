@@ -1040,7 +1040,7 @@ void EclAgent::getExternalResultRaw(unsigned & tlen, void * & tgt, const char * 
     }
 }
 
-void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, IOutputRowDeserializer * deserializer, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
+void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * stepname, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
 {
     tgt = NULL;
     PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
@@ -1049,6 +1049,7 @@ void EclAgent::getResultRowset(size32_t & tcount, byte * * & tgt, const char * s
         Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
         Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
         r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
+        Owned<IOutputRowDeserializer> deserializer = _rowAllocator->createDiskDeserializer(queryCodeContext());
         rtlDataset2RowsetX(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray(), isGrouped);
     );
 }
@@ -1060,7 +1061,9 @@ void EclAgent::getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRow
     PROTECTED_GETRESULT(stepname, sequence, "Rowset", "rowset",
         MemoryBuffer datasetBuffer;
         MemoryBuffer2IDataVal result(datasetBuffer);
-        r->getResultRaw(result, NULL, NULL);
+        Owned<IXmlToRawTransformer> rawXmlTransformer = createXmlRawTransformer(xmlTransformer);
+        Owned<ICsvToRawTransformer> rawCsvTransformer = createCsvRawTransformer(csvTransformer);
+        r->getResultRaw(result, rawXmlTransformer, rawCsvTransformer);
         Owned<IOutputRowDeserializer> deserializer = _rowAllocator->createDiskDeserializer(queryCodeContext());
         rtlDeserializeDictionary(tcount, tgt, _rowAllocator, deserializer, datasetBuffer.length(), datasetBuffer.toByteArray());
     );

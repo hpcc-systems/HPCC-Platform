@@ -4768,7 +4768,6 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
                 {
                     ensureSerialized = false;
                     args.append(*createRowAllocator(ctx, record));
-                    args.append(*createSerializer(ctx, record, internalAtom, deserializerAtom));
                     args.append(*createConstant(isGrouped(expr)));
                     overrideType.setown(setLinkCountedAttr(overrideType, true));
                     func = getResultRowsetAtom;
