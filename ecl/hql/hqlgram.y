@@ -4283,6 +4283,18 @@ fieldDef
                             parser->addFields($1, e, NULL, hasNamedSymbol(e));
                             $$.clear();
                         }
+    | dictionary        {
+                            parser->normalizeExpression($1);
+                            IHqlExpression *value = $1.getExpr();
+
+                            _ATOM name = parser->createFieldNameFromExpr(value);
+
+                            IHqlExpression * attrs = extractAttrsFromExpr(value);
+
+                            ITypeInfo * type = value->queryType();
+                            parser->addField($1, name, LINK(type), value, attrs);
+                            $$.clear();
+                        }
     | dataSet               {
                             OwnedHqlExpr e = $1.getExpr();
                             parser->addFields($1, e->queryRecord(), e, true);
