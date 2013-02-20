@@ -376,7 +376,7 @@ bool deletePkgInfo(const char *packageMap, const char *target, const char *proce
 
     StringBuffer pkgSetId;
     buildPkgSetId(pkgSetId, process);
-    VStringBuffer pkgSet_xpath("PackageSet[@id='%s'][@process='%s']", pkgSetId.str(), process);
+    VStringBuffer pkgSet_xpath("PackageSet[@id='%s']", pkgSetId.str());
     IPropertyTree *pkgSetRegistry = packageSets->queryPropTree(pkgSet_xpath.str());
     if (!pkgSetRegistry)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "No package sets defined for %s", process);
@@ -425,7 +425,7 @@ void activatePackageMapInfo(const char *target, const char *packageMap, const ch
 
     StringBuffer pkgSetId;
     buildPkgSetId(pkgSetId, process);
-    VStringBuffer pkgSet_xpath("PackageSet[@id='%s'][@process='%s']", pkgSetId.str(), process);
+    VStringBuffer pkgSet_xpath("PackageSet[@id='%s']", pkgSetId.str());
     IPropertyTree *pkgSetTree = root->queryPropTree(pkgSet_xpath.str());
     if (pkgSetTree)
     {
