@@ -1,4 +1,3 @@
-//skip type==thorlcr TBD
 // Valid...
 d1 := dictionary([{5 => 'Richard'}], { integer id => string name });
 d2 := dictionary([{5,2 => 'Richard'}], { integer id1, integer id2 => string name });

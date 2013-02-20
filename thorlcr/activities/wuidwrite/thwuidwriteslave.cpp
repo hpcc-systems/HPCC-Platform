@@ -33,7 +33,6 @@
 class CWorkUnitWriteSlaveBase : public ProcessSlaveActivity
 {
 protected:
-    IHThorWorkUnitWriteArg *helper;
     Owned<IThorDataLink> input;
     bool grouped;
 
@@ -42,8 +41,7 @@ public:
 
     CWorkUnitWriteSlaveBase(CGraphElementBase *container) : ProcessSlaveActivity(container)
     {
-        helper = static_cast <IHThorWorkUnitWriteArg *> (queryHelper());    // really a dynamic_cast
-        grouped = 0 != (POFgrouped & helper->getFlags());
+        grouped = false;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -83,10 +81,10 @@ public:
     }
 };
 
-class CWorkUnitWriteGlobalSlaveActivity : public CWorkUnitWriteSlaveBase
+class CWorkUnitWriteGlobalSlaveBaseActivity : public CWorkUnitWriteSlaveBase
 {
 public:
-    CWorkUnitWriteGlobalSlaveActivity(CGraphElementBase *container) : CWorkUnitWriteSlaveBase(container)
+    CWorkUnitWriteGlobalSlaveBaseActivity(CGraphElementBase *container) : CWorkUnitWriteSlaveBase(container)
     {
     }
     void process()
@@ -134,10 +132,13 @@ public:
 
 class CWorkUnitWriteLocalSlaveActivity : public CWorkUnitWriteSlaveBase
 {
+    IHThorWorkUnitWriteArg *helper;
     mptag_t replyTag;
 public:
     CWorkUnitWriteLocalSlaveActivity(CGraphElementBase *container) : CWorkUnitWriteSlaveBase(container)
     {
+        helper = static_cast <IHThorWorkUnitWriteArg *> (queryHelper());    // really a dynamic_cast
+        grouped = 0 != (POFgrouped & helper->getFlags());
         replyTag = createReplyTag();
     }
     void process()
@@ -205,10 +206,35 @@ public:
 };
 
 
+class CWorkUnitWriteGlobalSlaveActivity : public CWorkUnitWriteGlobalSlaveBaseActivity
+{
+    IHThorWorkUnitWriteArg *helper;
+public:
+    CWorkUnitWriteGlobalSlaveActivity(CGraphElementBase *container) : CWorkUnitWriteGlobalSlaveBaseActivity(container)
+    {
+        helper = static_cast <IHThorWorkUnitWriteArg *> (queryHelper());    // really a dynamic_cast
+        grouped = 0 != (POFgrouped & helper->getFlags());
+    }
+};
+
 CActivityBase *createWorkUnitWriteSlave(CGraphElementBase *container)
 {
     if (container->queryLocalOrGrouped())
         return new CWorkUnitWriteLocalSlaveActivity(container);
     else
         return new CWorkUnitWriteGlobalSlaveActivity(container);
+}
+
+
+class CDictionaryWorkunitWriteActivity : public CWorkUnitWriteGlobalSlaveActivity
+{
+public:
+    CDictionaryWorkunitWriteActivity(CGraphElementBase *container) : CWorkUnitWriteGlobalSlaveActivity(container)
+    {
+    }
+};
+
+CActivityBase *createDictionaryWorkunitWriteSlave(CGraphElementBase *container)
+{
+    return new CDictionaryWorkunitWriteActivity(container);
 }

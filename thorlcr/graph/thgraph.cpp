@@ -174,17 +174,9 @@ public:
         countResult = 0;
         OwnedConstThorRow _rowset = allocator->createRowset((unsigned)rowStreamCount);
         const void **rowset = (const void **)_rowset.get();
-        loop
+        while (countResult < rowStreamCount)
         {
             OwnedConstThorRow row = stream->nextRow();
-            if (!row)
-            {
-                row.setown(stream->nextRow());
-                if (row)
-                    rowset[countResult++] = NULL;
-                else
-                    break;
-            }
             rowset[countResult++] = row.getClear();
         }
         result = (byte **)_rowset.getClear();
@@ -828,6 +820,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKindexwrite:
         case TAKkeydiff:
         case TAKkeypatch:
+        case TAKdictionaryworkunitwrite:
             return true;
         case TAKdiskwrite:
         {
@@ -975,6 +968,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKemptyaction:
         case TAKlocalresultread:
         case TAKlocalresultwrite:
+        case TAKdictionaryresultwrite:
         case TAKgraphloopresultread:
         case TAKgraphloopresultwrite:
         case TAKnwaygraphloopresultread:
