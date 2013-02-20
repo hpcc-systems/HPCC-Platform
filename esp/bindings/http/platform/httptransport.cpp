@@ -1836,11 +1836,11 @@ int CHttpRequest::processHeaders(IMultiException *me)
 bool CHttpRequest::readContentToBuffer(MemoryBuffer& buffer, __int64& bytesNotRead)
 {
     char buf[1024 + 1];
-    int buflen = 1024;
+    __int64 buflen = 1024;
     if (buflen > bytesNotRead)
         buflen = bytesNotRead;
 
-    int readlen = m_bufferedsocket->read(buf, buflen);
+    int readlen = m_bufferedsocket->read(buf, (int) buflen);
     if(readlen < 0)
         DBGLOG("Failed to read from socket");
 
@@ -1892,7 +1892,7 @@ IFile* CHttpRequest::createUploadFile(StringBuffer netAddress, const char* fileP
     return createIFile(rfn);
 }
 
-int CHttpRequest::readContentToFile(StringBuffer netAddress, StringBuffer path, StringArray& fileNames)
+int CHttpRequest::readContentToFiles(StringBuffer netAddress, StringBuffer path, StringArray& fileNames)
 {
     Owned<CMimeMultiPart> multipart = new CMimeMultiPart("1.0", m_content_type.get(), "", "", "");
     multipart->parseContentType(m_content_type.get());

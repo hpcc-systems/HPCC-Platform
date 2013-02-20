@@ -358,7 +358,7 @@ public:
     bool readContentToBuffer(MemoryBuffer& fileContent, __int64& bytesNotRead);
     bool readUploadFileName(CMimeMultiPart* mimemultipart, StringBuffer& fileName, MemoryBuffer& contentBuffer, __int64& bytesNotRead);
     IFile* createUploadFile(StringBuffer netAddress, const char* filePath, StringBuffer& fileName);
-    virtual int readContentToFile(StringBuffer netAddress, StringBuffer path, StringArray& fileNames);
+    virtual int readContentToFiles(StringBuffer netAddress, StringBuffer path, StringArray& fileNames);
 };
 
 class CHttpResponse : public CHttpMessage
