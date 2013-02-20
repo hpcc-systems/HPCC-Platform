@@ -42,6 +42,7 @@ include_directories (
          ./../../common/deftype
          ./../../system/jlib
          ${CMAKE_BINARY_DIR}
+         ${CMAKE_BINARY_DIR}/oss
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DJAVAEMBED_EXPORTS )
