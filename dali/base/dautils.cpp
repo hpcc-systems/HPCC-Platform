@@ -291,7 +291,6 @@ void CDfsLogicalFileName::set(const char *name)
         e->errorMessage(err);
         WARNLOG("CDfsLogicalFileName::set %s",err.str());
         e->Release();
-        multi = false;
     }
     if (multi) {
         StringBuffer full;
