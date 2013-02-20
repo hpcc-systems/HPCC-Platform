@@ -662,6 +662,15 @@ extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte *
     return ret;
 }
 
+extern ECLRTL_API bool rtlDictionaryExists(size32_t tableSize, byte **table)
+{
+    unsigned __int64 ret = 0;
+    for (size32_t i = 0; i < tableSize; i++)
+        if (table[i])
+            return true;
+    return false;
+}
+
 extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow)
 {
     if (!tableSize)

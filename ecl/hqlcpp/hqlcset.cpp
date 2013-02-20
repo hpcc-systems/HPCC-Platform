@@ -139,6 +139,12 @@ void BaseDatasetCursor::buildCountDict(BuildCtx & ctx, CHqlBoundExpr & tgt)
     throwUnexpected();
 }
 
+void BaseDatasetCursor::buildExistsDict(BuildCtx & ctx, CHqlBoundExpr & tgt)
+{
+    // Should only be seen for dictionaries
+    throwUnexpected();
+}
+
 void BaseDatasetCursor::buildInDataset(BuildCtx & ctx, IHqlExpression * inExpr, CHqlBoundExpr & tgt)
 {
     // Should only be seen for dictionaries, for now
@@ -845,7 +851,15 @@ void InlineLinkedDictionaryCursor::buildCountDict(BuildCtx & ctx, CHqlBoundExpr 
 {
     HqlExprArray args;
     args.append(*LINK(ds));
-    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryCountAtom, args, makeBoolType());
+    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryCountAtom, args, makeIntType(8, false));
+    translator.buildExpr(ctx, call, tgt);
+}
+
+void InlineLinkedDictionaryCursor::buildExistsDict(BuildCtx & ctx, CHqlBoundExpr & tgt)
+{
+    HqlExprArray args;
+    args.append(*LINK(ds));
+    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryExistsAtom, args, makeBoolType());
     translator.buildExpr(ctx, call, tgt);
 }
 

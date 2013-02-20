@@ -437,6 +437,7 @@ protected:
 };
 
 extern ECLRTL_API unsigned __int64 rtlDictionaryCount(size32_t tableSize, byte **table);
+extern ECLRTL_API bool rtlDictionaryExists(size32_t tableSize, byte **table);
 extern ECLRTL_API byte *rtlDictionaryLookup(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source, byte *defaultRow);
 extern ECLRTL_API byte *rtlDictionaryLookupString(size32_t tableSize, byte **table, size32_t len, const char *source, byte *defaultRow);
 extern ECLRTL_API byte *rtlDictionaryLookupStringN(size32_t tableSize, byte **table, size32_t N, size32_t len, const char *source, byte *defaultRow);
