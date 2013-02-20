@@ -536,7 +536,10 @@ void RtlLinkedDictionaryBuilder::init(IEngineRowAllocator * _rowAllocator, IHTho
 {
     hash  = _hashInfo->queryHash();
     compare  = _hashInfo->queryCompare();
-    initialSize = _initialSize;
+    if (_initialSize >= 4)
+        initialSize = _initialSize;
+    else
+        initialSize = 4;
     rowAllocator = LINK(_rowAllocator);
     table = NULL;
     usedCount = 0;
@@ -598,7 +601,7 @@ void RtlLinkedDictionaryBuilder::checkSpace()
         usedLimit = (tableSize * 3) / 4;
         usedCount = 0;
     }
-    else if (usedCount > usedLimit)
+    else if (usedCount >= usedLimit)
     {
         // Rehash
         byte * * oldTable = table;

@@ -241,6 +241,7 @@ _ATOM deserializerSkipVUniAtom;
 _ATOM destroyRegexAtom;
 _ATOM destroyWRegexAtom;
 _ATOM destructMetaMemberAtom;
+_ATOM dictionaryAtom;
 _ATOM dictionaryCountAtom;
 _ATOM dictionaryLookupAtom;
 _ATOM dictionaryLookupExistsAtom;
@@ -961,6 +962,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(destroyRegex);
     MAKEATOM(destroyWRegex);
     MAKEATOM(destructMetaMember);
+    MAKEATOM(dictionary);
     MAKEATOM(dictionaryCount);
     MAKEATOM(dictionaryLookup);
     MAKEATOM(dictionaryLookupExists);

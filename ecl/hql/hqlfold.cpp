@@ -312,6 +312,8 @@ static IHqlExpression * compareLists(node_operator op, IHqlExpression * leftList
     {
         IValue * leftValue = leftList->queryChild(i)->queryValue();
         IValue * rightValue = rightList->queryChild(i)->queryValue();
+        if (!leftValue || !rightValue)
+            return NULL;
         order = orderValues(leftValue, rightValue);
         if (order != 0)
             return createCompareResult(op, order);
@@ -421,7 +423,7 @@ static IHqlExpression * optimizeCompare(IHqlExpression * expr)
     if ((rightOp == no_all) && leftChild->isConstant())
         return createCompareResult(op, -1);
     
-    if ((leftOp == no_list) && (rightOp == no_list))
+    if (((leftOp == no_sortlist) || (leftOp == no_list)) && ((rightOp == no_sortlist) || (rightOp == no_list)))
         return compareLists(op, leftChild, rightChild);
 
     IValue * leftValue = leftChild->queryValue();

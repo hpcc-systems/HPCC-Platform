@@ -762,6 +762,8 @@ public:
 class AliasExpansionInfo;
 class HashCodeCreator;
 class ParentExtract;
+class ConstantRowArray;
+
 enum PEtype {
     PETnone,
     PETchild,       // child query
@@ -1210,8 +1212,11 @@ public:
     BoundRow * buildDatasetIterateSpecialTempTable(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
     BoundRow * buildDatasetIterateStreamedCall(BuildCtx & ctx, IHqlExpression * expr, bool needToBreak);
 
+    void createInlineDictionaryRows(HqlExprArray & args, ConstantRowArray & boundRows, IHqlExpression * keyRecord, IHqlExpression * nullRow);
+    bool buildConstantRows(ConstantRowArray & boundRows, IHqlExpression * transforms);
     void doBuildDatasetLimit(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
     bool doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
+    bool doBuildDictionaryInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format);
 
     void doBuildCheckDatasetLimit(BuildCtx & ctx, IHqlExpression * expr, const CHqlBoundExpr & bound);
 
