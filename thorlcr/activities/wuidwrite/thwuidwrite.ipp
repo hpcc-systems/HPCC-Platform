@@ -22,6 +22,7 @@
 
 
 CActivityBase *createWorkUnitWriteActivityMaster(CMasterGraphElement *container);
+CActivityBase *createDictionaryWorkunitWriteMaster(CMasterGraphElement *container);
 
 
 #endif

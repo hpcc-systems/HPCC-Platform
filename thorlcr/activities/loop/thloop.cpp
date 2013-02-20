@@ -377,3 +377,23 @@ CActivityBase *createGraphLoopResultActivityMaster(CMasterGraphElement *containe
 {
     return new CGraphLoopResultWriteActivityMaster(container);
 }
+
+
+class CDictionaryResultActivityMaster : public CLocalResultActivityMasterBase
+{
+public:
+    CDictionaryResultActivityMaster(CMasterGraphElement *info) : CLocalResultActivityMasterBase(info)
+    {
+    }
+    virtual void createResult()
+    {
+        IHThorDictionaryResultWriteArg *helper = (IHThorDictionaryResultWriteArg *)queryHelper();
+        Owned<CGraphBase> graph = queryJob().getGraph(container.queryResultsGraph()->queryGraphId());
+        graph->createResult(*this, helper->querySequence(), this, true); // NB graph owns result
+    }
+};
+
+CActivityBase *createDictionaryResultActivityMaster(CMasterGraphElement *container)
+{
+    return new CDictionaryResultActivityMaster(container);
+}
