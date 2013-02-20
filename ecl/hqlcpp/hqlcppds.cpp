@@ -2069,8 +2069,12 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             tgt.count.setown(getSizetConstant(0));
             tgt.length.setown(getSizetConstant(0));
             IHqlExpression * record = expr->queryRecord();
-            Owned<ITypeInfo> type = makeTableType(makeRowType(record->getType()), NULL, NULL, NULL);
-            if ((format == FormatLinkedDataset) || (format == FormatArrayDataset))
+            Owned<ITypeInfo> type;
+            if (expr->isDictionary())
+                type.setown(makeDictionaryType(makeRowType(record->getType())));
+            else
+                type.setown(makeTableType(makeRowType(record->getType()), NULL, NULL, NULL));
+            if ((format == FormatLinkedDataset) || (format == FormatArrayDataset) || expr->isDictionary())
                 type.setown(setLinkCountedAttr(type, true));
             tgt.expr.setown(createValue(no_nullptr, makeReferenceModifier(type.getClear())));
             return;
