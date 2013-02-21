@@ -287,6 +287,7 @@ extern DEFTYPE_API ICharsetInfo * getCharset(_ATOM charset);
 extern DEFTYPE_API ICollationInfo * getCollation(_ATOM collation);
 extern DEFTYPE_API ITranslationInfo * getDefaultTranslation(ICharsetInfo * tgt, ICharsetInfo * src);
 extern DEFTYPE_API ITranslationInfo * queryDefaultTranslation(ICharsetInfo * tgt, ICharsetInfo * src);
+extern DEFTYPE_API bool isAscii(ITypeInfo * type);
 
 //---------------------------------------------------------------------------
 
