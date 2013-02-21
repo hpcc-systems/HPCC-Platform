@@ -239,6 +239,11 @@ static IValue * castViaString(ITypeInfo * type, bool isSignedValue, __int64 valu
     return temp2->castTo(type);
 }
 
+bool isAscii(ITypeInfo * type)
+{
+    return type->queryCharset()->queryName() == asciiAtom;
+}
+
 //===========================================================================
 
 CTypeInfo::~CTypeInfo()
