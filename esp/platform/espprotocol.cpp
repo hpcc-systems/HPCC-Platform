@@ -617,7 +617,7 @@ unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage*
     bool returnFlag = false;
     try
     {
-        returnFlag = secmgr->updateUser(*user, newpass1);
+        returnFlag = secmgr->updateUserPassword(*user, newpass1, oldpass);//provide the entered current password, not the cached one
     }
     catch(IException* e)
     {

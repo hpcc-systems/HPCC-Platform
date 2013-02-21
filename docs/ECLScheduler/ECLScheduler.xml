@@ -121,7 +121,7 @@
     <sect1 id="WHEN">
       <title>WHEN</title>
 
-      <xi:include href="ECLLanguageReference/ECLR_Mods/BltInFunc-WHEN.xml"
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHEN.xml"
                   xpointer="SchWhen"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
@@ -129,7 +129,7 @@
     <sect1 id="NOTIFY">
       <title>NOTIFY</title>
 
-      <xi:include href="ECLLanguageReference/ECLR_Mods/BltInFunc-NOTIFY.xml"
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTIFY.xml"
                   xpointer="SchNOTIFY"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
@@ -137,7 +137,7 @@
     <sect1>
       <title>EVENT</title>
 
-      <xi:include href="ECLLanguageReference/ECLR_Mods/BltInFunc-EVENT.xml"
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENT.xml"
                   xpointer="SchEvent"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
@@ -145,7 +145,7 @@
     <sect1>
       <title>CRON</title>
 
-      <xi:include href="ECLLanguageReference/ECLR_Mods/BltInFunc-CRON.xml"
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CRON.xml"
                   xpointer="SchCRON"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
@@ -153,7 +153,7 @@
     <sect1>
       <title>WAIT</title>
 
-      <xi:include href="ECLLanguageReference/ECLR_Mods/BltInFunc-WAIT.xml"
+      <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WAIT.xml"
                   xpointer="SchWAIT"
                   xmlns:xi="http://www.w3.org/2001/XInclude" />
     </sect1>
