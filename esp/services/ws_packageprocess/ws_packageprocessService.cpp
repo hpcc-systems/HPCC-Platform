@@ -179,6 +179,14 @@ void makePackageActive(IPropertyTree *pkgSetRegistry, IPropertyTree *pkgSetTree,
     pkgSetTree->setPropBool("@active", true);
 }
 
+const char *buildPkgSetId(StringBuffer &pkgSetId, const char *processName)
+{
+    pkgSetId.appendf("default_%s", processName);
+    pkgSetId.replace('*', '#');
+    pkgSetId.replace('?', '~');
+    return pkgSetId.str();
+}
+
 //////////////////////////////////////////////////////////
 
 void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const char *packageMapName, const char *packageSetName, const char *lookupDaliIp, IPropertyTree *packageInfo, bool active, bool overWrite, IUserDescriptor* userdesc)
@@ -358,7 +366,7 @@ void getPkgInfo(const char *target, const char *process, StringBuffer &info)
     toXML(tree, info);
 }
 
-bool deletePkgInfo(const char *packageMap, const char *target)
+bool deletePkgInfo(const char *packageMap, const char *target, const char *process)
 {
     Owned<IRemoteConnection> pkgSet = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (!pkgSet)
@@ -366,10 +374,12 @@ bool deletePkgInfo(const char *packageMap, const char *target)
 
     IPropertyTree* packageSets = pkgSet->queryRoot();
 
-    VStringBuffer pkgSet_xpath("PackageSet[@id='%s']", target);
+    StringBuffer pkgSetId;
+    buildPkgSetId(pkgSetId, process);
+    VStringBuffer pkgSet_xpath("PackageSet[@id='%s']", pkgSetId.str());
     IPropertyTree *pkgSetRegistry = packageSets->queryPropTree(pkgSet_xpath.str());
     if (!pkgSetRegistry)
-        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "No package sets defined for %s", target);
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "No package sets defined for %s", process);
 
     StringBuffer lcName(packageMap);
     lcName.toLowerCase();
@@ -397,7 +407,7 @@ bool deletePkgInfo(const char *packageMap, const char *target)
     return true;
 }
 
-void activatePackageMapInfo(const char *target, const char *packageMap, bool activate)
+void activatePackageMapInfo(const char *target, const char *packageMap, const char *process, bool activate)
 {
     if (!target || !*target)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "No target defined");
@@ -408,13 +418,15 @@ void activatePackageMapInfo(const char *target, const char *packageMap, bool act
 
     StringBuffer lcName(target);
     lcName.toLowerCase();
-    VStringBuffer xpath("PackageSet[@id=\"%s\"]", lcName.str());
 
     IPropertyTree *root = globalLock->queryRoot();
     if (!root)
-        throw MakeStringException(PKG_ACTIVATE_NOT_FOUND, "Unable to retrieve PackageSet information for %s", lcName.str());
+        throw MakeStringException(PKG_ACTIVATE_NOT_FOUND, "Unable to retrieve PackageSet information");
 
-    IPropertyTree *pkgSetTree = root->queryPropTree(xpath);
+    StringBuffer pkgSetId;
+    buildPkgSetId(pkgSetId, process);
+    VStringBuffer pkgSet_xpath("PackageSet[@id='%s']", pkgSetId.str());
+    IPropertyTree *pkgSetTree = root->queryPropTree(pkgSet_xpath.str());
     if (pkgSetTree)
     {
         if (packageMap && *packageMap)
@@ -450,9 +462,8 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
         userdesc->set(user, password);
     }
 
-    VStringBuffer pkgSetId("default_%s", processName.get());
-    pkgSetId.replace('*', '#');
-    pkgSetId.replace('?', '~');
+    StringBuffer pkgSetId;
+    buildPkgSetId(pkgSetId, processName.get());
 
     Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
     Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(pkgSetId.str(), processName.get(), false);
@@ -468,7 +479,11 @@ bool CWsPackageProcessEx::onDeletePackage(IEspContext &context, IEspDeletePackag
 {
     resp.updateStatus().setCode(0);
     StringAttr pkgMap(req.getPackageMap());
-    bool ret = deletePkgInfo(pkgMap.get(), req.getTarget());
+    StringAttr processName(req.getProcess());
+    if (processName.length()==0)
+        processName.set("*");
+
+    bool ret = deletePkgInfo(pkgMap.get(), req.getTarget(), processName.get());
     StringBuffer msg;
     (ret) ? msg.append("Successfully ") : msg.append("Unsuccessfully ");
     msg.append("deleted ").append(pkgMap.get()).append(" from ").append(req.getTarget());
@@ -480,20 +495,14 @@ bool CWsPackageProcessEx::onDeletePackage(IEspContext &context, IEspDeletePackag
 bool CWsPackageProcessEx::onActivatePackage(IEspContext &context, IEspActivatePackageRequest &req, IEspActivatePackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
-    StringBuffer target(req.getTarget());
-    StringBuffer pkgMapName(req.getPackageMap());
-
-    activatePackageMapInfo(target.str(), pkgMapName.str(), true);
+    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), true);
     return true;
 }
 
 bool CWsPackageProcessEx::onDeActivatePackage(IEspContext &context, IEspDeActivatePackageRequest &req, IEspDeActivatePackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
-    StringBuffer target(req.getTarget());
-    StringBuffer pkgMapName(req.getPackageMap());
-
-    activatePackageMapInfo(target.str(), pkgMapName.str(), false);
+    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), false);
     return true;
 }
 
