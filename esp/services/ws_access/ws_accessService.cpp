@@ -2533,7 +2533,7 @@ bool Cws_accessEx::onUserResetPass(IEspContext &context, IEspUserResetPassReques
             return false;
         }
 
-        bool ret = ldapsecmgr->updateUser(username, req.getNewPassword());
+        bool ret = ldapsecmgr->updateUserPassword(username, req.getNewPassword());
         if(ret)
         {
             resp.setRetcode(0);

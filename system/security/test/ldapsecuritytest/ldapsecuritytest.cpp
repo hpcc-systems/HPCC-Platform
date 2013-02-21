@@ -377,7 +377,7 @@ int main(int argc, char* argv[])
 
             Owned<ISecUser> usr = secmgr->createUser(username);
             usr->credentials().setPassword(passwd);
-            bool ok = secmgr->updateUser(*usr, newpasswd);
+            bool ok = secmgr->updateUserPassword(*usr, newpasswd);
             if(ok)
                 printf("user password changed\n");
             else

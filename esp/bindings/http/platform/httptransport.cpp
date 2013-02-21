@@ -2229,8 +2229,6 @@ void CHttpResponse::sendBasicChallenge(const char* realm, const char* content)
     send();
 }
 
-
-
 int CHttpResponse::processHeaders(IMultiException *me)
 {
     char oneline[MAX_HTTP_HEADER_LEN + 1];

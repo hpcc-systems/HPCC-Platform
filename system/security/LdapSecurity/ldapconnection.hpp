@@ -165,9 +165,9 @@ interface ILdapClient : extends IInterface
     virtual void setResourceBasedn(const char* rbasedn, SecResourceType rtype = RT_DEFAULT) = 0;
     virtual ILdapConfig* getLdapConfig() = 0;
     virtual bool userInGroup(const char* userdn, const char* groupdn) = 0;
-    virtual bool updateUser(ISecUser& user, const char* newPassword) = 0;
+    virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword = 0) = 0;
     virtual bool updateUser(const char* type, ISecUser& user) = 0;
-    virtual bool updateUser(const char* username, const char* newPassword) = 0;
+    virtual bool updateUserPassword(const char* username, const char* newPassword) = 0;
     virtual bool getResources(SecResourceType rtype, const char * basedn, const char* prefix, IArrayOf<ISecResource>& resources) = 0;
     virtual bool getResourcesEx(SecResourceType rtype, const char * basedn, const char* prefix, const char* searchstr, IArrayOf<ISecResource>& resources) = 0;
     virtual bool getPermissionsArray(const char* basedn, SecResourceType rtype, const char* name, IArrayOf<CPermission>& permissions) = 0;

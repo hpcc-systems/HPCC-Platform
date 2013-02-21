@@ -378,9 +378,9 @@ public:
     virtual IAuthMap * createFeatureMap(IPropertyTree * authconfig);
     virtual IAuthMap * createSettingMap(struct IPropertyTree *){return 0;}
     virtual bool updateSettings(ISecUser & User,ISecPropertyList * settings){return false;}
-    virtual bool updateUser(ISecUser& user, const char* newPassword);
+    virtual bool updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword = 0);
     virtual bool updateUser(const char* type, ISecUser& user);
-    virtual bool updateUser(const char* username, const char* newPassword);
+    virtual bool updateUserPassword(const char* username, const char* newPassword);
     virtual bool initUser(ISecUser& user){return false;}
 
     virtual bool getResources(SecResourceType rtype, const char * basedn, IArrayOf<ISecResource>& resources);
