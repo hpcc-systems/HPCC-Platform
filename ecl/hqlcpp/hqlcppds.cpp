@@ -2226,12 +2226,19 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
         }
     case no_createdictionary:
         {
+            if (isConstantDictionary(expr))
+            {
+                if (doBuildDictionaryInlineTable(ctx, expr, tgt, format))
+                    return;
+            }
+
             IHqlExpression * record = expr->queryRecord();
+            IHqlExpression * dataset = expr->queryChild(0);
             Owned<IHqlCppDatasetBuilder> builder = createLinkedDictionaryBuilder(record);
 
             builder->buildDeclare(ctx);
 
-            buildDatasetAssign(ctx, builder, expr->queryChild(0));
+            buildDatasetAssign(ctx, builder, dataset);
 
             builder->buildFinish(ctx, tgt);
             ctx.associateExpr(expr, tgt);
@@ -2536,6 +2543,17 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
         }
     case no_createdictionary:
         {
+            if (isConstantDictionary(expr))
+            {
+                CHqlBoundExpr temp;
+                if (doBuildDictionaryInlineTable(ctx, expr, temp, FormatNatural))
+                {
+                    OwnedHqlExpr translated = temp.getTranslatedExpr();
+                    buildDatasetAssign(ctx, target, translated);
+                    return;
+                }
+            }
+
             IHqlExpression * record = expr->queryRecord();
             Owned<IHqlCppDatasetBuilder> builder = createLinkedDictionaryBuilder(record);
             builder->buildDeclare(ctx);
@@ -2754,6 +2772,42 @@ void HqlCppTranslator::doBuildDatasetLimit(BuildCtx & ctx, IHqlExpression * expr
     doBuildCheckDatasetLimit(ctx, expr, tgt);
 }
 
+class ConstantRow : public CInterface
+{
+public:
+    ConstantRow(IHqlExpression * _transform, IHqlExpression * _boundRow) : transform(_transform), boundRow(_boundRow)
+    {
+    }
+
+public:
+    IHqlExpression * transform;
+    LinkedHqlExpr boundRow;
+};
+
+class ConstantRowArray : public CIArrayOf<ConstantRow> {};
+
+bool HqlCppTranslator::buildConstantRows(ConstantRowArray & boundRows, IHqlExpression * transforms)
+{
+    HqlExprArray rows;
+
+    ForEachChild(row, transforms)
+    {
+        OwnedHqlExpr constRow = createConstantRowExpr(transforms->queryChild(row));
+        if (!constRow || !canGenerateStringInline(constRow->queryType()->getSize()))
+            return false;
+        rows.append(*constRow.getClear());
+    }
+
+    ForEachItemIn(i, rows)
+    {
+        IHqlExpression * transform = transforms->queryChild(i);
+        CHqlBoundExpr bound;
+        buildConstRow(transform->queryRecord(), &rows.item(i), bound);
+        boundRows.append(*new ConstantRow(transform, bound.expr));
+    }
+    return true;
+}
+
 bool HqlCppTranslator::doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format)
 {
     if (!options.generateStaticInlineTables)
@@ -2770,38 +2824,28 @@ bool HqlCppTranslator::doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression 
 
     BuildCtx declareCtx(*code, literalAtom);
     //Remove unique id when checking for constant datasets already generated
-    OwnedHqlExpr exprNoUnique = removeProperty(expr, _uid_Atom);
-    if (declareCtx.getMatchExpr(exprNoUnique, tgt))
+    OwnedHqlExpr exprKey = removeProperty(expr, _uid_Atom);
+    if (declareCtx.getMatchExpr(exprKey, tgt))
         return true;
 
-    HqlExprArray rows;
-    unsigned maxRows = transforms->numChildren();
-    unsigned row;
-    for (row = 0; row < maxRows; row++)
-    {
-        OwnedHqlExpr constRow = createConstantRowExpr(transforms->queryChild(row));
-        if (!constRow || !canGenerateStringInline(constRow->queryType()->getSize()))
-            return false;
-        rows.append(*constRow.getClear());
-    }
-
-    HqlExprArray boundRows;
-    ForEachItemIn(i, rows)
-    {
-        CHqlBoundExpr bound;
-        buildConstRow(record, &rows.item(i), bound);
-        boundRows.append(*bound.expr.getClear());
-    }
+    ConstantRowArray boundRows;
+    if (!buildConstantRows(boundRows, transforms))
+        return false;
 
     Owned<ITypeInfo> rowType = makeConstantModifier(makeReferenceModifier(makeRowType(LINK(queryRecordType(expr->queryType())))));
-    OwnedHqlExpr values = createValue(no_list, makeSetType(LINK(rowType)), boundRows);
 
-    Owned<ITypeInfo> tableType = makeConstantModifier(makeArrayType(LINK(rowType), maxRows));
+    HqlExprArray args;
+    ForEachItemIn(i, boundRows)
+        args.append(*LINK(boundRows.item(i).boundRow));
+    OwnedHqlExpr values = createValue(no_list, makeSetType(LINK(rowType)), args);
+
+    unsigned maxRows = values->numChildren();
+    Owned<ITypeInfo> declareType = makeConstantModifier(makeArrayType(LINK(rowType), maxRows));
     OwnedITypeInfo rowsType = makeOutOfLineModifier(makeTableType(LINK(rowType), NULL, NULL, NULL));
     if (options.canLinkConstantRows)
         rowsType.setown(setLinkCountedAttr(rowsType, true));
 
-    OwnedHqlExpr table = declareCtx.getTempDeclare(tableType, values);
+    OwnedHqlExpr table = declareCtx.getTempDeclare(declareType, values);
     if (options.spanMultipleCpp)
     {
         BuildCtx protoctx(*code, mainprototypesAtom);
@@ -2811,7 +2855,211 @@ bool HqlCppTranslator::doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression 
     tgt.count.setown(getSizetConstant(maxRows));
     tgt.expr.setown(createValue(no_typetransfer, LINK(rowsType), LINK(table)));
 
-    declareCtx.associateExpr(exprNoUnique, tgt);
+    declareCtx.associateExpr(exprKey, tgt);
+    return true;
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+//The code generator uses the the run time library code used to build dictionaries to try and ensure they stay compatible.
+//
+//The following classes allow IHqlExpressions to be used with those external classes.  A ConstantRow * is used where a
+//row would normally be used at runtime.
+
+//This class provides the minimal functionality for the interface required to call the dictionary builder class
+class EclccEngineRowAllocator : public CInterfaceOf<IEngineRowAllocator>
+{
+public:
+    virtual byte * * createRowset(unsigned _numItems) { return (byte * *)malloc(_numItems * sizeof(byte *)); }
+    virtual byte * * linkRowset(byte * * rowset) { throwUnexpected(); }
+    virtual void releaseRowset(unsigned count, byte * * rowset) { free(rowset); }
+    virtual byte * * appendRowOwn(byte * * rowset, unsigned newRowCount, void * row)
+    {
+        byte * * expanded = reallocRows(rowset, newRowCount-1, newRowCount);
+        expanded[newRowCount-1] = (byte *)row;
+        return expanded;
+    }
+    virtual byte * * reallocRows(byte * * rowset, unsigned oldRowCount, unsigned newRowCount)
+    {
+        return (byte * *)realloc(rowset, newRowCount * sizeof(byte *));
+    }
+
+    virtual void * createRow() { throwUnexpected(); }
+    virtual void releaseRow(const void * row) {  } // can occur if a row is removed from a dictionary.
+    virtual void * linkRow(const void * row) { return const_cast<void *>(row); }  // can occur if a dictionary is resized.
+
+//Used for dynamically sizing rows.
+    virtual void * createRow(size32_t & allocatedSize) { throwUnexpected(); }
+    virtual void * resizeRow(size32_t newSize, void * row, size32_t & size) { throwUnexpected(); }
+    virtual void * finalizeRow(size32_t newSize, void * row, size32_t oldSize) { throwUnexpected(); }
+
+    virtual IOutputMetaData * queryOutputMeta() { return NULL; }
+    virtual unsigned queryActivityId() { return 0; }
+    virtual StringBuffer &getId(StringBuffer & out) { return out; }
+    virtual IOutputRowSerializer *createDiskSerializer(ICodeContext *ctx = NULL) { throwUnexpected(); }
+    virtual IOutputRowDeserializer *createDiskDeserializer(ICodeContext *ctx) { throwUnexpected(); }
+    virtual IOutputRowSerializer *createInternalSerializer(ICodeContext *ctx = NULL) { throwUnexpected(); }
+    virtual IOutputRowDeserializer *createInternalDeserializer(ICodeContext *ctx) { throwUnexpected(); }
+};
+
+//Use a (constant) transform to map selectors of the form queryActiveTableSelector().field
+static IHqlExpression * mapExprViaTransform(IHqlExpression * transform, IHqlExpression * expr)
+{
+    NewProjectMapper2 mapper;
+    mapper.setMapping(transform);
+    return mapper.expandFields(expr, queryActiveTableSelector(), queryActiveTableSelector(), queryActiveTableSelector());
+}
+
+//Implement hash - constructor parameter is the hash expression
+class EclccCHash : implements IHash
+{
+public:
+    EclccCHash(IHqlExpression * _hashExpr) : hashExpr(_hashExpr) {}
+
+    virtual unsigned hash(const void *data)
+    {
+        const ConstantRow * row = reinterpret_cast<const ConstantRow *>(data);
+        OwnedHqlExpr expanded = mapExprViaTransform(row->transform, hashExpr);
+        OwnedHqlExpr folded = foldHqlExpression(expanded);
+        assertex(folded->queryValue());
+        return (unsigned)getIntValue(folded, 0);
+    }
+
+protected:
+    LinkedHqlExpr hashExpr;
+};
+
+// implement compare -the constructor parameter is the list of fields to compare
+class EclccCCompare : implements ICompare
+{
+public:
+    EclccCCompare(IHqlExpression * _sortorder) : sortorder(_sortorder) {}
+
+    virtual int docompare(const void * _left,const void * _right) const
+    {
+        const ConstantRow * left = reinterpret_cast<const ConstantRow *>(_left);
+        const ConstantRow * right = reinterpret_cast<const ConstantRow *>(_right);
+
+        OwnedHqlExpr expandedLeft = mapExprViaTransform(left->transform, sortorder);
+        OwnedHqlExpr expandedRight = mapExprViaTransform(right->transform, sortorder);
+        OwnedHqlExpr order = createValue(no_order, LINK(signedType), expandedLeft.getClear(), expandedRight.getClear());
+        OwnedHqlExpr folded = foldHqlExpression(order);
+        assertex(folded->queryValue());
+        return (int)getIntValue(folded, 0);
+    }
+
+protected:
+    LinkedHqlExpr sortorder;
+};
+
+//The dictionary information class - the hash lookup versions are not implemented
+class EclccHashLookupInfo : implements IHThorHashLookupInfo
+{
+public:
+    EclccHashLookupInfo(IHqlExpression * hashExpr, IHqlExpression * sortorder)
+        : hasher(hashExpr), comparer(sortorder)
+    {
+    }
+
+    virtual IHash * queryHash() { return &hasher; }
+    virtual ICompare * queryCompare() { return &comparer; }
+    virtual IHash * queryHashLookup() { throwUnexpected(); }
+    virtual ICompare * queryCompareLookup() { throwUnexpected(); }
+
+protected:
+    EclccCHash hasher;
+    EclccCCompare comparer;
+};
+
+void HqlCppTranslator::createInlineDictionaryRows(HqlExprArray & args, ConstantRowArray & boundRows, IHqlExpression * keyRecord, IHqlExpression * nullRow)
+{
+    //The code generator uses the the run time library code used to build dictionaries to try and ensure they stay compatible.
+    HqlExprArray keyedDictFields;
+    expandRecord(keyedDictFields, queryActiveTableSelector(), keyRecord);
+    OwnedHqlExpr keyedlist = createSortList(keyedDictFields);
+    OwnedHqlExpr hash = createValue(no_hash32, LINK(unsignedType), LINK(keyedlist));
+
+    //Estimate a good hash table size from the number of rows - otherwise the size can be more than double the number of rows
+    size32_t hashSize = (boundRows.ordinality() * 4 / 3) + 1;
+    EclccEngineRowAllocator rowsetAllocator;
+    EclccHashLookupInfo hasher(hash, keyedlist);
+    RtlLinkedDictionaryBuilder builder(&rowsetAllocator, &hasher, hashSize);
+    ForEachItemIn(i, boundRows)
+        builder.appendOwn(&boundRows.item(i));
+
+    unsigned size = builder.getcount();
+    ConstantRow * * rows = reinterpret_cast<ConstantRow * *>(builder.queryrows());
+    for (unsigned i=0; i < size; i++)
+    {
+        if (rows[i])
+            args.append(*LINK(rows[i]->boundRow));
+        else
+            args.append(*LINK(nullRow)); 
+    }
+}
+
+bool HqlCppTranslator::doBuildDictionaryInlineTable(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format)
+{
+    if (!options.generateStaticInlineTables || !options.canLinkConstantRows)
+        return false;
+
+    IHqlExpression * dataset = expr->queryChild(0);
+    assertex(dataset->getOperator() == no_inlinetable);
+
+    IHqlExpression * transforms = dataset->queryChild(0);
+    IHqlExpression * record = dataset->queryRecord();
+    if (transforms->numChildren() == 0)
+    {
+        OwnedHqlExpr null = createDictionary(no_null, LINK(record));
+        buildDataset(ctx, null, tgt, format);
+        return true;
+    }
+
+    BuildCtx declareCtx(*code, literalAtom);
+    //Remove unique id when checking for constant datasets already generated
+    OwnedHqlExpr exprNoUnique = removeProperty(dataset, _uid_Atom);
+    OwnedHqlExpr exprKey = createAttribute(dictionaryAtom, exprNoUnique.getClear());
+    if (declareCtx.getMatchExpr(exprKey, tgt))
+        return true;
+
+    ConstantRowArray boundRows;
+    if (!buildConstantRows(boundRows, transforms))
+        return false;
+
+    OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
+    Owned<ITypeInfo> rowType = makeConstantModifier(makeReferenceModifier(makeRowType(LINK(queryRecordType(expr->queryType())))));
+    OwnedHqlExpr nullExpr = createValue(no_nullptr, LINK(rowType));
+
+    HqlExprArray args;
+    try
+    {
+        createInlineDictionaryRows(args, boundRows, keyRecord, nullExpr);
+    }
+    catch (IException * e)
+    {
+        //If the hash or compare couldn't be done (e.g., some strange field type that isn't constant folded)
+        //then generate a warning and fall back to the default inline dictionary code
+        EXCLOG(e, "Generating an inline dictionary");
+        e->Release();
+        return false;
+    }
+    OwnedHqlExpr values = createValue(no_list, makeSetType(LINK(rowType)), args);
+
+    unsigned maxRows = values->numChildren();
+    Owned<ITypeInfo> declareType = makeConstantModifier(makeArrayType(LINK(rowType), maxRows));
+    OwnedITypeInfo rowsType = makeOutOfLineModifier(makeDictionaryType(LINK(rowType)));
+    rowsType.setown(setLinkCountedAttr(rowsType, true));
+
+    OwnedHqlExpr table = declareCtx.getTempDeclare(declareType, values);
+    if (options.spanMultipleCpp)
+    {
+        BuildCtx protoctx(*code, mainprototypesAtom);
+        protoctx.addDeclareExternal(table);
+    }
+
+    tgt.count.setown(getSizetConstant(maxRows));
+    tgt.expr.setown(createValue(no_typetransfer, LINK(rowsType), LINK(table)));
+
+    declareCtx.associateExpr(exprKey, tgt);
     return true;
 }
 

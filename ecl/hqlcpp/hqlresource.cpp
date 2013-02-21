@@ -2256,7 +2256,7 @@ protected:
             noteDataset(expr, expr, true);
             return;
         case no_createdictionary:
-            if (isEvaluateable(expr))
+            if (isEvaluateable(expr) && !isConstantDictionary(expr))
                 noteDataset(expr, expr, true);
             return;
 

@@ -524,6 +524,34 @@ IHqlExpression * queryLastNonAttribute(IHqlExpression * expr)
     return NULL;
 }
 
+void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_record:
+        {
+            ForEachChild(i, expr)
+                expandRecord(selects, selector, expr->queryChild(i));
+            break;
+        }
+    case no_field:
+        {
+            OwnedHqlExpr subSelector = createSelectExpr(LINK(selector), LINK(expr));
+            if (expr->queryRecord() && !expr->isDataset() && !expr->isDictionary())
+                expandRecord(selects, subSelector, expr->queryRecord());
+            else
+            {
+                if (selects.find(*subSelector) == NotFound)
+                    selects.append(*subSelector.getClear());
+            }
+            break;
+        }
+    case no_ifblock:
+        expandRecord(selects, selector, expr->queryChild(1));
+        break;
+    }
+}
+
 //---------------------------------------------------------------------------
 
 static IHqlExpression * queryOnlyTableChild(IHqlExpression * expr)
@@ -4948,6 +4976,18 @@ bool isConstantDataset(IHqlExpression * expr)
             return false;
     }
     return true;
+}
+
+bool isConstantDictionary(IHqlExpression * expr)
+{
+    if (expr->getOperator() == no_null)
+        return true;
+    if (expr->getOperator() != no_createdictionary)
+        return false;
+    IHqlExpression * dataset = expr->queryChild(0);
+    if (dataset->getOperator() == no_inlinetable)
+        return isConstantDataset(dataset);
+    return false;
 }
 
 inline bool iseol(char c) { return c == '\r' || c == '\n'; }

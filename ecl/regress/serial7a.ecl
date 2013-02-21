@@ -17,7 +17,7 @@
 
 IMPORT SerialTest;
 
-interestingWords := DICTIONARY([{'elves'},{'cheddar'}], SerialTest.wordRec);
+interestingWords := DICTIONARY([{'elves'},{'cheddar'},{'cheddar'}], SerialTest.wordRec);
 
 output(SerialTest.bookIndex(WILD(title), EXISTS(words(word IN interestingWords))));
 

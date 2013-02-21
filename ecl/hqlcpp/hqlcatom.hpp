@@ -241,6 +241,7 @@ extern _ATOM deserializerSkipVUniAtom;
 extern _ATOM destroyRegexAtom;
 extern _ATOM destroyWRegexAtom;
 extern _ATOM destructMetaMemberAtom;
+extern _ATOM dictionaryAtom;
 extern _ATOM dictionaryCountAtom;
 extern _ATOM dictionaryExistsAtom;
 extern _ATOM dictionaryLookupAtom;
