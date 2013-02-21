@@ -919,7 +919,7 @@
           listed in your environment's topology section.</para>
         </sect3>
 
-        <sect3>
+        <sect3 role="brk">
           <title>Running a basic ECL program from the ECL IDE</title>
 
           <para><orderedlist>
