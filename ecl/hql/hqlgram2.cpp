@@ -5331,34 +5331,6 @@ ITypeInfo *HqlGram::checkPromoteNumeric(attribute &a1, bool extendPrecision)
 }
 
 
-void expandRecord(HqlExprArray & fields, IHqlExpression * selector, IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_record:
-        {
-            ForEachChild(i, expr)
-                expandRecord(fields, selector, expr->queryChild(i));
-            break;
-        }
-    case no_field:
-        {
-            OwnedHqlExpr subSelector = createSelectExpr(LINK(selector), LINK(expr));
-            if (expr->queryRecord() && !expr->isDataset() && !expr->isDictionary())
-                expandRecord(fields, subSelector, expr->queryRecord());
-            else
-            {
-                if (fields.find(*subSelector) == NotFound)
-                    fields.append(*subSelector.getClear());
-            }
-            break;
-        }
-    case no_ifblock:
-        expandRecord(fields, selector, expr->queryChild(1));
-        break;
-    }
-}
-
 bool HqlGram::expandWholeAndExcept(IHqlExpression * dataset, const attribute & errpos, HqlExprArray & parms)
 {
     HqlExprArray results;
