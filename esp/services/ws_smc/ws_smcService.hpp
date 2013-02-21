@@ -80,6 +80,16 @@ private:
     void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName, const char* serverType);
     void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* queueState, const char* serverName, const char* serverType);
     void getQueueState(int runningJobsInQueue, StringBuffer& queueState, BulletType& colorType);
+    void setClusterNameTypeQueueMap(CConstWUClusterInfoArray& clusters, std::map<std::string, std::string>& clusterNameQueueMap, std::map<std::string, std::string>& clusterNameTypeMap);
+    void findQueueNameAndInstance(IPropertyTree& node, StringBuffer& qname, StringBuffer& instance);
+    void addRunningWUs(IEspContext &context, IPropertyTree& node, StringBuffer& qname, StringBuffer& instance,
+                   std::map<std::string, std::string>& clusterNameQueueMap, std::map<std::string, std::string>& clusterNameTypeMap,
+                   IArrayOf<IEspActiveWorkunit>& aws, BoolHash& uniqueWUIDs,
+                   StringArray& runningQueueNames, int* runningJobsInQueue);
+    void addRunningWUs(IEspContext &context, IPropertyTreeIterator* it,
+                   std::map<std::string, std::string>& clusterNameQueueMap, std::map<std::string, std::string>& clusterNameTypeMap,
+                   IArrayOf<IEspActiveWorkunit>& aws, BoolHash& uniqueWUIDs,
+                   StringArray& runningQueueNames, int* runningJobsInQueue, bool fromECLagent);
 };
 
 
