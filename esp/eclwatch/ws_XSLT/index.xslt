@@ -564,7 +564,7 @@
                     <input type="hidden" name="Wuid" id="Wuid" value=""/>
                     <xsl:for-each select="ThorClusters/ThorCluster">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ThorMaster' and QueueName=current()/QueueName]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='ThorMaster' and QueueName=current()/QueueName) or (ClusterType='Thor' and ClusterQueueName=current()/QueueName)]"/>
                             <xsl:with-param name="cluster" select="ClusterName"/>
                             <xsl:with-param name="clusterType" select="'THOR'"/>
                             <xsl:with-param name="queue" select="QueueName"/>
@@ -576,7 +576,7 @@
 
                     <xsl:for-each select="RoxieClusters/RoxieCluster">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='RoxieServer' and QueueName=current()/QueueName]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='RoxieServer' and QueueName=current()/QueueName) or (ClusterType='Roxie' and ClusterQueueName=current()/QueueName)]"/>
                             <xsl:with-param name="cluster" select="ClusterName"/>
                             <xsl:with-param name="clusterType" select="'ROXIE'"/>
                             <xsl:with-param name="queue" select="QueueName"/>
@@ -587,7 +587,7 @@
 
                     <xsl:for-each select="HThorClusters/HThorCluster">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='HThorServer' and QueueName=current()/QueueName]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='HThorServer' and QueueName=current()/QueueName) or (ClusterType='HThor' and ClusterQueueName=current()/QueueName)]"/>
                             <xsl:with-param name="cluster" select="ClusterName"/>
                             <xsl:with-param name="clusterType" select="'HTHOR'"/>
                             <xsl:with-param name="queue" select="QueueName"/>
