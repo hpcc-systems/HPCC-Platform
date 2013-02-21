@@ -151,14 +151,22 @@ public:
     }
 };
 
+enum baseResolutionState
+{
+    basesUnresolved=0,
+    basesResolving=1,
+    basesResolved=2
+};
+
 template <class TYPE>
 class CResolvedPackage : public TYPE
 {
 public:
     typedef CResolvedPackage<TYPE> self;
     CIArrayOf<self> bases;
+    baseResolutionState baseResolution;
 
-    CResolvedPackage<TYPE>(IPropertyTree *p) : TYPE(p) {}
+    CResolvedPackage<TYPE>(IPropertyTree *p) : TYPE(p), baseResolution(basesUnresolved) {}
 
     virtual aindex_t getBaseCount() const {return bases.length();}
     const self *getResolvedBase(aindex_t pos) const
@@ -182,14 +190,18 @@ public:
 
     void resolveBases(const IHpccPackageMap *packages)
     {
-        TYPE::loadEnvironment();
+        if (baseResolution==basesResolved)
+            return;
         if (packages)
         {
+            if (baseResolution==basesResolving)
+                throw MakeStringExceptionDirect(0, "PACKAGE_ERROR: circular or invalid base package definition");
             Owned<IPropertyTreeIterator> baseIterator = TYPE::node->getElements("Base");
             if (!baseIterator->first())
                 appendBase(TYPE::queryRootPackage());
             else
             {
+                baseResolution=basesResolving;
                 do
                 {
                     IPropertyTree &baseElem = baseIterator->query();
@@ -199,10 +211,13 @@ public:
                     const IHpccPackage *base = packages->queryPackage(baseId);
                     if (!base)
                         throw MakeStringException(0, "PACKAGE_ERROR: base package %s not found", baseId);
+                    CResolvedPackage<TYPE> *rebase = dynamic_cast<CResolvedPackage<TYPE> *>(const_cast<IHpccPackage *>(base));
+                    rebase->resolveBases(packages);
                     appendBase(base);
                 }
                 while(baseIterator->next());
             }
+            baseResolution=basesResolved;
         }
     }
 
@@ -321,6 +336,7 @@ public:
                 throw MakeStringException(-1, "Invalid package map - Package element missing id attribute");
             Owned<packageType> package = new packageType(&packageTree);
             packages.setValue(id, package.get());
+            package->loadEnvironment();
             const char *queries = packageTree.queryProp("@queries");
             if (queries && *queries)
             {
