@@ -6851,6 +6851,10 @@ void HqlGram::checkIndexFieldType(IHqlExpression * expr, bool isPayload, bool in
                     checkIndexRecordType(record, numPayload, true, errpos);
                     break;
                 }
+            case type_dictionary:
+                if (!variableOk || !isPayload)
+                    reportError(ERR_INDEX_BADTYPE, errpos, "Dictionaries (%s) are not supported inside indexes", name->str());
+                break;
             case type_table:
             case type_groupedtable:
                 if (!variableOk)
