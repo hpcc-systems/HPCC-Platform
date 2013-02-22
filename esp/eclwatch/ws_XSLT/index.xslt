@@ -860,13 +860,14 @@
         <xsl:param name="queue"/>
         <xsl:param name="thorlcr" select="'0'"/>
 
-        <xsl:variable name="active" select="$workunits[State='running']"/>
+        <xsl:variable name="active1" select="$workunits[State='running' and $queue = QueueName]"/>
+        <xsl:variable name="active2" select="$workunits[State='running' and $queue != QueueName]"/>
         <tbody>
             <xsl:choose>
                 <xsl:when test="$workunits[1]">
                     <tr style="border:solid 2 black">
-                        <xsl:if test="count($active)">
-                            <xsl:for-each select="$active">
+                        <xsl:if test="count($active1)">
+                            <xsl:for-each select="$active1">
                                 <xsl:if test="position() > 1">
                                     <xsl:text disable-output-escaping="yes">
                                             <![CDATA[
@@ -895,6 +896,27 @@
                             </xsl:apply-templates>
                         </tr>
                     </xsl:for-each>
+
+                    <tr style="border:solid 2 black">
+                        <xsl:if test="count($active2)">
+                            <xsl:for-each select="$active2">
+                                <xsl:if test="position() > 1">
+                                    <xsl:text disable-output-escaping="yes">
+                                            <![CDATA[
+                                                </tr>
+                                                <tr>
+                                            ]]>
+                                        </xsl:text>
+                                </xsl:if>
+                                <xsl:apply-templates select=".">
+                                    <xsl:with-param name="cluster" select="$cluster"/>
+                                    <xsl:with-param name="clusterType" select="$clusterType"/>
+                                    <xsl:with-param name="queue" select="$queue"/>
+                                    <xsl:with-param name="thorlcr" select="$thorlcr"/>
+                                </xsl:apply-templates>
+                            </xsl:for-each>
+                        </xsl:if>
+                    </tr>
                 </xsl:when>
                 <xsl:otherwise>
                     <td width="1100" colspan='4'>No active workunit</td>
@@ -1005,6 +1027,9 @@
                     </xsl:if>
                 </xsl:otherwise>
             </xsl:choose>
+            <xsl:if test="$queue != QueueName">
+                <b> (on <xsl:value-of select="QueueName"/>)</b>
+            </xsl:if>
         </td>
         <td class="{$active}">
             <xsl:value-of select="Owner"/>&#160;
