@@ -68,6 +68,86 @@
                     }
                 }" data-dojo-type="dojox.grid.EnhancedGrid">
                 </div>
+                
+                <!--copy dialog -->
+                <div data-dojo-type="dijit/Dialog" data-dojo-id="myCopyDialog" title="Copy" id="${id}myCopyDialog">
+                    <h2>Sources</h2>
+                    <form class="extraSmallForm">
+                        <ul>
+                            <li>
+                                <label>Logical File:</label>
+                                <div id="${id}Sources">progguide::exampledata::accounts</div>
+                            </li>
+                        </ul>
+                    </form>
+                        <h2>Destination</h2>
+                        <form class="extraSmallForm">
+                            <ul>
+                                <li>
+                                    <label>Group:</label>
+                                    <div id="${id}Sources" data-dojo-type="dijit/form/Select">
+                                        <span value="NM" disabled="disabled">Hthor</span>
+                                    </div>
+                                </li>
+                                <li>
+                                    <label>Logical Name:</label>
+                                    <div id="${id}Sources">progguide::exampledata::accounts</div>
+                                </li>
+                                <li>
+                                    <label>Mask:</label>
+                                    <div id="${id}Sources">progguide::exampledata::accounts._$P$_of_$N$</div>
+                                </li>
+                            </ul>
+                        </form>
+                        <h2>Options</h2>
+                        <form class="extraExtraSmallForm">
+                            <ul>
+                                <li>
+                                    <label>Wrap?</label>
+                                    <div>
+                                        <input id="mycheck" name="mycheck" data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+                                    </div>
+                                </li>
+                                <li>
+                                    <label>No Split?</label>
+                                    <div></div>
+                                </li>
+                                <li>
+                                    <label>Overwrite?</label>
+                                    <div></div>
+                                </li>
+                                <li>
+                                    <label>Compress?</label>
+                                    <div></div>
+                                </li>
+                                <li>
+                                    <label>Retain Superfile Structure?</label>
+                                    <div></div>
+                                </li>
+                            </ul>
+                        </form>
+
+                        <div class="dijitDialogPaneActionBar">
+                            <button dojoType="dijit.form.Button" type="submit">Submit</button>
+                            <button dojoType="dijit.form.Button" type="button" onClick="myCopyDialog.onCancel();">Cancel</button>
+                        </div>
+                </div>
+               
+                <!--rename dialog -->
+                <div data-dojo-type="dijit/Dialog" data-dojo-id="myRenameDialog" title="Rename">
+                    <form class="extraSmallForm">
+                        <ul>
+                            <li>
+                                <label for="${id}Rename">Sources:</label>
+                                <input id="${id}Rename" data-dojo-props="trim: true, placeHolder:'Logical Name'" data-dojo-type="dijit.form.TextBox"/>
+                            </li>
+                        </ul>
+                    </form>
+                        <div class="dijitDialogPaneActionBar">
+                            <button dojoType="dijit.form.Button" type="submit" id="ok">Submit</button>
+                            <button dojoType="dijit.form.Button" type="button" onClick="myRenameDialog.onCancel();" id="cancel">Cancel</button>
+                        </div>
+                </div>
             </div>
             <div id="${id}Legacy" title="Legacy Web Page" data-dojo-type="dijit.layout.ContentPane">
             </div>
