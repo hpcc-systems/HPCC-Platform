@@ -2811,6 +2811,7 @@ IHqlExpression * CXmlColumnInfo::getCallExpr(HqlCppTranslator & translator, Buil
 
     switch (type->getTypeCode())
     {
+    case type_dictionary:
     case type_table:
     case type_groupedtable:
         return getXmlDatasetExpr(translator, ctx, selector);
