@@ -1238,6 +1238,7 @@ knownFunction1
 scopeFlag
     : EXPORT            {   $$.setInt(EXPORT_FLAG); $$.setPosition($1); }
     | SHARED            {   $$.setInt(SHARED_FLAG); $$.setPosition($1); }
+    | LOCAL             {   $$.setInt(0); $$.setPosition($1); }
     ;
 
 // scopeflags needs to be explicitly included, rather than using an optScopeFlags production, otherwise you get shift reduce errors - since it is the first item on a line.
