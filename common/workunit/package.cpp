@@ -110,23 +110,26 @@ void CPackageNode::loadEnvironment()
     }
 }
 
-bool CPackageNode::validate(IMultiException *me) const
+bool CPackageNode::validate(StringArray &warn, StringArray &err) const
 {
     if (!node)
         return true;
-    const char *packageId = node->queryProp("@id");
-    if (!packageId || !*packageId)
-        me->append(*MakeStringExceptionDirect(PACKAGE_MISSING_ID, "Package has no id attribute"));
+    StringAttr packageId = node->queryProp("@id");
+    if (packageId.isEmpty())
+        err.append("Package has no id attribute");
     Owned<IPropertyTreeIterator> files = node->getElements("SuperFile");
     ForEach(*files)
     {
         IPropertyTree &super = files->query();
-        const char *superId = super.queryProp("@id");
-        if (!superId || !*superId)
-            me->append(*MakeStringExceptionDirect(PACKAGE_MISSING_ID, "SuperFile has no id attribute"));
+        StringAttr superId = super.queryProp("@id");
+        if (superId.isEmpty())
+            err.append("SuperFile has no id attribute");
 
         if (!super.hasProp("SubFile"))
-            me->append(*MakeStringException(PACKAGE_NO_SUBFILES, "Warning: Package['%s']/SuperFile['%s'] has no SubFiles defined", packageId, superId ? superId : ""));
+        {
+            VStringBuffer msg("Package['%s']/SuperFile['%s'] has no SubFiles defined", packageId.sget(), superId.sget());
+            warn.append(msg.str());
+        }
     }
     return true;
 }

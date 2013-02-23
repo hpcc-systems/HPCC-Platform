@@ -529,18 +529,17 @@ bool CWsPackageProcessEx::onGetPackage(IEspContext &context, IEspGetPackageReque
 
 bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePackageRequest &req, IEspValidatePackageResponse &resp)
 {
-    Owned<IHpccPackageMap> map = createPackageMapFromXml(req.getInfo(), req.getTarget(), NULL);
-    Owned<IMultiException> me = MakeMultiException("PackageMap");
+    StringArray warnings;
+    StringArray errors;
     StringArray unmatchedQueries;
     StringArray unusedPackages;
-    map->validate(me, unmatchedQueries, unusedPackages);
+
+    Owned<IHpccPackageMap> map = createPackageMapFromXml(req.getInfo(), req.getTarget(), NULL);
+    map->validate(warnings, errors, unmatchedQueries, unusedPackages);
+
+    resp.setWarnings(warnings);
+    resp.setErrors(errors);
     resp.updateQueries().setUnmatched(unmatchedQueries);
     resp.updatePackages().setUnmatched(unusedPackages);
-    if (me->ordinality()>0)
-    {
-        IArrayOf<IException>& exceptions = me->getArray();
-        ForEachItemIn(i, exceptions)
-            resp.noteException(*LINK(&exceptions.item(i)));
-    }
     return true;
 }

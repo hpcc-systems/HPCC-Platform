@@ -512,9 +512,9 @@ public:
     {
         return BASE::isActive();
     }
-    virtual bool validate(IMultiException *me, StringArray &unmatchedQueries, StringArray &unusedPackages) const
+    virtual bool validate(StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages) const
     {
-        return BASE::validate(me, unmatchedQueries, unusedPackages);
+        return BASE::validate(wrn, err, unmatchedQueries, unusedPackages);
     }
 
     virtual const IRoxiePackage *queryRoxiePackage(const char *name) const

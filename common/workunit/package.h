@@ -45,7 +45,7 @@ interface IHpccPackageMap : extends IInterface
     virtual const IHpccPackage *matchPackage(const char *name) const = 0;
     virtual const char *queryPackageId() const = 0;
     virtual bool isActive() const = 0;
-    virtual bool validate(IMultiException *me, StringArray &unmatchedQueries, StringArray &unusedPackages) const = 0;
+    virtual bool validate(StringArray &warn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages) const = 0;
 };
 
 interface IHpccPackageSet : extends IInterface

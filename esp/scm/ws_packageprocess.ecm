@@ -129,6 +129,8 @@ ESPstruct ValidatePackageQueries
 ESPresponse [exceptions_inline] ValidatePackageResponse
 {
     ESPstruct BasePackageStatus status;
+    ESParray<string> Warnings;
+    ESParray<string> Errors;
     ESPstruct ValidatePackageInfo packages;
     ESPstruct ValidatePackageQueries queries;
 };
