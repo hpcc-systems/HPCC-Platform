@@ -110,11 +110,11 @@ define([
                 title: "Missing Fields",
                 content: "Please make sure you have set at least one filter."
             });
-            var today = new Date();
+            /*var today = new Date();
             var filterThreeDays = date.add(today, "day",- 3);
             dijit.byId(this.id + "FromDate").set("value",filterThreeDays);
             dijit.byId(this.id + "ToDate").set("value",today);
-            dijit.byId(this.id + "threeDays").set("checked",true);
+            dijit.byId(this.id + "threeDays").set("checked",true);*/
         },
 
 
@@ -578,6 +578,7 @@ define([
             setTimeout(function () {
                 context.refreshActionState()
             }, 200);
+            this.workunitsGrid.selection.clear(true);
         },
 
 
