@@ -313,7 +313,6 @@ extern _ATOM getProductionResultAtom;
 extern _ATOM getProductionTextAtom;
 extern _ATOM getProductionUnicodeAtom;
 extern _ATOM getProductionUtf8Atom;
-extern _ATOM getRecoveringCountAtom;
 extern _ATOM getResultBoolAtom;
 extern _ATOM getResultDataAtom;
 extern _ATOM getResultDatasetAtom;

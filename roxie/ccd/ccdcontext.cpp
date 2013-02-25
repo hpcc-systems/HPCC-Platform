@@ -1205,7 +1205,6 @@ public:
 
     virtual char *getWuid() { throwUnexpected(); }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
-    virtual char *getDaliServers() { throwUnexpected(); }
 
     virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { throwUnexpected(); }
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
@@ -1214,7 +1213,6 @@ public:
     virtual IUserDescriptor *queryUserDescriptor() { throwUnexpected(); }
 
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) { throwUnexpected(); }
-    virtual unsigned getRecoveringCount() { throwUnexpected(); }
 
     virtual unsigned getNodes() { throwUnexpected(); }
     virtual unsigned getNodeNum() { throwUnexpected(); }
@@ -2849,7 +2847,6 @@ public:
     virtual char *getClusterName() { throwUnexpected(); }
     virtual char *getGroupName() { throwUnexpected(); }
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) { throwUnexpected(); }
-    virtual char *getDaliServers() { throwUnexpected(); }
     virtual char *getEnv(const char *name, const char *defaultValue) const
     {
         return serverQueryFactory->getEnv(name, defaultValue);
@@ -2884,7 +2881,6 @@ public:
     virtual void clearPersist(const char * logicalName) { throwUnexpected(); }
     virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) { throwUnexpected(); }
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) { throwUnexpected(); }
-    virtual unsigned getRecoveringCount() { throwUnexpected(); }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { throwUnexpected(); }
     virtual __int64 countDiskFile(const char * lfn, unsigned recordSize)

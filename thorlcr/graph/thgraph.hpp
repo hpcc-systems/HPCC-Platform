@@ -476,7 +476,6 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
         virtual unsigned getResultHash(const char * name, unsigned sequence) { return ctx->getResultHash(name, sequence); }
         virtual char *getWuid() { return ctx->getWuid(); }
         virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer); }
-        virtual char *getDaliServers() { return ctx->getDaliServers(); }
         virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract); }
         virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { return ctx->countDiskFile(lfn, recordSize); }
         virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) { return ctx->countIndex(activityId, arg); }
@@ -487,7 +486,6 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
         virtual IUserDescriptor *queryUserDescriptor() { return ctx->queryUserDescriptor(); }
         virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) { return ctx->resolveChildQuery(activityId, colocal); }
         virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash) { return ctx->getDatasetHash(name, hash); }
-        virtual unsigned getRecoveringCount() { return ctx->getRecoveringCount(); }
         virtual unsigned getNodes() { return ctx->getNodes(); }
         virtual unsigned getNodeNum() { return ctx->getNodeNum(); }
         virtual char *getFilePart(const char *logicalPart, bool create) { return ctx->getFilePart(logicalPart, create); }

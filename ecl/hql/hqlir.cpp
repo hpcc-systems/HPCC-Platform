@@ -355,7 +355,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,rshift);
     EXPAND_CASE(no,colon);
     EXPAND_CASE(no,setworkflow_cond);
-    EXPAND_CASE(no,recovering);
+    EXPAND_CASE(no,unused102);
     EXPAND_CASE(no,unused15);
     EXPAND_CASE(no,random);
     EXPAND_CASE(no,select);

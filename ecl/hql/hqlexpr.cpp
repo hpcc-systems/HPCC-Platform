@@ -1331,7 +1331,6 @@ const char *getOpString(node_operator op)
     case no_compound_selectnew: return "no_compound_selectnew";
     case no_compound_inline: return "no_compound_inline";
     case no_setworkflow_cond: return "no_setworkflow_cond";
-    case no_recovering: return "RECOVERY";
     case no_nothor: return "NOTHOR";
     case no_call: return "no_call";
     case no_getgraphresult: return "GetGraphResult";
@@ -1461,6 +1460,7 @@ const char *getOpString(node_operator op)
     case no_unused81:
     case no_unused83:
     case no_unused101:
+    case no_unused102:
         return "unused";
     /* if fail, use "hqltest -internal" to find out why. */
     default: assertex(false); return "???";
@@ -1577,7 +1577,6 @@ bool checkConstant(node_operator op)
     case no_output:
     case no_pat_featuredef:
     case no_assertwild:
-    case no_recovering:
     case no_call:
     case no_cluster:
     case no_forcenolocal:

@@ -545,10 +545,8 @@ public:
 
     virtual char *getWuid() { throwUnexpected(); } // caller frees return string.
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }  // shouldn't really be here, but it broke thor.
-    virtual char *getDaliServers() { throwUnexpected(); } // caller frees return string.
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { throwUnexpected(); }
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)   { throwUnexpected(); return 0; }
-    virtual unsigned getRecoveringCount() { throwUnexpected(); }
 
     virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { throwUnexpected(); }
     virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) { throwUnexpected(); }

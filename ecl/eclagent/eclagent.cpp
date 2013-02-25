@@ -2705,25 +2705,6 @@ const char *EclAgent::queryWuid()
     return wuid.get();
 }
 
-char * EclAgent::getDaliServers()
-{
-    if (!isCovenActive())
-        return strdup("");
-    StringBuffer dali;
-    IGroup &group = queryCoven().queryComm().queryGroup();
-    Owned<INodeIterator> coven = group.getIterator();
-    bool first = true;
-    ForEach(*coven)
-    {
-        if (first)
-            first = false;
-        else
-            dali.append(',');
-        coven->query().endpoint().getUrlStr(dali);
-    }
-    return dali.detach();
-}
-
 char * EclAgent::getJobName()
 {
     SCMStringBuffer out;
