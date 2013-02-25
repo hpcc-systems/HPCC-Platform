@@ -435,7 +435,7 @@ enum _node_operator {
         no_rshift,
         no_colon,
         no_setworkflow_cond,
-        no_recovering,
+        no_unused102,
         no_unused15,
         no_random,
         no_select,

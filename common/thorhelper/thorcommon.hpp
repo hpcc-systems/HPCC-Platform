@@ -283,10 +283,6 @@ public:
     {
         ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer);
     }
-    virtual char *getDaliServers()
-    {
-        return ctx->getDaliServers();
-    }
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract)
     {
         ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract);
@@ -326,10 +322,6 @@ public:
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)
     {
         return ctx->getDatasetHash(name, hash);
-    }
-    virtual unsigned getRecoveringCount()
-    {
-        return ctx->getRecoveringCount();
     }
     virtual unsigned getNodes()
     {

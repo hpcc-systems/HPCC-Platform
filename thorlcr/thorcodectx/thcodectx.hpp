@@ -57,12 +57,9 @@ public:
 // ICodeContext
     virtual const char *loadResource(unsigned id);
     virtual char *getWuid();
-    virtual char *getDaliServers();
 
     virtual char *getExpandLogicalName(const char * logicalName);
     virtual IUserDescriptor *queryUserDescriptor() { return userDesc; }
-
-    virtual unsigned getRecoveringCount() { UNIMPLEMENTED; }        // don't know how to implement here!
 
     virtual unsigned getNodes() { assertex(false); return (unsigned)-1; }
     virtual unsigned getNodeNum() { assertex(!"getNodeNum should not be called on the master"); return (unsigned)-1; }

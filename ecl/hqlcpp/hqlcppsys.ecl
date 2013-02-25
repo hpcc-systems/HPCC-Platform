@@ -661,7 +661,6 @@ const char * cppSystemText[]  = {
     "   varstring getExpandLogicalName(const varstring lfn) : ctxmethod,entrypoint='getExpandLogicalName';",
     "   deleteFile(const varstring lfn) : gctxmethod,entrypoint='deleteFile';",
     "   integer8 countRoxieDiskFile(unsigned4 id, boolean monitors) : ctxmethod,entrypoint='countDiskFile';",       // id is actually 8 bytes, for backward compatibility
-    "   integer4 getRecoveringCount() : ctxmethod,entrypoint='getRecoveringCount';",
 
     "   setResultInt(const varstring stepname, unsigned4 sequence, integer8 value) : ctxmethod,entrypoint='setResultInt';",
     "   setResultUInt(const varstring stepname, unsigned4 sequence, unsigned8 value) : ctxmethod,entrypoint='setResultUInt';",

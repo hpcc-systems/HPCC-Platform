@@ -3058,9 +3058,6 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
     case no_random:
         doBuildExprSysFunc(ctx, expr, tgt, rtlRandomAtom);
         return;
-    case no_recovering:
-        doBuildExprSysFunc(ctx, expr, tgt, getRecoveringCountAtom);
-        return;
     case no_rank:
         doBuildExprRank(ctx, expr, tgt);
         return;

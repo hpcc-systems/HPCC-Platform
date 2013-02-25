@@ -66,24 +66,6 @@ char *CThorCodeContextBase::getGroupName()
     return NULL;
 }
 
-
-char *CThorCodeContextBase::getDaliServers()
-{
-    StringBuffer dali;
-    IGroup &group = queryCoven().queryComm().queryGroup();
-    Owned<INodeIterator> coven = group.getIterator();
-    bool first = true;
-    ForEach(*coven)
-    {
-        if (first)
-            first = false;
-        else
-            dali.append(',');
-        coven->query().endpoint().getUrlStr(dali);
-    }
-    return dali.detach();
-}
-
 const char *CThorCodeContextBase::loadResource(unsigned id)
 {
     return (const char *) querySo.getResource(id);

@@ -486,7 +486,6 @@ public:
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer);
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer);
     virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher);
-    virtual char *getDaliServers();
     virtual char *getJobName();
     virtual char *getJobOwner();
     virtual char *getClusterName();
@@ -522,7 +521,6 @@ public:
 
 
 //New workflow interface
-    virtual unsigned getRecoveringCount() { UNIMPLEMENTED; }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { if(workflow) workflow->returnPersistVersion(logicalName, eclCRC, allCRC, isFile); }
 

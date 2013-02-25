@@ -5395,6 +5395,8 @@ public:
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         IXmlToRowTransformer * xmlTransformer = helper.queryXmlTransformer();
+        if (helper.queryWUID())
+            UNIMPLEMENTED;
         wuReader.setown(ctx->getWorkunitRowReader(helper.queryName(), helper.querySequence(), xmlTransformer, rowAllocator, meta.isGrouped()));
         // MORE _ should that be in onCreate?
     }
