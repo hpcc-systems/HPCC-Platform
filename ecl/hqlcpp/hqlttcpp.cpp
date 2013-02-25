@@ -4835,7 +4835,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
         targetName.setown(createNextStringValue(value));
 
     ITypeInfo * valueType = value->queryType();
-    if (value->isDataset())
+    if (value->isDataset() || value->isDictionary())
     {
         IHqlExpression * groupOrder = (IHqlExpression *)valueType->queryGroupInfo();
         if (few)
@@ -4939,6 +4939,8 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
                 getValue.setown(preserveTableInfo(getValue, value, false, (persistOp == no_persist) ? filename : NULL));
 
             //Note: getValue->queryType() != valueType because the dataset used for field resolution has changed...
+            if (value->isDictionary())
+                getValue.setown(createDictionary(no_createdictionary, getValue.getClear()));
             getOutput->setown(getValue.getClear());
         }
     }
@@ -5034,7 +5036,7 @@ void GlobalAttributeInfo::splitSmallDataset(IHqlExpression * value, SharedHqlExp
             if (recordCountAttr)
                 args.append(*LINK(recordCountAttr));
         }
-        OwnedHqlExpr wuRead = createDataset(no_workunit_dataset, args);
+        OwnedHqlExpr wuRead = value->isDictionary() ? createDictionary(no_workunit_dataset, args) : createDataset(no_workunit_dataset, args);
         //wuRead.setown(cloneInheritedAnnotations(value, wuRead));
         if (persistOp != no_stored)
             getOutput->setown(preserveTableInfo(wuRead, value, true, NULL));
