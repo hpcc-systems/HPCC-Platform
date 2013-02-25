@@ -2493,10 +2493,7 @@ public:
         // JCSMORE - it may not be worth extracting the key,
         // if there's an upstream activity that holds onto rows for periods of time (e.g. sort)
         IOutputMetaData *km = helper->queryKeySize();
-        if (helper->selectInterface(TAIhashdeduparg_2))
-            extractKey = (0 == (HFDwholerecord & helper->getFlags()));
-        else
-            extractKey = km != NULL;
+        extractKey = (0 == (HFDwholerecord & helper->getFlags()));
         if (extractKey)
         {
             // if key and row are fixed length, check that estimated memory sizes make it worth extracting key per row

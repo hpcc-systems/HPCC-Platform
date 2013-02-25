@@ -16752,17 +16752,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     //virtual int numRetries()
     doBuildSignedFunction(instance->classctx, "numRetries", queryPropertyChild(expr, retryAtom, 0));
 
-    //virtual unsigned getTimeout()
-    doBuildUnsignedFunction(instance->classctx, "getTimeout", queryPropertyChild(expr, timeoutAtom, 0));
+    //virtual double getTimeout()
+    doBuildDoubleFunction(instance->classctx, "getTimeout", queryPropertyChild(expr, timeoutAtom, 0));
 
-    //virtual unsigned getTimeLimit()
-    doBuildUnsignedFunction(instance->classctx, "getTimeLimit", queryPropertyChild(expr, timeLimitAtom, 0));
-
-    //virtual double getTimeoutMS()
-    doBuildDoubleFunction(instance->classctx, "getTimeoutMS", queryPropertyChild(expr, timeoutAtom, 0));
-
-    //virtual double getTimeLimitMS()
-    doBuildDoubleFunction(instance->classctx, "getTimeLimitMS", queryPropertyChild(expr, timeLimitAtom, 0));
+    //virtual double getTimeLimit()
+    doBuildDoubleFunction(instance->classctx, "getTimeLimit", queryPropertyChild(expr, timeLimitAtom, 0));
 
     if (namespaceAttr)
     {
@@ -16909,17 +16903,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
     //virtual int numRetries()
     doBuildSignedFunction(instance->classctx, "numRetries", queryPropertyChild(expr, retryAtom, 0));
 
-    //virtual unsigned getTimeout()
-    doBuildUnsignedFunction(instance->classctx, "getTimeout", queryPropertyChild(expr, timeoutAtom, 0));
+    //virtual double getTimeout()
+    doBuildDoubleFunction(instance->classctx, "getTimeout", queryPropertyChild(expr, timeoutAtom, 0));
 
-    //virtual unsigned getTimeLimit()
-    doBuildUnsignedFunction(instance->classctx, "getTimeLimit", queryPropertyChild(expr, timeLimitAtom, 0));
-
-    //virtual double getTimeoutMS()
-    doBuildDoubleFunction(instance->classctx, "getTimeoutMS", queryPropertyChild(expr, timeoutAtom, 0));
-
-    //virtual double getTimeLimitMS()
-    doBuildDoubleFunction(instance->classctx, "getTimeLimitMS", queryPropertyChild(expr, timeLimitAtom, 0));
+    //virtual double getTimeLimit()
+    doBuildDoubleFunction(instance->classctx, "getTimeLimit", queryPropertyChild(expr, timeLimitAtom, 0));
 
     if (namespaceAttr)
     {

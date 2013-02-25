@@ -30,8 +30,8 @@ It should only contain pure interface definitions or inline functions.
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      141
-#define MIN_ACTIVITY_INTERFACE_VERSION  141             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      142
+#define MIN_ACTIVITY_INTERFACE_VERSION  142             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -941,9 +941,6 @@ enum ActivityInterfaceEnum
     TAInwayjoinarg_1,
     TAInwaymergeextra_1,
     TAInwaygraphloopresultreadarg_1,
-    TAIcompoundreadextra_2,
-    TAIcompoundgroupaggregateextra_2,
-    TAIsoapactionarg_2,
     TAInwayselectarg_1,
     TAIalgorithm_1,
     TAInonemptyarg_1,
@@ -960,19 +957,13 @@ enum ActivityInterfaceEnum
     TAIfilterprojectarg_1,
     TAIsteppedsourceextra_1,
     TAIcatcharg_1,
-    TAIsortarg_2,
     TAIsectioninputarg_1,
     TAIwhenactionarg_1,
     TAIcountrowaggregator_1,
-    TAIpipereadarg_2,
     TAIstreamediteratorarg_1,
     TAIexternal_1,
-    TAIpipethrougharg_2,
-    TAIpipewritearg_2,
     TAIinlinetablearg_1,
     TAIshuffleextra_1,
-    TAIhashdeduparg_2,
-    TAIsoapcallextra_2,
     TAIdictionaryworkunitwritearg_1,
     TAIdictionaryresultwritearg_1,
 
@@ -1823,7 +1814,6 @@ struct IHThorHashDedupArg : public IHThorArg
     virtual IOutputMetaData * queryKeySize() = 0;
     virtual size32_t recordToKey(ARowBuilder & rowBuilder, const void * _record) = 0;
     virtual ICompare * queryKeyCompare()=0;
-    //the following are only valid if selectInterface(TAIhashdeduparg_2) returns non-null
     virtual unsigned getFlags() = 0;
     virtual IHash    * queryKeyHash()=0;
     virtual ICompare * queryRowKeyCompare()=0; // lhs is a row, rhs is a key
@@ -2111,14 +2101,14 @@ struct IHThorWebServiceCallActionArg : public IHThorArg
     virtual unsigned numRecordsPerBatch()               { return 0; }
     virtual const char * queryUserName()                { return NULL; }
     virtual const char * queryPassword()                { return NULL; }
-    virtual int numRetries()                            { return -1; }
-    virtual unsigned getTimeout()                       { return (unsigned)-1; }
+    virtual int numRetries()                             { return -1; }
+    virtual double getTimeout()                         { return (double)-1.0; }
+    virtual double getTimeLimit()                       { return (double)0.0; }
     virtual const char * querySoapAction()              { return NULL; }
     virtual const char * queryNamespaceName()           { return NULL; }
     virtual const char * queryNamespaceVar()            { return NULL; }
     virtual const char * queryHttpHeaderName()          { return NULL; }
     virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual unsigned     getTimeLimit()                 { return (unsigned)-1; }
     virtual const char * queryProxyAddress()            { return NULL; }
     virtual const char * queryAcceptType()              { return NULL; }
 };
@@ -2135,14 +2125,7 @@ struct IHThorWebServiceCallExtra : public IInterface
 };
 typedef IHThorWebServiceCallExtra IHThorSoapCallExtra;
 
-struct IHThorWebServiceCallExtra2 : public IInterface
-{
-    virtual double getTimeoutMS()   { return (double)-1.0; }//not specified, use default
-    virtual double getTimeLimitMS() { return (double)-1.0; }//not specified, use default
-};
-typedef IHThorWebServiceCallExtra2 IHThorSoapCallExtra2;
-
-struct IHThorWebServiceCallArg : public IHThorWebServiceCallActionArg, public IHThorWebServiceCallExtra, public IHThorWebServiceCallExtra2
+struct IHThorWebServiceCallArg : public IHThorWebServiceCallActionArg, public IHThorWebServiceCallExtra
 {
     COMMON_NEWTHOR_FUNCTIONS
 };
