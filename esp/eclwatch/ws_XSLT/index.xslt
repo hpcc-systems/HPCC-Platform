@@ -596,16 +596,6 @@
                         </xsl:call-template>
                     </xsl:for-each>
 
-                    <xsl:for-each select="ServerJobQueues/ServerJobQueue[ServerType='ECLagent']">
-                        <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLagent' and QueueName=current()/QueueName]"/>
-                            <xsl:with-param name="cluster" select="ServerName"/>
-                            <xsl:with-param name="clusterType" select="ServerType"/>
-                            <xsl:with-param name="queue" select="QueueName"/>
-                            <xsl:with-param name="status" select="QueueStatus"/>
-                        </xsl:call-template>
-                    </xsl:for-each>
-
                     <xsl:for-each select="ServerJobQueues/ServerJobQueue[ServerType='ECLCCserver']">
                         <xsl:call-template name="show-queue">
                             <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLCCserver' and QueueName=current()/QueueName]"/>
