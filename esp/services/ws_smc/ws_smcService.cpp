@@ -272,36 +272,49 @@ void CWsSMCEx::getQueueState(int runningJobsInQueue, StringBuffer& queueState, B
     return;
 }
 
-void CWsSMCEx::setClusterNameTypeQueueMap(CConstWUClusterInfoArray& clusters, std::map<std::string, std::string>& clusterNameQueueMap, std::map<std::string, std::string>& clusterNameTypeMap)
+void CWsSMCEx::readClusterTypeAndQueueName(CConstWUClusterInfoArray& clusters, const char* clusterName, SCMStringBuffer& clusterType, SCMStringBuffer& clusterQueue)
 {
+    if (!clusterName || !*clusterName)
+        return;
+
     ForEachItemIn(cl, clusters)
     {
-        SCMStringBuffer str, str1;
         IConstWUClusterInfo &cluster = clusters.item(cl);
+        SCMStringBuffer str;
+        cluster.getName(str);
+        if (!streq(str.str(), clusterName))
+            continue;
+
         if (cluster.getPlatform() == HThorCluster)
         {
-            clusterNameQueueMap[cluster.getName(str).str()] = cluster.getAgentQueue(str1).str();
-            clusterNameTypeMap[cluster.getName(str).str()] = "HThor";
+            cluster.getAgentQueue(clusterQueue);
+            clusterType.set("HThor");
         }
         else if (cluster.getPlatform() == RoxieCluster)
         {
-            clusterNameQueueMap[cluster.getName(str).str()] = cluster.getAgentQueue(str1).str();
-            clusterNameTypeMap[cluster.getName(str).str()] = "Roxie";
+            cluster.getAgentQueue(clusterQueue);
+            clusterType.set("Roxie");
         }
         else
         {
-            clusterNameQueueMap[cluster.getName(str).str()] = cluster.getThorQueue(str1).str();
-            clusterNameTypeMap[cluster.getName(str).str()] = "Thor";
+            cluster.getThorQueue(clusterQueue);
+            clusterType.set("Thor");
         }
+        break;
     }
 
     return;
 }
 
-void CWsSMCEx::findQueueNameAndInstance(IPropertyTree& node, StringBuffer& qname, StringBuffer& instance)
+void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWUClusterInfoArray& clusters,
+                   IArrayOf<IEspActiveWorkunit>& aws, BoolHash& uniqueWUIDs,
+                   StringArray& runningQueueNames, int* runningJobsInQueue)
 {
-    const char* name = node.queryProp("@name");
-    if (name && *name)
+    StringBuffer instance;
+	StringBuffer qname;
+	int serverID = -1;
+	const char* name = node.queryProp("@name");
+	if (name && *name)
     {
         node.getProp("@queue", qname);
         if (0 == stricmp("ThorMaster", name))
@@ -318,15 +331,6 @@ void CWsSMCEx::findQueueNameAndInstance(IPropertyTree& node, StringBuffer& qname
             instance.append(" on ").append(node.queryProp("@node"));
         }
     }
-    return;
-}
-
-void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, StringBuffer& qname, StringBuffer& instance,
-                   std::map<std::string, std::string>& clusterNameQueueMap, std::map<std::string, std::string>& clusterNameTypeMap,
-                   IArrayOf<IEspActiveWorkunit>& aws, BoolHash& uniqueWUIDs,
-                   StringArray& runningQueueNames, int* runningJobsInQueue)
-{
-    int serverID = -1;
     if (qname.length() > 0)
     {
         StringArray qlist;
@@ -400,13 +404,10 @@ void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, StringBu
                         const char* clusterName = wu->getClusterName();
                         if (clusterName && *clusterName)
                         {
-                            std::string clusterType = clusterNameTypeMap[clusterName];
-                            std::string clusterQueueName = clusterNameQueueMap[clusterName];
-                            if(clusterQueueName.size()> 0)
-                            {
-                                wu->setClusterType(clusterType.c_str());
-                                wu->setClusterQueueName(clusterQueueName.c_str());
-                            }
+                            SCMStringBuffer clusterType, clusterQueue;
+                            readClusterTypeAndQueueName(clusters, clusterName, clusterType, clusterQueue);
+                            wu->setClusterType(clusterType.str());
+                            wu->setClusterQueueName(clusterQueue.str());
                         }
                     }
                 }
@@ -427,26 +428,6 @@ void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, StringBu
         }
     }
 
-    return;
-}
-
-void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTreeIterator* it,
-                   std::map<std::string, std::string>& clusterNameQueueMap, std::map<std::string, std::string>& clusterNameTypeMap,
-                   IArrayOf<IEspActiveWorkunit>& aws, BoolHash& uniqueWUIDs,
-                   StringArray& runningQueueNames, int* runningJobsInQueue, bool fromECLagent)
-{
-    ForEach(*it)
-    {
-        StringBuffer instance, queueName;
-        IPropertyTree& node = it->query();
-        findQueueNameAndInstance(node, queueName, instance);
-
-        bool isECLAgent = streq(queueName.str(), "ECLagent");
-        if ((fromECLagent && !isECLAgent) || (!fromECLagent && isECLAgent))
-            continue;
-
-        addRunningWUs(context, node, queueName, instance, clusterNameQueueMap, clusterNameTypeMap, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
-    }
     return;
 }
 
@@ -551,10 +532,6 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         CConstWUClusterInfoArray clusters;
         getEnvironmentClusterInfo(envRoot, clusters);
         BoolHash uniqueWUIDs;
-        std::map<std::string, std::string> clusterNameQueueMap;
-        std::map<std::string, std::string> clusterNameTypeMap;
-        if (version > 1.14)
-            setClusterNameTypeQueueMap(clusters, clusterNameQueueMap, clusterNameTypeMap);
 
         Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
 
@@ -566,9 +543,13 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
         IArrayOf<IEspActiveWorkunit> aws;
         if (conn.get()) 
         {
-            Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server"));
-            addRunningWUs(context, it, clusterNameQueueMap, clusterNameTypeMap, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue, false);
-            addRunningWUs(context, it, clusterNameQueueMap, clusterNameTypeMap, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue, true);
+            Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server[@name!=\"ECLagent\"]"));
+            ForEach(*it)
+                addRunningWUs(context, it->query(), clusters, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
+
+            Owned<IPropertyTreeIterator> it1(conn->queryRoot()->getElements("Server[@name=\"ECLagent\"]"));
+            ForEach(*it1)
+                addRunningWUs(context, it1->query(), clusters, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
         }
 
         SecAccessFlags access;
