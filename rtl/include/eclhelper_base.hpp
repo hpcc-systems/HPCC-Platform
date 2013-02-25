@@ -470,7 +470,6 @@ public:
         {
         case TAIarg:
         case TAIpipereadarg_1:
-        case TAIpipereadarg_2:
             return static_cast<IHThorPipeReadArg *>(this);
         }
         return NULL;
@@ -498,7 +497,6 @@ public:
         {
         case TAIarg:
         case TAIpipewritearg_1:
-        case TAIpipewritearg_2:
             return static_cast<IHThorPipeWriteArg *>(this);
         }
         return NULL;
@@ -524,7 +522,6 @@ public:
         {
         case TAIarg:
         case TAIpipethrougharg_1:
-        case TAIpipethrougharg_2:
             return static_cast<IHThorPipeThroughArg *>(this);
         }
         return NULL;
@@ -1529,7 +1526,6 @@ class CThorSortArg : public CThorArg, implements IHThorSortArg, implements IHTho
         {
         case TAIarg:
         case TAIsortarg_1:
-        case TAIsortarg_2:
             return static_cast<IHThorSortArg *>(this);
         case TAIalgorithm_1:
             return static_cast<IHThorAlgorithm *>(this);
@@ -2025,7 +2021,6 @@ class CThorHashDedupArg : public CThorArg, implements IHThorHashDedupArg
         {
         case TAIarg:
         case TAIhashdeduparg_1:
-        case TAIhashdeduparg_2:
             return static_cast<IHThorHashDedupArg *>(this);
         }
         return NULL;
@@ -2416,7 +2411,7 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
 
 //-- SOAP --
 
-class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg, public IHThorWebServiceCallExtra2
+class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -2429,10 +2424,7 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg, publ
         {
         case TAIarg:
         case TAIsoapactionarg_1:
-        case TAIsoapactionarg_2:
             return static_cast<IHThorSoapActionArg *>(this);
-        case TAIsoapcallextra_2:
-            return static_cast<IHThorWebServiceCallExtra2 *>(this);
         }
         return NULL;
     }
@@ -2446,14 +2438,14 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg, publ
     virtual const char * queryUserName()                { return NULL; }
     virtual const char * queryPassword()                { return NULL; }
     virtual int numRetries()                            { return -1; }
-    virtual unsigned getTimeout()                       { return -1; }
+    virtual double getTimeout()                          { return -1.0; }
+    virtual double getTimeLimit()                        { return 0.0; }
     virtual const char * querySoapAction()              { return NULL; }
     virtual const char * queryNamespaceName()           { return NULL; }
     virtual const char * queryNamespaceVar()            { return NULL; }
 
     virtual const char * queryHttpHeaderName()          { return NULL; }
     virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual unsigned     getTimeLimit()                 { return 0; }
     virtual const char * queryProxyAddress()            { return NULL; }
     virtual const char * queryAcceptType()              { return NULL; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
@@ -2471,12 +2463,9 @@ class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
         {
         case TAIarg:
         case TAIsoapactionarg_1:
-        case TAIsoapactionarg_2:
             return static_cast<IHThorSoapActionArg *>(this);
         case TAIsoapcallextra_1:
             return static_cast<IHThorSoapCallExtra *>(this);
-        case TAIsoapcallextra_2:
-            return static_cast<IHThorWebServiceCallExtra2 *>(this);
         }
 
         return NULL;
@@ -2495,14 +2484,14 @@ class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
     virtual const char * queryUserName()                { return NULL; }
     virtual const char * queryPassword()                { return NULL; }
     virtual int numRetries()                            { return -1; }
-    virtual unsigned getTimeout()                       { return -1; }
+    virtual double getTimeout()                          { return -1.0; }
+    virtual double getTimeLimit()                        { return 0.0; }
     virtual const char * querySoapAction()              { return NULL; }
     virtual const char * queryNamespaceName()           { return NULL; }
     virtual const char * queryNamespaceVar()            { return NULL; }
 
     virtual const char * queryHttpHeaderName()          { return NULL; }
     virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual unsigned     getTimeLimit()                 { return 0; }
     virtual const char * queryProxyAddress()            { return NULL; }
     virtual const char * queryAcceptType()              { return NULL; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
@@ -2555,7 +2544,6 @@ protected:
             return static_cast<IHThorIndexReadBaseArg *>(this);
         case TAIcompoundextra_1:
         case TAIcompoundreadextra_1:
-        case TAIcompoundreadextra_2:
             return static_cast<IHThorCompoundReadExtra *>(this);
         case TAIsourcelimittransformextra_1:
             return static_cast<IHThorSourceLimitTransformExtra *>(this);
@@ -2724,7 +2712,6 @@ protected:
             return static_cast<IHThorIndexReadBaseArg *>(this);
         case TAIrowaggregator_1:
         case TAIcompoundgroupaggregateextra_1:
-        case TAIcompoundgroupaggregateextra_2:
             return static_cast<IHThorCompoundGroupAggregateExtra *>(this);
         }
         return NULL;
@@ -2760,7 +2747,6 @@ class CThorDiskReadArg : public CThorArg, implements IHThorDiskReadArg, implemen
             return static_cast<IHThorDiskReadBaseArg *>(this);
         case TAIcompoundextra_1:
         case TAIcompoundreadextra_1:
-        case TAIcompoundreadextra_2:
             return static_cast<IHThorCompoundReadExtra *>(this);
         case TAIsourcelimittransformextra_1:
             return static_cast<IHThorSourceLimitTransformExtra *>(this);
@@ -2898,7 +2884,6 @@ class CThorDiskGroupAggregateArg : public CThorArg, implements IHThorDiskGroupAg
             return static_cast<IHThorDiskReadBaseArg *>(this);
         case TAIrowaggregator_1:
         case TAIcompoundgroupaggregateextra_1:
-        case TAIcompoundgroupaggregateextra_2:
             return static_cast<IHThorCompoundGroupAggregateExtra *>(this);
         }
         return NULL;

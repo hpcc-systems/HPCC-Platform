@@ -730,39 +730,19 @@ public:
         logXML = (flags & SOAPFlog) != 0;
         logUserMsg = (flags & SOAPFlogusermsg) != 0;
 
-        IHThorWebServiceCallExtra2 * helperExtra2 = static_cast<IHThorWebServiceCallExtra2*>(helper->selectInterface(TAIsoapcallextra_2));
-        if (helperExtra2)
-        {
-            double dval = helperExtra2->getTimeoutMS();//double, indicating seconds and nanoseconds.
-            if (dval == -1.0)//not provided
-                timeoutMS = 300*1000; // 300 second default
-            else if (dval == 0)
-                timeoutMS = WAIT_FOREVER;
-            else
-                timeoutMS = dval * 1000;
-
-            dval = helperExtra2->getTimeLimitMS();
-            if (dval <= 0.0)
-                timeLimitMS = WAIT_FOREVER;
-            else
-                timeLimitMS = dval * 1000;
-        }
+        double dval = helper->getTimeout(); // In seconds, but may include fractions of a second...
+        if (dval == -1.0) //not provided
+            timeoutMS = 300*1000; // 300 second default
+        else if (dval == 0)
+            timeoutMS = WAIT_FOREVER;
         else
-        {
-            timeoutMS = helper->getTimeout();//get timeout, in seconds
-            if (timeoutMS == (unsigned)-1)
-                timeoutMS = 300*1000; // 300 second default
-            else if (timeoutMS == 0)
-                timeoutMS = WAIT_FOREVER;
-            else
-                timeoutMS *= 1000;
+            timeoutMS = dval * 1000;
 
-            timeLimitMS = helper->getTimeLimit();
-            if (timeLimitMS == 0  ||  timeLimitMS == (unsigned)-1)
-                timeLimitMS = WAIT_FOREVER;	//default
-            else
-                timeLimitMS *= 1000;
-        }
+        dval = helper->getTimeLimit();
+        if (dval <= 0.0)
+            timeLimitMS = WAIT_FOREVER;
+        else
+            timeLimitMS = dval * 1000;
 
         if (wscType == STsoap)
         {
