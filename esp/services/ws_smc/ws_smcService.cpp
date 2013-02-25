@@ -431,6 +431,24 @@ void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWU
     return;
 }
 
+// This method reads job information from both /Status/Servers and IJobQueue.
+//
+// Each server component (a thor cluster, a dfuserver, or an eclagent) is one 'Server' branch under
+// /Status/Servers. A 'Server' branch has a @queue which indicates the queue name of the server.
+// A 'Server' branch also contains the information about running WUs on that 'Server'. This
+// method reads the information. Those WUs are displays under that server (identified by its queue name)
+// on Activity page.
+//
+// For the WUs list inside /Status/Servers/Server[@name=ECLagent] but not list under other 'Server', the
+// existing code has to find out WUID and @clusterName of the WU. Then, uses @clusterName to find out the
+// queue name in IConstWUClusterInfo. Those WUs list under that server (identified by its queue name) with
+// a note 'on ECLagent'.
+//
+// In order to get information about queued WUs, this method gets queue names from both IConstWUClusterInfo
+// and other environment functions. Each of those queue names is linked to one IJobQueues. From the
+// IJobQueues, this method reads queued jobs for each server component and list them under the server
+// component (identified by its queue name).
+
 bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp)
 {
     context.validateFeatureAccess(FEATURE_URL, SecAccess_Read, true);
