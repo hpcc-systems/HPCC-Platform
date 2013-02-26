@@ -287,6 +287,12 @@ ESPStruct [nil_remove] ThorQueue
     string RunningWU2;
 };
 
+ESPStruct [nil_remove] ResubmittedWU
+{
+    string WUID;
+    string ParentWUID;
+};
+
 ESPrequest [nil_remove] WUCreateRequest
 {
 };
@@ -494,6 +500,7 @@ ESPrequest WUResubmitRequest
 
 ESPresponse [exceptions_inline] WUResubmitResponse
 {
+    [min_ver("1.40")] ESParray<ESPstruct ResubmittedWU, WU> WUs;
 };
 
 ESPrequest WURunRequest
@@ -1328,7 +1335,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.39"), default_client_version("1.39"),
+    version("1.40"), default_client_version("1.40"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

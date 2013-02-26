@@ -1084,6 +1084,8 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
         SCMStringBuffer wuid;
         StringArray wuids;
 
+        double version = context.getClientVersion();
+        IArrayOf<IEspResubmittedWU> resubmittedWUs;
         for(aindex_t i=0; i<req.getWuids().length();i++)
         {
             StringBuffer wuidStr = req.getWuids().item(i);
@@ -1114,6 +1116,15 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
                 submitWsWorkunit(context, cw, NULL, NULL, 0, req.getRecompile(), req.getResetWorkflow(), false);
+
+                if (version < 1.40)
+                    continue;
+
+                Owned<IEspResubmittedWU> resubmittedWU = createResubmittedWU();
+                resubmittedWU->setWUID(wuid.str());
+                if (!streq(wuidStr.str(), wuid.str()))
+                    resubmittedWU->setParentWUID(wuidStr.str());
+                resubmittedWUs.append(*resubmittedWU.getClear());
             }
             catch (IException *E)
             {
@@ -1134,6 +1145,9 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
             for(aindex_t i=0; i<wuids.length(); i++)
                 waitForWorkUnitToComplete(wuids.item(i), timeToWait);
         }
+
+        if (version > 1.39)
+            resp.setWUs(resubmittedWUs);
 
         if(wuids.length()==1)
         {
