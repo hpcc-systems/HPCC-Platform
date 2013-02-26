@@ -11129,6 +11129,14 @@ static void gatherPotentialSelectors(HqlExprArray & args, IHqlExpression * expr)
 }
 
 
+IHqlExpression * HqlTreeNormalizer::transformChildrenNoAnnotations(IHqlExpression * expr)
+{
+    HqlExprArray args;
+    ForEachChild(i, expr)
+        args.append(*transform(expr->queryChild(i)->queryBody()));
+    return completeTransform(expr, args);
+}
+
 //The following symbol removal code works, but I'm not sure I want to do it at the moment because of the changes to the HOLe queries
 //Remove as many named symbols as we can - try and keep for datasets and statements so can go in the tree.
 IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
@@ -11904,6 +11912,14 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 }
             }
 #endif
+
+            //If a named symbol is used as an argument to maxlength you can end up with a situation
+            //where records are identical except for that named symbol.
+            //If f(a + b) is then optimized to b this can lead to incompatible selectors, since
+            //a and b are "compatible", but not identical.
+            //This then causes chaos, so strip them as a precaution... but it is only a partial solution.
+            if (name == maxLengthAtom)
+                return transformChildrenNoAnnotations(expr);
             break;
         }
 
