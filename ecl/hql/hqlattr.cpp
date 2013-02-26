@@ -2972,11 +2972,19 @@ bool hasFewRows(IHqlExpression * expr)
     return (info.magnitude <= RCMfew);
 }
 
-bool spillToWorkunitNotFile(IHqlExpression * expr)
+bool spillToWorkunitNotFile(IHqlExpression * expr, ClusterType platform)
 {
-    //In thor, all rows will get sent to master and written to dali, and then read back on slave 0
-    //not likely to be more efficient unless only a single row.
-    return hasNoMoreRowsThan(expr, 1);
+    if (platform == RoxieCluster)
+        return true;
+
+    if (isThorCluster(platform))
+    {
+        //In thor, all rows will get sent to master and written to dali, and then read back on slave 0
+        //not likely to be more efficient unless only a single row - although the generated code accessing
+        //from a child query is better
+        return hasNoMoreRowsThan(expr, 1);
+    }
+    return hasFewRows(expr);
 }
 
 bool hasSingleRow(IHqlExpression * expr)
