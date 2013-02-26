@@ -37,9 +37,11 @@
 #ifdef _WIN32
 #define SECLIB "seclib.dll"
 #define LDAPSECLIB "LdapSecurity.dll"
+#define HTPASSWDSECLIB "htpasswdSecurity.dll"
 #else
 #define SECLIB "libseclib.so"
 #define LDAPSECLIB "libLdapSecurity.so"
+#define HTPASSWDSECLIB "libhtpasswdSecurity.so"
 #endif
 
 enum NewSecAccessFlags
@@ -325,6 +327,7 @@ const char* const sec_CompanyZip        = "sec_company_zip";
 typedef ISecManager* (*createSecManager_t)(const char *model_name, const char *serviceName, IPropertyTree &config);
 typedef IAuthMap* (*createDefaultAuthMap_t)(IPropertyTree* config);
 typedef ISecManager* (*newLdapSecManager_t)(const char *serviceName, IPropertyTree &config);
+typedef ISecManager* (*newHtpasswdSecManager_t)(const char *serviceName, IPropertyTree &config);
 
 extern "C" SECLIB_API ISecManager *createSecManager(const char *model_name, const char *serviceName, IPropertyTree &config);
 extern "C" SECLIB_API IAuthMap *createDefaultAuthMap(IPropertyTree* config);
@@ -347,6 +350,20 @@ public:
                 return xproc(servicename, *cfg);
             else
                 throw MakeStringException(-1, "procedure newLdapSecManager of %s can't be loaded", LDAPSECLIB);
+        }
+        else if(model_name && stricmp(model_name, "htpasswdSecurity") == 0)
+        {
+            HINSTANCE htpasswdseclib = LoadSharedObject(HTPASSWDSECLIB, true, false);
+            if(htpasswdseclib == NULL)
+                throw MakeStringException(-1, "can't load library %s", HTPASSWDSECLIB);
+
+            newHtpasswdSecManager_t xproc = NULL;
+            xproc = (newHtpasswdSecManager_t)GetSharedProcedure(htpasswdseclib, "newHtpasswdSecManager");
+
+            if (xproc)
+                return xproc(servicename, *cfg);
+            else
+                throw MakeStringException(-1, "procedure newHtpasswdSecManager of %s can't be loaded", HTPASSWDSECLIB);
         }
         else
         {

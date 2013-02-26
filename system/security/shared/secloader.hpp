@@ -33,50 +33,66 @@ class SecLoader
 public:
     static ISecManager* loadSecManager(const char* model_name, const char* servicename, IPropertyTree* cfg)
     {
-        if(model_name && stricmp(model_name, "LdapSecurity") == 0)
+        if (model_name)
         {
-            HINSTANCE ldapseclib = LoadSharedObject(LDAPSECLIB, true, false);
-            if(ldapseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", LDAPSECLIB);
-            
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newLdapSecManager");
+            if(stricmp(model_name, "LdapSecurity") == 0)
+            {
+                HINSTANCE ldapseclib = LoadSharedObject(LDAPSECLIB, true, false);
+                if(ldapseclib == NULL)
+                    throw MakeStringException(-1, "can't load library %s", LDAPSECLIB);
 
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newLdapSecManager of %s can't be loaded", LDAPSECLIB);
-        }
-        else if(model_name && stricmp(model_name, "Local") == 0)
-        {
-            HINSTANCE ldapseclib = LoadSharedObject(LDAPSECLIB, true, false);
-            if(ldapseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", LDAPSECLIB);
-            
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newLocalSecManager");
+                newSecManager_t_ xproc = NULL;
+                xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newLdapSecManager");
 
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newLocalSecManager of %s can't be loaded", LDAPSECLIB);
-        }
-        else if(model_name && stricmp(model_name, "Default") == 0)
-        {
-            HINSTANCE ldapseclib = LoadSharedObject(LDAPSECLIB, true, false);
-            if(ldapseclib == NULL)
-                throw MakeStringException(-1, "can't load library %s", LDAPSECLIB);
-            
-            newSecManager_t_ xproc = NULL;
-            xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newDefaultSecManager");
+                if (xproc)
+                    return xproc(servicename, *cfg);
+                else
+                    throw MakeStringException(-1, "procedure newLdapSecManager of %s can't be loaded", LDAPSECLIB);
+            }
+            else if(stricmp(model_name, "Local") == 0)
+            {
+                HINSTANCE ldapseclib = LoadSharedObject(LDAPSECLIB, true, false);
+                if(ldapseclib == NULL)
+                    throw MakeStringException(-1, "can't load library %s", LDAPSECLIB);
 
-            if (xproc)
-                return xproc(servicename, *cfg);
-            else
-                throw MakeStringException(-1, "procedure newDefaultSecManager of %s can't be loaded", LDAPSECLIB);
+                newSecManager_t_ xproc = NULL;
+                xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newLocalSecManager");
+
+                if (xproc)
+                    return xproc(servicename, *cfg);
+                else
+                    throw MakeStringException(-1, "procedure newLocalSecManager of %s can't be loaded", LDAPSECLIB);
+            }
+            else if(stricmp(model_name, "Default") == 0)
+            {
+                HINSTANCE ldapseclib = LoadSharedObject(LDAPSECLIB, true, false);
+                if(ldapseclib == NULL)
+                    throw MakeStringException(-1, "can't load library %s", LDAPSECLIB);
+
+                newSecManager_t_ xproc = NULL;
+                xproc = (newSecManager_t_)GetSharedProcedure(ldapseclib, "newDefaultSecManager");
+
+                if (xproc)
+                    return xproc(servicename, *cfg);
+                else
+                    throw MakeStringException(-1, "procedure newDefaultSecManager of %s can't be loaded", LDAPSECLIB);
+            }
+            else if(stricmp(model_name, "htpasswd") == 0)
+            {
+                HINSTANCE htpasswdseclib = LoadSharedObject(HTPASSWDSECLIB, true, false);
+                if(htpasswdseclib == NULL)
+                    throw MakeStringException(-1, "can't load library %s", HTPASSWDSECLIB);
+
+                newSecManager_t_ xproc = NULL;
+                xproc = (newSecManager_t_)GetSharedProcedure(htpasswdseclib, "newHtpasswdSecManager");
+
+                if (xproc)
+                    return xproc(servicename, *cfg);
+                else
+                    throw MakeStringException(-1, "procedure newHtpasswdSecManager of %s can't be loaded", HTPASSWDSECLIB);
+           }
         }
-        else
-            throw MakeStringException(-1, "Security model %s not supported", model_name?model_name:"UNKNOWN");
+        throw MakeStringException(-1, "Security model %s not supported", model_name?model_name:"UNKNOWN");
     }   
 
     static IAuthMap* loadTheDefaultAuthMap(IPropertyTree* cfg)

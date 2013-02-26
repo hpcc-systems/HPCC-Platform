@@ -326,7 +326,21 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 m_secmgr.setown(SecLoader::loadSecManager("Local", "EspHttpBinding", NULL));
                 m_authmap.setown(m_secmgr->createAuthMap(authcfg));
             }
+            else if(stricmp(m_authmethod.str(), "htpasswd") == 0)
+            {
+                Owned<IPropertyTree> cfg;
+                Owned<IPropertyTree> process_config = getProcessConfig(tree, procname);
+                if(process_config.get() != NULL)
+                    cfg.setown(process_config->getPropTree("htpasswdSecurity"));
+                if(cfg == NULL)
+                {
+                    ERRLOG("can't find htpasswdSecurity in configuration");
+                    throw MakeStringException(-1, "can't find htpasswdSecurity in configuration");
+                }
 
+                m_secmgr.setown(SecLoader::loadSecManager("htpasswd", "EspHttpBinding", LINK(cfg)));
+                m_authmap.setown(m_secmgr->createAuthMap(authcfg));
+            }
             IRestartManager* restartManager = dynamic_cast<IRestartManager*>(m_secmgr.get());
             if(restartManager!=NULL)
             {
