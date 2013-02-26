@@ -30,8 +30,8 @@ It should only contain pure interface definitions or inline functions.
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      142
-#define MIN_ACTIVITY_INTERFACE_VERSION  142             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      143
+#define MIN_ACTIVITY_INTERFACE_VERSION  143             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -499,6 +499,25 @@ interface IHThorHashLookupInfo;
 
 interface ICodeContext : public IResourceContext
 {
+    // Fetching interim results from workunit/query context
+
+    virtual bool getResultBool(const char * name, unsigned sequence) = 0;
+    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) = 0;
+    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) = 0;
+    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) = 0;
+    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
+    virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
+    virtual __int64 getResultInt(const char * name, unsigned sequence) = 0;
+    virtual double getResultReal(const char * name, unsigned sequence) = 0;
+    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
+    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) = 0;
+    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) = 0;
+    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) = 0;
+    virtual char *getResultVarString(const char * name, unsigned sequence) = 0;
+    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) = 0;
+
+    // Writing results to workunit/query context/output
+
     virtual void setResultBool(const char *name, unsigned sequence, bool value) = 0;
     virtual void setResultData(const char *name, unsigned sequence, int len, const void * data) = 0;
     virtual void setResultDecimal(const char * stepname, unsigned sequence, int len, int precision, bool isSigned, const void *val) = 0; 
@@ -512,69 +531,72 @@ interface ICodeContext : public IResourceContext
     virtual void setResultVarString(const char * name, unsigned sequence, const char * value) = 0;
     virtual void setResultVarUnicode(const char * name, unsigned sequence, UChar const * value) = 0;
 
-    virtual bool getResultBool(const char * name, unsigned sequence) = 0;
-    virtual void getResultData(unsigned & tlen, void * & tgt, const char * name, unsigned sequence) = 0;
-    virtual void getResultDecimal(unsigned tlen, int precision, bool isSigned, void * tgt, const char * stepname, unsigned sequence) = 0;
-    virtual void getResultRaw(unsigned & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
-    virtual void getResultSet(bool & isAll, size32_t & tlen, void * & tgt, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
-    virtual __int64 getResultInt(const char * name, unsigned sequence) = 0;
-    virtual double getResultReal(const char * name, unsigned sequence) = 0;
-    virtual void getResultString(unsigned & tlen, char * & tgt, const char * name, unsigned sequence) = 0;
-    virtual void getResultUnicode(unsigned & tlen, UChar * & tgt, const char * name, unsigned sequence) = 0;
-    virtual char *getResultVarString(const char * name, unsigned sequence) = 0;
-    virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) = 0;
-    virtual unsigned getResultHash(const char * name, unsigned sequence) = 0;
+    // Checking persists etc are up to date
 
+    virtual unsigned getResultHash(const char * name, unsigned sequence) = 0;
+    virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 crc) = 0;
+
+    // Fetching various environment information, typically accessed via std.system
+
+    virtual char *getClusterName() = 0; // caller frees return string.
+    virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
+    virtual char *getGroupName() = 0; // caller frees return string.
+    virtual char *getJobName() = 0; // caller frees return string.
+    virtual char *getJobOwner() = 0; // caller frees return string.
+    virtual unsigned getNodeNum() = 0;
+    virtual unsigned getNodes() = 0;
+    virtual char *getOS() = 0; // caller frees return string
+    virtual char *getPlatform() = 0; // caller frees return string.
+    virtual unsigned getPriority() const = 0;
     virtual char *getWuid() = 0; // caller frees return string.
-    virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;    // shouldn't really be here, but it broke thor.
-    virtual char *getDaliServers() = 0; // caller frees return string.
-    virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) = 0;
+
+    // Exception handling
+
+    virtual void addWuException(const char * text, unsigned code, unsigned severity) = 0; //n.b. this might be better named: it should only be used for adding user-generated exceptions (via the logging plug-in) --- there's a call in IAgentContext which takes a source argument too
+    virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) = 0;
+
+    // File resolution etc
 
     virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) = 0;
     virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) = 0;
     virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg) = 0;        // only used for roxie...
+
     virtual char * getExpandLogicalName(const char * logicalName) = 0;
-    virtual void addWuException(const char * text, unsigned code, unsigned severity) = 0; //n.b. this might be better named: it should only be used for adding user-generated exceptions (via the logging plug-in) --- there's a call in IAgentContext which takes a source argument too
-    virtual IUserDescriptor *queryUserDescriptor() = 0;
-    virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) = 0;
-
-    virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 crc) = 0;   // Moved for build(,update) processing
-    virtual unsigned getRecoveringCount() = 0;                                              // No simple idea how to implement this in thor!
-
-    //these are only really relevant in thor
-    virtual unsigned getNodes() = 0;
-    virtual unsigned getNodeNum() = 0;
-    virtual char *getFilePart(const char *logicalPart, bool create=false) = 0; // caller frees return string.
     virtual unsigned __int64 getFileOffset(const char *logicalPart) = 0;
-
+    virtual char *getFilePart(const char *logicalPart, bool create=false) = 0; // caller frees return string.
     virtual IDistributedFileTransaction *querySuperFileTransaction() = 0;
-    virtual char *getJobName() = 0; // caller frees return string.
-    virtual char *getJobOwner() = 0; // caller frees return string.
-    virtual char *getClusterName() = 0; // caller frees return string.
-    virtual unsigned getPriority() const = 0;
-    virtual char *getPlatform() = 0; // caller frees return string.
-    virtual char *getOS() = 0; // caller frees return string
+    virtual IUserDescriptor *queryUserDescriptor() = 0;
 
+    // Graphs, child queries etc
+
+    virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) = 0;
+    virtual unsigned getGraphLoopCounter() const { return 0; }
+    virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) = 0;
     virtual ILocalGraph * resolveLocalQuery(__int64 activityId) { return NULL; }
 
-    virtual char *getEnv(const char *name, const char *defaultValue) const = 0;
-    virtual unsigned getGraphLoopCounter() const { return 0; }
+    // Logging etc
+
     virtual unsigned logString(const char *text) const = 0;
     virtual const IContextLogger &queryContextLogger() const = 0;
-    virtual void getResultStringF(unsigned tlen, char * tgt, const char * name, unsigned sequence) = 0;
-    virtual char *getGroupName() = 0; // caller frees return string.
-    virtual char * queryIndexMetaData(char const * lfn, char const * xpath) = 0;
-    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const = 0;
-    virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;
     virtual IDebuggableContext *queryDebugContext() const { return NULL; }
-    virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
-    virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) = 0;
+
+    // Memory management
+
+    virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const = 0;
+
+    // Called from generated code for FROMXML/TOXML
+
     virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace) = 0;
-    virtual void getResultDictionary(size32_t & tcount, byte * * & tgt, IEngineRowAllocator * _rowAllocator, const char * name, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer, IHThorHashLookupInfo * hasher) = 0;
+    virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags) = 0;
+
+    // Miscellaneous
+
+    virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;    // shouldn't really be here, but it broke thor.
+    virtual char * queryIndexMetaData(char const * lfn, char const * xpath) = 0;
 };
 
 
-//Provided by engine=>can extent
+//Provided by engine=>can extend
 interface IFilePositionProvider : extends IInterface
 {
     virtual unsigned __int64 getFilePosition(const void * row) = 0;
@@ -584,14 +606,14 @@ interface IFilePositionProvider : extends IInterface
 typedef size32_t (*rowTransformFunction)(ARowBuilder & rowBuilder, const byte * src);
 
 interface IColumnProvider;
-//Provided by engine=>can extent
+//Provided by engine=>can extend
 interface IColumnProviderIterator : extends IInterface
 {
     virtual IColumnProvider * first() = 0;
     virtual IColumnProvider * next() = 0;
 };
 
-//Provided by engine=>can extent
+//Provided by engine=>can extend
 interface IColumnProvider : extends IInterface
 {
     virtual bool        getBool(const char * path) = 0;

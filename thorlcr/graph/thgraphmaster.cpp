@@ -1130,7 +1130,6 @@ public:
             rtlFailOnAssert();      // minimal implementation
     }
     virtual unsigned __int64 getFileOffset(const char *logicalName) { assertex(false); return 0; }
-    virtual unsigned getRecoveringCount() { UNIMPLEMENTED; }        // don't know how to implement here!
     virtual unsigned getNodes() { return job.queryJobGroup().ordinality()-1; }
     virtual unsigned getNodeNum() { throw MakeThorException(0, "Unsupported. getNodeNum() called in master"); return (unsigned)-1; }
     virtual char *getFilePart(const char *logicalName, bool create=false) { assertex(false); return NULL; }

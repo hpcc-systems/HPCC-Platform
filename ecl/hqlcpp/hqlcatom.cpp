@@ -313,7 +313,6 @@ _ATOM getProductionResultAtom;
 _ATOM getProductionTextAtom;
 _ATOM getProductionUnicodeAtom;
 _ATOM getProductionUtf8Atom;
-_ATOM getRecoveringCountAtom;
 _ATOM getResultBoolAtom;
 _ATOM getResultDataAtom;
 _ATOM getResultDatasetAtom;
@@ -1035,7 +1034,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(getProductionText);
     MAKEATOM(getProductionUnicode);
     MAKEATOM(getProductionUtf8);
-    MAKEATOM(getRecoveringCount);
     MAKEATOM(getResultBool);
     MAKEATOM(getResultData);
     MAKEATOM(getResultDataset);

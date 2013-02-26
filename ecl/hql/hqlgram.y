@@ -5674,10 +5674,6 @@ primexpr1
                         {
                             $$.setExpr(createValue(no_random, LINK(parser->uint4Type), parser->createUniqueId()));
                         }
-    | RECOVERY
-                        {
-                            $$.setExpr(createValue(no_recovering, LINK(parser->uint4Type)));
-                        }
     | ROUND '(' expression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
