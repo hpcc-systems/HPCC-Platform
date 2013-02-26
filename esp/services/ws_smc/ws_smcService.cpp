@@ -602,6 +602,22 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 int serverID = runningQueueNames.find(queueName);
                 int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
                 getQueueState(numRunningJobsInQueue, queueState, bulletType);
+
+                StringBuffer agentQueueState;
+                CJobQueueContents agentContents;
+                SCMStringBuffer str1;
+                const char *agentQueueName = cluster.getAgentQueue(str1).str();
+                Owned<IJobQueue> agentQueue = createJobQueue(agentQueueName);
+                agentQueue->copyItemsAndState(agentContents, agentQueueState);
+                //Use the same 'queueName' because the job belongs to the same cluster
+                addQueuedWorkUnits(queueName, agentContents, aws, context, "ThorMaster", NULL);
+                if (bulletType == bulletGreen)
+                {//If ThorQueue is normal, check the AgentQueue
+                    serverID = runningQueueNames.find(agentQueueName);
+                    numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
+                    getQueueState(numRunningJobsInQueue, queueState, bulletType);
+                }
+
                 returnCluster->setQueueStatus(queueState.str());
                 if (version > 1.06)
                     returnCluster->setQueueStatus2(bulletType);
