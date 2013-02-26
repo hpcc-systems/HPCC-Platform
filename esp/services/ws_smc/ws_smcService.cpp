@@ -442,7 +442,8 @@ void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWU
 // For the WUs list inside /Status/Servers/Server[@name=ECLagent] but not list under other 'Server', the
 // existing code has to find out WUID and @clusterName of the WU. Then, uses @clusterName to find out the
 // queue name in IConstWUClusterInfo. Those WUs list under that server (identified by its queue name) with
-// a note 'on ECLagent'.
+// a note 'on ECLagent'. TBD: the logic here will be simpler if the /Status/Servers/Server is named the
+// instance and/or cluster.
 //
 // In order to get information about queued WUs, this method gets queue names from both IConstWUClusterInfo
 // and other environment functions. Each of those queue names is linked to one IJobQueues. From the
