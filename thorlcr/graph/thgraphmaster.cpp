@@ -47,6 +47,8 @@
 #include "thmem.hpp"
 #include "thcompressutil.hpp"
 
+using roxiemem::OwnedRoxieString;
+
 static CriticalSection *jobManagerCrit;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -480,7 +482,7 @@ bool CMasterGraphElement::checkUpdate()
         return false;
 
     bool doCheckUpdate = false;
-    StringAttr filename;
+    OwnedRoxieString filename;
     unsigned eclCRC;
     unsigned __int64 totalCRC;
     bool temporary = false;
@@ -1051,7 +1053,6 @@ public:
         DBGLOG("Error could not resolve file %s", name);
         throw MakeStringException(9003, "Error could not resolve %s", name);
     }
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) { UNIMPLEMENTED; }
     virtual __int64 countDiskFile(__int64 id, IHThorCountFileArg & arg)
     {
         // would have called the above function in a try block but corrupted registers whenever I tried.
@@ -1060,7 +1061,7 @@ public:
         arg.onCreate(this, NULL, NULL);
         arg.onStart(NULL, NULL);
 
-        const char *name = arg.getFileName();
+        OwnedRoxieString name(arg.getFileName());
         Owned<IDistributedFile> f = queryThorFileManager().lookup(job, name, 0 != ((TDXtemporary|TDXjobtemp) & arg.getFlags()));
         if (f) 
         {
@@ -1070,7 +1071,7 @@ public:
             unsigned __int64 size = f->getFileSize(true,false);
             if (size % recordSize)
             {
-                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", name, size, recordSize);
+                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", name.get(), size, recordSize);
             }
             return size / recordSize;
         }
@@ -1078,8 +1079,8 @@ public:
             return 0;
         else
         {
-            PrintLog("Error could not resolve file %s", name);
-            throw MakeStringException(0, "Error could not resolve %s", name);
+            PrintLog("Error could not resolve file %s", name.get());
+            throw MakeStringException(0, "Error could not resolve %s", name.get());
         }
     }
     virtual void addWuException(const char * text, unsigned code, unsigned severity)

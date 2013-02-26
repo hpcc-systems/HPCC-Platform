@@ -136,7 +136,7 @@ protected:
                 skewThreshold = container.queryJob().getWorkUnitValueInt("defaultSkewThreshold", 0);
         }
         StringBuffer cosortfilenames;
-        const char *cosortlogname = helper->getSortedFilename();
+        OwnedRoxieString cosortlogname(helper->getSortedFilename());
         if (cosortlogname&&*cosortlogname) {
 
             Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), cosortlogname);

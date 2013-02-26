@@ -58,7 +58,8 @@ public:
     }
     virtual void init()
     {
-        dlfn.set(helper->getFileName());
+        OwnedRoxieString fname(helper->getFileName());
+        dlfn.set(fname);
         isLocal = 0 != (TIWlocal & helper->getFlags());
         unsigned maxSize = helper->queryDiskRecordSize()->getMinRecordSize();
         if (maxSize > KEYBUILD_MAXLENGTH)
@@ -78,7 +79,7 @@ public:
         else if (!isLocal || globals->getPropBool("@buildLocalTlks", true))
             buildTlk = true;
 
-        fillClusterArray(container.queryJob(), helper->getFileName(), clusters, groups);
+        fillClusterArray(container.queryJob(), fname, clusters, groups);
         unsigned restrictedWidth = 0;
         if (TIWhaswidth & helper->getFlags())
         {
@@ -108,21 +109,22 @@ public:
         }
         else
             restrictedWidth = singlePartKey?1:container.queryJob().querySlaves();
-        fileDesc.setown(queryThorFileManager().create(container.queryJob(), helper->getFileName(), clusters, groups, 0 != (TIWoverwrite & helper->getFlags()), 0, buildTlk, restrictedWidth));
+        fileDesc.setown(queryThorFileManager().create(container.queryJob(), fname, clusters, groups, 0 != (TIWoverwrite & helper->getFlags()), 0, buildTlk, restrictedWidth));
         if (buildTlk)
             fileDesc->queryPart(fileDesc->numParts()-1)->queryProperties().setProp("@kind", "topLevelKey");
 
-        if (helper->getDistributeIndexName())
+        OwnedRoxieString diName(helper->getDistributeIndexName());
+        if (diName.get())
         {
             assertex(!isLocal);
             buildTlk = false;
-            Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), helper->getDistributeIndexName());
+            Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), diName);
             checkFormatCrc(this, _f, helper->getFormatCrc(), true);
             IDistributedFile *f = _f->querySuperFile();
             if (!f) f = _f;
             Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);
             if (!existingTlk->queryAttributes().hasProp("@kind") || 0 != stricmp("topLevelKey", existingTlk->queryAttributes().queryProp("@kind")))
-                throw MakeActivityException(this, 0, "Cannot build new key '%s' based on non-distributed key '%s'", helper->getFileName(), helper->getDistributeIndexName());
+                throw MakeActivityException(this, 0, "Cannot build new key '%s' based on non-distributed key '%s'", fname.get(), diName.get());
             IPartDescriptor *tlkDesc = fileDesc->queryPart(fileDesc->numParts()-1);
             IPropertyTree &props = tlkDesc->queryProperties();
             if (existingTlk->queryAttributes().hasProp("@size"))
@@ -135,7 +137,7 @@ public:
         
         StringBuffer datasetName;
         fileSize = 0;
-        const char *dname = helper->getDatasetName();
+        OwnedRoxieString dname(helper->getDatasetName());
         if (dname)
         {
             if (dname[0] == '~')
@@ -182,7 +184,8 @@ public:
         {
             dst.append(true);
             IPartDescriptor *partDesc = fileDesc->queryPart(slave);
-            dst.append(helper->getFileName());
+            OwnedRoxieString fname(helper->getFileName());
+            dst.append(fname.get());
             partDesc->serialize(dst);
         }
         else
@@ -203,10 +206,11 @@ public:
                 }
                 else if (!isLocal)
                 {
-                    assertex(helper->getDistributeIndexName());
+                    OwnedRoxieString diName(helper->getDistributeIndexName());
+                    assertex(diName.get());
                     IPartDescriptor *tlkDesc = fileDesc->queryPart(fileDesc->numParts()-1);
                     tlkDesc->serialize(dst);
-                    Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), helper->getDistributeIndexName());
+                    Owned<IDistributedFile> _f = queryThorFileManager().lookup(container.queryJob(), diName);
                     IDistributedFile *f = _f->querySuperFile();
                     if (!f) f = _f;
                     Owned<IDistributedFilePart> existingTlk = f->getPart(f->numParts()-1);
@@ -227,11 +231,12 @@ public:
     {
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *)queryHelper();
         StringBuffer scopedName;
-        queryThorFileManager().addScope(container.queryJob(), helper->getFileName(), scopedName);
+        OwnedRoxieString fname(helper->getFileName());
+        queryThorFileManager().addScope(container.queryJob(), fname, scopedName);
         updateActivityResult(container.queryJob().queryWorkUnit(), helper->getFlags(), helper->getSequence(), scopedName.str(), recordsProcessed);
 
         // MORE - add in the extra entry somehow
-        if (helper->getFileName())
+        if (fname.get())
         {
             IPropertyTree &props = fileDesc->queryProperties();
             props.setPropInt64("@recordCount", recordsProcessed);
@@ -248,9 +253,9 @@ public:
             props.setPropInt("@formatCrc", helper->getFormatCrc());
             if (isLocal)
                 props.setPropBool("@local", true);
-            container.queryTempHandler()->registerFile(helper->getFileName(), container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
+            container.queryTempHandler()->registerFile(fname, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
             if (!dlfn.isExternal())
-                queryThorFileManager().publish(container.queryJob(), helper->getFileName(), false, *fileDesc);
+                queryThorFileManager().publish(container.queryJob(), fname, false, *fileDesc);
         }
     }
     virtual void slaveDone(size32_t slaveIdx, MemoryBuffer &mb)
@@ -301,7 +306,8 @@ public:
         IHThorIndexWriteArg *helper = (IHThorIndexWriteArg *) queryHelper();
         if (0 == (TIWvarfilename & helper->getFlags()))
         {
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helper->getFileName(), false, true);
+            OwnedRoxieString fname(helper->getFileName());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, false, true);
             if (file)
             {
                 if (0 == (TIWoverwrite & helper->getFlags()))

@@ -138,8 +138,9 @@ public:
         IHThorKeyedDistributeArg *helper = (IHThorKeyedDistributeArg *)queryHelper();
 
         StringBuffer scoped;
-        queryThorFileManager().addScope(container.queryJob(), helper->getIndexFileName(), scoped);
-        Owned<IDistributedFile> f = queryThorFileManager().lookup(container.queryJob(), helper->getIndexFileName());
+        OwnedRoxieString indexFileName(helper->getIndexFileName());
+        queryThorFileManager().addScope(container.queryJob(), indexFileName, scoped);
+        Owned<IDistributedFile> f = queryThorFileManager().lookup(container.queryJob(), indexFileName);
         if (!f)
             throw MakeActivityException(this, 0, "KeyedDistribute: Failed to find key: %s", scoped.str());
         if (0 == f->numParts())

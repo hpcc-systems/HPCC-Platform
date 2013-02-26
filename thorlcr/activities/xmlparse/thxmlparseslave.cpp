@@ -134,7 +134,7 @@ public:
                     break;
                 unsigned len;
                 helper->getSearchText(len, searchStr, nxt);
-                xmlParser.setown(createXMLParse(searchStr, len, helper->queryIteratorPath(), *this, xr_noRoot, helper->requiresContents()));
+                xmlParser.setown(createXMLParse(searchStr, len, helper->queryXmlIteratorPath(), *this, xr_noRoot, helper->requiresContents()));
             }
         }
         catch (IOutOfMemException *e)

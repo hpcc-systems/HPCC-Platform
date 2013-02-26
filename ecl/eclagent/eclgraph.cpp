@@ -38,6 +38,8 @@
 #include "commonext.hpp"
 #include "thorcommon.hpp"
 
+using roxiemem::OwnedRoxieString;
+
 //---------------------------------------------------------------------------
 
 static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityId, unsigned subgraphId, unsigned graphId, ThorActivityKind kind, bool isLocal, bool isGrouped, IHThorArg & arg, IPropertyTree * node, EclGraphElement * graphElement)
@@ -358,7 +360,7 @@ bool EclGraphElement::alreadyUpToDate(IAgentContext & agent)
         throw makeWrappedException(e);
     }
 
-    StringAttr filename;
+    OwnedRoxieString filename;
     unsigned eclCRC;
     unsigned __int64 totalCRC;
     switch (kind)

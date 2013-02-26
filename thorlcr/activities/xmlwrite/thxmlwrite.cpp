@@ -40,7 +40,7 @@ public:
 
         IPropertyTree &props = fileDesc->queryProperties();
         StringBuffer rowTag;
-        const char * path = helper->queryIteratorPath();
+        const char * path = helper->queryXmlIteratorPath();
         if (!path)
             rowTag.append("Row");
         else

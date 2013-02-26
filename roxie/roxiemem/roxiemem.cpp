@@ -2370,6 +2370,19 @@ public:
         return normalHeap.doAllocate(activityId);
     }
 
+    virtual const char *strdup(const char *str)
+    {
+        if (str)
+        {
+            memsize_t len = strlen(str)+1;
+            void *ret = allocate(len, 0);
+            memcpy(ret, str, len);
+            return (const char *) ret;
+        }
+        else
+            return NULL;
+    }
+
     virtual void setMemoryLimit(memsize_t bytes, memsize_t spillSize)
     {
         memsize_t systemMemoryLimit = getTotalMemoryLimit();

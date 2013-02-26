@@ -623,7 +623,7 @@ public:
         {
             streams[f].setown(createBufferedIOStream(fetchStream->queryPartIO(f)));
             // NB: the index is based on path iteration matches, so on lookup the elements start at positioned stream
-            // i.e. queryIteratorPath not used here.
+            // i.e. queryXmlIteratorPath not used here.
             parsers[f].setown(createXMLParse(*streams[f], "/", *xmlSelect, xr_none, ((IHThorXmlFetchArg *)fetchBaseHelper)->requiresContents()));
         }
     }

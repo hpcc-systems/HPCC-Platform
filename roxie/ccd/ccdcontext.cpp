@@ -1093,11 +1093,6 @@ public:
         totSlavesReplyLen += len;
     }
 
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg)
-    {
-        throwUnexpected();
-    }
-
     virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg)
     {
         Owned<IHThorCountFileArg> a = &arg;  // to make sure it gets released when I am done....
@@ -1232,6 +1227,11 @@ public:
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
         return allocatorMetaCache->ensure(meta, activityId);
+    }
+
+    virtual const char *getString(const char *str) const
+    {
+        return rowManager->strdup(str);
     }
 
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
@@ -1670,8 +1670,6 @@ protected:
         }
         throw MakeStringException(ROXIE_DATA_ERROR, "Failed to retrieve data value %s", stepname);
     }
-
-
 };
 
 IRoxieSlaveContext *createSlaveContext(const IQueryFactory *_factory, const SlaveContextLogger &_logctx, unsigned _timeLimit, memsize_t _memoryLimit, IRoxieQueryPacket *packet)

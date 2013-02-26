@@ -330,6 +330,7 @@ extern _ATOM getResultUnicodeAtom;
 extern _ATOM getResultVarStringAtom;
 extern _ATOM getResultVarUnicodeAtom;
 extern _ATOM getRootResultAtom;
+extern _ATOM getStringAtom;
 extern _ATOM getWorkflowIdAtom;
 extern _ATOM getWuidAtom;
 extern _ATOM groupedDataset2RowsetXAtom;

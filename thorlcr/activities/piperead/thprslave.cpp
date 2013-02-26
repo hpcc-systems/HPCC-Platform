@@ -249,7 +249,8 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         eof = false;
-        openPipe(helper->getPipeProgram(), "PIPEREAD");
+        OwnedRoxieString pipeProgram(helper->getPipeProgram());
+        openPipe(pipeProgram, "PIPEREAD");
         dataLinkStart("PIPEREAD", container.queryId());
     }
     virtual void stop()
@@ -372,8 +373,10 @@ public:
             writeTransformer->ready();
         }
         if (!recreate)
-            openPipe(helper->getPipeProgram(), "PIPETHROUGH");
-
+        {
+            OwnedRoxieString pipeProgram(helper->getPipeProgram());
+            openPipe(pipeProgram, "PIPETHROUGH");
+        }
         startInput(inputs.item(0));
         dataLinkStart("PIPETHROUGH", container.queryId());
         pipeWriter = new PipeWriterThread(*this);

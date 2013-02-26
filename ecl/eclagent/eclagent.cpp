@@ -50,6 +50,8 @@
 #include "roxiehelper.hpp"
 #include "jlzw.hpp"
 
+using roxiemem::OwnedRoxieString;
+
 #include <new>
 
 #ifdef _USE_CPPUNIT
@@ -1492,11 +1494,6 @@ void EclAgent::deleteFile(const char * logicalName)
     queryDistributedFileDirectory().removeEntry(logicalName, queryUserDescriptor());
 }
 
-__int64 EclAgent::countIndex(__int64 id, IHThorCountIndexArg & arg)
-{
-    throwUnexpected();
-}
-
 __int64 EclAgent::countDiskFile(__int64 id, IHThorCountFileArg & arg)
 {
     Owned<IHThorCountFileArg> a = &arg;  // make sure it gets destroyed....
@@ -1514,7 +1511,8 @@ __int64 EclAgent::countDiskFile(__int64 id, IHThorCountFileArg & arg)
     }
 
     StringBuffer mangled;
-    mangleHelperFileName(mangled, arg.getFileName(), queryWuid(), arg.getFlags());
+    OwnedRoxieString fname(arg.getFileName());
+    mangleHelperFileName(mangled, fname, queryWuid(), arg.getFlags());
     Owned<ILocalOrDistributedFile> ldFile = resolveLFN(mangled, "CountDisk", 0 != (arg.getFlags() & TDRoptional));
     if (ldFile) 
     {

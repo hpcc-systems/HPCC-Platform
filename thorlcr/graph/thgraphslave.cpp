@@ -935,7 +935,6 @@ public:
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
 
     virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { throwUnexpected(); } 
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) { throwUnexpected(); }
     virtual __int64 countDiskFile(__int64 id, IHThorCountFileArg & arg) { throwUnexpected(); }
     virtual void addWuException(const char * text, unsigned code, unsigned severity)
     {

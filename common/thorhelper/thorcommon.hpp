@@ -291,10 +291,6 @@ public:
     {
         return ctx->countDiskFile(lfn, recordSize);
     }
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg)
-    {
-        return ctx->countIndex(activityId, arg);
-    }
     virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg)
     {
         return ctx->countDiskFile(activityId, arg);
@@ -402,6 +398,10 @@ public:
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
         return ctx->getRowAllocator(meta, activityId);
+    }
+    virtual const char *getString(const char *str) const
+    {
+        return ctx->getString(str);
     }
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {

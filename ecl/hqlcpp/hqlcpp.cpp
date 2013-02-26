@@ -3384,19 +3384,14 @@ void HqlCppTranslator::buildReturn(BuildCtx & ctx, IHqlExpression * expr, ITypeI
         {
             if (hasConstModifier(retType))
             {
-                BuildCtx * declareCtx = NULL;
-                if (getInvariantMemberContext(ctx, &declareCtx, NULL, false, false))
-                {
-                    CHqlBoundTarget tempTarget;
-                    createTempFor(*declareCtx, retType, tempTarget, typemod_member, FormatNatural);
-                    buildExprAssign(ctx, tempTarget, expr);
-                    OwnedHqlExpr result = getElementPointer(tempTarget.expr);
-                    ctx.addReturn(result);
-                    return;
-                }
-
-                //we are going to have a memory leak......
-                PrintLog("Runtime memory leak returning allocated string from constant function");
+                OwnedHqlExpr cast = ensureExprType(expr, retType);
+                CHqlBoundExpr ret;
+                buildCachedExpr(ctx, cast, ret);
+                HqlExprArray args;
+                args.append(*LINK(ret.expr));
+                OwnedHqlExpr call = bindFunctionCall(getStringAtom, args);
+                ctx.addReturn(call);
+                return;
             }
 
             CHqlBoundTarget retVar;

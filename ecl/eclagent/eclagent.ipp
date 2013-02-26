@@ -507,7 +507,6 @@ public:
     virtual void cachePersist(const char * name);
     virtual void decachePersist(const char * name);
     virtual void finishPersist();
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg);
     virtual void clearPersist(const char * logicalName);
     virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC);
@@ -611,6 +610,10 @@ public:
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
         return allocatorMetaCache->ensure(meta, activityId);
+    }
+    virtual const char *getString(const char *str) const
+    {
+        return rowManager->strdup(str);
     }
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
     {

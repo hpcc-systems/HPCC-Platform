@@ -1831,29 +1831,6 @@ class CThorKeyedDistributeArg : public CThorArg, implements IHThorKeyedDistribut
 };
 
 
-class CThorCountIndexArg : public CThorArg, implements IHThorCountIndexArg
-{
-    virtual void Link() const { RtlCInterface::Link(); }
-    virtual bool Release() const { return RtlCInterface::Release(); }
-    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
-
-    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
-    {
-        switch (which)
-        {
-        case TAIarg:
-        case TAIcountindexarg_1:
-            return static_cast<IHThorCountIndexArg *>(this);
-        }
-        return NULL;
-    }
-
-    virtual bool hasPostFilter() { return false; };
-    virtual size32_t isValid(const void * src, unsigned __int64 _fpos, IBlobProvider * blobs) { return true; }
-    virtual void extractLookupFields() {}
-    virtual bool canMatchAny()                              { return true; }
-};
-
 class CThorCountFileArg : public CThorArg, implements IHThorCountFileArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
@@ -2394,7 +2371,7 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
         return NULL;
     }
 
-    virtual const char * queryIteratorPath()           { return NULL; }             // supplies the prefix and suffix for a row
+    virtual const char * queryXmlIteratorPath()        { return NULL; }             // supplies the prefix and suffix for a row
     virtual const char * queryHeader()                 { return NULL; }
     virtual const char * queryFooter()                 { return NULL; }
     virtual unsigned getXmlFlags()                     { return 0; }

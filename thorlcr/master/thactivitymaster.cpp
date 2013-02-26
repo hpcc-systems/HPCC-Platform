@@ -96,7 +96,10 @@ public:
             IHThorDiskReadArg *diskHelper = QUERYINTERFACE(helper, IHThorDiskReadArg);
             mb.append(NULL != diskHelper); // flag to slaves that they should create diskread
             if (diskHelper)
-                mb.append(diskHelper->getFileName());
+            {
+                OwnedRoxieString fileName(diskHelper->getFileName());
+                mb.append(fileName);
+            }
         }
     }
     virtual CActivityBase *factory(ThorActivityKind kind)

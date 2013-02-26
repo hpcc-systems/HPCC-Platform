@@ -81,7 +81,7 @@ class CXmlReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 stream.set(crcStream);
             }
             inputIOstream.setown(createBufferedIOStream(stream));
-            xmlParser.setown(createXMLParse(*inputIOstream.get(), activity.helper->queryIteratorPath(), *this, (0 != (TDRxmlnoroot & activity.helper->getFlags()))?xr_noRoot:xr_none, 0 != (TDRusexmlcontents & activity.helper->getFlags())));
+            xmlParser.setown(createXMLParse(*inputIOstream.get(), activity.helper->queryXmlIteratorPath(), *this, (0 != (TDRxmlnoroot & activity.helper->getFlags()))?xr_noRoot:xr_none, 0 != (TDRusexmlcontents & activity.helper->getFlags())));
         }
         virtual void close(CRC32 &fileCRC)
         {

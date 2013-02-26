@@ -10086,7 +10086,7 @@ void HqlCppTranslator::buildXmlWriteMembers(ActivityInstance * instance, IHqlExp
 
     IHqlExpression * rowAttr = xmlAttr->queryProperty(rowAtom);
     if (rowAttr)
-        doBuildVarStringFunction(instance->startctx, "queryIteratorPath", rowAttr->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "queryXmlIteratorPath", rowAttr->queryChild(0));
     IHqlExpression * headerAttr = xmlAttr->queryProperty(headingAtom);
     if (headerAttr)
     {
@@ -10218,7 +10218,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (expr->hasProperty(repeatAtom))
             {
                 //virtual const char * getPipeProgram() { return "grep"; }
-                instance->startctx.addQuoted("virtual char * getPipeProgram() { return NULL; }");
+                instance->startctx.addQuoted("virtual const char * getPipeProgram() { return NULL; }");
 
                 BuildCtx pipeCtx(instance->startctx);
                 pipeCtx.addQuotedCompound("virtual char * getNameFromRow(const void * _self)");
@@ -10230,7 +10230,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             {
                 //virtual const char * getPipeProgram() { return "grep"; }
                 BuildCtx pipeCtx(instance->startctx);
-                pipeCtx.addQuotedCompound("virtual char * getPipeProgram()");
+                pipeCtx.addQuotedCompound("virtual const char * getPipeProgram()");
                 buildReturn(pipeCtx, pipe, unknownVarStringType);
             }
 
@@ -11046,7 +11046,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
 
     if (expr->hasProperty(repeatAtom))
     {
-        //virtual char * getPipeProgram() { return "grep"; }
+        //virtual const char * getPipeProgram() { return "grep"; }
         instance->startctx.addQuoted("virtual char * getPipeProgram() { return NULL; }");
 
         BuildCtx pipeCtx(instance->startctx);
@@ -11057,9 +11057,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
     }
     else
     {
-        //virtual char * getPipeProgram() { return "grep"; }
+        //virtual const char * getPipeProgram() { return "grep"; }
         BuildCtx pipeCtx(instance->startctx);
-        pipeCtx.addQuotedCompound("virtual char * getPipeProgram()");
+        pipeCtx.addQuotedCompound("virtual const char * getPipeProgram()");
         buildReturn(pipeCtx, pipe, unknownVarStringType);
     }
 
@@ -16152,7 +16152,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlParse(BuildCtx & ctx, IHqlE
     //MORE: What encoding is the search text in???
 
     doBuildParseSearchText(instance->startctx, dataset, expr->queryChild(1), type_utf8, unknownStringType);
-    doBuildVarStringFunction(instance->classctx, "queryIteratorPath", xmlAttr ? queryRealChild(xmlAttr, 0) : NULL);
+    doBuildVarStringFunction(instance->classctx, "queryXmlIteratorPath", xmlAttr ? queryRealChild(xmlAttr, 0) : NULL);
 
     BuildCtx funcctx(instance->startctx);
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IColumnProvider * parsed)");

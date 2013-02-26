@@ -453,7 +453,6 @@ protected:
 
 interface IXmlToRowTransformer;
 interface ICsvToRowTransformer;
-interface IHThorCountIndexArg;
 interface IHThorCountFileArg;
 interface IThorDiskCallback;
 interface IThorIndexCallback;
@@ -558,7 +557,6 @@ interface ICodeContext : public IResourceContext
     // File resolution etc
 
     virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) = 0;
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) = 0;
     virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg) = 0;        // only used for roxie...
 
     virtual char * getExpandLogicalName(const char * logicalName) = 0;
@@ -583,6 +581,7 @@ interface ICodeContext : public IResourceContext
     // Memory management
 
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const = 0;
+    virtual const char * getString(const char *str) const = 0;
 
     // Called from generated code for FROMXML/TOXML
 
@@ -906,7 +905,6 @@ enum ActivityInterfaceEnum
     TAIalljoinarg_1,
     TAIhashjoinextra_1,
     TAIkeyeddistributearg_1,
-    TAIcountindexarg_1,
     TAIcountfilearg_1,
     TAIbinfetchextra_1,
     TAIworkunitwritearg_1,
@@ -1757,18 +1755,6 @@ struct IHThorKeyedDistributeArg : public IHThorArg
 };
 
 
-struct IHThorCountIndexArg : public IHThorArg
-{
-    // Inside the indexRead remote activity:
-    virtual const char * getIndexFileName() = 0;
-    virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    virtual void createSegmentMonitors(IIndexReadContext *ctx) = 0;
-    virtual bool hasPostFilter() { return false; };
-    virtual size32_t isValid(const void * src, unsigned __int64 _fpos, IBlobProvider * blobs) { return true; }
-    virtual void extractLookupFields() {}
-    virtual bool canMatchAny()                              { return true; }
-};
-
 struct IHThorCountFileArg : public IHThorArg
 {
     virtual const char * getFileName() = 0;
@@ -2005,7 +1991,7 @@ struct IHThorCsvFetchArg : public IHThorFetchBaseArg, public IHThorFetchContext,
 struct IHThorXmlParseArg : public IHThorArg
 {
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * left, IColumnProvider * parsed) = 0;
-    virtual const char * queryIteratorPath() = 0;
+    virtual const char * queryXmlIteratorPath() = 0;
     virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self) = 0;
     virtual bool searchTextNeedsFree() = 0;
     virtual bool requiresContents() { return false; }
@@ -2014,7 +2000,7 @@ struct IHThorXmlParseArg : public IHThorArg
 struct IHThorXmlFetchExtra : public IInterface
 {
     virtual size32_t transform(ARowBuilder & rowBuilder, IColumnProvider * rowLeft, const void * right, unsigned __int64 _fpos) = 0;
-    virtual const char * queryIteratorPath() = 0;               // required so that xpaths to extract data are correct
+    virtual const char * queryXmlIteratorPath() = 0;               // required so that xpaths to extract data are correct
     virtual bool requiresContents() { return false; }
 };
 
@@ -2027,7 +2013,7 @@ struct IHThorXmlFetchArg : public IHThorFetchBaseArg, public IHThorFetchContext,
 struct IHThorXmlWriteExtra : public IInterface
 {
     virtual void toXML(const byte * self, IXmlWriter & out) = 0;
-    virtual const char * queryIteratorPath()           { return NULL; }             // supplies the prefix and suffix for a row
+    virtual const char * queryXmlIteratorPath()           { return NULL; }             // supplies the prefix and suffix for a row
     virtual const char * queryHeader()                 { return NULL; }
     virtual const char * queryFooter()                 { return NULL; }
     virtual unsigned getXmlFlags()                     { return 0; }
@@ -2069,7 +2055,7 @@ struct IHThorPipeReadArg : public IHThorArg
 
 struct IHThorPipeWriteArg : public IHThorArg
 {
-    virtual char * getPipeProgram() = 0;
+    virtual const char * getPipeProgram() = 0;
     virtual int getSequence() = 0;
     virtual IOutputMetaData * queryDiskRecordSize() = 0;
     virtual char * getNameFromRow(const void * _self)       { return NULL; }
@@ -2081,7 +2067,7 @@ struct IHThorPipeWriteArg : public IHThorArg
 
 struct IHThorPipeThroughArg : public IHThorArg
 {
-    virtual char * getPipeProgram() = 0;
+    virtual const char * getPipeProgram() = 0;
     virtual char * getNameFromRow(const void * _self)       { return NULL; }
     virtual bool recreateEachRow()                          { return false; }
     virtual unsigned getPipeFlags() = 0;
@@ -2456,7 +2442,7 @@ struct IHThorCsvReadArg: public IHThorDiskReadBaseArg
 struct IHThorXmlReadArg: public IHThorDiskReadBaseArg
 {
     virtual IXmlToRowTransformer * queryTransformer() = 0;
-    virtual const char * queryIteratorPath() = 0;
+    virtual const char * queryXmlIteratorPath() = 0;
     virtual unsigned __int64 getChooseNLimit() = 0;
     virtual unsigned __int64 getRowLimit() = 0;
     virtual void onLimitExceeded() = 0;

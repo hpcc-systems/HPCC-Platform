@@ -6984,7 +6984,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
     bool usesContents = false;
     doBuildXmlReadMember(*instance, tableExpr, "queryTransformer", usesContents);
 
-    doBuildVarStringFunction(instance->classctx, "queryIteratorPath", queryRealChild(mode, 0));
+    doBuildVarStringFunction(instance->classctx, "queryXmlIteratorPath", queryRealChild(mode, 0));
 
     buildMetaMember(instance->classctx, tableExpr, false, "queryDiskRecordSize");  // A lie, but I don't care....
 
@@ -7106,8 +7106,8 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     case no_xml:
         {
             //MORE: MaxLength?
-            // virtual const char * queryIteratorPath()
-            translator.doBuildVarStringFunction(instance->classctx, "queryIteratorPath", queryRealChild(tableExpr->queryChild(2), 0));
+            // virtual const char * queryXmlIteratorPath()
+            translator.doBuildVarStringFunction(instance->classctx, "queryXmlIteratorPath", queryRealChild(tableExpr->queryChild(2), 0));
             break;
         }
     default:

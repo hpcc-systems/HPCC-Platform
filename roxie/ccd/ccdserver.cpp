@@ -88,6 +88,7 @@ namespace ccdserver_hqlhelper
 #endif
 
 using roxiemem::OwnedRoxieRow;
+using roxiemem::OwnedRoxieString;
 using roxiemem::OwnedConstRoxieRow;
 using roxiemem::IRowManager;
 
@@ -8723,7 +8724,8 @@ public:
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         if (!readTransformer)
             readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
-        openPipe(helper.getPipeProgram());
+        OwnedRoxieString pipeProgram(helper.getPipeProgram());
+        openPipe(pipeProgram);
     }
 
     virtual void stop(bool aborting)
@@ -8842,7 +8844,10 @@ public:
         if (!readTransformer)
             readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
         if(!recreate)
-            openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper.getPipeProgram());
+            openPipe(pipeProgram);
+        }
         puller.start(parentExtractSize, parentExtract, paused, 0, false, ctx);  // Pipe does not support preload presently - locks up
     }
 
@@ -9027,7 +9032,10 @@ public:
         writeTransformer->ready();
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         if(!recreate)
-            openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper.getPipeProgram());
+            openPipe(pipeProgram);
+        }
     }
 
     virtual void stop(bool aborting)
@@ -10658,7 +10666,7 @@ protected:
 
     void resolve()
     {
-        const char * rawLogicalName = helper.getFileName();
+        OwnedRoxieString rawLogicalName = helper.getFileName();
         assertex(rawLogicalName);
         assertex((helper.getFlags() & TDXtemporary) == 0);
         StringArray clusters;
@@ -10674,7 +10682,7 @@ protected:
         if (clusters.length())
         {
             if (extend)
-                throw MakeStringException(0, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", rawLogicalName);
+                throw MakeStringException(0, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", rawLogicalName.get());
         }
         else
         {
@@ -10953,7 +10961,7 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerDiskWriteActivity::start(parentExtractSize, parentExtract, paused);
-        const char * path = xmlHelper.queryIteratorPath();
+        const char * path = xmlHelper.queryXmlIteratorPath();
         if (!path)
             rowTag.set("Row");
         else
@@ -11103,7 +11111,8 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             clusters.append(roxieName.str());
         else
             clusters.append(".");
-        writer.setown(ctx->createLFN(helper.getFileName(), overwrite, false, clusters)); // MORE - if there's a workunit, use if for scope.
+        OwnedRoxieString fname(helper.getFileName());
+        writer.setown(ctx->createLFN(fname, overwrite, false, clusters)); // MORE - if there's a workunit, use if for scope.
         filename.set(writer->queryFile()->queryFilename());
         if (writer->queryFile()->exists())
         {
@@ -11129,9 +11138,15 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             StringBuffer name(nameLen, nameBuff);
             StringBuffer value(valueLen, valueBuff);
             if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
-                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper.getFileName());
+            {
+                OwnedRoxieString fname(helper.getFileName());
+                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
+            }
             if(!validateXMLTag(name.str()))
-                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper.getFileName());
+            {
+                OwnedRoxieString fname(helper.getFileName());
+                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
+            }
             if(!metadata)
                 metadata.setown(createPTree("metadata"));
             metadata->setProp(name.str(), value.str());
@@ -11188,9 +11203,10 @@ public:
 
         unsigned __int64 fileSize = 0;
         fileCrc = -1;
-        if (helper.getDatasetName())
+        OwnedRoxieString dsName(helper.getFileName());
+        if (dsName.get())
         {
-            Owned<const IResolvedFile> dsFileInfo = resolveLFN(helper.getFileName(), false);
+            Owned<const IResolvedFile> dsFileInfo = resolveLFN(dsName, false);
             if (dsFileInfo)
             {
                 fileSize = dsFileInfo->getFileSize();
@@ -19592,7 +19608,7 @@ public:
             }
             size32_t srchLen;
             helper.getSearchText(srchLen, srchStr, in);
-            xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryIteratorPath(), *this));
+            xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryXmlIteratorPath(), *this));
         }   
     }
 
@@ -19705,7 +19721,8 @@ public:
         {
             if (variableFileName)
             {
-                varFileInfo.setown(resolveLFN(helper.getFileName(), isOpt));
+                OwnedRoxieString fileName(helper.getFileName());
+                varFileInfo.setown(resolveLFN(fileName, isOpt));
                 Owned<IFilePartMap> map = varFileInfo->getFileMap();
                 if (map)
                     numParts = map->getNumParts();
@@ -20035,7 +20052,7 @@ public:
         {
             rowTransformer.set(readHelper->queryTransformer());
             assertex(reader != NULL);
-            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), readHelper->queryIteratorPath(), *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?xr_noRoot:xr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
+            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), readHelper->queryXmlIteratorPath(), *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?xr_noRoot:xr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
         }
     }
 
@@ -20699,7 +20716,7 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
-            const char *fileName = helper->getFileName();
+            OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 map.setown(datafile->getFileMap());
@@ -20795,7 +20812,8 @@ protected:
 
     void setVariableFileInfo()
     {
-        varFileInfo.setown(resolveLFN(indexHelper.getFileName(), isOpt));
+        OwnedRoxieString indexName(indexHelper.getFileName());
+        varFileInfo.setown(resolveLFN(indexName, isOpt));
         translators.setown(new TranslatorArray) ;
         keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
         variableInfoPending = false;
@@ -21422,7 +21440,8 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
 
     void setVariableFileInfo()
     {
-        varFileInfo.setown(resolveLFN(indexHelper.getFileName(), isOpt));
+        OwnedRoxieString indexName(indexHelper.getFileName());
+        varFileInfo.setown(resolveLFN(indexName, isOpt));
         translators.setown(new TranslatorArray) ;
         keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
         initKeySet();
@@ -21800,7 +21819,8 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (flags & TIRoptional) != 0;
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexHelper->getFileName(), isOpt, true, queryFactory.queryWorkUnit()));
+            OwnedRoxieString indexName(indexHelper->getFileName());
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, queryFactory.queryWorkUnit()));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -22682,7 +22702,8 @@ public:
         bool isOpt = (helper.getFlags() & TDRoptional) != 0;
         unsigned recsize = helper.queryRecordSize()->getFixedSize();
         assertex(recsize);
-        Owned<const IResolvedFile> varFileInfo = resolveLFN(helper.getFileName(), isOpt);
+        OwnedRoxieString fname(helper.getFileName());
+        Owned<const IResolvedFile> varFileInfo = resolveLFN(fname, isOpt);
         return varFileInfo->getFileSize() / recsize; 
     }
 
@@ -22715,12 +22736,12 @@ public:
         {
             unsigned recsize = helper->queryRecordSize()->getFixedSize();
             assertex(recsize);
-            const char *fileName = helper->getFileName();
+            OwnedRoxieString fileName(helper->getFileName());
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             datafile.setown(queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, queryFactory.queryWorkUnit()));
             offset_t filesize = datafile ? datafile->getFileSize() : 0;
             if (filesize % recsize != 0)
-                throw MakeStringException(ROXIE_MISMATCH, "Record size mismatch for file %s - %"I64F"d is not a multiple of fixed record size %d", fileName, filesize, recsize);
+                throw MakeStringException(ROXIE_MISMATCH, "Record size mismatch for file %s - %"I64F"d is not a multiple of fixed record size %d", fileName.get(), filesize, recsize);
             answer = filesize / recsize; 
         }
         else
@@ -22812,7 +22833,8 @@ public:
         remote.setLimits(helper.getRowLimit(), (unsigned __int64) -1, I64C(0x7FFFFFFFFFFFFFFF));
         if (variableFileName)
         {
-            varFileInfo.setown(resolveLFN(fetchContext->getFileName(), isOpt));
+            OwnedRoxieString fname(fetchContext->getFileName());
+            varFileInfo.setown(resolveLFN(fname, isOpt));
             map.setown(varFileInfo->getFileMap());
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->fetchPreload(), false, ctx);
@@ -22931,7 +22953,8 @@ public:
         variableFileName = (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
         if (!variableFileName)
         {
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fetchContext->getFileName(),
+            OwnedRoxieString fname(fetchContext->getFileName());
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname,
                                                                         (fetchContext->getFetchFlags() & FFdatafileoptional) != 0,
                                                                         true,
                                                                         _queryFactory.queryWorkUnit()));
@@ -23493,7 +23516,8 @@ public:
         }
         else if (variableIndexFileName)
         {
-            varFileInfo.setown(resolveLFN(helper.getIndexFileName(), false));
+            OwnedRoxieString indexFileName(helper.getIndexFileName());
+            varFileInfo.setown(resolveLFN(indexFileName, false));
             translators.setown(new TranslatorArray);
             keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); // MORE - isLocal?
         }
@@ -24148,7 +24172,8 @@ public:
         CRoxieServerKeyedJoinBase::start(parentExtractSize, parentExtract, paused);
         if (variableFetchFileName)
         {
-            varFetchFileInfo.setown(resolveLFN(helper.getFileName(), false));
+            OwnedRoxieString fname(helper.getFileName());
+            varFetchFileInfo.setown(resolveLFN(fname, false));
             map.setown(varFetchFileInfo->getFileMap());
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->keyedJoinPreload(), false, ctx);
@@ -24281,7 +24306,8 @@ public:
         }
         else if (variableIndexFileName)
         {
-            varFileInfo.setown(resolveLFN(helper.getIndexFileName(), false));
+            OwnedRoxieString indexFileName(helper.getIndexFileName());
+            varFileInfo.setown(resolveLFN(indexFileName, false));
             translators.setown(new TranslatorArray);
             keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); 
         }
@@ -24502,7 +24528,8 @@ public:
         if (!variableIndexFileName)
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(helper->getIndexFileName(), isOpt, true, queryFactory.queryWorkUnit()));
+            OwnedRoxieString indexFileName(helper->getIndexFileName());
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, queryFactory.queryWorkUnit()));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }

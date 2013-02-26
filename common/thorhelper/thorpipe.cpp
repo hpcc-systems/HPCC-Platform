@@ -322,7 +322,7 @@ public:
         if (flags & TPFwritexmltopipe)
         {
             assertex(xmlWriterExtra);
-            const char * path = xmlWriterExtra->queryIteratorPath();
+            const char * path = xmlWriterExtra->queryXmlIteratorPath();
             if (!path)
                 rowTag.append("Row");
             else

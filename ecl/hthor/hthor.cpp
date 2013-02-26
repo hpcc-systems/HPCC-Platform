@@ -56,6 +56,7 @@ static unsigned const hthorPipeWaitTimeout = 100; //100ms - fairly arbitrary cho
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
+using roxiemem::OwnedRoxieString;
 using roxiemem::OwnedConstRoxieRow;
 
 IRowManager * theRowManager;
@@ -399,7 +400,8 @@ void CHThorDiskWriteActivity::done()
 
 void CHThorDiskWriteActivity::resolve()
 {
-    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), helper.getFlags());
+    OwnedRoxieString rawname = helper.getFileName();
+    mangleHelperFileName(mangledHelperFileName, rawname, agent.queryWuid(), helper.getFlags());
     assertex(mangledHelperFileName.str());
     if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
     {
@@ -871,7 +873,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
-    const char * path = helper.queryIteratorPath();
+    const char * path = helper.queryXmlIteratorPath();
     if (!path)
         rowTag.append("Row");
     else
@@ -956,7 +958,8 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
 {
     incomplete = false;
     StringBuffer lfn;
-    expandLogicalFilename(lfn, helper.getFileName(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+    OwnedRoxieString fname(helper.getFileName());
+    expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally());
     if (!agent.queryResolveFilesLocally())
     {
         Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
@@ -1002,9 +1005,10 @@ void CHThorIndexWriteActivity::execute()
     // Loop thru the results
     unsigned __int64 reccount = 0;
     unsigned __int64 fileSize = 0;
-    if (helper.getDatasetName())
+    OwnedRoxieString dsName(helper.getDatasetName());
+    if (dsName.get())
     {
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndexWrite::execute",false,false,true);
+        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(dsName,"IndexWrite::execute",false,false,true);
         if (ldFile )
         {
             IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -1074,7 +1078,8 @@ void CHThorIndexWriteActivity::execute()
             if(sizeLimit && (out->tell() > sizeLimit))
             {
                 StringBuffer msg;
-                msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing index ").append(helper.getFileName());
+                OwnedRoxieString fname(helper.getFileName());
+                msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing index ").append(fname);
                 throw MakeStringException(0, "%s", msg.str());
             }
             reccount++;
@@ -1179,7 +1184,8 @@ void CHThorIndexWriteActivity::execute()
     if (!agent.queryResolveFilesLocally())
     {
         dfile.setown(queryDistributedFileDirectory().createNew(desc));
-        expandLogicalFilename(lfn, helper.getFileName(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+        OwnedRoxieString fname(helper.getFileName());
+        expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally());
         dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(dfile, "HThor", "CREATED");
     }
@@ -1217,9 +1223,15 @@ void CHThorIndexWriteActivity::buildUserMetadata(Owned<IPropertyTree> & metadata
         StringBuffer name(nameLen, nameBuff);
         StringBuffer value(valueLen, valueBuff);
         if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
-            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper.getFileName());
+        {
+            OwnedRoxieString fname(helper.getFileName());
+            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
+        }
         if(!validateXMLTag(name.str()))
-            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper.getFileName());
+        {
+            OwnedRoxieString fname(helper.getFileName());
+            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
+        }
         if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp(name.str(), value.str());
     }
@@ -1264,7 +1276,8 @@ public:
         CHThorSimpleActivityBase::ready();
         rowDeserializer.setown(rowAllocator->createDiskDeserializer(agent.queryCodeContext()));
         readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
-        openPipe(helper.getPipeProgram());
+        OwnedRoxieString pipeProgram(helper.getPipeProgram());
+        openPipe(pipeProgram);
     }
 
     virtual void done()
@@ -1447,7 +1460,10 @@ public:
         if (!readTransformer)
             readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
         if(!recreate)
-            openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper.getPipeProgram());
+            openPipe(pipeProgram);
+        }
         puller.start();
     }
 
@@ -1620,7 +1636,10 @@ public:
         inputExhausted = false;
         writeTransformer->ready();
         if(!recreate)
-            openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper.getPipeProgram());
+            openPipe(pipeProgram);
+        }
     }
 
     virtual void execute()
@@ -7051,7 +7070,7 @@ const void * CHThorXmlParseActivity::nextInGroup()
         }
         size32_t srchLen;
         helper.getSearchText(srchLen, srchStr, in);
-        xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryIteratorPath(), *this, xr_noRoot, helper.requiresContents()));
+        xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryXmlIteratorPath(), *this, xr_noRoot, helper.requiresContents()));
     }
 }
 
@@ -7722,7 +7741,8 @@ void CHThorDiskReadBaseActivity::done()
 
 void CHThorDiskReadBaseActivity::resolve()
 {
-    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), helper.getFlags());
+    OwnedRoxieString fileName(helper.getFileName());
+    mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
     if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;
@@ -8677,7 +8697,10 @@ const void *CHThorCsvReadActivity::nextInGroup()
                 if (thisLineLength < rowSize || avail < rowSize)
                     break;
                 if (rowSize == maxRowSize)
-                    throw MakeStringException(99, "File %s contained a line of length greater than %d bytes.", helper.getFileName(), rowSize);
+                {
+                    OwnedRoxieString fileName(helper.getFileName());
+                    throw MakeStringException(99, "File %s contained a line of length greater than %d bytes.", fileName.get(), rowSize);
+                }
                 if (rowSize >= maxRowSize/2)
                     rowSize = maxRowSize;
                 else
@@ -8856,7 +8879,7 @@ bool CHThorXmlReadActivity::openNext()
         else
             inputfileiostream.setown(createIOStream(inputfileio));
 
-        xmlParser.setown(createXMLParse(*inputfileiostream, helper.queryIteratorPath(), *this, (0 != (TDRxmlnoroot & helper.getFlags()))?xr_noRoot:xr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        xmlParser.setown(createXMLParse(*inputfileiostream, helper.queryXmlIteratorPath(), *this, (0 != (TDRxmlnoroot & helper.getFlags()))?xr_noRoot:xr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
         return true;
     }
     return false;
