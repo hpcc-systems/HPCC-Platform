@@ -534,9 +534,7 @@ bool CMimeMultiPart::separateMultiParts(MemoryBuffer& firstPart, MemoryBuffer& o
 
     // Get rid of CR/LF at the end of the content
     unsigned firstPartLength = offset;
-    if ((firstPartLength > 0) && (startPos[firstPartLength-1] == '\n'))
-        firstPartLength--;
-    if ((firstPartLength > 0) && (startPos[firstPartLength-1] == '\r'))
+    while ((firstPartLength > 0) && ((startPos[firstPartLength-1] == '\r') || (startPos[firstPartLength-1] == '\n')))
         firstPartLength--;
     if(firstPartLength >= 0)
     {
