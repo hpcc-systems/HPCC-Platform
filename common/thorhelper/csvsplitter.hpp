@@ -90,8 +90,9 @@ protected:
     unsigned *          lengths;
     const byte * *      data;
     byte *              internalBuffer;
-    byte *              curUnquoted;
-    unsigned            maxCsvSize;
+    size32_t            internalOffset;
+    size32_t            sizeInternal;
+    size32_t            maxCsvSize;
 };
 
 class THORHELPER_API CSVOutputStream : public StringBuffer, implements ITypedOutputStream
