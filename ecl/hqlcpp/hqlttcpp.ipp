@@ -1167,6 +1167,7 @@ protected:
     IHqlExpression * validateKeyedJoin(IHqlExpression * expr);
 
 protected:
+    IHqlExpression * transformChildrenNoAnnotations(IHqlExpression * expr);
     IHqlExpression * makeRecursiveName(_ATOM searchModule, _ATOM searchName);
     HqlTreeNormalizerInfo * queryCommonExtra(IHqlExpression * expr);
     IHqlExpression * transformSimpleConst(IHqlExpression * expr)
