@@ -76,8 +76,8 @@ public:
     void setContentType(const char* content_type);
 
     void parseContentType(const char* contenttype);
-    void checkEndOfFile(MemoryBuffer& fileContent);
-    void readUploadFile(MemoryBuffer& fileContent, StringBuffer& fileName);
+    bool separateMultiParts(MemoryBuffer& firstPart, MemoryBuffer& otherParts, __int64 contentNotRead);
+    void readUploadFileName(MemoryBuffer& fileContent, StringBuffer& fileName);
 
     void serialize(StringBuffer& contenttype, StringBuffer & buffer);
     void unserialize(const char* contenttype, int text_length, const char* text);
