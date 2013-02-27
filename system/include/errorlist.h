@@ -45,6 +45,9 @@
 #define WORKUNIT_ERROR_START    5000
 #define WORKUNIT_ERROR_END      5099
 
+#define PACKAGE_ERROR_START    5200
+#define PACKAGE_ERROR_END      5299
+
 #define WUWEB_ERROR_START       5500
 #define WUWEB_ERROR_END         5599
 

@@ -26,6 +26,7 @@
 #include "ws_workunits.hpp"
 #include "packageprocess_errors.h"
 #include "referencedfilelist.hpp"
+#include "package.h"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -523,5 +524,22 @@ bool CWsPackageProcessEx::onGetPackage(IEspContext &context, IEspGetPackageReque
     StringBuffer info;
     getPkgInfo(req.getTarget(), process.length() ? process.get() : "*", info);
     resp.setInfo(info);
+    return true;
+}
+
+bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePackageRequest &req, IEspValidatePackageResponse &resp)
+{
+    StringArray warnings;
+    StringArray errors;
+    StringArray unmatchedQueries;
+    StringArray unusedPackages;
+
+    Owned<IHpccPackageMap> map = createPackageMapFromXml(req.getInfo(), req.getTarget(), NULL);
+    map->validate(warnings, errors, unmatchedQueries, unusedPackages);
+
+    resp.setWarnings(warnings);
+    resp.setErrors(errors);
+    resp.updateQueries().setUnmatched(unmatchedQueries);
+    resp.updatePackages().setUnmatched(unusedPackages);
     return true;
 }
