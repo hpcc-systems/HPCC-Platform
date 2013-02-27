@@ -236,7 +236,7 @@
                             return false;
                         }
 
-                        function queuedWUPopup(cluster,clusterType,queue,wuid,prev,next,highpriority)
+                        function queuedWUPopup(cluster,clusterType,queue,eclAgentQueue, wuid,prev,next,highpriority)
                         {
                             function moveupWuid()
                             {
@@ -276,15 +276,20 @@
                             oMenu = new YAHOO.widget.Menu("activitypagemenu", {position: "dynamic", xy: xypos} );
                             oMenu.clearContent();
 
-                            oMenu.addItems([
-                                { text: "Move Up", onclick: { fn: moveupWuid }, disabled: prev ? false : true },
-                                { text: "Move Down", onclick: { fn: movedownWuid }, disabled: next ? false : true },
-                                { text: "Move Top", onclick: { fn: movefrontWuid }, disabled: prev ? false : true },
-                                { text: "Move Bottom", onclick: { fn: movebackWuid }, disabled: next ? false : true },
-                                { text: "Remove", onclick: { fn: removeWuid } },
-                                { text: "High Priority", onclick: { fn: highpriority ? setNormalPriority : setHighPriority }, checked: highpriority ? true : false }
-                            ]);
-
+                            if (eclAgentQueue == '') {
+                                oMenu.addItems([
+                                    { text: "Move Up", onclick: { fn: moveupWuid }, disabled: prev ? false : true },
+                                    { text: "Move Down", onclick: { fn: movedownWuid }, disabled: next ? false : true },
+                                    { text: "Move Top", onclick: { fn: movefrontWuid }, disabled: prev ? false : true },
+                                    { text: "Move Bottom", onclick: { fn: movebackWuid }, disabled: next ? false : true },
+                                    { text: "Remove", onclick: { fn: removeWuid } },
+                                    { text: "High Priority", onclick: { fn: highpriority ? setNormalPriority : setHighPriority }, checked: highpriority ? true : false }
+                                ]);
+                            } else {
+                                oMenu.addItems([
+                                    { text: "Remove", onclick: { fn: removeWuid } }
+                                ]);
+                            }
                             oMenu.render("rendertarget");
                             oMenu.show();
                             return false;
@@ -963,7 +968,7 @@
                     return activeWUPopup('paused', '<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>);
                 </xsl:when>
                 <xsl:when test="starts-with(State,'queued')">
-                    return queuedWUPopup('<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="starts-with(preceding-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="starts-with(following-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="Priority='high'"/>);
+                    return queuedWUPopup('<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="AgentQueueName"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="starts-with(preceding-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="starts-with(following-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="Priority='high'"/>);
                 </xsl:when>
             </xsl:choose>
         </xsl:variable>

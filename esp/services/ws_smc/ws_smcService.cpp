@@ -211,7 +211,7 @@ bool isInWuList(IArrayOf<IEspActiveWorkunit>& aws, const char* wuid)
     return bFound;
 }
 
-void addQueuedWorkUnits(const char *queueName, CJobQueueContents &contents, IArrayOf<IEspActiveWorkunit> &aws, IEspContext &context, const char *serverName, const char *instanceName)
+void addQueuedWorkUnits(const char *queueName, const char *agentQueueName, CJobQueueContents &contents, IArrayOf<IEspActiveWorkunit> &aws, IEspContext &context, const char *serverName, const char *instanceName)
 {
     Owned<IJobQueueIterator> iter = contents.getIterator();
     unsigned count=0;
@@ -225,6 +225,7 @@ void addQueuedWorkUnits(const char *queueName, CJobQueueContents &contents, IArr
                     wu->setServer(serverName);
                     wu->setInstance(instanceName); // JCSMORE In thor case at least, if queued it is unknown which instance it will run on..
                     wu->setQueueName(queueName);
+                    wu->setAgentQueueName(agentQueueName);
 
                     aws.append(*wu.getLink());
             }
@@ -236,6 +237,7 @@ void addQueuedWorkUnits(const char *queueName, CJobQueueContents &contents, IArr
                 wu->setServer(serverName);
                 wu->setInstance(instanceName);
                 wu->setQueueName(queueName);
+                wu->setAgentQueueName(agentQueueName);
 
                 aws.append(*wu.getLink());
             }
@@ -597,7 +599,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 CJobQueueContents contents;
                 Owned<IJobQueue> queue = createJobQueue(queueName);
                 queue->copyItemsAndState(contents, queueState);
-                addQueuedWorkUnits(queueName, contents, aws, context, "ThorMaster", NULL);
+                addQueuedWorkUnits(queueName, "", contents, aws, context, "ThorMaster", NULL);
 
                 BulletType bulletType = bulletGreen;
                 int serverID = runningQueueNames.find(queueName);
@@ -611,7 +613,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 Owned<IJobQueue> agentQueue = createJobQueue(agentQueueName);
                 agentQueue->copyItemsAndState(agentContents, agentQueueState);
                 //Use the same 'queueName' because the job belongs to the same cluster
-                addQueuedWorkUnits(queueName, agentContents, aws, context, "ThorMaster", NULL);
+                addQueuedWorkUnits(queueName, agentQueueName, agentContents, aws, context, "ThorMaster", NULL);
                 if (bulletType == bulletGreen)
                 {//If ThorQueue is normal, check the AgentQueue
                     serverID = runningQueueNames.find(agentQueueName);
@@ -643,7 +645,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                     CJobQueueContents contents;
                     Owned<IJobQueue> queue = createJobQueue(queueName);
                     queue->copyItemsAndState(contents, queueState);
-                    addQueuedWorkUnits(queueName, contents, aws, context, "RoxieServer", NULL);
+                    addQueuedWorkUnits(queueName, queueName, contents, aws, context, "RoxieServer", NULL);
 
                     BulletType bulletType = bulletGreen;
                     int serverID = runningQueueNames.find(queueName);
@@ -670,7 +672,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
                 CJobQueueContents contents;
                 Owned<IJobQueue> queue = createJobQueue(queueName);
                 queue->copyItemsAndState(contents, queueState);
-                addQueuedWorkUnits(queueName, contents, aws, context, "HThorServer", NULL);
+                addQueuedWorkUnits(queueName, queueName, contents, aws, context, "HThorServer", NULL);
 
                 BulletType bulletType = bulletGreen;
                 int serverID = runningQueueNames.find(queueName);
