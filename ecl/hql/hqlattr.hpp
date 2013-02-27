@@ -18,6 +18,7 @@
 #define HQLATTR_HPP
 
 #include "hqlexpr.hpp"
+#include "workunit.hpp"
 
 #define MAX_MAXLENGTH (INFINITE_LENGTH-1)
 
@@ -76,6 +77,6 @@ extern HQL_API void getRecordCountText(StringBuffer & result, IHqlExpression * e
 extern HQL_API IHqlExpression * queryRecordCountInfo(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getRecordCountInfo(IHqlExpression * expr);
 extern HQL_API bool hasNoMoreRowsThan(IHqlExpression * expr, __int64 limit);
-extern HQL_API bool spillToWorkunitNotFile(IHqlExpression * expr);
+extern HQL_API bool spillToWorkunitNotFile(IHqlExpression * expr, ClusterType platform);
 
 #endif

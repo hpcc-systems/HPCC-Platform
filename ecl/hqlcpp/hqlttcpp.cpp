@@ -129,12 +129,12 @@ IHqlExpression * getDebugValueExpr(IConstWorkUnit * wu, IHqlExpression * expr)
 struct GlobalAttributeInfo
 {
 public:
-    GlobalAttributeInfo(const char * _filePrefix, const char * _storedPrefix) { setOp = no_none; persistOp = no_none; few = false; filePrefix = _filePrefix; storedPrefix = _storedPrefix; }
+    GlobalAttributeInfo(const char * _filePrefix, const char * _storedPrefix, IHqlExpression * _value) : value(_value)
+    { setOp = no_none; persistOp = no_none; few = false; filePrefix = _filePrefix; storedPrefix = _storedPrefix; }
 
-    void extractCluster(IHqlExpression * expr, bool isRoxie);
-    void extractGlobal(IHqlExpression * expr, bool isRoxie);
+    void extractGlobal(IHqlExpression * global, ClusterType platform);
     void extractStoredInfo(IHqlExpression * expr, IHqlExpression * originalValue, bool isRoxie);
-    void checkFew(HqlCppTranslator & translator, IHqlExpression * value);
+    void checkFew(HqlCppTranslator & translator);
     void splitGlobalDefinition(ITypeInfo * type, IHqlExpression * value, IConstWorkUnit * wu, SharedHqlExpr & setOutput, OwnedHqlExpr * getOutput, bool isRoxie);
     IHqlExpression * getStoredKey();
     void preventDiskSpill() { few = true; }
@@ -150,6 +150,7 @@ protected:
     void setCluster(IHqlExpression * expr);
 
 public:
+    LinkedHqlExpr value;
     OwnedHqlExpr storedName;
     OwnedHqlExpr sequence;
     node_operator setOp;
@@ -4737,25 +4738,22 @@ IHqlExpression * GlobalAttributeInfo::getStoredKey()
     return createAttribute(nameAtom, LINK(sequence), lowerCaseHqlExpr(storedName));
 }
 
-void GlobalAttributeInfo::extractCluster(IHqlExpression * expr, bool isRoxie)
-{
-    extractGlobal(expr, isRoxie);
-    setCluster(queryRealChild(expr, 1));
-}
-
 void GlobalAttributeInfo::setCluster(IHqlExpression * expr)
 {
     if (expr && !isBlankString(expr))
         cluster.set(expr);
 }
 
-void GlobalAttributeInfo::extractGlobal(IHqlExpression * expr, bool isRoxie)
+void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType platform)
 {
-    few = isRoxie || spillToWorkunitNotFile(expr);
-    if (expr->hasProperty(fewAtom))
-        few = true;
-    else if (expr->hasProperty(manyAtom) && !isRoxie)
-        few = false;
+    few = spillToWorkunitNotFile(value, platform) || value->isDictionary();
+    if (global)
+    {
+        if (global->hasProperty(fewAtom))
+            few = true;
+        else if (global->hasProperty(manyAtom) && (platform != RoxieCluster))
+            few = false;
+    }
     setOp = no_setresult;
     sequence.setown(getLocalSequenceNumber());
     persistOp = no_global;
@@ -4764,7 +4762,7 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * expr, bool isRoxie)
 void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpression * originalValue, bool isRoxie)
 {
     node_operator op = expr->getOperator();
-    few = expr->hasProperty(fewAtom) || (isRoxie);// && !expr->hasProperty(manyAtom));
+    few = expr->hasProperty(fewAtom) || (isRoxie) || (value->isDictionary() && !expr->hasProperty(manyAtom));
     switch (op)
     {
     case no_stored:
@@ -4846,7 +4844,10 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
         LinkedHqlExpr filename = queryFilename(value, wu, isRoxie);
 
         HqlExprArray args;
-        args.append(*LINK(value));
+        if (value->isDictionary())
+            args.append(*createDataset(no_datasetfromdictionary, LINK(value)));
+        else
+            args.append(*LINK(value));
         args.append(*LINK(filename));
 
         //NB: Also update the dataset node at the end...
@@ -5009,7 +5010,7 @@ void GlobalAttributeInfo::createSmallOutput(IHqlExpression * value, SharedHqlExp
     }
 }
 
-void GlobalAttributeInfo::checkFew(HqlCppTranslator & translator, IHqlExpression * value)
+void GlobalAttributeInfo::checkFew(HqlCppTranslator & translator)
 {
 //  if (few && isGrouped(value))
 //      translator.WARNINGAT(queryLocation(value), HQLWRN_GroupedGlobalFew);
@@ -5308,12 +5309,12 @@ unsigned WorkflowTransformer::ensureWorkflowAction(IHqlExpression * expr)
 
 unsigned WorkflowTransformer::splitValue(IHqlExpression * value)
 {
-    GlobalAttributeInfo info("spill::wf", "wf");
+    GlobalAttributeInfo info("spill::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
     info.setOp = no_setresult;
     info.persistOp = no_global;
     OwnedHqlExpr setValue;
-    info.checkFew(translator, value);
+    info.checkFew(translator);
     info.splitGlobalDefinition(value->queryType(), value, wu, setValue, 0, (translator.getTargetClusterType() == RoxieCluster));
     inheritDependencies(setValue);
     unsigned wfid = ++wfidCount;
@@ -5324,11 +5325,11 @@ unsigned WorkflowTransformer::splitValue(IHqlExpression * value)
 
 IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransformed, IHqlExpression * expr)
 {
-    GlobalAttributeInfo info("spill::wf", "wf");
+    IHqlExpression * value = expr->queryChild(0);
+    GlobalAttributeInfo info("spill::wf", "wf", value);
     info.sequence.setown(getLocalSequenceNumber());
     OwnedHqlExpr scheduleActions;
 
-    IHqlExpression * value = expr->queryChild(0);
     HqlExprArray actions;
     unwindChildren(actions, expr, 1);
 
@@ -5492,7 +5493,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
     {
         assertex(!sched.independent);           // should have been enforced by the tree normalization
         ITypeInfo * type = expr->queryType();
-        info.checkFew(translator, expr);
+        info.checkFew(translator);
         info.splitGlobalDefinition(type, value, wu, setValue, &getValue, isRoxie);
         copySetValueDependencies(queryBodyExtra(value), setValue);
     }
@@ -5664,8 +5665,8 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     DBGLOG("%s", s.str());
     translator.addWorkunitException(ExceptionSeverityInformation, 0, s.str(), location);
 
-    GlobalAttributeInfo info("spill::wfa", "wfa");
-    info.extractGlobal(transformed, isRoxie);       // should really be a slightly different unction
+    GlobalAttributeInfo info("spill::wfa", "wfa", transformed);
+    info.extractGlobal(NULL, translator.getTargetClusterType());       // should really be a slightly different function
 
     OwnedHqlExpr setValue;
     OwnedHqlExpr getValue;
@@ -7130,10 +7131,13 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
                 }
                 else
                 {
-                    GlobalAttributeInfo info("spill::global","gl");
-                    info.extractGlobal(transformed, isRoxie || (op == no_nothor));
+                    GlobalAttributeInfo info("spill::global","gl", transformed);
+                    if (op == no_nothor)
+                        info.extractGlobal(NULL, RoxieCluster);
+                    else
+                        info.extractGlobal(transformed, translator.getTargetClusterType());
                     OwnedHqlExpr getResult, setResult;
-                    info.checkFew(translator, transformed);
+                    info.checkFew(translator);
                     info.splitGlobalDefinition(transformed->queryType(), value, wu, setResult, &getResult, isRoxie);
                     if (op == no_nothor)
                         setResult.setown(createValue(no_nothor, makeVoidType(), LINK(setResult)));
@@ -7599,12 +7603,12 @@ IHqlExpression * AutoScopeMigrateTransformer::createTransformed(IHqlExpression *
         s.append("as an item to hoist");
         DBGLOG("%s", s.str());
 
-        GlobalAttributeInfo info("spill::auto","auto");
-        info.extractGlobal(transformed, isRoxie);
+        GlobalAttributeInfo info("spill::auto","auto", transformed);
+        info.extractGlobal(NULL, translator.getTargetClusterType());
         if (translator.targetThor() && extra->globalInsideChild)
             info.preventDiskSpill();
         OwnedHqlExpr getResult, setResult;
-        info.checkFew(translator, transformed);
+        info.checkFew(translator);
         info.splitGlobalDefinition(transformed->queryType(), transformed, wu, setResult, &getResult, isRoxie);
 
         //If the first use is conditional, then hoist the expression globally (it can't have any dependents)

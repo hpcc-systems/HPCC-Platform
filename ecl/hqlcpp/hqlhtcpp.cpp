@@ -10110,7 +10110,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
     IHqlExpression * rawFilename = queryRealChild(expr, 1);
 
     if (dataset->isDictionary())
+    {
+        //OUTPUT(dictionary,,'filename') should never be generated - it should go via a dataset
+        assertex(!rawFilename);
         return doBuildActivityDictionaryWorkunitWrite(ctx, expr, isRoot);
+    }
     if (!rawFilename)
         return doBuildActivityOutputWorkunit(ctx, expr, isRoot);
 
