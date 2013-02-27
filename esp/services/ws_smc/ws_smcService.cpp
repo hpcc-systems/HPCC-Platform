@@ -272,7 +272,7 @@ void CWsSMCEx::getQueueState(int runningJobsInQueue, StringBuffer& queueState, B
     return;
 }
 
-void CWsSMCEx::readClusterTypeAndQueueName(CConstWUClusterInfoArray& clusters, const char* clusterName, SCMStringBuffer& clusterType, SCMStringBuffer& clusterQueue)
+void CWsSMCEx::readClusterTypeAndQueueName(CConstWUClusterInfoArray& clusters, const char* clusterName, StringBuffer& clusterType, SCMStringBuffer& clusterQueue)
 {
     if (!clusterName || !*clusterName)
         return;
@@ -311,10 +311,10 @@ void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWU
                    StringArray& runningQueueNames, int* runningJobsInQueue)
 {
     StringBuffer instance;
-	StringBuffer qname;
-	int serverID = -1;
-	const char* name = node.queryProp("@name");
-	if (name && *name)
+    StringBuffer qname;
+    int serverID = -1;
+    const char* name = node.queryProp("@name");
+    if (name && *name)
     {
         node.getProp("@queue", qname);
         if (0 == stricmp("ThorMaster", name))
@@ -404,7 +404,8 @@ void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWU
                         const char* clusterName = wu->getClusterName();
                         if (clusterName && *clusterName)
                         {
-                            SCMStringBuffer clusterType, clusterQueue;
+                            StringBuffer clusterType;
+                            SCMStringBuffer clusterQueue;
                             readClusterTypeAndQueueName(clusters, clusterName, clusterType, clusterQueue);
                             wu->setClusterType(clusterType.str());
                             wu->setClusterQueueName(clusterQueue.str());
