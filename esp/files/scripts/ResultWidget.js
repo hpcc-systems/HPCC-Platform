@@ -124,9 +124,12 @@ define([
             this.result = params.result;
             //TODO:  Encapsulate this IF into ESPResult.js
             if (params.result && params.result.canShowResults()) {
-                this.grid.setStructure(params.result.getStructure());
-                this.grid.setStore(params.result.getObjectStore());
-                this.refresh();
+                var context = this;
+                params.result.fetchStructure(function (structure) {
+                    context.grid.setStructure(structure);
+                    context.grid.setStore(params.result.getObjectStore());
+                    context.refresh();
+                })
             } else {
                 this.grid.setStructure([
                             {

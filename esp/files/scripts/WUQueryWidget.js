@@ -19,7 +19,6 @@ define([
     "dojo/dom",
     "dojo/on",
     "dojo/dom-class",
-    "dojo/data/ObjectStore",
     "dojo/date",
 
     "dijit/_TemplatedMixin",
@@ -37,6 +36,7 @@ define([
     "dojox/widget/Calendar",
 
     "hpcc/_TabContainerWidget",
+    "hpcc/ESPWorkunit",
     "hpcc/WsWorkunits",
     "hpcc/WUDetailsWidget",
 
@@ -53,10 +53,10 @@ define([
     "dijit/form/Select",
     "dijit/Toolbar",
     "dijit/TooltipDialog"
-], function (declare, array, dom, on, domClass, ObjectStore, date,
+], function (declare, arrayUtil, dom, on, domClass, date,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
                 EnhancedGrid, Pagination, IndirectSelection, Calendar,
-                _TabContainerWidget, WsWorkunits, WUDetailsWidget,
+                _TabContainerWidget, ESPWorkunit, WsWorkunits, WUDetailsWidget,
                 template) {
     return declare("WUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -97,7 +97,11 @@ define([
         },
 
         //  Hitched actions  ---
+        _onRefresh: function (event) {
+            this.refreshGrid();
+        },
         _onOpen: function (event) {
+            //dojo.publish("hpcc/standbyForegroundShow");
             var selections = this.workunitsGrid.selection.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
@@ -111,12 +115,17 @@ define([
             if (firstTab) {
                 this.selectChild(firstTab);
             }
+            //dojo.publish("hpcc/standbyForegroundHide");
         },
         _onDelete: function (event) {
             if (confirm('Delete selected workunits?')) {
                 var context = this;
-                WsWorkunits.WUAction(this.workunitsGrid.selection.getSelected(), "Delete", {
+                var selection = this.workunitsGrid.selection.getSelected();
+                WsWorkunits.WUAction(selection, "Delete", {
                     load: function (response) {
+                        arrayUtil.forEach(selection, function (item, idx) {
+                            context.objectStore.objectStore.remove(item);
+                        });
                         context.workunitsGrid.rowSelectCell.toggleAllSelection(false);
                         context.refreshGrid(response);
                     }
@@ -131,9 +140,18 @@ define([
                 }
             });
         },
+        _onAbort: function (event) {
+            var context = this;
+            WsWorkunits.WUAction(this.workunitsGrid.selection.getSelected(), "Abort", {
+                load: function (response) {
+                    context.refreshGrid(response);
+                }
+            });
+        },
         _onProtect: function (event) {
             var context = this;
-            WsWorkunits.WUAction(this.workunitsGrid.selection.getSelected(), "Protect", {
+            var selection = this.workunitsGrid.selection.getSelected();
+            WsWorkunits.WUAction(selection, "Protect", {
                 load: function (response) {
                     context.refreshGrid(response);
                 }
@@ -141,7 +159,8 @@ define([
         },
         _onUnprotect: function (event) {
             var context = this;
-            WsWorkunits.WUAction(this.workunitsGrid.selection.getSelected(), "Unprotect", {
+            var selection = this.workunitsGrid.selection.getSelected();
+            WsWorkunits.WUAction(selection, "Unprotect", {
                 load: function (response) {
                     context.refreshGrid(response);
                 }
@@ -190,7 +209,7 @@ define([
         },
         _onRowContextMenu: function (idx, item, colField, mystring) {
             var selection = this.workunitsGrid.selection.getSelected();
-            var found = array.indexOf(selection, item);
+            var found = arrayUtil.indexOf(selection, item);
             if (found == -1) {
                 this.workunitsGrid.selection.deselectAll();
                 this.workunitsGrid.selection.setSelected(idx, true);
@@ -397,6 +416,7 @@ define([
         },
 
         initWorkunitsGrid: function () {
+            var context = this;
             this.workunitsGrid.setStructure([
                 {
                     name: "<img src='../files/img/locked.png'>",
@@ -409,7 +429,13 @@ define([
                         return "";
                     }
                 },
-                { name: "Wuid", field: "Wuid", width: "12" },
+                {
+                    name: "Wuid", field: "Wuid", width: "15",
+                    formatter: function (Wuid) {
+                        var wu = ESPWorkunit.Get(Wuid);
+                        return ("<img src='../files/" + wu.getStateImage() + "'>&nbsp" + Wuid);
+                    }
+                },
                 { name: "Owner", field: "Owner", width: "8" },
                 { name: "Job Name", field: "Jobname", width: "16" },
                 { name: "Cluster", field: "Cluster", width: "8" },
@@ -418,13 +444,11 @@ define([
                 { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
             ]);
 
-            var store = new WsWorkunits.WUQuery();
-            var objStore = new ObjectStore({ objectStore: store });
-            this.workunitsGrid.setStore(objStore);
+            this.objectStore = ESPWorkunit.CreateWUQueryObjectStore();
+            this.workunitsGrid.setStore(this.objectStore);
             this.workunitsGrid.setQuery(this.getFilter());
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
 
-            var context = this;
             this.workunitsGrid.on("RowDblClick", function (evt) {
                 if (context._onRowDblClick) {
                     var idx = evt.rowIndex;
@@ -481,22 +505,34 @@ define([
             var hasFailed = false;
             var hasNotFailed = false;
             var hasFilter = this.hasFilter();
+            var hasCompleted = false;
+            var hasNotCompleted = false;
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
-                if (selection[i] && selection[i].Protected && selection[i].Protected != "0") {
-                    hasProtected = true;
-                } else {
-                    hasNotProtected = true;
+                if (selection[i] && selection[i].Protected !== null) {
+                    if (selection[i].Protected != "0") {
+                        hasProtected = true;
+                    } else {
+                        hasNotProtected = true;
+                    }
                 }
-                if (selection[i] && selection[i].StateID && selection[i].StateID == "4") {
-                    hasFailed = true;
-                } else {
-                    hasNotFailed = true;
+                if (selection[i] && selection[i].StateID !== null) {
+                    if (selection[i].StateID == "4") {
+                        hasFailed = true;
+                    } else {
+                        hasNotFailed = true;
+                    }
+                    if (WsWorkunits.isComplete(selection[i].StateID)) {
+                        hasCompleted = true;
+                    } else {
+                        hasNotCompleted = true;
+                    }
                 }
             }
 
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
             registry.byId(this.id + "Delete").set("disabled", !hasNotProtected);
+            registry.byId(this.id + "Abort").set("disabled", !hasNotCompleted);
             registry.byId(this.id + "SetToFailed").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Protect").set("disabled", !hasNotProtected);
             registry.byId(this.id + "Unprotect").set("disabled", !hasProtected);
@@ -516,7 +552,7 @@ define([
                 retVal = new WUDetailsWidget({
                     id: id,
                     title: params.Wuid,
-                    closable: true,
+                    closable: false,
                     onClose: function () {
                         delete context.tabMap[id];
                         return true;

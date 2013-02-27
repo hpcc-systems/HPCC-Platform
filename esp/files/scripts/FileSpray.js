@@ -16,7 +16,6 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/xhr",
     "dojo/_base/Deferred",
     "dojo/store/util/QueryResults",
     "dojo/store/JsonRest", 
@@ -26,11 +25,11 @@ define([
     
     "dojox/xml/parser",    
 
-    "hpcc/ESPBase"
-], function (declare, lang, xhr, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
+    "hpcc/ESPRequest"
+], function (declare, lang, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
     parser,
-    ESPBase) {
-    var GetDFUWorkunits = declare(ESPBase, {
+    ESPRequest) {
+    var GetDFUWorkunits = declare(null, {
         idProperty: "ID",
 
         constructor: function (options) {
@@ -52,12 +51,9 @@ define([
                 request['Sortby'] = options.sort[0].attribute;
                 request['Descending'] = options.sort[0].descending;
             }
-            request['rawxml_'] = "1";
 
-            var results = xhr.get({
-                url: this.getBaseURL("FileSpray") + "/GetDFUWorkunits.json",
-                handleAs: "json",
-                content: request
+            var results = ESPRequest.send("FileSpray", "GetDFUWorkunits", {
+                request: request
             });
 
             var deferredResults = new Deferred();
@@ -82,32 +78,15 @@ define([
     return {
         GetDFUWorkunits: GetDFUWorkunits,
 
-        WUAction: function (items, actionType, callback) {
-            var request = {
-                Type: actionType
-            };
+        GetDFUWorkunit: function (params) {
+            ESPRequest.send("FileSpray", "GetDFUWorkunit", params);
+        },
 
-            for (var i = 0; i < items.length; ++i) {
-                request["wuids_i" + i] = items[i].ID;
-            }
-
-            var espBase = new ESPBase();
-            var context = this;
-            xhr.post({
-                url: espBase.getBaseURL("FileSpray") + "/DFUWorkunitsAction.json",
-                handleAs: "json",
-                content: request,
-                load: function (response) {
-                    if (callback && callback.load) {
-                        callback.load(response);
-                    }
-                },
-                error: function () {
-                    if (callback && callback.error) {
-                        callback.error(e);
-                    }
-                }
+        DFUWUFile: function (params) {
+            lang.mixin(params, {
+                handleAs: "text"
             });
+            ESPRequest.send("FileSpray", "DFUWUFile", params);
         }
     };
 });

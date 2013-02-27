@@ -15,28 +15,175 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/array",
     "dojo/_base/lang",
-    "dojo/_base/xhr",
+    "dojo/_base/Deferred",
+    "dojo/data/ObjectStore",
+    "dojo/store/util/QueryResults",
+    "dojo/store/Observable",
+    "dojo/Stateful",
+
     "hpcc/ESPResult",
-    "hpcc/ESPBase"
-], function (declare, lang, xhr, ESPResult, ESPBase) {
-    return declare(ESPBase, {
-        Wuid: "",
+    "hpcc/WsWorkunits"
+], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable, Stateful,
+    ESPResult, WsWorkunits) {
 
-        stateID: 0,
-        state: "",
+    _workunits = {};
 
-        text: "",
+    var Store = declare(null, {
+        idProperty: "Wuid",
 
-        resultCount: 0,
+        _watched: {},
+
+        constructor: function (options) {
+            declare.safeMixin(this, options);
+        },
+
+        getIdentity: function (object) {
+            return object[this.idProperty];
+        },
+
+        get: function (id) {
+            if (!_workunits[id]) {
+                _workunits[id] = new Workunit({
+                    Wuid: id
+                });
+            }
+            return _workunits[id];
+        },
+
+        remove: function (item) {
+            if (_workunits[this.getIdentity(item)]) {
+                _workunits[this.getIdentity(item)].killTimer();
+                delete _workunits[this.getIdentity(item)];
+            }
+        },
+
+        query: function (query, options) {
+            var request = {};
+            lang.mixin(request, options.query);
+            if (options.start)
+                request['PageStartFrom'] = options.start;
+            if (options.count)
+                request['Count'] = options.count;
+            if (options.sort) {
+                request['Sortby'] = options.sort[0].attribute;
+                request['Descending'] = options.sort[0].descending;
+            }
+
+            var results = WsWorkunits.WUQuery({
+                request: request
+            });
+
+            var deferredResults = new Deferred();
+            deferredResults.total = results.then(function (response) {
+                if (lang.exists("WUQueryResponse.NumWUs", response)) {
+                    return response.WUQueryResponse.NumWUs;
+                }
+                return 0;
+            });
+            var context = this;
+            Deferred.when(results, function (response) {
+                var workunits = [];
+                for (key in context._watched) {
+                    context._watched[key].unwatch();
+                }
+                this._watched = {};
+                if (lang.exists("WUQueryResponse.Workunits.ECLWorkunit", response)) {
+                    arrayUtil.forEach(response.WUQueryResponse.Workunits.ECLWorkunit, function (item, index) {
+                        var wu = context.get(item.Wuid);
+                        wu.updateData(item);
+                        workunits.push(wu);
+                        context._watched[wu.Wuid] = wu.watch("changedCount", function (name, oldValue, newValue) {
+                            if (oldValue !== newValue) {
+                                context.notify(wu, wu.Wuid);
+                            }
+                        });
+                    });
+                }
+                deferredResults.resolve(workunits);
+            });
+
+            return QueryResults(deferredResults);
+        }
+    });
+
+    var WorkunitData = declare([Stateful], {
+        _StateIDSetter: function (StateID) {
+            if (this.StateID !== StateID) {
+                this.StateID = StateID;
+                var actionEx = lang.exists("ActionEx", this) ? this.ActionEx : null;
+                this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, actionEx));
+            }
+        },
+        _VariablesSetter: function (Variables) {
+            var variables = [];
+            for (var i = 0; i < Variables.ECLResult.length; ++i) {
+                context.variables.push(lang.mixin({
+                    ColumnType: Variables.ECLResult[i].ECLSchemas && Variables.ECLResult[i].ECLSchemas.ECLSchemaItem.length ? Variables.ECLResult[i].ECLSchemas.ECLSchemaItem[0].ColumnType : "unknown"
+                }, variables[i]));
+            }
+            this.set("variables", variables);
+        },
+        _ResultsSetter: function (Results) {
+            var results = [];
+            for (var i = 0; i < Results.ECLResult.length; ++i) {
+                results.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i])));
+            }
+            this.set("results", results);
+        },
+        _SourceFilesSetter: function (SourceFiles) {
+            var sourceFiles = [];
+            for (var i = 0; i < SourceFiles.ECLSourceFile.length; ++i) {
+                sourceFiles.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, SourceFiles.ECLSourceFile[i])));
+            }
+            this.set("sourceFiles", sourceFiles);
+        },
+        _TimersSetter: function(Timers) {
+            var timers = [];
+            for (var i = 0; i < Timers.ECLTimer.length; ++i) {
+                var timeParts = Timers.ECLTimer[i].Value.split(":");
+                var secs = 0;
+                for (var j = 0; j < timeParts.length; ++j) {
+                    secs = secs * 60 + timeParts[j] * 1;
+                }
+
+                timers.push(lang.mixin(Timers.ECLTimer[i], {
+                    Seconds: Math.round(secs * 1000) / 1000,
+                    HasSubGraphId: Timers.ECLTimer[i].SubGraphId && Timers.ECLTimer[i].SubGraphId != "" ? true : false
+                }));
+            }
+            this.set("timers", timers);
+        },
+        _GraphsSetter: function(Graphs) {
+            this.set("graphs", Graphs.ECLGraph);
+        },
+        getData: function () {
+            if (this instanceof WorkunitData) {
+               return (WorkunitData)(this);
+            }
+            return {};
+        },
+        updateData: function (response) {
+            var changed = false;
+            for (var key in response) {
+                if (this.get(key) !== response[key]) {
+                    changed = true;
+                    this.set(key, response[key]);
+                }
+            }
+            if (changed) {
+                this.set("changedCount", this.get("changedCount") + 1);
+            }
+        }
+    });
+
+    var Workunit = declare([WorkunitData], {
         results: [],
 
         graphs: [],
 
-        exceptions: [],
         timers: [],
-
-        WUInfoResponse: {},
 
         onCreate: function () {
         },
@@ -45,342 +192,250 @@ define([
         onSubmit: function () {
         },
         constructor: function (args) {
-            declare.safeMixin(this, args);
-            if (this.Wuid) {
-                this.WUInfoResponse = {
-                    Wuid: this.Wuid
-                }
-            }
+            this.inherited(arguments);
+            this.wu = this;
+            this.setTimer(1000);
         },
         isComplete: function () {
-            switch (this.stateID) {
-                case 1: //WUStateCompiled
-                    if (lang.exists("WUInfoResponse.ActionEx", this) && this.WUInfoResponse.ActionEx == "compile") {
-                        return true;
-                    }
-                    break;
-                case 3:	//WUStateCompleted:
-                case 4:	//WUStateFailed:
-                case 5:	//WUStateArchived:
-                case 7:	//WUStateAborted:
-                    return true;
-            }
-            return false;
+            return this.hasCompleted;
         },
-        monitor: function (callback, monitorDuration) {
-            if (!monitorDuration)
-                monitorDuration = 0;
-            var request = {
-                Wuid: this.Wuid,
-                TruncateEclTo64k: true,
-                IncludeExceptions: false,
-                IncludeGraphs: false,
-                IncludeSourceFiles: false,
-                IncludeResults: false,
-                IncludeResultsViewNames: false,
-                IncludeVariables: false,
-                IncludeTimers: false,
-                IncludeDebugValues: false,
-                IncludeApplicationValues: false,
-                IncludeWorkflows: false,
-                IncludeXmlSchemas: false,
-                SuppressResultSchemas: true
-            };
+        setTimer: function (timer) {
+            this._timerTickCount = 0;
+            this._timer = timer;
+            this.onTimer();
+        },
+        killTimer: function () {
+            this._timerTickCount = 0;
+            this._timer = 0;
+        },
+        onTimer: function () {
+            this._timerTickCount++;
+
+            if (this.hasCompleted) {
+                this.killTimer();
+                return;
+            } else {
+                if (this._timerTickCount < 5 && this._timerTickCount % 5 === 0) {
+                    this.refresh();
+                } else if (this._timerTickCount < 30 && this._timerTickCount % 5 === 0) {
+                    this.refresh();
+                } else if (this._timerTickCount < 60 && this._timerTickCount % 10 === 0) {
+                    this.refresh();
+                } else if (this._timerTickCount < 120 && this._timerTickCount % 30 === 0) {
+                    this.refresh();
+                } else if (this._timerTickCount % 60 === 0) {
+                    this.refresh();
+                }
+            }
 
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUInfo.json",
-                handleAs: "json",
-                content: request,
-                load: function (response) {
-                    if (lang.exists("WUInfoResponse.Workunit", response)) {
-                        context.WUInfoResponse = response.WUInfoResponse.Workunit;
-                        context.stateID = context.WUInfoResponse.StateID;
-                        context.state = context.WUInfoResponse.State;
-                        context.protected = context.WUInfoResponse.Protected;
-                        if (callback) {
-                            callback(context.WUInfoResponse);
+            if (this._timer) {
+                setTimeout(function () {
+                    context.onTimer();
+                }, this._timer);
+            } else {
+                this_timerTickCount = 0;
+            }
+        },
+        monitor: function (callback) {
+            if (callback) {
+                if (this.hasCompleted) {
+                    callback(this);
+                } else {
+                    var context = this;
+                    this.watch("hasCompleted", function (name, oldValue, newValue) {
+                        if (oldValue !== newValue && newValue) {
+                            callback(context);
                         }
-
-                        if (!context.isComplete()) {
-                            var timeout = 30;	// Seconds
-
-                            if (monitorDuration < 5) {
-                                timeout = 1;
-                            } else if (monitorDuration < 10) {
-                                timeout = 2;
-                            } else if (monitorDuration < 30) {
-                                timeout = 5;
-                            } else if (monitorDuration < 60) {
-                                timeout = 10;
-                            } else if (monitorDuration < 120) {
-                                timeout = 20;
-                            }
-                            setTimeout(function () {
-                                context.monitor(callback, monitorDuration + timeout);
-                            }, timeout * 1000);
-                        }
-                    }
-                },
-                error: function () {
-                    done = true;
+                    });
                 }
-            });
+            }
+            return;
         },
         create: function (ecl) {
-            var request = {};
-            request['rawxml_'] = "1";
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUCreate.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUCreate({
                 load: function (response) {
-                    context.Wuid = response.WUCreateResponse.Workunit.Wuid;
+                    _workunits[response.WUCreateResponse.Workunit.Wuid] = context
+                    context.updateData(response.WUCreateResponse.Workunit);
                     context.onCreate();
-                },
-                error: function () {
                 }
             });
         },
-        update: function (request, appData, callback) {
+        update: function (request, appData) {
             lang.mixin(request, {
-                Wuid: this.Wuid,
-                rawxml_: true
+                Wuid: this.Wuid
             });
-            if (this.WUInfoResponse) {
-                lang.mixin(request, {
-                    StateOrig: this.WUInfoResponse.State,
-                    JobnameOrig: this.WUInfoResponse.Jobname,
-                    DescriptionOrig: this.WUInfoResponse.Description,
-                    ProtectedOrig: this.WUInfoResponse.Protected,
-                    ScopeOrig: this.WUInfoResponse.Scope,
-                    ClusterOrig: this.WUInfoResponse.Cluster
-                });
-            }
-            if (appData) {
-                request['ApplicationValues.ApplicationValue.itemcount'] = appData.length;
-                var i = 0;
-                for (key in appData) {
-                    request['ApplicationValues.ApplicationValue.' + i + '.Application'] = "ESPWorkunit.js";
-                    request['ApplicationValues.ApplicationValue.' + i + '.Name'] = key;
-                    request['ApplicationValues.ApplicationValue.' + i + '.Value'] = appData[key];
-                    ++i;
-                }
-            }
+            lang.mixin(request, {
+                StateOrig: this.State,
+                JobnameOrig: this.Jobname,
+                DescriptionOrig: this.Description,
+                ProtectedOrig: this.Protected,
+                ScopeOrig: this.Scope,
+                ClusterOrig: this.Cluster,
+                ApplicationValues: appData
+            });
 
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUUpdate.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUUpdate({
+                request: request,
                 load: function (response) {
-                    context.WUInfoResponse = lang.mixin(context.WUInfoResponse, response.WUUpdateResponse.Workunit);
+                    context.updateData(response.WUUpdateResponse.Workunit);
                     context.onUpdate();
-                    if (callback && callback.load) {
-                        callback.load(response);
-                    }
-                },
-                error: function (error) {
-                    if (callback && callback.error) {
-                        callback.error(e);
-                    }
                 }
             });
         },
         submit: function (target) {
-            var request = {
-                Wuid: this.Wuid,
-                Cluster: target
-            };
-            request['rawxml_'] = "1";
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUSubmit.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUSubmit({
+                request: {
+                    Wuid: this.Wuid,
+                    Cluster: target
+                },
                 load: function (response) {
                     context.onSubmit();
-                },
-                error: function (error) {
                 }
             });
         },
-        _resubmit: function (clone, resetWorkflow, callback) {
-            var request = {
-                Wuids: this.Wuid,
-                CloneWorkunit: clone,
-                ResetWorkflow: resetWorkflow,
-                rawxml_: true
-            };
-
+        _resubmit: function (clone, resetWorkflow) {
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUResubmit.json",
-                handleAs: "json",
-                content: request,
-                load: function (response) {
-                    if (callback && callback.load) {
-                        callback.load(response);
-                    }
+            WsWorkunits.WUResubmit({
+                request: {
+                    Wuids: this.Wuid,
+                    CloneWorkunit: clone,
+                    ResetWorkflow: resetWorkflow
                 },
-                error: function (e) {
-                    if (callback && callback.error) {
-                        callback.error(e);
-                    }
+                load: function (response) {
+                    context.refresh();
                 }
             });
         },
-        clone: function (callback) {
-            this._resubmit(true, false, callback);
+        clone: function () {
+            this._resubmit(true, false);
         },
-        resubmit: function (callback) {
-            this._resubmit(false, false, callback);
+        resubmit: function () {
+            this._resubmit(false, false);
         },
-        restart: function (callback) {
-            this._resubmit(false, true, callback);
+        restart: function () {
+            this._resubmit(false, true);
         },
-        _action: function (action, callback) {
-            var request = {
-                Wuids: this.Wuid,
-                ActionType: action,
-                rawxml_: true
-            };
-
+        _action: function (action) {
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUAction.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUAction([{ Wuid: this.Wuid }], action, {
                 load: function (response) {
-                    if (callback && callback.load) {
-                        callback.load(response);
-                    }
-                },
-                error: function (e) {
-                    if (callback && callback.error) {
-                        callback.error(e);
-                    }
+                    context.refresh();
                 }
             });
         },
-        abort: function (callback) {
-            this._action("Abort", callback);
+        setToFailed: function () {
+            this._action("setToFailed");
         },
-        doDelete: function (callback) {
-            this._action("Delete", callback);
+        abort: function () {
+            this._action("Abort");
+        },
+        doDelete: function () {
+            this._action("Delete");
         },
         publish: function (jobName) {
-            var request = {
-                Wuid: this.Wuid,
-                JobName: jobName,
-                Activate: 1,
-                UpdateWorkUnitName: 1,
-                Wait: 5000,
-                rawxml_: true
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUPublishWorkunit.json",
-                handleAs: "json",
-                content: request,
-                load: function (response) {
+            WsWorkunits.WUPublishWorkunit({
+                request: {
+                    Wuid: this.Wuid,
+                    JobName: jobName,
+                    Activate: 1,
+                    UpdateWorkUnitName: 1,
+                    Wait: 5000
                 },
-                error: function (e) {
+                load: function (response) {
+                    context.updateData(response.WUPublishWorkunitResponse);
+                }
+            });
+        },
+        refresh: function (full) {
+            if (full) {
+                this.getInfo({
+                    onGetText: function () {
+                    },
+                    onGetWUExceptions: function () {
+                    },
+                    onGetGraphs: function () {
+                    },
+                    onGetSourceFiles: function () {
+                    },
+                    onGetResults: function () {
+                    },
+                    onGetVariables: function () {
+                    },
+                    onGetTimers: function () {
+                    },
+                    onGetApplicationValues: function () {
+                    }
+                });
+            } else {
+                this.getQuery();
+            }
+        },
+        getQuery: function () {
+            var context = this;
+            WsWorkunits.WUQuery({
+                request: {
+                    Wuid: this.Wuid,
+                },
+                load: function (response) {
+                    if (lang.exists("WUQueryResponse.Workunits.ECLWorkunit", response)) {
+                        arrayUtil.forEach(response.WUQueryResponse.Workunits.ECLWorkunit, function (item, index) {
+                            context.updateData(item);
+                        });
+                    }
                 }
             });
         },
         getInfo: function (args) {
-            var request = {
-                Wuid: this.Wuid,
-                TruncateEclTo64k: args.onGetText ? false : true,
-                IncludeExceptions: args.onGetWUExceptions ? true : false,
-                IncludeGraphs: args.onGetGraphs ? true : false,
-                IncludeSourceFiles: args.onGetSourceFiles ? true : false,
-                IncludeResults: args.onGetResults ? true : false,
-                IncludeResultsViewNames: false,
-                IncludeVariables: args.onGetVariables ? true : false,
-                IncludeTimers: args.onGetTimers ? true : false,
-                IncludeDebugValues: false,
-                IncludeApplicationValues: args.onGetApplicationValues ? true : false,
-                IncludeWorkflows: false,
-                IncludeXmlSchemas: args.onGetResults ? true : false,
-                SuppressResultSchemas: args.onGetResults ? false : true,
-                rawxml_: true
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUInfo.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUInfo({
+                request: {
+                    Wuid: this.Wuid,
+                    TruncateEclTo64k: args.onGetText ? false : true,
+                    IncludeExceptions: args.onGetWUExceptions ? true : false,
+                    IncludeGraphs: args.onGetGraphs ? true : false,
+                    IncludeSourceFiles: args.onGetSourceFiles ? true : false,
+                    IncludeResults: args.onGetResults ? true : false,
+                    IncludeResultsViewNames: false,
+                    IncludeVariables: args.onGetVariables ? true : false,
+                    IncludeTimers: args.onGetTimers ? true : false,
+                    IncludeDebugValues: false,
+                    IncludeApplicationValues: args.onGetApplicationValues ? true : false,
+                    IncludeWorkflows: false,
+                    IncludeXmlSchemas: args.onGetResults ? true : false,
+                    SuppressResultSchemas: args.onGetResults ? false : true
+                },
                 load: function (response) {
                     if (lang.exists("WUInfoResponse.Workunit", response)) {
-                        context.WUInfoResponse = response.WUInfoResponse.Workunit;
+                        context.updateData(response.WUInfoResponse.Workunit);
 
-                        if (args.onGetText && lang.exists("Query.Text", context.WUInfoResponse)) {
-                            context.text = context.WUInfoResponse.Query.Text;
-                            args.onGetText(context.text);
+                        if (args.onGetText && lang.exists("Query.Text", context)) {
+                            args.onGetText(context.Query.Text);
                         }
-                        if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context.WUInfoResponse)) {
-                            context.exceptions = [];
-                            for (var i = 0; i < context.WUInfoResponse.Exceptions.ECLException.length; ++i) {
-                                context.exceptions.push(context.WUInfoResponse.Exceptions.ECLException[i]);
-                            }
-                            args.onGetWUExceptions(context.exceptions);
+                        if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context)) {
+                            args.onGetWUExceptions(context.Exceptions.ECLException);
                         }
-                        if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context.WUInfoResponse)) {
-                            context.applicationValues = context.WUInfoResponse.ApplicationValues.ApplicationValue;
-                            args.onGetApplicationValues(context.applicationValues)
+                        if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context)) {
+                            args.onGetApplicationValues(context.ApplicationValues.ApplicationValue)
                         }
-                        if (args.onGetVariables && lang.exists("Variables.ECLResult", context.WUInfoResponse)) {
-                            context.variables = [];
-                            var variables = context.WUInfoResponse.Variables.ECLResult;
-                            for (var i = 0; i < variables.length; ++i) {
-                                context.variables.push(lang.mixin({
-                                    ColumnType: variables[i].ECLSchemas && variables[i].ECLSchemas.ECLSchemaItem.length ? variables[i].ECLSchemas.ECLSchemaItem[0].ColumnType : "unknown"
-                                }, variables[i]));
-                            }
+                        if (args.onGetVariables && lang.exists("variables", context)) {
                             args.onGetVariables(context.variables);
                         }
-                        if (args.onGetResults && lang.exists("Results.ECLResult", context.WUInfoResponse)) {
-                            context.results = [];
-                            var results = context.WUInfoResponse.Results.ECLResult;
-                            for (var i = 0; i < results.length; ++i) {
-                                context.results.push(new ESPResult(lang.mixin({ wu: context, Wuid: context.Wuid }, results[i])));
-                            }
+                        if (args.onGetResults && lang.exists("results", context)) {
                             args.onGetResults(context.results);
                         }
-                        if (args.onGetSourceFiles && lang.exists("SourceFiles.ECLSourceFile", context.WUInfoResponse)) {
-                            context.sourceFiles = [];
-                            var sourceFiles = context.WUInfoResponse.SourceFiles.ECLSourceFile;
-                            for (var i = 0; i < sourceFiles.length; ++i) {
-                                context.sourceFiles.push(new ESPResult(lang.mixin({ wu: context, Wuid: context.Wuid }, sourceFiles[i])));
-                            }
+                        if (args.onGetSourceFiles && lang.exists("sourceFiles", context)) {
                             args.onGetSourceFiles(context.sourceFiles);
                         }
-                        if (args.onGetTimers && lang.exists("Timers.ECLTimer", context.WUInfoResponse)) {
-                            context.timers = [];
-                            for (var i = 0; i < context.WUInfoResponse.Timers.ECLTimer.length; ++i) {
-                                var timeParts = context.WUInfoResponse.Timers.ECLTimer[i].Value.split(":");
-                                var secs = 0;
-                                for (var j = 0; j < timeParts.length; ++j) {
-                                    secs = secs * 60 + timeParts[j] * 1;
-                                }
-
-                                context.timers.push(lang.mixin(context.WUInfoResponse.Timers.ECLTimer[i], {
-                                    Seconds: Math.round(secs * 1000) / 1000,
-                                    HasSubGraphId: context.WUInfoResponse.Timers.ECLTimer[i].SubGraphId && context.WUInfoResponse.Timers.ECLTimer[i].SubGraphId != "" ? true : false
-                                }));
-                            }
+                        if (args.onGetTimers && lang.exists("timers", context)) {
                             args.onGetTimers(context.timers);
                         }
-                        if (args.onGetGraphs && lang.exists("Graphs.ECLGraph", context.WUInfoResponse)) {
-                            context.graphs = context.WUInfoResponse.Graphs.ECLGraph;
-                            if (context.timers || context.applicationValues) {
+                        if (args.onGetGraphs && lang.exists("graphs", context)) {
+                            if (context.timers || lang.exists("ApplicationValues.ApplicationValue", context)) {
                                 for (var i = 0; i < context.graphs.length; ++i) {
                                     if (context.timers) {
                                         context.graphs[i].Time = 0;
@@ -391,22 +446,20 @@ define([
                                             context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                         }
                                     }
-                                    if (context.applicationValues) {
+                                    if (lang.exists("ApplicationValues.ApplicationValue", context)) {
                                         var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
                                         if (idx >= 0) {
-                                            context.graphs[i].svg = context.applicationValues[idx].Value;
+                                            context.graphs[i].svg = context.ApplicationValues.ApplicationValue[idx].Value;
                                         }
                                     }
                                 }
                             }
                             args.onGetGraphs(context.graphs)
                         }
-                        if (args.onGetAll) {
-                            args.onGetAll(context.WUInfoResponse);
+                        if (args.onAfterSend) {
+                            args.onAfterSend(context);
                         }
                     }
-                },
-                error: function (e) {
                 }
             });
         },
@@ -419,25 +472,27 @@ define([
             return -1;
         },
         getApplicationValueIndex: function (application, name) {
-            for (var i = 0; i < this.applicationValues.length; ++i) {
-                if (this.applicationValues[i].Application == application && this.applicationValues[i].Name == name) {
-                    return i;
+            if (lang.exists("ApplicationValues.ApplicationValue", this)) {
+                for (var i = 0; i < this.ApplicationValues.ApplicationValue.length; ++i) {
+                    if (this.ApplicationValues.ApplicationValue[i].Application == application && this.ApplicationValues.ApplicationValue[i].Name == name) {
+                        return i;
+                    }
                 }
             }
             return -1;
         },
         getState: function () {
-            return this.state;
+            return this.State;
         },
         getStateIconClass: function () {
-            switch (this.stateID) {
+            switch (this.StateID) {
                 case 1:
                 case 3:
                     return "iconCompleted";
                 case 2:
                 case 11:
                 case 15:
-                    return "iconRunning";                
+                    return "iconRunning";
                 case 4:
                 case 7:
                     return "iconFailed";
@@ -450,16 +505,16 @@ define([
                 case 16:
                     return "iconArchived";
                 case 6:
-                    return "iconAborting";                                
+                    return "iconAborting";
                 case 9:
-                    return "iconSubmitted";                
+                    return "iconSubmitted";
                 case 999:
                     return "iconDeleted";
             }
             return "iconWorkunit";
         },
         getStateImage: function () {
-            switch (this.stateID) {
+            switch (this.StateID) {
                 case 1:
                     return "img/workunit_completed.png";
                 case 2:
@@ -498,14 +553,15 @@ define([
             return "img/workunit.png";
         },
         getProtectedImage: function () {
-            if (this.protected) {
+            if (this.Protected) {
                 return "img/locked.png"
             }
             return "img/unlocked.png"
         },
         fetchText: function (onFetchText) {
-            if (this.text) {
-                onFetchText(this.text);
+            var context = this;
+            if (lang.exists("Query.Text", context)) {
+                onFetchText(this.Query.Text);
                 return;
             }
 
@@ -519,21 +575,15 @@ define([
                 return;
             }
 
-            var request = {
-                Wuid: this.Wuid,
-                Type: "XML"
-            };
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUFile.json",
-                handleAs: "text",
-                content: request,
+            WsWorkunits.WUFile({
+                request: {
+                    Wuid: this.Wuid,
+                    Type: "XML"
+                },
                 load: function (response) {
                     context.xml = response;
                     onFetchXML(response);
-                },
-                error: function (e) {
                 }
             });
         },
@@ -574,21 +624,15 @@ define([
             }
         },
         fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
-            var request = {};
-            request['Wuid'] = this.Wuid;
-            request['GraphName'] = this.graphs[idx].Name;
-            request['rawxml_'] = "1";
-
             var context = this;
-            xhr.post({
-                url: this.getBaseURL() + "/WUGetGraph.json",
-                handleAs: "json",
-                content: request,
+            WsWorkunits.WUGetGraph({
+                request: {
+                    Wuid: this.Wuid,
+                    GraphName: this.graphs[idx].Name
+                },
                 load: function (response) {
                     context.graphs[idx].xgmml = response.WUGetGraphResponse.Graphs.ECLGraphEx[0].Graph;
                     onFetchGraphXgmml(context.graphs[idx].xgmml, context.graphs[idx].svg);
-                },
-                error: function () {
                 }
             });
         },
@@ -602,4 +646,24 @@ define([
             }
         }
     });
+
+    return {
+        Create: function (params) {
+            retVal = new Workunit(params);
+            retVal.create();
+            return retVal;
+        },
+
+        Get: function (wuid) {
+            var store = new Store();
+            return store.get(wuid);
+        },
+
+        CreateWUQueryObjectStore: function (options) {
+            var store = new Store(options);
+            store = Observable(store);
+            var objStore = new ObjectStore({ objectStore: store });
+            return objStore;
+        }
+    };
 });

@@ -16,7 +16,9 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/xhr",
+    "dojo/_base/lang",
     "dojo/dom",
+    "dojo/query",
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
@@ -34,9 +36,9 @@ define([
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/ECLPlaygroundWidget.html"
-], function (declare, xhr, dom,
+], function (declare, xhr, lang, dom, query,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry,
-                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, Workunit,
+                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit,
                 template) {
     return declare("ECLPlaygroundWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -104,13 +106,14 @@ define([
 
             var context = this;
             this.initGraph();
+
             if (params.Wuid) {
-                this.wu = new Workunit({
-                    Wuid: params.Wuid
-                });
-                this.wu.monitor(function () {
-                    context.monitorWorkunit();
-                });
+                this.wu = ESPWorkunit.Get(params.Wuid);
+                var data = this.wu.getData();
+                for (key in data) {
+                    this.updateInput(key, null, data[key]);
+                }
+                this.watchWU();
             } else {
                 this.initSamples();
                 this.graphControl.watchSelect(this.sampleSelectWidget.selectControl);
@@ -135,7 +138,7 @@ define([
 
         initGraph: function () {
             var context = this;
-            this.graphControl = registry.byId(this.id + "Graphs");
+            this.graphControl = registry.byId(this.id + "GraphControl");
             this.graphControl.onSelectionChanged = function (items) {
                 context.editorControl.clearHighlightLines();
                 for (var i = 0; i < items.length; ++i) {
@@ -157,10 +160,40 @@ define([
             this.editorControl.clearHighlightLines();
             this.graphControl.clear();
             this.resultsWidget.clear();
+            this.updateInput("State", null, "...");
         },
 
-        monitorWorkunit: function () {
-            dom.byId(this.id + "Status").innerHTML = this.wu.state;
+        watchWU: function () {
+            if (this.watching) {
+                this.watching.unwatch();
+            }
+            var context = this;
+            this.watching = this.wu.watch(function (name, oldValue, newValue) {
+                context.updateInput(name, oldValue, newValue);
+            });
+        },
+
+        updateInput: function (name, oldValue, newValue) {
+            var input = query("input[id=" + this.id + name + "]", this.summaryForm)[0];
+            if (input) {
+                var dijitInput = registry.byId(this.id + name);
+                if (dijitInput) {
+                    dijitInput.set("value", newValue);
+                } else {
+                    input.value = newValue;
+                }
+            } else {
+                var div = query("div[id=" + this.id + name + "]", this.summaryForm)[0];
+                if (div) {
+                    div.innerHTML = newValue;
+                }
+            }
+            if (name === "hasCompleted") {
+                this.checkIfComplete();
+            }
+        },
+
+        checkIfComplete: function() {
             var context = this;
             if (this.wu.isComplete()) {
                 this.wu.getInfo({
@@ -173,7 +206,7 @@ define([
                     onGetGraphs: function (graphs) {
                         context.displayGraphs(graphs);
                     },
-                    onGetAll: function (workunit) {
+                    onAfterSend: function (workunit) {
                         context.displayAll(workunit);
                     }
                 });
@@ -202,8 +235,8 @@ define([
         },
 
         displayAll: function (workunit) {
-            if (this.wu.exceptions.length) {
-                this.editorControl.setErrors(this.wu.exceptions);
+            if (lang.exists("Exceptions.ECLException", this.wu)) {
+                this.editorControl.setErrors(this.wu.Exceptions.ECLException);
             }
             this.resultsWidget.refresh(this.wu);
         },
@@ -211,7 +244,7 @@ define([
         _onSubmit: function (evt) {
             this.resetPage();
             var context = this;
-            this.wu = new Workunit({
+            this.wu = ESPWorkunit.Create({
                 onCreate: function () {
                     context.wu.update({
                         QueryText: context.editorControl.getText()
@@ -221,12 +254,9 @@ define([
                     context.wu.submit(context.targetSelectWidget.getValue());
                 },
                 onSubmit: function () {
-                    context.wu.monitor(function () {
-                        context.monitorWorkunit();
-                    });
                 }
             });
-            this.wu.create();
+            this.watchWU();
         }
     });
 });
