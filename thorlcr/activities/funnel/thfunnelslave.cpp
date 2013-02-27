@@ -369,7 +369,7 @@ public:
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         IHThorFunnelArg *helper = (IHThorFunnelArg *)queryHelper();
-        bool parallel = !container.queryGrouped() && !helper->isOrdered() && globals->getPropBool("@parallelFunnel", true);
+        bool parallel = !container.queryGrouped() && !helper->isOrdered() && getOptBool(THOROPT_PARALLEL_FUNNEL, true);
         init(container.queryGrouped(), parallel);
     }
     void start()

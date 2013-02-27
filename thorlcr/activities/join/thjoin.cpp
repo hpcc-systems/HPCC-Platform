@@ -160,7 +160,7 @@ public:
             }
             try
             {
-                size32_t maxdeviance=globals->getPropInt("@sort_max_deviance", 10*1024*1024);
+                size32_t maxdeviance = getOptUInt(THOROPT_SORT_MAX_DEVIANCE, 10*1024*1024);
                 rightpartition = (container.getKind() == TAKjoin)&&((helper->getJoinFlags()&JFpartitionright)!=0);
                 bool betweenjoin = (helper->getJoinFlags()&JFslidingmatch)!=0;
                 if (!container.queryLocalOrGrouped() && container.getKind() == TAKselfjoin)
