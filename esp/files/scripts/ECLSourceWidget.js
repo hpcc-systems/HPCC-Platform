@@ -15,6 +15,7 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/dom",
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
@@ -29,7 +30,7 @@ define([
 
     "dijit/Toolbar", "dijit/ToolbarSeparator", "dijit/form/Button"
 ],
-    function (declare,
+    function (declare, dom,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, ContentPane, registry,
             ESPWorkunit,
             template) {
@@ -82,12 +83,11 @@ define([
                     gutter: this.WUXml ? true : false,
                     onGutterClick: CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder)
                 });
+                dom.byId(this.id + "EclContent").style.backgroundColor = this.readOnly ? 0xd0d0d0 : 0xffffff;
 
                 var context = this;
                 if (params.Wuid) {
-                    this.wu = new ESPWorkunit({
-                        Wuid: params.Wuid
-                    });
+                    this.wu = ESPWorkunit.Get(params.Wuid);
                     if (this.WUXml) {
                         this.wu.fetchXML(function (xml) {
                             context.editor.setValue(xml);

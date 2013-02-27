@@ -92,9 +92,8 @@ define([
 
                 var context = this;
                 if (params.Wuid) {
-                    this.wu = new ESPWorkunit({
-                        Wuid: params.Wuid
-                    });
+                    this.wu = ESPWorkunit.Get(params.Wuid);
+
                     this.wu.fetchTimers(function (timers) {
                         context.timers = timers;
                         context.loadTimers(timers, context.defaultQuery);

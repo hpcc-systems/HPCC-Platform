@@ -3,9 +3,13 @@
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
             <div id="${id}_Workunits" style="width: 100%; height: 100%" data-dojo-props='title:"Workunits"' data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">Open</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}SetToFailed" data-dojo-attach-event="onClick:_onSetToFailed" data-dojo-type="dijit.form.Button">Set To Failed</div>
+                    <div id="${id}Abort" data-dojo-attach-event="onClick:_onAbort" data-dojo-type="dijit.form.Button">Abort</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Protect" data-dojo-attach-event="onClick:_onProtect" data-dojo-type="dijit.form.Button">Protect</div>
                     <div id="${id}Unprotect" data-dojo-attach-event="onClick:_onUnprotect" data-dojo-type="dijit.form.Button">Unprotect</div>
