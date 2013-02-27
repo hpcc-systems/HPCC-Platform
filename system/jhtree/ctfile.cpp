@@ -365,7 +365,7 @@ bool CWriteNode::add(offset_t pos, const void *indata, size32_t insize, unsigned
     }
 
     if (insize>keyLen)
-        throw MakeStringException(0, "key+payload exceeds max length");
+        throw MakeStringException(0, "key+payload (%u) exceeds max length (%u)", insize, keyLen);
     memcpy(lastKeyValue, indata, insize);
     lastSequence = sequence;
     hdr.numKeys++;

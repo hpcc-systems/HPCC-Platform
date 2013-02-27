@@ -193,28 +193,6 @@ protected:
     virtual aindex_t getBaseCount() const = 0;
     virtual const CRoxiePackageNode *getBaseNode(aindex_t pos) const = 0;
 
-    //map ambiguous IHpccPackage
-    virtual ISimpleSuperFileEnquiry *resolveSuperFile(const char *superFileName) const
-    {
-        return CPackageNode::resolveSuperFile(superFileName);
-    }
-    virtual const char *queryEnv(const char *varname) const
-    {
-        return CPackageNode::queryEnv(varname);
-    }
-    virtual bool getEnableFieldTranslation() const
-    {
-        return CPackageNode::getEnableFieldTranslation();
-    }
-    virtual const IPropertyTree *queryTree() const
-    {
-        return CPackageNode::queryTree();
-    }
-    virtual hash64_t queryHash() const
-    {
-        return CPackageNode::queryHash();
-    }
-
     virtual bool getSysFieldTranslationEnabled() const {return fieldTranslationEnabled;} //roxie configured value
 
     // Add a filename and the corresponding IResolvedFile to the cache
@@ -468,6 +446,28 @@ public:
         else
             return NULL;
     }
+
+    //map ambiguous IHpccPackage
+    virtual ISimpleSuperFileEnquiry *resolveSuperFile(const char *superFileName) const
+    {
+        return CPackageNode::resolveSuperFile(superFileName);
+    }
+    virtual const char *queryEnv(const char *varname) const
+    {
+        return CPackageNode::queryEnv(varname);
+    }
+    virtual bool getEnableFieldTranslation() const
+    {
+        return CPackageNode::getEnableFieldTranslation();
+    }
+    virtual const IPropertyTree *queryTree() const
+    {
+        return CPackageNode::queryTree();
+    }
+    virtual hash64_t queryHash() const
+    {
+        return CPackageNode::queryHash();
+    }
 };
 
 typedef CResolvedPackage<CRoxiePackageNode> CRoxiePackage;
@@ -512,6 +512,10 @@ public:
     virtual bool isActive() const
     {
         return BASE::isActive();
+    }
+    virtual bool validate(StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages) const
+    {
+        return BASE::validate(wrn, err, unmatchedQueries, unusedPackages);
     }
 
     virtual const IRoxiePackage *queryRoxiePackage(const char *name) const

@@ -108,7 +108,18 @@ bool canCreateTemporary(IHqlExpression * expr)
     case no_loopbody:
         return false;
     }
-    return !expr->isAction() && !expr->isTransform();
+    ITypeInfo * type = expr->queryType();
+    if (!type)
+        return false;
+    switch (type->getTypeCode())
+    {
+    case type_transform:
+    case type_null:
+    case type_void:
+        return false;
+    default:
+        return true;
+    }
 }
 
 

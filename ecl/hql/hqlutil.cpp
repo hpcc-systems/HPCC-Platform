@@ -4609,6 +4609,10 @@ static bool splitDatasetAttribute(SharedHqlExpr & dataset, SharedHqlExpr & attri
         if (leftOp == no_selectmap)
             return false;
 
+        //If this is a selection from an inscope dataset then this must not be assumed to be an input dataset.
+        if (expr->isDataset() && !expr->hasProperty(newAtom))
+            return false;
+
         IHqlExpression * lhs = LINK(left);
         IHqlExpression * field = expr->queryChild(1);
         if (lhs->isDataset()) lhs = createRow(no_activerow, lhs);

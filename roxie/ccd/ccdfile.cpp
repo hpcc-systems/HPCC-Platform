@@ -2085,7 +2085,15 @@ public:
                             }
                         }
                         if (part)
-                            keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part, false, false)); 
+                        {
+                            if (lazyOpen)
+                            {
+                                // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *QUERYINTERFACE(part.get(), IDelayedFile), false, false));
+                            }
+                            else
+                                keyset->addIndex(createKeyIndex(part->queryFilename(), crc, *part.get(), false, false));
+                        }
                         else
                             keyset->addIndex(NULL);
                     }
@@ -2116,7 +2124,13 @@ public:
                     pdesc->getCrc(crc);
                     StringBuffer pname;
                     pdesc->getPath(pname);
-                    key.setown(createKeyIndex(pname.str(), crc, *keyFile, numParts>1, false));
+                    if (lazyOpen)
+                    {
+                        // We pass the IDelayedFile interface to createKeyIndex, so that it does not open the file immediately
+                        key.setown(createKeyIndex(pname.str(), crc, *QUERYINTERFACE(keyFile.get(), IDelayedFile), numParts>1, false));
+                    }
+                    else
+                        key.setown(createKeyIndex(pname.str(), crc, *keyFile.get(), numParts>1, false));
                     keyset->addIndex(LINK(key->queryPart(0)));
                 }
                 else
