@@ -80,7 +80,7 @@ private:
     void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* serverName, const char* serverType);
     void addServerJobQueue(IArrayOf<IEspServerJobQueue>& jobQueues, const char* queueName, const char* queueState, const char* serverName, const char* serverType);
     void getQueueState(int runningJobsInQueue, StringBuffer& queueState, BulletType& colorType);
-    void readClusterTypeAndQueueName(CConstWUClusterInfoArray& clusters, const char* clusterName, SCMStringBuffer& clusterType, SCMStringBuffer& clusterQueue);
+    void readClusterTypeAndQueueName(CConstWUClusterInfoArray& clusters, const char* clusterName, StringBuffer& clusterType, SCMStringBuffer& clusterQueue);
     void addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWUClusterInfoArray& clusters,
                    IArrayOf<IEspActiveWorkunit>& aws, BoolHash& uniqueWUIDs,
                    StringArray& runningQueueNames, int* runningJobsInQueue);

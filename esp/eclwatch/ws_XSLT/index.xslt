@@ -876,6 +876,29 @@
                         </xsl:if>
                     </tr>
 
+                    <xsl:if test="$clusterType='HTHOR'">
+                        <tr style="border:solid 2 black">
+                            <xsl:if test="count($active2)">
+                                <xsl:for-each select="$active2">
+                                    <xsl:if test="position() > 1">
+                                        <xsl:text disable-output-escaping="yes">
+                                                <![CDATA[
+                                                    </tr>
+                                                    <tr>
+                                                ]]>
+                                            </xsl:text>
+                                    </xsl:if>
+                                    <xsl:apply-templates select=".">
+                                        <xsl:with-param name="cluster" select="$cluster"/>
+                                        <xsl:with-param name="clusterType" select="$clusterType"/>
+                                        <xsl:with-param name="queue" select="$queue"/>
+                                        <xsl:with-param name="thorlcr" select="$thorlcr"/>
+                                    </xsl:apply-templates>
+                                </xsl:for-each>
+                            </xsl:if>
+                        </tr>
+                    </xsl:if>
+
                     <xsl:for-each select="$workunits[State!='running']">
                         <tr>
                             <xsl:apply-templates select=".">
@@ -887,26 +910,28 @@
                         </tr>
                     </xsl:for-each>
 
-                    <tr style="border:solid 2 black">
-                        <xsl:if test="count($active2)">
-                            <xsl:for-each select="$active2">
-                                <xsl:if test="position() > 1">
-                                    <xsl:text disable-output-escaping="yes">
-                                            <![CDATA[
-                                                </tr>
-                                                <tr>
-                                            ]]>
-                                        </xsl:text>
-                                </xsl:if>
-                                <xsl:apply-templates select=".">
-                                    <xsl:with-param name="cluster" select="$cluster"/>
-                                    <xsl:with-param name="clusterType" select="$clusterType"/>
-                                    <xsl:with-param name="queue" select="$queue"/>
-                                    <xsl:with-param name="thorlcr" select="$thorlcr"/>
-                                </xsl:apply-templates>
-                            </xsl:for-each>
-                        </xsl:if>
-                    </tr>
+                    <xsl:if test="$clusterType!='HTHOR'">
+                        <tr style="border:solid 2 black">
+                            <xsl:if test="count($active2)">
+                                <xsl:for-each select="$active2">
+                                    <xsl:if test="position() > 1">
+                                        <xsl:text disable-output-escaping="yes">
+                                                <![CDATA[
+                                                    </tr>
+                                                    <tr>
+                                                ]]>
+                                            </xsl:text>
+                                    </xsl:if>
+                                    <xsl:apply-templates select=".">
+                                        <xsl:with-param name="cluster" select="$cluster"/>
+                                        <xsl:with-param name="clusterType" select="$clusterType"/>
+                                        <xsl:with-param name="queue" select="$queue"/>
+                                        <xsl:with-param name="thorlcr" select="$thorlcr"/>
+                                    </xsl:apply-templates>
+                                </xsl:for-each>
+                            </xsl:if>
+                        </tr>
+                    </xsl:if>
                 </xsl:when>
                 <xsl:otherwise>
                     <td width="1100" colspan='4'>No active workunit</td>
