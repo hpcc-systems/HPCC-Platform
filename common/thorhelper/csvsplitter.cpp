@@ -27,6 +27,10 @@
 #include "csvsplitter.hpp"
 #include "eclrtl.hpp"
 
+// If you have lines more than 2Mb in length it is more likely to be a bug - so require an explicit override
+#define DEFAULT_CSV_LINE_LENGTH 2048
+#define MAX_SENSIBLE_CSV_LINE_LENGTH 0x200000
+
 CSVSplitter::CSVSplitter()
 {
     lengths = NULL;
@@ -34,7 +38,7 @@ CSVSplitter::CSVSplitter()
     numQuotes = 0;
     internalBuffer = NULL;
     maxColumns = 0;
-    curUnquoted = NULL;
+    internalOffset = 0;
 }
 
 CSVSplitter::~CSVSplitter()
@@ -77,15 +81,16 @@ void CSVSplitter::reset()
     data = NULL;
     numQuotes = 0;
     internalBuffer = NULL;
+    internalOffset = 0;
+    sizeInternal = 0;
     maxCsvSize = 0;
 }
 
 void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const char * dfsQuotes, const char * dfsSeparators, const char * dfsTerminators, const char * dfsEscapes)
 {
     reset();
-    maxCsvSize = csvInfo->queryMaxSize();
-    internalBuffer = (byte *)malloc(maxCsvSize);
 
+    maxCsvSize = csvInfo->queryMaxSize();
     maxColumns = _maxColumns;
     lengths = new unsigned [maxColumns+1];      // NB: One larger to remove some tests in main loop...
     data = new const byte * [maxColumns+1];
@@ -158,96 +163,114 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
 
 void CSVSplitter::setFieldRange(const byte * start, const byte * end, unsigned curColumn, unsigned quoteToStrip, bool unescape)
 {
-    // Either quoting or escaping will use the local buffer
-    if ((quoteToStrip || unescape) &&
-        (unsigned)(curUnquoted - internalBuffer) + (unsigned)(end - start) > maxCsvSize)
-        throw MakeStringException(99, "MAXLENGTH for CSV file is not large enough");
+    size32_t sizeOriginal = (size32_t)(end - start);
+    //If the field doesn't contain quotes or escape characters, then we can directly store a pointer to the original.
+    if (!quoteToStrip && !unescape)
+    {
+        lengths[curColumn] = sizeOriginal;
+        data[curColumn] = start;
+        return;
+    }
 
-    // point to the beginning of the local (possibly changed) buffer, for escaping later
-    byte * curUnescaped = curUnquoted;
-    if (quoteToStrip)
+    // Either quoting or escaping will need to copy into a local buffer.
+    size32_t sizeUsed = internalOffset;
+    size32_t sizeRequired = sizeUsed + sizeOriginal;
+    if (sizeRequired > sizeInternal)
     {
-        data[curColumn] = curUnquoted;
-        const byte * lastCopied = start;
-        const byte *cur;
-        for (cur = start; cur != end; )
+        if (sizeInternal == 0)
+            sizeInternal = maxCsvSize;
+
+        //Check again to allow an explicit size to override the maximum sensible line limit
+        if (sizeRequired > sizeInternal)
         {
-            unsigned matchLen;
-            unsigned match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
-            switch (match & 255)
+            if (sizeInternal == 0)
+                sizeInternal = DEFAULT_CSV_LINE_LENGTH;
+            else if (sizeRequired > MAX_SENSIBLE_CSV_LINE_LENGTH)
+                throw MakeStringException(99, "CSV File contains a line > %u characters.  Use MAXLENGTH to override the maximum length.", sizeRequired);
+
+            //Cannot overflow as long as MAX_SENSIBLE_CSV_LINE_LENGTH < 0x80...
+            while (sizeRequired > sizeInternal)
+                sizeInternal *= 2;
+        }
+
+        byte * newBuffer = (byte *)realloc(internalBuffer, sizeInternal);
+        if (!newBuffer)
+            throw MakeStringException(99, "Failed to allocate CSV read buffer of %u bytes", sizeInternal);
+
+        //The buffer has been reallocated, so we need to patch up any fields with pointers into the old buffer
+        if (internalBuffer)
+        {
+            for (unsigned i=0; i < curColumn; i++)
             {
-            case NONE:
-                matchLen = 1;
-                break;
-            case WHITESPACE:
-            case SEPARATOR:
-                break;
-            case TERMINATOR:
-                goto done;
-            case QUOTE:
+                byte * cur = (byte *)data[i];
+                if ((cur >= internalBuffer) && (cur < internalBuffer + sizeInternal))
+                    data[i] = (cur - internalBuffer) + newBuffer;
+            }
+        }
+        internalBuffer = newBuffer;
+    }
+
+    data[curColumn] = internalBuffer + internalOffset;
+    const byte * lastCopied = start;
+    const byte *cur;
+    for (cur = start; cur != end; )
+    {
+        unsigned matchLen;
+        unsigned match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
+        switch (match & 255)
+        {
+        case NONE:
+            matchLen = 1;
+            break;
+        case WHITESPACE:
+        case SEPARATOR:
+            break;
+        case TERMINATOR:
+            goto done;
+        case ESCAPE:
+            {
+                const byte * next = cur + matchLen;
+                if (next != end)
                 {
-                    const byte * next = cur + matchLen;
-                    if ((match == quoteToStrip) && (next != end))
-                    {
-                        unsigned nextMatchLen;
-                        unsigned nextMatch = matcher.getMatch((size32_t)(end-next), (const char *)next, nextMatchLen);
-                        if (nextMatch == match)
-                        {
-                            memcpy(curUnquoted, lastCopied, next-lastCopied);
-                            curUnquoted += (next-lastCopied);
-                            matchLen += nextMatchLen;
-                            lastCopied = cur+matchLen;
-                        }
-                    }
-                    break;
+                    //Copy all the data up to this escape character, start copying from the next character
+                    memcpy(internalBuffer + internalOffset, lastCopied, cur-lastCopied);
+                    internalOffset += (cur-lastCopied);
+                    lastCopied = cur+matchLen;
+
+                    //Don't treat the next character specially
+                    unsigned nextMatchLen;
+                    unsigned nextMatch = matcher.getMatch((size32_t)(end-next), (const char *)next, nextMatchLen);
+                    if (nextMatchLen == 0)
+                        nextMatchLen = 1;
+                    matchLen += nextMatchLen;
                 }
+                break;
             }
-            cur += matchLen;
-        }
-done:
-        memcpy(curUnquoted, lastCopied, cur-lastCopied);
-        curUnquoted += (cur-lastCopied);
-        lengths[curColumn] = (size32_t)(curUnquoted - data[curColumn]);
-    }
-    else
-    {
-        lengths[curColumn] = (size32_t)(end-start);
-        // Only if ESCAPEs were detected in the input
-        if (unescape)
-        {
-            // Need to copy original to a local string (using allocated buffer)
-            memcpy(curUnescaped, start, lengths[curColumn]);
-            data[curColumn] = curUnescaped;
-            // and update the buffer pointer, to re-use on next iteration
-            curUnquoted = curUnescaped + lengths[curColumn];
-        }
-        else
-        {
-            data[curColumn] = start;
-            return;
-        }
-    }
-    // Un-escape string, if necessary.
-    if (unescape)
-    {
-        byte * cur = curUnescaped; // data[curColumn] is already pointing here one way or another
-        byte * end = cur + lengths[curColumn];
-        for (; cur < end; cur++)
-        {
-            unsigned matchLen;
-            unsigned match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
-            if ((match & 255) == ESCAPE)
+        case QUOTE:
             {
-                ptrdiff_t restLen = end-(cur+matchLen);
-                memmove(cur, cur+matchLen, restLen);
-                end -= matchLen;
-                lengths[curColumn] -= matchLen;
-                // Avoid having cur past end
-                if (cur == end)
-                    break;
+                const byte * next = cur + matchLen;
+                if ((match == quoteToStrip) && (next != end))
+                {
+                    unsigned nextMatchLen;
+                    unsigned nextMatch = matcher.getMatch((size32_t)(end-next), (const char *)next, nextMatchLen);
+                    if (nextMatch == match)
+                    {
+                        memcpy(internalBuffer + internalOffset, lastCopied, next-lastCopied);
+                        internalOffset += (next-lastCopied);
+                        matchLen += nextMatchLen;
+                        lastCopied = cur+matchLen;
+                    }
+                }
+                break;
             }
         }
+        cur += matchLen;
     }
+
+done:
+    memcpy(internalBuffer + internalOffset, lastCopied, cur-lastCopied);
+    internalOffset += (cur-lastCopied);
+    lengths[curColumn] = (size32_t)(internalBuffer + internalOffset - data[curColumn]);
 }
 
 size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
@@ -260,7 +283,7 @@ size32_t CSVSplitter::splitLine(size32_t maxLength, const byte * start)
     const byte * firstGood = start;
     const byte * lastGood = start;
     bool lastEscape = false;
-    curUnquoted = internalBuffer;
+    internalOffset = 0;
 
     while (cur != end)
     {

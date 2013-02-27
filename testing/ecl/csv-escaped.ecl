@@ -78,3 +78,14 @@ orig9 := DATASET([{'\'escaping\'\'the quote\'', 10, 'with user defined escape'}]
 OUTPUT(orig9, ,'regress::csv-escaped-escaped2'+EmptyString, OVERWRITE, CSV);
 escaped9 := DATASET('regress::csv-escaped-escaped2'+EmptyString, rec, CSV(ESCAPE('\\')));
 OUTPUT(escaped9);
+
+// Default is no escape
+orig10 := DATASET([
+    {'this is a line with new lines \n\n in it', 10, 'while this is not'},
+    {'this is a line with new lines \r\n\r\n in it', 10, 'while this is not'},
+    {'this is a line with "quotes" \n\n in it', 10, 'while this is not'},
+    {'',0,''}
+    ], rec);
+OUTPUT(orig10, ,'regress::csv-orig10'+EmptyString, OVERWRITE, CSV(QUOTE('"')));
+escaped10 := DATASET('regress::csv-orig10'+EmptyString, rec, CSV(QUOTE('"'),MAXLENGTH(1)));
+OUTPUT(escaped10);
