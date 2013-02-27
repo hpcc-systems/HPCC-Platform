@@ -238,7 +238,7 @@ done:
             unsigned match = matcher.getMatch((size32_t)(end-cur), (const char *)cur, matchLen);
             if ((match & 255) == ESCAPE)
             {
-                ptrdiff_t restLen = end-cur+matchLen;
+                ptrdiff_t restLen = end-(cur+matchLen);
                 memmove(cur, cur+matchLen, restLen);
                 end -= matchLen;
                 lengths[curColumn] -= matchLen;
