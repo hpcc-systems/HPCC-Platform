@@ -4129,7 +4129,9 @@ void HqlCppTranslator::buildMetaInfo(MetaInstance & instance)
             {
                 unsigned minSize = getMinRecordSize(record);
                 unsigned maxLength = map->getMaxSize();
-                assertex(maxLength >= minSize);
+                if (maxLength < minSize)
+                    reportError(queryLocation(record), ECODETEXT(HQLERR_MaximumSizeLessThanMinimum_XY), maxLength, minSize);
+                    
 #ifdef _DEBUG
                 //Paranoia check to ensure the two methods agree.
                 unsigned calcMinSize = map->getTotalMinimumSize();
