@@ -44,7 +44,7 @@ public:
         numResults = 0;
         totalSize = 0;
         appendOutput = 0 != (POFextend & helper->getFlags());
-        flushThreshold = globals->getPropInt("@output_flush_threshold", -1);
+        flushThreshold = getOptInt(THOROPT_OUTPUT_FLUSH_THRESHOLD, -1);
         workunitWriteLimit = 0;
         mpTag = container.queryJob().allocateMPTag(); // used by local too
     }
