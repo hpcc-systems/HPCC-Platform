@@ -40,7 +40,8 @@ set (    SRCS
          thortlex.cpp 
          thortparse.cpp 
          thorxmlread.cpp 
-         thorxmlwrite.cpp 
+         thorxmlwrite.cpp
+         roxierow.cpp
          
          csvsplitter.hpp 
          layouttrans.hpp 
@@ -52,7 +53,8 @@ set (    SRCS
          thorsoapcall.hpp 
          thorstep.hpp 
          thorxmlread.hpp 
-         thorxmlwrite.hpp 
+         thorxmlwrite.hpp
+         roxierow.hpp
                  
     )
 
@@ -67,6 +69,8 @@ include_directories (
          ./../../system/jlib 
          ./../deftype 
          ./../../rtl/include 
+         ./../../roxie/roxiemem
+         ./../../testing/unittests
     )
 
 ADD_DEFINITIONS( -DTHORHELPER_EXPORTS -D_USRDLL )
@@ -77,6 +81,7 @@ target_link_libraries ( thorhelper
          jlib 
          nbcd 
          eclrtl 
+         roxiemem
          deftype 
          securesocket 
     )
