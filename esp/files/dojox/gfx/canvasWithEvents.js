@@ -57,6 +57,13 @@ this.inherited(arguments);
 },getEventSource:function(){
 return this.surface.getEventSource();
 },connect:function(_13,_14,_15){
+if(_13.indexOf("mouse")===0){
+_13="on"+_13;
+}else{
+if(_13.indexOf("ontouch")===0){
+_13=_13.slice(2);
+}
+}
 this.surface._setupEvents(_13);
 return arguments.length>2?_3.connect(this,_13,_14,_15):_3.connect(this,_13,_14);
 },disconnect:function(_16){
@@ -205,7 +212,7 @@ this._eventsH["onmouseup"]=_3.connect(this.getEventSource(),"onmouseup",_8.fixCa
 }
 }
 },destroy:function(){
-_8.Surface.prototype.destroy.apply(this);
+this.inherited(arguments);
 for(var i in this._eventsH){
 _3.disconnect(this._eventsH[i]);
 }

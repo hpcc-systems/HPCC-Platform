@@ -95,10 +95,13 @@ return _20;
 if(!this.current||this.tree.isExpandoNode(e.target,this.current)){
 return;
 }
-if(e.type!="touchstart"&&!_8.isLeft(e)){
+if(_8.isLeft(e)){
+e.preventDefault();
+}else{
+if(e.type!="touchstart"){
 return;
 }
-e.preventDefault();
+}
 var _22=this.current,_23=_2.isCopyKey(e),id=_22.id;
 if(!this.singular&&!e.shiftKey&&this.selection[id]){
 this._doDeselect=true;

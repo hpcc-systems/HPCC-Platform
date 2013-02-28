@@ -8,8 +8,14 @@ this.set("checked",_5?this.checked:_4);
 return _5;
 },_setCheckedAttr:function(_6,_7){
 this._set("checked",_6);
-_2.set(this.focusNode||this.domNode,"checked",_6);
-(this.focusNode||this.domNode).setAttribute(this._aria_attr,_6?"true":"false");
+var _8=this.focusNode||this.domNode;
+_2.set(_8,"checked",!!_6);
+if(_6){
+_8.setAttribute("checked","");
+}else{
+_8.removeAttribute("checked");
+}
+_8.setAttribute(this._aria_attr,String(_6));
 this._handleOnChange(_6,_7);
 },reset:function(){
 this._hasBeenBlurred=false;

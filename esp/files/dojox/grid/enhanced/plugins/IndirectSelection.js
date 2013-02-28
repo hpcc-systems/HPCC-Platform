@@ -136,7 +136,7 @@ var _36=e.rowIndex;
 if(this.disabledMap[_36]){
 return;
 }
-this._focusEndingCell(_36,0);
+this._focusEndingCell(_36,e.cellIndex);
 this._nativeSelect(_36,!this.grid.selection.selected[_36]);
 }});
 var _37=_1("dojox.grid.cells.MultipleRowSelector",_f,{inputType:"CheckBox",swipeStartRowIndex:-1,swipeMinRowIndex:-1,swipeMaxRowIndex:-1,toSelect:false,lastClickRowIdx:-1,unCheckedText:"&#9633;",constructor:function(){
@@ -243,7 +243,7 @@ if(this.disabledMap[_46]){
 return;
 }
 _3.stop(e);
-this._focusEndingCell(_46,0);
+this._focusEndingCell(_46,e.cellIndex);
 var _47=_46-this.lastClickRowIdx;
 var _48=!this.grid.selection.selected[_46];
 if(this.lastClickRowIdx>=0&&!e.ctrlKey&&!e.altKey&&e.shiftKey){

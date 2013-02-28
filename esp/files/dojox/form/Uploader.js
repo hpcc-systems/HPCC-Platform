@@ -75,7 +75,7 @@ return this.getFileList();
 },_setValueAttr:function(_1b){
 console.error("Uploader value is read only");
 },_setDisabledAttr:function(_1c){
-if(this._disabled==_1c){
+if(this.disabled==_1c||!this.inputNode){
 return;
 }
 this.inherited(arguments);

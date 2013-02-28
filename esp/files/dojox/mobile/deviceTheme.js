@@ -46,7 +46,7 @@ return _6?_6.toUrl(_10):_3.baseUrl+"../"+_10;
 this.setDm=function(_11){
 dm=_11;
 };
-this.themeMap=_3.themeMap||[["Android","android",[]],["BlackBerry","blackberry",[]],["iPhone","iphone",[]],["iPad","iphone",[this.toUrl("dojox/mobile/themes/iphone/ipad.css")]],["Custom","custom",[]],[".*","iphone",[]]];
+this.themeMap=_3.themeMap||[["Android","android",[]],["BlackBerry","blackberry",[]],["BB10","blackberry",[]],["iPhone","iphone",[]],["iPad","iphone",[this.toUrl("dojox/mobile/themes/iphone/ipad.css")]],["Custom","custom",[]],[".*","iphone",[]]];
 dm.loadedCssFiles=[];
 this.loadDeviceTheme=function(_12){
 var t=_3.mblThemeFiles||dm.themeFiles||["@theme"];

@@ -1,7 +1,7 @@
 //>>built
-define("dojox/app/widgets/_ScrollableMixin",["dojo/_base/declare","dojo/_base/lang","dojo/dom-class","dojo/dom-construct","./scrollable"],function(_1,_2,_3,_4,_5){
+define("dojox/app/widgets/_ScrollableMixin",["dojo/_base/declare","dojo/_base/lang","dojo/dom-class","dojo/dom-construct","dojox/mobile/scrollable"],function(_1,_2,_3,_4,_5){
 var _6=_1("dojox.app.widgets._ScrollableMixin",null,{scrollableParams:null,allowNestedScrolls:true,constructor:function(){
-this.scrollableParams={};
+this.scrollableParams={noResize:true};
 },destroy:function(){
 this.cleanup();
 this.inherited(arguments);

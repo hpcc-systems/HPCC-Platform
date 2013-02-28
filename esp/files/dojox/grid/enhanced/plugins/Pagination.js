@@ -245,7 +245,7 @@ return;
 }
 var _42=g._getPadBorder().h;
 if(!this.plugin.gh){
-this.plugin.gh=_6.contentBox(g.domNode).h+2*_42;
+this.plugin.gh=(g.domNode.clientHeight||_6.style(g.domNode,"height"))+2*_42;
 }
 if(_41){
 _40=_41;

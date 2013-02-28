@@ -13,9 +13,10 @@ if(this.group){
 this.group.removeShape();
 var _8=this.group.children;
 for(var i=0;i<_8.length;++i){
-_6.dispose(_8[i]);
+_6.dispose(_8[i],true);
 }
 this.group.clear();
+_6.dispose(this.group,true);
 this.group=null;
 }
 this.dirty=true;
@@ -34,7 +35,7 @@ _a=this.chart.surface;
 if(this.group){
 var _b=this.group.children;
 for(var i=0;i<_b.length;++i){
-_6.dispose(_b[i]);
+_6.dispose(_b[i],true);
 }
 this.group.clear();
 }else{

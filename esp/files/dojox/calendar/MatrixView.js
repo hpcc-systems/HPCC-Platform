@@ -1187,10 +1187,18 @@ this._dispatchCalendarEvt(e,"onRowHeaderClick");
 },onRowHeaderClick:function(e){
 },expandRendererClickHandler:function(e,_ff){
 _3.stop(e);
+var ri=_ff.get("rowIndex");
+var ci=_ff.get("columnIndex");
+this._onExpandRendererClick(_4.mixin(this._createItemEditEvent(),{rowIndex:ri,columnIndex:ci,renderer:_ff,triggerEvent:e,date:this.renderData.dates[ri][ci]}));
+},onExpandRendererClick:function(e){
+},_onExpandRendererClick:function(e){
+this._dispatchCalendarEvt(e,"onExpandRendererClick");
+if(!e.isDefaultPrevented()){
 if(this.getExpandedRowIndex()!=-1){
 this.collapseRow();
 }else{
-this.expandRow(_ff.rowIndex,_ff.columnIndex);
+this.expandRow(e.rowIndex,e.columnIndex);
+}
 }
 },snapUnit:"minute",snapSteps:15,minDurationUnit:"minute",minDurationSteps:15,triggerExtent:3,liveLayout:false,stayInView:true,allowStartEndSwap:true,allowResizeLessThan24H:false});
 });

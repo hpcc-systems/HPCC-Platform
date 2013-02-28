@@ -1,7 +1,7 @@
 //>>built
-require({cache:{"url:dojox/form/resources/TriStateCheckBox.html":"<div class=\"dijit dijitReset dijitInline\" role=\"presentation\"\n\t><div class=\"dojoxTriStateCheckBoxInner\" dojoAttachPoint=\"stateLabelNode\"></div\n\t><input ${!nameAttrSetting} type=\"${type}\" dojoAttachPoint=\"focusNode\"\n\tclass=\"dijitReset dojoxTriStateCheckBoxInput\" dojoAttachEvent=\"onclick:_onClick\"\n/></div>"}});
+require({cache:{"url:dojox/form/resources/TriStateCheckBox.html":"<div class=\"dijit dijitReset dijitInline\" role=\"presentation\"\n\t><div class=\"dojoxTriStateCheckBoxInner\" dojoAttachPoint=\"stateLabelNode\"></div\n\t><input ${!nameAttrSetting} type=\"${type}\" role=\"${type}\" dojoAttachPoint=\"focusNode\"\n\tclass=\"dijitReset dojoxTriStateCheckBoxInput\" dojoAttachEvent=\"onclick:_onClick\"\n/></div>\n"}});
 define("dojox/form/TriStateCheckBox",["dojo/_base/kernel","dojo/_base/declare","dojo/_base/array","dojo/_base/lang","dojo/_base/event","dojo/query","dojo/dom-attr","dojo/text!./resources/TriStateCheckBox.html","dijit/form/Button","dijit/form/_ToggleButtonMixin","dojo/NodeList-dom"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a){
-return _2("dojox.form.TriStateCheckBox",[_9,_a],{templateString:_8,baseClass:"dojoxTriStateCheckBox",type:"checkbox",states:"",states:[false,true,"mixed"],_stateLabels:null,_stateLabels:{"False":"&#9633","True":"&#8730;","Mixed":"&#9632"},stateValues:{"False":false,"True":"on","Mixed":"mixed"},_currentState:0,_stateType:"False",readOnly:false,checked:"",constructor:function(){
+return _2("dojox.form.TriStateCheckBox",[_9,_a],{templateString:_8,baseClass:"dojoxTriStateCheckBox",type:"checkbox",states:"",_stateLabels:null,stateValue:null,_currentState:0,_stateType:"False",readOnly:false,checked:"",_aria_attr:"aria-checked",constructor:function(){
 this.states=[false,"mixed",true];
 this.checked=false;
 this._stateLabels={"False":"&#9633;","True":"&#8730;","Mixed":"&#9632;"};
@@ -18,22 +18,10 @@ this.inherited(arguments);
 var _e=_3.indexOf(this.states,_c),_f=false;
 if(_e>=0){
 this._currentState=_e;
-if(_c!=this.get("checked")){
-_f=true;
-}
-this._set("checked",_c);
 this._stateType=this._getStateType(_c);
-if(_c=="mixed"){
-_7.set(this.focusNode||this.domNode,"checked",true);
-}else{
-_7.set(this.focusNode||this.domNode,"checked",_c);
-}
 _7.set(this.focusNode,"value",this.stateValues[this._stateType]);
 _7.set(this.stateLabelNode,"innerHTML",this._stateLabels[this._stateType]);
-(this.focusNode||this.domNode).setAttribute("aria-checked",_c);
-if(_f){
-this._handleOnChange(_c,_d);
-}
+this.inherited(arguments);
 }else{
 console.warn("Invalid state!");
 }
@@ -56,7 +44,6 @@ this._set("states",_11);
 },_setReadOnlyAttr:function(_12){
 this._set("readOnly",_12);
 _7.set(this.focusNode,"readOnly",_12);
-this.focusNode.setAttribute("aria-readonly",_12);
 },_setValueAttr:function(_13,_14){
 if(typeof _13=="string"&&(_3.indexOf(this.states,_13)<0)){
 if(_13==""){

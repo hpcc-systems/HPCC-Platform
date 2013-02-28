@@ -167,14 +167,14 @@ delete this._pendingSelectedItem;
 }
 }
 if(this._pendingDoubleTap&&this._pendingDoubleTap.item==p.item){
-this._onItemDoubleClick({triggerEvent:e,renderer:p.renderer,item:this.itemToRenderItem(p.item,this.get("store"))});
+this._onItemDoubleClick({triggerEvent:e,renderer:p.renderer,item:this.renderItemToItem(p.item,this.get("store"))});
 clearTimeout(this._pendingDoubleTap.timer);
 delete this._pendingDoubleTap;
 }else{
 this._pendingDoubleTap={item:p.item,timer:setTimeout(_2.hitch(this,function(){
 delete this._pendingDoubleTap;
 }),this.doubleTapDelay)};
-this._onItemClick({triggerEvent:e,renderer:p.renderer,item:this.itemToRenderItem(p.item,this.get("store"))});
+this._onItemClick({triggerEvent:e,renderer:p.renderer,item:this.renderItemToItem(p.item,this.get("store"))});
 }
 this._edProps=null;
 }else{

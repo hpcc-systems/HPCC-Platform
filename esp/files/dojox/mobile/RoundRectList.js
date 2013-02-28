@@ -6,7 +6,7 @@ this.inherited(arguments);
 },postCreate:function(){
 if(this.editable){
 require([this.editableMixinClass],_4.hitch(this,function(_a){
-_4.mixin(this,new _a());
+_2.safeMixin(this,new _a());
 }));
 }
 this.connect(this.domNode,"onselectstart",_3.stop);

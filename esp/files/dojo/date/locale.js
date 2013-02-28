@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -164,7 +164,7 @@ if(_21){
 str.push(_20(_21,_1f));
 }
 }
-return str.length==1?str[0]:_1e["dateTimeFormat-"+_1d].replace(/\{(\d+)\}/g,function(_22,key){
+return str.length==1?str[0]:_1e["dateTimeFormat-"+_1d].replace(/\'/g,"").replace(/\{(\d+)\}/g,function(_22,key){
 return str[key];
 });
 };

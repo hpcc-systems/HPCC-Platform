@@ -8,12 +8,12 @@ var _6=_4[i];
 for(var j=0;j<_6.data.length;j++){
 var x,y;
 if(_6.data[j]!==null){
-if(typeof _6.data[j]=="number"||!_6.data[j].x){
+if(typeof _6.data[j]=="number"||!_6.data[j].hasOwnProperty("x")){
 y=_3.getIndexValue(_4,i,j);
 x=j+1;
 }else{
 x=_6.data[j].x;
-if(x){
+if(x!==null){
 y=_3.getValue(_4,i,x);
 y=y!=null&&y.y?y.y:null;
 }

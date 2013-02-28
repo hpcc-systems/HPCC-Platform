@@ -242,7 +242,7 @@ return {html:_2e=="html",label:_2d};
 },doHighlight:function(_2f,_30){
 var _31=(this.ignoreCase?"i":"")+(this.highlightMatch=="all"?"g":""),i=this.queryExpr.indexOf("${0}");
 _30=_8.escapeString(_30);
-return this._escapeHtml(_2f.replace(new RegExp((i==0?"^":"")+"("+_30+")"+(i==(this.queryExpr.length-4)?"$":""),_31),"￿$1￿")).replace(/\uFFFF([^\uFFFF]+)\uFFFF/g,"<span class=\"dijitComboBoxHighlightMatch\">$1</span>");
+return this._escapeHtml(_2f.replace(new RegExp((i==0?"^":"")+"("+_30+")"+(i==(this.queryExpr.length-4)?"$":""),_31),"\uffff$1\uffff")).replace(/\uFFFF([^\uFFFF]+)\uFFFF/g,"<span class=\"dijitComboBoxHighlightMatch\">$1</span>");
 },_escapeHtml:function(str){
 str=String(str).replace(/&/gm,"&amp;").replace(/</gm,"&lt;").replace(/>/gm,"&gt;").replace(/"/gm,"&quot;");
 return str;

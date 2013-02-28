@@ -2,7 +2,6 @@
 define("dijit/form/_FormValueMixin",["dojo/_base/declare","dojo/dom-attr","dojo/keys","dojo/sniff","./_FormWidgetMixin"],function(_1,_2,_3,_4,_5){
 return _1("dijit.form._FormValueMixin",_5,{readOnly:false,_setReadOnlyAttr:function(_6){
 _2.set(this.focusNode,"readOnly",_6);
-this.focusNode.setAttribute("aria-readonly",_6);
 this._set("readOnly",_6);
 },postCreate:function(){
 this.inherited(arguments);

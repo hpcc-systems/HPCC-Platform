@@ -58,20 +58,22 @@ return this.toPlainObject();
 return this.value===""&&this.data?this.data.toString():this.value.toString();
 },constructor:function(_10){
 var _11=(_10&&"data" in _10)?_10.data:this.data;
-if(_11!=null){
-_11=_6(_11,_9.getStatefulOptions);
-if(_2.isArray(_11)){
+this._createModel(_11);
+},_createModel:function(_12){
+if(_12!=null){
+_12=_6(_12,_9.getStatefulOptions);
+if(_2.isArray(_12)){
 this.length=0;
-[].splice.apply(this,_11);
+[].splice.apply(this,_12);
 }else{
-if(_2.isObject(_11)){
-for(var s in _11){
-if(_11.hasOwnProperty(s)){
-this[s]=_11[s];
+if(_2.isObject(_12)){
+for(var s in _12){
+if(_12.hasOwnProperty(s)){
+this[s]=_12[s];
 }
 }
 }else{
-this.set("value",_11);
+this.set("value",_12);
 }
 }
 }
@@ -82,47 +84,47 @@ this[x]._commit();
 }
 }
 this.data=this.toPlainObject();
-},_saveToStore:function(_12){
+},_saveToStore:function(_13){
 if(this._removals){
 _3.forEach(this._removals,function(d){
-_12.remove(_12.getIdentity(d));
+_13.remove(_13.getIdentity(d));
 },this);
 delete this._removals;
 }
-var _13=this.toPlainObject();
-if(_2.isArray(_13)){
-_3.forEach(_13,function(d){
-_12.put(d);
+var _14=this.toPlainObject();
+if(_2.isArray(_14)){
+_3.forEach(_14,function(d){
+_13.put(d);
 },this);
 }else{
-_12.put(_13);
+_13.put(_14);
 }
 }});
 _2.mixin(_9,{getStatefulOptions:{getType:function(v){
 return _2.isArray(v)?"array":v!=null&&{}.toString.call(v)=="[object Object]"?"object":"value";
 },getStatefulArray:function(a){
-var _14=this,_15=_2.mixin(new _8(_3.map(a,function(_16){
-return _6(_16,_14);
+var _15=this,_16=_2.mixin(new _8(_3.map(a,function(_17){
+return _6(_17,_15);
 })));
 for(var s in _9.prototype){
 if(s!="set"){
-_15[s]=_9.prototype[s];
+_16[s]=_9.prototype[s];
 }
 }
-_15.data=a;
-return _15;
+_16.data=a;
+return _16;
 },getStatefulObject:function(o){
-var _17=new _9();
-_17.data=o;
-for(var s in o){
-_17.set(s,_6(o[s],this));
-}
-return _17;
-},getStatefulValue:function(v){
 var _18=new _9();
-_18.data=v;
-_18.set("value",v);
+_18.data=o;
+for(var s in o){
+_18.set(s,_6(o[s],this));
+}
 return _18;
+},getStatefulValue:function(v){
+var _19=new _9();
+_19.data=v;
+_19.set("value",v);
+return _19;
 }},getPlainValueOptions:{getType:function(v){
 if(_2.isArray(v)){
 return "array";
@@ -136,18 +138,18 @@ return "object";
 }
 return "value";
 },getPlainArray:function(a){
-return _3.map(a,function(_19){
-return _7(_19,this);
+return _3.map(a,function(_1a){
+return _7(_1a,this);
 },this);
 },getPlainObject:function(o){
-var _1a={};
+var _1b={};
 for(var s in o){
 if(s=="_watchCallbacks"||(s in _9.prototype)){
 continue;
 }
-_1a[s]=_7(o[s],this);
+_1b[s]=_7(o[s],this);
 }
-return _1a;
+return _1b;
 },getPlainValue:function(v){
 return (v||{}).set&&(v||{}).watch?_7(v.value,this):v;
 }}});

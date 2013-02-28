@@ -458,6 +458,7 @@ return this.isItemEditable()&&this.resizeEnabled;
 },onItemRollOut:function(e){
 },onColumnHeaderClick:function(e){
 },onRowHeaderClick:function(e){
+},onExpandRendererClick:function(e){
 },onRendererCreated:function(_5c){
 },onRendererRecycled:function(_5d){
 },onRendererReused:function(_5e){

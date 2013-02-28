@@ -82,16 +82,20 @@ _22.push(_25);
 }
 }
 }
-_2.forEach(_22,function(_27){
-if(this.params&&_27 in this.params){
+var _27={};
+for(var key in this.params||{}){
+_27[key]=this[key];
+}
+_2.forEach(_22,function(_28){
+if(_28 in _27){
 }else{
-if(this[_27]){
-this.set(_27,this[_27]);
+if(this[_28]){
+this.set(_28,this[_28]);
 }
 }
 },this);
-for(var _28 in this.params){
-this.set(_28,this.params[_28]);
+for(key in _27){
+this.set(key,_27[key]);
 }
 },postMixInProperties:function(){
 },buildRendering:function(){

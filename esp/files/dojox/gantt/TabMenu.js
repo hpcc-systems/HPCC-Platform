@@ -144,7 +144,7 @@ this.addItemMenuPanel(tab);
 }
 this.isShow=true;
 _10.set(this.menuPanel,{zIndex:15,visibility:"visible"});
-var _29=_12.position(this.menuPanel,true),_2a=_12.position(this.ganttChart.content,true),pos=_12.getMarginBox(_27,true);
+var _29=_12.position(this.menuPanel,true),_2a=_12.position(this.ganttChart.content,true),pos=_12.position(_27,true);
 if((pos.y+_29.h)>(_2a.y+_2a.h+50)){
 this.menuPanel.style.top=pos.y-_29.h+pos.h+"px";
 }else{

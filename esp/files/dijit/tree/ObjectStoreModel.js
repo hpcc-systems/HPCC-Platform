@@ -33,17 +33,16 @@ if(this.childrenCache[id]){
 _5(this.childrenCache[id],_d,_e);
 return;
 }
-_5(this.childrenCache[id]=this.store.getChildren(_c),_4.hitch(this,function(_f){
+var _f=this.childrenCache[id]=this.store.getChildren(_c);
+_5(_f,_d,_e);
 if(_f.observe){
 _f.observe(_4.hitch(this,function(obj,_10,_11){
 this.onChange(obj);
 if(_10!=_11){
-this.onChildrenChange(_c,_f);
+_5(_f,_4.hitch(this,"onChildrenChange",_c));
 }
 }),true);
 }
-_d(_f);
-}),_e);
 },isItem:function(){
 return true;
 },fetchItemByIdentity:function(_12){

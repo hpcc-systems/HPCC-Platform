@@ -364,6 +364,7 @@ var _35={},_36=new Function;
 sl.Surface=_3("dojox.gfx.silverlight.Surface",gs.Surface,{constructor:function(){
 gs.Container._init.call(this);
 },destroy:function(){
+this.clear(true);
 window[this._onLoadName]=_36;
 delete _35[this._nodeName];
 this.inherited(arguments);

@@ -39,7 +39,8 @@ this._keydownCloseHandle=this.connect(w.closeIconNode,"onkeydown","_closeIconCli
 this.inherited(arguments);
 if(!this._isOnLine){
 this._isOnLine=true;
-this.set("icon",this.icon);
+this.set("icon",this._pendingIcon!==undefined?this._pendingIcon:this.icon);
+delete this._pendingIcon;
 }
 if(!this.icon&&p.defaultIcon){
 this.set("icon",p.defaultIcon);

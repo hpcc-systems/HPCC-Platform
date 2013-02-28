@@ -66,6 +66,11 @@ this.imageNode=null;
 }
 this.spinnerNode.style.display="";
 }
+},destroy:function(){
+this.inherited(arguments);
+if(this===_b._instance){
+_b._instance=null;
+}
 }});
 _b._instance=null;
 _b.getInstance=function(_13){

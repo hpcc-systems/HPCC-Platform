@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -41,10 +41,7 @@ _f.previous=_e;
 }
 if(_8&&!_9){
 if(_5=="after"){
-var _10=_8;
-while(_10){
-_8=_10;
-_10=_10.next;
+while(_8.next&&(_8=_8.next)){
 }
 _8.next=_a;
 _a.previous=_8;
@@ -60,47 +57,47 @@ _4[_5]=_a;
 }
 return _a;
 };
-function _11(_12){
-return function(_13,_14,_15,_16){
-var _17=_13[_14],_18;
-if(!_17||_17.target!=_13){
-_13[_14]=_18=function(){
-var _19=_2;
-var _1a=arguments;
-var _1b=_18.before;
-while(_1b){
-_1a=_1b.advice.apply(this,_1a)||_1a;
-_1b=_1b.next;
+function _10(_11){
+return function(_12,_13,_14,_15){
+var _16=_12[_13],_17;
+if(!_16||_16.target!=_12){
+_12[_13]=_17=function(){
+var _18=_2;
+var _19=arguments;
+var _1a=_17.before;
+while(_1a){
+_19=_1a.advice.apply(this,_19)||_19;
+_1a=_1a.next;
 }
-if(_18.around){
-var _1c=_18.around.advice(this,_1a);
+if(_17.around){
+var _1b=_17.around.advice(this,_19);
 }
-var _1d=_18.after;
-while(_1d&&_1d.id<_19){
-if(_1d.receiveArguments){
-var _1e=_1d.advice.apply(this,_1a);
-_1c=_1e===_1?_1c:_1e;
+var _1c=_17.after;
+while(_1c&&_1c.id<_18){
+if(_1c.receiveArguments){
+var _1d=_1c.advice.apply(this,_19);
+_1b=_1d===_1?_1b:_1d;
 }else{
-_1c=_1d.advice.call(this,_1c,_1a);
+_1b=_1c.advice.call(this,_1b,_19);
 }
-_1d=_1d.next;
+_1c=_1c.next;
 }
-return _1c;
+return _1b;
 };
-if(_17){
-_18.around={advice:function(_1f,_20){
-return _17.apply(_1f,_20);
+if(_16){
+_17.around={advice:function(_1e,_1f){
+return _16.apply(_1e,_1f);
 }};
 }
-_18.target=_13;
+_17.target=_12;
 }
-var _21=_3((_18||_17),_12,_15,_16);
-_15=null;
-return _21;
+var _20=_3((_17||_16),_11,_14,_15);
+_14=null;
+return _20;
 };
 };
-var _22=_11("after");
-var _23=_11("before");
-var _24=_11("around");
-return {before:_23,around:_24,after:_22};
+var _21=_10("after");
+var _22=_10("before");
+var _23=_10("around");
+return {before:_22,around:_23,after:_21};
 });

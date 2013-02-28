@@ -500,6 +500,9 @@ _a.Surface=_3("dojox.gfx.canvas.Surface",gs.Surface,{constructor:function(){
 gs.Container._init.call(this);
 this.pendingImageCount=0;
 this.makeDirty();
+},destroy:function(){
+gs.Container.clear.call(this,true);
+this.inherited(arguments);
 },setDimensions:function(_61,_62){
 this.width=g.normalizedLength(_61);
 this.height=g.normalizedLength(_62);

@@ -18,7 +18,7 @@ var _b=this.items.length;
 var n=Math.ceil(this.minItems/_b);
 for(j=0;j<n;j++){
 for(i=0;i<_b;i++){
-_7.create("div",{className:"mblSpinWheelSlotLabel",name:this.items[i][0],innerHTML:this._cv?this._cv(this.items[i][1]):this.items[i][1]},this.panelNodes[k]);
+_7.create("div",{className:"mblSpinWheelSlotLabel",name:this.items[i][0],val:this.items[i][1],innerHTML:this._cv?this._cv(this.items[i][1]):this.items[i][1]},this.panelNodes[k]);
 }
 }
 this.containerNode.appendChild(this.panelNodes[k]);
@@ -114,8 +114,8 @@ return null;
 var _18=this.getCenterItem();
 return (_18&&_18.getAttribute("name"));
 },_getValueAttr:function(){
-var _19=this.items[this.get("key")];
-return _19&&_19[1];
+var _19=this.getCenterItem();
+return (_19&&_19.getAttribute("val"));
 },_setValueAttr:function(_1a){
 var _1b,_1c;
 var _1d=this.get("value");
@@ -145,6 +145,9 @@ m=(d<n-d)?-d:n-d;
 m=(-d<n+d)?-d:-(n+d);
 }
 this.spin(m);
+},stopAnimation:function(){
+this.inherited(arguments);
+this._set("value",this.get("value"));
 },spin:function(_1e){
 if(!this._started){
 return;

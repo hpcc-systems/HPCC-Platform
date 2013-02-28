@@ -38,7 +38,7 @@ this._maskValidSubsetError=true;
 }
 var _14=this._isEmpty(this.textbox.value);
 var _15=!_13&&_11&&this._isValidSubset();
-this._set("state",_13?"":(((((!this._hasBeenBlurred||_11)&&_14)||_15)&&this._maskValidSubsetError)?"Incomplete":"Error"));
+this._set("state",_13?"":(((((!this._hasBeenBlurred||_11)&&_14)||_15)&&(this._maskValidSubsetError||(_15&&!this._hasBeenBlurred&&_11)))?"Incomplete":"Error"));
 this.focusNode.setAttribute("aria-invalid",_13?"false":"true");
 if(this.state=="Error"){
 this._maskValidSubsetError=_11&&_15;
@@ -78,14 +78,16 @@ _18.locale=this.lang;
 }
 this._set("constraints",_18);
 this._refreshState();
-},_getPatternAttr:function(_19){
+},_setPatternAttr:function(_19){
+this._set("pattern",_19);
+},_getPatternAttr:function(_1a){
 var p=this.pattern;
-var _1a=(typeof p).toLowerCase();
-if(_1a=="function"){
-p=this.pattern(_19||this.constraints);
+var _1b=(typeof p).toLowerCase();
+if(_1b=="function"){
+p=this.pattern(_1a||this.constraints);
 }
 if(p!=this._lastRegExp){
-var _1b="";
+var _1c="";
 this._lastRegExp=p;
 if(p!=".*"){
 p.replace(/\\.|\[\]|\[.*?[^\\]{1}\]|\{.*?\}|\(\?[=:!]|./g,function(re){
@@ -98,41 +100,41 @@ case "^":
 case "$":
 case "|":
 case "(":
-_1b+=re;
+_1c+=re;
 break;
 case ")":
-_1b+="|$)";
+_1c+="|$)";
 break;
 default:
-_1b+="(?:"+re+"|$)";
+_1c+="(?:"+re+"|$)";
 break;
 }
 });
 }
 try{
-"".search(_1b);
+"".search(_1c);
 }
 catch(e){
-_1b=this.pattern;
+_1c=this.pattern;
 console.warn("RegExp error in "+this.declaredClass+": "+this.pattern);
 }
-this._partialre="^(?:"+_1b+")$";
+this._partialre="^(?:"+_1c+")$";
 }
 return p;
 },postMixInProperties:function(){
 this.inherited(arguments);
 this.messages=_3.getLocalization("dijit.form","validate",this.lang);
 this._setConstraintsAttr(this.constraints);
-},_setDisabledAttr:function(_1c){
+},_setDisabledAttr:function(_1d){
 this.inherited(arguments);
 this._refreshState();
-},_setRequiredAttr:function(_1d){
-this._set("required",_1d);
-this.focusNode.setAttribute("aria-required",_1d);
+},_setRequiredAttr:function(_1e){
+this._set("required",_1e);
+this.focusNode.setAttribute("aria-required",_1e);
 this._refreshState();
-},_setMessageAttr:function(_1e){
-this._set("message",_1e);
-this.displayMessage(_1e);
+},_setMessageAttr:function(_1f){
+this._set("message",_1f);
+this.displayMessage(_1f);
 },reset:function(){
 this._maskValidSubsetError=true;
 this.inherited(arguments);
