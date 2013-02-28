@@ -507,7 +507,8 @@ IRowAllocatorMetaActIdCache *createRowAllocatorCache(IRowAllocatorMetaActIdCache
 #ifdef _USE_CPPUNIT
 #include "unittests.hpp"
 
-namespace roxiemem {
+namespace roxierowtests {
+using namespace roxiemem;
 
 class RoxieRowAllocatorTests : public CppUnit::TestFixture
 {
