@@ -1323,7 +1323,7 @@ THORHELPER_API IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * _
 
 //=====================================================================================================
 
-THORHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags)
+StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags)
 {
     out = in;
     if (flags & (TDXtemporary | TDXjobtemp))
@@ -1331,7 +1331,7 @@ THORHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const cha
     return out;
 }
 
-THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
+StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
 {
     char const * start = in;
     while(true)
@@ -1351,7 +1351,7 @@ THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char c
     return out;
 }
 
-THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
+StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
 {
     if (fname[0]=='~')
         logicalName.append(fname+1);

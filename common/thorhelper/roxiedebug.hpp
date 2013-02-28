@@ -18,18 +18,7 @@
 #ifndef ROXIEDEBUG_HPP
 #define ROXIEDEBUG_HPP
 
-#ifdef _WIN32
- #ifdef THORHELPER_EXPORTS
-  #define THORHELPER_API __declspec(dllexport)
- #else
-  #define THORHELPER_API __declspec(dllimport)
- #endif
-#else
- #define THORHELPER_API
-#endif
-
-//#pragma message("**** ROXIEDEBUG.HPP ***")
-
+#include "thorhelper.hpp"
 #include "roxiedebug.ipp"
 #include "jprop.hpp"
 

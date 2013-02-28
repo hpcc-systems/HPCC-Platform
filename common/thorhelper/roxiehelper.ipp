@@ -18,22 +18,11 @@
 #ifndef ROXIEHELPER_IPP
 #define ROXIEHELPER_IPP
 
-
-#ifdef _WIN32
- #ifdef THORHELPER_EXPORTS
-  #define THORHELPER_API __declspec(dllexport)
- #else
-  #define THORHELPER_API __declspec(dllimport)
- #endif
-#else
- #define THORHELPER_API
-#endif
+#include "thorhelper.hpp"
 
 #include "jlog.hpp"
 
 extern THORHELPER_API unsigned traceLevel;
-
-//#pragma message("**** ROXIEHELPER.IPP ***")
 
 //---------------------------------------------------
 // Base classes for all Roxie/HThor activities

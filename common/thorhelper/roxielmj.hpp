@@ -20,24 +20,12 @@
 
 //Limited Match Join helpers  (s[1..n])
 
+#include "thorhelper.hpp"
 #include "roxiehelper.hpp"
 #include "roxiemem.hpp"
 #include "limits.h"
 #include "jqueue.tpp"
 #include "thorcommon.hpp"
-
-#ifdef _WIN32
- #ifdef THORHELPER_EXPORTS
-  #define THORHELPER_API __declspec(dllexport)
- #else
-  #define THORHELPER_API __declspec(dllimport)
- #endif
-#else
- #define THORHELPER_API
-#endif
-
-//#pragma message("**** ROXIELMJ.HPP ***")
-
 
 //===================================================================================
 THORHELPER_API IRHLimitedCompareHelper *createRHLimitedCompareHelper();

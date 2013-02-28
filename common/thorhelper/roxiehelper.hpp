@@ -23,18 +23,7 @@
 #include "roxiemem.hpp"
 #include "mpbase.hpp"
 #include "workunit.hpp"
-
-#ifdef _WIN32
- #ifdef THORHELPER_EXPORTS
-  #define THORHELPER_API __declspec(dllexport)
- #else
-  #define THORHELPER_API __declspec(dllimport)
- #endif
-#else
- #define THORHELPER_API
-#endif
-
-//#pragma message("**** ROXIEHELPER.HPP ***")
+#include "thorhelper.hpp"
 
 //========================================================================================= 
 
