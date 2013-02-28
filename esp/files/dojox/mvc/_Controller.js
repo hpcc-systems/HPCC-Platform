@@ -21,6 +21,8 @@ catch(e){
 }
 if(!_6){
 this.startup();
+}else{
+_6.setAttribute("widgetId",this.id);
 }
 },startup:function(){
 if(!this._applyAttributes){
@@ -28,10 +30,19 @@ this._startAtWatchHandles();
 }
 this.inherited(arguments);
 },destroy:function(){
+this._beingDestroyed=true;
 if(!this._applyAttributes){
 this._stopAtWatchHandles();
 }
 this.inherited(arguments);
+if(!this._applyAttributes){
+try{
+require("dijit/registry").remove(this.id);
+}
+catch(e){
+}
+}
+this._destroyed=true;
 },set:function(_8,_9){
 if(typeof _8==="object"){
 for(var x in _8){

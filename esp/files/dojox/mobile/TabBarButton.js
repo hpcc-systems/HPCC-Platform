@@ -67,7 +67,8 @@ this.iconDivNode.tabIndex="0";
 this.inherited(arguments);
 if(!this._isOnLine){
 this._isOnLine=true;
-this.set({icon1:this.icon1,icon2:this.icon2});
+this.set({icon:this._pendingIcon!==undefined?this._pendingIcon:this.icon,icon1:this.icon1,icon2:this.icon2});
+delete this._pendingIcon;
 }
 _5.setSelectable(this.domNode,false);
 },onClose:function(e){

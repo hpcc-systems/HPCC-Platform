@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -234,6 +234,11 @@ _34.then(function(){
 dfd.resolve(dfd);
 }).otherwise(function(_37){
 _35.error=_37;
+if(_37.response){
+_37.status=_37.response.status;
+_37.responseText=_37.response.text;
+_37.xhr=_37.response.xhr;
+}
 dfd.reject(_37);
 });
 return dfd;

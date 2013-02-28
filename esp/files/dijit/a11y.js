@@ -55,7 +55,7 @@ return _19&&_19.tagName.toLowerCase()=="input"&&_19.type&&_19.type.toLowerCase()
 };
 var _1a=function(_1b){
 for(var _1c=_1b.firstChild;_1c;_1c=_1c.nextSibling){
-if(_1c.nodeType!=1||(_7("ie")&&_1c.scopeName!=="HTML")||!_9(_1c)){
+if(_1c.nodeType!=1||(_7("ie")<=9&&_1c.scopeName!=="HTML")||!_9(_1c)){
 continue;
 }
 if(_e(_1c)){

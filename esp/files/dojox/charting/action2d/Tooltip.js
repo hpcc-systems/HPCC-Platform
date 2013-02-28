@@ -70,6 +70,9 @@ var _11=m._degToRad(o.plot.opt.startAngle),_12=(this.angles[o.index]+this.angles
 _f.x=o.cx+o.cr*Math.cos(_12);
 _f.y=o.cy+o.cr*Math.sin(_12);
 _f.w=_f.h=1;
+if(_11&&(_12<0||_12>2*Math.PI)){
+_12=Math.abs(2*Math.PI-Math.abs(_12));
+}
 if(_12<_a){
 }else{
 if(_12<_b+_a){

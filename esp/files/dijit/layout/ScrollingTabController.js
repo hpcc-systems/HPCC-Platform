@@ -44,7 +44,7 @@ return false;
 var _19=this.getChildren();
 if(_19.length){
 var _1a=_19[this.isLeftToRight()?0:_19.length-1].domNode,_1b=_19[this.isLeftToRight()?_19.length-1:0].domNode;
-return _1b.offsetLeft+_5.get(_1b,"width")-_1a.offsetLeft;
+return _1b.offsetLeft+_1b.offsetWidth-_1a.offsetLeft;
 }else{
 return 0;
 }
@@ -101,7 +101,7 @@ this.inherited(arguments);
 },_getScrollBounds:function(){
 var _22=this.getChildren(),_23=_5.get(this.scrollNode,"width"),_24=_5.get(this.containerNode,"width"),_25=_24-_23,_26=this._getTabsWidth();
 if(_22.length&&_26>_23){
-return {min:this.isLeftToRight()?0:_22[_22.length-1].domNode.offsetLeft,max:this.isLeftToRight()?(_22[_22.length-1].domNode.offsetLeft+_5.get(_22[_22.length-1].domNode,"width"))-_23:_25};
+return {min:this.isLeftToRight()?0:_22[_22.length-1].domNode.offsetLeft,max:this.isLeftToRight()?(_22[_22.length-1].domNode.offsetLeft+_22[_22.length-1].domNode.offsetWidth)-_23:_25};
 }else{
 var _27=this.isLeftToRight()?0:_25;
 return {min:_27,max:_27};

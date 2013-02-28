@@ -66,7 +66,7 @@ _14.destroy();
 });
 },getEnclosingWidget:function(_15){
 while(_15){
-var id=_15.getAttribute&&_15.getAttribute("widgetId");
+var id=_15.nodeType==1&&_15.getAttribute("widgetId");
 if(id){
 return _7[id];
 }

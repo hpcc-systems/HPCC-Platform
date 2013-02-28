@@ -1,15 +1,45 @@
 //>>built
-define("dojox/dgauges/GaugeBase",["dojo/_base/lang","dojo/_base/declare","dojo/dom-geometry","dijit/registry","dijit/_WidgetBase","dojo/_base/html","dojo/_base/event","dojox/gfx","dojox/widget/_Invalidating","./ScaleBase","dojox/gfx/matrix","dojox/gfx/canvas"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c){
-return _2("dojox.dgauges.GaugeBase",[_5,_9],{_elements:null,_scales:null,_elementsIndex:null,_elementsRenderers:null,_gfxGroup:null,_mouseShield:null,_widgetBox:null,_node:null,value:0,font:null,constructor:function(_d,_e){
+define("dojox/dgauges/GaugeBase",["dojo/_base/lang","dojo/_base/declare","dojo/dom-geometry","dijit/registry","dijit/_WidgetBase","dojo/_base/html","dojo/_base/event","dojox/gfx","dojox/widget/_Invalidating","./ScaleBase","dojox/gfx/matrix"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b){
+return _2("dojox.dgauges.GaugeBase",[_5,_9],{_elements:null,_scales:null,_elementsIndex:null,_elementsRenderers:null,_gfxGroup:null,_mouseShield:null,_widgetBox:null,_node:null,value:0,_mainIndicator:null,_getValueAttr:function(){
+if(this._mainIndicator){
+return this._mainIndicator.get("value");
+}else{
+this._setMainIndicator();
+if(this._mainIndicator){
+return this._mainIndicator.get("value");
+}
+}
+return this.value;
+},_setValueAttr:function(_c){
+this._set("value",_c);
+if(this._mainIndicator){
+this._mainIndicator.set("value",_c);
+}else{
+this._setMainIndicator();
+if(this._mainIndicator){
+this._mainIndicator.set("value",_c);
+}
+}
+},_setMainIndicator:function(){
+var _d;
+for(var i=0;i<this._scales.length;i++){
+_d=this._scales[i].getIndicator("indicator");
+if(_d){
+this._mainIndicator=_d;
+}
+}
+},_resetMainIndicator:function(){
+this._mainIndicator=null;
+},font:null,constructor:function(_e,_f){
 this.font={family:"Helvetica",style:"normal",variant:"small-caps",weight:"bold",size:"10pt",color:"black"};
 this._elements=[];
 this._scales=[];
 this._elementsIndex={};
 this._elementsRenderers={};
-this._node=_4.byId(_e);
-var _f=_6.getMarginBox(_e);
-this.surface=_8.createSurface(this._node,_f.w||1,_f.h||1);
-this._widgetBox=_f;
+this._node=_4.byId(_f);
+var box=_6.getMarginBox(_f);
+this.surface=_8.createSurface(this._node,box.w||1,box.h||1);
+this._widgetBox=box;
 this._baseGroup=this.surface.createGroup();
 this._mouseShield=this._baseGroup.createGroup();
 this._gfxGroup=this._baseGroup.createGroup();
@@ -21,6 +51,7 @@ this._node.style.cursor=_10;
 return _11?_11.getBoundingBox():{x:0,y:0,width:0,height:0};
 },destroy:function(){
 this.surface.destroy();
+this.inherited(arguments);
 },resize:function(_12,_13){
 var box;
 switch(arguments.length){
@@ -82,6 +113,7 @@ this._elements.splice(idx,1);
 if(_18 instanceof _a){
 var _19=this._scales.indexOf(_18);
 this._scales.splice(_19,1);
+this._resetMainIndicator();
 }
 delete this._elementsIndex[_17];
 delete this._elementsRenderers[_17];

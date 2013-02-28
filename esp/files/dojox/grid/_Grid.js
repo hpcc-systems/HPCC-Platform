@@ -27,6 +27,9 @@ _17.addClass(this.domNode,this.classTag);
 if(!this.isLeftToRight()){
 _17.addClass(this.domNode,this.classTag+"Rtl");
 }
+if(this.rowHeight>0){
+_17.addClass(this.viewsNode,this.classTag+"FixedRowHeight");
+}
 },postMixInProperties:function(){
 this.inherited(arguments);
 var _1a=_1.i18n.getLocalization("dijit","loading",this.lang);
@@ -265,9 +268,6 @@ this.render();
 },hasLayout:function(){
 return this.layout.cells.length;
 },resize:function(_2f,_30){
-if(_1.isIE&&!_2f&&!_30&&this._autoHeight){
-return;
-}
 this._pendingChangeSize=_2f;
 this._pendingResultSize=_30;
 this.sizeChange();
@@ -324,7 +324,7 @@ this.height=this.domNode.style.height;
 delete this.fitTo;
 }else{
 if(this.fitTo=="parent"){
-h=this._parentContentBoxHeight=this._parentContentBoxHeight||_17._getContentBox(pn).h;
+h=this._parentContentBoxHeight=(this._parentContentBoxHeight>0?this._parentContentBoxHeight:_17._getContentBox(pn).h);
 this.domNode.style.height=Math.max(0,h)+"px";
 }
 }

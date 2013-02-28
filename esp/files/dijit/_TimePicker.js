@@ -44,11 +44,15 @@ this._visibleIncrement=_21/_20;
 this._maxIncrement=(60*60*24)/_20;
 var _24=Math.min(this._totalIncrements,10),_25=this._getFilteredNodes(0,(_24>>1)+1,false),_26=[],_27=_24-_25.length,_28=this._getFilteredNodes(0,_27,true,_25[0]);
 if(_28.length<_27&&_25.length>0){
-_26=this._getFilteredNodes(_25.length,_27-_28.length,false,_25[_25.length-1]);
+_26=this._getFilteredNodes(_25[_25.length-1].idx+1,_27-_28.length,false,_25[_25.length-1]);
 }
 _1.forEach(_28.concat(_25,_26),function(n){
 this.timeMenu.appendChild(n);
 },this);
+if(!_28.length&&!_25.length&&!_26.length&&this.filterString){
+this.filterString="";
+this._showText();
+}
 },constructor:function(){
 this.constraints={};
 },postMixInProperties:function(){

@@ -778,6 +778,9 @@ break;
 _d.TextPath.nodeType="shape";
 _d.Surface=_2("dojox.gfx.vml.Surface",gs.Surface,{constructor:function(){
 gs.Container._init.call(this);
+},destroy:function(){
+this.clear(true);
+this.inherited(arguments);
 },setDimensions:function(_82,_83){
 this.width=g.normalizedLength(_82);
 this.height=g.normalizedLength(_83);

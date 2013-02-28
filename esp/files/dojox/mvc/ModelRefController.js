@@ -82,6 +82,6 @@ hm=null;
 };
 return h;
 },hasControllerProperty:function(_1c){
-return _1c=="_watchCallbacks"||_1c==this._refModelProp||_1c==this._refInModelProp||(_1c in (this.ownProps||{}))||(_1c in this.constructor.prototype);
+return _1c=="_watchCallbacks"||_1c==this._refModelProp||_1c==this._refInModelProp||(_1c in (this.ownProps||{}))||(_1c in this.constructor.prototype)||/^dojoAttach(Point|Event)$/i.test(_1c);
 }});
 });

@@ -177,7 +177,7 @@ this.ownerNameItem.push(_46);
 _42.push(_46);
 }
 if(this.panelNames){
-this.ownerNameItem[this.ownerNameItem.length-1].style.left=_9.set(_40,"left")+15+"px";
+this.ownerNameItem[this.ownerNameItem.length-1].style.left=_9.get(_40,"left")+15+"px";
 var _47=this.createConnectingLinesPN(_40,this.ownerNameItem[this.ownerNameItem.length-1]);
 _2.forEach(_47,function(_48){
 _48.style.display="none";
@@ -214,10 +214,10 @@ return _55;
 var _59=_8.create("div",{id:_58.id,className:"ganttImageTreeExpand"});
 _a.set(_59,"tabIndex",0);
 var _5a=this.ownerTaskNodeMapping[_58.id];
-_2.forEach(["onclick","onkeydown"],function(e){
+_2.forEach(["click","keydown"],function(e){
 this.ganttChart._events.push(on(_59,e,_3.hitch(this,function(evt){
 var _5b=false,_5c,_5d;
-if(e=="onkeydown"&&evt.keyCode!=_c.ENTER){
+if(e=="keydown"&&evt.keyCode!=_c.ENTER){
 return;
 }
 if(_5a.isOpen){
@@ -228,13 +228,13 @@ for(_5c in this.ownerTaskNodeMapping){
 _5d=this.ownerTaskNodeMapping[_5c];
 if(_5b){
 _2.forEach(_5d[_5c],function(_5e){
-_9.set(_5e,"top",_9.set(_5e,"top")-_5a.taskCount*23+"px");
+_9.set(_5e,"top",_9.get(_5e,"top")-_5a.taskCount*23+"px");
 });
 _2.forEach(_5d.tasks,function(_5f){
 _2.forEach(_5f,function(_60){
 var _61=!_60.v&&!_60.h?[_60]:[_60.v,_60.h];
 _2.forEach(_61,function(t){
-_9.set(t,"top",_9.set(t,"top")-_5a.taskCount*23+"px");
+_9.set(t,"top",_9.get(t,"top")-_5a.taskCount*23+"px");
 });
 });
 });
@@ -257,13 +257,13 @@ for(_5c in this.ownerTaskNodeMapping){
 _5d=this.ownerTaskNodeMapping[_5c];
 if(_5b){
 _2.forEach(_5d[_5c],function(_64){
-_9.set(_64,"top",_9.set(_64,"top")+_5a.taskCount*23+"px");
+_9.set(_64,"top",_9.get(_64,"top")+_5a.taskCount*23+"px");
 });
 _2.forEach(_5d.tasks,function(_65){
 _2.forEach(_65,function(_66){
 var _67=!_66.v&&!_66.h?[_66]:[_66.v,_66.h];
 _2.forEach(_67,function(t){
-_9.set(t,"top",_9.set(t,"top")+_5a.taskCount*23+"px");
+_9.set(t,"top",_9.get(t,"top")+_5a.taskCount*23+"px");
 });
 });
 });
@@ -282,7 +282,7 @@ this.styleOwnerItem(_69,_5d[_5c][0],"inline",(i+1)*23);
 })));
 },this);
 _7.add(_59,"ganttResourceTreeImage");
-_9.set(_59,{left:(_9.set(_58,"left")-12)+"px",top:(_9.set(_58,"top")+3)+"px"});
+_9.set(_59,{left:(_9.get(_58,"left")-12)+"px",top:(_9.get(_58,"top")+3)+"px"});
 return _59;
 },styleOwnerItem:function(_6a,_6b,_6c,_6d){
 if(_6a.v||_6a.h){

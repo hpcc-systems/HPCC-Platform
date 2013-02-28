@@ -647,7 +647,7 @@ if(_a7&&this._lastType==_a4&&_aa==this._toSelect&&this._config[_a4]==_10){
 if(_a4==="row"){
 this._isUsingRowSelector=true;
 }
-this._startPoint[_a4]=this._lastEndPoint[_a4];
+this._startPoint[_a4]=this._lastAnchorPoint[_a4];
 this._highlight(_a4,this._startPoint[_a4]);
 this._isUsingRowSelector=false;
 }else{

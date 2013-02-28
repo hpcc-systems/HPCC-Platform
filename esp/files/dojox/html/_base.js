@@ -148,6 +148,13 @@ _3.destroy(this._styleNodes.pop());
 if(this.renderStyles&&_49&&_49.length){
 this._renderStyles(_49);
 }
+var d=new _2();
+var _4a=this.getInherited(arguments),_4b=arguments,_4c=_6.hitch(this,function(){
+_4a.apply(this,_4b);
+_b(this.parseDeferred,function(){
+d.resolve();
+});
+});
 if(this.executeScripts&&_48){
 if(this.cleanContent){
 _48=_48.replace(/(<!--|(?:\/\/)?-->|<!\[CDATA\[|\]\]>)/g,"");
@@ -161,14 +168,10 @@ _3d(_48,this.node);
 catch(e){
 this._onError("Exec","Error eval script in "+this.id+", "+e.message,e);
 }
+_7(_4c);
+}else{
+_4c();
 }
-var _4a=this.getInherited(arguments),_4b=arguments,d=new _2();
-_7(_6.hitch(this,function(){
-_4a.apply(this,_4b);
-_b(this.parseDeferred,function(){
-d.resolve();
-});
-}));
 return d.promise;
 },tearDown:function(){
 this.inherited(arguments);
@@ -181,11 +184,11 @@ _3.destroy(this._styleNodes.pop());
 delete this._styleNodes;
 _6.mixin(this,_d._ContentSetter.prototype);
 }});
-_d.set=function(_4c,_4d,_4e){
-if(!_4e){
-return _4._setNodeContent(_4c,_4d,true);
+_d.set=function(_4d,_4e,_4f){
+if(!_4f){
+return _4._setNodeContent(_4d,_4e,true);
 }else{
-var op=new _d._ContentSetter(_6.mixin(_4e,{content:_4d,node:_4c}));
+var op=new _d._ContentSetter(_6.mixin(_4f,{content:_4e,node:_4d}));
 return op.set();
 }
 };

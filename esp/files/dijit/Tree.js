@@ -552,7 +552,7 @@ this.focusNode(_8e);
 }
 }
 },isExpandoNode:function(_8f,_90){
-return _7.isDescendant(_8f,_90.expandoNode);
+return _7.isDescendant(_8f,_90.expandoNode)||_7.isDescendant(_8f,_90.expandoNodeText);
 },_onClick:function(_91,e){
 var _92=e.target,_93=this.isExpandoNode(_92,_91);
 if((this.openOnClick&&_91.isExpandable)||_93){

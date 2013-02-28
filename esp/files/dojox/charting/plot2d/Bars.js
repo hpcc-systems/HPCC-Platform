@@ -61,11 +61,12 @@ run._rectUsePool=[];
 }
 var _15=t.next("bar",[this.opt,run]),_16=new Array(run.data.length);
 s=run.group;
-var l=this.getDataLength(run);
 var _17=_3.some(run.data,function(_18){
 return typeof _18=="number"||(_18&&!_18.hasOwnProperty("x"));
 });
-for(var j=0;j<l;++j){
+var min=_17?Math.max(0,Math.floor(this._vScaler.bounds.from-1)):0;
+var max=_17?Math.min(run.data.length,Math.ceil(this._vScaler.bounds.to)):run.data.length;
+for(var j=min;j<max;++j){
 var _19=run.data[j];
 if(_19!=null){
 var val=this.getValue(_19,j,i,_17),hv=ht(val.y),w=Math.abs(hv-_13),_1a,_1b;
@@ -110,8 +111,6 @@ run.dirty=false;
 }
 this.dirty=false;
 return this;
-},getDataLength:function(run){
-return Math.min(run.data.length,Math.ceil(this._vScaler.bounds.to));
 },getValue:function(_21,j,_22,_23){
 var y,x;
 if(_23){

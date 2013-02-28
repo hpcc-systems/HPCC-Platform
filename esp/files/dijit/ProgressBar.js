@@ -16,8 +16,6 @@ var _a=this.internalProgress,ap=this.domNode;
 var _b=1;
 if(this.indeterminate){
 ap.removeAttribute("aria-valuenow");
-ap.removeAttribute("aria-valuemin");
-ap.removeAttribute("aria-valuemax");
 }else{
 if(String(this.progress).indexOf("%")!=-1){
 _b=Math.min(parseFloat(this.progress)/100,1);
@@ -26,11 +24,11 @@ this.progress=_b*this.maximum;
 this.progress=Math.min(this.progress,this.maximum);
 _b=this.maximum?this.progress/this.maximum:0;
 }
-ap.setAttribute("aria-describedby",this.labelNode.id);
 ap.setAttribute("aria-valuenow",this.progress);
+}
+ap.setAttribute("aria-describedby",this.labelNode.id);
 ap.setAttribute("aria-valuemin",0);
 ap.setAttribute("aria-valuemax",this.maximum);
-}
 this.labelNode.innerHTML=this.report(_b);
 _3.toggle(this.domNode,"dijitProgressBarIndeterminate",this.indeterminate);
 _a.style.width=(_b*100)+"%";

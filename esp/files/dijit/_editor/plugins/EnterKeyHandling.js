@@ -24,7 +24,7 @@ _3.stop(e);
 }
 }
 });
-if(_6("ie")==9){
+if(_6("ie")>=9){
 this.connect(_e.document,"onpaste",function(e){
 setTimeout(dojo.hitch(this,function(){
 var r=this.editor.document.selection.createRange();
@@ -54,7 +54,7 @@ _a.prototype.execCommand.call(this.editor,"formatblock",this.blockNodeForEnter);
 var _10=this.editor._sCall("getAncestorElement",[this.blockNodeForEnter]);
 if(_10){
 _10.innerHTML=this.bogusHtmlContent;
-if(_6("ie")){
+if(_6("ie")<=9){
 var r=this.editor.document.selection.createRange();
 r.move("character",-1);
 r.select();

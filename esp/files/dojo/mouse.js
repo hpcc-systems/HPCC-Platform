@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -10,7 +10,7 @@ _2.add("dom-quirks",_4.doc&&_4.doc.compatMode=="BackCompat");
 _2.add("events-mouseenter",_4.doc&&"onmouseenter" in _4.doc.createElement("div"));
 _2.add("events-mousewheel",_4.doc&&"onmousewheel" in _4.doc);
 var _5;
-if(_2("dom-quirks")||!_2("dom-addeventlistener")){
+if((_2("dom-quirks")&&_2("ie"))||!_2("dom-addeventlistener")){
 _5={LEFT:1,MIDDLE:4,RIGHT:2,isButton:function(e,_6){
 return e.button&_6;
 },isLeft:function(e){

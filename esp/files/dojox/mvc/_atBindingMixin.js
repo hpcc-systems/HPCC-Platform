@@ -97,7 +97,7 @@ continue;
 _25[_26]=_10(_24[_26].target,_24[_26].targetProp,this,_26,{bindDirection:_24[_26].bindDirection,converter:_24[_26].converter});
 }
 if((_24["*"]||{}).atsignature=="dojox.mvc.at"){
-_25["*"]=_10(_24[_26].target,_24["*"].targetProp,this,"*",{bindDirection:_24["*"].bindDirection,converter:_24["*"].converter});
+_25["*"]=_10(_24["*"].target,_24["*"].targetProp,this,"*",{bindDirection:_24["*"].bindDirection,converter:_24["*"].converter});
 }
 }
 },_stopAtWatchHandles:function(){

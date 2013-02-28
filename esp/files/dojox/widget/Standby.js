@@ -309,7 +309,7 @@ if(this.target===_c.body()||this.target===_c.doc){
 this._overflowDisabled=true;
 var _37=_c.body();
 if(_37.style&&_37.style.overflow){
-this._oldOverflow=_a.set(_37,"overflow");
+this._oldOverflow=_a.get(_37,"overflow");
 }else{
 this._oldOverflow="";
 }
@@ -318,7 +318,7 @@ if(_37.parentNode&&_37.parentNode.style&&_37.parentNode.style.overflow){
 this._oldBodyParentOverflow=_37.parentNode.style.overflow;
 }else{
 try{
-this._oldBodyParentOverflow=_a.set(_37.parentNode,"overflow");
+this._oldBodyParentOverflow=_a.get(_37.parentNode,"overflow");
 }
 catch(e){
 this._oldBodyParentOverflow="scroll";

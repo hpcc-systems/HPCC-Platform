@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -37,7 +37,7 @@ this.constraints=function(){
 return box;
 };
 }});
-var _10=_1("dnd.move.parentConstrainedMoveable",_7,{area:"content",constructor:function(_11,_12){
+var _10=_1("dojo.dnd.move.parentConstrainedMoveable",_7,{area:"content",constructor:function(_11,_12){
 var _13=_12&&_12.area;
 this.constraints=function(){
 var n=this.node.parentNode,s=_3.getComputedStyle(n),mb=_2.getMarginBox(n,s);
