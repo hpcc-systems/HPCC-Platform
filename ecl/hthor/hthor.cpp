@@ -807,7 +807,7 @@ CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _
 
 void CHThorCsvWriteActivity::execute()
 {
-    const char * header = helper.queryCsvParameters()->queryHeader();
+    OwnedRoxieString header(helper.queryCsvParameters()->getHeader());
     if (header) {
         csvOutput.beginLine();
         csvOutput.writeHeaderLn(strlen(header), header);
@@ -840,7 +840,7 @@ void CHThorCsvWriteActivity::execute()
         numRecords++;
     }
 
-    const char * footer = helper.queryCsvParameters()->queryFooter();
+    OwnedRoxieString footer(helper.queryCsvParameters()->getFooter());
     if (footer) {
         csvOutput.beginLine();
         csvOutput.writeHeaderLn(strlen(footer), footer);
@@ -852,9 +852,10 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 {
     // MORE - should call parent's setFormat too?
     ICsvParameters * csvInfo = helper.queryCsvParameters();
+    OwnedRoxieString rs(csvInfo->getSeparator(0));
     StringBuffer separator;
-    const char *s = csvInfo->querySeparator(0);
-    while (*s)
+    const char *s = rs;
+    while (s && *s)
     {
         if (',' == *s)
             separator.append("\\,");
@@ -863,9 +864,9 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
         ++s;
     }
     desc->queryProperties().setProp("@csvSeparate", separator.str());
-    desc->queryProperties().setProp("@csvQuote", csvInfo->queryQuote(0));
-    desc->queryProperties().setProp("@csvTerminate", csvInfo->queryTerminator(0));
-    desc->queryProperties().setProp("@csvEscape", csvInfo->queryEscape(0));
+    desc->queryProperties().setProp("@csvQuote", rs.setown(csvInfo->getQuote(0)));
+    desc->queryProperties().setProp("@csvTerminate", rs.setown(csvInfo->getTerminator(0)));
+    desc->queryProperties().setProp("@csvEscape", rs.setown(csvInfo->getEscape(0)));
     desc->queryProperties().setProp("@format","utf8n");
 }
 
@@ -873,11 +874,12 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
-    const char * path = helper.queryXmlIteratorPath();
-    if (!path)
+    OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
+    if (!xmlpath)
         rowTag.append("Row");
     else
     {
+        const char *path = xmlpath;
         if (*path == '/') path++;
         if (strchr(path, '/')) UNIMPLEMENTED;               // more what do we do with /mydata/row
         rowTag.append(path);
@@ -888,7 +890,8 @@ void CHThorXmlWriteActivity::execute()
 {
     // Loop thru the results
     numRecords = 0;
-    const char * header = helper.queryHeader();
+    OwnedRoxieString suppliedHeader(helper.getHeader());
+    const char *header = suppliedHeader;
     if (!header) header = "<Dataset>\n";
     diskout->write(strlen(header), header);
 
@@ -917,7 +920,8 @@ void CHThorXmlWriteActivity::execute()
         diskout->write(xmlOutput.length(), xmlOutput.str());
         numRecords++;
     }
-    const char * footer = helper.queryFooter();
+    OwnedRoxieString suppliedFooter(helper.getFooter());
+    const char *footer = suppliedFooter;
     if (!footer) footer = "</Dataset>\n";
     diskout->write(strlen(footer), footer);
 }
@@ -1275,7 +1279,8 @@ public:
         groupSignalled = true; // i.e. don't start with a NULL row
         CHThorSimpleActivityBase::ready();
         rowDeserializer.setown(rowAllocator->createDiskDeserializer(agent.queryCodeContext()));
-        readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
+        OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
+        readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), xmlIteratorPath, helper.getPipeFlags()));
         OwnedRoxieString pipeProgram(helper.getPipeProgram());
         openPipe(pipeProgram);
     }
@@ -1458,7 +1463,10 @@ public:
         writeTransformer->ready();
 
         if (!readTransformer)
-            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
+        {
+            OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
+            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), xmlIterator, helper.getPipeFlags()));
+        }
         if(!recreate)
         {
             OwnedRoxieString pipeProgram(helper.getPipeProgram());
@@ -7071,7 +7079,8 @@ const void * CHThorXmlParseActivity::nextInGroup()
         }
         size32_t srchLen;
         helper.getSearchText(srchLen, srchStr, in);
-        xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryXmlIteratorPath(), *this, xr_noRoot, helper.requiresContents()));
+        OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
+        xmlParser.setown(createXMLParse(srchStr, srchLen, xmlIteratorPath, *this, xr_noRoot, helper.requiresContents()));
     }
 }
 
@@ -8880,7 +8889,8 @@ bool CHThorXmlReadActivity::openNext()
         else
             inputfileiostream.setown(createIOStream(inputfileio));
 
-        xmlParser.setown(createXMLParse(*inputfileiostream, helper.queryXmlIteratorPath(), *this, (0 != (TDRxmlnoroot & helper.getFlags()))?xr_noRoot:xr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
+        xmlParser.setown(createXMLParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?xr_noRoot:xr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
         return true;
     }
     return false;

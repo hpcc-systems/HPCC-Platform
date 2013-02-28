@@ -242,7 +242,8 @@ public:
         }
         else
             _inrowif = this;
-        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), flags));
+        OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
+        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIteratorPath, flags));
         appendOutputLinked(this);
     }
     virtual void start()
@@ -356,7 +357,8 @@ public:
         recreate = helper->recreateEachRow();
         grouped = 0 != (flags & TPFgroupeachrow);
 
-        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), flags));
+        OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
+        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIterator, flags));
         readTransformer->setStream(pipeStream); // NB the pipe process stream is provided to pipeStream after pipe->run()
 
         appendOutputLinked(this);

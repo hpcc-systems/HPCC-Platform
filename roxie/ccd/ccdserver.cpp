@@ -8724,7 +8724,10 @@ public:
         groupSignalled = true; // i.e. don't start with a NULL row
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         if (!readTransformer)
-            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
+        {
+            OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
+            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), xmlIteratorPath, helper.getPipeFlags()));
+        }
         OwnedRoxieString pipeProgram(helper.getPipeProgram());
         openPipe(pipeProgram);
     }
@@ -8843,7 +8846,10 @@ public:
         writeTransformer->ready();
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         if (!readTransformer)
-            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
+        {
+            OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
+            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), xmlIterator, helper.getPipeFlags()));
+        }
         if(!recreate)
         {
             OwnedRoxieString pipeProgram(helper.getPipeProgram());
@@ -10889,7 +10895,7 @@ public:
 
     virtual void onExecute() 
     {
-        const char * header = csvHelper.queryCsvParameters()->queryHeader();
+        OwnedRoxieString header(csvHelper.queryCsvParameters()->getHeader());
         if (header) 
         {
             csvOutput.beginLine();
@@ -10912,7 +10918,7 @@ public:
             diskout->write(csvOutput.length(), csvOutput.str());
             ReleaseRoxieRow(nextrec);
         }
-        const char * footer = csvHelper.queryCsvParameters()->queryFooter();
+        OwnedRoxieString footer(csvHelper.queryCsvParameters()->getFooter());
         if (footer) 
         {
             csvOutput.beginLine();
@@ -10929,8 +10935,9 @@ public:
 
         ICsvParameters *csvParameters = csvHelper.queryCsvParameters();
         StringBuffer separator;
-        const char *s = csvParameters->querySeparator(0);
-        while (*s)
+        OwnedRoxieString rs(csvParameters->getSeparator(0));
+        const char *s = rs;
+        while (s &&  *s)
         {
             if (',' == *s)
                 separator.append("\\,");
@@ -10939,9 +10946,9 @@ public:
             ++s;
         }
         props.setProp("@csvSeparate", separator.str());
-        props.setProp("@csvQuote", csvParameters->queryQuote(0));
-        props.setProp("@csvTerminate", csvParameters->queryTerminator(0));
-        props.setProp("@csvEscape", csvParameters->queryEscape(0));
+        props.setProp("@csvQuote", rs.setown(csvParameters->getQuote(0)));
+        props.setProp("@csvTerminate", rs.setown(csvParameters->getTerminator(0)));
+        props.setProp("@csvEscape", rs.setown(csvParameters->getEscape(0)));
     }
 
     virtual bool isOutputTransformed() const { return true; }
@@ -10962,11 +10969,12 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerDiskWriteActivity::start(parentExtractSize, parentExtract, paused);
-        const char * path = xmlHelper.queryXmlIteratorPath();
-        if (!path)
+        OwnedRoxieString xmlpath(xmlHelper.getXmlIteratorPath());
+        if (!xmlpath)
             rowTag.set("Row");
         else
         {
+            const char *path = xmlpath;
             if (*path == '/') path++;
             if (strchr(path, '/')) UNIMPLEMENTED;               // more what do we do with /mydata/row
             rowTag.set(path);
@@ -10975,7 +10983,8 @@ public:
 
     virtual void onExecute() 
     {
-        const char * header = xmlHelper.queryHeader();
+        OwnedRoxieString suppliedHeader(xmlHelper.getHeader());
+        const char *header = suppliedHeader;
         if (!header) header = "<Dataset>\n";
         diskout->write(strlen(header), header);
         CommonXmlWriter xmlOutput(xmlHelper.getXmlFlags());
@@ -10994,7 +11003,8 @@ public:
             xmlOutput.outputEndNested(rowTag);
             diskout->write(xmlOutput.length(), xmlOutput.str());
         }
-        const char * footer = xmlHelper.queryFooter();
+        OwnedRoxieString suppliedFooter(xmlHelper.getFooter());
+        const char * footer = suppliedFooter;
         if (!footer) footer = "</Dataset>\n";
         diskout->write(strlen(footer), footer);
     }
@@ -19609,7 +19619,8 @@ public:
             }
             size32_t srchLen;
             helper.getSearchText(srchLen, srchStr, in);
-            xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryXmlIteratorPath(), *this));
+            OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
+            xmlParser.setown(createXMLParse(srchStr, srchLen, xmlIteratorPath, *this));
         }   
     }
 
@@ -20053,7 +20064,8 @@ public:
         {
             rowTransformer.set(readHelper->queryTransformer());
             assertex(reader != NULL);
-            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), readHelper->queryXmlIteratorPath(), *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?xr_noRoot:xr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
+            OwnedRoxieString xmlIterator(readHelper->getXmlIteratorPath());
+            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?xr_noRoot:xr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
         }
     }
 

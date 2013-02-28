@@ -1936,18 +1936,17 @@ struct ICsvParameters
         preserveWhitespace =  0x0020,
         manyHeaderFooter =    0x0040,
         defaultEscape =       0x0080,
-        supportsEscape =      0x0100, // MORE: deprecate on next major version
     }; // flags values
     virtual unsigned     getFlags() = 0;
     virtual bool         queryEBCDIC() = 0;
-    virtual const char * queryHeader()              { return NULL; }
+    virtual const char * getHeader()              { return NULL; }
     virtual unsigned     queryHeaderLen() = 0;
     virtual size32_t     queryMaxSize() = 0;
-    virtual const char * queryQuote(unsigned idx) = 0;
-    virtual const char * querySeparator(unsigned idx) = 0;
-    virtual const char * queryTerminator(unsigned idx) = 0;
-    virtual const char * queryEscape(unsigned idx) = 0;
-    virtual const char * queryFooter()              { return NULL; }
+    virtual const char * getQuote(unsigned idx) = 0;
+    virtual const char * getSeparator(unsigned idx) = 0;
+    virtual const char * getTerminator(unsigned idx) = 0;
+    virtual const char * getEscape(unsigned idx) = 0;
+    virtual const char * getFooter()              { return NULL; }
 };
 
 struct ITypedOutputStream
@@ -1991,7 +1990,7 @@ struct IHThorCsvFetchArg : public IHThorFetchBaseArg, public IHThorFetchContext,
 struct IHThorXmlParseArg : public IHThorArg
 {
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * left, IColumnProvider * parsed) = 0;
-    virtual const char * queryXmlIteratorPath() = 0;
+    virtual const char * getXmlIteratorPath() = 0;
     virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self) = 0;
     virtual bool searchTextNeedsFree() = 0;
     virtual bool requiresContents() { return false; }
@@ -2000,7 +1999,6 @@ struct IHThorXmlParseArg : public IHThorArg
 struct IHThorXmlFetchExtra : public IInterface
 {
     virtual size32_t transform(ARowBuilder & rowBuilder, IColumnProvider * rowLeft, const void * right, unsigned __int64 _fpos) = 0;
-    virtual const char * queryXmlIteratorPath() = 0;               // required so that xpaths to extract data are correct
     virtual bool requiresContents() { return false; }
 };
 
@@ -2013,9 +2011,9 @@ struct IHThorXmlFetchArg : public IHThorFetchBaseArg, public IHThorFetchContext,
 struct IHThorXmlWriteExtra : public IInterface
 {
     virtual void toXML(const byte * self, IXmlWriter & out) = 0;
-    virtual const char * queryXmlIteratorPath()           { return NULL; }             // supplies the prefix and suffix for a row
-    virtual const char * queryHeader()                 { return NULL; }
-    virtual const char * queryFooter()                 { return NULL; }
+    virtual const char * getXmlIteratorPath()         { return NULL; }             // supplies the prefix and suffix for a row
+    virtual const char * getHeader()                   { return NULL; }
+    virtual const char * getFooter()                   { return NULL; }
     virtual unsigned getXmlFlags()                     { return 0; }
 };
 
@@ -2050,7 +2048,7 @@ struct IHThorPipeReadArg : public IHThorArg
     virtual unsigned getPipeFlags() = 0;
     virtual ICsvToRowTransformer * queryCsvTransformer() = 0;
     virtual IXmlToRowTransformer * queryXmlTransformer() = 0;
-    virtual const char * queryXmlIteratorPath() = 0;
+    virtual const char * getXmlIteratorPath() = 0;
 };
 
 struct IHThorPipeWriteArg : public IHThorArg
@@ -2075,7 +2073,7 @@ struct IHThorPipeThroughArg : public IHThorArg
     virtual IHThorXmlWriteExtra * queryXmlOutput() = 0;
     virtual ICsvToRowTransformer * queryCsvTransformer() = 0;
     virtual IXmlToRowTransformer * queryXmlTransformer() = 0;
-    virtual const char * queryXmlIteratorPath() = 0;
+    virtual const char * getXmlIteratorPath() = 0;
 };
 
 
@@ -2097,28 +2095,26 @@ enum
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
 {
-    virtual const char * queryHosts() = 0;
-    virtual const char * queryService() = 0;
+    virtual const char * getHosts() = 0;
+    virtual const char * getService() = 0;
 
 //writing to the soap service.
     virtual void toXML(const byte * self, IXmlWriter & out) = 0;
-    virtual const char * queryHeader()                  { return NULL; }
-    virtual const char * queryFooter()                  { return NULL; }
+    virtual const char * getHeader()                  { return NULL; }
+    virtual const char * getFooter()                  { return NULL; }
     virtual unsigned getFlags() = 0;
     virtual unsigned numParallelThreads()               { return 0; }
     virtual unsigned numRecordsPerBatch()               { return 0; }
-    virtual const char * queryUserName()                { return NULL; }
-    virtual const char * queryPassword()                { return NULL; }
     virtual int numRetries()                             { return -1; }
     virtual double getTimeout()                         { return (double)-1.0; }
     virtual double getTimeLimit()                       { return (double)0.0; }
-    virtual const char * querySoapAction()              { return NULL; }
-    virtual const char * queryNamespaceName()           { return NULL; }
-    virtual const char * queryNamespaceVar()            { return NULL; }
-    virtual const char * queryHttpHeaderName()          { return NULL; }
-    virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual const char * queryProxyAddress()            { return NULL; }
-    virtual const char * queryAcceptType()              { return NULL; }
+    virtual const char * getSoapAction()              { return NULL; }
+    virtual const char * getNamespaceName()           { return NULL; }
+    virtual const char * getNamespaceVar()            { return NULL; }
+    virtual const char * getHttpHeaderName()          { return NULL; }
+    virtual const char * getHttpHeaderValue()         { return NULL; }
+    virtual const char * getProxyAddress()            { return NULL; }
+    virtual const char * getAcceptType()              { return NULL; }
 };
 typedef IHThorWebServiceCallActionArg IHThorSoapActionArg ;
 typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;
@@ -2127,7 +2123,7 @@ typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;
 struct IHThorWebServiceCallExtra : public IInterface
 {
     virtual IXmlToRowTransformer * queryInputTransformer() = 0;
-    virtual const char * queryInputIteratorPath()       { return NULL; }
+    virtual const char * getInputIteratorPath()       { return NULL; }
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) { return 0; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) = 0;  // iff SOAPFlogusermsg set
 };
@@ -2442,7 +2438,7 @@ struct IHThorCsvReadArg: public IHThorDiskReadBaseArg
 struct IHThorXmlReadArg: public IHThorDiskReadBaseArg
 {
     virtual IXmlToRowTransformer * queryTransformer() = 0;
-    virtual const char * queryXmlIteratorPath() = 0;
+    virtual const char * getXmlIteratorPath() = 0;
     virtual unsigned __int64 getChooseNLimit() = 0;
     virtual unsigned __int64 getRowLimit() = 0;
     virtual void onLimitExceeded() = 0;

@@ -1616,7 +1616,8 @@ public:
         unsigned totalSizeSent = 0;
 #endif
         Linked<IXmlToRowTransformer> rowTransformer = helper->queryTransformer();
-        Owned<IXMLParse> xmlParser = createXMLParse(*reader->querySimpleStream(), helper->queryXmlIteratorPath(), *this, (0 != (TDRxmlnoroot & helper->getFlags()))?xr_noRoot:xr_none, (helper->getFlags() & TDRusexmlcontents) != 0);
+        OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
+        Owned<IXMLParse> xmlParser = createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?xr_noRoot:xr_none, (helper->getFlags() & TDRusexmlcontents) != 0);
         while (!aborted)
         {
             //call to next() will callback on the IXmlSelect interface

@@ -480,7 +480,7 @@ public:
     virtual unsigned getPipeFlags()                         { return 0; }
     virtual ICsvToRowTransformer * queryCsvTransformer()    { return NULL; }
     virtual IXmlToRowTransformer * queryXmlTransformer()    { return NULL; }
-    virtual const char * queryXmlIteratorPath()             { return NULL; }
+    virtual const char * getXmlIteratorPath()             { return NULL; }
 };
 
 class CThorPipeWriteArg : public CThorArg, implements IHThorPipeWriteArg
@@ -534,7 +534,7 @@ public:
     virtual IHThorXmlWriteExtra * queryXmlOutput()          { return NULL; }
     virtual ICsvToRowTransformer * queryCsvTransformer()    { return NULL; }
     virtual IXmlToRowTransformer * queryXmlTransformer()    { return NULL; }
-    virtual const char * queryXmlIteratorPath()             { return NULL; }
+    virtual const char * getXmlIteratorPath()             { return NULL; }
 };
 
 
@@ -2371,8 +2371,8 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
         return NULL;
     }
 
-    virtual const char * queryXmlIteratorPath()        { return NULL; }             // supplies the prefix and suffix for a row
-    virtual const char * queryHeader()                 { return NULL; }
+    virtual const char * getXmlIteratorPath()        { return NULL; }             // supplies the prefix and suffix for a row
+    virtual const char * getHeader()                 { return NULL; }
     virtual const char * queryFooter()                 { return NULL; }
     virtual unsigned getXmlFlags()                     { return 0; }
 
@@ -2407,24 +2407,22 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
     }
 
     virtual void toXML(const byte * self, IXmlWriter & out) { return; }
-    virtual const char * queryHeader()                  { return NULL; }
-    virtual const char * queryFooter()                  { return NULL; }
+    virtual const char * getHeader()                  { return NULL; }
+    virtual const char * getFooter()                  { return NULL; }
     virtual unsigned getFlags()                         { return 0; }
     virtual unsigned numParallelThreads()               { return 0; }
     virtual unsigned numRecordsPerBatch()               { return 0; }
-    virtual const char * queryUserName()                { return NULL; }
-    virtual const char * queryPassword()                { return NULL; }
     virtual int numRetries()                            { return -1; }
     virtual double getTimeout()                          { return -1.0; }
     virtual double getTimeLimit()                        { return 0.0; }
-    virtual const char * querySoapAction()              { return NULL; }
-    virtual const char * queryNamespaceName()           { return NULL; }
-    virtual const char * queryNamespaceVar()            { return NULL; }
+    virtual const char * getSoapAction()              { return NULL; }
+    virtual const char * getNamespaceName()           { return NULL; }
+    virtual const char * getNamespaceVar()            { return NULL; }
 
-    virtual const char * queryHttpHeaderName()          { return NULL; }
-    virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual const char * queryProxyAddress()            { return NULL; }
-    virtual const char * queryAcceptType()              { return NULL; }
+    virtual const char * getHttpHeaderName()          { return NULL; }
+    virtual const char * getHttpHeaderValue()         { return NULL; }
+    virtual const char * getProxyAddress()            { return NULL; }
+    virtual const char * getAcceptType()              { return NULL; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
 };
 
@@ -2449,28 +2447,26 @@ class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
     }
     
 //writing to the soap service.
-    virtual const char * queryInputIteratorPath()       { return NULL; }
+    virtual const char * getInputIteratorPath()       { return NULL; }
     virtual unsigned onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) { return 0; }
 
     virtual void toXML(const byte * self, IXmlWriter & out) { return; }
-    virtual const char * queryHeader()                  { return NULL; }
-    virtual const char * queryFooter()                  { return NULL; }
+    virtual const char * getHeader()                  { return NULL; }
+    virtual const char * getFooter()                  { return NULL; }
     virtual unsigned getFlags()                         { return 0; }
     virtual unsigned numParallelThreads()               { return 0; }
     virtual unsigned numRecordsPerBatch()               { return 0; }
-    virtual const char * queryUserName()                { return NULL; }
-    virtual const char * queryPassword()                { return NULL; }
     virtual int numRetries()                            { return -1; }
     virtual double getTimeout()                          { return -1.0; }
     virtual double getTimeLimit()                        { return 0.0; }
-    virtual const char * querySoapAction()              { return NULL; }
-    virtual const char * queryNamespaceName()           { return NULL; }
-    virtual const char * queryNamespaceVar()            { return NULL; }
+    virtual const char * getSoapAction()              { return NULL; }
+    virtual const char * getNamespaceName()           { return NULL; }
+    virtual const char * getNamespaceVar()            { return NULL; }
 
-    virtual const char * queryHttpHeaderName()          { return NULL; }
-    virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual const char * queryProxyAddress()            { return NULL; }
-    virtual const char * queryAcceptType()              { return NULL; }
+    virtual const char * getHttpHeaderName()          { return NULL; }
+    virtual const char * getHttpHeaderValue()         { return NULL; }
+    virtual const char * getProxyAddress()            { return NULL; }
+    virtual const char * getAcceptType()              { return NULL; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
 };
 typedef CThorSoapCallArg CThorHttpCallArg;
