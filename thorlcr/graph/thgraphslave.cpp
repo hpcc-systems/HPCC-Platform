@@ -361,7 +361,7 @@ void CSlaveGraph::recvStartCtx()
     {
         sentStartCtx = true;
         CMessageBuffer msg;
-        if (!job.queryJobComm().recv(msg, 0, mpTag, NULL, LONGTIMEOUT))
+        if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
             throw MakeStringException(0, "Error receiving startCtx data for graph: %"GIDPF"d", graphId);
         deserializeStartContexts(msg);
     }
@@ -391,7 +391,7 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
 
         if (syncInitData())
         {
-            if (!job.queryJobComm().recv(msg, 0, mpTag, NULL, LONGTIMEOUT))
+            if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
                 throw MakeStringException(0, "Error receiving actinit data for graph: %"GIDPF"d", graphId);
             replyTag = msg.getReplyTag();
             msg.read(len);
@@ -553,7 +553,7 @@ void CSlaveGraph::create(size32_t parentExtractSz, const byte *parentExtract)
         {
             CMessageBuffer msg;
             // nothing changed if rerunning, unless conditional branches different
-            if (!job.queryJobComm().recv(msg, 0, mpTag, NULL, LONGTIMEOUT))
+            if (!graphCancelHandler.recv(queryJob().queryJobComm(), msg, 0, mpTag, NULL, LONGTIMEOUT))
                 throw MakeStringException(0, "Error receiving createctx data for graph: %"GIDPF"d", graphId);
             try
             {
