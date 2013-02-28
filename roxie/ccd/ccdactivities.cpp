@@ -590,13 +590,13 @@ public:
     {
         return queryContext->queryCodeContext()->getRowAllocator(meta, activityId); 
     }
-    virtual const char *getString(const char *str) const
+    virtual const char *cloneVString(const char *str) const
     {
-        return queryContext->queryCodeContext()->getString(str);
+        return queryContext->queryCodeContext()->cloneVString(str);
     }
-    virtual const char *getString(size32_t len, const char *str) const
+    virtual const char *cloneVString(size32_t len, const char *str) const
     {
-        return queryContext->queryCodeContext()->getString(len, str);
+        return queryContext->queryCodeContext()->cloneVString(len, str);
     }
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
     {

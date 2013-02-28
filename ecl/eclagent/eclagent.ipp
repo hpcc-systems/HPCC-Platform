@@ -609,13 +609,13 @@ public:
     {
         return allocatorMetaCache->ensure(meta, activityId);
     }
-    virtual const char *getString(const char *str) const
+    virtual const char *cloneVString(const char *str) const
     {
-        return rowManager->strdup(str);
+        return rowManager->cloneVString(str);
     }
-    virtual const char *getString(size32_t len, const char *str) const
+    virtual const char *cloneVString(size32_t len, const char *str) const
     {
-        return rowManager->strdup(len, str);
+        return rowManager->cloneVString(len, str);
     }
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
     {

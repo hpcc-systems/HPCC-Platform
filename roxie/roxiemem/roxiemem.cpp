@@ -2370,7 +2370,7 @@ public:
         return normalHeap.doAllocate(activityId);
     }
 
-    virtual const char *strdup(size32_t len, const char *str)
+    virtual const char *cloneVString(size32_t len, const char *str)
     {
         if (str)
         {
@@ -2386,10 +2386,10 @@ public:
         }
     }
 
-    virtual const char *strdup(const char *str)
+    virtual const char *cloneVString(const char *str)
     {
         if (str)
-            return strdup(strlen(str), str);
+            return cloneVString(strlen(str), str);
         else
             return NULL;
     }

@@ -391,13 +391,13 @@ public:
     {
         return ctx->getRowAllocator(meta, activityId);
     }
-    virtual const char *getString(const char *str) const
+    virtual const char *cloneVString(const char *str) const
     {
-        return ctx->getString(str);
+        return ctx->cloneVString(str);
     }
-    virtual const char *getString(size32_t len, const char *str) const
+    virtual const char *cloneVString(size32_t len, const char *str) const
     {
-        return ctx->getString(len, str);
+        return ctx->cloneVString(len, str);
     }
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {

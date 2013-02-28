@@ -402,8 +402,8 @@ interface IRowResizeCallback
 interface IRowManager : extends IInterface
 {
     virtual void *allocate(memsize_t size, unsigned activityId) = 0;
-    virtual const char *strdup(const char *str) = 0;
-    virtual const char *strdup(size32_t len, const char *str) = 0;
+    virtual const char *cloneVString(const char *str) = 0;
+    virtual const char *cloneVString(size32_t len, const char *str) = 0;
     virtual void resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, IRowResizeCallback & callback) = 0;
     virtual void resizeRow(memsize_t & capacity, void * & original, memsize_t copysize, memsize_t newsize, unsigned activityId) = 0;
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;

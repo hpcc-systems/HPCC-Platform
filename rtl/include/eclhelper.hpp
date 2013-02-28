@@ -21,6 +21,15 @@
 /*
 This file contains interface definitions for the meta-information, dataset processing an activities.
 It should only contain pure interface definitions or inline functions.
+
+A note on naming conventions:
+  getXXX implies that the returned value should be released by the caller
+  queryXXX implies that it should not
+
+Methods named getXXX returning const char * from generated code will return a value that MAY need releasing (via roxiemem)
+or that may be constants. Callers should always call roxiemem::ReleaseRoxieRow on the returned value - this will do nothing
+if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieString is the easiest way to achieve this.
+
 */
 
 #include "jscm.hpp"
@@ -578,8 +587,8 @@ interface ICodeContext : public IResourceContext
     // Memory management
 
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const = 0;
-    virtual const char * getString(const char *str) const = 0;
-    virtual const char * getString(size32_t len, const char *str) const = 0;
+    virtual const char * cloneVString(const char *str) const = 0;
+    virtual const char * cloneVString(size32_t len, const char *str) const = 0;
 
     // Called from generated code for FROMXML/TOXML
 

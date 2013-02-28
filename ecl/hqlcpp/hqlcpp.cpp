@@ -3386,9 +3386,9 @@ void HqlCppTranslator::buildReturn(BuildCtx & ctx, IHqlExpression * expr, ITypeI
             {
                 _ATOM funcAtom;
                 if (expr->queryType()->getTypeCode()==type_varstring)
-                    funcAtom = getStringAtom;
+                    funcAtom = cloneVStringAtom;
                 else
-                    funcAtom = getStringXAtom;
+                    funcAtom = cloneVStringXAtom;
                 HqlExprArray args;
                 args.append(*LINK(expr));
                 OwnedHqlExpr call = bindFunctionCall(funcAtom, args);
