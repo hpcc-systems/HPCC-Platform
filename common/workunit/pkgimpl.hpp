@@ -192,10 +192,11 @@ public:
     {
         if (baseResolution==basesResolved)
             return;
+        if (baseResolution==basesResolving)
+            throw MakeStringExceptionDirect(0, "PACKAGE_ERROR: circular or invalid base package definition");
+        TYPE::loadEnvironment();
         if (packages)
         {
-            if (baseResolution==basesResolving)
-                throw MakeStringExceptionDirect(0, "PACKAGE_ERROR: circular or invalid base package definition");
             Owned<IPropertyTreeIterator> baseIterator = TYPE::node->getElements("Base");
             if (!baseIterator->first())
                 appendBase(TYPE::queryRootPackage());
@@ -309,11 +310,21 @@ public:
 
     virtual const packageType *matchResolvedPackage(const char *name) const
     {
-        if (name)
+        if (name && *name)
         {
             const packageType *pkg = queryResolvedPackage(name);
             if (pkg)
                 return pkg;
+            const char *tail = name + strlen(name)-1;
+            while (tail>name && isdigit(*tail))
+                tail--;
+            if (*tail=='.' && tail>name)
+            {
+                StringAttr notail(name, tail-name);
+                pkg = queryResolvedPackage(notail);
+                if (pkg)
+                    return pkg;
+            }
             ForEachItemIn(idx, wildMatches)
             {
                 if (WildMatch(name, wildMatches.item(idx), true))
@@ -341,7 +352,6 @@ public:
                 throw MakeStringException(PACKAGE_MISSING_ID, "Invalid package map - Package element missing id attribute");
             Owned<packageType> package = new packageType(&packageTree);
             packages.setValue(id, package.get());
-            package->loadEnvironment();
             const char *queries = packageTree.queryProp("@queries");
             if (queries && *queries)
             {

@@ -51,6 +51,10 @@
 #define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"
 #define THOROPT_SPLITTER_SPILL        "splitterSpill"
 #define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"
+#define THOROPT_SMALLSORT             "smallSortThreshold"
+#define THOROPT_PARALLEL_FUNNEL       "parallelFunnel"
+#define THOROPT_SORT_MAX_DEVIANCE     "sort_max_deviance"
+#define THOROPT_OUTPUT_FLUSH_THRESHOLD "output_flush_threshold"
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 

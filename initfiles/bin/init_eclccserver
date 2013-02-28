@@ -25,6 +25,8 @@ echo $$ > $INIT_PID_NAME
 export SENTINEL="eclccserver.sentinel"
 rm -f ${SENTINEL}
 
+ulimit -c unlimited
+
 killed() {
     kill_process ${SENTINEL} ${PID_NAME} 3
     exit 255
