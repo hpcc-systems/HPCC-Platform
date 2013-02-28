@@ -37,14 +37,12 @@ set (    SRCS
          rtlread.cpp 
          rtltype.cpp 
          rtlxml.cpp 
-         workflow.cpp 
     )
 
 include_directories ( 
          ./../../rtl/include 
          ./../../rtl/nbcd 
          ./../../system/include 
-         ./../../common/workunit
          ./../../system/jlib 
          ./../../testing/unittests
          ${ICU_INCLUDE_DIR}

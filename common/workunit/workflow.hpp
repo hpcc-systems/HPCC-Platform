@@ -18,12 +18,12 @@
 #ifndef workflow_incl
 #define workflow_incl
 
-#include "eclrtl.hpp"
+#include "thorhelper.hpp"
 #include "workunit.hpp"
 #include "jlog.hpp"
 #include "eclhelper.hpp"
 
-class ECLRTL_API WorkflowException : public CInterface, public IException
+class WORKUNIT_API WorkflowException : public CInterface, public IException
 {
 public:
     typedef enum { SYSTEM, USER, ABORT } Type;
@@ -63,7 +63,7 @@ private:
   *  - Support once, stored, persist workflow items.
   *
   */
-class ECLRTL_API WorkflowMachine : public CInterface
+class WORKUNIT_API WorkflowMachine : public CInterface
 {
 public:
     WorkflowMachine();
@@ -124,13 +124,13 @@ protected:
     unsigned condition;
 };
 
-extern ECLRTL_API IWorkflowItemIterator *createWorkflowItemIterator(IPropertyTree *p);
-extern ECLRTL_API IWorkflowItemArray *createWorkflowItemArray(unsigned size);
-extern ECLRTL_API IWorkflowItem *createWorkflowItem(IPropertyTree * ptree, unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor);
-extern ECLRTL_API IWorkflowItemIterator *createWorkflowItemIterator(IPropertyTree * ptree);
+extern WORKUNIT_API IWorkflowItemIterator *createWorkflowItemIterator(IPropertyTree *p);
+extern WORKUNIT_API IWorkflowItemArray *createWorkflowItemArray(unsigned size);
+extern WORKUNIT_API IWorkflowItem *createWorkflowItem(IPropertyTree * ptree, unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor);
+extern WORKUNIT_API IWorkflowItemIterator *createWorkflowItemIterator(IPropertyTree * ptree);
 
 #ifdef TRACE_WORKFLOW
-extern const ECLRTL_API LogMsgCategory MCworkflow;       // Category used to inform enqueue/start/finish of workflow item
+extern const WORKUNIT_API LogMsgCategory MCworkflow;       // Category used to inform enqueue/start/finish of workflow item
 #endif
 
 #endif

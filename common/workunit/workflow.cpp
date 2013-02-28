@@ -999,17 +999,17 @@ const char * WorkflowMachine::queryEventExtra() const
 }
 
 
-ECLRTL_API IWorkflowItemIterator *createWorkflowItemIterator(IPropertyTree *p)
+WORKUNIT_API IWorkflowItemIterator *createWorkflowItemIterator(IPropertyTree *p)
 {
     return new CWorkflowItemIterator(p);
 }
 
-ECLRTL_API IWorkflowItemArray *createWorkflowItemArray(unsigned size)
+WORKUNIT_API IWorkflowItemArray *createWorkflowItemArray(unsigned size)
 {
     return new CCloneWorkflowItemArray(size);
 }
 
-ECLRTL_API IWorkflowItem *createWorkflowItem(IPropertyTree * ptree, unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor)
+WORKUNIT_API IWorkflowItem *createWorkflowItem(IPropertyTree * ptree, unsigned wfid, WFType type, WFMode mode, unsigned success, unsigned failure, unsigned recovery, unsigned retriesAllowed, unsigned contingencyFor)
 {
     return new CWorkflowItem(ptree, wfid, type, mode, success, failure, recovery, retriesAllowed, contingencyFor);
 }
