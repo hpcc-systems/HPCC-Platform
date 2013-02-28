@@ -582,6 +582,7 @@ interface ICodeContext : public IResourceContext
 
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const = 0;
     virtual const char * getString(const char *str) const = 0;
+    virtual const char * getString(size32_t len, const char *str) const = 0;
 
     // Called from generated code for FROMXML/TOXML
 

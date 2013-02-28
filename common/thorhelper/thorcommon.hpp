@@ -403,6 +403,10 @@ public:
     {
         return ctx->getString(str);
     }
+    virtual const char *getString(size32_t len, const char *str) const
+    {
+        return ctx->getString(len, str);
+    }
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {
         ctx->getResultRowset(tcount, tgt, name, sequence, _rowAllocator, isGrouped, xmlTransformer, csvTransformer);

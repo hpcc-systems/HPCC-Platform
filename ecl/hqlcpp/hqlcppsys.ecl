@@ -656,6 +656,7 @@ const char * cppSystemText[]  = {
     "   linkcounted dictionary getResultDictionary(const varstring stepname, unsigned4 sequence, boolean xmltransformer, boolean csvtransformer, boolean hasher) : ctxmethod,pure,entrypoint='getResultDictionary';",
 
     "   const varstring  getString(const varstring str) : ctxmethod,pure,entrypoint='getString';",
+    "   const varstring  getStringX(const string str) : ctxmethod,pure,entrypoint='getString';",
 
     //Don't make these pure because they may change over time.
     "   boolean isResult(const varstring stepname, unsigned4 sequence) : gctxmethod,entrypoint='isResult';",

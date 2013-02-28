@@ -3384,13 +3384,17 @@ void HqlCppTranslator::buildReturn(BuildCtx & ctx, IHqlExpression * expr, ITypeI
         {
             if (hasConstModifier(retType))
             {
-                OwnedHqlExpr cast = ensureExprType(expr, retType);
-                CHqlBoundExpr ret;
-                buildCachedExpr(ctx, cast, ret);
+                _ATOM funcAtom;
+                if (expr->queryType()->getTypeCode()==type_varstring)
+                    funcAtom = getStringAtom;
+                else
+                    funcAtom = getStringXAtom;
                 HqlExprArray args;
-                args.append(*LINK(ret.expr));
-                OwnedHqlExpr call = bindFunctionCall(getStringAtom, args);
-                ctx.addReturn(call);
+                args.append(*LINK(expr));
+                OwnedHqlExpr call = bindFunctionCall(funcAtom, args);
+                CHqlBoundExpr ret;
+                buildExpr(ctx, call, ret);
+                ctx.addReturn(ret.expr);
                 return;
             }
 

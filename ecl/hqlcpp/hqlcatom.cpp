@@ -331,6 +331,7 @@ _ATOM getResultVarStringAtom;
 _ATOM getResultVarUnicodeAtom;
 _ATOM getRootResultAtom;
 _ATOM getStringAtom;
+_ATOM getStringXAtom;
 _ATOM getWorkflowIdAtom;
 _ATOM getWuidAtom;
 _ATOM goAtom;
@@ -1053,6 +1054,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEATOM(getResultVarUnicode);
     MAKEATOM(getRootResult);
     MAKEATOM(getString);
+    MAKEATOM(getStringX);
     MAKEATOM(getWorkflowId);
     MAKEATOM(getWuid);
     MAKEATOM(groupedDataset2RowsetX);

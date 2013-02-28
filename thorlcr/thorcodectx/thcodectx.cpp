@@ -102,6 +102,11 @@ const char * CThorCodeContextBase::getString(const char * str) const
     return job.queryRowManager()->strdup(str);
 }
 
+const char * CThorCodeContextBase::getString(size32_t len, const char * str) const
+{
+    return job.queryRowManager()->strdup(len, str);
+}
+
 ILocalGraph *CThorCodeContextBase::resolveLocalQuery(__int64 gid)
 {
     ILocalGraph *graph = job.getGraph((graph_id)gid);

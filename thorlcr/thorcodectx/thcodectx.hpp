@@ -109,6 +109,7 @@ public:
     virtual char *queryIndexMetaData(char const * lfn, char const * xpath) { UNIMPLEMENTED; }
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const;
     virtual const char *getString(const char *str) const;
+    virtual const char *getString(size32_t len, const char *str) const;
     virtual ILocalGraph *resolveLocalQuery(__int64 gid);
     virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal);
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags);

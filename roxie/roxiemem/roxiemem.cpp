@@ -2370,15 +2370,26 @@ public:
         return normalHeap.doAllocate(activityId);
     }
 
-    virtual const char *strdup(const char *str)
+    virtual const char *strdup(size32_t len, const char *str)
     {
         if (str)
         {
-            memsize_t len = strlen(str)+1;
-            void *ret = allocate(len, 0);
+            char *ret = (char *) allocate(len+1, 0);
             memcpy(ret, str, len);
+            ret[len] = 0;
             return (const char *) ret;
         }
+        else
+        {
+            assertex(len==0);
+            return NULL;
+        }
+    }
+
+    virtual const char *strdup(const char *str)
+    {
+        if (str)
+            return strdup(strlen(str), str);
         else
             return NULL;
     }

@@ -596,6 +596,10 @@ public:
     {
         return queryContext->queryCodeContext()->getString(str);
     }
+    virtual const char *getString(size32_t len, const char *str) const
+    {
+        return queryContext->queryCodeContext()->getString(len, str);
+    }
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
     {
         convertRowToXML(lenResult, result, info, row, flags);
