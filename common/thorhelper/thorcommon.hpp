@@ -287,14 +287,6 @@ public:
     {
         ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract);
     }
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize)
-    {
-        return ctx->countDiskFile(lfn, recordSize);
-    }
-    virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg)
-    {
-        return ctx->countDiskFile(activityId, arg);
-    }
     virtual char * getExpandLogicalName(const char * logicalName)
     {
         return ctx->getExpandLogicalName(logicalName);

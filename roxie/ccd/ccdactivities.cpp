@@ -550,8 +550,6 @@ public:
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { throwUnexpected(); }
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)   { throwUnexpected(); return 0; }
 
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { throwUnexpected(); }
-    virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg) { throwUnexpected(); }      // only used for roxie...
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
     virtual void addWuException(const char * text, unsigned code, unsigned severity) { throwUnexpected(); }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { throwUnexpected(); }

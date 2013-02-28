@@ -1039,50 +1039,6 @@ public:
             throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "Failed to retrieve external data value %s from workunit %s", stepname, wuid);
         }
     }
-    virtual __int64 countDiskFile(const char * name, unsigned recordSize)
-    {
-        unsigned __int64 size = 0;
-        Owned<IDistributedFile> f = queryThorFileManager().lookup(job, name);
-        if (f) 
-        {
-            size = f->getFileSize(true,false);
-            if (size % recordSize)
-                throw MakeStringException(9001, "File %s has size %"I64F"d which is not a multiple of record size %d", name, size, recordSize);
-            return size / recordSize;
-        }
-        DBGLOG("Error could not resolve file %s", name);
-        throw MakeStringException(9003, "Error could not resolve %s", name);
-    }
-    virtual __int64 countDiskFile(__int64 id, IHThorCountFileArg & arg)
-    {
-        // would have called the above function in a try block but corrupted registers whenever I tried.
-
-        Owned<IHThorCountFileArg> a = &arg;  // make sure it gets destroyed....
-        arg.onCreate(this, NULL, NULL);
-        arg.onStart(NULL, NULL);
-
-        OwnedRoxieString name(arg.getFileName());
-        Owned<IDistributedFile> f = queryThorFileManager().lookup(job, name, 0 != ((TDXtemporary|TDXjobtemp) & arg.getFlags()));
-        if (f) 
-        {
-            IOutputMetaData * rs = arg.queryRecordSize();
-            assertex(rs->isFixedSize());
-            unsigned recordSize = rs->getMinRecordSize();
-            unsigned __int64 size = f->getFileSize(true,false);
-            if (size % recordSize)
-            {
-                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", name.get(), size, recordSize);
-            }
-            return size / recordSize;
-        }
-        else if (arg.getFlags() & TDRoptional)
-            return 0;
-        else
-        {
-            PrintLog("Error could not resolve file %s", name.get());
-            throw MakeStringException(0, "Error could not resolve %s", name.get());
-        }
-    }
     virtual void addWuException(const char * text, unsigned code, unsigned severity)
     {
         DBGLOG("%s", text);

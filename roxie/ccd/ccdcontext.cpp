@@ -1093,23 +1093,6 @@ public:
         totSlavesReplyLen += len;
     }
 
-    virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg)
-    {
-        Owned<IHThorCountFileArg> a = &arg;  // to make sure it gets released when I am done....
-        Owned<IRoxieServerActivityFactory> f = factory->getRoxieServerActivityFactory((unsigned) activityId);
-        if (f)
-        {
-            Owned<IRoxieServerActivity> fa = f->createFunction(*a.getClear(), NULL);
-            fa->onCreate(this, NULL);
-            fa->start(0, NULL, false);
-            __int64 ret = fa->evaluate();
-            fa->stop(false);
-            fa->reset();
-            return ret;
-        }
-        throwUnexpected();
-    }
-
     virtual const char *loadResource(unsigned id)
     {
         ILoadedDllEntry *dll = factory->queryDll();
@@ -1201,7 +1184,6 @@ public:
     virtual char *getWuid() { throwUnexpected(); }
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { throwUnexpected(); }
 
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { throwUnexpected(); }
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
     virtual void addWuException(const char * text, unsigned code, unsigned severity) { throwUnexpected(); }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { throwUnexpected(); }
@@ -2886,10 +2868,6 @@ public:
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) { throwUnexpected(); }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { throwUnexpected(); }
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize)
-    {
-        throwUnexpected();
-    }
     virtual void fail(int code, const char *text)
     {
         addWuException(text, code, 2);

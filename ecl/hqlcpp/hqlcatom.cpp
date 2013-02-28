@@ -129,7 +129,6 @@ _ATOM containerAtom;
 _ATOM cosAtom;
 _ATOM coshAtom;
 _ATOM countProviderAtom;
-_ATOM countRoxieDiskFileAtom;
 _ATOM countRowsAtom;
 _ATOM countToSizeAtom;
 _ATOM crcDataAtom;
@@ -852,7 +851,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     cosAtom = createAtom("_cos");
     coshAtom = createAtom("_cosh");
     MAKEATOM(countProvider);
-    MAKEATOM(countRoxieDiskFile);
     MAKEATOM(countRows);
     MAKEATOM(countToSize);
     MAKEATOM(crcData);

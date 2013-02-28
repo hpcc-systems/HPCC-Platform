@@ -493,8 +493,6 @@ public:
     virtual char *queryIndexMetaData(char const * lfn, char const * xpath);
     virtual void  abort();
 
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize);
-    virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg);
     virtual bool fileExists(const char * filename);
     virtual char * getExpandLogicalName(const char * logicalName);
     virtual void addWuException(const char * text, unsigned code, unsigned severity);

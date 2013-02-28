@@ -556,9 +556,6 @@ interface ICodeContext : public IResourceContext
 
     // File resolution etc
 
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) = 0;
-    virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg) = 0;        // only used for roxie...
-
     virtual char * getExpandLogicalName(const char * logicalName) = 0;
     virtual unsigned __int64 getFileOffset(const char *logicalPart) = 0;
     virtual char *getFilePart(const char *logicalPart, bool create=false) = 0; // caller frees return string.
