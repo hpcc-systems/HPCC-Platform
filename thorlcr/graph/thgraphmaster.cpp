@@ -1269,7 +1269,7 @@ static IException *createBCastException(unsigned slave, const char *errorMsg)
     return e.getClear();
 }
 
-void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, mptag_t *_replyTag, bool sendOnly)
+void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler, bool sendOnly)
 {
     mptag_t replyTag = createReplyTag();
     msg.setReplyTag(replyTag);
@@ -1312,17 +1312,16 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
         throw e.getClear();
     }
     if (sendOnly) return;
-    if (_replyTag)
-        *_replyTag = replyTag;
     unsigned respondents = 0;
     Owned<IBitSet> bitSet = createBitSet();
     loop
     {
         rank_t sender;
         CMessageBuffer msg;
-        if (!queryJobComm().recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT))
+        bool r = msgHandler ? msgHandler->recv(queryJobComm(), msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT)
+                            : queryJobComm().recv(msg, RANK_ALL, replyTag, &sender, LONGTIMEOUT);
+        if (!r)
         {
-            if (_replyTag) _replyTag = NULL;
             StringBuffer tmpStr;
             if (errorMsg)
                 tmpStr.append(": ").append(errorMsg).append(" - ");
@@ -1342,7 +1341,6 @@ void CJobMaster::broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned 
             EXCLOG(e, NULL);
             throw e.getClear();
         }
-        if (_replyTag) _replyTag = NULL;
         bool error;
         msg.read(error);
         if (error)
@@ -1850,7 +1848,7 @@ class CCollatedResult : public CSimpleInterface, implements IThorResult
         msg.append(ownerId);
         msg.append(id);
         msg.append(replyTag);
-        ((CJobMaster &)graph.queryJob()).broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, NULL, NULL, true);
+        ((CJobMaster &)graph.queryJob()).broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "CCollectResult", NULL, true);
 
         unsigned numSlaves = graph.queryJob().querySlaves();
         for (unsigned n=0; n<numSlaves; n++)
@@ -1987,7 +1985,6 @@ CMasterGraph::CMasterGraph(CJobMaster &_job) : CGraphBase(_job), jobM(_job)
     waitBarrierTag = job.allocateMPTag();
     startBarrier = job.createBarrier(startBarrierTag);
     waitBarrier = job.createBarrier(waitBarrierTag);
-    bcastTag = TAG_NULL;
 }
 
 
@@ -2046,6 +2043,14 @@ bool CMasterGraph::fireException(IException *e)
     return true;
 }
 
+void CMasterGraph::reset()
+{
+    CGraphBase::reset();
+    bcastMsgHandler.reset();
+    activityInitMsgHandler.reset();
+    executeReplyMsgHandler.reset();
+}
+
 void CMasterGraph::abort(IException *e)
 {
     if (aborted) return;
@@ -2055,8 +2060,9 @@ void CMasterGraph::abort(IException *e)
         GraphPrintLog(e, "Aborting master graph");
         e->Release();
     }
-    if (TAG_NULL != bcastTag)
-        job.queryJobComm().cancel(0, bcastTag);
+    bcastMsgHandler.cancel(0);
+    activityInitMsgHandler.cancel(RANK_ALL);
+    executeReplyMsgHandler.cancel(RANK_ALL);
     if (started)
     {
         try
@@ -2065,7 +2071,7 @@ void CMasterGraph::abort(IException *e)
             msg.append(GraphAbort);
             msg.append(job.queryKey());
             msg.append(queryGraphId());
-            jobM.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "abort", &bcastTag);
+            jobM.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "abort");
         }
         catch (IException *e)
         {
@@ -2183,7 +2189,7 @@ void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                     msg.append((unsigned)0);
                 try
                 {
-                    jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastTag);
+                    jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "serializeCreateContexts", &bcastMsgHandler);
                 }
                 catch (IException *e)
                 {
@@ -2256,7 +2262,7 @@ void CMasterGraph::sendActivityInitData()
         {
             rank_t sender;
             msg.clear();
-            if (!job.queryJobComm().recv(msg, w+1, replyTag, &sender, LONGTIMEOUT))
+            if (!activityInitMsgHandler.recv(queryJob().queryJobComm(), msg, w+1, replyTag, &sender, LONGTIMEOUT))
                 throw MakeGraphException(this, 0, "Timeout receiving from slaves after graph sent");
 
             bool error;
@@ -2327,7 +2333,7 @@ void CMasterGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentE
         for (; s<queryJob().querySlaves(); s++)
         {
             CMessageBuffer msg;
-            if (!queryJob().queryJobComm().recv(msg, RANK_ALL, executeReplyTag, &sender))
+            if (!executeReplyMsgHandler.recv(queryJob().queryJobComm(), msg, RANK_ALL, executeReplyTag, &sender))
                 break;
             bool error;
             msg.read(error);
@@ -2362,7 +2368,7 @@ void CMasterGraph::sendGraph()
     // slave graph data
     try
     {
-        jobM.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "sendGraph", &bcastTag);
+        jobM.broadcastToSlaves(msg, masterSlaveMpTag, LONGTIMEOUT, "sendGraph", &bcastMsgHandler);
     }
     catch (IException *e)
     {
@@ -2385,7 +2391,7 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
         serializeStartContexts(msg);
         try
         {
-            jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "startCtx", &bcastTag, true);
+            jobM.broadcastToSlaves(msg, mpTag, LONGTIMEOUT, "startCtx", NULL, true);
         }
         catch (IException *e)
         {
