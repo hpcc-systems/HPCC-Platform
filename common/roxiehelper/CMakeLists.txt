@@ -53,6 +53,5 @@ target_link_libraries ( roxiehelper
          eclrtl 
          thorhelper 
          roxiemem 
-         dalibase 
  ) 
 
