@@ -247,8 +247,14 @@ void CWriteMasterBase::init()
         bool overwriteok = 0!=(TDWoverwrite & diskHelperBase->getFlags());
         
         unsigned idx=0;
-        while (diskHelperBase->queryCluster(idx))
-            clusters.append(diskHelperBase->queryCluster(idx++));
+        while (true)
+        {
+            OwnedRoxieString cluster(diskHelperBase->getCluster(idx));
+            if(!cluster)
+                break;
+            clusters.append(cluster);
+            idx++;
+        }
         IArrayOf<IGroup> groups;
         fillClusterArray(container.queryJob(), fname, clusters, groups);
         fileDesc.setown(queryThorFileManager().create(container.queryJob(), fname, clusters, groups, overwriteok, diskHelperBase->getFlags()));

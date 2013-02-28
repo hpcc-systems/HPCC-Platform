@@ -309,7 +309,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     unsigned clusterIdx = 0;
     while(true)
     {
-        char const * cluster = iwHelper ? iwHelper->queryCluster(clusterIdx++) : dwHelper->queryCluster(clusterIdx++);
+        OwnedRoxieString cluster(iwHelper ? iwHelper->getCluster(clusterIdx++) : dwHelper->getCluster(clusterIdx++));
         if(!cluster)
             break;
         if(!clusterHandler)
@@ -3698,7 +3698,7 @@ void CHThorGroupSortActivity::createSorter()
     }
     unsigned flags = algo->getAlgorithmFlags();
     sorterIsConst = ((flags & TAFconstant) != 0);
-    char const * algoname = algo->queryAlgorithm();
+    OwnedRoxieString algoname(algo->getAlgorithm());
     if(!algoname)
     {
         if((flags & TAFunstable) != 0)
@@ -3722,7 +3722,7 @@ void CHThorGroupSortActivity::createSorter()
     else
     {
         StringBuffer sb;
-        sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname);
+        sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname.get());
         agent.addWuException(sb.str(),0,ExceptionSeverityWarning,"hthor");
         if((flags & TAFunstable) != 0)
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));

@@ -1142,7 +1142,7 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual unsigned getExpiryDays() = 0;
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) = 0;
     virtual unsigned getFormatCrc() = 0;
-    virtual const char * queryCluster(unsigned idx) = 0;        // result only valid until next call.
+    virtual const char * getCluster(unsigned idx) = 0;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
     virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) = 0;
     virtual unsigned getWidth() = 0;                // only guaranteed present if TIWhaswidth defined
@@ -1187,7 +1187,7 @@ struct IHThorDiskWriteArg : public IHThorArg
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) = 0;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) = 0;
     virtual unsigned getFormatCrc() = 0;
-    virtual const char * queryCluster(unsigned idx) = 0;        // result only valid until next call.
+    virtual const char * getCluster(unsigned idx) = 0;        // result only valid until next call.
 };
 
 struct IHThorFilterArg : public IHThorArg
@@ -1536,7 +1536,7 @@ struct IHThorSortArg : public IHThorArg
 struct IHThorAlgorithm : public IInterface
 {
     virtual unsigned getAlgorithmFlags() = 0;
-    virtual const char * queryAlgorithm() = 0;
+    virtual const char * getAlgorithm() = 0;
 };
 
 typedef IHThorSortArg IHThorSortedArg;

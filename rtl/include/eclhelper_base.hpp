@@ -345,7 +345,7 @@ public:
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual unsigned getFormatCrc() = 0;
-    virtual const char * queryCluster(unsigned idx) { return NULL; }
+    virtual const char * getCluster(unsigned idx) { return NULL; }
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
     virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) { return false; }
     virtual unsigned getWidth() { return 0; }
@@ -454,7 +454,7 @@ class CThorDiskWriteArg : public CThorArg, implements IHThorDiskWriteArg
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
-    virtual const char * queryCluster(unsigned idx)         { return NULL; }
+    virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
 class CThorPipeReadArg : public CThorArg, implements IHThorPipeReadArg
@@ -1017,7 +1017,7 @@ class CThorSpillArg : public CThorArg, implements IHThorSpillArg
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
-    virtual const char * queryCluster(unsigned idx)         { return NULL; }
+    virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
 
@@ -1542,7 +1542,7 @@ class CThorSortArg : public CThorArg, implements IHThorSortArg, implements IHTho
     virtual const char * getSortedFilename()            { return NULL; }
     virtual ICompare * queryCompareLeftRight()          { return NULL; }
     virtual unsigned getAlgorithmFlags()                { return TAFconstant; }
-    virtual const char * queryAlgorithm()               { return NULL; }
+    virtual const char * getAlgorithm()               { return NULL; }
     virtual ICompare * queryCompareSerializedRow()      { return NULL; }
 };
 
@@ -2278,7 +2278,7 @@ class CThorCsvWriteArg : public CThorArg, implements IHThorCsvWriteArg
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
-    virtual const char * queryCluster(unsigned idx)         { return NULL; }
+    virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
 
@@ -2373,7 +2373,7 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
 
     virtual const char * getXmlIteratorPath()        { return NULL; }             // supplies the prefix and suffix for a row
     virtual const char * getHeader()                 { return NULL; }
-    virtual const char * queryFooter()                 { return NULL; }
+    virtual const char * getFooter()                 { return NULL; }
     virtual unsigned getXmlFlags()                     { return 0; }
 
     virtual int getSequence()                               { return -3; }
@@ -2382,7 +2382,7 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
-    virtual const char * queryCluster(unsigned idx)         { return NULL; }
+    virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
 

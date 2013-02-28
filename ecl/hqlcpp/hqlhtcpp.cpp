@@ -9563,7 +9563,7 @@ void HqlCppTranslator::buildClusterHelper(BuildCtx & ctx, IHqlExpression * expr)
         return;
 
     BuildCtx funcctx(ctx);
-    funcctx.addQuotedCompound("virtual const char * queryCluster(unsigned idx)");
+    funcctx.addQuotedCompound("virtual const char * getCluster(unsigned idx)");
 
     BuildCtx switchctx(funcctx);
     OwnedHqlExpr var = createVariable("idx", LINK(unsignedType));
@@ -16009,7 +16009,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
         flags.append("|TAFconstant");
 
     if (method)
-        doBuildVarStringFunction(instance->startctx, "queryAlgorithm", method);
+        doBuildVarStringFunction(instance->startctx, "getAlgorithm", method);
 
     if (!streq(flags.str(), "|TAFconstant"))
         instance->classctx.addQuotedF("virtual unsigned getAlgorithmFlags() { return %s; }", flags.str()+1);

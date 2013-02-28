@@ -68,8 +68,14 @@ public:
         singlePartKey = 0 != (helper->getFlags() & TIWsmall) || dlfn.isExternal();
         clusters.kill();
         unsigned idx=0;
-        while (helper->queryCluster(idx))
-            clusters.append(helper->queryCluster(idx++));
+        while (true)
+        {
+            OwnedRoxieString cluster(helper->getCluster(idx));
+            if(!cluster)
+                break;
+            clusters.append(cluster);
+            idx++;
+        }
         IArrayOf<IGroup> groups;
         if (singlePartKey)
         {

@@ -7950,13 +7950,13 @@ public:
             {
                 sorter.clear();
                 IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
-                const char *useAlgorithm = sortMethod->queryAlgorithm();
+                OwnedRoxieString useAlgorithm(sortMethod->getAlgorithm());
                 if (useAlgorithm)
                 {
                     if (stricmp(useAlgorithm, "quicksort")==0)
                     {
                         if (sortFlags & TAFstable)
-                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm.get());
                         sorter.setown(new CQuickSortAlgorithm(compare));
                     }
                     else if (stricmp(useAlgorithm, "heapsort")==0)
@@ -7965,7 +7965,7 @@ public:
                         sorter.setown(new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId));
                     else
                     {
-                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm.get());
                         if (sortFlags & TAFunstable)
                             sorter.setown(new CQuickSortAlgorithm(compare));
                         else
@@ -8012,19 +8012,19 @@ public:
                 sortAlgorithm = unknownSort;
             else
             {
-                const char *useAlgorithm = sortMethod->queryAlgorithm();
+                OwnedRoxieString useAlgorithm(sortMethod->getAlgorithm());
                 if (useAlgorithm)
                 {
                     if (stricmp(useAlgorithm, "quicksort")==0)
                     {
                         if (sortFlags & TAFstable)
-                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm.get());
                         sortAlgorithm = quickSort;
                     }
                     else if (stricmp(useAlgorithm, "spillingquicksort")==0)
                     {
                         if (sortFlags & TAFstable)
-                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm.get());
                         sortAlgorithm = spillingQuickSort;
                     }
                     else if (stricmp(useAlgorithm, "heapsort")==0)
@@ -8033,7 +8033,7 @@ public:
                         sortAlgorithm = insertionSort;
                     else
                     {
-                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm.get());
                         if (sortFlags & TAFunstable)
                             sortAlgorithm = quickSort;
                         else
@@ -10680,7 +10680,7 @@ protected:
         unsigned clusterIdx = 0;
         while(true)
         {
-            char const * cluster = helper.queryCluster(clusterIdx);
+            OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
             clusters.append(cluster);
@@ -11111,7 +11111,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         unsigned clusterIdx = 0;
         while(true)
         {
-            char const * cluster = helper.queryCluster(clusterIdx);
+            OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
             clusters.append(cluster);
@@ -25894,7 +25894,7 @@ public:
         return &testMeta; 
     }
     virtual unsigned getAlgorithmFlags() { return TAFunstable; }
-    virtual const char * queryAlgorithm() { return sortAlgorithm; }
+    virtual const char * getAlgorithm() { return sortAlgorithm; }
 };
 extern "C" IHThorArg * sortActivityTestFactory() { return new SortActivityTest; }
 
