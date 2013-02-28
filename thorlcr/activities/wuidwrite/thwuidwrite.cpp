@@ -145,7 +145,7 @@ public:
     {
         helper = (IHThorWorkUnitWriteArg *)queryHelper();
         appendOutput = 0 != (POFextend & helper->getFlags());
-        flushThreshold = globals->getPropInt("@output_flush_threshold", -1);
+        flushThreshold = getOptInt(THOROPT_OUTPUT_FLUSH_THRESHOLD, -1);
         resultName.set(helper->queryName());
         resultSeq = helper->getSequence();
     }
