@@ -2167,7 +2167,7 @@ class CThorWorkunitReadArg : public CThorArg, implements IHThorWorkunitReadArg
     }
 
     virtual int querySequence() { return -3; }
-    virtual const char * queryWUID() { return NULL; }
+    virtual const char * getWUID() { return NULL; }
     virtual ICsvToRowTransformer * queryCsvTransformer() { return NULL; }
     virtual IXmlToRowTransformer * queryXmlTransformer() { return NULL; }
 };

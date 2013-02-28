@@ -47,11 +47,12 @@ public:
     void init()
     {
         helper = (IHThorKeyDiffArg *)queryHelper();
-
-        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), helper->queryOriginalName()));
-        newIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), helper->queryUpdatedName()));
+        OwnedRoxieString origName(helper->getOriginalName());
+        OwnedRoxieString updatedName(helper->getUpdatedName());
+        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), origName));
+        newIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), updatedName));
         if (originalIndexFile->numParts() != newIndexFile->numParts())
-            throw MakeActivityException(this, TE_KeyDiffIndexSizeMismatch, "Index %s and %s differ in width", helper->queryOriginalName(), helper->queryUpdatedName());
+            throw MakeActivityException(this, TE_KeyDiffIndexSizeMismatch, "Index %s and %s differ in width", origName.get(), updatedName.get());
         if (originalIndexFile->querySuperFile() || newIndexFile->querySuperFile())
             throw MakeActivityException(this, 0, "Diffing super files not supported");  
 
@@ -72,8 +73,9 @@ public:
         queryThorFileManager().noteFileRead(container.queryJob(), newIndexFile);
 
         IArrayOf<IGroup> groups;
-        fillClusterArray(container.queryJob(), helper->queryOutputName(), clusters, groups);
-        patchDesc.setown(queryThorFileManager().create(container.queryJob(), helper->queryOutputName(), clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));
+        OwnedRoxieString outputName(helper->getOutputName());
+        fillClusterArray(container.queryJob(), outputName, clusters, groups);
+        patchDesc.setown(queryThorFileManager().create(container.queryJob(), outputName, clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
@@ -149,7 +151,8 @@ public:
     void done()
     {
         StringBuffer scopedName;
-        queryThorFileManager().addScope(container.queryJob(), helper->queryOutputName(), scopedName);
+        OwnedRoxieString outputName(helper->getOutputName());
+        queryThorFileManager().addScope(container.queryJob(), outputName, scopedName);
         Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
         Owned<IWUResult> r = wu->updateResultBySequence(helper->getSequence());
         r->setResultStatus(ResultStatusCalculated);
@@ -164,10 +167,10 @@ public:
             patchProps.setProp("ECL", originalProps.queryProp("ECL"));
         if (originalProps.getPropBool("@local"))
             patchProps.setPropBool("@local", true);
-        container.queryTempHandler()->registerFile(helper->queryOutputName(), container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
+        container.queryTempHandler()->registerFile(outputName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
         Owned<IDistributedFile> patchFile;
         // set part sizes etc
-        queryThorFileManager().publish(container.queryJob(), helper->queryOutputName(), false, *patchDesc, &patchFile, 0, false);
+        queryThorFileManager().publish(container.queryJob(), outputName, false, *patchDesc, &patchFile, 0, false);
         try { // set file size
             if (patchFile) {
                 __int64 fs = patchFile->getFileSize(true,false);
@@ -203,7 +206,8 @@ public:
         if (0==(KDPoverwrite & helper->getFlags()))
         {
             if (KDPvaroutputname & helper->getFlags()) return;
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helper->queryOutputName(), false, true);
+            OwnedRoxieString outputName(helper->getOutputName());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputName, false, true);
             if (file)
                 throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
         }

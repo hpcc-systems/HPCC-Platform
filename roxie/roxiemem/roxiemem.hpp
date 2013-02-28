@@ -345,8 +345,8 @@ public:
     inline operator const char *() const { return ptr; }
     inline const char * get() const { return ptr; }
     inline const char * getLink() const { LinkRoxieRow(ptr); return ptr; }
-    inline void set(const char * _ptr) { const char * temp = ptr; if (_ptr) LinkRoxieRow(_ptr); ptr = _ptr; ReleaseRoxieRow(temp); }
-    inline void setown(const char * _ptr) { const char * temp = ptr; ptr = _ptr; ReleaseRoxieRow(temp); }
+    inline const char * set(const char * _ptr) { const char * temp = ptr; if (_ptr) LinkRoxieRow(_ptr); ptr = _ptr; ReleaseRoxieRow(temp); return ptr; }
+    inline const char * setown(const char * _ptr) { const char * temp = ptr; ptr = _ptr; ReleaseRoxieRow(temp); return ptr; }
 
 private:
     /* Disable use of some constructs that often cause memory leaks by creating private members */

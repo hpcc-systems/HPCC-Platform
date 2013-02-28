@@ -6654,11 +6654,11 @@ void CHThorWorkunitReadActivity::ready()
     grouped = outputMeta.isGrouped();
     unsigned lenData;
     void * tempData;
-    const char * wuid = helper.queryWUID();
+    OwnedRoxieString fromWuid(helper.getWUID());
     ICsvToRowTransformer * csvTransformer = helper.queryCsvTransformer();
     IXmlToRowTransformer * xmlTransformer = helper.queryXmlTransformer();
-    if (wuid)
-        agent.queryCodeContext()->getExternalResultRaw(lenData, tempData, wuid, helper.queryName(), helper.querySequence(), xmlTransformer, csvTransformer);
+    if (fromWuid)
+        agent.queryCodeContext()->getExternalResultRaw(lenData, tempData, fromWuid, helper.queryName(), helper.querySequence(), xmlTransformer, csvTransformer);
     else
         agent.queryCodeContext()->getResultRaw(lenData, tempData, helper.queryName(), helper.querySequence(), xmlTransformer, csvTransformer);
     resultBuffer.setBuffer(lenData, tempData, true);
@@ -6668,7 +6668,8 @@ void CHThorWorkunitReadActivity::ready()
 void CHThorWorkunitReadActivity::checkForDiskRead()
 {
     StringBuffer diskFilename;
-    if(agent.getWorkunitResultFilename(diskFilename, helper.queryWUID(), helper.queryName(), helper.querySequence()))
+    OwnedRoxieString fromWuid(helper.getWUID());
+    if (agent.getWorkunitResultFilename(diskFilename, fromWuid, helper.queryName(), helper.querySequence()))
     {
         diskreadHelper.setown(createWorkUnitReadArg(diskFilename.str(), &helper));
         try

@@ -1869,9 +1869,9 @@ enum
 struct IHThorKeyDiffArg : public IHThorArg
 {
     virtual unsigned getFlags() = 0;
-    virtual const char * queryOriginalName() = 0;
-    virtual const char * queryUpdatedName() = 0;
-    virtual const char * queryOutputName() = 0;
+    virtual const char * getOriginalName() = 0;
+    virtual const char * getUpdatedName() = 0;
+    virtual const char * getOutputName() = 0;
     virtual int getSequence() = 0;
     virtual unsigned getExpiryDays() = 0;
 };
@@ -1879,9 +1879,9 @@ struct IHThorKeyDiffArg : public IHThorArg
 struct IHThorKeyPatchArg : public IHThorArg
 {
     virtual unsigned getFlags() = 0;
-    virtual const char * queryOriginalName() = 0;           // may be null
-    virtual const char * queryPatchName() = 0;
-    virtual const char * queryOutputName() = 0;
+    virtual const char * getOriginalName() = 0;           // may be null
+    virtual const char * getPatchName() = 0;
+    virtual const char * getOutputName() = 0;
     virtual int getSequence() = 0;
     virtual unsigned getExpiryDays() = 0;
 };
@@ -1895,7 +1895,7 @@ struct IHThorWorkunitReadArg : public IHThorArg
 {
     virtual const char * queryName() = 0;
     virtual int querySequence() = 0;
-    virtual const char * queryWUID() = 0;
+    virtual const char * getWUID() = 0;
     virtual ICsvToRowTransformer * queryCsvTransformer() = 0;
     virtual IXmlToRowTransformer * queryXmlTransformer() = 0;
 };
