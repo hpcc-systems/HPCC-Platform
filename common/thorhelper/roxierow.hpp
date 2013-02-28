@@ -18,24 +18,15 @@
 #ifndef _ROXIEROW_INCL
 #define _ROXIEROW_INCL
 
-#ifdef _WIN32
- #ifdef ROXIEMEM_EXPORTS
-  #define roxiemem_decl __declspec(dllexport)
- #else
-  #define roxiemem_decl __declspec(dllimport)
- #endif
-#else
- #define roxiemem_decl
-#endif
-
+#include "thorhelper.hpp"
 #include "roxiemem.hpp"
 #include "eclhelper.hpp"
 
 #define ALLOCATORID_CHECK_MASK  0x00300000
 #define ALLOCATORID_MASK                0x000fffff
 
-extern roxiemem_decl IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, roxiemem::RoxieHeapFlags flags);
-extern roxiemem_decl IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, roxiemem::RoxieHeapFlags flags);
+extern THORHELPER_API IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, roxiemem::RoxieHeapFlags flags);
+extern THORHELPER_API IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, roxiemem::RoxieHeapFlags flags);
 
 interface IRowAllocatorMetaActIdCache : extends roxiemem::IRowAllocatorCache
 {
@@ -52,9 +43,9 @@ interface IRowAllocatorMetaActIdCacheCallback
     virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned cacheId) const = 0;
 };
 
-extern roxiemem_decl IRowAllocatorMetaActIdCache *createRowAllocatorCache(IRowAllocatorMetaActIdCacheCallback *callback);
+extern THORHELPER_API IRowAllocatorMetaActIdCache *createRowAllocatorCache(IRowAllocatorMetaActIdCacheCallback *callback);
 
-extern roxiemem_decl bool isRowCheckValid(unsigned allocatorId, const void * row);
+extern THORHELPER_API bool isRowCheckValid(unsigned allocatorId, const void * row);
 
 //Inline call which avoids the call if no row checking is enabled.
 inline bool RoxieRowCheckValid(unsigned allocatorId, const void * row)

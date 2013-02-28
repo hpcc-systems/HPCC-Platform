@@ -24,13 +24,11 @@
 project( roxiemem ) 
 
 set (    SRCS 
-         roxierow.cpp
          roxiemem.cpp 
          roxierowbuff.cpp
     )
          
 set (    INCLUDES
-         roxierow.hpp
          roxiemem.hpp
          roxierowbuff.hpp
     )
@@ -39,8 +37,6 @@ include_directories (
          ./../../system/include
          ./../../system/jlib
          ./../../rtl/include
-         ./../../rtl/eclrtl
-         ./../../common/thorhelper
          ./../../testing/unittests
     )
 
@@ -50,8 +46,6 @@ HPCC_ADD_LIBRARY( roxiemem SHARED ${SRCS} ${INCLUDES})
 install ( TARGETS roxiemem RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( roxiemem
          jlib
-         thorhelper
-         eclrtl
          ${CPPUNIT_LIBRARIES}
     )
 
