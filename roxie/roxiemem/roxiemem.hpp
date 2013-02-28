@@ -52,6 +52,9 @@
 #define ACTIVITY_FLAG_NEEDSDESTRUCTOR   0x00800000
 #define ACTIVITY_FLAG_ISREGISTERED      0x00400000
 #define MAX_ACTIVITY_ID                 0x003fffff
+// MAX_ACTIVITY_ID is further subdivided:
+#define ALLOCATORID_CHECK_MASK          0x00300000
+#define ALLOCATORID_MASK                0x000fffff
 
 #define ALLOC_ALIGNMENT                 sizeof(void *)          // Minimum alignment of data allocated from the heap manager
 #define PACKED_ALIGNMENT                4                       // Minimum alignment of packed blocks

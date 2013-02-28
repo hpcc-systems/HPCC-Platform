@@ -22,8 +22,6 @@
 #include "roxiemem.hpp"
 #include "eclhelper.hpp"
 
-#define ALLOCATORID_CHECK_MASK  0x00300000
-#define ALLOCATORID_MASK                0x000fffff
 
 extern THORHELPER_API IEngineRowAllocator * createRoxieRowAllocator(roxiemem::IRowManager & _rowManager, IOutputMetaData * _meta, unsigned _activityId, unsigned _allocatorId, roxiemem::RoxieHeapFlags flags);
 extern THORHELPER_API IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem::IRowManager & rowManager, IOutputMetaData * meta, unsigned activityId, unsigned allocatorId, roxiemem::RoxieHeapFlags flags);
