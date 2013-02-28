@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #include "jexcept.hpp"
-#include "roxie.hpp"
+#include "thorherror.h"
 #include "roxiehelper.hpp"
 #include "roxiedebug.hpp"
 #include "portlist.h"
@@ -84,7 +84,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
     {
         const char *idx = query->queryProp("@idx");
         if (!idx)
-            throw MakeStringException(ROXIE_DEBUG_ERROR, "delete must specify breakpoint index, or all");
+            throw MakeStringException(THORHELPER_DEBUG_ERROR, "delete must specify breakpoint index, or all");
         if (stricmp(idx, "all")==0)
             debugContext->removeAllBreakpoints(&out);
         else 
@@ -99,7 +99,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
                     debugContext->removeAllBreakpoints(&out);
             }
             else
-                throw MakeStringException(ROXIE_DEBUG_ERROR, "Invalid value for idx - expected number or all");
+                throw MakeStringException(THORHELPER_DEBUG_ERROR, "Invalid value for idx - expected number or all");
         }
     }
     else if (strnicmp(commandName, "g", 1)==0 && checkCommand(out, commandName, "graph"))
@@ -137,7 +137,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
             if (ep != idx && *ep==0)
                 debugContext->listBreakpoint(&out, bpIdx);
             else
-                throw MakeStringException(ROXIE_DEBUG_ERROR, "Invalid value for idx - expected number or all");
+                throw MakeStringException(THORHELPER_DEBUG_ERROR, "Invalid value for idx - expected number or all");
         }
     }
     else if (strnicmp(commandName, "n", 1)==0 && checkCommand(out, commandName, "next"))
@@ -205,7 +205,7 @@ void CDebugCommandHandler::doDebugCommand(IPropertyTree *query, IDebuggerContext
         debugContext->debugWhere(&out);
     }
     else
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Unknown command %s", commandName);
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Unknown command %s", commandName);
     out.outputEndNested(commandName);
     output.append(out.str());
 }
@@ -1080,7 +1080,7 @@ BreakpointActionMode CBaseDebugContext::checkBreakpoint(DebugState state, IActiv
     bool stop = false;
     currentNode.clear();
     if (watchState == WatchStateQuit)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Query aborted by debugger");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Query aborted by debugger");
     if (state==DebugStateEdge)
     {
         // Check whether there is a breakpoint etc active for this activityId
@@ -1343,11 +1343,11 @@ void CBaseServerDebugContext::_listBreakpoint(IXmlWriter *output, IBreakpointInf
 void CBaseServerDebugContext::_continue(WatchState watch) 
 {
     if (running)
-        throw MakeStringException(ROXIE_INTERNAL_ERROR, "Query already running");
+        throw MakeStringException(THORHELPER_INTERNAL_ERROR, "Query already running");
     if (watch==WatchStateNext || watch==WatchStateOver)
     {
         if (!currentActivity)
-            throw MakeStringException(ROXIE_INTERNAL_ERROR, "next: no current activity");
+            throw MakeStringException(THORHELPER_INTERNAL_ERROR, "next: no current activity");
         nextActivity.set(currentActivity);
     }
     else
@@ -1374,7 +1374,7 @@ unsigned CBaseServerDebugContext::checkOption(const char *supplied, const char *
                 return idx;
             idx++;
         }
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Invalid parameter value %s='%s'", name, supplied);
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Invalid parameter value %s='%s'", name, supplied);
     }
     else
         return 0; // first is default
@@ -1395,13 +1395,13 @@ IBreakpointInfo *CBaseServerDebugContext::_createBreakpoint(const char *modeStri
         if (mode==BreakpointModeEdge)
         {
             if (!currentActivity)
-                throw MakeStringException(ROXIE_DEBUG_ERROR, "No current activity");
+                throw MakeStringException(THORHELPER_DEBUG_ERROR, "No current activity");
             id = currentActivity->queryEdgeId();
         }
         else if (mode==BreakpointModeNode)
         {
             if (!currentActivity)
-                throw MakeStringException(ROXIE_DEBUG_ERROR, "No current activity");
+                throw MakeStringException(THORHELPER_DEBUG_ERROR, "No current activity");
             id = currentActivity->querySourceId();
         }
     }
@@ -1464,7 +1464,7 @@ void CBaseServerDebugContext::addBreakpoint(IXmlWriter *output, const char *mode
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
 
     Owned<IBreakpointInfo> newBreakpoint = _createBreakpoint(modeString, id, action, fieldName, condition, value, caseSensitive, hitCount, hitCountMode);
     // For breakpoints to be efficient we need to set them in the probe, though because the activity probe may not exist yet, we should also 
@@ -1473,7 +1473,7 @@ void CBaseServerDebugContext::addBreakpoint(IXmlWriter *output, const char *mode
     {
         IBreakpointInfo &bp = breakpoints.item(idx);
         if (bp.equals(*newBreakpoint))
-            throw MakeStringException(ROXIE_DEBUG_ERROR, "Breakpoint already exists");
+            throw MakeStringException(THORHELPER_DEBUG_ERROR, "Breakpoint already exists");
     }
     _listBreakpoint(output, *newBreakpoint, breakpoints.ordinality());
     CBaseDebugContext::addBreakpoint(*newBreakpoint.getClear());
@@ -1483,10 +1483,10 @@ void CBaseServerDebugContext::removeBreakpoint(IXmlWriter *output, unsigned remo
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     assertex(removeIdx);
     if (!breakpoints.isItem(removeIdx))
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Breakpoint %d does not exist", removeIdx);
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Breakpoint %d does not exist", removeIdx);
     IBreakpointInfo &bp = breakpoints.item(removeIdx);
     _listBreakpoint(output, bp, removeIdx);
     if (currentGraph)
@@ -1511,10 +1511,10 @@ void CBaseServerDebugContext::listBreakpoint(IXmlWriter *output, unsigned listId
     // MORE - fair amount could be commoned up with remove...
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     assertex(listIdx);
     if (!breakpoints.isItem(listIdx))
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Breakpoint %d does not exist", listIdx);
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Breakpoint %d does not exist", listIdx);
     IBreakpointInfo &bp = breakpoints.item(listIdx);
     _listBreakpoint(output, bp, listIdx);
 }
@@ -1532,7 +1532,7 @@ void CBaseServerDebugContext::debugInterrupt(IXmlWriter *output)
 {
     CriticalBlock b(debugCrit);
     if (!running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Query is already paused"); // MORE - or has terminated?
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Query is already paused"); // MORE - or has terminated?
     detached = false;
     nextActivity.clear();
     watchState = WatchStateStep;
@@ -1569,7 +1569,7 @@ void CBaseServerDebugContext::debugRun(IXmlWriter *output)
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_INTERNAL_ERROR, "Query already running");
+        throw MakeStringException(THORHELPER_INTERNAL_ERROR, "Query already running");
     watchState = WatchStateContinue;
     detached = true;
     if (currentGraph)
@@ -1602,9 +1602,9 @@ void CBaseServerDebugContext::debugSkip(IXmlWriter *output)
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (!currentActivity)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "No current activity");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "No current activity");
     skipRequested = true;
     doStandardResult(output);
 }
@@ -1626,7 +1626,7 @@ void CBaseServerDebugContext::debugStep(IXmlWriter *output, const char *modeStri
         else if (strcmp(modeString, "edge")==0)
             state = WatchStateStep;
         else
-            throw MakeStringException(ROXIE_DEBUG_ERROR, "Step mode should be edge or graph");
+            throw MakeStringException(THORHELPER_DEBUG_ERROR, "Step mode should be edge or graph");
     }
     else
         state = WatchStateStep;
@@ -1652,11 +1652,11 @@ void CBaseServerDebugContext::debugChanges(IXmlWriter *output, unsigned sinceSeq
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (sinceSequence == (unsigned) -1)
         sinceSequence = previousSequence;
     if (!currentGraph)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available when no graph active");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available when no graph active");
 
     // MORE - if current graph has changed since specified sequence, then ??
     currentGraph->getXGMML(output, sinceSequence, true);
@@ -1666,7 +1666,7 @@ void CBaseServerDebugContext::debugCounts(IXmlWriter *output, unsigned sinceSequ
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (sinceSequence == (unsigned) -1)
         sinceSequence = previousSequence;
     HashIterator edges(globalCounts);
@@ -1689,9 +1689,9 @@ void CBaseServerDebugContext::debugWhere(IXmlWriter *output) const
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (!currentActivity)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "No current activity");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "No current activity");
 
     output->outputCString(currentGraph->queryGraphName(), "@graphId");
     output->outputCString(currentActivity->queryEdgeId(), "@edgeId");
@@ -1713,9 +1713,9 @@ void CBaseServerDebugContext::debugSearch(IXmlWriter *output, const char *fieldN
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (!currentGraph)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available when no graph active");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available when no graph active");
     Owned<IRowMatcher> searcher = createRowMatcher(fieldName, (BreakpointConditionMode) checkOption(condition, "condition", BreakpointConditionModes), value, caseSensitive);
     currentGraph->searchHistories(output, searcher, fullRows);
 }
@@ -1725,20 +1725,20 @@ void CBaseServerDebugContext::debugPrint(IXmlWriter *output, const char *edgeId,
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (!currentGraph)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available when no graph active");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available when no graph active");
     IActivityDebugContext *activityCtx;
     if (edgeId)
     {
         activityCtx = currentGraph->lookupActivityByEdgeId(edgeId);
         if (!activityCtx)
-            throw MakeStringException(ROXIE_DEBUG_ERROR, "Edge %s not found in current graph", edgeId);
+            throw MakeStringException(THORHELPER_DEBUG_ERROR, "Edge %s not found in current graph", edgeId);
     }
     else if (currentActivity)
         activityCtx = currentActivity;
     else
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "An edge id must be specified if there is no current edge");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "An edge id must be specified if there is no current edge");
 
     output->outputCString(currentGraph->queryGraphName(), "@graphId");
 #if 1
@@ -1772,9 +1772,9 @@ void CBaseServerDebugContext::debugGetConfig(IXmlWriter *output, const char *nam
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (!name)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "configuration setting name must be supplied");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "configuration setting name must be supplied");
     if (stricmp(name, "executeSequentially")==0)
     {
         output->outputBool(executeSequentially, "@value");
@@ -1788,10 +1788,10 @@ void CBaseServerDebugContext::debugGetConfig(IXmlWriter *output, const char *nam
         if (id)
         {
             if (!currentGraph)
-                throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available when no graph active");
+                throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available when no graph active");
             IActivityDebugContext *activityCtx = currentGraph->lookupActivityByEdgeId(id);
             if (!activityCtx)
-                throw MakeStringException(ROXIE_DEBUG_ERROR, "Edge %s not found in current graph", id);
+                throw MakeStringException(THORHELPER_DEBUG_ERROR, "Edge %s not found in current graph", id);
             output->outputInt(activityCtx->queryHistoryCapacity(), "@value");
         }
         else
@@ -1800,7 +1800,7 @@ void CBaseServerDebugContext::debugGetConfig(IXmlWriter *output, const char *nam
         }
     }
     else
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Unknown configuration setting '%s'", name);
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Unknown configuration setting '%s'", name);
     output->outputCString(name, "@name");
     if (id) output->outputCString(id, "@id");
 }
@@ -1809,14 +1809,14 @@ void CBaseServerDebugContext::debugSetConfig(IXmlWriter *output, const char *nam
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (!name)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "configuration setting name must be supplied");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "configuration setting name must be supplied");
     unsigned intval = value ? atoi(value) : 0;
     if (stricmp(name, "executeSequentially")==0)
     {
         if (id)
-            throw MakeStringException(ROXIE_DEBUG_ERROR, "id not supported here");
+            throw MakeStringException(THORHELPER_DEBUG_ERROR, "id not supported here");
         if (!value || clipStrToBool(value))
             executeSequentially = true;
         else
@@ -1825,7 +1825,7 @@ void CBaseServerDebugContext::debugSetConfig(IXmlWriter *output, const char *nam
     else if (stricmp(name, "stopOnLimits")==0)
     {
         if (id)
-            throw MakeStringException(ROXIE_DEBUG_ERROR, "id not supported here");
+            throw MakeStringException(THORHELPER_DEBUG_ERROR, "id not supported here");
         if (!value || clipStrToBool(value))
             stopOnLimits = true;
         else
@@ -1834,14 +1834,14 @@ void CBaseServerDebugContext::debugSetConfig(IXmlWriter *output, const char *nam
     else if (stricmp(name, "historySize")==0)
     {
         if (!value)
-            throw MakeStringException(ROXIE_DEBUG_ERROR, "No value supplied");
+            throw MakeStringException(THORHELPER_DEBUG_ERROR, "No value supplied");
         if (id)
         {
             if (!currentGraph)
-                throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available when no graph active");
+                throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available when no graph active");
             IActivityDebugContext *activityCtx = currentGraph->lookupActivityByEdgeId(id);
             if (!activityCtx)
-                throw MakeStringException(ROXIE_DEBUG_ERROR, "Edge %s not found in current graph", id);
+                throw MakeStringException(THORHELPER_DEBUG_ERROR, "Edge %s not found in current graph", id);
             activityCtx->setHistoryCapacity(intval);
         }
         else
@@ -1852,7 +1852,7 @@ void CBaseServerDebugContext::debugSetConfig(IXmlWriter *output, const char *nam
         }
     }
     else
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Unknown configuration setting '%s'", name);
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Unknown configuration setting '%s'", name);
     if (name) output->outputCString(name, "@name");
     if (value) output->outputCString(value, "@value");
     if (id) output->outputCString(id, "@id");
@@ -1862,9 +1862,9 @@ void CBaseServerDebugContext::getCurrentGraphXGMML(IXmlWriter *output, bool orig
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     if (!currentGraph)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "No current graph");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "No current graph");
     if (original)
         getGraphXGMML(output, currentGraph->queryGraphName());
     else
@@ -1892,7 +1892,7 @@ void CBaseServerDebugContext::getQueryXGMML(IXmlWriter *output) const
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     StringBuffer s;
     toXML(queryXGMML, s, 2);
     output->outputString(0, NULL, NULL); // closes any open tags....
@@ -1903,12 +1903,12 @@ void CBaseServerDebugContext::getGraphXGMML(IXmlWriter *output, const char *grap
 {
     CriticalBlock b(debugCrit);
     if (running)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Command not available while query is running");
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Command not available while query is running");
     StringBuffer xpath;
     xpath.appendf("Graph[@id='%s']", graphName);
     Owned<IPropertyTree> graph = queryXGMML->getPropTree(xpath.str());
     if (!graph)
-        throw MakeStringException(ROXIE_DEBUG_ERROR, "Graph %s not found", graphName);
+        throw MakeStringException(THORHELPER_DEBUG_ERROR, "Graph %s not found", graphName);
     StringBuffer s;
     toXML(graph, s, 2);
     output->outputString(0, NULL, NULL); // closes any open tags....

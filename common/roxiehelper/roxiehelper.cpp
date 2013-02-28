@@ -16,7 +16,7 @@
 ############################################################################## */
 
 #include "jexcept.hpp"
-#include "roxie.hpp"
+#include "thorherror.h"
 #include "roxiehelper.hpp"
 #include "roxielmj.hpp"
 
@@ -452,7 +452,7 @@ size32_t CSafeSocket::write(const void *buf, size32_t size, bool takeOwnership)
             {
                 void *newbuf = malloc(size);
                 if (!newbuf)
-                    throw MakeStringException(ROXIE_INTERNAL_ERROR, "Out of memory in CSafeSocket::write (requesting %d bytes)", size);
+                    throw MakeStringException(THORHELPER_INTERNAL_ERROR, "Out of memory in CSafeSocket::write (requesting %d bytes)", size);
                 memcpy(newbuf, buf, size);
                 buf = newbuf;
             }
@@ -504,7 +504,7 @@ bool CSafeSocket::readBlock(MemoryBuffer &ret, unsigned timeout, unsigned maxBlo
         if (len & 0x80000000)
             len ^= 0x80000000;
         if (len > maxBlockSize)
-            throw MakeStringException(ROXIE_DATA_ERROR, "Maximum block size (%d bytes) exceeded (missing length prefix?)", maxBlockSize);
+            throw MakeStringException(THORHELPER_DATA_ERROR, "Maximum block size (%d bytes) exceeded (missing length prefix?)", maxBlockSize);
         if (len)
         {
             unsigned bytesRead;
@@ -589,7 +589,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
 
             pHttpHelper->setIsHttp(true);
             if (!len)
-                throw MakeStringException(ROXIE_DATA_ERROR, "Badly formed HTTP header");
+                throw MakeStringException(THORHELPER_DATA_ERROR, "Badly formed HTTP header");
         }
         else if (strnicmp((char *)&len, "STAT", 4) == 0)
             isStatus = true;
@@ -602,7 +602,7 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
                 continuationNeeded = true;
             }
             if (len > maxBlockSize)
-                throw MakeStringException(ROXIE_DATA_ERROR, "Maximum block size (%d bytes) exceeded (missing length prefix?)", maxBlockSize);
+                throw MakeStringException(THORHELPER_DATA_ERROR, "Maximum block size (%d bytes) exceeded (missing length prefix?)", maxBlockSize);
             left = len;
 
             if (len)

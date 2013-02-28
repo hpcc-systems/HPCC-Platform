@@ -24,7 +24,7 @@
 #include "jlog.hpp"
 
 #include "csvsplitter.hpp"
-#include "thorcerror.hpp"
+#include "thorherror.h"
 #include "thorxmlread.hpp"
 #include "thorcommon.ipp"
 #include "eclrtl.hpp"

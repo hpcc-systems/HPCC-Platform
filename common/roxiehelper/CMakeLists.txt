@@ -24,14 +24,13 @@
 
 project( roxiehelper ) 
 
-include_directories (            ./../../system/security/securesocket 
+include_directories (
+         ./../../system/security/securesocket 
          ./../../common/remote 
          ./../../system/jhtree 
          ./../../rtl/eclrtl 
          ./../../common/thorhelper 
          ./../../roxie/roxiemem 
-         ./../../roxie/roxie
-         ./../../roxie/ccd
          ./../../system/include 
          ./../workunit 
          ./../../system/jlib 
