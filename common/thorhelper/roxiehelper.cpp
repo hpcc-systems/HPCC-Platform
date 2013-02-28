@@ -1316,14 +1316,14 @@ public:
     }
 };
 
-ROXIEHELPER_API IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * _outFile)
+THORHELPER_API IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * _outFile)
 {
     return new COrderedOutputSerializer(_outFile);
 }
 
 //=====================================================================================================
 
-ROXIEHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags)
+THORHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags)
 {
     out = in;
     if (flags & (TDXtemporary | TDXjobtemp))
@@ -1331,7 +1331,7 @@ ROXIEHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const ch
     return out;
 }
 
-ROXIEHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
+THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in)
 {
     char const * start = in;
     while(true)
@@ -1351,7 +1351,7 @@ ROXIEHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char 
     return out;
 }
 
-ROXIEHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
+THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally)
 {
     if (fname[0]=='~')
         logicalName.append(fname+1);

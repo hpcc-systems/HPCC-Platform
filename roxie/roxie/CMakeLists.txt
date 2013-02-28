@@ -43,7 +43,6 @@ include_directories (
          ./../../roxie/roxie 
          ./../../roxie/roxiemem 
          ./../../common/thorhelper 
-         ./../../common/roxiehelper 
     )
 
 ADD_DEFINITIONS( -D_CONSOLE )

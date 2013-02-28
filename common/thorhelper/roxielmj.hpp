@@ -27,20 +27,20 @@
 #include "thorcommon.hpp"
 
 #ifdef _WIN32
- #ifdef ROXIEHELPER_EXPORTS
-  #define ROXIEHELPER_API __declspec(dllexport)
+ #ifdef THORHELPER_EXPORTS
+  #define THORHELPER_API __declspec(dllexport)
  #else
-  #define ROXIEHELPER_API __declspec(dllimport)
+  #define THORHELPER_API __declspec(dllimport)
  #endif
 #else
- #define ROXIEHELPER_API
+ #define THORHELPER_API
 #endif
 
 //#pragma message("**** ROXIELMJ.HPP ***")
 
 
 //===================================================================================
-ROXIEHELPER_API IRHLimitedCompareHelper *createRHLimitedCompareHelper();
+THORHELPER_API IRHLimitedCompareHelper *createRHLimitedCompareHelper();
 
 
 //===================================================================================
@@ -78,7 +78,7 @@ public:
 //===================================================================================
 //CRHDualCache copied from THOR CDualCache, and modified to get input from IInputBase instead 
 //of IReadSeqVar and to manage rows as OwnedRoxieRow types
-class ROXIEHELPER_API CRHDualCache: public CInterface, public IRecordSize
+class THORHELPER_API CRHDualCache: public CInterface, public IRecordSize
 {
     // similar to rolling cache - should be combined really
     IInputBase * in;

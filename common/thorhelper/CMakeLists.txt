@@ -42,6 +42,8 @@ set (    SRCS
          thorxmlread.cpp 
          thorxmlwrite.cpp
          roxierow.cpp
+         roxiehelper.cpp
+         roxiedebug.cpp
          
          csvsplitter.hpp 
          layouttrans.hpp 
@@ -55,6 +57,12 @@ set (    SRCS
          thorxmlread.hpp 
          thorxmlwrite.hpp
          roxierow.hpp
+         
+         roxiedebug.hpp
+         roxiedebug.ipp
+         roxiehelper.hpp
+         roxiehelper.ipp
+         roxielmj.hpp
                  
     )
 
@@ -65,9 +73,11 @@ include_directories (
          ./../../rtl/eclrtl 
          ./../../rtl/nbcd 
          ./../../system/include 
-         ./../workunit 
+         ./../../system/mp
          ./../../system/jlib 
+         ./../../dali/base
          ./../deftype 
+         ./../workunit
          ./../../rtl/include 
          ./../../roxie/roxiemem
          ./../../testing/unittests

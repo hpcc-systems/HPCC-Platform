@@ -77,7 +77,6 @@ include_directories (
          ./../../system/jlib 
          ./../../common/thorhelper 
          ./../../rtl/eclrtl 
-         ./../../common/roxiehelper 
          ./../../rtl/include
          ./../../testing/unittests
          ${CMAKE_BINARY_DIR}
@@ -107,7 +106,6 @@ target_link_libraries ( ccd
          jhtree 
          environment 
          dllserver 
-         roxiehelper 
          workunit 
     )
 

@@ -19,13 +19,13 @@
 #define ROXIEDEBUG_IPP
 
 #ifdef _WIN32
- #ifdef ROXIEHELPER_EXPORTS
-  #define ROXIEHELPER_API __declspec(dllexport)
+ #ifdef THORHELPER_EXPORTS
+  #define THORHELPER_API __declspec(dllexport)
  #else
-  #define ROXIEHELPER_API __declspec(dllimport)
+  #define THORHELPER_API __declspec(dllimport)
  #endif
 #else
- #define ROXIEHELPER_API
+ #define THORHELPER_API
 #endif
 
 //#pragma message("**** ROXIEDEBUG.IPP ***")
