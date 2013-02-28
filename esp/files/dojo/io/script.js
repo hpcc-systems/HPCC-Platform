@@ -1,12 +1,12 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
 
 //>>built
 define("dojo/io/script",["../_base/connect","../_base/kernel","../_base/lang","../sniff","../_base/window","../_base/xhr","../dom","../dom-construct","../request/script"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9){
-dojo.deprecated("dojo/io/script","Use dojo/request/script.","2.0");
+_2.deprecated("dojo/io/script","Use dojo/request/script.","2.0");
 var _a={get:function(_b){
 var _c;
 var _d=this._makeScriptDeferred(_b,function(_e){

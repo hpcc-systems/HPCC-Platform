@@ -38,6 +38,7 @@ this.onChange(this.value);
 },setAttribute:function(key,_13){
 this.set(key,_13);
 },_setValueAttr:function(val){
+this.focusNode.value=val;
 this._set("value",val);
 this._renderStars(val);
 this.onChange(val);

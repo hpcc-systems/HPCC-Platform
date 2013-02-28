@@ -171,7 +171,7 @@ if(!_14){
 _14=3;
 }
 _e=_8.createElement("font");
-font.setAttribute("size",_14);
+_e.setAttribute("size",_14);
 _b.style.fontSize="";
 }
 _b=_f(_e,_b);
@@ -207,6 +207,7 @@ return this._normalizeTags(_a(_7));
 return _7;
 },_normalizeTags:function(_16){
 var w=this.editor.window;
+var doc=this.editor.document;
 _1.query("em,s,strong",_16).forEach(function(n){
 var tag=n.tagName?n.tagName.toLowerCase():"";
 var _17;

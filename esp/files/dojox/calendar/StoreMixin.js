@@ -4,7 +4,7 @@ return _1("dojox.calendar.StoreMixin",_6,{store:null,query:{},startTimeAttr:"sta
 if(this.owner){
 return this.owner.itemToRenderItem(_8,_9);
 }
-return {id:_9.getIdentity(_8),summary:_8[this.summaryAttr],startTime:(this.decodeDate&&this.decodeDate(_8[this.startTimeAttr]))||this.newDate(_8[this.startTimeAttr]),endTime:(this.decodeDate&&this.decodeDate(_8[this.endTimeAttr]))||this.newDate(_8[this.endTimeAttr]),allDay:_8[this.allDayAttr]!=null?_8[this.allDayAttr]:false,cssClass:this.cssClassFunc?this.cssClassFunc(_8):null};
+return {id:_9.getIdentity(_8),summary:_8[this.summaryAttr],startTime:(this.decodeDate&&this.decodeDate(_8[this.startTimeAttr]))||this.newDate(_8[this.startTimeAttr],this.dateClassObj),endTime:(this.decodeDate&&this.decodeDate(_8[this.endTimeAttr]))||this.newDate(_8[this.endTimeAttr],this.dateClassObj),allDay:_8[this.allDayAttr]!=null?_8[this.allDayAttr]:false,cssClass:this.cssClassFunc?this.cssClassFunc(_8):null};
 },renderItemToItem:function(_a,_b){
 if(this.owner){
 return this.owner.renderItemToItem(_a,_b);

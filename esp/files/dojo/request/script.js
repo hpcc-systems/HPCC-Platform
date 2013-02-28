@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -33,79 +33,82 @@ delete _11[id];
 }
 };
 function _19(dfd){
-var _1a=dfd.response;
-_12.push({id:dfd.id,frameDoc:_1a.options.frameDoc});
-_1a.options.frameDoc=null;
+var _1a=dfd.response.options,_1b=_1a.ioArgs?_1a.ioArgs.frameDoc:_1a.frameDoc;
+_12.push({id:dfd.id,frameDoc:_1b});
+if(_1a.ioArgs){
+_1a.ioArgs.frameDoc=null;
+}
+_1a.frameDoc=null;
 };
-function _1b(dfd,_1c){
+function _1c(dfd,_1d){
 if(dfd.canDelete){
-_1d._remove(dfd.id,_1c.options.frameDoc,true);
+_1e._remove(dfd.id,_1d.options.frameDoc,true);
 }
 };
-function _1e(_1f){
+function _1f(_20){
 if(_12&&_12.length){
-_4.forEach(_12,function(_20){
-_1d._remove(_20.id,_20.frameDoc);
-_20.frameDoc=null;
+_4.forEach(_12,function(_21){
+_1e._remove(_21.id,_21.frameDoc);
+_21.frameDoc=null;
 });
 _12=[];
 }
-return _1f.options.jsonp?!_1f.data:true;
+return _20.options.jsonp?!_20.data:true;
 };
-function _21(_22){
+function _22(_23){
 return !!this.scriptLoaded;
 };
-function _23(_24){
-var _25=_24.options.checkString;
-return _25&&eval("typeof("+_25+") !== \"undefined\"");
+function _24(_25){
+var _26=_25.options.checkString;
+return _26&&eval("typeof("+_26+") !== \"undefined\"");
 };
-function _26(_27,_28){
+function _27(_28,_29){
 if(this.canDelete){
 _19(this);
 }
-if(_28){
-this.reject(_28);
+if(_29){
+this.reject(_29);
 }else{
-this.resolve(_27);
+this.resolve(_28);
 }
 };
-function _1d(url,_29,_2a){
-var _2b=_3.parseArgs(url,_3.deepCopy({},_29));
-url=_2b.url;
-_29=_2b.options;
-var dfd=_3.deferred(_2b,_1b,_1e,_29.jsonp?null:(_29.checkString?_23:_21),_26);
+function _1e(url,_2a,_2b){
+var _2c=_3.parseArgs(url,_3.deepCopy({},_2a));
+url=_2c.url;
+_2a=_2c.options;
+var dfd=_3.deferred(_2c,_1c,_1f,_2a.jsonp?null:(_2a.checkString?_24:_22),_27);
 _5.mixin(dfd,{id:_d+(_e++),canDelete:false});
-if(_29.jsonp){
-var _2c=(~url.indexOf("?")?"&":"?")+_29.jsonp+"=";
-if(url.indexOf(_2c)===-1){
-url+=_2c+(_29.frameDoc?"parent.":"")+_d+"_callbacks."+dfd.id;
+if(_2a.jsonp){
+var _2d=new RegExp("[?&]"+_2a.jsonp+"=");
+if(!_2d.test(url)){
+url+=_2d+(_2a.frameDoc?"parent.":"")+_d+"_callbacks."+dfd.id;
 }
 dfd.canDelete=true;
-_11[dfd.id]=function(_2d){
-_2b.data=_2d;
-dfd.handleResponse(_2b);
+_11[dfd.id]=function(_2e){
+_2c.data=_2e;
+dfd.handleResponse(_2c);
 };
 }
 if(_3.notify){
-_3.notify.emit("send",_2b,dfd.promise.cancel);
+_3.notify.emit("send",_2c,dfd.promise.cancel);
 }
-if(!_29.canAttach||_29.canAttach(dfd)){
-var _2e=_1d._attach(dfd.id,url,_29.frameDoc);
-if(!_29.jsonp&&!_29.checkString){
-var _2f=on(_2e,_f,function(evt){
-if(evt.type==="load"||_10.test(_2e.readyState)){
-_2f.remove();
+if(!_2a.canAttach||_2a.canAttach(dfd)){
+var _2f=_1e._attach(dfd.id,url,_2a.frameDoc);
+if(!_2a.jsonp&&!_2a.checkString){
+var _30=on(_2f,_f,function(evt){
+if(evt.type==="load"||_10.test(_2f.readyState)){
+_30.remove();
 dfd.scriptLoaded=evt;
 }
 });
 }
 }
 _2(dfd);
-return _2a?dfd:dfd.promise;
+return _2b?dfd:dfd.promise;
 };
-_1d.get=_1d;
-_1d._attach=_13;
-_1d._remove=_16;
-_1d._callbacksProperty=_d+"_callbacks";
-return _1d;
+_1e.get=_1e;
+_1e._attach=_13;
+_1e._remove=_16;
+_1e._callbacksProperty=_d+"_callbacks";
+return _1e;
 });

@@ -31,10 +31,18 @@ this._ch.push(_2.connect(this.touchNode,_9("touch")?"ontouchstart":"onmousedown"
 if(_9("webkit")){
 this._useTopLeft=this.scrollType?this.scrollType===2:_9("android")<3;
 if(!this._useTopLeft){
+this._useTransformTransition=this.scrollType?this.scrollType===3:_9("iphone")>=6;
+}
+if(!this._useTopLeft){
+if(this._useTransformTransition){
+this._ch.push(_2.connect(this.domNode,"webkitTransitionEnd",this,"onFlickAnimationEnd"));
+this._ch.push(_2.connect(this.domNode,"webkitTransitionStart",this,"onFlickAnimationStart"));
+}else{
 this._ch.push(_2.connect(this.domNode,"webkitAnimationEnd",this,"onFlickAnimationEnd"));
 this._ch.push(_2.connect(this.domNode,"webkitAnimationStart",this,"onFlickAnimationStart"));
 for(var i=0;i<3;i++){
 this.setKeyframes(null,null,i);
+}
 }
 if(_9("translate3d")){
 _8.set(this.containerNode,"webkitTransform","translate3d(0,0,0)");
@@ -149,7 +157,7 @@ this._scrollBarNodeH.className="";
 }
 return;
 }
-if(this._useTopLeft){
+if(this._useTransformTransition||this._useTopLeft){
 var n=e.target;
 if(n===this._scrollBarV||n===this._scrollBarH){
 var cls="mblScrollableScrollTo"+(n===this._scrollBarV?"0":"1");
@@ -239,8 +247,14 @@ this._locked=true;
 return;
 }
 }
-if(this._v&&Math.abs(dy)<this.threshold||(this._h||this._f)&&Math.abs(dx)<this.threshold){
+if(this._v&&this._h){
+if(dy<this.threshold&&dx<this.threshold){
 return;
+}
+}else{
+if(this._v&&dy<this.threshold||(this._h||this._f)&&dx<this.threshold){
+return;
+}
 }
 this.addCover();
 this.showScrollBar();
@@ -331,7 +345,7 @@ _1c=true;
 if(_1c){
 this.hideScrollBar();
 this.removeCover();
-if(_9("touch")&&!this.isFormElement(e.target)){
+if(_9("touch")&&!this.isFormElement(e.target)&&!(_9("android")>=4.1)){
 var _1d=e.target;
 if(_1d.nodeType!=1){
 _1d=_1d.parentNode;
@@ -459,7 +473,7 @@ this._scrollBarV.className="";
 if(this._scrollBarH){
 this._scrollBarH.className="";
 }
-if(this._useTopLeft){
+if(this._useTransformTransition||this._useTopLeft){
 this.containerNode.style.webkitTransition="";
 if(this._scrollBarV){
 this._scrollBarV.style.webkitTransition="";
@@ -497,6 +511,9 @@ return Math.round(_26/_27*100)*4;
 var s=(_29||this.containerNode).style;
 if(_9("webkit")){
 if(!this._useTopLeft){
+if(this._useTransformTransition){
+s.webkitTransition="";
+}
 s.webkitTransform=this.makeTranslateStr(to);
 }else{
 s.webkitTransition="";
@@ -644,6 +661,9 @@ return;
 if(this._v&&this._scrollBarV&&typeof to.y=="number"){
 if(_9("webkit")){
 if(!this._useTopLeft){
+if(this._useTransformTransition){
+this._scrollBarV.style.webkitTransition="";
+}
 this._scrollBarV.style.webkitTransform=this.makeTranslateStr({y:to.y});
 }else{
 _8.set(this._scrollBarV,{webkitTransition:"",top:to.y+"px"});
@@ -655,6 +675,9 @@ this._scrollBarV.style.top=to.y+"px";
 if(this._h&&this._scrollBarH&&typeof to.x=="number"){
 if(_9("webkit")){
 if(!this._useTopLeft){
+if(this._useTransformTransition){
+this._scrollBarH.style.webkitTransition="";
+}
 this._scrollBarH.style.webkitTransform=this.makeTranslateStr({x:to.x});
 }else{
 _8.set(this._scrollBarH,{webkitTransition:"",left:to.x+"px"});
@@ -678,6 +701,25 @@ this._runSlideAnimation({x:_36.x},{x:_37.x},_34,_35,this._scrollBarH,1);
 },_runSlideAnimation:function(_38,to,_39,_3a,_3b,idx){
 if(_9("webkit")){
 if(!this._useTopLeft){
+if(this._useTransformTransition){
+if(to.x===undefined){
+to.x=_38.x;
+}
+if(to.y===undefined){
+to.y=_38.y;
+}
+if(to.x!==_38.x||to.y!==_38.y){
+_8.set(_3b,{webkitTransitionProperty:"-webkit-transform",webkitTransitionDuration:_39+"s",webkitTransitionTimingFunction:_3a});
+var t=this.makeTranslateStr(to);
+setTimeout(function(){
+_8.set(_3b,{webkitTransform:t});
+},0);
+_6.add(_3b,"mblScrollableScrollTo"+idx);
+}else{
+this.hideScrollBar();
+this.removeCover();
+}
+}else{
 this.setKeyframes(_38,to,idx);
 _8.set(_3b,{webkitAnimationDuration:_39+"s",webkitAnimationTimingFunction:_3a});
 _6.add(_3b,"mblScrollableScrollTo"+idx);
@@ -685,6 +727,7 @@ if(idx==2){
 this.scrollTo(to,true,_3b);
 }else{
 this.scrollScrollBarTo(to);
+}
 }
 }else{
 _8.set(_3b,{webkitTransitionProperty:"top, left",webkitTransitionDuration:_39+"s",webkitTransitionTimingFunction:_3a});

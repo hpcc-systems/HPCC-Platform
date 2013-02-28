@@ -1,6 +1,6 @@
 //>>built
 define("dijit/form/NumberSpinner",["dojo/_base/declare","dojo/_base/event","dojo/keys","./_Spinner","./NumberTextBox"],function(_1,_2,_3,_4,_5){
-return _1("dijit.form.NumberSpinner",[_4,_5.Mixin],{adjust:function(_6,_7){
+return _1("dijit.form.NumberSpinner",[_4,_5.Mixin],{baseClass:"dijitTextBox dijitSpinner dijitNumberTextBox",adjust:function(_6,_7){
 var tc=this.constraints,v=isNaN(_6),_8=!isNaN(tc.max),_9=!isNaN(tc.min);
 if(v&&_7!=0){
 _6=(_7>0)?_9?tc.min:_8?tc.max:0:_8?this.constraints.max:_9?tc.min:0;

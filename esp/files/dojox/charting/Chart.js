@@ -32,13 +32,10 @@ this.plotGroup=this.surface.createGroup();
 _3.forEach(this.series,_15);
 _3.forEach(this.stack,_15);
 _10.forIn(this.axes,_15);
+this.surface.destroy();
 if(this.chartTitle&&this.chartTitle.tagName){
 _8.destroy(this.chartTitle);
 }
-if(this.plotGroup){
-this.plotGroup.destroy();
-}
-this.surface.destroy();
 },getCoords:function(){
 var _1c=this.node;
 var s=_5.getComputedStyle(_1c),_1d=_7.getMarginBox(_1c,s);

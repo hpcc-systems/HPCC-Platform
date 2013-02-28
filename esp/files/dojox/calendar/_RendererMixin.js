@@ -43,7 +43,7 @@ if(this.owner){
 this.owner._setText(_e,_f,_10);
 }
 },_isElementVisible:function(elt,_11,_12,_13){
-var _14;
+var _14=true;
 var _15=this.visibilityLimits[elt];
 switch(elt){
 case "moveHandle":
@@ -104,7 +104,7 @@ var _17=this._orientation=="vertical"?h:w;
 var rd=this.owner.renderData;
 var _18=rd.dateModule.compare(this.item.range[0],this.item.startTime)!=0;
 var _19=rd.dateModule.compare(this.item.range[1],this.item.endTime)!=0;
-var _1a,_1b;
+var _1a;
 if(this.beforeIcon!=null){
 _1a=this._orientation!="horizontal"||this.isLeftToRight()?_18:_19;
 _3.set(this.beforeIcon,"display",_1a?this.getDisplayValue("beforeIcon"):"none");

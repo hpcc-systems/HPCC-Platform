@@ -27,7 +27,8 @@ this._keydownHandle=this.connect(this.domNode,"onkeydown","_onClick");
 this.inherited(arguments);
 if(!this._isOnLine){
 this._isOnLine=true;
-this.set("icon",this.icon);
+this.set("icon",this._pendingIcon!==undefined?this._pendingIcon:this.icon);
+delete this._pendingIcon;
 }
 },_onClick:function(e){
 if(e&&e.type==="keydown"&&e.keyCode!==13){

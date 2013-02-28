@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -7,6 +7,7 @@
 //>>built
 define("dojo/store/Cache",["../_base/lang","../_base/Deferred"],function(_1,_2){
 var _3=function(_4,_5,_6){
+_6=_6||{};
 return _1.delegate(_4,{query:function(_7,_8){
 var _9=_4.query(_7,_8);
 _9.forEach(function(_a){

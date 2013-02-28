@@ -29,12 +29,15 @@ if(this._queryObserveHandle){
 this._queryObserveHandle.cancel();
 }
 var _d=this;
-return _3(this.store.get(id,_c),function(_e){
+result=_3(this.store.get(id,_c),function(_e){
 if(_d._beingDestroyed){
 return;
 }
-_d.set(_d._refSourceModelProp,_4(_e,_d.getStatefulOptions));
+_e=_4(_e,_d.getStatefulOptions);
+_d.set(_d._refSourceModelProp,_e);
+return _e;
 });
+return result;
 },putStore:function(_f,_10){
 if(!(this.store||{}).put){
 return;

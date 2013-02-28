@@ -76,7 +76,7 @@ return this;
 _13=df.map(_12,"/this",df.foldl(_12,"+",0));
 if(this.opt.labels){
 _14=_2.map(_13,function(x,i){
-if(x<=0){
+if(x<0){
 return "";
 }
 var v=run[i];

@@ -9,7 +9,9 @@ this.dataUrl=_2["analyticsUrl"]||require.toUrl("dojox/analytics/logger/dojoxAnal
 this.sendMethod=_2["sendMethod"]||"xhrPost";
 this.maxRequestSize=_5("ie")?2000:_2["maxRequestSize"]||4000;
 _3(this,"schedulePusher");
-_4.addOnUnload(this,"pushData",true);
+_4.addOnUnload(this,function(){
+this.pushData();
+});
 };
 _1.extend(_a,{schedulePusher:function(_b){
 setTimeout(_1.hitch(this,"checkData"),_b||this.sendInterval);

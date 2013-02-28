@@ -125,11 +125,6 @@
 	text-align:left;
 	color:#8397b9;
 }
-.dijitButtonNode .dijitArrowButtonInner{
-	
-	background:url(../../../../dijit/themes/tundra/images/spriteArrows.png) no-repeat left top;
-	width:7px;
-}
 .dojoxEditorUploadNorm{
 	font-family:Arial;
 	font-size:12px;

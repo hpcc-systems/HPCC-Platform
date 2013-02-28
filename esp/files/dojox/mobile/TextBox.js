@@ -2,6 +2,7 @@
 define("dojox/mobile/TextBox",["dojo/_base/declare","dojo/dom-construct","dijit/_WidgetBase","dijit/form/_FormValueMixin","dijit/form/_TextBoxMixin"],function(_1,_2,_3,_4,_5){
 return _1("dojox.mobile.TextBox",[_3,_4,_5],{baseClass:"mblTextBox",_setTypeAttr:null,_setPlaceHolderAttr:function(_6){
 _6=this._cv?this._cv(_6):_6;
+this._set("placeHolder",_6);
 this.textbox.setAttribute("placeholder",_6);
 },buildRendering:function(){
 if(!this.srcNodeRef){

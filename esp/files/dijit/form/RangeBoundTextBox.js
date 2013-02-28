@@ -35,23 +35,6 @@ if(!this.rangeMessage){
 this.messages=_2.getLocalization("dijit.form","validate",this.lang);
 this.rangeMessage=this.messages.rangeMessage;
 }
-},_setConstraintsAttr:function(_d){
-this.inherited(arguments);
-if(this.focusNode){
-if(this.constraints.min!==undefined){
-this.focusNode.setAttribute("aria-valuemin",this.constraints.min);
-}else{
-this.focusNode.removeAttribute("aria-valuemin");
-}
-if(this.constraints.max!==undefined){
-this.focusNode.setAttribute("aria-valuemax",this.constraints.max);
-}else{
-this.focusNode.removeAttribute("aria-valuemax");
-}
-}
-},_setValueAttr:function(_e,_f){
-this.focusNode.setAttribute("aria-valuenow",_e);
-this.inherited(arguments);
 },applyTextDir:function(){
 }});
 return _4;

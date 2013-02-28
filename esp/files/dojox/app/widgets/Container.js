@@ -1,6 +1,6 @@
 //>>built
 define("dojox/app/widgets/Container",["dojo/_base/declare","dojo/_base/lang","dijit/registry","dojo/dom-attr","dojo/dom-geometry","dojo/dom-style","dijit/_WidgetBase","dijit/_Container","dijit/_Contained","dojo/_base/array","dojo/query","../layout/utils","./_ScrollableMixin"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d){
-return _1("dojox.app.widgets.Container",[_7,_8,_9,_d],{buildRendering:function(){
+return _1("dojox.app.widgets.Container",[_7,_8,_9,_d],{scrollable:false,buildRendering:function(){
 if(!this.region){
 this.region="center";
 _4.set(this.srcNodeRef,"data-app-region","center");
@@ -8,7 +8,7 @@ _4.set(this.srcNodeRef,"data-app-region","center");
 this.inherited(arguments);
 _6.set(this.domNode,"overflow-x","hidden");
 _6.set(this.domNode,"overflow-y","auto");
-if(this.scrollable&&this.scrollable=="true"){
+if(this.scrollable){
 this.inherited(arguments);
 this.domNode.style.position="absolute";
 this.domNode.style.width="100%";
@@ -18,7 +18,7 @@ this.domNode.style.height="100%";
 if(this._started){
 return;
 }
-if(this.scrollable&&(this.scrollable=="true")){
+if(this.scrollable){
 this.inherited(arguments);
 }
 this._started=true;

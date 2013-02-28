@@ -131,7 +131,7 @@ this._moved=true;
 _1.forEach(this._conn,_2.disconnect);
 this._conn=null;
 if(this.innerStartX==this.inner.offsetLeft){
-if(_c("touch")){
+if(_c("touch")&&!(_c("android")>=4.1)){
 var ev=_5.doc.createEvent("MouseEvents");
 ev.initEvent("click",true,true);
 this.inner.dispatchEvent(ev);

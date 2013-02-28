@@ -114,7 +114,7 @@ _23=true;
 return (_23?_f.getScrollbar().w:0);
 },getColumnsWidth:function(){
 var h=this.headerContentNode;
-return h&&h.firstChild?h.firstChild.offsetWidth:0;
+return h&&h.firstChild?(h.firstChild.offsetWidth||_11.style(h.firstChild,"width")):0;
 },setColumnsWidth:function(_25){
 this.headerContentNode.firstChild.style.width=_25+"px";
 if(this.viewWidth){

@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -131,6 +131,6 @@ _6.notify(undefined,id);
 });
 return _6;
 };
-_2.setObject("dojo.store.util.Observable",_5);
+_2.setObject("dojo.store.Observable",_5);
 return _5;
 });

@@ -45,10 +45,16 @@ this.defer(_3.hitch(this,"layoutVariableHeight"),0);
 }
 if(!this._isOnLine){
 this._isOnLine=true;
-this.set({icon:this.icon,deleteIcon:this.deleteIcon,rightIcon:this.rightIcon,rightIcon2:this.rightIcon2});
+this.set({icon:this._pending_icon!==undefined?this._pending_icon:this.icon,deleteIcon:this._pending_deleteIcon!==undefined?this._pending_deleteIcon:this.deleteIcon,rightIcon:this._pending_rightIcon!==undefined?this._pending_rightIcon:this.rightIcon,rightIcon2:this._pending_rightIcon2!==undefined?this._pending_rightIcon2:this.rightIcon2,uncheckIcon:this._pending_uncheckIcon!==undefined?this._pending_uncheckIcon:this.uncheckIcon});
+delete this._pending_icon;
+delete this._pending_deleteIcon;
+delete this._pending_rightIcon;
+delete this._pending_rightIcon2;
+delete this._pending_uncheckIcon;
 }
 if(_e&&_e.select){
-this.set("checked",this.checked);
+this.set("checked",this._pendingChecked!==undefined?this._pendingChecked:this.checked);
+delete this._pendingChecked;
 }
 this.setArrow();
 this.layoutChildren();
@@ -163,6 +169,7 @@ return _17.nextSibling;
 return this.domNode.firstChild;
 },_setIcon:function(_19,_1a){
 if(!this._isOnLine){
+this["_pending_"+_1a]=_19;
 return;
 }
 this._set(_1a,_19);
@@ -193,6 +200,7 @@ this._setIcon(_20,"uncheckIcon");
 this._setIcon(_21,"rightIcon2");
 },_setCheckedAttr:function(_22){
 if(!this._isOnLine){
+this._pendingChecked=_22;
 return;
 }
 var _23=this.getParent();

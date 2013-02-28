@@ -31,6 +31,9 @@
 .dijitTextBoxRtl .dijitArrowButtonContainer {
 	float: left;
 }
+div.dijitNumberTextBoxRtl {
+	text-align: right;
+}
 .dijitCalendarRtl .dijitCalendarNextYear {
 	margin:0 0.55em 0 0;
 }

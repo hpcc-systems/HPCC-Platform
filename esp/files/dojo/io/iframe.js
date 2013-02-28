@@ -1,12 +1,12 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
 
 //>>built
 define("dojo/io/iframe",["../_base/config","../_base/json","../_base/kernel","../_base/lang","../_base/xhr","../sniff","../_base/window","../dom","../dom-construct","../query","require","../aspect","../request/iframe"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d){
-dojo.deprecated("dojo/io/iframe","Use dojo/request/iframe.","2.0");
+_3.deprecated("dojo/io/iframe","Use dojo/request/iframe.","2.0");
 var _e=_d._iframeName;
 _e=_e.substring(0,_e.lastIndexOf("_"));
 var _f=_4.delegate(_d,{create:function(){
@@ -41,7 +41,7 @@ dfd.ioArgs._hasError=true;
 return _15;
 });
 var _16=dfd.ioArgs;
-var _17="GET",_18=dojo.byId(_10.form);
+var _17="GET",_18=_8.byId(_10.form);
 if(_10.method&&_10.method.toUpperCase()==="POST"&&_18){
 _17="POST";
 }

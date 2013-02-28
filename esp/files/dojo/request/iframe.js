@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -121,8 +121,9 @@ _27=_6.mixin(_7.queryToObject(_28),_27);
 if(_25){
 if(!dfd._legacy){
 var _29=_25;
-while(_29=_29.parentNode&&_29!==_c.doc.documentElement){
-}
+do{
+_29=_29.parentNode;
+}while(_29!==_c.doc.documentElement);
 if(!_29){
 _25.style.position="absolute";
 _25.style.left="-1000px";

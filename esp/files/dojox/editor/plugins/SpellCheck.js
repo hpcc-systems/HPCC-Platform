@@ -481,7 +481,7 @@ var _6e,win;
 if(_6d.tagName.toLowerCase()=="iframe"){
 _6e=_6d;
 win=this._iframeContentWindow(_6e);
-cn=_2.body(ed.document);
+cn=_2.body(_5e.document);
 }else{
 cn=(_6d==_2.body()?_2.doc.documentElement:_6d);
 }
@@ -533,8 +533,7 @@ this._scheduleOpen(evt.target,_6e);
 _6f.connects=cn?_70(cn):[];
 if(_6e){
 _6f.onloadHandler=_2.hitch(this,function(){
-var win=this._iframeContentWindow(_6e);
-cn=_2.body(ed.document);
+var win=this._iframeContentWindow(_6e),cn=_2.body(_5e.document);
 _6f.connects=_70(cn);
 });
 if(_6e.addEventListener){
@@ -546,7 +545,7 @@ _6e.attachEvent("onload",_6f.onloadHandler);
 }});
 }
 },_selectWord:function(_77){
-var _78=this._spanList;
+var ed=this._editor,_78=this._spanList;
 if(_77<_78.length&&_78.length>0){
 ed._sCall("selectElement",[_78[_77]]);
 ed._sCall("collapse",[true]);

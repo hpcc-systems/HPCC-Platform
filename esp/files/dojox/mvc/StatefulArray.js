@@ -23,7 +23,9 @@ return this.splice(0,1)[0];
 },sort:function(){
 return _3([].sort.apply(this,_1._toArray(arguments)));
 },splice:function(_7,n){
-var l=this.get("length"),p=Math.min(_7,l),_8=this.slice(_7,_7+n),_9=_1._toArray(arguments).slice(2);
+var l=this.get("length");
+_7+=_7<0?l:0;
+var p=Math.min(_7,l),_8=this.slice(_7,_7+n),_9=_1._toArray(arguments).slice(2);
 [].splice.apply(this,[_7,n].concat(new Array(_9.length)));
 for(var i=0;i<_9.length;i++){
 this.set(p+i,_9[i]);
@@ -47,7 +49,10 @@ _b.push(this.get(i));
 }
 return _b.join(_a);
 },slice:function(_c,_d){
-var _e=[],_d=typeof _d==="undefined"?this.get("length"):_d;
+var l=this.get("length");
+_c+=_c<0?l:0;
+_d=(_d===void 0?l:_d)+(_d<0?l:0);
+var _e=[];
 for(var i=_c||0;i<Math.min(_d,this.get("length"));i++){
 _e.push(this.get(i));
 }
