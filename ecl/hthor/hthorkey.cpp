@@ -33,6 +33,7 @@
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedConstRoxieRow;
+using roxiemem::OwnedRoxieString;
 
 static IKeyIndex *openKeyFile(IDistributedFilePart & keyFile)
 {
@@ -1067,7 +1068,7 @@ IInputSteppingMeta * CHThorIndexReadActivity::querySteppingMeta()
 extern HTHOR_API IHThorActivity *createIndexReadActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexReadArg &arg, ThorActivityKind _kind)
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
-    const char *lfn = arg.getFileName();
+    OwnedRoxieString lfn(arg.getFileName());
     Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexRead", 0 != (arg.getFlags() & TIRoptional));
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
@@ -1245,7 +1246,7 @@ const void * CHThorIndexNormalizeActivity::createNextRow()
 extern HTHOR_API IHThorActivity *createIndexNormalizeActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexNormalizeArg &arg, ThorActivityKind _kind)
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
-    const char *lfn = arg.getFileName();
+    OwnedRoxieString lfn(arg.getFileName());
     Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexNormalize", 0 != (arg.getFlags() & TIRoptional),true,true);
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
@@ -1363,7 +1364,7 @@ const void *CHThorIndexAggregateActivity::nextInGroup()
 extern HTHOR_API IHThorActivity *createIndexAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexAggregateArg &arg, ThorActivityKind _kind)
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
-    const char *lfn = arg.getFileName();
+    OwnedRoxieString lfn(arg.getFileName());
     Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexAggregate", 0 != (arg.getFlags() & TIRoptional));
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
@@ -1467,7 +1468,7 @@ const void *CHThorIndexCountActivity::nextInGroup()
 extern HTHOR_API IHThorActivity *createIndexCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexCountArg &arg, ThorActivityKind _kind)
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
-    const char *lfn = arg.getFileName();
+    OwnedRoxieString lfn(arg.getFileName());
     Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexCount", 0 != (arg.getFlags() & TIRoptional));
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
@@ -1577,7 +1578,7 @@ const void *CHThorIndexGroupAggregateActivity::nextInGroup()
 extern HTHOR_API IHThorActivity *createIndexGroupAggregateActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorIndexGroupAggregateArg &arg, ThorActivityKind _kind)
 {
     // A logical filename for the key should refer to a single physical file - either the TLK or a monolithic key
-    const char *lfn = arg.getFileName();
+    OwnedRoxieString lfn(arg.getFileName());
     Owned<ILocalOrDistributedFile> ldFile = _agent.resolveLFN(lfn, "IndexGroupAggregate", 0 != (arg.getFlags() & TIRoptional));
     Linked<IDistributedFile> dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
     if (!dFile)
@@ -2188,8 +2189,8 @@ public:
 
     virtual void start()
     {
-        const char *lfn = fetch.getFileName();
-        if (lfn)
+        OwnedRoxieString lfn(fetch.getFileName());
+        if (lfn.get())
         {
             Owned <ILocalOrDistributedFile> ldFile = agent.resolveLFN(lfn, "Fetch", 0 != (fetch.getFetchFlags() & FFdatafileoptional));
             IDistributedFile * dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
@@ -2448,7 +2449,7 @@ public:
         //reads a record based on the csv information
         ICsvParameters * csvInfo = _arg.queryCsvParameters();
 
-        char const * lfn = fetch.getFileName();
+        OwnedRoxieString lfn(fetch.getFileName());
         Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(lfn, "CsvFetch", 0 != (_arg.getFetchFlags() & FFdatafileoptional));
         IDistributedFile * dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         const char * quotes = NULL;
@@ -3880,7 +3881,7 @@ public:
 
     virtual void start()
     {
-        const char *lfn = helper.getIndexFileName();
+        OwnedRoxieString lfn(helper.getIndexFileName());
         ldFile.setown(agent.resolveLFN(lfn, "KeyedJoin", 0 != (helper.getJoinFlags() & JFindexoptional)));
         dFile = ldFile ? ldFile->queryDistributedFile() : NULL;
         if (dFile)

@@ -242,14 +242,16 @@ public:
         }
         else
             _inrowif = this;
-        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), flags));
+        OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
+        readTransformer.setown(createReadRowStream(_inrowif->queryRowAllocator(), _inrowif->queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIteratorPath, flags));
         appendOutputLinked(this);
     }
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         eof = false;
-        openPipe(helper->getPipeProgram(), "PIPEREAD");
+        OwnedRoxieString pipeProgram(helper->getPipeProgram());
+        openPipe(pipeProgram, "PIPEREAD");
         dataLinkStart("PIPEREAD", container.queryId());
     }
     virtual void stop()
@@ -355,7 +357,8 @@ public:
         recreate = helper->recreateEachRow();
         grouped = 0 != (flags & TPFgroupeachrow);
 
-        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), helper->queryXmlIteratorPath(), flags));
+        OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
+        readTransformer.setown(createReadRowStream(queryRowAllocator(), queryRowDeserializer(), helper->queryXmlTransformer(), helper->queryCsvTransformer(), xmlIterator, flags));
         readTransformer->setStream(pipeStream); // NB the pipe process stream is provided to pipeStream after pipe->run()
 
         appendOutputLinked(this);
@@ -372,8 +375,10 @@ public:
             writeTransformer->ready();
         }
         if (!recreate)
-            openPipe(helper->getPipeProgram(), "PIPETHROUGH");
-
+        {
+            OwnedRoxieString pipeProgram(helper->getPipeProgram());
+            openPipe(pipeProgram, "PIPETHROUGH");
+        }
         startInput(inputs.item(0));
         dataLinkStart("PIPETHROUGH", container.queryId());
         pipeWriter = new PipeWriterThread(*this);

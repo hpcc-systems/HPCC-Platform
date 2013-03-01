@@ -26,6 +26,8 @@
 
 #include "csvsplitter.hpp"
 #include "eclrtl.hpp"
+#include "roxiemem.hpp"
+using roxiemem::OwnedRoxieString;
 
 // If you have lines more than 2Mb in length it is more likely to be a bug - so require an explicit override
 #define DEFAULT_CSV_LINE_LENGTH 2048
@@ -103,7 +105,7 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
     {
         for (idx=0;;idx++)
         {
-            const char * text = csvInfo->queryQuote(idx);
+            OwnedRoxieString text(csvInfo->getQuote(idx));
             if (!text)
                 break;
             addQuote(text);
@@ -116,7 +118,7 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
     {
         for (idx=0;;idx++)
         {
-            const char * text = csvInfo->querySeparator(idx);
+            OwnedRoxieString text(csvInfo->getSeparator(idx));
             if (!text)
                 break;
             addSeparator(text);
@@ -129,27 +131,23 @@ void CSVSplitter::init(unsigned _maxColumns, ICsvParameters * csvInfo, const cha
     {
         for (idx=0;;idx++)
         {
-            const char * text = csvInfo->queryTerminator(idx);
+            OwnedRoxieString text(csvInfo->getTerminator(idx));
             if (!text)
                 break;
             addTerminator(text);
         }
     }
 
-    // Old workunits won't have queryEscape. MORE: deprecate on the next major version
-    if (flags & ICsvParameters::supportsEscape)
+    if (dfsEscapes && (flags & ICsvParameters::defaultEscape))
+        addActionList(matcher, dfsEscapes, ESCAPE);
+    else
     {
-        if (dfsEscapes && (flags & ICsvParameters::defaultEscape))
-            addActionList(matcher, dfsEscapes, ESCAPE);
-        else
+        for (idx=0;;idx++)
         {
-            for (idx=0;;idx++)
-            {
-                const char * text = csvInfo->queryEscape(idx);
-                if (!text)
-                    break;
-                addEscape(text);
-            }
+            OwnedRoxieString text(csvInfo->getEscape(idx));
+            if (!text)
+                break;
+            addEscape(text);
         }
     }
 
@@ -407,10 +405,11 @@ void CSVOutputStream::init(ICsvParameters * args, bool _oldOutputFormat)
 {
     if (args->queryEBCDIC())
         throw MakeStringException(99, "EBCDIC CSV output not yet implemented");
-    quote.set(args->queryQuote(0));
-    separator.set(args->querySeparator(0));
-    terminator.set(args->queryTerminator(0));
-    escape.set(args->queryEscape(0));
+    OwnedRoxieString rs;
+    quote.set(rs.setown(args->getQuote(0)));
+    separator.set(rs.setown(args->getSeparator(0)));
+    terminator.set(rs.setown(args->getTerminator(0)));
+    escape.set(rs.setown(args->getEscape(0)));
     oldOutputFormat = _oldOutputFormat||!quote.length();
 }
 

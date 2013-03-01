@@ -56,6 +56,7 @@ static unsigned const hthorPipeWaitTimeout = 100; //100ms - fairly arbitrary cho
 
 using roxiemem::IRowManager;
 using roxiemem::OwnedRoxieRow;
+using roxiemem::OwnedRoxieString;
 using roxiemem::OwnedConstRoxieRow;
 
 IRowManager * theRowManager;
@@ -308,7 +309,7 @@ ClusterWriteHandler *createClusterWriteHandler(IAgentContext &agent, IHThorIndex
     unsigned clusterIdx = 0;
     while(true)
     {
-        char const * cluster = iwHelper ? iwHelper->queryCluster(clusterIdx++) : dwHelper->queryCluster(clusterIdx++);
+        OwnedRoxieString cluster(iwHelper ? iwHelper->getCluster(clusterIdx++) : dwHelper->getCluster(clusterIdx++));
         if(!cluster)
             break;
         if(!clusterHandler)
@@ -399,7 +400,8 @@ void CHThorDiskWriteActivity::done()
 
 void CHThorDiskWriteActivity::resolve()
 {
-    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), helper.getFlags());
+    OwnedRoxieString rawname = helper.getFileName();
+    mangleHelperFileName(mangledHelperFileName, rawname, agent.queryWuid(), helper.getFlags());
     assertex(mangledHelperFileName.str());
     if((helper.getFlags() & (TDXtemporary | TDXjobtemp)) == 0)
     {
@@ -805,7 +807,7 @@ CHThorCsvWriteActivity::CHThorCsvWriteActivity(IAgentContext &_agent, unsigned _
 
 void CHThorCsvWriteActivity::execute()
 {
-    const char * header = helper.queryCsvParameters()->queryHeader();
+    OwnedRoxieString header(helper.queryCsvParameters()->getHeader());
     if (header) {
         csvOutput.beginLine();
         csvOutput.writeHeaderLn(strlen(header), header);
@@ -838,7 +840,7 @@ void CHThorCsvWriteActivity::execute()
         numRecords++;
     }
 
-    const char * footer = helper.queryCsvParameters()->queryFooter();
+    OwnedRoxieString footer(helper.queryCsvParameters()->getFooter());
     if (footer) {
         csvOutput.beginLine();
         csvOutput.writeHeaderLn(strlen(footer), footer);
@@ -850,9 +852,10 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 {
     // MORE - should call parent's setFormat too?
     ICsvParameters * csvInfo = helper.queryCsvParameters();
+    OwnedRoxieString rs(csvInfo->getSeparator(0));
     StringBuffer separator;
-    const char *s = csvInfo->querySeparator(0);
-    while (*s)
+    const char *s = rs;
+    while (s && *s)
     {
         if (',' == *s)
             separator.append("\\,");
@@ -861,9 +864,9 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
         ++s;
     }
     desc->queryProperties().setProp("@csvSeparate", separator.str());
-    desc->queryProperties().setProp("@csvQuote", csvInfo->queryQuote(0));
-    desc->queryProperties().setProp("@csvTerminate", csvInfo->queryTerminator(0));
-    desc->queryProperties().setProp("@csvEscape", csvInfo->queryEscape(0));
+    desc->queryProperties().setProp("@csvQuote", rs.setown(csvInfo->getQuote(0)));
+    desc->queryProperties().setProp("@csvTerminate", rs.setown(csvInfo->getTerminator(0)));
+    desc->queryProperties().setProp("@csvEscape", rs.setown(csvInfo->getEscape(0)));
     desc->queryProperties().setProp("@format","utf8n");
 }
 
@@ -871,11 +874,12 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
 
 CHThorXmlWriteActivity::CHThorXmlWriteActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorXmlWriteArg &_arg, ThorActivityKind _kind) : CHThorDiskWriteActivity(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
-    const char * path = helper.queryIteratorPath();
-    if (!path)
+    OwnedRoxieString xmlpath(helper.getXmlIteratorPath());
+    if (!xmlpath)
         rowTag.append("Row");
     else
     {
+        const char *path = xmlpath;
         if (*path == '/') path++;
         if (strchr(path, '/')) UNIMPLEMENTED;               // more what do we do with /mydata/row
         rowTag.append(path);
@@ -886,7 +890,8 @@ void CHThorXmlWriteActivity::execute()
 {
     // Loop thru the results
     numRecords = 0;
-    const char * header = helper.queryHeader();
+    OwnedRoxieString suppliedHeader(helper.getHeader());
+    const char *header = suppliedHeader;
     if (!header) header = "<Dataset>\n";
     diskout->write(strlen(header), header);
 
@@ -915,7 +920,8 @@ void CHThorXmlWriteActivity::execute()
         diskout->write(xmlOutput.length(), xmlOutput.str());
         numRecords++;
     }
-    const char * footer = helper.queryFooter();
+    OwnedRoxieString suppliedFooter(helper.getFooter());
+    const char *footer = suppliedFooter;
     if (!footer) footer = "</Dataset>\n";
     diskout->write(strlen(footer), footer);
 }
@@ -956,7 +962,8 @@ CHThorIndexWriteActivity::CHThorIndexWriteActivity(IAgentContext &_agent, unsign
 {
     incomplete = false;
     StringBuffer lfn;
-    expandLogicalFilename(lfn, helper.getFileName(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+    OwnedRoxieString fname(helper.getFileName());
+    expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally());
     if (!agent.queryResolveFilesLocally())
     {
         Owned<IDistributedFile> f = queryDistributedFileDirectory().lookup(lfn, agent.queryCodeContext()->queryUserDescriptor(), true);
@@ -1002,9 +1009,10 @@ void CHThorIndexWriteActivity::execute()
     // Loop thru the results
     unsigned __int64 reccount = 0;
     unsigned __int64 fileSize = 0;
-    if (helper.getDatasetName())
+    OwnedRoxieString dsName(helper.getDatasetName());
+    if (dsName.get())
     {
-        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(helper.getDatasetName(),"IndexWrite::execute",false,false,true);
+        Owned<ILocalOrDistributedFile> ldFile = agent.resolveLFN(dsName,"IndexWrite::execute",false,false,true);
         if (ldFile )
         {
             IDistributedFile * dFile = ldFile->queryDistributedFile();
@@ -1074,7 +1082,8 @@ void CHThorIndexWriteActivity::execute()
             if(sizeLimit && (out->tell() > sizeLimit))
             {
                 StringBuffer msg;
-                msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing index ").append(helper.getFileName());
+                OwnedRoxieString fname(helper.getFileName());
+                msg.append("Exceeded disk write size limit of ").append(sizeLimit).append(" while writing index ").append(fname);
                 throw MakeStringException(0, "%s", msg.str());
             }
             reccount++;
@@ -1179,7 +1188,8 @@ void CHThorIndexWriteActivity::execute()
     if (!agent.queryResolveFilesLocally())
     {
         dfile.setown(queryDistributedFileDirectory().createNew(desc));
-        expandLogicalFilename(lfn, helper.getFileName(), agent.queryWorkUnit(), agent.queryResolveFilesLocally());
+        OwnedRoxieString fname(helper.getFileName());
+        expandLogicalFilename(lfn, fname, agent.queryWorkUnit(), agent.queryResolveFilesLocally());
         dfile->attach(lfn.str(),agent.queryCodeContext()->queryUserDescriptor());
         agent.logFileAccess(dfile, "HThor", "CREATED");
     }
@@ -1217,9 +1227,15 @@ void CHThorIndexWriteActivity::buildUserMetadata(Owned<IPropertyTree> & metadata
         StringBuffer name(nameLen, nameBuff);
         StringBuffer value(valueLen, valueBuff);
         if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
-            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper.getFileName());
+        {
+            OwnedRoxieString fname(helper.getFileName());
+            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
+        }
         if(!validateXMLTag(name.str()))
-            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper.getFileName());
+        {
+            OwnedRoxieString fname(helper.getFileName());
+            throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
+        }
         if(!metadata) metadata.setown(createPTree("metadata"));
         metadata->setProp(name.str(), value.str());
     }
@@ -1263,8 +1279,10 @@ public:
         groupSignalled = true; // i.e. don't start with a NULL row
         CHThorSimpleActivityBase::ready();
         rowDeserializer.setown(rowAllocator->createDiskDeserializer(agent.queryCodeContext()));
-        readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
-        openPipe(helper.getPipeProgram());
+        OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
+        readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), xmlIteratorPath, helper.getPipeFlags()));
+        OwnedRoxieString pipeProgram(helper.getPipeProgram());
+        openPipe(pipeProgram);
     }
 
     virtual void done()
@@ -1445,9 +1463,15 @@ public:
         writeTransformer->ready();
 
         if (!readTransformer)
-            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
+        {
+            OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
+            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), xmlIterator, helper.getPipeFlags()));
+        }
         if(!recreate)
-            openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper.getPipeProgram());
+            openPipe(pipeProgram);
+        }
         puller.start();
     }
 
@@ -1620,7 +1644,10 @@ public:
         inputExhausted = false;
         writeTransformer->ready();
         if(!recreate)
-            openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper.getPipeProgram());
+            openPipe(pipeProgram);
+        }
     }
 
     virtual void execute()
@@ -3671,7 +3698,7 @@ void CHThorGroupSortActivity::createSorter()
     }
     unsigned flags = algo->getAlgorithmFlags();
     sorterIsConst = ((flags & TAFconstant) != 0);
-    char const * algoname = algo->queryAlgorithm();
+    OwnedRoxieString algoname(algo->getAlgorithm());
     if(!algoname)
     {
         if((flags & TAFunstable) != 0)
@@ -3695,7 +3722,7 @@ void CHThorGroupSortActivity::createSorter()
     else
     {
         StringBuffer sb;
-        sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname);
+        sb.appendf("Ignoring unsupported sort order algorithm '%s', using default", algoname.get());
         agent.addWuException(sb.str(),0,ExceptionSeverityWarning,"hthor");
         if((flags & TAFunstable) != 0)
             sorter.setown(new CQuickSorter(helper.queryCompare(), queryRowManager(), InitialSortElements, CommitStep));
@@ -5939,30 +5966,6 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
 
 //=====================================================================================================
 
-CHThorCountActivity::CHThorCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &_arg, ThorActivityKind _kind)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
-{
-}
-
-__int64 CHThorCountActivity::getCount()
-{
-    __int64 count = 0;
-    loop
-    {
-        OwnedConstHThorRow nextrec(input->nextInGroup());
-        if (!nextrec)
-        {
-            nextrec.setown(input->nextInGroup());
-            if (!nextrec)
-                break;
-        }
-        count++;
-    }
-    return count;
-}
-
-//=====================================================================================================
-
 
 CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRemoteResultArg &_arg, ThorActivityKind _kind)
  : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
@@ -5985,42 +5988,6 @@ void CHThorRemoteResultActivity::execute()
     helper.sendResult(result);
 }
 
-
-//=====================================================================================================
-
-/*
- * Deprecated in 3.8, this class is being kept for backward compatibility,
- * since now the code generator is using InlineTables (below) for all
- * temporary tables and rows.
- */
-CHThorTempTableActivity::CHThorTempTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &_arg, ThorActivityKind _kind) :
-                 CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
-{
-}
-
-void CHThorTempTableActivity::ready()
-{
-    CHThorSimpleActivityBase::ready();
-    curRow = 0;
-    numRows = helper.numRows();
-}
-
-
-const void *CHThorTempTableActivity::nextInGroup()
-{
-    // Filtering empty rows, returns the next valid row
-    while (curRow < numRows)
-    {
-        RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        size32_t size = helper.getRow(rowBuilder, curRow++);
-        if (size)
-        {
-            processed++;
-            return rowBuilder.finalizeRowClear(size);
-        }
-    }
-    return NULL;
-}
 
 //=====================================================================================================
 
@@ -6635,11 +6602,11 @@ void CHThorWorkunitReadActivity::ready()
     grouped = outputMeta.isGrouped();
     unsigned lenData;
     void * tempData;
-    const char * wuid = helper.queryWUID();
+    OwnedRoxieString fromWuid(helper.getWUID());
     ICsvToRowTransformer * csvTransformer = helper.queryCsvTransformer();
     IXmlToRowTransformer * xmlTransformer = helper.queryXmlTransformer();
-    if (wuid)
-        agent.queryCodeContext()->getExternalResultRaw(lenData, tempData, wuid, helper.queryName(), helper.querySequence(), xmlTransformer, csvTransformer);
+    if (fromWuid)
+        agent.queryCodeContext()->getExternalResultRaw(lenData, tempData, fromWuid, helper.queryName(), helper.querySequence(), xmlTransformer, csvTransformer);
     else
         agent.queryCodeContext()->getResultRaw(lenData, tempData, helper.queryName(), helper.querySequence(), xmlTransformer, csvTransformer);
     resultBuffer.setBuffer(lenData, tempData, true);
@@ -6649,7 +6616,8 @@ void CHThorWorkunitReadActivity::ready()
 void CHThorWorkunitReadActivity::checkForDiskRead()
 {
     StringBuffer diskFilename;
-    if(agent.getWorkunitResultFilename(diskFilename, helper.queryWUID(), helper.queryName(), helper.querySequence()))
+    OwnedRoxieString fromWuid(helper.getWUID());
+    if (agent.getWorkunitResultFilename(diskFilename, fromWuid, helper.queryName(), helper.querySequence()))
     {
         diskreadHelper.setown(createWorkUnitReadArg(diskFilename.str(), &helper));
         try
@@ -7051,7 +7019,8 @@ const void * CHThorXmlParseActivity::nextInGroup()
         }
         size32_t srchLen;
         helper.getSearchText(srchLen, srchStr, in);
-        xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryIteratorPath(), *this, xr_noRoot, helper.requiresContents()));
+        OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
+        xmlParser.setown(createXMLParse(srchStr, srchLen, xmlIteratorPath, *this, xr_noRoot, helper.requiresContents()));
     }
 }
 
@@ -7722,7 +7691,8 @@ void CHThorDiskReadBaseActivity::done()
 
 void CHThorDiskReadBaseActivity::resolve()
 {
-    mangleHelperFileName(mangledHelperFileName, helper.getFileName(), agent.queryWuid(), helper.getFlags());
+    OwnedRoxieString fileName(helper.getFileName());
+    mangleHelperFileName(mangledHelperFileName, fileName, agent.queryWuid(), helper.getFlags());
     if (helper.getFlags() & (TDXtemporary | TDXjobtemp))
     {
         StringBuffer mangledFilename;
@@ -8677,7 +8647,10 @@ const void *CHThorCsvReadActivity::nextInGroup()
                 if (thisLineLength < rowSize || avail < rowSize)
                     break;
                 if (rowSize == maxRowSize)
-                    throw MakeStringException(99, "File %s contained a line of length greater than %d bytes.", helper.getFileName(), rowSize);
+                {
+                    OwnedRoxieString fileName(helper.getFileName());
+                    throw MakeStringException(99, "File %s contained a line of length greater than %d bytes.", fileName.get(), rowSize);
+                }
                 if (rowSize >= maxRowSize/2)
                     rowSize = maxRowSize;
                 else
@@ -8856,7 +8829,8 @@ bool CHThorXmlReadActivity::openNext()
         else
             inputfileiostream.setown(createIOStream(inputfileio));
 
-        xmlParser.setown(createXMLParse(*inputfileiostream, helper.queryIteratorPath(), *this, (0 != (TDRxmlnoroot & helper.getFlags()))?xr_noRoot:xr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
+        xmlParser.setown(createXMLParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?xr_noRoot:xr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
         return true;
     }
     return false;
@@ -9860,8 +9834,6 @@ MAKEFACTORY(AllJoin);
 MAKEFACTORY(WorkUnitWrite);
 MAKEFACTORY(DictionaryWorkUnitWrite);
 MAKEFACTORY(FirstN);
-MAKEFACTORY(Count);
-MAKEFACTORY(TempTable);
 MAKEFACTORY(InlineTable);
 MAKEFACTORY_ARG(Concat, Funnel);
 MAKEFACTORY(Apply);

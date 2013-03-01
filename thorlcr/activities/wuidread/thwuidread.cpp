@@ -32,9 +32,9 @@ public:
         IHThorWorkunitReadArg *helper = (IHThorWorkunitReadArg *)queryHelper();
         size32_t lenData;
         void *tempData;
-        const char *wuid = helper->queryWUID();
-        if (wuid)
-            queryCodeContext()->getExternalResultRaw(lenData, tempData, wuid, helper->queryName(), helper->querySequence(), helper->queryXmlTransformer(), helper->queryCsvTransformer());
+        OwnedRoxieString fromWuid(helper->getWUID());
+        if (fromWuid)
+            queryCodeContext()->getExternalResultRaw(lenData, tempData, fromWuid, helper->queryName(), helper->querySequence(), helper->queryXmlTransformer(), helper->queryCsvTransformer());
         else
             queryCodeContext()->getResultRaw(lenData, tempData, helper->queryName(), helper->querySequence(), helper->queryXmlTransformer(), helper->queryCsvTransformer());
         msg.clear();
@@ -79,7 +79,8 @@ CActivityBase *createWorkUnitActivityMaster(CMasterGraphElement *container)
 {
     StringBuffer diskFilename;
     IHThorWorkunitReadArg *wuReadHelper = (IHThorWorkunitReadArg *)container->queryHelper();
-    if (getWorkunitResultFilename(*container, diskFilename, wuReadHelper->queryWUID(), wuReadHelper->queryName(), wuReadHelper->querySequence()))
+    OwnedRoxieString fromWuid(wuReadHelper->getWUID());
+    if (getWorkunitResultFilename(*container, diskFilename, fromWuid, wuReadHelper->queryName(), wuReadHelper->querySequence()))
     {
         Owned<IHThorDiskReadArg> diskReadHelper = createWorkUnitReadArg(diskFilename, LINK(wuReadHelper));
         Owned<CActivityBase> retAct = createDiskReadActivityMaster(container, diskReadHelper);

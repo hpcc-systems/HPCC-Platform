@@ -345,32 +345,11 @@ public:
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual unsigned getFormatCrc() = 0;
-    virtual const char * queryCluster(unsigned idx) { return NULL; }
+    virtual const char * getCluster(unsigned idx) { return NULL; }
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
     virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) { return false; }
     virtual unsigned getWidth() { return 0; }
     virtual ICompare * queryCompare() { return NULL; }
-};
-
-//I don't think this is ever used....
-class CThorCountArg : public CThorArg, implements IHThorCountArg
-{
-    virtual void Link() const { RtlCInterface::Link(); }
-    virtual bool Release() const { return RtlCInterface::Release(); }
-    virtual IOutputMetaData * queryOutputMeta() { return NULL; }
-    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
-
-
-    virtual IInterface * selectInterface(ActivityInterfaceEnum which)                       
-    { 
-        switch (which)
-        {
-        case TAIarg:
-        case TAIcountarg_1:
-            return static_cast<IHThorCountArg *>(this);
-        }
-        return NULL;
-    }
 };
 
 class CThorFirstNArg : public CThorArg, implements IHThorFirstNArg
@@ -454,7 +433,7 @@ class CThorDiskWriteArg : public CThorArg, implements IHThorDiskWriteArg
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
-    virtual const char * queryCluster(unsigned idx)         { return NULL; }
+    virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
 class CThorPipeReadArg : public CThorArg, implements IHThorPipeReadArg
@@ -480,7 +459,7 @@ public:
     virtual unsigned getPipeFlags()                         { return 0; }
     virtual ICsvToRowTransformer * queryCsvTransformer()    { return NULL; }
     virtual IXmlToRowTransformer * queryXmlTransformer()    { return NULL; }
-    virtual const char * queryXmlIteratorPath()             { return NULL; }
+    virtual const char * getXmlIteratorPath()             { return NULL; }
 };
 
 class CThorPipeWriteArg : public CThorArg, implements IHThorPipeWriteArg
@@ -534,7 +513,7 @@ public:
     virtual IHThorXmlWriteExtra * queryXmlOutput()          { return NULL; }
     virtual ICsvToRowTransformer * queryCsvTransformer()    { return NULL; }
     virtual IXmlToRowTransformer * queryXmlTransformer()    { return NULL; }
-    virtual const char * queryXmlIteratorPath()             { return NULL; }
+    virtual const char * getXmlIteratorPath()             { return NULL; }
 };
 
 
@@ -1017,7 +996,7 @@ class CThorSpillArg : public CThorArg, implements IHThorSpillArg
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
-    virtual const char * queryCluster(unsigned idx)         { return NULL; }
+    virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
 
@@ -1324,29 +1303,6 @@ class CThorHashAggregateArg : public CThorArg, implements IHThorHashAggregateArg
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
 };
 
-class CThorTempTableArg : public CThorArg, implements IHThorTempTableArg
-{
-public:
-    virtual void Link() const { RtlCInterface::Link(); }
-    virtual bool Release() const { return RtlCInterface::Release(); }
-    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
-
-    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
-    {
-        switch (which)
-        {
-        case TAIarg:
-        case TAItemptablearg_1:
-            return static_cast<IHThorTempTableArg *>(this);
-        }
-        return NULL;
-    }
-
-    virtual unsigned getFlags()                         { return 0; }
-    virtual bool isConstant()                           { return (getFlags() & TTFnoconstant) == 0; }
-    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) { return 0; }
-};
-
 class CThorInlineTableArg : public CThorArg, implements IHThorInlineTableArg
 {
 public:
@@ -1542,7 +1498,7 @@ class CThorSortArg : public CThorArg, implements IHThorSortArg, implements IHTho
     virtual const char * getSortedFilename()            { return NULL; }
     virtual ICompare * queryCompareLeftRight()          { return NULL; }
     virtual unsigned getAlgorithmFlags()                { return TAFconstant; }
-    virtual const char * queryAlgorithm()               { return NULL; }
+    virtual const char * getAlgorithm()               { return NULL; }
     virtual ICompare * queryCompareSerializedRow()      { return NULL; }
 };
 
@@ -1830,29 +1786,6 @@ class CThorKeyedDistributeArg : public CThorArg, implements IHThorKeyedDistribut
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) { return false; }
 };
 
-
-class CThorCountIndexArg : public CThorArg, implements IHThorCountIndexArg
-{
-    virtual void Link() const { RtlCInterface::Link(); }
-    virtual bool Release() const { return RtlCInterface::Release(); }
-    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
-
-    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
-    {
-        switch (which)
-        {
-        case TAIarg:
-        case TAIcountindexarg_1:
-            return static_cast<IHThorCountIndexArg *>(this);
-        }
-        return NULL;
-    }
-
-    virtual bool hasPostFilter() { return false; };
-    virtual size32_t isValid(const void * src, unsigned __int64 _fpos, IBlobProvider * blobs) { return true; }
-    virtual void extractLookupFields() {}
-    virtual bool canMatchAny()                              { return true; }
-};
 
 class CThorCountFileArg : public CThorArg, implements IHThorCountFileArg
 {
@@ -2190,7 +2123,7 @@ class CThorWorkunitReadArg : public CThorArg, implements IHThorWorkunitReadArg
     }
 
     virtual int querySequence() { return -3; }
-    virtual const char * queryWUID() { return NULL; }
+    virtual const char * getWUID() { return NULL; }
     virtual ICsvToRowTransformer * queryCsvTransformer() { return NULL; }
     virtual IXmlToRowTransformer * queryXmlTransformer() { return NULL; }
 };
@@ -2301,7 +2234,7 @@ class CThorCsvWriteArg : public CThorArg, implements IHThorCsvWriteArg
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
-    virtual const char * queryCluster(unsigned idx)         { return NULL; }
+    virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
 
@@ -2394,9 +2327,9 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
         return NULL;
     }
 
-    virtual const char * queryIteratorPath()           { return NULL; }             // supplies the prefix and suffix for a row
-    virtual const char * queryHeader()                 { return NULL; }
-    virtual const char * queryFooter()                 { return NULL; }
+    virtual const char * getXmlIteratorPath()        { return NULL; }             // supplies the prefix and suffix for a row
+    virtual const char * getHeader()                 { return NULL; }
+    virtual const char * getFooter()                 { return NULL; }
     virtual unsigned getXmlFlags()                     { return 0; }
 
     virtual int getSequence()                               { return -3; }
@@ -2405,7 +2338,7 @@ class CThorXmlWriteArg : public CThorArg, implements IHThorXmlWriteArg
     virtual unsigned getExpiryDays()                        { return 0; }
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC)  { }
     virtual void getEncryptKey(size32_t & keyLen, void * & key) { keyLen = 0; key = 0; }
-    virtual const char * queryCluster(unsigned idx)         { return NULL; }
+    virtual const char * getCluster(unsigned idx)         { return NULL; }
 };
 
 
@@ -2430,24 +2363,22 @@ class CThorSoapActionArg : public CThorArg, implements IHThorSoapActionArg
     }
 
     virtual void toXML(const byte * self, IXmlWriter & out) { return; }
-    virtual const char * queryHeader()                  { return NULL; }
-    virtual const char * queryFooter()                  { return NULL; }
+    virtual const char * getHeader()                  { return NULL; }
+    virtual const char * getFooter()                  { return NULL; }
     virtual unsigned getFlags()                         { return 0; }
     virtual unsigned numParallelThreads()               { return 0; }
     virtual unsigned numRecordsPerBatch()               { return 0; }
-    virtual const char * queryUserName()                { return NULL; }
-    virtual const char * queryPassword()                { return NULL; }
     virtual int numRetries()                            { return -1; }
     virtual double getTimeout()                          { return -1.0; }
     virtual double getTimeLimit()                        { return 0.0; }
-    virtual const char * querySoapAction()              { return NULL; }
-    virtual const char * queryNamespaceName()           { return NULL; }
-    virtual const char * queryNamespaceVar()            { return NULL; }
+    virtual const char * getSoapAction()              { return NULL; }
+    virtual const char * getNamespaceName()           { return NULL; }
+    virtual const char * getNamespaceVar()            { return NULL; }
 
-    virtual const char * queryHttpHeaderName()          { return NULL; }
-    virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual const char * queryProxyAddress()            { return NULL; }
-    virtual const char * queryAcceptType()              { return NULL; }
+    virtual const char * getHttpHeaderName()          { return NULL; }
+    virtual const char * getHttpHeaderValue()         { return NULL; }
+    virtual const char * getProxyAddress()            { return NULL; }
+    virtual const char * getAcceptType()              { return NULL; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
 };
 
@@ -2472,28 +2403,26 @@ class CThorSoapCallArg : public CThorArg, implements IHThorSoapCallArg
     }
     
 //writing to the soap service.
-    virtual const char * queryInputIteratorPath()       { return NULL; }
+    virtual const char * getInputIteratorPath()       { return NULL; }
     virtual unsigned onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) { return 0; }
 
     virtual void toXML(const byte * self, IXmlWriter & out) { return; }
-    virtual const char * queryHeader()                  { return NULL; }
-    virtual const char * queryFooter()                  { return NULL; }
+    virtual const char * getHeader()                  { return NULL; }
+    virtual const char * getFooter()                  { return NULL; }
     virtual unsigned getFlags()                         { return 0; }
     virtual unsigned numParallelThreads()               { return 0; }
     virtual unsigned numRecordsPerBatch()               { return 0; }
-    virtual const char * queryUserName()                { return NULL; }
-    virtual const char * queryPassword()                { return NULL; }
     virtual int numRetries()                            { return -1; }
     virtual double getTimeout()                          { return -1.0; }
     virtual double getTimeLimit()                        { return 0.0; }
-    virtual const char * querySoapAction()              { return NULL; }
-    virtual const char * queryNamespaceName()           { return NULL; }
-    virtual const char * queryNamespaceVar()            { return NULL; }
+    virtual const char * getSoapAction()              { return NULL; }
+    virtual const char * getNamespaceName()           { return NULL; }
+    virtual const char * getNamespaceVar()            { return NULL; }
 
-    virtual const char * queryHttpHeaderName()          { return NULL; }
-    virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual const char * queryProxyAddress()            { return NULL; }
-    virtual const char * queryAcceptType()              { return NULL; }
+    virtual const char * getHttpHeaderName()          { return NULL; }
+    virtual const char * getHttpHeaderValue()         { return NULL; }
+    virtual const char * getProxyAddress()            { return NULL; }
+    virtual const char * getAcceptType()              { return NULL; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) { lenText =0; text = NULL; }
 };
 typedef CThorSoapCallArg CThorHttpCallArg;

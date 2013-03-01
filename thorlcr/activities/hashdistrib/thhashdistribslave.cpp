@@ -2049,7 +2049,8 @@ public:
         data.read(tlkSz);
         Owned<IFileIO> iFileIO = createIFileI((size32_t)tlkSz, data.readDirect((size32_t)tlkSz));
 
-        StringBuffer name(helper->getIndexFileName());
+        OwnedRoxieString indexFileName(helper->getIndexFileName());
+        StringBuffer name(indexFileName);
         name.append("_tlk"); // MORE - this does not look right!
         CKeyLookup *l = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, true, false)); // MORE - crc is not 0...
         ihash = l;

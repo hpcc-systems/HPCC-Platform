@@ -65,8 +65,9 @@ public:
         IHThorCsvWriteArg *helper=(IHThorCsvWriteArg *)queryHelper();
         ICsvParameters *csvParameters = helper->queryCsvParameters();
         StringBuffer separator;
-        const char *s = csvParameters->querySeparator(0);
-        while (*s)
+        OwnedRoxieString rs(csvParameters->getSeparator(0));
+        const char *s = rs;
+        while (s && *s)
         {
             if (',' == *s)
                 separator.append("\\,");
@@ -75,9 +76,9 @@ public:
             ++s;
         }
         props.setProp("@csvSeparate", separator.str());
-        props.setProp("@csvQuote", csvParameters->queryQuote(0));
-        props.setProp("@csvTerminate", csvParameters->queryTerminator(0));
-        props.setProp("@csvEscape", csvParameters->queryEscape(0));
+        props.setProp("@csvQuote", rs.setown(csvParameters->getQuote(0)));
+        props.setProp("@csvTerminate", rs.setown(csvParameters->getTerminator(0)));
+        props.setProp("@csvEscape", rs.setown(csvParameters->getEscape(0)));
 
         CWriteMasterBase::done(); // will publish
     }

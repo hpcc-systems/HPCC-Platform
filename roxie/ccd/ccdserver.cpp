@@ -88,6 +88,7 @@ namespace ccdserver_hqlhelper
 #endif
 
 using roxiemem::OwnedRoxieRow;
+using roxiemem::OwnedRoxieString;
 using roxiemem::OwnedConstRoxieRow;
 using roxiemem::IRowManager;
 
@@ -5225,82 +5226,6 @@ IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsig
 
 //=================================================================================
 
-/*
- * Deprecated in 3.8, this class is being kept for backward compatibility,
- * since now the code generator is using InlineTables (below) for all
- * temporary tables and rows.
- */
-class CRoxieServerTempTableActivity : public CRoxieServerActivity
-{
-    IHThorTempTableArg &helper;
-    unsigned curRow;
-    unsigned numRows;
-
-public:
-    CRoxieServerTempTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTempTableArg &) basehelper)
-    {
-        curRow = 0;
-    }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        curRow = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        numRows = helper.numRows();
-    }
-
-    virtual bool needsAllocator() const { return true; }
-    virtual const void *nextInGroup()
-    {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-        // Filtering empty rows, returns the next valid row
-        while (curRow < numRows)
-        {
-            RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            unsigned outSize = helper.getRow(rowBuilder, curRow++);
-            if (outSize)
-            {
-                processed++;
-                return rowBuilder.finalizeRowClear(outSize);
-            }
-        }
-        return NULL;
-    }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
-    }
-
-};
-
-class CRoxieServerTempTableActivityFactory : public CRoxieServerActivityFactory
-{
-
-public:
-    CRoxieServerTempTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
-    {
-    }
-
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
-    {
-        return new CRoxieServerTempTableActivity(this, _probeManager);
-    }
-    virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
-    {
-        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() should not be called for TempTable activity");
-    }
-};
-
-IRoxieServerActivityFactory *createRoxieServerTempTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-{
-    return new CRoxieServerTempTableActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
-}
-
-//=================================================================================
-
 class CRoxieServerInlineTableActivity : public CRoxieServerActivity
 {
     IHThorInlineTableArg &helper;
@@ -5395,7 +5320,8 @@ public:
     {
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         IXmlToRowTransformer * xmlTransformer = helper.queryXmlTransformer();
-        if (helper.queryWUID())
+        OwnedRoxieString fromWuid(helper.getWUID());
+        if (fromWuid)
             UNIMPLEMENTED;
         wuReader.setown(ctx->getWorkunitRowReader(helper.queryName(), helper.querySequence(), xmlTransformer, rowAllocator, meta.isGrouped()));
         // MORE _ should that be in onCreate?
@@ -7948,13 +7874,13 @@ public:
             {
                 sorter.clear();
                 IHThorAlgorithm *sortMethod = static_cast<IHThorAlgorithm *>(helper.selectInterface(TAIalgorithm_1));
-                const char *useAlgorithm = sortMethod->queryAlgorithm();
+                OwnedRoxieString useAlgorithm(sortMethod->getAlgorithm());
                 if (useAlgorithm)
                 {
                     if (stricmp(useAlgorithm, "quicksort")==0)
                     {
                         if (sortFlags & TAFstable)
-                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm.get());
                         sorter.setown(new CQuickSortAlgorithm(compare));
                     }
                     else if (stricmp(useAlgorithm, "heapsort")==0)
@@ -7963,7 +7889,7 @@ public:
                         sorter.setown(new CInsertionSortAlgorithm(compare, &ctx->queryRowManager(), activityId));
                     else
                     {
-                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm.get());
                         if (sortFlags & TAFunstable)
                             sorter.setown(new CQuickSortAlgorithm(compare));
                         else
@@ -8010,19 +7936,19 @@ public:
                 sortAlgorithm = unknownSort;
             else
             {
-                const char *useAlgorithm = sortMethod->queryAlgorithm();
+                OwnedRoxieString useAlgorithm(sortMethod->getAlgorithm());
                 if (useAlgorithm)
                 {
                     if (stricmp(useAlgorithm, "quicksort")==0)
                     {
                         if (sortFlags & TAFstable)
-                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm.get());
                         sortAlgorithm = quickSort;
                     }
                     else if (stricmp(useAlgorithm, "spillingquicksort")==0)
                     {
                         if (sortFlags & TAFstable)
-                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm);
+                            throw MakeStringException(ROXIE_UNKNOWN_ALGORITHM, "Invalid stable sort algorithm %s requested", useAlgorithm.get());
                         sortAlgorithm = spillingQuickSort;
                     }
                     else if (stricmp(useAlgorithm, "heapsort")==0)
@@ -8031,7 +7957,7 @@ public:
                         sortAlgorithm = insertionSort;
                     else
                     {
-                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm);
+                        WARNLOG(ROXIE_UNKNOWN_ALGORITHM, "Ignoring unsupported sort order algorithm '%s', using default", useAlgorithm.get());
                         if (sortFlags & TAFunstable)
                             sortAlgorithm = quickSort;
                         else
@@ -8722,8 +8648,12 @@ public:
         groupSignalled = true; // i.e. don't start with a NULL row
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         if (!readTransformer)
-            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
-        openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
+            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), xmlIteratorPath, helper.getPipeFlags()));
+        }
+        OwnedRoxieString pipeProgram(helper.getPipeProgram());
+        openPipe(pipeProgram);
     }
 
     virtual void stop(bool aborting)
@@ -8840,9 +8770,15 @@ public:
         writeTransformer->ready();
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         if (!readTransformer)
-            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), helper.queryXmlIteratorPath(), helper.getPipeFlags()));
+        {
+            OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
+            readTransformer.setown(createReadRowStream(rowAllocator, rowDeserializer, helper.queryXmlTransformer(), helper.queryCsvTransformer(), xmlIterator, helper.getPipeFlags()));
+        }
         if(!recreate)
-            openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper.getPipeProgram());
+            openPipe(pipeProgram);
+        }
         puller.start(parentExtractSize, parentExtract, paused, 0, false, ctx);  // Pipe does not support preload presently - locks up
     }
 
@@ -9027,7 +8963,10 @@ public:
         writeTransformer->ready();
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         if(!recreate)
-            openPipe(helper.getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper.getPipeProgram());
+            openPipe(pipeProgram);
+        }
     }
 
     virtual void stop(bool aborting)
@@ -10658,14 +10597,14 @@ protected:
 
     void resolve()
     {
-        const char * rawLogicalName = helper.getFileName();
+        OwnedRoxieString rawLogicalName = helper.getFileName();
         assertex(rawLogicalName);
         assertex((helper.getFlags() & TDXtemporary) == 0);
         StringArray clusters;
         unsigned clusterIdx = 0;
         while(true)
         {
-            char const * cluster = helper.queryCluster(clusterIdx);
+            OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
             clusters.append(cluster);
@@ -10674,7 +10613,7 @@ protected:
         if (clusters.length())
         {
             if (extend)
-                throw MakeStringException(0, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", rawLogicalName);
+                throw MakeStringException(0, "Cannot combine EXTEND and CLUSTER flags on disk write of file %s", rawLogicalName.get());
         }
         else
         {
@@ -10880,7 +10819,7 @@ public:
 
     virtual void onExecute() 
     {
-        const char * header = csvHelper.queryCsvParameters()->queryHeader();
+        OwnedRoxieString header(csvHelper.queryCsvParameters()->getHeader());
         if (header) 
         {
             csvOutput.beginLine();
@@ -10903,7 +10842,7 @@ public:
             diskout->write(csvOutput.length(), csvOutput.str());
             ReleaseRoxieRow(nextrec);
         }
-        const char * footer = csvHelper.queryCsvParameters()->queryFooter();
+        OwnedRoxieString footer(csvHelper.queryCsvParameters()->getFooter());
         if (footer) 
         {
             csvOutput.beginLine();
@@ -10920,8 +10859,9 @@ public:
 
         ICsvParameters *csvParameters = csvHelper.queryCsvParameters();
         StringBuffer separator;
-        const char *s = csvParameters->querySeparator(0);
-        while (*s)
+        OwnedRoxieString rs(csvParameters->getSeparator(0));
+        const char *s = rs;
+        while (s &&  *s)
         {
             if (',' == *s)
                 separator.append("\\,");
@@ -10930,9 +10870,9 @@ public:
             ++s;
         }
         props.setProp("@csvSeparate", separator.str());
-        props.setProp("@csvQuote", csvParameters->queryQuote(0));
-        props.setProp("@csvTerminate", csvParameters->queryTerminator(0));
-        props.setProp("@csvEscape", csvParameters->queryEscape(0));
+        props.setProp("@csvQuote", rs.setown(csvParameters->getQuote(0)));
+        props.setProp("@csvTerminate", rs.setown(csvParameters->getTerminator(0)));
+        props.setProp("@csvEscape", rs.setown(csvParameters->getEscape(0)));
     }
 
     virtual bool isOutputTransformed() const { return true; }
@@ -10953,11 +10893,12 @@ public:
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         CRoxieServerDiskWriteActivity::start(parentExtractSize, parentExtract, paused);
-        const char * path = xmlHelper.queryIteratorPath();
-        if (!path)
+        OwnedRoxieString xmlpath(xmlHelper.getXmlIteratorPath());
+        if (!xmlpath)
             rowTag.set("Row");
         else
         {
+            const char *path = xmlpath;
             if (*path == '/') path++;
             if (strchr(path, '/')) UNIMPLEMENTED;               // more what do we do with /mydata/row
             rowTag.set(path);
@@ -10966,7 +10907,8 @@ public:
 
     virtual void onExecute() 
     {
-        const char * header = xmlHelper.queryHeader();
+        OwnedRoxieString suppliedHeader(xmlHelper.getHeader());
+        const char *header = suppliedHeader;
         if (!header) header = "<Dataset>\n";
         diskout->write(strlen(header), header);
         CommonXmlWriter xmlOutput(xmlHelper.getXmlFlags());
@@ -10985,7 +10927,8 @@ public:
             xmlOutput.outputEndNested(rowTag);
             diskout->write(xmlOutput.length(), xmlOutput.str());
         }
-        const char * footer = xmlHelper.queryFooter();
+        OwnedRoxieString suppliedFooter(xmlHelper.getFooter());
+        const char * footer = suppliedFooter;
         if (!footer) footer = "</Dataset>\n";
         diskout->write(strlen(footer), footer);
     }
@@ -11092,7 +11035,7 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
         unsigned clusterIdx = 0;
         while(true)
         {
-            char const * cluster = helper.queryCluster(clusterIdx);
+            OwnedRoxieString cluster(helper.getCluster(clusterIdx));
             if(!cluster)
                 break;
             clusters.append(cluster);
@@ -11103,7 +11046,8 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             clusters.append(roxieName.str());
         else
             clusters.append(".");
-        writer.setown(ctx->createLFN(helper.getFileName(), overwrite, false, clusters)); // MORE - if there's a workunit, use if for scope.
+        OwnedRoxieString fname(helper.getFileName());
+        writer.setown(ctx->createLFN(fname, overwrite, false, clusters)); // MORE - if there's a workunit, use if for scope.
         filename.set(writer->queryFile()->queryFilename());
         if (writer->queryFile()->exists())
         {
@@ -11129,9 +11073,15 @@ class CRoxieServerIndexWriteActivity : public CRoxieServerInternalSinkActivity, 
             StringBuffer name(nameLen, nameBuff);
             StringBuffer value(valueLen, valueBuff);
             if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
-                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper.getFileName());
+            {
+                OwnedRoxieString fname(helper.getFileName());
+                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
+            }
             if(!validateXMLTag(name.str()))
-                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper.getFileName());
+            {
+                OwnedRoxieString fname(helper.getFileName());
+                throw MakeStringException(0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
+            }
             if(!metadata)
                 metadata.setown(createPTree("metadata"));
             metadata->setProp(name.str(), value.str());
@@ -11188,9 +11138,10 @@ public:
 
         unsigned __int64 fileSize = 0;
         fileCrc = -1;
-        if (helper.getDatasetName())
+        OwnedRoxieString dsName(helper.getFileName());
+        if (dsName.get())
         {
-            Owned<const IResolvedFile> dsFileInfo = resolveLFN(helper.getFileName(), false);
+            Owned<const IResolvedFile> dsFileInfo = resolveLFN(dsName, false);
             if (dsFileInfo)
             {
                 fileSize = dsFileInfo->getFileSize();
@@ -19592,7 +19543,8 @@ public:
             }
             size32_t srchLen;
             helper.getSearchText(srchLen, srchStr, in);
-            xmlParser.setown(createXMLParse(srchStr, srchLen, helper.queryIteratorPath(), *this));
+            OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
+            xmlParser.setown(createXMLParse(srchStr, srchLen, xmlIteratorPath, *this));
         }   
     }
 
@@ -19705,7 +19657,8 @@ public:
         {
             if (variableFileName)
             {
-                varFileInfo.setown(resolveLFN(helper.getFileName(), isOpt));
+                OwnedRoxieString fileName(helper.getFileName());
+                varFileInfo.setown(resolveLFN(fileName, isOpt));
                 Owned<IFilePartMap> map = varFileInfo->getFileMap();
                 if (map)
                     numParts = map->getNumParts();
@@ -20035,7 +19988,8 @@ public:
         {
             rowTransformer.set(readHelper->queryTransformer());
             assertex(reader != NULL);
-            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), readHelper->queryIteratorPath(), *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?xr_noRoot:xr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
+            OwnedRoxieString xmlIterator(readHelper->getXmlIteratorPath());
+            xmlParser.setown(createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & readHelper->getFlags()))?xr_noRoot:xr_none, (readHelper->getFlags() & TDRusexmlcontents) != 0));
         }
     }
 
@@ -20699,7 +20653,7 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
-            const char *fileName = helper->getFileName();
+            OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 map.setown(datafile->getFileMap());
@@ -20795,7 +20749,8 @@ protected:
 
     void setVariableFileInfo()
     {
-        varFileInfo.setown(resolveLFN(indexHelper.getFileName(), isOpt));
+        OwnedRoxieString indexName(indexHelper.getFileName());
+        varFileInfo.setown(resolveLFN(indexName, isOpt));
         translators.setown(new TranslatorArray) ;
         keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
         variableInfoPending = false;
@@ -21422,7 +21377,8 @@ class CRoxieServerSimpleIndexReadActivity : public CRoxieServerActivity, impleme
 
     void setVariableFileInfo()
     {
-        varFileInfo.setown(resolveLFN(indexHelper.getFileName(), isOpt));
+        OwnedRoxieString indexName(indexHelper.getFileName());
+        varFileInfo.setown(resolveLFN(indexName, isOpt));
         translators.setown(new TranslatorArray) ;
         keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
         initKeySet();
@@ -21800,7 +21756,8 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (flags & TIRoptional) != 0;
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexHelper->getFileName(), isOpt, true, queryFactory.queryWorkUnit()));
+            OwnedRoxieString indexName(indexHelper->getFileName());
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, queryFactory.queryWorkUnit()));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -22682,7 +22639,8 @@ public:
         bool isOpt = (helper.getFlags() & TDRoptional) != 0;
         unsigned recsize = helper.queryRecordSize()->getFixedSize();
         assertex(recsize);
-        Owned<const IResolvedFile> varFileInfo = resolveLFN(helper.getFileName(), isOpt);
+        OwnedRoxieString fname(helper.getFileName());
+        Owned<const IResolvedFile> varFileInfo = resolveLFN(fname, isOpt);
         return varFileInfo->getFileSize() / recsize; 
     }
 
@@ -22715,12 +22673,12 @@ public:
         {
             unsigned recsize = helper->queryRecordSize()->getFixedSize();
             assertex(recsize);
-            const char *fileName = helper->getFileName();
+            OwnedRoxieString fileName(helper->getFileName());
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
             datafile.setown(queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, queryFactory.queryWorkUnit()));
             offset_t filesize = datafile ? datafile->getFileSize() : 0;
             if (filesize % recsize != 0)
-                throw MakeStringException(ROXIE_MISMATCH, "Record size mismatch for file %s - %"I64F"d is not a multiple of fixed record size %d", fileName, filesize, recsize);
+                throw MakeStringException(ROXIE_MISMATCH, "Record size mismatch for file %s - %"I64F"d is not a multiple of fixed record size %d", fileName.get(), filesize, recsize);
             answer = filesize / recsize; 
         }
         else
@@ -22812,7 +22770,8 @@ public:
         remote.setLimits(helper.getRowLimit(), (unsigned __int64) -1, I64C(0x7FFFFFFFFFFFFFFF));
         if (variableFileName)
         {
-            varFileInfo.setown(resolveLFN(fetchContext->getFileName(), isOpt));
+            OwnedRoxieString fname(fetchContext->getFileName());
+            varFileInfo.setown(resolveLFN(fname, isOpt));
             map.setown(varFileInfo->getFileMap());
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->fetchPreload(), false, ctx);
@@ -22931,7 +22890,8 @@ public:
         variableFileName = (fetchContext->getFetchFlags() & (FFvarfilename|FFdynamicfilename)) != 0;
         if (!variableFileName)
         {
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fetchContext->getFileName(),
+            OwnedRoxieString fname(fetchContext->getFileName());
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname,
                                                                         (fetchContext->getFetchFlags() & FFdatafileoptional) != 0,
                                                                         true,
                                                                         _queryFactory.queryWorkUnit()));
@@ -23493,7 +23453,8 @@ public:
         }
         else if (variableIndexFileName)
         {
-            varFileInfo.setown(resolveLFN(helper.getIndexFileName(), false));
+            OwnedRoxieString indexFileName(helper.getIndexFileName());
+            varFileInfo.setown(resolveLFN(indexFileName, false));
             translators.setown(new TranslatorArray);
             keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); // MORE - isLocal?
         }
@@ -24148,7 +24109,8 @@ public:
         CRoxieServerKeyedJoinBase::start(parentExtractSize, parentExtract, paused);
         if (variableFetchFileName)
         {
-            varFetchFileInfo.setown(resolveLFN(helper.getFileName(), false));
+            OwnedRoxieString fname(helper.getFileName());
+            varFetchFileInfo.setown(resolveLFN(fname, false));
             map.setown(varFetchFileInfo->getFileMap());
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->keyedJoinPreload(), false, ctx);
@@ -24281,7 +24243,8 @@ public:
         }
         else if (variableIndexFileName)
         {
-            varFileInfo.setown(resolveLFN(helper.getIndexFileName(), false));
+            OwnedRoxieString indexFileName(helper.getIndexFileName());
+            varFileInfo.setown(resolveLFN(indexFileName, false));
             translators.setown(new TranslatorArray);
             keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); 
         }
@@ -24502,7 +24465,8 @@ public:
         if (!variableIndexFileName)
         {
             bool isOpt = (joinFlags & JFindexoptional) != 0;
-            indexfile.setown(queryFactory.queryPackage().lookupFileName(helper->getIndexFileName(), isOpt, true, queryFactory.queryWorkUnit()));
+            OwnedRoxieString indexFileName(helper->getIndexFileName());
+            indexfile.setown(queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, queryFactory.queryWorkUnit()));
             if (indexfile)
                 keySet.setown(indexfile->getKeyArray(activityMeta, translatorArray, isOpt, isLocal ? queryFactory.queryChannel() : 0, enableFieldTranslation));
         }
@@ -25854,7 +25818,7 @@ public:
         return &testMeta; 
     }
     virtual unsigned getAlgorithmFlags() { return TAFunstable; }
-    virtual const char * queryAlgorithm() { return sortAlgorithm; }
+    virtual const char * getAlgorithm() { return sortAlgorithm; }
 };
 extern "C" IHThorArg * sortActivityTestFactory() { return new SortActivityTest; }
 
@@ -25908,12 +25872,12 @@ struct PrefetchProjectActivityTest : public ccdserver_hqlhelper::CThorPrefetchPr
 };
 extern "C" IHThorArg * prefetchProjectActivityTestFactory() { return new PrefetchProjectActivityTest; }
 
-struct TempTableActivityTest : public ccdserver_hqlhelper::CThorTempTableArg {
-    virtual IOutputMetaData * queryOutputMeta() 
+struct InlineTableActivityTest : public ccdserver_hqlhelper::CThorInlineTableArg {
+    virtual IOutputMetaData * queryOutputMeta()
     {
-        return &testMeta; 
+        return &testMeta;
     }
-    virtual size32_t getRow(ARowBuilder & _self, unsigned row) {
+    virtual size32_t getRow(ARowBuilder & _self, __uint64 row) {
         unsigned char * self = (unsigned char *) _self.getSelf();
         switch (row) {
             case 0: {
@@ -25923,11 +25887,11 @@ struct TempTableActivityTest : public ccdserver_hqlhelper::CThorTempTableArg {
         }
         return 0;
     }
-    virtual unsigned numRows() {
+    virtual __uint64 numRows() {
         return 1;
     }
 };
-extern "C" IHThorArg * tempTableActivityTestFactory() { return new TempTableActivityTest; }
+extern "C" IHThorArg * inlineTableActivityTestFactory() { return new InlineTableActivityTest; }
 
 struct SelectNActivityTest : public ccdserver_hqlhelper::CThorSelectNArg {
     virtual IOutputMetaData * queryOutputMeta() 
@@ -26271,7 +26235,7 @@ protected:
         init();
         Owned <IRoxieServerActivityFactory> factory = createRoxieServerPrefetchProjectActivityFactory(1, 1, *queryFactory, prefetchProjectActivityTestFactory, TAKprefetchproject);
         Owned<ActivityArray> childGraph = new ActivityArray(false, false, false, false);
-        IRoxieServerActivityFactory *ttf = createRoxieServerTempTableActivityFactory(2, 1, *queryFactory, tempTableActivityTestFactory, TAKtemptable);
+        IRoxieServerActivityFactory *ttf = createRoxieServerInlineTableActivityFactory(2, 1, *queryFactory, inlineTableActivityTestFactory, TAKinlinetable);
         IRoxieServerActivityFactory *snf = createRoxieServerSelectNActivityFactory(3, 1, *queryFactory, selectNActivityTestFactory, TAKselectn);
         IRoxieServerActivityFactory *lrf = createRoxieServerLocalResultWriteActivityFactory(4, 1, *queryFactory, localResultActivityTestFactory, TAKlocalresultwrite, 0, 8, true);
         childGraph->append(*ttf);

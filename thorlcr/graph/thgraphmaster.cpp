@@ -47,6 +47,8 @@
 #include "thmem.hpp"
 #include "thcompressutil.hpp"
 
+using roxiemem::OwnedRoxieString;
+
 static CriticalSection *jobManagerCrit;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -480,7 +482,7 @@ bool CMasterGraphElement::checkUpdate()
         return false;
 
     bool doCheckUpdate = false;
-    StringAttr filename;
+    OwnedRoxieString filename;
     unsigned eclCRC;
     unsigned __int64 totalCRC;
     bool temporary = false;
@@ -1035,51 +1037,6 @@ public:
         catch (CATCHALL)
         {
             throw MakeStringException(TE_FailedToRetrieveWorkunitValue, "Failed to retrieve external data value %s from workunit %s", stepname, wuid);
-        }
-    }
-    virtual __int64 countDiskFile(const char * name, unsigned recordSize)
-    {
-        unsigned __int64 size = 0;
-        Owned<IDistributedFile> f = queryThorFileManager().lookup(job, name);
-        if (f) 
-        {
-            size = f->getFileSize(true,false);
-            if (size % recordSize)
-                throw MakeStringException(9001, "File %s has size %"I64F"d which is not a multiple of record size %d", name, size, recordSize);
-            return size / recordSize;
-        }
-        DBGLOG("Error could not resolve file %s", name);
-        throw MakeStringException(9003, "Error could not resolve %s", name);
-    }
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) { UNIMPLEMENTED; }
-    virtual __int64 countDiskFile(__int64 id, IHThorCountFileArg & arg)
-    {
-        // would have called the above function in a try block but corrupted registers whenever I tried.
-
-        Owned<IHThorCountFileArg> a = &arg;  // make sure it gets destroyed....
-        arg.onCreate(this, NULL, NULL);
-        arg.onStart(NULL, NULL);
-
-        const char *name = arg.getFileName();
-        Owned<IDistributedFile> f = queryThorFileManager().lookup(job, name, 0 != ((TDXtemporary|TDXjobtemp) & arg.getFlags()));
-        if (f) 
-        {
-            IOutputMetaData * rs = arg.queryRecordSize();
-            assertex(rs->isFixedSize());
-            unsigned recordSize = rs->getMinRecordSize();
-            unsigned __int64 size = f->getFileSize(true,false);
-            if (size % recordSize)
-            {
-                throw MakeStringException(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", name, size, recordSize);
-            }
-            return size / recordSize;
-        }
-        else if (arg.getFlags() & TDRoptional)
-            return 0;
-        else
-        {
-            PrintLog("Error could not resolve file %s", name);
-            throw MakeStringException(0, "Error could not resolve %s", name);
         }
     }
     virtual void addWuException(const char * text, unsigned code, unsigned severity)

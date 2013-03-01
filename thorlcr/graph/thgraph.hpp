@@ -474,12 +474,11 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
         virtual char *getResultVarString(const char * name, unsigned sequence) { return ctx->getResultVarString(name, sequence); }
         virtual UChar *getResultVarUnicode(const char * name, unsigned sequence) { return ctx->getResultVarUnicode(name, sequence); }
         virtual unsigned getResultHash(const char * name, unsigned sequence) { return ctx->getResultHash(name, sequence); }
+        virtual const char *cloneVString(const char *str) const { return ctx->cloneVString(str); }
+        virtual const char *cloneVString(size32_t len, const char *str) const { return ctx->cloneVString(len, str); }
         virtual char *getWuid() { return ctx->getWuid(); }
         virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) { ctx->getExternalResultRaw(tlen, tgt, wuid, stepname, sequence, xmlTransformer, csvTransformer); }
         virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract); }
-        virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { return ctx->countDiskFile(lfn, recordSize); }
-        virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) { return ctx->countIndex(activityId, arg); }
-        virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg) { return ctx->countDiskFile(activityId, arg); }
         virtual char * getExpandLogicalName(const char * logicalName) { return ctx->getExpandLogicalName(logicalName); }
         virtual void addWuException(const char * text, unsigned code, unsigned severity) { ctx->addWuException(text, code, severity); }
         virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { ctx->addWuAssertFailure(code, text, filename, lineno, column, isAbort); }

@@ -50,6 +50,8 @@
 #include "roxiehelper.hpp"
 #include "jlzw.hpp"
 
+using roxiemem::OwnedRoxieString;
+
 #include <new>
 
 #ifdef _USE_CPPUNIT
@@ -1454,27 +1456,6 @@ static unsigned __int64 getFileSize(IFile * file)
     return size;
 }
 
-
-__int64 EclAgent::countDiskFile(const char * name, unsigned recordSize)
-{
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(name, "CountDisk");
-
-    offset_t size = 0;
-    Owned<IFileDescriptor> fdesc;
-    if (ldFile)
-    {
-        size = ldFile->getPartFileSize(0);
-        fdesc.setown(ldFile->getFileDescriptor());
-    }
-
-    if(fdesc->isGrouped()) recordSize++; //MORE: if codegen supplied group info, could x-check with dfs, like we do on disk read
-    if (size % recordSize)
-    {
-        failv(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, recordSize);
-    }
-    return size / recordSize;
-}
-
 bool EclAgent::fileExists(const char *name)
 {
     unsigned __int64 size = 0;
@@ -1490,47 +1471,6 @@ bool EclAgent::fileExists(const char *name)
 void EclAgent::deleteFile(const char * logicalName)
 {
     queryDistributedFileDirectory().removeEntry(logicalName, queryUserDescriptor());
-}
-
-__int64 EclAgent::countIndex(__int64 id, IHThorCountIndexArg & arg)
-{
-    throwUnexpected();
-}
-
-__int64 EclAgent::countDiskFile(__int64 id, IHThorCountFileArg & arg)
-{
-    Owned<IHThorCountFileArg> a = &arg;  // make sure it gets destroyed....
-
-    //MORE: This needs rewriting if it is to be called from a child query, but I expect the
-    //whole activity to be replaced with something else in that case.
-    try
-    {
-        arg.onCreate(queryCodeContext(), NULL, NULL);
-        arg.onStart(NULL, NULL);
-    }
-    catch(IException * e)
-    {
-        throw makeHThorException(TAKcountdisk, (unsigned)id, 0, e);
-    }
-
-    StringBuffer mangled;
-    mangleHelperFileName(mangled, arg.getFileName(), queryWuid(), arg.getFlags());
-    Owned<ILocalOrDistributedFile> ldFile = resolveLFN(mangled, "CountDisk", 0 != (arg.getFlags() & TDRoptional));
-    if (ldFile) 
-    {
-        IRecordSize * rs = arg.queryRecordSize();
-        assertex(rs->isFixedSize());
-        unsigned recordSize = rs->getFixedSize();
-        Owned<IFileDescriptor> fdesc = ldFile->getFileDescriptor();
-        if(fdesc->isGrouped()) recordSize++; //MORE: if codegen supplied group info, could x-check with dfs, like we do on disk read
-        offset_t size  = ldFile->getFileSize();
-        if (size % recordSize)
-        {
-            failv(0, "Physical file %s has size %"I64F"d which is not a multiple of record size %d", ldFile->queryLogicalName(), size, recordSize);
-        }
-        return size / recordSize;
-    }
-    return 0;
 }
 
 char * EclAgent::getExpandLogicalName(const char * logicalName)

@@ -51,7 +51,8 @@ public:
     }
     virtual void init()
     {
-        fetchFile.setown(queryThorFileManager().lookup(container.queryJob(), helper->getFileName(), false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true));
+        OwnedRoxieString fname(helper->getFileName());
+        fetchFile.setown(queryThorFileManager().lookup(container.queryJob(), fname, false, 0 != (helper->getFetchFlags() & FFdatafileoptional), true));
         if (fetchFile)
         {
             queryThorFileManager().noteFileRead(container.queryJob(), fetchFile);
@@ -72,7 +73,7 @@ public:
                 }
             }
             else if (encrypted)
-                throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", helper->getFileName());
+                throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fname.get());
             mapping.setown(getFileSlaveMaps(fetchFile->queryLogicalName(), *fileDesc, container.queryJob().queryUserDescriptor(), container.queryJob().querySlaveGroup(), container.queryLocalOrGrouped(), false, NULL, fetchFile->querySuperFile()));
             mapping->serializeFileOffsetMap(offsetMapMb);
         }

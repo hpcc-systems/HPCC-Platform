@@ -46,6 +46,7 @@ size32_t diskReadBufferSize = 0x10000;
 
 using roxiemem::OwnedRoxieRow;
 using roxiemem::OwnedConstRoxieRow;
+using roxiemem::OwnedRoxieString;
 using roxiemem::IRowManager;
 
 #define maxContinuationSize 48000 // note - must fit in the 2-byte length field... but also needs to be possible to send back from Roxie server->slave in one packet
@@ -358,7 +359,8 @@ protected:
             CDateTime cacheDate(serializedCreate);
             unsigned checksum;
             serializedCreate.read(checksum);
-            varFileInfo.setown(querySlaveDynamicFileCache()->lookupDynamicFile(logctx, queryDynamicFileName(), cacheDate, checksum, &packet->queryHeader(), isOpt, true));
+            OwnedRoxieString fname(queryDynamicFileName());
+            varFileInfo.setown(querySlaveDynamicFileCache()->lookupDynamicFile(logctx, fname, cacheDate, checksum, &packet->queryHeader(), isOpt, true));
             setVariableFileInfo();
         }
     }
@@ -548,9 +550,6 @@ public:
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { throwUnexpected(); }
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)   { throwUnexpected(); return 0; }
 
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) { throwUnexpected(); }
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) { throwUnexpected(); }
-    virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg) { throwUnexpected(); }      // only used for roxie...
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
     virtual void addWuException(const char * text, unsigned code, unsigned severity) { throwUnexpected(); }
     virtual void addWuAssertFailure(unsigned code, const char * text, const char * filename, unsigned lineno, unsigned column, bool isAbort) { throwUnexpected(); }
@@ -590,6 +589,14 @@ public:
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const 
     {
         return queryContext->queryCodeContext()->getRowAllocator(meta, activityId); 
+    }
+    virtual const char *cloneVString(const char *str) const
+    {
+        return queryContext->queryCodeContext()->cloneVString(str);
+    }
+    virtual const char *cloneVString(size32_t len, const char *str) const
+    {
+        return queryContext->queryCodeContext()->cloneVString(len, str);
     }
     virtual void getRowXML(size32_t & lenResult, char * & result, IOutputMetaData & info, const void * row, unsigned flags)
     {
@@ -972,7 +979,7 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (helper->getFlags() & TDRoptional) != 0;
-            const char *fileName = helper->getFileName();
+            OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
             {
@@ -1611,7 +1618,8 @@ public:
         unsigned totalSizeSent = 0;
 #endif
         Linked<IXmlToRowTransformer> rowTransformer = helper->queryTransformer();
-        Owned<IXMLParse> xmlParser = createXMLParse(*reader->querySimpleStream(), helper->queryIteratorPath(), *this, (0 != (TDRxmlnoroot & helper->getFlags()))?xr_noRoot:xr_none, (helper->getFlags() & TDRusexmlcontents) != 0);
+        OwnedRoxieString xmlIterator(helper->getXmlIteratorPath());
+        Owned<IXMLParse> xmlParser = createXMLParse(*reader->querySimpleStream(), xmlIterator, *this, (0 != (TDRxmlnoroot & helper->getFlags()))?xr_noRoot:xr_none, (helper->getFlags() & TDRusexmlcontents) != 0);
         while (!aborted)
         {
             //call to next() will callback on the IXmlSelect interface
@@ -3066,7 +3074,8 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (helper->getFlags() & TIRoptional) != 0;
-            datafile.setown(queryFactory.queryPackage().lookupFileName(helper->getFileName(), isOpt, true, queryFactory.queryWorkUnit()));
+            OwnedRoxieString indexName(helper->getFileName());
+            datafile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, queryFactory.queryWorkUnit()));
             if (datafile)
                 keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
         }
@@ -4262,7 +4271,8 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (fetchContext->getFetchFlags() & FFdatafileoptional) != 0;
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(fetchContext->getFileName(), isOpt, true, _queryFactory.queryWorkUnit()));
+            OwnedRoxieString fname(fetchContext->getFileName());
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(fname, isOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
         }
@@ -4610,7 +4620,8 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (helper->getJoinFlags() & JFindexoptional) != 0;
-            datafile.setown(_queryFactory.queryPackage().lookupFileName(helper->getIndexFileName(), isOpt, true, _queryFactory.queryWorkUnit()));
+            OwnedRoxieString indexFileName(helper->getIndexFileName());
+            datafile.setown(_queryFactory.queryPackage().lookupFileName(indexFileName, isOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 keyArray.setown(datafile->getKeyArray(activityMeta, layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
         }
@@ -4955,7 +4966,7 @@ public:
         if (!variableFileName)
         {
             bool isOpt = (helper->getFetchFlags() & FFdatafileoptional) != 0;
-            const char *fileName = helper->getFileName();
+            OwnedRoxieString fileName(helper->getFileName());
             datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
             if (datafile)
                 fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));

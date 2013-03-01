@@ -287,18 +287,6 @@ public:
     {
         ctx->executeGraph(graphName, realThor, parentExtractSize, parentExtract);
     }
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize)
-    {
-        return ctx->countDiskFile(lfn, recordSize);
-    }
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg)
-    {
-        return ctx->countIndex(activityId, arg);
-    }
-    virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg)
-    {
-        return ctx->countDiskFile(activityId, arg);
-    }
     virtual char * getExpandLogicalName(const char * logicalName)
     {
         return ctx->getExpandLogicalName(logicalName);
@@ -402,6 +390,14 @@ public:
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
         return ctx->getRowAllocator(meta, activityId);
+    }
+    virtual const char *cloneVString(const char *str) const
+    {
+        return ctx->cloneVString(str);
+    }
+    virtual const char *cloneVString(size32_t len, const char *str) const
+    {
+        return ctx->cloneVString(len, str);
     }
     virtual void getResultRowset(size32_t & tcount, byte * * & tgt, const char * name, unsigned sequence, IEngineRowAllocator * _rowAllocator, bool isGrouped, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer)
     {

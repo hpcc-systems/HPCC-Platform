@@ -46,11 +46,13 @@ public:
     {
         helper = (IHThorKeyPatchArg *)queryHelper();
 
-        Owned<IDistributedFile> originalIndexFile = queryThorFileManager().lookup(container.queryJob(), helper->queryOriginalName());
-        Owned<IDistributedFile> patchFile = queryThorFileManager().lookup(container.queryJob(), helper->queryPatchName());
+        OwnedRoxieString originalName(helper->getOriginalName());
+        OwnedRoxieString patchName(helper->getPatchName());
+        Owned<IDistributedFile> originalIndexFile = queryThorFileManager().lookup(container.queryJob(), originalName);
+        Owned<IDistributedFile> patchFile = queryThorFileManager().lookup(container.queryJob(), patchName);
         
         if (originalIndexFile->numParts() != patchFile->numParts())
-            throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", helper->queryOriginalName(), helper->queryPatchName());
+            throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());
         if (originalIndexFile->querySuperFile() || patchFile->querySuperFile())
             throw MakeActivityException(this, 0, "Patching super files not supported");
         
@@ -69,8 +71,9 @@ public:
             throw MakeActivityException(this, 0, "Unsupported: keypatch(%s, %s) - Cannot patch a key that's wider(%d) than the target cluster size(%d)", originalIndexFile->queryLogicalName(), patchFile->queryLogicalName(), width, container.queryJob().querySlaves());
 
         IArrayOf<IGroup> groups;
-        fillClusterArray(container.queryJob(), helper->queryOutputName(), clusters, groups);
-        newIndexDesc.setown(queryThorFileManager().create(container.queryJob(), helper->queryOutputName(), clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));
+        OwnedRoxieString outputName(helper->getOutputName());
+        fillClusterArray(container.queryJob(), outputName, clusters, groups);
+        newIndexDesc.setown(queryThorFileManager().create(container.queryJob(), outputName, clusters, groups, 0 != (KDPoverwrite & helper->getFlags()), 0, !local, width));
         if (!local)
             newIndexDesc->queryPart(newIndexDesc->numParts()-1)->queryProperties().setProp("@kind", "topLevelKey");
     }
@@ -133,7 +136,8 @@ public:
     void done()
     {
         StringBuffer scopedName;
-        queryThorFileManager().addScope(container.queryJob(), helper->queryOutputName(), scopedName);
+        OwnedRoxieString outputName(helper->getOutputName());
+        queryThorFileManager().addScope(container.queryJob(), outputName, scopedName);
         Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
         Owned<IWUResult> r = wu->updateResultBySequence(helper->getSequence());
         r->setResultStatus(ResultStatusCalculated);
@@ -156,8 +160,8 @@ public:
         if (originalProps.getPropBool("@local"))
             props.setPropBool("@local", true);
 
-        container.queryTempHandler()->registerFile(helper->queryOutputName(), container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
-        queryThorFileManager().publish(container.queryJob(), helper->queryOutputName(), false, *newIndexDesc);
+        container.queryTempHandler()->registerFile(outputName, container.queryOwner().queryGraphId(), 0, false, WUFileStandard, &clusters);
+        queryThorFileManager().publish(container.queryJob(), outputName, false, *newIndexDesc);
     }
     void preStart(size32_t parentExtractSz, const byte *parentExtract)
     {
@@ -166,7 +170,8 @@ public:
         if (0==(KDPoverwrite & helper->getFlags()))
         {
             if (KDPvaroutputname & helper->getFlags()) return;
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helper->queryOutputName(), false, true);
+            OwnedRoxieString outputName(helper->getOutputName());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), outputName, false, true);
             if (file)
                 throw MakeActivityException(this, TE_OverwriteNotSpecified, "Cannot write %s, file already exists (missing OVERWRITE attribute?)", file->queryLogicalName());
         }

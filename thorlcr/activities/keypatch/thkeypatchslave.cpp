@@ -77,8 +77,10 @@ public:
         }
 
         StringBuffer originalFilePart, patchFilePart;
-        locateFilePartPath(this, helper->queryOriginalName(), *originalIndexPart, originalFilePart);
-        locateFilePartPath(this, helper->queryPatchName(), *patchPart, patchFilePart);
+        OwnedRoxieString originalName(helper->getOriginalName());
+        OwnedRoxieString patchName(helper->getPatchName());
+        locateFilePartPath(this, originalName, *originalIndexPart, originalFilePart);
+        locateFilePartPath(this, patchName, *patchPart, patchFilePart);
 
         StringBuffer newIndexFilePath;
         getPartFilename(*newIndexPart, 0, newIndexFilePath);
@@ -95,8 +97,8 @@ public:
             if (!copyTlk)
             {
                 StringBuffer tmp;
-                locateFilePartPath(this, tmp.clear().append(helper->queryOriginalName()).append(" [TLK]").str(), *originalIndexTlkPart, originalFilePart);
-                locateFilePartPath(this, tmp.clear().append(helper->queryPatchName()).append(" [TLK]").str(), *patchTlkPart, patchFilePart);
+                locateFilePartPath(this, tmp.clear().append(originalName).append(" [TLK]").str(), *originalIndexTlkPart, originalFilePart);
+                locateFilePartPath(this, tmp.clear().append(patchName).append(" [TLK]").str(), *patchTlkPart, patchFilePart);
                 getPartFilename(*newIndexTlkPart, 0, tmp.clear());
                 tlkPatchApplicator.setown(createKeyDiffApplicator(patchFilePart.str(), originalFilePart.str(), tmp.str(), NULL, true, true));
             }
@@ -123,7 +125,8 @@ public:
                 {
                     StringBuffer newFilePathTlk, patchFilePathTlk, tmp;
                     getPartFilename(*newIndexTlkPart, 0, newFilePathTlk);
-                    locateFilePartPath(this, tmp.append(helper->queryPatchName()).append(" [TLK]").str(), *patchTlkPart, patchFilePathTlk);
+                    OwnedRoxieString patchName(helper->getPatchName());
+                    locateFilePartPath(this, tmp.append(patchName).append(" [TLK]").str(), *patchTlkPart, patchFilePathTlk);
                     OwnedIFile newIFileTlk = createIFile(newFilePathTlk.str());
                     OwnedIFile patchIFileTlk = createIFile(patchFilePathTlk.str());
                     copyFile(newIFileTlk, patchIFileTlk);

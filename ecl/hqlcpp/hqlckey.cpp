@@ -1573,16 +1573,16 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyDiff(BuildCtx & ctx, IHqlEx
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
-    //virtual const char * queryOriginalName() = 0;         // may be null
-    buildRefFilenameFunction(*instance, instance->startctx, "queryOriginalName", original);
+    //virtual const char * getOriginalName() = 0;         // may be null
+    buildRefFilenameFunction(*instance, instance->startctx, "getOriginalName", original);
     noteAllFieldsUsed(original);
 
-    //virtual const char * queryPatchName() = 0;
-    buildRefFilenameFunction(*instance, instance->startctx, "queryUpdatedName", updated);
+    //virtual const char * getUpdatedName() = 0;
+    buildRefFilenameFunction(*instance, instance->startctx, "getUpdatedName", updated);
     noteAllFieldsUsed(updated);
 
-    //virtual const char * queryOutputName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "queryOutputName", output, hasDynamicFilename(expr));
+    //virtual const char * getOutputName() = 0;
+    buildFilenameFunction(*instance, instance->startctx, "getOutputName", output, hasDynamicFilename(expr));
 
     //virtual int getSequence() = 0;
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
@@ -1617,15 +1617,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlE
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
 
-    //virtual const char * queryOriginalName() = 0;
-    buildRefFilenameFunction(*instance, instance->startctx, "queryOriginalName", original);
+    //virtual const char * getOriginalName() = 0;
+    buildRefFilenameFunction(*instance, instance->startctx, "getOriginalName", original);
     noteAllFieldsUsed(original);
 
-    //virtual const char * queryPatchName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "queryPatchName", patch, true);
+    //virtual const char * getPatchName() = 0;
+    buildFilenameFunction(*instance, instance->startctx, "getPatchName", patch, true);
 
-    //virtual const char * queryOutputName() = 0;
-    buildFilenameFunction(*instance, instance->startctx, "queryOutputName", output, hasDynamicFilename(expr));
+    //virtual const char * getOutputName() = 0;
+    buildFilenameFunction(*instance, instance->startctx, "getOutputName", output, hasDynamicFilename(expr));
 
     //virtual int getSequence() = 0;
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);

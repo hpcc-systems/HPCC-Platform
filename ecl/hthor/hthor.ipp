@@ -1480,18 +1480,6 @@ public:
     virtual bool needsAllocator() const { return true; }
 };
 
-class CHThorCountActivity : public CHThorActivityBase
-{
-    IHThorCountArg &helper;
-
-public:
-    IMPLEMENT_SINKACTIVITY;
-
-    CHThorCountActivity (IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &_arg, ThorActivityKind _kind);
-    virtual __int64 getCount();
-};
-
-
 class CHThorRemoteResultActivity : public CHThorActivityBase
 {
     IHThorRemoteResultArg &helper;
@@ -1538,30 +1526,6 @@ public:
     virtual void execute();
 };
 
-class CHThorTempTableActivity : public CHThorSimpleActivityBase
-{
-    IHThorTempTableArg &helper;
-    unsigned curRow;
-    unsigned numRows;
-
-public:
-    CHThorTempTableActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &_arg, ThorActivityKind _kind);
-
-    virtual void ready();
-    virtual bool needsAllocator() const { return true; }    
-
-    //interface IHThorInput
-    virtual const void *nextInGroup();
-};
-
-/*
- * This class differ from TempTable (above) by having 64-bit number of rows
- * and, in Thor, it's able to run distributed in the cluster. We, therefore,
- * need to keep consistency and implement it here, too.
- *
- * Some optimisations [ex. NORMALIZE(ds) -> DATASET(COUNT)] will make use of
- * this class, so you can't use TempTables.
- */
 class CHThorInlineTableActivity : public CHThorSimpleActivityBase
 {
     IHThorInlineTableArg &helper;

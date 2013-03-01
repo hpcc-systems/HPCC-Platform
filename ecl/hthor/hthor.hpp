@@ -106,8 +106,6 @@ extern HTHOR_API IHThorActivity *createAllJoinActivity(IAgentContext &, unsigned
 extern HTHOR_API IHThorActivity *createWorkUnitWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorWorkUnitWriteArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createDictionaryWorkUnitWriteActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorDictionaryWorkUnitWriteArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createFirstNActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorFirstNArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createCountActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createTempTableActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createInlineTableActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorInlineTableArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createConcatActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorFunnelArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createApplyActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorApplyArg &arg, ThorActivityKind kind);

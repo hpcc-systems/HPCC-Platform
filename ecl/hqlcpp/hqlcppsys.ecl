@@ -655,12 +655,14 @@ const char * cppSystemText[]  = {
     "   _linkcounted_ dataset getResultRowset(const varstring stepname, unsigned4 sequence, boolean _allocator, boolean isGrouped, boolean xmltransformer, boolean csvtransformer) : ctxmethod,allocator(false),pure,entrypoint='getResultRowset';",
     "   linkcounted dictionary getResultDictionary(const varstring stepname, unsigned4 sequence, boolean xmltransformer, boolean csvtransformer, boolean hasher) : ctxmethod,pure,entrypoint='getResultDictionary';",
 
+    "   const varstring  cloneVString(const varstring str) : ctxmethod,pure,entrypoint='cloneVString';",
+    "   const varstring  cloneVStringX(const string str) : ctxmethod,pure,entrypoint='cloneVString';",
+
     //Don't make these pure because they may change over time.
     "   boolean isResult(const varstring stepname, unsigned4 sequence) : gctxmethod,entrypoint='isResult';",
     "   boolean fileExists(const varstring lfn) : gctxmethod,entrypoint='fileExists';",
     "   varstring getExpandLogicalName(const varstring lfn) : ctxmethod,entrypoint='getExpandLogicalName';",
     "   deleteFile(const varstring lfn) : gctxmethod,entrypoint='deleteFile';",
-    "   integer8 countRoxieDiskFile(unsigned4 id, boolean monitors) : ctxmethod,entrypoint='countDiskFile';",       // id is actually 8 bytes, for backward compatibility
 
     "   setResultInt(const varstring stepname, unsigned4 sequence, integer8 value) : ctxmethod,entrypoint='setResultInt';",
     "   setResultUInt(const varstring stepname, unsigned4 sequence, unsigned8 value) : ctxmethod,entrypoint='setResultUInt';",

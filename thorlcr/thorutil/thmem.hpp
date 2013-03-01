@@ -52,7 +52,7 @@ interface ICompare;
 #define ReleaseClearThorRow(row) ReleaseClearRoxieRow(row)
 #define LinkThorRow(row) LinkRoxieRow(row)
 
-
+using roxiemem::OwnedRoxieString;
 
 graph_decl void setThorInABox(unsigned num);
 

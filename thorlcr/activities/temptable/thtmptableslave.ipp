@@ -20,14 +20,9 @@
 
 #include "platform.h"
 #include "jiface.hpp"       // IInterface defined in jlib   
-#include "eclhelper.hpp"        // for IHThorTempTableArg
+#include "eclhelper.hpp"        // for IHThorInlineTableArg
 #include "slave.ipp"
 #include "thactivityutil.ipp"
-
-
-
-activityslaves_decl CActivityBase *createTempTableSlave(CGraphElementBase *container);
-
 
 activityslaves_decl CActivityBase *createInlineTableSlave(CGraphElementBase *container);
 

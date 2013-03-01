@@ -58,9 +58,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKworkunitwrite] = "workunitwrite";
     kindArray[TAKfunnel] = "funnel";
     kindArray[TAKapply] = "apply";
-    kindArray[TAKtemptable] = "temptable";
     kindArray[TAKinlinetable] = "inlinetable";
-    kindArray[TAKtemprow] = "temprow";
     kindArray[TAKhashdistribute] = "hashdistribute";
     kindArray[TAKhashdedup] = "hashdedup";
     kindArray[TAKnormalize] = "normalize";

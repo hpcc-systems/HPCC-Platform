@@ -71,7 +71,10 @@ class CCsvReadSlaveActivity : public CDiskReadSlaveActivityBase, public CThorDat
                 if (thisLineLength < minRequired || avail < minRequired)
                     break;
                 if (minRequired == maxRowSize)
-                    throw MakeActivityException(&activity, 0, "File %s contained a line of length greater than %d bytes.", activity.helper->getFileName(), minRequired);
+                {
+                    OwnedRoxieString fileName(activity.helper->getFileName());
+                    throw MakeActivityException(&activity, 0, "File %s contained a line of length greater than %d bytes.", fileName.get(), minRequired);
+                }
                 if (minRequired >= maxRowSize/2)
                     minRequired = maxRowSize;
                 else
