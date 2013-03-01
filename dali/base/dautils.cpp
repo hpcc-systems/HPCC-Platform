@@ -25,6 +25,7 @@
 #include "jsort.hpp"
 #include "jprop.hpp"
 #include "jregexp.hpp"
+#include "jset.hpp"
 #include "rmtfile.hpp"
 
 #include "mpbase.hpp"
@@ -1809,14 +1810,17 @@ class CPECacheElem: public CTimedCacheItem
 public:
     IMPLEMENT_IINTERFACE;
     CPECacheElem(const char *owner)
-        : CTimedCacheItem(owner)
+        : CTimedCacheItem(owner), postFiltered(0)
     {
+        passesFilter.setown(createBitSet());
     }
     ~CPECacheElem()
     {
     }
     Owned<IRemoteConnection> conn;
     IArrayOf<IPropertyTree> totalres;
+    unsigned postFiltered;
+    Owned<IBitSet> passesFilter;
 };
 
 IRemoteConnection *getElementsPaged( const char *basexpath,
@@ -1858,7 +1862,17 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
         n = 0;
         ForEachItemIn(i,elem->totalres) {
             IPropertyTree &item = elem->totalres.item(i);
-            if (postfilter->isOK(item)) {
+            bool passesFilter = false;
+            if (elem->postFiltered>i) // postFiltered is high water mark of items checked
+                passesFilter = elem->passesFilter->test(i);
+            else
+            {
+                passesFilter = postfilter->isOK(item);
+                elem->passesFilter->set(i, passesFilter);
+                elem->postFiltered = i+1;
+            }
+            if (passesFilter)
+            {
                 if (n>=startoffset) {
                     item.Link();
                     results.append(item);
