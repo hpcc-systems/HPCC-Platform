@@ -38,7 +38,8 @@ CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterAct
 void CDiskReadMasterBase::init()
 {
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
-    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), helper->getFileName(), 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
+    OwnedRoxieString fileName(helper->getFileName());
+    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
 
     if (file)
     {
@@ -84,19 +85,20 @@ void CDiskReadMasterBase::init()
             free(ekey);
             if (!encrypted)
             {
-                Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", helper->getFileName());
+                Owned<IException> e = MakeActivityWarning(&container, TE_EncryptionMismatch, "Ignoring encryption key provided as file '%s' was not published as encrypted", fileName.get());
                 container.queryJob().fireException(e);
             }
         }
         else if (encrypted)
-            throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", helper->getFileName());
+            throw MakeActivityException(this, 0, "File '%s' was published as encrypted but no encryption key provided", fileName.get());
     }
 }
 
 void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 {
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
-    dst.append(helper->getFileName());
+    OwnedRoxieString fileName(helper->getFileName());
+    dst.append(fileName);
     dst.append(subfileLogicalFilenames.ordinality());
     if (subfileLogicalFilenames.ordinality())
     {
@@ -116,7 +118,10 @@ void CDiskReadMasterBase::done()
     if (!abortSoon) // in case query has relinquished control of file usage to another query (e.g. perists) 
     {
         if (0 != (helper->getFlags() & TDXupdateaccessed))
-            queryThorFileManager().updateAccessTime(container.queryJob(), helper->getFileName());
+        {
+            OwnedRoxieString fileName(helper->getFileName());
+            queryThorFileManager().updateAccessTime(container.queryJob(), fileName);
+        }
     }
 }
 
@@ -144,10 +149,11 @@ void CWriteMasterBase::publish()
 {
     if (published) return;
     published = true;
+    OwnedRoxieString fname(diskHelperBase->getFileName());
     if (!(diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)))
     {
         StringBuffer scopedName;
-        queryThorFileManager().addScope(container.queryJob(), diskHelperBase->getFileName(), scopedName);
+        queryThorFileManager().addScope(container.queryJob(), fname, scopedName);
         updateActivityResult(container.queryJob().queryWorkUnit(), diskHelperBase->getFlags(), diskHelperBase->getSequence(), scopedName.str(), recordsProcessed);
     }
 
@@ -165,11 +171,11 @@ void CWriteMasterBase::publish()
             props.setPropInt64("@totalCRC", totalCRC);
         }
     }
-    container.queryTempHandler()->registerFile(diskHelperBase->getFileName(), container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
+    container.queryTempHandler()->registerFile(fname, container.queryOwner().queryGraphId(), diskHelperBase->getTempUsageCount(), TDXtemporary & diskHelperBase->getFlags(), getDiskOutputKind(diskHelperBase->getFlags()), &clusters);
     if (!dlfn.isExternal())
     {
         bool mangle = 0 != (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp));
-        queryThorFileManager().publish(container.queryJob(), diskHelperBase->getFileName(), mangle, *fileDesc, NULL, targetOffset);
+        queryThorFileManager().publish(container.queryJob(), fname, mangle, *fileDesc, NULL, targetOffset);
     }
 }
 
@@ -206,7 +212,8 @@ void CWriteMasterBase::preStart(size32_t parentExtractSz, const byte *parentExtr
     {
         if (0 == ((TDXvarfilename|TDXtemporary|TDXjobtemp) & diskHelperBase->getFlags()))
         {
-            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), diskHelperBase->getFileName(), false, true);
+            OwnedRoxieString fname(diskHelperBase->getFileName());
+            Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, false, true);
             if (file)
             {
                 if (0 == (TDWextend+TDWoverwrite & diskHelperBase->getFlags()))
@@ -221,11 +228,12 @@ void CWriteMasterBase::init()
 {
     published = false;
     recordsProcessed = 0;
-    dlfn.set(diskHelperBase->getFileName());
+    OwnedRoxieString fname(diskHelperBase->getFileName());
+    dlfn.set(fname);
     if (diskHelperBase->getFlags() & TDWextend)
     {
         assertex(0 == (diskHelperBase->getFlags() & (TDXtemporary|TDXjobtemp)));
-        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), diskHelperBase->getFileName(), false, true);
+        Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fname, false, true);
         if (file.get())
         {
             fileDesc.setown(file->getFileDescriptor());
@@ -239,11 +247,17 @@ void CWriteMasterBase::init()
         bool overwriteok = 0!=(TDWoverwrite & diskHelperBase->getFlags());
         
         unsigned idx=0;
-        while (diskHelperBase->queryCluster(idx))
-            clusters.append(diskHelperBase->queryCluster(idx++));
+        while (true)
+        {
+            OwnedRoxieString cluster(diskHelperBase->getCluster(idx));
+            if(!cluster)
+                break;
+            clusters.append(cluster);
+            idx++;
+        }
         IArrayOf<IGroup> groups;
-        fillClusterArray(container.queryJob(), diskHelperBase->getFileName(), clusters, groups);
-        fileDesc.setown(queryThorFileManager().create(container.queryJob(), diskHelperBase->getFileName(), clusters, groups, overwriteok, diskHelperBase->getFlags()));
+        fillClusterArray(container.queryJob(), fname, clusters, groups);
+        fileDesc.setown(queryThorFileManager().create(container.queryJob(), fname, clusters, groups, overwriteok, diskHelperBase->getFlags()));
         if (1 == groups.ordinality())
             targetOffset = getGroupOffset(groups.item(0), container.queryJob().querySlaveGroup());
         IPropertyTree &props = fileDesc->queryProperties();
@@ -278,10 +292,11 @@ void CWriteMasterBase::init()
 
 void CWriteMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 {
-    dst.append(diskHelperBase->getFileName());
+    OwnedRoxieString fname(diskHelperBase->getFileName());
+    dst.append(fname.get());
     if (diskHelperBase->getFlags() & TDXtemporary)
     {
-        unsigned usageCount = container.queryJob().queryWorkUnit().queryFileUsage(diskHelperBase->getFileName());
+        unsigned usageCount = container.queryJob().queryWorkUnit().queryFileUsage(fname);
         if (0 == usageCount) usageCount = diskHelperBase->getTempUsageCount();
         dst.append(usageCount);
     }

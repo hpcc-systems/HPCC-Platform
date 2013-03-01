@@ -82,7 +82,7 @@ protected:
     {
         if (!singleHF || firstNode())
         {
-            const char * header = helper->queryCsvParameters()->queryHeader();
+            OwnedRoxieString header(helper->queryCsvParameters()->getHeader());
             if (header)
             {
                 csvOutput.beginLine();
@@ -116,7 +116,7 @@ protected:
         }
         if (!singleHF || lastNode())
         {
-            const char * footer = helper->queryCsvParameters()->queryFooter();
+            OwnedRoxieString footer(helper->queryCsvParameters()->getFooter());
             if (footer)
             {
                 csvOutput.beginLine();

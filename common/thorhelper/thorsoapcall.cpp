@@ -21,13 +21,14 @@
 
 #include "thorxmlread.hpp"
 #include "thorxmlwrite.hpp"
-
 #include "thorcommon.ipp"
 #include "thorsoapcall.hpp"
 
 #include "securesocket.hpp"
-
 #include "eclrtl.hpp"
+#include "roxiemem.hpp"
+
+using roxiemem::OwnedRoxieString;
 
 #ifndef _WIN32
 #include <stdexcept>
@@ -717,6 +718,7 @@ public:
         callHelper = rowProvider->queryCallHelper();  //MORE: This should not be done this way!! Should use extra as below.
         helperExtra = static_cast<IHThorSoapCallExtra*>(helper->selectInterface(TAIsoapcallextra_1));
         flags = helper->getFlags();
+        OwnedRoxieString s;
 
         authToken.append(_authToken);
 
@@ -746,20 +748,20 @@ public:
 
         if (wscType == STsoap)
         {
-            soapaction.set(helper->querySoapAction());
+            soapaction.set(s.setown(helper->getSoapAction()));
             if(soapaction.get() && !isValidHttpValue(soapaction.get()))
                 throw MakeStringException(-1, "SOAPAction value contained illegal characters: %s", soapaction.get());
 
-            httpHeaderName.set(helper->queryHttpHeaderName());
+            httpHeaderName.set(s.setown(helper->getHttpHeaderName()));
             if(httpHeaderName.get() && !isValidHttpValue(httpHeaderName.get()))
                 throw MakeStringException(-1, "HTTPHEADER name contained illegal characters: %s", httpHeaderName.get());
 
-            httpHeaderValue.set(helper->queryHttpHeaderValue());
+            httpHeaderValue.set(s.setown(helper->getHttpHeaderValue()));
             if(httpHeaderValue.get() && !isValidHttpValue(httpHeaderValue.get()))
                 throw MakeStringException(-1, "HTTPHEADER value contained illegal characters: %s", httpHeaderValue.get());
 
             StringAttr proxyAddress;
-            proxyAddress.set(helper->queryProxyAddress());
+            proxyAddress.set(s.setown(helper->getProxyAddress()));
             if (!proxyAddress.isEmpty())
             {
                 UrlListParser proxyUrlListParser(proxyAddress);
@@ -770,11 +772,11 @@ public:
             if ((flags & SOAPFliteral) && (flags & SOAPFencoding))
                 throw MakeStringException(0, "SOAPCALL 'LITERAL' and 'ENCODING' options are mutually exclusive");
 
-            header.set(helper->queryHeader());
-            footer.set(helper->queryFooter());
+            header.set(s.setown(helper->getHeader()));
+            footer.set(s.setown(helper->getFooter()));
             if(flags & SOAPFnamespace)
             {
-                char const * ns = helper->queryNamespaceName();
+                OwnedRoxieString ns = helper->getNamespaceName();
                 if(ns && *ns)
                     xmlnamespace.set(ns);
             }
@@ -789,13 +791,14 @@ public:
 
         if (callHelper)
         {
-            char const * ipath = callHelper->queryInputIteratorPath();
+            OwnedRoxieString iteratorPath(callHelper->getInputIteratorPath());
+            char const * ipath = iteratorPath;
             if(ipath && (*ipath == '/'))
                 ++ipath;
             inputpath.set(ipath);
         }
         
-        service.set(helper->queryService());
+        service.set(s.setown(helper->getService()));
         service.trim();
 
         if (wscType == SThttp)
@@ -803,7 +806,8 @@ public:
             service.toUpperCase();  //GET/PUT/POST
             if (strcmp(service.str(), "GET"))
                 throw MakeStringException(0, "HTTPCALL Only 'GET' service supported");
-            acceptType.set(helper->queryAcceptType());// text/html, text/xml, etc
+            OwnedRoxieString acceptTypeSupplied(helper->getAcceptType()); // text/html, text/xml, etc
+            acceptType.set(acceptTypeSupplied);
             acceptType.trim();
             acceptType.toLowerCase();
         }
@@ -817,7 +821,8 @@ public:
             rowTransformer = NULL;
         }
 
-        UrlListParser urlListParser(helper->queryHosts());
+        OwnedRoxieString hosts(helper->getHosts());
+        UrlListParser urlListParser(hosts);
         if ((numUrls = urlListParser.getUrls(urlArray)) > 0)
         {
             if (wscMode == SCrow)

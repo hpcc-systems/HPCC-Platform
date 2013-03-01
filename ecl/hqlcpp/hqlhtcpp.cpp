@@ -9300,12 +9300,12 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
         {
             if (header->queryType()->isInteger())
             {
-                classctx.addQuoted("virtual const char * queryHeader() { return NULL; }");
+                classctx.addQuoted("virtual const char * getHeader() { return NULL; }");
                 doBuildUnsignedFunction(classctx, "queryHeaderLen", header);
             }
             else
             {
-                doBuildVarStringFunction(classctx, "queryHeader", header);
+                doBuildVarStringFunction(classctx, "getHeader", header);
                 classctx.addQuoted("virtual unsigned queryHeaderLen() { return 1; }");
             }
         }
@@ -9320,7 +9320,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
                 expandDefaultString(names, terminator, "\n");
             }
             OwnedHqlExpr namesExpr = createConstant(names.str());
-            doBuildVarStringFunction(classctx, "queryHeader", namesExpr);
+            doBuildVarStringFunction(classctx, "getHeader", namesExpr);
             classctx.addQuoted("virtual unsigned queryHeaderLen() { return 1; }");
         }
 
@@ -9332,7 +9332,7 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
         else
         {
             if (queryRealChild(headerAttr, 1))
-                doBuildVarStringFunction(classctx, "queryFooter", headerAttr->queryChild(1));
+                doBuildVarStringFunction(classctx, "getFooter", headerAttr->queryChild(1));
             if (headerAttr->hasProperty(singleAtom))
                 singleHeader = true;
             else
@@ -9341,22 +9341,19 @@ void HqlCppTranslator::buildCsvParameters(BuildCtx & subctx, IHqlExpression * cs
     }
     else
     {
-        classctx.addQuoted("virtual const char * queryHeader() { return NULL; }");
+        classctx.addQuoted("virtual const char * getHeader() { return NULL; }");
         classctx.addQuoted("virtual unsigned queryHeaderLen() { return 0; }");
     }
 
 
     doBuildSizetFunction(classctx, "queryMaxSize", getCsvMaxLength(csvAttr));
 
-    buildCsvListFunc(classctx, "queryQuote", queryProperty(quoteAtom, attrs), isReading ? "'" : NULL);
-    buildCsvListFunc(classctx, "querySeparator", separator, ",");
-    buildCsvListFunc(classctx, "queryTerminator", terminator, isReading ? "\r\n|\n" : "\n");
-    buildCsvListFunc(classctx, "queryEscape", escape, NULL);
+    buildCsvListFunc(classctx, "getQuote", queryProperty(quoteAtom, attrs), isReading ? "'" : NULL);
+    buildCsvListFunc(classctx, "getSeparator", separator, ",");
+    buildCsvListFunc(classctx, "getTerminator", terminator, isReading ? "\r\n|\n" : "\n");
+    buildCsvListFunc(classctx, "getEscape", escape, NULL);
 
     StringBuffer flags;
-    // Backward compatible option hasEscape should be deprecated in next major version
-    flags.append("|supportsEscape");
-    // Proper flags
     if (!queryProperty(quoteAtom, attrs))       flags.append("|defaultQuote");
     if (!queryProperty(separatorAtom, attrs))   flags.append("|defaultSeparate");
     if (!queryProperty(terminatorAtom, attrs))  flags.append("|defaultTerminate");
@@ -9566,7 +9563,7 @@ void HqlCppTranslator::buildClusterHelper(BuildCtx & ctx, IHqlExpression * expr)
         return;
 
     BuildCtx funcctx(ctx);
-    funcctx.addQuotedCompound("virtual const char * queryCluster(unsigned idx)");
+    funcctx.addQuotedCompound("virtual const char * getCluster(unsigned idx)");
 
     BuildCtx switchctx(funcctx);
     OwnedHqlExpr var = createVariable("idx", LINK(unsignedType));
@@ -10086,12 +10083,12 @@ void HqlCppTranslator::buildXmlWriteMembers(ActivityInstance * instance, IHqlExp
 
     IHqlExpression * rowAttr = xmlAttr->queryProperty(rowAtom);
     if (rowAttr)
-        doBuildVarStringFunction(instance->startctx, "queryIteratorPath", rowAttr->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "getXmlIteratorPath", rowAttr->queryChild(0));
     IHqlExpression * headerAttr = xmlAttr->queryProperty(headingAtom);
     if (headerAttr)
     {
-        doBuildVarStringFunction(instance->startctx, "queryHeader", headerAttr->queryChild(0));
-        doBuildVarStringFunction(instance->startctx, "queryFooter", headerAttr->queryChild(1));
+        doBuildVarStringFunction(instance->startctx, "getHeader", headerAttr->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "getFooter", headerAttr->queryChild(1));
     }
     StringBuffer xmlFlags;
     if (xmlAttr->hasProperty(trimAtom))
@@ -10218,7 +10215,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             if (expr->hasProperty(repeatAtom))
             {
                 //virtual const char * getPipeProgram() { return "grep"; }
-                instance->startctx.addQuoted("virtual char * getPipeProgram() { return NULL; }");
+                instance->startctx.addQuoted("virtual const char * getPipeProgram() { return NULL; }");
 
                 BuildCtx pipeCtx(instance->startctx);
                 pipeCtx.addQuotedCompound("virtual char * getNameFromRow(const void * _self)");
@@ -10230,7 +10227,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             {
                 //virtual const char * getPipeProgram() { return "grep"; }
                 BuildCtx pipeCtx(instance->startctx);
-                pipeCtx.addQuotedCompound("virtual char * getPipeProgram()");
+                pipeCtx.addQuotedCompound("virtual const char * getPipeProgram()");
                 buildReturn(pipeCtx, pipe, unknownVarStringType);
             }
 
@@ -11046,7 +11043,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
 
     if (expr->hasProperty(repeatAtom))
     {
-        //virtual char * getPipeProgram() { return "grep"; }
+        //virtual const char * getPipeProgram() { return "grep"; }
         instance->startctx.addQuoted("virtual char * getPipeProgram() { return NULL; }");
 
         BuildCtx pipeCtx(instance->startctx);
@@ -11057,9 +11054,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
     }
     else
     {
-        //virtual char * getPipeProgram() { return "grep"; }
+        //virtual const char * getPipeProgram() { return "grep"; }
         BuildCtx pipeCtx(instance->startctx);
-        pipeCtx.addQuotedCompound("virtual char * getPipeProgram()");
+        pipeCtx.addQuotedCompound("virtual const char * getPipeProgram()");
         buildReturn(pipeCtx, pipe, unknownVarStringType);
     }
 
@@ -11095,7 +11092,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityPipeThrough(BuildCtx & ctx, IH
     else if (xmlFromPipe)
     {
         doBuildXmlReadMember(*instance, expr, "queryXmlTransformer", usesContents);
-        doBuildVarStringFunction(instance->classctx, "queryXmlIteratorPath", queryPropertyChild(xmlFromPipe, rowAtom, 0));
+        doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryPropertyChild(xmlFromPipe, rowAtom, 0));
     }
 
     StringBuffer flags;
@@ -16012,7 +16009,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
         flags.append("|TAFconstant");
 
     if (method)
-        doBuildVarStringFunction(instance->startctx, "queryAlgorithm", method);
+        doBuildVarStringFunction(instance->startctx, "getAlgorithm", method);
 
     if (!streq(flags.str(), "|TAFconstant"))
         instance->classctx.addQuotedF("virtual unsigned getAlgorithmFlags() { return %s; }", flags.str()+1);
@@ -16085,7 +16082,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityWorkunitRead(BuildCtx & ctx, I
         }
 
         if (wuid)
-            doBuildVarStringFunction(instance->classctx, "queryWUID", wuid->queryChild(0));
+            doBuildVarStringFunction(instance->classctx, "getWUID", wuid->queryChild(0));
 
         bool usesContents = false;
         if (isStored || (targetRoxie() && (sequenceValue >= 0)))
@@ -16152,7 +16149,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlParse(BuildCtx & ctx, IHqlE
     //MORE: What encoding is the search text in???
 
     doBuildParseSearchText(instance->startctx, dataset, expr->queryChild(1), type_utf8, unknownStringType);
-    doBuildVarStringFunction(instance->classctx, "queryIteratorPath", xmlAttr ? queryRealChild(xmlAttr, 0) : NULL);
+    doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", xmlAttr ? queryRealChild(xmlAttr, 0) : NULL);
 
     BuildCtx funcctx(instance->startctx);
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left, IColumnProvider * parsed)");
@@ -16532,7 +16529,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     IHqlExpression * transform = queryNewColumnProvider(expr);
     IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
 
-    // Overriding IHThorTempTableArg
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
     buildActivityFramework(instance);
     buildInstancePrefix(instance);
@@ -16661,11 +16657,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     validateExprScope(instance->startctx, dataset, hosts, opText, "host url");
     validateExprScope(instance->startctx, dataset, service, opText, "service");
 
-    //virtual const char * queryHosts() = 0;
-    doBuildVarStringFunction(instance->startctx, "queryHosts", hosts);
+    //virtual const char * getHosts() = 0;
+    doBuildVarStringFunction(instance->startctx, "getHosts", hosts);
 
-    //virtual const char * queryService() = 0;
-    doBuildVarStringFunction(instance->startctx, "queryService", service);
+    //virtual const char * getService() = 0;
+    doBuildVarStringFunction(instance->startctx, "getService", service);
 
     //virtual void toXML(const byte * self, StringBuffer & out) = 0;
     buildSOAPtoXml(instance->startctx, dataset, expr->queryChild(firstArg+3), selSeq);
@@ -16675,30 +16671,30 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
     if (separator)
         doBuildVarStringFunction(instance->startctx, "queryOutputIteratorPath", separator->queryChild(0));
 
-    //virtual const char * queryHeader()
-    //virtual const char * queryFooter()
+    //virtual const char * getHeader()
+    //virtual const char * getFooter()
     IHqlExpression * header = expr->queryProperty(headingAtom);
     if (header)
     {
-        doBuildVarStringFunction(instance->startctx, "queryHeader", header->queryChild(0));
-        doBuildVarStringFunction(instance->startctx, "queryFooter", header->queryChild(1));
+        doBuildVarStringFunction(instance->startctx, "getHeader", header->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "getFooter", header->queryChild(1));
     }
 
     IHqlExpression * action = expr->queryProperty(soapActionAtom);
     if (action)
-        doBuildVarStringFunction(instance->startctx, "querySoapAction", action->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "getSoapAction", action->queryChild(0));
 
     IHqlExpression * httpHeader = expr->queryProperty(httpHeaderAtom);
     if (httpHeader)
     {
-        doBuildVarStringFunction(instance->startctx, "queryHttpHeaderName", httpHeader->queryChild(0));
-        doBuildVarStringFunction(instance->startctx, "queryHttpHeaderValue", httpHeader->queryChild(1));
+        doBuildVarStringFunction(instance->startctx, "getHttpHeaderName", httpHeader->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "getHttpHeaderValue", httpHeader->queryChild(1));
     }
 
     IHqlExpression * proxyAddress = expr->queryProperty(proxyAddressAtom);
     if (proxyAddress)
     {
-        doBuildVarStringFunction(instance->startctx, "queryProxyAddress", proxyAddress->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "getProxyAddress", proxyAddress->queryChild(0));
     }
 
     IHqlExpression * namespaceAttr = expr->queryProperty(namespaceAtom);
@@ -16766,9 +16762,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
 
     if (namespaceAttr)
     {
-        doBuildVarStringFunction(instance->startctx, "queryNamespaceName", namespaceAttr->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "getNamespaceName", namespaceAttr->queryChild(0));
         if (namespaceAttr->queryChild(1))
-            doBuildVarStringFunction(instance->startctx, "queryNamespaceVar", namespaceAttr->queryChild(1));
+            doBuildVarStringFunction(instance->startctx, "getNamespaceVar", namespaceAttr->queryChild(1));
     }
 
     if (logText)
@@ -16791,10 +16787,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySOAP(BuildCtx & ctx, IHqlExpre
         if (usesContents)
             throwError(HQLERR_ContentsInSoapCall);
 
-        //virtual const char * queryInputIteratorPath()
+        //virtual const char * getInputIteratorPath()
         IHqlExpression * xpath = expr->queryProperty(xpathAtom);
         if (xpath)
-            doBuildVarStringFunction(instance->classctx, "queryInputIteratorPath", xpath->queryChild(0));
+            doBuildVarStringFunction(instance->classctx, "getInputIteratorPath", xpath->queryChild(0));
 
         IHqlExpression * onFail = expr->queryProperty(onFailAtom);
         if (onFail)
@@ -16840,14 +16836,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
 
     buildInstancePrefix(instance);
 
-    //virtual const char * queryHosts() = 0;
-    doBuildVarStringFunction(instance->startctx, "queryHosts", expr->queryChild(firstArg));
+    //virtual const char * getHosts() = 0;
+    doBuildVarStringFunction(instance->startctx, "getHosts", expr->queryChild(firstArg));
 
-    //virtual const char * queryService() = 0;
-    doBuildVarStringFunction(instance->startctx, "queryService", expr->queryChild(firstArg+1));
+    //virtual const char * getService() = 0;
+    doBuildVarStringFunction(instance->startctx, "getService", expr->queryChild(firstArg+1));
 
-    //virtual const char * queryAcceptType() = 0;
-    doBuildVarStringFunction(instance->startctx, "queryAcceptType", expr->queryChild(firstArg+2));
+    //virtual const char * getAcceptType() = 0;
+    doBuildVarStringFunction(instance->startctx, "getAcceptType", expr->queryChild(firstArg+2));
 
     //virtual void toXML(const byte * self, StringBuffer & out) = 0;
     buildHTTPtoXml(instance->startctx);
@@ -16917,9 +16913,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
 
     if (namespaceAttr)
     {
-        doBuildVarStringFunction(instance->startctx, "queryNamespaceName", namespaceAttr->queryChild(0));
+        doBuildVarStringFunction(instance->startctx, "getNamespaceName", namespaceAttr->queryChild(0));
         if (namespaceAttr->queryChild(1))
-            doBuildVarStringFunction(instance->startctx, "queryNamespaceVar", namespaceAttr->queryChild(1));
+            doBuildVarStringFunction(instance->startctx, "getNamespaceVar", namespaceAttr->queryChild(1));
     }
 
     if (logText)
@@ -16937,10 +16933,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityHTTP(BuildCtx & ctx, IHqlExpre
         if (usesContents)
             throwError(HQLERR_ContentsInSoapCall);
 
-        //virtual const char * queryInputIteratorPath()
+        //virtual const char * getInputIteratorPath()
         IHqlExpression * xpath = expr->queryProperty(xpathAtom);
         if (xpath)
-            doBuildVarStringFunction(instance->classctx, "queryInputIteratorPath", xpath->queryChild(0));
+            doBuildVarStringFunction(instance->classctx, "getInputIteratorPath", xpath->queryChild(0));
 
         IHqlExpression * onFail = expr->queryProperty(onFailAtom);
         if (onFail)

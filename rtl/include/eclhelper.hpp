@@ -21,6 +21,15 @@
 /*
 This file contains interface definitions for the meta-information, dataset processing an activities.
 It should only contain pure interface definitions or inline functions.
+
+A note on naming conventions:
+  getXXX implies that the returned value should be released by the caller
+  queryXXX implies that it should not
+
+Methods named getXXX returning const char * from generated code will return a value that MAY need releasing (via roxiemem)
+or that may be constants. Callers should always call roxiemem::ReleaseRoxieRow on the returned value - this will do nothing
+if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieString is the easiest way to achieve this.
+
 */
 
 #include "jscm.hpp"
@@ -453,7 +462,6 @@ protected:
 
 interface IXmlToRowTransformer;
 interface ICsvToRowTransformer;
-interface IHThorCountIndexArg;
 interface IHThorCountFileArg;
 interface IThorDiskCallback;
 interface IThorIndexCallback;
@@ -557,10 +565,6 @@ interface ICodeContext : public IResourceContext
 
     // File resolution etc
 
-    virtual __int64 countDiskFile(const char * lfn, unsigned recordSize) = 0;
-    virtual __int64 countIndex(__int64 activityId, IHThorCountIndexArg & arg) = 0;
-    virtual __int64 countDiskFile(__int64 activityId, IHThorCountFileArg & arg) = 0;        // only used for roxie...
-
     virtual char * getExpandLogicalName(const char * logicalName) = 0;
     virtual unsigned __int64 getFileOffset(const char *logicalPart) = 0;
     virtual char *getFilePart(const char *logicalPart, bool create=false) = 0; // caller frees return string.
@@ -583,6 +587,8 @@ interface ICodeContext : public IResourceContext
     // Memory management
 
     virtual IEngineRowAllocator * getRowAllocator(IOutputMetaData * meta, unsigned activityId) const = 0;
+    virtual const char * cloneVString(const char *str) const = 0;
+    virtual const char * cloneVString(size32_t len, const char *str) const = 0;
 
     // Called from generated code for FROMXML/TOXML
 
@@ -697,7 +703,6 @@ enum ThorActivityKind
     TAKworkunitwrite,
     TAKfunnel,
     TAKapply,
-    TAKtemptable,
     TAKhashdistribute,
     TAKhashdedup,
     TAKnormalize,
@@ -825,7 +830,6 @@ enum ThorActivityKind
     TAKlinkedrawiterator,
     TAKnormalizelinkedchild,
     TAKfilterproject,
-    TAKtemprow,
     TAKdiskexists,              // non-grouped count of dataset (not child), (may filter input)
     TAKindexexists,
     TAKchildexists,
@@ -860,7 +864,6 @@ enum ActivityInterfaceEnum
     TAIarg,
     TAIpipereadarg_1,
     TAIindexwritearg_1,
-    TAIcountarg_1,
     TAIfirstnarg_1,
     TAIchoosesetsarg_1,
     TAIchoosesetsexarg_1,
@@ -891,7 +894,6 @@ enum ActivityInterfaceEnum
     TAIthroughaggregateextra_1,
     TAIdistributionarg_1,
     TAIhashaggregateextra_1,
-    TAItemptablearg_1,
     TAIsamplearg_1,
     TAIentharg_1,
     TAIfunnelarg_1,
@@ -906,7 +908,6 @@ enum ActivityInterfaceEnum
     TAIalljoinarg_1,
     TAIhashjoinextra_1,
     TAIkeyeddistributearg_1,
-    TAIcountindexarg_1,
     TAIcountfilearg_1,
     TAIbinfetchextra_1,
     TAIworkunitwritearg_1,
@@ -1137,15 +1138,11 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual unsigned getExpiryDays() = 0;
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) = 0;
     virtual unsigned getFormatCrc() = 0;
-    virtual const char * queryCluster(unsigned idx) = 0;        // result only valid until next call.
+    virtual const char * getCluster(unsigned idx) = 0;
     virtual bool getIndexLayout(size32_t & _retLen, void * & _retData) = 0;
     virtual bool getIndexMeta(size32_t & lenName, char * & name, size32_t & lenValue, char * & value, unsigned idx) = 0;
     virtual unsigned getWidth() = 0;                // only guaranteed present if TIWhaswidth defined
     virtual ICompare * queryCompare() = 0;          // only guaranteed present if TIWhaswidth defined
-};
-
-struct IHThorCountArg : public IHThorArg
-{
 };
 
 struct IHThorFirstNArg : public IHThorArg
@@ -1182,7 +1179,7 @@ struct IHThorDiskWriteArg : public IHThorArg
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) = 0;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) = 0;
     virtual unsigned getFormatCrc() = 0;
-    virtual const char * queryCluster(unsigned idx) = 0;        // result only valid until next call.
+    virtual const char * getCluster(unsigned idx) = 0;
 };
 
 struct IHThorFilterArg : public IHThorArg
@@ -1439,20 +1436,6 @@ struct IHThorHashAggregateArg : public IHThorAggregateArg, public IHThorHashAggr
     COMMON_NEWTHOR_FUNCTIONS
 };
 
-/*
- * This class has been deprecated in 3.8 in favour of IHThorInlineTableArg.
- * CThorTempRowArg also now derives from IHThorInlineTableArg.
- *
- * As of 3.8, only old code will implement this interface.
- */
-struct IHThorTempTableArg : public IHThorArg
-{
-    virtual size32_t getRow(ARowBuilder & rowBuilder, unsigned row) = 0;
-    virtual unsigned numRows() = 0;
-    virtual bool isConstant()                           { return true; }    // deprecated in favour of getFlags
-    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) = 0;            // deprecated, TempRow derives from InlineTable
-};
-
 struct IHThorInlineTableArg : public IHThorArg
 {
     virtual size32_t getRow(ARowBuilder & rowBuilder, __uint64 row) = 0;
@@ -1531,7 +1514,7 @@ struct IHThorSortArg : public IHThorArg
 struct IHThorAlgorithm : public IInterface
 {
     virtual unsigned getAlgorithmFlags() = 0;
-    virtual const char * queryAlgorithm() = 0;
+    virtual const char * getAlgorithm() = 0;
 };
 
 typedef IHThorSortArg IHThorSortedArg;
@@ -1757,18 +1740,6 @@ struct IHThorKeyedDistributeArg : public IHThorArg
 };
 
 
-struct IHThorCountIndexArg : public IHThorArg
-{
-    // Inside the indexRead remote activity:
-    virtual const char * getIndexFileName() = 0;
-    virtual IOutputMetaData * queryIndexRecordSize() = 0; //Excluding fpos and sequence
-    virtual void createSegmentMonitors(IIndexReadContext *ctx) = 0;
-    virtual bool hasPostFilter() { return false; };
-    virtual size32_t isValid(const void * src, unsigned __int64 _fpos, IBlobProvider * blobs) { return true; }
-    virtual void extractLookupFields() {}
-    virtual bool canMatchAny()                              { return true; }
-};
-
 struct IHThorCountFileArg : public IHThorArg
 {
     virtual const char * getFileName() = 0;
@@ -1883,9 +1854,9 @@ enum
 struct IHThorKeyDiffArg : public IHThorArg
 {
     virtual unsigned getFlags() = 0;
-    virtual const char * queryOriginalName() = 0;
-    virtual const char * queryUpdatedName() = 0;
-    virtual const char * queryOutputName() = 0;
+    virtual const char * getOriginalName() = 0;
+    virtual const char * getUpdatedName() = 0;
+    virtual const char * getOutputName() = 0;
     virtual int getSequence() = 0;
     virtual unsigned getExpiryDays() = 0;
 };
@@ -1893,9 +1864,9 @@ struct IHThorKeyDiffArg : public IHThorArg
 struct IHThorKeyPatchArg : public IHThorArg
 {
     virtual unsigned getFlags() = 0;
-    virtual const char * queryOriginalName() = 0;           // may be null
-    virtual const char * queryPatchName() = 0;
-    virtual const char * queryOutputName() = 0;
+    virtual const char * getOriginalName() = 0;           // may be null
+    virtual const char * getPatchName() = 0;
+    virtual const char * getOutputName() = 0;
     virtual int getSequence() = 0;
     virtual unsigned getExpiryDays() = 0;
 };
@@ -1909,7 +1880,7 @@ struct IHThorWorkunitReadArg : public IHThorArg
 {
     virtual const char * queryName() = 0;
     virtual int querySequence() = 0;
-    virtual const char * queryWUID() = 0;
+    virtual const char * getWUID() = 0;
     virtual ICsvToRowTransformer * queryCsvTransformer() = 0;
     virtual IXmlToRowTransformer * queryXmlTransformer() = 0;
 };
@@ -1950,18 +1921,17 @@ struct ICsvParameters
         preserveWhitespace =  0x0020,
         manyHeaderFooter =    0x0040,
         defaultEscape =       0x0080,
-        supportsEscape =      0x0100, // MORE: deprecate on next major version
     }; // flags values
     virtual unsigned     getFlags() = 0;
     virtual bool         queryEBCDIC() = 0;
-    virtual const char * queryHeader()              { return NULL; }
+    virtual const char * getHeader()              { return NULL; }
     virtual unsigned     queryHeaderLen() = 0;
     virtual size32_t     queryMaxSize() = 0;
-    virtual const char * queryQuote(unsigned idx) = 0;
-    virtual const char * querySeparator(unsigned idx) = 0;
-    virtual const char * queryTerminator(unsigned idx) = 0;
-    virtual const char * queryEscape(unsigned idx) = 0;
-    virtual const char * queryFooter()              { return NULL; }
+    virtual const char * getQuote(unsigned idx) = 0;
+    virtual const char * getSeparator(unsigned idx) = 0;
+    virtual const char * getTerminator(unsigned idx) = 0;
+    virtual const char * getEscape(unsigned idx) = 0;
+    virtual const char * getFooter()              { return NULL; }
 };
 
 struct ITypedOutputStream
@@ -2005,7 +1975,7 @@ struct IHThorCsvFetchArg : public IHThorFetchBaseArg, public IHThorFetchContext,
 struct IHThorXmlParseArg : public IHThorArg
 {
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * left, IColumnProvider * parsed) = 0;
-    virtual const char * queryIteratorPath() = 0;
+    virtual const char * getXmlIteratorPath() = 0;
     virtual void getSearchText(size32_t & retLen, char * & retText, const void * _self) = 0;
     virtual bool searchTextNeedsFree() = 0;
     virtual bool requiresContents() { return false; }
@@ -2014,7 +1984,6 @@ struct IHThorXmlParseArg : public IHThorArg
 struct IHThorXmlFetchExtra : public IInterface
 {
     virtual size32_t transform(ARowBuilder & rowBuilder, IColumnProvider * rowLeft, const void * right, unsigned __int64 _fpos) = 0;
-    virtual const char * queryIteratorPath() = 0;               // required so that xpaths to extract data are correct
     virtual bool requiresContents() { return false; }
 };
 
@@ -2027,9 +1996,9 @@ struct IHThorXmlFetchArg : public IHThorFetchBaseArg, public IHThorFetchContext,
 struct IHThorXmlWriteExtra : public IInterface
 {
     virtual void toXML(const byte * self, IXmlWriter & out) = 0;
-    virtual const char * queryIteratorPath()           { return NULL; }             // supplies the prefix and suffix for a row
-    virtual const char * queryHeader()                 { return NULL; }
-    virtual const char * queryFooter()                 { return NULL; }
+    virtual const char * getXmlIteratorPath()         { return NULL; }             // supplies the prefix and suffix for a row
+    virtual const char * getHeader()                   { return NULL; }
+    virtual const char * getFooter()                   { return NULL; }
     virtual unsigned getXmlFlags()                     { return 0; }
 };
 
@@ -2064,12 +2033,12 @@ struct IHThorPipeReadArg : public IHThorArg
     virtual unsigned getPipeFlags() = 0;
     virtual ICsvToRowTransformer * queryCsvTransformer() = 0;
     virtual IXmlToRowTransformer * queryXmlTransformer() = 0;
-    virtual const char * queryXmlIteratorPath() = 0;
+    virtual const char * getXmlIteratorPath() = 0;
 };
 
 struct IHThorPipeWriteArg : public IHThorArg
 {
-    virtual char * getPipeProgram() = 0;
+    virtual const char * getPipeProgram() = 0;
     virtual int getSequence() = 0;
     virtual IOutputMetaData * queryDiskRecordSize() = 0;
     virtual char * getNameFromRow(const void * _self)       { return NULL; }
@@ -2081,7 +2050,7 @@ struct IHThorPipeWriteArg : public IHThorArg
 
 struct IHThorPipeThroughArg : public IHThorArg
 {
-    virtual char * getPipeProgram() = 0;
+    virtual const char * getPipeProgram() = 0;
     virtual char * getNameFromRow(const void * _self)       { return NULL; }
     virtual bool recreateEachRow()                          { return false; }
     virtual unsigned getPipeFlags() = 0;
@@ -2089,7 +2058,7 @@ struct IHThorPipeThroughArg : public IHThorArg
     virtual IHThorXmlWriteExtra * queryXmlOutput() = 0;
     virtual ICsvToRowTransformer * queryCsvTransformer() = 0;
     virtual IXmlToRowTransformer * queryXmlTransformer() = 0;
-    virtual const char * queryXmlIteratorPath() = 0;
+    virtual const char * getXmlIteratorPath() = 0;
 };
 
 
@@ -2111,28 +2080,26 @@ enum
 
 struct IHThorWebServiceCallActionArg : public IHThorArg
 {
-    virtual const char * queryHosts() = 0;
-    virtual const char * queryService() = 0;
+    virtual const char * getHosts() = 0;
+    virtual const char * getService() = 0;
 
 //writing to the soap service.
     virtual void toXML(const byte * self, IXmlWriter & out) = 0;
-    virtual const char * queryHeader()                  { return NULL; }
-    virtual const char * queryFooter()                  { return NULL; }
+    virtual const char * getHeader()                  { return NULL; }
+    virtual const char * getFooter()                  { return NULL; }
     virtual unsigned getFlags() = 0;
     virtual unsigned numParallelThreads()               { return 0; }
     virtual unsigned numRecordsPerBatch()               { return 0; }
-    virtual const char * queryUserName()                { return NULL; }
-    virtual const char * queryPassword()                { return NULL; }
     virtual int numRetries()                             { return -1; }
     virtual double getTimeout()                         { return (double)-1.0; }
     virtual double getTimeLimit()                       { return (double)0.0; }
-    virtual const char * querySoapAction()              { return NULL; }
-    virtual const char * queryNamespaceName()           { return NULL; }
-    virtual const char * queryNamespaceVar()            { return NULL; }
-    virtual const char * queryHttpHeaderName()          { return NULL; }
-    virtual const char * queryHttpHeaderValue()         { return NULL; }
-    virtual const char * queryProxyAddress()            { return NULL; }
-    virtual const char * queryAcceptType()              { return NULL; }
+    virtual const char * getSoapAction()              { return NULL; }
+    virtual const char * getNamespaceName()           { return NULL; }
+    virtual const char * getNamespaceVar()            { return NULL; }
+    virtual const char * getHttpHeaderName()          { return NULL; }
+    virtual const char * getHttpHeaderValue()         { return NULL; }
+    virtual const char * getProxyAddress()            { return NULL; }
+    virtual const char * getAcceptType()              { return NULL; }
 };
 typedef IHThorWebServiceCallActionArg IHThorSoapActionArg ;
 typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;
@@ -2141,7 +2108,7 @@ typedef IHThorWebServiceCallActionArg IHThorHttpActionArg ;
 struct IHThorWebServiceCallExtra : public IInterface
 {
     virtual IXmlToRowTransformer * queryInputTransformer() = 0;
-    virtual const char * queryInputIteratorPath()       { return NULL; }
+    virtual const char * getInputIteratorPath()       { return NULL; }
     virtual size32_t onFailTransform(ARowBuilder & rowBuilder, const void * left, IException * e) { return 0; }
     virtual void getLogText(size32_t & lenText, char * & text, const void * left) = 0;  // iff SOAPFlogusermsg set
 };
@@ -2456,7 +2423,7 @@ struct IHThorCsvReadArg: public IHThorDiskReadBaseArg
 struct IHThorXmlReadArg: public IHThorDiskReadBaseArg
 {
     virtual IXmlToRowTransformer * queryTransformer() = 0;
-    virtual const char * queryIteratorPath() = 0;
+    virtual const char * getXmlIteratorPath() = 0;
     virtual unsigned __int64 getChooseNLimit() = 0;
     virtual unsigned __int64 getRowLimit() = 0;
     virtual void onLimitExceeded() = 0;

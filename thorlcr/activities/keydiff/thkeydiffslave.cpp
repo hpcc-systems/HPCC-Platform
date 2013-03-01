@@ -77,8 +77,10 @@ public:
         }
 
         StringBuffer originalFilePart, updatedFilePart;
-        locateFilePartPath(this, helper->queryOriginalName(), *originalIndexPart, originalFilePart);
-        locateFilePartPath(this, helper->queryUpdatedName(), *updatedIndexPart, updatedFilePart);
+        OwnedRoxieString origName(helper->getOriginalName());
+        OwnedRoxieString updatedName(helper->getUpdatedName());
+        locateFilePartPath(this, origName, *originalIndexPart, originalFilePart);
+        locateFilePartPath(this, updatedName, *updatedIndexPart, updatedFilePart);
         StringBuffer patchFilePath;
         getPartFilename(*patchPart, 0, patchFilePath);
         if (globals->getPropBool("@replicateAsync", true))
@@ -94,8 +96,8 @@ public:
             if (!copyTlk)
             {
                 StringBuffer tmp;
-                locateFilePartPath(this, tmp.clear().append(helper->queryOriginalName()).append(" [TLK]").str(), *originalIndexTlkPart, originalFilePart.clear());
-                locateFilePartPath(this, tmp.clear().append(helper->queryUpdatedName()).append(" [TLK]").str(), *updatedIndexTlkPart, updatedFilePart.clear());
+                locateFilePartPath(this, tmp.clear().append(origName).append(" [TLK]").str(), *originalIndexTlkPart, originalFilePart.clear());
+                locateFilePartPath(this, tmp.clear().append(updatedName).append(" [TLK]").str(), *updatedIndexTlkPart, updatedFilePart.clear());
                 getPartFilename(*patchTlkPart, 0, tmp.clear());
                 tlkDiffGenerator.setown(createKeyDiffGenerator(originalFilePart.str(), updatedFilePart.str(), tmp.str(), 0, true, COMPRESS_METHOD_LZMA));
             }
@@ -126,7 +128,8 @@ public:
                 {
                     StringBuffer patchFilePathTlk, updatedFilePartTlk, tmp;
                     getPartFilename(*patchTlkPart, 0, patchFilePathTlk);
-                    locateFilePartPath(this, tmp.append(helper->queryUpdatedName()).append(" [TLK]").str(), *updatedIndexTlkPart, updatedFilePartTlk);
+                    OwnedRoxieString updatedName(helper->getUpdatedName());
+                    locateFilePartPath(this, tmp.append(updatedName).append(" [TLK]").str(), *updatedIndexTlkPart, updatedFilePartTlk);
                     OwnedIFile dstIFileTlk = createIFile(patchFilePathTlk.str());
                     OwnedIFile updatedIFileTlk = createIFile(updatedFilePartTlk.str());
                     copyFile(dstIFileTlk, updatedIFileTlk);

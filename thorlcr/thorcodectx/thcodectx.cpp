@@ -97,6 +97,16 @@ IEngineRowAllocator * CThorCodeContextBase::getRowAllocator(IOutputMetaData * me
     return job.getRowAllocator(meta, activityId);
 }
 
+const char * CThorCodeContextBase::cloneVString(const char * str) const
+{
+    return job.queryRowManager()->cloneVString(str);
+}
+
+const char * CThorCodeContextBase::cloneVString(size32_t len, const char * str) const
+{
+    return job.queryRowManager()->cloneVString(len, str);
+}
+
 ILocalGraph *CThorCodeContextBase::resolveLocalQuery(__int64 gid)
 {
     ILocalGraph *graph = job.getGraph((graph_id)gid);

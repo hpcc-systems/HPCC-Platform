@@ -23,6 +23,9 @@
 #include "csvsplitter.hpp"
 #include "rtlread_imp.hpp"
 #include "rtlds_imp.hpp"
+#include "roxiemem.hpp"
+
+using roxiemem::OwnedRoxieString;
 
 //=====================================================================================================
 
@@ -322,11 +325,12 @@ public:
         if (flags & TPFwritexmltopipe)
         {
             assertex(xmlWriterExtra);
-            const char * path = xmlWriterExtra->queryIteratorPath();
-            if (!path)
+            OwnedRoxieString xmlpath(xmlWriterExtra->getXmlIteratorPath());
+            if (!xmlpath)
                 rowTag.append("Row");
             else
             {
+                const char *path = xmlpath;
                 if (*path == '/') 
                     path++;
                 if (strchr(path, '/')) 
@@ -334,16 +338,16 @@ public:
                 rowTag.append(path);
             }
 
-            //queryHeader/footer can return a tag name, or NULL (indicates to use the default tag), or "" (do not use header/footer)
+            //getHeader/footer can return a tag name, or NULL (indicates to use the default tag), or "" (do not use header/footer)
             if (!(flags & TPFwritenoroot))
             {
-                const char * hdr = xmlWriterExtra->queryHeader();
+                OwnedRoxieString hdr(xmlWriterExtra->getHeader());
                 if (hdr == NULL)
                     header.append("<Dataset>\n");
                 else
                     header.append(hdr);
 
-                const char * ftr = xmlWriterExtra->queryFooter();
+                OwnedRoxieString ftr(xmlWriterExtra->getFooter());
                 if (ftr == NULL) 
                     footer.append("</Dataset>\n");
                 else
@@ -355,7 +359,7 @@ public:
             assertex(csvWriterExtra);
             ICsvParameters * csv = csvWriterExtra->queryCsvParameters(); 
             csvWriter.init(csv, false);
-            const char * hdr = csv->queryHeader();
+            OwnedRoxieString hdr(csv->getHeader());
             if (hdr) 
             {
                 csvWriter.beginLine();
@@ -363,7 +367,7 @@ public:
                 header.append(csvWriter.str());
             }
 
-            const char * ftr = csv->queryFooter();
+            OwnedRoxieString ftr(csv->getFooter());
             if (ftr) 
             {
                 csvWriter.beginLine();

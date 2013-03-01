@@ -40,13 +40,14 @@ public:
     virtual void write()
     {
         StringBuffer rowTag;
-        const char * path = helper->queryIteratorPath();
-        if (!path)
+        OwnedRoxieString xmlpath(helper->getXmlIteratorPath());
+        if (!xmlpath)
         {
             rowTag.append("Row");
         }
         else
         {
+            const char *path = xmlpath;
             if (*path == '/') path++;
             if (strchr(path, '/')) UNIMPLEMENTED;
             rowTag.append(path);
@@ -56,7 +57,7 @@ public:
         CommonXmlWriter xmlWriter(helper->getXmlFlags());
         if (!dlfn.isExternal() || firstNode()) // if external, 1 header,footer
         {
-            const char * header = helper->queryHeader();
+            OwnedRoxieString header(helper->getHeader());
             if (header)
                 xmlOutput.clear().append(header);
             else
@@ -80,7 +81,7 @@ public:
         }
         if (!dlfn.isExternal() || lastNode()) // if external, 1 header,footer
         {
-            const char * footer = helper->queryFooter();
+            OwnedRoxieString footer(helper->getFooter());
             if (footer)
                 xmlOutput.clear().append(footer);
             else

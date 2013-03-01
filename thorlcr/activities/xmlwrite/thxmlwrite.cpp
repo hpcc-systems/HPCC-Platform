@@ -40,11 +40,12 @@ public:
 
         IPropertyTree &props = fileDesc->queryProperties();
         StringBuffer rowTag;
-        const char * path = helper->queryIteratorPath();
-        if (!path)
+        OwnedRoxieString xmlpath(helper->getXmlIteratorPath());
+        if (!xmlpath)
             rowTag.append("Row");
         else
         {
+            const char *path = xmlpath;
             if (*path == '/') path++;
             if (strchr(path, '/')) UNIMPLEMENTED;
             rowTag.append(path);

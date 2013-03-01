@@ -55,7 +55,10 @@ public:
     {
         assertex(helper);
         if (!recreate)
-            openPipe(helper->getPipeProgram());
+        {
+            OwnedRoxieString pipeProgram(helper->getPipeProgram());
+            openPipe(pipeProgram);
+        }
     }
     void abort()
     {

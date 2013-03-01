@@ -150,7 +150,8 @@ public:
                     tlkDesc.setown(deserializePartFileDescriptor(data));
                 else if (!isLocal) // exising tlk then..
                 {
-                    assertex(helper->getDistributeIndexName());
+                    OwnedRoxieString diName(helper->getDistributeIndexName());
+                    assertex(diName.get());
                     tlkDesc.setown(deserializePartFileDescriptor(data));
                     unsigned c;
                     data.read(c);
@@ -166,7 +167,7 @@ public:
                         }
                     }
                     if (!existingTlkIFile)
-                        throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", helper->getDistributeIndexName());
+                        throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", diName.get());
                 }
             }
         }
@@ -214,9 +215,15 @@ public:
             StringBuffer name(nameLen, nameBuff);
             StringBuffer value(valueLen, valueBuff);
             if(*nameBuff == '_' && strcmp(name, "_nodeSize") != 0)
-                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), helper->getFileName());
+            {
+                OwnedRoxieString fname(helper->getFileName());
+                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (names beginning with underscore are reserved)", name.str(), fname.get());
+            }
             if(!validateXMLTag(name.str()))
-                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), helper->getFileName());
+            {
+                OwnedRoxieString fname(helper->getFileName());
+                throw MakeActivityException(this, 0, "Invalid name %s in user metadata for index %s (not legal XML element name)", name.str(), fname.get());
+            }
             if(!metadata) metadata.setown(createPTree("metadata"));
             metadata->setProp(name.str(), value.str());
         }

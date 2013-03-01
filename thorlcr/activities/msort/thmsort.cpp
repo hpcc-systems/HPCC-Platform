@@ -41,11 +41,11 @@ public:
     {
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
         IHThorAlgorithm *algo = static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1));
-        char const *algoname = algo->queryAlgorithm();
+        OwnedRoxieString algoname = algo->getAlgorithm();
         unsigned flags = algo->getAlgorithmFlags();
         if (algoname && (0 != stricmp(algoname, "quicksort")))
         {
-            Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname);
+            Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
             reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
         }
     }
@@ -77,11 +77,11 @@ protected:
     {
         IHThorSortArg *helper = (IHThorSortArg *)queryHelper();
         IHThorAlgorithm *algo = static_cast<IHThorAlgorithm *>(helper->selectInterface(TAIalgorithm_1));
-        char const *algoname = algo->queryAlgorithm();
+        OwnedRoxieString algoname(algo->getAlgorithm());
         unsigned flags = algo->getAlgorithmFlags();
         if (algoname && (0 != stricmp(algoname, "quicksort")))
         {
-            Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname);
+            Owned<IException> e = MakeActivityException(this, 0, "Ignoring, unsupported sort order algorithm '%s'", algoname.get());
             reportExceptionToWorkunit(container.queryJob().queryWorkUnit(), e);
         }
     }
@@ -136,7 +136,7 @@ protected:
                 skewThreshold = container.queryJob().getWorkUnitValueInt("defaultSkewThreshold", 0);
         }
         StringBuffer cosortfilenames;
-        const char *cosortlogname = helper->getSortedFilename();
+        OwnedRoxieString cosortlogname(helper->getSortedFilename());
         if (cosortlogname&&*cosortlogname) {
 
             Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), cosortlogname);

@@ -2370,6 +2370,30 @@ public:
         return normalHeap.doAllocate(activityId);
     }
 
+    virtual const char *cloneVString(size32_t len, const char *str)
+    {
+        if (str)
+        {
+            char *ret = (char *) allocate(len+1, 0);
+            memcpy(ret, str, len);
+            ret[len] = 0;
+            return (const char *) ret;
+        }
+        else
+        {
+            assertex(len==0);
+            return NULL;
+        }
+    }
+
+    virtual const char *cloneVString(const char *str)
+    {
+        if (str)
+            return cloneVString(strlen(str), str);
+        else
+            return NULL;
+    }
+
     virtual void setMemoryLimit(memsize_t bytes, memsize_t spillSize)
     {
         memsize_t systemMemoryLimit = getTotalMemoryLimit();

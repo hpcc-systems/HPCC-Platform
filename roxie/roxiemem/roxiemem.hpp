@@ -333,6 +333,30 @@ private:
     void * ptr;
 };
 
+class OwnedRoxieString
+{
+public:
+    inline OwnedRoxieString()                               { ptr = NULL; }
+    inline OwnedRoxieString(const char * _ptr)             { ptr = _ptr; }
+    inline OwnedRoxieString(const OwnedRoxieString & other) { ptr = other.getLink(); }
+
+    inline ~OwnedRoxieString() { ReleaseRoxieRow(ptr); }
+
+    inline operator const char *() const { return ptr; }
+    inline const char * get() const { return ptr; }
+    inline const char * getLink() const { LinkRoxieRow(ptr); return ptr; }
+    inline const char * set(const char * _ptr) { const char * temp = ptr; if (_ptr) LinkRoxieRow(_ptr); ptr = _ptr; ReleaseRoxieRow(temp); return ptr; }
+    inline const char * setown(const char * _ptr) { const char * temp = ptr; ptr = _ptr; ReleaseRoxieRow(temp); return ptr; }
+
+private:
+    /* Disable use of some constructs that often cause memory leaks by creating private members */
+    void operator = (const void * _ptr)              {  }
+    void operator = (const OwnedRoxieString & other) { }
+    void setown(const OwnedRoxieString &other) {  }
+
+private:
+    const char * ptr;
+};
 
 interface IFixedRowHeap : extends IInterface
 {
@@ -378,6 +402,8 @@ interface IRowResizeCallback
 interface IRowManager : extends IInterface
 {
     virtual void *allocate(memsize_t size, unsigned activityId) = 0;
+    virtual const char *cloneVString(const char *str) = 0;
+    virtual const char *cloneVString(size32_t len, const char *str) = 0;
     virtual void resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, IRowResizeCallback & callback) = 0;
     virtual void resizeRow(memsize_t & capacity, void * & original, memsize_t copysize, memsize_t newsize, unsigned activityId) = 0;
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;
