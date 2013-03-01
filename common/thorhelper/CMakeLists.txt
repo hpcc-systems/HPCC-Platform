@@ -94,6 +94,7 @@ target_link_libraries ( thorhelper
          roxiemem
          deftype 
          securesocket 
+         dalibase 
     )
 
 
