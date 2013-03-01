@@ -92,6 +92,9 @@ require([
             //  Plugin wrapper  ---
             clear: function () {
                 if (this._plugin) {
+                    this.xgmml = "";
+                    this.svg = "";
+                    this.dot = "";
                     this._plugin.clear();
                 }
             },

@@ -109,6 +109,9 @@ define([
     });
 
     var WorkunitData = declare([Stateful], {
+        Wuid: "",
+        changedCount: 0,
+
         _StateIDSetter: function (StateID) {
             if (this.StateID !== StateID) {
                 this.StateID = StateID;
@@ -185,6 +188,12 @@ define([
 
         timers: [],
 
+        _assertHasWuid: function () {
+            if (!this.Wuid) {
+                throw new Error("Wuid cannot be empty.");
+            }
+        },
+
         onCreate: function () {
         },
         onUpdate: function () {
@@ -193,8 +202,8 @@ define([
         },
         constructor: function (args) {
             this.inherited(arguments);
+            declare.safeMixin(this, args);
             this.wu = this;
-            this.setTimer(1000);
         },
         isComplete: function () {
             return this.hasCompleted;
@@ -215,7 +224,7 @@ define([
                 this.killTimer();
                 return;
             } else {
-                if (this._timerTickCount < 5 && this._timerTickCount % 5 === 0) {
+                if (this._timerTickCount < 5 && this._timerTickCount % 1 === 0) {
                     this.refresh();
                 } else if (this._timerTickCount < 30 && this._timerTickCount % 5 === 0) {
                     this.refresh();
@@ -238,19 +247,21 @@ define([
             }
         },
         monitor: function (callback) {
-            if (callback) {
-                if (this.hasCompleted) {
+            if (this.hasCompleted) {
+                if (callback) {
                     callback(this);
-                } else {
-                    var context = this;
-                    this.watch("hasCompleted", function (name, oldValue, newValue) {
-                        if (oldValue !== newValue && newValue) {
+                }
+            } else {
+                this.setTimer(1000);
+                var context = this;
+                this.watch("changedCount", function (name, oldValue, newValue) {
+                    if (oldValue !== newValue && newValue) {
+                        if (callback) {
                             callback(context);
                         }
-                    });
-                }
+                    }
+                });
             }
-            return;
         },
         create: function (ecl) {
             var context = this;
@@ -263,6 +274,7 @@ define([
             });
         },
         update: function (request, appData) {
+            this._assertHasWuid();
             lang.mixin(request, {
                 Wuid: this.Wuid
             });
@@ -286,6 +298,7 @@ define([
             });
         },
         submit: function (target) {
+            this._assertHasWuid();
             var context = this;
             WsWorkunits.WUSubmit({
                 request: {
@@ -298,6 +311,7 @@ define([
             });
         },
         _resubmit: function (clone, resetWorkflow) {
+            this._assertHasWuid();
             var context = this;
             WsWorkunits.WUResubmit({
                 request: {
@@ -320,6 +334,7 @@ define([
             this._resubmit(false, true);
         },
         _action: function (action) {
+            this._assertHasWuid();
             var context = this;
             WsWorkunits.WUAction([{ Wuid: this.Wuid }], action, {
                 load: function (response) {
@@ -337,6 +352,7 @@ define([
             this._action("Delete");
         },
         publish: function (jobName) {
+            this._assertHasWuid();
             var context = this;
             WsWorkunits.WUPublishWorkunit({
                 request: {
@@ -376,6 +392,7 @@ define([
             }
         },
         getQuery: function () {
+            this._assertHasWuid();
             var context = this;
             WsWorkunits.WUQuery({
                 request: {
@@ -391,6 +408,7 @@ define([
             });
         },
         getInfo: function (args) {
+            this._assertHasWuid();
             var context = this;
             WsWorkunits.WUInfo({
                 request: {
@@ -575,6 +593,7 @@ define([
                 return;
             }
 
+            this._assertHasWuid();
             var context = this;
             WsWorkunits.WUFile({
                 request: {
@@ -624,6 +643,7 @@ define([
             }
         },
         fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
+            this._assertHasWuid();
             var context = this;
             WsWorkunits.WUGetGraph({
                 request: {

@@ -171,6 +171,7 @@ define([
             this.watching = this.wu.watch(function (name, oldValue, newValue) {
                 context.updateInput(name, oldValue, newValue);
             });
+            this.wu.monitor();
         },
 
         updateInput: function (name, oldValue, newValue) {
@@ -222,15 +223,9 @@ define([
         displayGraphs: function (graphs) {
             for (var i = 0; i < graphs.length; ++i) {
                 var context = this;
-                if (i == 0) {
-                    this.wu.fetchGraphXgmml(i, function (xgmml) {
-                        context.graphControl.loadXGMML(xgmml);
-                    });
-                } else {
-                    this.wu.fetchGraphXgmml(i, function (xgmml) {
-                        context.graphControl.loadXGMML(xgmml, true);
-                    });
-                }
+                this.wu.fetchGraphXgmml(i, function (xgmml) {
+                    context.graphControl.loadXGMML(xgmml, i > 0);
+                });
             }
         },
 
@@ -249,6 +244,7 @@ define([
                     context.wu.update({
                         QueryText: context.editorControl.getText()
                     });
+                    context.watchWU();
                 },
                 onUpdate: function () {
                     context.wu.submit(context.targetSelectWidget.getValue());
@@ -256,7 +252,6 @@ define([
                 onSubmit: function () {
                 }
             });
-            this.watchWU();
         }
     });
 });
