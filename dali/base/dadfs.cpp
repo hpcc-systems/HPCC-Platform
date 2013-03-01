@@ -3090,7 +3090,7 @@ public:
             CDistributedFileBase<IDistributedFile>::conn->commit(); // should only be cluster changes but a bit dangerous
     }
 
-    void addCluster(const char *clustername,ClusterPartDiskMapSpec &mspec)
+    void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec)
     {
         if (!clustername&&!*clustername)
             return;
@@ -5574,7 +5574,7 @@ public:
         return clusterscache.queryGroup(clusternum);
     }
 
-    void addCluster(const char *clustername,ClusterPartDiskMapSpec &mspec)  
+    void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec)
     {
         if (!clustername||!*clustername)
             return;

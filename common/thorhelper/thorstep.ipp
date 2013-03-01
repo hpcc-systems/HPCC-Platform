@@ -29,26 +29,6 @@ enum
     MJFalwaysoptimize       = 0x80000000,
 };
 
-class OwnedLCRow
-{
-public:
-    inline OwnedLCRow(const void * _row) { row = _row; }
-    inline ~OwnedLCRow() { kill(); }
-
-    inline operator const void * () const { return row; }
-    inline const void * get() const { return row; }
-    inline void clear() { kill(); row = NULL; }
-    inline void set(const void * value) { rtlLinkRow(value); kill(); row = value; }
-    inline void setown(const void * value) { kill(); row = value; }
-    inline const void * getClear() { const void * ret = row; row = NULL; return ret; }
-
-protected:
-    inline void kill() { if (row) rtlReleaseRow(row); }
-
-protected:
-    const void * row;
-};
-
 //---------------------------------------------------------------------------
 
 //It would make a lot of sense for the following interfaces to be identical...

@@ -18,22 +18,11 @@
 #ifndef ROXIEHELPER_IPP
 #define ROXIEHELPER_IPP
 
-
-#ifdef _WIN32
-#ifdef ROXIEHELPER_EXPORTS
-#define ROXIEHELPER_API __declspec(dllexport)
-#else
-#define ROXIEHELPER_API __declspec(dllimport)
-#endif
-#else
-#define ROXIEHELPER_API
-#endif
+#include "thorhelper.hpp"
 
 #include "jlog.hpp"
 
-extern ROXIEHELPER_API unsigned traceLevel;
-
-//#pragma message("**** ROXIEHELPER.IPP ***")
+extern THORHELPER_API unsigned traceLevel;
 
 //---------------------------------------------------
 // Base classes for all Roxie/HThor activities
@@ -111,6 +100,6 @@ interface IOrderedOutputSerializer : extends IInterface
   virtual void close(int seq, bool nl) = 0;
 };
 
-extern ROXIEHELPER_API IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * _outFile);
+extern THORHELPER_API IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * _outFile);
 
 #endif // ROXIEHELPER_IPP
