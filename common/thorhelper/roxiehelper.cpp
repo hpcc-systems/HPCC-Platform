@@ -1316,7 +1316,7 @@ public:
     }
 };
 
-THORHELPER_API IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * _outFile)
+IOrderedOutputSerializer * createOrderedOutputSerializer(FILE * _outFile)
 {
     return new COrderedOutputSerializer(_outFile);
 }
