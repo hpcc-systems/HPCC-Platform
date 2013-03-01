@@ -45,7 +45,8 @@
             <entry><emphasis>value</emphasis></entry>
 
             <entry>The value to return. This may be a single value, a set of
-            values, a record set, or an action.</entry>
+            values, a DATASET, a DICTIONARY, a record set, or an
+            action.</entry>
           </row>
 
           <row>
@@ -97,5 +98,8 @@ MyAction := CASE(MyExp, 1 =&gt; FAIL('Failed for reason 1'),
     4 =&gt; FAIL('Failed for reason 4'),    FAIL('Failed for unknown reason'));
   // for the caseval of 3, Fails for reason 3</programlisting>
 
-  <para>See Also: <link linkend="MAP">MAP</link>, <link linkend="CHOOSE">CHOOSE</link>, <link linkend="IF">IF</link>, <link linkend="REJECTED">REJECTED</link>, <link linkend="WHICH">WHICH</link></para>
+  <para>See Also: <link linkend="MAP">MAP</link>, <link
+  linkend="CHOOSE">CHOOSE</link>, <link linkend="IF">IF</link>, <link
+  linkend="REJECTED">REJECTED</link>, <link
+  linkend="WHICH">WHICH</link></para>
 </sect1>

@@ -2,28 +2,28 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Field_and_Attribute_Qualification">
-  <title>Field and Attribute Qualification</title>
+  <title>Field and Definition Qualification</title>
 
   <sect2 id="Imported_Attributes">
-    <title>Imported Attributes</title>
+    <title>Imported Definitions</title>
 
-    <para><emphasis role="bold">EXPORTed<indexterm>
+    <para>EXPORTed<indexterm>
         <primary>EXPORTed</primary>
-      </indexterm> Attributes<indexterm>
-        <primary>EXPORTed Attributes</primary>
+      </indexterm> definitions<indexterm>
+        <primary>EXPORTed Definitions</primary>
       </indexterm> defined within another module and IMPORTed<indexterm>
         <primary>IMPORTed</primary>
-      </indexterm> (see the </emphasis><emphasis role="bold">EXPORT
-    </emphasis>and <emphasis role="bold">IMPORT</emphasis> keywords) are
-    available for use in the attribute definition that contains the IMPORT.
-    Imported Attributes must be fully qualified by their Module name and
-    Attribute name, using dot syntax<indexterm>
+      </indexterm> (see the <emphasis role="bold">EXPORT </emphasis>and
+    <emphasis role="bold">IMPORT</emphasis> keywords) are available for use in
+    the definition that contains the IMPORT. Imported Definitions must be
+    fully qualified by their Module name and Definition name, using dot
+    syntax<indexterm>
         <primary>dot syntax</primary>
-      </indexterm> (module.attribute).</para>
+      </indexterm> (module.definition).</para>
 
-    <programlisting>IMPORT abc;                //make all exported attributes in the abc module available
-EXPORT Attribute1 := 5;    //make Attribute1 available to other modules
-Attribute2 := abc.Attribute2 + Attribute1;  // object qualification needed for Attributes from abc module</programlisting>
+    <programlisting>IMPORT abc;                //make all exported definitions in the abc module available
+EXPORT Definition1 := 5;    //make Definition1 available to other modules
+Definition2 := abc.Definition2 + Definition1;  // object qualification needed for Definitions from abc module</programlisting>
   </sect2>
 
   <sect2 id="Fields_in_Datasets">
@@ -41,12 +41,12 @@ Attribute2 := abc.Attribute2 + Attribute1;  // object qualification needed for A
     <programlisting>Young := YearOf(Person.per_dbrth) &lt; 1950;
 MySet := Person(Young);</programlisting>
 
-    <para>When naming a Dataset as part of an Attribute definition, the fields
-    of that Attribute (or record set) come into scope. If Parameterized
-    Attributes (functions) are nested, only the innermost scope is available.
-    That is, all the fields of a Dataset (or derived record set) are in scope
-    in the filter expression. This is also true for expressions parameters of
-    any built-in function that names a Dataset or derived record set as a
+    <para>When naming a Dataset as part of a definition, the fields of that
+    Definition (or record set) come into scope. If Parameterized Definitions
+    (functions) are nested, only the innermost scope is available. That is,
+    all the fields of a Dataset (or derived record set) are in scope in the
+    filter expression. This is also true for expressions parameters of any
+    built-in function that names a Dataset or derived record set as a
     parameter.</para>
 
     <programlisting>MySet1 := Person(YearOf(dbrth) &lt; 1950);
@@ -88,17 +88,17 @@ trades.trd_drpt</programlisting>
 
     <para>1. The currently active dataset, if any</para>
 
-    <para>2. The current attribute being defined, and any parameters it is
+    <para>2. The current definition being defined, and any parameters it is
     based on</para>
 
-    <para>3. Any attributes or parameters of any MODULE or FUNCTION structure
-    that contains the current attribute</para>
+    <para>3. Any definitions or parameters of any MODULE or FUNCTION structure
+    that contains the current definition</para>
 
-    <para>This might mean that the attribute or parameter you want to access
-    isn't picked because it is hidden as in a parameter or private attribute
+    <para>This might mean that the definition or parameter you want to access
+    isn't picked because it is hidden as in a parameter or private definition
     name clashing with the name of a dataset field.</para>
 
-    <para>It would be better to rename the parameter or private attribute so
+    <para>It would be better to rename the parameter or private definition so
     the name clash cannot occur, but sometimes this is not possible.</para>
 
     <para>You may direct access to a different match by qualifying the field
@@ -107,7 +107,7 @@ trades.trd_drpt</programlisting>
     skip.</para>
 
     <para>This example shows the qualification order necessary to reach a
-    specific attribute/parameter:</para>
+    specific definition/parameter:</para>
 
     <para><programlisting>ds := DATASET([1], { INTEGER SomeValue });
 
@@ -119,7 +119,7 @@ myModule(INTEGER SomeValue) := MODULE
     tbl := TABLE(ds,{SUM(GROUP, someValue), // 1 - DATASET field
                      SUM(GROUP, ^.someValue), // 84 - FUNCTION parameter
                      SUM(GROUP, ^^.someValue), // 42 - MODULE parameter
-                     SUM(GROUP, ^^^.someValue), // 10 - local attribute
+                     SUM(GROUP, ^^^.someValue), // 10 - local definition
                  0});
      RETURN<indexterm>
           <primary>RETURN</primary>
@@ -136,7 +136,7 @@ OUTPUT(myModule(42).result);</programlisting></para>
 
     <para>a field in a DATASET.</para>
 
-    <para>a local attribute</para>
+    <para>a local definition</para>
 
     <para>a parameter to a MODULE structure</para>
 
@@ -147,6 +147,6 @@ OUTPUT(myModule(42).result);</programlisting></para>
       </indexterm> shows how to reference each separate instance.</para>
 
     <para>While this syntax allows exceptions where you need it, creating
-    another attribute with a different name is the preferred solution.</para>
+    another definition with a different name is the preferred solution.</para>
   </sect2>
 </sect1>

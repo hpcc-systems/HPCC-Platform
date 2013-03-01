@@ -2,27 +2,27 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Attribute_Visibility">
-  <title>Attribute Visibility<indexterm>
-      <primary>Attribute Visibility</primary>
+  <title>Definition Visibility<indexterm>
+      <primary>Definition Visibility</primary>
     </indexterm></title>
 
-  <para>ECL Attributes are organized into modules. Within a module, you may
-  define as many Attributes as needed. An IMPORT statement (see the <emphasis
-  role="bold">IMPORT </emphasis>keyword) identifies any other modules whose
-  visible Attributes will be available for use in the current attribute
-  definition.</para>
+  <para>ECL definitions are organized into modules (directories or folders on
+  disk). Within a module, you may define as many Definitions as needed. An
+  IMPORT statement (see the <emphasis role="bold">IMPORT </emphasis>keyword)
+  identifies any other modules whose visible Definitions will be available for
+  use in the current definition definition.</para>
 
-  <programlisting>IMPORT AnotherModule; //imports attributes from AnotherModule
-Attribute1 := 5;     //as many definitions as needed</programlisting>
+  <programlisting>IMPORT AnotherModule; //imports definitions from AnotherModule
+Definition1 := 5;     //as many definitions as needed</programlisting>
 
-  <para>The following fundamental attribute visibility scopes are available in
-  ECL: <emphasis role="bold">"Global," Module</emphasis>, and <emphasis
+  <para>The following fundamental definition visibility scopes are available
+  in ECL: <emphasis role="bold">"Global," Module</emphasis>, and <emphasis
   role="bold">Local</emphasis>.</para>
 
   <sect2 id="Global_attribute_visibility">
     <title>"Global"</title>
 
-    <para>Attributes defined as <emphasis
+    <para>Definitions defined as <emphasis
     role="bold">EXPORT</emphasis><indexterm>
         <primary>EXPORT</primary>
       </indexterm> (see the <emphasis role="bold">EXPORT</emphasis> keyword)
@@ -30,49 +30,49 @@ Attribute1 := 5;     //as many definitions as needed</programlisting>
     throughout any other module that IMPORTs the module (see the <emphasis
     role="bold">IMPORT</emphasis> keyword).</para>
 
-    <programlisting>EXPORT Attribute1 := 5;
-//make Attribute1 available to other modules and
+    <programlisting>EXPORT Definition1 := 5;
+//make Definition1 available to other modules and
 //also available throughout its own module</programlisting>
   </sect2>
 
   <sect2 id="Module">
     <title>Module</title>
 
-    <para>The scope of the Attributes defined as <emphasis
+    <para>The scope of the Definitions defined as <emphasis
     role="bold">SHARED<indexterm>
         <primary>SHARED</primary>
       </indexterm></emphasis> (see the <emphasis role="bold">SHARED</emphasis>
     keyword) is limited to that one module, and are available throughout the
-    module (unlike local Attributes). This allows you to keep private any
+    module (unlike local Definitions). This allows you to keep private any
     definitions that are only needed to implement internal
     functionality.</para>
 
-    <programlisting>SHARED Attribute1 := 5;
-//Attribute1 available throughout its own module, only
-EXPORT Attribute2 := Attribute1 + 5;
-//make Attribute2 available to other modules and
+    <programlisting>SHARED Definition1 := 5;
+//Definition1 available throughout its own module, only
+EXPORT Definition2 := Definition1 + 5;
+//make Definition2 available to other modules and
 //also available throughout its own module</programlisting>
   </sect2>
 
   <sect2 id="Local">
     <title>Local</title>
 
-    <para>An Attribute defined without either EXPORT or SHARED (see the
+    <para>A Definition defined without either EXPORT or SHARED (see the
     <emphasis role="bold">EXPORT </emphasis>and <emphasis
     role="bold">SHARED</emphasis> keywords) is available only to the
-    subsequent Attributes until the next Attribute definition with EXPORT or
-    SHARED. This makes them private Attributes used only within the scope of
-    that EXPORT or SHARED Attribute. This allows you to keep private any
+    subsequent Definitions until the next Definition definition with EXPORT or
+    SHARED. This makes them private Definitions used only within the scope of
+    that EXPORT or SHARED Definition. This allows you to keep private any
     definitions that are only needed to implement internal functionality.
-    Local Attributes are referenced by the Attribute name alone; no
+    Local Definitions are referenced by the Definition name alone; no
     qualification is needed.</para>
 
     <programlisting>MODULE abc;
 LocalAttr := 5;
-//local -- available through the end of Attribute1's definition, only
-SHARED Attribute1 := LocalAttr;
+//local -- available through the end of Definition1's definition, only
+SHARED Definition1 := LocalAttr;
 //SHARED terminates scope for LocalAttr
-Attribute2 := Attribute1 + LocalAttr;
+Definition2 := Definition1 + LocalAttr;
 //INVALID SYNTAX -- LocalAttr is out of scope here</programlisting>
   </sect2>
 </sect1>

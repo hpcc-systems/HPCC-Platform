@@ -39,8 +39,8 @@
           <entry><emphasis>value</emphasis></entry>
 
           <entry>The value to return if the expression is true. This may be a
-          single value expression, a set of values, a record set, or an
-          action.</entry>
+          single value expression, a set of values, a DATASET, a DICTIONARY, a
+          record set, or an action.</entry>
         </row>
 
         <row>

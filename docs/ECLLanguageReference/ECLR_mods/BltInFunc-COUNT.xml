@@ -28,11 +28,11 @@
             <entry><emphasis>recordset</emphasis></entry>
 
             <entry>The set of records to process. This may be the name of a
-            dataset or a record set derived from some filter condition, or any
-            expression that results in a derived record set. This also may be
-            the GROUP keyword to indicate counting the number of elements in a
-            group, when used in a RECORD structure to generate crosstab
-            statistics.</entry>
+            DATASET or a record set derived from some filter condition, or any
+            expression that results in a derived record set, or a the name of
+            a DICTIONARY declaration. This also may be the GROUP keyword to
+            indicate counting the number of elements in a group, when used in
+            a RECORD structure to generate crosstab statistics.</entry>
           </row>
 
           <row>
@@ -93,5 +93,8 @@ SetVals := [4,8,16,2,1];
 Cnt2    := COUNT(SetVals); //returns 5
 </programlisting>
 
-  <para>See Also: <link linkend="SUM">SUM</link>, <link linkend="AVE">AVE</link>, <link linkend="MIN">MIN</link>, <link linkend="MAX">MAX</link>, <link linkend="GROUP">GROUP</link>, <link linkend="TABLE">TABLE</link></para>
+  <para>See Also: <link linkend="SUM">SUM</link>, <link
+  linkend="AVE">AVE</link>, <link linkend="MIN">MIN</link>, <link
+  linkend="MAX">MAX</link>, <link linkend="GROUP">GROUP</link>, <link
+  linkend="TABLE">TABLE</link></para>
 </sect1>

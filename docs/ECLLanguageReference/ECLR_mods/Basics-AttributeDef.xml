@@ -2,20 +2,18 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Attribute_Definition">
-  <title>Attribute Definition</title>
+  <title>Definitions</title>
 
   <para>Each ECL definition<indexterm>
       <primary>ECL definition</primary>
-    </indexterm> creates an Attribute<indexterm>
-      <primary>Attribute</primary>
-    </indexterm>—the basic building block of ECL. An Attribute definition
-  asserts that something is true; it defines <emphasis>what </emphasis>is done
-  but not <emphasis>how</emphasis> it is to be done. Attributes can be thought
-  of as a highly developed form of macro-substitution, making each succeeding
-  Attribute definition more and more highly leveraged upon the work that has
-  gone before. This results in extremely efficient query construction.</para>
+    </indexterm> is the basic building block of ECL. A definition asserts that
+  something is true; it defines <emphasis>what </emphasis>is done but not
+  <emphasis>how</emphasis> it is to be done. Definitions can be thought of as
+  a highly developed form of macro-substitution, making each succeeding
+  definition more and more highly leveraged upon the work that has gone
+  before. This results in extremely efficient query construction.</para>
 
-  <para>All Attribute definitions take the form:</para>
+  <para>All definitions take the form:</para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>Scope</emphasis><emphasis
   role="bold">] [</emphasis><emphasis>ValueType</emphasis><emphasis
@@ -27,10 +25,10 @@
     </indexterm> [ </emphasis><emphasis>:WorkflowService</emphasis><emphasis
   role="bold">] ;</emphasis></para>
 
-  <para>The Attribute Definition Operator<indexterm>
-      <primary>Attribute Definition Operator</primary>
-    </indexterm> (<emphasis role="bold">:=</emphasis> read as “is defined as”)
-  defines an Attribute. On the left side of the operator is an optional
+  <para>The Definition Operator<indexterm>
+      <primary>Definition Operator</primary>
+    </indexterm> (<emphasis role="bold"> :=</emphasis> read as “is defined
+  as”) defines an expression. On the left side of the operator is an optional
   <emphasis>Scope<indexterm>
       <primary>Scope</primary>
     </indexterm></emphasis> (see <emphasis role="bold">Attribute
@@ -41,27 +39,27 @@
       <primary>parameters</primary>
     </indexterm> (<emphasis>parms</emphasis>) it may take (see <emphasis
   role="bold">Functions (Parameter Passing)</emphasis>). On the right side is
-  the Expression that produces the result and optionally a colon (:) and a
+  the expression that produces the result and optionally a colon (:) and a
   comma-delimited list of <emphasis>WorkflowServices</emphasis> (see <emphasis
-  role="bold">Workflow Services</emphasis>). An Attribute definition must be
-  explicitly terminated with a semi-colon (;). The Attribute name can be used
-  in subsequent Attribute definitions:</para>
+  role="bold">Workflow Services</emphasis>). A definition must be explicitly
+  terminated with a semi-colon (;). The Definition name can be used in
+  subsequent definitions:</para>
 
-  <programlisting>MyFirstAttribute := 5; //defined as 5
-MySecondAttribute := MyFirstAttribute + 5; //this is 10</programlisting>
+  <programlisting>MyFirstDefinition := 5; //defined as 5
+MySecondDefinition := MyFirstDefinition + 5; //this is 10</programlisting>
 
   <sect2 id="Attribute_Name_Rules">
-    <title>Attribute Name Rules</title>
+    <title>Definition Name Rules</title>
 
-    <para>Attribute name<indexterm>
-        <primary>Attribute Name</primary>
+    <para>Definition name<indexterm>
+        <primary>Definition Name</primary>
       </indexterm>s begin with a letter and may contain only letters, numbers,
     or underscores (_).</para>
 
-    <programlisting>My_First_Attribute1 := 5; // valid name
-My First Attribute := 5;  // INVALID name, spaces not allowed</programlisting>
+    <programlisting>My_First_Definition1 := 5; // valid name
+My First Definition := 5;  // INVALID name, spaces not allowed</programlisting>
 
-    <para>You may name an attribute with the name of a previously created
+    <para>You may name a Definition with the name of a previously created
     module in the ECL Repository, if the attribute is defined with an explicit
     <emphasis>ValueType</emphasis>.</para>
   </sect2>
@@ -87,14 +85,14 @@ My First Attribute := 5;  // INVALID name, spaces not allowed</programlisting>
   </sect2>
 
   <sect2 id="Attribute_Naming">
-    <title>Attribute Naming</title>
+    <title>Definition Naming</title>
 
-    <para>Use descriptive names for all EXPORTed and SHARED Attributes. This
+    <para>Use descriptive names for all EXPORTed and SHARED Definitions. This
     will make your code more readable. The naming convention adopted
     throughout the ECL documentation and training courses is as
     follows:</para>
 
-    <programlisting><emphasis role="bold">Attribute Type</emphasis>     <emphasis
+    <programlisting><emphasis role="bold">Definition Type</emphasis>     <emphasis
         role="bold">Are Named
 </emphasis>Boolean              Is...
 Set Definition       Set...
@@ -102,8 +100,8 @@ Record Set           ...DatasetName</programlisting>
 
     <para>For example:</para>
 
-    <programlisting>IsTrue := TRUE;                         // a BOOLEAN Attribute
-SetNumbers := [1,2,3,4,5];              // a Set Attribute
-R_People := People(firstname[1] = 'R'); // a Record Set Attribute</programlisting>
+    <programlisting>IsTrue := TRUE;                         // a BOOLEAN Definition
+SetNumbers := [1,2,3,4,5];              // a Set Definition
+R_People := People(firstname[1] = 'R'); // a Record Set Definition</programlisting>
   </sect2>
 </sect1>

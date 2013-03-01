@@ -41,7 +41,7 @@
     <xi:include href="common/Version.xml" xpointer="DateVer"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <releaseinfo>© 2012 HPCC Systems. All rights reserved. Except where
+    <releaseinfo>© 2013 HPCC Systems. All rights reserved. Except where
     otherwise noted, ECL Language Reference content licensed under Creative
     Commons public license.</releaseinfo>
 
@@ -57,7 +57,8 @@
   <chapter id="ECLR_Intro">
     <title><emphasis role="bold">Introduction</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/DocumentStructure.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/DocumentStructure.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/DocumentConventions.xml"
@@ -68,10 +69,12 @@
   <chapter id="ECL_Basics">
     <title><emphasis role="bold">ECL Basics</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Overview.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Overview.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Constants.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Basics-Constants.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Basics-AttributeDef.xml"
@@ -114,68 +117,88 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-RecordSetOps.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-RecordSetOps.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-SetOper.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-SetOper.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-StringOps.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-StringOps.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-InOps.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-InOps.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-BetweenOps.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Expr-BetweenOps.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Value_Types_Chapter">
     <title><emphasis role="bold">Value Types</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Boolean.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Boolean.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Integer.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Integer.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Real.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Real.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Decimal.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Decimal.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-String.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-String.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-QString.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-QString.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Unicode.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Unicode.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Data.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Data.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-VarString.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-VarString.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-VarUnicode.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-VarUnicode.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-SetOf.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-SetOf.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-TypeOf.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-TypeOf.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-RecordOf.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-RecordOf.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Enum.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-Enum.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Value-TypeCasting.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Value-TypeCasting.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
@@ -183,13 +206,20 @@
     <title><emphasis role="bold">Record Structures and
     Files</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/RecordStructure.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/RecordStructure.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-DATASET.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-DATASET.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-Index.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-DICTIONARY.xml"
+                xpointer="element(/1)"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-Index.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/Recrd-ScopeNLogicalFilenames.xml"
@@ -216,35 +246,44 @@
   <chapter id="Parsing_Support_Chapter">
     <title><emphasis role="bold">Parsing Support</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-PARSPattrn.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-PARSPattrn.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-NLPRecrd.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-NLPRecrd.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-XMLnTRANSF.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ParSppt-XMLnTRANSF.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Reserved_Keywords">
     <title><emphasis role="bold">Reserved Keywords</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-ALL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-ALL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-EXCEPT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-EXCEPT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-EXPORT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-EXPORT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-GROUP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-GROUP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-IMPORT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-IMPORT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-KEYED-WILD.xml"
@@ -259,13 +298,16 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SELF.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SELF.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SHARED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SHARED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SKIP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-SKIP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/ResrvdKywds-TrueFalse.xml"
@@ -276,10 +318,12 @@
   <chapter id="Special_Structures">
     <title><emphasis role="bold">Special Structures</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-BeginC++.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-BeginC++.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-FuncTion.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-FuncTion.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-FuncTionMacro.xml"
@@ -290,10 +334,12 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Macro.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Macro.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Module.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Module.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/SpecStruc-Transform.xml"
@@ -305,92 +351,116 @@
     <title><emphasis role="bold">Built-in Functions and
     Actions</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ABS.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ABS.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ACOS.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ACOS.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-AGGREGATE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ALLNODES.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ALLNODES.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-APPLY.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-APPLY.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASCII.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASCII.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASIN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASIN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASSERT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASSERT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASTRING.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ASTRING.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ATAN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ATAN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ATAN2.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ATAN2.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-AVE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-AVE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-BUILD.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-BUILD.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CASE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CASE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CATCH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CATCH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSEN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSEN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSETS.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CHOOSETS.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CLUSTERSIZE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COMBINE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COMBINE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CORRELATION.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COS.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COS.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COSH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COSH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COUNT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COUNT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-COVARIANCE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CRON.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-CRON.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DEDUP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DEDUP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DEFINE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DEFINE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-DENORMALIZE.xml"
@@ -409,19 +479,24 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EBCDIC.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EBCDIC.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ENTH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ENTH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ERROR.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ERROR.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVALUATE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVALUATE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EVENTNAME.xml"
@@ -432,184 +507,236 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EXISTS.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EXISTS.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EXP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-EXP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FAIL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FAIL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FAILCODE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FAILCODE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FAILMESSAGE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FETCH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FETCH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMUNICODE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMXML.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-FROMXML.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GETENV.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GETENV.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GLOBAL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GLOBAL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GRAPH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GRAPH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GROUP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-GROUP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH32.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH32.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH64.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASH64.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASHCRC.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASHCRC.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASHMD5.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HASHMD5.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HAVING.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HAVING.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HTTPCALL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-HTTPCALL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-IF.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-IF.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-INTFORMAT.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ISVALID.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ISVALID.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ITERATE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ITERATE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-JOIN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-JOIN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-KEYDIFF.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-KEYDIFF.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-KEYPATCH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-KEYPATCH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-KEYUNICODE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LENGTH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LENGTH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LIBRARY.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LIBRARY.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LIMIT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LIMIT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LoadXML.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LoadXML.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOCAL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOCAL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOG.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOG.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOOP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-LOOP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MAP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MAP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MAX.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MAX.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MERGE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MERGE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MERGEJOIN.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MIN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-MIN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOLOCAL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOLOCAL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NONEMPTY.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NONEMPTY.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NORMALIZE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTHOR.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTHOR.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTIFY.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-NOTIFY.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-OUTPUT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-OUTPUT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PARALLEL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PARALLEL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PARSE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PARSE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PIPE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PIPE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-POWER.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-POWER.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PRELOAD.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PRELOAD.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PROCESS.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PROCESS.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PROJECT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PROJECT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PULL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-PULL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANDOM.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANDOM.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANGE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANGE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANK.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANK.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANKED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-RANKED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REALFORMAT.xml"
@@ -624,115 +751,148 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGROUP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REGROUP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REJECTED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-REJECTED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROLLUP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROLLUP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROUND.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROUND.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROUNDUP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROUNDUP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROW.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROW.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROWDIFF.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-ROWDIFF.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SAMPLE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SAMPLE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SEQUENTIAL.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SET.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SET.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SIN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SIN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SINH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SINH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SIZEOF.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SIZEOF.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SOAPCALL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SOAPCALL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SORT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SORT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SORTED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SORTED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SQRT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SQRT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-STEPPED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-STEPPED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-STORED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-STORED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SUM.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-SUM.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TABLE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TABLE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TAN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TAN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TANH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TANH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-THISNODE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-THISNODE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOPN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOPN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TOUNICODE.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRANSFER.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRANSFER.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRIM.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRIM.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRUNCATE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-TRUNCATE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNGROUP.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNGROUP.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-UNICODEORDER.xml"
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-VARIANCE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-VARIANCE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WAIT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WAIT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHEN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHEN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHICH.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WHICH.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WORKUNIT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-WORKUNIT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/BltInFunc-XMLDECODE.xml"
@@ -747,116 +907,152 @@
   <chapter id="Workflow_Services">
     <title><emphasis role="bold">Workflow Services</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-OverView.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-OverView.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-CheckPoint.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-CheckPoint.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-DEPRICATED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-DEPRICATED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-FAILURE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-FAILURE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-GLOBAL.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-GLOBAL.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-INDEPENDENT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-INDEPENDENT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-ONWARNING.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-ONWARNING.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-PERSIST.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-PERSIST.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-PRIORITY.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-PRIORITY.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-RECOVERY.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-RECOVERY.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-STORED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-STORED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-SUCCESS.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-SUCCESS.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-WHEN.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/WkFlo-WHEN.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
   <chapter id="Templates">
     <title><emphasis role="bold">Template Language</emphasis></title>
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-OVERVIEW.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-OVERVIEW.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-APPEND.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-APPEND.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-CONSTANT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-CONSTANT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-DECLARE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-DECLARE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-DEMANGLE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-DEMANGLE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-ERROR.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-ERROR.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPAND.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPAND.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPORT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPORT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPORTXML.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-EXPORTXML.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-FOR.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-FOR.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-GETDATATYPE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-GETDATATYPE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-IF.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-IF.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-INMODULE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-INMODULE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-LOOP-BREAK.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-LOOP-BREAK.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-MANGLE.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-MANGLE.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-ONWARNING.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-ONWARNING.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-OPTION.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-OPTION.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-SET.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-SET.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-STORED.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-STORED.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-TEXT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-TEXT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-UNIQUENAME.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-UNIQUENAME.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WARNING.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WARNING.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WORKUNIT.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/Templ-WORKUNIT.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 
@@ -867,7 +1063,8 @@
                 xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <xi:include href="ECLLanguageReference/ECLR_mods/ExtrSvcs-CONST.xml" xpointer="element(/1)"
+    <xi:include href="ECLLanguageReference/ECLR_mods/ExtrSvcs-CONST.xml"
+                xpointer="element(/1)"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
     <xi:include href="ECLLanguageReference/ECLR_mods/ExtrSvcs-ExternalServicesImpl.xml"
