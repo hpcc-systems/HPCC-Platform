@@ -15,13 +15,18 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef THORCERROR_HPP
-#define THORCERROR_HPP
+#ifndef THORHERROR_H
+#define THORHERROR_H
 
 #include "jexcept.hpp"
+#include "errorlist.h"
 
-#define THORCERR_InvalidXmlFromXml          8000
+#define THORHELPER_DEBUG_ERROR              (THORHELPER_ERROR_START + 0)
+#define THORHELPER_INTERNAL_ERROR           (THORHELPER_ERROR_START + 1)
+#define THORHELPER_DATA_ERROR               (THORHELPER_ERROR_START + 2)
 
+//Errors with associated text
+#define THORCERR_InvalidXmlFromXml          (THORHELPER_ERROR_START + 50)
 
 #define THORCERR_InvalidXmlFromXml_Text     "Invalid xml passed to FROMXML"
 

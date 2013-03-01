@@ -28,11 +28,13 @@ set (    SRCS
          workunit.cpp 
          wujobq.cpp
          package.cpp
+         workflow.cpp
                  
          workunit.hpp 
          wuerror.hpp
          wujobq.hpp
          package.h
+         workflow.hpp
          pkgimpl.hpp
     )
 

@@ -23,22 +23,11 @@
 #include "roxiemem.hpp"
 #include "mpbase.hpp"
 #include "workunit.hpp"
-
-#ifdef _WIN32
- #ifdef ROXIEHELPER_EXPORTS
-  #define ROXIEHELPER_API __declspec(dllexport)
- #else
-  #define ROXIEHELPER_API __declspec(dllimport)
- #endif
-#else
- #define ROXIEHELPER_API
-#endif
-
-//#pragma message("**** ROXIEHELPER.HPP ***")
+#include "thorhelper.hpp"
 
 //========================================================================================= 
 
-class ROXIEHELPER_API HttpHelper : public CInterface
+class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     bool _isHttp;
@@ -73,7 +62,7 @@ interface SafeSocket : extends IInterface
     virtual CriticalSection &queryCrit() = 0;
 };
 
-class ROXIEHELPER_API CSafeSocket : public CInterface, implements SafeSocket
+class THORHELPER_API CSafeSocket : public CInterface, implements SafeSocket
 {
 protected:
     Linked<ISocket> sock;
@@ -106,7 +95,7 @@ public:
 };
 
 //==============================================================================================================
-class ROXIEHELPER_API FlushingStringBuffer : extends CInterface, implements IXmlStreamFlusher, implements IInterface
+class THORHELPER_API FlushingStringBuffer : extends CInterface, implements IXmlStreamFlusher, implements IInterface
 {
     // MORE this code is yukky. Overdue for cleanup!
 
@@ -155,7 +144,7 @@ public:
 
 //==============================================================================================================
 
-class ROXIEHELPER_API OwnedRowArray
+class THORHELPER_API OwnedRowArray
 {
 public:
     OwnedRowArray() {}
@@ -180,7 +169,7 @@ protected:
 
 interface IFileDescriptor;
 interface IAgentContext;
-class ROXIEHELPER_API ClusterWriteHandler : public CInterface
+class THORHELPER_API ClusterWriteHandler : public CInterface
 {
 public:
     ClusterWriteHandler(char const * _logicalName, char const * _activityType);
@@ -209,8 +198,8 @@ private:
 
 //==============================================================================================================
 
-ROXIEHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags);
-ROXIEHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in);
-ROXIEHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally);
+THORHELPER_API StringBuffer & mangleHelperFileName(StringBuffer & out, const char * in, const char * wuid, unsigned int flags);
+THORHELPER_API StringBuffer & mangleLocalTempFilename(StringBuffer & out, char const * in);
+THORHELPER_API StringBuffer & expandLogicalFilename(StringBuffer & logicalName, const char * fname, IConstWorkUnit * wu, bool resolveLocally);
 
 #endif // ROXIEHELPER_HPP

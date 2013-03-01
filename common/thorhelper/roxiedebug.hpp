@@ -18,18 +18,7 @@
 #ifndef ROXIEDEBUG_HPP
 #define ROXIEDEBUG_HPP
 
-#ifdef _WIN32
- #ifdef ROXIEHELPER_EXPORTS
-  #define ROXIEHELPER_API __declspec(dllexport)
- #else
-  #define ROXIEHELPER_API __declspec(dllimport)
- #endif
-#else
- #define ROXIEHELPER_API
-#endif
-
-//#pragma message("**** ROXIEDEBUG.HPP ***")
-
+#include "thorhelper.hpp"
 #include "roxiedebug.ipp"
 #include "jprop.hpp"
 
@@ -45,7 +34,7 @@ static const char *BreakpointCountModes[] = { "none", "equals" , "atleast", NULL
 
 //=======================================================================================
 
-class ROXIEHELPER_API CDebugCommandHandler : public CInterface, implements IInterface
+class THORHELPER_API CDebugCommandHandler : public CInterface, implements IInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
@@ -124,10 +113,10 @@ public:
 
 
 //=======================================================================================
-extern ROXIEHELPER_API IRowMatcher *createRowMatcher(const char *fieldName, BreakpointConditionMode condition, const char *value, bool caseSensitive);
-extern ROXIEHELPER_API IRowMatcher *createRowMatcher(MemoryBuffer &serialized);
+extern THORHELPER_API IRowMatcher *createRowMatcher(const char *fieldName, BreakpointConditionMode condition, const char *value, bool caseSensitive);
+extern THORHELPER_API IRowMatcher *createRowMatcher(MemoryBuffer &serialized);
 
-class ROXIEHELPER_API CBreakpointInfo : public CInterface, implements IBreakpointInfo
+class THORHELPER_API CBreakpointInfo : public CInterface, implements IBreakpointInfo
 {
 private:
     BreakpointMode mode;
@@ -174,7 +163,7 @@ public:
 
 //=======================================================================================
 interface IDebugGraphManager;
-class ROXIEHELPER_API DebugActivityRecord : public CInterface, implements IInterface
+class THORHELPER_API DebugActivityRecord : public CInterface, implements IInterface
 {
 public:
     unsigned __int64 totalCycles;
@@ -196,7 +185,7 @@ public:
     void updateTimes(unsigned _sequence);
 };
 
-class ROXIEHELPER_API DebugEdgeRecord : public CInterface, implements IGlobalEdgeRecord
+class THORHELPER_API DebugEdgeRecord : public CInterface, implements IGlobalEdgeRecord
 {
     unsigned count;
     unsigned lastSequence;
@@ -215,7 +204,7 @@ public:
 
 //=======================================================================================
 
-class ROXIEHELPER_API CBaseDebugContext : public CInterface, implements IDebuggableContext
+class THORHELPER_API CBaseDebugContext : public CInterface, implements IDebuggableContext
 {
 protected:
     enum WatchState
@@ -298,7 +287,7 @@ public:
 //=======================================================================================
 //Shared by CRoxieServerDebugContext and CHThorDebugContext
 #define DEBUGEE_TIMEOUT 10000
-class ROXIEHELPER_API CBaseServerDebugContext : public CBaseDebugContext, implements IDebuggerContext
+class THORHELPER_API CBaseServerDebugContext : public CBaseDebugContext, implements IDebuggerContext
 {
     // Some questions:
     // 1. Do we let all threads go even when say step? Probably... (may allow a thread to be suspended at some point)
@@ -365,7 +354,7 @@ public:
 
 //=======================================================================================
 
-class ROXIEHELPER_API CBaseDebugGraphManager : public CInterface, implements IProbeManager, implements IDebugGraphManager
+class THORHELPER_API CBaseDebugGraphManager : public CInterface, implements IProbeManager, implements IDebugGraphManager
 {
     class DebugDependencyRecord : public CInterface, implements IInterface
     {

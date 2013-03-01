@@ -66,7 +66,7 @@ interface IRoxieServerLoopResultProcessor;
 interface IActivityGraph;
 typedef MapBetween<unsigned, unsigned, unsigned, unsigned> MapIdToActivityIndex;
 
-struct LibraryCallFactoryExtra
+class LibraryCallFactoryExtra
 {
 public:
     void calcUnused();

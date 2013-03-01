@@ -22,10 +22,13 @@
 #include "thorcommon.hpp"
 #include "thorstep.ipp"
 #include "thorstep2.ipp"
+#include "roxiemem.hpp"
 
 #ifdef _DEBUG
 #define CHECK_CONSISTENCY
 #endif
+
+using roxiemem::OwnedConstRoxieRow;
 
 const static SmartStepExtra knownLowestFrequencyTermStepExtra(SSEFreadAhead, NULL);
 const static SmartStepExtra unknownFrequencyTermStepExtra(SSEFreturnMismatches, NULL);
@@ -162,7 +165,7 @@ const void * CSteppedInputLookahead::nextInputRowGE(const void * seek, unsigned 
 {
     while (readAheadRows.ordinality())
     {
-        OwnedLCRow next = readAheadRows.dequeue();
+        OwnedConstRoxieRow next = readAheadRows.dequeue();
         if (compare->docompare(next, seek, numFields) >= 0)
         {
             assertex(wasCompleteMatch);

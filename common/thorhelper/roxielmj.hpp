@@ -20,27 +20,15 @@
 
 //Limited Match Join helpers  (s[1..n])
 
+#include "thorhelper.hpp"
 #include "roxiehelper.hpp"
 #include "roxiemem.hpp"
 #include "limits.h"
 #include "jqueue.tpp"
 #include "thorcommon.hpp"
 
-#ifdef _WIN32
- #ifdef ROXIEHELPER_EXPORTS
-  #define ROXIEHELPER_API __declspec(dllexport)
- #else
-  #define ROXIEHELPER_API __declspec(dllimport)
- #endif
-#else
- #define ROXIEHELPER_API
-#endif
-
-//#pragma message("**** ROXIELMJ.HPP ***")
-
-
 //===================================================================================
-ROXIEHELPER_API IRHLimitedCompareHelper *createRHLimitedCompareHelper();
+THORHELPER_API IRHLimitedCompareHelper *createRHLimitedCompareHelper();
 
 
 //===================================================================================
@@ -78,7 +66,7 @@ public:
 //===================================================================================
 //CRHDualCache copied from THOR CDualCache, and modified to get input from IInputBase instead 
 //of IReadSeqVar and to manage rows as OwnedRoxieRow types
-class ROXIEHELPER_API CRHDualCache: public CInterface, public IRecordSize
+class THORHELPER_API CRHDualCache: public CInterface, public IRecordSize
 {
     // similar to rolling cache - should be combined really
     IInputBase * in;

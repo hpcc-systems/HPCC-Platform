@@ -61,7 +61,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/roxie/roxiemem
          ${HPCC_SOURCE_DIR}/roxie/roxie
          ${HPCC_SOURCE_DIR}/roxie/ccd
-         ${HPCC_SOURCE_DIR}/common/roxiehelper
          ${HPCC_SOURCE_DIR}/common/dllserver
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/ecl/schedulectrl
@@ -90,7 +89,6 @@ target_link_libraries ( hthor
          securesocket
          thorhelper
          roxiemem
-         roxiehelper
          commonext
          schedulectrl
     )
