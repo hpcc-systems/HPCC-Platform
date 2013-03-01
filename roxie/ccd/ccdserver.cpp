@@ -5226,82 +5226,6 @@ IRoxieServerActivityFactory *createRoxieServerDatasetResultActivityFactory(unsig
 
 //=================================================================================
 
-/*
- * Deprecated in 3.8, this class is being kept for backward compatibility,
- * since now the code generator is using InlineTables (below) for all
- * temporary tables and rows.
- */
-class CRoxieServerTempTableActivity : public CRoxieServerActivity
-{
-    IHThorTempTableArg &helper;
-    unsigned curRow;
-    unsigned numRows;
-
-public:
-    CRoxieServerTempTableActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
-        : CRoxieServerActivity(_factory, _probeManager), helper((IHThorTempTableArg &) basehelper)
-    {
-        curRow = 0;
-    }
-
-    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
-    {
-        curRow = 0;
-        CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
-        numRows = helper.numRows();
-    }
-
-    virtual bool needsAllocator() const { return true; }
-    virtual const void *nextInGroup()
-    {
-        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
-        // Filtering empty rows, returns the next valid row
-        while (curRow < numRows)
-        {
-            RtlDynamicRowBuilder rowBuilder(rowAllocator);
-            unsigned outSize = helper.getRow(rowBuilder, curRow++);
-            if (outSize)
-            {
-                processed++;
-                return rowBuilder.finalizeRowClear(outSize);
-            }
-        }
-        return NULL;
-    }
-
-    virtual void setInput(unsigned idx, IRoxieInput *_in)
-    {
-        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() called for source activity");
-    }
-
-};
-
-class CRoxieServerTempTableActivityFactory : public CRoxieServerActivityFactory
-{
-
-public:
-    CRoxieServerTempTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-        : CRoxieServerActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind)
-    {
-    }
-
-    virtual IRoxieServerActivity *createActivity(IProbeManager *_probeManager) const
-    {
-        return new CRoxieServerTempTableActivity(this, _probeManager);
-    }
-    virtual void setInput(unsigned idx, unsigned source, unsigned sourceidx)
-    {
-        throw MakeStringException(ROXIE_SET_INPUT, "Internal error: setInput() should not be called for TempTable activity");
-    }
-};
-
-IRoxieServerActivityFactory *createRoxieServerTempTableActivityFactory(unsigned _id, unsigned _subgraphId, IQueryFactory &_queryFactory, HelperFactory *_helperFactory, ThorActivityKind _kind)
-{
-    return new CRoxieServerTempTableActivityFactory(_id, _subgraphId, _queryFactory, _helperFactory, _kind);
-}
-
-//=================================================================================
-
 class CRoxieServerInlineTableActivity : public CRoxieServerActivity
 {
     IHThorInlineTableArg &helper;
@@ -25948,12 +25872,12 @@ struct PrefetchProjectActivityTest : public ccdserver_hqlhelper::CThorPrefetchPr
 };
 extern "C" IHThorArg * prefetchProjectActivityTestFactory() { return new PrefetchProjectActivityTest; }
 
-struct TempTableActivityTest : public ccdserver_hqlhelper::CThorTempTableArg {
-    virtual IOutputMetaData * queryOutputMeta() 
+struct InlineTableActivityTest : public ccdserver_hqlhelper::CThorInlineTableArg {
+    virtual IOutputMetaData * queryOutputMeta()
     {
-        return &testMeta; 
+        return &testMeta;
     }
-    virtual size32_t getRow(ARowBuilder & _self, unsigned row) {
+    virtual size32_t getRow(ARowBuilder & _self, __uint64 row) {
         unsigned char * self = (unsigned char *) _self.getSelf();
         switch (row) {
             case 0: {
@@ -25963,11 +25887,11 @@ struct TempTableActivityTest : public ccdserver_hqlhelper::CThorTempTableArg {
         }
         return 0;
     }
-    virtual unsigned numRows() {
+    virtual __uint64 numRows() {
         return 1;
     }
 };
-extern "C" IHThorArg * tempTableActivityTestFactory() { return new TempTableActivityTest; }
+extern "C" IHThorArg * inlineTableActivityTestFactory() { return new InlineTableActivityTest; }
 
 struct SelectNActivityTest : public ccdserver_hqlhelper::CThorSelectNArg {
     virtual IOutputMetaData * queryOutputMeta() 
@@ -26311,7 +26235,7 @@ protected:
         init();
         Owned <IRoxieServerActivityFactory> factory = createRoxieServerPrefetchProjectActivityFactory(1, 1, *queryFactory, prefetchProjectActivityTestFactory, TAKprefetchproject);
         Owned<ActivityArray> childGraph = new ActivityArray(false, false, false, false);
-        IRoxieServerActivityFactory *ttf = createRoxieServerTempTableActivityFactory(2, 1, *queryFactory, tempTableActivityTestFactory, TAKtemptable);
+        IRoxieServerActivityFactory *ttf = createRoxieServerInlineTableActivityFactory(2, 1, *queryFactory, inlineTableActivityTestFactory, TAKinlinetable);
         IRoxieServerActivityFactory *snf = createRoxieServerSelectNActivityFactory(3, 1, *queryFactory, selectNActivityTestFactory, TAKselectn);
         IRoxieServerActivityFactory *lrf = createRoxieServerLocalResultWriteActivityFactory(4, 1, *queryFactory, localResultActivityTestFactory, TAKlocalresultwrite, 0, 8, true);
         childGraph->append(*ttf);

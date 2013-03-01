@@ -637,12 +637,10 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKselfjoin:               return "Self Join";
     case TAKkeyedjoin:              return "Keyed Join";
     case TAKgroup:                  return "Group";
-    case TAKworkunitwrite:              return "Output";
+    case TAKworkunitwrite:          return "Output";
     case TAKfunnel:                 return "Funnel";
     case TAKapply:                  return "Apply";
-    case TAKtemptable:              return "Inline Dataset";
     case TAKinlinetable:            return "Inline Dataset";
-    case TAKtemprow:                return "Inline Row";
     case TAKhashdistribute:         return "Hash Distribute";
     case TAKhashdedup:              return "Hash Dedup";
     case TAKnormalize:              return "Normalize";
@@ -797,9 +795,7 @@ extern bool isActivitySource(ThorActivityKind kind)
     switch (kind)
     {
     case TAKpiperead:
-    case TAKtemptable:
     case TAKinlinetable:
-    case TAKtemprow:
     case TAKworkunitread:
     case TAKnull:
     case TAKsideeffect:

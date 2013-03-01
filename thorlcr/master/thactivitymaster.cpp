@@ -126,9 +126,7 @@ public:
             case TAKnormalize:
             case TAKnormalizechild:
             case TAKnormalizelinkedchild:
-            case TAKtemptable:
             case TAKinlinetable:
-            case TAKtemprow:
             case TAKpull:
             case TAKnull:
             case TAKpiperead:

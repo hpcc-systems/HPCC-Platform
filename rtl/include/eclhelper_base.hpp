@@ -352,27 +352,6 @@ public:
     virtual ICompare * queryCompare() { return NULL; }
 };
 
-//I don't think this is ever used....
-class CThorCountArg : public CThorArg, implements IHThorCountArg
-{
-    virtual void Link() const { RtlCInterface::Link(); }
-    virtual bool Release() const { return RtlCInterface::Release(); }
-    virtual IOutputMetaData * queryOutputMeta() { return NULL; }
-    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
-
-
-    virtual IInterface * selectInterface(ActivityInterfaceEnum which)                       
-    { 
-        switch (which)
-        {
-        case TAIarg:
-        case TAIcountarg_1:
-            return static_cast<IHThorCountArg *>(this);
-        }
-        return NULL;
-    }
-};
-
 class CThorFirstNArg : public CThorArg, implements IHThorFirstNArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
@@ -1322,29 +1301,6 @@ class CThorHashAggregateArg : public CThorArg, implements IHThorHashAggregateArg
 
     virtual unsigned getAggregateFlags() { return 0; }
     virtual size32_t mergeAggregate(ARowBuilder & rowBuilder, const void * src) { rtlFailUnexpected(); return 0; }
-};
-
-class CThorTempTableArg : public CThorArg, implements IHThorTempTableArg
-{
-public:
-    virtual void Link() const { RtlCInterface::Link(); }
-    virtual bool Release() const { return RtlCInterface::Release(); }
-    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) { ctx = _ctx; }
-
-    virtual IInterface * selectInterface(ActivityInterfaceEnum which)
-    {
-        switch (which)
-        {
-        case TAIarg:
-        case TAItemptablearg_1:
-            return static_cast<IHThorTempTableArg *>(this);
-        }
-        return NULL;
-    }
-
-    virtual unsigned getFlags()                         { return 0; }
-    virtual bool isConstant()                           { return (getFlags() & TTFnoconstant) == 0; }
-    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) { return 0; }
 };
 
 class CThorInlineTableArg : public CThorArg, implements IHThorInlineTableArg

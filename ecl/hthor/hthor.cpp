@@ -5966,30 +5966,6 @@ void CHThorDictionaryWorkUnitWriteActivity::execute()
 
 //=====================================================================================================
 
-CHThorCountActivity::CHThorCountActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorCountArg &_arg, ThorActivityKind _kind)
- : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
-{
-}
-
-__int64 CHThorCountActivity::getCount()
-{
-    __int64 count = 0;
-    loop
-    {
-        OwnedConstHThorRow nextrec(input->nextInGroup());
-        if (!nextrec)
-        {
-            nextrec.setown(input->nextInGroup());
-            if (!nextrec)
-                break;
-        }
-        count++;
-    }
-    return count;
-}
-
-//=====================================================================================================
-
 
 CHThorRemoteResultActivity::CHThorRemoteResultActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRemoteResultArg &_arg, ThorActivityKind _kind)
  : CHThorActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
@@ -6012,42 +5988,6 @@ void CHThorRemoteResultActivity::execute()
     helper.sendResult(result);
 }
 
-
-//=====================================================================================================
-
-/*
- * Deprecated in 3.8, this class is being kept for backward compatibility,
- * since now the code generator is using InlineTables (below) for all
- * temporary tables and rows.
- */
-CHThorTempTableActivity::CHThorTempTableActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorTempTableArg &_arg, ThorActivityKind _kind) :
-                 CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
-{
-}
-
-void CHThorTempTableActivity::ready()
-{
-    CHThorSimpleActivityBase::ready();
-    curRow = 0;
-    numRows = helper.numRows();
-}
-
-
-const void *CHThorTempTableActivity::nextInGroup()
-{
-    // Filtering empty rows, returns the next valid row
-    while (curRow < numRows)
-    {
-        RtlDynamicRowBuilder rowBuilder(rowAllocator);
-        size32_t size = helper.getRow(rowBuilder, curRow++);
-        if (size)
-        {
-            processed++;
-            return rowBuilder.finalizeRowClear(size);
-        }
-    }
-    return NULL;
-}
 
 //=====================================================================================================
 
@@ -9894,8 +9834,6 @@ MAKEFACTORY(AllJoin);
 MAKEFACTORY(WorkUnitWrite);
 MAKEFACTORY(DictionaryWorkUnitWrite);
 MAKEFACTORY(FirstN);
-MAKEFACTORY(Count);
-MAKEFACTORY(TempTable);
 MAKEFACTORY(InlineTable);
 MAKEFACTORY_ARG(Concat, Funnel);
 MAKEFACTORY(Apply);

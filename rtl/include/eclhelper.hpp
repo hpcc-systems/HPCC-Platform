@@ -703,7 +703,6 @@ enum ThorActivityKind
     TAKworkunitwrite,
     TAKfunnel,
     TAKapply,
-    TAKtemptable,
     TAKhashdistribute,
     TAKhashdedup,
     TAKnormalize,
@@ -831,7 +830,6 @@ enum ThorActivityKind
     TAKlinkedrawiterator,
     TAKnormalizelinkedchild,
     TAKfilterproject,
-    TAKtemprow,
     TAKdiskexists,              // non-grouped count of dataset (not child), (may filter input)
     TAKindexexists,
     TAKchildexists,
@@ -866,7 +864,6 @@ enum ActivityInterfaceEnum
     TAIarg,
     TAIpipereadarg_1,
     TAIindexwritearg_1,
-    TAIcountarg_1,
     TAIfirstnarg_1,
     TAIchoosesetsarg_1,
     TAIchoosesetsexarg_1,
@@ -897,7 +894,6 @@ enum ActivityInterfaceEnum
     TAIthroughaggregateextra_1,
     TAIdistributionarg_1,
     TAIhashaggregateextra_1,
-    TAItemptablearg_1,
     TAIsamplearg_1,
     TAIentharg_1,
     TAIfunnelarg_1,
@@ -1149,10 +1145,6 @@ struct IHThorIndexWriteArg : public IHThorArg
     virtual ICompare * queryCompare() = 0;          // only guaranteed present if TIWhaswidth defined
 };
 
-struct IHThorCountArg : public IHThorArg
-{
-};
-
 struct IHThorFirstNArg : public IHThorArg
 {
     virtual __int64 getLimit() = 0;
@@ -1187,7 +1179,7 @@ struct IHThorDiskWriteArg : public IHThorArg
     virtual void getUpdateCRCs(unsigned & eclCRC, unsigned __int64 & totalCRC) = 0;
     virtual void getEncryptKey(size32_t & keyLen, void * & key) = 0;
     virtual unsigned getFormatCrc() = 0;
-    virtual const char * getCluster(unsigned idx) = 0;        // result only valid until next call.
+    virtual const char * getCluster(unsigned idx) = 0;
 };
 
 struct IHThorFilterArg : public IHThorArg
@@ -1442,20 +1434,6 @@ struct IHThorHashAggregateExtra : public IInterface
 struct IHThorHashAggregateArg : public IHThorAggregateArg, public IHThorHashAggregateExtra
 {
     COMMON_NEWTHOR_FUNCTIONS
-};
-
-/*
- * This class has been deprecated in 3.8 in favour of IHThorInlineTableArg.
- * CThorTempRowArg also now derives from IHThorInlineTableArg.
- *
- * As of 3.8, only old code will implement this interface.
- */
-struct IHThorTempTableArg : public IHThorArg
-{
-    virtual size32_t getRow(ARowBuilder & rowBuilder, unsigned row) = 0;
-    virtual unsigned numRows() = 0;
-    virtual bool isConstant()                           { return true; }    // deprecated in favour of getFlags
-    virtual size32_t getRowSingle(ARowBuilder & rowBuilder) = 0;            // deprecated, TempRow derives from InlineTable
 };
 
 struct IHThorInlineTableArg : public IHThorArg

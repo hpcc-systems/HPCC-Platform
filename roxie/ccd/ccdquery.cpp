@@ -528,9 +528,6 @@ protected:
             return createRoxieServerSplitActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKstreamediterator:
             return createRoxieServerStreamedIteratorActivityFactory(id, subgraphId, *this, helperFactory, kind);
-        case TAKtemptable:
-        case TAKtemprow:
-            return createRoxieServerTempTableActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKinlinetable:
             return createRoxieServerInlineTableActivityFactory(id, subgraphId, *this, helperFactory, kind);
         case TAKthroughaggregate:

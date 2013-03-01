@@ -481,10 +481,6 @@ public:
             case TAKapply:
                 ret = createApplySlave(this);
                 break;
-            case TAKtemptable:
-            case TAKtemprow:
-                ret = createTempTableSlave(this);
-                break;
             case TAKinlinetable:
                 ret = createInlineTableSlave(this);
                 break;

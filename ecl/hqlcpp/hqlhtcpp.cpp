@@ -16529,7 +16529,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCountTransform(BuildCtx & ctx,
     IHqlExpression * transform = queryNewColumnProvider(expr);
     IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
 
-    // Overriding IHThorTempTableArg
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKinlinetable, expr, "InlineTable");
     buildActivityFramework(instance);
     buildInstancePrefix(instance);
