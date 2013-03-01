@@ -157,6 +157,18 @@ void ViewFailTransformer::transform(unsigned & lenTarget, char * & target, unsig
 }
 
 
+ViewExceptionTransformer::ViewExceptionTransformer(IException * _e) : ViewFieldTransformer(failAtom), e(_e)
+{
+}
+
+void ViewExceptionTransformer::transform(unsigned & lenTarget, char * & target, unsigned lenSource, const char * source)
+{
+    throw LINK(e);
+    lenTarget = 0;
+    target = NULL;
+}
+
+
 ViewAddTransformer::ViewAddTransformer() : ViewFieldTransformer(addAtom)
 {
 }
@@ -814,22 +826,31 @@ void MappingParser::parseTransformList(ViewFieldTransformerArray & transforms)
         }
 
         ViewFieldTransformer * transform;
-        if (childName)
+        try
         {
-            transform = theTransformerRegistry->resolve(mappingName, childName, args);
-            if (!transform)
+            if (childName)
             {
-                //Maybe they specified the module name - should provide a 3 valued lookup
-                transform = theTransformerRegistry->resolve(childName, grandName, args);
+                transform = theTransformerRegistry->resolve(mappingName, childName, args);
+                if (!transform)
+                {
+                    //Maybe they specified the module name - should provide a 3 valued lookup
+                    transform = theTransformerRegistry->resolve(childName, grandName, args);
+                }
+                if (!transform)
+                    throwError2(FVERR_UnrecognisedMappingFunctionXY, mappingName.get(), childName.get());
             }
-            if (!transform)
-                throwError2(FVERR_UnrecognisedMappingFunctionXY, mappingName.get(), childName.get());
+            else
+            {
+                transform = theTransformerRegistry->resolve(mappingName, args);
+                if (!transform)
+                    throwError1(FVERR_UnrecognisedMappingFunctionX, mappingName.get());
+            }
         }
-        else
+        catch (IException * e)
         {
-            transform = theTransformerRegistry->resolve(mappingName, args);
-            if (!transform)
-                throwError1(FVERR_UnrecognisedMappingFunctionX, mappingName.get());
+            EXCLOG(e, "Processing field mapping");
+            transform = new ViewExceptionTransformer(e);
+            e->Release();
         }
 
         transforms.append(*transform);
