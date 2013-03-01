@@ -233,6 +233,16 @@ struct ECLRTL_API RtlDatasetTypeInfo : public RtlCompoundTypeInfo
 };
 
 
+struct ECLRTL_API RtlDictionaryTypeInfo : public RtlCompoundTypeInfo
+{
+    inline RtlDictionaryTypeInfo(unsigned _fieldType, unsigned _length, const RtlTypeInfo * _child) : RtlCompoundTypeInfo(_fieldType, _length, _child) {}
+
+    virtual size32_t size(const byte * self, const byte * selfrow) const;
+    virtual size32_t process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const;
+    virtual size32_t toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const;
+};
+
+
 struct ECLRTL_API RtlIfBlockTypeInfo : public RtlTypeInfoBase
 {
     inline RtlIfBlockTypeInfo(unsigned _fieldType, unsigned _length, const RtlFieldInfo * const * _fields) : RtlTypeInfoBase(_fieldType, _length), fields(_fields) {}

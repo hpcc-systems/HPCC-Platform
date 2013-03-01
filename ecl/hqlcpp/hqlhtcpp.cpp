@@ -3928,11 +3928,19 @@ unsigned HqlCppTranslator::buildRtlType(StringBuffer & instanceName, ITypeInfo *
                 fieldType |= RFTMlinkcounted;
             break;
         }
-    case type_dictionary:
     case type_table:
     case type_groupedtable:
         {
             className.clear().append("RtlDatasetTypeInfo");
+            arguments.append(",&");
+            childType = buildRtlType(arguments, ::queryRecordType(type));
+            if (hasLinkCountedModifier(type))
+                fieldType |= RFTMlinkcounted;
+            break;
+        }
+    case type_dictionary:
+        {
+            className.clear().append("RtlDictionaryTypeInfo");
             arguments.append(",&");
             childType = buildRtlType(arguments, ::queryRecordType(type));
             if (hasLinkCountedModifier(type))
