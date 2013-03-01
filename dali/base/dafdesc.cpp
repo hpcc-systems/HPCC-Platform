@@ -1754,7 +1754,7 @@ public:
         partmask.set(mask);
     }
 
-    unsigned addCluster(const char *name,IGroup *grp,ClusterPartDiskMapSpec &map)
+    unsigned addCluster(const char *name,IGroup *grp,const ClusterPartDiskMapSpec &map)
     {
         closePending();
         IClusterInfo * cluster = createClusterInfo(name,grp,map);
@@ -1762,7 +1762,7 @@ public:
         return clusters.ordinality()-1;
     }
 
-    unsigned addCluster(IGroup *grp,ClusterPartDiskMapSpec &map)
+    unsigned addCluster(IGroup *grp,const ClusterPartDiskMapSpec &map)
     {
         return addCluster(NULL,grp,map);
     }
