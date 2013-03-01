@@ -34,41 +34,6 @@
 #define THORHELPER_API
 #endif
 
-//Similar to OwnedRoxieRow, but doesn't asssume roxie memory manager.
-class OwnedConstRow
-{
-public:
-    inline OwnedConstRow()                              { row = NULL; }
-    inline OwnedConstRow(const void * _row)                 { row = _row; }
-
-    inline ~OwnedConstRow()                             { rtlReleaseRow(row); }
-    
-private: 
-    /* these overloaded operators are the devil of memory leak. Use set, setown instead. */
-    inline OwnedConstRow(const OwnedConstRow & other)   { row = NULL; }
-    void operator = (void * _row)                { row = NULL; }
-    void operator = (const OwnedConstRow & other) { row = NULL; }
-
-    /* this causes -ve memory leak */
-    void setown(const OwnedConstRow &other) {  }
-
-public:
-    inline const void * operator -> () const        { return row; } 
-    inline operator const void *() const            { return row; } 
-    
-    inline void clear()                     { const void *temp=row; row=NULL; rtlReleaseRow(temp); }
-    inline const void * get() const             { return row; }
-    inline const void * getClear()              { const void * temp = row; row = NULL; return temp; }
-    inline const void * getLink() const         { rtlLinkRow(row); return row; }
-    inline void set(const void * _row)          { const void * temp = row; if (_row) rtlLinkRow(_row); row = _row; rtlReleaseRow(temp); }
-    inline void setown(const void * _row)           { const void * temp = row; row = _row; rtlReleaseRow(temp); }
-    
-    inline void set(const OwnedConstRow &other) { set(other.get()); }
-    
-private:
-    const void * row;
-};
-
 //------------------------------------------------------------------------------------------------
 
 //An inline caching version of an IOutputMetaDataEx, which hides the backward compatibility issues, and caches

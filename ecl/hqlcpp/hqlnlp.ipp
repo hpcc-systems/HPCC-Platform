@@ -19,7 +19,7 @@
 
 #include "thorparse.ipp"
 #include "thorregex.hpp"
-#include "thorrparse.ipp"
+#include "thorralgo.ipp"
 #include "hqlhtcpp.ipp"
 
 //---------------------------------------------------------------------------

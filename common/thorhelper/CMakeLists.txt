@@ -57,6 +57,8 @@ set (    SRCS
          thorxmlread.hpp 
          thorxmlwrite.hpp
          roxierow.hpp
+         thorralgo.ipp
+         thorrparse.ipp
          
          roxiedebug.hpp
          roxiedebug.ipp

@@ -27,7 +27,7 @@
 #include "hqlhtcpp.ipp"
 #include "hqlcatom.hpp"
 #include "hqlcpputil.hpp"
-#include "thorrparse.ipp"
+#include "thorralgo.ipp"
 #include "hqlthql.hpp"
 
 #include "unicode/uchar.h"
