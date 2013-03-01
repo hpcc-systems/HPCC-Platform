@@ -162,7 +162,9 @@ void CKeyHdr::write(IFileIOStream *out, CRC32 *crc)
 
 unsigned int CKeyHdr::getMaxKeyLength() 
 {
-    return hdr.length; 
+    if (hdr.flflvr < 2) // ulength introduced in KEYBUILD_VERSION_MINOR(2)
+        return hdr.length;
+    return hdr.ulength;
 }
 
 bool CKeyHdr::isVariable() 

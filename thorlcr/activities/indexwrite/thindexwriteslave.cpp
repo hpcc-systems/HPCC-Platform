@@ -74,7 +74,7 @@ class IndexWriteSlaveActivity  : public ProcessSlaveActivity, public ISmartBuffe
     bool isLocal, singlePartKey, reportOverflow, fewcapwarned, refactor;
     unsigned __int64 totalCount;
 
-    size32_t maxDiskRecordSize, lastRowSize, firstRowSize;
+    size32_t lastRowSize, firstRowSize;
     MemoryBuffer rowBuff;
     OwnedConstThorRow lastRow, firstRow;
     bool needFirstRow, enableTlkPart0, receivingTag2;
@@ -113,7 +113,6 @@ public:
     {
         helper = static_cast <IHThorIndexWriteArg *> (queryHelper());
         init();
-        maxDiskRecordSize = 0;
         active = false;
         isLocal = false;
         buildTlk = true;
@@ -171,10 +170,6 @@ public:
             }
         }
         assertex(!(helper->queryDiskRecordSize()->getMetaFlags() & MDFneedserialize));
-        maxDiskRecordSize = helper->queryDiskRecordSize()->isVariableSize() ? KEYBUILD_MAXLENGTH : helper->queryDiskRecordSize()->getFixedSize();
-        // NB: the max [ecl] length is not used, other than setting a max field in the header.
-        // However, legacy systems (<=702) check that query rec length == key rec len.
-        maxDiskRecordSize = helper->queryDiskRecordSize()->getRecordSize(NULL);
         reportOverflow = false;
     }
 
@@ -198,6 +193,7 @@ public:
         buildUserMetadata(metadata);                
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
+        size32_t maxDiskRecordSize = helper->queryDiskRecordSize()->getRecordSize(NULL);
         builder.setown(createKeyBuilder(out, flags, maxDiskRecordSize, fileSize, nodeSize, helper->getKeyedSize(), isTopLevel ? 0 : totalCount));
     }
 

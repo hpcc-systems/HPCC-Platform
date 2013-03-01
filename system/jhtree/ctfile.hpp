@@ -38,7 +38,8 @@
 #define HTREE_COMPRESSED_KEY 0x40
 #define HTREE_QUICK_COMPRESSED_KEY 0x48
 #define KEYBUILD_VERSION 1 // unsigned short. NB: This should upped if a change would make existing keys incompatible with current build.
-#define KEYBUILD_MAXLENGTH 0x7FFF
+#define KEYBUILD_VERSION_MINOR 2 // a minor version change, will not break compatibility with old builds
+#define KEYBUILD_LEGACY_MAXLENGTH 0x7FFF
 
 // structure to be read into - NO VIRTUALS.
 // This header layout corresponds to FairCom cTree layout for compatibility with old systems ...
@@ -57,7 +58,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     __int64 servid; /* unique server id         48x */
     short   verson; /* configuration options at create  50x */
     unsigned short  nodeSize;   /* node record size         52x */
-    unsigned short  reclen; /* data record length           54x */
+    unsigned short  reclen; /* data record length           54x */ // JCSMORE - appears to be unused/unset in our system
     unsigned short  extsiz; /* extend file (chunk) size     56x */
     unsigned short  flmode; /* file mode (virtual, etc)     58x */
     unsigned short  logtyp; /* permanent components of file mode    5ax */
@@ -96,6 +97,7 @@ struct __declspec(novtable) jhtree_decl KeyHdr
     short unused[2]; /* unused ecx */
     __int64 blobHead; /* fpos of first blob node f0x */
     __int64 metadataHead; /* fpos of first metadata node f8x */
+    unsigned ulength; // KEYBUILD_VERSION_MINOR>=2 use this 4byte field in place of 2byte 'length'
 };
 
 //#pragma pack(1)

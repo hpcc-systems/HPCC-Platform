@@ -113,7 +113,21 @@ public:
         KeyHdr *hdr = keyHdr->getHdrStruct();
         hdr->nodeSize = nodeSize;
         hdr->extsiz = 4096;
-        hdr->length = keyValueSize; 
+        // NB: 'length' used by KEYBUILD_VERSION_MINOR<=1 only
+        if (keyValueSize <= KEYBUILD_LEGACY_MAXLENGTH)
+            hdr->length = keyValueSize;
+        else
+        {
+            // This is for legacy reasons only.
+            // a variable length key, _may_ fit into the old KEYBUILD_MAXLENGTH maximum
+            if (HTREE_VARSIZE == (flags & HTREE_VARSIZE))
+            {
+                // However, legacy hthor, insisted on exact match with ECL maxlength.
+                hdr->length = KEYBUILD_LEGACY_MAXLENGTH;
+            }
+            else // a fixed > KEYBUILD_LEGACY_MAXLENGTH, will not be compatible with legacy systems.
+                hdr->length = 0; // mark as 0 to ensure legacy readers spot unable to handle asap.
+        }
         hdr->ktype = flags; 
         hdr->timeid = 0;
         hdr->clstyp = 1;  // IDX_CLOSE
@@ -122,7 +136,7 @@ public:
         hdr->flpntr = sizeof(offset_t);
         hdr->verson = 130; // version from ctree.
         hdr->keypad = ' ';
-        hdr->flflvr = 1;
+        hdr->flflvr = KEYBUILD_VERSION_MINOR; // AFAICS, this was  unused, we use this as a minor version, for feature detection.
         hdr->flalgn = 8;
         hdr->maxmrk = hdr->nodeSize/4; // always this in ctree.
         hdr->namlen = 255;
@@ -131,9 +145,10 @@ public:
         hdr->fposOffset = 0;
         hdr->fileSize = fileSize;
         hdr->nodeKeyLength = _keyedSize;
-        hdr->version = KEYBUILD_VERSION;
+        hdr->version = KEYBUILD_VERSION; // NB: old readers, will fire error if detect new version
         hdr->blobHead = 0;
         hdr->metadataHead = 0;
+        hdr->ulength = keyValueSize; // introduced in KEYBUILD_VERSION_MINOR(2), KEYBUILD_VERSION_MINOR<2 relies on short field 'length'
 
         keyHdr->write(out);  // Reserve space for the header - we'll seek back and write it properly later
     }

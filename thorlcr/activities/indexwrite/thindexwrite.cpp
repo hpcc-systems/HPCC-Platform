@@ -60,10 +60,6 @@ public:
     {
         dlfn.set(helper->getFileName());
         isLocal = 0 != (TIWlocal & helper->getFlags());
-        unsigned maxSize = helper->queryDiskRecordSize()->getMinRecordSize();
-        if (maxSize > KEYBUILD_MAXLENGTH)
-            throw MakeActivityException(this, 0, "Index minimum record length (%d) exceeds %d internal limit", maxSize, KEYBUILD_MAXLENGTH);
-
         singlePartKey = 0 != (helper->getFlags() & TIWsmall) || dlfn.isExternal();
         clusters.kill();
         unsigned idx=0;
