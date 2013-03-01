@@ -143,6 +143,7 @@ define([
             this.removeAllChildren();
             this.tabMap = [];
             this.selectedTab = null;
+            this.initalized = false;
         },
 
         refresh: function (wu) {
