@@ -62,14 +62,6 @@ class MemoryBuffer;
 
 //-----------------------------------------------------------------------------
 
-interface IRtlRowCallback
-{
-    virtual void releaseRow(const void * row) const = 0;
-    virtual void releaseRowset(unsigned count, byte * * rowset) const = 0;
-    virtual void * linkRow(const void * row) const = 0;
-    virtual byte * * linkRowset(byte * * rowset) const = 0;
-};
-
 // RegEx Compiler for ansii  strings (uses BOOST)
 interface IStrRegExprFindInstance
 {
@@ -497,11 +489,6 @@ ECLRTL_API void rtlReleaseRow(const void * row);
 ECLRTL_API void * rtlLinkRow(const void * row);
 ECLRTL_API void rtlReleaseRowset(unsigned count, byte * * rowset);
 ECLRTL_API byte * * rtlLinkRowset(byte * * rowset);
-
-// argument is not linked, and must remain until closedown, or called with NULL.  Returns the previous value.  
-// Not thread safe, but shouldn't need to be.
-ECLRTL_API IRtlRowCallback * rtlSetReleaseRowHook(IRtlRowCallback * hook);      
-
 
 ECLRTL_API void ensureRtlLoaded();      // call this to create a static link to the rtl...
 

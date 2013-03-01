@@ -43,6 +43,8 @@
 #include "jmd5.hpp"
 #include "rtlqstr.ipp"
 
+#include "roxiemem.hpp"
+
 #ifndef _WIN32
 //typedef long long __int64;
 #define _fastcall
@@ -87,34 +89,27 @@ ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size)
 }
 
 //=============================================================================
-static IRtlRowCallback * rowCallback = NULL;
 
 ECLRTL_API void rtlReleaseRow(const void * row)
 {
-    if (row)
-        rowCallback->releaseRow(row);
+    ReleaseRoxieRow(row);
 }
 
 ECLRTL_API void rtlReleaseRowset(unsigned count, byte * * rowset)
 {
-    rowCallback->releaseRowset(count, rowset);
-}
-
-ECLRTL_API IRtlRowCallback * rtlSetReleaseRowHook(IRtlRowCallback * hook)
-{
-    IRtlRowCallback * prev = rowCallback;
-    rowCallback = hook;
-    return prev;
+    ReleaseRoxieRowset(count, rowset);
 }
 
 ECLRTL_API void * rtlLinkRow(const void * row)
 {
-    return rowCallback->linkRow(row);
+    LinkRoxieRow(row);
+    return const_cast<void *>(row);
 }
 
 ECLRTL_API byte * * rtlLinkRowset(byte * * rowset)
 {
-    return rowCallback->linkRowset(rowset);
+    LinkRoxieRowset(rowset);
+    return rowset;
 }
 
 //=============================================================================

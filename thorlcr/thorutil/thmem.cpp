@@ -1714,7 +1714,7 @@ ILargeMemLimitNotify *createMultiThorResourceMutex(const char *grpname,CSDSServe
 }
 
 
-class CThorAllocator : public CSimpleInterface, implements IRtlRowCallback, implements IThorAllocator, implements IRowAllocatorMetaActIdCacheCallback
+class CThorAllocator : public CSimpleInterface, implements IThorAllocator, implements IRowAllocatorMetaActIdCacheCallback
 {
 protected:
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
@@ -1729,13 +1729,11 @@ public:
         allocatorMetaCache.setown(createRowAllocatorCache(this));
         rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
         rowManager->setMemoryLimit(memSize, 0==memorySpillAt ? 0 : memSize/100*memorySpillAt);
-        rtlSetReleaseRowHook(this);
     }
     ~CThorAllocator()
     {
         rowManager.clear();
         allocatorMetaCache.clear();
-        rtlSetReleaseRowHook(NULL); // nothing should use it beyond this point anyway
     }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
     virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id) const
@@ -1753,26 +1751,6 @@ public:
     }
     virtual roxiemem::RoxieHeapFlags queryFlags() const { return flags; }
     virtual bool queryCrc() const { return false; }
-
-// IRtlRowCallback
-    virtual void releaseRow(const void * row) const
-    {
-        ReleaseThorRow(row);
-    }
-    virtual void releaseRowset(unsigned count, byte * * rowset) const
-    {
-        ReleaseRoxieRowset(count, rowset);
-    }
-    virtual void *linkRow(const void * row) const
-    {
-        LinkThorRow(row);
-        return const_cast<void *>(row);
-    }
-    virtual byte * * linkRowset(byte * * rowset) const
-    {
-        LinkThorRow(rowset);
-        return const_cast<byte * *>(rowset);
-    }
 };
 
 // derived to avoid a 'crcChecking' check per getRowAllocator only

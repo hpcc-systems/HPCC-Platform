@@ -9960,28 +9960,3 @@ extern HTHOR_API IEngineRowAllocator * createHThorRowAllocator(IRowManager & _ro
 {
     return createRoxieRowAllocator(_rowManager, _meta, _activityId, _allocatorId, roxiemem::RHFnone);
 }
-
-static class RowCallbackHook : implements IRtlRowCallback
-{
-public:
-    virtual void releaseRow(const void * row) const
-    {
-        releaseHThorRow(row);
-    }
-    virtual void releaseRowset(unsigned count, byte * * rowset) const
-    {
-        ReleaseRoxieRowset(count, rowset);
-    }
-    virtual void * linkRow(const void * row) const
-    {
-        linkHThorRow(row);
-        return const_cast<void *>(row);
-    }
-    virtual byte * * linkRowset(byte * * rowset) const
-    {
-        linkHThorRow(rowset);
-        return const_cast<byte * *>(rowset);
-    }
-} callbackHook;
-
-extern HTHOR_API IRtlRowCallback * queryHThorRtlRowCallback() { return &callbackHook; }
