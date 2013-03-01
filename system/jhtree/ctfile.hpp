@@ -109,7 +109,8 @@ struct jhtree_decl NodeHdr
     unsigned short   numKeys;
     unsigned short   keyBytes;
     unsigned    crc32;
-    char    unusedMemNumber;
+    char    compatVersion; // set only if key requirements mean key is incompatible with legacy systems
+                           // legacy systems (702) used to insist that this member was == 0
     char    leafFlag;
 
     bool isValid(unsigned nodeSize)
@@ -117,7 +118,7 @@ struct jhtree_decl NodeHdr
         return 
             (rightSib % nodeSize == 0) &&
             (leftSib % nodeSize == 0) &&
-            (unusedMemNumber==0) &&
+            (compatVersion==0 || compatVersion>=KEYBUILD_VERSION) &&
             (keyBytes < nodeSize);
     }
 };
@@ -166,6 +167,10 @@ protected:
     CKeyHdr *keyHdr;
     bool isVariable;
 
+    bool isBigKey()
+    {
+        return keyHdr->getMaxKeyLength() > KEYBUILD_LEGACY_MAXLENGTH;
+    }
 public:
     inline offset_t getFpos() const { return fpos; }
     inline size32_t getKeyLen() const { return keyLen; }
@@ -265,17 +270,6 @@ public:
     virtual int compareValueAt(const char *src, unsigned int index) const {throwUnexpected();}
     virtual void dump() {throwUnexpected();}
     void get(StringBuffer & out);
-};
-
-class jhtree_decl CNodeHeader : public CNodeBase
-{
-public:
-    CNodeHeader();
-
-    void load(NodeHdr &hdr);
-
-    inline offset_t getRightSib() const { return hdr.rightSib; }
-    inline offset_t getLeftSib() const { return hdr.leftSib; }
 };
 
 class jhtree_decl CWriteNodeBase : public CNodeBase

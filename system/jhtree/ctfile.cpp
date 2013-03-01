@@ -80,6 +80,7 @@ inline void SwapBigEndian(KeyHdr &hdr)
     _WINREV(hdr.version);
     _WINREV(hdr.blobHead);
     _WINREV(hdr.metadataHead);
+    _WINREV(hdr.ulength);
 }
 
 inline void SwapBigEndian(NodeHdr &hdr)
@@ -89,7 +90,7 @@ inline void SwapBigEndian(NodeHdr &hdr)
     _WINREV(hdr.numKeys);
     _WINREV(hdr.keyBytes);
     _WINREV(hdr.crc32);
-//   _WINREV(hdr.memNumber);
+//   _WINREV(hdr.compatVersion);
 //   _WINREV(hdr.leafFlag);
 }
 
@@ -206,6 +207,8 @@ CNodeBase::~CNodeBase()
 CWriteNodeBase::CWriteNodeBase(offset_t _fpos, CKeyHdr *_keyHdr) 
 {
     CNodeBase::load(_keyHdr, _fpos);
+    if (isBigKey()) // if key is bigger than legacy systems, flag in hdr, so legacy builds will reject key
+        hdr.compatVersion = KEYBUILD_VERSION;
     unsigned nodeSize = keyHdr->getNodeSize();
     nodeBuf = (char *) malloc(nodeSize);
     memset(nodeBuf, 0, nodeSize);
@@ -442,18 +445,6 @@ size32_t CMetadataWriteNode::set(const char * &data, size32_t &size)
     data += written;
     size -= written;
     return written;
-}
-
-//=========================================================================================================
-
-CNodeHeader::CNodeHeader() 
-{
-}
-
-void CNodeHeader::load(NodeHdr &_hdr)
-{
-    memcpy(&hdr, &_hdr, sizeof(hdr));
-    SwapBigEndian(hdr);
 }
 
 //=========================================================================================================
