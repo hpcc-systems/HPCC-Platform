@@ -848,6 +848,74 @@ size32_t RtlDatasetTypeInfo::toXML(const byte * self, const byte * selfrow, cons
 
 //-------------------------------------------------------------------------------------------------------------------
 
+size32_t RtlDictionaryTypeInfo::size(const byte * self, const byte * selfrow) const
+{
+    if (isLinkCounted())
+        return sizeof(size32_t) + sizeof(void * *);
+    return sizeof(size32_t) + rtlReadUInt4(self);
+}
+
+size32_t RtlDictionaryTypeInfo::process(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IFieldProcessor & target) const
+{
+    if (isLinkCounted())
+    {
+        if (target.processBeginDataset(field))
+        {
+            size32_t thisCount = rtlReadUInt4(self);
+            const byte * * rows = *reinterpret_cast<const byte * * const *>(self + sizeof(size32_t));
+            for (unsigned i= 0; i < thisCount; i++)
+            {
+                const byte * row = rows[i];
+                if (row)
+                    child->process(row, row, field, target);
+            }
+            target.processEndDataset(field);
+        }
+        return sizeof(size32_t) + sizeof(void * *);
+    }
+    else
+    {
+        //MORE: We could interpret serialized dictionaries if there was ever a need
+        UNIMPLEMENTED;
+    }
+}
+
+size32_t RtlDictionaryTypeInfo::toXML(const byte * self, const byte * selfrow, const RtlFieldInfo * field, IXmlWriter & target) const
+{
+    StringAttr outerTag;
+    if (hasOuterXPath(field))
+    {
+        queryNestedOuterXPath(outerTag, field);
+        target.outputBeginNested(outerTag, false);
+    }
+
+    unsigned thisSize;
+    if (isLinkCounted())
+    {
+        size32_t thisCount = rtlReadUInt4(self);
+        const byte * * rows = *reinterpret_cast<const byte * * const *>(self + sizeof(size32_t));
+        for (unsigned i= 0; i < thisCount; i++)
+        {
+            const byte * row = rows[i];
+            if (row)
+                child->toXML(row, row, field, target);
+        }
+        thisSize = sizeof(size32_t) + sizeof(void * *);
+    }
+    else
+    {
+        //MORE: We could interpret serialized dictionaries if there was ever a need
+        UNIMPLEMENTED;
+    }
+
+    if (outerTag)
+        target.outputEndNested(outerTag);
+
+    return thisSize;
+}
+
+//-------------------------------------------------------------------------------------------------------------------
+
 size32_t RtlIfBlockTypeInfo::size(const byte * self, const byte * selfrow) const 
 {
     if (getCondition(selfrow))
