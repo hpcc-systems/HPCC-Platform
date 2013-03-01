@@ -47,7 +47,6 @@ include_directories (
          ./../../system/jlib 
          ./../thorcodectx 
          ./../mfilemanager 
-         ./../../common/commonext 
          ./../activities 
          ./../../rtl/eclrtl 
          ./../master 
@@ -77,7 +76,6 @@ target_link_libraries (  thormaster_lcr
          eclrtl 
          deftype 
          workunit 
-         commonext 
          graph_lcr 
          thorsort_lcr 
          thorhelper 

@@ -46,7 +46,6 @@ include_directories (
          ./../../system/jlib 
          ./../thorcodectx 
          ./../mfilemanager 
-         ./../../common/commonext 
          ./../activities 
          ./../../rtl/eclrtl 
          ./../../common/thorhelper 
@@ -59,7 +58,6 @@ set_target_properties(graphmaster_lcr PROPERTIES
 install ( TARGETS graphmaster_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( graphmaster_lcr
          jlib
-         commonext 
          jhtree 
          nbcd 
          eclrtl 

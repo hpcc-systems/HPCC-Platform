@@ -64,7 +64,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/dllserver
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/ecl/schedulectrl
-         ${HPCC_SOURCE_DIR}/common/commonext
          ${CMAKE_BINARY_DIR}
          ${CMAKE_BINARY_DIR}/oss
     )
@@ -89,7 +88,6 @@ target_link_libraries ( hthor
          securesocket
          thorhelper
          roxiemem
-         commonext
          schedulectrl
     )
 
