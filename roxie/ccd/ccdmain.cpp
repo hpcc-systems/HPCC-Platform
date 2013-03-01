@@ -415,27 +415,16 @@ public:
     }
     virtual void releaseRowset(unsigned count, byte * * rowset) const
     {
-        if (rowset)
-        {
-            if (!roxiemem::HeapletBase::isShared(rowset))
-            {
-                byte * * finger = rowset;
-                while (count--)
-                    ReleaseRoxieRow(*finger++);
-            }
-            ReleaseRoxieRow(rowset);
-        }
+        ReleaseRoxieRowset(count, rowset);
     }
     virtual void * linkRow(const void * row) const
     {
-        if (row) 
-            LinkRoxieRow(row);
+        LinkRoxieRow(row);
         return const_cast<void *>(row);
     }
     virtual byte * * linkRowset(byte * * rowset) const
     {
-        if (rowset)
-            LinkRoxieRow(rowset);
+        LinkRoxieRow(rowset);
         return const_cast<byte * *>(rowset);
     }
 } callbackHook;

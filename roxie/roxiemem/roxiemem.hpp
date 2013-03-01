@@ -128,6 +128,7 @@ public:
     }
 
     static void release(const void *ptr);
+    static void releaseRowset(unsigned count, byte * * rowset);
     static bool isShared(const void *ptr);
     static void link(const void *ptr);
     static memsize_t capacity(const void *ptr);
@@ -254,6 +255,7 @@ public:
 #define ReleaseRoxieRow(row) roxiemem::HeapletBase::release(row)
 #define ReleaseClearRoxieRow(row) roxiemem::HeapletBase::releaseClear(row)
 #define LinkRoxieRow(row) roxiemem::HeapletBase::link(row)
+#define ReleaseRoxieRowset(cnt, rowset) roxiemem::HeapletBase::releaseRowset(cnt, rowset)
 
 //Functions to determine information about roxie rows
 #define RoxieRowCapacity(row)  roxiemem::HeapletBase::capacity(row)
