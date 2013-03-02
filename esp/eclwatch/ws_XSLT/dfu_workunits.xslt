@@ -397,7 +397,7 @@
                 </xsl:if>
             </td>
             <td>
-                <a href="javascript:go('/esp/files/stub.htm?Widget=DFUWUDetailsWidget&amp;Wuid={ID}')">
+                <a href="javascript:go('/FileSpray/GetDFUWorkunit?wuid={ID}')">
                     <xsl:choose>
                         <xsl:when test="State=2 or State=3"><b><xsl:value-of select="ID"/></b></xsl:when>
                         <xsl:otherwise><xsl:value-of select="ID"/></xsl:otherwise>

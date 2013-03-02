@@ -71,19 +71,25 @@ define([
                 Wuids: wuids,
                 ActionType: actionType
             };
-            ESPRequest.flattenArray(request, "Wuids");
+            ESPRequest.flattenArray(request, "Wuids", "Wuid");
 
             return ESPRequest.send("WsWorkunits", "WUAction", {
                 request: request,
                 load: function (response) {
                     if (lang.exists("WUActionResponse.ActionResults.WUActionResult", response)) {
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
-                            var isError = item.Result.indexOf("Failed:") === 0;
-                            dojo.publish("hpcc/brToaster", {
-                                message: "<h4>" + item.Action + " "+ item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
-                                type: isError ? "error" : "message",
-                                duration: isError ? -1 : 5
-                            });
+                            if (item.Result.indexOf("Failed:") === 0) {
+                                dojo.publish("hpcc/brToaster", {
+                                    message: "<h4>" + item.Action + " " + item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
+                                    type: "error",
+                                    duration: -1
+                                });
+                            } else {
+                                dojo.publish("hpcc/brToaster", {
+                                    message: "<h4>" + item.Action + " " + item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
+                                    type: "message"
+                                });
+                            }
                         });
                     }
 

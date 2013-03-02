@@ -14,10 +14,15 @@
 #	limitations under the License.
 ############################################################################## */
 define([
+    "exports",
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-attr",
     "dojo/dom-class",
+    "dojo/dom-form",
+    "dojo/query",
 
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
@@ -26,8 +31,11 @@ define([
     "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/TooltipDialog",
+    "dijit/form/Form",
     "dijit/form/SimpleTextarea",
+    "dijit/form/TextBox",
     "dijit/form/Button",
+    "dijit/form/DropDownButton",
     "dijit/TitlePane",
     "dijit/registry",
 
@@ -37,20 +45,23 @@ define([
     "hpcc/FilePartsWidget",
     "hpcc/WUDetailsWidget",
     "hpcc/DFUWUDetailsWidget",
-
+    "hpcc/TargetSelectWidget",
     "hpcc/ESPLogicalFile",
 
-    "dojo/text!../templates/LFDetailsWidget.html"
-], function (declare, lang, dom, domClass, 
-                _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, SimpleTextarea, Button, TitlePane, registry,
-                _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget,
+    "dojo/text!../templates/LFDetailsWidget.html",
+
+    "dijit/TooltipDialog"
+], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query,
+                _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
+                _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget,
                 ESPLogicalFile,
                 template) {
-    return declare("LFDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "LFDetailsWidget",
         borderContainer: null,
         tabContainer: null,
+        summaryWidget: null,
         contentWidget: null,
         contentWidgetLoaded: false,
         sourceWidget: null,
@@ -83,45 +94,50 @@ define([
             this.workunitWidget = registry.byId(this.id + "_Workunit");
             this.dfuWorkunitWidget = registry.byId(this.id + "_DFUWorkunit");
             this.legacyPane = registry.byId(this.id + "_Legacy");
+            this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
+            this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
         },
 
         //  Hitched actions  ---
+        _onRefresh: function (event) {
+            this.logicalFile.refresh();
+        },
         _onSave: function (event) {
             var context = this;
-            this.logicalFile.save(dom.byId(context.id + "Description").value, {
-                onGetAll: function (response) {
-                    context.refreshFileDetails(response);
-                }
-            });
-        },
-        _onRename: function (event) {
-            var context = this;
-            this.logicalFile.rename(dom.byId(this.id + "LogicalFileName2").innerHTML, {
-                onGetAll: function (response) {
-                    context.refreshFileDetails(response);
-                }
-            });
+            this.logicalFile.save(dom.byId(context.id + "Description").value);
         },
         _onDelete: function (event) {
             this.logicalFile.doDelete({
                 load: function (response) {
-                    //TODO
                 }
             });
         },
-        _onCopy: function (event) {
+        _onCopyOk: function (event) {
             this.logicalFile.copy({
-                load: function (response) {
-                    //TODO
-                }
+                request: domForm.toObject(this.id + "CopyDialog")
             });
+            registry.byId(this.id + "CopyDropDown").closeDropDown();
         },
-        _onDespray: function (event) {
-            var context = this;
+        _onCopyCancel: function (event) {
+            registry.byId(this.id + "CopyDropDown").closeDropDown();
+        },
+        _onDesprayOk: function (event) {
             this.logicalFile.despray({
-                load: function (response) {
-                }
+                request: domForm.toObject(this.id + "DesprayDialog")
             });
+            registry.byId(this.id + "DesprayDropDown").closeDropDown();
+        },
+        _onDesprayCancel: function (event) {
+            registry.byId(this.id + "DesprayDropDown").closeDropDown();
+        },
+        _onRenameOk: function (event) {
+            this.logicalFile.rename({
+                request: domForm.toObject(this.id + "RenameDialog")
+            });
+            registry.byId(this.id + "RenameDropDown").closeDropDown();
+        },
+        _onRenameCancel: function (event) {
+            registry.byId(this.id + "RenameDropDown").closeDropDown();
         },
 
         //  Implementation  ---
@@ -130,16 +146,31 @@ define([
                 return;
             this.initalized = true;
 
+            var context = this;
             if (params.Name) {
-                dom.byId(this.id + "LogicalFileName").innerHTML = params.Name;
+                //dom.byId(this.id + "Name").innerHTML = params.Name;
                 //dom.byId(this.id + "LogicalFileName2").value = params.Name;
-                this.logicalFile = new ESPLogicalFile({
-                    cluster: params.Cluster,
-                    logicalName: params.Name
+                this.logicalFile = ESPLogicalFile.Get(params.Name);
+                var data = this.logicalFile.getData();
+                for (key in data) {
+                    this.updateInput(key, null, data[key]);
+                }
+                this.logicalFile.watch(function (name, oldValue, newValue) {
+                    context.updateInput(name, oldValue, newValue);
                 });
-                this.refreshPage();
+                this.logicalFile.refresh();
             }
             this.selectChild(this.summaryWidget, true);
+            this.copyTargetSelect.init({
+                Groups: true
+            });
+            this.desprayTargetSelect.init({
+                DropZones: true,
+                callback: function (value, item) {
+                    context.updateInput("DesprayTargetIPAddress", null, item.machine.Netaddress);
+                    context.updateInput("DesprayTargetPath", null, item.machine.Directory + "/" + context.logicalFile.Filename);
+                }
+            });
         },
 
         initTab: function() {
@@ -152,7 +183,7 @@ define([
             } else if (currSel.id == this.sourceWidget.id && !this.sourceWidgetLoaded) {
                 this.sourceWidgetLoaded = true;
                 this.sourceWidget.init({
-                    ECL: this.logicalFile.DFUInfoResponse.Ecl
+                    ECL: this.logicalFile.Ecl
                 });
             } else if (currSel.id == this.defWidget.id && !this.defWidgetLoaded) {
                 var context = this;
@@ -173,22 +204,22 @@ define([
             } else if (currSel.id == this.filePartsWidget.id && !this.filePartsWidgetLoaded) {
                 this.filePartsWidgetLoaded = true;
                 this.filePartsWidget.init({
-                    fileParts: lang.exists("logicalFile.DFUInfoResponse.DFUFileParts.DFUPart", this) ? this.logicalFile.DFUInfoResponse.DFUFileParts.DFUPart : []
+                    fileParts: lang.exists("logicalFile.DFUFileParts.DFUPart", this) ? this.logicalFile.DFUFileParts.DFUPart : []
                 });
             } else if (this.workunitWidget && currSel.id == this.workunitWidget.id && !this.workunitWidgetLoaded) {
                 this.workunitWidgetLoaded = true;
                 this.workunitWidget.init({
-                    Wuid: this.logicalFile.DFUInfoResponse.Wuid
+                    Wuid: this.logicalFile.Wuid
                 });
             } else if (this.dfuWorkunitWidget && currSel.id == this.dfuWorkunitWidget.id && !this.workunitWidgetLoaded) {
                 this.dfuWorkunitWidgetLoaded = true;
                 this.dfuWorkunitWidget.init({
-                    Wuid: this.logicalFile.DFUInfoResponse.Wuid
+                    Wuid: this.logicalFile.Wuid
                 });
             } else if (currSel.id == this.legacyPane.id && !this.legacyPaneLoaded) {
                 this.legacyPaneLoaded = true;
                 this.legacyPane.set("content", dojo.create("iframe", {
-                    src: "/WsDfu/DFUInfo?Name=" + this.logicalFile.logicalName,//+ "&Cluster=" + this.logicalFile.cluster,
+                    src: "/WsDfu/DFUInfo?Name=" + this.logicalFile.Name,//+ "&Cluster=" + this.logicalFile.cluster,
                     style: "border: 0; width: 100%; height: 100%"
                 }));
             }
@@ -201,15 +232,69 @@ define([
             return true;
         },*/
 
-        refreshPage: function () {
-            var context = this;
-            this.logicalFile.getInfo({
-                onGetAll: function (response) {
-                    context.refreshFileDetails(response);
+        updateInput: function (name, oldValue, newValue) {
+            var domElem = dom.byId(this.id + name);
+            if (domElem) {
+                switch(domElem.tagName) {
+                    case "SPAN":
+                    case "DIV":
+                        domAttr.set(this.id + name, "innerHTML", newValue)
+                        break;
+                    case "INPUT":
+                    case "TEXTAREA":
+                        domAttr.set(this.id + name, "value", newValue)
+                        break;
+                    default:
+                        alert(domElem.tagName);
                 }
-            });
+            }
+            if (name === "Wuid") {
+                if (!newValue) {
+                    this.removeChild(this.workunitWidget);
+                    this.workunitWidget = null;
+                    this.removeChild(this.dfuWorkunitWidget);
+                    this.dfuWorkunitWidget = null;
+                } else if (this.workunitWidget && newValue[0] === "D") {
+                    this.removeChild(this.workunitWidget);
+                    this.workunitWidget = null;
+                } else if (this.dfuWorkunitWidget) {
+                    this.removeChild(this.dfuWorkunitWidget);
+                    this.dfuWorkunitWidget = null;
+                }
+            }
+            if (name === "Name") {
+                this.updateInput("RenameSourceName", oldValue, newValue);
+                this.updateInput("RenameTargetName", oldValue, newValue);
+                this.updateInput("DespraySourceName", oldValue, newValue);
+                this.updateInput("CopySourceName", oldValue, newValue);
+                this.updateInput("CopyTargetName", oldValue, newValue);
+            }
+
+            /*
+            var widget = registry.byId(this.id + name);
+            if (widget) {
+                if (widget.has("innerHTML")) {
+                    widget.set("innerHTML", newValue);
+                } else {
+                    widget.set("value", newValue);
+                }
+            } else {
+                var element = dom.byId(this.id + name);
+                if (element) {
+                    if (element.innerHTML) {
+                        element.innerHTML = newValue;
+                    } else {
+                        element.value = newValue;
+                    }
+                }
+            }
+            if (name === "Filename") {
+                registry.byId(this.id + "_Summary").set("title", newValue);
+            }
+            */
         },
         refreshFileDetails: function (fileDetails) {
+            /*
             if (fileDetails.Wuid && fileDetails.Wuid[0] == "D" && this.workunitWidget) {
                 this.removeChild(this.workunitWidget);
                 this.workunitWidget = null;
@@ -226,12 +311,13 @@ define([
             dom.byId(this.id + "JobName").innerHTML = fileDetails.JobName;
             dom.byId(this.id + "Wuid").innerHTML = fileDetails.Wuid;
             dom.byId(this.id + "Modification").innerHTML = fileDetails.Modified + " (UTC/GMT)";
-            dom.byId(this.id + "Directory").innerHTML = fileDetails.Dir;
+            dom.byId(this.id + "Dir").innerHTML = fileDetails.Dir;
             dom.byId(this.id + "RecordSize").innerHTML = fileDetails.RecordSize;
             dom.byId(this.id + "Count").innerHTML = fileDetails.RecordCount;
             this.contentWidget.set("title", "Content " + "(" + fileDetails.RecordCount + ")");
             dom.byId(this.id + "Filesize").innerHTML = fileDetails.Filesize;
-            dom.byId(this.id + "Pathmask").innerHTML = fileDetails.PathMask;
+            dom.byId(this.id + "PathMask").innerHTML = fileDetails.PathMask;
+            */
         }
 
     });

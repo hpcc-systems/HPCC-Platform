@@ -1,6 +1,6 @@
 define([
-	"dojo/_base/declare", // declare
-	"dojo/_base/lang", // lang.mixin
+    "dojo/_base/declare", // declare
+    "dojo/_base/lang", // lang.mixin
     "dojo/dom",
     "dojo/hash",
     "dojo/router",
@@ -165,8 +165,11 @@ define([
         },
 
         removeChild: function (child) {
-            this._tabContainer.removeChild(child);
-            child.destroyRecursive();
+            var context = this;
+            setTimeout(function () {
+                context._tabContainer.removeChild(child);
+                //child.destroyRecursive();
+            }, 100);
         },
 
         removeAllChildren: function() {
@@ -185,7 +188,7 @@ define([
             if (currSel != child) {
                 var nodeExists = dom.byId(child);
                 if (nodeExists) {
-                    this._tabContainer.selectChild(nodeExists);
+                    this._tabContainer.selectChild(child);
                 }
             } else {
                 this.onNewTabSelection({
