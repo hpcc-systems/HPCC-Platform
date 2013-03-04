@@ -152,8 +152,6 @@ ViewFailTransformer::ViewFailTransformer() : ViewFieldTransformer(failAtom)
 void ViewFailTransformer::transform(unsigned & lenTarget, char * & target, unsigned lenSource, const char * source)
 {
     throwError(FVERR_FailTransformation);
-    lenTarget = 0;
-    target = NULL;
 }
 
 
@@ -164,8 +162,6 @@ ViewExceptionTransformer::ViewExceptionTransformer(IException * _e) : ViewFieldT
 void ViewExceptionTransformer::transform(unsigned & lenTarget, char * & target, unsigned lenSource, const char * source)
 {
     throw LINK(e);
-    lenTarget = 0;
-    target = NULL;
 }
 
 
