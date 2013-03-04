@@ -4,30 +4,33 @@
 <sect1 id="Actions_and_Attributes">
   <title>Actions and Definitions</title>
 
-  <para>There are several built-in Actions in ECL (such as OUTPUT), but there
-  are many more actions that you can execute as queries to the supercomputer.
-  Fundamentally, an Action is simply an expression that produces a result that
-  has not been given a definition name.</para>
+  <para>While Definitions define expressions that may be evaluated, Actions
+  trigger execution of a workunit that produces results that may be viewed. An
+  Action may evaluate Definitions to produce its result. There are a number of
+  built-in Actions in ECL (such as OUTPUT), and any expression (without a
+  Definition name) is implicitly treated as an Action to produce the result of
+  the expression.</para>
 
   <sect2 id="Functions_as_ActionsFunctions_as_Actions">
-    <title>Functions as Actions<indexterm>
-        <primary>Functions as Actions</primary>
+    <title>Expressions as Actions<indexterm>
+        <primary>Expressions as Actions</primary>
       </indexterm></title>
 
-    <para>Fundamentally, all the built-in functions that return single values
-    (such as COUNT) can be executed as Actions. For example,</para>
+    <para>Fundamentally, any expression in can be treated as an Action. For
+    example,</para>
 
-    <programlisting>Attr1 := COUNT(Trades);
+    <programlisting>Attr1 := COUNT(Trades);     
 Attr2 := MAX(Trades,trd_bal);
 Attr3 := IF (1 = 0, 'A', 'B');</programlisting>
 
-    <para>are all definitions, but</para>
+    <para>are all definitions, but without a definition name, they are simply
+    expressions</para>
 
-    <programlisting>COUNT(Trades);       //execute these Function calls as Actions
+    <programlisting>COUNT(Trades);       //execute these expressions as Actions
 MAX(Trades,trd_bal);
 IF (1 = 0, 'A', 'B');</programlisting>
 
-    <para>are also all valid actions, and as such, can directly generate
+    <para>that are treated as actions, and as such, can directly generate
     result values by simply submitting them as queries to the supercomputer.
     Basically, any ECL expression can be used as an Action to instigate a
     workunit.</para>
@@ -38,9 +41,8 @@ IF (1 = 0, 'A', 'B');</programlisting>
         <primary>Definitions as Actions</primary>
       </indexterm></title>
 
-    <para>Any definition that defines a single value or record set can be
-    executed as an Action. These same actions can be executed by submitting
-    the names of the Attributes as queries, like this:</para>
+    <para>These same expression definitions can be executed by submitting the
+    names of the Definitions as queries, like this:</para>
 
     <programlisting>Attr1; //These all generate the same result values
 Attr2; // as the previous examples
@@ -52,9 +54,9 @@ Attr3;</programlisting>
         <primary>Actions as Definitions</primary>
       </indexterm></title>
 
-    <para>Conversely, by simply giving any Action a Definition name you turn
-    it into a definition, therefore no longer a directly executable action.
-    For example,</para>
+    <para>Conversely, by simply giving any Action a Definition name it becomes
+    a definition, therefore no longer a directly executable action. For
+    example,</para>
 
     <programlisting>OUTPUT(Person);</programlisting>
 
@@ -67,7 +69,7 @@ Attr3;</programlisting>
     must execute the Definition name you've given to the Action, like
     this:</para>
 
-    <programlisting>Attr4; // run the OUTPUT(Person) action</programlisting>
+    <programlisting>Attr4;    // run the previously defined OUTPUT(Person) action </programlisting>
   </sect2>
 
   <sect2 id="Debugging_Uses">

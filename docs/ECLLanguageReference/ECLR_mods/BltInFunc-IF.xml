@@ -37,17 +37,15 @@
             <entry><emphasis>trueresult</emphasis></entry>
 
             <entry>The result to return when the expression is true. This may
-            be a single value, a SET of values, a DATASET, a DICTIONARY, a
-            recordset, or an action to perform.</entry>
+            be any expression or action.</entry>
           </row>
 
           <row>
             <entry><emphasis>falseresult</emphasis></entry>
 
             <entry>The result to return when the expression is false. This may
-            be a single value, a SET of values, a DATASET, a DICTIONARY, a
-            recordset, or an action to perform. This may be omitted only if
-            the result is an action.</entry>
+            be any expression or action. This may be omitted only if the
+            result is an action.</entry>
           </row>
 
           <row>

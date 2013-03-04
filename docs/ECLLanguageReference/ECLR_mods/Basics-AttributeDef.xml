@@ -6,12 +6,12 @@
 
   <para>Each ECL definition<indexterm>
       <primary>ECL definition</primary>
-    </indexterm> is the basic building block of ECL. A definition asserts that
-  something is true; it defines <emphasis>what </emphasis>is done but not
-  <emphasis>how</emphasis> it is to be done. Definitions can be thought of as
-  a highly developed form of macro-substitution, making each succeeding
-  definition more and more highly leveraged upon the work that has gone
-  before. This results in extremely efficient query construction.</para>
+    </indexterm> is the basic building block of ECL. A definition specifies
+  <emphasis>what </emphasis>is done but not <emphasis>how</emphasis> it is to
+  be done. Definitions can be thought of as a highly developed form of
+  macro-substitution, making each succeeding definition more and more highly
+  leveraged upon the work that has gone before. This results in extremely
+  efficient query construction.</para>
 
   <para>All definitions take the form:</para>
 

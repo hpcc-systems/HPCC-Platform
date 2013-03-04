@@ -30,8 +30,7 @@
 
             <entry>The values to return. There may be as many value parameters
             as necessary to specify all the expected values of the expression.
-            This may be a single value expression, a set of values, a DATASET,
-            a DICTIONARY, a record set, or an action.</entry>
+            This may be any expression or action.</entry>
           </row>
 
           <row>
@@ -39,8 +38,7 @@
 
             <entry>The value to return when the expression returns an
             out-of-range value. The last parameter is always the
-            <emphasis>elsevalue</emphasis>. This may not be a record
-            set.</entry>
+            <emphasis>elsevalue</emphasis>. </entry>
           </row>
 
           <row>

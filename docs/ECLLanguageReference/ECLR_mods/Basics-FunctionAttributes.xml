@@ -162,19 +162,19 @@ OUTPUT(FilteredDS(SomeFile));</programlisting>
     <para><emphasis>DefinitionName</emphasis><emphasis role="bold">(
     DICTIONARY<indexterm>
         <primary>DICTIONARY parameter</primary>
-      </indexterm>(</emphasis><emphasis> struct </emphasis><emphasis
+      </indexterm>(</emphasis><emphasis> structure </emphasis><emphasis
     role="bold">) </emphasis><emphasis>AliasName</emphasis><emphasis
     role="bold"> ) := </emphasis><emphasis>expression</emphasis><emphasis
     role="bold">;</emphasis></para>
 
-    <para>The required <emphasis>struct</emphasis> names the RECORD structure
-    that defines the layout of fields in the passed DICTIONARY parameter. The
-    required<emphasis> AliasName</emphasis> names the DICTIONARY for use in
-    the function and is used in the Definition's
-    <emphasis>expression</emphasis> to indicate where in the operation the
-    passed parameter is to be used. See the <emphasis role="bold">DICTIONARY
-    as a Value Type</emphasis> discussion in the DICTIONARY
-    documentation.</para>
+    <para>The required <emphasis>structure</emphasis> parameter is the RECORD
+    structure that defines the layout of fields in the passed DICTIONARY
+    parameter (usually defined inline). The required<emphasis>
+    AliasName</emphasis> names the DICTIONARY for use in the function and is
+    used in the Definition's <emphasis>expression</emphasis> to indicate where
+    in the operation the passed parameter is to be used. See the <emphasis
+    role="bold">DICTIONARY as a Value Type</emphasis> discussion in the
+    DICTIONARY documentation.</para>
 
     <programlisting>rec := RECORD
   STRING10  color;
@@ -188,13 +188,18 @@ Ds := DATASET([{'Black' ,0 , 'Fred'},
 
 DsDCT := DICTIONARY(DS,{color =&gt; DS});
 
+DCTrec := RECORD 
+  STRING10 color =&gt; 
+  UNSIGNED1 code,
+  STRING10 name,
+END;
 InlineDCT := DICTIONARY([{'Black' =&gt; 0 , 'Fred'},
                          {'Brown' =&gt; 1 , 'Sam'},
                          {'Red'   =&gt; 2 , 'Sue'},
                          {'White' =&gt; 3 , 'Jo'} ], 
-                        {STRING10 color =&gt; UNSIGNED1 code,STRING10 name});
+                        DCTrec);
 
-MyDCTfunc(DICTIONARY({STRING10 color =&gt; UNSIGNED1 code,STRING10 name}) DCT,STRING10 key) := DCT[key].name;
+MyDCTfunc(DICTIONARY(DCTrec) DCT,STRING10 key) := DCT[key].name;
 
 MyDCTfunc(InlineDCT,'White');  //Jo
 MyDCTfunc(DsDCT,'Brown');      //Seth</programlisting>
@@ -316,7 +321,7 @@ OUTPUT(doApplyValue(2, multiValues));             // 24
 
 
           
-//An definition taking function parameters which themselves
+//A definition taking function parameters which themselves
 //have parameters that are functions...
 
 STRING doMany(INTEGER v1,

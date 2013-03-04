@@ -44,8 +44,7 @@
           <row>
             <entry><emphasis>value</emphasis></entry>
 
-            <entry>The value to return. This may be a single value, a set of
-            values, a DATASET, a DICTIONARY, a record set, or an
+            <entry>The value to return. This may be any expression or
             action.</entry>
           </row>
 

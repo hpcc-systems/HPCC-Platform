@@ -13,8 +13,8 @@
         <primary>EXPORTed Definitions</primary>
       </indexterm> defined within another module and IMPORTed<indexterm>
         <primary>IMPORTed</primary>
-      </indexterm> (see the <emphasis role="bold">EXPORT </emphasis>and
-    <emphasis role="bold">IMPORT</emphasis> keywords) are available for use in
+      </indexterm> (see the <link linkend="EXPORT">EXPORT</link> and <link linkend="IMPORT">IMPORT</link>
+     keywords) are available for use in
     the definition that contains the IMPORT. Imported Definitions must be
     fully qualified by their Module name and Definition name, using dot
     syntax<indexterm>

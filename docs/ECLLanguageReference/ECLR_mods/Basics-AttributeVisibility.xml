@@ -10,7 +10,7 @@
   disk). Within a module, you may define as many Definitions as needed. An
   IMPORT statement (see the <emphasis role="bold">IMPORT </emphasis>keyword)
   identifies any other modules whose visible Definitions will be available for
-  use in the current definition definition.</para>
+  use in the current definition.</para>
 
   <programlisting>IMPORT AnotherModule; //imports definitions from AnotherModule
 Definition1 := 5;     //as many definitions as needed</programlisting>

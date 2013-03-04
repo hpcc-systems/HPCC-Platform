@@ -30,8 +30,8 @@
         <row>
           <entry><emphasis>value_set</emphasis></entry>
 
-          <entry>A set of values. This may be an explicit set of values, the
-          SET function, or a DICTIONARY.</entry>
+          <entry>A set of values. This may be a set expression or a
+          DICTIONARY.</entry>
         </row>
       </tbody>
     </tgroup>
