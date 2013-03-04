@@ -574,9 +574,8 @@ void RtlLinkedDictionaryBuilder::appendOwn(const void * source)
             const void *entry = table[rowidx];
             if (entry && compare->docompare(source, entry)==0)
             {
-                rowAllocator->releaseRow(entry);
-                usedCount--;
-                entry = NULL;
+                rowAllocator->releaseRow(source);
+                break;
             }
             if (!entry)
             {
