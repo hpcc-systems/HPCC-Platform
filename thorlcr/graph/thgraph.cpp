@@ -1021,7 +1021,7 @@ CGraphBase::CGraphBase(CJobBase &_job) : job(_job)
 //  sentStartCtx = false;
     sentStartCtx = true; // JCSMORE - disable for now
     parentActivityId = 0;
-    created = connected = started = graphDone = aborted = prepared = receiving = false;
+    created = connected = started = graphDone = aborted = prepared = false;
     startBarrier = waitBarrier = doneBarrier = NULL;
     mpTag = waitBarrierTag = startBarrierTag = doneBarrierTag = TAG_NULL;
     executeReplyTag = TAG_NULL;
@@ -1105,6 +1105,7 @@ void CGraphBase::deserializeStartContexts(MemoryBuffer &mb)
 void CGraphBase::reset()
 {
     setCompleteEx(false);
+    graphCancelHandler.reset();
     if (0 == containers.count())
     {
         SuperHashIteratorOf<CGraphBase> iter(childGraphsTable);
@@ -1144,18 +1145,6 @@ IThorGraphIterator *CGraphBase::getChildGraphs() const
 bool CGraphBase::fireException(IException *e)
 {
     return job.fireException(e);
-}
-
-bool CGraphBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
-{
-    BooleanOnOff onOff(receiving);
-    return queryJob().queryJobComm().recv(mb, rank, mpTag, sender, timeout);
-}
-
-void CGraphBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
-{
-    if (receiving)
-        queryJob().queryJobComm().cancel(rank, mpTag);
 }
 
 bool CGraphBase::preStart(size32_t parentExtractSz, const byte *parentExtract)
@@ -1247,14 +1236,22 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
 {
     if (isComplete()) return;
     if (queryAborted())
+    {
+        if (abortException)
+            throw abortException.getLink();
         throw MakeGraphException(this, 0, "subgraph aborted(1)");
+    }
     if (!prepare(parentExtractSz, parentExtract, checkDependencies, false, false))
     {
         setComplete();
         return;
     }
     if (queryAborted())
+    {
+        if (abortException)
+            throw abortException.getLink();
         throw MakeGraphException(this, 0, "subgraph aborted(2)");
+    }
     Owned<IException> exception;
     try
     {
@@ -1613,7 +1610,7 @@ void CGraphBase::abort(IException *e)
 
         abortException.set(e);
         aborted = true;
-        cancelReceiveMsg(0, mpTag);
+        graphCancelHandler.cancel(0);
 
         if (0 == containers.count())
         {

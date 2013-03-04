@@ -528,7 +528,7 @@ protected:
     Owned<IPropertyTree> node;
     IBarrier *startBarrier, *waitBarrier, *doneBarrier;
     mptag_t mpTag, startBarrierTag, waitBarrierTag, doneBarrierTag;
-    bool created, connected, started, aborted, graphDone, prepared, sequential, receiving;
+    bool created, connected, started, aborted, graphDone, prepared, sequential;
     bool reinit, sentInitData, sentStartCtx;
     CJobBase &job;
     graph_id graphId;
@@ -536,6 +536,7 @@ protected:
     size32_t parentExtractSz; // keep track of sz when passed in, as may need to serialize later
     MemoryBuffer parentExtractMb; // retain copy, used if slave transmits to master (child graph 1st time initialization of global graph)
     unsigned counter;
+    CReplyCancelHandler graphCancelHandler;
 
     class CGraphGraphActElementIterator : public CInterface, implements IThorActivityIterator
     {
@@ -634,9 +635,7 @@ public:
     virtual void deserializeStartContexts(MemoryBuffer &mb);
     virtual void serializeCreateContexts(MemoryBuffer &mb);
     virtual void serializeStartContexts(MemoryBuffer &mb);
-    void reset();
-    bool receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER);
-    void cancelReceiveMsg(const rank_t rank, const mptag_t mpTag);
+    virtual void reset();
     void disconnectActivities()
     {
         CGraphElementIterator iter(containers);
