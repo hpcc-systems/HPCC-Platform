@@ -1,0 +1,83 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}Workunits" style="width: 100%; height: 100%" data-dojo-props='title:"Workunits"' data-dojo-type="dijit.layout.BorderContainer">
+                <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">Open</div>
+                    <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
+                    <div id="${id}SetToFailed" data-dojo-attach-event="onClick:_onSetToFailed" data-dojo-type="dijit.form.Button">Set To Failed</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}Protect" data-dojo-attach-event="onClick:_onProtect" data-dojo-type="dijit.form.Button">Protect</div>
+                    <div id="${id}Unprotect" data-dojo-attach-event="onClick:_onUnprotect" data-dojo-type="dijit.form.Button">Unprotect</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div data-dojo-type="dijit.form.DropDownButton">
+                        <span>Filter</span>
+                        <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
+                            <form class="filterForm">
+                                <ul>
+                                    <li> 
+                                        <label for="${id}Owner">Owner:</label>
+                                        <input id="${id}Owner" data-dojo-props="trim: true, placeHolder:'jsmi*'" data-dojo-type="dijit.form.TextBox"/>
+                                    </li>
+                                    <li> 
+                                        <label for="${id}Cluster">Cluster:</label>
+                                        <input id="${id}Cluster" data-dojo-props="trim: true, placeHolder:'r?x*'" data-dojo-type="dijit.form.TextBox"/>
+                                        
+                                    </li>
+                                    <li> 
+                                        <label for="${id}StateReq">StateReq:</label>
+                                        <input id="${id}StateReq" data-dojo-props="trim: true, placeHolder:'StateReq'" data-dojo-type="dijit.form.TextBox"/>
+                                    </li>
+                                    <li> 
+                                        <label for="${id}Type">Type:</label>
+                                        <input id="${id}Type" data-dojo-props="trim: true, placeHolder:'Type'" data-dojo-type="dijit.form.TextBox"/>
+                                    </li>
+                                    <li> 
+                                        <label for="${id}Jobname">Jobname:</label>
+                                        <input id="${id}Jobname" data-dojo-props="trim: true, placeHolder:'Jobname'" data-dojo-type="dijit.form.TextBox"/>
+                                    </li>
+                                    <li>
+                                        <label for="${id}PageSize">PageSize:</label>
+                                        <input id="${id}PageSize" data-dojo-props="trim: true, placeHolder:'PageSize'" data-dojo-type="dijit.form.TextBox"/>
+                                    </li>
+                                    <li>
+                                        <label for="${id}CurrentPage">CurrentPage:</label>
+                                        <input id="${id}CurrentPage" data-dojo-props="trim: true, placeHolder:'CurrentPage'" data-dojo-type="dijit.form.TextBox"/>
+                                    </li>
+                                    <li>
+                                        <label for="${id}PageStartFrom">PageStartFrom:</label>
+                                        <input id="${id}PageStartFrom" data-dojo-props="trim: true, placeHolder:'-1'" data-dojo-type="dijit.form.TextBox"/>
+                                    </li>
+                                    <li>
+                                        <label for="${id}Sortby">Sortby:</label>
+                                        <input id="${id}Sortby" data-dojo-props="trim: true, placeHolder:'Sortby'" data-dojo-type="dijit.form.TextBox"/>
+                                    </li>
+                                    <li>
+                                        <label for="${id}Descending">Descending?:</label>
+                                        <input data-dojo-type="dijit/form/CheckBox" value="descending" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+                                    </li>
+                                </ul>
+                                <button data-dojo-attach-event="onClick:_onFilterApply" data-dojo-type="dijit.form.Button">Apply</button>
+                                <button data-dojo-attach-event="onClick:_onFilterSoapTest" data-dojo-type="dijit.form.Button">SOAP Test</button>
+                                <button data-dojo-attach-event="onClick:_onFilterReset" data-dojo-type="dijit.form.Button">Reset</button>
+                                <button data-dojo-attach-event="onClick:_onFilterClearAll" data-dojo-type="dijit.form.Button">Clear All</button>
+                                <button data-dojo-attach-event="onClick:_onFilterLink" data-dojo-type="dijit.form.Button">Link to this form</button>
+                            </form>
+                        </div>
+                    </div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                </div>
+                <div id="${id}WorkunitsGrid" data-dojo-props="region: 'center', plugins: { pagination: { pageSizes: [25, 50, 100, 'All'], defaultPageSize: 50, description: true, sizeSwitch: true, pageStepper: true, gotoButton: true, maxPageStep: 4, position: 'bottom' }
+                    , indirectSelection: {
+                        headerSelector: true,
+                        width: '20px',
+                        styles: 'text-align: center;'
+                    }
+                }" data-dojo-type="dojox.grid.EnhancedGrid">
+                </div>
+            </div>
+            <div id="${id}Legacy" title="Legacy Web Page" data-dojo-type="dijit.layout.ContentPane">
+            </div>
+        </div>
+    </div>
+</div>
