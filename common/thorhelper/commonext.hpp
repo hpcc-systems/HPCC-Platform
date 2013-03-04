@@ -18,19 +18,10 @@
 #ifndef _COMMONEXT_
 #define _COMMONEXT_
 
-#ifdef _WIN32
-    #ifdef COMMONEXT_EXPORTS
-        #define thcommonext_decl __declspec(dllexport)
-    #else
-        #define thcommonext_decl __declspec(dllimport)
-    #endif
-#else
-    #define thcommonext_decl
-#endif
-
+#include "thorhelper.hpp"
 #include "eclhelper.hpp"
 
-extern thcommonext_decl const char *activityKindStr(ThorActivityKind kind);
+extern THORHELPER_API const char *activityKindStr(ThorActivityKind kind);
 
 #endif
 

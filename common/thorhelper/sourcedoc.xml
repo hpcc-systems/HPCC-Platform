@@ -21,6 +21,82 @@
     <title>common/thorhelper</title>
 
     <para>
-        The common/thorhelper directory contains the sources for the common/thorhelper library.
+        The common/thorhelper directory contains the sources for the thorhelper.so library.
+    </para>
+    <para>
+        This library contains code that is shared between the different engines.  It contains common code for activties -
+        e.g., SOAPCALL, PARSE, stepped joins.  It also contains internal code that would be shared between engines - e.g.,
+        row allocators, csv reading classes, debug helper classes.
+    </para>
+    <para>
+        The library is dependent on roxiemem (the memory manager is assumed), and can also include dependencies on dali if
+        necesary.
+    </para>
+    <para>
+        Although thorhelper primarily exists to share code between the engines, it is also used by the code generator since it
+        contains some classes for the PARSE implementation which are created and then serialized.  They are then deserialized
+        at runtime.
+    </para>
+    <para>
+        The following is a summary of the different files:
+        <itemizedlist override="bullet">
+            <listitem>
+                commonext.cpp - Mappings from an activity kind to a text string.
+            </listitem>
+            <listitem>
+                csvsplitter.cpp - Helper classes for processing csv files - dealing with quotes, escape characters and different terminators.
+            </listitem>
+            <listitem>
+                layouttrans.cpp - Classes for supporting dynamic translation of files from one format to another.
+            </listitem>
+            <listitem>
+                roxiedebug.cpp - Debugger support classes.
+            </listitem>
+            <listitem>
+                roxiehelper.cpp - Various implementation classes (could do with rationalizing)
+            </listitem>
+            <listitem>
+                roxierow.cpp - Implementation of an IEngineRowAllocator.
+            </listitem>
+            <listitem>
+                thorcommon.cpp - Shared implementation classes for hash aggregation, merging, and building rows
+            </listitem>
+            <listitem>
+                thorfile.cpp - helpers for accessing workunit results written to disk.
+            </listitem>
+            <listitem>
+                thorparse.cpp - classes shared between both PARSE implementations
+            </listitem>
+            <listitem>
+                thorpipe.cpp - classes for implementing read/write to external PIPE program.
+            </listitem>
+            <listitem>
+                thorrparse.cpp - regular expression implementation of PARSE
+            </listitem>
+            <listitem>
+                thorsoapcall.cpp - support classes for SOAPCALL
+            </listitem>
+            <listitem>
+                thorstep.cpp - implementation of the stepped join logic.
+            </listitem>
+            <listitem>
+                thorstep2.cpp - classes for optimizing a tree of stepped joins.
+            </listitem>
+            <listitem>
+                thortalgo.cpp - classes to represent a tomita PARSE
+            </listitem>
+            <listitem>
+                thortlex.cpp - lexer used by the tomita implementation of PARSE.
+            </listitem>
+            <listitem>
+                thortparse.cpp - run time tomita implementation of PARSE
+            </listitem>
+            <listitem>
+                thorxmlread.cpp - xml reading helpers
+            </listitem>
+            <listitem>
+                thorxmlwrite.cpp - xml output helpers
+            </listitem>
+        </itemizedlist>
     </para>
 </section>

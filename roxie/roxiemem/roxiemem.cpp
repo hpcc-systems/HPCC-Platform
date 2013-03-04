@@ -719,6 +719,23 @@ void HeapletBase::release(const void *ptr)
     }
 }
 
+
+void HeapletBase::releaseRowset(unsigned count, byte * * rowset)
+{
+    if (rowset)
+    {
+        //MORE: There is a small window of simultaneous releases that could lead to the children being leaked
+        if (!isShared(rowset))
+        {
+            byte * * finger = rowset;
+            while (count--)
+                release(*finger++);
+        }
+        release(rowset);
+    }
+}
+
+
 void HeapletBase::link(const void *ptr)
 {
     if (isValidRoxiePtr(ptr))
@@ -4884,8 +4901,8 @@ protected:
 
 };
 
-const memsize_t hugeMemorySize = 0x110000000;
-const memsize_t hugeAllocSize = 0x100000001;
+const memsize_t hugeMemorySize = (memsize_t)0x110000000;
+const memsize_t hugeAllocSize = (memsize_t)0x100000001;
 // const memsize_t initialAllocSize = hugeAllocSize/2; // need to support expand block for that to fit
 const memsize_t initialAllocSize = 0x100;
 

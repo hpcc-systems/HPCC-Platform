@@ -44,6 +44,7 @@ include_directories (
          ./../../rtl/nbcd 
          ./../../system/include 
          ./../../system/jlib 
+         ./../../roxie/roxiemem
          ./../../testing/unittests
          ${ICU_INCLUDE_DIR}
          ${BOOST_REGEX_INCLUDE_DIR}
@@ -62,7 +63,8 @@ target_link_libraries ( eclrtl
       ${BOOST_REGEX_LIBRARIES}
       ${ICU_LIBRARIES}
       jlib
-      nbcd 
+      nbcd
+      roxiemem
     )
 
 FOREACH( iFILES

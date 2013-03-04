@@ -47,7 +47,6 @@ include_directories (
          ./../../system/jlib 
          ./../thorcodectx 
          ./../mfilemanager 
-         ./../../common/commonext 
          ./../../common/thorhelper 
          ./../../roxie/roxiemem
     )
@@ -68,7 +67,6 @@ target_link_libraries ( mfilemanager_lcr
          deftype 
          workunit 
          jhtree 
-         commonext 
          graph_lcr 
     )
 

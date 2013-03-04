@@ -23,7 +23,7 @@
 #include "hqlnlp.ipp"
 #include "hqlhtcpp.ipp"
 #include "hqlcatom.hpp"
-#include "thorrparse.ipp"
+#include "thorralgo.ipp"
 #include "hqlfold.hpp"
 #include "hqlcse.ipp"
 #include "hqlccommon.hpp"

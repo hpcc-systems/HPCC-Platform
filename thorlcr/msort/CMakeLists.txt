@@ -46,7 +46,6 @@ include_directories (
          ./../shared 
          ./../../system/jlib 
          ./../../common/workunit 
-         ./../../common/commonext 
          ./../thorutil 
          ./../../common/thorhelper 
          ./../../common/dllserver 
@@ -68,7 +67,6 @@ else ()
     target_link_libraries ( thorsort_lcr
          jlib
          eclrtl
-         commonext
          thorhelper
          mp
          dalibase

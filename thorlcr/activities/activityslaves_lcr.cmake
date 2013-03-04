@@ -103,7 +103,6 @@ include_directories (
          ./../thorcodectx 
          ./../mfilemanager 
          ./../../common/thorhelper 
-         ./../../common/commonext 
          ./../activities 
          ./../../rtl/eclrtl 
          ./../../roxie/roxiemem
@@ -117,7 +116,6 @@ install ( TARGETS activityslaves_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DES
 target_link_libraries ( activityslaves_lcr 
          jlib
          thorsort_lcr 
-         commonext 
          nbcd 
          eclrtl 
          deftype 

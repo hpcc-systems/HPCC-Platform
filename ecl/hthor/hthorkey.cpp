@@ -410,7 +410,7 @@ CHThorIndexReadActivityBase::CHThorIndexReadActivityBase(IAgentContext &_agent, 
 
 CHThorIndexReadActivityBase::~CHThorIndexReadActivityBase()
 {
-//  releaseHThorRow(recBuffer);
+//  ReleaseRoxieRow(recBuffer);
     rtlFree(activityRecordMetaBuff);
 }
 
@@ -1736,7 +1736,7 @@ public:
     offset_t pos;
     offset_t seq;
     FetchRequest(const void * _left, offset_t _pos, offset_t _seq) : left(_left), pos(_pos), seq(_seq) {}
-    ~FetchRequest() { releaseHThorRow(left); }
+    ~FetchRequest() { ReleaseRoxieRow(left); }
 };
 
 class IFlatFetchHandlerCallback
@@ -2104,7 +2104,7 @@ public:
         while (!stopped)
         {
             const void * row = getRow();
-            releaseHThorRow(row);
+            ReleaseRoxieRow(row);
         }
         clearQueue();
         waitForThreads();
@@ -2335,7 +2335,7 @@ public:
             const void * * ptr = pending.dequeue();
             if(ptr)
             {
-                releaseHThorRow(*ptr);
+                ReleaseRoxieRow(*ptr);
                 delete ptr;
             }
         }
@@ -2701,7 +2701,7 @@ public:
     ~MatchSet()
     {
         ForEachItemIn(idx, rows)
-            releaseHThorRow(rows.item(idx));
+            ReleaseRoxieRow(rows.item(idx));
     }
 
     void addRightMatch(void * right, offset_t fpos);
@@ -2803,7 +2803,7 @@ public:
 
     ~CJoinGroup()
     {
-        releaseHThorRow(left);
+        ReleaseRoxieRow(left);
     }
 
     MatchSet * getMatchSet()
@@ -3454,7 +3454,7 @@ public:
     virtual void clearQueue()
     {
         while (pending.ordinality())
-            releaseHThorRow(pending.dequeue());
+            ReleaseRoxieRow(pending.dequeue());
     }
 
     void addRow(const void *row)
@@ -3780,7 +3780,7 @@ public:
                 }
             case TAKkeyeddenormalize:
                 {
-                    OwnedConstHThorRow newLeft;
+                    OwnedConstRoxieRow newLeft;
                     newLeft.set(left);
                     unsigned rowSize = 0;
                     unsigned count = 0;
@@ -3822,7 +3822,7 @@ public:
                     if (rowSize)
                     {
                         addRow(newLeft.getClear());
-                        releaseHThorRow(newLeft);
+                        ReleaseRoxieRow(newLeft);
                         added++;
                     }
                     break;

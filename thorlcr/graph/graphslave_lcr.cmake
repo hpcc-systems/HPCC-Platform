@@ -42,7 +42,6 @@ include_directories (
          ./../slave 
          ./../../system/jlib 
          ./../mfilemanager 
-         ./../../common/commonext 
          ./../../rtl/eclrtl 
          ./../../common/thorhelper 
     )
@@ -54,7 +53,6 @@ set_target_properties(graphslave_lcr PROPERTIES
 install ( TARGETS graphslave_lcr RUNTIME DESTINATION ${EXEC_DIR} LIBRARY DESTINATION ${LIB_DIR} )
 target_link_libraries ( graphslave_lcr 
          jlib
-         commonext 
          nbcd 
          eclrtl 
          deftype 

@@ -39,7 +39,6 @@ include_directories (
          ./../shared 
          .
          ./../../common/environment 
-         ./../../common/commonext
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 
@@ -67,7 +66,6 @@ install ( TARGETS thorslave_lcr RUNTIME DESTINATION ${EXEC_DIR} )
 target_link_libraries (  thorslave_lcr 
          jlib
          remote 
-         commonext 
          dalibase 
          environment 
          dllserver 

@@ -44,17 +44,8 @@
 #include "roxierowbuff.hpp"
 
 roxiemem::IRowManager * queryRowManager();
-#define releaseHThorRow(row) ReleaseRoxieRow(row)
-#define linkHThorRow(row) LinkRoxieRow(row)
-typedef roxiemem::OwnedRoxieRow OwnedHThorRow;
-typedef roxiemem::OwnedConstRoxieRow OwnedConstHThorRow;
-typedef roxiemem::OwnedRoxieRow OwnedRow;
-typedef roxiemem::DynamicRoxieOutputRowArray DynamicOutputRowArray;
-
-//-- Memory allocation helper class
-
-byte * * linkHThorRowset(byte * * rowset);
-void releaseHThorRowset(unsigned count, byte * * rowset);
+using roxiemem::OwnedConstRoxieRow;
+using roxiemem::DynamicRoxieOutputRowArray;
 
 //---------------------------------------------------------------------------
 
@@ -146,7 +137,7 @@ public:
 
     virtual void releaseRow(const void * row)
     {
-        releaseHThorRow(row);
+        ReleaseRoxieRow(row);
     }
 
 protected:
@@ -295,7 +286,7 @@ protected:
     offset_t sizeLimit;
     Owned<IRowInterfaces> rowIf;
     StringBuffer mangledHelperFileName;
-    OwnedConstHThorRow nextrow; // needed for grouped spill
+    OwnedConstRoxieRow nextrow; // needed for grouped spill
 
     virtual bool isOutputTransformed() { return false; }
     virtual void setFormat(IFileDescriptor * desc);
@@ -399,9 +390,9 @@ public:
 class CHThorIterateActivity : public CHThorSimpleActivityBase
 {
     IHThorIterateArg &helper;
-    OwnedConstHThorRow defaultRecord;
-    OwnedConstHThorRow left;
-    OwnedConstHThorRow right;
+    OwnedConstRoxieRow defaultRecord;
+    OwnedConstRoxieRow left;
+    OwnedConstRoxieRow right;
     unsigned __int64 counter;
 
 public:
@@ -418,8 +409,8 @@ public:
 class CHThorProcessActivity : public CHThorSimpleActivityBase
 {
     IHThorProcessArg &helper;
-    OwnedConstHThorRow curRight;
-    OwnedConstHThorRow initialRight;
+    OwnedConstRoxieRow curRight;
+    OwnedConstRoxieRow initialRight;
     unsigned __int64 counter;
     Owned<IEngineRowAllocator> rightRowAllocator;
 
@@ -437,9 +428,9 @@ public:
 class CHThorRollupActivity : public CHThorSimpleActivityBase
 {
     IHThorRollupArg &helper;
-    OwnedConstHThorRow left;
-    OwnedConstHThorRow prev;
-    OwnedConstHThorRow right;
+    OwnedConstRoxieRow left;
+    OwnedConstRoxieRow prev;
+    OwnedConstRoxieRow right;
 public:
     CHThorRollupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorRollupArg &_arg, ThorActivityKind _kind);
     ~CHThorRollupActivity();
@@ -465,7 +456,7 @@ public:
 
 private:
     IHThorDedupArg &helper;
-    OwnedConstHThorRow kept;
+    OwnedConstRoxieRow kept;
     unsigned     numKept;
     unsigned     numToKeep;
     bool         keepLeft;
@@ -505,7 +496,7 @@ public:
         : hash(_hash), keyRow(_keyRow)
     {
     }
-    ~HashDedupElement()                 { releaseHThorRow(keyRow); }
+    ~HashDedupElement()                 { ReleaseRoxieRow(keyRow); }
     inline unsigned queryHash() const   { return hash; }
     inline const void *queryRow() const { return keyRow; }
 private:
@@ -575,7 +566,7 @@ private:
 class CHThorNormalizeActivity : public CHThorSimpleActivityBase
 {
     IHThorNormalizeArg &helper;
-    OwnedConstHThorRow inbuff;
+    OwnedConstRoxieRow inbuff;
     bool isVariable;
     unsigned numThisRow;
     unsigned curRow;
@@ -594,7 +585,7 @@ public:
 class CHThorNormalizeChildActivity : public CHThorSimpleActivityBase
 {
     IHThorNormalizeChildArg &helper;
-    OwnedConstHThorRow inbuff;
+    OwnedConstRoxieRow inbuff;
     unsigned curRow;
     unsigned __int64 numProcessedLastGroup;
     INormalizeChildIterator * cursor;
@@ -620,8 +611,8 @@ protected:
 class CHThorNormalizeLinkedChildActivity : public CHThorSimpleActivityBase
 {
     IHThorNormalizeLinkedChildArg &helper;
-    OwnedConstHThorRow curParent;
-    OwnedConstHThorRow curChild;
+    OwnedConstRoxieRow curParent;
+    OwnedConstRoxieRow curChild;
     unsigned __int64 numProcessedLastGroup;
 
 public:
@@ -980,7 +971,7 @@ public:
 class CHThorGroupActivity : public CHThorSteppableActivityBase
 {
     IHThorGroupArg &helper;
-    OwnedConstHThorRow next; 
+    OwnedConstRoxieRow next; 
     bool endPending;
     bool firstDone;
 public:
@@ -1016,7 +1007,7 @@ public:
     virtual void spillSortedToDisk(IDiskMerger * merger) = 0;
     virtual const void * getNextSorted() = 0;
     virtual void killSorted() = 0;
-    virtual const DynamicOutputRowArray & getRowArray() = 0;
+    virtual const DynamicRoxieOutputRowArray & getRowArray() = 0;
     virtual void flushRows() = 0;
     virtual unsigned numCommitted() const = 0;
     virtual void setActivityId(unsigned _activityId) = 0;
@@ -1082,7 +1073,7 @@ public:
             return NULL;
     }
     virtual void killSorted()                               { rowsToSort.kill(); finger = 0;}
-    virtual const DynamicOutputRowArray & getRowArray()     { return rowsToSort; }
+    virtual const DynamicRoxieOutputRowArray & getRowArray()     { return rowsToSort; }
     virtual void flushRows()                                { rowsToSort.flush(); }
     virtual size32_t numCommitted() const                   { return rowsToSort.numCommitted(); }
     virtual void setActivityId(unsigned _activityId)        { activityId = _activityId; }
@@ -1091,7 +1082,7 @@ protected:
     roxiemem::IRowManager * rowManager;
     unsigned activityId;
     ICompare * compare;
-    DynamicOutputRowArray rowsToSort;
+    DynamicRoxieOutputRowArray rowsToSort;
     aindex_t finger;
 };
 
@@ -1153,7 +1144,7 @@ public:
 class CHThorGroupedActivity : public CHThorSimpleActivityBase
 {
     IHThorGroupedArg &helper;
-    OwnedConstHThorRow next[3];
+    OwnedConstRoxieRow next[3];
     unsigned nextRowIndex;
     bool firstDone;
 public:
@@ -1170,7 +1161,7 @@ class CHThorSortedActivity : public CHThorSteppableActivityBase
 {
     IHThorSortedArg &helper;
     ICompare * compare;
-    OwnedConstHThorRow next; 
+    OwnedConstRoxieRow next; 
     bool firstDone;
 public:
     CHThorSortedActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorSortedArg &_arg, ThorActivityKind _kind);
@@ -1203,8 +1194,8 @@ class CHThorJoinActivity : public CHThorActivityBase
     bool betweenjoin;
 
     OwnedRowArray right;
-    OwnedConstHThorRow left;
-    OwnedConstHThorRow pendingRight;
+    OwnedConstRoxieRow left;
+    OwnedConstRoxieRow pendingRight;
     unsigned rightIndex;
     BoolArray matchedRight;
     bool matchedLeft;
@@ -1213,8 +1204,8 @@ class CHThorJoinActivity : public CHThorActivityBase
     Owned<IRHLimitedCompareHelper> limitedhelper;
 
 //MORE: Following are good candidates for a join base class + others
-    OwnedConstHThorRow defaultLeft;
-    OwnedConstHThorRow defaultRight;
+    OwnedConstRoxieRow defaultLeft;
+    OwnedConstRoxieRow defaultRight;
     RtlDynamicRowBuilder outBuilder;
 
     Owned<IEngineRowAllocator> defaultLeftAllocator;    
@@ -1279,9 +1270,9 @@ class CHThorSelfJoinActivity : public CHThorActivityBase
     bool eof;
     bool doneFirstFill;
 
-    OwnedConstHThorRow lhs;
-    OwnedConstHThorRow defaultLeft;
-    OwnedConstHThorRow defaultRight;
+    OwnedConstRoxieRow lhs;
+    OwnedConstRoxieRow defaultLeft;
+    OwnedConstRoxieRow defaultRight;
     RtlDynamicRowBuilder outBuilder;
     Owned<IException> failingLimit;
     bool failingOuterAtmost;
@@ -1332,7 +1323,7 @@ private:
         bool dedupOnAdd;
         unsigned size;
         unsigned mask;
-        OwnedConstHThorRow * table;
+        OwnedConstRoxieRow * table;
         unsigned mutable fstart;
         unsigned mutable findex;
         static unsigned const BadIndex;
@@ -1351,12 +1342,12 @@ private:
     bool limitOnFail;
     bool hasGroupLimit;
     unsigned keepCount;
-    OwnedConstHThorRow defaultRight;
+    OwnedConstRoxieRow defaultRight;
     RtlDynamicRowBuilder outBuilder;
     Owned<LookupTable> table;
     bool eog;
     bool matchedGroup;
-    OwnedConstHThorRow left;
+    OwnedConstRoxieRow left;
     bool gotMatch;
     ConstPointerArray rightGroup;
     aindex_t rightGroupIndex;
@@ -1412,13 +1403,13 @@ private:
     bool leftOuterJoin;
     bool exclude;
     unsigned keepLimit;
-    OwnedConstHThorRow defaultRight;
+    OwnedConstRoxieRow defaultRight;
     RtlDynamicRowBuilder outBuilder;
     bool started;
     bool eog;
     bool eos;
     bool matchedGroup;
-    OwnedConstHThorRow left;
+    OwnedConstRoxieRow left;
     bool matchedLeft;
     unsigned countForLeft;
     unsigned rightIndex;
@@ -1866,7 +1857,7 @@ protected:
     INlpParser * parser;
     bool anyThisGroup;
     INlpResultIterator * rowIter;
-    OwnedConstHThorRow in;
+    OwnedConstRoxieRow in;
     char * curSearchText;
     size32_t curSearchTextLen;
 };
@@ -1958,7 +1949,7 @@ public:
 private:
     IHThorXmlParseArg & helper;
     bool srchStrNeedsFree;
-    OwnedConstHThorRow in;
+    OwnedConstRoxieRow in;
     unsigned __int64 numProcessedLastGroup;
     char * srchStr;
     Owned<IXMLParse> xmlParser;
@@ -1979,7 +1970,7 @@ public:
     virtual IHThorWebServiceCallActionArg * queryActionHelper() { return &helper; };
     virtual IHThorWebServiceCallArg * queryCallHelper() { return callHelper; };
     virtual const void * getNextRow() { return NULL; };
-    virtual void releaseRow(const void * r) { releaseHThorRow(r); }
+    virtual void releaseRow(const void * r) { ReleaseRoxieRow(r); }
 
 protected:
     Owned<IWSCHelper> WSChelper;
@@ -2113,7 +2104,7 @@ public:
 class CHThorChildThroughNormalizeActivity : public CHThorSimpleActivityBase
 {
     IHThorChildThroughNormalizeArg &helper;
-    OwnedConstHThorRow lastInput;
+    OwnedConstRoxieRow lastInput;
     RtlDynamicRowBuilder outBuilder;
     unsigned __int64 numProcessedLastGroup;
     bool ok;
