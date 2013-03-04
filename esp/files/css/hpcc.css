@@ -45,57 +45,28 @@ button:hover {
         background-color: rgb(175, 217, 255);
     }
 
-h1 {
-    font-size: 1.5em;
+fieldset{
+    margin:10px 0;
+    border:dotted 1px #5ea4d6;
 }
 
-/*Use this class when creating a dropdown form*/
-.smallForm label{
-    float: left;
-    width: 26%;
-    margin: 0 15px 0 0;
-    text-align: left;
-    padding-top: 4px;
-    font-weight:bold;
-    height:20px;
+legend{
+font-size:20px;
 }
 
-/*Use this class when creating a dialog form*/
-
-.extraSmallForm{
-    width:500px;
+form ul{
+    list-style:none;
+    margin:0;
+    padding:0;
 }
 
-.extraSmallForm label{
-    width: 100%;
-    margin: 0;
-    text-align: left;
-    padding-top: 4px;
-    font-weight:bold;
-    
-}
-
-.extraSmallForm li {
-    margin: 0;
-    padding: 0px 1% 9px 1%;
-    clear: both;
-    position: relative;
-    height:40px;
-    text-align: left;
-}
-
-.extraExtraSmallForm li{
-    width:40px;
-}
-
-
-form {
+.leftAlignFields {
     margin:0;
     padding:0;
     width:100%;
 }
 
-form label{
+.leftAlignFields label{
     float: left;
     width: 14%;
     margin: 0 15px 0 0;
@@ -105,7 +76,7 @@ form label{
     height:20px;
 }
 
-form textarea{
+.leftAlignFields textarea{
     font-size: 13px;
     font-family: Arial;
     width:auto;
@@ -113,13 +84,8 @@ form textarea{
     float:left;
 }
 
-form ul{
-    list-style:none;
-    margin:0;
-    padding:0;
-}
 
-form li{
+.leftAlignFields li{
     margin: 0;
     padding: 6px 1% 9px 1%;
     clear: both;
@@ -127,13 +93,105 @@ form li{
     height:20px;
 }
 
-form div{
+.leftAlignFields div{
     margin:4px 0 0 0;
 }
 
-form h2{
-    padding:5px 0;
+/*Filter dropdown form*/
+
+.filterForm form {
+    margin:0;
+    padding:0;
+    width:100%;
 }
+
+.filterForm label{
+    width: 33%;
+    float:left;
+    text-align: left;
+    font-weight:bold;
+    margin:4px 0 5px 0;
+ 
+}
+
+.filterForm textarea{
+    font-size: 13px;
+    font-family: Arial;
+
+}
+
+
+.filterForm li{
+    padding: 5px 1% 9px 1%;
+    
+}
+
+.filterForm div{
+
+}
+
+
+.filterForm .dijitTextBox {
+    width:50%;
+}
+
+
+.filterForm .dijitSelect {
+    width:50%;
+}
+
+.filterForm .dijitDateTextBox {
+    width:25%;
+}
+
+.filterForm .dijitTimeTextBox {
+
+    width:25%;
+}
+
+
+/*Use this class when creating a dropdown form*/
+.dialogForm form {
+    margin:0;
+    padding:0;
+    width:100%;
+}
+
+.dialogForm label{
+    width: 100%;
+    float:left;
+    text-align: left;
+    font-weight:bold;
+    margin:4px 0 5px 0;
+ 
+}
+
+.dialogForm textarea{
+    font-size: 13px;
+    font-family: Arial;
+
+}
+
+
+.dialogForm li{
+    padding: 5px 1% 9px 1%;
+    
+}
+
+.dialogForm div{
+
+}
+
+
+.dialogForm .dijitTextBox {
+    width:100%;
+}
+
+
+.dialogForm .dijitSelect {
+    width:60%;
+}
+
 
 
 
@@ -194,6 +252,14 @@ form h2{
 }
 
 /*CLASSES******************/
+.left{
+    float:left;
+}
+
+.right{
+    float:right;
+}
+
 .hidden{
     color:rgb(214, 214, 214);
     display: none !important;

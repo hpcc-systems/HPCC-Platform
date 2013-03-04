@@ -13,11 +13,11 @@
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 </div>
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
-                    <div class="rounded">
-                        <h2>
+                        <form class="leftAlignFields">
+                            <fieldset>
+                                <legend><h2>
                             <img id="${id}ProtectedImage" src="img/locked.png" />&nbsp<img id="${id}StateIdImage" src="img/workunit.png" />&nbsp<span id="${id}Wuid" class="bold">WUID</span>
-                        </h2>
-                        <form>
+                        </h2></legend>
                             <ul>
                                 <li>
                                     <label for="${id}ID">ID:</label>
@@ -78,11 +78,13 @@
                                     <div id="${id}SummaryMessage"></div>
                                 </li>
                             </ul>
+                        </fieldset>
                         </form>
-                    </div>
-                    <div id="${id}ImportGroup" class="rounded">
-                        <h1>Spray Details</h1>
-                        <form>
+                    
+                    <div id="${id}ImportGroup">
+                        <form class="leftAlignFields">
+                            <fieldset>
+                            <legend>Spray Details</legend>
                             <ul>
                                 <li>
                                     <label for="State">State:</label>
@@ -154,11 +156,13 @@
                                     <div id="${id}AutoRefresh"></div>
                                 </li>
                             </ul>
+                        </fieldset>
                         </form>
                     </div>
-                    <div id="${id}ExportGroup" class="rounded">
-                        <h1>Despray Details</h1>
-                        <form>
+                    <div id="${id}ExportGroup">
+                        <form class="leftAlignFields">
+                        <fieldset>
+                            <legend>Despray Details</legend>
                             <ul>
                                 <li>
                                     <label for="State">State:</label>
@@ -214,6 +218,7 @@
                                     <div id="${id}AutoRefresh"></div>
                                 </li>
                             </ul>
+                            </fieldset>
                         </form>
                     </div>
                 </div>

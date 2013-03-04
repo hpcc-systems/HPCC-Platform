@@ -10,55 +10,65 @@
                     <div data-dojo-type="dijit.form.DropDownButton">
                         <span>Filter</span>
                         <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
-                            <form class="smallForm">
-                                <ul>
-                                    <li>
-                                        <label for="${id}LogicalFile">Name:</label>
-                                        <input id="${id}LogicalFile" data-dojo-props="trim: true, placeHolder:'*::somefile*'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}Owner">Owner:</label>
-                                        <input id="${id}Owner" data-dojo-props="trim: true, placeHolder:'jsmi*'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}Jobname">Job Name:</label>
-                                        <input id="${id}Jobname" data-dojo-props="trim: true, placeHolder:'log_analysis_1'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}Cluster">Cluster:</label>
-                                        <input id="${id}Cluster" data-dojo-props="trim: true, placeHolder:'r?x*'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}State">State:</label>
-                                        <input id="${id}State" data-dojo-props="trim: true, placeHolder:'failed'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}ECL">ECL Text:</label>
-                                        <input id="${id}ECL" data-dojo-props="trim: true, placeHolder:':=dataset'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}FromDate">From:</label>
-                                        <img src="img/cal.gif" alt="calendar"/>
-                                        <input id="${id}FromDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox"/>
-                                        <input id="${id}FromTime" class="smallCombo" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}ToDate">To:</label>
-                                        <img src="img/cal.gif" alt="calendar"/>
-                                        <input id="${id}ToDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox"/>
-                                        <input id="${id}ToTime" class="smallCombo" data-dojo-props="trim: true, placeHolder:'7:30 PM'" data-dojo-type="dijit.form.TimeTextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}LastNDays">Last N Days:</label>
-                                        <input id="${id}LastNDays" data-dojo-props="trim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                </ul>
+                            <form class="filterForm">
+                                 <fieldset>
+                                        <legend>Open DFU Workunit</legend>
+                                        <ul>
+                                            <li>
+                                                <label for="${id}LogicalFile">WUID:</label>
+                                                <input id="${id}LogicalFile" data-dojo-props="trim: true, placeHolder:'workunit'" data-dojo-type="dijit.form.TextBox"/>
+                                            </li>
+                                        </ul>
+                                    </fieldset>
+                                <fieldset>
+                                    <legend>Search DFU Workunit</legend>
+                                        <ul>
+                                            <li>
+                                                <label for="${id}Owner">Type:</label>
+                                                <select id="${id}ArchivedWorkUnits" name="${id}ArchivedWorkUnits" data-dojo-type="dijit.form.Select">
+                                                    <option value="nonarchived" selected="selected">Non-Archived workunits</option>
+                                                    <option value="archived">Archived workunits</option>
+                                                </select>
+                                            </li>
+                                            <li> 
+                                                <label for="${id}Username">Username:</label>
+                                                <input id="${id}Username" data-dojo-props="trim: true, placeHolder:'username'" data-dojo-type="dijit.form.TextBox"/>
+                                            </li>
+                                            <li>
+                                                <label for="${id}Cluster">Cluster:</label>
+                                                <select id="${id}Cluster" name="${id}Cluster" data-dojo-type="dijit.form.Select">
+                                                    <option value="hthor" selected="selected">hthor</option>
+                                                    <option value="thor">thor</option>
+                                                    <option value="roxie">roxie</option>
+                                                </select>
+                                            </li>
+                                            <li>
+                                                <label for="${id}State">State:</label>
+                                                <select id="${id}State" name="${id}State" data-dojo-type="dijit.form.Select">
+                                                    <option>unknown</option>
+                                                    <option>submitted</option>
+                                                    <option>scheduled</option>
+                                                    <option>compiled</option>
+                                                    <option>running</option>
+                                                    <option>finished</option>
+                                                    <option>failed</option>
+                                                    <option>aborting</option>
+                                                    <option>aborted</option>
+                                                    <option>blocked</option>
+                                                    <option>monitoring</option>
+                                                </select>
+                                            </li>
+                                            <li> 
+                                                <label for="${id}Jobname">Jobname:</label>
+                                                <input id="${id}Jobname" data-dojo-props="trim: true, placeHolder:'jobname'" data-dojo-type="dijit.form.TextBox"/>
+                                            </li>
+                                        </ul>
                                 <button data-dojo-attach-event="onClick:_onFilterApply" data-dojo-type="dijit.form.Button">Apply</button>
                                 <button data-dojo-attach-event="onClick:_onFilterClear" data-dojo-type="dijit.form.Button">Clear</button>
+                                </fieldset>
                             </form>
                         </div>
                     </div>
-                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 </div>
                 <div id="${id}WorkunitsGrid" data-dojo-props="region: 'center', plugins: { pagination: { pageSizes: [25, 50, 100, 'All'], defaultPageSize: 50, description: true, sizeSwitch: true, pageStepper: true, gotoButton: true, maxPageStep: 4, position: 'bottom' }
                     , indirectSelection: {
@@ -68,86 +78,171 @@
                     }
                 }" data-dojo-type="dojox.grid.EnhancedGrid">
                 </div>
-                
+
                 <!--copy dialog -->
                 <div data-dojo-type="dijit/Dialog" data-dojo-id="myCopyDialog" title="Copy" id="${id}myCopyDialog">
-                    <h2>Sources</h2>
-                    <form class="extraSmallForm">
-                        <ul>
-                            <li>
-                                <label>Logical File:</label>
-                                <div id="${id}Sources">progguide::exampledata::accounts</div>
-                            </li>
-                        </ul>
-                    </form>
-                        <h2>Destination</h2>
-                        <form class="extraSmallForm">
-                            <ul>
-                                <li>
-                                    <label>Group:</label>
-                                    <div id="${id}Sources" data-dojo-type="dijit/form/Select">
-                                        <span value="NM" disabled="disabled">Hthor</span>
-                                    </div>
-                                </li>
-                                <li>
+                    <form class="dialogForm">
+                                <fieldset>
+                                    <legend>Sources</legend>
+                                    <ul>
+                                        <li>
+                                            <label for="${id}LogicalFile">Logical File:</label>
+                                            <div>progguide::exampledata::accountsprogguide::exampledata::accounts</div>
+                                        </li>
+                                    </ul>
+                                </fieldset>
+                                <fieldset>
+                                    <legend>Destination</legend>
+                                    <ul>
+                                        <li>
+                                             <label>Group:</label>
+                                             <select id="${id}LogicalFileSearchType" name="${id}LogicalFileSearchType" data-dojo-type="dijit.form.Select">
+                                                <option value="Hthor">mythor</option>
+                                                <option value="Thor" selected="selected">myeclagent</option>
+                                                <option value="Thor" selected="selected">myroxie</option>
+                                             </select>
+                                        </li>
+                                        <li>
                                     <label>Logical Name:</label>
-                                    <div id="${id}Sources">progguide::exampledata::accounts</div>
+                                    <div id="${id}LogicalName">progguide::exampledata::accounts</div>
                                 </li>
                                 <li>
                                     <label>Mask:</label>
-                                    <div id="${id}Sources">progguide::exampledata::accounts._$P$_of_$N$</div>
+                                    <div id="${id}Mask">progguide::exampledata::accounts._$P$_of_$N$ progguide::exampledata::accounts._$P$_of_$N$</div>
                                 </li>
+                                </fieldset>
                             </ul>
-                        </form>
-                        <h2>Options</h2>
-                        <form class="extraExtraSmallForm">
-                            <ul>
-                                <li>
-                                    <label>Wrap?</label>
-                                    <div>
-                                        <input id="mycheck" name="mycheck" data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
-                                    </div>
-                                </li>
-                                <li>
-                                    <label>No Split?</label>
-                                    <div></div>
-                                </li>
-                                <li>
-                                    <label>Overwrite?</label>
-                                    <div></div>
-                                </li>
-                                <li>
-                                    <label>Compress?</label>
-                                    <div></div>
-                                </li>
-                                <li>
-                                    <label>Retain Superfile Structure?</label>
-                                    <div></div>
-                                </li>
-                            </ul>
-                        </form>
+                                <fieldset>
+                                    <legend>Options</legend>
+                                    <ul>
+                                        <li class="left">
+                                            <label>Wrap?</label>
+                                                <input data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+                                        </li>
+                                        <li class="left">
+                                               <label>No Split?</label>
+                                                <input data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
 
-                        <div class="dijitDialogPaneActionBar">
-                            <button dojoType="dijit.form.Button" type="submit">Submit</button>
-                            <button dojoType="dijit.form.Button" type="button" onClick="myCopyDialog.onCancel();">Cancel</button>
-                        </div>
-                </div>
-               
-                <!--rename dialog -->
-                <div data-dojo-type="dijit/Dialog" data-dojo-id="myRenameDialog" title="Rename">
-                    <form class="extraSmallForm">
-                        <ul>
-                            <li>
-                                <label for="${id}Rename">Sources:</label>
-                                <input id="${id}Rename" data-dojo-props="trim: true, placeHolder:'Logical Name'" data-dojo-type="dijit.form.TextBox"/>
-                            </li>
-                        </ul>
+                                        </li>
+                                         <li class="left">
+                                               <label>Overwrite?</label>
+                                                <input data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+
+                                        </li>
+                                         <li class="left">
+                                               <label>Compress?</label>
+                                                <input data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+
+                                        </li>
+                                        <li class="left">
+                                               <label>Retain Superfile Structure?</label>
+                                                <input data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+
+                                        </li>
+                                </fieldset>
+                                    </ul>
+                                <button dojoType="dijit.form.Button" type="submit">Submit</button>
+                                <button dojoType="dijit.form.Button" type="button" onClick="myCopyDialog.onCancel();">Cancel</button>
                     </form>
-                        <div class="dijitDialogPaneActionBar">
-                            <button dojoType="dijit.form.Button" type="submit" id="ok">Submit</button>
-                            <button dojoType="dijit.form.Button" type="button" onClick="myRenameDialog.onCancel();" id="cancel">Cancel</button>
-                        </div>
                 </div>
+
+                <!--rename dialog -->
+                <div>
+                    <div data-dojo-type="dijit/Dialog" data-dojo-id="myRenameDialog" title="Rename" id="${id}myRenameDialog">
+                        <form class="dialogForm">
+                                    <fieldset>
+                                        <legend>Source</legend>
+                                        <ul>
+                                            <li>
+                                                <label>Logical File: </label>
+                                                <div>progguide::exampledata::accounts</div>
+                                            </li>
+                                    </fieldset>
+                                    <fieldset>
+                                        <legend>Destination</legend>
+                                        <ul>
+                                            <li>
+                                                <label>Logical File: </label>
+                                                <div><input data-dojo-props="trim: true, placeHolder:'progguide::exampledata::accounts'" data-dojo-type="dijit.form.TextBox"/></div>
+                                            </li>
+                                            <li class="left">
+                                            <label>Overwrite?</label>
+                                                <input data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+                                        </li>
+                                    </fieldset>
+                                        </ul>
+                                    <button dojoType="dijit.form.Button" type="submit">Submit</button>
+                                    <button dojoType="dijit.form.Button" type="button" onClick="myRenameDialog.onCancel();">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+
+
+                <div>
+                    <div data-dojo-type="dijit/Dialog" data-dojo-id="myDesprayDialog" title="Despray" id="${id}myDesprayDialog">
+                        <form class="dialogForm">
+                                    <fieldset>
+                                        <legend>Source</legend>
+                                        <ul>
+                                            <li>
+                                                <label>Logical File: </label>
+                                                <div>progguide::exampledata::accounts</div>
+                                            </li>
+                                    </fieldset>
+                                    <fieldset>
+                                        <legend>Destination</legend>
+                                        <ul>
+                                            <li>
+                                                <label>Machine/dropzone: </label>
+                                            <select id="${id}machineZone" name="${id}machineZone" data-dojo-type="dijit.form.Select">
+                                                <option value="Hthor">mythor</option>
+                                                <option value="Thor" selected="selected">myeclagent</option>
+                                                <option value="Thor" selected="selected">myroxie</option>
+                                             </select>
+                                            </li>
+                                            <li>
+                                            <label>IP Address</label>
+                                                <div>10.0.2.15</div>
+                                            </li>
+                                            <li>
+                                                <label>Local Path: </label>
+                                                <div></div>
+                                            </li>
+                                            <li>
+                                                <label>Network Path: </label>
+                                                <div>//10.0.2.15/accounts</div>
+                                            </li>
+                                            <li>
+                                                <label>Split Prefix: </label>
+                                                <div></div>
+                                            </li>
+                                            <li class="left">
+                                            <label>Use Single Connection: </label>
+                                                <input data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+                                        </li>
+                                        <li class="left">
+                                            <label>Overwrite?</label>
+                                                <input data-dojo-type="dijit/form/CheckBox" value="agreed" checked onChange="alert('onChange called with parameter = ' + arguments[0] + ', and widget value = ' + this.get('value'))" />
+                                        </li>
+                                    </fieldset>
+                                        </ul>
+                                    <button dojoType="dijit.form.Button" type="submit">Submit</button>
+                                    <button dojoType="dijit.form.Button" type="button" onClick="myDesprayDialog.onCancel();">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+
+
+
+
+
+
+
+
+
+
+
+
             </div>
             <div id="${id}Legacy" title="Legacy Web Page" data-dojo-type="dijit.layout.ContentPane">
             </div>

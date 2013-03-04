@@ -17,7 +17,7 @@
                     <div data-dojo-type="dijit.form.DropDownButton" id="${id}FilterDropDown">
                         <span>Filter</span>
                         <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
-                            <form id="${id}filterForm" class="smallForm">
+                            <form id="${id}filterForm" class="filterForm">
                                 <ul>
                                     <li>
                                         <label for="${id}Owner">Owner:</label>
@@ -45,41 +45,46 @@
                                         placeHolder:'*::somefile'" data-dojo-type="dijit.form.TextBox"/>
                                     </li>
                                     <li>
-                                        <label>Label</label>
+                                        <label>Label: </label>
                                         <select id="${id}LogicalFileSearchType" name="${id}LogicalFileSearchType" data-dojo-type="dijit.form.Select">
                                             <option value="Created">Created</option>
                                             <option value="Used" selected="selected">Used</option>
                                         </select>
                                     </li>
-                                <div id="${id}Highlight" class="Highlight">
-                                    <li>
-                                        <label for="${id}FromDate">From:</label>
-                                        <!--<img src="img/cal.gif" alt="calendar" id="${id}FromDate"/>-->
-                                        <input id="${id}FromDate" data-dojo-props="trim: true, placeHolder:'m/dd/yyyy'" data-dojo-type="dijit.form.DateTextBox"/>
-                                        <input id="${id}FromTime" class="smallCombo" data-dojo-props="trim: true,
-                                        placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox"/>
-                                    </li>
-                                    <li>
-                                        <label for="${id}ToDate">To:</label>
-                                        <!--<img src="img/cal.gif" alt="calendar" id="${id}ToDate"/>-->
-                                        <input id="${id}ToDate" data-dojo-props="trim: true, placeHolder:'m/dd/yyyy'" data-dojo-type="dijit.form.DateTextBox"/>
-                                        <input id="${id}ToTime"  data-dojo-props="trim: true, placeHolder:'7:30 PM'"
-                                        data-dojo-type="dijit.form.TimeTextBox"/>
-                                    </li>
-                                    <li>
-                                        <label for="${id}DateRange">Date Range:</label>
-                                        <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}threeDays"/> <span>3 days ago</span>
-                                        <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}thisWeek"/><span>This Week</span>
-                                        <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}thisMonth"/><span>This Month</span>
-                                        <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}older"/><span>Older</span>
-                                        <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}specify"/><span>Specify a date</span>
-                                    </li><br/>
-                                    <li>
-                                        <label for="${id}LastNDays">Last N Days:</label>
-                                        <input id="${id}LastNDays" data-dojo-props="trim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                </div>
                                 </ul>
+                            </form>
+                                <form class="filterForm">
+                                <div id="${id}Highlight" class="Highlight">
+                                    <ul>
+                                        <li>
+                                            <label for="${id}FromDate">From:</label>
+                                            <!--<img src="img/cal.gif" alt="calendar" id="${id}FromDate"/>-->
+                                            <input id="${id}FromDate" data-dojo-props="trim: true, placeHolder:'m/dd/yyyy'" data-dojo-type="dijit.form.DateTextBox"/>
+                                            <input id="${id}FromTime" class="smallCombo" data-dojo-props="trim: true,
+                                            placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox"/>
+                                        </li>
+                                        <li>
+                                            <label for="${id}ToDate">To:</label>
+                                            <!--<img src="img/cal.gif" alt="calendar" id="${id}ToDate"/>-->
+                                            <input id="${id}ToDate" data-dojo-props="trim: true, placeHolder:'m/dd/yyyy'" data-dojo-type="dijit.form.DateTextBox"/>
+                                            <input id="${id}ToTime"  data-dojo-props="trim: true, placeHolder:'7:30 PM'"
+                                            data-dojo-type="dijit.form.TimeTextBox"/>
+                                        </li>
+                                        <!--<li>
+                                            <label for="${id}DateRange">Date Range:</label>
+                                            <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}threeDays"/> <span>3 days ago</span>
+                                            <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}thisWeek"/><span>This Week</span>
+                                            <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}thisMonth"/><span>This Month</span>
+                                            <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}older"/><span>Older</span>
+                                            <input type="radio" data-dojo-type="dijit/form/RadioButton" id="${id}specify"/><span>Specify a date</span>
+                                        </li><br/>-->
+                                        <li>
+                                            <label for="${id}LastNDays">Last N Days:</label>
+                                            <input id="${id}LastNDays" data-dojo-props="trim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox"/>
+                                        </li>
+                                        </ul>
+                                    </div>
+                                
                                 <button data-dojo-attach-event="onClick:_onFilterApply" data-dojo-type="dijit.form.Button">Apply</button>
                                 <button data-dojo-attach-event="onClick:_onFilterClear" data-dojo-type="dijit.form.Button">Clear Filters</button>
                             </form>

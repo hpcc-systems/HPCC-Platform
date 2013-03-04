@@ -36,6 +36,7 @@ define([
 
     "hpcc/WsDfu",
     "hpcc/LFDetailsWidget",
+    "hpcc/DFUWUDetailsWidget",
 
     "dojo/text!../templates/DFUWUQueryWidget.html",
 
@@ -52,7 +53,7 @@ define([
 ], function (declare, dom, ObjectStore, date, on, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 EnhancedGrid, Pagination, IndirectSelection,
-                WsDfu, LFDetailsWidget,
+                WsDfu, LFDetailsWidget, DFUWUDetailsWidget,
                 template) {
     return declare("DFUWUQueryWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -127,6 +128,16 @@ define([
                 });
             }
         },
+
+
+        _onReplicate: function (event) {
+            var selections = this.workunitsGrid.selection.getSelected();
+            for (var i = selections.length - 1; i >= 0; --i) {
+                this.ensureDetailsPane(selections[i].Name, {
+                    Name: selections[i].Name
+                });
+            }
+        },
         _onDelete: function (event) {
             if (confirm('Delete selected workunits?')) {
                 var context = this;
@@ -148,6 +159,13 @@ define([
             }*/
             myRenameDialog.show();
         },
+
+        _onDespray: function(event){
+
+            myDesprayDialog.show();
+        },
+
+
         _onCopy: function (event) {
             //var selections = this.workunitsGrid.selection.getSelected();
             /*for (var i = selections.length - 1; i >= 0; --i) {
@@ -181,15 +199,15 @@ define([
 
         getFilter: function () {
             var retVal = {
-                Owner: dom.byId(this.id + "Owner").value,
-                Jobname: dom.byId(this.id + "Jobname").value,
-                Cluster: dom.byId(this.id + "Cluster").value,
-                State: dom.byId(this.id + "State").value,
-                ECL: dom.byId(this.id + "ECL").value,
-                LogicalFile: dom.byId(this.id + "LogicalFile").value,
-                StartDate: this.getISOString("FromDate", "FromTime"),
-                EndDate: this.getISOString("ToDate", "ToTime"),
-                LastNDays: dom.byId(this.id + "LastNDays").value
+                //Owner: dom.byId(this.id + "Owner").value,
+                //Jobname: dom.byId(this.id + "Jobname").value,
+                //Cluster: dom.byId(this.id + "Cluster").value,
+                //State: dom.byId(this.id + "State").value,
+                //ECL: dom.byId(this.id + "ECL").value,
+                //LogicalFile: dom.byId(this.id + "LogicalFile").value,
+                //StartDate: this.getISOString("FromDate", "FromTime"),
+                //EndDate: this.getISOString("ToDate", "ToTime"),
+                //LastNDays: dom.byId(this.id + "LastNDays").value
             };
             if (retVal.StartDate != "" && retVal.EndDate != "") {
                 retVal["DateRB"] = "0";
@@ -245,11 +263,11 @@ define([
             }));
             pMenu.addChild(new MenuItem({
                 label: "Replicate",
-                onClick: function(){context._onOpen();}
+                onClick: function(){context._onReplicate();}
             }));
             pMenu.addChild(new MenuItem({
                 label: "Despray",
-                onClick: function(){context._onOpen();}
+                onClick: function(){context._onDespray();}
             }));
 
             pMenu.startup();
@@ -377,6 +395,28 @@ define([
             return retVal;
         },
 
+        ensureDetailsPane: function (id, params) {
+            var retVal = this.tabMap[id];
+            if (!retVal) {
+                var context = this;
+                retVal = new DFUWUDetailsWidget({
+                    Name: id,
+                    title: id,
+                    closable: true,
+                    onClose: function () {
+                        delete context.tabMap[id];
+                        return true;
+                    },
+                    params: params
+                });
+                this.tabMap[id] = retVal;
+                this.tabContainer.addChild(retVal, 3);
+            }
+            return retVal;
+        },
+
+       
+
         onRowDblClick: function (name) {
             var wuTab = this.ensurePane(name, {
                 Name: name
@@ -384,6 +424,13 @@ define([
             this.tabContainer.selectChild(wuTab);
         },
 
+        onReplicate: function(name){
+            
+            var wuTab = this.ensureDetailsPane(name, {
+                Name: name
+            });
+            this.tabContainer.selectChild(wuTab);
+        },
 
         onRowContextMenu: function (idx,item,colField,mystring) {
             this.workunitsGrid.selection.clear(idx,true);

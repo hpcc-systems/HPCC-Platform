@@ -221,11 +221,11 @@ define([
             dom.byId(this.id + "FromTime").value = "";
             dom.byId(this.id + "ToDate").value = "";
             dom.byId(this.id + "LastNDays").value = "";
-            dijit.byId(this.id + "threeDays").set("checked",false);
+            /*dijit.byId(this.id + "threeDays").set("checked",false);
             dijit.byId(this.id + "thisWeek").set("checked",false);
             dijit.byId(this.id + "specify").set("checked",false);
             dijit.byId(this.id + "thisMonth").set("checked",false);
-            dijit.byId(this.id + "older").set("checked",false);
+            dijit.byId(this.id + "older").set("checked",false);*/
             domClass.remove(this.id + "IconFilter", "iconFilter");
             domClass.add(this.id + "IconFilter", "hidden");
             if (!supressGridRefresh) {
