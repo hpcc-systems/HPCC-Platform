@@ -406,40 +406,6 @@ int myhook(int alloctype, void *, size_t nSize, int p1, long allocSeq, const uns
 }
 #endif
 
-static class RoxieRowCallbackHook : implements IRtlRowCallback
-{
-public:
-    virtual void releaseRow(const void * row) const
-    {
-        ReleaseRoxieRow(row);
-    }
-    virtual void releaseRowset(unsigned count, byte * * rowset) const
-    {
-        if (rowset)
-        {
-            if (!roxiemem::HeapletBase::isShared(rowset))
-            {
-                byte * * finger = rowset;
-                while (count--)
-                    ReleaseRoxieRow(*finger++);
-            }
-            ReleaseRoxieRow(rowset);
-        }
-    }
-    virtual void * linkRow(const void * row) const
-    {
-        if (row) 
-            LinkRoxieRow(row);
-        return const_cast<void *>(row);
-    }
-    virtual byte * * linkRowset(byte * * rowset) const
-    {
-        if (rowset)
-            LinkRoxieRow(rowset);
-        return const_cast<byte * *>(rowset);
-    }
-} callbackHook;
-
 int STARTQUERY_API start_query(int argc, const char *argv[])
 {
     EnableSEHtoExceptionMapping();
@@ -755,7 +721,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000;  // 1 Gb;
         roxiemem::setTotalMemoryLimit(totalMemoryLimit, 0, NULL);
-        rtlSetReleaseRowHook(&callbackHook);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);

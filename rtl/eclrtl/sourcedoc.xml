@@ -21,6 +21,77 @@
     <title>rtl/eclrtl</title>
 
     <para>
-        The rtl/eclrtl directory contains the sources for the rtl/eclrtl library.
+        The rtl/eclrtl directory contains the sources for the eclrtl.so library.
+    </para>
+    <para>
+        The eclrtl library is primarily the runtime support library for the code generator.  Many of the functions it contains
+        are related to processing the different datatypes (e.g., string/int/unicode/datasets/dictionaries).  It also contains
+        the functions for regular expressions.
+    </para>
+    <para>
+        Eclrtl should only contain code that is needed by the code generator - it is not a library for sharing code between the engines.
+        In particular it should not have any activity related code (that should go in thorhelper).  All the functions assume that
+        the roxiemem memory manager is being used for allocating rows.  This library also shouldn't contain any dependence on dali.
+    </para>
+    <para>
+        The library is also used by many other libraries in the system primarily for the functions for the system functions and the
+        functions for converting between different datatypes.
+    </para>
+    <para>
+        One of its goals is to isolate the generated code from other parts of the system and minimize the dependencies.  There
+        are two reasons for this -
+        <itemizedlist override="bullet">
+            <listitem>
+                It allows compiled workunits to remain compatible with future revisions of the platform.  This allows the
+                platform to be upgraded withut having to recompile any deployed queries.
+            </listitem>
+            <listitem>
+                It reduces the include file dependencies for the generated code.  In particular the header files should
+                not include jlib, icu, boost or any other complex set of includes.  It is fine for the implementation to use those libraries,
+                but there should be no direct references in the headers.  This reduces the dependencies required on a system
+                and also reduces the compile time.
+            </listitem>
+        </itemizedlist>
+    </para>
+    <para>
+        The following is a summary of the different files, and yes they could do with being rationalized.
+        <itemizedlist override="bullet">
+            <listitem>
+                eclrtl.cpp - datatype conversion functions, regular expression wrappers, various system functions, hash functions, helper functions for searching tables,
+            </listitem>
+            <listitem>
+                rtldistr.cpp - support classes for DISTRIBUTION
+            </listitem>
+            <listitem>
+                rtlds.cpp - support classes for datasets and dictionaries
+            </listitem>
+            <listitem>
+                rtlfield.cpp - classes for representing the format of fields within records.
+            </listitem>
+            <listitem>
+                rtlint.cpp - functions for reading and writing integers of different lengths
+            </listitem>
+            <listitem>
+                rtlkey.cpp - functions and classes that are used to create keyed filters for the index reads.
+            </listitem>
+            <listitem>
+                rtlqstr.cpp - qstring helper functions.
+            </listitem>
+            <listitem>
+                rtlrank.cpp - support functions for RANK/RANKED
+            </listitem>
+            <listitem>
+                rtlread.cpp - helper functions for creating/reading/accessing serialized rows.
+            </listitem>
+            <listitem>
+                rtlsize.cpp - unused - should possibly be deleted.
+            </listitem>
+            <listitem>
+                rtltype.cpp
+            </listitem>
+            <listitem>
+                rtlxml.cpp - helper functions for generating xml from rows.
+            </listitem>
+        </itemizedlist>
     </para>
 </section>

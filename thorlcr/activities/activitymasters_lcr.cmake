@@ -89,7 +89,6 @@ include_directories (
          ./../../system/jlib 
          ./../mfilemanager 
          ./../../common/thorhelper 
-         ./../../common/commonext 
          ./../activities 
          ./../../rtl/eclrtl 
     )
@@ -103,7 +102,6 @@ target_link_libraries ( activitymasters_lcr
          jlib
          remote 
          thorsort_lcr 
-         commonext 
          jhtree 
          nbcd 
          eclrtl 

@@ -23,13 +23,13 @@
 #include "jsocket.hpp"
 
 #ifdef _WIN32
-    #ifdef COMMONEXT_EXPORTS
-        #define thcommonext_decl __declspec(dllexport)
+    #ifdef GRAPH_EXPORTS
+        #define graph_decl __declspec(dllexport)
     #else
-        #define thcommonext_decl __declspec(dllimport)
+        #define graph_decl __declspec(dllimport)
     #endif
 #else
-    #define thcommonext_decl
+    #define graph_decl
 #endif
 
 enum ThorPortKind
@@ -38,15 +38,15 @@ enum ThorPortKind
     TPORT_mp
 };
 
-thcommonext_decl unsigned short getFixedPort(ThorPortKind category);
-thcommonext_decl unsigned short getFixedPort(unsigned short base, ThorPortKind category);
-thcommonext_decl unsigned short getExternalFixedPort(unsigned short masterbase, unsigned short machinebase, ThorPortKind category);
-thcommonext_decl unsigned short allocPort(unsigned num=1);
-thcommonext_decl void           freePort(unsigned short,unsigned num=1);
-thcommonext_decl void           setMachinePortBase(unsigned short base);
-thcommonext_decl void           setMasterPortBase(unsigned short base);
-thcommonext_decl unsigned short         getMasterPortBase();
-thcommonext_decl unsigned short         getMachinePortBase();
+graph_decl unsigned short getFixedPort(ThorPortKind category);
+graph_decl unsigned short getFixedPort(unsigned short base, ThorPortKind category);
+graph_decl unsigned short getExternalFixedPort(unsigned short masterbase, unsigned short machinebase, ThorPortKind category);
+graph_decl unsigned short allocPort(unsigned num=1);
+graph_decl void           freePort(unsigned short,unsigned num=1);
+graph_decl void           setMachinePortBase(unsigned short base);
+graph_decl void           setMasterPortBase(unsigned short base);
+graph_decl unsigned short         getMasterPortBase();
+graph_decl unsigned short         getMachinePortBase();
 
 typedef UnsignedShortArray PortArray;
 

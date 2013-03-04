@@ -26,6 +26,8 @@
 project( thorhelper ) 
 
 set (    SRCS 
+
+         commonext.cpp
          csvsplitter.cpp 
          layouttrans.cpp 
          thorcommon.cpp 
@@ -45,6 +47,7 @@ set (    SRCS
          roxiehelper.cpp
          roxiedebug.cpp
          
+         commonext.hpp
          csvsplitter.hpp 
          layouttrans.hpp 
          thorcommon.hpp 
@@ -57,6 +60,8 @@ set (    SRCS
          thorxmlread.hpp 
          thorxmlwrite.hpp
          roxierow.hpp
+         thorralgo.ipp
+         thorrparse.ipp
          
          roxiedebug.hpp
          roxiedebug.ipp

@@ -39,7 +39,6 @@ include_directories (
          ./../../ecl/hql 
          ./../../rtl/include 
          ./../../system/jlib 
-         ./../../common/commonext 
          ./../../common/remote
     )
 
