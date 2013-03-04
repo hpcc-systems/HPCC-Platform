@@ -21,4 +21,4 @@
 
 d1 := dictionary([{'DAVID'}, {'CLAIRE'}, {'EBENEZER'}], { string20 fname});
 
-output(DG_indexFile(dg_firstName IN d1));
+output(DG_indexFile(dg_firstName IN d1), {dg_firstName, dg_lastName, dg_prange, filepos});
