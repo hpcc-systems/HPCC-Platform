@@ -2186,13 +2186,16 @@ public:
                                                 ISecUser *secuser,
                                                 unsigned *total)
     {
-        class cScopeChecker: implements ISortedElementsTreeFilter
+        class CScopeChecker : public CSimpleInterface, implements ISortedElementsTreeFilter
         {
             UniqueScopes done;
             ISecManager *secmgr;
             ISecUser *secuser;
+            CriticalSection crit;
         public:
-            cScopeChecker(ISecManager *_secmgr,ISecUser *_secuser)
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            CScopeChecker(ISecManager *_secmgr,ISecUser *_secuser)
             {
                 secmgr = _secmgr;
                 secuser = _secuser;
@@ -2202,14 +2205,23 @@ public:
                 const char *scopename = tree.queryProp("@scope");
                 if (!scopename||!*scopename)
                     return true;
-                const bool *b = done.getValue(scopename);
-                if (b)
-                    return *b;
+
+                {
+                    CriticalBlock block(crit);
+                    const bool *b = done.getValue(scopename);
+                    if (b)
+                        return *b;
+                }
                 bool ret = checkWuScopeSecAccess(scopename,*secmgr,secuser,SecAccess_Read,"iterating",false,false);
-                done.setValue(scopename,ret);
+                {
+                    // conceivably could have already been checked and added, but ok.
+                    CriticalBlock block(crit);
+                    done.setValue(scopename,ret);
+                }
                 return ret;
             }
-        } sc(secmgr,secuser);
+        };
+        Owned<ISortedElementsTreeFilter> sc = new CScopeChecker(secmgr,secuser);
         StringBuffer query("*");
         StringBuffer so;
         StringAttr namefilterlo;
@@ -2250,7 +2262,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IRemoteConnection> conn=getElementsPaged( "WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
-            secmgr?&sc:NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results,total);
+            secmgr?sc:NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results,total);
         return new CConstWUArrayIterator(conn, results, secmgr, secuser);
     }
 

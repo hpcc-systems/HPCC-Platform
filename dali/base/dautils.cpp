@@ -1809,8 +1809,8 @@ class CPECacheElem: public CTimedCacheItem
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CPECacheElem(const char *owner)
-        : CTimedCacheItem(owner), postFiltered(0)
+    CPECacheElem(const char *owner, ISortedElementsTreeFilter *_postFilter)
+        : CTimedCacheItem(owner), postFilter(_postFilter), postFiltered(0)
     {
         passesFilter.setown(createBitSet());
     }
@@ -1819,6 +1819,7 @@ public:
     }
     Owned<IRemoteConnection> conn;
     IArrayOf<IPropertyTree> totalres;
+    Linked<ISortedElementsTreeFilter> postFilter;
     unsigned postFiltered;
     Owned<IBitSet> passesFilter;
 };
@@ -1847,9 +1848,12 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
     }
     Owned<CPECacheElem> elem;
     if (hint&&*hint)
-        elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem));
+    {
+        elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem)); // NB: removes from cache in process, added back at end
+        postfilter = elem->postFilter; // reuse cached postfilter
+    }
     if (!elem)
-        elem.setown(new CPECacheElem(owner));
+        elem.setown(new CPECacheElem(owner, postfilter));
     if (!elem->conn)
         elem->conn.setown(getSortedElements(basexpath,xpath,sortorder,namefilterlo,namefilterhi,elem->totalres));
     if (!elem->conn)

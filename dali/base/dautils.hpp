@@ -259,7 +259,7 @@ IRemoteConnection *getSortedElements( const char *basexpath,
                                      const char *namefilterlo, // if non null filter less than this value
                                      const char *namefilterhi, // if non null filter greater than this value
                                      IArrayOf<IPropertyTree> &results);
-interface ISortedElementsTreeFilter
+interface ISortedElementsTreeFilter : extends IInterface
 {
     virtual bool isOK(IPropertyTree &tree) = 0;
 };
