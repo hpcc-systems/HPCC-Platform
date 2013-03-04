@@ -688,7 +688,7 @@ public:
         temporaries = NULL;
         deserializedResultStore = NULL;
         rereadResults = NULL;
-        xmlStoredDatasetReadFlags = xr_none;
+        xmlStoredDatasetReadFlags = ptr_none;
         if (_debuggerActive)
         {
             CSlaveDebugContext *slaveDebugContext = new CSlaveDebugContext(this, logctx, *header);
@@ -1503,7 +1503,7 @@ protected:
     Owned<IPropertyTree> context;
     IPropertyTree *temporaries;
     IPropertyTree *rereadResults;
-    XmlReaderOptions xmlStoredDatasetReadFlags;
+    PTreeReaderOptions xmlStoredDatasetReadFlags;
     CDeserializedResultStore *deserializedResultStore;
 
     IPropertyTree &useContext(unsigned sequence)
@@ -1961,7 +1961,7 @@ public:
         startWorkUnit();
     }
 
-    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, XmlReaderOptions _xmlReadFlags)
+    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
     {
         init();
@@ -2914,7 +2914,7 @@ private:
     StringAttr queryName;
 
 public:
-    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, XmlReaderOptions xmlReadFlags)
+    CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
         : CRoxieServerContext(_context, _factory, _client, true, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
     {
         queryName.set(_context->queryName());
@@ -2967,7 +2967,7 @@ public:
     }
 };
 
-IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, XmlReaderOptions xmlReadFlags)
+IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
 {
     if (httpHelper.isHttp())
         return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, xmlReadFlags);

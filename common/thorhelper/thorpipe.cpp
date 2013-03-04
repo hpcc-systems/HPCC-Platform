@@ -224,7 +224,7 @@ public:
         bool noRoot = (pipeFlags & TPFreadnoroot) != 0;
         bool useContents = (pipeFlags & TPFreadusexmlcontents) != 0;
         if (in)
-            xmlParser.setown(createXMLParse(*in, iteratorPath, *this, noRoot?xr_noRoot:xr_none, useContents));
+            xmlParser.setown(createXMLParse(*in, iteratorPath, *this, noRoot?ptr_noRoot:ptr_none, useContents));
         else
             xmlParser.clear();
     }

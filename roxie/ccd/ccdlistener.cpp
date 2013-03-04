@@ -100,13 +100,13 @@ private:
     Linked<IQueryFactory> f;
     SafeSocket &client;
     HttpHelper &httpHelper;
-    XmlReaderOptions xmlReadFlags;
+    PTreeReaderOptions xmlReadFlags;
     unsigned &memused;
     unsigned &slaveReplyLen;
     CriticalSection crit;
 
 public:
-    CSoapRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IRoxieContextLogger &_logctx, XmlReaderOptions _xmlReadFlags) :
+    CSoapRequestAsyncFor(const char *_queryName, IQueryFactory *_f, IArrayOf<IPropertyTree> &_requestArray, SafeSocket &_client, HttpHelper &_httpHelper, unsigned &_memused, unsigned &_slaveReplyLen, const char *_queryText, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags) :
       f(_f), requestArray(_requestArray), client(_client), httpHelper(_httpHelper), memused(_memused), slaveReplyLen(_slaveReplyLen), logctx(_logctx), xmlReadFlags(_xmlReadFlags)
     {
         queryName = _queryName;
@@ -1421,7 +1421,7 @@ readAnother:
 
                 if (strnicmp(rawText.str(), "<control:aclupdate", 18)==0 && !isalpha(rawText.charAt(18)))
                 {
-                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces)));
+                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces)));
                     IPropertyTree *aclTree = queryXml->queryPropTree("ACL");
                     if (aclTree)
                     {
@@ -1475,7 +1475,7 @@ readAnother:
             {
                 try
                 {
-                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(defaultXmlReadFlags | xr_ignoreNameSpaces)));
+                    queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)(defaultXmlReadFlags | ptr_ignoreNameSpaces)));
                 }
                 catch (IException *E)
                 {
@@ -1551,14 +1551,14 @@ readAnother:
                             client->setHttpMode(queryName, isRequestArray);
                         if (queryFactory)
                         {
-                            bool stripWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (xr_ignoreWhiteSpace & defaultXmlReadFlags));
+                            bool stripWhitespace = queryFactory->getDebugValueBool("stripWhitespaceFromStoredDataset", 0 != (ptr_ignoreWhiteSpace & defaultXmlReadFlags));
                             stripWhitespace = queryXml->getPropBool("_stripWhitespaceFromStoredDataset", stripWhitespace);
-                            XmlReaderOptions xmlReadFlags = (XmlReaderOptions)((defaultXmlReadFlags & ~xr_ignoreWhiteSpace) |
-                                                                               (stripWhitespace ? xr_ignoreWhiteSpace : xr_none));
+                            PTreeReaderOptions xmlReadFlags = (PTreeReaderOptions)((defaultXmlReadFlags & ~ptr_ignoreWhiteSpace) |
+                                                                               (stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none));
                             if (xmlReadFlags != defaultXmlReadFlags)
                             {
                                 // we need to reparse input xml, as global whitespace setting has been overridden
-                                queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(xmlReadFlags|xr_ignoreNameSpaces)));
+                                queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)(xmlReadFlags|ptr_ignoreNameSpaces)));
                                 sanitizeQuery(queryXml, queryName, sanitizedText, isHTTP, uid, isRequest, isRequestArray, isBlind, isDebug);
                             }
                             IArrayOf<IPropertyTree> requestArray;

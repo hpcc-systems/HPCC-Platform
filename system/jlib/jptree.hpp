@@ -126,25 +126,25 @@ interface IPTreeNotifyEvent : extends IInterface
     virtual void endNode(const char *tag, unsigned length, const void *value, bool binary, offset_t endOffset) = 0;
 };
 
-enum XmlReadExcptCode { XmlRead_undefined, XmlRead_EOS, XmlRead_syntax };
-interface jlib_thrown_decl IXMLReadException : extends IException
+enum PTreeReadExcptCode { PTreeRead_undefined, PTreeRead_EOS, PTreeRead_syntax };
+interface jlib_thrown_decl IPTreeReadException : extends IException
 {
     virtual const char *queryDescription() = 0;
     virtual unsigned queryLine() = 0;
     virtual offset_t queryOffset() = 0;
     virtual const char *queryContext() = 0;
 };
-extern jlib_decl IXMLReadException *createXmlReadException(int code, const char *msg, const char *context, unsigned line, offset_t offset);
+extern jlib_decl IPTreeReadException *createPTreeReadException(int code, const char *msg, const char *context, unsigned line, offset_t offset);
 
-enum XmlReaderOptions { xr_none=0x00, xr_ignoreWhiteSpace=0x01, xr_noRoot=0x02, xr_ignoreNameSpaces=0x04 };
+enum PTreeReaderOptions { ptr_none=0x00, ptr_ignoreWhiteSpace=0x01, ptr_noRoot=0x02, ptr_ignoreNameSpaces=0x04 };
 
-interface IXMLReader : extends IInterface
+interface IPTreeReader : extends IInterface
 {
     virtual void load() = 0;
     virtual offset_t queryOffset() = 0;
 };
 
-interface IPullXMLReader : extends IXMLReader
+interface IPullPTreeReader : extends IPTreeReader
 {
     virtual bool next() = 0;
     virtual void reset() = 0;
@@ -167,19 +167,19 @@ interface IPTreeNodeCreator : extends IInterface
 enum ipt_flags { ipt_none=0x00, ipt_caseInsensitive=0x01, ipt_binary=0x02, ipt_ordered=0x04, ipt_ext1=0x08, ipt_ext2=16, ipt_ext3=32, ipt_ext4=64, ipt_ext5=128 };
 jlib_decl IPTreeMaker *createPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
 jlib_decl IPTreeMaker *createRootLessPTreeMaker(byte flags=ipt_none, IPropertyTree *root=NULL, IPTreeNodeCreator *nodeCreator=NULL);
-jlib_decl IXMLReader *createXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace, size32_t bufSize=0);
-jlib_decl IXMLReader *createXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace);
-jlib_decl IXMLReader *createXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace);
-jlib_decl IPullXMLReader *createPullXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace, size32_t bufSize=0);
-jlib_decl IPullXMLReader *createPullXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace);
-jlib_decl IPullXMLReader *createPullXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions xmlReaderOptions=xr_ignoreWhiteSpace);
+jlib_decl IPTreeReader *createXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace, size32_t bufSize=0);
+jlib_decl IPTreeReader *createXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace);
+jlib_decl IPTreeReader *createXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace);
+jlib_decl IPullPTreeReader *createPullXMLStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace, size32_t bufSize=0);
+jlib_decl IPullPTreeReader *createPullXMLStringReader(const char *xml, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace);
+jlib_decl IPullPTreeReader *createPullXMLBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions=ptr_ignoreWhiteSpace);
 
-jlib_decl IXMLReader *createJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions=xr_ignoreWhiteSpace, size32_t bufSize=0);
-jlib_decl IXMLReader *createJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions=xr_ignoreWhiteSpace);
-jlib_decl IXMLReader *createJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions jsonReaderOptions=xr_ignoreWhiteSpace);
-jlib_decl IPullXMLReader *createPullJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions=xr_ignoreWhiteSpace, size32_t bufSize=0);
-jlib_decl IPullXMLReader *createPullJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions=xr_ignoreWhiteSpace);
-jlib_decl IPullXMLReader *createPullJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, XmlReaderOptions readerOptions=xr_ignoreWhiteSpace);
+jlib_decl IPTreeReader *createJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions=ptr_ignoreWhiteSpace, size32_t bufSize=0);
+jlib_decl IPTreeReader *createJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions=ptr_ignoreWhiteSpace);
+jlib_decl IPTreeReader *createJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions jsonReaderOptions=ptr_ignoreWhiteSpace);
+jlib_decl IPullPTreeReader *createPullJSONStreamReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions=ptr_ignoreWhiteSpace, size32_t bufSize=0);
+jlib_decl IPullPTreeReader *createPullJSONStringReader(const char *json, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions=ptr_ignoreWhiteSpace);
+jlib_decl IPullPTreeReader *createPullJSONBufferReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions=ptr_ignoreWhiteSpace);
 
 jlib_decl void mergePTree(IPropertyTree *target, IPropertyTree *toMerge);
 jlib_decl void synchronizePTree(IPropertyTree *target, IPropertyTree *source);
@@ -190,16 +190,16 @@ jlib_decl IPropertyTree *createPTree(MemoryBuffer &src);
 
 jlib_decl IPropertyTree *createPTree(byte flags=ipt_none);
 jlib_decl IPropertyTree *createPTree(const char *name, byte flags=ipt_none);
-jlib_decl IPropertyTree *createPTree(IFile &ifile, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
-jlib_decl IPropertyTree *createPTree(IFileIO &ifileio, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
-jlib_decl IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
-jlib_decl IPropertyTree *createPTreeFromXMLString(const char *xml, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
-jlib_decl IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
-jlib_decl IPropertyTree *createPTreeFromXMLFile(const char *filename, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTree(IFile &ifile, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTree(IFileIO &ifileio, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTree(ISimpleReadStream &stream, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromXMLString(const char *xml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromXMLString(unsigned len, const char *xml, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromXMLFile(const char *filename, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 jlib_decl IPropertyTree *createPTreeFromIPT(const IPropertyTree *srcTree, ipt_flags flags=ipt_none);
 
-jlib_decl IPropertyTree *createPTreeFromJSONString(const char *json, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
-jlib_decl IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte flags=ipt_none, XmlReaderOptions readFlags=xr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromJSONString(const char *json, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
+jlib_decl IPropertyTree *createPTreeFromJSONString(unsigned len, const char *json, byte flags=ipt_none, PTreeReaderOptions readFlags=ptr_ignoreWhiteSpace, IPTreeMaker *iMaker=NULL);
 
 #define XML_SortTags 0x01
 #define XML_Format   0x02

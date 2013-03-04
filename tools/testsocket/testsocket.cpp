@@ -425,7 +425,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
     if (useHTTP)
     {
         StringBuffer newQuery;
-        Owned<IPTree> p = createPTreeFromXMLString(base, ipt_none, xr_none);
+        Owned<IPTree> p = createPTreeFromXMLString(base, ipt_none, ptr_none);
         const char *queryName = p->queryName();
         if ((stricmp(queryName, "envelope") != 0) && (stricmp(queryName, "envelope") != 0))
         {
@@ -467,7 +467,7 @@ int doSendQuery(const char * ip, unsigned port, const char * base)
         {
             try
             {
-                Owned<IPTree> p = createPTreeFromXMLString(base, ipt_none, xr_none);
+                Owned<IPTree> p = createPTreeFromXMLString(base, ipt_none, ptr_none);
                 p->renameProp("/", queryNameOverride);
                 toXML(p, fullQuery.clear());
             }
