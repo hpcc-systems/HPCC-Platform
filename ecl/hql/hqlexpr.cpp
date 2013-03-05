@@ -13213,6 +13213,11 @@ void PrintLogExprTree(IHqlExpression *expr, const char *caption, bool full)
 static unsigned exportRecord(IPropertyTree *dataNode, IHqlExpression * record, unsigned & offset, bool flatten);
 static unsigned exportRecord(IPropertyTree *dataNode, IHqlExpression * record, bool flatten);
 
+static inline bool isdigit_or_underbar(unsigned char c)
+{
+    return isdigit(c) || c=='_';
+}
+
 unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & offset, bool flatten)
 {
     if (field->isAttribute())
@@ -13246,7 +13251,7 @@ unsigned exportField(IPropertyTree *table, IHqlExpression *field, unsigned & off
     if (!queryOriginalName(type, typeName))
         type->getECLType(typeName);
     f->setProp("@ecltype", typeName.str());
-    while (isdigit((unsigned char)typeName.charAt(typeName.length()-1)))
+    while (isdigit_or_underbar((unsigned char)typeName.charAt(typeName.length()-1)))
         typeName.remove(typeName.length()-1, 1);
     f->setProp("@type", typeName.str());
     f = table->addPropTree(f->queryName(), f);
