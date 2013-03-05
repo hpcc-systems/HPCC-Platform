@@ -6,9 +6,9 @@
 
   <para>This section details the steps to configure your HPCC platform to use
   authentication. There are two ways to use authentication with your HPCC
-  system: simple htpassword authentication or LDAP.</para>
+  system: simple htpasswd authentication or LDAP.</para>
 
-  <para>The htpassword authentication method is basic password authentication.
+  <para>The htpasswd authentication method is basic password authentication.
   It only serves to either authenticate a user and grant access or not.</para>
 
   <para>LDAP authentication offers more features and options. LDAP can not
@@ -52,30 +52,31 @@
       <para>In order to change the configuration for HPCC components, connect
       to the Configuration Manager.</para>
 
-    <orderedlist numeration="arabic">
-      <listitem>
-        <para>Stop all HPCC Components, if they are running.</para>
-      </listitem>
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Stop all HPCC Components, if they are running.</para>
+        </listitem>
 
         <listitem>
           <para>Verify that they are stopped. You can use a single command,
           such as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
         </listitem>
 
-      <listitem>
-        <para>Start Configuration Manager.</para>
+        <listitem>
+          <para>Start Configuration Manager.</para>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
-      </listitem>
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
 
-      <listitem>
-        <para>Connect to the Configuration Manager web interface.</para>
+        <listitem>
+          <para>Connect your web browser to the Configuration Manager web
+          interface.</para>
 
-        <para>(using the url of
-        http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
-        <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address of
-        the node running Configuration Manager)</para>
-      </listitem>
+          <para>(using the url of
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          of the node running Configuration Manager)</para>
+        </listitem>
 
         <listitem>
           <para>Select the <emphasis role="bold">Advanced View</emphasis>
@@ -174,9 +175,11 @@
 
       <para>Users and passwords are kept in the htpasswd file. The htpasswd
       file needs to exist on the ESP Node that you have enabled authentication
-      on. The default location is: <emphasis
+      on. HPCC only recognizes MD5 encrypted passwords. </para>
+
+      <para>The default location is: <emphasis
       role="bold">/etc/HPCCSystems/.htpasswd</emphasis> on the ESP node that
-      has been configured to authenticate, but it is configurable. </para>
+      has been configured to authenticate, but it is configurable.</para>
 
       <para>You can use the htpasswd utility to create the .htpasswd file to
       administer users.</para>
