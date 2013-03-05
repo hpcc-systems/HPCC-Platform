@@ -2967,7 +2967,8 @@ public:
                                                     unsigned startoffset,
                                                     unsigned maxnum,
                                                     const char *queryowner, 
-                                                    __int64 *cachehint)
+                                                    __int64 *cachehint,
+                                                    unsigned *total)
     {
         StringBuffer query("*");
         StringBuffer so;
@@ -3005,7 +3006,7 @@ public:
         }
         IArrayOf<IPropertyTree> results;
         Owned<IRemoteConnection> conn=getElementsPaged( "DFU/WorkUnits", query.str(), so.length()?so.str():NULL,startoffset,maxnum,
-            NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results);
+            NULL,queryowner,cachehint,namefilterlo.get(),namefilterhi.get(),results,total);
         return new CConstDFUWUArrayIterator(this,conn,results);
     }
 
@@ -3022,12 +3023,9 @@ public:
     {
         if (!filters)
             return numWorkUnits();
-        // bit slow
-        Owned<IConstDFUWorkUnitIterator> iter =  getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL);
-        unsigned ret = 0;
-        ForEach(*iter)
-            ret++;
-        return ret;
+        unsigned total;
+        Owned<IConstDFUWorkUnitIterator> iter = getWorkUnitsSorted( NULL,filters,filterbuf,0,0x7fffffff,NULL,NULL,&total);
+        return total;
     }
 
 

@@ -25,6 +25,7 @@
 #include "jsort.hpp"
 #include "jprop.hpp"
 #include "jregexp.hpp"
+#include "jset.hpp"
 #include "rmtfile.hpp"
 
 #include "mpbase.hpp"
@@ -1807,15 +1808,19 @@ class CPECacheElem: public CTimedCacheItem
 {
 public:
     IMPLEMENT_IINTERFACE;
-    CPECacheElem(const char *owner)
-        : CTimedCacheItem(owner)
+    CPECacheElem(const char *owner, ISortedElementsTreeFilter *_postFilter)
+        : CTimedCacheItem(owner), postFilter(_postFilter), postFiltered(0)
     {
+        passesFilter.setown(createBitSet());
     }
     ~CPECacheElem()
     {
     }
     Owned<IRemoteConnection> conn;
     IArrayOf<IPropertyTree> totalres;
+    Linked<ISortedElementsTreeFilter> postFilter;
+    unsigned postFiltered;
+    Owned<IBitSet> passesFilter;
 };
 
 IRemoteConnection *getElementsPaged( const char *basexpath,
@@ -1828,7 +1833,8 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
                                      __int64 *hint,
                                      const char *namefilterlo,
                                      const char *namefilterhi,
-                                     IArrayOf<IPropertyTree> &results)
+                                     IArrayOf<IPropertyTree> &results,
+                                     unsigned *total)
 {
     if (pagesize==0)
         return NULL;
@@ -1841,28 +1847,53 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
     }
     Owned<CPECacheElem> elem;
     if (hint&&*hint)
-        elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem));
+    {
+        elem.setown(QUERYINTERFACE(pagedElementsCache->get(owner,*hint),CPECacheElem)); // NB: removes from cache in process, added back at end
+        postfilter = elem->postFilter; // reuse cached postfilter
+    }
     if (!elem)
-        elem.setown(new CPECacheElem(owner));
+        elem.setown(new CPECacheElem(owner, postfilter));
     if (!elem->conn)
         elem->conn.setown(getSortedElements(basexpath,xpath,sortorder,namefilterlo,namefilterhi,elem->totalres));
     if (!elem->conn)
         return NULL;
     unsigned n;
+    if (total)
+        *total = elem->totalres.ordinality();
     if (postfilter) {
+        unsigned numFiltered = 0;
         n = 0;
         ForEachItemIn(i,elem->totalres) {
             IPropertyTree &item = elem->totalres.item(i);
-            if (postfilter->isOK(item)) {
+            bool passesFilter = false;
+            if (elem->postFiltered>i) // postFiltered is high water mark of items checked
+                passesFilter = elem->passesFilter->test(i);
+            else
+            {
+                passesFilter = postfilter->isOK(item);
+                elem->passesFilter->set(i, passesFilter);
+                elem->postFiltered = i+1;
+            }
+            if (passesFilter)
+            {
                 if (n>=startoffset) {
                     item.Link();
                     results.append(item);
                     if (results.ordinality()>=pagesize)
-                        break;
+                    {
+                        // if total needed, need to iterate through all items
+                        if (NULL == total)
+                            break;
+                        startoffset = (unsigned)-1; // no more results needed
+                    }
                 }
                 n++;
             }
+            else
+                ++numFiltered;
         }
+        if (total)
+            *total -= numFiltered;
     }
     else {
         n = (elem->totalres.ordinality()>startoffset)?(elem->totalres.ordinality()-startoffset):0;
