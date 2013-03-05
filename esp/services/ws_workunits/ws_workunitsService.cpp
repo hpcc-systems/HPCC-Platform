@@ -2023,8 +2023,8 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     filters[filterCount] = WUSFterm;
 
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
-    unsigned numWUs = factory->numWorkUnitsFiltered(filters, filterbuf.bufferBase());
-    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), begin, pagesize+1, "", NULL);
+    unsigned numWUs;
+    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), begin, pagesize+1, "", NULL, &numWUs);
 
     unsigned actualCount = 0;
     ForEach(*it)

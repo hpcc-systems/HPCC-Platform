@@ -641,7 +641,7 @@ void testPagedIterate()
     unsigned n=0;
     for (unsigned page=0;page<3;page++) {
         DFUsortfield sortorder[] = {DFUsf_user,DFUsf_state,DFUsf_term};
-        Owned<IConstDFUWorkUnitIterator> iter = factory->getWorkUnitsSorted(sortorder, NULL, NULL, page*10, 10, "nigel", &cachehint);
+        Owned<IConstDFUWorkUnitIterator> iter = factory->getWorkUnitsSorted(sortorder, NULL, NULL, page*10, 10, "nigel", &cachehint, NULL);
         StringBuffer s;
         ForEach(*iter) {
 
