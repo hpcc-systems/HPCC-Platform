@@ -482,7 +482,8 @@ void EclCC::loadOptions()
 #else
         extractOption(compilerPath, globals, "CL_PATH", "compilerPath", "/usr", NULL);
 #endif
-        extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, "lib");
+        if (!extractOption(libraryPath, globals, "ECLCC_LIBRARY_PATH", "libraryPath", syspath, "lib"))
+            libraryPath.append(ENVSEPCHAR).append(syspath).append("plugins");
         extractOption(cppIncludePath, globals, "ECLCC_INCLUDE_PATH", "includePath", syspath, "componentfiles/cl/include");
         extractOption(pluginsPath, globals, "ECLCC_PLUGIN_PATH", "plugins", syspath, "plugins");
         extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");

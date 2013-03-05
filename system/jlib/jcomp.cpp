@@ -128,7 +128,7 @@ static void doSetCompilerPath(const char * path, const char * includes, const ch
     for (;;)
     {
         StringBuffer thislib;
-        while (*libs && *libs != ';')
+        while (*libs && *libs != ENVSEPCHAR)
             thislib.append(*libs++);
         if (thislib.length())
         {
