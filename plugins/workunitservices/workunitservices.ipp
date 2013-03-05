@@ -57,6 +57,7 @@ inline void varAppend(MemoryBuffer &mb,unsigned w,IPropertyTree &pt,const char *
 
 inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
 {
+    mb.setEndian(__LITTLE_ENDIAN);
     fixedAppend(mb,24,pt.queryName());
     varAppend(mb,64,pt,"@submitID");
     varAppend(mb,64,pt,"@clusterName");
@@ -64,6 +65,9 @@ inline bool serializeWUSrow(IPropertyTree &pt,MemoryBuffer &mb, bool isonline)
     varAppend(mb,256,pt,"@jobName");
     fixedAppend(mb,10,pt,"@state");
     fixedAppend(mb,7,pt,"@priorityClass");
+    short int prioritylevel = calcPriorityValue(&pt);
+    mb.appendEndian(sizeof(prioritylevel), &prioritylevel);
+
     const char *mod = "TimeStamps/TimeStamp[@application=\"workunit\"]/Modified";
     const char *crt = "TimeStamps/TimeStamp[@application=\"workunit\"]/Created";
     fixedAppend(mb,20,pt,crt);
