@@ -11,17 +11,17 @@
 
     <emphasis role="bold">:= DICTIONARY(</emphasis>
 
-    <emphasis>dataset, struct</emphasis>
+    <emphasis>dataset, structure</emphasis>
 
-    <emphasis role="bold"> );</emphasis>
+    <emphasis role="bold">);</emphasis>
   </para>
 
   <para>
     <emphasis role="bold">DICTIONARY(</emphasis>
 
-    <emphasis>struct</emphasis>
+    <emphasis>structure</emphasis>
 
-    <emphasis role="bold"> )</emphasis>
+    <emphasis role="bold">)</emphasis>
   </para>
 
   <informaltable colsep="0" frame="none" rowsep="0">
@@ -52,50 +52,47 @@
 
         <row>
           <entry>
-            <emphasis>struct</emphasis>
+            <emphasis>structure</emphasis>
           </entry>
 
-          <entry>The (usually inline) RECORD structure defining the layout of
-          the fields. This may use the "results in" operator (=&gt;) to
-          indicate payload fields.</entry>
+          <entry>The RECORD structure (often defined inline) specifying the
+          layout of the fields. The first field(s) are key fields, optionally
+          followed the "results in" operator (=&gt;) and additional payload
+          fields. This is similar to the payload version of an INDEX. The
+          payload may specify individual fields or may use the name of the
+          <emphasis>dataset </emphasis> to payload all the non-key
+          fields.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>The <emphasis role="bold">DICTIONARY</emphasis> declaration defines a
-  set of unique records indexed by the fields named in the
-  <emphasis>struct</emphasis> that appear before the "results in" operator
-  (=&gt;), while any subsequent fields are payload fields. This is similar to
-  the payload version of an INDEX. You may access individual records in the
-  DICTIONARY by indexing into it using square brackets ( [ ] ) containing the
-  key field values that identify the record to reference. </para>
+  <para>A <emphasis role="bold">DICTIONARY</emphasis> allows you to
+  efficiently check whether a particular data value is in a list (using the IN
+  operator), or to simply map data. It is similar to a LOOKUP JOIN that can be
+  used in any context.</para>
 
   <sect2 id="DICTIONARY_Definition">
     <title>DICTIONARY Definition</title>
 
-    <para>The first form of DICTIONARY allows you to efficiently check whether
-    a particular data value is in a list (using the IN operator), or to simply
-    map data. It is similar to a LOOKUP JOIN that can be used in any context.
-    The DICTIONARY maps each unique value o</para>
-
-    <para>The <emphasis>struct</emphasis> parameter described above is a
-    RECORD structure, usually defined inline, which specifies the field
-    layout, similar to the RECORD structure parameter of a TABLE function. The
-    first field(s) define the key field(s) used to search the DICTIONARY. The
-    "results in" operator(=&gt;) delimits key fields from the payload fields.
-    The payload may specify individual fields or may use the name of the
-    <emphasis>dataset</emphasis> to payload all the non-key fields.</para>
+    <para>The DICTIONARY declaration defines a set of unique records derived
+    from the <emphasis>dataset</emphasis> parameter and indexed by the first
+    field(s) named in the <emphasis>structure</emphasis> parameter. The
+    DICTIONARY will contain one record for each unique value(s) in the key
+    field(s). You can access an individual record by appending square brackets
+    ( [ ] ) to the <emphasis>attr</emphasis> name of the DICTIONARY, which
+    contain the key field value(s) that identify the specific record to
+    access.</para>
   </sect2>
 
   <sect2 id="Child_DICTIONARY">
     <title>DICTIONARY as a Value Type</title>
 
     <para>The second form of DICTIONARY is a value type with the
-    <emphasis>struct</emphasis> parameter specifying the structure of the
-    data. This data type usage allows you to specify a DICTIONARY as a child
-    dataset, similar to the way DATASET may be used to define a child dataset.
-    This may also be used to pass a DICTIONARY as a parameter.</para>
+    <emphasis>structure</emphasis> parameter specifying the RECORD structure
+    of the data. This data type usage allows you to specify a DICTIONARY as a
+    child dataset, similar to the way DATASET may be used to define a child
+    dataset. This may also be used to pass a DICTIONARY as a parameter.</para>
   </sect2>
 
   <para>Example:</para>
@@ -165,5 +162,5 @@ MyDCTfunc(DsDCT,'Brown');      //Seth
 
   <para>See Also: <link linkend="DATASET">DATASET</link>, <link
   linkend="RECORD_Structure">RECORD Structure</link>, <link
-  linkend="INDEX">INDEX</link></para>
+  linkend="INDEX">INDEX</link>, <link linkend="IN_Operator">IN Operator</link></para>
 </sect1>
