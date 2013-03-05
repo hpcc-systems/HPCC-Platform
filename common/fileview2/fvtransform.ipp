@@ -88,6 +88,18 @@ public:
 };
 
 
+class FILEVIEW_API ViewExceptionTransformer : public ViewFieldTransformer
+{
+public:
+    ViewExceptionTransformer(IException * _e);
+
+    virtual void transform(unsigned & lenTarget, char * & target, unsigned lenSource, const char * source);
+
+private:
+    Linked<IException> e;
+};
+
+
 class FILEVIEW_API ViewAddTransformer : public ViewFieldTransformer
 {
 public:
