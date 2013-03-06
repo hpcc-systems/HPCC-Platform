@@ -14521,7 +14521,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
 {
     IHqlExpression * dataset = expr->queryChild(0);
     bool serialize = (expr->getOperator() == no_serialize);
-    assertex(serialize);//Needs changing once interface has changed.
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKproject, expr, "Project");
@@ -14539,7 +14538,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
     //MORE: I don't have any examples that trigger this code as far as I know...
     _ATOM func = serialize ? rtlSerializeToBuilderAtom : rtlDeserializeToBuilderAtom;
     _ATOM kind = serialize ? serializerAtom : deserializerAtom;
-    _ATOM serializeForm = serialize ? expr->queryChild(2)->queryName() : expr->queryChild(1)->queryName();
+    _ATOM serializeForm = serialize ? expr->queryChild(1)->queryName() : expr->queryChild(2)->queryName();
 
     IHqlExpression * record = expr->queryRecord();
     HqlExprArray args;
