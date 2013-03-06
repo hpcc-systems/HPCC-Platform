@@ -577,7 +577,11 @@ void fvSplitXPath(const char *xpath, StringBuffer &s, const char *&name, const c
         return;
     const char * slash = strchr(xpath, '/');
     if (!slash)
+    {
         name = xpath;
+        if (childname)
+            *childname = NULL;
+    }
     else
     {
         if (!childname || strchr(slash+1, '/')) //output ignores xpaths that are too deep
