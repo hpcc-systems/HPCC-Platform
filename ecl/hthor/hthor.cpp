@@ -7381,49 +7381,6 @@ void CHThorChildIteratorActivity::ready()
 
 //=====================================================================================================
 
-CHThorRawIteratorActivity::CHThorRawIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorRawIteratorArg &_arg, ThorActivityKind _kind) : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), recordSize(outputMeta)
-{
-    bufferStream.setown(createMemoryBufferSerialStream(resultBuffer));
-    rowSource.setStream(bufferStream);
-}
-
-void CHThorRawIteratorActivity::ready()
-{
-    CHThorSimpleActivityBase::ready();
-    grouped = outputMeta.isGrouped();
-    size32_t lenData = 0;
-    const void * data = NULL;
-    helper.queryDataset(lenData, data);
-    resultBuffer.setBuffer(lenData, const_cast<void *>(data), false);
-    eogPending = false;
-    rowDeserializer.setown(rowAllocator->createDiskDeserializer(agent.queryCodeContext()));
-}
-
-void CHThorRawIteratorActivity::done()
-{
-    resultBuffer.resetBuffer();
-    CHThorSimpleActivityBase::done();
-}
-
-
-const void * CHThorRawIteratorActivity::nextInGroup()
-{
-    if (rowSource.eos())
-        return NULL;
-    if (eogPending)
-    {
-        eogPending = false;
-        return NULL;
-    }
-    RtlDynamicRowBuilder rowBuilder(rowAllocator);
-    size32_t newSize = rowDeserializer->deserialize(rowBuilder, rowSource); 
-    
-    if (outputMeta.isGrouped())
-        rowSource.read(sizeof(bool), &eogPending);
-    processed++;
-    return rowBuilder.finalizeRowClear(newSize);                
-}
-//=====================================================================================================
 CHThorLinkedRawIteratorActivity::CHThorLinkedRawIteratorActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLinkedRawIteratorArg &_arg, ThorActivityKind _kind) 
     : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg)
 {
@@ -9923,7 +9880,6 @@ MAKEFACTORY(RollupGroup)
 MAKEFACTORY(Regroup)
 MAKEFACTORY(CombineGroup)
 MAKEFACTORY(Case)
-MAKEFACTORY(RawIterator)
 MAKEFACTORY(LinkedRawIterator)
 MAKEFACTORY(GraphLoop)
 MAKEFACTORY(Loop)

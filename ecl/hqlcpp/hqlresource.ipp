@@ -56,22 +56,18 @@ public:
     bool     isChildQuery;
     bool     groupedChildIterators;
     bool     allowSplitBetweenSubGraphs;
-    bool     supportsChildQueries;
     bool     preventKeyedSplit;
     bool     preventSteppedSplit;
-    bool     mangleSpillNameWithWuid;
     bool     minimizeSkewBeforeSpill;
     bool     useMpForDistribute;
     bool     expandSingleConstRow;
     bool     createSpillAsDataset;
-    bool     useLinkedRawIterator;
     bool     optimizeSharedInputs;
     bool     combineSiblings;
 
     IHqlExpression * graphIdExpr;
     unsigned nextResult;
     unsigned clusterSize;
-    StringAttr filenameMangler;
     ClusterType targetClusterType;
 
     //Used
@@ -83,7 +79,7 @@ public:
     inline bool canSplit() const            { return targetClusterType != HThorCluster; }
     inline bool checkResources() const      { return isThorCluster(targetClusterType) && !isChildQuery; }
     inline bool targetRoxie() const         { return targetClusterType == RoxieCluster; }
-    inline bool targetThor() const          { return targetClusterType == ThorCluster || targetClusterType == ThorLCRCluster; }
+    inline bool targetThor() const          { return targetClusterType == ThorLCRCluster; }
 };
 
 struct CResources : public CInterface

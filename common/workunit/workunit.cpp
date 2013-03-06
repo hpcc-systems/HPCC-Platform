@@ -3957,7 +3957,7 @@ public:
 ClusterType getClusterType(const char * platform, ClusterType dft)
 {
     if (stricmp(platform, "thor") == 0)
-        return ThorCluster;
+        return ThorLCRCluster;
     if (stricmp(platform, "thorlcr") == 0)
         return ThorLCRCluster;
     if (stricmp(platform, "hthor") == 0)
@@ -3974,8 +3974,6 @@ const char *clusterTypeString(ClusterType clusterType, bool lcrSensitive)
     case ThorLCRCluster:
         if (lcrSensitive)
             return "thorlcr";
-        // fall through
-    case ThorCluster:
         return "thor";
     case RoxieCluster:
         return "roxie";
@@ -4040,7 +4038,6 @@ public:
         {
             thorQueue.set(getClusterThorQueueName(queue.clear(), name));
             clusterWidth = 0;
-            bool lcr = false;
             ForEachItemIn(i,thors) 
             {
                 IPropertyTree &thor = thors.item(i);
@@ -4053,12 +4050,10 @@ public:
                     throw MakeStringException(WUERR_MismatchClusterSize,"CEnvironmentClusterInfo: mismatched thor sizes in cluster");
                 clusterWidth = ts;
                 bool islcr = !thor.getPropBool("@Legacy");
-                if (i==0)
-                    lcr = islcr;
-                else if (lcr!=islcr)
-                    throw MakeStringException(WUERR_MismatchThorType,"CEnvironmentClusterInfo: mismatched thor Legacy in cluster");
+                if (!islcr)
+                    throw MakeStringException(WUERR_MismatchThorType,"CEnvironmentClusterInfo: Legacy Thor no longer supported");
             }
-            platform = lcr ? ThorLCRCluster : ThorCluster;
+            platform = ThorLCRCluster;
         }
         else if (roxie)
         {

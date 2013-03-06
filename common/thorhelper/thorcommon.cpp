@@ -738,7 +738,6 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKchildcase:              return "Case";
     case TAKremotegraph:            return "Remote";
     case TAKlibrarycall:            return "Library Call";
-    case TAKrawiterator:            return "Child Dataset";
     case TAKlocalstreamread:        return "Read Input";
     case TAKprocess:                return "Process";
     case TAKgraphloop:              return "Graph";
@@ -823,7 +822,6 @@ extern bool isActivitySource(ThorActivityKind kind)
     case TAKxmlread:
     case TAKlocalresultread:
     case TAKsimpleaction:
-    case TAKrawiterator:
     case TAKlocalstreamread:
     case TAKgraphloopresultread:
     case TAKnwaygraphloopresultread:

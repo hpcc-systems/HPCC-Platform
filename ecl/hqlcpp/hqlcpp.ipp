@@ -534,7 +534,6 @@ struct HqlCppOptions
     unsigned            maxRecordSize;
     unsigned            inlineStringThreshold;
     unsigned            maxRootMaybeThorActions;
-    unsigned            maxStaticRowSize;
     unsigned            maxLocalRowSize;
     unsigned            insertProjectCostLevel;
     unsigned            dfaRepeatMax;
@@ -559,7 +558,6 @@ struct HqlCppOptions
     bool                peephole;
     bool                foldConstantCast;
     bool                optimizeBoolReturn;
-    bool                checkRowOverflow;
     bool                freezePersists;
     bool                checkRoxieRestrictions;
     bool                checkThorRestrictions;
@@ -611,11 +609,8 @@ struct HqlCppOptions
     bool                preventSteppedSplit;
     bool                canGenerateSimpleAction;
     bool                minimizeActivityClasses;
-    bool                includeHelperInGraph;
-    bool                supportsLinkedChildRows;
     bool                minimizeSkewBeforeSpill;
     bool                createSerializeForUnknownSize;
-    bool                tempDatasetsUseLinkedRows;
     bool                implicitLinkedChildRows;
     bool                mainRowsAreLinkCounted;
     bool                allowSections;
@@ -624,7 +619,6 @@ struct HqlCppOptions
     bool                sortIndexPayload;
     bool                foldFilter;
     bool                finalizeAllRows;
-    bool                finalizeAllVariableRows;
     bool                optimizeGraph;
     bool                optimizeChildGraph ;
     bool                orderDiskFunnel;
@@ -638,8 +632,6 @@ struct HqlCppOptions
     bool                generateLogicalGraph;
     bool                generateLogicalGraphOnly;
     bool                globalAutoHoist;
-    bool                useLinkedRawIterator;
-    bool                useLinkedNormalize;
     bool                expandRepeatAnyAsDfa;
     bool                unlimitedResources;
     bool                hasResourceUseMpForDistribute;
@@ -658,7 +650,6 @@ struct HqlCppOptions
     bool                combineTrivialStored;
     bool                combineAllStored;
     bool                allowStoredDuplicate;
-    bool                preserveUniqueSelector;
     bool                allowScopeMigrate;
     bool                supportFilterProject;
     bool                normalizeExplicitCasts;
@@ -691,10 +682,7 @@ struct HqlCppOptions
     bool                addLibraryInputsToGraph;
     bool                showRecordCountInGraph;
     bool                serializeRowsetInExtract;
-    bool                optimizeInSegmentMonitor;
-    bool                supportDynamicRows;
     bool                testIgnoreMaxLength;
-    bool                limitMaxLength;
     bool                trackDuplicateActivities;               // for diagnosing problems with code becoming duplicated
     bool                showActivitySizeInGraph;
     bool                addLocationToCpp;
@@ -722,7 +710,6 @@ struct HqlCppOptions
     bool                projectNestedTables;
     bool                showSeqInGraph;
     bool                normalizeSelectorSequence;
-    bool                transformCaseToChoose;
     bool                removeXpathFromOutput;
     bool                canLinkConstantRows;
 };
@@ -917,7 +904,6 @@ public:
     void generateStatistics(const char * targetDir, const char * varient);
 
             unsigned getHints()                             { return hints; }
-    inline  bool checkForRowOverflow() const                { return options.checkRowOverflow; }
     inline bool queryEvaluateCoLocalRowInvariantInExtract() const { return options.evaluateCoLocalRowInvariantInExtract; }
     inline byte notifyOptimizedProjectsLevel()              { return options.notifyOptimizedProjects; }
     inline bool generateAsserts() const                     { return options.checkAsserts; }
@@ -1444,7 +1430,6 @@ public:
     ABoundActivity * doBuildActivityPrefetchProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProcess(BuildCtx & ctx, IHqlExpression * expr);
-    ABoundActivity * doBuildActivityRawChildDataset(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRegroup(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRemote(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityReturnResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
