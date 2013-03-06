@@ -67,6 +67,7 @@ static const char * EclDefinition =
                             " string job{maxlength(256)};"
                             " string10 state;"
                             " string7 priority;"
+                            " integer2 priorityvalue;"
                             " string20 created;"
                             " string20 modified;"
                             " boolean online;"

@@ -1765,7 +1765,7 @@ static int getEnum(const char *v, mapEnums *map)
     return 0;
 }
 
-static int getEnum(IPropertyTree *p, const char *propname, mapEnums *map) 
+static int getEnum(const IPropertyTree *p, const char *propname, mapEnums *map)
 {
     return getEnum(p->queryProp(propname),map);
 }
@@ -3909,10 +3909,9 @@ int CLocalWorkUnit::getPriorityLevel() const
     return p->getPropInt("PriorityFlag"); 
 }
 
-int CLocalWorkUnit::getPriorityValue() const 
+int calcPriorityValue(const IPropertyTree * p)
 {
-    CriticalBlock block(crit);
-    int priority = p->getPropInt("PriorityFlag"); 
+    int priority = p->getPropInt("PriorityFlag");
     switch((WUPriorityClass) getEnum(p, "@priorityClass", priorityClasses))
     {
     case PriorityClassLow:
@@ -3923,6 +3922,13 @@ int CLocalWorkUnit::getPriorityValue() const
         break;
     }
     return priority;
+}
+
+
+int CLocalWorkUnit::getPriorityValue() const 
+{
+    CriticalBlock block(crit);
+    return calcPriorityValue(p);
 }
 
 void CLocalWorkUnit::setRescheduleFlag(bool value) 

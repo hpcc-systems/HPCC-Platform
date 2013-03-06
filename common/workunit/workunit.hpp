@@ -1210,6 +1210,7 @@ enum WUQueryActivationOptions
     MAKE_ACTIVATE_LOAD_DATA_ONLY = 5
 };
 
+extern WORKUNIT_API int calcPriorityValue(const IPropertyTree * p);  // Calls to this should really go through the workunit interface.
 
 extern WORKUNIT_API IPropertyTree * addNamedQuery(IPropertyTree * queryRegistry, const char * name, const char * wuid, const char * dll, bool library, const char *userid);       // result not linked
 extern WORKUNIT_API void removeNamedQuery(IPropertyTree * queryRegistry, const char * id);
