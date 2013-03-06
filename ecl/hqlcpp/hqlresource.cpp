@@ -1779,7 +1779,6 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     resourceLimit->set(RESactivities, maxActivities);
     switch (targetClusterType)
     {
-    case ThorCluster:
     case ThorLCRCluster:
         resourceLimit->set(RESheavy, maxHeavy).set(REShashdist, maxDistribute);
         resourceLimit->set(RESmastersocket, maxSockets).set(RESslavememory,totalMemory);
@@ -1825,7 +1824,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.useGraphResults = false;        // modified by later call
     options.groupedChildIterators = _translatorOptions.groupedChildIterators;
     options.allowSplitBetweenSubGraphs = false;//(targetClusterType == RoxieCluster);
-    options.supportsChildQueries = (targetClusterType != ThorCluster);
+    options.supportsChildQueries = true;
     options.clusterSize = clusterSize;
     options.preventKeyedSplit = _translatorOptions.preventKeyedSplit;
     options.preventSteppedSplit = _translatorOptions.preventSteppedSplit;
@@ -3749,7 +3748,6 @@ void EclResourcer::spotUnbalancedSplitters(HqlExprArray & exprs)
     {
     case HThorCluster:
         break;
-    case ThorCluster:
     case ThorLCRCluster:
         {
             //Thor only handles one graph at a time, so only walk expressions within a single graph.

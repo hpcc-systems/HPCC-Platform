@@ -824,7 +824,6 @@ static unsigned getActivityCost(IHqlExpression * expr, ClusterType targetCluster
 {
     switch (targetClusterType)
     {
-    case ThorCluster:
     case ThorLCRCluster:
         {
             switch (expr->getOperator())
@@ -3147,7 +3146,6 @@ IHqlExpression * ImplicitProjectTransformer::process(IHqlExpression * expr)
     case HThorCluster:
         // same as roxie, but also maybe worth inserting projects to minimise the amount of data that is spilled.
         break;
-    case ThorCluster:
     case ThorLCRCluster:
         //worth inserting projects to reduce copying, spilling, but primarily data transfered between nodes.
         if (options.insertProjectCostLevel || options.optimizeSpills)

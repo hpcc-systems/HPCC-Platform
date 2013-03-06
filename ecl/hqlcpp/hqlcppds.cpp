@@ -1655,7 +1655,6 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     case HThorCluster:
         csfFlags |= CSFcompoundSpill;
         break;
-    case ThorCluster:
     case ThorLCRCluster:
         //Don't compound spills inside a child query because it can cause non remote projects to become remote
         //And we'll also probably be using the roxie code to implement

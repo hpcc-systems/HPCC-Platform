@@ -941,7 +941,7 @@ void SourceBuilder::analyse(IHqlExpression * expr)
             break;
         }
     case no_stepped:
-        if ((translator.getTargetClusterType() == ThorCluster) && translator.queryOptions().checkThorRestrictions)
+        if ((translator.getTargetClusterType() == ThorLCRCluster) && translator.queryOptions().checkThorRestrictions)
             throwError(HQLERR_ThorNotSupportStepping);
         if (steppedExpr)
             throwError(HQLERR_MultipleStepped);

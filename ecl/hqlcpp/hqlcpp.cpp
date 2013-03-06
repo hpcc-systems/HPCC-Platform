@@ -1577,7 +1577,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.minimizeActivityClasses,"minimizeActivityClasses", true),
         DebugOption(options.maxRootMaybeThorActions, "maxRootMaybeThorActions", 0),
         DebugOption(options.includeHelperInGraph,"includeHelperInGraph", false),
-        DebugOption(options.supportsLinkedChildRows,"supportsLinkedChildRows", (targetClusterType != ThorCluster)),
+        DebugOption(options.supportsLinkedChildRows,"supportsLinkedChildRows", true),
         DebugOption(options.minimizeSkewBeforeSpill,"minimizeSkewBeforeSpill", false),
         DebugOption(options.createSerializeForUnknownSize,"createSerializeForUnknownSize", false),
         DebugOption(options.implicitLinkedChildRows,"implicitLinkedChildRows", false),
@@ -1795,13 +1795,6 @@ void HqlCppTranslator::cacheOptions()
 void HqlCppTranslator::postProcessOptions()
 {
 //Any post processing - e.g., dependent flags goes here...
-    if (targetClusterType == ThorCluster)
-    {
-        options.supportDynamicRows = false;
-        options.resourceConditionalActions = false;
-        options.resourceSequential = false;
-    }
-
     if (options.supportDynamicRows)
     {
         options.finalizeAllVariableRows = true;
@@ -1864,7 +1857,6 @@ unsigned HqlCppTranslator::getOptimizeFlags() const
     case HThorCluster:
         optFlags |= HOOnocloneindexlimit|HOOalwayslocal;
         break;
-    case ThorCluster:
     case ThorLCRCluster:
         break;
     default:

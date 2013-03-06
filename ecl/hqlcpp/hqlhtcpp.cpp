@@ -5518,9 +5518,6 @@ void HqlCppTranslator::updateClusterType()
     const char * clusterTypeText="?";
     switch (targetClusterType)
     {
-    case ThorCluster:
-         clusterTypeText = "thor";
-         break;
     case ThorLCRCluster:
          clusterTypeText = "thorlcr";
          break;

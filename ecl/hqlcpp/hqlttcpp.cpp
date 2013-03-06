@@ -4215,7 +4215,6 @@ bool CompoundSourceTransformer::needToCloneLimit(IHqlExpression * expr, node_ope
         return false;
     case HThorCluster:
         return (sourceOp != no_compound_indexread) || (op != no_limit);
-    case ThorCluster:
     case ThorLCRCluster:
         return true;
     default:
