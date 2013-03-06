@@ -1511,7 +1511,7 @@ bool HqlCppTranslator::tempRowRequiresFinalize(IHqlExpression * record) const
 {
     if (recordRequiresDestructor(record) || options.finalizeAllRows)
         return true;
-    if (options.finalizeAllVariableRows && isVariableSizeRecord(record))
+    if (isVariableSizeRecord(record))
         return true;
     return false;
 }
@@ -14563,9 +14563,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySerialize(BuildCtx & ctx, IHql
 
     BuildCtx funcctx(instance->startctx);
     funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
-
-    assertex(!options.limitMaxLength);      //need more thought
-
 
     // Bind left to "left" and right to RIGHT
     BoundRow * leftCursor = bindTableCursor(funcctx, dataset, "_left");

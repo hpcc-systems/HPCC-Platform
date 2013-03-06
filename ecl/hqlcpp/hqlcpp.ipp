@@ -621,7 +621,6 @@ struct HqlCppOptions
     bool                sortIndexPayload;
     bool                foldFilter;
     bool                finalizeAllRows;
-    bool                finalizeAllVariableRows;
     bool                optimizeGraph;
     bool                optimizeChildGraph ;
     bool                orderDiskFunnel;
@@ -690,7 +689,6 @@ struct HqlCppOptions
     bool                serializeRowsetInExtract;
     bool                optimizeInSegmentMonitor;
     bool                testIgnoreMaxLength;
-    bool                limitMaxLength;
     bool                trackDuplicateActivities;               // for diagnosing problems with code becoming duplicated
     bool                showActivitySizeInGraph;
     bool                addLocationToCpp;

@@ -1587,7 +1587,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.sortIndexPayload,"sortIndexPayload", true),
         DebugOption(options.foldFilter,"foldFilter", true),
         DebugOption(options.finalizeAllRows, "finalizeAllRows", false),
-        DebugOption(options.finalizeAllVariableRows, "finalizeAllVariableRows", true),
         DebugOption(options.maxLocalRowSize , "maxLocalRowSize", MAX_LOCAL_ROW_SIZE),
         DebugOption(options.optimizeGraph,"optimizeGraph", true),
         DebugOption(options.optimizeChildGraph,"optimizeChildGraph", false),
@@ -1676,7 +1675,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.serializeRowsetInExtract,"serializeRowsetInExtract", false),
         DebugOption(options.optimizeInSegmentMonitor,"optimizeInSegmentMonitor", true),
         DebugOption(options.testIgnoreMaxLength,"testIgnoreMaxLength", false),
-        DebugOption(options.limitMaxLength,"limitMaxLength", false),
         DebugOption(options.trackDuplicateActivities,"trackDuplicateActivities", false),
         DebugOption(options.showActivitySizeInGraph,"showActivitySizeInGraph", false),
         DebugOption(options.addLocationToCpp,"addLocationToCpp", false),
@@ -1776,7 +1774,6 @@ void HqlCppTranslator::cacheOptions()
         options.useLinkedRawIterator = true;
         options.useLinkedNormalize = true;
         options.finalizeAllRows = true;     // inline temporary rows should actually be ok.
-        options.finalizeAllVariableRows = true;
     }
 
     postProcessOptions();
@@ -1785,8 +1782,6 @@ void HqlCppTranslator::cacheOptions()
 void HqlCppTranslator::postProcessOptions()
 {
 //Any post processing - e.g., dependent flags goes here...
-    options.finalizeAllVariableRows = true;
-
     options.optimizeDiskFlag = 0;
     if (options.optimizeInlineSource) 
         options.optimizeDiskFlag |= CSFnewinline;

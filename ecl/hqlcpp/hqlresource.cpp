@@ -528,17 +528,7 @@ IHqlExpression * CResourceOptions::createSpillName(bool isGraphResult)
     StringBuffer s;
     s.append("~spill::");
     getUniqueId(s);
-    if (!mangleSpillNameWithWuid)
-        return createConstant(s.str());
-    s.append("_");
-    if (filenameMangler)
-    {
-        s.append(filenameMangler);
-        return createConstant(s.str());
-    }
-
-    ITypeInfo * type = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
-    return createValue(no_concat, type, createConstant(s.str()), createValue(no_wuid, LINK(type)));
+    return createConstant(s.str());
 }
 
 //---------------------------------------------------------------------------
@@ -1758,16 +1748,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     insideNeverSplit = false;
     insideSteppedNeverSplit = false;
     sequential = false;
-    options.mangleSpillNameWithWuid = false;
     options.minimizeSpillSize = _translatorOptions.minimizeSpillSize;
-
-    bool wuidIsConstant = (targetClusterType == RoxieCluster) || !wu->getCloneable();
-    if (wuidIsConstant)
-    {
-        SCMStringBuffer wuNameText;
-        wu->getWuid(wuNameText);
-        options.filenameMangler.set(wuNameText.str());
-    }
 
     unsigned totalMemory = _translatorOptions.resourceMaxMemory ? _translatorOptions.resourceMaxMemory : DEFAULT_TOTAL_MEMORY;
     unsigned maxSockets = _translatorOptions.resourceMaxSockets ? _translatorOptions.resourceMaxSockets : DEFAULT_MAX_SOCKETS;

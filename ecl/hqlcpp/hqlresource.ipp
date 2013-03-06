@@ -58,7 +58,6 @@ public:
     bool     allowSplitBetweenSubGraphs;
     bool     preventKeyedSplit;
     bool     preventSteppedSplit;
-    bool     mangleSpillNameWithWuid;
     bool     minimizeSkewBeforeSpill;
     bool     useMpForDistribute;
     bool     expandSingleConstRow;
@@ -70,7 +69,6 @@ public:
     IHqlExpression * graphIdExpr;
     unsigned nextResult;
     unsigned clusterSize;
-    StringAttr filenameMangler;
     ClusterType targetClusterType;
 
     //Used
