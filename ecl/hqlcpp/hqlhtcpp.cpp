@@ -1526,7 +1526,7 @@ BoundRow * HqlCppTranslator::createRowBuilder(BuildCtx & ctx, BoundRow * targetR
     getUniqueId(builderName.append("b"));
     rowName.append(builderName).append(".row()");
 
-    if ((!targetIsOwnedRow && isFixedWidthDataset(record) && !options.alwaysCreateRowBuilder) || !options.supportDynamicRows)
+    if (!targetIsOwnedRow && isFixedWidthDataset(record) && !options.alwaysCreateRowBuilder)
     {
         LinkedHqlExpr targetArg = boundTarget;
         if (targetIsOwnedRow)
@@ -1632,7 +1632,7 @@ BoundRow * HqlCppTranslator::declareTempRow(BuildCtx & ctx, BuildCtx & codectx, 
 
     //if maxRecordSize is too large, and cannot store it in a class, then allocate a pointer to it dynamically.
     unsigned maxRecordSize = getMaxRecordSize(record);
-    bool createRowDynamically = tempRowRequiresFinalize(record) || ((maxRecordSize > options.maxStaticRowSize) && (maxRecordSize > options.maxLocalRowSize));
+    bool createRowDynamically = tempRowRequiresFinalize(record) || (maxRecordSize > options.maxLocalRowSize);
     if (createRowDynamically)
     {
         return declareLinkedRow(ctx, expr, &ctx != &codectx);
@@ -6868,7 +6868,7 @@ BoundRow * HqlCppTranslator::bindSelectorAsSelf(BuildCtx & ctx, IReferenceSelect
     BoundRow * rootRow = selector->queryRootRow();
     if (!rootRow->queryBuilder())
     {
-        if (options.alwaysCreateRowBuilder || (options.supportDynamicRows && !isFixedWidthDataset(rootRow->queryRecord())))
+        if (options.alwaysCreateRowBuilder || !isFixedWidthDataset(rootRow->queryRecord()))
             UNIMPLEMENTED_X("expected a row builder");
     }
     if (selector->isRoot())
@@ -13221,7 +13221,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
 ABoundActivity * HqlCppTranslator::doBuildActivityChildDataset(BuildCtx & ctx, IHqlExpression * expr)
 {
     if ((options.mainRowsAreLinkCounted && options.useLinkedRawIterator) || isGrouped(expr))
-        return doBuildActivityRawChildDataset(ctx, expr);
+        return doBuildActivityLinkedRawChildDataset(ctx, expr);
 
 
     StringBuffer s;
@@ -13329,59 +13329,6 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLinkedRawChildDataset(BuildCtx
     OwnedHqlExpr ret = createValue(no_index, expr->getType(), LINK(boundDs.expr), createValue(no_postinc, LINK(sizetType), LINK(boundActiveIndex.expr)));
     subctx.addReturn(ret);
     funcctx.addReturn(queryQuotedNullExpr());
-
-    buildInstanceSuffix(instance);
-    return instance->getBoundActivity();
-}
-
-ABoundActivity * HqlCppTranslator::doBuildActivityRawChildDataset(BuildCtx & ctx, IHqlExpression * expr)
-{
-    //If it is possible to create a linked child rows we need to use a linked raw child dataset iterator - 
-    //otherwise the dataset may not be in the right format (and I can't work out how to efficiently force it otherwise.)
-    //If main rows are link counted then it is always going to be as good or better to generate a link counted raw iterator.
-    return doBuildActivityLinkedRawChildDataset(ctx, expr);
-
-    StringBuffer s;
-    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKrawiterator, expr, "RawIterator");
-    buildActivityFramework(instance);
-
-    buildInstancePrefix(instance);
-
-    OwnedHqlExpr value = LINK(expr);
-    switch (value->getOperator())
-    {
-    case no_alias:
-    case no_left:
-    case no_right:
-    case no_id2blob:
-    case no_rows:
-        break;
-    case no_select:
-        if (!isNewSelector(expr))
-            break;
-        //fall through
-    default:
-        {
-            CHqlBoundExpr bound;
-            doBuildAliasValue(instance->onstartctx, value, bound);
-            value.setown(bound.getTranslatedExpr());
-            break;
-        }
-    }
-
-
-    //virtual void queryDataset(size_t & len, const void * & data)
-    BuildCtx funcctx(instance->startctx);
-    funcctx.addQuotedCompound("virtual void queryDataset(size32_t & len, const void * & data)");
-    CHqlBoundExpr boundValue;
-    buildExpr(funcctx, value, boundValue);
-
-    OwnedHqlExpr len = getBoundLength(boundValue);
-    generateExprCpp(s.clear().append("len = "), len).append(";");
-    funcctx.addQuoted(s);
-    OwnedHqlExpr addr = getPointer(boundValue.expr);
-    generateExprCpp(s.clear().append("data = "), addr).append(";");
-    funcctx.addQuoted(s);
 
     buildInstanceSuffix(instance);
     return instance->getBoundActivity();

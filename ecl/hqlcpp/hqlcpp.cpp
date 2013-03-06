@@ -1588,7 +1588,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.foldFilter,"foldFilter", true),
         DebugOption(options.finalizeAllRows, "finalizeAllRows", false),
         DebugOption(options.finalizeAllVariableRows, "finalizeAllVariableRows", true),
-        DebugOption(options.maxStaticRowSize , "maxStaticRowSize", MAX_STATIC_ROW_SIZE),
         DebugOption(options.maxLocalRowSize , "maxLocalRowSize", MAX_LOCAL_ROW_SIZE),
         DebugOption(options.optimizeGraph,"optimizeGraph", true),
         DebugOption(options.optimizeChildGraph,"optimizeChildGraph", false),
@@ -1676,7 +1675,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.showRecordCountInGraph,"showRecordCountInGraph", true),
         DebugOption(options.serializeRowsetInExtract,"serializeRowsetInExtract", false),
         DebugOption(options.optimizeInSegmentMonitor,"optimizeInSegmentMonitor", true),
-        DebugOption(options.supportDynamicRows,"supportDynamicRows", true),
         DebugOption(options.testIgnoreMaxLength,"testIgnoreMaxLength", false),
         DebugOption(options.limitMaxLength,"limitMaxLength", false),
         DebugOption(options.trackDuplicateActivities,"trackDuplicateActivities", false),
@@ -1787,17 +1785,7 @@ void HqlCppTranslator::cacheOptions()
 void HqlCppTranslator::postProcessOptions()
 {
 //Any post processing - e.g., dependent flags goes here...
-    if (options.supportDynamicRows)
-    {
-        options.finalizeAllVariableRows = true;
-    }
-    else
-    {
-        options.testIgnoreMaxLength = false;
-        options.limitMaxLength = false;
-    }
-
-    options.maxStaticRowSize = 0;
+    options.finalizeAllVariableRows = true;
 
     options.optimizeDiskFlag = 0;
     if (options.optimizeInlineSource) 
@@ -5789,21 +5777,8 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
             if (resultSelfCursor->queryBuilder())
                 args.append(*LINK(resultSelfCursor->queryBuilder()));
             else
-            {
-                //Legacy support....
-                assertex(!options.supportDynamicRows);
-                OwnedHqlExpr rowExpr = getPointer(resultSelfCursor->queryBound());
+                throwUnexpectedX("Expected a dynamic target for a transform - legacy not supported");
 
-                StringBuffer builderName;
-                getUniqueId(builderName.append("b"));
-
-                StringBuffer s;
-                s.append("RtlStaticRowBuilder ").append(builderName).append("(");
-                generateExprCpp(s, rowExpr).append(",").append(getMaxRecordSize(funcdef->queryRecord())).append(");");
-                ctx.addQuoted(s);
-
-                args.append(*createVariable(builderName, makeBoolType()));
-            }
             returnByReference = true;
             doneAssign = true;
             break;

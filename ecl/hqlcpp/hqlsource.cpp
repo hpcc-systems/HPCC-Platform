@@ -2821,14 +2821,6 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
 
         unsigned maxColumns = countTotalFields(tableExpr->queryRecord(), false);
         translator.doBuildUnsignedFunction(instance->classctx, "getMaxColumns", maxColumns);
-
-        if (!translator.queryOptions().supportDynamicRows)
-        {
-            unsigned csvMax = translator.getCsvMaxLength(mode);
-            unsigned rowMax = translator.getMaxRecordSize(tableExpr->queryRecord());
-            if (rowMax > csvMax)
-                translator.WARNINGAT2(queryLocation(expr), HQLWRN_CsvMaxLengthMismatch, rowMax, csvMax);
-        }
         return;
     }
 

@@ -534,7 +534,6 @@ struct HqlCppOptions
     unsigned            maxRecordSize;
     unsigned            inlineStringThreshold;
     unsigned            maxRootMaybeThorActions;
-    unsigned            maxStaticRowSize;
     unsigned            maxLocalRowSize;
     unsigned            insertProjectCostLevel;
     unsigned            dfaRepeatMax;
@@ -690,7 +689,6 @@ struct HqlCppOptions
     bool                showRecordCountInGraph;
     bool                serializeRowsetInExtract;
     bool                optimizeInSegmentMonitor;
-    bool                supportDynamicRows;
     bool                testIgnoreMaxLength;
     bool                limitMaxLength;
     bool                trackDuplicateActivities;               // for diagnosing problems with code becoming duplicated
@@ -1442,7 +1440,6 @@ public:
     ABoundActivity * doBuildActivityPrefetchProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProject(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityProcess(BuildCtx & ctx, IHqlExpression * expr);
-    ABoundActivity * doBuildActivityRawChildDataset(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRegroup(BuildCtx & ctx, IHqlExpression * expr);
     ABoundActivity * doBuildActivityRemote(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
     ABoundActivity * doBuildActivityReturnResult(BuildCtx & ctx, IHqlExpression * expr, bool isRoot);
