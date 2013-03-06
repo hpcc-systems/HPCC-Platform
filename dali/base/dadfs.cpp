@@ -4167,6 +4167,9 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             if (!subfile.isEmpty()) {
                 try {
                     sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
+                    // Must validate before locking for update below, to check sub is not already in parent (and therefore locked already)
+                    CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
+                    sf->validateAddSubFile(sub);
                 }
                 catch (IDFS_Exception *e) {
                     if (e->errorCode()!=DFSERR_LookupConnectionTimout)
@@ -5258,15 +5261,19 @@ public:
     }
 
 private:
-    void doAddSubFile(IDistributedFile *_sub,bool before,const char *other,IDistributedFileTransaction *transaction) // takes ownership of sub
+    void validateAddSubFile(IDistributedFile *sub)
     {
-        Owned<IDistributedFile> sub = _sub;
         if (strcmp(sub->queryLogicalName(),queryLogicalName())==0)
             throw MakeStringException(-1,"addSubFile: Cannot add file %s to itself", queryLogicalName());
         if (subfiles.ordinality())
             checkFormatAttr(sub,"addSubFile");
         if (findSubFile(sub->queryLogicalName())!=NotFound)
             throw MakeStringException(-1,"addSubFile: File %s is already a subfile of %s", sub->queryLogicalName(),queryLogicalName());
+    }
+    void doAddSubFile(IDistributedFile *_sub,bool before,const char *other,IDistributedFileTransaction *transaction) // takes ownership of sub
+    {
+        Owned<IDistributedFile> sub = _sub;
+        validateAddSubFile(sub);
 
         unsigned pos;
         if (other&&*other) {

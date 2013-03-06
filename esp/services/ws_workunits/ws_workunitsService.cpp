@@ -1084,14 +1084,16 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
         SCMStringBuffer wuid;
         StringArray wuids;
 
+        double version = context.getClientVersion();
+        IArrayOf<IEspResubmittedWU> resubmittedWUs;
         for(aindex_t i=0; i<req.getWuids().length();i++)
         {
-            StringBuffer wuidStr = req.getWuids().item(i);
-            checkAndTrimWorkunit("WUResubmit", wuidStr);
+            StringBuffer requestWuid = req.getWuids().item(i);
+            checkAndTrimWorkunit("WUResubmit", requestWuid);
 
-            ensureWsWorkunitAccess(context, wuidStr.str(), SecAccess_Write);
+            ensureWsWorkunitAccess(context, requestWuid.str(), SecAccess_Write);
 
-            wuid.set(wuidStr.str());
+            wuid.set(requestWuid.str());
 
             try
             {
@@ -1114,6 +1116,15 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
                     throw MakeStringException(ECLWATCH_CANNOT_OPEN_WORKUNIT,"Cannot open workunit %s.",wuid.str());
 
                 submitWsWorkunit(context, cw, NULL, NULL, 0, req.getRecompile(), req.getResetWorkflow(), false);
+
+                if (version < 1.40)
+                    continue;
+
+                Owned<IEspResubmittedWU> resubmittedWU = createResubmittedWU();
+                resubmittedWU->setWUID(wuid.str());
+                if (!streq(requestWuid.str(), wuid.str()))
+                    resubmittedWU->setParentWUID(requestWuid.str());
+                resubmittedWUs.append(*resubmittedWU.getClear());
             }
             catch (IException *E)
             {
@@ -1134,6 +1145,9 @@ bool CWsWorkunitsEx::onWUResubmit(IEspContext &context, IEspWUResubmitRequest &r
             for(aindex_t i=0; i<wuids.length(); i++)
                 waitForWorkUnitToComplete(wuids.item(i), timeToWait);
         }
+
+        if (version >= 1.40)
+            resp.setWUs(resubmittedWUs);
 
         if(wuids.length()==1)
         {

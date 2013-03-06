@@ -136,7 +136,7 @@
                   return soapXML;
               }
 
-              function deleteAliases() {
+              function deactivateAliases() {
                 actionAliases('Deactivate');
               }
 
@@ -403,9 +403,9 @@
             <div>
               <div id="aliasdiv">&#160;</div>
               <br/>
-              <span id="DeleteAliasButton" class="yui-button yui-push-button">
+              <span id="DeactivateAliasButton" class="yui-button yui-push-button">
                 <em class="first-child">
-                  <button type="button" name="DeleteAliasButton" onclick="deleteAliases();">Delete</button>
+                  <button type="button" name="DeactivateAliasButton" onclick="deactivateAliases();">Deactivate</button>
                 </em>
               </span>
               <span id="DetailsButton" class="yui-button yui-push-button">

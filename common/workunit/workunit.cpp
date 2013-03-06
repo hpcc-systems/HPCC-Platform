@@ -4728,6 +4728,13 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     updateProp(p, fromP, "CustomerID");
     updateProp(p, fromP, "SNAPSHOT");
 
+    //MORE: This is very adhoc.  All options that should be cloned should really be in a common branch
+    if (all && (fromP->hasProp("PriorityFlag") || fromP->hasProp("@priorityClass")))
+    {
+        updateProp(p, fromP, "PriorityFlag");
+        updateProp(p, fromP, "@priorityClass");
+    }
+
     //Variables may have been set up as parameters to the query - so need to preserve any values that were supplied.
     pt = fromP->getBranch("Variables");
     if (pt)
