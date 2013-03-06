@@ -2,12 +2,12 @@
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="Basic_Attribute_Types">
-  <title>Basic Attribute Types<indexterm>
-      <primary>Attribute Types</primary>
+  <title>Basic Definition Types<indexterm>
+      <primary>Definition Types</primary>
     </indexterm></title>
 
-  <para>The basic types of Attributes used most commonly throughout ECL coding
-  are: <emphasis role="bold">Boolean</emphasis><indexterm>
+  <para>The basic types of Definitions used most commonly throughout ECL
+  coding are: <emphasis role="bold">Boolean</emphasis><indexterm>
       <primary>Boolean</primary>
     </indexterm>, <emphasis role="bold">Value<indexterm>
       <primary>Value</primary>
@@ -20,13 +20,13 @@
     </indexterm></emphasis>.</para>
 
   <sect2 id="Boolean_Attributes">
-    <title>Boolean Attribute<indexterm>
-        <primary>Boolean Attribute</primary>
+    <title>Boolean Definition<indexterm>
+        <primary>Boolean Definition</primary>
       </indexterm>s</title>
 
-    <para>A Boolean Attribute is defined as any Attribute whose definition is
-    a logical expression resulting in a TRUE/FALSE result. For example, the
-    following are all Boolean Attributes:</para>
+    <para>A Boolean Definition is defined as any Definition whose definition
+    is a logical expression resulting in a TRUE/FALSE result. For example, the
+    following are all Boolean Definitions:</para>
 
     <programlisting>IsBoolTrue  := TRUE;
 IsFloridian := Person.per_st = 'FL';
@@ -34,13 +34,13 @@ IsOldPerson := Person.Age &gt;= 65;</programlisting>
   </sect2>
 
   <sect2 id="Value_Attributes">
-    <title>Value Attribute<indexterm>
-        <primary>Value Attribute</primary>
+    <title>Value Definition<indexterm>
+        <primary>Value Definition</primary>
       </indexterm>s</title>
 
-    <para>A Value Attribute is defined as any Attribute whose expression is an
-    arithmetic or string expression with a single-valued result. For example,
-    the following are all Value Attributes:</para>
+    <para>A Value Definition is defined as any Definition whose expression is
+    an arithmetic or string expression with a single-valued result. For
+    example, the following are all Value Definitions:</para>
 
     <programlisting>ValueTrue      := 1;
 FloridianCount := COUNT(Person(Person.per_st = 'FL'));
@@ -48,11 +48,11 @@ OldAgeSum     := SUM(Person(Person.Age &gt;= 65),Person.Age);</programlisting>
   </sect2>
 
   <sect2 id="Set_Attributes">
-    <title>Set Attributes</title>
+    <title>Set Definitions</title>
 
-    <para>A Set Attribute<indexterm>
-        <primary>Set Attribute</primary>
-      </indexterm> is defined as any Attribute whose expression is a set of
+    <para>A Set Definition<indexterm>
+        <primary>Set Definition</primary>
+      </indexterm> is defined as any Definition whose expression is a set of
     values, defined within square brackets<indexterm>
         <primary>square brackets</primary>
       </indexterm>. Constant set<indexterm>
@@ -61,7 +61,7 @@ OldAgeSum     := SUM(Person(Person.Age &gt;= 65),Person.Age);</programlisting>
     values<indexterm>
         <primary>constant values</primary>
       </indexterm> that must be declared within square brackets, whether that
-    set is defined as a separate attribute or simply included in-line in
+    set is defined as a separate definition or simply included in-line in
     another expression. All the constants must be of the same type.</para>
 
     <programlisting>SetInts  := [1,2,3,4,5]; // an INTEGER set with 5 elements
@@ -74,11 +74,11 @@ SetStatusCodes := ['A','B','C','D','E'];
     arbitrary expressions. All the expressions must result in the same type
     and must be constant expressions.</para>
 
-    <programlisting>SetExp := [1,2+3,45,SomeIntegerAttribute,7*3];
+    <programlisting>SetExp := [1,2+3,45,SomeIntegerDefinition,7*3];
                         // an INTEGER set with 5 elements</programlisting>
 
-    <para>Declared Sets can contain attributes and expressions<indexterm>
-        <primary>Sets can contain attributes and expressions</primary>
+    <para>Declared Sets can contain definitions and expressions<indexterm>
+        <primary>Sets can contain definitions and expressions</primary>
       </indexterm> as well as constants as long as all the elements are of the
     same result type. For example:</para>
 
@@ -87,8 +87,8 @@ SetStatusCodes := ['A','B','C','D','E'];
 SetFloridaCities := ['Orlando', StateCapitol('FL'), 'Boca '+'Raton',
           person[1].per_full_city];</programlisting>
 
-    <para>Set Attribute<indexterm>
-        <primary>Set Attribute</primary>
+    <para>Set Definition<indexterm>
+        <primary>Set Definition</primary>
       </indexterm>s can also be defined using the SET function<indexterm>
         <primary>SET function</primary>
       </indexterm> (which see). Sets defined this way may be used like any
@@ -148,7 +148,7 @@ MySubString3 := MyString[2.. ]; // MySubString3 is 'BCDE'</programlisting>
   </sect2>
 
   <sect2 id="Record_Set_Attributes">
-    <title>Record Set Attributes</title>
+    <title>Record Set Definitions</title>
 
     <para>The term “Dataset”<indexterm>
         <primary>Dataset</primary>
@@ -162,11 +162,11 @@ MySubString3 := MyString[2.. ]; // MySubString3 is 'BCDE'</programlisting>
     return result from one of the built-in functions that return result
     sets.</para>
 
-    <para>A Record Set Attribute<indexterm>
-        <primary>Record Set Attribute</primary>
-      </indexterm> is defined as any Attribute whose expression is a filtered
+    <para>A Record Set Definition<indexterm>
+        <primary>Record Set Definition</primary>
+      </indexterm> is defined as any Definition whose expression is a filtered
     dataset or record set, or any function that returns a record set. For
-    example, the following are all Record Set Attributes:</para>
+    example, the following are all Record Set Definitions:</para>
 
     <programlisting>FloridaPersons    := Person(Person.per_st = 'FL');
 OldFloridaPersons := FloridaPersons(Person.Age &gt;= 65);</programlisting>
@@ -216,13 +216,13 @@ MyRec4 := Person[2..];   // all recs except the first</programlisting>
   </sect2>
 
   <sect2 id="TypeDef_Attributes">
-    <title>TypeDef Attributes</title>
+    <title>TypeDef Definitions</title>
 
-    <para>A TypeDef Attribute<indexterm>
-        <primary>TypeDef Attribute</primary>
-      </indexterm> is defined as any Attribute whose definition is a value
+    <para>A TypeDef Definition<indexterm>
+        <primary>TypeDef Definition</primary>
+      </indexterm> is defined as any Definition whose definition is a value
     type, whether built-in or user-defined. For example, the following are all
-    TypeDef Attributes (except GetXLen):</para>
+    TypeDef Definitions (except GetXLen):</para>
 
     <programlisting>GetXLen(DATA x,UNSIGNED len) := TRANSFER(((DATA4)(x[1..len])),UNSIGNED4);
 
@@ -242,6 +242,6 @@ namesRecord := RECORD
   pppStr addr;
   
 END;
-//A RECORD structure is also a typedef attribute (user-defined)</programlisting>
+//A RECORD structure is also a typedef definition (user-defined)</programlisting>
   </sect2>
 </sect1>

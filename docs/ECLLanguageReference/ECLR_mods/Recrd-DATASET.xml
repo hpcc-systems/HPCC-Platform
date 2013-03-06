@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DATASET">
@@ -50,6 +50,9 @@
       <primary>DATASET</primary>
     </indexterm>(</emphasis><emphasis> struct </emphasis><emphasis
   role="bold">)</emphasis></para>
+
+  <para><emphasis role="bold">DATASET(</emphasis><emphasis> dict
+  </emphasis><emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="0" frame="none" rowsep="0">
     <tgroup cols="2">
@@ -123,7 +126,7 @@
           <entry><emphasis>recordset</emphasis></entry>
 
           <entry><para>A set of in-line data records. This can simply name a
-          previously-defined set attribute or explicitly use square brackets
+          previously-defined set definition or explicitly use square brackets
           to indicate an inline set definition. Within the square brackets
           records are separated by commas. The records are specified by
           either:</para><para>1) Using curly braces ({}) to surround the field
@@ -221,9 +224,9 @@
         </row>
 
         <row>
-          <entry><emphasis>DATASET</emphasis></entry>
+          <entry><emphasis>dict</emphasis></entry>
 
-          <entry>declares a new data table in the supercomputer.</entry>
+          <entry>The name of a DICTIONARY definition.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -265,6 +268,9 @@
       <primary>DATASET parameters</primary>
     </indexterm> (see <emphasis role="bold">DATASET as a Parameter Type
   </emphasis>below).</para>
+
+  <para>The eighth form is used to define a DICTIONARY as a DATASET (see
+  <emphasis role="bold">DATASET from DICTIONARY </emphasis>below).</para>
 
   <sect2 id="THOR-FLAT_Files">
     <title>THOR/FLAT Files</title>
@@ -726,7 +732,7 @@ file3 := DATASET('MyFile.CSV',
 rform := RECORD
   STRING author; //data from author tag -- tag name is lowercase and matches field name
   STRING name {XPATH('title')}; //data from title tag, renaming the field
-  STRING isbn {XPATH('@isbn')}; //isbn attribute data from book tag
+  STRING isbn {XPATH('@isbn')}; //isbn definition data from book tag
 tag
 END;
 books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
@@ -868,7 +874,7 @@ OUTPUT(ds);</programlisting>
       </indexterm> and have it treated as a file. This is useful in situations
     where file operations are needed on dynamically generated data (such as
     the runtime values of a set of pre-defined expressions). It is also useful
-    to test any boundary conditions for attributes by creating a small
+    to test any boundary conditions for definitions by creating a small
     well-defined set of records with constant values<indexterm>
         <primary>constant values</primary>
       </indexterm> that specifically exercise those boundaries. This form may
@@ -883,7 +889,7 @@ OUTPUT(ds);</programlisting>
 
     <para>Example:</para>
 
-    <programlisting>//Inline DATASET using attribute values
+    <programlisting>//Inline DATASET using definition values
 myrec := {REAL diff, INTEGER1 reason};
 rms5008 := 10.0;
 rms5009 := 11.0;
@@ -1300,7 +1306,37 @@ OUTPUT(s_Name1);
 OUTPUT(s_Name2);
 OUTPUT(a_Name);
 OUTPUT(b_Name);</programlisting>
+  </sect2>
 
-    <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link linkend="RECORD_Structure">RECORD Structure</link>, <link linkend="TABLE">TABLE</link>, <link linkend="ROW">ROW</link>, <link linkend="RECORDOF">RECORDOF</link>, <link linkend="TRANSFORM_Structure">TRANSFORM Structure</link></para>
+  <sect2 id="DATASET_from_DICTIONARY">
+    <title>DATASET from DICTIONARY</title>
+
+    <para><emphasis role="bold">DATASET(</emphasis><emphasis> dict
+    </emphasis><emphasis role="bold">)</emphasis></para>
+
+    <para>This form re-defines the<emphasis> dict </emphasis> as a
+    DATASET<indexterm>
+        <primary>Treating DICTIONARY as a DATASET</primary>
+      </indexterm>.</para>
+
+    <para>Example:</para>
+
+    <programlisting>rec := {STRING color,UNSIGNED1 code, STRING name};
+ColorCodes := DATASET([{'Black' ,0 , 'Fred'},
+                       {'Brown' ,1 , 'Sam'},
+                       {'Red'   ,2 , 'Sue'},
+                       {'White' ,3 , 'Jo'}], rec);
+
+ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
+
+ds := DATASET(ColorCodesDCT);
+OUTPUT(ds);         </programlisting>
+
+    <para>See Also: <link linkend="OUTPUT">OUTPUT</link>, <link
+    linkend="RECORD_Structure">RECORD Structure</link>, <link
+    linkend="TABLE">TABLE</link>, <link linkend="ROW">ROW</link>, <link
+    linkend="RECORDOF">RECORDOF</link>, <link
+    linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
+    linkend="DICTIONARY">DICTIONARY</link></para>
   </sect2>
 </sect1>

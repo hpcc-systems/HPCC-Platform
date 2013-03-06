@@ -90,16 +90,16 @@
     that the passed value will always be treated as a constant (typically used
     only in ECL prototypes of external functions).</para>
 
-    <programlisting>ValueAttribute := 15;
+    <programlisting>ValueDefinition := 15;
 FirstFunction(INTEGER x=5) := x + 5;
           //takes an integer parameter named "x" and "x" is used in the
           //arithmetic expression to indicate the usage of the parameter
           
-SecondAttribute := FirstFunction(ValueAttribute);
-          // The value of SecondAttribute is 20
+SecondDefinition := FirstFunction(ValueDefinition);
+          // The value of SecondDefinition is 20
           
-ThirdAttribute := FirstFunction();
-          // The value of ThirdAttribute is 10, omitting the parameter</programlisting>
+ThirdDefinition := FirstFunction();
+          // The value of ThirdDefinition is 10, omitting the parameter</programlisting>
   </sect2>
 
   <sect2 id="SET_Parameters">
@@ -134,23 +134,75 @@ OUTPUT(IsInSetFunction(,5)); // true</programlisting>
     role="bold">;</emphasis></para>
 
     <para>The required<emphasis> recstruct</emphasis> names the RECORD
-    structure attribute that defines the layout of fields in the passed
-    DATASET parameter. The <emphasis>recstruct</emphasis> may alternatively
-    use the RECORDOF function. The required<emphasis> AliasName</emphasis>
-    names the dataset for use in the function and is used in the Definition's
+    structure that defines the layout of fields in the passed DATASET
+    parameter. The <emphasis>recstruct</emphasis> may alternatively use the
+    RECORDOF function. The required<emphasis> AliasName</emphasis> names the
+    dataset for use in the function and is used in the Definition's
     <emphasis>expression</emphasis> to indicate where in the operation the
     passed parameter is to be used. See the <emphasis role="bold">DATASET as a
     Value Type</emphasis> discussion in the DATASET documentation for further
     examples.</para>
 
-    <programlisting>    MyRec := {STRING1 Letter};
+    <programlisting>MyRec := {STRING1 Letter};
     
-    SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
+SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'}],MyRec);
 
-    FilteredDS(DATASET(MyRec) ds) := ds(Letter NOT IN ['A','C','E']);
-            //passed dataset referenced as “ds” in expression
+FilteredDS(DATASET(MyRec) ds) := ds(Letter NOT IN ['A','C','E']);
+           //passed dataset referenced as “ds” in expression
 
-    OUTPUT(FilteredDS(SomeFile));</programlisting>
+OUTPUT(FilteredDS(SomeFile));</programlisting>
+  </sect2>
+
+  <sect2 id="Passing_DICTIONARY_Parameters">
+    <title>Passing DICTIONARY Parameters</title>
+
+    <para>Passing a DICTIONARY as a parameter may be accomplished using the
+    following syntax:</para>
+
+    <para><emphasis>DefinitionName</emphasis><emphasis role="bold">(
+    DICTIONARY<indexterm>
+        <primary>DICTIONARY parameter</primary>
+      </indexterm>(</emphasis><emphasis> structure </emphasis><emphasis
+    role="bold">) </emphasis><emphasis>AliasName</emphasis><emphasis
+    role="bold"> ) := </emphasis><emphasis>expression</emphasis><emphasis
+    role="bold">;</emphasis></para>
+
+    <para>The required <emphasis>structure</emphasis> parameter is the RECORD
+    structure that defines the layout of fields in the passed DICTIONARY
+    parameter (usually defined inline). The required<emphasis>
+    AliasName</emphasis> names the DICTIONARY for use in the function and is
+    used in the Definition's <emphasis>expression</emphasis> to indicate where
+    in the operation the passed parameter is to be used. See the <emphasis
+    role="bold">DICTIONARY as a Value Type</emphasis> discussion in the
+    DICTIONARY documentation.</para>
+
+    <programlisting>rec := RECORD
+  STRING10  color;
+  UNSIGNED1 code; 
+  STRING10  name;
+END;
+Ds := DATASET([{'Black' ,0 , 'Fred'},
+               {'Brown' ,1 , 'Seth'},
+               {'Red'   ,2 , 'Sue'},
+               {'White' ,3 , 'Jo'}], rec);
+
+DsDCT := DICTIONARY(DS,{color =&gt; DS});
+
+DCTrec := RECORD 
+  STRING10 color =&gt; 
+  UNSIGNED1 code,
+  STRING10 name,
+END;
+InlineDCT := DICTIONARY([{'Black' =&gt; 0 , 'Fred'},
+                         {'Brown' =&gt; 1 , 'Sam'},
+                         {'Red'   =&gt; 2 , 'Sue'},
+                         {'White' =&gt; 3 , 'Jo'} ], 
+                        DCTrec);
+
+MyDCTfunc(DICTIONARY(DCTrec) DCT,STRING10 key) := DCT[key].name;
+
+MyDCTfunc(InlineDCT,'White');  //Jo
+MyDCTfunc(DsDCT,'Brown');      //Seth</programlisting>
   </sect2>
 
   <sect2 id="Passing_Typeless_Parameters">
@@ -269,7 +321,7 @@ OUTPUT(doApplyValue(2, multiValues));             // 24
 
 
           
-//An attribute taking function parameters which themselves
+//A definition taking function parameters which themselves
 //have parameters that are functions...
 
 STRING doMany(INTEGER v1,
@@ -324,7 +376,7 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
           <row>
             <entry><emphasis>AliasName</emphasis></entry>
 
-            <entry>The names of the parameter in the attribute's function
+            <entry>The names of the parameter in the definition's function
             definition.</entry>
           </row>
 

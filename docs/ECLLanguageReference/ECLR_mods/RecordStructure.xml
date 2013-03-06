@@ -19,22 +19,22 @@
       <primary>PACKED</primary>
     </indexterm> ]</emphasis></para>
 
-  <para><emphasis role="bold"></emphasis><emphasis role="bold">
-  </emphasis><emphasis>fields ;</emphasis></para>
+  <para><emphasis role="bold"> </emphasis><emphasis>fields ;</emphasis></para>
 
-  <para><emphasis></emphasis><emphasis> </emphasis><emphasis role="bold"> [
-  IFBLOCK<indexterm>
+  <para><emphasis role="bold"> [ IFBLOCK<indexterm>
       <primary>IFBLOCK</primary>
     </indexterm>( </emphasis><emphasis>condition</emphasis><emphasis
-  role="bold"> )</emphasis><emphasis role="bold"> </emphasis><emphasis>
-  </emphasis></para>
+  role="bold"> )</emphasis></para>
 
-  <para><emphasis> fields ;</emphasis><emphasis> </emphasis><emphasis
-  role="bold"> </emphasis></para>
+  <para><emphasis> fields ;</emphasis></para>
 
   <para><emphasis role="bold"> END; ]</emphasis></para>
 
-  <para><emphasis role="bold"></emphasis><emphasis role="bold">END;<indexterm>
+  <para><emphasis role="bold"> [ =&gt;
+  </emphasis><emphasis>payload</emphasis><emphasis role="bold">
+  ]</emphasis></para>
+
+  <para><emphasis role="bold">END;<indexterm>
       <primary>RECORD structure</primary>
     </indexterm></emphasis></para>
 
@@ -49,7 +49,7 @@
           <entry><emphasis>attr</emphasis></entry>
 
           <entry>The name of the RECORD structure for later use in other
-          attributes.</entry>
+          definitions.</entry>
         </row>
 
         <row>
@@ -141,15 +141,32 @@
           receive their declared default values. If there's no default value,
           the <emphasis>fields</emphasis> receive blanks or zeros.</entry>
         </row>
+
+        <row>
+          <entry><emphasis role="bold">=&gt;</emphasis></entry>
+
+          <entry>Optional. The delimiter between the list of key
+          <emphasis>fields</emphasis> and the <emphasis>payload</emphasis>
+          when the RECORD structure is used by the DICTIONARY declaration.
+          Typically, this is an inline structure using curly braces ( { } )
+          instead of RECORD and END.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>payload</emphasis></entry>
+
+          <entry>The list of non-keyed <emphasis>fields</emphasis> in the
+          DICTIONARY.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-  <para>Record layouts are Attribute definitions whose expression is a RECORD
-  structure terminated by the END keyword. The <emphasis>attr</emphasis> name
-  creates a user-defined value type that can be used in built-in functions and
-  TRANSFORM function definitions. The delimiter between field definitions in a
-  RECORD structure can be either the semi-colon (;) or a comma (,).</para>
+  <para>Record layouts are definitions whose expression is a RECORD structure
+  terminated by the END keyword. The <emphasis>attr</emphasis> name creates a
+  user-defined value type that can be used in built-in functions and TRANSFORM
+  function definitions. The delimiter between field definitions in a RECORD
+  structure can be either the semi-colon (;) or a comma (,).</para>
 
   <sect2 id="In-line_Record_Definitions">
     <title>In-line Record Definitions</title>
@@ -159,7 +176,7 @@
     (RECORD/END or {}) can be used to create “on-the-fly” record formats
     within those functions that require record structures (OUTPUT, TABLE,
     DATASET etc.), instead of defining the record as a separate
-    attribute.</para>
+    definition.</para>
   </sect2>
 
   <sect2 id="Field_Definitions">
@@ -224,8 +241,8 @@
 
             <entry>Optional. An expression defining the source of the data
             (for operations that require a data source, such as TABLE and
-            PARSE). This may be a constant, expression, or Attribute providing
-            the value.</entry>
+            PARSE). This may be a constant, expression, or definition
+            providing the value.</entry>
           </row>
 
           <row>
@@ -256,19 +273,19 @@
             <entry><emphasis>sourcedataset</emphasis></entry>
 
             <entry>A previously defined DATASET or derived recordset
-            attribute. See the <emphasis role="bold">Field
+            definition. See the <emphasis role="bold">Field
             Inheritance</emphasis>section below.</entry>
           </row>
 
           <row>
             <entry><emphasis>childdataset</emphasis></entry>
 
-            <entry>A child DATASET declaration (see DATASET discussion), which
-            implicitly defines all the fields of the child at their already
-            defined <emphasis>datatype</emphasis>,
+            <entry>A child dataset declaration (see DATASET and DICTIONARY
+            discussions), which implicitly defines all the fields of the child
+            at their already defined <emphasis>datatype</emphasis>,
             <emphasis>identifier</emphasis>, and
             <emphasis>defaultvalue</emphasis> (if present in the child
-            DATASET's RECORD structure).</entry>
+            dataset's RECORD structure).</entry>
           </row>
         </tbody>
       </tgroup>
@@ -295,7 +312,7 @@
     are implicitly defined using the <emphasis>datatype</emphasis> and
     <emphasis>identifier</emphasis> of all the existing field definitions in
     the <emphasis>recstruct</emphasis>. When a <emphasis>sourcedataset
-    </emphasis>(a previously defined DATASET or recordset attribute) is
+    </emphasis>(a previously defined DATASET or recordset definition) is
     specified to inherit the fields, the new fields are implicitly defined
     using the <emphasis>datatype</emphasis>, <emphasis>identifier</emphasis>,
     and <emphasis>defaultvalue</emphasis> of all the fields (making it usable
@@ -429,9 +446,14 @@ END;</programlisting>
 
     <para><emphasis role="bold"> { XMLDEFAULT<indexterm>
         <primary>XMLDEFAULT</primary>
-      </indexterm>(</emphasis><emphasis role="bold"> </emphasis><emphasis
-    role="bold">'</emphasis><emphasis>value</emphasis><emphasis role="bold">' )
-    }</emphasis><emphasis role="bold"> </emphasis></para>
+      </indexterm>(</emphasis> <emphasis
+    role="bold">'</emphasis><emphasis>value</emphasis><emphasis role="bold">'
+    ) }</emphasis></para>
+
+    <para><emphasis role="bold"> { DEFAULT<indexterm>
+        <primary>DEFAULT</primary>
+      </indexterm>(</emphasis> <emphasis>value</emphasis><emphasis
+    role="bold"> ) }</emphasis></para>
 
     <para><emphasis role="bold"> { VIRTUAL<indexterm>
         <primary>Virtual</primary>
@@ -486,11 +508,27 @@ END;</programlisting>
 
           <row>
             <entry><emphasis role="bold">{
-            XMLDEFAULT(</emphasis>'<emphasis>value</emphasis>'<emphasis role="bold">)
-            }</emphasis></entry>
+            XMLDEFAULT(</emphasis>'<emphasis>value</emphasis>'<emphasis
+            role="bold">) }</emphasis></entry>
 
-            <entry>Specifies a default XML <emphasis>value</emphasis> for the field. 
-            The <emphasis>value</emphasis> must be constant. </entry>
+            <entry>Specifies a default XML <emphasis>value</emphasis> for the
+            field. The <emphasis>value</emphasis> must be constant.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">{ DEFAULT(</emphasis><emphasis>
+            value</emphasis> <emphasis role="bold">) }</emphasis></entry>
+
+            <entry>Specifies a default <emphasis>value</emphasis> for the
+            field. The <emphasis>value</emphasis> must be constant. This
+            <emphasis>value</emphasis> will be used: <para>1. When a
+            DICTIONARY lookup returns no match.</para><para>2. When an
+            out-of-range record is fetched using ds[n] (as in ds[5] when ds
+            contains only 4 records). </para><para>3. In the default record
+            passed to TRANSFORM functions in LEFT ONLY or RIGHT ONLY JOINs
+            where there is no corresponding row. </para><para>4. When
+            defaulting field values in a TRANSFORM using SELF = [
+            ].</para></entry>
           </row>
 
           <row>
@@ -576,7 +614,7 @@ END;</programlisting>
 
     <programlisting>R := RECORD
 STRING blah{xpath('a/b&lt;&gt;')};
-//contains all of b, including any child attributes and values
+//contains all of b, including any child definitions and values
 END;</programlisting>
 
     <para>For XML DATASET reading and processing results of the
@@ -719,7 +757,7 @@ Form1 := RECORD
     BOOLEAN HasBogey := FALSE; 
                         //HasBogey defaults to false
     REAL4    Valu8024;
-          //value from the Valu8024 attribute
+          //value from the Valu8024 definition
 END;
 Form2 := RECORD
      Trades; //include all fields from the Trades dataset at their
@@ -838,6 +876,7 @@ OUTPUT(ds,,'~RTTEST::XMLtest2',
  */</programlisting>
 
     <para>See Also: <link linkend="DATASET">DATASET</link>, <link
+    linkend="DICTIONARY">DICTIONARY</link>, <link
     linkend="INDEX_record_structure">INDEX</link>, <link
     linkend="OUTPUT">OUTPUT</link>, <link linkend="TABLE">TABLE</link>, <link
     linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link

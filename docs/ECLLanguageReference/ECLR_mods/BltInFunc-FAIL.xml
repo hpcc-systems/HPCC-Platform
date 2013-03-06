@@ -59,8 +59,8 @@
           <row>
             <entry><emphasis>datatype</emphasis></entry>
 
-            <entry>The value type or name of a RECORD structure to
-            emulate.</entry>
+            <entry>The value type, name of a RECORD structure, DATASET, or
+            DICTIONARY to emulate.</entry>
           </row>
         </tbody>
       </tgroup>
@@ -89,5 +89,6 @@ MyRecSet  := IF(EXISTS(Person),Person,
              FAIL(Person,99,’Person does not exist!!’));
 </programlisting>
 
-  <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link linkend="ERROR">ERROR</link></para>
+  <para>See Also: <link linkend="FAILURE">FAILURE</link>, <link
+  linkend="ERROR">ERROR</link></para>
 </sect1>
