@@ -1657,7 +1657,7 @@ bool ResourcerInfo::expandRatherThanSplit()
                 return false;
             if (!isNewSelector(expr))
             {
-                if (!options->useLinkedRawIterator || !hasLinkCountedModifier(expr))
+                if (!hasLinkCountedModifier(expr))
                     return false;
                 return true;
             }
@@ -1811,7 +1811,6 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.minimizeSkewBeforeSpill = _translatorOptions.minimizeSkewBeforeSpill;
     options.expandSingleConstRow = true;
     options.createSpillAsDataset = _translatorOptions.optimizeSpillProject && (targetClusterType != HThorCluster);
-    options.useLinkedRawIterator = _translatorOptions.useLinkedRawIterator;
     options.combineSiblings = _translatorOptions.combineSiblingGraphs && (targetClusterType != HThorCluster) && (targetClusterType != RoxieCluster);
     options.optimizeSharedInputs = _translatorOptions.optimizeSharedGraphInputs && options.combineSiblings;
 }

@@ -13220,7 +13220,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
 
 ABoundActivity * HqlCppTranslator::doBuildActivityChildDataset(BuildCtx & ctx, IHqlExpression * expr)
 {
-    if ((options.mainRowsAreLinkCounted && options.useLinkedRawIterator) || isGrouped(expr))
+    if (options.mainRowsAreLinkCounted || isGrouped(expr))
         return doBuildActivityLinkedRawChildDataset(ctx, expr);
 
 
@@ -14059,11 +14059,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
     IHqlExpression * transform = expr->queryChild(2);
     IHqlExpression * selSeq = querySelSeq(expr);
 
-    if (options.useLinkedNormalize)
-    {
-        if (transformReturnsSide(expr, no_right, 1))
-            return doBuildActivityNormalizeLinkedChild(ctx, expr);
-    }
+    if (transformReturnsSide(expr, no_right, 1))
+        return doBuildActivityNormalizeLinkedChild(ctx, expr);
 
     StringBuffer s;
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
@@ -14283,36 +14280,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeLinkedChild(BuildCtx 
 
 ABoundActivity * HqlCppTranslator::doBuildActivitySelectNew(BuildCtx & ctx, IHqlExpression * expr)
 {
-    if (options.useLinkedNormalize)
-        return doBuildActivityNormalizeLinkedChild(ctx, expr);
-
-    bool isNew;
-    IHqlExpression * ds = querySelectorDataset(expr, isNew);
-//  if (!isContextDependent(ds) && !containsActiveDataset(ds))
-//      return doBuildActivityChildDataset(ctx, expr);
-    if (canEvaluateInline(&ctx, ds))
-        return doBuildActivityChildDataset(ctx, expr);
-
-    //Convert the ds.x to normalize(ds, left.x, transform(right));
-    OwnedHqlExpr selSeq = createSelectorSequence();
-    OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
-    OwnedHqlExpr selector = replaceExpression(expr, ds, left);//createSelectExpr(LINK(left), LINK(field));
-    OwnedHqlExpr transformedExpr;
-    if (expr->isDatarow())
-    {
-        OwnedHqlExpr transform = createTransformFromRow(selector);
-        if (ds->isDatarow())
-            transformedExpr.setown(createRowF(no_projectrow, LINK(ds), LINK(transform), LINK(selSeq), NULL));
-        else
-            transformedExpr.setown(createDatasetF(no_hqlproject, LINK(ds), LINK(transform), LINK(selSeq), NULL));
-    }
-    else
-    {
-        OwnedHqlExpr right = createSelector(no_right, expr, selSeq);
-        OwnedHqlExpr transform = createTransformFromRow(right);
-        transformedExpr.setown(createDatasetF(no_normalize, LINK(ds), LINK(selector), LINK(transform), LINK(selSeq), NULL));        // MORE: UID
-    }
-    return buildActivity(ctx, transformedExpr, false);
+    return doBuildActivityNormalizeLinkedChild(ctx, expr);
 }
 
 

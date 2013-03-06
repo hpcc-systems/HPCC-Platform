@@ -1601,10 +1601,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.generateLogicalGraph,"generateLogicalGraph", false),
         DebugOption(options.generateLogicalGraphOnly,"generateLogicalGraphOnly", false),
         DebugOption(options.globalAutoHoist,"globalAutoHoist", true),
-
-        DebugOption(options.useLinkedRawIterator,"useLinkedRawIterator", false),
-        DebugOption(options.useLinkedNormalize,"useLinkedNormalize", false),
-
         DebugOption(options.applyInstantEclTransformationsLimit, "applyInstantEclTransformationsLimit", 100),
         DebugOption(options.insertProjectCostLevel, "insertProjectCostLevel", (unsigned)-1),
         DebugOption(options.dfaRepeatMax, "dfaRepeatMax", 10),
@@ -1766,15 +1762,8 @@ void HqlCppTranslator::cacheOptions()
         options.constantFoldPostNormalize = false;
     }
 
-    //A meta flag for enabling link counted child rows.
-    bool useLCR = getDebugFlag("linkCountedRows", getDebugFlag("testLCR", true));
-    if (useLCR)
-    {
-        options.implicitLinkedChildRows = true;
-        options.useLinkedRawIterator = true;
-        options.useLinkedNormalize = true;
-        options.finalizeAllRows = true;     // inline temporary rows should actually be ok.
-    }
+    options.implicitLinkedChildRows = true;
+    options.finalizeAllRows = true;     // inline temporary rows should actually be ok.
 
     postProcessOptions();
 }

@@ -62,7 +62,6 @@ public:
     bool     useMpForDistribute;
     bool     expandSingleConstRow;
     bool     createSpillAsDataset;
-    bool     useLinkedRawIterator;
     bool     optimizeSharedInputs;
     bool     combineSiblings;
 

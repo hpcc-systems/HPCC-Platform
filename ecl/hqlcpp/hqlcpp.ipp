@@ -634,8 +634,6 @@ struct HqlCppOptions
     bool                generateLogicalGraph;
     bool                generateLogicalGraphOnly;
     bool                globalAutoHoist;
-    bool                useLinkedRawIterator;
-    bool                useLinkedNormalize;
     bool                expandRepeatAnyAsDfa;
     bool                unlimitedResources;
     bool                hasResourceUseMpForDistribute;
