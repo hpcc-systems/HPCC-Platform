@@ -13,7 +13,7 @@
   separating each filter expression with a comma (,). All filter conditions
   separated by commas must be TRUE for a record to be included, which makes
   the comma an implicit AND operator (see <emphasis role="bold">Logical
-  Operators</emphasis>).</para>
+  Operators</emphasis>) in this context only.</para>
 
   <programlisting>MyRecordSet := Person(per_last_name &gt;= 'T', per_last_name &lt; 'U');
      // MyRecordSet contains people whose last name begins with “T”
@@ -29,8 +29,8 @@ RateGE7trds := Trades(trd_rate &gt;= '7');
 ValidTrades := Trades(NOT rmsTrade.Mortgage AND
                       NOT rmsTrade.HasNarrative(rmsTrade.snClosed));</programlisting>
 
-  <para>Boolean Attribute<indexterm>
-      <primary>Boolean Attribute</primary>
+  <para>Boolean <indexterm>
+      <primary>Boolean Definition</primary>
     </indexterm> definitions should be used as recordset filters for maximum
   flexibility, readability and re-usability instead of hard-coding in a Record
   Set definition. For example, use:</para>
@@ -62,7 +62,7 @@ BankCardTrades := trades(isBankCard AND WithinDate(6));</programlisting>
   role="underline">and</emphasis> a set of parentheses around the individual
   filters being separated. This results in a tighter binding than if AND is
   used instead of a comma without parentheses. For example, the filter
-  expression in this Attribute definition::</para>
+  expression in this definition::</para>
 
   <programlisting>BankMortTrades := trades(isBankCard OR isMortgage, isOpen);</programlisting>
 

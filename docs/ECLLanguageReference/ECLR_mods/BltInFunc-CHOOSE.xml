@@ -30,7 +30,7 @@
 
             <entry>The values to return. There may be as many value parameters
             as necessary to specify all the expected values of the expression.
-            This may not be a record set.</entry>
+            This may be any expression or action.</entry>
           </row>
 
           <row>
@@ -38,8 +38,7 @@
 
             <entry>The value to return when the expression returns an
             out-of-range value. The last parameter is always the
-            <emphasis>elsevalue</emphasis>. This may not be a record
-            set.</entry>
+            <emphasis>elsevalue</emphasis>. </entry>
           </row>
 
           <row>
@@ -68,5 +67,6 @@ WorstRate := CHOOSE(IntRate,1,2,3,4,5,6,6,6,6,0);
  // WorstRate receives 6 if the IntRate is 7, 8, or 9
 </programlisting>
 
-  <para>See Also: <link linkend="CASE">CASE</link>, <link linkend="IF">IF</link>, <link linkend="MAP">MAP</link></para>
+  <para>See Also: <link linkend="CASE">CASE</link>, <link
+  linkend="IF">IF</link>, <link linkend="MAP">MAP</link></para>
 </sect1>

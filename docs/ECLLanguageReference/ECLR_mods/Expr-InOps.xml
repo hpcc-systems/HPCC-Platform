@@ -21,23 +21,26 @@
         <row>
           <entry><emphasis>value</emphasis></entry>
 
-          <entry>The value to find in the
-          <emphasis>value_set</emphasis>.</entry>
+          <entry>The value to find in the <emphasis>value_set</emphasis>. This
+          is usually a single value, but if the <emphasis>value_set</emphasis>
+          is a DICTIONARY with a multiple-component key, this may also be a
+          ROW.</entry>
         </row>
 
         <row>
           <entry><emphasis>value_set</emphasis></entry>
 
-          <entry>The low value in the inclusive range.</entry>
+          <entry>A set of values. This may be a set expression or a
+          DICTIONARY.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
   <para>The <emphasis role="bold">IN</emphasis> operator is shorthand for a
-  collection of OR conditions. It is an operator that will search an ordered
-  set to find an inclusion, resulting in a Boolean return. Using IN is much
-  more efficient than the equivalent OR expression.</para>
+  collection of OR conditions. It is an operator that will search a set to
+  find an inclusion, resulting in a Boolean return. Using IN is much more
+  efficient than the equivalent OR expression.</para>
 
   <para>Example:</para>
 
@@ -45,17 +48,33 @@
 IsABCStatus := Person.Status IN ABCset;
     //This code is directly equivalent to:
     // IsABCStatus := Person.Status = 'A' OR
-    // Person.Status = 'B' OR
-    // Person.Status = 'C';
+    //                Person.Status = 'B' OR
+    //                Person.Status = 'C';
        
-IsABCRate := Trades.trd_rate IN ABCset;
-Trades_ABCstat := Trades(IsABCRate);
+IsABC(STRING1 char) := char IN ABCset;
+Trades_ABCstat := Trades(IsABC(rate));
     // Trades_ABCstat is a record set definition of all those
-    // trades with a trade status of A, B, or C</programlisting>
+    // trades with a trade status of A, B, or C
 
-  <para>See Also: <link linkend="Basic_Attribute_Types">Basic Attribute
-  Types</link>, <link linkend="Basic_Attribute_Types">Attribute Types</link>
-  (<link linkend="Set_Attributes">Set Attributes</link>), <link
+//DICTIONARY examples:
+rec := {STRING color,UNSIGNED1 code};
+ColorCodes := DATASET([{'Black' ,0 },
+                       {'Brown' ,1 },
+                       {'Red'   ,2 },
+                       {'White' ,3 }], rec);
+
+CodeColorDCT  := DICTIONARY(ColorCodes,{Code =&gt; Color});
+OUTPUT(6 IN CodeColorDCT);     //true
+
+ColorCodesDCT := DICTIONARY(ColorCodes,{Color,Code});
+OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);
+</programlisting>
+
+  <para>See Also: <link linkend="Basic_Attribute_Types">Basic Definition
+  Types</link>, <link linkend="Basic_Attribute_Types">Definition Types</link>
+  (<link linkend="Set_Attributes">Set Definitions</link>), <link
   linkend="Logical_Operators">Logical Operators</link>, <link
-  linkend="PARSE_Pattern_Value_Types">PATTERN</link></para>
+  linkend="PARSE_Pattern_Value_Types">PATTERN</link>, <link
+  linkend="DICTIONARY">DICTIONARY</link>, <link
+  linkend="ROW">ROW</link></para>
 </sect1>

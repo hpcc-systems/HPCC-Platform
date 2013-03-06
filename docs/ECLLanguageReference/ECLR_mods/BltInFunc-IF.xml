@@ -37,17 +37,15 @@
             <entry><emphasis>trueresult</emphasis></entry>
 
             <entry>The result to return when the expression is true. This may
-            be a single value, a SET of values, a recordset, or an action to
-            perform.</entry>
+            be any expression or action.</entry>
           </row>
 
           <row>
             <entry><emphasis>falseresult</emphasis></entry>
 
             <entry>The result to return when the expression is false. This may
-            be a single value, a SET of values, a recordset, or an action to
-            perform. This may be omitted only if the result is an
-            action.</entry>
+            be any expression or action. This may be omitted only if the
+            result is an action.</entry>
           </row>
 
           <row>
@@ -66,18 +64,17 @@
   <emphasis>falseresult</emphasis> based on the evaluation of the
   <emphasis>expression</emphasis>. Both the <emphasis>trueresult</emphasis>
   and <emphasis>falseresult</emphasis> must be the same type (i.e. both
-  strings, or both recordsets, or ...). If the
-  <emphasis>trueresult</emphasis> and <emphasis>falseresult</emphasis> are
-  strings, then the size of the returned string will be the size of the
-  resultant value. If subsequent code relies on the size of the two being the
-  same, then a type cast to the required size may be required (typically to
-  cast an empty string to the proper size so subsequent string indexing will
-  not fail).</para>
-  
-  <para>The <emphasis role="bold">IFF</emphasis> function performs the same 
-  functionality as IF, but ensures that an <emphasis>expression</emphasis> 
+  strings, or both recordsets, or ...). If the <emphasis>trueresult</emphasis>
+  and <emphasis>falseresult</emphasis> are strings, then the size of the
+  returned string will be the size of the resultant value. If subsequent code
+  relies on the size of the two being the same, then a type cast to the
+  required size may be required (typically to cast an empty string to the
+  proper size so subsequent string indexing will not fail).</para>
+
+  <para>The <emphasis role="bold">IFF</emphasis> function performs the same
+  functionality as IF, but ensures that an <emphasis>expression</emphasis>
   containing complex boolean logic is evaluated exactly as it appears.</para>
-  
+
   <para>Example:</para>
 
   <programlisting>MyDate := IF(ValidDate(Trades.trd_dopn),Trades.trd_dopn,0);
@@ -98,5 +95,7 @@ MyAddress := IF(person.gender = 'M',
   // STRING182 ensures a proper-length string return
 </programlisting>
 
-  <para>See Also: <link linkend="MAP">MAP</link>, <link linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>, <link linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
+  <para>See Also: <link linkend="MAP">MAP</link>, <link
+  linkend="EVALUATE">EVALUATE</link>, <link linkend="CASE">CASE</link>, <link
+  linkend="CHOOSE">CHOOSE</link>, <link linkend="SET">SET</link></para>
 </sect1>

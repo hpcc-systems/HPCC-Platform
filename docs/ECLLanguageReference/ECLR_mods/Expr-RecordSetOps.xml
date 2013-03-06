@@ -8,11 +8,10 @@
       <primary>Record Set Operators</primary>
     </indexterm></title>
 
-  <para><emphasis>The following record set Append operators are supported
-  (both require that the files were created using identical RECORD
-  structure<indexterm>
+  <para>The following record set Append operators are supported (both require
+  that the files were created using identical RECORD structures<indexterm>
       <primary>RECORD structure</primary>
-    </indexterm>s):</emphasis></para>
+    </indexterm>):</para>
 
   <informaltable colsep="0" frame="none" rowsep="0">
     <tgroup align="left" cols="2">
