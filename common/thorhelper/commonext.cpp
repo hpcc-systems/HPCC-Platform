@@ -153,7 +153,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKchildcase] = "childcase";
     kindArray[TAKremotegraph] = "remote";
     kindArray[TAKlibrarycall] = "librarycall";
-    kindArray[TAKrawiterator] = "Child Dataset";
     kindArray[TAKlocalstreamread] = "localstreamread";
     kindArray[TAKprocess] = "process";
     kindArray[TAKgraphloop] ="graph";

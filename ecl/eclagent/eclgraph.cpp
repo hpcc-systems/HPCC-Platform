@@ -195,8 +195,6 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
         return createSoapDatasetActionActivity(agent, activityId, subgraphId, (IHThorSoapActionArg &)arg, kind);
     case TAKchilditerator:          
         return createChildIteratorActivity(agent, activityId, subgraphId, (IHThorChildIteratorArg &)arg, kind);
-    case TAKrawiterator:            
-        return createRawIteratorActivity(agent, activityId, subgraphId, (IHThorRawIteratorArg &)arg, kind);
     case TAKlinkedrawiterator:
         return createLinkedRawIteratorActivity(agent, activityId, subgraphId, (IHThorLinkedRawIteratorArg &)arg, kind);
     case TAKrowresult:          

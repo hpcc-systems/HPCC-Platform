@@ -547,9 +547,6 @@ public:
             case TAKchilditerator:
                 ret = createChildIteratorSlave(this);
                 break;
-            case TAKrawiterator:
-                ret = createRawIteratorSlave(this);
-                break;
             case TAKlinkedrawiterator:
                 ret = createLinkedRawIteratorSlave(this);
                 break;

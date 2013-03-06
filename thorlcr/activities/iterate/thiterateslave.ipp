@@ -27,7 +27,6 @@ activityslaves_decl CActivityBase *createIterateSlave(CGraphElementBase *contain
 activityslaves_decl CActivityBase *createLocalIterateSlave(CGraphElementBase *container);
 
 activityslaves_decl CActivityBase *createChildIteratorSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createRawIteratorSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createLinkedRawIteratorSlave(CGraphElementBase *container);
 
 activityslaves_decl CActivityBase *createProcessSlave(CGraphElementBase *container);

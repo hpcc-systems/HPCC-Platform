@@ -1605,27 +1605,6 @@ public:
 };
 
 
-class CHThorRawIteratorActivity : public CHThorSimpleActivityBase
-{
-    IHThorRawIteratorArg &helper;
-    CachedRecordSize recordSize;
-    bool eogPending;
-    bool grouped;
-    Owned<IOutputRowDeserializer> rowDeserializer;  
-    MemoryBuffer resultBuffer;
-    Owned<ISerialStream> bufferStream;
-    CThorStreamDeserializerSource rowSource;
-
-public:
-    CHThorRawIteratorActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorRawIteratorArg &_arg, ThorActivityKind _kind);
-    virtual bool needsAllocator() const { return true; }    
-
-    //interface IHThorInput
-    virtual const void *nextInGroup();
-    virtual void ready();
-    virtual void done();
-};
-
 class CHThorLinkedRawIteratorActivity : public CHThorSimpleActivityBase
 {
     IHThorLinkedRawIteratorArg &helper;

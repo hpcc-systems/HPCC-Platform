@@ -188,7 +188,6 @@ extern HTHOR_API IHThorActivity *createCombineGroupActivity(IAgentContext &, uns
 extern HTHOR_API IHThorActivity *createLoopActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorLoopArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createGraphLoopActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorGraphLoopArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createCaseActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorCaseArg &arg, ThorActivityKind kind);
-extern HTHOR_API IHThorActivity *createRawIteratorActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorRawIteratorArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createLinkedRawIteratorActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorLinkedRawIteratorArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createProcessActivity(IAgentContext &, unsigned _activityId, unsigned _subgraphId, IHThorProcessArg &arg, ThorActivityKind kind);
 extern HTHOR_API IHThorActivity *createLibraryCallActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorLibraryCallArg &arg, ThorActivityKind kind, IPropertyTree * node);
