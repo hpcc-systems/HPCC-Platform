@@ -56,7 +56,6 @@ public:
     bool     isChildQuery;
     bool     groupedChildIterators;
     bool     allowSplitBetweenSubGraphs;
-    bool     supportsChildQueries;
     bool     preventKeyedSplit;
     bool     preventSteppedSplit;
     bool     mangleSpillNameWithWuid;

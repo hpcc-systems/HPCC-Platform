@@ -2709,10 +2709,7 @@ IHqlExpression * CXmlColumnInfo::getXmlDatasetExpr(HqlCppTranslator & translator
     //Create the builder for generating a temporary set.
     IHqlExpression * record = expr->queryRecord();
     Owned<IHqlCppDatasetBuilder> builder;
-    if (recordRequiresLinkCount(expr->queryRecord()) || translator.queryOptions().tempDatasetsUseLinkedRows)
-        builder.setown(translator.createLinkedDatasetBuilder(record));
-    else
-        builder.setown(translator.createBlockedDatasetBuilder(record));
+    builder.setown(translator.createLinkedDatasetBuilder(record));
     builder->buildDeclare(ctx);
 
     //Generate the code to process a child iterator
@@ -3443,7 +3440,7 @@ IHqlExpression * SerializationRow::ensureSerialized(IHqlExpression * path, IHqlE
     Owned<ITypeInfo> unqualifiedType = getFullyUnqualifiedType(pathType);
     Owned<ITypeInfo> serializeType = cloneEssentialFieldModifiers(pathType, unqualifiedType);
     if (colocal && path->isDataset() && 
-        (hasLinkedRow(pathType) || (hasOutOfLineModifier(pathType) && translator.queryOptions().tempDatasetsUseLinkedRows)))
+        (hasLinkedRow(pathType) || hasOutOfLineModifier(pathType)))
         serializeType.setown(setLinkCountedAttr(serializeType, true));
     return addSerializedValue(path, serializeType, colocal, isConditional);
 }

@@ -1577,12 +1577,10 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.minimizeActivityClasses,"minimizeActivityClasses", true),
         DebugOption(options.maxRootMaybeThorActions, "maxRootMaybeThorActions", 0),
         DebugOption(options.includeHelperInGraph,"includeHelperInGraph", false),
-        DebugOption(options.supportsLinkedChildRows,"supportsLinkedChildRows", true),
         DebugOption(options.minimizeSkewBeforeSpill,"minimizeSkewBeforeSpill", false),
         DebugOption(options.createSerializeForUnknownSize,"createSerializeForUnknownSize", false),
         DebugOption(options.implicitLinkedChildRows,"implicitLinkedChildRows", false),
-        DebugOption(options.tempDatasetsUseLinkedRows,"tempDatasetsUseLinkedRows", false),
-//      DebugOption(options.mainRowsAreLinkCounted,"mainRowsAreLinkCounted", options.supportsLinkedChildRows),
+        DebugOption(options.mainRowsAreLinkCounted,"mainRowsAreLinkCounted", true),
         DebugOption(options.allowSections,"allowSections", true),
         DebugOption(options.autoPackRecords,"autoPackRecords", false),
         DebugOption(options.commonUniqueNameAttributes,"commonUniqueNameAttributes", true),
@@ -1738,9 +1736,6 @@ void HqlCppTranslator::cacheOptions()
     //The following cases handle options whose default values are dependent on other options.  
     //Or where one debug options sets more than one option
     options.hasResourceUseMpForDistribute = wu()->hasDebugValue("resourceUseMpForDistribute");
-    if (!options.supportsLinkedChildRows) 
-        options.implicitLinkedChildRows = false;
-
     if (options.spanMultipleCpp)
     {
         options.activitiesPerCpp = wu()->getDebugValueInt("activitiesPerCpp", DEFAULT_ACTIVITIES_PER_CPP);
@@ -1765,9 +1760,7 @@ void HqlCppTranslator::cacheOptions()
         options.optimizeResourcedProjects = true;
     }
 
-    options.mainRowsAreLinkCounted = options.supportsLinkedChildRows && getDebugFlag("mainRowsAreLinkCounted", true);
     options.minimizeWorkunitTemporaries = !options.workunitTemporaries || getDebugFlag("minimizeWorkunitTemporaries", false);//options.resourceConditionalActions);
-    options.tempDatasetsUseLinkedRows = getDebugFlag("tempDatasetsUseLinkedRows", options.implicitLinkedChildRows);
 
     options.inlineStringThreshold = wu()->getDebugValueInt("inlineStringThreshold", (options.targetCompiler != Vs6CppCompiler) ? 0 : 10000);
 
@@ -1779,10 +1772,9 @@ void HqlCppTranslator::cacheOptions()
 
     //A meta flag for enabling link counted child rows.
     bool useLCR = getDebugFlag("linkCountedRows", getDebugFlag("testLCR", true));
-    if (options.supportsLinkedChildRows && useLCR)
+    if (useLCR)
     {
         options.implicitLinkedChildRows = true;
-        options.tempDatasetsUseLinkedRows = true;
         options.useLinkedRawIterator = true;
         options.useLinkedNormalize = true;
         options.finalizeAllRows = true;     // inline temporary rows should actually be ok.
@@ -1805,20 +1797,7 @@ void HqlCppTranslator::postProcessOptions()
         options.limitMaxLength = false;
     }
 
-    if (options.supportsLinkedChildRows) 
-    {
-        options.maxStaticRowSize = 0;
-    }
-    else
-    {
-        options.maxStaticRowSize = (unsigned)-1;
-        options.implicitLinkedChildRows = false;
-        options.tempDatasetsUseLinkedRows = false;
-        options.useLinkedRawIterator = false;
-        options.useLinkedNormalize = false;
-        options.finalizeAllRows = false;
-        options.finalizeAllVariableRows = false;
-    }
+    options.maxStaticRowSize = 0;
 
     options.optimizeDiskFlag = 0;
     if (options.optimizeInlineSource) 
@@ -4133,7 +4112,7 @@ void HqlCppTranslator::createTempFor(BuildCtx & ctx, ITypeInfo * _exprType, CHql
                 assertex(format != FormatBlockedDataset);
                 format = FormatLinkedDataset;
             }
-            else if (options.tempDatasetsUseLinkedRows && (format == FormatNatural))
+            else if (format == FormatNatural)
                 format = FormatLinkedDataset;
             break;
         }

@@ -612,10 +612,8 @@ struct HqlCppOptions
     bool                canGenerateSimpleAction;
     bool                minimizeActivityClasses;
     bool                includeHelperInGraph;
-    bool                supportsLinkedChildRows;
     bool                minimizeSkewBeforeSpill;
     bool                createSerializeForUnknownSize;
-    bool                tempDatasetsUseLinkedRows;
     bool                implicitLinkedChildRows;
     bool                mainRowsAreLinkCounted;
     bool                allowSections;

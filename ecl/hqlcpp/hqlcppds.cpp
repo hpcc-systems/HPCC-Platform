@@ -946,8 +946,6 @@ bool HqlCppTranslator::canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * d
         }
         break;
     default:
-        if (!options.tempDatasetsUseLinkedRows)
-            break;
         if (!alwaysEvaluatesToBound(dataset))
             break;
         //fall through
@@ -2303,10 +2301,6 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
                 {
                     if (record != serializedRecord)
                         throwError(HQLERR_LinkedDatasetNoContext);
-                    format = FormatBlockedDataset;
-                }
-                else if ((record == serializedRecord) && !options.tempDatasetsUseLinkedRows)
-                {
                     format = FormatBlockedDataset;
                 }
                 else
@@ -5008,9 +5002,7 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
         }
     }
 
-    bool useLinkCounted = recordRequiresLinkCount(expr->queryRecord()) || options.tempDatasetsUseLinkedRows;
-
-    OwnedHqlExpr call = buildGetLocalResult(ctx, expr, useLinkCounted);
+    OwnedHqlExpr call = buildGetLocalResult(ctx, expr, true);
     switch (expr->queryType()->getTypeCode())
     {
     case type_row:

@@ -4773,7 +4773,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
                 record.set(::queryRecord(type));
                 //NB: The result type (including grouping) will be overridden when this function is bound
                 func = getResultDatasetAtom;
-                bool defaultLCR = targetAssign ? hasLinkedRow(targetAssign->queryType()) : options.tempDatasetsUseLinkedRows;
+                bool defaultLCR = targetAssign ? hasLinkedRow(targetAssign->queryType()) : true;
                 if (hasLinkCountedModifier(type) || defaultLCR)
                 {
                     ensureSerialized = false;
@@ -7383,9 +7383,8 @@ void HqlCppTranslator::doBuildExprGetResult(BuildCtx & ctx, IHqlExpression * exp
         return;
 
     ITypeInfo * exprType = expr->queryType();
-    ExpressionFormat format = (hasLinkCountedModifier(exprType) || options.tempDatasetsUseLinkedRows) ? FormatLinkedDataset : FormatBlockedDataset;
     CHqlBoundTarget tempTarget;
-    createTempFor(ctx, exprType, tempTarget, typemod_none, format);
+    createTempFor(ctx, exprType, tempTarget, typemod_none, FormatLinkedDataset);
     buildGetResultInfo(ctx, expr, NULL, &tempTarget);
     tgt.setFromTarget(tempTarget);
     ctx.associateExpr(expr, tgt);
@@ -13221,7 +13220,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
 
 ABoundActivity * HqlCppTranslator::doBuildActivityChildDataset(BuildCtx & ctx, IHqlExpression * expr)
 {
-    if ((options.mainRowsAreLinkCounted && options.supportsLinkedChildRows && options.useLinkedRawIterator) || isGrouped(expr))
+    if ((options.mainRowsAreLinkCounted && options.useLinkedRawIterator) || isGrouped(expr))
         return doBuildActivityRawChildDataset(ctx, expr);
 
 
@@ -13340,8 +13339,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRawChildDataset(BuildCtx & ctx
     //If it is possible to create a linked child rows we need to use a linked raw child dataset iterator - 
     //otherwise the dataset may not be in the right format (and I can't work out how to efficiently force it otherwise.)
     //If main rows are link counted then it is always going to be as good or better to generate a link counted raw iterator.
-    if (options.implicitLinkedChildRows || options.tempDatasetsUseLinkedRows)
-        return doBuildActivityLinkedRawChildDataset(ctx, expr);
+    return doBuildActivityLinkedRawChildDataset(ctx, expr);
 
     StringBuffer s;
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKrawiterator, expr, "RawIterator");
@@ -14133,7 +14131,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeChild(BuildCtx & ctx,
 
     // INormalizeChildIterator * queryIterator();
     {
-        bool outOfLine = options.tempDatasetsUseLinkedRows;
+        bool outOfLine = true;
         if (childDataset->isDatarow())
             childDataset.setown(createDatasetFromRow(childDataset.getClear()));
         if (childDataset->getOperator() == no_select)

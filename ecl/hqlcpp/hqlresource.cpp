@@ -1824,7 +1824,6 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.useGraphResults = false;        // modified by later call
     options.groupedChildIterators = _translatorOptions.groupedChildIterators;
     options.allowSplitBetweenSubGraphs = false;//(targetClusterType == RoxieCluster);
-    options.supportsChildQueries = true;
     options.clusterSize = clusterSize;
     options.preventKeyedSplit = _translatorOptions.preventKeyedSplit;
     options.preventSteppedSplit = _translatorOptions.preventSteppedSplit;
@@ -2095,8 +2094,8 @@ protected:
 class EclChildSplitPointLocator : public EclHoistLocator
 {
 public:
-    EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches, bool _groupedChildIterators, bool _supportsChildQueries)
-    : EclHoistLocator(_originalMatches, _matches, _singleNode, _alwaysHoistMatches), selectors(_selectors), groupedChildIterators(_groupedChildIterators), supportsChildQueries(_supportsChildQueries)
+    EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches, bool _groupedChildIterators)
+    : EclHoistLocator(_originalMatches, _matches, _singleNode, _alwaysHoistMatches), selectors(_selectors), groupedChildIterators(_groupedChildIterators)
     { 
         original = _original;
         okToSelect = false; 
@@ -2146,10 +2145,7 @@ protected:
         if (executedOnce)
         {
             if (conditionalDepth != 0)
-            {
-                if (supportsChildQueries || canProcessInline(NULL, ds))
-                    alwaysHoist = false;
-            }
+                alwaysHoist = false;
         }
         return alwaysHoist;
     }
@@ -2498,7 +2494,6 @@ protected:
     bool gathered;
     bool groupedChildIterators;
     bool executedOnce;
-    bool supportsChildQueries;
 };
 
 
@@ -2506,7 +2501,7 @@ protected:
 void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, BoolArray & alwaysHoistChild, ResourcerInfo * info, unsigned first, unsigned last)
 {
     //NB: Don't call member functions to ensure correct nesting of transform mutexes.
-    EclChildSplitPointLocator locator(expr, activeSelectors, info->originalChildDependents, info->childDependents, info->childSingleNode, alwaysHoistChild, options.groupedChildIterators, options.supportsChildQueries);
+    EclChildSplitPointLocator locator(expr, activeSelectors, info->originalChildDependents, info->childDependents, info->childSingleNode, alwaysHoistChild, options.groupedChildIterators);
     unsigned max = expr->numChildren();
 
     //If child queries are supported then don't hoist the expressions if they might only be evaluated once
