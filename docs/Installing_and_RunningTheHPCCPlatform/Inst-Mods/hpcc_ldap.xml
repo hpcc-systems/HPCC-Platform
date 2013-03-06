@@ -2,10 +2,23 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="ldap_config">
-  <title>Configuring HPCC to use LDAP Authentication</title>
+  <title>Configuring HPCC for Authentication</title>
 
-  <para>This section details the steps to connect your HPCC platform to an
-  existing LDAP Server to enable user security.</para>
+  <para>This section details the steps to configure your HPCC platform to use
+  authentication. There are two ways to use authentication with your HPCC
+  system: simple htpasswd authentication or LDAP.</para>
+
+  <para>The htpasswd authentication method is basic password authentication.
+  It only grants or denies access to a user, based upon MD5 encrypted password
+  authentication.</para>
+
+  <para>LDAP authentication offers more features and options. LDAP can not
+  only authenticate users, but adds granularity to the authentication. LDAP
+  allows you to control grouped access to features, functions, and
+  files.</para>
+
+  <para>You should consider your system needs and decide which of these
+  methods is appropriate for your environment.</para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <?dbfo keep-together="always"?>
@@ -28,50 +41,214 @@
   </informaltable>
 
   <sect2>
-    <title>Connect to Configuration Manager</title>
+    <title>Using htpasswd authentication</title>
 
-    <para>In order to change the configuration for HPCC components, connect to
-    the Configuration Manager.</para>
+    <para>htpasswd provides basic password authentication to the entire
+    system. This section contains the information to install and implement
+    htpasswd authentication.</para>
 
-    <orderedlist numeration="arabic">
-      <listitem>
-        <para>Stop all HPCC Components, if they are running.</para>
-      </listitem>
+    <sect3>
+      <title>Connect to Configuration Manager</title>
 
-      <listitem>
-        <para>Verify that they are stopped. You can use a single command, such
-        as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
-      </listitem>
+      <para>In order to change the configuration for HPCC components, connect
+      to the Configuration Manager.</para>
 
-      <listitem>
-        <para>Start Configuration Manager.</para>
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Stop all HPCC Components, if they are running.</para>
+        </listitem>
 
-        <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
-      </listitem>
+        <listitem>
+          <para>Verify that they are stopped. You can use a single command,
+          such as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
 
-      <listitem>
-        <para>Connect to the Configuration Manager web interface.</para>
+        <listitem>
+          <para>Start Configuration Manager.</para>
 
-        <para>(using the url of
-        http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
-        <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address of
-        the node running Configuration Manager)</para>
-      </listitem>
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
 
-      <listitem>
-        <para>Select the <emphasis role="bold">Advanced View</emphasis> radio
-        button.</para>
-      </listitem>
+        <listitem>
+          <para>Connect your web browser to the Configuration Manager web
+          interface.</para>
 
-      <listitem>
-        <para>Use the drop list to select the XML configuration file.</para>
-      </listitem>
-    </orderedlist>
+          <para>(using the url of
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          of the node running Configuration Manager)</para>
+        </listitem>
 
-    <para><emphasis role="bold">Note:</emphasis> Configuration Manager
-    <emphasis role="bold">never</emphasis> works on the active configuration
-    file. After you finish editing you will have to copy the environment.xml
-    to the active location and push it out to all nodes.</para>
+        <listitem>
+          <para>Select the <emphasis role="bold">Advanced View</emphasis>
+          radio button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use the drop list to select the XML configuration file.
+          <variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>Configuration Manager <emphasis
+                  role="bold">never</emphasis> works on the active
+                  configuration file. After you finish editing you will have
+                  to copy the environment.xml to the active location and push
+                  it out to all nodes.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </listitem>
+
+        <listitem>
+          <para>Check the <emphasis role="bold">Write Access</emphasis>
+          box.</para>
+
+          <para>Default access is read-only. Many options are only available
+          when write-access is enabled.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3>
+      <title>Enabling htpasswd authentication in HPCC</title>
+
+      <orderedlist continuation="continues">
+        <listitem>
+          <para>Select <emphasis role="bold">Esp - myesp</emphasis> in the
+          Navigator panel on the left hand side.</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>If you have more than one ESP Server, you would only use
+                one of them for authentication.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Select the <emphasis role="bold">Authentication</emphasis>
+          tab<graphic fileref="../../images/gs-ht01.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">htpasswd File</emphasis>
+          entry, set the value option to the location of the htpasswd
+          file.</para>
+
+          <para>If the file does not already exist you must create one, see
+          the following section <emphasis>User administration with
+          htpasswd</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">method</emphasis>
+          entry.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Click on the value column drop list to display the choices for
+          method. <graphic fileref="../../images/gs-ht02.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Choose <emphasis role="bluebold">htpasswd</emphasis> from the
+          drop list.</para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the disk icon to save.</para>
+        </listitem>
+      </orderedlist>
+    </sect3>
+
+    <sect3>
+      <title>User administration with htpasswd</title>
+
+      <para>Users and passwords are kept in the htpasswd file. The htpasswd
+      file needs to exist on the ESP Node that you have enabled
+      authentication. HPCC only recognizes MD5 encrypted passwords.</para>
+
+      <para>The default location is: <emphasis
+      role="bold">/etc/HPCCSystems/.htpasswd</emphasis> on the ESP node that
+      has been configured to authenticate, but it is configurable.</para>
+
+      <para>You can use the htpasswd utility to create the .htpasswd file to
+      administer users.</para>
+
+      <para>You may already have the htpasswd utility on your system, as it is
+      a part of some Linux distributions. Check your Linux distribution to see
+      if you already have it. If you do not have it you should download the
+      utility for your distribution from The Apache Software
+      Foundation.</para>
+
+      <para>For more information about using htpasswd see: <ulink
+      url="http://httpd.apache.org/docs/2.2/programs/htpasswd.html">http://httpd.apache.org/docs/2.2/programs/htpasswd.html</ulink>.</para>
+    </sect3>
+  </sect2>
+
+  <sect2 role="brk">
+    <title>Using LDAP Authentication</title>
+
+    <para>This section contains the information to install and implement LDAP
+    based authentication. LDAP Authentication provides the most options for
+    securing your system, or parts of your system.</para>
+
+    <sect3>
+      <title>Connect to Configuration Manager</title>
+
+      <para>In order to change the configuration for HPCC components, connect
+      to the Configuration Manager.</para>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Stop all HPCC Components, if they are running.</para>
+        </listitem>
+
+        <listitem>
+          <para>Verify that they are stopped. You can use a single command,
+          such as : <programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init status</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Start Configuration Manager.</para>
+
+          <para><programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Connect to the Configuration Manager web interface.</para>
+
+          <para>(using the url of
+          http://<emphasis>&lt;configmgr_IP_Address&gt;</emphasis>:8015, where
+          <emphasis>&lt;configmgr_IP_Address&gt;</emphasis> is the IP address
+          of the node running Configuration Manager)</para>
+        </listitem>
+
+        <listitem>
+          <para>Select the <emphasis role="bold">Advanced View</emphasis>
+          radio button.</para>
+        </listitem>
+
+        <listitem>
+          <para>Use the drop list to select the XML configuration file.</para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Note:</emphasis> Configuration Manager
+      <emphasis role="bold">never</emphasis> works on the active configuration
+      file. After you finish editing you will have to copy the environment.xml
+      to the active location and push it out to all nodes.</para>
+    </sect3>
   </sect2>
 
   <sect2>
@@ -307,7 +484,7 @@
               LDAP Server, in our example it is:
               <emphasis>ldapserver.</emphasis></para>
 
-              <para>Confirm the change when prompted. </para>
+              <para>Confirm the change when prompted.</para>
             </listitem>
 
             <listitem>
