@@ -1141,7 +1141,7 @@ Restart:
 
     void startTX()
     {
-        // not used
+        stopping = false;
     }
 };
 
