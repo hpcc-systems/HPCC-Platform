@@ -1508,7 +1508,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.peephole,"peephole", true),
         DebugOption(options.foldConstantCast,"foldConstantCast", true),
         DebugOption(options.optimizeBoolReturn,"optimizeBoolReturn", true),
-        DebugOption(options.checkRowOverflow,"checkRowOverflow", true),
         DebugOption(options.freezePersists,"freezePersists", false),
         DebugOption(options.maxRecordSize, "defaultMaxLengthRecord", MAX_RECORD_SIZE),
 
@@ -1532,7 +1531,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.commonUpChildGraphs,"commonUpChildGraphs", true),
         DebugOption(options.detectAmbiguousSelector,"detectAmbiguousSelector", false),
         DebugOption(options.allowAmbiguousSelector,"allowAmbiguousSelector", false),
-        DebugOption(options.preserveUniqueSelector,"preserveUniqueSelector", true),
 #ifdef _DEBUG
         DebugOption(options.regressionTest,"regressionTest", true),
 #else
@@ -1557,7 +1555,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.warnOnImplicitReadLimit,"warnOnImplicitReadLimit", targetRoxie()),
 
         DebugOption(options.convertJoinToLookup,"convertJoinToLookup", true),
-        DebugOption(options.convertJoinToLookupIfSorted,"convertJoinToLookupIfSorted", false),      // should change to false once tested
+        DebugOption(options.convertJoinToLookupIfSorted,"convertJoinToLookupIfSorted", false),
         DebugOption(options.spotCSE,"spotCSE", true),
         DebugOption(options.optimizeNonEmpty,"optimizeNonEmpty", !targetThor()),                // not sure that it will be conditional resourced correctly for thor
         DebugOption(options.allowVariableRoxieFilenames,"allowVariableRoxieFilenames", false),
@@ -1576,7 +1574,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.canGenerateSimpleAction,"canGenerateSimpleAction", true),
         DebugOption(options.minimizeActivityClasses,"minimizeActivityClasses", true),
         DebugOption(options.maxRootMaybeThorActions, "maxRootMaybeThorActions", 0),
-        DebugOption(options.includeHelperInGraph,"includeHelperInGraph", false),
         DebugOption(options.minimizeSkewBeforeSpill,"minimizeSkewBeforeSpill", false),
         DebugOption(options.createSerializeForUnknownSize,"createSerializeForUnknownSize", false),
         DebugOption(options.implicitLinkedChildRows,"implicitLinkedChildRows", false),
@@ -1669,7 +1666,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.addLibraryInputsToGraph,"addLibraryInputsToGraph", false),
         DebugOption(options.showRecordCountInGraph,"showRecordCountInGraph", true),
         DebugOption(options.serializeRowsetInExtract,"serializeRowsetInExtract", false),
-        DebugOption(options.optimizeInSegmentMonitor,"optimizeInSegmentMonitor", true),
         DebugOption(options.testIgnoreMaxLength,"testIgnoreMaxLength", false),
         DebugOption(options.trackDuplicateActivities,"trackDuplicateActivities", false),
         DebugOption(options.showActivitySizeInGraph,"showActivitySizeInGraph", false),
@@ -1700,7 +1696,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.projectNestedTables,"projectNestedTables",true),
         DebugOption(options.showSeqInGraph,"showSeqInGraph",false),  // For tracking down why projects are not commoned up
         DebugOption(options.normalizeSelectorSequence,"normalizeSelectorSequence",false),  // For tracking down why projects are not commoned up
-        DebugOption(options.transformCaseToChoose,"transformCaseToChoose",true),
         DebugOption(options.removeXpathFromOutput,"removeXpathFromOutput",false),
         DebugOption(options.canLinkConstantRows,"canLinkConstantRows",true),
     };

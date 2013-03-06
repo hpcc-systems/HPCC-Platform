@@ -577,9 +577,6 @@ void CMemberInfo::gatherMaxRowSize(SizeStruct & totalSize, IHqlExpression * newS
 
 void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * newSize, unsigned fixedExtra)
 {
-    if (!translator.checkForRowOverflow())
-        return;
-
     //If no size beyond the constant value then this can't be increasing the size of the row => no need to check
     if (matchesConstantValue(newSize, 0))
         return;

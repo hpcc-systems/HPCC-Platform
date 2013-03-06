@@ -1187,7 +1187,6 @@ protected:
     {
         bool removeAsserts;
         bool commonUniqueNameAttributes;
-        bool simplifySelectorSequence;
         bool sortIndexPayload;
         bool allowSections;
         bool normalizeExplicitCasts;
@@ -1196,7 +1195,6 @@ protected:
         bool constantFoldNormalize;
         bool allowActivityForKeyedJoin;
         bool implicitShuffle;
-        bool transformCaseToChoose;
     } options;
     unsigned nextSequenceValue;
     bool seenForceLocal;

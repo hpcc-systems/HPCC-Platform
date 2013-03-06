@@ -2155,9 +2155,6 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (strcmp(graphEclText.str(), "<>") != 0)
         addAttribute("ecl", graphEclText.str());
 
-    if (translator.queryOptions().includeHelperInGraph)
-        addAttribute("helper", factoryName);
-
     if (translator.queryOptions().showSeqInGraph)
     {
         IHqlExpression * selSeq = querySelSeq(dataset);

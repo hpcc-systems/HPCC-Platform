@@ -558,7 +558,6 @@ struct HqlCppOptions
     bool                peephole;
     bool                foldConstantCast;
     bool                optimizeBoolReturn;
-    bool                checkRowOverflow;
     bool                freezePersists;
     bool                checkRoxieRestrictions;
     bool                checkThorRestrictions;
@@ -610,7 +609,6 @@ struct HqlCppOptions
     bool                preventSteppedSplit;
     bool                canGenerateSimpleAction;
     bool                minimizeActivityClasses;
-    bool                includeHelperInGraph;
     bool                minimizeSkewBeforeSpill;
     bool                createSerializeForUnknownSize;
     bool                implicitLinkedChildRows;
@@ -652,7 +650,6 @@ struct HqlCppOptions
     bool                combineTrivialStored;
     bool                combineAllStored;
     bool                allowStoredDuplicate;
-    bool                preserveUniqueSelector;
     bool                allowScopeMigrate;
     bool                supportFilterProject;
     bool                normalizeExplicitCasts;
@@ -685,7 +682,6 @@ struct HqlCppOptions
     bool                addLibraryInputsToGraph;
     bool                showRecordCountInGraph;
     bool                serializeRowsetInExtract;
-    bool                optimizeInSegmentMonitor;
     bool                testIgnoreMaxLength;
     bool                trackDuplicateActivities;               // for diagnosing problems with code becoming duplicated
     bool                showActivitySizeInGraph;
@@ -714,7 +710,6 @@ struct HqlCppOptions
     bool                projectNestedTables;
     bool                showSeqInGraph;
     bool                normalizeSelectorSequence;
-    bool                transformCaseToChoose;
     bool                removeXpathFromOutput;
     bool                canLinkConstantRows;
 };
@@ -909,7 +904,6 @@ public:
     void generateStatistics(const char * targetDir, const char * varient);
 
             unsigned getHints()                             { return hints; }
-    inline  bool checkForRowOverflow() const                { return options.checkRowOverflow; }
     inline bool queryEvaluateCoLocalRowInvariantInExtract() const { return options.evaluateCoLocalRowInvariantInExtract; }
     inline byte notifyOptimizedProjectsLevel()              { return options.notifyOptimizedProjects; }
     inline bool generateAsserts() const                     { return options.checkAsserts; }
