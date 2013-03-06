@@ -145,7 +145,7 @@ public:
 protected:
     const CResultSetMetaData & getMeta() { return static_cast<const CResultSetMetaData &>(getMetaData()); }
 
-    CResultSetCursor * doCreateCursor(bool oldInterface);
+    CResultSetCursor * doCreateCursor();
 };
 
 
@@ -170,8 +170,6 @@ public:
     virtual void onOpen() { dataSource->onOpen(); }
     virtual void onClose() { dataSource->onClose(); }
     virtual IFvDataSource * queryDataSource() { return dataSource; }
-
-    inline CResultSetCursor * createOldStyleCursor() { return doCreateCursor(true); }
 
     void setColumnMapping(IDistributedFile * df);
 
@@ -320,16 +318,13 @@ protected:
     UInt64Array validOffsets;
 };
 
-class CResultSetCursor : public CInterface, implements IResultSet, implements IExtendedResultSetCursor
+class CResultSetCursor : public CInterface, implements IExtendedResultSetCursor
 {
 public:
-    CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, bool _oldInterface);
+    CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet);
     CResultSetCursor(const CResultSetMetaData & _meta, IExtendedNewResultSet * _resultSet, MemoryBuffer & val);
     ~CResultSetCursor();
     IMPLEMENT_IINTERFACE;
-
-//interface IResultSet only
-    virtual int findColumn(const char * columnName) const;
 
 //interface IResultSet, IResultSetCursor shared
     virtual bool absolute(__int64 row);
@@ -369,12 +364,6 @@ public:
     virtual IStringVal & getXmlRow(IStringVal &ret);
     virtual IStringVal & getXmlItem(IStringVal & ret);
 
-
-
-//IResultSetCursor
-    virtual void beginAccess();
-    virtual void endAccess();
-
 //IExtendedResultSetCursor
     virtual void noteRelatedFileChanged() {}
 
@@ -397,7 +386,6 @@ protected:
     MemoryBuffer curRowData;
     __int64 curRow;
     unsigned * offsets;
-    bool oldInterface;
 };
 
 //---------------------------------------------------------------------------
@@ -580,8 +568,6 @@ public:
     CResultSetFactory(const char * _username, const char * _password);
     CResultSetFactory(ISecManager &secmgr, ISecUser &secuser);
 
-    virtual IResultSet * createResultSet(IConstWUResult * wuResult, const char * wuid);
-    virtual IResultSet * createFileResultSet(const char * logicalFile, const char * cluster);
     virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster);
     virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name);
@@ -612,8 +598,6 @@ public:
     CRemoteResultSetFactory(const char * remoteServer, ISecManager &secmgr, ISecUser &secuser);
     IMPLEMENT_IINTERFACE
 
-    virtual IResultSet * createResultSet(IConstWUResult * wuResult, const char * wuid);
-    virtual IResultSet * createFileResultSet(const char * logicalFile, const char * cluster);
     virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid);
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster);
     virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name);

@@ -86,43 +86,6 @@ interface IResultSetMetaData : extends IInterface
 
 
 typedef double xdouble;
-interface IResultSet : extends IInterface
-{
-    virtual bool absolute(__int64 row) = 0;
-    virtual void afterLast() = 0;
-    virtual void beforeFirst() = 0;
-    virtual int findColumn(const char * columnName) const = 0;
-    virtual bool first() = 0;
-    virtual bool getBoolean(int columnIndex) = 0;
-    virtual IDataVal & getBytes(IDataVal & d, int columnIndex) = 0;
-    virtual xdouble getDouble(int columnIndex) = 0;
-    virtual int getFetchSize() const = 0;
-    virtual __int64 getInt(int columnIndex) = 0;
-    virtual int getType() = 0;
-    virtual const IResultSetMetaData & getMetaData() const = 0;
-    virtual __int64 getNumRows() const = 0;
-    virtual IDataVal & getRaw(IDataVal & d, int columnIndex) = 0;
-    virtual IDataVal & getRawRow(IDataVal & d) = 0;
-    virtual IStringVal & getString(IStringVal & ret, int columnIndex) = 0;
-    virtual bool isAfterLast() const = 0;
-    virtual bool isBeforeFirst() const = 0;
-    virtual bool isFirst() const = 0;
-    virtual bool isLast() const = 0;
-    virtual bool isNull(int columnIndex) const = 0;
-    virtual bool last() = 0;
-    virtual bool next() = 0;
-    virtual bool previous() = 0;
-    virtual bool relative(__int64 rows) = 0;
-    virtual void setFetchSize(int rows) = 0;
-    virtual bool supportsRandomSeek() const = 0;
-    virtual IStringVal & getDisplayText(IStringVal & ret, int columnIndex) = 0;
-    virtual void beginAccess() = 0;
-    virtual void endAccess() = 0;
-    virtual IStringVal & getXml(IStringVal & ret, int columnIndex) = 0;
-};
-
-
-
 interface INewResultSet;
 interface IResultSetCursor : extends IInterface
 {
@@ -196,8 +159,6 @@ interface INewResultSet : extends IInterface
 
 interface IResultSetFactory : extends IInterface
 {
-    virtual IResultSet * createResultSet(IConstWUResult * wuResult, const char * wuid) = 0;
-    virtual IResultSet * createFileResultSet(const char * logicalFile, const char * cluster) = 0;
     virtual INewResultSet * createNewResultSet(IConstWUResult * wuResult, const char * wuid) = 0;
     virtual INewResultSet * createNewFileResultSet(const char * logicalFile, const char * cluster) = 0;
     virtual INewResultSet * createNewResultSet(const char * wuid, unsigned sequence, const char * name) = 0;
@@ -208,8 +169,6 @@ interface IResultSetFactory : extends IInterface
 
 
 //provided to wrap the exceptions for clarion....
-extern FILEVIEW_API IResultSet* createResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
-extern FILEVIEW_API IResultSet* createFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue = NULL, const char * cluster = NULL);
 extern FILEVIEW_API INewResultSet* createNewResultSet(IResultSetFactory & factory, IStringVal & error, IConstWUResult * wuResult, const char * wuid);
 extern FILEVIEW_API INewResultSet* createNewFileResultSet(IResultSetFactory & factory, IStringVal & error, const char * logicalFile, const char * queue, const char * cluster);
 extern FILEVIEW_API INewResultSet* createNewResultSetSeqName(IResultSetFactory & factory, IStringVal & error, const char * wuid, unsigned sequence, const char * name);
