@@ -77,14 +77,17 @@ interface IQueryStatsAggregator : public IInterface
     virtual void noteQuery(time_t startTime, bool failed, unsigned elapsedTimeMs, unsigned memUsed, unsigned slavesReplyLen, unsigned bytesOut) = 0;
     virtual IPropertyTree *getStats(time_t from, time_t to) = 0;
 };
+
+extern IQueryStatsAggregator *queryGlobalQueryStatsAggregator();
 extern IQueryStatsAggregator *createQueryStatsAggregator(const char *queryName, unsigned expirySeconds);
-extern IPropertyTree *getAllQueryStats(time_t from, time_t to);
+extern IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to);
 
 extern atomic_t queryCount;
 extern RoxieQueryStats unknownQueryStats;
 extern RoxieQueryStats loQueryStats;
 extern RoxieQueryStats hiQueryStats;
 extern RoxieQueryStats slaQueryStats;
+extern RoxieQueryStats combinedQueryStats;
 extern atomic_t retriesIgnoredPrm;
 extern atomic_t retriesIgnoredSec;
 extern atomic_t retriesNeeded;

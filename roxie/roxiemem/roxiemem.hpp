@@ -461,6 +461,7 @@ extern roxiemem_decl bool memPoolExhausted();
 extern roxiemem_decl unsigned memTraceLevel;
 extern roxiemem_decl memsize_t memTraceSizeLimit;
 
+extern roxiemem_decl unsigned heapAllocated;
 extern roxiemem_decl atomic_t dataBufferPages;
 extern roxiemem_decl atomic_t dataBuffersActive;
 

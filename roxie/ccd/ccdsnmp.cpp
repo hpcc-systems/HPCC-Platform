@@ -19,6 +19,7 @@
 #include "jlog.hpp"
 #include "jtime.hpp"
 #include "jptree.hpp"
+#include "jqueue.tpp"
 #include "mpbase.hpp"
 #include "math.h"
 #include "ccdsnmp.hpp"
@@ -34,6 +35,7 @@ RoxieQueryStats unknownQueryStats;
 RoxieQueryStats loQueryStats;
 RoxieQueryStats hiQueryStats;
 RoxieQueryStats slaQueryStats;
+RoxieQueryStats combinedQueryStats;
 atomic_t retriesIgnoredPrm;
 atomic_t retriesIgnoredSec;
 atomic_t retriesNeeded;
@@ -338,11 +340,13 @@ void RoxieQueryStats::addMetrics(CRoxieMetricsManager *snmpManager, const char *
     StringBuffer name;
     snmpManager->doAddMetric(count, name.clear().append(prefix).append("QueryCount"), interval);
     snmpManager->doAddMetric(failedCount, name.clear().append(prefix).append("QueryFailed"), interval);
-    snmpManager->doAddMetric(active, name.clear().append(prefix).append("QueryActive"), interval);
-    snmpManager->doAddMetric(maxTime, name.clear().append(prefix).append("Max"), interval);
-    snmpManager->doAddMetric(minTime, name.clear().append(prefix).append("Min"), interval);
-    snmpManager->addRatioMetric(count, name.clear().append(prefix).append("Average"), totalTime);
+    snmpManager->doAddMetric(active, name.clear().append(prefix).append("QueryActive"), 0);
+    snmpManager->doAddMetric(maxTime, name.clear().append(prefix).append("QueryMaxTime"), 0);
+    snmpManager->doAddMetric(minTime, name.clear().append(prefix).append("QueryMinTime"), 0);
+    snmpManager->addRatioMetric(count, name.clear().append(prefix).append("QueryAverageTime"), totalTime);
 }
+
+using roxiemem::heapAllocated;
 using roxiemem::dataBufferPages;
 using roxiemem::dataBuffersActive;
 
@@ -355,6 +359,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     loQueryStats.addMetrics(this, "lo", 1000);
     hiQueryStats.addMetrics(this, "hi", 1000);
     slaQueryStats.addMetrics(this, "sla", 1000);
+    combinedQueryStats.addMetrics(this, "all", 1000);
     addMetric(retriesIgnoredPrm, 1000);
     addMetric(retriesIgnoredSec, 1000);
     addMetric(retriesNeeded, 1000);
@@ -402,6 +407,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(packetsRetried, 1000);
     addMetric(packetsAbandoned, 1000);
 
+    addMetric(heapAllocated, 0);
     addMetric(dataBufferPages, 0);
     addMetric(dataBuffersActive, 0);
     
@@ -553,7 +559,7 @@ Owned<IRoxieMetricsManager> roxieMetrics;
 // A separate process tailing the log file?
 
 // If we do the internal concentric buffers route:
-// If hour (or minute, or minute/5, or whatever minumum granularity we pick) has changed since last noted a query, 
+// If hour (or minute, or minute/5, or whatever minimum granularity we pick) has changed since last noted a query,
 // shuffle...
 // we will be able to give results for any hour (x:00 to x+1:00), day (midnight to midnight), 5 minute period, etc
 // as well as current hour-so-far, current day-so-far 
@@ -567,7 +573,7 @@ Owned<IRoxieMetricsManager> roxieMetrics;
 // We can arrange so that all info < 2 hours old is in one circular buffer, all info > 2 hours old is aggregated into hourly slices
 // The last of the hourly slices is then incomplete. OR is it easier to aggregate as we go and discard data > 1 hour old?
 // Probably.
-// If we have per-hour aggregate data available indefinately, and last-hour data available in full, we should be ok
+// If we have per-hour aggregate data available indefinitely, and last-hour data available in full, we should be ok
 
 // If we want to be able to see other stats with same detail as time, we will need to abstract this out a bit more.
 
@@ -641,6 +647,13 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
                 result.setPropInt("percentile97", 0);
         }
 
+        static bool checkOlder(const void *_left, const void *_right)
+        {
+            QueryStatsRecord *left = (QueryStatsRecord *) _left;
+            QueryStatsRecord *right = (QueryStatsRecord *) _right;
+            return left->isOlderThan(right->startTime);
+        }
+
     };
     
     class QueryStatsAggregateRecord : public CInterface
@@ -666,7 +679,6 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         {
             startTime = _startTime;
             endTime = _endTime;
-            assertex(endTime > startTime);
             countTotal = 0;
             countFailed = 0;
             totalTimeMs = 0;
@@ -798,9 +810,9 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         }
     };
 
-    CIArrayOf<QueryStatsRecord> recent;
+    QueueOf<QueryStatsRecord, false> recent;
     CIArrayOf<QueryStatsAggregateRecord> aggregated; // stored with most recent first
-    unsigned expirySeconds;  // time to keep exact info (rather than just agregated)
+    unsigned expirySeconds;  // time to keep exact info (rather than just aggregated)
     StringAttr queryName;
     SpinLock lock;
 
@@ -836,8 +848,9 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         slotEnd = mktime(&queryTimeExpanded);
     }
     
-    static CIArrayOf<CQueryStatsAggregator> allStats;
-    static SpinLock allStatsCrit;
+    static CQueryStatsAggregator globalStatsAggregator;
+    static CIArrayOf<CQueryStatsAggregator> queryStatsAggregators;
+    static SpinLock queryStatsCrit;
 
 public:
     virtual void Link(void) const { CInterface::Link(); }
@@ -845,10 +858,10 @@ public:
     {
         if (CInterface::Release())
             return true;
-        SpinBlock b(allStatsCrit);
+        SpinBlock b(queryStatsCrit);
         if (!IsShared())
         {
-            allStats.zap(* const_cast<CQueryStatsAggregator*>(this));
+            queryStatsAggregators.zap(* const_cast<CQueryStatsAggregator*>(this));
             return true;
         }
         return false;
@@ -857,20 +870,24 @@ public:
     CQueryStatsAggregator(const char *_queryName, unsigned _expirySeconds)
         : queryName(_queryName)
     {
-        SpinBlock b(allStatsCrit);
+        SpinBlock b(queryStatsCrit);
         expirySeconds = _expirySeconds;
-        allStats.append(*LINK(this));
+        queryStatsAggregators.append(*LINK(this));
     }
 
-    static IPropertyTree *getAllQueryStats(time_t from, time_t to)
+    static IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to)
     {
         Owned<IPTree> result = createPTree("QueryStats");
-        SpinBlock b(allStatsCrit);
-        ForEachItemIn(idx, allStats)
+        if (includeQueries)
         {
-            CQueryStatsAggregator &thisQuery = allStats.item(idx);
-            result->addPropTree("Query", thisQuery.getStats(from, to));
+            SpinBlock b(queryStatsCrit);
+            ForEachItemIn(idx, queryStatsAggregators)
+            {
+                CQueryStatsAggregator &thisQuery = queryStatsAggregators.item(idx);
+                result->addPropTree("Query", thisQuery.getStats(from, to));
+            }
         }
+        result->addPropTree("Global", globalStatsAggregator.getStats(from, to));
         return result.getClear();
     }
 
@@ -878,23 +895,19 @@ public:
     {
         time_t timeNow;
         time(&timeNow);
-        QueryStatsRecord *statsRec = new QueryStatsRecord(startTime, failed, elapsedTimeMs, memUsed, slavesReplyLen, bytesOut);
-
         SpinBlock b(lock);
         if (expirySeconds)
         {
-            unsigned pos = recent.length();
-            while (pos && !recent.item(pos-1).isOlderThan(startTime))
-                pos--;
-            recent.add(*statsRec, pos);
+            QueryStatsRecord *statsRec = new QueryStatsRecord(startTime, failed, elapsedTimeMs, memUsed, slavesReplyLen, bytesOut);
+            recent.enqueue(statsRec, QueryStatsRecord::checkOlder);
         }
-
         // Now remove any that have expired
-        // MORE - a circular buffer would be more efficient
         if (expirySeconds != (unsigned) -1)
         {
-            while (recent.isItem(0) && recent.item(0).expired(timeNow, expirySeconds))
-                recent.remove(0);
+            while (recent.ordinality() && recent.head()->expired(timeNow, expirySeconds))
+            {
+                recent.dequeue()->Release();
+            }
         }
 
         QueryStatsAggregateRecord &aggregator = findAggregate(startTime);
@@ -913,13 +926,13 @@ public:
             CIArrayOf<QueryStatsRecord> useStats;
             {
                 SpinBlock b(lock); // be careful not to take too much time in here! If it gets to take a while, we will have to rethink
-                ForEachItemIn(idx, recent)
+                ForEachQueueItemIn(idx, recent)
                 {
-                    QueryStatsRecord &rec = recent.item(idx);
-                    if (rec.inRange(from, to))
+                    QueryStatsRecord *rec = recent.item(idx);
+                    if (rec->inRange(from, to))
                     {
-                        rec.Link();
-                        useStats.append(rec);
+                        rec->Link();
+                        useStats.append(*rec);
                     }
                 }
                 // Spinlock is released here, and we process the useStats array at our leisure...
@@ -945,19 +958,29 @@ public:
         }
         return result.getClear();
     }
+    static inline IQueryStatsAggregator *queryGlobalStatsAggregator()
+    {
+        return &globalStatsAggregator;
+    }
 };
 
-CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::allStats;
-SpinLock CQueryStatsAggregator::allStatsCrit;
+CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
+CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
+SpinLock CQueryStatsAggregator::queryStatsCrit;
+
+IQueryStatsAggregator *queryGlobalQueryStatsAggregator()
+{
+    return CQueryStatsAggregator::queryGlobalStatsAggregator();
+}
 
 IQueryStatsAggregator *createQueryStatsAggregator(const char *_queryName, unsigned _expirySeconds)
 {
     return new CQueryStatsAggregator(_queryName, _expirySeconds);
 }
 
-IPropertyTree *getAllQueryStats(time_t from, time_t to)
+IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to)
 {
-     return CQueryStatsAggregator::getAllQueryStats(from, to);
+     return CQueryStatsAggregator::getAllQueryStats(includeQueries, from, to);
 }
 
 //=======================================================================================================
@@ -1005,7 +1028,7 @@ protected:
             DBGLOG("%s", stats.str());
         }
         {
-            Owned<IPropertyTree> p = getAllQueryStats(start, end);
+            Owned<IPropertyTree> p = getAllQueryStats(true, start, end);
             StringBuffer stats; 
             toXML(p, stats);
             DBGLOG("%s", stats.str());
