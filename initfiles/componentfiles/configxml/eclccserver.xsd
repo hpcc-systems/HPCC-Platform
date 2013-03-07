@@ -191,6 +191,13 @@
                     </xs:appinfo>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="generatePrecompiledHeader" type="xs:boolean" use="optional" default="true">
+                <xs:annotation>
+                    <xs:appinfo>
+                        <tooltip>Generate precompiled header when eclccserver starts.</tooltip>
+                    </xs:appinfo>
+                </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="1"/>
             <xs:attribute name="maxEclccProcesses" type="xs:nonNegativeInteger" use="optional" default="4">
                 <xs:annotation>
