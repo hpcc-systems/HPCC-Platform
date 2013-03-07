@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="NOFOLD">
+  <title>NOFOLD<indexterm>
+      <primary>NOFOLD function</primary>
+    </indexterm></title>
+
+  <para><emphasis role="bold">[</emphasis><emphasis>name</emphasis>
+  :=<emphasis role="bold"> ] NOFOLD<indexterm>
+      <primary>NOFOLD</primary>
+    </indexterm>(</emphasis><emphasis> expression </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="83.15pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry><emphasis>name</emphasis></entry>
+
+            <entry>Optional. The identifier for this function.</entry>
+          </row>
+
+          <row>
+            <entry>expression</entry>
+
+            <entry>The expression to evaluate.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">NOFOLD</emphasis> function creates a barrier
+  that prevents optimizations occurring between the
+  <emphasis>expression</emphasis> and the context it is used in. This is used
+  to prevent constant-folding in the context so that it may be evaluated
+  as-is. Note that this does not prevent constant-folding within the
+  <emphasis>expression</emphasis> itself. It is normally only used to prevent
+  test cases being optimized into something completely different, or to
+  temporarily work around bugs in the compiler.</para>
+
+  <para>Example:</para>
+
+  <programlisting>OUTPUT(2 * 2);  // is normally constant folded to:
+OUTPUT(4);      // at compile time. 
+
+  //However adding NOFOLD() around one argument prevents that 
+OUTPUT(NOFOLD(2) * 2);
+
+  //Adding NOFOLD() around the entire expression does NOT
+  // prevent folding within the argument:
+OUTPUT(NOFOLD(2 * 2));
+  //is the same as
+OUTPUT(NOFOLD(4));
+  
+</programlisting>
+</sect1>
