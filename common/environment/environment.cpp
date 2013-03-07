@@ -789,7 +789,7 @@ public:
             return os;
 
         Owned<IConstComputerTypeInfo> type = env->getComputerType(root->queryProp("@computerType"));
-        if (type)
+        if (type && (type.get() != this))
             return type->getOS();
         return MachineOsUnknown;
     }
@@ -800,7 +800,7 @@ public:
             return atoi(v);
 
         Owned<IConstComputerTypeInfo> type = env->getComputerType(root->queryProp("@computerType"));
-        if (type)
+        if (type && (type.get() != this))
             return type->getNicSpeedMbitSec();
         return 0;
     }
