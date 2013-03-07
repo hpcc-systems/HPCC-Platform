@@ -32,6 +32,7 @@
     <xsl:variable name="num" select="/GetDFUWorkunitsResponse/NumWUs"/>
     <xsl:variable name="filters" select="/GetDFUWorkunitsResponse/Filters"/>
     <xsl:variable name="basicquery" select="/GetDFUWorkunitsResponse/BasicQuery"/>
+    <xsl:variable name="cachehint" select="/GetDFUWorkunitsResponse/CacheHint"/>
     <xsl:template match="/GetDFUWorkunitsResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
             <head>
@@ -52,6 +53,7 @@
                     var currentFilters='<xsl:value-of select="$filters"/>';
                     var archived='<xsl:value-of select="$archived"/>';
                     var basicQuery='<xsl:value-of select="$basicquery"/>';
+                    var cacheHint='<xsl:value-of select="$cachehint"/>';
                     <xsl:text disable-output-escaping="yes"><![CDATA[
                             var protectedChecked = 0;
                             var unprotectedChecked = 0;
@@ -138,9 +140,9 @@
                                 startFrom -= 1;
 
                                 if (basicQuery.length > 0)
-                                    document.location.href = '/FileSpray/GetDFUWorkunits?'+ basicQuery + '&PageStartFrom='+startFrom+'&PageSize='+size;
+                                    document.location.href = '/FileSpray/GetDFUWorkunits?'+ basicQuery + '&PageStartFrom='+startFrom+'&PageSize='+size+'&CacheHint=' + cacheHint;
                                 else
-                                    document.location.href = '/FileSpray/GetDFUWorkunits?PageStartFrom='+startFrom+'&PageSize='+size;
+                                    document.location.href = '/FileSpray/GetDFUWorkunits?PageStartFrom='+startFrom+'&PageSize='+size+'&CacheHint=' + cacheHint;
 
                                 return false;
                             }             
@@ -334,25 +336,25 @@
               <xsl:choose>
                 <xsl:when test="string-length($basicquery)">
                   <xsl:if test="$firstpage &lt; 1">
-                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?{$basicquery}&amp;PageSize={$pagesize}')">First</a>
-                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?{$basicquery}&amp;PageStartFrom={$prevpage}&amp;PageSize={$pagesize}')">Prev</a>
+                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?{$basicquery}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">First</a>
+                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?{$basicquery}&amp;PageStartFrom={$prevpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Prev</a>
                   </xsl:if>
                   <xsl:if test="$nextpage &gt; -1">
-                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?{$basicquery}&amp;PageStartFrom={$nextpage}&amp;PageSize={$pagesize}')">Next</a>
+                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?{$basicquery}&amp;PageStartFrom={$nextpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Next</a>
                     <xsl:if test="not(string-length($archived))">
-                      <a href="javascript:go('/FileSpray/GetDFUWorkunits?{$basicquery}&amp;PageStartFrom={$lastpage}&amp;PageSize={$pagesize}')">Last</a>
+                      <a href="javascript:go('/FileSpray/GetDFUWorkunits?{$basicquery}&amp;PageStartFrom={$lastpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Last</a>
                     </xsl:if>
                   </xsl:if>
                 </xsl:when>
                 <xsl:otherwise>
                   <xsl:if test="$firstpage &lt; 1">
-                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?PageSize={$pagesize}')">First</a>
-                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?PageStartFrom={$prevpage}&amp;PageSize={$pagesize}')">Prev</a>
+                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?PageSize={$pagesize}&amp;CacheHint={$cachehint}')">First</a>
+                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?PageStartFrom={$prevpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Prev</a>
                   </xsl:if>
                   <xsl:if test="$nextpage &gt; -1">
-                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?PageStartFrom={$nextpage}&amp;PageSize={$pagesize}')">Next</a>
+                    <a href="javascript:go('/FileSpray/GetDFUWorkunits?PageStartFrom={$nextpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Next</a>
                     <xsl:if test="not(string-length($archived))">
-                      <a href="javascript:go('/FileSpray/GetDFUWorkunits?PageStartFrom={$lastpage}&amp;PageSize={$pagesize}')">Last</a>
+                      <a href="javascript:go('/FileSpray/GetDFUWorkunits?PageStartFrom={$lastpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Last</a>
                     </xsl:if>
                   </xsl:if>
                 </xsl:otherwise>
