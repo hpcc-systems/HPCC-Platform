@@ -67,16 +67,16 @@ nbcd_decl int _fastcall  DecDistinctR()
     return stack[curStack+1].compare(stack[curStack]);
 }
 
-nbcd_decl void _fastcall  DecDivide()
+nbcd_decl void _fastcall  DecDivide(byte dbz)
 {
     curStack--;
-    stack[curStack-1].divide(stack[curStack]);
+    stack[curStack-1].divide(stack[curStack], (DBZaction)dbz);
 }
 
-nbcd_decl void _fastcall  DecDivideR()
+nbcd_decl void _fastcall  DecDivideR(byte dbz)
 {
     DecSwap();
-    DecDivide();
+    DecDivide(dbz);
 }
 
 nbcd_decl void _fastcall  DecDup()
@@ -122,10 +122,10 @@ nbcd_decl void _fastcall  DecUlongPower(unsigned long pow)
     stack[curStack-1].power((unsigned)pow);
 }
 
-nbcd_decl void  _fastcall  DecModulus()
+nbcd_decl void  _fastcall  DecModulus(byte dbz)
 {
     curStack--;
-    stack[curStack-1].modulus(stack[curStack]);
+    stack[curStack-1].modulus(stack[curStack], (DBZaction)dbz);
 }
 
 nbcd_decl void _fastcall  DecMul()
@@ -272,6 +272,11 @@ nbcd_decl void _fastcall  DecTruncateAt(unsigned places)
 nbcd_decl bool _fastcall  DecValid(bool isSigned, unsigned digits, const void * data)
 {
     return decValid(isSigned, digits, data);
+}
+
+nbcd_decl bool _fastcall  DecValidTos()
+{
+    return stack[--curStack].isValid();
 }
 
 nbcd_decl bool _fastcall  Dec2Bool(size32_t bytes, const void * data)

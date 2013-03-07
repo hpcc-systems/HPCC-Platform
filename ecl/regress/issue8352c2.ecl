@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,15 +15,16 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('globalFold', false);
-#option ('checkThorRestrictions', false);
+//Test division by zero - fail instead of returning 0
+#option ('divideByZero', 'fail'); 
 
-d := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
+unsigned cintZero := 0;
+real crealZero := 0.0;
+decimal10_2 cdecZero := 0.0D;
 
-i := stepped(index(d, { name, filepos }, {},'\\home\\person.name_first.key', hint(thisIsAHint(5))), filepos,hint(anotherHint));
-
-a1 := table(i(name='RICHARD'), {filepos, name},hint(yetAnotherHint));
-
-a2 := project(a1, transform({unsigned4 fp}, self.fp := left.filepos),hint(afourthhint),keyed);
-
-output(a2);
+//The constant folding in the pre-processor defaults to throwing an error
+#IF (100.0 / crealZero = 0)
+OUTPUT('success');
+#else
+OUTPUT('failure');
+#END

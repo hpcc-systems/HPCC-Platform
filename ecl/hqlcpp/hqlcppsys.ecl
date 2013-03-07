@@ -313,8 +313,8 @@ const char * cppSystemText[]  = {
     "   integer4 DecCompareNull() : bcd,library='nbcd',entrypoint='DecCompareNull';",
     "   integer4 DecDistinct() :    bcd,library='nbcd',entrypoint='DecDistinct';",
     "   integer4 DecDistinctR() :   bcd,library='nbcd',entrypoint='DecDistinctR';",
-    "   DecDivide() :   bcd,library='nbcd',entrypoint='DecDivide';",
-    "   DecModulus() :  bcd,library='nbcd',entrypoint='DecModulus';",
+    "   DecDivide(unsigned1 dbz) :   bcd,library='nbcd',entrypoint='DecDivide';",
+    "   DecModulus(unsigned1 dbz) :  bcd,library='nbcd',entrypoint='DecModulus';",
     "   DecSub() :  bcd,library='nbcd',entrypoint='DecSub';",
     "   DecSubR() : bcd,library='nbcd',entrypoint='DecSubR';",
     "   DecNegate() :   bcd,library='nbcd',entrypoint='DecNegate';",
@@ -339,7 +339,7 @@ const char * cppSystemText[]  = {
     "   DecRoundTo(unsigned4 places) :  bcd,library='nbcd',entrypoint='DecRoundTo';",
     "   DecDup() :  bcd,library='nbcd',entrypoint='DecDup';",
     "   DecMul() :  bcd,library='nbcd',entrypoint='DecMul';",
-    "   DecDivideR() :  bcd,library='nbcd',entrypoint='DecDivideR';",
+    "   DecDivideR(unsigned1 dbz) :  bcd,library='nbcd',entrypoint='DecDivideR';",
     "   DecLongPower(integer4 pow) :    bcd,library='nbcd',entrypoint='DecLongPower';",
     "   DecPushReal(real8 d) :  bcd,library='nbcd',entrypoint='DecPushReal';",
     "   DecPushUtf8(utf8 d) :   bcd,library='nbcd',entrypoint='rtlDecPushUtf8';",
@@ -354,6 +354,7 @@ const char * cppSystemText[]  = {
     "   DecLock() : bcd,library='nbcd',entrypoint='DecLock';",
     "   DecUnlock() :   bcd,library='nbcd',entrypoint='DecUnlock';",
     "   boolean DecValid(boolean isSigned, const data src) : bcd,pure,library='nbcd',entrypoint='DecValid';",
+    "   boolean DecValidTos() : bcd,pure,library='nbcd',entrypoint='DecValidTos';",
 
     "   integer8 _ROUND(real8 arg) :    eclrtl,pure,library='eclrtl',entrypoint='rtlRound';",
     "   real8 roundTo(real8 arg, integer4 _places) : eclrtl,pure,library='eclrtl',entrypoint='rtlRoundTo';",
@@ -362,6 +363,7 @@ const char * cppSystemText[]  = {
     "   unsigned4 rtlRandom() : eclrtl,library='eclrtl',entrypoint='rtlRandom';",
     "   _fail(integer4 code, const varstring msg) : eclrtl,library='eclrtl',entrypoint='rtlFail';",
     "   sysFail(integer4 code, const varstring msg) :   eclrtl,library='eclrtl',entrypoint='rtlSysFail';",
+    "   failDivideByZero() : eclrtl,library='eclrtl',entrypoint='rtlFailDivideByZero';",
 
     "   unsigned4 crcData(const data src, unsigned4 initval) :  eclrtl,pure,library='eclrtl',entrypoint='rtlCrcData';",
     "   unsigned4 crcUnicode(const unicode src, unsigned4 initval) :    eclrtl,pure,library='eclrtl',entrypoint='rtlCrcUnicode';",
@@ -401,6 +403,7 @@ const char * cppSystemText[]  = {
     "   data16 hashMd5Finish(data _state) : eclrtl,entrypoint='rtlHashMd5Finish';",
 
     "   boolean validReal(const data src) : eclrtl,pure,library='eclrtl',entrypoint='rtlIsValidReal';",
+    "   real8 createRealNull() : eclrtl,pure,library='eclrtl',entrypoint='rtlCreateRealNull';",
 
     "   deserializeRaw(data field, boolean o) : eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeRaw';",
     "   data deserializeDataX(boolean o) :  eclrtl,include='eclrtl.hpp',library='eclrtl',entrypoint='deserializeDataX';",

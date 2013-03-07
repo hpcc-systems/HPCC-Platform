@@ -56,8 +56,8 @@ public:
     Decimal & add(const Decimal & other);
     int compareNull() const;
     int compare(const Decimal & other) const;
-    Decimal & divide(const Decimal & other);
-    Decimal & modulus(const Decimal & other);
+    Decimal & divide(const Decimal & other, DBZaction dbz);
+    Decimal & modulus(const Decimal & other, DBZaction dbz);
     Decimal & multiply(const Decimal & other);
     Decimal & negate();
     Decimal & power(int value);
@@ -83,6 +83,8 @@ public:
 
     void getClipPrecision(unsigned & digits, unsigned & precision);
     void getPrecision(unsigned & digits, unsigned & precison);
+
+    bool isValid() const { return true; } // MORE: Should extend to support Nans
 
     void set(const Decimal & value);
     void setCString(const char * buffer);
@@ -126,6 +128,7 @@ protected:
     void extendRange(byte oLsb, byte oMsb);
     void extendRange(const Decimal & other)     { extendRange(other.lsb, other.msb); }
     void overflow();
+    void setDivideByZero(DBZaction dbz);
 
 private:
     Decimal & incLSD();
@@ -171,8 +174,8 @@ protected:
 inline Decimal operator + (const Decimal & left, const Decimal & right) { return Decimal(left).add(right); }
 inline Decimal operator - (const Decimal & left, const Decimal & right) { return Decimal(left).subtract(right); }
 inline Decimal operator * (const Decimal & left, const Decimal & right) { return Decimal(left).multiply(right); }
-inline Decimal operator / (const Decimal & left, const Decimal & right) { return Decimal(left).divide(right); }
-inline Decimal operator % (const Decimal & left, const Decimal & right) { return Decimal(left).modulus(right); }
+inline Decimal operator / (const Decimal & left, const Decimal & right) { return Decimal(left).divide(right, DBZzero); }
+inline Decimal operator % (const Decimal & left, const Decimal & right) { return Decimal(left).modulus(right, DBZzero); }
 inline bool operator == (const Decimal & left, const Decimal & right) { return left.compare(right) == 0; }
 inline bool operator != (const Decimal & left, const Decimal & right) { return left.compare(right) != 0; }
 inline bool operator >= (const Decimal & left, const Decimal & right) { return left.compare(right) >= 0; }

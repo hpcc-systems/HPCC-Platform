@@ -3731,6 +3731,12 @@ void rtlFailOnAssert()
 {
     throw MakeStringException(MSGAUD_user, -1, "Abort execution");
 }
+
+void rtlFailDivideByZero()
+{
+    throw MakeStringException(MSGAUD_user, -1, "Division by zero");
+}
+
 //---------------------------------------------------------------------------
 
 void deserializeRaw(unsigned recordSize, void *record, MemoryBuffer &in)
@@ -4067,6 +4073,19 @@ ECLRTL_API bool rtlIsValidReal(unsigned size, const void * data)
 
     return true;
 }
+
+double rtlCreateRealNull()
+{
+    union
+    {
+        byte data[8];
+        double r;
+    } u;
+    //Use a non-signaling NaN
+    memcpy(u.data, "\x01\x00\x00\x00\x00\x00\xF0\x7f", 8);
+    return u.r;
+}
+
 
 void rtlUnicodeToUnicode(size32_t outlen, UChar * out, size32_t inlen, UChar const *in)
 {

@@ -555,6 +555,7 @@ struct HqlCppOptions
     unsigned            complexClassesThreshold;
     unsigned            complexClassesActivityFilter;
     CompilerType        targetCompiler;
+    DBZaction           divideByZeroAction;
     bool                peephole;
     bool                foldConstantCast;
     bool                optimizeBoolReturn;
@@ -1129,6 +1130,7 @@ public:
 
     void buildExprAssignViaType(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, ITypeInfo * type);
     void buildExprAssignViaString(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, unsigned len);
+    void doBuildDivideByZero(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * zero, CHqlBoundExpr * bound);
 
     void doBuildAssignAddSets(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * value);
     void doBuildAssignAggregate(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr);

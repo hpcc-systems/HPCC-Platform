@@ -1749,9 +1749,23 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             return applyBinaryFold(expr, multiplyValues);
         }
     case no_div:
-        return applyBinaryFold(expr, divideValues);
     case no_modulus:
-        return applyBinaryFold(expr, modulusValues);
+        {
+            IValue * leftValue = expr->queryChild(0)->queryValue();
+            IValue * rightValue = expr->queryChild(1)->queryValue();
+            if (leftValue && rightValue)
+            {
+                DBZaction onZero = (foldOptions & HFOforcefold) ? DBZfail : DBZnone;
+                IValue * res;
+                if (op == no_div)
+                    res = divideValues(leftValue, rightValue, onZero);
+                else
+                    res = modulusValues(leftValue, rightValue, onZero);
+                if (res)
+                    return createConstant(res);
+            }
+            return LINK(expr);
+        }
     case no_concat:
         return applyBinaryFold(expr, concatValues);
     case no_band:

@@ -108,12 +108,12 @@ protected:
         char temp[80];
         Decimal a = left;
         Decimal b = right;
-        a.divide(b);
+        a.divide(b, DBZzero);
         a.getCString(sizeof(temp), temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testDivide/getCString: expected '%s', got '%s'", expected, temp);
         DecPushCString(left);
         DecPushCString(right);
-        DecDivide();
+        DecDivide(DBZzero);
         DecPopCString(sizeof(temp),temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testDivide/DecDivide: expected '%s', got '%s'", expected, temp);
     }
@@ -138,7 +138,7 @@ protected:
         char temp[80];
         Decimal a = left;
         Decimal b = right;
-        a.modulus(b);
+        a.modulus(b, DBZzero);
         a.getCString(sizeof(temp), temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testModulus: expected '%s', got '%s'", expected, temp);
     }
@@ -552,7 +552,7 @@ protected:
                 }
 
                 sofar1.multiply(value);
-                sofar2.divide(value);
+                sofar2.divide(value, DBZzero);
             }
             cppunit_assert(success, "ERROR: testBcdPower: one or more errors detected above.");
         }

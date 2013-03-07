@@ -2462,11 +2462,6 @@ IValue * addValues(IValue * left, IValue * right)
                                     return res;                         
 
 
-IValue * addValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(addValues);
-}
-
 IValue * subtractValues(IValue * left, IValue * right)
 {
     IValue * ret;
@@ -2496,11 +2491,6 @@ IValue * subtractValues(IValue * left, IValue * right)
         assertThrow(false);
     }
     return ret;
-}
-
-IValue * substractValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(subtractValues);
 }
 
 IValue * multiplyValues(IValue * left, IValue * right)
@@ -2534,14 +2524,18 @@ IValue * multiplyValues(IValue * left, IValue * right)
     return ret;
 }
 
-IValue * multiplyValues(unsigned num, IValue * * values)
+IValue * divideValues(IValue * left, IValue * right, DBZaction onZero)
 {
-    CALCULATE_AND_RETURN(multiplyValues);
-}
+    Owned<ITypeInfo> pnt = getPromotedMulDivType(left->queryType(), right->queryType());
 
-IValue * divideValues(IValue * left, IValue * right)
-{
-    ITypeInfo * pnt = getPromotedMulDivType(left->queryType(), right->queryType());
+    //All non zero values should return false when cast to boolean
+    if (!right->getBoolValue())
+    {
+        if (onZero == DBZnone)
+            return NULL;
+        if (onZero == DBZfail)
+            rtlFailDivideByZero();
+    }
 
     switch(pnt->getTypeCode())
     {
@@ -2559,24 +2553,22 @@ IValue * divideValues(IValue * left, IValue * right)
             else
                 res = (__int64)((unsigned __int64)lv / (unsigned __int64)rv);
         }
-        return createTruncIntValue(res, pnt);
+        return createTruncIntValue(res, pnt.getClear());
     }
     case type_real:
     {
         double lv = left->getRealValue();
         double rv = right->getRealValue();
-        double res = rv ? lv / rv : 0;
-        return createRealValue(res, pnt);
+        double res = rv ? lv / rv : 0.0;
+        return createRealValue(res, pnt.getClear());
     }
     case type_decimal:
     {
         BcdCriticalBlock bcdBlock;
         left->pushDecimalValue();
         right->pushDecimalValue();
-        DecDivide();   // returns 0 if divide by zero
-        IValue * ret = ((CDecimalTypeInfo*)pnt)->createValueFromStack();
-        pnt->Release();
-        return ret;
+        DecDivide(onZero);
+        return createDecimalValueFromStack(pnt);
     }
     default:
         assertThrow(false);
@@ -2584,16 +2576,19 @@ IValue * divideValues(IValue * left, IValue * right)
     }
 }
 
-IValue * divideValues(unsigned num, IValue * * values)
+IValue * modulusValues(IValue * left, IValue * right, DBZaction onZero)
 {
-    CALCULATE_AND_RETURN(divideValues);
-}
-
-IValue * modulusValues(IValue * left, IValue * right)
-{
-    IValue * ret;
-    ITypeInfo * pnt = getPromotedMulDivType(left->queryType(), right->queryType());
+    Owned<ITypeInfo> pnt = getPromotedMulDivType(left->queryType(), right->queryType());
     
+    //All non zero values should return false when cast to boolean
+    if (!right->getBoolValue())
+    {
+        if (onZero == DBZnone)
+            return NULL;
+        if (onZero == DBZfail)
+            rtlFailDivideByZero();
+    }
+
     switch(pnt->getTypeCode())
     {
     case type_int:
@@ -2610,33 +2605,26 @@ IValue * modulusValues(IValue * left, IValue * right)
             else
                 res = (__int64)((unsigned __int64)lv % (unsigned __int64)rv);
         }
-        return createTruncIntValue(res, pnt);
+        return createTruncIntValue(res, pnt.getClear());
     }
     case type_real:
     {
         double rv = right->getRealValue();
         double res = rv ? fmod(left->getRealValue(), rv) : 0;
-        return createRealValue(res, pnt);
+        return createRealValue(res, pnt.getClear());
     }
     case type_decimal:
     {
         BcdCriticalBlock bcdBlock;
         left->pushDecimalValue();
         right->pushDecimalValue();
-        DecModulus();
-        ret = ((CDecimalTypeInfo*)pnt)->createValueFromStack();
-        pnt->Release();
-        break;
+        DecModulus(onZero);
+        return createDecimalValueFromStack(pnt);
     }
     default:
         assertThrow(false);
+        return NULL;
     }
-    return ret;
-}
-
-IValue * modulusValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(modulusValues);
 }
 
 IValue * powerValues(IValue * left, IValue * right)
@@ -2667,11 +2655,6 @@ IValue * powerValues(IValue * left, IValue * right)
         assertThrow(false);
     }
     return ret;
-}
-
-IValue * powerValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(powerValues);
 }
 
 IValue * negateValue(IValue * v)
@@ -3105,11 +3088,6 @@ IValue * concatValues(IValue * left, IValue * right)
     }
 }
 
-IValue * concatValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(concatValues);
-}
-
 IValue * binaryAndValues(IValue * left, IValue * right)
 {
     IValue * ret;
@@ -3128,11 +3106,6 @@ IValue * binaryAndValues(IValue * left, IValue * right)
         assertThrow(false);
     }
     return ret;
-}
-
-IValue * binaryAndValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(binaryAndValues);
 }
 
 IValue * binaryOrValues(IValue * left, IValue * right)
@@ -3155,11 +3128,6 @@ IValue * binaryOrValues(IValue * left, IValue * right)
     return ret;
 }
 
-IValue * binaryOrValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(binaryOrValues);
-}
-
 IValue * binaryXorValues(IValue * left, IValue * right)
 {
     IValue * ret;
@@ -3176,11 +3144,6 @@ IValue * binaryXorValues(IValue * left, IValue * right)
         assertThrow(false);
     }
     return ret;
-}
-
-IValue * binaryXorValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(concatValues);
 }
 
 IValue * binaryNotValues(IValue * v)
@@ -3206,19 +3169,9 @@ IValue * logicalAndValues(IValue * left, IValue * right)
     return createBoolValue(left->getBoolValue() && right->getBoolValue());
 }
 
-IValue * logicalAndValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(logicalAndValues);
-}
-
 IValue * logicalOrValues(IValue * left, IValue * right)
 {
     return createBoolValue(left->getBoolValue() || right->getBoolValue());
-}
-
-IValue * logicalOrValues(unsigned num, IValue * * values)
-{
-    CALCULATE_AND_RETURN(logicalOrValues);
 }
 
 int orderValues(IValue * left, IValue * right)

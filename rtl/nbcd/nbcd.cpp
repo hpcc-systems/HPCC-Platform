@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "nbcd.hpp"
 #include "jlib.hpp"
+#include "jexcept.hpp"
 
 #ifdef _WIN32
  #define NOMEMCPY volatile          // stop VC++ doing a stupid optimization
@@ -141,7 +142,7 @@ int Decimal::compare(const Decimal & other) const
 }
 
 
-Decimal & Decimal::divide(const Decimal & other)
+Decimal & Decimal::divide(const Decimal & other, DBZaction dbz)
 {
     //NB: Round towards zero
     int lo1, hi1, lo2, hi2;
@@ -159,8 +160,7 @@ Decimal & Decimal::divide(const Decimal & other)
     }
     if (hi2 < lo2)
     {
-        //divide by zero
-        setZero();
+        setDivideByZero(dbz);
         return *this;
     }
 
@@ -250,10 +250,10 @@ void Decimal::extendRange(byte oLsb, byte oMsb)
 }
 
 
-Decimal & Decimal::modulus(const Decimal & other)
+Decimal & Decimal::modulus(const Decimal & other, DBZaction dbz)
 {
     Decimal left(*this);
-    left.divide(other).truncate(0).multiply(other);
+    left.divide(other, dbz).truncate(0).multiply(other);
     return subtract(left);
 }
 
@@ -342,7 +342,7 @@ Decimal & Decimal::power(int value)
     //This probably gives slightly more expected results, but both suffer from rounding errors.
     Decimal reciprocal;
     reciprocal.setInt(1);
-    reciprocal.divide(*this);
+    reciprocal.divide(*this, DBZzero);  // MORE: This should probably be passed in
     set(reciprocal);
     doPower((unsigned)-value);
     return *this;
@@ -1157,6 +1157,22 @@ void Decimal::setZero()
     digits[zeroDigit] = 0;
 }
 
+
+void Decimal::setDivideByZero(DBZaction dbz)
+{
+    switch (dbz)
+    {
+    case DBZfail:
+        //No dependency on eclrtl, so throw a jlib exception directly
+        throw MakeStringException(MSGAUD_user, -1, "Division by zero");
+    case DBZnan:
+    case DBZzero:
+        setZero();
+        break;
+    default:
+        throwUnexpected();
+    }
+}
 //---------------------------------------------------------------------------
 
 

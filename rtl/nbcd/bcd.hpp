@@ -39,8 +39,8 @@ nbcd_decl void  _fastcall  DecAdd( void );         // add top two values on stac
 nbcd_decl int   _fastcall  DecCompareNull( void ); // compare top of stack to NULL, returns result, takes value of stack
 nbcd_decl int   _fastcall  DecDistinct( void );    // compares second to top value on stack, removes them and returns result
 nbcd_decl int   _fastcall  DecDistinctR( void );   // compares top to second value on stack, removes them and returns result
-nbcd_decl void  _fastcall  DecDivide( void );      // divide second by top value on stack and replace with result
-nbcd_decl void  _fastcall  DecDivideR( void );     // divide top by second value on stack and replace with result
+nbcd_decl void  _fastcall  DecDivide(byte dbz);      // divide second by top value on stack and replace with result
+nbcd_decl void  _fastcall  DecDivideR(byte dbz);     // divide top by second value on stack and replace with result
 nbcd_decl void  _fastcall  DecDup( void );         // duplicate value on top of decimal stack
 nbcd_decl void  _fastcall  DecSetPrecision(unsigned char declen, unsigned char prec); // changes length and precision of top value on stack
 nbcd_decl void  _fastcall  DecSub( void );         // substract top from second value on stack and replace with result
@@ -48,7 +48,7 @@ nbcd_decl void  _fastcall  DecSubR( void );        // substract second from top 
 nbcd_decl void  _fastcall  DecInfo(unsigned & digits, unsigned & prec); // returns the digits and precision of top value on stack
 nbcd_decl void  _fastcall  DecClipInfo(unsigned & digits, unsigned & prec);
 nbcd_decl void  _fastcall  DecLongPower(long pow);   // calculates top of stack to the power of long and replaces with result
-nbcd_decl void  _fastcall  DecModulus( void );   // modulus second by top value on stack and replace with result
+nbcd_decl void  _fastcall  DecModulus(byte dbz);   // modulus second by top value on stack and replace with result
 nbcd_decl void  _fastcall  DecMul( void );         // multiply values top and second on the stack and replace with result
 nbcd_decl void  _fastcall  DecNegate( void );      // negate value on top of the decimal stack
 nbcd_decl void  _fastcall  DecPopCString (unsigned, char *); // Pops decimal accumulator into CString
@@ -83,6 +83,7 @@ nbcd_decl void  _fastcall  DecUlongPower(unsigned long pow); // calculates top o
 nbcd_decl void  _fastcall  DecLock();
 nbcd_decl void  _fastcall  DecUnlock();
 nbcd_decl bool  _fastcall  DecValid(bool isSigned, unsigned digits, const void * data);
+nbcd_decl bool  _fastcall  DecValidTos();
 nbcd_decl bool  _fastcall  Dec2Bool(size32_t bytes, const void * data);
 nbcd_decl bool  _fastcall  UDec2Bool(size32_t bytes, const void * data);
 

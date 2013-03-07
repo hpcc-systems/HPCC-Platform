@@ -218,6 +218,8 @@ StringBuffer & StringBuffer::append(double value)
         case '.':
         case 'E':
         case 'e':
+        case 'N': // Not a number/infinity
+        case 'n':
             return *this;
         }
         len++;
@@ -236,6 +238,8 @@ StringBuffer & StringBuffer::append(float value)
         case '.':
         case 'E':
         case 'e':
+        case 'N': // Not a number/infinity
+        case 'n':
             return *this;
         }
         len++;
