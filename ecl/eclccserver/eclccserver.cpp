@@ -35,22 +35,109 @@ static StringAttr dllPath;
 Owned<IPropertyTree> globals;
 
 //------------------------------------------------------------------------------------------------------------------
+// We use a separate thread for reading eclcc's stderr output. This prevents the thread that is
+// writing to its stdin from being blocked because eclcc is trying to write to stderr...
+//------------------------------------------------------------------------------------------------------------------
+
+interface IErrorReporter
+{
+    virtual void reportError(IException *e) = 0;
+    virtual void reportError(const char *errStr, unsigned retcode) = 0;
+};
+
+class ErrorReader : public Thread
+{
+public:
+    ErrorReader(IPipeProcess *_pipe, IErrorReporter *_errorReporter)
+        : Thread("EclccCompileThread::ErrorReader"), pipe(_pipe), errorReporter(_errorReporter), errors(0)
+    {
+    }
+
+    virtual int run()
+    {
+        MemoryAttr buf;
+        const size32_t incSize = 512;
+        size32_t bufferSize = 0;
+        char * buffer = NULL;
+        size_t remaining = 0;
+        bool eof = false;
+        while (!eof)
+        {
+            if (remaining == bufferSize)
+            {
+                bufferSize += incSize;
+                buffer = (char *) buf.reallocate(bufferSize);
+            }
+            size32_t read = pipe->readError(bufferSize-remaining, buffer+remaining);
+
+            if ((read == 0) || (read == (size32_t)-1))
+                eof = true;
+            else
+                remaining += read;
+
+            char *finger = buffer;
+            while (remaining)
+            {
+                char *eolpos = (char *) memchr(finger, '\n', remaining);
+                if (eolpos)
+                {
+                    *eolpos = '\0';
+                    if (eolpos > finger && eolpos[-1]=='\r')
+                        eolpos[-1] = '\0';
+                    if (errorReporter)
+                        errorReporter->reportError(finger, 0);
+                    else
+                        DBGLOG("%s", finger);
+                    errors++;
+                    remaining -= (eolpos-finger) + 1;
+                    finger = eolpos + 1;
+                }
+                else if (eof)
+                {
+                    StringBuffer e(remaining, finger);
+                    if (errorReporter)
+                        errorReporter->reportError(e, 0);
+                    else
+                        DBGLOG("%s", e.str());
+                    errors++;
+                    break;
+                }
+                else
+                    break;
+            }
+            if (!eof && (finger != buffer))
+                memmove(buffer, finger, remaining);
+        }
+        return 0;
+    }
+
+    unsigned errCount() const
+    {
+        return errors;
+    }
+private:
+    IPipeProcess *pipe;
+    IErrorReporter *errorReporter;
+    unsigned errors;
+};
+
+//------------------------------------------------------------------------------------------------------------------
 // Class EclccCompileThread does the work of compiling workunits (using eclcc), and optionally then enqueueing them for execution by agentexec.
 // A threadpool is used to allow multiple compiles to be submitted at once. Threads are reused when compilation completes.
 //------------------------------------------------------------------------------------------------------------------
 
-class EclccCompileThread : public CInterface, implements IPooledThread
+class EclccCompileThread : public CInterface, implements IPooledThread, implements IErrorReporter
 {
     StringAttr wuid;
     Owned<IWorkUnit> workunit;
 
-    void reportError(IException *e)
+    virtual void reportError(IException *e)
     {
         StringBuffer s;
         reportError(e->errorMessage(s).str(), 2);
     }
 
-    void reportError(const char *errStr, unsigned retcode)
+    virtual void reportError(const char *errStr, unsigned retcode)
     {
         // A typical error looks like this: stdin:(385,29): warning C1041: Record doesn't have an explicit maximum record size
         // we will also see (and want to skip) nn error(s), nn warning(s)
@@ -345,79 +432,28 @@ public:
     {
         return true;
     }
-
-private:
-    // We use a separate thread for reading eclcc's stderr output. This prevents the thread that is
-    // writing to its stdin from being blocked because eclcc is trying to write to stderr...
-    friend class ErrorReader;
-    class ErrorReader : public Thread
-    {
-    public:
-        ErrorReader(IPipeProcess *_pipe, EclccCompileThread *_owner) 
-            : Thread("EclccCompileThread::ErrorReader"), pipe(_pipe), owner(_owner)
-        {
-        }
-
-        virtual int run()
-        {
-            owner->readErrors(pipe);
-            return 0;
-        }
-    private:
-        IPipeProcess *pipe;
-        EclccCompileThread *owner;
-    };
-
-    void readErrors(IPipeProcess *pipe)
-    {
-        MemoryAttr buf;
-        const size32_t incSize = 512;
-        size32_t bufferSize = 0;
-        char * buffer = NULL;
-        size_t remaining = 0;
-        bool eof = false;
-        while (!eof)
-        {
-            if (remaining == bufferSize)
-            {
-                bufferSize += incSize;
-                buffer = (char *)buf.reallocate(bufferSize);
-            }
-            size32_t read = pipe->readError(bufferSize-remaining, buffer+remaining);
-
-            if ((read == 0) || (read == (size32_t)-1))
-                eof = true;
-            else
-                remaining += read;
-
-            char *finger = buffer;
-            while (remaining)
-            {
-                char *eolpos = (char *) memchr(finger, '\n', remaining);
-                if (eolpos)
-                {
-                    *eolpos = '\0';
-                    if (eolpos > finger && eolpos[-1]=='\r')
-                        eolpos[-1] = '\0';
-                    reportError(finger, 0);
-                    remaining -= (eolpos-finger) + 1;
-                    finger = eolpos + 1;
-                }
-                else if (eof)
-                {
-                    StringBuffer e(remaining, finger);
-                    reportError(e, 0);
-                    break;
-                }
-                else
-                    break;
-            }
-            if (!eof && (finger != buffer))
-                memmove(buffer, finger, remaining);
-        }
-    };
-
 };
+
+static void generatePrecompiledHeader()
+{
+    try
+    {
+        Owned<IPipeProcess> pipe = createPipeProcess();
+        Owned<ErrorReader> errorReader = new ErrorReader(pipe, NULL);
+        pipe->run("eclcc", "eclcc -pch", ".", false, false, true, 0);
+        errorReader->start();
+        unsigned retcode = pipe->wait();
+        errorReader->join();
+        if (retcode != 0 || errorReader->errCount() != 0)
+            throw MakeStringException(0, "eclcc -pch failed");
+        DBGLOG("Created precompiled header");
+    }
+    catch (IException * e)
+    {
+        EXCLOG(e, "Creating precompiled header");
+        e->Release();
+    }
+}
 
 //------------------------------------------------------------------------------------------------------------------
 // Class EclccServer manages a pool of compile threads
@@ -587,6 +623,9 @@ int main(int argc, const char *argv[])
 
     if (globals->getPropBool("@enableSysLog",true))
         UseSysLogForOperatorMessages();
+    if (globals->getPropBool("@generatePrecompiledHeader",true))
+        generatePrecompiledHeader();
+
     const char *daliServers = globals->queryProp("@daliServers");
     if (!daliServers)
     {
