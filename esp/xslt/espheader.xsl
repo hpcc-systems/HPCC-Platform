@@ -63,7 +63,7 @@
                 url += '?inner=' + escape('..' + inner.pathname + inner.search);
             }
 
-            var html = '<html><head><title>Copy URLs</title>';
+            var html = '<html><head><title>View URL</title>';
             html += '</head><body ><form>';
                     html += "<table border=\"0\" cellpadding=\"2\" cellspacing=\"2\">";
                     var usequote = "\"";
@@ -72,8 +72,8 @@
             html += '</table></form>';
             html += '</body></html>';
 
-            var windowWidth = 400;
-            var windowHeight = 50;
+            var windowWidth = 800;
+            var windowHeight = 500;
             var centerWidth = (window.screen.width - windowWidth) / 2;
             var centerHeight = (window.screen.height - windowHeight) / 2;
 
@@ -125,7 +125,7 @@
                     <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
                     <img src="files_/img/refresh.png" style="cursor:pointer" onclick="parent.frames['main'].location.reload();" title="Refresh" width="13" height="15"/>
                     <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
-                    <img src="files_/img/copyurl.png" style="cursor:pointer" onclick="copy_url(parent.frames['main'].location)" title="Copy URL" width="13" height="15"/>
+                    <img src="files_/img/copyurl.png" style="cursor:pointer" onclick="copy_url(parent.frames['main'].location)" title="View URL" width="13" height="15"/>
                     <xsl:text disable-output-escaping="yes">&amp;nbsp;</xsl:text>
                     <img border="0" src="files_/img/topurl.png" title="No Frames" width="13" height="15" style="cursor:pointer"
                     onclick="top.location.href=top.frames['main'].location.href"/>
