@@ -45,6 +45,7 @@
 #include  "../../SOAP/Platform/soapmessage.hpp"
 #include "xmlvalidator.hpp"
 #include "xsdparser.hpp"
+#include "EspErrors.hpp"
 
 #define FILE_UPLOAD     "FileUploadAccess"
 
@@ -53,7 +54,7 @@ static HINSTANCE getXmlLib()
     const char* name = SharedObjectPrefix "xmllib" SharedObjectExtension;
     HINSTANCE xmllib = LoadSharedObject(name,true,false);
     if (!LoadSucceeded(xmllib))
-        throw MakeStringException(-1,"load %s failed with code %d", name, GetSharedObjectError());
+        throw MakeStringException(ECLWATCH_HTTPBINDING_LOAD_FAILED,"load %s failed with code %d", name, GetSharedObjectError());
     return xmllib;
 }
 
@@ -87,11 +88,11 @@ static IXmlSchema* createXmlSchema(const char* schema)
     const char* name = SharedObjectPrefix "xmllib" SharedObjectExtension;
     HINSTANCE xmllib = LoadSharedObject(name,true,false);
     if (!LoadSucceeded(xmllib))
-        throw MakeStringException(-1,"load %s failed with code %d", name, GetSharedObjectError());
+        throw MakeStringException(ECLWATCH_HTTPBINDING_LOAD_FAILED,"load %s failed with code %d", name, GetSharedObjectError());
     typedef IXmlSchema* (*XmlSchemaCreator)(const char*);
     XmlSchemaCreator creator = (XmlSchemaCreator)GetSharedProcedure(xmllib, "createXmlSchemaFromString");
     if (!creator)
-        throw MakeStringException(-1,"load XmlSchema factory failed: createXmlSchemaFromString()");
+        throw MakeStringException(ECLWATCH_HTTPBINDING_LOAD_FAILED,"load XmlSchema factory failed: createXmlSchemaFromString()");
     
     return creator(schema);
 }
@@ -193,14 +194,14 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     if(lscfg == NULL)
                     {
                         ERRLOG("can't find bnd_cfg for LdapSecurity %s", lsname.str());
-                        throw MakeStringException(-1, "can't find bnd_cfg for LdapSecurity %s", lsname.str());
+                        throw MakeStringException(ECLWATCH_HTTPBINDING_INV_CONFIG_DATA, "can't find bnd_cfg for LdapSecurity %s", lsname.str());
                     }
                 }
 
                 m_secmgr.setown(SecLoader::loadSecManager("LdapSecurity", "EspHttpBinding", LINK(lscfg)));
                 if(m_secmgr.get() == NULL)
                 {
-                    throw MakeStringException(-1, "error generating SecManager");
+                    throw MakeStringException(ECLWATCH_HTTPBINDING_OBJ_CREATE_ERROR, "error generating SecManager");
                 }
                 
                 StringBuffer basednbuf;
@@ -224,13 +225,13 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     if(process_config != NULL)
                         cscfg = process_config->getPropTree(StringBuffer("CommonSecurity[@name=").appendf("\"%s\"]", csname.str()).str());
                     if(cscfg == NULL)
-                        throw MakeStringException(-1, "can't find cfg for CommonSecurity %s", csname.str());
+                        throw MakeStringException(ECLWATCH_HTTPBINDING_INV_CONFIG_DATA, "can't find cfg for CommonSecurity %s", csname.str());
                 }
                 
                 m_secmgr.setown(SecLibLoader::loadSecManager("CommonSecurity", "EspHttpBinding", cscfg));
                 if(m_secmgr.get() == NULL)
                 {
-                    throw MakeStringException(-1, "error generating SecManager for CommonSecurity");
+                    throw MakeStringException(ECLWATCH_HTTPBINDING_OBJ_CREATE_ERROR, "error generating SecManager for CommonSecurity");
                 }
                 
                 m_authmap.setown(m_secmgr->createAuthMap(authcfg));
@@ -246,7 +247,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     if(process_config.get() != NULL)
                         cscfg.setown(process_config->getPropTree(StringBuffer("AccurintSecurity[@name=").appendf("\"%s\"]", csname.str()).str()));
                     if(cscfg == NULL)
-                        throw MakeStringException(-1, "can't find cfg for AccurintSecurity %s", csname.str());
+                        throw MakeStringException(ECLWATCH_HTTPBINDING_INV_CONFIG_DATA, "can't find cfg for AccurintSecurity %s", csname.str());
                 }
                 StringBuffer iproaming;
                 if(proc_cfg.get())
@@ -262,7 +263,7 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                 m_secmgr.setown(SecLibLoader::loadSecManager("AccurintSecurity", "EspHttpBinding", cscfg));
                 if(m_secmgr.get() == NULL)
                 {
-                    throw MakeStringException(-1, "error generating SecManager for AccurintSecurity");
+                    throw MakeStringException(ECLWATCH_HTTPBINDING_OBJ_CREATE_ERROR, "error generating SecManager for AccurintSecurity");
                 }
                 m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                 m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
@@ -280,13 +281,13 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     if(process_config.get() != NULL)
                         cscfg.setown(process_config->getPropTree(StringBuffer("AccurintSecurity[@name=").appendf("\"%s\"]", csname.str()).str()));
                     if(cscfg == NULL)
-                        throw MakeStringException(-1, "can't find cfg for AccurintSecurity %s", csname.str());
+                        throw MakeStringException(ECLWATCH_HTTPBINDING_INV_CONFIG_DATA, "can't find cfg for AccurintSecurity %s", csname.str());
                 }
                 
                 m_secmgr.setown(SecLibLoader::loadSecManager("AccurintAccess", "EspHttpBinding", cscfg));
                 if(m_secmgr.get() == NULL)
                 {
-                    throw MakeStringException(-1, "error generating SecManager for AccurintSecurity");
+                    throw MakeStringException(ECLWATCH_HTTPBINDING_OBJ_CREATE_ERROR, "error generating SecManager for AccurintSecurity");
                 }
                 m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                 m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
@@ -305,13 +306,13 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
                     if(process_config.get() != NULL)
                         cscfg.setown(process_config->getPropTree(StringBuffer("AccurintSecurity[@name=").appendf("\"%s\"]", csname.str()).str()));
                     if(cscfg == NULL)
-                        throw MakeStringException(-1, "can't find cfg for AccurintSecurity %s", csname.str());
+                        throw MakeStringException(ECLWATCH_HTTPBINDING_INV_CONFIG_DATA, "can't find cfg for AccurintSecurity %s", csname.str());
                 }
                 
                 m_secmgr.setown(SecLibLoader::loadSecManager("RemoteNSSecurity", "EspHttpBinding", cscfg));
                 if(m_secmgr.get() == NULL)
                 {
-                    throw MakeStringException(-1, "error generating SecManager for CommonSecurity");
+                    throw MakeStringException(ECLWATCH_HTTPBINDING_OBJ_CREATE_ERROR, "error generating SecManager for CommonSecurity");
                 }
                 m_authmap.setown(m_secmgr->createAuthMap(authcfg));
                 m_feature_authmap.setown(m_secmgr->createFeatureMap(authcfg));
@@ -441,7 +442,7 @@ bool EspHttpBinding::authRequired(CHttpRequest *request)
     request->getPath(path);
     if(path.length() == 0)
     {
-        throw MakeStringException(-1, "Path is empty for http request");
+        throw MakeStringException(ECLWATCH_HTTPBINDING_INV_REQUEST, "Path is empty for http request");
     }
     if(m_authmap.get() == NULL)
         return false;
@@ -1362,7 +1363,7 @@ static void genSampleXml(StringStack& parent, IXmlType* type, StringBuffer& out,
         const char* itemName = type->queryFieldName(0);
         IXmlType*   itemType = type->queryFieldType(0);
         if (!itemName || !itemType)
-            throw MakeStringException(-1,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
+            throw MakeStringException(ECLWATCH_HTTPBINDING_INV_DATA,"*** Invalid array definition: tag=%s, itemName=%s", tag, itemName?itemName:"NULL");
 
         StringBuffer item;
         if (typeName)
@@ -1431,7 +1432,7 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
         }
     }
 
-    throw MakeStringException(-1,"Unknown type: %s", element.str());
+    throw MakeStringException(ECLWATCH_HTTPBINDING_INV_DATA,"Unknown type: %s", element.str());
 }
 
 int EspHttpBinding::onGetReqSampleXml(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
@@ -1452,14 +1453,14 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
     try
     {
         if (!ctx.validateFeatureAccess(FILE_UPLOAD, SecAccess_Full, false))
-            throw MakeStringException(-1, "Permission denied.");
+            throw MakeStringException(ECLWATCH_HTTPBINDING_PERMISSION_DENIED, "Permission denied.");
 
         StringBuffer netAddress, path;
         request->getParameter("NetAddress", netAddress);
         request->getParameter("Path", path);
 
         if ((netAddress.length() < 1) || (path.length() < 1))
-            throw MakeStringException(-1, "Upload destination not specified.");
+            throw MakeStringException(ECLWATCH_HTTPBINDING_INV_REQUEST, "Upload destination not specified.");
 
         StringArray fileNames;
         request->readContentToFiles(netAddress, path, fileNames);
@@ -2168,13 +2169,13 @@ void EspHttpBinding::validateResponse(IEspContext& context, CHttpRequest* reques
             if (end)
                 end = strchr(end+2, '>');
             if (!end)
-                throw MakeStringException(-1,"Invalid response XML in processing instruction");
+                throw MakeStringException(ECLWATCH_HTTPBINDING_INV_RESPONSE,"Invalid response XML in processing instruction");
         } 
         else
         {
             end = strchr(xml, '>');
             if (!end)
-                throw MakeStringException(-1,"Can not find the root node");
+                throw MakeStringException(ECLWATCH_HTTPBINDING_INV_RESPONSE,"Can not find the root node");
             if (*(end-1)=='/')   // root is like: <xxx />
                 end--;
         }
