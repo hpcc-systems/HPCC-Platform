@@ -21,30 +21,27 @@
 
       <tbody>
         <row>
-          
+          <entry><emphasis>rollback</emphasis></entry>
 
-  <entry><emphasis>rollback</emphasis> </entry><entry>
-Optional. A boolean flag that indicates
-  whether to commit (FALSE) or roll back (TRUE) the transaction. If omitted,
-  the default is FALSE.</entry>
-
+          <entry>Optional. A boolean flag that indicates whether to commit
+          (FALSE) or roll back (TRUE) the transaction. If omitted, the default
+          is FALSE.</entry>
         </row>
+
         <row>
-  <entry>Return:<emphasis> </emphasis></entry><entry>
-Null.</entry>
+          <entry>Return:<emphasis> </emphasis></entry>
 
-
+          <entry>Null.</entry>
         </row>
       </tbody>
     </tgroup>
   </informaltable>
 
-
   <para>The <emphasis role="bold">FinishSuperFileTransaction
   </emphasis>function terminates a superfile maintenance transaction frame. If
-  the <emphasis>rollback</emphasis> flag is FALSE, the transction is committed
-  atomically and the transaction frame closes. Otherwise, the transaction is
-  rolled back and the transaction frame closes.</para>
+  the <emphasis>rollback</emphasis> flag is FALSE, the transaction is
+  committed atomically and the transaction frame closes. Otherwise, the
+  transaction is rolled back and the transaction frame closes.</para>
 
   <para>Example:</para>
 
