@@ -1352,6 +1352,9 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
     }
     Owned<ISharedOnceContext> sharedOnceContext;
     assertex(dll->queryWorkUnit());
+    unsigned wuVersion = dll->queryWorkUnit()->getCodeVersion();
+    if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
+        throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
     IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
     if (workflow && workflow->hasProp("Item[@mode='once']"))
         sharedOnceContext.setown(new CSharedOnceContext);
@@ -1610,6 +1613,10 @@ IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, con
         ::Release(dll);
         return cached;
     }
+    assertex(dll->queryWorkUnit());
+    unsigned wuVersion = dll->queryWorkUnit()->getCodeVersion();
+    if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
+        throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
     Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo); // Should always find a cached one
     Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, serverFactory->querySharedOnceContext());
     newFactory->load(stateInfo);

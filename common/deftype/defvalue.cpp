@@ -2088,7 +2088,7 @@ IValue *DecimalValue::castTo(ITypeInfo *t)
     case type_packedint:
         return createTruncIntValue(DecPopInt64(), LINK(t));
     case type_boolean:
-        return createBoolValue(!DecCompareNull());
+        return createBoolValue(DecCompareNull() != 0);
     case type_decimal:
         return createDecimalValueFromStack(t);
     }
@@ -2143,7 +2143,7 @@ bool DecimalValue::getBoolValue()
 {
     BcdCriticalBlock bcdBlock;
     pushDecimalValue();
-    return DecCompareNull() ? 0 : 1;
+    return DecCompareNull() != 0;
 }
 
 __int64 DecimalValue::getIntValue()
