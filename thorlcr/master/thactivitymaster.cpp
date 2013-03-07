@@ -119,7 +119,6 @@ public:
             case TAKprefetchcountproject:
             case TAKxmlparse:
             case TAKchilditerator:
-            case TAKrawiterator:
             case TAKlinkedrawiterator:
             case TAKcatch:
             case TAKsample:

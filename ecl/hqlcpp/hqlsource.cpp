@@ -941,7 +941,7 @@ void SourceBuilder::analyse(IHqlExpression * expr)
             break;
         }
     case no_stepped:
-        if ((translator.getTargetClusterType() == ThorCluster) && translator.queryOptions().checkThorRestrictions)
+        if ((translator.getTargetClusterType() == ThorLCRCluster) && translator.queryOptions().checkThorRestrictions)
             throwError(HQLERR_ThorNotSupportStepping);
         if (steppedExpr)
             throwError(HQLERR_MultipleStepped);
@@ -2821,14 +2821,6 @@ void DiskReadBuilder::buildTransform(IHqlExpression * expr)
 
         unsigned maxColumns = countTotalFields(tableExpr->queryRecord(), false);
         translator.doBuildUnsignedFunction(instance->classctx, "getMaxColumns", maxColumns);
-
-        if (!translator.queryOptions().supportDynamicRows)
-        {
-            unsigned csvMax = translator.getCsvMaxLength(mode);
-            unsigned rowMax = translator.getMaxRecordSize(tableExpr->queryRecord());
-            if (rowMax > csvMax)
-                translator.WARNINGAT2(queryLocation(expr), HQLWRN_CsvMaxLengthMismatch, rowMax, csvMax);
-        }
         return;
     }
 
@@ -3911,17 +3903,14 @@ void MonitorExtractor::expandSelects(IHqlExpression * expr, IHqlSimpleScope * ex
 
 void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, KeySelectorInfo & selectorInfo, BuildCtx & ctx, const char * target, IHqlExpression & thisKey, MonitorFilterKind filterKind)
 {
-    if (translator.queryOptions().optimizeInSegmentMonitor)
+    //Generally this slightly increases the code size, but reduces the number of
+    //temporary sets which is generally more efficient.
+    OwnedHqlExpr simplified = querySimplifyInExpr(&thisKey);
+    if (simplified)
     {
-        //Generally this slightly increases the code size, but reduces the number of
-        //temporary sets which is generally more efficient.
-        OwnedHqlExpr simplified = querySimplifyInExpr(&thisKey);
-        if (simplified)
-        {
-            OwnedHqlExpr folded = foldHqlExpression(simplified);
-            buildKeySegmentExpr(buildState, selectorInfo, ctx, target, *folded, filterKind);
-            return;
-        }
+        OwnedHqlExpr folded = foldHqlExpression(simplified);
+        buildKeySegmentExpr(buildState, selectorInfo, ctx, target, *folded, filterKind);
+        return;
     }
 
     IHqlExpression * expandedSelector = selectorInfo.expandedSelector;

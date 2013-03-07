@@ -577,9 +577,6 @@ void CMemberInfo::gatherMaxRowSize(SizeStruct & totalSize, IHqlExpression * newS
 
 void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * newSize, unsigned fixedExtra)
 {
-    if (!translator.checkForRowOverflow())
-        return;
-
     //If no size beyond the constant value then this can't be increasing the size of the row => no need to check
     if (matchesConstantValue(newSize, 0))
         return;
@@ -608,9 +605,6 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
     {
         unsigned maxRowSize = row->getMaxSize();
         unsigned fixedSize = totalSize.getFixedSize();
-        bool supportDynamicRows = translator.queryOptions().supportDynamicRows;
-        if (!supportDynamicRows && (fixedSize > maxRowSize))
-            translator.throwError2(HQLERR_RowTooLarge, fixedSize, maxRowSize);
 
         //This removes calls that can be constant folded - a bit confusing in the generated code sometimes..
         if (!row->queryBuilder() && !totalSize.queryVarSize())
@@ -622,13 +616,7 @@ void CMemberInfo::checkAssignOk(HqlCppTranslator & translator, BuildCtx & ctx, I
         if (value)
         {
             unsigned constSize = (unsigned)value->getIntValue();
-            if (!supportDynamicRows)
-            {
-                if (constSize > maxRowSize)
-                    translator.throwError2(HQLERR_RowTooLarge, constSize, maxRowSize);
-                return;
-            }
-            else if (constSize <= getMinRecordSize(row->queryRecord()))
+            if (constSize <= getMinRecordSize(row->queryRecord()))
                 return;
         }
 
@@ -991,9 +979,8 @@ void CContainerInfo::setRow(HqlCppTranslator & translator, BuildCtx & ctx, IRefe
 
     //If copying from one identical record to another then the source record must be large enough,
     //so only need to check it it is a child record....
-    if (!cachedSize.isFixedSize() && (container || translator.queryOptions().supportDynamicRows))
+    if (!cachedSize.isFixedSize())
     {
-        //Note - if we are cop
         OwnedHqlExpr translatedLength = length.getTranslatedExpr();
         checkAssignOk(translator, ctx, selector, translatedLength, 0);
     }
@@ -2709,10 +2696,7 @@ IHqlExpression * CXmlColumnInfo::getXmlDatasetExpr(HqlCppTranslator & translator
     //Create the builder for generating a temporary set.
     IHqlExpression * record = expr->queryRecord();
     Owned<IHqlCppDatasetBuilder> builder;
-    if (recordRequiresLinkCount(expr->queryRecord()) || translator.queryOptions().tempDatasetsUseLinkedRows)
-        builder.setown(translator.createLinkedDatasetBuilder(record));
-    else
-        builder.setown(translator.createBlockedDatasetBuilder(record));
+    builder.setown(translator.createLinkedDatasetBuilder(record));
     builder->buildDeclare(ctx);
 
     //Generate the code to process a child iterator
@@ -3443,7 +3427,7 @@ IHqlExpression * SerializationRow::ensureSerialized(IHqlExpression * path, IHqlE
     Owned<ITypeInfo> unqualifiedType = getFullyUnqualifiedType(pathType);
     Owned<ITypeInfo> serializeType = cloneEssentialFieldModifiers(pathType, unqualifiedType);
     if (colocal && path->isDataset() && 
-        (hasLinkedRow(pathType) || (hasOutOfLineModifier(pathType) && translator.queryOptions().tempDatasetsUseLinkedRows)))
+        (hasLinkedRow(pathType) || hasOutOfLineModifier(pathType)))
         serializeType.setown(setLinkCountedAttr(serializeType, true));
     return addSerializedValue(path, serializeType, colocal, isConditional);
 }

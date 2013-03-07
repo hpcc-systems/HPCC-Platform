@@ -528,17 +528,7 @@ IHqlExpression * CResourceOptions::createSpillName(bool isGraphResult)
     StringBuffer s;
     s.append("~spill::");
     getUniqueId(s);
-    if (!mangleSpillNameWithWuid)
-        return createConstant(s.str());
-    s.append("_");
-    if (filenameMangler)
-    {
-        s.append(filenameMangler);
-        return createConstant(s.str());
-    }
-
-    ITypeInfo * type = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
-    return createValue(no_concat, type, createConstant(s.str()), createValue(no_wuid, LINK(type)));
+    return createConstant(s.str());
 }
 
 //---------------------------------------------------------------------------
@@ -1667,7 +1657,7 @@ bool ResourcerInfo::expandRatherThanSplit()
                 return false;
             if (!isNewSelector(expr))
             {
-                if (!options->useLinkedRawIterator || !hasLinkCountedModifier(expr))
+                if (!hasLinkCountedModifier(expr))
                     return false;
                 return true;
             }
@@ -1758,16 +1748,7 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     insideNeverSplit = false;
     insideSteppedNeverSplit = false;
     sequential = false;
-    options.mangleSpillNameWithWuid = false;
     options.minimizeSpillSize = _translatorOptions.minimizeSpillSize;
-
-    bool wuidIsConstant = (targetClusterType == RoxieCluster) || !wu->getCloneable();
-    if (wuidIsConstant)
-    {
-        SCMStringBuffer wuNameText;
-        wu->getWuid(wuNameText);
-        options.filenameMangler.set(wuNameText.str());
-    }
 
     unsigned totalMemory = _translatorOptions.resourceMaxMemory ? _translatorOptions.resourceMaxMemory : DEFAULT_TOTAL_MEMORY;
     unsigned maxSockets = _translatorOptions.resourceMaxSockets ? _translatorOptions.resourceMaxSockets : DEFAULT_MAX_SOCKETS;
@@ -1779,7 +1760,6 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     resourceLimit->set(RESactivities, maxActivities);
     switch (targetClusterType)
     {
-    case ThorCluster:
     case ThorLCRCluster:
         resourceLimit->set(RESheavy, maxHeavy).set(REShashdist, maxDistribute);
         resourceLimit->set(RESmastersocket, maxSockets).set(RESslavememory,totalMemory);
@@ -1825,14 +1805,12 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
     options.useGraphResults = false;        // modified by later call
     options.groupedChildIterators = _translatorOptions.groupedChildIterators;
     options.allowSplitBetweenSubGraphs = false;//(targetClusterType == RoxieCluster);
-    options.supportsChildQueries = (targetClusterType != ThorCluster);
     options.clusterSize = clusterSize;
     options.preventKeyedSplit = _translatorOptions.preventKeyedSplit;
     options.preventSteppedSplit = _translatorOptions.preventSteppedSplit;
     options.minimizeSkewBeforeSpill = _translatorOptions.minimizeSkewBeforeSpill;
     options.expandSingleConstRow = true;
     options.createSpillAsDataset = _translatorOptions.optimizeSpillProject && (targetClusterType != HThorCluster);
-    options.useLinkedRawIterator = _translatorOptions.useLinkedRawIterator;
     options.combineSiblings = _translatorOptions.combineSiblingGraphs && (targetClusterType != HThorCluster) && (targetClusterType != RoxieCluster);
     options.optimizeSharedInputs = _translatorOptions.optimizeSharedGraphInputs && options.combineSiblings;
 }
@@ -2096,8 +2074,8 @@ protected:
 class EclChildSplitPointLocator : public EclHoistLocator
 {
 public:
-    EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches, bool _groupedChildIterators, bool _supportsChildQueries)
-    : EclHoistLocator(_originalMatches, _matches, _singleNode, _alwaysHoistMatches), selectors(_selectors), groupedChildIterators(_groupedChildIterators), supportsChildQueries(_supportsChildQueries)
+    EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches, bool _groupedChildIterators)
+    : EclHoistLocator(_originalMatches, _matches, _singleNode, _alwaysHoistMatches), selectors(_selectors), groupedChildIterators(_groupedChildIterators)
     { 
         original = _original;
         okToSelect = false; 
@@ -2147,10 +2125,7 @@ protected:
         if (executedOnce)
         {
             if (conditionalDepth != 0)
-            {
-                if (supportsChildQueries || canProcessInline(NULL, ds))
-                    alwaysHoist = false;
-            }
+                alwaysHoist = false;
         }
         return alwaysHoist;
     }
@@ -2499,7 +2474,6 @@ protected:
     bool gathered;
     bool groupedChildIterators;
     bool executedOnce;
-    bool supportsChildQueries;
 };
 
 
@@ -2507,7 +2481,7 @@ protected:
 void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, BoolArray & alwaysHoistChild, ResourcerInfo * info, unsigned first, unsigned last)
 {
     //NB: Don't call member functions to ensure correct nesting of transform mutexes.
-    EclChildSplitPointLocator locator(expr, activeSelectors, info->originalChildDependents, info->childDependents, info->childSingleNode, alwaysHoistChild, options.groupedChildIterators, options.supportsChildQueries);
+    EclChildSplitPointLocator locator(expr, activeSelectors, info->originalChildDependents, info->childDependents, info->childSingleNode, alwaysHoistChild, options.groupedChildIterators);
     unsigned max = expr->numChildren();
 
     //If child queries are supported then don't hoist the expressions if they might only be evaluated once
@@ -3749,7 +3723,6 @@ void EclResourcer::spotUnbalancedSplitters(HqlExprArray & exprs)
     {
     case HThorCluster:
         break;
-    case ThorCluster:
     case ThorLCRCluster:
         {
             //Thor only handles one graph at a time, so only walk expressions within a single graph.

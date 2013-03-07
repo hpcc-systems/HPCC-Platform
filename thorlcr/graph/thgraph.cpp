@@ -955,7 +955,6 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKsoap_rowaction:
         case TAKsoap_datasetdataset:
         case TAKsoap_datasetaction:
-        case TAKrawiterator:
         case TAKlinkedrawiterator:
         case TAKchilditerator:
         case TAKstreamediterator:

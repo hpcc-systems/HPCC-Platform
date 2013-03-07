@@ -946,8 +946,6 @@ bool HqlCppTranslator::canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * d
         }
         break;
     default:
-        if (!options.tempDatasetsUseLinkedRows)
-            break;
         if (!alwaysEvaluatesToBound(dataset))
             break;
         //fall through
@@ -1655,7 +1653,6 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     case HThorCluster:
         csfFlags |= CSFcompoundSpill;
         break;
-    case ThorCluster:
     case ThorLCRCluster:
         //Don't compound spills inside a child query because it can cause non remote projects to become remote
         //And we'll also probably be using the roxie code to implement
@@ -2304,10 +2301,6 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
                 {
                     if (record != serializedRecord)
                         throwError(HQLERR_LinkedDatasetNoContext);
-                    format = FormatBlockedDataset;
-                }
-                else if ((record == serializedRecord) && !options.tempDatasetsUseLinkedRows)
-                {
                     format = FormatBlockedDataset;
                 }
                 else
@@ -5009,9 +5002,7 @@ void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression 
         }
     }
 
-    bool useLinkCounted = recordRequiresLinkCount(expr->queryRecord()) || options.tempDatasetsUseLinkedRows;
-
-    OwnedHqlExpr call = buildGetLocalResult(ctx, expr, useLinkCounted);
+    OwnedHqlExpr call = buildGetLocalResult(ctx, expr, true);
     switch (expr->queryType()->getTypeCode())
     {
     case type_row:

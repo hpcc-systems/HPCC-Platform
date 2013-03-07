@@ -4215,7 +4215,6 @@ bool CompoundSourceTransformer::needToCloneLimit(IHqlExpression * expr, node_ope
         return false;
     case HThorCluster:
         return (sourceOp != no_compound_indexread) || (op != no_limit);
-    case ThorCluster:
     case ThorLCRCluster:
         return true;
     default:
@@ -10127,7 +10126,6 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     const HqlCppOptions & translatorOptions = translator.queryOptions();
     options.removeAsserts = !translatorOptions.checkAsserts;
     options.commonUniqueNameAttributes = translatorOptions.commonUniqueNameAttributes;
-    options.simplifySelectorSequence = !translatorOptions.preserveUniqueSelector && !translatorOptions.detectAmbiguousSelector && !translatorOptions.allowAmbiguousSelector;
     options.sortIndexPayload = translatorOptions.sortIndexPayload;
     options.allowSections = translatorOptions.allowSections;
     options.normalizeExplicitCasts = translatorOptions.normalizeExplicitCasts;
@@ -10136,7 +10134,6 @@ HqlTreeNormalizer::HqlTreeNormalizer(HqlCppTranslator & _translator) : NewHqlTra
     options.constantFoldNormalize = translatorOptions.constantFoldNormalize;
     options.allowActivityForKeyedJoin = translatorOptions.allowActivityForKeyedJoin;
     options.implicitShuffle = translatorOptions.implicitBuildIndexShuffle;
-    options.transformCaseToChoose = translatorOptions.transformCaseToChoose;
     errors = translator.queryErrors();
     nextSequenceValue = 1;
 }
@@ -10486,7 +10483,7 @@ IHqlExpression * HqlTreeNormalizer::transformCaseToChoose(IHqlExpression * expr)
     //For the moment only convert datasets to choose format.  (Partly to test implementation.)
     //Datarows are unlikely to benefit, and will cause additional work.
     //Converting actions has implications for needing new activity kinds, and support in thor.
-    if (!expr->isDataset() || !options.transformCaseToChoose)
+    if (!expr->isDataset())
         return transformCaseToIfs(expr);
 
     unsigned max = numRealChildren(expr);
@@ -11905,10 +11902,6 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
 #ifdef USE_SELSEQ_UID
             if (name == _selectorSequence_Atom)
             {
-                //Purely for testing what effect adding the unique sequences has on the parse time
-                if (options.simplifySelectorSequence)
-                    return createDummySelectorSequence();
-
                 //Ensure parameterised sequences generate a unique sequence number...
                 //Not sure the following is really necessary, but will reduce in memory tree size....
                 //also saves complications from having weird attributes in the tree

@@ -623,7 +623,7 @@ extern HQLCPP_API ClusterType queryClusterType(IConstWorkUnit * wu, ClusterType 
     if (wu->getDebugValueBool("forceRoxie", false))
         targetClusterType = RoxieCluster;
     else if (prevType == NoCluster)
-        targetClusterType = ThorCluster;
+        targetClusterType = ThorLCRCluster;
 
     SCMStringBuffer targetText;
     wu->getDebugValue("targetClusterType", targetText);

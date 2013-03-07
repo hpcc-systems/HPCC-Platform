@@ -534,11 +534,11 @@ interface IConstWUExceptionIterator : extends IScmIterator
     virtual IConstWUException & query() = 0;
 };
 
-enum ClusterType { NoCluster, ThorCluster, HThorCluster, RoxieCluster, ThorLCRCluster };
+enum ClusterType { NoCluster, HThorCluster, RoxieCluster, ThorLCRCluster };
 
 extern WORKUNIT_API ClusterType getClusterType(const char * platform, ClusterType dft = NoCluster);
 extern WORKUNIT_API const char *clusterTypeString(ClusterType clusterType, bool lcrSensitive);
-inline bool isThorCluster(ClusterType type) { return (type == ThorCluster) || (type == ThorLCRCluster); }
+inline bool isThorCluster(ClusterType type) { return (type == ThorLCRCluster); }
 
 //! IClusterInfo
 interface IConstWUClusterInfo : extends IInterface

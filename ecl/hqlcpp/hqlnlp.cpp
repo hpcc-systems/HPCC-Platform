@@ -987,10 +987,10 @@ IReferenceSelector * HqlCppTranslator::doBuildRowMatchAttr(BuildCtx & ctx, IHqlE
     IHqlExpression * record = expr->queryRecord();
     StringBuffer rowName;
     getUniqueId(rowName.append("row"));
-    //MORE: Production rows should be a linkable match row - would help in parsing.
+
     OwnedITypeInfo rowType = makeConstantModifier(makeRowReferenceType(record));
-    if (options.supportsLinkedChildRows)
-        rowType.setown(makeAttributeModifier(LINK(rowType), getLinkCountedAttr()));
+    rowType.setown(makeAttributeModifier(LINK(rowType), getLinkCountedAttr()));
+
     OwnedHqlExpr row = createVariable(rowName, rowType.getClear());
     ctx.addDeclare(row);
     ctx.addAssign(row, call);

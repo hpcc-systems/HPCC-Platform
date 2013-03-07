@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      143
-#define MIN_ACTIVITY_INTERFACE_VERSION  143             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      144
+#define MIN_ACTIVITY_INTERFACE_VERSION  144             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -800,7 +800,6 @@ enum ThorActivityKind
     TAKchildcase,
     TAKremotegraph,
     TAKlibrarycall,
-    TAKrawiterator,
     TAKlocalstreamread,
     TAKprocess,
     TAKgraphloop,
