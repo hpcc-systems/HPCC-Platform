@@ -88,10 +88,16 @@ ESPStruct DFUFileDetail
     string Persistent;
     string Format;
     string MaxRecordSize;
-    string CsvSeparate;
-    string CsvQuote;
-    string CsvTerminate;
-    [min_ver("1.20")] string CsvEscape;
+    [max_ver("1.20")] string CsvSeparate;
+    [max_ver("1.20")] string CsvQuote;
+    [max_ver("1.20")] string CsvTerminate;
+    [min_ver("1.20"), max_ver("1.20")] string CsvEscape;
+
+    [min_ver("1.21")] string Separate;
+    [min_ver("1.21")] string Quote;
+    [min_ver("1.21")] string Terminate;
+    [min_ver("1.21")] string Escape;
+
     string Modified;
     string Ecl;
     bool ZipFile(false);
@@ -625,7 +631,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.20"), default_client_version("1.20"),
+    version("1.21"), default_client_version("1.21"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
