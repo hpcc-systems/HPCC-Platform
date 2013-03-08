@@ -1059,11 +1059,6 @@ IHThorGraphResult * EclSubGraph::createGraphLoopResult(IEngineRowAllocator * own
     return graphLoopResults->createResult(ownedRowsetAllocator);
 }
 
-void EclSubGraph::getResult(unsigned & len, void * & data, unsigned id)
-{
-    localResults->queryResult(id)->getResult(len, data);
-}
-
 void EclSubGraph::getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
 {
     localResults->queryResult(id)->getLinkedResult(count, ret);
@@ -1278,11 +1273,6 @@ const void * UninitializedGraphResult::queryRow(unsigned whichRow)
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
 }
 
-void UninitializedGraphResult::getResult(unsigned & lenResult, void * & result)
-{
-    throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
-}
-
 void UninitializedGraphResult::getLinkedResult(unsigned & count, byte * * & ret)
 {
     throw MakeStringException(99, "Graph Result %d accessed before it is created", id);
@@ -1309,41 +1299,6 @@ const void * GraphResult::queryRow(unsigned whichRow)
     if (rows.isItem(whichRow))
         return rows.item(whichRow);
     return NULL;
-}
-
-void GraphResult::getResult(unsigned & lenResult, void * & result)
-{
-    IOutputMetaData * outputMeta = meta;
-    unsigned fixedSize = outputMeta->getFixedSize();
-
-    bool grouped = outputMeta->isGrouped();
-    MemoryBuffer rowdata;
-    unsigned max = rows.ordinality();
-    unsigned i;
-    for (i = 0; i < max; i++)
-    {
-        const void * nextrec = rows.item(i);
-        size32_t thisSize = fixedSize ? fixedSize : outputMeta->getRecordSize(nextrec);
-        rowdata.append(thisSize, nextrec);
-        if (grouped)
-        {
-            bool eog = false;
-            if (rows.isItem(i+1))
-            {
-                if (!rows.item(i+1))
-                {
-                    eog = true;
-                    i++;
-                }
-            }
-            else
-                eog = true;
-            rowdata.append(eog);
-        }
-    }
-
-    lenResult = rowdata.length();
-    result = rowdata.detach();
 }
 
 void GraphResult::getLinkedResult(unsigned & count, byte * * & ret)
@@ -1432,7 +1387,7 @@ IThorChildGraph * EclGraph::resolveChildQuery(unsigned subgraphId)
 
 
 //NB: resolveLocalQuery (unlike children) can't link otherwise you get a cicular dependency.
-ILocalGraph * EclGraph::resolveLocalQuery(unsigned subgraphId)
+IEclGraphResults * EclGraph::resolveLocalQuery(unsigned subgraphId)
 {
     return idToGraph(subgraphId);
 }
@@ -1830,7 +1785,7 @@ IThorChildGraph * EclAgent::resolveChildQuery(__int64 subgraphId, IHThorArg * co
     throwUnexpected();
 }
 
-ILocalGraph * EclAgent::resolveLocalQuery(__int64 activityId) 
+IEclGraphResults * EclAgent::resolveLocalQuery(__int64 activityId)
 { 
     throwUnexpected();
 }

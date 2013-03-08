@@ -1,5 +1,5 @@
 /*##############################################################################
-#    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+#    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      144
-#define MIN_ACTIVITY_INTERFACE_VERSION  144             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      145
+#define MIN_ACTIVITY_INTERFACE_VERSION  145             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -478,7 +478,6 @@ interface IResourceContext
 //Provided by engine=>can extent
 interface IEclGraphResults : public IInterface
 {
-    virtual void getResult(size32_t & retSize, void * & ret, unsigned id) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id) = 0;
     virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id) = 0;
 };
@@ -488,13 +487,6 @@ interface IEclGraphResults : public IInterface
 interface IThorChildGraph : public IInterface
 {
     virtual IEclGraphResults * evaluate(unsigned parentExtractSize, const byte * parentExtract) = 0;
-};
-
-interface ILocalGraph : public IInterface
-{
-    virtual void getResult(unsigned & len, void * & data, unsigned id) = 0;
-    virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id) = 0;
-    virtual void getDictionaryResult(size32_t & tcount, byte * * & tgt, unsigned id) = 0;
 };
 
 //NB: New methods must always be added at the end of this interface to retain backward compatibility
@@ -576,7 +568,7 @@ interface ICodeContext : public IResourceContext
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) = 0;
     virtual unsigned getGraphLoopCounter() const { return 0; }
     virtual IThorChildGraph * resolveChildQuery(__int64 activityId, IHThorArg * colocal) = 0;
-    virtual ILocalGraph * resolveLocalQuery(__int64 activityId) { return NULL; }
+    virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) { return NULL; }
 
     // Logging etc
 

@@ -235,9 +235,9 @@ void CHThorActivityBase::updateProgressForOther(IWUGraphProgress &progress, unsi
     edge.setPropInt64("@slaves", 1);
 }
 
-ILocalGraphEx * CHThorActivityBase::resolveLocalQuery(__int64 graphId)
+ILocalEclGraphResults * CHThorActivityBase::resolveLocalQuery(__int64 graphId)
 {
-    return static_cast<ILocalGraphEx *>(agent.queryCodeContext()->resolveLocalQuery(graphId));
+    return static_cast<ILocalEclGraphResults *>(agent.queryCodeContext()->resolveLocalQuery(graphId));
 }
 
 IException * CHThorActivityBase::makeWrappedException(IException * e) const

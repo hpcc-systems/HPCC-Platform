@@ -233,7 +233,7 @@ protected:
     void updateProgressForOther(IWUGraphProgress &progress, unsigned otherActivity, unsigned otherSubgraph, unsigned whichOutput, unsigned __int64 numProcessed) const;
 
 protected:
-    ILocalGraphEx * resolveLocalQuery(__int64 graphId);
+    ILocalEclGraphResults * resolveLocalQuery(__int64 graphId);
 };
 
 class CHThorSimpleActivityBase : public CHThorActivityBase
@@ -2400,7 +2400,7 @@ class CHThorLocalResultReadActivity : public CHThorSimpleActivityBase
     IHThorLocalResultReadArg &helper;
     IRecordSize * physicalRecordSize;
     IHThorGraphResult * result;
-    ILocalGraphEx * graph;
+    ILocalEclGraphResults * graph;
     unsigned curRow;
     bool grouped;
 
@@ -2418,7 +2418,7 @@ public:
 class CHThorLocalResultWriteActivity : public CHThorActivityBase
 {
     IHThorLocalResultWriteArg &helper;
-    ILocalGraphEx * graph;
+    ILocalEclGraphResults * graph;
 
 public:
     IMPLEMENT_SINKACTIVITY;
@@ -2431,7 +2431,7 @@ public:
 class CHThorDictionaryResultWriteActivity : public CHThorActivityBase
 {
     IHThorDictionaryResultWriteArg &helper;
-    ILocalGraphEx * graph;
+    ILocalEclGraphResults * graph;
 
 public:
     IMPLEMENT_SINKACTIVITY;
@@ -2444,7 +2444,7 @@ public:
 class CHThorLocalResultSpillActivity : public CHThorSimpleActivityBase
 {
     IHThorLocalResultSpillArg &helper;
-    ILocalGraphEx * graph;
+    ILocalEclGraphResults * graph;
     IHThorGraphResult * result;
     bool nullPending;
 
@@ -2533,7 +2533,7 @@ protected:
 class CHThorGraphLoopResultReadActivity : public CHThorSimpleActivityBase
 {
     IHThorGraphLoopResultReadArg * helper;
-    ILocalGraphEx * graph;
+    ILocalEclGraphResults * graph;
     IRecordSize * physicalRecordSize;
     IHThorGraphResult * result;
     unsigned curRow;
@@ -2555,7 +2555,7 @@ public:
 class CHThorGraphLoopResultWriteActivity : public CHThorActivityBase
 {
     IHThorGraphLoopResultWriteArg &helper;
-    ILocalGraphEx * graph;
+    ILocalEclGraphResults * graph;
 
 public:
     IMPLEMENT_SINKACTIVITY;
