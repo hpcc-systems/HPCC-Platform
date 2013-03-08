@@ -12,8 +12,7 @@
     </mediaobject>
 
     <author>
-      <surname><emphasis role="redbold">DRAFT 004</emphasis> Boca Raton
-      Documentation Team</surname>
+      <surname>Boca Raton Documentation Team</surname>
     </author>
 
     <legalnotice>
@@ -32,7 +31,7 @@
       used in this manual are fictitious. Any similarity to actual persons,
       living or dead, is purely coincidental.</para>
 
-      <para><emphasis role="redbold">DRAFT 004</emphasis></para>
+      <para><emphasis role="redbold"></emphasis></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -65,12 +64,14 @@
     <title>Introduction</title>
 
     <para>Eclipse is an alternative Integrated Development Environment (IDE)
-    which can be used with the HPCC Systems Platform. Eclipse is open source,
-    and multi-platform and it can be used instead of the ECL IDE. The
-    following sections cover how to install and use the ECL plug-in for
-    Eclipse.</para>
+    which can be used with the HPCC Systems Platform. Eclipse is open-source,
+    and multi-platform. It can be used instead of the ECL IDE to write and
+    execute queries into data on an HPCC cluster .</para>
 
     <para>The ECL plug-in is also open source.</para>
+
+    <para>The following sections cover how to install and use the ECL plug-in
+    for Eclipse.</para>
 
     <sect1 id="ECL_Files" role="nobrk">
       <title>Prerequisites and Requirements</title>
@@ -83,20 +84,17 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>The HPCC Client Tools (this installs the ECL compiler,
-              eclcc, command line tools, and related components).</para>
+              <para>The HPCC Client Tools (available from <ulink
+              url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink>
+              )</para>
+
+              <para>This installs the ECL compiler, eclcc, command line tools,
+              and related components</para>
             </listitem>
 
             <listitem>
               <para>The Graph Control (available from <ulink
               url="http://hpccsystems.com/download/free-community-edition/graph-control">http://hpccsystems.com/download/free-community-edition/graph-control</ulink>)</para>
-            </listitem>
-
-            <listitem>
-              <para>Visual Studio 2008 or Visual Studio 2008 Express
-              (<emphasis role="bold">this is only needed if you want to create
-              local .exe files from ECL. It is not needed if you are planning
-              on targeting a server</emphasis>).</para>
             </listitem>
 
             <listitem>
@@ -120,15 +118,16 @@
                         fileref="images/caution.png" /></entry>
 
                         <entry>On a machine running Windows 7 (either the 32-
-                        or 64-bit), you must start Eclipse with
-                        <emphasis>administrator privileges</emphasis> for
-                        plug-ins to install properly. This is necessary even
-                        if your account has administrator privileges.
-                        <para>Right-click on the Eclipse shortcut, then select
-                        <emphasis role="bold">Run as Administrator</emphasis>
-                        from the pop-up menu. </para><para>After installing
-                        the plug-in, you do not need to run as administrator
-                        in the normal course of your work. However, to install
+                        or 64-bit), depending on your install location, you
+                        may need to start Eclipse with <emphasis>administrator
+                        privileges</emphasis> for plug-ins to install
+                        properly. This is necessary even if your account has
+                        administrator privileges. <para>Right-click on the
+                        Eclipse shortcut, then select <emphasis
+                        role="bold">Run as Administrator</emphasis> from the
+                        pop-up menu. </para><para>After installing the
+                        plug-in, you do not need to run as administrator in
+                        the normal course of your work. However, to install
                         any future updates will require running as
                         administrator. </para></entry>
                       </row>
@@ -144,8 +143,12 @@
 
         <para><itemizedlist>
             <listitem>
-              <para>HPCC-Client Tools package (this installs the ECL compiler,
-              eclcc, command line tools, and related components).</para>
+              <para>The HPCC Client Tools (available from <ulink
+              url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink>
+              )</para>
+
+              <para>This installs the ECL compiler, eclcc, command line tools,
+              and related components</para>
             </listitem>
 
             <listitem>
@@ -154,7 +157,7 @@
             </listitem>
 
             <listitem>
-              <para>64-bit desktop edition of Linux*</para>
+              <para>64-bit desktop edition of Linux</para>
             </listitem>
 
             <listitem>
@@ -167,13 +170,17 @@
           </itemizedlist></para>
       </sect2>
 
-      <sect2>
+      <sect2 role="brk">
         <title>Mac (Intel-based) Prerequisites:</title>
 
         <itemizedlist>
           <listitem>
-            <para>HPCC-Client Tools (this installs the ECL compiler, eclcc,
-            command line tools, and related components).</para>
+            <para>The HPCC Client Tools (available from <ulink
+            url="http://hpccsystems.com/download/free-community-edition/client-tools">http://hpccsystems.com/download/free-community-edition/client-tools</ulink>
+            )</para>
+
+            <para>This installs the ECL compiler, eclcc, command line tools,
+            and related components</para>
           </listitem>
 
           <listitem>
@@ -182,7 +189,7 @@
           </listitem>
 
           <listitem>
-            <para>Mac OS X (10.6.x or later)</para>
+            <para>Mac OS X 64-bit (10.6.x or later)</para>
           </listitem>
 
           <listitem>
@@ -191,12 +198,6 @@
 
           <listitem>
             <para>The ECL plug-in for Eclipse</para>
-          </listitem>
-
-          <listitem>
-            <para>Xcode for your OS <emphasis role="bold">(this is only needed
-            if you want to create local executables from ECL. It is not needed
-            if you are planning on targeting a server)</emphasis></para>
           </listitem>
         </itemizedlist>
       </sect2>
@@ -210,10 +211,8 @@
     already have the Eclipse IDE installed, skip this section and go to
     <emphasis>Installing the ECL Plug-In</emphasis>.</para>
 
-    <!-- add screen shot***-->
-
     <sect1 id="Used_to_Build_Queries" role="nobrk">
-      <title>Getting Eclipse Indigo</title>
+      <title>Getting Eclipse</title>
 
       <para>Download the Eclipse IDE from the site:</para>
 
@@ -230,7 +229,15 @@
           </listitem>
 
           <listitem>
-            <para>Install the Eclipse IDE</para>
+            <para>The Eclipse IDE is delivered as a compressed (.zip or
+            .tar.gz) file. Extract this file into the folder of your choice
+            (for example, c:\Eclipse on Windows).</para>
+          </listitem>
+
+          <listitem>
+            <para>You can optionally create a shortcut to the executable file
+            (<emphasis role="bold">eclipse.exe</emphasis> on Windows, or
+            <emphasis role="bold">eclipse</emphasis> on Linux). </para>
           </listitem>
         </itemizedlist></para>
     </sect1>
@@ -238,7 +245,7 @@
     <sect1 id="Configuration_Files">
       <title>Installing the ECL Plug-in</title>
 
-      <para>Install the Eclipse plug-in:</para>
+      <para>To install the Eclipse plug-in:</para>
 
       <para><orderedlist>
           <listitem>
@@ -268,10 +275,18 @@
 
           <listitem>
             <para>Enter one of the locations below in the <emphasis
-            role="bold">Location</emphasis> field</para>
+            role="bold">Location</emphasis> field.</para>
 
-            <para><emphasis role="bold">NOTE: We recommend the latest stable
-            build for production work. </emphasis></para>
+            <para><variablelist>
+                <varlistentry>
+                  <term>Note:</term>
+
+                  <listitem>
+                    <para>We recommend the latest stable build for production
+                    work.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
 
             <para><informaltable colsep="1" frame="all" rowsep="1">
                 <tgroup cols="2">
@@ -289,7 +304,7 @@
                     <row>
                       <entry>http://eclipse.hpccsystems.com/develop</entry>
 
-                      <entry>The cutting edge untested development
+                      <entry>The cutting-edge, untested development
                       build.</entry>
                     </row>
                   </tbody>
@@ -314,7 +329,17 @@
             then press the <emphasis role="bold">Next &gt;</emphasis>
             button.</para>
 
-            <para>Note: This can take a while before it appears.<figure>
+            <variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>This can take a while before it appears.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+
+            <para><figure>
                 <title>Select ECL Language</title>
 
                 <mediaobject>
@@ -326,7 +351,7 @@
           </listitem>
 
           <listitem>
-            <para>Review the Items to be installed and press the <emphasis
+            <para>Review the items to be installed and press the <emphasis
             role="bold">Next &gt;</emphasis> button.</para>
           </listitem>
 
@@ -340,6 +365,77 @@
             <para>After completing the wizard, it prompts you to restart
             eclipse. You should restart eclipse in order for the changes to
             take effect.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>After it restarts, check the ECL Compiler settings
+            (<emphasis role="bold">Window &gt;&gt; Preferences</emphasis>).The
+            location of your installed Client Tools should have been found and
+            auto-completed. If not correct, fill in the location of your
+            Client Tools. </para>
+
+            <figure>
+              <title>Compiler Settings</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/EPI020.jpg" scale="80" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+        </orderedlist></para>
+    </sect1>
+
+    <sect1>
+      <title>Updating the ECL Plug-in for Eclipse</title>
+
+      <para>We recommend using the Eclipse Automatic Update feature.</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>In Eclipse IDE, select <emphasis role="bold">Window &gt;&gt;
+            Preferences.</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>Expand the <emphasis role="bold">Install/Update</emphasis>
+            branch on the left, then select <emphasis role="bold">Automatic
+            Updates</emphasis>. <emphasis role="bold"></emphasis>.</para>
+
+            <figure>
+              <title>Automatic Update Settings</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/EPI017.jpg" scale="80" />
+                </imageobject>
+              </mediaobject>
+            </figure>
+          </listitem>
+
+          <listitem>
+            <para>Set your options, then press the<emphasis role="bold">
+            OK</emphasis> button.</para>
+          </listitem>
+        </orderedlist>To manually update the Eclipse plug-in:</para>
+
+      <para><orderedlist>
+          <listitem>
+            <para>In Eclipse IDE, select <emphasis role="bold">Help &gt;&gt;
+            Check for Updates…</emphasis></para>
+
+            <para>A progress window displays as it checks for any available
+            updates.<emphasis role="bold"></emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para>If an update is available, follow the prompts to install
+            it.</para>
+
+            <para></para>
           </listitem>
         </orderedlist></para>
     </sect1>
@@ -379,6 +475,8 @@
             <para>Expand the <emphasis role="bold">ECL</emphasis> folder,
             select <emphasis role="bold">ECL Project</emphasis>, then press
             the <emphasis role="bold">Next</emphasis> button.</para>
+
+            <graphic fileref="images/EPI007a.jpg" scale="90" />
           </listitem>
 
           <listitem>
@@ -407,28 +505,29 @@
                   <listitem>
                     <para>If you check the <emphasis role="bold">Remember my
                     decision checkbox</emphasis>, you won't have to do this
-                    each time</para>
+                    every time.</para>
                   </listitem>
                 </varlistentry>
               </variablelist></para>
           </listitem>
 
           <listitem>
-            <para>Select <emphasis role="bold">File <emphasis
-            role="bold">&gt;&gt;</emphasis> New <emphasis
-            role="bold">&gt;&gt;</emphasis> ECL Editor file.</emphasis></para>
+            <para>In the <emphasis role="bold">ECL Explorer</emphasis> panel,
+            right-click on the newly created project, then select <emphasis
+            role="bold">New <emphasis role="bold">&gt;&gt;</emphasis>
+            File.</emphasis></para>
 
             <graphic fileref="images/EPI009.jpg" />
 
-            <para>The <emphasis role="bold">ECL File</emphasis> window
+            <para>The <emphasis role="bold">New File</emphasis> window
             displays.</para>
           </listitem>
 
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Select the parent folder, then provide a name for the file,
-            for example, <emphasis
+            <para>If necessary, select the parent folder, then provide a name
+            for the file. For example, <emphasis
             role="bluebold">hello.ecl</emphasis>.</para>
 
             <para><graphic fileref="images/EPI009.1a.jpg" /></para>
@@ -446,7 +545,7 @@
                       <entry><inlinegraphic
                       fileref="images/caution.png" /></entry>
 
-                      <entry>No matter what you name your project be sure you
+                      <entry>No matter what you name your file, be sure you
                       ALWAYS include the .ecl extension. The extension is
                       required for the project to work correctly with the HPCC
                       compiler.</entry>
@@ -483,8 +582,9 @@
                     <entry><inlinegraphic
                     fileref="images/OSSgr3.png" /></entry>
 
-                    <entry>Saving an ECL file invokes the syntax
-                    checker.</entry>
+                    <entry>Saving an ECL file automatically invokes a syntax
+                    check. If there is an error, it is indicated by a red X
+                    next to the line containing the error.</entry>
                   </row>
                 </tbody>
               </tgroup>
@@ -496,8 +596,8 @@
     <sect1 id="Editing" role="brk">
       <title>Execute the ECL Code</title>
 
-      <para>You can choose where to execute your ECL Code. You can execute ECL
-      Code locally or on a server.</para>
+      <para>You can choose where to execute your ECL Code. Each target is
+      defined in a <emphasis role="bold">Run Configuration</emphasis>.</para>
 
       <sect2>
         <title>Execute your ECL Code Remotely on a Server.</title>
@@ -527,11 +627,11 @@
             <para>On the <emphasis role="bold">HPCC Platfom</emphasis> tab
             enter the following:<variablelist>
                 <varlistentry>
-                  <term>Configuration Name</term>
+                  <term>Name</term>
 
                   <listitem>
                     <para>Give it an appropriate name, for example: <emphasis
-                    role="bold">MyThorCluster</emphasis></para>
+                    role="bold">ThorCluster</emphasis></para>
                   </listitem>
                 </varlistentry>
 
@@ -555,7 +655,8 @@
                   <term>Target name</term>
 
                   <listitem>
-                    <para>hthor, thor, or roxie</para>
+                    <para>The name of the cluster (for example, hthor, thor,
+                    or roxie)</para>
                   </listitem>
                 </varlistentry>
 
@@ -603,6 +704,16 @@
           </listitem>
 
           <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>On the <emphasis role="bold">ECLCC Compiler</emphasis> tab
+            check the settings. The location of your installed Client Tools
+            should have been found and auto-completed. If they are not
+            correct, check the Override Defaults box and fill in the location
+            of your Client Tools. </para>
+          </listitem>
+
+          <listitem>
             <para>Press the <emphasis role="bold">Apply</emphasis> button to
             save your configuration.</para>
           </listitem>
@@ -615,61 +726,24 @@
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Click and expand the <emphasis
-            role="bold">Workunit</emphasis> to view the <emphasis
+            <para>In the <emphasis role="bold">Workunits</emphasis> panel on
+            the left, click and expand the <emphasis
+            role="bold">Workunit</emphasis> , then click on the <emphasis
             role="bold">Results</emphasis> folder.</para>
+
+            <para>The result(s) display in the center panel. (If your query
+            has multiple results, then each result displays in a separate
+            tab.)</para>
 
             <para><graphic fileref="images/EPI014.jpg" /></para>
           </listitem>
 
           <listitem>
-            <?dbfo keep-together="always"?>
+            <para>Later you can use the drop list on the toolbar button to run
+            on an established <emphasis role="bold">Run
+            Configuration</emphasis>, as show below. </para>
 
-            <para>Click on the <emphasis role="bold">Result</emphasis> to
-            display in the <emphasis role="bold">Result View</emphasis>
-            panel.<graphic fileref="images/EPI016.jpg" /></para>
-          </listitem>
-        </orderedlist>
-      </sect2>
-
-      <sect2>
-        <title>Execute your ECL Code Locally.</title>
-
-        <para><emphasis role="bold">NOTE: </emphasis>Compiling and executing
-        ECL code locally requires Visual Studio 2008 for Windows or GCC on
-        Linux. You do not need these if you are targeting a server.</para>
-
-        <orderedlist>
-          <listitem>
-            <para>Expand the <emphasis role="bold">hello_world</emphasis>
-            folder and right click on the <emphasis
-            role="bold">hello.ecl.</emphasis></para>
-
-            <para><graphic fileref="images/EPI010.jpg" scale="65" /></para>
-          </listitem>
-
-          <listitem>
-            <para>Right click on your project (hello_world) and select
-            <emphasis role="bold">Run As</emphasis> <emphasis
-            role="bold">&gt;&gt;</emphasis><emphasis role="bold"> Local
-            Execute (ECL)</emphasis>. <graphic fileref="images/EPI015.jpg"
-            scale="75" /></para>
-          </listitem>
-
-          <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Click and expand the <emphasis
-            role="bold">Workunit</emphasis> to view the <emphasis
-            role="bold">Results</emphasis> folder.</para>
-
-            <para><graphic fileref="images/EPI014.jpg" /></para>
-          </listitem>
-
-          <listitem>
-            <para>Click on the <emphasis role="bold">Result</emphasis> to
-            display in the <emphasis role="bold">Result View</emphasis>
-            panel.<graphic fileref="images/EPI016.jpg" /></para>
+            <graphic fileref="images/EPI018.jpg" />
           </listitem>
         </orderedlist>
       </sect2>
@@ -679,20 +753,22 @@
   <chapter>
     <title>Next Steps</title>
 
-    <para><!-- /*Import the <emphasis role="bold">Samples</emphasis> folder from the
-    ECL IDE installation. Import the <emphasis role="bold">Samples</emphasis>
-    folder from the ECL IDE installation.*/
-    /*Take note what happens if you insert a syntax error in<emphasis
-    role="bold"> ProgrammersGuide.DeclareData</emphasis>.*/
-    /*Save the file. Fix the error and save again. */
-    --></para>
+    <para>To familiarize yourself with the Eclipse IDE and the ECL Development
+    perspective, we recommend working the following tutorials in Eclipse:
+    <itemizedlist spacing="compact">
+        <listitem>
+          <para>The <emphasis role="bold">HPCC Data Tutorial</emphasis></para>
+        </listitem>
 
-    <para></para>
+        <listitem>
+          <para><emphasis role="bold">The Six Degrees of Kevin
+          Bacon</emphasis> example</para>
+        </listitem>
+      </itemizedlist>To discuss this plug-in or get help using it, visit the
+    forum on the HPCC System's portal at:</para>
 
-    <itemizedlist>
-      <listitem>
-        <para>More to come...</para>
-      </listitem>
-    </itemizedlist>
+    <para><ulink
+    url="http://hpccsystems.com/bb/viewforum.php?f=33&amp;sid=adddbd537294bf32e2c46c1d7d16134e">http://hpccsystems.com/bb/viewforum.php?f=33&amp;sid=adddbd537294bf32e2c46c1d7d16134e</ulink>
+    </para>
   </chapter>
 </book>
