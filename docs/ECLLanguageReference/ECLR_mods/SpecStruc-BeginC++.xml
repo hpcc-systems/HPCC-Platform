@@ -35,7 +35,7 @@
         <row>
           <entry><emphasis>funcname</emphasis></entry>
 
-          <entry><para>The ECL attribute name of the function.</para></entry>
+          <entry><para>The ECL definition name of the function.</para></entry>
         </row>
 
         <row>
@@ -223,6 +223,7 @@ STRING buildString(INTEGER4 value) := BEGINC++
      __result = out;
 ENDC++;</programlisting>
 
-    <para>See Also: <link linkend="External_Service_Implementation">External Service Implementation</link></para>
+    <para>See Also: <link linkend="External_Service_Implementation">External
+    Service Implementation</link>, <link linkend="EMBED_Structure">EMBED Structure</link></para>
   </sect2>
 </sect1>
