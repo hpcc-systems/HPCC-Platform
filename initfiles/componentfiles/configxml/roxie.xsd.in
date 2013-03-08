@@ -562,7 +562,7 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="lazyOpen" use="optional" default="false">
+    <xs:attribute name="lazyOpen" use="optional" default="smart">
         <xs:annotation>
           <xs:appinfo>
             <tooltip>Delay opening files until first use. Select smart to use lazy mode only after a restart</tooltip>
