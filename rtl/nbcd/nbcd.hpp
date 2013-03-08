@@ -84,7 +84,8 @@ public:
     void getClipPrecision(unsigned & digits, unsigned & precision);
     void getPrecision(unsigned & digits, unsigned & precison);
 
-    bool isValid() const { return true; } // MORE: Should extend to support Nans
+    // MORE: We could support NaNs for decimals at a later date by adding a member to this class.
+    bool isValid() const { return true; }
 
     void set(const Decimal & value);
     void setCString(const char * buffer);

@@ -342,7 +342,8 @@ Decimal & Decimal::power(int value)
     //This probably gives slightly more expected results, but both suffer from rounding errors.
     Decimal reciprocal;
     reciprocal.setInt(1);
-    reciprocal.divide(*this, DBZzero);  // MORE: This should probably be passed in
+    // DBZzero means 0D^-3 will return 0 instead of throwing an error if divide by zero is set to DBZfail.
+    reciprocal.divide(*this, DBZzero);
     set(reciprocal);
     doPower((unsigned)-value);
     return *this;

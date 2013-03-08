@@ -2528,11 +2528,13 @@ IValue * divideValues(IValue * left, IValue * right, DBZaction onZero)
 {
     Owned<ITypeInfo> pnt = getPromotedMulDivType(left->queryType(), right->queryType());
 
-    //All non zero values should return false when cast to boolean
+    //Use a cast to a boolean as a shortcut for testing against zero
     if (!right->getBoolValue())
     {
+        //If no action is selected, return NULL so the expression doesn't get constant folded.
         if (onZero == DBZnone)
             return NULL;
+
         if (onZero == DBZfail)
             rtlFailDivideByZero();
     }
@@ -2559,7 +2561,14 @@ IValue * divideValues(IValue * left, IValue * right, DBZaction onZero)
     {
         double lv = left->getRealValue();
         double rv = right->getRealValue();
-        double res = rv ? lv / rv : 0.0;
+        double res;
+        if (rv)
+            res = lv / rv;
+        else if (onZero == DBZnan)
+            res =  rtlCreateRealNull();
+        else
+            res = 0.0;
+
         return createRealValue(res, pnt.getClear());
     }
     case type_decimal:
@@ -2580,11 +2589,13 @@ IValue * modulusValues(IValue * left, IValue * right, DBZaction onZero)
 {
     Owned<ITypeInfo> pnt = getPromotedMulDivType(left->queryType(), right->queryType());
     
-    //All non zero values should return false when cast to boolean
+    //Use a cast to a boolean as a shortcut for testing against zero
     if (!right->getBoolValue())
     {
+        //If no action is selected, return NULL so the expression doesn't get constant folded.
         if (onZero == DBZnone)
             return NULL;
+
         if (onZero == DBZfail)
             rtlFailDivideByZero();
     }
@@ -2610,7 +2621,14 @@ IValue * modulusValues(IValue * left, IValue * right, DBZaction onZero)
     case type_real:
     {
         double rv = right->getRealValue();
-        double res = rv ? fmod(left->getRealValue(), rv) : 0;
+        double res;
+        if (rv)
+            res = fmod(left->getRealValue(), rv);
+        else if (onZero == DBZnan)
+            res =  rtlCreateRealNull();
+        else
+            res = 0.0;
+
         return createRealValue(res, pnt.getClear());
     }
     case type_decimal:

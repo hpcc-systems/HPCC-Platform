@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,13 +15,19 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('globalFold', false);
-d := dataset('~local::rkc::person', { string15 name, unsigned8 filepos{virtual(fileposition)} }, flat);
+//nothor
+//nothorlcr
+//noroxie
 
-i := stepped(index(d, { name, filepos }, {},'\\home\\person.name_first.key', hint(thisIsAHint(5))), filepos,hint(anotherHint));
+//Test division by zero - default action to return 0
+#option ('divideByZero', 'fail'); 
 
-a1 := table(i(name='RICHARD'), {filepos, name},hint(yetAnotherHint));
+unsigned cintZero := 0;
+real crealZero := 0.0;
+decimal10_2 cdecZero := 0.0D;
 
-a2 := project(a1, transform({unsigned4 fp}, self.fp := left.filepos),hint(afourthhint),keyed);
+unsigned intZero := 0 : stored('intZero');
+real realZero := 0.0 : stored('realZero');
+decimal10_2 decZero := 0.0D : stored('decZero');
 
-output(a2);
+output(100.1D / decZero);

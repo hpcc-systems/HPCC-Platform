@@ -1729,6 +1729,8 @@ void HqlCppTranslator::cacheOptions()
         options.divideByZeroAction = DBZnan;
     else if (strieq(val.str(), "fail") || strieq(val.str(), "throw"))
         options.divideByZeroAction = DBZfail;
+    else if (val.length())
+        throwError2(HQLERR_UnexpectedOptionValue_XY, "divideByZero", val.str());
 
     //The following cases handle options whose default values are dependent on other options.  
     //Or where one debug options sets more than one option
@@ -7044,7 +7046,6 @@ void HqlCppTranslator::doBuildDivideByZero(BuildCtx & ctx, const CHqlBoundTarget
                 nan.setown(bindFunctionCall(createRealNullAtom, noArgs));
             }
 
-            //MORE:
             if (target)
                 assignBound(ctx, *target, nan);
             else
