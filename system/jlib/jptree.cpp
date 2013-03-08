@@ -3764,6 +3764,22 @@ protected:
     unsigned line;
     char nextChar;
 
+private:
+    void init()
+    {
+        ignoreWhiteSpace = 0 != ((unsigned)readerOptions & (unsigned)ptr_ignoreWhiteSpace);
+        noRoot = 0 != ((unsigned)readerOptions & (unsigned)ptr_noRoot);
+    }
+    void resetState()
+    {
+        bufPtr = buf;
+        nextChar = 0;
+        if (nullTerm || stream)
+            bufRemaining = 0;
+        curOffset = 0;
+        line = 0;
+    }
+
 public:
     CommonReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _readerOptions, size32_t _bufSize=0) :
         readerOptions(_readerOptions), iEvent(&_iEvent), bufSize(_bufSize)
@@ -3776,6 +3792,8 @@ public:
         nullTerm = false;
         lstream.set(&_stream);
         stream = &_stream; // for efficiency
+        init();
+        resetState();
     }
     CommonReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _readerOptions) :
         readerOptions(_readerOptions), iEvent(&_iEvent)
@@ -3786,6 +3804,8 @@ public:
         nullTerm = false;
         buf = (byte *)_buf;
         bufOwned = false;
+        init();
+        resetState();
     }
     CommonReaderBase(const void *_buf, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _readerOptions) :
         readerOptions(_readerOptions), iEvent(&_iEvent)
@@ -3797,6 +3817,8 @@ public:
         nullTerm = true;
         buf = (byte *)_buf;
         bufOwned = false;
+        init();
+        resetState();
     }
     ~CommonReaderBase()
     {
@@ -3805,20 +3827,9 @@ public:
     }
     IMPLEMENT_IINTERFACE;
 protected:
-    virtual void init()
-    {
-        ignoreWhiteSpace = 0 != ((unsigned)readerOptions & (unsigned)ptr_ignoreWhiteSpace);
-        noRoot = 0 != ((unsigned)readerOptions & (unsigned)ptr_noRoot);
-        reset();
-    }
     virtual void reset()
     {
-        bufPtr = buf;
-        nextChar = 0;
-        if (nullTerm || stream)
-            bufRemaining = 0;
-        curOffset = 0;
-        line = 0;
+        resetState();
     }
     void rewind(size32_t n)
     {
@@ -3999,6 +4010,15 @@ protected:
     bool ignoreNameSpaces;
     bool hadXMLDecl;
 
+private:
+    void init()
+    {
+        ignoreNameSpaces = 0 != ((unsigned) readerOptions & (unsigned)ptr_ignoreNameSpaces);
+    }
+    void resetState()
+    {
+        hadXMLDecl = false;
+    }
 public:
     typedef CommonReaderBase<X> PARENT;
     using PARENT::nextChar;
@@ -4013,28 +4033,26 @@ public:
     CXMLReaderBase(ISimpleReadStream &_stream, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _xmlReaderOptions, size32_t _bufSize=0)
         : CommonReaderBase<X>(_stream, _iEvent, _xmlReaderOptions, _bufSize)
     {
+        init();
+        resetState();
     }
     CXMLReaderBase(const void *_buf, size32_t bufLength, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _xmlReaderOptions)
         : CommonReaderBase<X>(_buf, bufLength, _iEvent, _xmlReaderOptions)
     {
+        init();
+        resetState();
     }
     CXMLReaderBase(const void *_buf, IPTreeNotifyEvent &_iEvent, PTreeReaderOptions _xmlReaderOptions)
         : CommonReaderBase<X>(_buf, _iEvent, _xmlReaderOptions)
     {
-    }
-    ~CXMLReaderBase()
-    {
+        init();
+        resetState();
     }
     IMPLEMENT_IINTERFACE;
 protected:
-    virtual void init()
-    {
-        ignoreNameSpaces = 0 != ((unsigned) readerOptions & (unsigned)ptr_ignoreNameSpaces);
-        PARENT::init();
-    }
     virtual void reset()
     {
-        hadXMLDecl = false;
+        resetState();
         PARENT::reset();
     }
     void readID(StringBuffer &id)
@@ -4362,6 +4380,15 @@ class CXMLReader : public CXMLReaderBase<X>, implements IPTreeReader
     StringBuffer attrName, attrval;
     StringBuffer tmpStr;
 
+    void init()
+    {
+        attrName.append('@');
+    }
+    void resetState()
+    {
+        rootTerminated = false;
+    }
+
 public:
     typedef CXMLReaderBase<X> PARENT;
     using PARENT::nextChar;
@@ -4392,29 +4419,26 @@ public:
     CXMLReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0)
         : PARENT(stream, iEvent, xmlReaderOptions, bufSize)
     {
-        this->init();
+        init();
+        resetState();
     }
     CXMLReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions)
         : PARENT(buf, bufLength, iEvent, xmlReaderOptions)
     {
-        this->init();
+        init();
+        resetState();
     }
     CXMLReader(const void *buf, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions)
         : PARENT(buf, iEvent, xmlReaderOptions)
     {
-        this->init();
+        init();
+        resetState();
     }
 
-    virtual void init()
-    {
-        attrName.append('@');
-        PARENT::init();
-    }
-    
     virtual void reset()
     {
+        resetState();
         PARENT::reset();
-        rootTerminated = false;
     }
 
 // IPTreeReader
@@ -4686,24 +4710,33 @@ class CPullXMLReader : public CXMLReaderBase<X>, implements IPullPTreeReader
     enum ParseStates { headerStart, tagStart, tagAttributes, tagContent, tagContent2, tagClose, tagEnd, tagMarker } state;
     bool endOfRoot;
     StringBuffer attrName, attrval, mark, tmpStr;
-    
+
+    void resetState()
+    {
+        stack.kill();
+        state = headerStart;
+        stateInfo = NULL;
+        endOfRoot = false;
+        attrName.append('@');
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
 
     CPullXMLReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions, size32_t bufSize=0)
         : CXMLReaderBase<X>(stream, iEvent, xmlReaderOptions, bufSize)
     {
-        init();
+        resetState();
     }
     CPullXMLReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions)
         : CXMLReaderBase<X>(buf, bufLength, iEvent, xmlReaderOptions)
     {
-        init();
+        resetState();
     }
     CPullXMLReader(const void *buf, IPTreeNotifyEvent &iEvent, PTreeReaderOptions xmlReaderOptions)
         : CXMLReaderBase<X>(buf, iEvent, xmlReaderOptions)
     {
-        init();
+        resetState();
     }
 
     ~CPullXMLReader()
@@ -4714,15 +4747,16 @@ public:
             delete &freeStateInfo.item(i2);
     }
 
-    void init()
-    {
-        PARENT::init();
-    }
-
 // IPullPTreeReader
     virtual void load()
     {
         while (next()) {}
+    }
+
+    virtual void reset()
+    {
+        PARENT::reset();
+        resetState();
     }
 
     virtual offset_t queryOffset() { return curOffset; }
@@ -5041,16 +5075,6 @@ public:
             }
         }
         return true;
-    }
-
-    virtual void reset()
-    {
-        PARENT::reset();
-        stack.kill();
-        state = headerStart;
-        stateInfo = NULL;
-        endOfRoot = false;
-        attrName.append('@');
     }
 };
 
@@ -6025,7 +6049,6 @@ class CJSONReaderBase : public CommonReaderBase<X>
 {
 public:
     typedef CommonReaderBase<X> PARENT;
-    using PARENT::init;
     using PARENT::reset;
     using PARENT::nextChar;
     using PARENT::readNext;
@@ -6197,17 +6220,14 @@ public:
     CJSONReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0)
         : PARENT(stream, iEvent, readerOptions, bufSize)
     {
-        this->init();
     }
     CJSONReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions)
         : PARENT(buf, bufLength, iEvent, readerOptions)
     {
-        this->init();
     }
     CJSONReader(const void *buf, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions)
         : PARENT(buf, iEvent, readerOptions)
     {
-        this->init();
     }
     void readValueNotify(const char *name, bool skipAttributes)
     {
@@ -6423,23 +6443,34 @@ class CPullJSONReader : public CJSONReaderBase<X>, implements IPullPTreeReader
     bool endOfRoot;
     StringBuffer tag, value;
 
+    void init()
+    {
+        state = headerStart;
+        stateInfo = NULL;
+        endOfRoot = false;
+    }
+
+    virtual void resetState()
+    {
+        stack.kill();
+    }
 public:
     IMPLEMENT_IINTERFACE;
 
     CPullJSONReader(ISimpleReadStream &stream, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions, size32_t bufSize=0)
         : CJSONReaderBase<X>(stream, iEvent, readerOptions, bufSize)
     {
-        this->init();
+        init();
     }
     CPullJSONReader(const void *buf, size32_t bufLength, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions)
         : CJSONReaderBase<X>(buf, bufLength, iEvent, readerOptions)
     {
-        this->init();
+        init();
     }
     CPullJSONReader(const void *buf, IPTreeNotifyEvent &iEvent, PTreeReaderOptions readerOptions)
         : CJSONReaderBase<X>(buf, iEvent, readerOptions)
     {
-        this->init();
+        init();
     }
 
     ~CPullJSONReader()
@@ -6448,14 +6479,6 @@ public:
             delete &stack.item(i);
         ForEachItemIn(i2, freeStateInfo)
             delete &freeStateInfo.item(i2);
-    }
-
-    virtual void init()
-    {
-        state = headerStart;
-        stateInfo = NULL;
-        endOfRoot = false;
-        PARENT::init();
     }
 
     inline void checkDelimiter(const char *msg=",")
@@ -6634,8 +6657,13 @@ public:
         while (next()) {}
     }
 
-    virtual offset_t queryOffset() { return curOffset; }
+    virtual void reset()
+    {
+        PARENT::reset();
+        resetState();
+    }
 
+    virtual offset_t queryOffset() { return curOffset; }
 
     virtual bool next()
     {
@@ -6757,13 +6785,6 @@ public:
             }
         }
         return true;
-    }
-
-    virtual void reset()
-    {
-        PARENT::reset();
-        stack.kill();
-        init();
     }
 };
 
