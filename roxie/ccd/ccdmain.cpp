@@ -28,6 +28,7 @@
 #include "jutil.hpp"
 #include <build-config.h>
 
+#include "dalienv.hpp"
 #include "rmtfile.hpp"
 #include "ccd.hpp"
 #include "ccdquery.hpp"
@@ -639,6 +640,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             lazyOpen = (restarts > 0);
         else
             lazyOpen = topology->getPropBool("@lazyOpen", false);
+        bool useNasTranslation = topology->getPropBool("@useNASTranslation", true);
+        if (useNasTranslation)
+            envInstallNASHooks(topology->queryPropTree("Environment/Hardware/NAS"));
         localSlave = topology->getPropBool("@localSlave", false);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);

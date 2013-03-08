@@ -466,11 +466,16 @@ IPropertyTree *envGetNASConfiguration()
 
 IPropertyTree *envGetInstallNASHooks()
 {
+    Owned<IPropertyTree> nasPTree = envGetNASConfiguration();
+    return envGetInstallNASHooks(nasPTree);
+}
+
+IPropertyTree *envGetInstallNASHooks(IPropertyTree *nasPTree)
+{
     IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
     if (!daFileSrvHook) // probably always installed
         return NULL;
     daFileSrvHook->clearSubNetFilters();
-    Owned<IPropertyTree> nasPTree = envGetNASConfiguration();
     if (!nasPTree)
         return NULL;
     return daFileSrvHook->addMySubnetFilters(nasPTree);
@@ -479,4 +484,9 @@ IPropertyTree *envGetInstallNASHooks()
 void envInstallNASHooks()
 {
     Owned<IPropertyTree> installedFilters = envGetInstallNASHooks();
+}
+
+void envInstallNASHooks(IPropertyTree *nasPTree)
+{
+    Owned<IPropertyTree> installedFilters = envGetInstallNASHooks(nasPTree);
 }
