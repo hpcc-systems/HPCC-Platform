@@ -1111,6 +1111,7 @@ void CGraphBase::deserializeStartContexts(MemoryBuffer &mb)
 void CGraphBase::reset()
 {
     setCompleteEx(false);
+    graphCancelHandler.reset();
     if (0 == containers.count())
     {
         SuperHashIteratorOf<CGraphBase> iter(childGraphs);
@@ -1239,13 +1240,23 @@ void CGraphBase::join()
 void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, bool checkDependencies)
 {
     if (isComplete()) return;
-    if (aborted) throw MakeGraphException(this, 0, "subgraph aborted");
+    if (queryAborted())
+    {
+        if (abortException)
+            throw abortException.getLink();
+        throw MakeGraphException(this, 0, "subgraph aborted(1)");
+    }
     if (!prepare(parentExtractSz, parentExtract, checkDependencies, false, false))
     {
         setComplete();
         return;
     }
-    if (aborted) throw MakeGraphException(this, 0, "subgraph aborted");
+    if (queryAborted())
+    {
+        if (abortException)
+            throw abortException.getLink();
+        throw MakeGraphException(this, 0, "subgraph aborted(2)");
+    }
     Owned<IException> exception;
     try
     {
@@ -1600,7 +1611,7 @@ void CGraphBase::abort(IException *e)
     crit.enter();
     abortException.set(e);
     aborted = true;
-    job.queryJobComm().cancel(0, mpTag);
+    graphCancelHandler.cancel(0);
 
     if (0 == containers.count())
     {
@@ -1610,6 +1621,7 @@ void CGraphBase::abort(IException *e)
             CGraphBase &graph = iter->query();
             graph.abort(e);
         }
+        
     }
     if (started)
     {

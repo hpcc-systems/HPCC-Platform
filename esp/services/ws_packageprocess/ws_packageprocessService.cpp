@@ -26,6 +26,7 @@
 #include "ws_workunits.hpp"
 #include "packageprocess_errors.h"
 #include "referencedfilelist.hpp"
+#include "package.h"
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -121,50 +122,32 @@ bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, con
     return isFileKnownOnCluster(logicalname, lookupDaliIp, clusterInfo, userdesc);
 }
 
-bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, bool overWrite, IUserDescriptor* userdesc)
+void cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, bool overWrite, IUserDescriptor* userdesc)
 {
-    bool retval = true;
-    try
-    {
-        StringBuffer user;
-        StringBuffer password;
+    StringBuffer user;
+    StringBuffer password;
 
-        if (userdesc)
-        {
-            userdesc->getUserName(user);
-            userdesc->getPassword(password);
-        }
-
-        Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password);
-        wufiles->addFiles(fileNames);
-        SCMStringBuffer processName;
-        clusterInfo->getRoxieProcess(processName);
-        wufiles->resolveFiles(processName.str(), lookupDaliIp, !overWrite, false);
-        wufiles->cloneAllInfo(overWrite, true);
-    }
-    catch(IException *e)
+    if (userdesc)
     {
-        StringBuffer msg;
-        e->errorMessage(msg);
-        DBGLOG("ERROR = %s", msg.str());
-        e->Release();  // report the error later if needed
-        retval = false;
-    }
-    catch(...)
-    {
-        retval = false;
+        userdesc->getUserName(user);
+        userdesc->getPassword(password);
     }
 
-    return retval;
+    Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password);
+    wufiles->addFiles(fileNames);
+    SCMStringBuffer processName;
+    clusterInfo->getRoxieProcess(processName);
+    wufiles->resolveFiles(processName.str(), lookupDaliIp, !overWrite, false);
+    wufiles->cloneAllInfo(overWrite, true);
 }
 
-bool cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const char *target, bool overWrite, IUserDescriptor* userdesc)
+void cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const char *target, bool overWrite, IUserDescriptor* userdesc)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
 
-    return cloneFileInfoToDali(fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
+    cloneFileInfoToDali(fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
 }
 
 
@@ -523,5 +506,22 @@ bool CWsPackageProcessEx::onGetPackage(IEspContext &context, IEspGetPackageReque
     StringBuffer info;
     getPkgInfo(req.getTarget(), process.length() ? process.get() : "*", info);
     resp.setInfo(info);
+    return true;
+}
+
+bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePackageRequest &req, IEspValidatePackageResponse &resp)
+{
+    StringArray warnings;
+    StringArray errors;
+    StringArray unmatchedQueries;
+    StringArray unusedPackages;
+
+    Owned<IHpccPackageMap> map = createPackageMapFromXml(req.getInfo(), req.getTarget(), NULL);
+    map->validate(warnings, errors, unmatchedQueries, unusedPackages);
+
+    resp.setWarnings(warnings);
+    resp.setErrors(errors);
+    resp.updateQueries().setUnmatched(unmatchedQueries);
+    resp.updatePackages().setUnmatched(unusedPackages);
     return true;
 }

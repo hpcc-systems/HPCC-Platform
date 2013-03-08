@@ -530,6 +530,7 @@ protected:
     size32_t parentExtractSz; // keep track of sz when passed in, as may need to serialize later
     MemoryBuffer parentExtractMb; // retain copy, used if slave transmits to master (child graph 1st time initialization of global graph)
     unsigned counter;
+    CReplyCancelHandler graphCancelHandler;
 
     class CGraphGraphActElementIterator : public CInterface, implements IThorActivityIterator
     {
@@ -628,7 +629,7 @@ public:
     virtual void deserializeStartContexts(MemoryBuffer &mb);
     virtual void serializeCreateContexts(MemoryBuffer &mb);
     virtual void serializeStartContexts(MemoryBuffer &mb);
-    void reset();
+    virtual void reset();
     void disconnectActivities()
     {
         CGraphElementIterator iter(containers);

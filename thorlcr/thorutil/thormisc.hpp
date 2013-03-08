@@ -51,6 +51,10 @@
 #define THOROPT_HDIST_WRITE_POOL_SIZE "hdistSendPoolSize"
 #define THOROPT_SPLITTER_SPILL        "splitterSpill"
 #define THOROPT_LOOP_MAX_EMPTY        "loopMaxEmpty"
+#define THOROPT_SMALLSORT             "smallSortThreshold"
+#define THOROPT_PARALLEL_FUNNEL       "parallelFunnel"
+#define THOROPT_SORT_MAX_DEVIANCE     "sort_max_deviance"
+#define THOROPT_OUTPUT_FLUSH_THRESHOLD "output_flush_threshold"
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
@@ -72,6 +76,75 @@ public:
     inline BooleanOnOff(bool &_tf) : tf(_tf) { tf = true; }
     inline ~BooleanOnOff() { tf = false; }
 };
+
+class CReplyCancelHandler
+{
+    ICommunicator *comm;
+    mptag_t mpTag;
+    bool cancelled;
+    SpinLock lock;
+
+    void clear()
+    {
+        mpTag = TAG_NULL;
+        comm = NULL;
+    }
+    void clearLock()
+    {
+        SpinBlock b(lock);
+        clear();
+    }
+public:
+    CReplyCancelHandler()
+    {
+        reset();
+    }
+    void reset()
+    {
+        clear();
+        cancelled = false;
+    }
+    void cancel(rank_t rank)
+    {
+        ICommunicator *_comm = NULL;
+        mptag_t _mpTag = TAG_NULL;
+        {
+            SpinBlock b(lock);
+            if (cancelled)
+                return;
+            cancelled = true;
+            if (TAG_NULL == mpTag)
+                return;
+            // stash in case other thread waiting finishing send.
+            _comm = comm;
+            _mpTag = mpTag;
+        }
+        _comm->cancel(rank, _mpTag);
+    }
+    bool recv(ICommunicator &_comm, CMessageBuffer &mb, rank_t rank, const mptag_t &_mpTag, rank_t *sender=NULL, unsigned timeout=MP_WAIT_FOREVER)
+    {
+        bool ret=false;
+        {
+            SpinBlock b(lock);
+            if (cancelled)
+                return false;
+            comm = &_comm;
+            mpTag = _mpTag; // receiving
+        }
+        try
+        {
+            ret = _comm.recv(mb, rank, _mpTag, sender, timeout);
+        }
+        catch (IException *)
+        {
+            clearLock();
+            throw;
+        }
+        clearLock();
+        return ret;
+    }
+};
+
 
 class graph_decl CTimeoutTrigger : public CInterface, implements IThreaded
 {

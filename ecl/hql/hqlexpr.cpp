@@ -15070,7 +15070,9 @@ unsigned firstPayloadField(IHqlExpression * record, unsigned cnt)
 IHqlExpression * createSelector(node_operator op, IHqlExpression * ds, IHqlExpression * seq)
 {
 //  OwnedHqlExpr record = getUnadornedExpr(ds->queryRecord());
-    IHqlExpression * record = ds->queryRecord()->queryBody();
+    IHqlExpression * dsRecord = ds->queryRecord();
+    assertex(dsRecord);
+    IHqlExpression * record = dsRecord->queryBody();
 
     switch (op)
     {
@@ -15078,11 +15080,11 @@ IHqlExpression * createSelector(node_operator op, IHqlExpression * ds, IHqlExpre
     case no_right:
     case no_top:
         assertex(seq && seq->isAttribute());
-        return createRow(op, LINK(record->queryBody()), LINK(seq));
+        return createRow(op, LINK(record), LINK(seq));
     case no_self:
         {
             //seq is set when generating code unique target selectors
-            return createRow(op, LINK(record->queryBody()), LINK(seq));
+            return createRow(op, LINK(record), LINK(seq));
         }
     case no_none:
         return LINK(ds);

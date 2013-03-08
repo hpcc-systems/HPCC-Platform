@@ -43,7 +43,8 @@ class graphmaster_decl CMasterGraph : public CGraphBase
     CriticalSection createdCrit;
     Owned<IFatalHandler> fatalHandler;
     CriticalSection exceptCrit;
-    mptag_t bcastTag;
+
+    CReplyCancelHandler activityInitMsgHandler, bcastMsgHandler, executeReplyMsgHandler;
 
     void sendQuery();
     void jobDone();
@@ -75,6 +76,7 @@ public:
     virtual bool preStart(size32_t parentExtractSz, const byte *parentExtract);
     virtual void start();
     virtual void done();
+    virtual void reset();
     virtual void abort(IException *e);
     IThorResult *createResult(CActivityBase &activity, unsigned id, IThorGraphResults *results, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
@@ -122,7 +124,7 @@ public:
     void registerFile(const char *logicalName, StringArray &clusters, unsigned usageCount=0, WUFileKind fileKind=WUFileStandard, bool temp=false);
     void deregisterFile(const char *logicalName, bool kept=false);
     const SocketEndpoint &queryAgentEp() const { return agentEp; }
-    void broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, mptag_t *replyTag=NULL, bool sendOnly=false);
+    void broadcastToSlaves(CMessageBuffer &msg, mptag_t mptag, unsigned timeout, const char *errorMsg, CReplyCancelHandler *msgHandler=NULL, bool sendOnly=false);
     IPropertyTree *prepareWorkUnitInfo();
     void sendQuery();
     void jobDone();

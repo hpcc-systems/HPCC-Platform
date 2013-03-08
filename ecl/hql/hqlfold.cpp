@@ -2702,7 +2702,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                         if (alreadyDone.find(*condValue) == NotFound)
                         {
                             alreadyDone.append(*condValue);
-                            args2.append(*createValue(no_mapto, LINK(condValue), LINK(mapValue)));
+                            args2.append(*createValue(no_mapto, mapValue->getType(), LINK(condValue), LINK(mapValue)));
                         }
                     }
                 }

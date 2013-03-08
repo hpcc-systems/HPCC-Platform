@@ -159,10 +159,10 @@ protected:
         try {   
             imaster->SortSetup(rowif,helper->queryCompare(),helper->querySerialize(),cosortfilenames.length()!=0,true,cosortfilenames.toCharArray(),auxrowif);
             if (barrier->wait(false)) { // local sort complete
-                size32_t maxdeviance=globals->getPropInt("@sort_max_deviance", 10*1024*1024);
+                size32_t maxdeviance = getOptUInt(THOROPT_SORT_MAX_DEVIANCE, 10*1024*1024);
                 try
                 {
-                    imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,true,false,false,(unsigned)globals->getPropInt("@smallSortThreshold"));
+                    imaster->Sort(skewThreshold,skewWarning,skewError,maxdeviance,true,false,false,getOptUInt(THOROPT_SMALLSORT));
                 }
                 catch (IThorException *e)
                 {
