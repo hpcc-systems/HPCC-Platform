@@ -20,6 +20,9 @@
     </indexterm> </emphasis><emphasis>folder </emphasis><emphasis
   role="bold">;</emphasis></para>
 
+  <para><emphasis
+  role="bold">IMPORT</emphasis><emphasis>language</emphasis>;</para>
+
   <informaltable colsep="0" frame="none" rowsep="0">
     <tgroup cols="2">
       <colspec colwidth="110" />
@@ -73,6 +76,16 @@
           <entry>Specifies the <emphasis>folder</emphasis> name in which the
           <emphasis>symbol-list</emphasis> resides.</entry>
         </row>
+
+        <row>
+          <entry><emphasis>language</emphasis></entry>
+
+          <entry>Specifies the name of an external programming language whose
+          code you wish to embed in your ECL. A language support module for
+          that language must have been installed in your plugins directory.
+          This makes the <emphasis>language</emphasis> available for use by
+          the EMBED structure and/or the IMPORT function.</entry>
+        </row>
       </tbody>
     </tgroup>
   </informaltable>
@@ -99,8 +112,12 @@ IMPORT Def1,Def2 FROM Fred;             //makes Def1 and Def2 from Fred availabl
 IMPORT * FROM Fred;                     //makes everything from Fred available, unqualified
 
 IMPORT Dev.Me.Project1;                 //makes the Dev/Me/Project1 folder available 
+
+IMPORT Python;                          //makes Python language code embeddable
 </programlisting>
 
   <para>See Also: <link linkend="EXPORT">EXPORT</link>, <link
-  linkend="SHARED">SHARED</link></para>
+  linkend="SHARED">SHARED</link>, <link linkend="EMBED_Structure">EMBED
+  Structure</link>, <link linkend="IMPORT_function">IMPORT
+  function</link></para>
 </sect1>

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="IMPORT_function">
+  <title>IMPORT</title>
+
+  <para><emphasis>resulttype funcname</emphasis> <emphasis
+  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
+  role="bold">) := IMPORT(<indexterm>
+      <primary>IMPORT function</primary>
+    </indexterm></emphasis> <emphasis>language, function </emphasis><emphasis
+  role="bold">);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec colwidth="110" />
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>The ECL return value type of the
+          <emphasis>function</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>The ECL definition name of the
+          <emphasis>function</emphasis>.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>The parameters to pass to the
+          <emphasis>function</emphasis>.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>language</emphasis></entry>
+
+          <entry>Specifies the name of the external programming language whose
+          code you wish to embed in your ECL. A language support module for
+          that language must have been installed in your plugins directory.
+          Modules are provided for languages such as Java, R, Javascript, and
+          Python. You can write your own pluggable language support module for
+          any language not already supported by using the supplied ones as
+          examples or starting points.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>function</emphasis></entry>
+
+          <entry>A string constant containing the name of the function to
+          include.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">IMPORT</emphasis> declaration allows you to
+  call existing code written in the external <emphasis>language</emphasis>.
+  This may be used to call Java or Python code, but is not usable with
+  Javascript or R code (use the EMBED structure instead). Java code must be
+  placed in a .java file and compiled using the javac compiler in the usual
+  way.</para>
+
+  <para><emphasis role="bold">WARNING: This feature could create memory
+  corruption and/or security issues, so great care and forethought are
+  advised—consult with Technical Support before using.</emphasis></para>
+
+  <para>Example:</para>
+
+  <programlisting>IMPORT Python;
+
+INTEGER addthree(INTEGER p) := IMPORT(Python, 'python_mod_name.addThree');
+</programlisting>
+
+  <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="EMBED_Structure">EMBED Structure</link></para>
+</sect1>
