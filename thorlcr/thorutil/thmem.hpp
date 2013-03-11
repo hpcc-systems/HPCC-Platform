@@ -351,7 +351,7 @@ public:
     memsize_t getMemUsage();
     void serialize(MemoryBuffer &mb);
     void serializeCompress(MemoryBuffer &mb);
-    rowidx_t serializeBlock(MemoryBuffer &mb, size32_t dstmax, rowidx_t idx, rowidx_t count);
+    rowidx_t serializeBlock(MemoryBuffer &mb, rowidx_t idx, rowidx_t count, size32_t dstmax, bool hardMax);
     void deserializeRow(IRowDeserializerSource &in); // NB single row not NULL
     void deserialize(size32_t sz, const void *buf);
     void deserializeExpand(size32_t sz, const void *data);
