@@ -5164,14 +5164,17 @@ void appendUStr(MemoryBuffer & x, const char * text)
 
 ECLRTL_API void xmlDecodeStrX(size32_t & outLen, char * & out, size32_t inLen, const char * in)
 {
+    StringBuffer input(inLen, in);
     StringBuffer temp;
-    decodeXML(in, temp, inLen);
+    decodeXML(input, temp, NULL, NULL, false);
     outLen = temp.length();
     out = temp.detach();
 }
 
-bool hasPrefix(const UChar * ustr, const char * str, unsigned len)
+bool hasPrefix(const UChar * ustr, const UChar * end, const char * str, unsigned len)
 {
+    if (end - ustr < len)
+        return false;
     while (len--)
     {
         if (*ustr++ != *str++)
@@ -5190,69 +5193,79 @@ ECLRTL_API void xmlDecodeUStrX(size32_t & outLen, UChar * & out, size32_t inLen,
         switch(*cur)
         {
         case '&':
-            if(hasPrefix(cur+1, "amp;", 4))
+            if(hasPrefix(cur+1, end, "amp;", 4))
             {
                 cur += 4;
                 appendUChar(ret, '&');
             }
-            else if(hasPrefix(cur+1, "lt;", 3))
+            else if(hasPrefix(cur+1, end, "lt;", 3))
             {
                 cur += 3;
                 appendUChar(ret, '<');
             }
-            else if(hasPrefix(cur+1, "gt;", 3))
+            else if(hasPrefix(cur+1, end, "gt;", 3))
             {
                 cur += 3;
                 appendUChar(ret, '>');
             }
-            else if(hasPrefix(cur+1, "quot;", 5))
+            else if(hasPrefix(cur+1, end, "quot;", 5))
             {
                 cur += 5;
                 appendUChar(ret, '"');
             }
-            else if(hasPrefix(cur+1, "apos;", 5))
+            else if(hasPrefix(cur+1, end, "apos;", 5))
             {
                 cur += 5;
                 appendUChar(ret, '\'');
             }
-            else
+            else if(hasPrefix(cur+1, end, "nbsp;", 5))
             {
-                cur++;
-                if (*cur == '#')
+                cur += 5;
+                appendUChar(ret, (UChar) 0xa0);
+            }
+            else if(hasPrefix(cur+1, end, "#", 1))
+            {
+                const UChar * saveCur = cur;
+                bool error = true;  // until we have seen a digit...
+                cur += 2;
+                unsigned base = 10;
+                if (*cur == 'x')
                 {
+                    base = 16;
                     cur++;
-                    unsigned base = 10;
-                    if (*cur == 'x' || *cur == 'X') // strictly not sure about X.
+                }
+                UChar value = 0;
+                while (cur < end)
+                {
+                    unsigned digit;
+                    UChar next = *cur;
+                    if ((next >= '0') && (next <= '9'))
+                        digit = next-'0';
+                    else if ((next >= 'A') && (next <= 'F'))
+                        digit = next-'A'+10;
+                    else if ((next >= 'a') && (next <= 'f'))
+                        digit = next-'a'+10;
+                    else if (next==';')
+                        break;
+                    if (digit >= base)
                     {
-                        base = 16;
-                        cur++;
+                        error = true;
+                        break;
                     }
-                    UChar value = 0;
-                    while (cur < end)
-                    {
-                        unsigned digit;
-                        UChar next = *cur;
-                        if ((next >= '0') && (next <= '9'))
-                            digit = next-'0';
-                        else if ((next >= 'A') && (next <= 'F'))
-                            digit = next-'A'+10;
-                        else if ((next >= 'a') && (next <= 'f'))
-                            digit = next-'a'+10;
-                        else
-                            break;
-                        if (digit >= base)
-                            break;
-                        value = value * base + digit;
-                        cur++;
-                    }
-                    appendUChar(ret, value);
-
-                    //if (cur == end) || (*cur != ';') throw Error;
+                    error = false;
+                    value = value * base + digit;
+                    cur++;
+                }
+                if (error)
+                {
+                    appendUChar(ret, '&');
+                    cur = saveCur;
                 }
                 else
-                    appendUChar(ret, *cur);     // error... / unexpanded entity
+                    appendUChar(ret, value);
             }
-            //assertex(cur<end);
+            else
+                appendUChar(ret, *cur);
             break;
         default:
             appendUChar(ret, *cur);

@@ -4125,7 +4125,7 @@ protected:
                                 ref.append(nextChar);
                             }
                             ref.append(";");
-                            decodeXML(ref, refValue, ref.length());
+                            decodeXML(ref, refValue);
                         }
                         else
                         {
@@ -4136,7 +4136,7 @@ protected:
                             {
                                 StringBuffer _ref("&");
                                 _ref.append(ref).append(';');
-                                decodeXML(ref, refValue, ref.length()); // try inbuilts
+                                decodeXML(ref, refValue); // try inbuilts
                             }
                         }
                     }
@@ -4349,10 +4349,10 @@ protected:
         }
         error("Bad comment syntax");
     }
-    const char *_decodeXML(unsigned read, const char *startMark, StringBuffer &ret, unsigned len)
+    const char *_decodeXML(unsigned read, const char *startMark, StringBuffer &ret)
     {
         const char *errMark = NULL;
-        try { return decodeXML(startMark, ret, len, &errMark, this); }
+        try { return decodeXML(startMark, ret, &errMark, this); }
         catch (IException *e)
         {
             if (errMark)
@@ -4565,7 +4565,7 @@ restart:
             else 
                 error();
 
-            _decodeXML(0, attrval.str(), tmpStr.clear(), attrval.length());
+            _decodeXML(0, attrval.str(), tmpStr.clear());
 
             if (0 == strcmp(attrName.str(), "@xsi:type") &&
                (0 == stricmp(tmpStr.str(),"SOAP-ENC:base64")))
@@ -4603,7 +4603,7 @@ restart:
                                 mark.setLength(l+1);
                             }
                             tagText.ensureCapacity(mark.length());
-                            _decodeXML(r, mark.toCharArray(), tagText, mark.length());
+                            _decodeXML(r, mark.toCharArray(), tagText);
                         }
                         readNext();
                         if ('!' == nextChar)
@@ -4899,7 +4899,7 @@ public:
                     else 
                         error();
 
-                    _decodeXML(0, attrval.str(), tmpStr.clear(), attrval.length());
+                    _decodeXML(0, attrval.str(), tmpStr.clear());
 
                     if (0 == strcmp(attrName.str(), "@xsi:type") &&
                        (0 == stricmp(tmpStr.str(),"SOAP-ENC:base64")))
@@ -4959,7 +4959,7 @@ public:
                                 }
                             }   
                             stateInfo->tagText.ensureCapacity(mark.length());
-                            _decodeXML(r, mark.toCharArray(), stateInfo->tagText, mark.length());
+                            _decodeXML(r, mark.toCharArray(), stateInfo->tagText);
                         }
                         if (endOfRoot && mark.length())
                         {

@@ -1702,177 +1702,126 @@ void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsigned len)
     UNIMPLEMENTED;
 }
 
-#define XMLSTRICT
-const char *decodeXML(const char *x, StringBuffer &ret, unsigned len, const char **errMark, IEntityHelper *entityHelper)
+const char *decodeXML(const char *x, StringBuffer &ret, const char **errMark, IEntityHelper *entityHelper, bool strict)
 {
     if (!x)
         return x;
-    if ((unsigned)-1 == len)
-        len = (unsigned)strlen(x);
-    const char *end = x+len;
     try
     {
-        while (x<end && *x)
+        while (*x)
         {
             if ('&' == *x)
             {
-                switch (*(x+1))
+                switch (x[1])
                 {
-                    case 'a':
-                    case 'A':
+                case 'a':
+                    switch (x[2])
                     {
-                        switch (*(x+2))
+                        case 'm':
                         {
-                            case 'm':
-                            case 'M':
+                            if ('p' == x[3] && ';' == x[4])
                             {
-                                char c1 = *(x+3);
-                                if (('p' == c1 || 'P' == c1) && ';' == *(x+4))
-                                {
-                                    x += 5;
-                                    ret.append('&');
-                                    continue;
-                                }
-                                break;
+                                x += 5;
+                                ret.append('&');
+                                continue;
                             }
-                            case 'p':
-                            case 'P':
+                            break;
+                        }
+                        case 'p':
+                        {
+                            if ('o' == x[3] && 's' == x[4] && ';' == x[5])
                             {
-                                char c1 = *(x+3);
-                                char c2 = *(x+4);
-                                if (('o' == c1 || 'O' == c1) && ('s' == c2 || 'S' == c2) && ';' == *(x+5))
-                                {
-                                    x += 6;
-                                    ret.append('\'');
-                                    continue;
-                                }
-                                break;
+                                x += 6;
+                                ret.append('\'');
+                                continue;
                             }
+                            break;
                         }
-                        break;
                     }
-                    case 'l':
-                    case 'L':
+                    break;
+                case 'l':
+                    if ('t' == x[2] && ';' == x[3])
                     {
-                        char c1 = *(x+2);
-                        if (('t' == c1 || 'T' == c1) && ';' == *(x+3))
-                        {
-                            x += 4;
-                            ret.append('<');
-                            continue;
-                        }
-                        break;
+                        x += 4;
+                        ret.append('<');
+                        continue;
                     }
-                    case 'g':
-                    case 'G':
+                    break;
+                case 'g':
+                    if ('t' == x[2] && ';' == x[3])
                     {
-                        char c1 = *(x+2);
-                        if (('t' == c1 || 'T' == c1) && ';' == *(x+3))
-                        {
-                            x += 4;
-                            ret.append('>');
-                            continue;
-                        }
-                        break;
+                        x += 4;
+                        ret.append('>');
+                        continue;
                     }
-                    case 'q':
-                    case 'Q':
+                    break;
+                case 'q':
+                    if ('u' == x[2] && 'o' == x[3] && 't' == x[4] && ';' == x[5])
                     {
-                        char c1 = *(x+2);
-                        char c2 = *(x+3);
-                        char c3 = *(x+4);
-                        if (('u' == c1 || 'U' == c1) && ('o' == c2 || 'O' == c2) && ('t' == c3 || 'T' == c3) && ';' == *(x+5))
-                        {
-                            x += 6;
-                            ret.append('"');
-                            continue;
-                        }
-                        break;
+                        x += 6;
+                        ret.append('"');
+                        continue;
                     }
-                    case 'n':
-                    case 'N':
+                    break;
+                case 'n':
+                    if ('b' == x[2] && 's' == x[3] && 'p' == x[4] && ';' == x[5])
                     {
-                        char c1 = *(x+2);
-                        char c2 = *(x+3);
-                        char c3 = *(x+4);
-                        if (('b' == c1 || 'B' == c1) && ('s' == c2 || 'S' == c2) && ('p' == c3 || 'P' == c3) && ';' == *(x+5))
-                        {
-                            x += 6;
-                            writeUtf8(0xa0, ret);
-                            continue;
-                        }
-                        break;
+                        x += 6;
+                        writeUtf8(0xa0, ret);
+                        continue;
                     }
-                    default:
+                    break;
+                case '#':
+                {
+                    const char *numstart = x+2;
+                    int base = 10;
+                    if (*numstart == 'x')
                     {
-                        x++;
-                        if (*x == '#')
-                        {
-                            x++;
-                            bool hex;
-                            if (*x == 'x' || *x == 'X') // strictly not sure about X.
-                            {
-                                hex = true;
-                                x++;
-                            }
-                            else
-                                hex = false;
-                            char *endptr;
-                            unsigned val = 0;
-                            if (hex)
-                                val = strtoul(x,&endptr,16);
-                            else
-                                val = strtoul(x,&endptr,10);
-                            if (x==endptr || *endptr != ';') {
-#ifndef XMLSTRICT
-                                LOG(MCerror, unknownJob, "&# syntax error");
-                                ret.append(*x);
-#endif
-                            }
-                            else // always convert to utf-8. Should potentially throw error if not marked as utf-8 encoded doc and out of ascii range.
-                                writeUtf8(val, ret);
-                            x = endptr+1;
-                            continue;
-                        }
-                        else
-                        {
-                            if ('\0' == *x) 
-                                --x;
-                            else
-                            {
-                                bool error = false;
-                                if (entityHelper)
-                                {
-                                    const char *start=x;
-                                    loop
-                                    {
-                                        ++x;
-                                        if ('\0' == *x) throw MakeStringException(-1, "missing ';'");
-                                        if (';' == *x) break;
-                                    }
-                                    StringBuffer entity(x-start, start);
-                                    if (!entityHelper->find(entity, ret))
-                                    {
-                                        error = true;
-                                        x = start;
-                                    }
-                                }
-                                else
-                                    error = true;
-                                if (error)
-                                {
-#ifdef XMLSTRICT
-                                    throw MakeStringException(-1, "invalid escaped sequence");
-#endif
-                                    ret.append('&');
-                                }
-                            }
-                        }
-                        break;
+                        base = 16;
+                        numstart++;
                     }
+                    char *numend;
+                    unsigned val = strtoul(numstart, &numend, base);
+                    if (numstart==numend || *numend != ';')
+                    {
+                        if (strict)
+                            throw MakeStringException(-1, "invalid escaped sequence");
+                    }
+                    else // always convert to utf-8. Should potentially throw error if not marked as utf-8 encoded doc and out of ascii range.
+                    {
+                        writeUtf8(val, ret);
+                        x = numend+1;
+                        continue;
+                    }
+                    break;
                 }
-                if (x>=end)
-                    throw MakeStringException(-1, "invalid escaped sequence");
+                case ';':
+                case '\0':
+                    if (strict)
+                        throw MakeStringException(-1, "invalid escaped sequence");
+                    break;
+                default:
+                    if (entityHelper)
+                    {
+                        bool error = false;
+                        const char *start=x+1;
+                        const char *finger=start;
+                        while (*finger && *finger != ';')
+                            ++finger;
+                        if (*finger == ';')
+                        {
+                            StringBuffer entity(finger-start, start);
+                            if (entityHelper->find(entity, ret))
+                            {
+                                x = finger + 1;
+                                continue;
+                            }
+                        }
+                    }
+                    if (strict)
+                        throw MakeStringException(-1, "invalid escaped sequence");
+                    break;
+                }
             }
             ret.append(*x);
             ++x;
