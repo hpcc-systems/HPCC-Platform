@@ -19,6 +19,7 @@
 #include "jlog.hpp"
 #include "jtime.hpp"
 #include "jptree.hpp"
+#include "jqueue.tpp"
 #include "mpbase.hpp"
 #include "math.h"
 #include "ccdsnmp.hpp"
@@ -34,6 +35,7 @@ RoxieQueryStats unknownQueryStats;
 RoxieQueryStats loQueryStats;
 RoxieQueryStats hiQueryStats;
 RoxieQueryStats slaQueryStats;
+RoxieQueryStats combinedQueryStats;
 atomic_t retriesIgnoredPrm;
 atomic_t retriesIgnoredSec;
 atomic_t retriesNeeded;
@@ -103,38 +105,75 @@ interface ITimerCallback : extends IInterface
 class AtomicMetric : public CInterface, implements INamedMetric
 {
     atomic_t &counter;
+    bool cumulative;
 public:
     IMPLEMENT_IINTERFACE;
-    AtomicMetric(atomic_t &_counter) : counter(_counter) {}
+    AtomicMetric(atomic_t &_counter, bool _cumulative)
+    : counter(_counter), cumulative(_cumulative)
+    {
+    }
     virtual long getValue() 
     {
         return atomic_read(&counter);
     }
-    virtual bool isCumulative() { return true; }
-
-    virtual void resetValue() { atomic_set(&counter, 0); }
-
+    virtual bool isCumulative()
+    {
+        return cumulative;
+    }
+    virtual void resetValue()
+    {
+        if (cumulative)
+            atomic_set(&counter, 0);
+    }
 };
 
 class CounterMetric : public CInterface, implements INamedMetric
 {
 protected:
     unsigned &counter;
+    bool cumulative;
 public:
     IMPLEMENT_IINTERFACE;
-    CounterMetric(unsigned &_counter) : counter(_counter) {}
+    CounterMetric(unsigned &_counter, bool _cumulative)
+    : counter(_counter), cumulative(_cumulative)
+    {
+    }
     virtual long getValue() 
     {
         CriticalBlock c(counterCrit);
         return counter;
     }
-    virtual bool isCumulative() { return true; }
-
+    virtual bool isCumulative()
+    {
+        return cumulative;
+    }
     virtual void resetValue()
     {
-        CriticalBlock c(counterCrit);
-        counter = 0;
+        if (cumulative)
+        {
+            CriticalBlock c(counterCrit);
+            counter = 0;
+        }
     }
+};
+
+typedef unsigned (*AccessorFunction)();
+
+class FunctionMetric : public CInterface, implements INamedMetric
+{
+    AccessorFunction accessor;
+public:
+    IMPLEMENT_IINTERFACE;
+    FunctionMetric(AccessorFunction _accessor)
+    : accessor(_accessor)
+    {
+    }
+    virtual long getValue()
+    {
+        return accessor();
+    }
+    virtual bool isCumulative() { return false; }
+    virtual void resetValue() { }
 
 };
 
@@ -322,6 +361,7 @@ public:
     void doAddMetric(atomic_t &counter, const char *name, unsigned interval);
     void doAddMetric(unsigned &counter, const char *name, unsigned interval);
     void doAddMetric(INamedMetric *n, const char *name, unsigned interval);
+    void doAddMetric(AccessorFunction function, const char *name, unsigned interval);
     void addRatioMetric(atomic_t &counter, const char *name, unsigned __int64 &elapsed);
     void addRatioMetric(unsigned &counter, const char *name, unsigned __int64 &elapsed);
     void addUserMetric(const char *name, const char *regex);
@@ -338,13 +378,16 @@ void RoxieQueryStats::addMetrics(CRoxieMetricsManager *snmpManager, const char *
     StringBuffer name;
     snmpManager->doAddMetric(count, name.clear().append(prefix).append("QueryCount"), interval);
     snmpManager->doAddMetric(failedCount, name.clear().append(prefix).append("QueryFailed"), interval);
-    snmpManager->doAddMetric(active, name.clear().append(prefix).append("QueryActive"), interval);
-    snmpManager->doAddMetric(maxTime, name.clear().append(prefix).append("Max"), interval);
-    snmpManager->doAddMetric(minTime, name.clear().append(prefix).append("Min"), interval);
-    snmpManager->addRatioMetric(count, name.clear().append(prefix).append("Average"), totalTime);
+    snmpManager->doAddMetric(active, name.clear().append(prefix).append("QueryActive"), 0);
+    snmpManager->doAddMetric(maxTime, name.clear().append(prefix).append("QueryMaxTime"), 0);
+    snmpManager->doAddMetric(minTime, name.clear().append(prefix).append("QueryMinTime"), 0);
+    snmpManager->addRatioMetric(count, name.clear().append(prefix).append("QueryAverageTime"), totalTime);
 }
-using roxiemem::dataBufferPages;
-using roxiemem::dataBuffersActive;
+
+using roxiemem::getHeapAllocated;
+using roxiemem::getHeapPercentAllocated;
+using roxiemem::getDataBufferPages;
+using roxiemem::getDataBuffersActive;
 
 CRoxieMetricsManager::CRoxieMetricsManager()
 {
@@ -355,6 +398,7 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     loQueryStats.addMetrics(this, "lo", 1000);
     hiQueryStats.addMetrics(this, "hi", 1000);
     slaQueryStats.addMetrics(this, "sla", 1000);
+    combinedQueryStats.addMetrics(this, "all", 1000);
     addMetric(retriesIgnoredPrm, 1000);
     addMetric(retriesIgnoredSec, 1000);
     addMetric(retriesNeeded, 1000);
@@ -381,15 +425,15 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(indexRecordsRead, 1000);
     addMetric(postFiltered, 1000);
     addMetric(abortsSent, 0);
-    addMetric(activitiesStarted, 0);
-    addMetric(activitiesCompleted, 0);
+    addMetric(activitiesStarted, 1000);
+    addMetric(activitiesCompleted, 1000);
     addMetric(diskReadStarted, 0);
     addMetric(diskReadCompleted, 0);
     addMetric(globalSignals, 0);
     addMetric(globalLocks, 0);
     addMetric(restarts, 0);
 
-    addMetric(nodesLoaded, 0);
+    addMetric(nodesLoaded, 1000);
     addMetric(cacheHits, 1000);
     addMetric(cacheAdds, 1000);
     addMetric(leafCacheHits, 1000);
@@ -402,8 +446,10 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(packetsRetried, 1000);
     addMetric(packetsAbandoned, 1000);
 
-    addMetric(dataBufferPages, 0);
-    addMetric(dataBuffersActive, 0);
+    addMetric(getHeapAllocated, 0);
+    addMetric(getHeapPercentAllocated, 0);
+    addMetric(getDataBufferPages, 0);
+    addMetric(getDataBuffersActive, 0);
     
     addMetric(maxScanLength, 0);
     addMetric(totScanLength, 0);
@@ -424,12 +470,12 @@ CRoxieMetricsManager::CRoxieMetricsManager()
 
 void CRoxieMetricsManager::doAddMetric(atomic_t &counter, const char *name, unsigned interval)
 {
-    doAddMetric(new AtomicMetric(counter), name, interval);
+    doAddMetric(new AtomicMetric(counter, interval != 0), name, interval);
 }
 
 void CRoxieMetricsManager::doAddMetric(unsigned &counter, const char *name, unsigned interval)
 {
-    doAddMetric(new CounterMetric(counter), name, interval);
+    doAddMetric(new CounterMetric(counter, interval != 0), name, interval);
 }
 
 void CRoxieMetricsManager::doAddMetric(INamedMetric *n, const char *name, unsigned interval)
@@ -447,9 +493,10 @@ void CRoxieMetricsManager::doAddMetric(INamedMetric *n, const char *name, unsign
     n->Release();
 }
 
-void CRoxieMetricsManager::addRatioMetric(atomic_t &counter, const char *name, unsigned __int64 &elapsed)
+void CRoxieMetricsManager::doAddMetric(AccessorFunction function, const char *name, unsigned interval)
 {
-    doAddMetric(new RatioMetric(counter, elapsed), name, 0);
+    assertex(interval==0);
+    doAddMetric(new FunctionMetric(function), name, interval);
 }
 
 void CRoxieMetricsManager::addRatioMetric(unsigned &counter, const char *name, unsigned __int64 &elapsed)
@@ -521,10 +568,7 @@ void CRoxieMetricsManager::resetMetrics()
     {           
         IMapping &cur = metrics.query();
         INamedMetric *m = (INamedMetric *) *metricMap.mapToValue(&cur);
-        if (m->isCumulative())
-        {
-            m->resetValue();
-        }
+        m->resetValue();
     }
 }
 
@@ -553,7 +597,7 @@ Owned<IRoxieMetricsManager> roxieMetrics;
 // A separate process tailing the log file?
 
 // If we do the internal concentric buffers route:
-// If hour (or minute, or minute/5, or whatever minumum granularity we pick) has changed since last noted a query, 
+// If hour (or minute, or minute/5, or whatever minimum granularity we pick) has changed since last noted a query,
 // shuffle...
 // we will be able to give results for any hour (x:00 to x+1:00), day (midnight to midnight), 5 minute period, etc
 // as well as current hour-so-far, current day-so-far 
@@ -567,7 +611,7 @@ Owned<IRoxieMetricsManager> roxieMetrics;
 // We can arrange so that all info < 2 hours old is in one circular buffer, all info > 2 hours old is aggregated into hourly slices
 // The last of the hourly slices is then incomplete. OR is it easier to aggregate as we go and discard data > 1 hour old?
 // Probably.
-// If we have per-hour aggregate data available indefinately, and last-hour data available in full, we should be ok
+// If we have per-hour aggregate data available indefinitely, and last-hour data available in full, we should be ok
 
 // If we want to be able to see other stats with same detail as time, we will need to abstract this out a bit more.
 
@@ -641,6 +685,13 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
                 result.setPropInt("percentile97", 0);
         }
 
+        static bool checkOlder(const void *_left, const void *_right)
+        {
+            QueryStatsRecord *left = (QueryStatsRecord *) _left;
+            QueryStatsRecord *right = (QueryStatsRecord *) _right;
+            return left->isOlderThan(right->startTime);
+        }
+
     };
     
     class QueryStatsAggregateRecord : public CInterface
@@ -666,7 +717,6 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         {
             startTime = _startTime;
             endTime = _endTime;
-            assertex(endTime > startTime);
             countTotal = 0;
             countFailed = 0;
             totalTimeMs = 0;
@@ -798,9 +848,9 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         }
     };
 
-    CIArrayOf<QueryStatsRecord> recent;
+    QueueOf<QueryStatsRecord, false> recent;
     CIArrayOf<QueryStatsAggregateRecord> aggregated; // stored with most recent first
-    unsigned expirySeconds;  // time to keep exact info (rather than just agregated)
+    unsigned expirySeconds;  // time to keep exact info (rather than just aggregated)
     StringAttr queryName;
     SpinLock lock;
 
@@ -836,8 +886,9 @@ class CQueryStatsAggregator : public CInterface, implements IQueryStatsAggregato
         slotEnd = mktime(&queryTimeExpanded);
     }
     
-    static CIArrayOf<CQueryStatsAggregator> allStats;
-    static SpinLock allStatsCrit;
+    static CQueryStatsAggregator globalStatsAggregator;
+    static CIArrayOf<CQueryStatsAggregator> queryStatsAggregators;
+    static SpinLock queryStatsCrit;
 
 public:
     virtual void Link(void) const { CInterface::Link(); }
@@ -845,10 +896,10 @@ public:
     {
         if (CInterface::Release())
             return true;
-        SpinBlock b(allStatsCrit);
+        SpinBlock b(queryStatsCrit);
         if (!IsShared())
         {
-            allStats.zap(* const_cast<CQueryStatsAggregator*>(this));
+            queryStatsAggregators.zap(* const_cast<CQueryStatsAggregator*>(this));
             return true;
         }
         return false;
@@ -857,20 +908,24 @@ public:
     CQueryStatsAggregator(const char *_queryName, unsigned _expirySeconds)
         : queryName(_queryName)
     {
-        SpinBlock b(allStatsCrit);
+        SpinBlock b(queryStatsCrit);
         expirySeconds = _expirySeconds;
-        allStats.append(*LINK(this));
+        queryStatsAggregators.append(*LINK(this));
     }
 
-    static IPropertyTree *getAllQueryStats(time_t from, time_t to)
+    static IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to)
     {
         Owned<IPTree> result = createPTree("QueryStats");
-        SpinBlock b(allStatsCrit);
-        ForEachItemIn(idx, allStats)
+        if (includeQueries)
         {
-            CQueryStatsAggregator &thisQuery = allStats.item(idx);
-            result->addPropTree("Query", thisQuery.getStats(from, to));
+            SpinBlock b(queryStatsCrit);
+            ForEachItemIn(idx, queryStatsAggregators)
+            {
+                CQueryStatsAggregator &thisQuery = queryStatsAggregators.item(idx);
+                result->addPropTree("Query", thisQuery.getStats(from, to));
+            }
         }
+        result->addPropTree("Global", globalStatsAggregator.getStats(from, to));
         return result.getClear();
     }
 
@@ -878,23 +933,19 @@ public:
     {
         time_t timeNow;
         time(&timeNow);
-        QueryStatsRecord *statsRec = new QueryStatsRecord(startTime, failed, elapsedTimeMs, memUsed, slavesReplyLen, bytesOut);
-
         SpinBlock b(lock);
         if (expirySeconds)
         {
-            unsigned pos = recent.length();
-            while (pos && !recent.item(pos-1).isOlderThan(startTime))
-                pos--;
-            recent.add(*statsRec, pos);
+            QueryStatsRecord *statsRec = new QueryStatsRecord(startTime, failed, elapsedTimeMs, memUsed, slavesReplyLen, bytesOut);
+            recent.enqueue(statsRec, QueryStatsRecord::checkOlder);
         }
-
         // Now remove any that have expired
-        // MORE - a circular buffer would be more efficient
         if (expirySeconds != (unsigned) -1)
         {
-            while (recent.isItem(0) && recent.item(0).expired(timeNow, expirySeconds))
-                recent.remove(0);
+            while (recent.ordinality() && recent.head()->expired(timeNow, expirySeconds))
+            {
+                recent.dequeue()->Release();
+            }
         }
 
         QueryStatsAggregateRecord &aggregator = findAggregate(startTime);
@@ -913,13 +964,13 @@ public:
             CIArrayOf<QueryStatsRecord> useStats;
             {
                 SpinBlock b(lock); // be careful not to take too much time in here! If it gets to take a while, we will have to rethink
-                ForEachItemIn(idx, recent)
+                ForEachQueueItemIn(idx, recent)
                 {
-                    QueryStatsRecord &rec = recent.item(idx);
-                    if (rec.inRange(from, to))
+                    QueryStatsRecord *rec = recent.item(idx);
+                    if (rec->inRange(from, to))
                     {
-                        rec.Link();
-                        useStats.append(rec);
+                        rec->Link();
+                        useStats.append(*rec);
                     }
                 }
                 // Spinlock is released here, and we process the useStats array at our leisure...
@@ -945,19 +996,29 @@ public:
         }
         return result.getClear();
     }
+    static inline IQueryStatsAggregator *queryGlobalStatsAggregator()
+    {
+        return &globalStatsAggregator;
+    }
 };
 
-CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::allStats;
-SpinLock CQueryStatsAggregator::allStatsCrit;
+CQueryStatsAggregator CQueryStatsAggregator::globalStatsAggregator(NULL, SLOT_LENGTH);
+CIArrayOf<CQueryStatsAggregator> CQueryStatsAggregator::queryStatsAggregators;
+SpinLock CQueryStatsAggregator::queryStatsCrit;
+
+IQueryStatsAggregator *queryGlobalQueryStatsAggregator()
+{
+    return CQueryStatsAggregator::queryGlobalStatsAggregator();
+}
 
 IQueryStatsAggregator *createQueryStatsAggregator(const char *_queryName, unsigned _expirySeconds)
 {
     return new CQueryStatsAggregator(_queryName, _expirySeconds);
 }
 
-IPropertyTree *getAllQueryStats(time_t from, time_t to)
+IPropertyTree *getAllQueryStats(bool includeQueries, time_t from, time_t to)
 {
-     return CQueryStatsAggregator::getAllQueryStats(from, to);
+     return CQueryStatsAggregator::getAllQueryStats(includeQueries, from, to);
 }
 
 //=======================================================================================================
@@ -1005,7 +1066,7 @@ protected:
             DBGLOG("%s", stats.str());
         }
         {
-            Owned<IPropertyTree> p = getAllQueryStats(start, end);
+            Owned<IPropertyTree> p = getAllQueryStats(true, start, end);
             StringBuffer stats; 
             toXML(p, stats);
             DBGLOG("%s", stats.str());
