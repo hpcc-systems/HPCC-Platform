@@ -105,38 +105,75 @@ interface ITimerCallback : extends IInterface
 class AtomicMetric : public CInterface, implements INamedMetric
 {
     atomic_t &counter;
+    bool cumulative;
 public:
     IMPLEMENT_IINTERFACE;
-    AtomicMetric(atomic_t &_counter) : counter(_counter) {}
+    AtomicMetric(atomic_t &_counter, bool _cumulative)
+    : counter(_counter), cumulative(_cumulative)
+    {
+    }
     virtual long getValue() 
     {
         return atomic_read(&counter);
     }
-    virtual bool isCumulative() { return true; }
-
-    virtual void resetValue() { atomic_set(&counter, 0); }
-
+    virtual bool isCumulative()
+    {
+        return cumulative;
+    }
+    virtual void resetValue()
+    {
+        if (cumulative)
+            atomic_set(&counter, 0);
+    }
 };
 
 class CounterMetric : public CInterface, implements INamedMetric
 {
 protected:
     unsigned &counter;
+    bool cumulative;
 public:
     IMPLEMENT_IINTERFACE;
-    CounterMetric(unsigned &_counter) : counter(_counter) {}
+    CounterMetric(unsigned &_counter, bool _cumulative)
+    : counter(_counter), cumulative(_cumulative)
+    {
+    }
     virtual long getValue() 
     {
         CriticalBlock c(counterCrit);
         return counter;
     }
-    virtual bool isCumulative() { return true; }
-
+    virtual bool isCumulative()
+    {
+        return cumulative;
+    }
     virtual void resetValue()
     {
-        CriticalBlock c(counterCrit);
-        counter = 0;
+        if (cumulative)
+        {
+            CriticalBlock c(counterCrit);
+            counter = 0;
+        }
     }
+};
+
+typedef unsigned (*AccessorFunction)();
+
+class FunctionMetric : public CInterface, implements INamedMetric
+{
+    AccessorFunction accessor;
+public:
+    IMPLEMENT_IINTERFACE;
+    FunctionMetric(AccessorFunction _accessor)
+    : accessor(_accessor)
+    {
+    }
+    virtual long getValue()
+    {
+        return accessor();
+    }
+    virtual bool isCumulative() { return false; }
+    virtual void resetValue() { }
 
 };
 
@@ -324,6 +361,7 @@ public:
     void doAddMetric(atomic_t &counter, const char *name, unsigned interval);
     void doAddMetric(unsigned &counter, const char *name, unsigned interval);
     void doAddMetric(INamedMetric *n, const char *name, unsigned interval);
+    void doAddMetric(AccessorFunction function, const char *name, unsigned interval);
     void addRatioMetric(atomic_t &counter, const char *name, unsigned __int64 &elapsed);
     void addRatioMetric(unsigned &counter, const char *name, unsigned __int64 &elapsed);
     void addUserMetric(const char *name, const char *regex);
@@ -346,9 +384,10 @@ void RoxieQueryStats::addMetrics(CRoxieMetricsManager *snmpManager, const char *
     snmpManager->addRatioMetric(count, name.clear().append(prefix).append("QueryAverageTime"), totalTime);
 }
 
-using roxiemem::heapAllocated;
-using roxiemem::dataBufferPages;
-using roxiemem::dataBuffersActive;
+using roxiemem::getHeapAllocated;
+using roxiemem::getHeapPercentAllocated;
+using roxiemem::getDataBufferPages;
+using roxiemem::getDataBuffersActive;
 
 CRoxieMetricsManager::CRoxieMetricsManager()
 {
@@ -386,15 +425,15 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(indexRecordsRead, 1000);
     addMetric(postFiltered, 1000);
     addMetric(abortsSent, 0);
-    addMetric(activitiesStarted, 0);
-    addMetric(activitiesCompleted, 0);
+    addMetric(activitiesStarted, 1000);
+    addMetric(activitiesCompleted, 1000);
     addMetric(diskReadStarted, 0);
     addMetric(diskReadCompleted, 0);
     addMetric(globalSignals, 0);
     addMetric(globalLocks, 0);
     addMetric(restarts, 0);
 
-    addMetric(nodesLoaded, 0);
+    addMetric(nodesLoaded, 1000);
     addMetric(cacheHits, 1000);
     addMetric(cacheAdds, 1000);
     addMetric(leafCacheHits, 1000);
@@ -407,9 +446,10 @@ CRoxieMetricsManager::CRoxieMetricsManager()
     addMetric(packetsRetried, 1000);
     addMetric(packetsAbandoned, 1000);
 
-    addMetric(heapAllocated, 0);
-    addMetric(dataBufferPages, 0);
-    addMetric(dataBuffersActive, 0);
+    addMetric(getHeapAllocated, 0);
+    addMetric(getHeapPercentAllocated, 0);
+    addMetric(getDataBufferPages, 0);
+    addMetric(getDataBuffersActive, 0);
     
     addMetric(maxScanLength, 0);
     addMetric(totScanLength, 0);
@@ -430,12 +470,12 @@ CRoxieMetricsManager::CRoxieMetricsManager()
 
 void CRoxieMetricsManager::doAddMetric(atomic_t &counter, const char *name, unsigned interval)
 {
-    doAddMetric(new AtomicMetric(counter), name, interval);
+    doAddMetric(new AtomicMetric(counter, interval != 0), name, interval);
 }
 
 void CRoxieMetricsManager::doAddMetric(unsigned &counter, const char *name, unsigned interval)
 {
-    doAddMetric(new CounterMetric(counter), name, interval);
+    doAddMetric(new CounterMetric(counter, interval != 0), name, interval);
 }
 
 void CRoxieMetricsManager::doAddMetric(INamedMetric *n, const char *name, unsigned interval)
@@ -453,9 +493,10 @@ void CRoxieMetricsManager::doAddMetric(INamedMetric *n, const char *name, unsign
     n->Release();
 }
 
-void CRoxieMetricsManager::addRatioMetric(atomic_t &counter, const char *name, unsigned __int64 &elapsed)
+void CRoxieMetricsManager::doAddMetric(AccessorFunction function, const char *name, unsigned interval)
 {
-    doAddMetric(new RatioMetric(counter, elapsed), name, 0);
+    assertex(interval==0);
+    doAddMetric(new FunctionMetric(function), name, interval);
 }
 
 void CRoxieMetricsManager::addRatioMetric(unsigned &counter, const char *name, unsigned __int64 &elapsed)
@@ -527,10 +568,7 @@ void CRoxieMetricsManager::resetMetrics()
     {           
         IMapping &cur = metrics.query();
         INamedMetric *m = (INamedMetric *) *metricMap.mapToValue(&cur);
-        if (m->isCumulative())
-        {
-            m->resetValue();
-        }
+        m->resetValue();
     }
 }
 

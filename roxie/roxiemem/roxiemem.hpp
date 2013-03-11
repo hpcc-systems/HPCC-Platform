@@ -458,12 +458,14 @@ extern roxiemem_decl void setTotalMemoryLimit(memsize_t max, memsize_t largeBloc
 extern roxiemem_decl memsize_t getTotalMemoryLimit();
 extern roxiemem_decl void releaseRoxieHeap();
 extern roxiemem_decl bool memPoolExhausted();
+extern roxiemem_decl unsigned getHeapAllocated();
+extern roxiemem_decl unsigned getHeapPercentAllocated();
+extern roxiemem_decl unsigned getDataBufferPages();
+extern roxiemem_decl unsigned getDataBuffersActive();
+
 extern roxiemem_decl unsigned memTraceLevel;
 extern roxiemem_decl memsize_t memTraceSizeLimit;
 
-extern roxiemem_decl unsigned heapAllocated;
-extern roxiemem_decl atomic_t dataBufferPages;
-extern roxiemem_decl atomic_t dataBuffersActive;
 
 #define ALLOCATE(a) allocate(a, activityId)
 #define CLONE(a,b) clone(a, b, activityId)
