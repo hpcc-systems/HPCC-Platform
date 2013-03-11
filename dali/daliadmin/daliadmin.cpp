@@ -1949,8 +1949,8 @@ struct CTreeItem : public CInterface
 
 class CXMLSizesParser : public CInterface
 {
-    Owned<IPullXMLReader> xmlReader;
-    XmlReaderOptions xmlOptions;
+    Owned<IPullPTreeReader> xmlReader;
+    PTreeReaderOptions xmlOptions;
     double pc;
 
     class CParse : public CInterface, implements IPTreeNotifyEvent
@@ -2059,7 +2059,7 @@ class CXMLSizesParser : public CInterface
 public:
     IMPLEMENT_IINTERFACE;
 
-    CXMLSizesParser(const char *fName, XmlReaderOptions _xmlOptions=xr_none, double _pc=1.0) : xmlOptions(_xmlOptions), pc(_pc) { go(fName); }
+    CXMLSizesParser(const char *fName, PTreeReaderOptions _xmlOptions=ptr_none, double _pc=1.0) : xmlOptions(_xmlOptions), pc(_pc) { go(fName); }
     ~CXMLSizesParser() { ::Release(parser); }
 
     void go(const char *fName)
@@ -2100,7 +2100,7 @@ static void xmlSize(const char *filename, double pc)
             OUTLOG("File '%s' not found", filename);
         else
         {
-            Owned<CXMLSizesParser> parser = new CXMLSizesParser((filename&&*filename)?filename:"dalisds.xml", xr_none, pc);
+            Owned<CXMLSizesParser> parser = new CXMLSizesParser((filename&&*filename)?filename:"dalisds.xml", ptr_none, pc);
             while (parser->next())
                 ;
             parser->printResultTree();

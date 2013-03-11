@@ -647,7 +647,7 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
 
 size32_t createRowFromXml(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace)
 {
-    Owned<IPropertyTree> root = createPTreeFromXMLString(size, utf8, ipt_none, stripWhitespace ? xr_ignoreWhiteSpace : xr_none);
+    Owned<IPropertyTree> root = createPTreeFromXMLString(size, utf8, ipt_none, stripWhitespace ? ptr_ignoreWhiteSpace : ptr_none);
     if (!root)
     {
         throwError(THORCERR_InvalidXmlFromXml);
@@ -695,7 +695,7 @@ IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, cons
 
 //=====================================================================================================
 
-extern thorhelper_decl IXmlToRawTransformer * createXmlRawTransformer(IXmlToRowTransformer * xmlTransformer, XmlReaderOptions xmlReadFlags)
+extern thorhelper_decl IXmlToRawTransformer * createXmlRawTransformer(IXmlToRowTransformer * xmlTransformer, PTreeReaderOptions xmlReadFlags)
 {
     if (xmlTransformer)
         return new CXmlToRawTransformer(*xmlTransformer, xmlReadFlags);
@@ -1605,10 +1605,10 @@ void CColumnIterator::setCurrent()
 
 class CXMLParse : public CInterface, implements IXMLParse
 {
-    IPullXMLReader *xmlReader;
+    IPullPTreeReader *xmlReader;
     StringAttr xpath;
     IXMLSelect *iXMLSelect;  // NOTE - not linked - creates circular links
-    XmlReaderOptions xmlOptions;
+    PTreeReaderOptions xmlOptions;
     bool step, contentRequired;
 
     class CXMLMaker : public CInterface, implements IPTreeMaker
@@ -1905,12 +1905,12 @@ class CXMLParse : public CInterface, implements IXMLParse
 public:
     IMPLEMENT_IINTERFACE;
 
-    CXMLParse(const char *fName, const char *_xpath, IXMLSelect &_iXMLSelect, XmlReaderOptions _xmlOptions=xr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(fName); }
-    CXMLParse(IFile &ifile, const char *_xpath, IXMLSelect &_iXMLSelect, XmlReaderOptions _xmlOptions=xr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(ifile); }
-    CXMLParse(IFileIO &fileio, const char *_xpath, IXMLSelect &_iXMLSelect, XmlReaderOptions _xmlOptions=xr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(fileio); }
-    CXMLParse(ISimpleReadStream &stream, const char *_xpath, IXMLSelect &_iXMLSelect, XmlReaderOptions _xmlOptions=xr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(stream); }
-    CXMLParse(const void *buffer, unsigned bufLen, const char *_xpath, IXMLSelect &_iXMLSelect, XmlReaderOptions _xmlOptions=xr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(buffer, bufLen); }
-    CXMLParse(const char *_xpath, IXMLSelect &_iXMLSelect, XmlReaderOptions _xmlOptions=xr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); }
+    CXMLParse(const char *fName, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(fName); }
+    CXMLParse(IFile &ifile, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(ifile); }
+    CXMLParse(IFileIO &fileio, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(fileio); }
+    CXMLParse(ISimpleReadStream &stream, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(stream); }
+    CXMLParse(const void *buffer, unsigned bufLen, const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); go(buffer, bufLen); }
+    CXMLParse(const char *_xpath, IXMLSelect &_iXMLSelect, PTreeReaderOptions _xmlOptions=ptr_none, bool _contentRequired=true, bool _step=true) : xpath(_xpath), iXMLSelect(&_iXMLSelect), xmlOptions(_xmlOptions), contentRequired(_contentRequired), step(_step) { init(); }
     ~CXMLParse()
     {
         ::Release(iXMLMaker);
@@ -1919,7 +1919,7 @@ public:
     void init()
     {
         xmlReader = NULL;
-        bool ignoreNameSpaces = 0 != ((unsigned)xmlOptions & (unsigned)xr_ignoreNameSpaces);
+        bool ignoreNameSpaces = 0 != ((unsigned)xmlOptions & (unsigned)ptr_ignoreNameSpaces);
         iXMLMaker = new CXMLMaker(xpath, *iXMLSelect, contentRequired, ignoreNameSpaces);
         iXMLMaker->init();
     }
@@ -2003,21 +2003,21 @@ public:
     }
 };
 
-IXMLParse *createXMLParse(const char *filename, const char *xpath, IXMLSelect &iselect, XmlReaderOptions xmlOptions, bool contentRequired)
+IXMLParse *createXMLParse(const char *filename, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
 {
     return new CXMLParse(filename, xpath, iselect, xmlOptions, contentRequired);
 }
-IXMLParse *createXMLParse(ISimpleReadStream &stream, const char *xpath, IXMLSelect &iselect, XmlReaderOptions xmlOptions, bool contentRequired)
+IXMLParse *createXMLParse(ISimpleReadStream &stream, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
 {
     return new CXMLParse(stream, xpath, iselect, xmlOptions, contentRequired);
 }
 
-IXMLParse *createXMLParse(const void *buffer, unsigned bufLen, const char *xpath, IXMLSelect &iselect, XmlReaderOptions xmlOptions, bool contentRequired)
+IXMLParse *createXMLParse(const void *buffer, unsigned bufLen, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
 {
     return new CXMLParse(buffer, bufLen, xpath, iselect, xmlOptions, contentRequired);
 }
 
-IXMLParse *createXMLParseString(const char *string, const char *xpath, IXMLSelect &iselect, XmlReaderOptions xmlOptions, bool contentRequired)
+IXMLParse *createXMLParseString(const char *string, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions, bool contentRequired)
 {
     CXMLParse *parser = new CXMLParse(xpath, iselect, xmlOptions, contentRequired);
     parser->provideXML(string);

@@ -4621,7 +4621,7 @@ IPropertyTree *loadStore(const char *storeFilename, IPTreeMaker *iMaker, unsigne
         Owned<IFileIOStream> fstream = createIOStream(iFileIOStore);
         Owned<ICrcIOStream> crcPipeStream = createCrcPipeStream(fstream);
         Owned<IIOStream> ios = createBufferedIOStream(crcPipeStream);
-        root.setown((CServerRemoteTree *) createPTree(*ios, ipt_none, xr_ignoreWhiteSpace, iMaker));
+        root.setown((CServerRemoteTree *) createPTree(*ios, ipt_none, ptr_ignoreWhiteSpace, iMaker));
         ios.clear();
         unsigned crc = crcPipeStream->queryCrc();
 
@@ -8760,7 +8760,7 @@ bool applyXmlDeltas(IPropertyTree &root, IIOStream &stream, bool stopOnError)
         }
     } deltaProcessor(root, stopOnError);
 
-    Owned<IPullXMLReader> xmlReader = createPullXMLStreamReader(stream, deltaProcessor, (XmlReaderOptions)((unsigned)xr_ignoreWhiteSpace+(unsigned)xr_noRoot), false);
+    Owned<IPullPTreeReader> xmlReader = createPullXMLStreamReader(stream, deltaProcessor, (PTreeReaderOptions)((unsigned)ptr_ignoreWhiteSpace+(unsigned)ptr_noRoot), false);
     try
     {
         xmlReader->load();

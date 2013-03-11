@@ -86,7 +86,7 @@ public:
     void appendDatasetsFromXML(const char *xml)
     {
         assertex(!finalized);
-        Owned<IPullXMLReader> reader = createPullXMLStringReader(xml, *this);
+        Owned<IPullPTreeReader> reader = createPullXMLStringReader(xml, *this);
         reader->load();
     }
 
@@ -735,7 +735,7 @@ void WuWebView::addInputsFromPTree(IPropertyTree *pt)
 
 void WuWebView::addInputsFromXml(const char *xml)
 {
-    Owned<IPropertyTree> pt = createPTreeFromXMLString(xml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces));
+    Owned<IPropertyTree> pt = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
     addInputsFromPTree(pt.get());
 }
 

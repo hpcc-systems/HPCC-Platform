@@ -580,7 +580,7 @@ interface IWSCAsyncFor: public IInterface
 };
 
 class CWSCHelper;
-IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, XmlReaderOptions _options);
+IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options);
 
 //=================================================================================================
 
@@ -1209,17 +1209,17 @@ void CWSCHelperThread::createXmlSoapQuery(CommonXmlWriter &xmlWriter, ConstPoint
 void CWSCHelperThread::processQuery(ConstPointerArray &inputRows)
 {
     unsigned xmlWriteFlags = 0;
-    unsigned xmlReadFlags = xr_ignoreNameSpaces; 
+    unsigned xmlReadFlags = ptr_ignoreNameSpaces;
     if (master->flags & SOAPFtrim)
         xmlWriteFlags |= XWFtrim;
     if ((master->flags & SOAPFpreserveSpace) == 0)
-        xmlReadFlags |= xr_ignoreWhiteSpace;
+        xmlReadFlags |= ptr_ignoreWhiteSpace;
         XMLWriterType xmlType = !(master->flags & SOAPFencoding) ? WTStandard : WTEncodingData64; 
     CommonXmlWriter *xmlWriter = CreateCommonXmlWriter(xmlWriteFlags, 0, NULL, xmlType);
     if (master->wscType == STsoap)
         createXmlSoapQuery(*xmlWriter, inputRows);
 
-    Owned<IWSCAsyncFor> casyncfor = createWSCAsyncFor(master, *xmlWriter, inputRows, (XmlReaderOptions) xmlReadFlags);
+    Owned<IWSCAsyncFor> casyncfor = createWSCAsyncFor(master, *xmlWriter, inputRows, (PTreeReaderOptions) xmlReadFlags);
     casyncfor->For(master->numUrls, master->numUrlThreads,false,true); // shuffle URLS for poormans load balance
     delete xmlWriter;
 }
@@ -1359,7 +1359,7 @@ private:
     CriticalSection processExceptionCrit;
     StringBuffer responsePath;
     Owned<CSocketDataProvider> dataProvider;
-    XmlReaderOptions options;
+    PTreeReaderOptions options;
     unsigned remainingMS;
 
     inline void checkRoxieAbortMonitor(IRoxieAbortMonitor * roxieAbortMonitor)
@@ -1709,7 +1709,7 @@ private:
     }
 
 public:
-    CWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, XmlReaderOptions _options): xmlWriter(_xmlWriter), inputRows(_inputRows), options(_options)
+    CWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options): xmlWriter(_xmlWriter), inputRows(_inputRows), options(_options)
     {
         master = _master;
         outputAllocator = master->queryOutputAllocator();
@@ -1923,7 +1923,7 @@ public:
     inline virtual IEngineRowAllocator * getOutputAllocator() { return outputAllocator; }
 };
 
-IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, XmlReaderOptions _options)
+IWSCAsyncFor * createWSCAsyncFor(CWSCHelper * _master, CommonXmlWriter &_xmlWriter, ConstPointerArray &_inputRows, PTreeReaderOptions _options)
 {
     return new CWSCAsyncFor(_master, _xmlWriter, _inputRows, _options);
 }

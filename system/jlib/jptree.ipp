@@ -140,6 +140,17 @@ inline static bool isValidXPathChr(char c)
     return ('\0' != c && (isalnum(c) || strchr(validChrs, c)));
 }
 
+inline static int validJSONUtf8ChrLen(unsigned char c)
+{
+    if (c <= 31)
+        return 0;
+    if ('\"' == c)
+        return 0;
+    if ('\\' == c)
+        return 2;
+    return utf8CharLen(&c);
+}
+
 inline static bool isAttribute(const char *xpath) { return (xpath && *xpath == '@'); }
 
 jlib_decl const char *splitXPathUQ(const char *xpath, StringBuffer &path);

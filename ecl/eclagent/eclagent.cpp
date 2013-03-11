@@ -383,7 +383,7 @@ public:
 
             try
             {
-                queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces)));
+                queryXml.setown(createPTreeFromXMLString(rawText.str(), ipt_caseInsensitive, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces)));
             }
             catch (IException *E)
             {

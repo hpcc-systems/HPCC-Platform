@@ -361,11 +361,14 @@ extern jlib_decl StringBuffer & appendStringAsSQL(StringBuffer & out, unsigned l
 extern jlib_decl StringBuffer & appendStringAsECL(StringBuffer & out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendStringAsQuotedECL(StringBuffer &out, unsigned len, const char * src);
 
-jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
+extern jlib_decl const char *decodeJSON(const char *x, StringBuffer &ret, unsigned len=(unsigned)-1, const char **errMark=NULL);
+extern jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);
 extern jlib_decl const char *encodeXML(const char *x, StringBuffer &ret, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
 extern jlib_decl const char *decodeXML(const char *x, StringBuffer &ret, unsigned len=(unsigned)-1, const char **errMark=NULL, IEntityHelper *entityHelper=NULL);
 extern jlib_decl const char *encodeXML(const char *x, IIOStream &out, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
 extern jlib_decl void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsigned len=(unsigned)-1);
+
+extern jlib_decl int utf8CharLen(const unsigned char *ch);
 
 inline const char *encodeUtf8XML(const char *x, StringBuffer &ret, unsigned flags=false, unsigned len=(unsigned)-1)
 {

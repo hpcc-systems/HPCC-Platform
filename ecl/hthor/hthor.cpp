@@ -7020,7 +7020,7 @@ const void * CHThorXmlParseActivity::nextInGroup()
         size32_t srchLen;
         helper.getSearchText(srchLen, srchStr, in);
         OwnedRoxieString xmlIteratorPath(helper.getXmlIteratorPath());
-        xmlParser.setown(createXMLParse(srchStr, srchLen, xmlIteratorPath, *this, xr_noRoot, helper.requiresContents()));
+        xmlParser.setown(createXMLParse(srchStr, srchLen, xmlIteratorPath, *this, ptr_noRoot, helper.requiresContents()));
     }
 }
 
@@ -8787,7 +8787,7 @@ bool CHThorXmlReadActivity::openNext()
             inputfileiostream.setown(createIOStream(inputfileio));
 
         OwnedRoxieString xmlIterator(helper.getXmlIteratorPath());
-        xmlParser.setown(createXMLParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?xr_noRoot:xr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
+        xmlParser.setown(createXMLParse(*inputfileiostream, xmlIterator, *this, (0 != (TDRxmlnoroot & helper.getFlags()))?ptr_noRoot:ptr_none, (helper.getFlags() & TDRusexmlcontents) != 0));
         return true;
     }
     return false;

@@ -1600,7 +1600,7 @@ IPropertyTree * CKeyIndex::getMetadata()
     {
         ret = createPTreeFromXMLString(xml.str());
     }
-    catch(IXMLReadException * e)
+    catch(IPTreeReadException * e)
     {
         StringBuffer emsg;
         IException * wrapped = MakeStringException(e->errorAudience(), e->errorCode(), "Error retrieving XML metadata: %s", e->errorMessage(emsg).str());

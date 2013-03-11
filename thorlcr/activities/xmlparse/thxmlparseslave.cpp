@@ -135,7 +135,7 @@ public:
                 unsigned len;
                 helper->getSearchText(len, searchStr, nxt);
                 OwnedRoxieString xmlIteratorPath(helper->getXmlIteratorPath());
-                xmlParser.setown(createXMLParse(searchStr, len, xmlIteratorPath, *this, xr_noRoot, helper->requiresContents()));
+                xmlParser.setown(createXMLParse(searchStr, len, xmlIteratorPath, *this, ptr_noRoot, helper->requiresContents()));
             }
         }
         catch (IOutOfMemException *e)

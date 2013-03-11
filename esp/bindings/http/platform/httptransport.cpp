@@ -185,7 +185,7 @@ public:
         m_message = message;
         m_pStart = (char*) message;
 
-        Owned<IPullXMLReader> reader = createPullXMLStringReader(m_message, *this, xr_ignoreNameSpaces);
+        Owned<IPullPTreeReader> reader = createPullXMLStringReader(m_message, *this, ptr_ignoreNameSpaces);
         while(m_readNext && reader->next())
         {
             if (m_foundPassword)

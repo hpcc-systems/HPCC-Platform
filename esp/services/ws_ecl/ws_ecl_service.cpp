@@ -1362,7 +1362,7 @@ void appendEclInputXsds(StringBuffer &content, IPropertyTree *xsd, BoolHash &add
 
 void CWsEclBinding::SOAPSectionToXsd(WsEclWuInfo &wsinfo, const char *parmXml, StringBuffer &schema, bool isRequest, IPropertyTree *xsdtree)
 {
-    Owned<IPropertyTree> tree = createPTreeFromXMLString(parmXml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_noRoot));
+    Owned<IPropertyTree> tree = createPTreeFromXMLString(parmXml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_noRoot));
 
     schema.appendf("<xsd:element name=\"%s%s\">", wsinfo.queryname.sget(), isRequest ? "Request" : "Response");
     schema.append("<xsd:complexType>");
@@ -1824,7 +1824,7 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
     size32_t start = jsonmsg.length();
     try
     {
-        Owned<IPropertyTree> parmtree = createPTreeFromXMLString(xml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces));
+        Owned<IPropertyTree> parmtree = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
 
         StringBuffer element;
         element.append(wsinfo.queryname.sget());
@@ -2189,7 +2189,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     workunit->setState(WUStateSubmitted);
     workunit->commit();
 
-    Owned<IPropertyTree> req = createPTreeFromXMLString(xml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace|xr_ignoreNameSpaces));
+    Owned<IPropertyTree> req = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace|ptr_ignoreNameSpaces));
     IPropertyTree *start = req.get();
     if (start->hasProp("Envelope"))
         start=start->queryPropTree("Envelope");
