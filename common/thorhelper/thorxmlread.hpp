@@ -136,7 +136,7 @@ public:
 class thorhelper_decl CXmlToRawTransformer : public CInterface, implements IXmlToRawTransformer
 {
 public:
-    CXmlToRawTransformer(IXmlToRowTransformer & _rowTransformer, XmlReaderOptions _xmlReadFlags)
+    CXmlToRawTransformer(IXmlToRowTransformer & _rowTransformer, PTreeReaderOptions _xmlReadFlags)
     : rowTransformer(&_rowTransformer), xmlReadFlags(_xmlReadFlags)
     {
     }
@@ -147,7 +147,7 @@ public:
 
 protected:
     Linked<IXmlToRowTransformer> rowTransformer;
-    XmlReaderOptions xmlReadFlags;
+    PTreeReaderOptions xmlReadFlags;
 };
 
 class thorhelper_decl CCsvToRawTransformer : public CInterface, implements ICsvToRawTransformer
@@ -191,7 +191,7 @@ protected:
     CSVColumnProvider csvSplitter;
 };
 #endif
-extern thorhelper_decl IXmlToRawTransformer * createXmlRawTransformer(IXmlToRowTransformer * xmlTransformer, XmlReaderOptions xmlReadFlags=xr_ignoreWhiteSpace);
+extern thorhelper_decl IXmlToRawTransformer * createXmlRawTransformer(IXmlToRowTransformer * xmlTransformer, PTreeReaderOptions xmlReadFlags=ptr_ignoreWhiteSpace);
 extern thorhelper_decl ICsvToRawTransformer * createCsvRawTransformer(ICsvToRowTransformer * csvTransformer);
 
 
@@ -209,10 +209,10 @@ interface IXMLParse : extends IInterface
     virtual bool next() = 0;
     virtual void reset() = 0;
 };
-thorhelper_decl IXMLParse *createXMLParse(const char *filename, const char *xpath, IXMLSelect &iselect, XmlReaderOptions xmlOptions=xr_none, bool contentRequired=true);
-thorhelper_decl IXMLParse *createXMLParse(ISimpleReadStream &stream, const char *xpath, IXMLSelect &iselect, XmlReaderOptions xmlOptions=xr_none, bool contentRequired=true);
-thorhelper_decl IXMLParse *createXMLParse(const void *buffer, unsigned bufLen, const char *xpath, IXMLSelect &iselect, XmlReaderOptions xmlOptions=xr_none, bool contentRequired=true);
-thorhelper_decl IXMLParse *createXMLParseString(const char *str, const char *xpath, IXMLSelect &iselect, XmlReaderOptions xmlOptions=xr_none, bool contentRequired=true);
+thorhelper_decl IXMLParse *createXMLParse(const char *filename, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions=ptr_none, bool contentRequired=true);
+thorhelper_decl IXMLParse *createXMLParse(ISimpleReadStream &stream, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions=ptr_none, bool contentRequired=true);
+thorhelper_decl IXMLParse *createXMLParse(const void *buffer, unsigned bufLen, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions=ptr_none, bool contentRequired=true);
+thorhelper_decl IXMLParse *createXMLParseString(const char *str, const char *xpath, IXMLSelect &iselect, PTreeReaderOptions xmlOptions=ptr_none, bool contentRequired=true);
 
 thorhelper_decl size32_t createRowFromXml(ARowBuilder & rowBuilder, size32_t size, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
 thorhelper_decl const void * createRowFromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);

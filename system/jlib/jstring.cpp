@@ -1617,6 +1617,85 @@ static void writeUtf8(unsigned c, StringBuffer &out)
         assertex(false);
 }
 
+#define JSONSTRICT
+const char *decodeJSON(const char *j, StringBuffer &ret, unsigned len, const char **errMark)
+{
+    if (!j)
+        return j;
+    if ((unsigned)-1 == len)
+        len = (unsigned)strlen(j);
+    try
+    {
+        for (const char *end = j+len; j<end && *j; j++)
+        {
+            if (*j!='\\')
+                ret.append(*j);
+            else
+            {
+                switch (*++j)
+                {
+                case 'u':
+                {
+                    j++;
+                    if (end-j>=4)
+                    {
+                        char *endptr;
+                        StringAttr s(j, 4);
+                        unsigned val = strtoul(s.get(), &endptr, 16);
+                        if (endptr && !*endptr)
+                        {
+                            writeUtf8(val, ret);
+                            j+=3;
+                            break;
+                        }
+                    }
+#ifdef JSONSTRICT
+                    throw MakeStringException(-1, "invalid json \\u escaped sequence");
+#endif
+                    ret.append(*j);
+                    break;
+                }
+                case '\"':
+                case '\\':
+                case '/':
+                    ret.append(*j);
+                    break;
+                case 'b':
+                    ret.append('\b');
+                    break;
+                case 'f':
+                    ret.append('\f');
+                    break;
+                case 'n':
+                    ret.append('\n');
+                    continue;
+                case 'r':
+                    ret.append('\r');
+                    break;
+                case 't':
+                    ret.append('\t');
+                    break;
+                default:
+                {
+#ifdef JSONSTRICT
+                    throw MakeStringException(-1, "invalid json escaped sequence");
+#endif
+                    ret.append('\\');
+                    ret.append(*j);
+                    break;
+                }
+                }
+            }
+        }
+    }
+    catch (IException *)
+    {
+        if (errMark) *errMark = j;
+        throw;
+    }
+    return j;
+}
+
 void decodeXML(ISimpleReadStream &in, StringBuffer &out, unsigned len)
 {
     // TODO

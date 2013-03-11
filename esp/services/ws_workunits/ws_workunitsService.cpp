@@ -103,7 +103,7 @@ void setWsWuXmlParameters(IWorkUnit *wu, const char *xml, bool setJobname=false)
 {
     if (!xml || !*xml)
         return;
-    Owned<IPropertyTree> tree = createPTreeFromXMLString(xml, ipt_none, (XmlReaderOptions)(xr_ignoreWhiteSpace | xr_ignoreNameSpaces));
+    Owned<IPropertyTree> tree = createPTreeFromXMLString(xml, ipt_none, (PTreeReaderOptions)(ptr_ignoreWhiteSpace | ptr_ignoreNameSpaces));
     IPropertyTree *root = tree.get();
     if (strieq(root->queryName(), "Envelope"))
         root = root->queryPropTree("Body/*[1]");
