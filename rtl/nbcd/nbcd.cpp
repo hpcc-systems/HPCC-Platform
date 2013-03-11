@@ -142,7 +142,7 @@ int Decimal::compare(const Decimal & other) const
 }
 
 
-Decimal & Decimal::divide(const Decimal & other, DBZaction dbz)
+Decimal & Decimal::divide(const Decimal & other)
 {
     //NB: Round towards zero
     int lo1, hi1, lo2, hi2;
@@ -160,7 +160,8 @@ Decimal & Decimal::divide(const Decimal & other, DBZaction dbz)
     }
     if (hi2 < lo2)
     {
-        setDivideByZero(dbz);
+        //Division by zero defined to return 0 instead of throw an exception
+        setZero();
         return *this;
     }
 
@@ -250,10 +251,18 @@ void Decimal::extendRange(byte oLsb, byte oMsb)
 }
 
 
-Decimal & Decimal::modulus(const Decimal & other, DBZaction dbz)
+bool Decimal::isZero() const
+{
+    //NB: Round towards zero
+    int lo, hi;
+    clip(lo, hi);
+    return (hi < lo);
+}
+
+Decimal & Decimal::modulus(const Decimal & other)
 {
     Decimal left(*this);
-    left.divide(other, dbz).truncate(0).multiply(other);
+    left.divide(other).truncate(0).multiply(other);
     return subtract(left);
 }
 
@@ -342,8 +351,7 @@ Decimal & Decimal::power(int value)
     //This probably gives slightly more expected results, but both suffer from rounding errors.
     Decimal reciprocal;
     reciprocal.setInt(1);
-    // DBZzero means 0D^-3 will return 0 instead of throwing an error if divide by zero is set to DBZfail.
-    reciprocal.divide(*this, DBZzero);
+    reciprocal.divide(*this);
     set(reciprocal);
     doPower((unsigned)-value);
     return *this;
@@ -1159,21 +1167,6 @@ void Decimal::setZero()
 }
 
 
-void Decimal::setDivideByZero(DBZaction dbz)
-{
-    switch (dbz)
-    {
-    case DBZfail:
-        //No dependency on eclrtl, so throw a jlib exception directly
-        throw MakeStringException(MSGAUD_user, -1, "Division by zero");
-    case DBZnan:
-    case DBZzero:
-        setZero();
-        break;
-    default:
-        throwUnexpected();
-    }
-}
 //---------------------------------------------------------------------------
 
 

@@ -25,7 +25,7 @@
 #include "jlib.hpp"
 #include "jptree.hpp"
 #include "eclrtl.hpp"
-#include "bcd.hpp"
+#include "rtlbcd.hpp"
 #include "unicode/uchar.h"
 #include "unicode/ucol.h"
 #include "unicode/ustring.h"
@@ -36,14 +36,6 @@
 #include "unicode/locid.h"
 #include "jlog.hpp"
 #include "jmd5.hpp"
-
-#ifndef _WIN32
-//typedef long long __int64;
-#define _fastcall
-#define __fastcall
-#define _stdcall
-#define __stdcall
-#endif
 
 //=============================================================================
 // Miscellaneous string functions...
@@ -518,15 +510,6 @@ bool rtlQStrToBool(size32_t inlen, const char *in)
         if (in[size])
             return true;
     return false;
-}
-
-#ifndef _WIN32
-extern "C" ECLRTL_API void cw_rtlQStrToStr(unsigned outlen, char * out, unsigned inlen, const char * in)
-#else
-extern "C" ECLRTL_API void __stdcall cw_rtlQStrToStr(unsigned outlen, char * out, unsigned inlen, const char * in)
-#endif
-{
-    rtlQStrToStr(QStrLength(outlen), out, QStrLength(inlen), in);
 }
 
 //---------------------------------------------------------------------------

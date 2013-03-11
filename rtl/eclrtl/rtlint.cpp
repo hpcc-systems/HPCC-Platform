@@ -24,7 +24,7 @@
 #include "jlib.hpp"
 #include "jptree.hpp"
 #include "eclrtl.hpp"
-#include "bcd.hpp"
+#include "rtlbcd.hpp"
 
 //#define _FAST_AND_LOOSE_
 

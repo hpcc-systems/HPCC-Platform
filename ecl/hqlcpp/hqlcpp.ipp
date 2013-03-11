@@ -28,6 +28,7 @@
 #include "hqlwcpp.hpp"
 #include "hqltrans.ipp"
 #include "hqlusage.hpp"
+#include "eclrtl.hpp"
 
 #define DEBUG_TIMER(name, time)                     if (options.addTimingToWorkunit) { timeReporter->addTiming(name, time); }
 #define DEBUG_TIMERX(timeReporter, name, time)      if (timeReporter) { timeReporter->addTiming(name, time); }

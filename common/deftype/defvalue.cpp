@@ -26,7 +26,7 @@
 #include <math.h>
 #include <limits.h>
 
-#include "bcd.hpp"
+#include "rtlbcd.hpp"
 #include "eclrtl_imp.hpp"
 
 #if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)
@@ -2524,7 +2524,7 @@ IValue * multiplyValues(IValue * left, IValue * right)
     return ret;
 }
 
-IValue * divideValues(IValue * left, IValue * right, DBZaction onZero)
+IValue * divideValues(IValue * left, IValue * right, byte dbz)
 {
     Owned<ITypeInfo> pnt = getPromotedMulDivType(left->queryType(), right->queryType());
 
@@ -2532,10 +2532,10 @@ IValue * divideValues(IValue * left, IValue * right, DBZaction onZero)
     if (!right->getBoolValue())
     {
         //If no action is selected, return NULL so the expression doesn't get constant folded.
-        if (onZero == DBZnone)
+        if (dbz == DBZnone)
             return NULL;
 
-        if (onZero == DBZfail)
+        if (dbz == DBZfail)
             rtlFailDivideByZero();
     }
 
@@ -2564,7 +2564,7 @@ IValue * divideValues(IValue * left, IValue * right, DBZaction onZero)
         double res;
         if (rv)
             res = lv / rv;
-        else if (onZero == DBZnan)
+        else if (dbz == DBZnan)
             res =  rtlCreateRealNull();
         else
             res = 0.0;
@@ -2576,7 +2576,7 @@ IValue * divideValues(IValue * left, IValue * right, DBZaction onZero)
         BcdCriticalBlock bcdBlock;
         left->pushDecimalValue();
         right->pushDecimalValue();
-        DecDivide(onZero);
+        DecDivide(dbz);
         return createDecimalValueFromStack(pnt);
     }
     default:
@@ -2585,7 +2585,7 @@ IValue * divideValues(IValue * left, IValue * right, DBZaction onZero)
     }
 }
 
-IValue * modulusValues(IValue * left, IValue * right, DBZaction onZero)
+IValue * modulusValues(IValue * left, IValue * right, byte dbz)
 {
     Owned<ITypeInfo> pnt = getPromotedMulDivType(left->queryType(), right->queryType());
     
@@ -2593,10 +2593,10 @@ IValue * modulusValues(IValue * left, IValue * right, DBZaction onZero)
     if (!right->getBoolValue())
     {
         //If no action is selected, return NULL so the expression doesn't get constant folded.
-        if (onZero == DBZnone)
+        if (dbz == DBZnone)
             return NULL;
 
-        if (onZero == DBZfail)
+        if (dbz == DBZfail)
             rtlFailDivideByZero();
     }
 
@@ -2624,7 +2624,7 @@ IValue * modulusValues(IValue * left, IValue * right, DBZaction onZero)
         double res;
         if (rv)
             res = fmod(left->getRealValue(), rv);
-        else if (onZero == DBZnan)
+        else if (dbz == DBZnan)
             res =  rtlCreateRealNull();
         else
             res = 0.0;
@@ -2636,7 +2636,7 @@ IValue * modulusValues(IValue * left, IValue * right, DBZaction onZero)
         BcdCriticalBlock bcdBlock;
         left->pushDecimalValue();
         right->pushDecimalValue();
-        DecModulus(onZero);
+        DecModulus(dbz);
         return createDecimalValueFromStack(pnt);
     }
     default:

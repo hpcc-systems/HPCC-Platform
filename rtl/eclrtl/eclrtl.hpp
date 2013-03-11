@@ -60,6 +60,8 @@ interface IException;
 class StringBuffer;
 class MemoryBuffer;
 
+enum DBZaction { DBZnone, DBZzero, DBZnan, DBZfail }; // Different actions on divide by zero
+
 //-----------------------------------------------------------------------------
 
 // RegEx Compiler for ansii  strings (uses BOOST)

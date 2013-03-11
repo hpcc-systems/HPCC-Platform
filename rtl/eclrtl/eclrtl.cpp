@@ -29,7 +29,7 @@
 #include "jptree.hpp"
 #include "junicode.hpp"
 #include "eclrtl.hpp"
-#include "bcd.hpp"
+#include "rtlbcd.hpp"
 #include "eclrtl_imp.hpp"
 #include "unicode/uchar.h"
 #include "unicode/ucol.h"
@@ -44,14 +44,6 @@
 #include "rtlqstr.ipp"
 
 #include "roxiemem.hpp"
-
-#ifndef _WIN32
-//typedef long long __int64;
-#define _fastcall
-#define __fastcall
-#define _stdcall
-#define __stdcall
-#endif
 
 #define UTF8_CODEPAGE "UTF-8"
 #define UTF8_MAXSIZE     4

@@ -28,6 +28,8 @@
  #define nbcd_decl
 #endif
 
+#define DECIMAL_OVERLOAD
+
 template <byte length, byte precision> class decimal;
 
 /*
@@ -56,8 +58,8 @@ public:
     Decimal & add(const Decimal & other);
     int compareNull() const;
     int compare(const Decimal & other) const;
-    Decimal & divide(const Decimal & other, DBZaction dbz);
-    Decimal & modulus(const Decimal & other, DBZaction dbz);
+    Decimal & divide(const Decimal & other);
+    Decimal & modulus(const Decimal & other);
     Decimal & multiply(const Decimal & other);
     Decimal & negate();
     Decimal & power(int value);
@@ -85,6 +87,7 @@ public:
     void getPrecision(unsigned & digits, unsigned & precison);
 
     // MORE: We could support NaNs for decimals at a later date by adding a member to this class.
+    bool isZero() const;
     bool isValid() const { return true; }
 
     void set(const Decimal & value);
@@ -129,7 +132,6 @@ protected:
     void extendRange(byte oLsb, byte oMsb);
     void extendRange(const Decimal & other)     { extendRange(other.lsb, other.msb); }
     void overflow();
-    void setDivideByZero(DBZaction dbz);
 
 private:
     Decimal & incLSD();
@@ -175,8 +177,8 @@ protected:
 inline Decimal operator + (const Decimal & left, const Decimal & right) { return Decimal(left).add(right); }
 inline Decimal operator - (const Decimal & left, const Decimal & right) { return Decimal(left).subtract(right); }
 inline Decimal operator * (const Decimal & left, const Decimal & right) { return Decimal(left).multiply(right); }
-inline Decimal operator / (const Decimal & left, const Decimal & right) { return Decimal(left).divide(right, DBZzero); }
-inline Decimal operator % (const Decimal & left, const Decimal & right) { return Decimal(left).modulus(right, DBZzero); }
+inline Decimal operator / (const Decimal & left, const Decimal & right) { return Decimal(left).divide(right); }
+inline Decimal operator % (const Decimal & left, const Decimal & right) { return Decimal(left).modulus(right); }
 inline bool operator == (const Decimal & left, const Decimal & right) { return left.compare(right) == 0; }
 inline bool operator != (const Decimal & left, const Decimal & right) { return left.compare(right) != 0; }
 inline bool operator >= (const Decimal & left, const Decimal & right) { return left.compare(right) >= 0; }
@@ -185,10 +187,11 @@ inline bool operator > (const Decimal & left, const Decimal & right) { return le
 inline bool operator < (const Decimal & left, const Decimal & right) { return left.compare(right) < 0; }
 #endif
 
-bool dec2Bool(size32_t bytes, const void * data);
-bool udec2Bool(size32_t bytes, const void * data);
-int decCompareDecimal(size32_t bytes, const void * _left, const void * _right);
-int decCompareUDecimal(size32_t bytes, const void * _left, const void * _right);
-bool decValid(bool isSigned, unsigned digits, const void * data);
+//Various utility helper functions:
+nbcd_decl bool dec2Bool(size32_t bytes, const void * data);
+nbcd_decl bool udec2Bool(size32_t bytes, const void * data);
+nbcd_decl int decCompareDecimal(size32_t bytes, const void * _left, const void * _right);
+nbcd_decl int decCompareUDecimal(size32_t bytes, const void * _left, const void * _right);
+nbcd_decl bool decValid(bool isSigned, unsigned digits, const void * data);
 
 #endif

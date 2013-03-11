@@ -33,7 +33,7 @@
 #include <math.h>
 #include <algorithm>
 
-#include "bcd.hpp"
+#include "rtlbcd.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
 

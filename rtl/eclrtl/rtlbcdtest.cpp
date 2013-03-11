@@ -16,10 +16,10 @@
 ############################################################################## */
 
 #include "platform.h"
-#define DECIMAL_OVERLOAD
-#include "nbcd.hpp"
-#include "bcd.hpp"
 #include "jlog.hpp"
+#include "rtlbcd.hpp"
+
+#include "nbcd.hpp"
 
 #define _elements_in(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -108,7 +108,7 @@ protected:
         char temp[80];
         Decimal a = left;
         Decimal b = right;
-        a.divide(b, DBZzero);
+        a.divide(b);
         a.getCString(sizeof(temp), temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testDivide/getCString: expected '%s', got '%s'", expected, temp);
         DecPushCString(left);
@@ -138,7 +138,7 @@ protected:
         char temp[80];
         Decimal a = left;
         Decimal b = right;
-        a.modulus(b, DBZzero);
+        a.modulus(b);
         a.getCString(sizeof(temp), temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testModulus: expected '%s', got '%s'", expected, temp);
     }
@@ -552,7 +552,7 @@ protected:
                 }
 
                 sofar1.multiply(value);
-                sofar2.divide(value, DBZzero);
+                sofar2.divide(value);
             }
             cppunit_assert(success, "ERROR: testBcdPower: one or more errors detected above.");
         }

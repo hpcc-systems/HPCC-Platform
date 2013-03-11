@@ -431,8 +431,6 @@ typedef int socklen_t;
 // **** END   OF UNIX SPECIFIC SECTION ****
 #endif
 
-enum DBZaction { DBZnone, DBZzero, DBZnan, DBZfail }; // Different actions on divide by zero
-
 #define FLOAT_SIG_DIGITS    7
 #define DOUBLE_SIG_DIGITS   16
 
