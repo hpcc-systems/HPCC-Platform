@@ -92,8 +92,9 @@
           <entry><emphasis>maxConnections</emphasis></entry>
 
           <entry>Optional. An integer specifying the maximum number of
-          connections. If omitted, the default is -1, which specifies using
-          the default as set in the environment configuration.</entry>
+          connections. If omitted, the default is -1, which indicates the
+          system chooses a suitable default based on the size of the
+          cluster.</entry>
         </row>
 
         <row>
@@ -139,8 +140,7 @@
 
           <entry>Optional. An integer specifying the size in bytes of the
           transfer buffer. Sometimes using larger values can speed the
-          process. If omitted, the default is 0, which specifies using the
-          default 64K. </entry>
+          process. If omitted, a default buffer size of 64K is used.</entry>
         </row>
 
         <row>
