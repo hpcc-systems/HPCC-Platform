@@ -804,7 +804,7 @@
                 jumboFrames="false"
                 keyedJoinFlowLimit="1000"
                 keyedJoinStable="true"
-                lazyOpen="true"
+                lazyOpen="smart"
                 leafCacheMem="50"
                 linuxYield="false"
                 localFilesExpire="-1"
