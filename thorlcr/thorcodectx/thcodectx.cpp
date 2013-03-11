@@ -107,9 +107,9 @@ const char * CThorCodeContextBase::cloneVString(size32_t len, const char * str) 
     return job.queryRowManager()->cloneVString(len, str);
 }
 
-ILocalGraph *CThorCodeContextBase::resolveLocalQuery(__int64 gid)
+IEclGraphResults *CThorCodeContextBase::resolveLocalQuery(__int64 gid)
 {
-    ILocalGraph *graph = job.getGraph((graph_id)gid);
+    IEclGraphResults *graph = job.getGraph((graph_id)gid);
     graph->Release(); // resolveLocalQuery doesn't own, can't otherwise will be circular ref.
     return graph;
 }

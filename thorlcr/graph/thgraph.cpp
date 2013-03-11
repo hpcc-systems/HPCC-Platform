@@ -1868,13 +1868,7 @@ IThorResult *CGraphBase::createGraphLoopResult(CActivityBase &activity, IRowInte
     return graphLoopResults->createResult(activity, rowIf, distributed, spillPriority);
 }
 
-// ILocalGraph
-void CGraphBase::getResult(size32_t & len, void * & data, unsigned id)
-{
-    Owned<IThorResult> result = getResult(id, true); // will get collated distributed result
-    result->getResult(len, data);
-}
-
+// IEclGraphResults
 void CGraphBase::getDictionaryResult(unsigned & count, byte * * & ret, unsigned id)
 {
     Owned<IThorResult> result = getResult(id, true); // will get collated distributed result

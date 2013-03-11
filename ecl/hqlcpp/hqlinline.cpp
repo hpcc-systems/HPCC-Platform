@@ -1433,13 +1433,13 @@ IHqlExpression * HqlCppTranslator::doCreateGraphLookup(BuildCtx & declarectx, Bu
     }
     else
     {
-        //NB: resolveLocalQuery (unlike children) can't link otherwise you get a cicular dependency.
+        //NB: resolveLocalQuery (unlike children) can't link otherwise you get a circular dependency.
         appendUniqueId(var.append("graph"), id);
         OwnedHqlExpr memberExpr = createQuoted(var, makeBoolType());
         if (declarectx.queryMatchExpr(memberExpr))
             return memberExpr.getClear();
     
-        s.clear().append("ILocalGraph * ").append(var).append(";");
+        s.clear().append("IEclGraphResults * ").append(var).append(";");
         declarectx.addQuoted(s);
         declarectx.associateExpr(memberExpr, memberExpr);
 

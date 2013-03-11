@@ -367,7 +367,7 @@ public:
     {
         return ctx->getOS();
     }
-    virtual ILocalGraph * resolveLocalQuery(__int64 activityId)
+    virtual IEclGraphResults * resolveLocalQuery(__int64 activityId)
     {
         return ctx->resolveLocalQuery(activityId);
     }

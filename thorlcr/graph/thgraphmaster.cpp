@@ -1969,11 +1969,6 @@ public:
         ensure();
         result->serialize(mb);
     }
-    virtual void getResult(size32_t & retSize, void * & ret)
-    {
-        ensure();
-        return result->getResult(retSize, ret);
-    }
     virtual void getLinkedResult(unsigned & count, byte * * & ret)
     {
         ensure();

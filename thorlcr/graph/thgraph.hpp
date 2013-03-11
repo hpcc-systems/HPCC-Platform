@@ -119,7 +119,6 @@ interface IThorResult : extends IInterface
     virtual CActivityBase *queryActivity() = 0;
     virtual bool isDistributed() const = 0;
     virtual void serialize(MemoryBuffer &mb) = 0;
-    virtual void getResult(size32_t & retSize, void * & ret) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
 };
 
@@ -421,7 +420,7 @@ interface IGraphCallback
 
 class CJobBase;
 interface IPropertyTree;
-class graph_decl CGraphBase : public CInterface, implements ILocalGraph, implements IThorChildGraph, implements IExceptionHandler
+class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, implements IThorChildGraph, implements IExceptionHandler
 {
     mutable CriticalSection crit;
     CriticalSection evaluateCrit;
@@ -499,7 +498,7 @@ class graph_decl CGraphBase : public CInterface, implements ILocalGraph, impleme
         virtual char *getPlatform() { return ctx->getPlatform(); }
         virtual char *getEnv(const char *name, const char *defaultValue) const { return ctx->getEnv(name, defaultValue); }
         virtual char *getOS() { return ctx->getOS(); }
-        virtual ILocalGraph * resolveLocalQuery(__int64 activityId) { return ctx->resolveLocalQuery(activityId); }
+        virtual IEclGraphResults * resolveLocalQuery(__int64 activityId) { return ctx->resolveLocalQuery(activityId); }
         virtual char *getEnv(const char *name, const char *defaultValue) { return ctx->getEnv(name, defaultValue); }
         virtual unsigned logString(const char * text) const { return ctx->logString(text); }
         virtual const IContextLogger &queryContextLogger() const { return ctx->queryContextLogger(); }
@@ -740,8 +739,7 @@ public:
     virtual IThorResult *createResult(CActivityBase &activity, unsigned id, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
     virtual IThorResult *createGraphLoopResult(CActivityBase &activity, IRowInterfaces *rowIf, bool distributed, unsigned spillPriority=SPILL_PRIORITY_RESULT);
 
-// ILocalGraph
-    virtual void getResult(size32_t & len, void * & data, unsigned id);
+// IEclGraphResults
     virtual void getDictionaryResult(unsigned & count, byte * * & ret, unsigned id);
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id);
 
@@ -1124,11 +1122,6 @@ public:
             results.append(*LINK(result));
     }
     virtual unsigned count() { return results.ordinality(); }
-    virtual void getResult(size32_t & retSize, void * & ret, unsigned id)
-    {
-        Owned<IThorResult> result = getResult(id, true);
-        result->getResult(retSize, ret);
-    }
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
     {
         Owned<IThorResult> result = getResult(id, true);

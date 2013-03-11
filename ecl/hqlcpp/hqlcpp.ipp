@@ -1560,7 +1560,7 @@ public:
     IHqlExpression * doBuildRegexFindInstance(BuildCtx & ctx, IHqlExpression * compiled, IHqlExpression * search, bool cloneSearch);
     
     IHqlExpression * doCreateGraphLookup(BuildCtx & declarectx, BuildCtx & resolvectx, unique_id_t id, const char * activity, bool isChild);
-    IHqlExpression * buildGetLocalResult(BuildCtx & ctx, IHqlExpression * expr, bool preferLinkedRows);
+    IHqlExpression * buildGetLocalResult(BuildCtx & ctx, IHqlExpression * expr);
 
     IHqlExpression * queryOptimizedExists(BuildCtx & ctx, IHqlExpression * expr, IHqlExpression * dataset);
     void doBuildAssignAggregateLoop(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IHqlExpression * dataset, IHqlExpression * doneFirstVar);
