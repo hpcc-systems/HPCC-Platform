@@ -1753,7 +1753,6 @@ private:
             }
             else if (stricmp(queryName, "control:queryAggregates")==0)
             {
-                const char *id = control->queryProp("Query/@id");
                 time_t from;
                 const char *fromTime = control->queryProp("@from");
                 if (fromTime)
@@ -1766,7 +1765,7 @@ private:
                     from = startupTime;
                 time_t to;
                 const char *toTime = control->queryProp("@to");
-                if (fromTime)
+                if (toTime)
                 {
                     CDateTime t;
                     t.setString(toTime, NULL, true);
@@ -1774,6 +1773,7 @@ private:
                 }
                 else
                     time(&to);
+                const char *id = control->queryProp("Query/@id");
                 if (id)
                 {
                     Owned<IQueryFactory> f = getQuery(id, logctx);
@@ -1787,7 +1787,8 @@ private:
                 }
                 else
                 {
-                    Owned<const IPropertyTree> stats = getAllQueryStats(from, to);
+                    bool includeAllQueries = control->getPropBool("@all", true);
+                    Owned<const IPropertyTree> stats = getAllQueryStats(includeAllQueries, from, to);
                     toXML(stats, reply);
                 }
             }

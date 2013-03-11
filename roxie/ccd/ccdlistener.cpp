@@ -1022,17 +1022,6 @@ protected:
     unsigned qstart;
     time_t startTime;
 
-    inline RoxieQueryStats &getStats(unsigned priority)
-    {
-        switch(priority)
-        {
-        case 0: return loQueryStats;
-        case 1: return hiQueryStats;
-        case 2: return slaQueryStats;
-        default: return unknownQueryStats;
-        }
-    }
-
     void noteQuery(bool failed, unsigned elapsedTime, unsigned priority)
     {
         Owned <IJlibDateTime> now = createDateTimeNow();
@@ -1042,8 +1031,14 @@ protected:
         lastQueryTime = h*10000 + m * 100 + s;
         lastQueryDate = y*10000 + mo * 100 + d;
 
-        RoxieQueryStats &stats = getStats(priority);
-        stats.noteQuery(failed, elapsedTime);
+        switch(priority)
+        {
+        case 0: loQueryStats.noteQuery(failed, elapsedTime); break;
+        case 1: hiQueryStats.noteQuery(failed, elapsedTime); break;
+        case 2: slaQueryStats.noteQuery(failed, elapsedTime); break;
+        default: unknownQueryStats.noteQuery(failed, elapsedTime); return; // Don't include unknown in the combined stats
+        }
+        combinedQueryStats.noteQuery(failed, elapsedTime);
     }
 };
 
@@ -1125,6 +1120,7 @@ public:
             case 1: hiQueryStats.noteActive(); break;
             case 2: slaQueryStats.noteActive(); break;
             }
+            combinedQueryStats.noteActive();
             Owned<IRoxieServerContext> ctx = queryFactory->createContext(wu, logctx);
             try
             {
@@ -1388,6 +1384,7 @@ readAnother:
                 unsigned replyLen = 0;
                 client->write(&replyLen, sizeof(replyLen));
                 rawText.clear();
+                unknownQueryStats.noteComplete();
                 goto readAnother;
             }
             else if (strnicmp(rawText.str(), "<control:childlock", 18)==0 && !isalpha(rawText.charAt(18)))
@@ -1629,6 +1626,7 @@ readAnother:
                             case 2: slaQueryStats.noteActive(); break;
                             }
                             unknownQueryStats.noteComplete();
+                            combinedQueryStats.noteActive();
                             if (isHTTP)
                             {
                                 CSoapRequestAsyncFor af(queryName, queryFactory, requestArray, *client, httpHelper, memused, slavesReplyLen, sanitizedText, logctx, xmlReadFlags);

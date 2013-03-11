@@ -94,15 +94,15 @@ static unsigned *heapBitmap;
 static unsigned heapBitmapSize;
 static unsigned heapTotalPages; // derived from heapBitmapSize - here for code clarity
 static unsigned heapLWM;
-static unsigned heapAllocated;
 static unsigned heapLargeBlocks;
 static unsigned heapLargeBlockGranularity;
 static ILargeMemCallback * heapLargeBlockCallback;
 static unsigned __int64 lastStatsCycles;
 static unsigned __int64 statsCyclesInterval;
 
-atomic_t dataBufferPages;
-atomic_t dataBuffersActive;
+static unsigned heapAllocated;
+static atomic_t dataBufferPages;
+static atomic_t dataBuffersActive;
 
 const unsigned UNSIGNED_BITS = sizeof(unsigned) * 8;
 const unsigned UNSIGNED_ALLBITS = (unsigned) -1;
@@ -3432,6 +3432,25 @@ extern bool memPoolExhausted()
    return (heapAllocated == heapTotalPages);
 }
 
+extern unsigned getHeapAllocated()
+{
+   return heapAllocated;
+}
+
+extern unsigned getHeapPercentAllocated()
+{
+   return (heapAllocated * 100)/heapTotalPages;
+}
+
+extern unsigned getDataBufferPages()
+{
+   return atomic_read(&dataBufferPages);
+}
+
+extern unsigned getDataBuffersActive()
+{
+   return atomic_read(&dataBuffersActive);
+}
 
 extern IDataBufferManager *createDataBufferManager(size32_t size)
 {
