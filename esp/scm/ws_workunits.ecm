@@ -350,6 +350,7 @@ ESPrequest [nil_remove] WUQueryRequest
 
     string Sortby;
     bool Descending(false);
+    int64 CacheHint;
 };
 
 
@@ -386,6 +387,7 @@ ESPresponse [nil_remove, exceptions_inline] WUQueryResponse
     bool Descending(false);
     string BasicQuery;
     string Filters;
+    [min_ver("1.41")] int64 CacheHint;
     
     ESParray<ESPstruct ECLWorkunit> Workunits;
 };
@@ -1335,7 +1337,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.40"), default_client_version("1.40"),
+    version("1.41"), default_client_version("1.41"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

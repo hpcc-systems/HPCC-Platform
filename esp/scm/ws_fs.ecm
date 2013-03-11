@@ -125,6 +125,7 @@ ESPrequest GetDFUWorkunits
     [min_ver("1.01")] int64 PageStartFrom(-1);
     string Sortby;
     bool Descending(false);
+    int64 CacheHint(-1);
 };
 
 ESPresponse [encode(0), exceptions_inline]
@@ -149,7 +150,7 @@ GetDFUWorkunitsResponse
     bool Descending(false);
     string BasicQuery;
     string Filters;
-
+    [min_ver("1.07")] int64 CacheHint;
  };
 
 ESPrequest [exceptions_inline] ProgressRequest
@@ -587,7 +588,7 @@ ESPresponse [exceptions_inline, nil_remove] DeleteDropZoneFilesResponse
 };
 
 ESPservice [
-    version("1.06"), default_client_version("1.06"),
+    version("1.07"), default_client_version("1.07"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;
