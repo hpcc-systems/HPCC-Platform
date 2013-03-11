@@ -634,9 +634,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         useRemoteResources = topology->getPropBool("@useRemoteResources", true);
         checkFileDate = topology->getPropBool("@checkFileDate", true);
         const char *lazyOpenMode = topology->queryProp("@lazyOpen");
-        if (!lazyOpenMode)
-            lazyOpen = false;
-        else if (stricmp(lazyOpenMode, "smart")==0)
+        if (!lazyOpenMode || stricmp(lazyOpenMode, "smart")==0)
             lazyOpen = (restarts > 0);
         else
             lazyOpen = topology->getPropBool("@lazyOpen", false);

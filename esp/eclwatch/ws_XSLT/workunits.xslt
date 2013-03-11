@@ -37,6 +37,7 @@
    <xsl:variable name="descending" select="/WUQueryResponse/Descending"/>
    <xsl:variable name="filters" select="/WUQueryResponse/Filters"/>
    <xsl:variable name="basicquery" select="/WUQueryResponse/BasicQuery"/>
+   <xsl:variable name="cachehint" select="/WUQueryResponse/CacheHint"/>
    <xsl:template match="WUQueryResponse">
       <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
          <head>
@@ -54,6 +55,7 @@
                var currentFilters='<xsl:value-of select="$filters"/>';
                var archivedStr='<xsl:value-of select="$archived"/>';
                var basicQuery='<xsl:value-of select="$basicquery"/>';
+               var cacheHint='<xsl:value-of select="$cachehint"/>';
                <xsl:text disable-output-escaping="yes"><![CDATA[
                      var protectedChecked = 0;
                      var unprotectedChecked = 0;
@@ -172,9 +174,9 @@
                         var size = pageEndAt - startFrom + 1;
                         startFrom -= 1;
                         if (basicQuery.length > 0)
-                            document.location.href = '/WsWorkunits/WUQuery?'+ basicQuery + '&PageStartFrom='+startFrom+'&PageSize='+size;
+                            document.location.href = '/WsWorkunits/WUQuery?'+ basicQuery + '&PageStartFrom='+startFrom+'&PageSize='+size+'&CacheHint=' + cacheHint;
                         else
-                            document.location.href = '/WsWorkunits/WUQuery?PageStartFrom='+startFrom+'&PageSize='+size;
+                            document.location.href = '/WsWorkunits/WUQuery?PageStartFrom='+startFrom+'&PageSize='+size+'&CacheHint=' + cacheHint;
 
                         return false;
                      }             
@@ -366,25 +368,25 @@
                         <xsl:choose>
                             <xsl:when test="string-length($basicquery)">
                                 <xsl:if test="$firstpage &lt; 1">
-                                    <a href="javascript:go('/WsWorkunits/WUQuery?{$basicquery}&amp;PageSize={$pagesize}')">First</a>&#160;
-                                    <a href="javascript:go('/WsWorkunits/WUQuery?{$basicquery}&amp;PageStartFrom={$prevpage}&amp;PageSize={$pagesize}')">Prev</a>&#160;
+                                    <a href="javascript:go('/WsWorkunits/WUQuery?{$basicquery}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">First</a>&#160;
+                                    <a href="javascript:go('/WsWorkunits/WUQuery?{$basicquery}&amp;PageStartFrom={$prevpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Prev</a>&#160;
                                 </xsl:if>
                                 <xsl:if test="$nextpage &gt; -1">
-                                    <a href="javascript:go('/WsWorkunits/WUQuery?{$basicquery}&amp;PageStartFrom={$nextpage}&amp;PageSize={$pagesize}')">Next</a>&#160;
+                                    <a href="javascript:go('/WsWorkunits/WUQuery?{$basicquery}&amp;PageStartFrom={$nextpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Next</a>&#160;
                                     <xsl:if test="not(string-length($archived))">
-                                        <a href="javascript:go('/WsWorkunits/WUQuery?{$basicquery}&amp;PageStartFrom={$lastpage}&amp;PageSize={$pagesize}')">Last</a>&#160;
+                                        <a href="javascript:go('/WsWorkunits/WUQuery?{$basicquery}&amp;PageStartFrom={$lastpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Last</a>&#160;
                                     </xsl:if>
                                 </xsl:if>
                             </xsl:when>
                             <xsl:otherwise>
                                 <xsl:if test="$firstpage &lt; 1">
-                                    <a href="javascript:go('/WsWorkunits/WUQuery?PageSize={$pagesize}')">First</a>&#160;
-                                    <a href="javascript:go('/WsWorkunits/WUQuery?PageStartFrom={$prevpage}&amp;PageSize={$pagesize}')">Prev</a>&#160;
+                                    <a href="javascript:go('/WsWorkunits/WUQuery?PageSize={$pagesize}&amp;CacheHint={$cachehint}')">First</a>&#160;
+                                    <a href="javascript:go('/WsWorkunits/WUQuery?PageStartFrom={$prevpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Prev</a>&#160;
                                 </xsl:if>
                                 <xsl:if test="$nextpage &gt; -1">
-                                    <a href="javascript:go('/WsWorkunits/WUQuery?PageStartFrom={$nextpage}&amp;PageSize={$pagesize}')">Next</a>&#160;
+                                    <a href="javascript:go('/WsWorkunits/WUQuery?PageStartFrom={$nextpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Next</a>&#160;
                                     <xsl:if test="not(string-length($archived))">
-                                        <a href="javascript:go('/WsWorkunits/WUQuery?PageStartFrom={$lastpage}&amp;PageSize={$pagesize}')">Last</a>&#160;
+                                        <a href="javascript:go('/WsWorkunits/WUQuery?PageStartFrom={$lastpage}&amp;PageSize={$pagesize}&amp;CacheHint={$cachehint}')">Last</a>&#160;
                                     </xsl:if>
                                 </xsl:if>
                             </xsl:otherwise>

@@ -2036,9 +2036,15 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
 
     filters[filterCount] = WUSFterm;
 
+    __int64 cacheHint = 0;
+    if (!req.getCacheHint_isNull())
+        cacheHint = req.getCacheHint();
+
     Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
     unsigned numWUs;
-    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), begin, pagesize+1, "", NULL, &numWUs);
+    Owned<IConstWorkUnitIterator> it = factory->getWorkUnitsSorted(sortorder, filters, filterbuf.bufferBase(), begin, pagesize+1, "", &cacheHint, &numWUs);
+    if (version >= 1.41)
+        resp.setCacheHint(cacheHint);
 
     unsigned actualCount = 0;
     ForEach(*it)
