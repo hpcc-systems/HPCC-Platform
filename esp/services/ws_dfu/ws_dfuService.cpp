@@ -1001,7 +1001,7 @@ void CWsDfuEx::parseStringArray(const char *input, StringArray& strarray)
 }
 
 int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const char* superfile, StringArray& subfiles,
-                               const char* beforeSubFile, bool existingSuperfile, bool deleteFile, bool removeSuperfile)
+                               const char* beforeSubFile, bool existingSuperfile, bool autocreatesuper, bool deleteFile, bool removeSuperfile)
 {
     if (!action || !*action)
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Superfile action not specified");
@@ -1011,10 +1011,6 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
 
     if (!superfile || !*superfile)
         throw MakeStringException(ECLWATCH_INVALID_INPUT, "Superfile name not specified");
-
-    unsigned num = subfiles.length();
-    if (num < 1)
-        throw MakeStringException(ECLWATCH_INVALID_INPUT, "Subfile not specified");
 
     StringBuffer username;
     context.getUserID(username);
@@ -1026,8 +1022,9 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
         userdesc->set(username.str(), passwd);
     }
 
+    if (!autocreatesuper)
     {//a file lock created by the lookup() will be released after '}'
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), true);   
+        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(superfile, userdesc.get(), true);
         if (existingSuperfile)
         {
             if (!df)
@@ -1039,36 +1036,40 @@ int CWsDfuEx::superfileAction(IEspContext &context, const char* action, const ch
             throw MakeStringException(ECLWATCH_FILE_ALREADY_EXISTS,"The file %s already exists.",superfile);
     }
 
-    StringBuffer msgHead;
-    if(username.length() > 0)
-        msgHead.appendf("CWsDfuEx::SuperfileAction User=%s Action=%s, Superfile=%s Subfile(s)= ", username.str(), action, superfile);
-    else
-        msgHead.appendf("CWsDfuEx::SuperfileAction User=<unknown> Action=%s, Superfile=%s Subfile(s)= ", action, superfile);
-
-    unsigned filesInMsgBuf = 0;
-    StringBuffer msgBuf = msgHead;
     PointerArrayOf<char> subfileArray;
-    for(unsigned i = 0; i < num; i++)
+    unsigned num = subfiles.length();
+    if (num > 0)
     {
-        subfileArray.append((char*) subfiles.item(i));
-        msgBuf.appendf("%s, ", subfiles.item(i));
-        filesInMsgBuf++;
-        if (filesInMsgBuf > 9)
-        {
-            PROGLOG("%s",msgBuf.str());
-            msgBuf = msgHead;
-            filesInMsgBuf = 0;
-        }
-    }
+        StringBuffer msgHead;
+        if(username.length() > 0)
+            msgHead.appendf("CWsDfuEx::SuperfileAction User=%s Action=%s, Superfile=%s Subfile(s)= ", username.str(), action, superfile);
+        else
+            msgHead.appendf("CWsDfuEx::SuperfileAction User=<unknown> Action=%s, Superfile=%s Subfile(s)= ", action, superfile);
 
-    if (filesInMsgBuf > 0)
-        PROGLOG("%s", msgBuf.str());
+        unsigned filesInMsgBuf = 0;
+        StringBuffer msgBuf = msgHead;
+        for(unsigned i = 0; i < num; i++)
+        {
+            subfileArray.append((char*) subfiles.item(i));
+            msgBuf.appendf("%s, ", subfiles.item(i));
+            filesInMsgBuf++;
+            if (filesInMsgBuf > 9)
+            {
+                PROGLOG("%s",msgBuf.str());
+                msgBuf = msgHead;
+                filesInMsgBuf = 0;
+            }
+        }
+
+        if (filesInMsgBuf > 0)
+            PROGLOG("%s", msgBuf.str());
+    }
 
     Owned<IDFUhelper> dfuhelper = createIDFUhelper();
 
     synchronized block(m_superfilemutex);
     if(strieq(action, "add"))
-        dfuhelper->addSuper(superfile, userdesc.get(), num, (const char**) subfileArray.getArray(), beforeSubFile);
+        dfuhelper->addSuper(superfile, userdesc.get(), num, (const char**) subfileArray.getArray(), beforeSubFile, true);
     else
         dfuhelper->removeSuper(superfile, userdesc.get(), num, (const char**) subfileArray.getArray(), deleteFile, removeSuperfile);
 
@@ -1111,7 +1112,7 @@ bool CWsDfuEx::onAddtoSuperfile(IEspContext &context, IEspAddtoSuperfileRequest 
 
         if (version > 1.15)
         {
-            superfileAction(context, "add", superfile, req.getNames(), NULL, req.getExistingFile(), false);
+            superfileAction(context, "add", superfile, req.getNames(), NULL, req.getExistingFile(), false, false);
         }
         else
         {
@@ -1120,7 +1121,7 @@ bool CWsDfuEx::onAddtoSuperfile(IEspContext &context, IEspAddtoSuperfileRequest 
             if (subfilesStr && *subfilesStr)
                 parseStringArray(subfilesStr, subfileNames);
 
-            superfileAction(context, "add", superfile, subfileNames, NULL, req.getExistingFile(), false);
+            superfileAction(context, "add", superfile, subfileNames, NULL, req.getExistingFile(), false, false);
         }
 
         resp.setRedirectUrl(StringBuffer("/WsDFU/DFUInfo?Name=").append(superfile));
@@ -3113,7 +3114,7 @@ bool CWsDfuEx::onSuperfileAction(IEspContext &context, IEspSuperfileActionReques
 
         const char* action = req.getAction();
         const char* superfile = req.getSuperfile();
-        superfileAction(context, action, superfile, req.getSubfiles(), req.getBefore(), true, req.getDelete(), req.getRemoveSuperfile());
+        superfileAction(context, action, superfile, req.getSubfiles(), req.getBefore(), true, true, req.getDelete(), req.getRemoveSuperfile());
 
         resp.setRetcode(0);
         if (superfile && *superfile && action && strieq(action, "remove"))
