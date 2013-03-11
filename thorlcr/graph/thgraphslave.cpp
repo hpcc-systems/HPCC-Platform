@@ -318,6 +318,8 @@ void CSlaveGraph::initWithActData(MemoryBuffer &in, MemoryBuffer &out)
 {
     CriticalBlock b(progressCrit);
     initialized = true;
+    if (0 == in.length())
+        return;
     activity_id id;
     loop
     {
@@ -422,12 +424,11 @@ bool CSlaveGraph::recvActivityInitData(size32_t parentExtractSz, const byte *par
         }
         try
         {
+            MemoryBuffer actInitData;
             if (len)
-            {
-                MemoryBuffer actInitData;
                 actInitData.append(len, msg.readDirect(len));
-                initWithActData(actInitData, actInitRtnData);
-            }
+            initWithActData(actInitData, actInitRtnData);
+
             if (queryOwner() && !isGlobal())
             {
                 // initialize any for which no data was sent
