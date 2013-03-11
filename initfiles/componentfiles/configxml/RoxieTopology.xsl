@@ -117,6 +117,7 @@
                 <xsl:value-of select="translate($path3, $oldPathSeparator, $newPathSeparator)"/>
             </xsl:attribute>
             <xsl:copy-of select="/Environment/Software/Directories"/>
+            <xsl:copy-of select="/Environment/Hardware/NAS"/>
             <xsl:for-each select="ACL">
                 <xsl:copy>
                     <xsl:copy-of select="@name"/>
