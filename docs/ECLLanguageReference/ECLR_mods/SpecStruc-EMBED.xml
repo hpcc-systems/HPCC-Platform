@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="EMBED_Structure">
+  <title>EMBED Structure<indexterm>
+      <primary>EMBED Structure</primary>
+    </indexterm></title>
+
+  <para><emphasis>resulttype funcname</emphasis> <emphasis
+  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
+  role="bold">) := EMBED(<indexterm>
+      <primary>EMBED</primary>
+    </indexterm></emphasis> <emphasis>language</emphasis> <emphasis
+  role="bold">)</emphasis></para>
+
+  <para><emphasis>code</emphasis></para>
+
+  <para><emphasis role="bold">ENDEMBED<indexterm>
+      <primary>ENDEMBED</primary>
+    </indexterm>;</emphasis></para>
+
+  <para><emphasis>resulttype funcname</emphasis> <emphasis
+  role="bold">(</emphasis> <emphasis>parameterlist</emphasis> <emphasis
+  role="bold">) := EMBED(</emphasis> <emphasis>language, code</emphasis>
+  <emphasis role="bold">);</emphasis></para>
+
+  <informaltable colsep="0" frame="none" rowsep="0">
+    <tgroup cols="2">
+      <colspec align="left" colwidth="122.40pt" />
+
+      <colspec />
+
+      <tbody>
+        <row>
+          <entry><emphasis>resulttype</emphasis></entry>
+
+          <entry>The ECL return value type of the function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>funcname</emphasis></entry>
+
+          <entry><para>The ECL definition name of the function.</para></entry>
+        </row>
+
+        <row>
+          <entry><emphasis>parameterlist</emphasis></entry>
+
+          <entry>The parameters to pass to the function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>language</emphasis></entry>
+
+          <entry>The name of the programming language being embedded. A
+          language support module for that language must have been installed
+          in your plugins directory. Modules are provided for languages such
+          as Java, R, Javascript, and Python. You can write your own pluggable
+          language support module for any language not already supported by
+          using the supplied ones as examples or starting points.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>code</emphasis></entry>
+
+          <entry>The source code to embed.</entry>
+        </row>
+      </tbody>
+    </tgroup>
+  </informaltable>
+
+  <para>The <emphasis role="bold">EMBED</emphasis> structure makes it possible
+  to add in-line <emphasis>language</emphasis> code to your ECL. This is
+  similar to the BEGINC++ structure, but available for any
+  <emphasis>language</emphasis> with a pluggable language support module
+  installed, such as R, Javascript, and Python. Others may follow or people
+  can write their own using the supplied ones as templates/examples/starting
+  points. This may be used to write Javascript, R, or Python code, but is not
+  usable with Java code (use the IMPORT function for Java code).</para>
+
+  <para>The parameter types that can be passed and returned will vary by
+  <emphasis>language</emphasis>, but in general the simple scalar types
+  (INTEGER, REAL, STRING, UNICODE, BOOLEAN, and DATA) and SETs of those scalar
+  types are supported, so long as there is an appropriate data type in the
+  <emphasis>language</emphasis> to map them to.</para>
+
+  <para>The first form of EMBED is the structure that must terminate with
+  ENDEMBED. This may contain any code in the supported
+  <emphasis>language</emphasis>.</para>
+
+  <para>The second form of EMBED is a self-contained function. The
+  <emphasis>code</emphasis> parameter contains all the code to execute, making
+  this useful only for very simple expressions.</para>
+
+  <para><emphasis role="bold">WARNING: This feature could create memory
+  corruption and/or security issues, so great care and forethought are
+  advised—consult with Technical Support before using.</emphasis></para>
+
+  <para>Example:</para>
+
+  <programlisting>//First form: a structure
+IMPORT Python;  //make Python language available
+
+INTEGER addone(INTEGER p) := EMBED(Python)
+# Python code that returns one more than the value passed to it
+if p &lt; 10:
+  return p+1
+else:
+  return 0
+ENDEMBED;
+
+//Second form: a function
+INTEGER addtwo(INTEGER p) := EMBED(Python, 'p+2');  </programlisting>
+
+  <para>See Also: <link linkend="BEGINCplus_Structure">BEGINC++
+  Structure</link>, <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="IMPORT_function">IMPORT function</link></para>
+</sect1>
