@@ -2824,6 +2824,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_param:
     case no_anon:
     case no_nofold:             // assume nothing - to stop subsequent optimizations
+    case no_delayedselect:
         info.setUnknown(RCMdisk);
         break;
     case no_parse:
