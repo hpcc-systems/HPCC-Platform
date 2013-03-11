@@ -1077,7 +1077,7 @@ public:
         return LINK(queryChildGraph((unsigned) activityId)->queryChildGraph());
     }
 
-    virtual ILocalGraph * resolveLocalQuery(__int64 id)
+    virtual IEclGraphResults * resolveLocalQuery(__int64 id)
     {
         return queryChildGraph((unsigned) id)->queryLocalGraph();
     }

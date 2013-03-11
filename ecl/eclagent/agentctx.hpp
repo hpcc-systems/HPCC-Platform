@@ -26,7 +26,6 @@ struct IHThorGraphResult : extends IInterface
 {
     virtual void addRowOwn(const void * row) = 0;
     virtual const void * queryRow(unsigned whichRow) = 0;
-    virtual void getResult(unsigned & len, void * & data) = 0;
     virtual void getLinkedResult(unsigned & count, byte * * & ret) = 0;
     virtual const void * getOwnRow(unsigned whichRow) = 0;      // used internally, removes row from result
 };
@@ -52,7 +51,7 @@ struct IEclLoopGraph : public IInterface
     virtual void executeChild(const byte * parentExtract, IHThorGraphResults * results, IHThorGraphResults * _graphLoopResults) = 0;
 };
 
-struct ILocalGraphEx : public ILocalGraph
+struct ILocalEclGraphResults : public IEclGraphResults
 {
 public:
     virtual IHThorGraphResult * queryResult(unsigned id) = 0;

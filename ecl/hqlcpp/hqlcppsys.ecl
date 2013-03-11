@@ -591,7 +591,6 @@ const char * cppSystemText[]  = {
     "   executeGraph(const varstring graph, boolean realThor, unsigned4 lenExtract, row parentExtract) : ctxmethod,entrypoint='executeGraph';",
     "   executeChildQueryInstance(unsigned4 lenExtract, row parentExtract)  : method,entrypoint='execute';",
     "   evaluateChildQueryInstance(unsigned4 lenExtract, row parentExtract) : method,entrypoint='evaluate';",       // actually returns something el
-    "   dataset getChildQueryResult(unsigned4 id)   : method,pure,entrypoint='getResult';",
     "   _linkcounted_ dataset getChildQueryLinkedResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getLinkedResult';",
     "   _linkcounted_ dictionary getChildQueryDictionaryResult(unsigned4 id)   : method,allocator(false),pure,entrypoint='getDictionaryResult';",
     
@@ -748,7 +747,6 @@ const char * cppSystemText[]  = {
     "   getBytesFromBuilder() : omethod,entrypoint='getbytes';", 
     "   unsigned integer4 getClusterSize() : ctxmethod, entrypoint='getNodes';",
 
-    "   dataset getLocalResult(unsigned4 id) :  method,pure,entrypoint='getResult';",
     "   _linkcounted_ dataset getLocalLinkedResult(unsigned4 id) : method,allocator(false),pure,entrypoint='getLinkedResult';",
     "   linkcounted dictionary getLocalDictionaryResult(unsigned4 id) : method,allocator(false),pure,entrypoint='getDictionaryResult';",
     "   unsigned4 getGraphLoopCounter() : ctxmethod,entrypoint='getGraphLoopCounter';",

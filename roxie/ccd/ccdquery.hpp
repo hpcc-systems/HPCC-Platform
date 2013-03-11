@@ -62,7 +62,7 @@ interface IActivityGraph : extends IInterface
     virtual void noteException(IException *E) = 0;
     virtual void checkAbort() = 0;
     virtual IThorChildGraph * queryChildGraph() = 0;
-    virtual ILocalGraph * queryLocalGraph() = 0;
+    virtual IEclGraphResults * queryLocalGraph() = 0;
     virtual IRoxieServerChildGraph * queryLoopGraph() = 0;
     virtual IRoxieServerChildGraph * createGraphLoopInstance(unsigned loopCounter, unsigned parentExtractSize, const byte * parentExtract, const IRoxieContextLogger &logctx) = 0;
     virtual const char *queryName() const = 0;

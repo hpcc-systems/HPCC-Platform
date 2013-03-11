@@ -5280,7 +5280,7 @@ IRoxieServerActivityFactory *createRoxieServerWorkUnitReadActivityFactory(unsign
 
 //=================================================================================
 
-interface ILocalGraphEx : public ILocalGraph
+interface ILocalGraphEx : public IEclGraphResults
 {
 public:
     virtual void setResult(unsigned id, IGraphResult * result) = 0;
@@ -24794,10 +24794,6 @@ public:
     {
         return select(id).createIterator();
     }
-    virtual void getResult(unsigned & lenResult, void * & result, unsigned id)
-    {
-        throwUnexpected(); // Only required in legacy thor implementation
-    }
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
     {
         select(id).getLinkedResult(count, ret);
@@ -24941,7 +24937,7 @@ protected:
     class ActivityGraphCodeContext : public IndirectCodeContext
     {
     public:
-        virtual ILocalGraph * resolveLocalQuery(__int64 activityId)
+        virtual IEclGraphResults * resolveLocalQuery(__int64 activityId)
         {
             if ((unsigned) activityId == container->queryId())
                 return container;
@@ -25124,7 +25120,7 @@ public:
         return this;
     }
 
-    virtual ILocalGraph * queryLocalGraph()
+    virtual IEclGraphResults * queryLocalGraph()
     {
         return this;
     }
@@ -25268,10 +25264,6 @@ public:
     {
         doExecute(parentExtractSize, parentExtract);
         return LINK(results);
-    }
-    virtual void getResult(size32_t & retSize, void * & ret, unsigned id)
-    {
-        results->getResult(retSize, ret, id);
     }
     virtual void getLinkedResult(unsigned & count, byte * * & ret, unsigned id)
     {
@@ -25535,7 +25527,7 @@ public:
     virtual void noteException(IException *E) { throwUnexpected(); }
     virtual void checkAbort() { throwUnexpected(); }
     virtual IThorChildGraph * queryChildGraph() { throwUnexpected(); }
-    virtual ILocalGraph * queryLocalGraph() { throwUnexpected(); }
+    virtual IEclGraphResults * queryLocalGraph() { throwUnexpected(); }
     virtual IRoxieServerChildGraph * queryLoopGraph() { throwUnexpected(); }
 
     virtual void onCreate(IRoxieSlaveContext *_ctx, IHThorArg *_colocalParent) 
@@ -25743,75 +25735,6 @@ public:
 bool MergeActivityTest::isDedup = false;
 extern "C" IHThorArg * mergeActivityTestFactory() { return new MergeActivityTest; }
 
-struct PrefetchProjectActivityTest : public ccdserver_hqlhelper::CThorPrefetchProjectArg {
-    virtual IOutputMetaData * queryOutputMeta()
-    {
-        return &testMeta;
-    }
-    virtual void onCreate(ICodeContext * _ctx, IHThorArg *, MemoryBuffer * in) {
-        ctx = _ctx;
-        child8.setown(ctx->resolveChildQuery(8,this));
-    }
-//  mutable rtlRowBuilder ex39R4;
-    Owned<IThorChildGraph> child8;
-    virtual IThorChildGraph *queryChild() { return child8; }
-    virtual bool preTransform(rtlRowBuilder & extract, const void * _left, unsigned __int64 count) {
-        const unsigned char * left = (const unsigned char *) _left;
-        extract.ensureAvailable(1);
-        memcpy((char *)(extract.getbytes() + 0),(char *)(left + 0),1);
-        // child8->execute(5,ex39R4.getbytes());
-        return true;
-    }
-    virtual size32_t transform(ARowBuilder & _self, const void * _left, IEclGraphResults * results, unsigned __int64 count) {
-        unsigned char * self = (unsigned char *) _self.getSelf();
-        const unsigned char * left = (const unsigned char *) _left;
-        memcpy((char *)(self + 0),(char *)(left + 0),10);
-        rtlDataAttr v79R4;
-        unsigned int v89R4;
-        results->getResult(v89R4,v79R4.refdata(),0);
-        memcpy(self + count - 1, ((unsigned char *)v79R4.getbytes() + count - 1), 1);
-        return 10;
-    }
-};
-extern "C" IHThorArg * prefetchProjectActivityTestFactory() { return new PrefetchProjectActivityTest; }
-
-struct InlineTableActivityTest : public ccdserver_hqlhelper::CThorInlineTableArg {
-    virtual IOutputMetaData * queryOutputMeta()
-    {
-        return &testMeta;
-    }
-    virtual size32_t getRow(ARowBuilder & _self, __uint64 row) {
-        unsigned char * self = (unsigned char *) _self.getSelf();
-        switch (row) {
-            case 0: {
-                memcpy((char *)(self + 0),"1234567890",10);
-                return 10;
-            }
-        }
-        return 0;
-    }
-    virtual __uint64 numRows() {
-        return 1;
-    }
-};
-extern "C" IHThorArg * inlineTableActivityTestFactory() { return new InlineTableActivityTest; }
-
-struct SelectNActivityTest : public ccdserver_hqlhelper::CThorSelectNArg {
-    virtual IOutputMetaData * queryOutputMeta() 
-    {
-        return &testMeta; 
-    }
-    virtual size32_t createDefault(ARowBuilder & _self) { memset(_self.getSelf(), ' ', 10); return 10; }
-    virtual unsigned __int64 getRowToSelect() { return 1; }
-};
-extern "C" IHThorArg * selectNActivityTestFactory() { return new SelectNActivityTest; }
-
-struct LocalResultActivityTest : public ccdserver_hqlhelper::CThorLocalResultWriteArg {
-    virtual unsigned querySequence() { return 0; }
-    virtual bool usedOutsideGraph() { return true; }
-};
-extern "C" IHThorArg * localResultActivityTestFactory() { return new LocalResultActivityTest; }
-
 class CcdServerTest : public CppUnit::TestFixture  
 {
     CPPUNIT_TEST_SUITE(CcdServerTest);
@@ -25821,7 +25744,6 @@ class CcdServerTest : public CppUnit::TestFixture
         CPPUNIT_TEST(testQuickSort);
         CPPUNIT_TEST(testMerge);
         CPPUNIT_TEST(testMergeDedup);
-        CPPUNIT_TEST(testPrefetchProject);
         CPPUNIT_TEST(testMiscellaneous);
         CPPUNIT_TEST(testCleanup);
     CPPUNIT_TEST_SUITE_END();
@@ -26130,31 +26052,6 @@ protected:
         // Should really test WHICH side gets kept...
         // Should test with more than 2 inputs...
         DBGLOG("testMergeDedup done");
-    }
-
-    void testPrefetchProject()
-    {
-        DBGLOG("testPrefetchProject");
-        init();
-        Owned <IRoxieServerActivityFactory> factory = createRoxieServerPrefetchProjectActivityFactory(1, 1, *queryFactory, prefetchProjectActivityTestFactory, TAKprefetchproject);
-        Owned<ActivityArray> childGraph = new ActivityArray(false, false, false, false);
-        IRoxieServerActivityFactory *ttf = createRoxieServerInlineTableActivityFactory(2, 1, *queryFactory, inlineTableActivityTestFactory, TAKinlinetable);
-        IRoxieServerActivityFactory *snf = createRoxieServerSelectNActivityFactory(3, 1, *queryFactory, selectNActivityTestFactory, TAKselectn);
-        IRoxieServerActivityFactory *lrf = createRoxieServerLocalResultWriteActivityFactory(4, 1, *queryFactory, localResultActivityTestFactory, TAKlocalresultwrite, 0, 8, true);
-        childGraph->append(*ttf);
-        childGraph->append(*snf);
-        snf->setInput(0,0,0);
-        childGraph->append(*lrf);
-        lrf->setInput(0,1,0);
-        factory->addChildQuery(8, childGraph.getLink());
-        factory->setInput(0,0,0);
-        Owned <IRoxieServerActivity> activity = factory->createActivity(NULL);
-        const char * test[] = { NULL, NULL };
-        const char * test1in[] = { "aaaaaaaaaa", "aaaaaaaaaa", "aaaaaaaaaa","aaaaaaaaaa", "aaaaaaaaaa", NULL, NULL };
-        const char * test1out[] = { "1aaaaaaaaa", "a2aaaaaaaa", "aa3aaaaaaa", "aaa4aaaaaa", "aaaa5aaaaa", NULL, NULL };
-        testActivity(activity, test1in, NULL, test1out);
-        testActivity(activity, test, NULL, test);
-        DBGLOG("testPrefetchProject done");
     }
 
     void testMiscellaneous()
