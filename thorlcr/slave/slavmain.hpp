@@ -20,6 +20,8 @@
 
 void abortSlave();
 void slaveMain();
+void enableThorSlaveAsDaliClient();
+void disableThorSlaveAsDaliClient();
 
 #endif
 
