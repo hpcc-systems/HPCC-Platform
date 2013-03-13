@@ -60,14 +60,14 @@ ESPStruct [nil_remove] DFUWorkunit
     bool Overwrite;
     bool Compress;
 
-    [min_ver("1.04"), max_ver("1.07")] string SourceCsvSeparate;
-    [min_ver("1.04"), max_ver("1.07")] string SourceCsvQuote;
-    [min_ver("1.04"), max_ver("1.07")] string SourceCsvTerminate;
-    [min_ver("1.05"), max_ver("1.07")] string SourceCsvEscape;
+    [min_ver("1.04"), depr_ver("1.08")] string SourceCsvSeparate;
+    [min_ver("1.04"), depr_ver("1.08")] string SourceCsvQuote;
+    [min_ver("1.04"), depr_ver("1.08")] string SourceCsvTerminate;
+    [min_ver("1.05"), depr_ver("1.08")] string SourceCsvEscape;
 
-    [min_ver("1.08")] string SourceSeparate;
+    [min_ver("1.08")] string SourceSeparators;
     [min_ver("1.08")] string SourceQuote;
-    [min_ver("1.08")] string SourceTerminate;
+    [min_ver("1.08")] string SourceTerminators;
     [min_ver("1.08")] string SourceEscape;
 
     string TimeStarted;
@@ -321,14 +321,14 @@ ESPrequest [nil_remove] SprayVariable
     
     int sourceMaxRecordSize;
     int sourceFormat;
-    [max_ver("1.07")] bool   NoSourceCsvSeparator(false);
-    [max_ver("1.07")] string sourceCsvSeparate;
-    [max_ver("1.07")] string sourceCsvTerminate;
-    [max_ver("1.07")] string sourceCsvQuote;
-    [max_ver("1.07")] string sourceCsvEscape;
+    [depr_ver("1.08")] bool   NoSourceCsvSeparator(false);
+    [depr_ver("1.08")] string sourceCsvSeparate;
+    [depr_ver("1.08")] string sourceCsvTerminate;
+    [depr_ver("1.08")] string sourceCsvQuote;
+    [depr_ver("1.08")] string sourceCsvEscape;
     [min_ver("1.08")] bool   NoSourceSeparator(false);
-    [min_ver("1.08")] string sourceSeparate;
-    [min_ver("1.08")] string sourceTerminate;
+    [min_ver("1.08")] string sourceSeparators;
+    [min_ver("1.08")] string sourceTerminators;
     [min_ver("1.08")] string sourceQuote;
     [min_ver("1.08")] string sourceEscape;
     string sourceRowTag;

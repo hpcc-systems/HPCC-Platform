@@ -271,9 +271,9 @@
         <xsl:apply-templates select="RowTag"/>
         <xsl:apply-templates select="SourceNumParts"/>
         <xsl:apply-templates select="SourceDirectory"/>
-        <xsl:apply-templates select="SourceSeparate"/>
+        <xsl:apply-templates select="SourceSeparators"/>
         <xsl:apply-templates select="SourceEscape"/>
-        <xsl:apply-templates select="SourceTerminate"/>
+        <xsl:apply-templates select="SourceTerminators"/>
         <xsl:apply-templates select="SourceQuote"/>
         <xsl:apply-templates select="DestLogicalName"/>
         <xsl:apply-templates select="DestGroupName"/>

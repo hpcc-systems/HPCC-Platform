@@ -362,14 +362,14 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
                 if(version < 1.07)
                     dest.setSourceCsvSeparate(separate.str());
                 else
-                    dest.setSourceSeparate(separate.str());
+                    dest.setSourceSeparators(separate.str());
             }
             if(terminate.length() > 0)
             {
                 if(version < 1.07)
                     dest.setSourceCsvTerminate(terminate.str());
                 else
-                    dest.setSourceTerminate(terminate.str());
+                    dest.setSourceTerminators(terminate.str());
             }
             if(quote.length() > 0)
             {
@@ -2052,7 +2052,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         }
         else
         {
-            const char* cs = req.getSourceSeparate();
+            const char* cs = req.getSourceSeparators();
             if (!cs || !*cs)
                 cs = req.getSourceCsvSeparate();
             bool noSourceSeparator = false;
@@ -2067,7 +2067,7 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
             else if(cs == NULL || *cs == '\0')
                 cs = "\\,";
 
-            const char* ct = req.getSourceTerminate();
+            const char* ct = req.getSourceTerminators();
             if (!ct || !*ct)
                 ct = req.getSourceCsvTerminate();
             if(ct == NULL || *ct == '\0')

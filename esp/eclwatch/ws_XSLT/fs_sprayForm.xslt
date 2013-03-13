@@ -170,8 +170,8 @@
                      if (method == 'SprayVariable')
                      {
                         disable = (document.getElementById('sourceMaxRecordSize') != null && document.getElementById('sourceMaxRecordSize').value == 0) || 
-                                      (document.getElementById('sourceSeparate') != null && document.getElementById('sourceSeparate').value  == '') ||
-                                      (document.getElementById('sourceTerminate') != null && document.getElementById('sourceTerminate').value == '') ||
+                                      (document.getElementById('sourceSeparators') != null && document.getElementById('sourceSeparators').value  == '') ||
+                                      (document.getElementById('sourceTerminators') != null && document.getElementById('sourceTerminators').value == '') ||
                                       (document.getElementById('sourceQuote') != null && document.getElementById('sourceQuote').value == '') ||
                                       (document.getElementById('sourceRowTag') != null && document.getElementById('sourceRowTag').value == '');
                      }
@@ -239,7 +239,7 @@
 
             function setSourceCsvSeparator(noSeparatorCheckbox)
             {
-                var separatorInputField = document.getElementById("sourceSeparate");
+                var separatorInputField = document.getElementById("sourceSeparators");
                 if (separatorInputField == NaN)
                     return;
 
@@ -485,9 +485,9 @@
                </tr>
               <xsl:choose><xsl:when test="$submethod='variable'">
                <tr>
-                  <td>Separator:</td>
+                  <td>Separators:</td>
                   <td>
-                     <input type="text" id="sourceSeparate" name="sourceSeparate" size="6" value="{$sep}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceSeparators" name="sourceSeparators" size="6" value="{$sep}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                <tr>
@@ -503,9 +503,9 @@
                   </td>
                </tr>
                <tr>
-                  <td>Line Terminator:</td>
+                  <td>Line Terminators:</td>
                   <td>
-                     <input type="text" id="sourceTerminate" name="sourceTerminate" size="6" value="{$term}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceTerminators" name="sourceTerminators" size="6" value="{$term}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                <tr>

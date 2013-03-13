@@ -1839,7 +1839,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 
    //@csvSeparate - separators between fields for a CSV/utf file
     if (version >= 1.21)
-        FileDetails.setSeparate(df->queryAttributes().queryProp("@csvSeparate"));
+        FileDetails.setSeparators(df->queryAttributes().queryProp("@csvSeparate"));
     else
         FileDetails.setCsvSeparate(df->queryAttributes().queryProp("@csvSeparate"));
 
@@ -1851,7 +1851,7 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
 
    //@csvTerminate - characters used to terminate a record in a csv.utf file
     if (version >= 1.21)
-        FileDetails.setTerminate(df->queryAttributes().queryProp("@csvTerminate"));
+        FileDetails.setTerminators(df->queryAttributes().queryProp("@csvTerminate"));
     else
         FileDetails.setCsvTerminate(df->queryAttributes().queryProp("@csvTerminate"));
 

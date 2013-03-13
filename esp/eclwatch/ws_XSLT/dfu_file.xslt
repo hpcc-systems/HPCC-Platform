@@ -271,14 +271,14 @@
                 <xsl:if test="string-length(MaxRecordSize)">
                     <tr><th>MaxRecordSize:</th><td><xsl:value-of select="MaxRecordSize"/></td></tr>
                 </xsl:if>
-                <xsl:if test="string-length(Separate)">
-                    <tr><th>Separate:</th><td><xsl:value-of select="Separate"/></td></tr>
+                <xsl:if test="string-length(Separators)">
+                    <tr><th>Separators:</th><td><xsl:value-of select="Separators"/></td></tr>
                 </xsl:if>
                 <xsl:if test="string-length(Quote)">
                     <tr><th>Quote:</th><td><xsl:value-of select="Quote"/></td></tr>
                 </xsl:if>
-                <xsl:if test="string-length(Terminate)">
-                    <tr><th>Terminate:</th><td><xsl:value-of select="Terminate"/></td></tr>
+                <xsl:if test="string-length(Terminators)">
+                    <tr><th>Terminators:</th><td><xsl:value-of select="Terminators"/></td></tr>
                 </xsl:if>
                 <xsl:if test="string-length(Escape)">
                     <tr><th>Escape:</th><td><xsl:value-of select="Escape"/></td></tr>

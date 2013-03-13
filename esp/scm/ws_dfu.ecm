@@ -88,14 +88,14 @@ ESPStruct DFUFileDetail
     string Persistent;
     string Format;
     string MaxRecordSize;
-    [max_ver("1.20")] string CsvSeparate;
-    [max_ver("1.20")] string CsvQuote;
-    [max_ver("1.20")] string CsvTerminate;
-    [min_ver("1.20"), max_ver("1.20")] string CsvEscape;
+    [depr_ver("1.21")] string CsvSeparate;
+    [depr_ver("1.21")] string CsvQuote;
+    [depr_ver("1.21")] string CsvTerminate;
+    [min_ver("1.20"), depr_ver("1.21")] string CsvEscape;
 
-    [min_ver("1.21")] string Separate;
+    [min_ver("1.21")] string Separators;
     [min_ver("1.21")] string Quote;
-    [min_ver("1.21")] string Terminate;
+    [min_ver("1.21")] string Terminators;
     [min_ver("1.21")] string Escape;
 
     string Modified;
