@@ -1352,7 +1352,8 @@ private:
             }
             else if (stricmp(queryName, "control:activeQueries")==0)
             {
-                debugSessionManager->getActiveQueries(reply);
+                if (debugSessionManager)
+                    debugSessionManager->getActiveQueries(reply);
             }
             else if (stricmp(queryName, "control:activitymetrics")==0)
             {
