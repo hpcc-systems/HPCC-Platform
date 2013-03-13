@@ -36,6 +36,8 @@ interface IRecordSize: public IInterface
        //passing NULL to getRecordSize returns size for fixed records and initial size for variable
     virtual size32_t getFixedSize() const = 0;                      
        // returns 0 for variable row size
+    virtual size32_t getMinRecordSize() const = 0;
+       // The minimum size that a variable (or fixed) size record can be.
 
     inline bool isFixedSize()      const { return getFixedSize()!=0; }
     inline bool isVariableSize()   const { return getFixedSize()==0; }

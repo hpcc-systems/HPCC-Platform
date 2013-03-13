@@ -93,6 +93,7 @@ public:
     virtual size32_t getRecordSize(const void *rec);
     virtual size32_t getRecordSize(unsigned maxLength, const void *rec);
     virtual size32_t getFixedSize() const;
+    virtual size32_t getMinRecordSize() const;
 
     size32_t getRecordLength(size32_t maxLength, const void * start, bool includeTerminator);
 
