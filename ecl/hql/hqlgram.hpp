@@ -961,7 +961,7 @@ protected:
     IHqlExpression *queryCurrentTransformRecord();
     IHqlExpression* queryFieldMap(IHqlExpression* expr);
     IHqlExpression* bindFieldMap(IHqlExpression*, IHqlExpression*);
-    void extractRecordFromExtra(SharedHqlExpr & record, SharedHqlExpr & extra);
+    void extractIndexRecordAndExtra(SharedHqlExpr & record, SharedHqlExpr & extra);
     void transferOptions(attribute & filenameAttr, attribute & optionsAttr);
     IHqlExpression * extractTransformFromExtra(SharedHqlExpr & extra);
     void expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHqlSimpleScope * scope, ITypeInfo * & lastFieldType, const attribute & errpos);
