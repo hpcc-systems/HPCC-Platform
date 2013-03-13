@@ -400,6 +400,11 @@ size32_t CsvRecordSize::getFixedSize() const
 }
 
 
+size32_t CsvRecordSize::getMinRecordSize() const
+{
+    return unitSize;
+}
+
 DirectCsvDiskDataSource::DirectCsvDiskDataSource(IDistributedFile * _df, const char * _format)
 {
     df.set(_df);

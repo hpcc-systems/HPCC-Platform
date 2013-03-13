@@ -174,7 +174,7 @@ DataSourceMetaData::DataSourceMetaData(IHqlExpression * _record, byte _numFields
     gatherAttributes();
 
     if (isStoredFixedWidth)
-        assertex(storedFixedSize == maxRecordSize);
+        assertex(minRecordSize == maxRecordSize);
 }
 
 
@@ -200,7 +200,7 @@ DataSourceMetaData::DataSourceMetaData(type_t typeCode)
 void DataSourceMetaData::init()
 {
     keyedSize = 0;
-    storedFixedSize = 0;
+    minRecordSize = 0;
     maxRecordSize = 0;
     bitsRemaining = 0;
     numVirtualFields = 0;
@@ -215,7 +215,7 @@ DataSourceMetaData::DataSourceMetaData(MemoryBuffer & buffer)
     buffer.read(numFieldsToIgnore);
     buffer.read(randomIsOk);
     buffer.read(isStoredFixedWidth);
-    buffer.read(storedFixedSize);
+    buffer.read(minRecordSize);
     buffer.read(keyedSize);
     buffer.read(maxRecordSize);
 
@@ -249,20 +249,40 @@ void DataSourceMetaData::addSimpleField(const char * name, const char * xpath, I
     unsigned size = promoted->getSize();
     unsigned thisBits = 0;
     if (size == UNKNOWN_LENGTH)
+    {
         isStoredFixedWidth = false;
+        switch (type->getTypeCode())
+        {
+        case type_set:
+            minRecordSize += sizeof(bool) + sizeof(size32_t);
+            break;
+        case type_varstring:
+            minRecordSize += 1;
+            break;
+        case type_packedint:
+            minRecordSize += 1;
+            break;
+        case type_varunicode:
+            minRecordSize += sizeof(UChar);
+            break;
+        default:
+            minRecordSize += sizeof(size32_t);
+            break;
+        }
+    }
     else if (type->getTypeCode() == type_bitfield)
     {
         thisBits = type->getBitSize();
         if (thisBits > bitsRemaining)
         {
             size = type->queryChildType()->getSize();
-            storedFixedSize += size;
+            minRecordSize += size;
             bitsRemaining = size * 8;
         }
         bitsRemaining -= thisBits;
     }
     else
-        storedFixedSize += size;
+        minRecordSize += size;
     if (thisBits == 0)
         bitsRemaining = 0;
     fields.append(*new DataSourceMetaItem(FVFFnone, name, xpath, type));
@@ -519,7 +539,7 @@ void DataSourceMetaData::serialize(MemoryBuffer & buffer) const
     buffer.append(numFieldsToIgnore);
     buffer.append(randomIsOk);
     buffer.append(isStoredFixedWidth);
-    buffer.append(storedFixedSize);
+    buffer.append(minRecordSize);
     buffer.append(keyedSize);
     buffer.append(maxRecordSize);
 
@@ -534,7 +554,7 @@ void DataSourceMetaData::serialize(MemoryBuffer & buffer) const
 size32_t DataSourceMetaData::getRecordSize(const void *rec)
 {
     if (isStoredFixedWidth)
-        return storedFixedSize;
+        return minRecordSize;
     if (!rec)
         return maxRecordSize;
 
@@ -608,10 +628,15 @@ size32_t DataSourceMetaData::getRecordSize(const void *rec)
 size32_t DataSourceMetaData::getFixedSize() const
 {
     if (isStoredFixedWidth)
-        return storedFixedSize;
+        return minRecordSize;
     return 0;
 }
 
+
+size32_t DataSourceMetaData::getMinRecordSize() const
+{
+    return minRecordSize;
+}
 
 IFvDataSourceMetaData * deserializeDataSourceMeta(MemoryBuffer & in)
 {

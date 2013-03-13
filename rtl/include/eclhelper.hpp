@@ -143,6 +143,7 @@ interface IRecordSize : public IInterface
 {
     virtual size32_t getRecordSize(const void *rec) = 0;
     virtual size32_t getFixedSize() const = 0;
+    virtual size32_t getMinRecordSize() const = 0;
     inline bool isFixedSize()      const { return getFixedSize()!=0; }
     inline bool isVariableSize()   const { return getFixedSize()==0; }
 };
@@ -390,7 +391,6 @@ interface IOutputMetaData : public IRecordSize
     inline bool isGrouped()                 { return (getMetaFlags() & MDFgrouped) != 0; }
     inline bool hasXML()                    { return (getMetaFlags() & MDFhasxml) != 0; }
 
-    virtual size32_t getMinRecordSize() const = 0;
     virtual void toXML(const byte * self, IXmlWriter & out) = 0;
     virtual unsigned getVersion() const = 0;
     virtual unsigned getMetaFlags() = 0;
