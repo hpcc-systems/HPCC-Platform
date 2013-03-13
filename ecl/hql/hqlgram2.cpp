@@ -3513,7 +3513,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,_ATOM name, IHq
                 attrs = createComma(attrs, createAttribute(entrypointAtom, args));
                 hasEntrypoint = true;
             }
-            else if (name == libraryAtom)
+            else if (name == libraryAtom || name == pluginAtom)
             {
                 bool invalid = false;
                 if (attr->numChildren()==0)
@@ -3529,7 +3529,7 @@ IHqlExpression* HqlGram::checkServiceDef(IHqlScope* serviceScope,_ATOM name, IHq
                 }
 
                 if (invalid)
-                    reportError(ERR_SVC_INVALIDLIBRARY,errpos,"Invalid library: can not be empty");
+                    reportError(ERR_SVC_INVALIDLIBRARY,errpos,"Invalid %s: can not be empty", name->getAtomNamePtr());
             }
             else if (name == includeAtom)
             {
