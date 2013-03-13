@@ -329,6 +329,7 @@ void CDiskWriteSlaveActivityBase::open()
     if (compress)
     {
         ActPrintLog("Performing row compression on output file: %s", fName.get());
+        // NB: block compressed output has implicit crc of 0, no need to calculate in row  writer.
         calcFileCrc = false;
     }
     Owned<IFileIOStream> stream;
@@ -557,8 +558,9 @@ void CDiskWriteSlaveActivityBase::processDone(MemoryBuffer &mb)
     if (-1 != sz)
         container.queryJob().queryIDiskUsage().increase(sz);
     mb.append(_processed).append(compress?uncompressedBytesWritten:sz).append(sz);
+    // NB: block compressed output has implicit crc of 0.
     unsigned crc = compress?~0:fileCRC.get();
-    mb.append(calcFileCrc?crc:0);
+    mb.append(crc);
 
     CDateTime createTime, modifiedTime, accessedTime;
     ifile->getTime(&createTime, &modifiedTime, &accessedTime);
