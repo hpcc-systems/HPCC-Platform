@@ -7933,12 +7933,24 @@ void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & p
     record.setown(createRecord(fields));
 }
 
-void HqlGram::extractRecordFromExtra(SharedHqlExpr & record, SharedHqlExpr & extra)
+// Because of some oddities of the grammar, the 'record' and 'attributes' expected by an index statement
+// come through with some of the latter attached to the former.
+// For historical reasons, the payload attribute in particular may be either attached to the record via a no_comma,
+// or be an attribute of the record itself.
+// Either way, for an index statement, we want to pull it out of the record param and into the extra param
+
+void HqlGram::extractIndexRecordAndExtra(SharedHqlExpr & record, SharedHqlExpr & extra)
 {
     while (record->getOperator() == no_comma)
     {
         extra.setown(createComma(LINK(record->queryChild(1)), extra.getClear()));
         record.set(record->queryChild(0));
+    }
+    IHqlExpression *payload = record->queryProperty(_payload_Atom);
+    if (payload)
+    {
+        extra.setown(createComma(extra.getClear(), LINK(payload)));
+        record.setown(removeProperty(record.getClear(), _payload_Atom));
     }
 }
 
