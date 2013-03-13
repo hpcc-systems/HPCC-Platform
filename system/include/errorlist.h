@@ -75,6 +75,8 @@
 #define ECLWATCH_ERROR_START    20000
 #define ECLWATCH_ERROR_END      29999
 
+#define ESP_ERROR_START    30000
+#define ESP_ERROR_END      30050
 
 
 #endif

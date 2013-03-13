@@ -18,33 +18,15 @@
 #ifndef __ESP_ERRORS_HPP__
 #define __ESP_ERRORS_HPP__
 
+#include "errorlist.h"
 
-namespace EspCoreErrors
-{
-    const unsigned int Base = 1000;
-}
-
-namespace WsGatewayErrors
-{
-    const unsigned int Base = EspCoreErrors::Base+200;   //1200 -- pls don't change this....
-    const unsigned int MissingConfiguration = Base+0;
-    const unsigned int MissingUserName      = Base+1;
-    const unsigned int MissingPassword      = Base+2;
-    const unsigned int MissingOptions       = Base+3;
-    const unsigned int MissingUrl           = Base+4;
-    const unsigned int InvalidUrl           = Base+5;
-    const unsigned int NoResponse           = Base+6;
-}
-
-namespace WsAccurintErrors
-{
-    const unsigned int Base = EspCoreErrors::Base+1005;   //2005 -- pls don't change this....the web is coded to expect the following codes
-    const unsigned int RealTimeInvalidUse       = Base+0; //"Access to realtime data is not allowed for your intended use."
-    const unsigned int RealTimeInvalidState     = Base+1; //"Access to realtime search is not allowed under the DPPA guidelines for your intended use for that state."
-    const unsigned int RealTimeMissingStateZip  = Base+2; //"A valid state or zip must be specified for realtime data."
-    const unsigned int RealTimeMissingName      = Base+3; //"A person or company name must be specified for realtime data."
-    const unsigned int RealTimeMissingAddress   = Base+4; //"Street address with City+State or Zip must be specified for realtime data."
-}
-
+#define ECLWATCH_HTTPBINDING_OBJ_CREATE_ERROR   ESP_ERROR_START+0
+#define ECLWATCH_HTTPBINDING_LOAD_FAILED        ESP_ERROR_START+1
+#define ECLWATCH_HTTPBINDING_INV_CONFIG_DATA    ESP_ERROR_START+2
+#define ECLWATCH_HTTPBINDING_INV_REQUEST        ESP_ERROR_START+3
+#define ECLWATCH_HTTPBINDING_INV_RESPONSE       ESP_ERROR_START+4
+#define ECLWATCH_HTTPBINDING_PERMISSION_DENIED  ESP_ERROR_START+5
+#define ECLWATCH_HTTPBINDING_INV_DATA           ESP_ERROR_START+6
+//ensure errors do not exceep ESP_ERROR_END
 
 #endif //__ESP_ERRORS_HPP__
