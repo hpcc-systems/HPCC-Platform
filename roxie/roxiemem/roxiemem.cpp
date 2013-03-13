@@ -154,10 +154,12 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
         {
             heapUseHugePages = true;
             DBGLOG("Using Huge Pages for roxiemem");
-            assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
         }
         else
+        {
             heapBase = NULL;
+            DBGLOG("Huge Pages requested but unavailable");
+        }
     }
 
     if (!heapBase)
@@ -170,6 +172,8 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
         }
     }
 #endif
+
+    assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
 
     heapEnd = heapBase + memsize;
     heapBitmap = new unsigned [heapBitmapSize];

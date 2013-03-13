@@ -2013,8 +2013,13 @@ void EclAgent::runProcess(IEclProcess *process)
     setHThorRowManager(rowManager.get());
 
     //Get memory limit. Workunit specified value takes precedence over config file
-    int memLimitMB = globals->getPropInt("defaultMemoryLimitMB", DEFAULT_MEM_LIMIT);
+    int memLimitMB = agentTopology->getPropInt("@defaultMemoryLimitMB", DEFAULT_MEM_LIMIT);
+    memLimitMB = globals->getPropInt("defaultMemoryLimitMB", memLimitMB);
     memLimitMB = queryWorkUnit()->getDebugValueInt("hthorMemoryLimit", memLimitMB);
+
+    bool allowHugePages = agentTopology->getPropBool("@heapUseHugePages", false);
+    allowHugePages = globals->getPropBool("heapUseHugePages", allowHugePages);
+
 #ifndef __64BIT__
     if (memLimitMB > 4096)
     {
@@ -2024,7 +2029,6 @@ void EclAgent::runProcess(IEclProcess *process)
     }
 #endif
     memsize_t memLimitBytes = (memsize_t)memLimitMB * 1024 * 1024;
-    bool allowHugePages = globals->getPropBool("heapUseHugePages", false);
     roxiemem::setTotalMemoryLimit(allowHugePages, memLimitBytes, 0, NULL);
 
     if (debugContext)
