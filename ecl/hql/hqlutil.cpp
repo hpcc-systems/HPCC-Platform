@@ -2805,10 +2805,16 @@ IHqlExpression * getInverse(IHqlExpression * op)
 {
     node_operator opKind = op->getOperator();
     if (opKind == no_not)
-        return LINK(op->queryChild(0));
-    else if (opKind == no_constant)
+    {
+        IHqlExpression * arg0 = op->queryChild(0);
+        if (arg0->isBoolean())
+            return LINK(arg0);
+    }
+
+    if (opKind == no_constant)
         return createConstant(!op->queryValue()->getBoolValue());
-    else if (opKind == no_alias_scope)
+
+    if (opKind == no_alias_scope)
     {
         HqlExprArray args;
         args.append(*getInverse(op->queryChild(0)));
@@ -2830,7 +2836,8 @@ IHqlExpression * getInverse(IHqlExpression * op)
         return createBoolExpr(no_if, LINK(op->queryChild(0)), getInverse(op->queryChild(1)), getInverse(op->queryChild(2)));
     }
 
-    return createValue(no_not, makeBoolType(), LINK(op));
+    Owned<ITypeInfo> boolType = makeBoolType();
+    return createValue(no_not, LINK(boolType), ensureExprType(op, boolType));
 }
 
 IHqlExpression * getNormalizedCondition(IHqlExpression * expr)

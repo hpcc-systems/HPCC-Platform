@@ -27,8 +27,9 @@ project( nbcd )
 
 set ( SRCS 
       nbcd.cpp 
-      nbcds.cpp 
-      nbcdtest.cpp 
+
+      nbcd.hpp 
+
       sourcedoc.xml
     )
 

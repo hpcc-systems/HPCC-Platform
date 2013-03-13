@@ -1720,6 +1720,18 @@ void HqlCppTranslator::cacheOptions()
         }
     }
 
+    //Configure the divide by zero action
+    options.divideByZeroAction = DBZzero;
+    const char * dbz = wu()->getDebugValue("divideByZero",val).str();
+    if (strieq(val.str(), "0") || strieq(val.str(), "zero"))
+        options.divideByZeroAction = DBZzero;
+    else if (strieq(val.str(), "nan"))
+        options.divideByZeroAction = DBZnan;
+    else if (strieq(val.str(), "fail") || strieq(val.str(), "throw"))
+        options.divideByZeroAction = DBZfail;
+    else if (val.length())
+        throwError2(HQLERR_UnexpectedOptionValue_XY, "divideByZero", val.str());
+
     //The following cases handle options whose default values are dependent on other options.  
     //Or where one debug options sets more than one option
     options.hasResourceUseMpForDistribute = wu()->hasDebugValue("resourceUseMpForDistribute");
@@ -5145,11 +5157,23 @@ void HqlCppTranslator::doBuildExprArith(BuildCtx & ctx, IHqlExpression * expr, C
             _ATOM func;
             switch (expr->getOperator())
             {
-            case no_add: func = DecAddAtom; break;
-            case no_div: func = DecDivideAtom; break;
-            case no_modulus: func = DecModulusAtom; break;
-            case no_mul: func = DecMulAtom; break;
-            case no_sub: func = DecSubAtom; break;
+            case no_add:
+                func = DecAddAtom;
+                break;
+            case no_div:
+                func = DecDivideAtom;
+                args.append(*getSizetConstant(options.divideByZeroAction));
+                break;
+            case no_modulus:
+                func = DecModulusAtom;
+                args.append(*getSizetConstant(options.divideByZeroAction));
+                break;
+            case no_mul:
+                func = DecMulAtom;
+                break;
+            case no_sub:
+                func = DecSubAtom;
+                break;
             default: UNIMPLEMENTED;
             }
             callProcedure(ctx, func, args);
@@ -6980,7 +7004,10 @@ void HqlCppTranslator::doBuildExprDivide(BuildCtx & ctx, IHqlExpression * expr, 
         int cmp = value->compare(zero);
 
         if (cmp == 0)
-            tgt.expr.setown(createConstant(zero.getClear()));
+        {
+            OwnedHqlExpr eZero = createConstant(LINK(zero));
+            doBuildDivideByZero(ctx, NULL, eZero, &tgt);
+        }
         else
             doBuildPureSubExpr(ctx, expr, tgt);
     }
@@ -6990,6 +7017,45 @@ void HqlCppTranslator::doBuildExprDivide(BuildCtx & ctx, IHqlExpression * expr, 
     }
 }
 
+
+
+void HqlCppTranslator::doBuildDivideByZero(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * zero, CHqlBoundExpr * bound)
+{
+    //Always assign something to bound - even if it is replaced further down.
+    if (bound)
+        buildExpr(ctx, zero, *bound);
+
+    switch (options.divideByZeroAction)
+    {
+    case DBZzero:
+        if (target)
+            assignBound(ctx, *target, zero);
+        break;
+    case DBZfail:
+        {
+            HqlExprArray noArgs;
+            buildFunctionCall(ctx, failDivideByZeroAtom, noArgs);
+            break;
+        }
+    case DBZnan:
+        {
+            LinkedHqlExpr nan = zero;
+            if (zero->queryType()->getTypeCode() == type_real)
+            {
+                HqlExprArray noArgs;
+                nan.setown(bindFunctionCall(createRealNullAtom, noArgs));
+            }
+
+            if (target)
+                assignBound(ctx, *target, nan);
+            else
+                buildExpr(ctx, nan, *bound);
+            break;
+        }
+    default:
+        throwUnexpected();
+    }
+}
 
 void HqlCppTranslator::doBuildAssignDivide(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
@@ -7017,7 +7083,7 @@ void HqlCppTranslator::doBuildAssignDivide(BuildCtx & ctx, const CHqlBoundTarget
         int cmp = value->compare(eZero->queryValue());
 
         if (cmp == 0)
-            assignBound(ctx, target, eZero);
+            doBuildDivideByZero(ctx, &target, eZero, NULL);
         else
             assignBound(ctx, target, pureExpr);
     }
@@ -7027,7 +7093,7 @@ void HqlCppTranslator::doBuildAssignDivide(BuildCtx & ctx, const CHqlBoundTarget
         IHqlStmt * stmt = subctx.addFilter(divisor);
         assignBound(subctx, target, pureExpr);
         subctx.selectElse(stmt);
-        assignBound(subctx, target, eZero);
+        doBuildDivideByZero(subctx, &target, eZero, NULL);
     }
 }
 
@@ -7544,22 +7610,8 @@ void HqlCppTranslator::doBuildAssignAll(BuildCtx & ctx, const CHqlBoundTarget & 
 
 void HqlCppTranslator::doBuildExprNot(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
-    ITypeInfo * type = expr->queryChild(0)->queryType();
-    switch (type->getTypeCode())
-    {
-    case type_decimal:
-        {
-            //MORE: Could leak decimal stack....  Is the last line correct?
-            HqlExprArray args;              
-            bindAndPush(ctx, expr->queryChild(0));
-            IHqlExpression * op = bindTranslatedFunctionCall(DecCompareNullAtom, args);
-            tgt.expr.setown(createValue(expr->getOperator(), LINK(boolType), op, getZero()));
-        }
-        break;
-    default:
-        doBuildPureSubExpr(ctx, expr, tgt);
-        break;
-    }
+    assertex(expr->queryChild(0)->isBoolean());
+    doBuildPureSubExpr(ctx, expr, tgt);
 }
 
 
@@ -9774,10 +9826,18 @@ void HqlCppTranslator::doBuildExprIsValid(BuildCtx & ctx, IHqlExpression * expr,
 
     CHqlBoundExpr bound;
     buildExpr(ctx, value, bound);
+
+    type_t tc = type->getTypeCode();
+    if ((tc == type_decimal) && (bound.expr->getOperator() == no_decimalstack))
+    {
+        tgt.expr.setown(bindTranslatedFunctionCall(DecValidTosAtom, args));
+        return;
+    }
+
     ensureHasAddress(ctx, bound);
 
     OwnedHqlExpr address = getPointer(bound.expr);
-    switch (type->getTypeCode())
+    switch (tc)
     {
     case type_decimal:
         args.append(*createConstant(type->isSigned()));

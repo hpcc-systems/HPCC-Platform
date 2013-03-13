@@ -28,6 +28,8 @@
  #define nbcd_decl
 #endif
 
+#define DECIMAL_OVERLOAD
+
 template <byte length, byte precision> class decimal;
 
 /*
@@ -83,6 +85,10 @@ public:
 
     void getClipPrecision(unsigned & digits, unsigned & precision);
     void getPrecision(unsigned & digits, unsigned & precison);
+
+    // MORE: We could support NaNs for decimals at a later date by adding a member to this class.
+    bool isZero() const;
+    bool isValid() const { return true; }
 
     void set(const Decimal & value);
     void setCString(const char * buffer);
@@ -181,10 +187,11 @@ inline bool operator > (const Decimal & left, const Decimal & right) { return le
 inline bool operator < (const Decimal & left, const Decimal & right) { return left.compare(right) < 0; }
 #endif
 
-bool dec2Bool(size32_t bytes, const void * data);
-bool udec2Bool(size32_t bytes, const void * data);
-int decCompareDecimal(size32_t bytes, const void * _left, const void * _right);
-int decCompareUDecimal(size32_t bytes, const void * _left, const void * _right);
-bool decValid(bool isSigned, unsigned digits, const void * data);
+//Various utility helper functions:
+nbcd_decl bool dec2Bool(size32_t bytes, const void * data);
+nbcd_decl bool udec2Bool(size32_t bytes, const void * data);
+nbcd_decl int decCompareDecimal(size32_t bytes, const void * _left, const void * _right);
+nbcd_decl int decCompareUDecimal(size32_t bytes, const void * _left, const void * _right);
+nbcd_decl bool decValid(bool isSigned, unsigned digits, const void * data);
 
 #endif
