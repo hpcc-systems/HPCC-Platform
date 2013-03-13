@@ -6874,11 +6874,11 @@ class CRenameFileAction: public CDFAction
     IUserDescriptor *user;
 public:
     CRenameFileAction(IDistributedFileTransaction *_transaction,
-                      CDistributedFileDirectory *parent,
+                      CDistributedFileDirectory *_parent,
                       IUserDescriptor *_user,
                       const char *_flname,
                       const char *_newname)
-        : CDFAction(_transaction), user(_user)
+        : CDFAction(_transaction), user(_user), parent(_parent)
     {
         logicalname.set(_flname);
         // Basic consistency checking
