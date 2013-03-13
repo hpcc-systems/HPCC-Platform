@@ -57,7 +57,7 @@ define([
             var retVal = this.tabMap[id];
             if (!retVal) {
                 if (lang.exists("Name", params) && lang.exists("Cluster", params)) {
-                    retVal = new LFDetailsWidget({
+                    retVal = new LFDetailsWidget.fixCircularDependency({
                         id: id,
                         title: params.Name,
                         params: params

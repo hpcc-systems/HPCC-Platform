@@ -15,7 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-form",
     "dojo/data/ObjectStore",
     "dojo/date",
     "dojo/on",
@@ -30,7 +33,9 @@ define([
 
     "hpcc/_TabContainerWidget",
     "hpcc/WsDfu",
+    "hpcc/ESPLogicalFile",
     "hpcc/LFDetailsWidget",
+    "hpcc/SFDetailsWidget",
 
     "dojo/text!../templates/DFUWUQueryWidget.html",
 
@@ -41,13 +46,19 @@ define([
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
+    "dijit/form/DropDownButton",
     "dijit/form/Select",
     "dijit/Toolbar",
-    "dijit/TooltipDialog"
-], function (declare, dom, ObjectStore, date, on,
+    "dijit/TooltipDialog",
+
+    "dojox/layout/TableContainer",
+
+    "hpcc/TargetSelectWidget"
+
+], function (declare, lang, arrayUtil, dom, domForm, ObjectStore, date, on,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 EnhancedGrid, Pagination, IndirectSelection,
-                _TabContainerWidget, WsDfu, LFDetailsWidget,
+                _TabContainerWidget, WsDfu, ESPLogicalFile, LFDetailsWidget, SFDetailsWidget,
                 template) {
     return declare("DFUWUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -64,6 +75,7 @@ define([
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
             this.legacyPane = registry.byId(this.id + "_Legacy");
+            this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
         },
 
         startup: function (args) {
@@ -73,13 +85,15 @@ define([
         },
 
         //  Hitched actions  ---
+        _onRefresh: function (event) {
+            this.refreshGrid();
+        },
+
         _onOpen: function (event) {
             var selections = this.workunitsGrid.selection.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensurePane(this.id + "_" + selections[i].Name, {
-                    Name: selections[i].Name
-                });
+                var tab = this.ensurePane(this.id + "_" + selections[i].Name, selections[i]);
                 if (i == 0) {
                     firstTab = tab;
                 }
@@ -89,9 +103,9 @@ define([
             }
         },
         _onDelete: function (event) {
-            if (confirm('Delete selected workunits?')) {
+            if (confirm('Delete selected files?')) {
                 var context = this;
-                WsDfu.WUAction(this.workunitsGrid.selection.getSelected(), "Delete", {
+                WsDfu.DFUArrayAction(this.workunitsGrid.selection.getSelected(), "Delete", {
                     load: function (response) {
                         context.workunitsGrid.rowSelectCell.toggleAllSelection(false);
                         context.refreshGrid(response);
@@ -99,7 +113,21 @@ define([
                 });
             }
         },
-        _onAddToSuperfile: function (event) {
+        _onAddToSuperfileOk: function (event) {
+            var context = this;
+            var formData = domForm.toObject(this.id + "AddToSuperfileForm");
+            WsDfu.AddtoSuperfile(this.workunitsGrid.selection.getSelected(), formData.Superfile, formData.ExistingFile, {
+                load: function (response) {
+                    context.workunitsGrid.rowSelectCell.toggleAllSelection(false);
+                    context.refreshGrid(response);
+                }
+            });
+            var d = registry.byId(this.id + "AddtoDropDown");
+            registry.byId(this.id + "AddtoDropDown").closeDropDown();
+        },
+        _onAddToSuperfileCancel: function (event) {
+            var d = registry.byId(this.id + "AddtoDropDown");
+            registry.byId(this.id + "AddtoDropDown").closeDropDown();
         },
         _onFilterApply: function (event) {
             this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
@@ -107,36 +135,40 @@ define([
         },
         _onFilterClear: function(event) {
             this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
-            dom.byId(this.id + "Owner").value = "";
-            dom.byId(this.id + "Jobname").value = "";
-            dom.byId(this.id + "Cluster").value = "";
-            dom.byId(this.id + "State").value = "";
-            dom.byId(this.id + "ECL").value = "";
-            dom.byId(this.id + "LogicalFile").value = "";
-            dom.byId(this.id + "LogicalFileSearchType").value = "";
-            dom.byId(this.id + "FromDate").value = "";
-            dom.byId(this.id + "FromTime").value = "";
-            dom.byId(this.id + "ToDate").value = "";
-            dom.byId(this.id + "LastNDays").value = "";
+            var context = this;
+            arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
+                if (item.id == context.id + "ClusterTargetSelect") {
+                    item.setValue("");
+                } else {
+                    item.set('value', null);
+                }
+            });
             this.refreshGrid();
         },
 
+        getISOString: function (dateField, timeField) {
+            var d = registry.byId(this.id + dateField).attr("value");
+            var t = registry.byId(this.id + timeField).attr("value");
+            if (d) {
+                if (t) {
+                    d.setHours(t.getHours());
+                    d.setMinutes(t.getMinutes());
+                    d.setSeconds(t.getSeconds());
+                }
+                return d.toISOString();
+            }
+            return "";
+        },
+
         getFilter: function () {
-            var retVal = {
-                Owner: dom.byId(this.id + "Owner").value,
-                Jobname: dom.byId(this.id + "Jobname").value,
-                Cluster: dom.byId(this.id + "Cluster").value,
-                State: dom.byId(this.id + "State").value,
-                ECL: dom.byId(this.id + "ECL").value,
-                LogicalFile: dom.byId(this.id + "LogicalFile").value,
+            var retVal = domForm.toObject(this.id + "FilterForm");
+            lang.mixin(retVal, {
+                ClusterName: this.clusterTargetSelect.getValue(),
                 StartDate: this.getISOString("FromDate", "FromTime"),
-                EndDate: this.getISOString("ToDate", "ToTime"),
-                LastNDays: dom.byId(this.id + "LastNDays").value
-            };
+                EndDate: this.getISOString("ToDate", "ToTime")
+            });
             if (retVal.StartDate != "" && retVal.EndDate != "") {
-                retVal["DateRB"] = "0";
-            } else if (retVal.LastNDays != "") {
-                retVal["DateRB"] = "0";
+            } else if (retVal.LastNDays) {
                 var now = new Date();
                 retVal.StartDate = date.add(now, "day", dom.byId(this.id + "LastNDays").value * -1).toISOString();
                 retVal.EndDate = now.toISOString();
@@ -164,7 +196,11 @@ define([
                 return;
             this.initalized = true;
 
-            this.selectChild(this.workunitsTab, true);
+            this.selectChild(this.legacyPane, true);
+            this.clusterTargetSelect.init({
+                Groups: true,
+                includeBlank: true
+            });
         },
 
         initTab: function() {
@@ -181,7 +217,7 @@ define([
                     }
                 } else {
                     if (!currSel.initalized) {
-                        currSel.init(currSel.params);
+                        currSel.init(currSel._hpccParams);
                     }
                 }
             }
@@ -189,50 +225,49 @@ define([
 
         initWorkunitsGrid: function() {
             this.workunitsGrid.setStructure([
-			    {
-			        name: "C",
-			        field: "isZipfile",
-			        width: "16px",
-			        formatter: function (compressed) {
-			            if (compressed == true) {
-			                return "C";
-			            }
-			            return "";
-			        }
-			    },
-			    {
-			        name: "K",
-			        field: "isKeyFile",
-			        width: "16px",
-			        formatter: function (keyfile) {
-			            if (keyfile == true) {
-			                return "K";
-			            }
-			            return "";
-			        }
-			    },
-			    {
-			        name: "S",
-			        field: "isSuperfile",
-			        width: "16px",
-			        formatter: function (superfile) {
-			            if (superfile == true) {
-			                return "S";
-			            }
-			            return "";
-			        }
-			    },
-			    { name: "Logical Name", field: "Name", width: "32" },
-			    { name: "Owner", field: "Owner", width: "8" },
-			    { name: "Description", field: "Description", width: "12" },
-			    { name: "Cluster", field: "ClusterName", width: "12" },
-			    { name: "Records", field: "RecordCount", width: "8" },
-			    { name: "Size", field: "Totalsize", width: "8" },
-			    { name: "Parts", field: "Parts", width: "4" },
-			    { name: "Modified (UTC/GMT)", field: "Modified", width: "12" }
+                {
+                    name: "C",
+                    field: "isZipfile",
+                    width: "16px",
+                    formatter: function (compressed) {
+                        if (compressed == true) {
+                            return "C";
+                        }
+                        return "";
+                    }
+                },
+                {
+                    name: "K",
+                    field: "IsKeyFile",
+                    width: "16px",
+                    formatter: function (keyfile) {
+                        if (keyfile == true) {
+                            return "K";
+                        }
+                        return "";
+                    }
+                },
+                {
+                    name: "S",
+                    field: "isSuperfile",
+                    width: "16px",
+                    formatter: function (superfile) {
+                        if (superfile == true) {
+                            return "S";
+                        }
+                        return "";
+                    }
+                },
+                { name: "Logical Name", field: "Name", width: "32" },
+                { name: "Owner", field: "Owner", width: "8" },
+                { name: "Description", field: "Description", width: "12" },
+                { name: "Cluster", field: "ClusterName", width: "12" },
+                { name: "Records", field: "RecordCount", width: "8" },
+                { name: "Size", field: "Totalsize", width: "8" },
+                { name: "Parts", field: "Parts", width: "4" },
+                { name: "Modified (UTC/GMT)", field: "Modified", width: "12" }
             ]);
-            var store = new WsDfu.DFUQuery();
-            var objStore = new ObjectStore({ objectStore: store });
+            var objStore = ESPLogicalFile.CreateLFQueryObjectStore();
             this.workunitsGrid.setStore(objStore);
             this.workunitsGrid.setQuery(this.getFilter());
 
@@ -241,8 +276,7 @@ define([
                 if (context.onRowDblClick) {
                     var idx = evt.rowIndex;
                     var item = this.getItem(idx);
-                    var Name = this.store.getValue(item, "Name");
-                    context.onRowDblClick(Name);
+                    context.onRowDblClick(item);
                 }
             }, true);
 
@@ -273,7 +307,7 @@ define([
 
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
             registry.byId(this.id + "Delete").set("disabled", !hasSelection);
-            registry.byId(this.id + "AddToSuperfile").set("disabled", !hasSelection);
+            registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
         },
 
         ensurePane: function (id, params) {
@@ -284,26 +318,37 @@ define([
             var retVal = this.tabMap[id];
             if (!retVal) {
                 var context = this;
-                retVal = new LFDetailsWidget({
-                    id: id,
-                    title: params.Name,
-                    closable: true,
-                    onClose: function () {
-                        delete context.tabMap[id];
-                        return true;
-                    },
-                    params: params
-                });
+                if (params.isSuperfile) {
+                    retVal = new SFDetailsWidget.fixCircularDependency({
+                        id: id,
+                        title: params.Name,
+                        closable: false,
+                        onClose: function () {
+                            delete context.tabMap[id];
+                            return true;
+                        },
+                        _hpccParams: params
+                    });
+                } else {
+                    retVal = new LFDetailsWidget.fixCircularDependency({
+                        id: id,
+                        title: params.Name,
+                        closable: false,
+                        onClose: function () {
+                            delete context.tabMap[id];
+                            return true;
+                        },
+                        _hpccParams: params
+                    });
+                }
                 this.tabMap[id] = retVal;
                 this.addChild(retVal, 2);
             }
             return retVal;
         },
 
-        onRowDblClick: function (name) {
-            var wuTab = this.ensurePane(this.id + "_" + name, {
-                Name: name
-            });
+        onRowDblClick: function (item) {
+            var wuTab = this.ensurePane(this.id + "_" + item.Name, item);
             this.selectChild(wuTab);
         }
     });

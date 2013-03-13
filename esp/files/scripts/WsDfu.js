@@ -18,10 +18,11 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/Deferred",
+    "dojo/_base/array",
     "dojo/store/util/QueryResults",
 
     "hpcc/ESPRequest"
-], function (declare, lang, Deferred, QueryResults,
+], function (declare, lang, Deferred, arrayUtil, QueryResults,
     ESPRequest) {
     var DFUQuery = declare(null, {
         idProperty: "Name",
@@ -68,17 +69,115 @@ define([
     });
 
     return {
-        DFUQuery: DFUQuery,
+        DFUArrayAction: function (logicalFiles, actionType, callback) {
+            arrayUtil.forEach(logicalFiles, function (item, idx) {
+                item.qualifiedName = item.Name + "@" + item.ClusterName;
+            });
+            var request = {
+                LogicalFiles: logicalFiles,
+                Type: actionType
+            };
+            ESPRequest.flattenArray(request, "LogicalFiles", "qualifiedName");
+
+            return ESPRequest.send("WsDfu", "DFUArrayAction", {
+                request: request,
+                load: function (response) {
+                    if (lang.exists("DFUArrayActionResponse.DFUArrayActionResult", response)) {
+                        dojo.publish("hpcc/brToaster", {
+                            message: response.DFUArrayActionResponse.DFUArrayActionResult,
+                            type: "error",
+                            duration: -1
+                        });
+                    }
+
+                    if (callback && callback.load) {
+                        callback.load(response);
+                    }
+                },
+                error: function (err) {
+                    if (callback && callback.error) {
+                        callback.error(err);
+                    }
+                }
+            });
+        },
+
+        SuperfileAction: function (action, superfile, subfiles, removeSuperfile, callback) {
+            var request = {
+                action: action,
+                superfile: superfile,
+                subfiles: subfiles,
+                removeSuperfile: removeSuperfile
+            };
+            ESPRequest.flattenArray(request, "subfiles", "Name");
+
+            return ESPRequest.send("WsDfu", "SuperfileAction", {
+                request: request,
+                load: function (response) {
+                    if (lang.exists("SuperfileActionResponse", response)) {
+                        dojo.publish("hpcc/brToaster", {
+                            message: response.AddtoSuperfileResponse.Subfiles,
+                            type: "error",
+                            duration: -1
+                        });
+                    }
+
+                    if (callback && callback.load) {
+                        callback.load(response);
+                    }
+                },
+                error: function (err) {
+                    if (callback && callback.error) {
+                        callback.error(err);
+                    }
+                }
+            });
+        },
+
+        AddtoSuperfile: function (logicalFiles, superfile, existingFile, callback) {
+            var request = {
+                names: logicalFiles,
+                Superfile: superfile,
+                ExistingFile: existingFile ? 1 : 0
+            };
+            ESPRequest.flattenArray(request, "names", "Name");
+
+            return ESPRequest.send("WsDfu", "AddtoSuperfile", {
+                request: request,
+                load: function (response) {
+                    if (lang.exists("AddtoSuperfileResponse.Subfiles", response)) {
+                        dojo.publish("hpcc/brToaster", {
+                            message: response.AddtoSuperfileResponse.Subfiles,
+                            type: "error",
+                            duration: -1
+                        });
+                    }
+
+                    if (callback && callback.load) {
+                        callback.load(response);
+                    }
+                },
+                error: function (err) {
+                    if (callback && callback.error) {
+                        callback.error(err);
+                    }
+                }
+            });
+        },
+
+        DFUQuery: function (params) {
+            return ESPRequest.send("WsDfu", "DFUQuery", params);
+        },
 
         DFUInfo: function (params) {
-            ESPRequest.send("WsDfu", "DFUInfo", params);
+            return ESPRequest.send("WsDfu", "DFUInfo", params);
         },
 
         DFUDefFile: function (params) {
             lang.mixin(params, {
                 handleAs: "text"
             });
-            ESPRequest.send("WsDfu", "DFUDefFile", params);
+            return ESPRequest.send("WsDfu", "DFUDefFile", params);
         }
     };
 });

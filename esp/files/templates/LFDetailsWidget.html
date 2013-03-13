@@ -3,64 +3,199 @@
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
             <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props='title:"Summary", iconClass:"iconLogicalFile"' data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Save" data-dojo-attach-event="onClick:_onSave" data-dojo-type="dijit.form.Button">Save</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}Clone" data-dojo-attach-event="onClick:_onCopy" data-dojo-type="dijit.form.Button">Copy</div>
-                    <div id="${id}Restart" data-dojo-attach-event="onClick:_onDespray" data-dojo-type="dijit.form.Button">Despray</div>
-                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}CopyDropDown" class="smallForm" data-dojo-type="dijit.form.DropDownButton">
+                        <span>Copy</span>
+                        <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
+                            <form id="${id}CopyDialog" class="smallForm">
+                                <fieldset>
+                                    <legend>Source</legend>
+                                    <ul>
+                                        <li>
+                                            <label for="${id}CopySourceName">Logical File: </label>
+                                            <div id="${id}CopySourceName"></div>
+                                        </li>
+                                    </ul>
+                                </fieldset>
+                                <fieldset>
+                                    <legend>Target</legend>
+                                    <ul>
+                                        <li>
+                                            <label for="${id}CopyTargetSelect">Group:</label>
+                                            <div id="${id}CopyTargetSelect" name="destGroup" style="display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget">
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <label for="${id}CopyTargetName">Logical File: </label>
+                                            <input id="${id}CopyTargetName" name="destLogicalName" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}CopyTargetWrap">Wrap: </label>
+                                            <input id="${id}CopyTargetWrap" name="Wrap" data-dojo-type="dijit/form/CheckBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}CopyTargetNoSplit">No Split: </label>
+                                            <input id="${id}CopyTargetNoSplit" name="nosplit" data-dojo-type="dijit/form/CheckBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}CopyTargetOverwrite">Overwrite: </label>
+                                            <input id="${id}CopyTargetOverwrite" name="overwrite" data-dojo-type="dijit/form/CheckBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}CopyTargetCompress">Compress: </label>
+                                            <input id="${id}CopyTargetCompress" name="compress" data-dojo-type="dijit/form/CheckBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}CopyTargetRetainSuperfileStructure">Retain Superfile Structure: </label>
+                                            <input id="${id}CopyTargetRetainSuperfileStructure" name="superCopy" data-dojo-type="dijit/form/CheckBox" />
+                                        </li>
+                                    </ul>
+                                </fieldset>
+                                <button data-dojo-attach-event="onClick:_onCopyOk" data-dojo-type="dijit.form.Button">Copy</button>
+                                <button data-dojo-attach-event="onClick:_onCopyCancel" data-dojo-type="dijit.form.Button">Cancel</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div id="${id}RenameDropDown" class="smallForm" data-dojo-type="dijit.form.DropDownButton">
+                        <span>Rename</span>
+                        <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
+                            <form id="${id}RenameDialog" class="smallForm">
+                                <fieldset>
+                                    <legend>Source</legend>
+                                    <ul>
+                                        <li>
+                                            <label for="${id}RenameSourceName">Logical File: </label>
+                                            <div id="${id}RenameSourceName"></div>
+                                        </li>
+                                    </ul>
+                                </fieldset>
+                                <fieldset>
+                                    <legend>Target</legend>
+                                    <ul>
+                                        <li>
+                                            <label for="${id}RenameTargetName">Logical File: </label>
+                                            <input id="${id}RenameTargetName" name="dstname" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}RenameTargetOverwrite">Overwrite: </label>
+                                            <input id="${id}RenameTargetOverwrite" name="overwrite" data-dojo-type="dijit/form/CheckBox" />
+                                        </li>
+                                    </ul>
+                                </fieldset>
+                                <button data-dojo-attach-event="onClick:_onRenameOk" data-dojo-type="dijit.form.Button">Rename</button>
+                                <button data-dojo-attach-event="onClick:_onRenameCancel" data-dojo-type="dijit.form.Button">Cancel</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div id="${id}DesprayDropDown" class="smallForm" data-dojo-type="dijit.form.DropDownButton">
+                        <span>Despray</span>
+                        <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
+                            <form id="${id}DesprayDialog" class="smallForm">
+                                <fieldset>
+                                    <legend>Source</legend>
+                                    <ul>
+                                        <li>
+                                            <label for="${id}DespraySourceName">Logical File: </label>
+                                            <div id="${id}DespraySourceName"></div>
+                                        </li>
+                                    </ul>
+                                </fieldset>
+                                <fieldset>
+                                    <legend>Target</legend>
+                                    <ul>
+                                        <li>
+                                            <label for="${id}DesprayTargetSelect">Drop Zone:</label>
+                                            <div id="${id}DesprayTargetSelect" style="display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget">
+                                            </div>
+                                        </li>
+                                        <li>
+                                            <label for="${id}DesprayTargetIPAddress">IP Address</label>
+                                            <input id="${id}DesprayTargetIPAddress" name="destIP" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}DesprayTargetPath">Path: </label>
+                                            <input id="${id}DesprayTargetPath" name="destPath" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}DesprayTargetSplitPrefix">Split Prefix: </label>
+                                            <input id="${id}DesprayTargetSplitPrefix" name="splitprefix" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}DesprayTargetUseSingleConnection">Use Single Connection: </label>
+                                            <input id="${id}DesprayTargetUseSingleConnection" name="SingleConnection" data-dojo-type="dijit/form/CheckBox" />
+                                        </li>
+                                        <li>
+                                            <label for="${id}DesprayTargetOverwrite">Overwrite?</label>
+                                            <input id="${id}DesprayTargetOverwrite" name="overwrite" data-dojo-type="dijit/form/CheckBox" />
+                                        </li>
+                                    </ul>
+                                </fieldset>
+                                <button data-dojo-attach-event="onClick:_onDesprayOk" data-dojo-type="dijit.form.Button">Despray</button>
+                                <button data-dojo-attach-event="onClick:_onDesprayCancel" data-dojo-type="dijit.form.Button">Cancel</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <h2>
-                        <img class="iconAlign" src="img/folder_table.png" />&nbsp<span id="${id}LogicalFileName" class="bold">LogicalFileName</span>
+                        <img class="iconAlign" src="img/folder_table.png" />&nbsp<span id="${id}Name" class="bold"></span>
                     </h2>
-                    <form>
+                    <form id="${id}SummaryForm">
                         <ul>
-                            <li> 
+                            <li>
                                 <label for="${id}Wuid">Workunit: </label>
                                 <div id="${id}Wuid"></div>
                             </li>
-                            <li> 
-                                <label for="Owner">Owner: </label>
+                            <li>
+                                <label for="${id}Owner">Owner: </label>
                                 <div id="${id}Owner"></div>
                             </li>
-                            <li> 
-                                <label for="Description">Description: </label>
-                                <div>
-                                    <input id="${id}Description" data-dojo-props="trim:true" data-dojo-type="dijit.form.SimpleTextarea" cols="55"
-                                    rows="4"/>
-                                </div>
-                            </li>                           
                             <li>
-                                <label for="Job Name">Job Name:</label>
-                                <div id="${id}JobName"></div>                         
+                                <label for="${id}ClusterName">Cluster Name: </label>
+                                <div id="${id}ClusterName"></div>
                             </li>
                             <li>
-                                <label for="Filesize">Filesize:</label>
-                                <div id="${id}Filesize"></div>                         
+                                <label for="${id}Description">Description: </label>
+                                <input id="${id}Description" data-dojo-props="trim:true" data-dojo-type="dijit.form.SimpleTextarea" cols="55" rows="4" />
                             </li>
                             <li>
-                                <label for="Modification">Modification:</label>
-                                <div id="${id}Modification"></div>                         
+                                <label for="${id}JobName">Job Name:</label>
+                                <div id="${id}JobName"></div>
                             </li>
                             <li>
-                                <label for="Directory">Directory:</label>
-                                <div id="${id}Directory"></div>                         
+                                <label for="${id}Filesize">File Size:</label>
+                                <div id="${id}Filesize"></div>
                             </li>
                             <li>
-                                <label for="Pathmask">Pathmask:</label>
-                                <div id="${id}Pathmask"></div>                         
+                                <label for="${id}ActualSize">Actual Size:</label>
+                                <div id="${id}ActualSize"></div>
                             </li>
                             <li>
-                                <label for="Record Size">Record Size:</label>
-                                <div id="${id}RecordSize"></div>                         
+                                <label for="${id}Modification">Modification:</label>
+                                <div id="${id}Modification"></div>
                             </li>
                             <li>
-                                <label for="Record Count">Record Count:</label>
-                                <div id="${id}Count"></div>                         
-                            </li> 
+                                <label for="${id}Directory">Directory:</label>
+                                <div id="${id}Directory"></div>
+                            </li>
+                            <li>
+                                <label for="${id}PathMask">Path Mask:</label>
+                                <div id="${id}PathMask"></div>
+                            </li>
+                            <li>
+                                <label for="${id}RecordSize">Record Size:</label>
+                                <div id="${id}RecordSize"></div>
+                            </li>
+                            <li>
+                                <label for="${id}Count">Record Count:</label>
+                                <div id="${id}Count"></div>
+                            </li>
                         </ul>
-                    </form>                                   
+                    </form>
                 </div>
             </div>
             <div id="${id}_Content" title="Contents" data-dojo-type="ResultWidget">

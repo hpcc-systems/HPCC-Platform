@@ -229,6 +229,10 @@ margin-left:-20px;
     text-align: left;
 }
 
+.dijitToasterContainer {
+    width: 64em;
+}
+
 .smallForm .dijitValidationTextBoxLabel {
     width: auto;
 }

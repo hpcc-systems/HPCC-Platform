@@ -34,10 +34,11 @@ define([
         require(
             ["hpcc/" + params.Widget],
             function (WidgetClass) {
-                var widget = new WidgetClass({
+                var params = {
                     id: "stub",
                     "class": "hpccApp"
-                });
+                };
+                var widget = WidgetClass.fixCircularDependency ? new WidgetClass.fixCircularDependency(params) : new WidgetClass(params);
 
                 var standbyBackground = new Standby({
                     /*

@@ -69,8 +69,17 @@ define([
     return {
         TpServiceQuery: TpServiceQuery,
 
+        TpServiceQuery: function (params) {
+            lang.mixin(params.request, {
+                Type: "ALLSERVICES"
+            });
+            ESPRequest.send("WsTopology", "TpServiceQuery", params);
+        },
         TpTargetClusterQuery: function (params) {
             ESPRequest.send("WsTopology", "TpTargetClusterQuery", params);
+        },
+        TpGroupQuery: function (params) {
+            ESPRequest.send("WsTopology", "TpGroupQuery", params);
         }
     };
 });

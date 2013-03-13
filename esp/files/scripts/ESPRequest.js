@@ -64,16 +64,20 @@ define([
             });
 
             var handleAs = params.handleAs ? params.handleAs : "json";
+            var postfix = "";
+            if (handleAs === "json") {
+                postfix = ".json";
+            }
             var method = params.method ? params.method : "get";
 
             var retVal = null;
             if (this.isCrossSite()) {
-                retVal = script.get(this.getBaseURL(service) + "/" + action + ".json", {
+                retVal = script.get(this.getBaseURL(service) + "/" + action + postfix, {
                     query: params.request,
                     jsonp: "jsonp"
                 });
             } else {
-                retVal = request.post(this.getBaseURL(service) + "/" + action + ".json", {
+                retVal = request.post(this.getBaseURL(service) + "/" + action + postfix, {
                     data: params.request,
                     handleAs: handleAs
                 });
@@ -193,11 +197,11 @@ define([
     });
 
     return {
-        flattenArray: function (target, arrayName) {
+        flattenArray: function (target, arrayName, arrayID) {
             if (lang.exists(arrayName + ".length", target)) {
                 var tmp = {};
                 for (var i = 0; i < target[arrayName].length; ++i) {
-                    tmp[arrayName + "_i" + i] = target[arrayName][i].Wuid;
+                    tmp[arrayName + "_i" + i] = target[arrayName][i][arrayID];
                 }
                 delete target[arrayName];
                 return lang.mixin(target, tmp);
