@@ -3,59 +3,45 @@
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
             <div id="${id}_Workunits" style="width: 100%; height: 100%" data-dojo-props='title:"Logical Files"' data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">Open</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
-                    <div id="${id}AddToSuperfile" data-dojo-attach-event="onClick:_onAddToSuperfile" data-dojo-type="dijit.form.Button">Add To Superfile</div>
+                    <div id="${id}AddtoDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>Add To Superfile</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}AddToSuperfileForm" style="width:480px" data-dojo-type="dijit.form.Form" >
+                                <div data-dojo-props="cols:1" data-dojo-type="dojox.layout.TableContainer">
+                                    <input id="${id}AddToSuperfileTargetName" name="Superfile" title="Logical&nbsp;File:" style="width:100%;" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}AddToSuperfileTargetAppend" name="ExistingFile" title="Append:" data-dojo-type="dijit/form/CheckBox" />
+                                </div>
+                                <button data-dojo-attach-event="onClick:_onAddToSuperfileOk" data-dojo-type="dijit.form.Button">Add</button>
+                                <button data-dojo-attach-event="onClick:_onAddToSuperfileCancel" data-dojo-type="dijit.form.Button">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div data-dojo-type="dijit.form.DropDownButton">
                         <span>Filter</span>
-                        <div data-dojo-type="dijit.TooltipDialog" class="toolTip">
-                            <form class="smallForm">
-                                <ul>
-                                    <li>
-                                        <label for="${id}LogicalFile">Name:</label>
-                                        <input id="${id}LogicalFile" data-dojo-props="trim: true, placeHolder:'*::somefile*'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}Owner">Owner:</label>
-                                        <input id="${id}Owner" data-dojo-props="trim: true, placeHolder:'jsmi*'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}Jobname">Job Name:</label>
-                                        <input id="${id}Jobname" data-dojo-props="trim: true, placeHolder:'log_analysis_1'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}Cluster">Cluster:</label>
-                                        <input id="${id}Cluster" data-dojo-props="trim: true, placeHolder:'r?x*'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}State">State:</label>
-                                        <input id="${id}State" data-dojo-props="trim: true, placeHolder:'failed'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}ECL">ECL Text:</label>
-                                        <input id="${id}ECL" data-dojo-props="trim: true, placeHolder:':=dataset'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}FromDate">From:</label>
-                                        <img src="img/cal.gif" alt="calendar"/>
-                                        <input id="${id}FromDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox"/>
-                                        <input id="${id}FromTime" class="smallCombo" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}ToDate">To:</label>
-                                        <img src="img/cal.gif" alt="calendar"/>
-                                        <input id="${id}ToDate" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox"/>
-                                        <input id="${id}ToTime" class="smallCombo" data-dojo-props="trim: true, placeHolder:'7:30 PM'" data-dojo-type="dijit.form.TimeTextBox"/>
-                                    </li>
-                                    <li> 
-                                        <label for="${id}LastNDays">Last N Days:</label>
-                                        <input id="${id}LastNDays" data-dojo-props="trim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox"/>
-                                    </li>
-                                </ul>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}FilterForm" style="width:480px" data-dojo-type="dijit.form.Form">
+                                <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+                                    <input id="${id}Name" title="Name:" name="LogicalName" colspan="2" style="width:100%;" data-dojo-props="trim: true, placeHolder:'*::somefile*'" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}Description" title="Description:" name="Description" colspan="2" style="width:100%;" data-dojo-props="trim: true, placeHolder:'Some*Description'" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}Owner" title="Owner:" name="Owner" colspan="2" data-dojo-props="trim: true, placeHolder:'JSmith'" data-dojo-type="dijit.form.TextBox" />
+                                    <div id="${id}ClusterTargetSelect" title="Cluster:" name="ClusterName" colspan="2" style="display: inline-block; vertical-align: middle" data-dojo-type="TargetSelectWidget">
+                                    </div>
+                                    <input id="${id}FromSize" title="From&nbsp;Size:" colspan="2" data-dojo-props="trim: true, placeHolder:'4096'" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}ToSize" title="To&nbsp;Size:" colspan="2" data-dojo-props="trim: true, placeHolder:'16777216'" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}FromDate" title="From&nbsp;Date:" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox" />
+                                    <input id="${id}FromTime" title="Time:" data-dojo-props="trim: true, placeHolder:'7:30 AM'" data-dojo-type="dijit.form.TimeTextBox" />
+                                    <input id="${id}ToDate" title="To&nbsp;Date:" data-dojo-props="trim: true, placeHolder:'7/28/2012'" data-dojo-type="dijit.form.DateTextBox" />
+                                    <input id="${id}ToTime" title="Time:" data-dojo-props="trim: true, placeHolder:'7:30 PM'" data-dojo-type="dijit.form.TimeTextBox" />
+                                    <input id="${id}LastNDays" title="Last&nbsp;N&nbsp;Days:" colspan="2" data-dojo-props="trim: true, placeHolder:'2'" data-dojo-type="dijit.form.TextBox" />
+                                </div>
                                 <button data-dojo-attach-event="onClick:_onFilterApply" data-dojo-type="dijit.form.Button">Apply</button>
                                 <button data-dojo-attach-event="onClick:_onFilterClear" data-dojo-type="dijit.form.Button">Clear</button>
-                            </form>
+                            </div>
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>

@@ -25,10 +25,11 @@ define([
     
     "dojox/xml/parser",    
 
+    "hpcc/ESPBase",
     "hpcc/ESPRequest"
 ], function (declare, lang, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
     parser,
-    ESPRequest) {
+    ESPBase, ESPRequest) {
     var GetDFUWorkunits = declare(null, {
         idProperty: "ID",
 
@@ -78,15 +79,24 @@ define([
     return {
         GetDFUWorkunits: GetDFUWorkunits,
 
+        Despray: function (params) {
+            return ESPRequest.send("FileSpray", "Despray", params);
+        },
+        Copy: function (params) {
+            return ESPRequest.send("FileSpray", "Copy", params);
+        },
+        Rename: function (params) {
+            return ESPRequest.send("FileSpray", "Rename", params);
+        },
         GetDFUWorkunit: function (params) {
-            ESPRequest.send("FileSpray", "GetDFUWorkunit", params);
+            return ESPRequest.send("FileSpray", "GetDFUWorkunit", params);
         },
 
         DFUWUFile: function (params) {
             lang.mixin(params, {
                 handleAs: "text"
             });
-            ESPRequest.send("FileSpray", "DFUWUFile", params);
+            return ESPRequest.send("FileSpray", "DFUWUFile", params);
         }
     };
 });

@@ -21,14 +21,14 @@ define([
     "dojo/data/ObjectStore",
     "dojo/store/util/QueryResults",
     "dojo/store/Observable",
-    "dojo/Stateful",
 
-    "hpcc/ESPResult",
-    "hpcc/WsWorkunits"
-], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable, Stateful,
-    ESPResult, WsWorkunits) {
+    "hpcc/WsWorkunits",
+    "hpcc/ESPUtil",
+    "hpcc/ESPResult"
+], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable,
+    WsWorkunits, ESPUtil, ESPResult) {
 
-    _workunits = {};
+    var _workunits = {};
 
     var Store = declare(null, {
         idProperty: "Wuid",
@@ -48,13 +48,14 @@ define([
                 _workunits[id] = new Workunit({
                     Wuid: id
                 });
+                _workunits[id].refresh();
             }
             return _workunits[id];
         },
 
         remove: function (item) {
             if (_workunits[this.getIdentity(item)]) {
-                _workunits[this.getIdentity(item)].killTimer();
+                _workunits[this.getIdentity(item)].stopMonitor();
                 delete _workunits[this.getIdentity(item)];
             }
         },
@@ -108,16 +109,18 @@ define([
         }
     });
 
-    var WorkunitData = declare([Stateful], {
-        Wuid: "",
-        changedCount: 0,
-
-        _StateIDSetter: function (StateID) {
-            if (this.StateID !== StateID) {
-                this.StateID = StateID;
-                var actionEx = lang.exists("ActionEx", this) ? this.ActionEx : null;
-                this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, actionEx));
+    var Workunit = declare([ESPUtil.Singleton, ESPUtil.Monitor], {
+        //  Asserts  ---
+        _assertHasWuid: function () {
+            if (!this.Wuid) {
+                throw new Error("Wuid cannot be empty.");
             }
+        },
+        //  Attributes  ---
+        _StateIDSetter: function (StateID) {
+            this.StateID = StateID;
+            var actionEx = lang.exists("ActionEx", this) ? this.ActionEx : null;
+            this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, actionEx));
         },
         _VariablesSetter: function (Variables) {
             var variables = [];
@@ -142,7 +145,7 @@ define([
             }
             this.set("sourceFiles", sourceFiles);
         },
-        _TimersSetter: function(Timers) {
+        _TimersSetter: function (Timers) {
             var timers = [];
             for (var i = 0; i < Timers.ECLTimer.length; ++i) {
                 var timeParts = Timers.ECLTimer[i].Value.split(":");
@@ -158,42 +161,10 @@ define([
             }
             this.set("timers", timers);
         },
-        _GraphsSetter: function(Graphs) {
+        _GraphsSetter: function (Graphs) {
             this.set("graphs", Graphs.ECLGraph);
         },
-        getData: function () {
-            if (this instanceof WorkunitData) {
-               return (WorkunitData)(this);
-            }
-            return {};
-        },
-        updateData: function (response) {
-            var changed = false;
-            for (var key in response) {
-                if (this.get(key) !== response[key]) {
-                    changed = true;
-                    this.set(key, response[key]);
-                }
-            }
-            if (changed) {
-                this.set("changedCount", this.get("changedCount") + 1);
-            }
-        }
-    });
-
-    var Workunit = declare([WorkunitData], {
-        results: [],
-
-        graphs: [],
-
-        timers: [],
-
-        _assertHasWuid: function () {
-            if (!this.Wuid) {
-                throw new Error("Wuid cannot be empty.");
-            }
-        },
-
+        //  ---  ---  ---
         onCreate: function () {
         },
         onUpdate: function () {
@@ -208,51 +179,12 @@ define([
         isComplete: function () {
             return this.hasCompleted;
         },
-        setTimer: function (timer) {
-            this._timerTickCount = 0;
-            this._timer = timer;
-            this.onTimer();
-        },
-        killTimer: function () {
-            this._timerTickCount = 0;
-            this._timer = 0;
-        },
-        onTimer: function () {
-            this._timerTickCount++;
-
-            if (this.hasCompleted) {
-                this.killTimer();
-                return;
-            } else {
-                if (this._timerTickCount < 5 && this._timerTickCount % 1 === 0) {
-                    this.refresh();
-                } else if (this._timerTickCount < 30 && this._timerTickCount % 5 === 0) {
-                    this.refresh();
-                } else if (this._timerTickCount < 60 && this._timerTickCount % 10 === 0) {
-                    this.refresh();
-                } else if (this._timerTickCount < 120 && this._timerTickCount % 30 === 0) {
-                    this.refresh();
-                } else if (this._timerTickCount % 60 === 0) {
-                    this.refresh();
-                }
-            }
-
-            var context = this;
-            if (this._timer) {
-                setTimeout(function () {
-                    context.onTimer();
-                }, this._timer);
-            } else {
-                this_timerTickCount = 0;
-            }
-        },
         monitor: function (callback) {
             if (this.hasCompleted) {
                 if (callback) {
                     callback(this);
                 }
             } else {
-                this.setTimer(1000);
                 var context = this;
                 this.watch("changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue && newValue) {
@@ -429,6 +361,10 @@ define([
                 },
                 load: function (response) {
                     if (lang.exists("WUInfoResponse.Workunit", response)) {
+                        if (!args.onGetText && lang.exists("WUInfoResponse.Workunit.Query", response)) {
+                            //  A truncated version of ECL just causes issues  ---
+                            delete response.WUInfoResponse.Workunit.Query;
+                        }
                         context.updateData(response.WUInfoResponse.Workunit);
 
                         if (args.onGetText && lang.exists("Query.Text", context)) {

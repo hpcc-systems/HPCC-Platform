@@ -16,6 +16,7 @@
 define([
     "dojo/_base/declare",
     "dojo/dom",
+    "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/query",
     "dojo/store/Memory",
@@ -47,7 +48,7 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog",
     "dijit/TitlePane"
-], function (declare, dom, domClass, query, Memory, ObjectStore,
+], function (declare, dom, domAttr, domClass, query, Memory, ObjectStore,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
                 template) {
@@ -55,7 +56,6 @@ define([
         templateString: template,
         baseClass: "WUDetailsWidget",
         summaryWidget: null,
-        summaryForm: null,
         resultsWidget: null,
         resultsWidgetLoaded: false,
         filesWidget: null,
@@ -92,7 +92,6 @@ define([
             this.xmlWidget = registry.byId(this.id + "_XML");
             this.legacyPane = registry.byId(this.id + "_Legacy");
 
-            this.summaryForm = registry.byId(this.id + "SummaryForm");
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
         },
 
@@ -150,7 +149,7 @@ define([
                 this.wu.watch(function (name, oldValue, newValue) {
                     context.updateInput(name, oldValue, newValue);
                 });
-                this.wu.refresh();
+                //this.wu.refresh(true);
             }
             this.infoGridWidget.init(params);
             this.selectChild(this.summaryWidget, true);
@@ -234,18 +233,19 @@ define([
         },
 
         updateInput: function (name, oldValue, newValue) {
-            var input = query("input[id=" + this.id + name + "]", this.summaryForm)[0];
-            if (input) {
-                var dijitInput = registry.byId(this.id + name);
-                if (dijitInput) {
-                    dijitInput.set("value", newValue);
-                } else {
-                    input.value = newValue;
-                }
-            } else {
-                var div = query("div[id=" + this.id + name + "]", this.summaryForm)[0];
-                if (div) {
-                    div.innerHTML = newValue;
+            var domElem = dom.byId(this.id + name);
+            if (domElem) {
+                switch (domElem.tagName) {
+                    case "SPAN":
+                    case "DIV":
+                        domAttr.set(this.id + name, "innerHTML", newValue)
+                        break;
+                    case "INPUT":
+                    case "TEXTAREA":
+                        domAttr.set(this.id + name, "value", newValue)
+                        break;
+                    default:
+                        alert(domElem.tagName);
                 }
             }
             if (name === "Protected") {
@@ -309,7 +309,7 @@ define([
                         tooltip += "\n";
                     tooltip += newValue[i].Name;
                     if (newValue[i].Time)
-                        tooltip += " " + response[i].Time;
+                        tooltip += " " + newValue[i].Time;
                 }
                 this.graphsWidget.set("tooltip", tooltip);
             } else if (name === "StateID") {

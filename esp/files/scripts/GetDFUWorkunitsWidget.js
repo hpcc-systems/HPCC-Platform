@@ -217,6 +217,7 @@ define([
             if (this.initalized)
                 return;
             this.initalized = true;
+            this.tabContainer.selectChild(this.legacyPane);
         },
 
         initWorkunitsGrid: function() {
