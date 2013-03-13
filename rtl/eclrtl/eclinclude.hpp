@@ -67,13 +67,6 @@ typedef unsigned __int64 hash64_t;
 #include "rtlfield_imp.hpp"
 #include "rtlds_imp.hpp"
 #include "eclhelper_base.hpp"
-
-extern __declspec(dllimport) void _fastcall DecLock();
-extern __declspec(dllimport) void _fastcall DecUnlock();
-struct BcdCriticalBlock
-{
-    BcdCriticalBlock()      { DecLock(); }
-    ~BcdCriticalBlock()     { DecUnlock(); }
-};
+#include "rtlbcd.hpp"
 
 #endif

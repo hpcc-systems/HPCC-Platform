@@ -17,7 +17,7 @@
 
 #include "platform.h"
 #include "jliball.hpp"
-#include "bcd.hpp"
+#include "rtlbcd.hpp"
 #include "workunit.hpp"
 #include "seclib.hpp"
 #include "eclrtl.hpp"

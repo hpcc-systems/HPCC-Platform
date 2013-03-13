@@ -122,6 +122,7 @@ _ATOM externalAtom;
 _ATOM failAtom;
 _ATOM failureAtom;
 _ATOM falseAtom;
+_ATOM fastAtom;
 _ATOM fewAtom;
 _ATOM fieldAtom;
 _ATOM fieldsAtom;
@@ -531,6 +532,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(fail);
     MAKEATOM(failure);
     MAKEATOM(false);
+    MAKEATOM(fast);
     MAKEATOM(few);
     MAKEATOM(field);
     MAKEATOM(fields);

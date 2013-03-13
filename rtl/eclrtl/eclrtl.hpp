@@ -60,6 +60,8 @@ interface IException;
 class StringBuffer;
 class MemoryBuffer;
 
+enum DBZaction { DBZnone, DBZzero, DBZnan, DBZfail }; // Different actions on divide by zero
+
 //-----------------------------------------------------------------------------
 
 // RegEx Compiler for ansii  strings (uses BOOST)
@@ -380,6 +382,7 @@ ECLRTL_API void rtlFail(int code, const char *msg);
 ECLRTL_API void rtlSysFail(int code, const char *msg);
 ECLRTL_API void rtlFailUnexpected();
 ECLRTL_API void rtlFailOnAssert();
+ECLRTL_API void rtlFailDivideByZero();
 
 ECLRTL_API void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name);
 ECLRTL_API void rtlReportRowOverflow(unsigned size, unsigned max);
@@ -579,6 +582,7 @@ ECLRTL_API double rtlACos(double x);
 ECLRTL_API double rtlASin(double x);
 
 ECLRTL_API bool rtlIsValidReal(unsigned size, const void * data);
+ECLRTL_API double rtlCreateRealNull();
 
 ECLRTL_API unsigned rtlQStrLength(unsigned size);
 ECLRTL_API unsigned rtlQStrSize(unsigned length);

@@ -125,6 +125,7 @@ extern HQL_API _ATOM externalAtom;
 extern HQL_API _ATOM failAtom;
 extern HQL_API _ATOM failureAtom;
 extern HQL_API _ATOM falseAtom;
+extern HQL_API _ATOM fastAtom;
 extern HQL_API _ATOM fewAtom;
 extern HQL_API _ATOM fieldAtom;
 extern HQL_API _ATOM fieldsAtom;

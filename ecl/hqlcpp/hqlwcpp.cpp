@@ -598,13 +598,13 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
         out.append(s);
         return true;
     }
-    enum { ServiceApi, RtlApi, BcdApi, CApi, CppApi, LocalApi } api = ServiceApi;
+    enum { ServiceApi, RtlApi, FastApi, CApi, CppApi, LocalApi } api = ServiceApi;
     bool isVirtual = funcdef->hasProperty(virtualAtom);
     bool isLocal = body->hasProperty(localAtom);
     if (body->hasProperty(eclrtlAtom))
         api = RtlApi;
-    else if (body->hasProperty(bcdAtom))
-        api = BcdApi;
+    else if (body->hasProperty(fastAtom))
+        api = FastApi;
     else if (body->hasProperty(cAtom))
         api = CApi;
     else if (body->hasProperty(cppAtom))
@@ -624,7 +624,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
     {
     case ServiceApi: out.append(" SERVICE_API"); break;
     case RtlApi:     out.append(" RTL_API"); break;
-    case BcdApi:     out.append(" BCD_API"); break;
+    case FastApi:     out.append(" BCD_API"); break;
     }
     out.append(" ");
 
@@ -642,7 +642,7 @@ bool HqlCppWriter::generateFunctionPrototype(IHqlExpression * funcdef, const cha
             break;
         }
         break;
-    case BcdApi:
+    case FastApi:
         switch (compiler)
         {
         case Vs6CppCompiler:

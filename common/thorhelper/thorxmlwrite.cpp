@@ -22,7 +22,7 @@
 #include "rtlkey.hpp"
 #include "eclhelper.hpp"
 #include "deftype.hpp"
-#include "bcd.hpp"
+#include "rtlbcd.hpp"
 
 CommonXmlWriter::CommonXmlWriter(unsigned _flags, unsigned initialIndent, IXmlStreamFlusher *_flusher) 
 {

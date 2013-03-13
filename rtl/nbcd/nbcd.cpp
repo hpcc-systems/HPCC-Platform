@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "nbcd.hpp"
 #include "jlib.hpp"
+#include "jexcept.hpp"
 
 #ifdef _WIN32
  #define NOMEMCPY volatile          // stop VC++ doing a stupid optimization
@@ -159,7 +160,7 @@ Decimal & Decimal::divide(const Decimal & other)
     }
     if (hi2 < lo2)
     {
-        //divide by zero
+        //Division by zero defined to return 0 instead of throw an exception
         setZero();
         return *this;
     }
@@ -249,6 +250,14 @@ void Decimal::extendRange(byte oLsb, byte oMsb)
     }
 }
 
+
+bool Decimal::isZero() const
+{
+    //NB: Round towards zero
+    int lo, hi;
+    clip(lo, hi);
+    return (hi < lo);
+}
 
 Decimal & Decimal::modulus(const Decimal & other)
 {
@@ -1156,6 +1165,7 @@ void Decimal::setZero()
     lsb = msb = zeroDigit;
     digits[zeroDigit] = 0;
 }
+
 
 //---------------------------------------------------------------------------
 

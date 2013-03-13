@@ -16,10 +16,10 @@
 ############################################################################## */
 
 #include "platform.h"
-#define DECIMAL_OVERLOAD
-#include "nbcd.hpp"
-#include "bcd.hpp"
 #include "jlog.hpp"
+#include "rtlbcd.hpp"
+
+#include "nbcd.hpp"
 
 #define _elements_in(a) (sizeof(a)/sizeof((a)[0]))
 
@@ -113,7 +113,7 @@ protected:
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testDivide/getCString: expected '%s', got '%s'", expected, temp);
         DecPushCString(left);
         DecPushCString(right);
-        DecDivide();
+        DecDivide(DBZzero);
         DecPopCString(sizeof(temp),temp);
         cppunit_assert(strcmp(expected, temp) == 0, "ERROR: testDivide/DecDivide: expected '%s', got '%s'", expected, temp);
     }
