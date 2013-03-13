@@ -18,8 +18,12 @@
   role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
   <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
   <emphasis>,replicate</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>,asSuperfile</emphasis> <emphasis role="bold">])</emphasis>
-  <emphasis></emphasis></para>
+  <emphasis>,asSuperfile</emphasis> <emphasis role="bold">]
+  [</emphasis><emphasis>,forcePush</emphasis> <emphasis role="bold">]
+  [</emphasis><emphasis>,transferBufferSize</emphasis> <emphasis role="bold">]
+  [</emphasis><emphasis>,wrap</emphasis> <emphasis role="bold">]
+  [</emphasis><emphasis>,compress</emphasis> <emphasis
+  role="bold">])</emphasis> <emphasis></emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.RemotePull(</emphasis> <emphasis> remoteURL,
@@ -31,6 +35,10 @@
   <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
   <emphasis>,replicate</emphasis> <emphasis role="bold">]</emphasis> <emphasis
   role="bold"> [</emphasis> <emphasis>,asSuperfile</emphasis> <emphasis
+  role="bold">] [</emphasis><emphasis>,forcePush</emphasis> <emphasis
+  role="bold">] [</emphasis><emphasis>,transferBufferSize</emphasis> <emphasis
+  role="bold">] [</emphasis><emphasis>,wrap</emphasis> <emphasis role="bold">]
+  [</emphasis><emphasis>,compress</emphasis> <emphasis
   role="bold">]);</emphasis></para>
 
   <informaltable colsep="0" frame="none" rowsep="0">
@@ -84,7 +92,9 @@
           <entry><emphasis>maxConnections</emphasis></entry>
 
           <entry>Optional. An integer specifying the maximum number of
-          connections. If omitted, the default is one (1).</entry>
+          connections. If omitted, the default is -1, which indicates the
+          system chooses a suitable default based on the size of the
+          cluster.</entry>
         </row>
 
         <row>
@@ -117,9 +127,45 @@
         </row>
 
         <row>
+          <entry><emphasis>forcePush</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          execute the copy process on the source nodes and push to the targets
+          instead of executing on the targets and pulling from the source. If
+          omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>transferBufferSize</emphasis></entry>
+
+          <entry>Optional. An integer specifying the size in bytes of the
+          transfer buffer. Sometimes using larger values can speed the
+          process. If omitted, a default buffer size of 64K is used.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>wrap</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          automatically wrap the file parts when copying to smaller sized
+          clusters. For example, copying from a 6-node cluster to a 3-node
+          cluster, two file parts will end up on each node; the difference is
+          whether node 1 gets parts 1 and 2 or parts 1 and 4. If omitted, the
+          default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>compress</emphasis></entry>
+
+          <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
+          automatically LZW compress the new file. If omitted, the default is
+          FALSE.</entry>
+        </row>
+
+        <row>
           <entry><emphasis>dfuwuid</emphasis></entry>
 
-          <entry>The attribute name to recieve the null-terminated string
+          <entry>The definition name to receive the null-terminated string
           containing the DFU workunit ID (DFUWUID) generated for the
           job.</entry>
         </row>
