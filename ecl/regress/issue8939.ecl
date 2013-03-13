@@ -1,6 +1,6 @@
 /*##############################################################################
 
-    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
+    HPCC SYSTEMS software Copyright (C) 2013 HPCC Systems.
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -15,14 +15,5 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef SLAVMAIN_HPP
-#define SLAVMAIN_HPP
-
-void abortSlave();
-void slaveMain();
-void enableThorSlaveAsDaliClient();
-void disableThorSlaveAsDaliClient();
-
-#endif
-
-
+ds := DATASET('x', { ebcdic string1 x }, THOR);
+output(ds(x IN ['A', 'B', 'Z']));

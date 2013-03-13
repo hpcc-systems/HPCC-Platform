@@ -708,7 +708,7 @@ class CDFUhelper: public CInterface, implements IDFUhelper
 public:
     IMPLEMENT_IINTERFACE;
 
-    void addSuper(const char *superfname,IUserDescriptor *user, unsigned numtoadd, const char **subfiles, const char *before)
+    void addSuper(const char *superfname, IUserDescriptor *user, unsigned numtoadd, const char **subfiles, const char *before, bool autocreatesuper)
     {
         if (!numtoadd)
             throwError(DFUERR_DNoSubfileToAddToSuperFile);
@@ -718,7 +718,11 @@ public:
 
         Owned<IDistributedSuperFile> superfile = transaction->lookupSuperFile(superfname);
         if (!superfile)
+        {
+            if (!autocreatesuper)
+                throwError1(DFUERR_DSuperFileNotFound, superfname);
             superfile.setown(queryDistributedFileDirectory().createSuperFile(superfname,user,true,false,transaction));
+        }
 
         for (unsigned i=0;i<numtoadd;i++)
         {

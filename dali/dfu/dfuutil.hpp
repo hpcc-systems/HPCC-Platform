@@ -32,7 +32,7 @@ interface IDfuFileCopier: extends IInterface
 
 interface IDFUhelper: extends IInterface
 {
-    virtual void addSuper(const char *superfname, IUserDescriptor *user, unsigned numtoadd=0, const char **subfiles=NULL, const char *before=NULL) = 0;
+    virtual void addSuper(const char *superfname, IUserDescriptor *user, unsigned numtoadd=0, const char **subfiles=NULL, const char *before=NULL, bool autocreatesuper = false) = 0;
     virtual void removeSuper(const char *superfname, IUserDescriptor *user, unsigned numtodelete=0, const char **subfiles=NULL, bool delsub=false, bool removesuperfile=true) = 0;
     virtual void listSubFiles(const char *superfname,StringAttrArray &out, IUserDescriptor *user) = 0;
     virtual StringBuffer &getFileXML(const char *lfn,StringBuffer &out, IUserDescriptor *user) = 0;

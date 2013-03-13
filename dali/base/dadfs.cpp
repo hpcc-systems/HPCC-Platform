@@ -1898,7 +1898,6 @@ public:
     void set(IPropertyTree *pt,FileClusterInfoArray &clusters,unsigned maxcluster);
     RemoteFilename &getFilename(RemoteFilename &ret,unsigned copy);
     void renameFile(IFile *file);
-    unsigned getCRC();
     IPropertyTree &queryAttributes();
     bool lockProperties(unsigned timems);
     void unlockProperties(DFTransactionState state);
