@@ -348,25 +348,6 @@ class CKeyFileReader: public CInterface, extends IKeyFileRowReader
     Owned<IPropertyTree> header;
     RowBuffer buffer;
 
-    class cRecSize: public CInterface, implements IRecordSize
-    {
-    public:
-        IMPLEMENT_IINTERFACE;
-        size32_t frecsize;
-        size32_t maxrecsize;
-        size32_t getRecordSize(const void *rec)
-        {
-            if (!rec)
-                return maxrecsize;
-            return frecsize?frecsize:((*((const size32_t *)rec)+sizeof(size32_t)+sizeof(offset_t)));
-        }
-        size32_t getFixedSize() const
-        {
-            return frecsize;
-        }
-
-    } crecsize;
-
 public:
     IMPLEMENT_IINTERFACE;
     CKeyFileReader(const char *filename)
@@ -375,8 +356,6 @@ public:
         size32_t rowsize = reader.queryRowSize();
         bool isvar = reader.isVariableWidth();
         buffer.init(rowsize,isvar);
-        crecsize.maxrecsize = buffer.buffSize();
-        crecsize.frecsize = isvar?0:crecsize.maxrecsize;
 
         header.setown(createPTree("Index"));
         header->setPropInt("@rowSize",rowsize);

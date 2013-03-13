@@ -254,6 +254,10 @@ size32_t CRHDualCache::getFixedSize() const
     return in->queryOutputMeta()->getFixedSize();
 }
 
+size32_t CRHDualCache::getMinRecordSize() const
+{
+    return in->queryOutputMeta()->getMinRecordSize();
+}
 
 CRHDualCache::cOut::cOut(CRHDualCache *_parent, unsigned &_pos) 
 : pos(_pos)

@@ -90,8 +90,12 @@ public:
 #endif
 
     bool get(unsigned n, CRHRollingCacheElem *&out);
-    size32_t getRecordSize(const void *ptr);
-    size32_t getFixedSize() const;
+
+    //interface IRecordSize:
+    virtual size32_t getRecordSize(const void *ptr);
+    virtual size32_t getFixedSize() const;
+    virtual size32_t getMinRecordSize() const;
+
     class cOut: public CInterface, public IInputBase
     {
     private:

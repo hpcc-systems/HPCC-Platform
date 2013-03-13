@@ -630,7 +630,11 @@ public:
     {
         return recsize;
     }
-    size32_t getFixedSize() const
+    virtual size32_t getFixedSize() const
+    {
+        return recsize;
+    }
+    virtual size32_t getMinRecordSize() const
     {
         return recsize;
     }
@@ -655,9 +659,13 @@ public:
     {
         return recordSize->getRecordSize(data) + delta;
     }
-    size32_t getFixedSize() const
+    virtual size32_t getFixedSize() const
     {
         return recordSize->getFixedSize()?recordSize->getFixedSize()+delta:0;
+    }
+    virtual size32_t getMinRecordSize() const
+    {
+        return recordSize->getMinRecordSize() + delta;
     }
 };
 

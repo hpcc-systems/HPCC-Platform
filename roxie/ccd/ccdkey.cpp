@@ -1983,6 +1983,7 @@ protected:
             IMPLEMENT_IINTERFACE;
             virtual size32_t getRecordSize(const void *) { return sizeof(unsigned); }
             virtual size32_t getFixedSize() const { return sizeof(unsigned); }
+            virtual size32_t getMinRecordSize() const { return sizeof(unsigned); }
         } x;
         unsigned testarray[] = {1,2,2,2,4,3,8,9,0,5};
         InMemoryIndex di;

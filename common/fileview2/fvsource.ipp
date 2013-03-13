@@ -55,6 +55,10 @@ public:
     {
         return recordSize->getFixedSize();
     }
+    virtual size32_t getMinRecordSize() const
+    {
+        return recordSize->getMinRecordSize();
+    }
 private:
     Linked<IRecordSize> recordSize;
 };
@@ -118,7 +122,7 @@ public:
     void addVirtualField(const char * name, const char * xpath, ITypeInfo * type);
 
     void extractKeyedInfo(UnsignedArray & offsets, TypeInfoArray & types);
-    unsigned fixedSize() { return storedFixedSize; }
+    unsigned fixedSize() { return minRecordSize; }
     bool isFixedSize() { return isStoredFixedWidth; }
     bool isSingleSet() { return ((fields.ordinality() == 1) && (fields.item(0).type->getTypeCode() == type_set)); }
     inline unsigned getMaxRecordSize()                      { return maxRecordSize; }
@@ -131,6 +135,7 @@ public:
     {
         return getRecordSize(rec);
     }
+    virtual size32_t getMinRecordSize() const;
 
 protected:
     void addSimpleField(const char * name, const char * xpath, ITypeInfo * type);
@@ -144,7 +149,7 @@ protected:
     CIArrayOf<DataSourceMetaItem> fields;
     IntArray attributes;
     unsigned keyedSize;
-    unsigned storedFixedSize;
+    unsigned minRecordSize;
     unsigned maxRecordSize;
     unsigned bitsRemaining;
     unsigned numVirtualFields;
