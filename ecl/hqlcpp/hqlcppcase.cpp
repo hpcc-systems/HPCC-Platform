@@ -641,10 +641,11 @@ void HqlCppCaseInfo::buildSwitchCondition(BuildCtx & ctx, CHqlBoundExpr & bound)
 void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, const CHqlBoundTarget * target, IHqlExpression * test)
 {
     bool isCharCompare = (test->queryType()->getTypeCode() == type_string);
+    Owned<ITypeInfo> unsigned1Type = makeIntType(1, false);
     
     LinkedHqlExpr cond = test;
     if (isCharCompare)
-        cond.setown(createValue(no_index, makeCharType(), LINK(test), getZero()));
+        cond.setown(createValue(no_implicitcast, LINK(unsigned1Type), createValue(no_index, makeCharType(), LINK(test), getZero())));
     
     BuildCtx subctx(ctx);
     IHqlStmt * stmt = subctx.addSwitch(cond);
@@ -659,10 +660,15 @@ void HqlCppCaseInfo::buildSwitchMap(BuildCtx & ctx, const CHqlBoundTarget * targ
 
         if (isCharCompare)
         {
-            OwnedITypeInfo charType = makeCharType();
-            IValue * cur = compare->queryValue();
-            IValue * next = cur->castTo(charType);
-            compare.setown(createConstant(next));
+            //Coded this way to avoid problems with ascii v ebcdic strings
+            const byte * data = reinterpret_cast<const byte *>((char *)compare->queryValue()->queryValue());
+            byte value = data[0];
+            Owned<IValue> cast;
+            if (value < 127)
+                cast.setown(createCharValue(value, true));
+            else
+                cast.setown(createIntValue(data[0], LINK(unsigned1Type)));
+            compare.setown(createConstant(cast.getClear()));
         }
         
         bool same = false;
