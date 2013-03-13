@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      146
-#define MIN_ACTIVITY_INTERFACE_VERSION  146             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      147
+#define MIN_ACTIVITY_INTERFACE_VERSION  147             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -496,6 +496,7 @@ interface IDistributedFileTransaction;
 interface IUserDescriptor;
 interface IHThorArg;
 interface IHThorHashLookupInfo;
+interface IEngineContext;
 
 interface ICodeContext : public IResourceContext
 {
@@ -591,6 +592,7 @@ interface ICodeContext : public IResourceContext
 
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;    // shouldn't really be here, but it broke thor.
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) = 0;
+    virtual IEngineContext *queryEngineContext() = 0;
 };
 
 

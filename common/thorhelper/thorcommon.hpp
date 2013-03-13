@@ -415,6 +415,10 @@ public:
     {
         return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
     }
+    virtual IEngineContext *queryEngineContext()
+    {
+        return ctx->queryEngineContext();
+    }
 
 protected:
     ICodeContext * ctx;

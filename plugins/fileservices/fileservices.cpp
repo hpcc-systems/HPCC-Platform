@@ -34,6 +34,7 @@
 #include "dfuplus.hpp"
 #include "daclient.hpp"
 #include "dasds.hpp"
+#include "enginecontext.hpp"
 
 #define USE_DALIDFS
 #define SDS_LOCK_TIMEOUT  10000
@@ -115,7 +116,7 @@ static const char * EclDefinition =
 "  dataset(FsLogicalSuperSubRecord) LogicalFileSuperSubList() : c,context,entrypoint='fsLogicalFileSuperSubList';\n"
 "  PromoteSuperFileList(const set of varstring lsuperfns,const varstring addhead='',boolean deltail=false,boolean createonlyonesuperfile=false,boolean reverse=false) : c,action,context,entrypoint='fsPromoteSuperFileList'; \n"
 "  varstring fPromoteSuperFileList(const set of varstring lsuperfns,const varstring addhead='', boolean deltail=false,boolean createonlyonesuperfile=false, boolean reverse=false) : c,action,context,entrypoint='fsfPromoteSuperFileList'; \n"
-"  unsigned8 getUniqueInteger(const varstring foreigndali='') : c,entrypoint='fsGetUniqueInteger'; \n"
+"  unsigned8 getUniqueInteger(const varstring foreigndali='') : c,context,entrypoint='fsGetUniqueInteger'; \n"
 "  AddFileRelationship(const varstring primary, const varstring secondary, const varstring primaryflds,  const varstring secondaryflds, const varstring kind='link', const varstring cardinality, boolean payload, const varstring description='') : c,action,context,entrypoint='fsAddFileRelationship'; \n"
 "  dataset(FsFileRelationshipRecord) FileRelationshipList(const varstring primary, const varstring secondary, const varstring primflds='', const varstring secondaryflds='',  const varstring kind='link') : c,action,context,entrypoint='fsFileRelationshipList'; \n"
 "  RemoveFileRelationship(const varstring primary,  const varstring secondary, const varstring primaryflds='', const varstring secondaryflds='',  const varstring kind='link') : c,action,context,entrypoint='fsRemoveFileRelationship'; \n"
@@ -1858,11 +1859,14 @@ FILESERVICES_API  char * FILESERVICES_CALL fsfPromoteSuperFileList(ICodeContext 
     return addlist.detach();
 }
 
-FILESERVICES_API unsigned __int64 FILESERVICES_CALL fsGetUniqueInteger(const char *foreigndali)
+FILESERVICES_API unsigned __int64 FILESERVICES_CALL fsGetUniqueInteger(ICodeContext * ctx, const char *foreigndali)
 {
     SocketEndpoint ep;
     if (foreigndali&&*foreigndali)
         ep.set(foreigndali);
+    IEngineContext *engineContext = ctx->queryEngineContext();
+    if (engineContext)
+        return engineContext->getGlobalUniqueIds(1,&ep);
     return getGlobalUniqueIds(1,&ep);
 }
 
