@@ -8326,7 +8326,7 @@ simpleDataSet
                             IHqlExpression *dataset = $3.getExpr();
                             OwnedHqlExpr record = $5.getExpr();
                             OwnedHqlExpr extra = $6.getExpr();
-                            parser->extractRecordFromExtra(record, extra);
+                            parser->extractIndexRecordAndExtra(record, extra);
                             OwnedHqlExpr transform = parser->extractTransformFromExtra(extra);
 
                             parser->inheritRecordMaxLength(dataset, record);
@@ -8354,7 +8354,7 @@ simpleDataSet
                         {
                             OwnedHqlExpr record = $3.getExpr();
                             OwnedHqlExpr extra = $4.getExpr();
-                            parser->extractRecordFromExtra(record, extra);
+                            parser->extractIndexRecordAndExtra(record, extra);
                             $$.setExpr(parser->createIndexFromRecord(record, extra, $3));
                             parser->checkIndexRecordTypes($$.queryExpr(), $1);
                             $$.setPosition($1);
