@@ -307,40 +307,9 @@ int main( int argc, char *argv[]  )
         markNodeCentral(masterEp);
         if (RegisterSelf(masterEp))
         {
-#define ISDALICLIENT // JCSMORE plugins *can* access dali - though I think we should probably prohibit somehow.
-#ifdef ISDALICLIENT
-            bool daliClient = globals->getPropBool("Debug/@slaveDaliClient");
-            PROGLOG("Slave is%s a Dali client", daliClient?"":" NOT");
-            if (daliClient)
-            {
-                const char *daliServers = globals->queryProp("@DALISERVERS");
-                if (!daliServers)
-                {
-                    LOG(MCerror, thorJob, "No Dali server list specified\n");
-                    return 1;
-                }
-                Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
-                unsigned retry = 0;
-                loop {
-                    try {
-                        LOG(MCdebugProgress, thorJob, "calling initClientProcess");
-                        initClientProcess(serverGroup,DCR_ThorSlave, getFixedPort(TPORT_mp));
-                        break;
-                    }
-                    catch (IJSOCK_Exception *e) {
-                        if ((e->errorCode()!=JSOCKERR_port_in_use))
-                            throw;
-                        FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
-                        if (retry++>10)
-                            throw;
-                        e->Release();
-                        LOG(MCdebugProgress, thorJob, "Retrying");
-                        Sleep(retry*2000);
-                    }
-                }
-                setPasswordsFromSDS();
-            }
-#endif
+            if (globals->getPropBool("Debug/@slaveDaliClient"))
+                enableThorSlaveAsDaliClient();
+
             IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
             if (daFileSrvHook) // probably always installed
                 daFileSrvHook->addSubnetFilters(globals->queryPropTree("NAS"), NULL);
@@ -453,13 +422,8 @@ int main( int argc, char *argv[]  )
         setMultiThorMemoryNotify(0,NULL);
     roxiemem::releaseRoxieHeap();
 
-#ifdef ISDALICLIENT
     if (globals->getPropBool("Debug/@slaveDaliClient"))
-    {
-        closeEnvironment();
-        closedownClientProcess();   // dali client closedown
-    }
-#endif
+        disableThorSlaveAsDaliClient();
 
 #ifdef USE_MP_LOG
     stopLogMsgReceivers();

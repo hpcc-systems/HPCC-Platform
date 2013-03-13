@@ -44,10 +44,54 @@
 #include "thgraphslave.hpp"
 #include "slave.ipp"
 #include "thcompressutil.hpp"
+#include "dalienv.hpp"
 
 //---------------------------------------------------------------------------
 
 //---------------------------------------------------------------------------
+
+#define ISDALICLIENT // JCSMORE plugins *can* access dali - though I think we should probably prohibit somehow.
+void enableThorSlaveAsDaliClient()
+{
+#ifdef ISDALICLIENT
+    PROGLOG("Slave activated as a Dali client");
+    const char *daliServers = globals->queryProp("@DALISERVERS");
+    if (!daliServers)
+        throw MakeStringException(0, "No Dali server list specified");
+    Owned<IGroup> serverGroup = createIGroup(daliServers, DALI_SERVER_PORT);
+    unsigned retry = 0;
+    loop
+    {
+        try
+        {
+            LOG(MCdebugProgress, thorJob, "calling initClientProcess");
+            initClientProcess(serverGroup,DCR_ThorSlave, getFixedPort(TPORT_mp));
+            break;
+        }
+        catch (IJSOCK_Exception *e)
+        {
+            if ((e->errorCode()!=JSOCKERR_port_in_use))
+                throw;
+            FLLOG(MCexception(e), thorJob, e,"InitClientProcess");
+            if (retry++>10)
+                throw;
+            e->Release();
+            LOG(MCdebugProgress, thorJob, "Retrying");
+            Sleep(retry*2000);
+        }
+    }
+    setPasswordsFromSDS();
+#endif
+}
+
+void disableThorSlaveAsDaliClient()
+{
+#ifdef ISDALICLIENT
+    closeEnvironment();
+    closedownClientProcess();   // dali client closedown
+    PROGLOG("Slave deactivated as a Dali client");
+#endif
+}
 
 class CJobListener : public CSimpleInterface
 {
@@ -245,6 +289,11 @@ public:
                         Owned<IPropertyTree> deps = createPTree(msg);
                         job->setXGMML(deps);
 
+                        if (!globals->getPropBool("Debug/@slaveDaliClient") && job->getWorkUnitValueBool("slaveDaliClient", false))
+                        {
+                            PROGLOG("Workunit option 'slaveDaliClient' enabled");
+                            enableThorSlaveAsDaliClient();
+                        }
                         msg.clear();
                         msg.append(false);
                         break;
@@ -257,11 +306,15 @@ public:
                         StringAttr wuid = job->queryWuid();
                         StringAttr graphName = job->queryGraphName();
 
+                        PROGLOG("Finished wuid=%s, graph=%s", wuid.get(), graphName.get());
+
+                        if (!globals->getPropBool("Debug/@slaveDaliClient") && job->getWorkUnitValueBool("slaveDaliClient", false))
+                            disableThorSlaveAsDaliClient();
+
                         PROGLOG("QueryDone, removing %s from jobs", key.get());
                         jobs.removeExact(job);
                         PROGLOG("QueryDone, removed %s from jobs", key.get());
 
-                        PROGLOG("Finished wuid=%s, graph=%s", wuid.get(), graphName.get());
                         msg.clear();
                         msg.append(false);
                         break;
