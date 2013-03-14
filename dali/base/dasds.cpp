@@ -73,7 +73,6 @@ static unsigned readWriteTimeout = 60000;
 #define DETACHINPROGRESS "detach.progress"
 #define TMPSAVENAME "dali_store_tmp.xml"
 #define INIT_NODETABLE_SIZE 0x380000
-// #define SUBLOCKS
 
 #define DEFAULT_LCIDLE_PERIOD (60*10)  // time has to be quiet for before blocking/saving (when using @lightweightCoalesce)
 #define DEFAULT_LCMIN_TIME (24*60*60)  // don't save more than once a 'DEFAULT_LCMIN_TIME' period.
@@ -3287,6 +3286,14 @@ class CLockInfo : public CInterface, implements IInterface
 #endif
                 break;
             default:
+                if (changingMode)
+                {
+                    // only an unlocked read lock can fail and need restore here.
+                    if (hadReadLock)
+                        readLocks++;
+                    if (hadHoldLock)
+                        holdLocks++;
+                }
                 throwUnexpected();
         }
         if (changingMode)
@@ -7223,7 +7230,7 @@ void CCovenSDSManager::unlockAll(__int64 treeId)
 LockStatus CCovenSDSManager::establishLock(CLockInfo &lockInfo, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback)
 {
     LockStatus res = lockInfo.lock(mode, timeout, connectionId, sessionId, lockCallback);
-    if (res != LockFailed && server.queryStopped())
+    if (res == LockSucceeded && server.queryStopped())
     {
         lockInfo.unlock(connectionId);
         throw MakeSDSException(SDSExcpt_ServerStoppedLockAborted);
@@ -7255,134 +7262,9 @@ void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *__xpath, Connec
     CHECKEDCRITICALBLOCK(lockCrit, fakeCritTimeout);
     lockInfo = lockTable.find(&treeId);
     
-    IdPath idPath;
-#ifdef SUBLOCKS
-    class CLockInfoList : public CLockInfoArray
-    {
-    public:
-        CLockInfoList(ConnectionId _connectionId) : connectionId(_connectionId) { }
-        ~CLockInfoList() { clear(); }
-        void clear()
-        {
-            ForEachItem(i)
-            {
-                CLockInfo &lockInfo = item(i);
-                lockInfo.unlock(connectionId);
-            }
-        }
-    private:
-        ConnectionId connectionId;
-    };
-    CTimeMon tm(timeout);
-    unsigned remaining = timeout;
-
-    loop
-    {
-        if (!lockInfo) // establish if parent tree within this path has a lock. (e.g. want lock on 'a/b/c/' but already lock on 'a/')
-        {
-            CLockInfoList tmpExistingLocks(connectionId);
-            StringAttr head("");
-            const char *tail=xpath;
-            do
-            {
-                Owned<IPropertyTreeIterator> headIter = root->getElements(head);
-                ForEach(*headIter)
-                {
-                    CRemoteTreeBase &head = (CRemoteTreeBase &)headIter->query();
-                    __int64 _treeId = head.queryServerId();
-                    CLockInfo *_lockInfo = lockTable.find(&_treeId);
-                    if (_lockInfo && _lockInfo->querySub())
-                    {
-                        if (tm.timedout(&remaining))
-                            throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s", __xpath);
-                        Owned<IPropertyTreeIterator> tailIter = head.getElements(tail);
-                        ForEach(*tailIter)
-                        {
-                            CRemoteTreeBase &tail = (CRemoteTreeBase &)tailIter->query();
-                            assertex(NULL == lockTable.find(treeId));
-                            Linked<CLockInfo> tmp = _lockInfo;  // keep it alive could be destroyed whilst blocked in call below. (NB:1)
-                            if (!establishLock(*_lockInfo, treeId, connectionId, sessionId, mode, remaining, callback))
-                            {
-                                StringBuffer s; // small window for debug info getLockInfo to be out of date. (NB:2)
-                                throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s, timeout waiting for existing PARENT lock @ %s", xpath, _lockInfo->queryXPath());
-                            }
-                            if (lockTable.find(treeId))
-                                break; // whilst waiting for intermediate, someone else established lock.
-                            tmpExistingLocks.append(*_lockInfo);
-                        }
-                    }
-                }
-                if (lockInfo) break;
-
-                const char *p = tail;
-                const char *end = tail + strlen(tail) - 1;
-                while (p < end)
-                {
-                    if (*p == '/')
-                        break;
-                    ++p;
-                }
-                if (p == end)
-                    tail = NULL;
-                else
-                {
-                    head.set(xpath, p-xpath);
-                    tail = p+1;
-                }
-            }
-            while (tail);
-
-            CPTStack ptreePath;
-            ptreePath.fill(*root, head, tree);
-            ptreePath.append(*LINK(&tree));
-
-            IdPath idPath;
-            ForEachItemIn(p, ptreePath) idPath.append(((CRemoteTreeBase &)(ptreePath.item(p))).queryServerId());
-            if (!lockInfo)
-            {
-                SuperHashIteratorOf<CLockInfo> iter(lockTable.queryBaseTable());
-                ForEach (iter) // JCSMORE - think about other approach other than iterative.
-                {
-                    CLockInfo *_lockInfo = &iter.query();
-                    if (_lockInfo->querySub() && _lockInfo->matchHead(idPath))
-                    {
-                        if (tm.timedout(&remaining))
-                            throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s timeout", __xpath);
-                        assertex(NULL == lockTable.find(treeId));
-                        Linked<CLockInfo> tmp = _lockInfo; // NB 1
-                        if (!establishLock(*_lockInfo, treeId, connectionId, sessionId, mode, remaining, callback))
-                        {
-                            StringBuffer s; // NB 2
-                            throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s, timeout waiting for existing CHILD lock @ %s", xpath, _lockInfo->queryXPath());
-                        }
-                        if (lockTable.find(treeId))
-                            break; // whilst waiting for intermediate, someone else established lock.
-                        tmpExistingLocks.append(*_lockInfo);
-                    }
-                }
-            }
-            if (!lockInfo)
-            {
-                lockInfo = new CLockInfo(lockTable, treeId, idPath, xpath, mode, connectionId, sessionId);
-                assertex(NULL == lockTable.find(treeId));
-                lockTable.replace(*lockInfo);
-                break;
-            }
-        }
-        else
-        {
-            Linked<CLockInfo> tmp = lockInfo; // NB 1
-            if (!establishLock(*lockInfo, treeId, connectionId, sessionId, mode, remaining, callback))
-            {
-                StringBuffer s; // NB 2
-                throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s\nExisting lock status: %s", xpath, lockInfo->getLockInfo(s).str());
-            }
-            break;
-        }
-    }
-#else
     if (!lockInfo)
     {
+        IdPath idPath;
         lockInfo = new CLockInfo(lockTable, treeId, idPath, xpath, mode, connectionId, sessionId);
         lockTable.replace(*lockInfo);
     }
@@ -7405,7 +7287,6 @@ void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *__xpath, Connec
             }
         }
     }
-#endif
 }
 
 void CCovenSDSManager::createConnection(SessionId sessionId, unsigned mode, unsigned timeout, const char *xpath, CServerRemoteTree *&tree, ConnectionId &connectionId, bool primary, Owned<LinkingCriticalBlock> &connectCritBlock)

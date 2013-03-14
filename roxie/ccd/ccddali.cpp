@@ -346,7 +346,7 @@ public:
         {
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
-            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, true);  // MORE - roxie doesn;t always hold ?
+            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt);
             if (dfsFile)
             {
                 IDistributedSuperFile *super = dfsFile->querySuperFile();
