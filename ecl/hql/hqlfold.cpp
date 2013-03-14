@@ -4783,6 +4783,15 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
         if (getBoolValue(expr->queryChild(0), false))
             return createValue(no_null, makeVoidType());
         break;
+    case no_sequential:
+    case no_parallel:
+        if (expr->numChildren() == 1)
+        {
+            if (expr->queryChild(0)->isAttribute())
+                return createValue(no_null, makeVoidType());
+            return removeParentNode(expr);
+        }
+        break;
     }
 
     return LINK(expr);
