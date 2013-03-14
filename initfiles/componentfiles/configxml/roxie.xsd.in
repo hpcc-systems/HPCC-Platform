@@ -747,6 +747,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="heapUseHugePages" type="xs:boolean" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Allow roxie to use memory from huge pages if they have been configured.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="trapTooManyActiveQueries" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>

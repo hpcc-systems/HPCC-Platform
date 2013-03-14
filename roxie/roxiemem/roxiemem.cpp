@@ -90,6 +90,7 @@ const unsigned maxLeakReport = 4;
 
 static char *heapBase;
 static char *heapEnd;   // Equal to heapBase + (heapTotalPages * page size)
+static bool heapUseHugePages;
 static unsigned *heapBitmap;
 static unsigned heapBitmapSize;
 static unsigned heapTotalPages; // derived from heapBitmapSize - here for code clarity
@@ -120,7 +121,7 @@ typedef MapBetween<unsigned, unsigned, memsize_t, memsize_t> MapActivityToMemsiz
 
 static CriticalSection heapBitCrit;
 
-static void initializeHeap(unsigned pages, unsigned largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
+static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBlockGranularity, ILargeMemCallback * largeBlockCallback)
 {
     if (heapBase) return;
     // CriticalBlock b(heapBitCrit); // unnecessary - must call this exactly once before any allocations anyway!
@@ -145,13 +146,35 @@ static void initializeHeap(unsigned pages, unsigned largeBlockGranularity, ILarg
         }
     }
 #else
-    int ret;
-    if ((ret = posix_memalign((void **) &heapBase, HEAP_ALIGNMENT_SIZE, memsize)) != 0) {
-        DBGLOG("RoxieMemMgr: posix_memalign (alignment=%"I64F"u, size=%"I64F"u) failed - ret=%d", 
-                (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
-        HEAPERROR("RoxieMemMgr: Unable to create heap");
+    heapUseHugePages = false;
+    if (allowHugePages)
+    {
+        heapBase = (char *)mmap(NULL, memsize, (PROT_READ | PROT_WRITE), (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB), 0, 0);
+        if (heapBase != MAP_FAILED)
+        {
+            heapUseHugePages = true;
+            DBGLOG("Using Huge Pages for roxiemem");
+        }
+        else
+        {
+            heapBase = NULL;
+            DBGLOG("Huge Pages requested but unavailable");
+        }
+    }
+
+    if (!heapBase)
+    {
+        int ret;
+        if ((ret = posix_memalign((void **) &heapBase, HEAP_ALIGNMENT_SIZE, memsize)) != 0) {
+            DBGLOG("RoxieMemMgr: posix_memalign (alignment=%"I64F"u, size=%"I64F"u) failed - ret=%d", 
+                    (unsigned __int64) HEAP_ALIGNMENT_SIZE, (unsigned __int64) memsize, ret);
+            HEAPERROR("RoxieMemMgr: Unable to create heap");
+        }
     }
 #endif
+
+    assertex(((memsize_t)heapBase & (HEAP_ALIGNMENT_SIZE-1)) == 0);
+
     heapEnd = heapBase + memsize;
     heapBitmap = new unsigned [heapBitmapSize];
     memset(heapBitmap, 0xff, heapBitmapSize*sizeof(unsigned));
@@ -171,15 +194,22 @@ extern void releaseRoxieHeap()
             DBGLOG("RoxieMemMgr: releasing heap");
         delete [] heapBitmap;
         heapBitmap = NULL;
-        heapBitmapSize = 0;
-        heapTotalPages = 0;
 #ifdef _WIN32
         VirtualFree(heapBase, 0, MEM_RELEASE);
 #else
-        free(heapBase);
+        if (heapUseHugePages)
+        {
+            memsize_t memsize = memsize_t(heapTotalPages) * HEAP_ALIGNMENT_SIZE;
+            munmap(heapBase, memsize);
+            heapUseHugePages = false;
+        }
+        else
+            free(heapBase);
 #endif
         heapBase = NULL;
         heapEnd = NULL;
+        heapBitmapSize = 0;
+        heapTotalPages = 0;
     }
 }
 
@@ -3410,7 +3440,7 @@ extern void setMemoryStatsInterval(unsigned secs)
     lastStatsCycles = get_cycles_now();
 }
 
-extern void setTotalMemoryLimit(memsize_t max, memsize_t largeBlockSize, ILargeMemCallback * largeBlockCallback)
+extern void setTotalMemoryLimit(bool allowHugePages, memsize_t max, memsize_t largeBlockSize, ILargeMemCallback * largeBlockCallback)
 {
     assertex(largeBlockSize == align_pow2(largeBlockSize, HEAP_ALIGNMENT_SIZE));
     unsigned totalMemoryLimit = (unsigned) (max / HEAP_ALIGNMENT_SIZE);
@@ -3419,7 +3449,7 @@ extern void setTotalMemoryLimit(memsize_t max, memsize_t largeBlockSize, ILargeM
         totalMemoryLimit = 1;
     if (memTraceLevel)
         DBGLOG("RoxieMemMgr: Setting memory limit to %"I64F"d bytes (%u pages)", (unsigned __int64) max, totalMemoryLimit);
-    initializeHeap(totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
+    initializeHeap(allowHugePages, totalMemoryLimit, largeBlockGranularity, largeBlockCallback);
 }
 
 extern memsize_t getTotalMemoryLimit()
@@ -3638,7 +3668,7 @@ public:
 protected:
     void testSetup()
     {
-        initializeHeap(300, 0, NULL);
+        initializeHeap(false, 300, 0, NULL);
     }
 
     void testCleanup()
@@ -3743,6 +3773,7 @@ protected:
             _heapTotalPages = heapTotalPages;
             _heapLWM = heapLWM;
             _heapAllocated = heapAllocated;
+            _heapUseHugePages = heapUseHugePages;
         }
         ~HeapPreserver()
         {
@@ -3753,6 +3784,7 @@ protected:
             heapTotalPages = _heapTotalPages;
             heapLWM = _heapLWM;
             heapAllocated = _heapAllocated;
+            heapUseHugePages = _heapUseHugePages;
         }
         char *_heapBase;
         char *_heapEnd;
@@ -3761,6 +3793,7 @@ protected:
         unsigned _heapTotalPages;
         unsigned _heapLWM;
         unsigned _heapAllocated;
+        bool _heapUseHugePages;
     };
     void initBitmap(unsigned size)
     {
@@ -4750,7 +4783,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(memorySize, 0, NULL);
+        setTotalMemoryLimit(false, memorySize, 0, NULL);
     }
 
     void testCleanup()
@@ -4946,7 +4979,7 @@ public:
 protected:
     void testSetup()
     {
-        setTotalMemoryLimit(hugeMemorySize, 0, NULL);
+        setTotalMemoryLimit(false, hugeMemorySize, 0, NULL);
     }
 
     void testCleanup()

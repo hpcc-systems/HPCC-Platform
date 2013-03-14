@@ -720,9 +720,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         pingInterval = topology->getPropInt("@pingInterval", 0);
         socketCheckInterval = topology->getPropInt("@socketCheckInterval", 5000);
         memsize_t totalMemoryLimit = (memsize_t) topology->getPropInt64("@totalMemoryLimit", 0);
+        bool allowHugePages = topology->getPropBool("@heapUseHugePages", false);
         if (!totalMemoryLimit)
             totalMemoryLimit = 1024 * 0x100000;  // 1 Gb;
-        roxiemem::setTotalMemoryLimit(totalMemoryLimit, 0, NULL);
+        roxiemem::setTotalMemoryLimit(allowHugePages, totalMemoryLimit, 0, NULL);
 
         traceStartStop = topology->getPropBool("@traceStartStop", false);
         traceServerSideCache = topology->getPropBool("@traceServerSideCache", false);
