@@ -4764,7 +4764,7 @@ void HqlCppTranslator::doBuildFilterToTarget(BuildCtx & ctx, const CHqlBoundTarg
 {
     LinkedHqlExpr test = isOk.expr;
     if (invert)
-        test.setown(createValue(no_not, makeBoolType(), LINK(test)));
+        test.setown(getInverse(test));
 
     unsigned max = conds.ordinality();
     unsigned curIndex = 0;
@@ -7611,7 +7611,9 @@ void HqlCppTranslator::doBuildAssignAll(BuildCtx & ctx, const CHqlBoundTarget & 
 void HqlCppTranslator::doBuildExprNot(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
     assertex(expr->queryChild(0)->isBoolean());
-    doBuildPureSubExpr(ctx, expr, tgt);
+    CHqlBoundExpr bound;
+    buildExpr(ctx, expr->queryChild(0), bound);
+    tgt.expr.set(getInverse(bound.expr));
 }
 
 
