@@ -3105,116 +3105,6 @@ class CLockInfo : public CInterface, implements IInterface
         return ret;
     }
 
-public:
-    IMPLEMENT_IINTERFACE;
-
-    CLockInfo(CLockInfoTable &_table, __int64 _treeId, IdPath &_idPath, const char *_xpath, unsigned mode, ConnectionId id, SessionId sessId)
-        : table(_table), treeId(_treeId), xpath(_xpath), exclusive(false), sub(0), readLocks(0), waiting(0), pending(0)
-    {
-        INIT_NAMEDCOUNT;
-        verifyex(tryLock(mode, id, sessId));
-        ForEachItemIn(i, _idPath)
-            idPath.append(_idPath.item(i));
-    }
-
-    ~CLockInfo()
-    {
-        if (parent)
-            clearLastRef();
-    }
-
-    inline void clearLastRef();
-
-    bool querySub() { return (0 != sub); }
-    const void *queryFindParam() const
-    {
-        return (const void *) &treeId;
-    }
-
-    bool matchHead(IdPath &_idPath)
-    {
-        unsigned o = idPath.ordinality();
-        ForEachItemIn(i, _idPath)
-        {
-            if (i>=o) return false;
-            else if (idPath.item(i) != _idPath.item(i))
-                return false;
-        }
-        return true;
-    }
-
-    bool unlock(ConnectionId id)
-    {
-        bool ret = false;
-        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destroyed last
-        {
-            CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);    
-            LockData *ld = connectionInfo.getValue(id);
-            if (ld)    // not necessarily any lock info for this connection
-            {
-                switch (ld->mode & RTM_LOCKBASIC_MASK)
-                {
-                    case RTM_LOCK_READ:
-                        assertex(readLocks);
-                        readLocks--;
-                        break;
-
-                    case (RTM_LOCK_WRITE+RTM_LOCK_READ):
-                    case RTM_LOCK_WRITE:
-                        assertex(exclusive && 0 == readLocks);
-                        exclusive = false;
-#ifdef _DEBUG
-                        debugInfo.clearExclusive();
-#endif
-                        break;
-                    case 0: // no locking
-                        break;
-                    default:
-                        assertex(false);
-                }
-                if (RTM_LOCK_SUB & ld->mode)
-                    sub--;
-                connectionInfo.remove(id);
-                if (parent && 0 == connectionInfo.count())
-                {
-                    clearLastRef();
-                    ret = true;
-                }
-            }
-            wakeWaiting();
-        }
-        return ret;
-    }
-
-    void unlockAll()
-    {
-        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this.
-        { CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
-            HashIterator iter(connectionInfo);
-            while (iter.first())
-            {
-                IMapping &map = iter.query();
-                ConnectionId id = *(ConnectionId *)map.getKey();
-                unlock(id);
-            }
-        }
-    }
-
-    inline void addPending() { CHECKEDCRITICALBLOCK(crit, fakeCritTimeout); pending++; }
-    inline void removePending()
-    { 
-        Linked<CLockInfo> destroy;
-        {
-            CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
-            pending--;
-            if (0 == (lockCount()+pending))
-            {
-                destroy.set(this);
-                table.removeExact(this);
-            }
-        }
-    }
-
     bool _lock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback, bool change=false)
     {
         class CLockCallbackUnblock
@@ -3279,7 +3169,7 @@ public:
                         if (tm.timedout(&remaining) || !sem.wait(remaining>LOCKSESSCHECK?LOCKSESSCHECK:remaining))
                             timedout = true;
                     }
-                    if (timedout) { 
+                    if (timedout) {
                         if (!sem.wait(0))
                             waiting--;  //// only dec waiting if waiting wasn't signalled.
 
@@ -3308,16 +3198,6 @@ public:
                         break;
                 }
             }
-        }
-        return false;
-    }
-
-    bool lock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback)
-    {
-        bool ret = false;
-        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destroyed last
-        { CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
-            return _lock(mode, timeout, id, sessionId, callback);
         }
         return false;
     }
@@ -3355,7 +3235,7 @@ public:
             else
                 changingMode = false; // nothing to restore in event of no change
         }
-        
+
         switch (mode & RTM_LOCKBASIC_MASK)
         {
             case 0:
@@ -3400,7 +3280,7 @@ public:
         {
             if (RTM_LOCK_SUB & mode)
                 sub++;
-            LockData ld;            
+            LockData ld;
             ld.mode = mode;
             ld.sessId = sessId;
             ld.timeLockObtained = msTick();
@@ -3416,6 +3296,131 @@ public:
             sem.signal(waiting); // get blocked locks to recheck.
             waiting=0;
         }
+    }
+
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CLockInfo(CLockInfoTable &_table, __int64 _treeId, IdPath &_idPath, const char *_xpath, unsigned mode, ConnectionId id, SessionId sessId)
+        : table(_table), treeId(_treeId), xpath(_xpath), exclusive(false), sub(0), readLocks(0), waiting(0), pending(0)
+    {
+        INIT_NAMEDCOUNT;
+        verifyex(tryLock(mode, id, sessId));
+        ForEachItemIn(i, _idPath)
+            idPath.append(_idPath.item(i));
+    }
+
+    ~CLockInfo()
+    {
+        if (parent)
+            clearLastRef();
+    }
+
+    inline void clearLastRef();
+
+    bool querySub() { return (0 != sub); }
+    const void *queryFindParam() const
+    {
+        return (const void *) &treeId;
+    }
+
+    bool matchHead(IdPath &_idPath)
+    {
+        unsigned o = idPath.ordinality();
+        ForEachItemIn(i, _idPath)
+        {
+            if (i>=o) return false;
+            else if (idPath.item(i) != _idPath.item(i))
+                return false;
+        }
+        return true;
+    }
+
+    bool unlock(ConnectionId id)
+    {
+        bool ret = false;
+        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destroyed last
+        {
+            CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
+            LockData *ld = connectionInfo.getValue(id);
+            if (ld)    // not necessarily any lock info for this connection
+            {
+                switch (ld->mode & RTM_LOCKBASIC_MASK)
+                {
+                    case RTM_LOCK_READ:
+                        assertex(readLocks);
+                        readLocks--;
+                        break;
+
+                    case (RTM_LOCK_WRITE+RTM_LOCK_READ):
+                    case RTM_LOCK_WRITE:
+                        assertex(exclusive && 0 == readLocks);
+                        exclusive = false;
+#ifdef _DEBUG
+                        debugInfo.clearExclusive();
+#endif
+                        break;
+                    case 0: // no locking
+                        break;
+                    default:
+                        assertex(false);
+                }
+                if (RTM_LOCK_SUB & ld->mode)
+                    sub--;
+                connectionInfo.remove(id);
+                if (parent && 0 == connectionInfo.count())
+                {
+                    clearLastRef();
+                    ret = true;
+                }
+            }
+            wakeWaiting();
+        }
+        return ret;
+    }
+
+    void unlockAll()
+    {
+        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this.
+        { CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
+            HashIterator iter(connectionInfo);
+            while (iter.first())
+            {
+                IMapping &map = iter.query();
+                ConnectionId id = *(ConnectionId *)map.getKey();
+                unlock(id);
+            }
+        }
+    }
+
+    inline void addPending()
+    {
+        CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
+        pending++;
+    }
+
+    inline void removePending()
+    {
+        Linked<CLockInfo> destroy;
+        {
+            CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
+            pending--;
+            if (0 == (lockCount()+pending))
+            {
+                destroy.set(this);
+                table.removeExact(this);
+            }
+        }
+    }
+
+    bool lock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback)
+    {
+        bool ret = false;
+        CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destroyed last
+        { CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
+            return _lock(mode, timeout, id, sessionId, callback);
+        }
+        return false;
     }
 
     void changeMode(ConnectionId id, SessionId sessionId, unsigned newMode, unsigned timeout, IUnlockCallback &callback)
@@ -3441,7 +3446,11 @@ public:
         return NULL!=connectionInfo.getValue(connectionId);
     }
 
-    const char *queryXPath() const { return xpath; }
+    const char *queryXPath() const
+    {
+        return xpath;
+    }
+
     StringBuffer &getLockInfo(StringBuffer &out)
     {
         unsigned nlocks=0;
