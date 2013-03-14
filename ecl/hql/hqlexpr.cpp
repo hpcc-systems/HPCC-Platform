@@ -2919,7 +2919,7 @@ IHqlExpression * ensureExprType(IHqlExpression * expr, ITypeInfo * type, node_op
     }
 
     //MORE: Casts of datasets should create a dataset - but there is no parameter to determine the type from...
-    switch (type->getTypeCode())
+    switch (tc)
     {
     case type_table:
     case type_groupedtable:
