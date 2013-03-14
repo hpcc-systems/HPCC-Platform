@@ -865,7 +865,10 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     case type_groupedtable:
         if (isConst)
             out.append("const ");
-        out.append("void *");
+        if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
+            out.append("byte * *");
+        else
+            out.append("void *");
         if (isOut)
             out.append(" &");
         break;

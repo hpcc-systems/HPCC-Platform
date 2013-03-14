@@ -1197,7 +1197,8 @@ static void normalizeResultFormat(WorkflowArray & workflow, const HqlCppOptions 
 {
     ForEachItemIn(idx, workflow)
     {
-        HqlExprArray & exprs = workflow.item(idx).queryExprs();
+        WorkflowItem & cur = workflow.item(idx);
+        HqlExprArray & exprs = cur.queryExprs();
 
         //Until thor has a way of calling a graph and returning a result we need to call this transformer, so that
         //scalars that need to be evaluated in thor are correctly hoisted.
