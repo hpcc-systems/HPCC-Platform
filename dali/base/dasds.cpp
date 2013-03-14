@@ -396,7 +396,7 @@ StringBuffer &constructStoreName(const char *storeBase, unsigned e, StringBuffer
 }
 
 ////////////////
-static CheckedCriticalSection loadStoreCrit, saveStoreCrit, saveIncCrit, nfyTableCrit, qntfyListCrit, extCrit, blockedSaveCrit;
+static CheckedCriticalSection loadStoreCrit, saveStoreCrit, saveIncCrit, nfyTableCrit, extCrit, blockedSaveCrit;
 class CCovenSDSManager;
 static CCovenSDSManager *SDSManager;
 
@@ -934,7 +934,7 @@ void writeDelta(StringBuffer &xml, IFile &iFile, const char *msg="", unsigned re
 struct BackupQueueItem
 {
     static unsigned typeMask;
-    enum { f_delta=0x1, f_addext=0x2, f_delext=0x3, f_first=0x10 } flagt;
+    enum flagt { f_delta=0x1, f_addext=0x2, f_delext=0x3, f_first=0x10 };
     BackupQueueItem() : edition((unsigned)-1), flags(0) { text = new StringBuffer; dataLength = 0; data = NULL; }
     ~BackupQueueItem()
     {
@@ -1815,6 +1815,8 @@ interface ICoalesce : extends IInterface
 
 //////////////////////
 
+enum LockStatus { LockFailed, LockHeld, LockTimedOut, LockSucceeded };
+
 class CCovenSDSManager : public CSDSManagerBase, implements ISDSManagerServer, implements ISubscriptionManager, implements IExceptionHandler
 {
 public:
@@ -1942,7 +1944,7 @@ public: // data
     Owned<IPropertyTree> properties;
 private:
     void validateBackup();
-    inline bool establishLock(CLockInfo &lockInfo, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback);
+    LockStatus establishLock(CLockInfo &lockInfo, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback);
     void _getChildren(CRemoteTreeBase &parent, CServerRemoteTree &serverParent, CRemoteConnection &connection, unsigned levels);
     void matchServerTree(CClientRemoteTree *local, IPropertyTree &matchTree, bool allTail);
 
@@ -2262,7 +2264,7 @@ IPropertyTree *CRemoteTreeBase::collateData()
             }
         }
     }
-    if (CPS_Changed & state || (0 == serverId && queryValue()))
+    if ((CPS_Changed & state) || (0 == serverId && queryValue()))
     {
         ct.queryCreateTree()->setPropBool("@localValue", true);
         if (queryValue())
@@ -3029,7 +3031,7 @@ class CLockInfo : public CInterface, implements IInterface
     DECL_NAMEDCOUNT;
 
     CLockInfoTable &table;
-    unsigned sub, readLocks, pending, waiting;
+    unsigned sub, readLocks, holdLocks, pending, waiting;
     IdPath idPath;
     ConnectionInfoMap connectionInfo;
     CheckedCriticalSection crit;
@@ -3105,7 +3107,7 @@ class CLockInfo : public CInterface, implements IInterface
         return ret;
     }
 
-    bool _lock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback, bool change=false)
+    LockStatus doLock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback, bool change=false)
     {
         class CLockCallbackUnblock
         {
@@ -3120,9 +3122,11 @@ class CLockInfo : public CInterface, implements IInterface
         {
             loop
             {
-                if (!SDSManager->queryConnection(id)) return false;
-                if (tryLock(mode, id, sessionId, change))
-                    return true;
+                if (!SDSManager->queryConnection(id))
+                    return LockFailed;
+                LockStatus lockStatus = tryLock(mode, id, sessionId, change);
+                if (lockStatus == LockSucceeded || lockStatus == LockHeld)
+                    return lockStatus;
                 else
                 {
                     bool timedout = false;
@@ -3155,9 +3159,11 @@ class CLockInfo : public CInterface, implements IInterface
             CTimeMon tm(timeout);
             loop
             {
-                if (!SDSManager->queryConnection(id)) return false;
-                if (tryLock(mode, id, sessionId, change))
-                    return true;
+                if (!SDSManager->queryConnection(id))
+                    return LockFailed;
+                LockStatus lockStatus = tryLock(mode, id, sessionId, change);
+                if (lockStatus == LockSucceeded || lockStatus == LockHeld)
+                    return lockStatus;
                 else
                 {
                     bool timedout = false;
@@ -3183,9 +3189,11 @@ class CLockInfo : public CInterface, implements IInterface
                         {
                             if (disconnects) // if some sessions disconnected, one final try
                             {
-                                if (!SDSManager->queryConnection(id)) return false;
-                                if (tryLock(mode, id, sessionId, change))
-                                    return true;
+                                if (!SDSManager->queryConnection(id))
+                                    return LockFailed;
+                                lockStatus = tryLock(mode, id, sessionId, change);
+                                if (lockStatus == LockSucceeded || lockStatus == LockHeld)
+                                    return lockStatus;
                             }
                             break;
                         }
@@ -3199,37 +3207,42 @@ class CLockInfo : public CInterface, implements IInterface
                 }
             }
         }
-        return false;
+        return LockTimedOut;
     }
 
-    bool tryLock(unsigned mode, ConnectionId id, SessionId sessId, bool changingMode=false)
+    LockStatus tryLock(unsigned mode, ConnectionId id, SessionId sessId, bool changingMode=false)
     {
         CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
         LockData *existingLd = NULL;
         bool hadReadLock = false;
+        bool hadHoldLock = false;
         if (changingMode)
         {
             existingLd = connectionInfo.getValue(id);
             if (existingLd)
             {
                 if ((existingLd->mode & RTM_LOCKBASIC_MASK) == (mode & RTM_LOCKBASIC_MASK))
-                    return true; // nothing to do
+                    return LockSucceeded; // nothing to do
                 // record and unlock existing state
                 switch (existingLd->mode & RTM_LOCKBASIC_MASK)
                 {
-                    case RTM_LOCK_READ:
-                        readLocks--;
-                        hadReadLock = true;
-                        break;
-                    case (RTM_LOCK_WRITE+RTM_LOCK_READ):
-                    case RTM_LOCK_WRITE:
-                        exclusive = false;
-                        // change will succeed
-                        break;
-                    case 0: // no locking
-                        break;
-                    default:
-                        assertex(false);
+                case (RTM_LOCK_HOLD+RTM_LOCK_READ):
+                    holdLocks--;
+                    hadHoldLock = true;
+                    // fall into...
+                case RTM_LOCK_READ:
+                    readLocks--;
+                    hadReadLock = true;
+                    break;
+                case (RTM_LOCK_WRITE+RTM_LOCK_READ):
+                case RTM_LOCK_WRITE:
+                    exclusive = false;
+                    // change will succeed
+                    break;
+                case 0: // no locking
+                    break;
+                default:
+                    throwUnexpected();
                 }
             }
             else
@@ -3242,24 +3255,29 @@ class CLockInfo : public CInterface, implements IInterface
             {
                 if (changingMode)
                     break;
-                return true;
+                return LockSucceeded;
             }
+            case (RTM_LOCK_READ+RTM_LOCK_HOLD):
             case RTM_LOCK_READ: // cannot fail if changingMode=true (exclusive will have been unlocked)
                 if (exclusive)
-                    return false;
+                    return LockFailed;
                 readLocks++;
+                if (mode & RTM_LOCK_HOLD)
+                    holdLocks++;
                 break;
             case (RTM_LOCK_WRITE+RTM_LOCK_READ):
             case RTM_LOCK_WRITE:
-                if (exclusive || readLocks)
+                if (exclusive || readLocks || holdLocks)
                 {
                     if (changingMode)
                     {
                         // only an unlocked read lock can fail and need restore here.
                         if (hadReadLock)
                             readLocks++;
+                        if (hadHoldLock)
+                            holdLocks++;
                     }
-                    return false;
+                    return holdLocks ? LockHeld : LockFailed;
                 }
                 exclusive = true;
 #ifdef _DEBUG
@@ -3269,7 +3287,7 @@ class CLockInfo : public CInterface, implements IInterface
 #endif
                 break;
             default:
-                assertex(false);
+                throwUnexpected();
         }
         if (changingMode)
         {
@@ -3286,7 +3304,7 @@ class CLockInfo : public CInterface, implements IInterface
             ld.timeLockObtained = msTick();
             connectionInfo.setValue(id, ld);
         }
-        return true;
+        return LockSucceeded;
     }
 
     inline void wakeWaiting()
@@ -3302,10 +3320,10 @@ public:
     IMPLEMENT_IINTERFACE;
 
     CLockInfo(CLockInfoTable &_table, __int64 _treeId, IdPath &_idPath, const char *_xpath, unsigned mode, ConnectionId id, SessionId sessId)
-        : table(_table), treeId(_treeId), xpath(_xpath), exclusive(false), sub(0), readLocks(0), waiting(0), pending(0)
+        : table(_table), treeId(_treeId), xpath(_xpath), exclusive(false), sub(0), readLocks(0), holdLocks(0), waiting(0), pending(0)
     {
         INIT_NAMEDCOUNT;
-        verifyex(tryLock(mode, id, sessId));
+        verifyex(tryLock(mode, id, sessId)==LockSucceeded);
         ForEachItemIn(i, _idPath)
             idPath.append(_idPath.item(i));
     }
@@ -3347,23 +3365,27 @@ public:
             {
                 switch (ld->mode & RTM_LOCKBASIC_MASK)
                 {
-                    case RTM_LOCK_READ:
-                        assertex(readLocks);
-                        readLocks--;
-                        break;
+                case RTM_LOCK_READ+RTM_LOCK_HOLD:
+                    assertex(holdLocks);
+                    holdLocks--;
+                    // fall into...
+                case RTM_LOCK_READ:
+                    assertex(readLocks);
+                    readLocks--;
+                    break;
 
-                    case (RTM_LOCK_WRITE+RTM_LOCK_READ):
-                    case RTM_LOCK_WRITE:
-                        assertex(exclusive && 0 == readLocks);
-                        exclusive = false;
+                case (RTM_LOCK_WRITE+RTM_LOCK_READ):
+                case RTM_LOCK_WRITE:
+                    assertex(exclusive && 0 == readLocks && 0 == holdLocks);
+                    exclusive = false;
 #ifdef _DEBUG
-                        debugInfo.clearExclusive();
+                    debugInfo.clearExclusive();
 #endif
-                        break;
-                    case 0: // no locking
-                        break;
-                    default:
-                        assertex(false);
+                    break;
+                case 0: // no locking
+                    break;
+                default:
+                    throwUnexpected();
                 }
                 if (RTM_LOCK_SUB & ld->mode)
                     sub--;
@@ -3413,24 +3435,34 @@ public:
         }
     }
 
-    bool lock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback)
+    LockStatus lock(unsigned mode, unsigned timeout, ConnectionId id, SessionId sessionId, IUnlockCallback &callback)
     {
         bool ret = false;
         CPendingLockBlock b(*this); // carefully placed, removePending can destroy this, therefore must be destroyed last
-        { CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
-            return _lock(mode, timeout, id, sessionId, callback);
+        {
+            CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
+            return doLock(mode, timeout, id, sessionId, callback);
         }
-        return false;
+        return LockFailed;
     }
 
     void changeMode(ConnectionId id, SessionId sessionId, unsigned newMode, unsigned timeout, IUnlockCallback &callback)
     {
         CPendingLockBlock b(*this); // carefully placed, removePending can destroy this.
         CHECKEDCRITICALBLOCK(crit, fakeCritTimeout);
-        if (!_lock(newMode, timeout, id, sessionId, callback, true))
+        LockStatus result = doLock(newMode, timeout, id, sessionId, callback, true);
+        if (result != LockSucceeded)
         {
             StringBuffer s;
-            throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout performing changeMode on connection to : %s, existing lock info: %s", xpath.get(), getLockInfo(s).str());
+            switch (result)
+            {
+            case LockFailed:
+                throw MakeSDSException(SDSExcpt_ConnectionAbsent, "Lost connection performing changeMode on connection to : %s", xpath.get());
+            case LockTimedOut:
+                throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout performing changeMode on connection to : %s, existing lock info: %s", xpath.get(), getLockInfo(s).str());
+            case LockHeld:
+                throw MakeSDSException(SDSExcpt_LockHeld, "Lock is held performing changeMode on connection to : %s, existing lock info: %s", xpath.get(), getLockInfo(s).str());
+            }
         }
     }
 
@@ -4386,7 +4418,7 @@ void CSDSTransactionServer::processMessage(CMessageBuffer &mb)
                 break;
             }
             default:
-                assertex(false);
+                throwUnexpected();
         }
     }
     catch (IException *e)                                       
@@ -4541,6 +4573,7 @@ static bool retryRename(const char *from, const char *to, unsigned maxAttempts, 
     return (attempts>0);
 }
 
+#ifdef NODELETE
 static bool retryCopy(const char *from, const char *to, unsigned maxAttempts, unsigned delay)
 {
     unsigned attempts=maxAttempts;
@@ -4569,6 +4602,7 @@ static bool retryCopy(const char *from, const char *to, unsigned maxAttempts, un
     }
     return (attempts>0);
 }
+#endif
 
 inline unsigned nextEditionN(unsigned e, unsigned i=1)
 {
@@ -4678,7 +4712,7 @@ class CLightCoalesceThread : public CInterface, implements ICoalesce
     {
         CLightCoalesceThread *coalesce;
     public:
-        CThreaded() : Thread("CLightCoalesceThread") { }
+        CThreaded() : Thread("CLightCoalesceThread") { coalesce = NULL; }
         void init(CLightCoalesceThread *_coalesce) { coalesce = _coalesce; start(); }
         virtual int run() { coalesce->main(); return 1; }
     } threaded;
@@ -7186,10 +7220,10 @@ void CCovenSDSManager::unlockAll(__int64 treeId)
         lockInfo->unlockAll();
 }
 
-bool CCovenSDSManager::establishLock(CLockInfo &lockInfo, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback)
+LockStatus CCovenSDSManager::establishLock(CLockInfo &lockInfo, __int64 treeId, ConnectionId connectionId, SessionId sessionId, unsigned mode, unsigned timeout, IUnlockCallback &lockCallback)
 {
-    bool res = lockInfo.lock(mode, timeout, connectionId, sessionId, lockCallback);
-    if (res && server.queryStopped())
+    LockStatus res = lockInfo.lock(mode, timeout, connectionId, sessionId, lockCallback);
+    if (res != LockFailed && server.queryStopped())
     {
         lockInfo.unlock(connectionId);
         throw MakeSDSException(SDSExcpt_ServerStoppedLockAborted);
@@ -7355,11 +7389,20 @@ void CCovenSDSManager::lock(CServerRemoteTree &tree, const char *__xpath, Connec
     else
     {
         Linked<CLockInfo> tmp = lockInfo; // keep it alive could be destroyed whilst blocked in call below.
-        if (!establishLock(*lockInfo, treeId, connectionId, sessionId, mode, timeout, callback))
+        LockStatus result = establishLock(*lockInfo, treeId, connectionId, sessionId, mode, timeout, callback);
+        if (result != LockSucceeded)
         {
             if (!queryConnection(connectionId)) return; // connection aborted.
             StringBuffer s;
-            throw MakeSDSException(SDSExcpt_LockTimeout, "Failed to establish lock to %s\nExisting lock status: %s", xpath, lockInfo->getLockInfo(s).str());
+            switch (result)
+            {
+            case LockFailed:
+                throw MakeSDSException(SDSExcpt_ConnectionAbsent, "Lost connection trying to establish lock on connection to : %s", xpath);
+            case LockTimedOut:
+                throw MakeSDSException(SDSExcpt_LockTimeout, "Lock timeout trying to establish lock to %s, existing lock info: %s", xpath, lockInfo->getLockInfo(s).str());
+            case LockHeld:
+                throw MakeSDSException(SDSExcpt_LockHeld, "Lock is held trying to establish lock to %s, existing lock info: %s", xpath, lockInfo->getLockInfo(s).str());
+            }
         }
     }
 #endif
@@ -7965,6 +8008,7 @@ void CCovenSDSManager::handleNodeNotify(notifications n, CServerRemoteTree &tree
             break;
         default:
             LOG(MCerror, unknownJob, "Unknown notification type (%d)", n);
+            break;
     }
 }
 

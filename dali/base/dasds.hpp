@@ -34,7 +34,7 @@
 #define RTM_DELETE_ON_DISCONNECT 0x400  // auto delete connection root on disconnection.
 
 
-#define RTM_LOCKBASIC_MASK  (RTM_LOCK_READ | RTM_LOCK_WRITE)
+#define RTM_LOCKBASIC_MASK  (RTM_LOCK_READ | RTM_LOCK_WRITE | RTM_LOCK_HOLD)
 #define RTM_CREATE_MASK     (RTM_CREATE | RTM_CREATE_UNIQUE | RTM_CREATE_ADD | RTM_CREATE_QUERY)
 
 #define RTM_MODE(X, M) ((X & M) == M)
@@ -195,6 +195,7 @@ enum SDSExceptionCodes
     SDSExcpt_StoreInfoMissing,
     SDSExcpt_ClientCacheDirty,
     SDSExcpt_InvalidSessionId,
+    SDSExcpt_LockHeld,
 };
 
 interface ISDSException : extends IException { };
