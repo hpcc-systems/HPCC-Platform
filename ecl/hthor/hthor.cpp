@@ -5772,7 +5772,10 @@ CHThorWorkUnitWriteActivity::CHThorWorkUnitWriteActivity(IAgentContext &_agent, 
 void CHThorWorkUnitWriteActivity::execute()
 {
     grouped = (POFgrouped & helper.getFlags()) != 0;
-    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit) * 0x100000;
+    size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit);
+    if (outputLimit>DALI_RESULT_OUTPUTMAX)
+        throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the default limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, defaultWorkUnitWriteLimit);
+    outputLimit *= 0x100000;
     MemoryBuffer rowdata;
     __int64 rows = 0;
     IRecordSize * inputMeta = input->queryOutputMeta();
