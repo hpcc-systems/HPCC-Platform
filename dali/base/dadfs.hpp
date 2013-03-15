@@ -439,6 +439,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDistributedFile *lookup(   const char *logicalname,
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
+                                        bool hold = false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found
@@ -446,6 +447,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDistributedFile *lookup(   const CDfsLogicalFileName &logicalname,
                                         IUserDescriptor *user,
                                         bool writeaccess=false,
+                                        bool hold = false,
                                         IDistributedFileTransaction *transaction=NULL, // transaction only used for looking up superfile sub files
                                         unsigned timeout=INFINITE
                                     ) = 0;  // links, returns NULL if not found

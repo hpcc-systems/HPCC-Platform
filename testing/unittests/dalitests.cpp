@@ -1025,7 +1025,7 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub2") == 0 && "promote failed, wrong name for sub2");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub1") == 0 && "promote failed, outlinked expected to be sub1");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, NULL, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
         }
 
@@ -1047,9 +1047,9 @@ public:
             ASSERT(strcmp(sfile3->querySubFile(0).queryLogicalName(), "regress::trans::sub3") == 0 && "promote failed, wrong name for sub3");
             ASSERT(outlinked.length() == 1 && "promote failed, outlinked expected only one item");
             ASSERT(strcmp(outlinked.popGet(), "regress::trans::sub2") == 0 && "promote failed, outlinked expected to be sub2");
-            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, NULL, timeout);
+            Owned<IDistributedFile> sub1 = dir.lookup("regress::trans::sub1", user, false, false, NULL, timeout);
             ASSERT(sub1.get() && "promote failed, sub1 was physically deleted");
-            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, NULL, timeout);
+            Owned<IDistributedFile> sub2 = dir.lookup("regress::trans::sub2", user, false, false, NULL, timeout);
             ASSERT(sub2.get() && "promote failed, sub2 was physically deleted");
         }
     }
