@@ -73,7 +73,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 #include "xmlwrite/thxmlwrite.ipp"
 #include "merge/thmerge.ipp"
 #include "fetch/thfetch.ipp"
-#include "soapcall/thsoapcall.ipp"
 #include "loop/thloop.ipp"
 
 CActivityBase *createGroupActivityMaster(CMasterGraphElement *container);
@@ -147,6 +146,10 @@ public:
             case TAKnwayjoin:
             case TAKgraphloopresultread:
             case TAKstreamediterator:
+            case TAKsoap_rowdataset:
+            case TAKsoap_rowaction:
+            case TAKsoap_datasetdataset:
+            case TAKsoap_datasetaction:
                 ret = new CMasterActivity(this);
                 break;
             case TAKskipcatch:
@@ -340,12 +343,6 @@ public:
                 break;
             case TAKmerge:
                 ret = createMergeActivityMaster(this);
-                break;
-            case TAKsoap_rowdataset:
-            case TAKsoap_rowaction:
-            case TAKsoap_datasetdataset:
-            case TAKsoap_datasetaction:
-                ret = createSoapCallActivityMaster(this);
                 break;
             case TAKkeydiff:
                 ret = createKeyDiffActivityMaster(this);
