@@ -3088,17 +3088,6 @@ void ColumnToOffsetMap::ensureMaxSizeCached()
     }
 }
 
-void ColumnToOffsetMap::checkValidMaxSize()
-{
-    ensureMaxSizeCached();
-    if (!cachedDefaultMaxSizeUsed)
-        return;
-
-    StringBuffer s;
-    getExprECL(record, s);
-    throwError1(HQLERR_MaxLengthNotSetOnRecord, s.str());
-}
-
 unsigned ColumnToOffsetMap::getMaxSize()
 {
     ensureMaxSizeCached();

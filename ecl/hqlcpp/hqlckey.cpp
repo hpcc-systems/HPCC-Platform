@@ -828,7 +828,7 @@ void KeyedJoinInfo::optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExp
             OwnedHqlExpr newExtraFilter = hasExtra ? optimizeTransfer(fields, values, *extraFilter, oldLeft) : NULL;
             if (newFilter && (newExtraFilter || !hasExtra) && fields.ordinality() < getFieldCount(dataset->queryRecord()))
             {
-                OwnedHqlExpr extractedRecord = translator.createRecordInheritMaxLength(fields, dataset);
+                OwnedHqlExpr extractedRecord = createRecord(fields);
                 OwnedHqlExpr serializedRecord = getSerializedForm(extractedRecord, diskAtom);
                 targetDataset.setown(createDataset(no_anon, LINK(serializedRecord), NULL));
 
@@ -1003,7 +1003,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
         if (extractedRecord || (fieldsAccessed.ordinality() != 0))
         {
             if (!extractedRecord)
-                extractedRecord.setown(translator.createRecordInheritMaxLength(fieldsAccessed, rawRhs));
+                extractedRecord.setown(createRecord(fieldsAccessed));
             extractJoinFieldsRecord.setown(getSerializedForm(extractedRecord, diskAtom));
             OwnedHqlExpr self = getSelf(extractJoinFieldsRecord);
             OwnedHqlExpr memorySelf = getSelf(extractedRecord);

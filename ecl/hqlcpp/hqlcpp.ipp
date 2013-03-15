@@ -1004,7 +1004,6 @@ public:
     unsigned getMaxRecordSize(IHqlExpression * record);
     IHqlExpression * getRecordSize(IHqlExpression * dataset);
     unsigned getCsvMaxLength(IHqlExpression * csvAttr);
-    IHqlExpression * createRecordInheritMaxLength(HqlExprArray & fields, IHqlExpression * donor);
     void ensureRowSerializer(StringBuffer & serializerName, BuildCtx & ctx, IHqlExpression * record, _ATOM format, _ATOM kind);
     void ensureRowPrefetcher(StringBuffer & prefetcherName, BuildCtx & ctx, IHqlExpression * record);
     IHqlExpression * createSerializer(BuildCtx & ctx, IHqlExpression * record, _ATOM format, _ATOM kind);

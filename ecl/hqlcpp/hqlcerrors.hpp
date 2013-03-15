@@ -120,7 +120,6 @@
 #define HQLERR_KeyedJoinTooComplex              4097
 #define HQLERR_KeyAccessNeedCast                4098
 #define HQLERR_KeyAccessNoKeyField              4099
-#define HQLERR_MaxLengthNotSetOnRecord          4100
 #define HQLERR_NotSupportedInsideNoThor         4102
 #define HQLERR_RegexNoTransformSupport          4103
 #define HQLERR_AccessMatchAttrInChildQuery      4104
@@ -401,7 +400,6 @@
 #define HQLERR_KeyedJoinTooComplex_Text         "Key condition (%s) is too complex, it cannot be done with the key."
 #define HQLERR_KeyAccessNeedCast_Text           "Key condition (%s) requires casts on comparison of field '%s'"
 #define HQLERR_KeyAccessNoKeyField_Text         "Key condition (%s) does not have any comparisons against key fields"
-#define HQLERR_MaxLengthNotSetOnRecord_Text     "No explicit maxlength provided for record %s"
 #define HQLERR_MinusOnString_Text               "unary - cannot be performed on a string"
 #define HQLERR_NotSupportedInsideNoThor_Text    "%s is not supported inside NOTHOR()"
 #define HQLERR_RegexNoTransformSupport_Text     "Regular expression parsing doesn't support productions - need to use tomita"
