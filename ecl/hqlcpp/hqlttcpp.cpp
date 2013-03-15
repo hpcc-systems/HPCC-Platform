@@ -3275,9 +3275,6 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
     HqlExprArray aggregateAssigns;
     HqlExprArray extraAssigns;
 
-    IHqlExpression * maxLength = queryRecordProperty(record, maxLengthAtom);
-    if (maxLength)
-        aggregateFields.append(*LINK(maxLength));
     bool extraSelectNeeded = false;
     OwnedHqlExpr self = getSelf(expr);
     ForEachChild(idx, transform)
@@ -3337,7 +3334,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
         newGroupBy = createSortList(newGroupElement);
     }
 
-    IHqlExpression * aggregateRecord = extraSelectNeeded ? translator.createRecordInheritMaxLength(aggregateFields, record) : LINK(record);
+    IHqlExpression * aggregateRecord = extraSelectNeeded ? createRecord(aggregateFields) : LINK(record);
     OwnedHqlExpr aggregateSelf = getSelf(aggregateRecord);
     replaceAssignSelector(aggregateAssigns, aggregateSelf);
     IHqlExpression * aggregateTransform = createValue(no_newtransform, makeTransformType(aggregateRecord->getType()), aggregateAssigns);

@@ -526,7 +526,6 @@ public:
     virtual const void * getKey() const { return &record; }
 
     void init(RecordOffsetMap & map);
-    void checkValidMaxSize();
     unsigned getFixedRecordSize();
     bool isFixedWidth() const                       { return fixedSizeRecord; }
     unsigned getMaxSize();

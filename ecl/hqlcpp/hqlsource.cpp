@@ -7094,7 +7094,6 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
         }
     case no_xml:
         {
-            //MORE: MaxLength?
             // virtual const char * getXmlIteratorPath()
             translator.doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryRealChild(tableExpr->queryChild(2), 0));
             break;
