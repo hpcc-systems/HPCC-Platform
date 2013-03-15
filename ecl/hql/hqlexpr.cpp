@@ -2265,6 +2265,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_parallel:
         return 0;
     case no_quoted:
+    case no_variable:
         return 0;
     case no_mapto:
     case no_compound:
