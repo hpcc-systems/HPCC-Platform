@@ -147,6 +147,8 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
     }
 #else
     heapUseHugePages = false;
+
+#ifdef MAP_HUGETLB
     if (allowHugePages)
     {
         heapBase = (char *)mmap(NULL, memsize, (PROT_READ | PROT_WRITE), (MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB), 0, 0);
@@ -161,6 +163,10 @@ static void initializeHeap(bool allowHugePages, unsigned pages, unsigned largeBl
             DBGLOG("Huge Pages requested but unavailable");
         }
     }
+#else
+    if (allowHugePages)
+        DBGLOG("Huge Pages requested but not supported by the system");
+#endif
 
     if (!heapBase)
     {
