@@ -446,6 +446,12 @@ void CGraphElementBase::ActPrintLog(IException *e, const char *format, ...)
     va_end(args);
 }
 
+void CGraphElementBase::ActPrintLog(IException *e)
+{
+    va_list args;
+    ::ActPrintLogArgs(this, e, thorlog_all, MCexception(e), NULL, args);
+}
+
 void CGraphElementBase::abort(IException *e)
 {
     CActivityBase *activity = queryActivity();
@@ -799,7 +805,7 @@ void CGraphElementBase::createActivity(size32_t parentExtractSz, const byte *par
                 break;
         }
     }
-    catch (IException *e) { ActPrintLog(e, NULL); activity.clear(); throw; }
+    catch (IException *e) { ActPrintLog(e); activity.clear(); throw; }
 }
 
 ICodeContext *CGraphElementBase::queryCodeContext()
@@ -1193,7 +1199,7 @@ void CGraphBase::executeSubGraph(size32_t parentExtractSz, const byte *parentExt
     }
     catch (IException *e)
     {
-        GraphPrintLog(e, NULL);
+        GraphPrintLog(e);
         exception.setown(e);
     }
     if (!queryOwner())
@@ -1270,7 +1276,8 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
     }
     catch (IException *e)
     {
-        GraphPrintLog(e, NULL); exception.setown(e);
+        GraphPrintLog(e);
+        exception.setown(e);
     }
     try
     {
@@ -1301,7 +1308,7 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
     }
     catch (IException *e)
     {
-        GraphPrintLog(e, NULL);
+        GraphPrintLog(e);
         if (!exception.get())
             exception.setown(e);
         else
@@ -1380,7 +1387,7 @@ void CGraphBase::end()
         catch (IException *e)
         {
             Owned<IException> e2 = MakeActivityException(element.queryActivity(), e, "Error calling kill()");
-            GraphPrintLog(e2, NULL);
+            GraphPrintLog(e2);
             e->Release();
         }
     }
@@ -1651,6 +1658,12 @@ void CGraphBase::GraphPrintLog(IException *e, const char *format, ...)
     va_start(args, format);
     ::GraphPrintLogArgs(this, e, thorlog_null, MCdebugProgress, format, args);
     va_end(args);
+}
+
+void CGraphBase::GraphPrintLog(IException *e)
+{
+    va_list args;
+    ::GraphPrintLogArgs(this, e, thorlog_null, MCdebugProgress, NULL, args);
 }
 
 void CGraphBase::setLogging(bool tf)
@@ -2734,6 +2747,12 @@ void CActivityBase::ActPrintLog(IException *e, const char *format, ...)
     va_start(args, format);
     ::ActPrintLogArgs(&queryContainer(), e, thorlog_all, MCexception(e), format, args);
     va_end(args);
+}
+
+void CActivityBase::ActPrintLog(IException *e)
+{
+    va_list args;
+    ::ActPrintLogArgs(&queryContainer(), e, thorlog_all, MCexception(e), NULL, args);
 }
 
 bool CActivityBase::fireException(IException *e)

@@ -317,6 +317,7 @@ extern graph_decl void ActPrintLogArgs(const CGraphElementBase *container, const
 extern graph_decl void ActPrintLogArgs(const CGraphElementBase *container, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args);
 extern graph_decl void ActPrintLog(const CActivityBase *activity, const char *format, ...) __attribute__((format(printf, 2, 3)));
 extern graph_decl void ActPrintLog(const CActivityBase *activity, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl void ActPrintLog(const CActivityBase *activity, IException *e);
 
 inline void ActPrintLog(const CGraphElementBase *container, const char *format, ...) __attribute__((format(printf, 2, 3)));
 inline void ActPrintLog(const CGraphElementBase *container, const char *format, ...)
@@ -341,6 +342,11 @@ inline void ActPrintLog(const CGraphElementBase *container, IException *e, const
     va_start(args, format);
     ActPrintLogArgs(container, e, thorlog_null, MCexception(e, MSGCLS_error), format, args);
     va_end(args);
+}
+inline void ActPrintLog(const CGraphElementBase *container, IException *e)
+{
+    va_list args;
+    ActPrintLogArgs(container, e, thorlog_null, MCexception(e, MSGCLS_error), NULL, args);
 }
 extern graph_decl void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args);
 extern graph_decl void GraphPrintLogArgs(CGraphBase *graph, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args);
@@ -372,11 +378,13 @@ inline void GraphPrintLog(CGraphBase *graph, const char *format, ...)
     va_end(args);
 }
 extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
-extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, IException *e, const char *xtra=NULL, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, IException *e, const char *xtra, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl IThorException *MakeActivityException(CActivityBase *activity, IException *e);
 extern graph_decl IThorException *MakeActivityWarning(CActivityBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityWarning(CActivityBase *activity, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityException(CGraphElementBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
-extern graph_decl IThorException *MakeActivityException(CGraphElementBase *activity, IException *e, const char *xtra=NULL, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl IThorException *MakeActivityException(CGraphElementBase *activity, IException *e, const char *xtra, ...) __attribute__((format(printf, 3, 4)));
+extern graph_decl IThorException *MakeActivityException(CGraphElementBase *activity, IException *e);
 extern graph_decl IThorException *MakeActivityWarning(CGraphElementBase *activity, int code, const char *_format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeActivityWarning(CGraphElementBase *activity, IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
 extern graph_decl IThorException *MakeGraphException(CGraphBase *graph, int code, const char *format, ...);

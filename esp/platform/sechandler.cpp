@@ -175,7 +175,7 @@ bool SecHandler::authorizeSecReqFeatures(StringArray & features, IEspStringIntMa
 
     if(m_user.get() == NULL)
     {
-        AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authorization", "Access Denied: No username provided", NULL);
+        AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authorization", "Access Denied: No username provided");
         return false;
     }
 
@@ -297,5 +297,11 @@ void SecHandler::AuditMessage(AuditType type, const char *filterType, const char
     msg.valist_appendf(format.str(), args);
     
     va_end(args);
+    AUDIT(type, msg.str());
+}
+
+void SecHandler::AuditMessage(AuditType type, const char *filterType, const char *title)
+{
+    VStringBuffer msg("%s\n\tProcess: esp\n\tUser: %s", title, m_user->getName());
     AUDIT(type, msg.str());
 }

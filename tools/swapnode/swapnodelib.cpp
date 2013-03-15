@@ -99,19 +99,6 @@ bool WuResubmit(const char *wuid)
     return true;
 }
 
-static bool resolveComputerName(IPropertyTree *rootEnv,const char *name,IpAddress &ip)
-{
-    StringBuffer query;
-    query.appendf("Hardware/Computer[@name=\"%s\"]",name);
-    Owned<IPropertyTree> machine = rootEnv->getPropTree(query.str());
-    const char *node = machine?machine->queryProp("@netAddress"):NULL;
-    if (!node||!*node)
-        false;
-    ip.ipset(node);
-    return true;
-}
-
-
 // SwapNode info
 //
 //  SwapNode/

@@ -120,7 +120,7 @@ void ProcessSlaveActivity::main()
             }
             _e->Release();
         }
-        ActPrintLog(e, NULL);
+        ActPrintLog(e);
         exception.setown(e);
     }
     catch (std::exception & es)

@@ -98,7 +98,7 @@ public:
         }
         catch (IException *e)
         {
-            ActPrintLog(e, NULL);
+            ActPrintLog(e);
             N=0;
             sendN();
             throw;

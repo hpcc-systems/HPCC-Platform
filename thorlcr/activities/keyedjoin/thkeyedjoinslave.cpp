@@ -1256,7 +1256,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             }
             catch (IException *e)
             {
-                ::ActPrintLog(&owner, e, NULL);
+                ::ActPrintLog(&owner, e);
                 throw;
             }
             return NULL;
@@ -1440,7 +1440,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             }
             catch (IException *e)
             {
-                ::ActPrintLog(&owner, e, NULL);
+                ::ActPrintLog(&owner, e);
                 throw;
             }
             noteStats(partManager->querySeeks(), partManager->queryScans());

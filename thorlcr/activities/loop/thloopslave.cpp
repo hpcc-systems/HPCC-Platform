@@ -81,7 +81,7 @@ public:
         }
         catch (IException *e)
         {
-            ActPrintLog(activity, e, NULL);
+            ActPrintLog(activity, e);
             exception.setown(e);
         }
         try { writer->flush(); }

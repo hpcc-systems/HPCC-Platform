@@ -2986,7 +2986,11 @@ public:
 
     KeyedLookupPartHandler(IJoinProcessor &_owner, IDistributedFilePart *_part, DistributedKeyLookupHandler * _tlk, unsigned _subno, IThreadPool * _threadPool, IAgentContext &_agent);
 
-    ~KeyedLookupPartHandler() { while(pending.dequeue()) 0; } //do nothing but dequeue as don't own MatchSets
+    ~KeyedLookupPartHandler()
+    {
+        while(pending.dequeue())
+            ;  //do nothing but dequeue as don't own MatchSets
+    }
 
 private:
     virtual void doRequest(MatchSet * ms)

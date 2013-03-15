@@ -547,7 +547,7 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(user == NULL)
     {
         WARNLOG("Can't find user in context");
-        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: No username provided", NULL);
+        ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: No username provided");
         return false;
     }
 
@@ -565,9 +565,9 @@ bool EspHttpBinding::basicAuth(IEspContext* ctx)
     if(!authenticated)
     {
         if (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED)
-            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "ESP password is expired", NULL);
+            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "ESP password is expired");
         else
-            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: User or password invalid", NULL);
+            ctx->AuditMessage(AUDIT_TYPE_ACCESS_FAILURE, "Authentication", "Access Denied: User or password invalid");
         return false;
     }
     bool authorized = true;

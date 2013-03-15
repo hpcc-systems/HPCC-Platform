@@ -159,6 +159,12 @@ void ActPrintLog(const CActivityBase *activity, IException *e, const char *forma
     va_end(args);
 }
 
+void ActPrintLog(const CActivityBase *activity, IException *e)
+{
+    va_list args;
+    ActPrintLogArgs(&activity->queryContainer(), e, thorlog_null, MCexception(e, MSGCLS_error), NULL, args);
+}
+
 void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
 {
     if (format)
@@ -393,6 +399,13 @@ IThorException *MakeActivityException(CActivityBase *activity, IException *e, co
     return e2;
 }
 
+IThorException *MakeActivityException(CActivityBase *activity, IException *e)
+{
+    va_list args;
+    IThorException *e2 = _MakeActivityException(activity->queryContainer(), e, NULL, args);
+    return e2;
+}
+
 IThorException *MakeActivityWarning(CActivityBase *activity, int code, const char *format, ...)
 {
     va_list args;
@@ -430,6 +443,13 @@ IThorException *MakeActivityException(CGraphElementBase *container, IException *
     va_start(args, format);
     IThorException *e2 = _MakeActivityException(*container, e, format, args);
     va_end(args);
+    return e2;
+}
+
+IThorException *MakeActivityException(CGraphElementBase *container, IException *e)
+{
+    va_list args;
+    IThorException *e2 = _MakeActivityException(*container, e, NULL, args);
     return e2;
 }
 
@@ -931,7 +951,7 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
             }
             catch (IException *e)
             {
-                ActPrintLog(&activity->queryContainer(), e, NULL);
+                ActPrintLog(&activity->queryContainer(), e, "In getBestFilePart");
                 e->Release();
             }
         }

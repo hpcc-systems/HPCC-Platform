@@ -853,7 +853,7 @@ void FlushingStringBuffer::append(unsigned len, const char *data)
     }
     catch (IException *E)
     {
-        logctx.logOperatorException(E, __FILE__, __LINE__, NULL);
+        logctx.logOperatorException(E, __FILE__, __LINE__, "FlushingStringBuffer::append");
         throw;
     }
 }
