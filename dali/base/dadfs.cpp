@@ -120,6 +120,7 @@ static StringBuffer &normalizeFormat(StringBuffer &in)
             break;
         default:
             i++;
+            break;
         }
     }
     return in;
@@ -143,15 +144,6 @@ static IPropertyTree *getNamedPropTree(IPropertyTree *parent,const char *sub,con
     return parent->getPropTree(query.str());
 }
 
-static IPropertyTreeIterator *getNamedPropIter(IPropertyTree *parent,const char *sub,const char *key,const char *name)
-{  // no create
-    if (!parent)
-        return NULL;
-    StringBuffer query;
-    getAttrQueryStr(query,sub,key,name);
-    return parent->getElements(query.str());
-}
-
 static IPropertyTree *addNamedPropTree(IPropertyTree *parent,const char *sub,const char *key,const char *name, IPropertyTree* init=NULL)
 {  
     IPropertyTree* ret = init?createPTreeFromIPT(init):createPTree(sub);
@@ -159,28 +151,6 @@ static IPropertyTree *addNamedPropTree(IPropertyTree *parent,const char *sub,con
     ret->setProp(key,name);
     ret = parent->addPropTree(sub,ret);
     return LINK(ret);
-}
-
-static void removeNamedPropTree(IPropertyTree *parent,const char *sub,const char *key,const char *name)
-{
-    StringBuffer query;
-    getAttrQueryStr(query,sub,key,name);
-    while (parent->removeProp(query.str()));
-}
-
-static IPropertyTree *createNamedPropTree(IPropertyTree *parent,const char *sub,const char *key,const char *name)
-{  
-    removeNamedPropTree(parent,sub,key,name);
-    return addNamedPropTree(parent,sub,key,name);
-}
-
-static IPropertyTree *getCreateNamedPropTree(IPropertyTree *parent,const char *sub,const char *key,const char *name)
-{  // create if not present
-    StringBuffer query;
-    IPropertyTree *t = parent->getPropTree(getAttrQueryStr(query,sub,key,name).str());
-    if (t)
-        return t;
-    return addNamedPropTree(parent,sub,key,name);
 }
 
 const char *normalizeLFN(const char *s,StringBuffer &tmp)
@@ -296,13 +266,18 @@ class CConnectLock
 {
 public:
     Owned<IRemoteConnection> conn;
-    CConnectLock(const char *caller,const char *name,bool write,bool preload,unsigned timeout)
+    CConnectLock(const char *caller, const char *name, bool write, bool preload, bool hold, unsigned timeout)
     {
         unsigned start = msTick();
         bool first = true;
-        loop {
-            try {
-                conn.setown(querySDS().connect(name,queryCoven().inCoven()?0:myProcessSession(),(write?RTM_LOCK_WRITE:RTM_LOCK_READ)|(preload?RTM_SUB:0),(timeout==INFINITE)?1000*60*5:timeout));
+        loop
+        {
+            try
+            {
+                unsigned mode = write ? RTM_LOCK_WRITE : RTM_LOCK_READ;
+                if (preload) mode |= RTM_SUB;
+                if (hold) mode |= RTM_LOCK_HOLD;
+                conn.setown(querySDS().connect(name, queryCoven().inCoven() ? 0 : myProcessSession(), mode, (timeout==INFINITE)?1000*60*5:timeout));
 #ifdef TRACE_LOCKS
                 PROGLOG("%s: LOCKGOT(%x) %s %s",caller,(unsigned)(memsize_t)conn.get(),name,write?"WRITE":"");
                 LogRemoteConn(conn);
@@ -369,7 +344,7 @@ public:
 
 void ensureFileScope(const CDfsLogicalFileName &dlfn,unsigned timeout)
 {
-    CConnectLock connlock("ensureFileScope",querySdsFilesRoot(),true,false,timeout); 
+    CConnectLock connlock("ensureFileScope",querySdsFilesRoot(),true,false,false,timeout);
     StringBuffer query;
     IPropertyTree *r = connlock.conn->getRoot();
     StringBuffer scopes;
@@ -397,7 +372,7 @@ void ensureFileScope(const CDfsLogicalFileName &dlfn,unsigned timeout)
 
 void removeFileEmptyScope(const CDfsLogicalFileName &dlfn,unsigned timeout)
 {
-    CConnectLock connlock("removeFileEmptyScope",querySdsFilesRoot(),true,false,timeout); //*1
+    CConnectLock connlock("removeFileEmptyScope",querySdsFilesRoot(),true,false,false,timeout); //*1
     IPropertyTree *root = connlock.conn.get()?connlock.conn->queryRoot():NULL;
     if (!root)
         return;
@@ -443,35 +418,37 @@ public:
         lock = NULL;
         attronly = _attronly;
     }
-    CFileConnectLock(const char *caller,const CDfsLogicalFileName &lname,DfsXmlBranchKind bkind,bool write,bool preload,unsigned timeout,bool _attronly=false)
+    CFileConnectLock(const char *caller,const CDfsLogicalFileName &lname,DfsXmlBranchKind bkind,bool write,bool preload,bool hold,unsigned timeout,bool _attronly=false)
     {
         lock = NULL;
         attronly = _attronly;
-        init(caller,lname,bkind,write,preload,timeout);
+        init(caller,lname,bkind,write,preload,hold,timeout);
     }
     ~CFileConnectLock()
     {
         delete lock;
     }
 
-    bool init(const char *caller,const CDfsLogicalFileName &lname,DfsXmlBranchKind bkind,bool write,bool preload,unsigned timeout)
+    bool init(const char *caller,const CDfsLogicalFileName &lname,DfsXmlBranchKind bkind,bool write,bool preload,bool hold,unsigned timeout)
     {
         kill();
         StringBuffer query;
         lname.makeFullnameQuery(query,bkind,true);
         if (attronly)
             query.append("/Attr");
-        lock = new CConnectLock(caller,query.str(),write,preload,timeout);
+        lock = new CConnectLock(caller,query.str(),write,preload,hold,timeout);
         return lock->conn.get()!=NULL;
     }
 
-    bool initany(const char *caller,const CDfsLogicalFileName &lname,DfsXmlBranchKind &bkind,bool write,bool preload,unsigned timeout)
+    bool initany(const char *caller,const CDfsLogicalFileName &lname,DfsXmlBranchKind &bkind,bool write,bool preload,bool hold,unsigned timeout)
     {
-        if (init(caller,lname,DXB_File,write,preload,timeout)) {
+        if (init(caller, lname, DXB_File, write, preload, hold, timeout))
+        {
             bkind = DXB_File;
             return true;
         }
-        if (init(caller,lname,DXB_SuperFile,write,preload,timeout)) {
+        if (init(caller, lname, DXB_SuperFile, write, preload, hold, timeout))
+        {
             bkind = DXB_SuperFile;
             return true;
         }
@@ -520,27 +497,28 @@ public:
     {
         lock = NULL;
     }
-    CScopeConnectLock(const char *caller,const CDfsLogicalFileName &lname,bool write,bool preload,unsigned timeout)
+    CScopeConnectLock(const char *caller, const CDfsLogicalFileName &lname, bool write, bool preload, bool hold, unsigned timeout)
     {
         lock = NULL;
-        init(caller,lname,write,preload,timeout);
+        init(caller, lname, write, preload, hold, timeout);
     }
     ~CScopeConnectLock()
     {
         delete lock;
     }
 
-    bool init(const char *caller,const CDfsLogicalFileName &lname,bool write,bool preload,unsigned timeout)
+    bool init(const char *caller, const CDfsLogicalFileName &lname, bool write, bool preload, bool hold, unsigned timeout)
     {
         delete lock;
         StringBuffer query;
         lname.makeScopeQuery(query,true);
-        lock = new CConnectLock(caller,query.str(),write,preload,timeout);
-        if (lock->conn.get()==NULL) {
+        lock = new CConnectLock(caller, query.str(), write, preload,hold, timeout);
+        if (lock->conn.get()==NULL)
+        {
             delete lock;
             lock = NULL;
             ensureFileScope(lname);
-            lock = new CConnectLock(caller,query.str(),write,preload,timeout);
+            lock = new CConnectLock(caller, query.str(), write, preload, hold, timeout);
         }
         return lock->conn.get()!=NULL;
     }
@@ -880,10 +858,10 @@ public:
         redirection.setown(createDFSredirection());
     }
 
-    IDistributedFile *dolookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout);
+    IDistributedFile *dolookup(const CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
 
-    IDistributedFile *lookup(const char *_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout);
-    IDistributedFile *lookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout);
+    IDistributedFile *lookup(const char *_logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
+    IDistributedFile *lookup(const CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
     
     IDistributedFile *createNew(IFileDescriptor * fdesc, const char *lname,bool includeports=false);
     IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false)
@@ -1144,34 +1122,6 @@ static bool checkLogicalName(const CDfsLogicalFileName &dlfn,IUserDescriptor *us
     return ret;
 }
 
-static bool checkNeedFQ(const char *filename, const char *dir, const char *partHead, StringBuffer &out)
-{
-    if (!dir || !*dir || (!containsPathSepChar(filename) && partHead && 0 != strcmp(partHead, dir)))
-    {
-        out.append(partHead).append(getPathSepChar(dir)).append(filename);
-        return true;
-    }
-    out.append(filename);
-    return false;
-}
-
-static StringBuffer &checkNeedFQ(const char *filename, const char *dir, RemoteFilename &rfn, StringBuffer &out)
-{
-    if (!dir || !*dir)
-        return rfn.getLocalPath(out);
-
-    if (!containsPathSepChar(filename))
-    {
-        rfn.getLocalPath(out);
-        StringBuffer head;
-        splitDirTail(out.str(), head);
-        if (head.length() && 0 != strcmp(head.str(), dir))
-            return out;
-        out.clear();
-    }
-    return out.append(filename);
-}
-
 /*
  * This class removes all files marked for deletion during transactions.
  *
@@ -1201,7 +1151,7 @@ public:
             ThrowStringException(-1, "Logical Name fails for removal on %s", lfn.get());
 
         // Transaction files have already been unlocked at this point, delete all remaining files
-        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, true, NULL, SDS_SUB_LOCK_TIMEOUT);
+        Owned<IDistributedFile> file = queryDistributedFileDirectory().lookup(lfn, user, true, false, NULL, SDS_SUB_LOCK_TIMEOUT);
         if (!file.get())
             return;
         StringBuffer reason;
@@ -1388,7 +1338,7 @@ public:
         IDistributedFile * ret = findFile(name);
         if (ret)
             return LINK(ret);
-        ret = queryDistributedFileDirectory().lookup(name,udesc,false,this,timeout);
+        ret = queryDistributedFileDirectory().lookup(name, udesc, false, false, this, timeout);
         if (!ret)
             return NULL;
         if (isactive) {
@@ -1552,7 +1502,7 @@ public:
             dlfn.makeScopeQuery(baseq,false);
         }
         {
-            CConnectLock connlock("CDFScopeIterator",querySdsFilesRoot(),false,false,timeout); 
+            CConnectLock connlock("CDFScopeIterator",querySdsFilesRoot(),false,false,false,timeout);
             // could use CScopeConnectLock here probably 
             StringBuffer name;
             IPropertyTree *root = connlock.conn->queryRoot();
@@ -2240,9 +2190,6 @@ static bool setFileProtectTree(IPropertyTree &p,const char *owner, bool protect)
     return ret;
 }
 
-
-extern bool isMulti(const char *str);
-
 static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,StringBuffer &reason)
 {
     Owned<IPropertyTreeIterator> wpiter = froot->getElements("Attr/Protect");
@@ -2288,6 +2235,7 @@ public:
 
     CDistributedFileBase<INTERFACE>()
     {
+        parent = NULL;
         proplockcount = 0;
         transactionnest = 0;
         defaultTimeout = INFINITE;
@@ -2349,7 +2297,7 @@ protected:
         CFileConnectLock fconnlock;
         {
             IPropertyTree *froot=NULL;
-            if (fconnlock.initany("doRemoveEntry",lfn,bkind,true,false,timeoutms))
+            if (fconnlock.initany("doRemoveEntry", lfn, bkind, true, false, false, timeoutms))
                 froot = fconnlock.queryRoot();
             if (!froot)
                 ThrowStringException(-1, "Can't find SDS node for %s", lfn.get());
@@ -2390,7 +2338,8 @@ protected:
                         CFileConnectLock fconnlockSub;
                         DfsXmlBranchKind subbkind;
                         // MORE: Use CDistributedSuperFile::linkSuperOwner(false) - ie. unlink
-                        if (fconnlockSub.initany("CDelayedDelete::doRemoveEntry",subfn,subbkind,false,false,timeoutms)) {
+                        if (fconnlockSub.initany("CDelayedDelete::doRemoveEntry", subfn, subbkind, false, false, false, timeoutms))
+                        {
                             IPropertyTree *subfroot = fconnlockSub.queryRoot();
                             if (subfroot) {
                                 if (!subfroot->removeProp(oquery.str()))
@@ -3375,7 +3324,7 @@ public:
         parent->addEntry(logicalName,root.getClear(),false,false);
         killParts();
         clusters.kill();
-        CFileConnectLock fcl("CDistributedFile::attach",logicalName,DXB_File,false,false,defaultTimeout);
+        CFileConnectLock fcl("CDistributedFile::attach",logicalName,DXB_File, false, false, false, defaultTimeout);
         conn.setown(fcl.detach());
         root.setown(conn->getRoot());
         root->queryBranch(".");     // load branch
@@ -3504,6 +3453,7 @@ public:
             {
                 file = _file;
                 ok = true;
+                islazy = false;
                 mexcept = _mexcept;
                 width = _width;
                 grpfilter = _grpfilter;
@@ -4407,7 +4357,7 @@ protected:
                 IPropertyTree &sub = subit->query();
                 sub.getProp("@name",subname.clear());
                 Owned<IDistributedFile> subfile;
-                subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(),udesc,false,transaction,timeout));
+                subfile.setown(transaction?transaction->lookupFile(subname.str(),timeout):parent->lookup(subname.str(), udesc, false, false, transaction, timeout));
                 if (!subfile.get())
                     subfile.setown(transaction?transaction->lookupSuperFile(subname.str(),timeout):parent->lookupSuperFile(subname.str(),udesc,transaction,timeout));
 
@@ -4898,7 +4848,7 @@ public:
         checkLogicalName(logicalName,user,true,true,false,"attach"); 
         parent->addEntry(logicalName,root.getClear(),true,false);
         conn.clear();
-        CFileConnectLock fcl("CDistributedSuperFile::attach",logicalName,DXB_SuperFile,false,false,defaultTimeout);
+        CFileConnectLock fcl("CDistributedSuperFile::attach",logicalName,DXB_SuperFile, false, false, false, defaultTimeout);
         conn.setown(fcl.detach());
         assertex(conn.get()); // must have been attached
         root.setown(conn->getRoot());
@@ -6156,7 +6106,7 @@ public:
                 CConnectLock *lock;
             } slock;
             if (!conn) {
-                slock.lock = new CConnectLock("CNamedGroup::lookup",SDS_GROUPSTORE_ROOT,false,false,defaultTimeout);
+                slock.lock = new CConnectLock("CNamedGroup::lookup", SDS_GROUPSTORE_ROOT, false, false, false, defaultTimeout);
                 conn = slock.lock->conn;
                 if (!conn)
                     return NULL;
@@ -6239,13 +6189,13 @@ public:
 
     INamedGroupIterator *getIterator()
     {
-        CConnectLock connlock("CNamedGroup::getIterator",SDS_GROUPSTORE_ROOT,false,true,defaultTimeout);
+        CConnectLock connlock("CNamedGroup::getIterator", SDS_GROUPSTORE_ROOT, false, true, false, defaultTimeout);
         return new CNamedGroupIterator(connlock.conn); // links connection
     }
 
     INamedGroupIterator *getIterator(IGroup *match,bool exact)
     {
-        CConnectLock connlock("CNamedGroup::getIterator",SDS_GROUPSTORE_ROOT,false,false,defaultTimeout);
+        CConnectLock connlock("CNamedGroup::getIterator", SDS_GROUPSTORE_ROOT, false, false, false, defaultTimeout);
         return new CNamedGroupIterator(connlock.conn,match,exact); // links connection
     }
 
@@ -6272,13 +6222,14 @@ public:
         connlock.conn->queryRoot()->addPropTree("Group",val);
     }
     
-    void addUnique(IGroup *group,StringBuffer &lname,const char *dir)
+    void addUnique(IGroup *group,StringBuffer &lname, const char *dir)
     {
-        if (group->ordinality()==1) {
+        if (group->ordinality()==1)
+        {
             group->getText(lname);
             return;
         }
-        CConnectLock connlock("CNamedGroup::addUnique",SDS_GROUPSTORE_ROOT,true,false,defaultTimeout);
+        CConnectLock connlock("CNamedGroup::addUnique", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
         StringBuffer name;
         StringBuffer prop;
         unsigned scale = 16;
@@ -6307,7 +6258,7 @@ public:
         name.trim();
         StringBuffer prop;
         prop.appendf("Group[@name=\"%s\"]",name.str());
-        CConnectLock connlock("CNamedGroup::add",SDS_GROUPSTORE_ROOT,true,false,defaultTimeout);
+        CConnectLock connlock("CNamedGroup::add", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
         connlock.conn->queryRoot()->removeProp(prop.str()); 
         doadd(connlock,name.str(),group,cluster,dir);
         {                                                           
@@ -6358,7 +6309,7 @@ public:
     {
         if (from.ipequals(to))
             return;
-        CConnectLock connlock("CNamedGroup::swapNode",SDS_GROUPSTORE_ROOT,true,false,defaultTimeout);
+        CConnectLock connlock("CNamedGroup::swapNode", SDS_GROUPSTORE_ROOT, true, false, false, defaultTimeout);
         StringBuffer froms;
         from.getIpText(froms);
         StringBuffer tos;
@@ -6497,21 +6448,23 @@ IDistributedFile *CDistributedFileDirectory::createExternal(const CDfsLogicalFil
 
     bool iswin=false;
     bool usedafs;
-    switch (getDaliServixOs(ep)) { 
-      case DAFS_OSwindows: 
-          iswin = true;
-          // fall through
-      case DAFS_OSlinux:   
-      case DAFS_OSsolaris: 
-          usedafs = ep.port||!ep.isLocal();
-          break;
-      default:
+    switch (getDaliServixOs(ep))
+    {
+    case DAFS_OSwindows:
+        iswin = true;
+        // fall through
+    case DAFS_OSlinux:
+    case DAFS_OSsolaris:
+        usedafs = ep.port||!ep.isLocal();
+        break;
+    default:
 #ifdef _WIN32
         iswin = true;
 #else
         iswin = false;
 #endif
         usedafs = false;
+        break;
     }
 
     //rest is local path
@@ -6582,17 +6535,14 @@ IDistributedFile *CDistributedFileDirectory::createExternal(const CDfsLogicalFil
     return ret;
 }
 
-
-
-
-IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout)
 {
     CDfsLogicalFileName logicalname;    
     logicalname.set(_logicalname);
-    return lookup(logicalname,user,writeattr,transaction,timeout);
+    return lookup(logicalname, user, writeattr, hold, transaction, timeout);
 }
 
-IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName &_logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction,unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName &_logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout)
 {
     const CDfsLogicalFileName *logicalname = &_logicalname;
     if (logicalname->isMulti()) 
@@ -6613,13 +6563,16 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
             loop {
                 CFileConnectLock fcl;
                 DfsXmlBranchKind bkind;
-                if (!fcl.initany("CDistributedFileDirectory::lookup",*logicalname,bkind,false,true,timeout))
+                if (!fcl.initany("CDistributedFileDirectory::lookup", *logicalname, bkind, false, true, hold, timeout))
                     break;
-                if (bkind == DXB_File) {
+                if (bkind == DXB_File)
+                {
                     StringBuffer cname;
-                    if (logicalname->getCluster(cname).length()) {
+                    if (logicalname->getCluster(cname).length())
+                    {
                         IPropertyTree *froot=fcl.queryRoot();
-                        if (froot) {
+                        if (froot)
+                        {
                             StringBuffer query;
                             query.appendf("Cluster[@name=\"%s\"]",cname.str());
                             if (!froot->hasProp(query.str())) 
@@ -6665,16 +6618,16 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
     return NULL;
 }
 
-IDistributedFile *CDistributedFileDirectory::lookup(const CDfsLogicalFileName &logicalname,IUserDescriptor *user,bool writeattr,IDistributedFileTransaction *transaction, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(const CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout)
 {
-    return dolookup(logicalname,user,writeattr,transaction,timeout);
+    return dolookup(logicalname, user, writeattr, hold, transaction, timeout);
 }
 
 IDistributedSuperFile *CDistributedFileDirectory::lookupSuperFile(const char *_logicalname,IUserDescriptor *user,IDistributedFileTransaction *transaction, unsigned timeout)
 {
     CDfsLogicalFileName logicalname;    
     logicalname.set(_logicalname);
-    IDistributedFile *file = dolookup(logicalname,user,false,transaction,timeout);
+    IDistributedFile *file = dolookup(logicalname, user, false, false, transaction, timeout);
     if (file) {
         IDistributedSuperFile *sf = file->querySuperFile();
         if (sf)
@@ -6706,7 +6659,7 @@ bool CDistributedFileDirectory::exists(const char *_logicalname,IUserDescriptor 
     external = dlfn.isExternal();
     foreign = dlfn.isForeign();
     if (foreign) {
-        Owned<IDistributedFile> file = lookup(_logicalname,user,false,NULL,defaultTimeout); 
+        Owned<IDistributedFile> file = lookup(_logicalname, user, false, false, NULL, defaultTimeout);
         if (file.get()==NULL)
             return false;
         if (file->querySuperFile()) {
@@ -6725,23 +6678,23 @@ bool CDistributedFileDirectory::exists(const char *_logicalname,IUserDescriptor 
         StringBuffer str;
         if (!superonly) {
             dlfn.makeFullnameQuery(str,DXB_File,true);
-            CConnectLock connlockfile("CDistributedFileDirectory::exists",str.str(),false,false,defaultTimeout);
+            CConnectLock connlockfile("CDistributedFileDirectory::exists",str.str(),false,false,false,defaultTimeout);
             if (connlockfile.conn.get())
                 return true;
         }
         if (notsuper)
             return false;
         dlfn.makeFullnameQuery(str.clear(),DXB_SuperFile,true);
-        CConnectLock connlocksuper("CDistributedFileDirectory::exists",str.str(),false,false,defaultTimeout);
+        CConnectLock connlocksuper("CDistributedFileDirectory::exists",str.str(),false,false,false,defaultTimeout);
         if (!connlocksuper.conn.get())
             return false;
     }
     return true;
 }
 
-bool CDistributedFileDirectory::existsPhysical(const char *_logicalname,IUserDescriptor *user)
+bool CDistributedFileDirectory::existsPhysical(const char *_logicalname, IUserDescriptor *user)
 {
-    Owned<IDistributedFile> file = lookup(_logicalname,user,false,NULL, defaultTimeout); 
+    Owned<IDistributedFile> file = lookup(_logicalname, user, false, false, NULL, defaultTimeout);
     if (!file)
         return false;
     return file->existsPhysicalPartFiles(0);
@@ -7204,7 +7157,7 @@ void CDistributedFileDirectory::addEntry(CDfsLogicalFileName &dlfn,IPropertyTree
         root->Release();
         return; // ignore attempts to add external
     }
-    CScopeConnectLock sconnlock("CDistributedFileDirectory::addEntry",dlfn,true,false,defaultTimeout);
+    CScopeConnectLock sconnlock("CDistributedFileDirectory::addEntry", dlfn, true, false, false, defaultTimeout);
     if (!sconnlock.conn()) {// warn?
         root->Release();
         return;
@@ -7241,7 +7194,7 @@ GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const cha
         return GFCN_Foreign;
     if (logicalname.isExternal())
         return GFCN_External;
-    CScopeConnectLock sconnlock("CDistributedFileDirectory::getFileClusterList",logicalname,false,false,defaultTimeout);
+    CScopeConnectLock sconnlock("CDistributedFileDirectory::getFileClusterList", logicalname, false, false, false, defaultTimeout);
     DfsXmlBranchKind bkind;
     IPropertyTree *froot = sconnlock.queryFileRoot(logicalname,bkind);
     if (froot) {
@@ -7960,7 +7913,7 @@ class CInitGroups
 public:
 
     CInitGroups(unsigned _defaultTimeout)
-        : groupsconnlock("constructGroup",SDS_GROUPSTORE_ROOT,true,false,_defaultTimeout)
+        : groupsconnlock("constructGroup",SDS_GROUPSTORE_ROOT,true,false,false,_defaultTimeout)
     {
         defaultTimeout = _defaultTimeout;
     }
@@ -8367,7 +8320,7 @@ public:
         dlfn.set(lname);
         if (!checkLogicalName(dlfn,udesc,true,false,true,"setFileAccessed on"))
             return;
-        CScopeConnectLock sconnlock("setFileAccessed",dlfn,false,false,defaultTimeout);
+        CScopeConnectLock sconnlock("setFileAccessed", dlfn, false, false, false, defaultTimeout);
         IPropertyTree* sroot = sconnlock.conn()?sconnlock.conn()->queryRoot():NULL;
         dlfn.getTail(tail);
         Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
@@ -8398,7 +8351,7 @@ public:
         dlfn.set(lname);
         if (!checkLogicalName(dlfn,udesc,true,false,true,"setFileProtect"))
             return;
-        CScopeConnectLock sconnlock("setFileProtect",dlfn,false,false,defaultTimeout);
+        CScopeConnectLock sconnlock("setFileProtect", dlfn, false, false, false, defaultTimeout);
         IPropertyTree* sroot = sconnlock.conn()?sconnlock.conn()->queryRoot():NULL;
         dlfn.getTail(tail);
         Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
@@ -8443,7 +8396,7 @@ public:
         loop {
             StringBuffer tail;
             checkLogicalName(*logicalname,udesc,true,false,true,"getFileTree on");
-            CScopeConnectLock sconnlock("getFileTree",*logicalname,false,false,defaultTimeout);
+            CScopeConnectLock sconnlock("getFileTree", *logicalname, false, false, false, defaultTimeout);
             IPropertyTree* sroot = sconnlock.conn()?sconnlock.conn()->queryRoot():NULL;
             logicalname->getTail(tail);
             Owned<IPropertyTree> tree = getNamedPropTree(sroot,queryDfsXmlBranchName(DXB_File),"@name",tail.str(),false);
@@ -8505,7 +8458,7 @@ public:
         if (queryTransactionLogging())
             transactionLog.log("%s", trc.str());
         byte ok;
-        CConnectLock connlock("getGroupTree",SDS_GROUPSTORE_ROOT,false,false,defaultTimeout);
+        CConnectLock connlock("getGroupTree",SDS_GROUPSTORE_ROOT,false,false,false,defaultTimeout);
         Owned<IPropertyTree> pt = getNamedPropTree(connlock.conn->queryRoot(),"Group","@name",gname.get(),true);
         if (pt) {
             ok = 1;
@@ -8555,6 +8508,7 @@ public:
             default: {
                     mb.clear();
                 }
+                break;
             }
         }
         catch (IException *e) {
@@ -8651,7 +8605,7 @@ bool CDistributedFileDirectory::loadScopeContents(const char *scopelfn,
             dlfn.makeScopeQuery(baseq,false);
         }
     }
-    CConnectLock connlock("CDistributedFileDirectory::loadScopeContents",querySdsFilesRoot(),false,false,defaultTimeout); 
+    CConnectLock connlock("CDistributedFileDirectory::loadScopeContents",querySdsFilesRoot(),false,false,false,defaultTimeout);
     if (!connlock.conn) 
         return false;
     IPropertyTree *root = connlock.conn->queryRoot();
@@ -9141,24 +9095,30 @@ DistributedFileCompareResult CDistributedFileDirectory::fileCompare(const char *
 {
     DistributedFileCompareResult ret = DFS_COMPARE_RESULT_SAME;
     StringBuffer msg;
-    try {
-        Owned<IDistributedFile> file1 = lookup(lfn1,user,false,NULL,defaultTimeout);    
-        Owned<IDistributedFile> file2 = lookup(lfn2,user,false,NULL,defaultTimeout);            
-        if (!file1) {
+    try
+    {
+        Owned<IDistributedFile> file1 = lookup(lfn1, user, false, false, NULL, defaultTimeout);
+        Owned<IDistributedFile> file2 = lookup(lfn2, user, false, false, NULL, defaultTimeout);
+        if (!file1)
+        {
             errstr.appendf("File %s not found",lfn1);
             ret = DFS_COMPARE_RESULT_FAILURE;
         }
-        else if (!file2) {
+        else if (!file2)
+        {
             errstr.appendf("File %s not found",lfn2);
             ret = DFS_COMPARE_RESULT_FAILURE;
         }
-        else {
+        else
+        {
             unsigned np = file1->numParts();
-            if (np!=file2->numParts()) {
+            if (np!=file2->numParts())
+            {
                 errstr.appendf("Files %s and %s have differing number of parts",lfn1,lfn2);
                 ret = DFS_COMPARE_RESULT_FAILURE;
             }
-            else {
+            else
+            {
                 CDateTime newestdt1;
                 CDateTime newestdt2;
                 bool differs = false;
@@ -9282,15 +9242,17 @@ DistributedFileCompareResult CDistributedFileDirectory::fileCompare(const char *
     return ret;
 }
 
-bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn,IUserDescriptor *user,bool includecrc,StringBuffer &errstr)
+bool CDistributedFileDirectory::filePhysicalVerify(const char *lfn, IUserDescriptor *user, bool includecrc, StringBuffer &errstr)
 {
     bool differs = false;
-    Owned<IDistributedFile> file = lookup(lfn,user,false,NULL,defaultTimeout);  
-    if (!file) {
+    Owned<IDistributedFile> file = lookup(lfn, user, false, false, NULL, defaultTimeout);
+    if (!file)
+    {
         errstr.appendf("Could not find file: %s",lfn);
         return false;
     }
-    try {
+    try
+    {
         unsigned np = file->numParts();
         class casyncfor: public CAsyncFor
         {
@@ -9585,6 +9547,7 @@ public:
     CLightWeightSuperFileConn(unsigned _defaultTimeout)
     {
         defaultTimeout = _defaultTimeout;
+        readonly = false;
     }
 
     bool connect(CDistributedFileDirectory *parent,const char *title, const char *name, bool _readonly, bool *autocreate, unsigned timeout)
@@ -9598,7 +9561,8 @@ public:
             throw MakeStringException(-1,"%s: Invalid superfile name '%s'",title,name);
         if (lfn.isMulti()||lfn.isExternal()||lfn.isForeign()) 
             return false;
-        if (!lock.init(title,lfn,DXB_SuperFile,!readonly,true,timeout)) {
+        if (!lock.init(title, lfn, DXB_SuperFile, !readonly, true, false, timeout))
+        {
             if (!autocreate)        // NB not !*autocreate here !
                 return false;
             IPropertyTree *root = createPTree();
@@ -9606,7 +9570,7 @@ public:
             root->setPropInt("@numsubfiles",0); 
             root->setPropTree("Attr",getEmptyAttr());   
             parent->addEntry(lfn,root,true,false);
-            if (!lock.init(title,lfn,DXB_SuperFile,true,true,timeout)) 
+            if (!lock.init(title, lfn, DXB_SuperFile, true, true, false, timeout))
                 throw MakeStringException(-1,"%s: Cannot create superfile '%s'",title,name);
             if (autocreate)
                 *autocreate = true;
@@ -9800,7 +9764,7 @@ bool CDistributedFileDirectory::getFileSuperOwners(const char *logicalname, Stri
     if (lfn.isMulti()||lfn.isExternal()||lfn.isForeign()) 
         return false;
     DfsXmlBranchKind bkind;
-    if (!lock.initany("CDistributedFileDirectory::getFileSuperOwners",lfn,bkind,false,false,defaultTimeout))
+    if (!lock.initany("CDistributedFileDirectory::getFileSuperOwners", lfn, bkind, false, false, false, defaultTimeout))
         return false;
     Owned<IPropertyTreeIterator> iter = lock.queryRoot()->getElements("SuperOwner");
     StringBuffer pname;
@@ -9886,7 +9850,7 @@ public:
         foreigndali.set(_foreigndali);
 
         if (isLocalDali(foreigndali)) {
-            CConnectLock connlock("lookupFileRelationships",querySdsRelationshipsRoot(),false,false,defaultTimeout);
+            CConnectLock connlock("lookupFileRelationships",querySdsRelationshipsRoot(),false,false,false,defaultTimeout);
             StringBuffer xpath;
             CDistributedFileDirectory::getFileRelationshipXPath(xpath,primary,secondary,primflds,secflds,kind,cardinality,payload);
             Owned<IPropertyTreeIterator> iter = connlock.conn?connlock.conn->getElements(xpath.str()):NULL;
@@ -9922,7 +9886,7 @@ public:
         unsigned count = 0;
         mb.append(count);
         {
-            CConnectLock connlock("lookupFileRelationships",querySdsRelationshipsRoot(),false,false,defaultTimeout);
+            CConnectLock connlock("lookupFileRelationships",querySdsRelationshipsRoot(),false,false,false,defaultTimeout);
             CDistributedFileDirectory::getFileRelationshipXPath(xpath,filename,NULL,NULL,NULL,NULL,NULL,NULL);
             // save as sequence of branches
             iter.setown(connlock.conn?connlock.conn->getElements(xpath.str()):NULL);
@@ -9934,7 +9898,7 @@ public:
             }
         }
         { // Kludge - seems to be a bug in getElements without second conn lock
-            CConnectLock connlock("lookupFileRelationships",querySdsRelationshipsRoot(),false,false,defaultTimeout);
+            CConnectLock connlock("lookupFileRelationships",querySdsRelationshipsRoot(),false,false,false,defaultTimeout);
             xpath.clear();
             CDistributedFileDirectory::getFileRelationshipXPath(xpath,NULL,filename,NULL,NULL,NULL,NULL,NULL);
             iter.clear();
@@ -10125,9 +10089,9 @@ void CDistributedFileDirectory::addFileRelationship(
 
 
     for (unsigned i=0;i<2;i++) {
-        CConnectLock connlock("addFileRelation",querySdsRelationshipsRoot(),true,false,defaultTimeout);
+        CConnectLock connlock("addFileRelation",querySdsRelationshipsRoot(),true,false,false,defaultTimeout);
         if (!connlock.conn) {
-            CConnectLock connlock2("addFileRelation.2",querySdsFilesRoot(),true,false,defaultTimeout);
+            CConnectLock connlock2("addFileRelation.2",querySdsFilesRoot(),true,false,false,defaultTimeout);
             if (!connlock2.conn)
                 return;
             Owned<IPropertyTree> ptr = createPTree("Relationships");
@@ -10153,7 +10117,7 @@ void CDistributedFileDirectory::removeFileRelationships(
         (!secondary||!*secondary||(strcmp(secondary,"*")==0)))
         throw MakeStringException(-1,"removeFileRelationships primary and secondary cannot both be wild");
 
-    CConnectLock connlock("removeFileRelation",querySdsRelationshipsRoot(),true,false,defaultTimeout);
+    CConnectLock connlock("removeFileRelation",querySdsRelationshipsRoot(),true,false,false,defaultTimeout);
     doRemoveFileRelationship(connlock.conn,primary,secondary,primflds,secflds,kind);
 }
 
@@ -10186,11 +10150,11 @@ void CDistributedFileDirectory::removeAllFileRelationships(const char *filename)
     if (!filename||!*filename||(strcmp(filename,"*")==0))
         throw MakeStringException(-1,"removeAllFileRelationships filename cannot be wild");
     {
-        CConnectLock connlock("removeFileRelation",querySdsRelationshipsRoot(),true,false,defaultTimeout);
+        CConnectLock connlock("removeFileRelation",querySdsRelationshipsRoot(),true,false,false,defaultTimeout);
         doRemoveFileRelationship(connlock.conn,filename,NULL,NULL,NULL,NULL);
     }
     {   // kludge bug in getElements if connection used twice
-        CConnectLock connlock("removeFileRelation",querySdsRelationshipsRoot(),true,false,defaultTimeout);
+        CConnectLock connlock("removeFileRelation",querySdsRelationshipsRoot(),true,false,false,defaultTimeout);
         doRemoveFileRelationship(connlock.conn,NULL,filename,NULL,NULL,NULL);
     }
 }
@@ -10350,7 +10314,7 @@ bool CDistributedFileDirectory::isProtectedFile(const CDfsLogicalFileName &logic
 {
     DfsXmlBranchKind bkind;
     CFileConnectLock fconnattrlock(true);
-    if (!fconnattrlock.initany("CDistributedFileDirectory::isProtectedFile",logicalname,bkind,true,false,timeout?timeout:INFINITE))
+    if (!fconnattrlock.initany("CDistributedFileDirectory::isProtectedFile", logicalname, bkind, true, false, false, timeout?timeout:INFINITE))
         return false; // timeout will raise exception
     Owned<IPropertyTreeIterator> wpiter = fconnattrlock.queryRoot()->getElements("Protect");
     bool prot = false;
@@ -10369,7 +10333,7 @@ unsigned CDistributedFileDirectory::queryProtectedCount(const CDfsLogicalFileNam
 {
     DfsXmlBranchKind bkind;
     CFileConnectLock fconnattrlock(true);
-    if (!fconnattrlock.initany("CDistributedFileDirectory::isProtectedFile",logicalname,bkind,true,false,defaultTimeout))
+    if (!fconnattrlock.initany("CDistributedFileDirectory::isProtectedFile", logicalname, bkind, true, false, false, defaultTimeout))
         return 0; // timeout will raise exception
     Owned<IPropertyTreeIterator> wpiter = fconnattrlock.queryRoot()->getElements("Protect");
     unsigned count = 0;
@@ -10386,7 +10350,7 @@ bool CDistributedFileDirectory::getProtectedInfo(const CDfsLogicalFileName &logi
 {
     DfsXmlBranchKind bkind;
     CFileConnectLock fconnattrlock(true);
-    if (!fconnattrlock.initany("CDistributedFileDirectory::isProtectedFile",logicalname,bkind,true,false,defaultTimeout))
+    if (!fconnattrlock.initany("CDistributedFileDirectory::isProtectedFile", logicalname, bkind, true, false, false, defaultTimeout))
         return false; // timeout will raise exception
     Owned<IPropertyTreeIterator> wpiter = fconnattrlock.queryRoot()->getElements("Protect");
     bool prot = false;

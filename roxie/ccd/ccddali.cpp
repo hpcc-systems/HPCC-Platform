@@ -346,7 +346,7 @@ public:
         {
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
-            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess);
+            Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt);
             if (dfsFile)
             {
                 IDistributedSuperFile *super = dfsFile->querySuperFile();

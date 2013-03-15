@@ -24,6 +24,7 @@
 #define RTM_NONE        0x00
 #define RTM_LOCK_READ   0x01        // non-exclusive lock
 #define RTM_LOCK_WRITE  0x02        // exclusive lock
+#define RTM_LOCK_HOLD   0x04        // long-term lock
 #define RTM_LOCK_SUB    0x10        // locks all descendants as well as self
 #define RTM_SUB         0x20        // loads entire sub-tree
 #define RTM_CREATE      0x40        // replace existing elements
@@ -33,7 +34,7 @@
 #define RTM_DELETE_ON_DISCONNECT 0x400  // auto delete connection root on disconnection.
 
 
-#define RTM_LOCKBASIC_MASK  (RTM_LOCK_READ | RTM_LOCK_WRITE)
+#define RTM_LOCKBASIC_MASK  (RTM_LOCK_READ | RTM_LOCK_WRITE | RTM_LOCK_HOLD)
 #define RTM_CREATE_MASK     (RTM_CREATE | RTM_CREATE_UNIQUE | RTM_CREATE_ADD | RTM_CREATE_QUERY)
 
 #define RTM_MODE(X, M) ((X & M) == M)
@@ -194,6 +195,7 @@ enum SDSExceptionCodes
     SDSExcpt_StoreInfoMissing,
     SDSExcpt_ClientCacheDirty,
     SDSExcpt_InvalidSessionId,
+    SDSExcpt_LockHeld,
 };
 
 interface ISDSException : extends IException { };
