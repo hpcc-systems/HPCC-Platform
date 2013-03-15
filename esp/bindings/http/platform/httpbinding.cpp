@@ -2102,9 +2102,10 @@ int EspHttpBinding::formatResultsPage(IEspContext &context, const char *serv, co
 
 bool EspHttpBinding::setContentFromFile(IEspContext &context, CHttpResponse &resp, const char *filepath)
 {
-    StringBuffer mimetype;
+    StringBuffer mimetype, etag, lastModified;
     MemoryBuffer content;
-    if (httpContentFromFile(filepath, mimetype, content))
+    bool modified = false;
+    if (httpContentFromFile(filepath, mimetype, content, modified, lastModified, etag))
     {
         resp.setContent(content.length(), content.toByteArray());
         resp.setContentType(mimetype.str());
