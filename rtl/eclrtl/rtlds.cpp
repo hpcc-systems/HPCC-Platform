@@ -163,7 +163,7 @@ void RtlLimitedFixedDatasetBuilder::flushDataset()
 RtlVariableDatasetBuilder::RtlVariableDatasetBuilder(IRecordSize & _recordSize)
 {
     recordSize = &_recordSize;
-    maxRowSize = recordSize->getRecordSize(NULL); // initial size
+    maxRowSize = recordSize->getMinRecordSize(); // initial size
 }
 
 
