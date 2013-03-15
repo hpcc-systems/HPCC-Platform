@@ -24,7 +24,6 @@
 project( graph_lcr ) 
 
 set (    SRCS 
-         ../thorutil/mcorecache.cpp 
          ../thorutil/thbuf.cpp 
          ../thorutil/thcompressutil.cpp 
          ../thorutil/thmem.cpp 

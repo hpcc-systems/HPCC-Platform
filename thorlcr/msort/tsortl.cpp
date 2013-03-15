@@ -187,17 +187,14 @@ public:
         socket->set_block_mode(BF_SYNC_TRANSFER_PULL,0,DEFAULTTIMEOUT*1000);
         stopped = false;
         initbuf = true;
-        size32_t maxsz = rowif->queryRowMetaData()->querySerializedDiskMeta()->getRecordSize(NULL);
-        // bit of a guess - TBD better (using ISerialStream?)
-        if (maxsz<rowif->queryRowMetaData()->querySerializedDiskMeta()->getMinRecordSize())
-            maxsz=rowif->queryRowMetaData()->querySerializedDiskMeta()->getMinRecordSize();
+        size32_t initSize = rowif->queryRowMetaData()->querySerializedDiskMeta()->getMinRecordSize();
 
-        if (maxsz>bufsize)
-            preallocated = maxsz;
-        else if (maxsz>bufsize/4)
+        if (initSize>bufsize)
+            preallocated = initSize;
+        else if (initSize>bufsize/4)
             preallocated = bufsize+bufsize/4;
         else
-            preallocated = bufsize+maxsz;
+            preallocated = bufsize+initSize;
 
 #ifdef _FULL_TRACE
         PROGLOG("CSocketRowWriter(%d,%x) preallocated = %d",id,(unsigned)(memsize_t)socket.get(),preallocated);

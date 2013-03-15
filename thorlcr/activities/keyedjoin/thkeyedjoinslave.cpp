@@ -1947,7 +1947,7 @@ public:
                     free(encryptedKey);
                 }
                 Owned<IOutputMetaData> fetchInputMeta;
-                if (0 != helper->queryFetchInputRecordSize()->getRecordSize(NULL))
+                if (0 != helper->queryFetchInputRecordSize()->getMinRecordSize())
                 {
                     fetchInputAllocator.setown(queryJob().getRowAllocator(helper->queryFetchInputRecordSize(), queryActivityId()));
                     fetchInputMeta.setown(createOutputMetaDataWithChildRow(fetchInputAllocator, FETCHKEY_HEADER_SIZE));

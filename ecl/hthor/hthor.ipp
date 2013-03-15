@@ -277,8 +277,7 @@ protected:
     bool grouped;
     bool blockcompressed;
     bool encrypted;
-    CachedRecordSize inputMeta;
-    CachedRecordSize serializedOutputMeta;
+    CachedOutputMetaData serializedOutputMeta;
     offset_t uncompressedBytesWritten;
     Owned<IExtRowWriter> outSeq;
     unsigned __int64 numRecords;

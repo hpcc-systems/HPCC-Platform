@@ -486,7 +486,6 @@ void CHThorDiskWriteActivity::open()
 {
     // Open an output file...
     file.setown(createIFile(filename));
-    inputMeta.set(input->queryOutputMeta());
     serializedOutputMeta.set(input->queryOutputMeta()->querySerializedDiskMeta());//returns outputMeta if serialization not needed
 
     Linked<IRecordSize> groupedMeta = input->queryOutputMeta()->querySerializedDiskMeta();

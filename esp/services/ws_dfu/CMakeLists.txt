@@ -32,7 +32,6 @@ set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_dfuXref_esp.cpp 
          ws_dfuPlugin.cpp 
          ws_dfuService.cpp 
-         ws_dfuView.cpp 
          ws_dfuXRefService.cpp 
     )
 
