@@ -136,14 +136,16 @@ struct CActiveWorkunitWrapper: public CActiveWorkunit
         double version = context.getClientVersion();
 
         CWUWrapper wu(wuid, context);
+        StringBuffer stateStr;
         SCMStringBuffer state,owner,jobname;
         setWuid(wuid);
+        wu->getStateDesc(state);
         if(index)
-            state.s.append("queued(").append(index).append(")");
+            stateStr.appendf("queued(%d) [%s]", index, state.str());
         else
-            wu->getStateDesc(state);
+            stateStr.set(state.str());
 
-        setState(state.str());
+        setState(stateStr.str());
         setStateID(wu->getState());
         if ((version > 1.09) && (wu->getState() == WUStateFailed))
             setWarning("The job will ultimately not complete. Please check ECLAgent.");
