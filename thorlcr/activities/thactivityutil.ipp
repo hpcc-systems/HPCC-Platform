@@ -154,8 +154,8 @@ protected:
         assertex(started());
 #ifdef OUTPUT_RECORDSIZE
         if (count==THORDATALINK_STARTED) {
-            size32_t rsz = queryRowMetaData(this)->getRecordSize(NULL);
-            ActPrintLog(owner, "Record size %s= %d", queryRowMetaData(this)->isVariableSize()?"(max) ":"",rsz);
+            size32_t rsz = queryRowMetaData(this)->getMinRecordSize();
+            ActPrintLog(owner, "Record size %s= %d", queryRowMetaData(this)->isVariableSize()?"(min) ":"",rsz);
         }   
 #endif
 #endif

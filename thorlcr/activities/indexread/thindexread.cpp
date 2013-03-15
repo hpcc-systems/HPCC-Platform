@@ -158,8 +158,8 @@ protected:
                     throw MakeThorException(TE_FileNotFound, "Top level key part does not exist, for key: %s", indexName.get());
                 }
             
-                unsigned maxSize = indexBaseHelper->queryDiskRecordSize()->querySerializedDiskMeta()->getRecordSize(NULL); // used only if fixed
-                Owned <IKeyManager> tlk = createKeyManager(keyIndex, maxSize, NULL);
+                unsigned fixedSize = indexBaseHelper->queryDiskRecordSize()->querySerializedDiskMeta()->getFixedSize(); // used only if fixed
+                Owned <IKeyManager> tlk = createKeyManager(keyIndex, fixedSize, NULL);
                 indexBaseHelper->createSegmentMonitors(tlk);
                 tlk->finishSegmentMonitors();
                 tlk->reset();
