@@ -61,31 +61,36 @@ void setLocalMountRedirect(const IpAddress &ip,const char *dir,const char *mount
 
 
 
-
 class CDaliServixFilter : public CInterface
 {
-    IpSubNet ipSubNet;
-    StringAttr dir;
-    bool trace;
-public:
-    CDaliServixFilter(IPropertyTree &filter)
+protected:
+    StringAttr dir, sourceRangeText;
+    SocketEndpointArray sourceRangeIps;
+    bool sourceRangeHasPorts, trace;
+
+    bool checkForPorts(SocketEndpointArray &ips)
     {
-        const char *subnet = filter.queryProp("@subnet");
-        const char *mask = filter.queryProp("@mask");
-        if (!ipSubNet.set(subnet, mask))
-            throw MakeStringException(0, "Invalid sub net definition: %s, %s", subnet, mask);
-        dir.set(filter.queryProp("@directory"));
-        trace = filter.getPropBool("@trace");
+        ForEachItemIn(i, ips)
+        {
+           if (ips.item(i).port)
+               return true;
+        }
+        return false;
     }
-    CDaliServixFilter(const char *subnet, const char *mask, const char *_dir, bool _trace) : dir(_dir), trace(_trace)
+public:
+    CDaliServixFilter(const char *_dir, const char *sourceRange, bool _trace) : dir(_dir), trace(_trace)
     {
-        if (!ipSubNet.set(subnet, mask))
-            throw MakeStringException(0, "Invalid sub net definition: %s, %s", subnet, mask);
+        if (sourceRange)
+        {
+            sourceRangeText.set(sourceRange);
+            sourceRangeIps.fromText(sourceRange, 0);
+            sourceRangeHasPorts = checkForPorts(sourceRangeIps);
+        }
+        else
+            sourceRangeHasPorts = false;
     }
     bool queryTrace() const { return trace; }
     const char *queryDirectory() const { return dir; }
-    const IpSubNet &querySubNet() const { return ipSubNet; }
-    bool testIp(const IpAddress &ip) const { return ipSubNet.test(ip); }
     bool testPath(const char *path) const
     {
         if (!dir) // if no dir in filter, match any
@@ -93,24 +98,109 @@ public:
         else
             return startsWith(path, dir.get());
     }
+    bool applyFilter(const SocketEndpoint &ep) const
+    {
+        if (sourceRangeText.length())
+        {
+            SocketEndpoint _ep = ep;
+            if (!sourceRangeHasPorts) // if source range doesn't have ports, only check ip
+                _ep.port = 0;
+            return NotFound != sourceRangeIps.find(_ep);
+        }
+        // NB: If no source range, use target range to decide if filter should apply
+        return testEp(ep);
+    }
+    virtual bool testEp(const SocketEndpoint &ep) const = 0;
+    virtual StringBuffer &getInfo(StringBuffer &info)
+    {
+        if (dir.length())
+            info.append(", dir=").append(dir.get());
+        if (sourceRangeText.get())
+            info.append(", sourcerange=").append(sourceRangeText.get());
+        info.append(", trace=(").append(trace ? "true" : "false").append(")");
+        return info;
+    }
 };
+
+class CDaliServixSubnetFilter : public CDaliServixFilter
+{
+    IpSubNet ipSubNet;
+public:
+    CDaliServixSubnetFilter(const char *subnet, const char *mask, const char *dir, const char *sourceRange, bool trace) :
+        CDaliServixFilter(dir, sourceRange, trace)
+    {
+        if (!ipSubNet.set(subnet, mask))
+            throw MakeStringException(0, "Invalid sub net definition: %s, %s", subnet, mask);
+    }
+    virtual bool testEp(const SocketEndpoint &ep) const
+    {
+        return ipSubNet.test(ep);
+    }
+    virtual StringBuffer &getInfo(StringBuffer &info)
+    {
+        info.append("subnet=");
+        ipSubNet.getNetText(info);
+        info.append(", mask=");
+        ipSubNet.getMaskText(info);
+        CDaliServixFilter::getInfo(info);
+        return info;
+    }
+};
+
+class CDaliServixRangeFilter : public CDaliServixFilter
+{
+    StringAttr rangeText;
+    SocketEndpointArray rangeIps;
+    bool rangeIpsHavePorts;
+public:
+    CDaliServixRangeFilter(const char *_range, const char *dir, const char *sourceRange, bool trace)
+        : CDaliServixFilter(dir, sourceRange, trace)
+    {
+        rangeText.set(_range);
+        rangeIps.fromText(_range, 0);
+        rangeIpsHavePorts = checkForPorts(rangeIps);
+    }
+    virtual bool testEp(const SocketEndpoint &ep) const
+    {
+        SocketEndpoint _ep = ep;
+        if (!rangeIpsHavePorts) // if range doesn't have ports, only check ip
+            _ep.port = 0;
+        return NotFound != rangeIps.find(_ep);
+    }
+    virtual StringBuffer &getInfo(StringBuffer &info)
+    {
+        info.append("range=").append(rangeText.get());
+        CDaliServixFilter::getInfo(info);
+        return info;
+    }
+};
+
+CDaliServixFilter *createDaliServixFilter(IPropertyTree &filterProps)
+{
+    CDaliServixFilter *filter = NULL;
+    const char *dir = filterProps.queryProp("@directory");
+    const char *sourceRange = filterProps.queryProp("@sourcerange");
+    bool trace = filterProps.queryProp("@trace");
+    if (filterProps.hasProp("@subnet"))
+        filter = new CDaliServixSubnetFilter(filterProps.queryProp("@subnet"), filterProps.queryProp("@mask"), dir, sourceRange, trace);
+    else if (filterProps.hasProp("@range"))
+        filter = new CDaliServixRangeFilter(filterProps.queryProp("@range"), dir, sourceRange, trace);
+    else
+        throw MakeStringException(0, "Unknown DaliServix filter definition");
+    return filter;
+}
 
 class CDaliServixIntercept: public CInterface, implements IDaFileSrvHook
 {
     CIArrayOf<CDaliServixFilter> filters;
 
-    void addSubnetFilter(CDaliServixFilter *filter)
+    void addFilter(CDaliServixFilter *filter)
     {
-        const IpSubNet &ipSubNet = filter->querySubNet();
-        StringBuffer msg("DaFileSrvHook: adding translateToLocal(subnet=");
-        ipSubNet.getNetText(msg);
-        msg.append(", mask=");
-        ipSubNet.getMaskText(msg);
-        if (filter->queryDirectory())
-            msg.append(", dir=").append(filter->queryDirectory());
-        msg.append(", trace=").append(filter->queryTrace() ? "true" : "false").append(")");
-        PROGLOG("%s", msg.str());
         filters.append(*filter);
+        StringBuffer msg("DaFileSrvHook: adding translateToLocal [");
+        filter->getInfo(msg);
+        msg.append("]");
+        PROGLOG("%s", msg.str());
     }
 public:
     IMPLEMENT_IINTERFACE;
@@ -128,7 +218,7 @@ public:
                 ForEachItemIn(sn, filters)
                 {
                     CDaliServixFilter &filter = filters.item(sn);
-                    if (filter.testIp(ep))
+                    if (filter.testEp(ep))
                     {
                         StringBuffer lPath;
                         filename.getLocalPath(lPath);
@@ -159,12 +249,17 @@ public:
         }
         return NULL;
     }
-    virtual void addSubnetFilter(const char *subnet, const char *mask, const char *dir, bool trace)
+    virtual void addSubnetFilter(const char *subnet, const char *mask, const char *dir, const char *sourceRange, bool trace)
     {
-        Owned<CDaliServixFilter> filter = new CDaliServixFilter(subnet, mask, dir, trace);
-        addSubnetFilter(filter.getClear());
+        Owned<CDaliServixFilter> filter = new CDaliServixSubnetFilter(subnet, mask, dir, sourceRange, trace);
+        addFilter(filter.getClear());
     }
-    virtual IPropertyTree *addSubnetFilters(IPropertyTree *config, const IpAddress *myIp)
+    virtual void addRangeFilter(const char *range, const char *dir, const char *sourceRange, bool trace)
+    {
+        Owned<CDaliServixFilter> filter = new CDaliServixRangeFilter(range, dir, sourceRange, trace);
+        addFilter(filter.getClear());
+    }
+    virtual IPropertyTree *addFilters(IPropertyTree *config, const SocketEndpoint *myEp)
     {
         if (!config)
             return NULL;
@@ -172,11 +267,11 @@ public:
         Owned<IPropertyTreeIterator> iter = config->getElements("Filter");
         ForEach(*iter)
         {
-            Owned<CDaliServixFilter> filter = new CDaliServixFilter(iter->query());
-            // Only add filters where myIP is within subnet
-            if (!myIp || filter->testIp(*myIp))
+            Owned<CDaliServixFilter> filter = createDaliServixFilter(iter->query());
+            // Only add filters where myIP matches filter criteria
+            if (!myEp || filter->applyFilter(*myEp))
             {
-                addSubnetFilter(filter.getClear());
+                addFilter(filter.getClear());
                 if (!result)
                     result.setown(createPTree());
                 result->addPropTree("Filter", LINK(&iter->query()));
@@ -184,13 +279,18 @@ public:
         }
         return result.getClear();
     }
-    virtual IPropertyTree *addMySubnetFilters(IPropertyTree *config)
+    virtual IPropertyTree *addMyFilters(IPropertyTree *config, SocketEndpoint *myEp)
     {
-        IpAddress ip;
-        GetHostIp(ip);
-        return addSubnetFilters(config, &ip);
+        if (myEp)
+            return addFilters(config, myEp);
+        else
+        {
+            SocketEndpoint ep;
+            GetHostIp(ep);
+            return addFilters(config, &ep);
+        }
     }
-    virtual void clearSubNetFilters()
+    virtual void clearFilters()
     {
         filters.kill();
     }
