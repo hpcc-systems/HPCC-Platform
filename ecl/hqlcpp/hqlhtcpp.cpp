@@ -329,8 +329,6 @@ ColumnToOffsetMap * RecordOffsetMap::queryMapping(IHqlExpression * record, unsig
         match = new ColumnToOffsetMap(record, 1, maxRecordSize, false);
         match->init(*this);
         addOwn(*match);
-        if (maxRecordSize == 0)
-            match->checkValidMaxSize();
     }
     return match;
 }
@@ -2207,7 +2205,12 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
                 size32_t minSize = getMinRecordSize(record);
                 size32_t expectedSize = getExpectedRecordSize(record);
                 StringBuffer temp;
-                temp.append(minSize).append("..").append(maxSize).append("(").append(expectedSize).append(")");
+                temp.append(minSize).append("..");
+                if (maxRecordSizeUsesDefault(record))
+                    temp.append("?");
+                else
+                    temp.append(maxSize);
+                temp.append("(").append(expectedSize).append(")");
                 addAttribute("recordSize", temp.str());
             }
             else
@@ -11362,7 +11365,7 @@ void HqlCppTranslator::generateSerializeKey(BuildCtx & nestedctx, node_operator 
             BuildCtx classctx(nestedctx);
             beginNestedClass(classctx, memberName, "ISortKeySerializer");
 
-            IHqlExpression * keyRecord = createRecordInheritMaxLength(keyFields, record);
+            IHqlExpression * keyRecord = createRecord(keyFields);
             Owned<IHqlExpression> keyDataset = createDataset(no_anon, keyRecord);
 
             DatasetReference keyActiveRef(keyDataset, no_activetable, NULL);
@@ -13581,7 +13584,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
             selects.append(*createSelectExpr(getActiveTableSelector(), LINK(field)));
         }
 
-        OwnedHqlExpr keyDataset = createDataset(no_anon, createRecordInheritMaxLength(fields, dataset));
+        OwnedHqlExpr keyDataset = createDataset(no_anon, createRecord(fields));
 
         //virtual IOutputMetaData * queryKeySize()
         buildMetaMember(instance->classctx, keyDataset, false, "queryKeySize");
@@ -17702,39 +17705,6 @@ bool HqlCppTranslator::recordContainsIfBlock(IHqlExpression * record)
 {
     return queryRecordOffsetMap(record)->queryContainsIfBlock();
 }
-
-IHqlExpression * HqlCppTranslator::createRecordInheritMaxLength(HqlExprArray & fields, IHqlExpression * donor)
-{
-    IHqlExpression * record = donor->queryRecord();
-    unsigned prevLength = fields.ordinality();
-    LinkedHqlExpr max;
-
-    if (!queryProperty(maxLengthAtom, fields))
-    {
-        max.set(donor->queryProperty(maxLengthAtom));
-        if (!max && hasMaxLength(record))
-        {
-            //maxlength inherited somewhere...
-            OwnedHqlExpr serializedDonorRecord = getSerializedForm(record, diskAtom);
-            ColumnToOffsetMap * map = queryRecordOffsetMap(serializedDonorRecord);
-            max.setown(createAttribute(maxLengthAtom, getSizetConstant(map->getMaxSize())));
-        }
-
-        if (max)
-            fields.append(*LINK(max));
-    }
-
-    OwnedHqlExpr ret = createRecord(fields);
-    fields.trunc(prevLength);
-    if (max)
-    {
-        OwnedHqlExpr serialized = getSerializedForm(ret, diskAtom);
-        if (isFixedRecordSize(serialized))
-            ret.setown(createRecord(fields));
-    }
-    return ret.getClear();
-}
-
 
 //-- Code to transform the expressions ready for generating source code.
 

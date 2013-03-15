@@ -7160,7 +7160,6 @@ static void unwindExtraFields(HqlExprArray & fields, IHqlExpression * expr)
 
 IHqlExpression * HqlGram::createRecordUnion(IHqlExpression * left, IHqlExpression * right, const attribute & errpos)
 {
-    //MORE: maxlength should be handled better - but should really be specified on the fields.
     RecordFieldDifference compare(left, *this, errpos);
     OwnedHqlExpr extra = ::createRecordExcept(right, compare);
 
@@ -7199,7 +7198,6 @@ IHqlExpression * HqlGram::createIndexFromRecord(IHqlExpression * record, IHqlExp
 void HqlGram::inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record)
 {
     IHqlExpression * maxLength = queryRecordProperty(dataset->queryRecord(), maxLengthAtom);
-//  if (maxLength && isVariableSizeRecord(record) && !queryRecordProperty(record, maxLengthAtom))
     if (maxLength && !queryRecordProperty(record, maxLengthAtom))
     {
         HqlExprArray fields;
@@ -9597,7 +9595,6 @@ IHqlExpression * HqlGram::createIffDataset(IHqlExpression * record, IHqlExpressi
 
 IHqlExpression * HqlGram::createIff(attribute & condAttr, attribute & leftAttr, attribute & rightAttr)
 {
-    //MORE: PromoteIfType should ideally add a maxlength to the type if possible.
     ITypeInfo * type = checkPromoteIfType(leftAttr, rightAttr);
     OwnedHqlExpr left = leftAttr.getExpr();
     OwnedHqlExpr right = rightAttr.getExpr();
@@ -10883,7 +10880,6 @@ IHqlExpression* HqlGram::createDefJoinTransform(IHqlExpression* left,IHqlExpress
         // create result record
         CHqlRecord * newRec = (CHqlRecord *)createRecord();
 
-        //MORE: maxlength should be handled better
         expandDefJoinAttrs(newRec, leftRecord);
         expandDefJoinAttrs(newRec, rightRecord);
         //Clone left - including ifblocks etc.

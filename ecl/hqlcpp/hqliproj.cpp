@@ -455,26 +455,6 @@ void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
     finalRecord.setown(createRecord(recordFields));
     if (canPack)
         finalRecord.setown(getPackedRecord(finalRecord));
-
-    OwnedHqlExpr serializedRecord = getSerializedForm(finalRecord, diskAtom);
-    if (maxRecordSizeUsesDefault(serializedRecord))
-    {
-        HqlExprArray recordFields;
-        unwindChildren(recordFields, finalRecord);
-        //Lost some indication of the record size->add an attribute
-        IHqlExpression * max = originalRecord->queryProperty(maxLengthAtom);
-        if (max)
-            recordFields.append(*LINK(max));
-        else
-        {
-            bool isKnownSize, useDefaultRecordSize;
-            OwnedHqlExpr oldSerializedRecord = getSerializedForm(originalRecord, diskAtom);
-            unsigned oldRecordSize = getMaxRecordSize(oldSerializedRecord, 0, isKnownSize, useDefaultRecordSize);
-            if (!useDefaultRecordSize)
-                recordFields.append(*createAttribute(maxLengthAtom, getSizetConstant(oldRecordSize)));
-        }
-        finalRecord.setown(createRecord(recordFields));
-    }
 }
 
 void UsedFieldSet::gatherExpandSelectsUsed(HqlExprArray * selfSelects, SelectUsedArray * parentSelects, IHqlExpression * selector, IHqlExpression * source)

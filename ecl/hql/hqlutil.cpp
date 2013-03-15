@@ -3179,30 +3179,6 @@ void SubStringHelper::init(IHqlExpression * _src, IHqlExpression * range)
 }
 
 
-bool hasMaxLength(IHqlExpression * record)
-{
-    ForEachChild(i, record)
-    {
-        IHqlExpression * cur = record->queryChild(i);
-        switch (cur->getOperator())
-        {
-        case no_record:
-            //inherited maxlength?
-            if (hasMaxLength(cur))
-                return true;
-            break;
-        case no_attr:
-        case no_attr_expr:
-        case no_attr_link:
-            if (cur->queryName() == maxLengthAtom)
-                return true;
-            break;
-        }
-    }
-    return false;
-}
-
-
 void unwindFields(HqlExprArray & fields, IHqlExpression * record)
 {
     ForEachChild(i, record)
@@ -4066,7 +4042,6 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
         return NULL;
     }
 
-    //more: InheritMaxlength
     OwnedHqlExpr field;
     if ((newop == no_mingroup || newop == no_maxgroup) && (arg->getOperator() == no_select))
         field.set(arg->queryChild(1));                  // inherit maxlength etc...
@@ -6136,7 +6111,6 @@ WarningProcessor::WarningProcessor()
 { 
     firstLocalOnWarning = 0; 
     activeSymbol = NULL; 
-//  addGlobalOnWarning(WRN_RECORDDEFAULTMAXLENGTH, errorAtom);
 }
 
 
