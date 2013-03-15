@@ -1913,7 +1913,7 @@ EintrRetry:
                 cpy = s;
             memcpy(outbuf+os,b,cpy);
             os += cpy;
-            left =- cpy;
+            left -= cpy;
             s -= cpy;
             b += cpy;
             if (left==0)  {
