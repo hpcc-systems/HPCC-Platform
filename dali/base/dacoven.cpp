@@ -992,7 +992,7 @@ const CDaliVersion &queryDaliServerVersion()
 }
 
 
-DALI_UID    getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
+DALI_UID getGlobalUniqueIds(unsigned num,SocketEndpoint *_foreignnode)
 {
     if (num==0)
         return 0;

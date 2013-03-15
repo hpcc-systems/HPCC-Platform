@@ -606,6 +606,7 @@ public:
     {
         return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
     }
+    virtual IEngineContext *queryEngineContext() { return NULL; }
 };
 
 //================================================================================================

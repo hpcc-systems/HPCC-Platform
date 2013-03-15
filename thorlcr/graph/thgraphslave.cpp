@@ -27,6 +27,7 @@
 #include "slwatchdog.hpp"
 #include "thgraphslave.hpp"
 #include "thcompressutil.hpp"
+#include "enginecontext.hpp"
 
 //////////////////////////////////
 
@@ -900,7 +901,7 @@ IThorResult *CSlaveGraph::getGlobalResult(CActivityBase &activity, IRowInterface
 
 ///////////////////////////
 
-class CThorCodeContextSlave : public CThorCodeContextBase
+class CThorCodeContextSlave : public CThorCodeContextBase, implements IEngineContext
 {
     mptag_t mptag;
     Owned<IDistributedFileTransaction> superfiletransaction;
@@ -992,6 +993,19 @@ public:
         job.fireException(e);
     }
     virtual unsigned __int64 getDatasetHash(const char * name, unsigned __int64 hash)   { throwUnexpected(); }      // Should only call from master
+    virtual IEngineContext *queryEngineContext() { return this; }
+// IEngineContext impl.
+    virtual DALI_UID getGlobalUniqueIds(unsigned num, SocketEndpoint *_foreignNode)
+    {
+        if (num==0)
+            return 0;
+        SocketEndpoint foreignNode;
+        if (_foreignNode && !_foreignNode->isNull())
+            foreignNode.set(*_foreignNode);
+        else
+            foreignNode.set(globals->queryProp("@DALISERVERS"));
+        return ::getGlobalUniqueIds(num, &foreignNode);
+    }
 };
 
 class CSlaveGraphTempHandler : public CGraphTempHandler
