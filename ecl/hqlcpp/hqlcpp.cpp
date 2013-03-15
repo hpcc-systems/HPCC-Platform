@@ -3157,6 +3157,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
             throwUnexpected();
         buildExpr(ctx, expr->queryChild(0), tgt);
         return;
+    case no_nothor:
     case no_nofold:
     case no_nohoist:
     case no_section:
@@ -11311,8 +11312,16 @@ static IHqlExpression *createActualFromFormal(IHqlExpression *param)
     case type_groupedtable:
         if (paramType->getSize() == UNKNOWN_LENGTH)
         {
-            appendCapital(temp.clear().append("len"), paramNameText);
-            bound.length.setown(createVariable(temp.str(), LINK(sizetType)));
+            if (hasOutOfLineModifier(paramType) || hasLinkCountedModifier(paramType))
+            {
+                appendCapital(temp.clear().append("count"), paramNameText);
+                bound.count.setown(createVariable(temp.str(), LINK(sizetType)));
+            }
+            else
+            {
+                appendCapital(temp.clear().append("len"), paramNameText);
+                bound.length.setown(createVariable(temp.str(), LINK(sizetType)));
+            }
         }
         type.setown(makeReferenceModifier(LINK(type)));
         break;
