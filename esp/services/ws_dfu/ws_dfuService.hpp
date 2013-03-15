@@ -26,8 +26,6 @@
 
 #include "ws_dfu_esp.ipp"
 
-#include "ws_dfuView.hpp"
-
 #include "fileview.hpp"
 #include "fvrelate.hpp"
 

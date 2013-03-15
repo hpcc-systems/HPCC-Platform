@@ -397,21 +397,6 @@ protected:
 
 //---------------------------------------------------------------------------
 
-class DALIFT_API CRecordSizePartitioner : public CInputBasePartitioner
-{
-public:
-    CRecordSizePartitioner(IRecordSize * _recordSize);
-
-protected:
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead);
-    virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
-
-protected:
-    IRecordSize *               recordSize;
-};
-
-//---------------------------------------------------------------------------
-
 class DALIFT_API CRemotePartitioner : public Thread, public IFormatPartitioner
 {
 public:
@@ -613,30 +598,5 @@ protected:
     UtfReader::UtfFormat utfFormat;
     MemoryBuffer transformed;
 };
-
-//---------------------------------------------------------------------------
-//Here as an example at the moment...
-
-interface IEclTransformer
-{
-public:
-    virtual IRecordSize * queryRecordSize() = 0;
-    virtual unsigned transform(void * self, const void * left) = 0; 
-};
-
-class DALIFT_API CEclTransformOutputProcessor : public COutputProcessorHook
-{
-public:
-    CEclTransformOutputProcessor(IOutputProcessor * _target, IEclTransformer * _helper);
-    ~CEclTransformOutputProcessor();
-
-    virtual void outputRecord(size32_t len, const byte * data);
-    virtual void updateOutputOffset(size32_t len, const byte * data);
-
-protected:
-    IEclTransformer *       helper;
-    byte *                  buffer;
-};
-
 
 #endif
