@@ -1163,6 +1163,7 @@ public:
     {
         return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
     }
+    virtual IEngineContext *queryEngineContext() { return NULL; }
 
     // The following from ICodeContext should never be executed in slave activity. If we are on Roxie server (or in child query on slave), they will be implemented by more derived CRoxieServerContext class
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }

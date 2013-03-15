@@ -517,7 +517,11 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         {
             return ctx->fromXml(_rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
         }
-    } graphCodeContext;
+        virtual IEngineContext *queryEngineContext()
+        {
+            return ctx->queryEngineContext();
+        }
+   } graphCodeContext;
 
 protected:
     Owned<IThorGraphResults> localResults, graphLoopResults;

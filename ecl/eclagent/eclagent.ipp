@@ -513,6 +513,7 @@ public:
     virtual bool queryWriteResultsToStdout() { return writeResultsToStdout; }
     virtual IOrderedOutputSerializer * queryOutputSerializer() { return outputSerializer; }
     virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
+    virtual IEngineContext *queryEngineContext() { return NULL; }
 
     unsigned __int64 queryStopAfter() { return stopAfter; }
 

@@ -116,6 +116,7 @@ public:
     virtual IConstWUResult *getExternalResult(const char * wuid, const char *name, unsigned sequence) { throwUnexpected(); }
     virtual IConstWUResult *getResultForGet(const char *name, unsigned sequence) { throwUnexpected(); }
     virtual const void * fromXml(IEngineRowAllocator * rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
+    virtual IEngineContext *queryEngineContext() { return NULL; }
 };
 
 #endif
