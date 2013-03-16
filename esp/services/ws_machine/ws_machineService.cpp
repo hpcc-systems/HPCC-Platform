@@ -36,6 +36,10 @@
 #define eqEclCCServer       "EclCCServerProcess"
 #endif
 
+#ifndef eqEclServer
+#define eqEclServer       "EclServerProcess"
+#endif
+
 #ifndef eqEclAgent
 #define eqEclAgent          "EclAgentProcess"
 #endif
@@ -579,6 +583,7 @@ void Cws_machineEx::readSettingsForTargetClusters(IEspContext& context, StringAr
         }
 
         Owned<IPropertyTreeIterator> eclCCServerProcesses= pCluster->getElements(eqEclCCServer);
+        Owned<IPropertyTreeIterator> eclServerProcesses= pCluster->getElements(eqEclServer);
         Owned<IPropertyTreeIterator> eclAgentProcesses= pCluster->getElements(eqEclAgent);
         Owned<IPropertyTreeIterator> eclSchedulerProcesses= pCluster->getElements(eqEclScheduler);
 
@@ -594,6 +599,10 @@ void Cws_machineEx::readSettingsForTargetClusters(IEspContext& context, StringAr
         //Read eclCCServer process
         if (eclCCServerProcesses->first())
             readTargetClusterProcesses(eclCCServerProcesses->query(), eqEclCCServer, uniqueProcesses, machineInfoData, targetClusterOut);
+
+        //Read eclServer process
+        if (eclServerProcesses->first())
+            readTargetClusterProcesses(eclServerProcesses->query(), eqEclServer, uniqueProcesses, machineInfoData, targetClusterOut);
 
         //Read eclAgent process
         if (eclAgentProcesses->first())
@@ -738,6 +747,10 @@ void Cws_machineEx::getProcesses(IConstEnvironment* constEnv, IPropertyTree* env
         StringArray processInstances, directories;
 
         IPropertyTree &process = processes->query();
+        const char* name = process.queryProp("@name");
+        if (!name || !*name || !streq(name, processName))
+            continue;
+
         const char* computerName = process.queryProp("@computer");
         if (computerName && *computerName)
             appendProcessInstance(computerName, directory, NULL, processInstances, directories);
