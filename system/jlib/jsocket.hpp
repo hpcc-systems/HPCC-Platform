@@ -26,7 +26,7 @@
 #include <time.h>
 #endif
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 #include "jexcept.hpp"
 #include "jthread.hpp"
 

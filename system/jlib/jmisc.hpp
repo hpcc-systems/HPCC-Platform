@@ -22,7 +22,6 @@
 
 #include "platform.h"
 #include <stdio.h>
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 #include "jcrc.hpp"
 #include "jlog.hpp"

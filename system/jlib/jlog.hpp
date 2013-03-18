@@ -29,7 +29,6 @@
 
 #include "stdio.h"
 #include "time.h"
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 #include "jlib.hpp"
 #include "jexcept.hpp"

@@ -20,10 +20,7 @@
 #ifndef JLIB_HPP
 #define JLIB_HPP
 
-#include "jexpdef.hpp"
-
 #define EXPLICIT_INIT
-
 
 #ifdef _MSC_VER
 //disable these throughout the system because they occur a lot
@@ -32,7 +29,6 @@
 #pragma warning(disable : 4786 ) // identifier was truncated to '255' characters in the debug information
 #pragma warning(disable : 4355 ) // 'this' : used in base member initializer list 
 #endif
-
 
 #include "modinit.h"
 #include "jiface.hpp"

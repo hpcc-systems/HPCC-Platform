@@ -23,7 +23,6 @@
 
 #include "platform.h"
 #include <string.h>
-#include "jexpdef.hpp"
 #include "jscm.hpp"
 #include "jatomic.hpp"
 

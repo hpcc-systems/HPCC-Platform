@@ -20,7 +20,6 @@
 #ifndef JOBSERVE_HPP
 #define JOBSERVE_HPP
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 
 interface IObservable;

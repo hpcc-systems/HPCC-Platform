@@ -20,7 +20,6 @@
 #define JUTIL_HPP
 
 #include "jlib.hpp"
-#include "jexpdef.hpp"
 #include "jstring.hpp"
 #include "jarray.tpp"
 #include "jbuff.hpp"

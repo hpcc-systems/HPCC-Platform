@@ -20,7 +20,6 @@
 #ifndef __JSTRING__
 #define __JSTRING__
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 #include "jio.hpp"
 #include "jstream.hpp"

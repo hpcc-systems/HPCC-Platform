@@ -99,7 +99,6 @@ set (    INCLUDES
         jerror.hpp
         jerrorrange.hpp
         jexcept.hpp
-        jexpdef.hpp
         jfile.hpp
         jfile.ipp
         jflz.hpp
