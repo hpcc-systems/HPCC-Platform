@@ -79,16 +79,18 @@ define([
                 this.stopMonitor();
                 return;
             } else {
-                if (this._timerTickCount < 5 && this._timerTickCount % 1 === 0) {
+                if (this._timerTickCount === 1) {
+                    this.refresh(true);
+                } else if (this._timerTickCount < 5 && this._timerTickCount % 1 === 0) {
                     this.refresh();
                 } else if (this._timerTickCount < 30 && this._timerTickCount % 5 === 0) {
                     this.refresh();
                 } else if (this._timerTickCount < 60 && this._timerTickCount % 10 === 0) {
                     this.refresh();
                 } else if (this._timerTickCount < 120 && this._timerTickCount % 30 === 0) {
-                    this.refresh();
+                    this.refresh(true);
                 } else if (this._timerTickCount % 60 === 0) {
-                    this.refresh();
+                    this.refresh(true);
                 }
             }
 
