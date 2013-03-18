@@ -20,7 +20,6 @@
 #ifndef JSTREAM_HPP
 #define JSTREAM_HPP
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 class StringBuffer;
 

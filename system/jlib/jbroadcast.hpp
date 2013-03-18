@@ -19,8 +19,6 @@
 #ifndef JBROADCAST_HPP
 #define JBROADCAST_HPP
 
-
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 
 enum bctag_t

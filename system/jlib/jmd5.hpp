@@ -68,7 +68,7 @@
 #ifndef md5_INCLUDED
 #  define md5_INCLUDED
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 
 /*
  * This package supports both compile-time and run-time determination of CPU

@@ -20,7 +20,6 @@
 #ifndef JBUFF_HPP
 #define JBUFF_HPP
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 #include "jmutex.hpp"
 #include "jmalloc.hpp"

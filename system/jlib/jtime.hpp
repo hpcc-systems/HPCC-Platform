@@ -19,7 +19,6 @@
 #ifndef JTIME_HPP
 #define JTIME_HPP
 
-#include "jexpdef.hpp"
 #include "jlib.hpp"
 
 #include "jiface.hpp"

@@ -23,7 +23,6 @@
 
 
 #include "platform.h"
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 
 typedef size32_t aindex_t;

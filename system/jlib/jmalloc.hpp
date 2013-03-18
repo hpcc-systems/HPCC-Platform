@@ -19,7 +19,6 @@
 #ifndef JMALLOC_HPP
 #define JMALLOC_HPP
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 
 interface IAllocator: extends IInterface

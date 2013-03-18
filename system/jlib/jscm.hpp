@@ -24,9 +24,23 @@
 #define extends      public
 
 #ifdef _MSC_VER
-#define interface    struct __declspec(novtable)
+ #define interface    struct __declspec(novtable)
+ #ifdef JLIB_EXPORTS
+  #define jlib_decl __declspec(dllexport)
+  #define jlib_thrown_decl __declspec(dllexport)
+ #else
+  #define jlib_decl __declspec(dllimport)
+  #define jlib_thrown_decl __declspec(dllimport)
+ #endif
 #else
-#define interface    struct 
+ #define interface    struct
+ #if __GNUC__ >= 4
+  #define jlib_decl  __attribute__ ((visibility("default")))
+  #define jlib_thrown_decl __attribute__ ((visibility("default")))
+ #else
+  #define jlib_decl
+  #define jlib_thrown_decl
+ #endif
 #endif
 
 interface IInterface
@@ -199,5 +213,30 @@ typedef Linked<IInterface> LinkedIInterface;
 template <class X> inline X * LINK(X * ptr)     { if (ptr) ptr->Link(); return ptr; }
 template <class X> inline X & OLINK(X & obj)        { obj.Link(); return obj; }
 template <class X> inline X * LINK(const Shared<X> &ptr) { return ptr.getLink(); }
+
+class StringBuffer;
+
+// When changing this enum, be sure to update (a) the string functions, and (b) NUM value in jlog.hpp
+
+typedef enum
+{
+    MSGAUD_unknown     = 0x00,
+    MSGAUD_operator    = 0x01,
+    MSGAUD_user        = 0x02,
+    MSGAUD_monitor     = 0x04,
+    MSGAUD_performance = 0x08,
+    MSGAUD_internal    = 0x10,
+    MSGAUD_programmer  = 0x20,
+    MSGAUD_legacy      = 0x40,
+    MSGAUD_audit       = 0x80,
+    MSGAUD_all         = 0xFF
+} MessageAudience;
+
+interface jlib_thrown_decl IException : public IInterface
+{
+    virtual int             errorCode() const = 0;
+    virtual StringBuffer &  errorMessage(StringBuffer &msg) const = 0;
+    virtual MessageAudience errorAudience() const = 0;
+};
 
 #endif

@@ -18,7 +18,7 @@
 #ifndef JUNICODE_HPP
 #define JUNICODE_HPP
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 
 class StringMatcher;
 

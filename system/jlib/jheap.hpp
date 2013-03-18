@@ -19,10 +19,7 @@
 #ifndef JHEAP_HPP
 #define JHEAP_HPP
 
-#include "jexpdef.hpp"
-
-//jlib_decl void * operator new (size32_t len);
-//jlib_decl void operator delete(void * data);
+#include "jiface.hpp"
 
 jlib_decl void * chunkedNew(size32_t len);
 jlib_decl void chunkedFree(void * data);

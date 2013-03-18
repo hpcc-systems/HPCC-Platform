@@ -22,7 +22,6 @@
 
 
 #include <assert.h>
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 #include "jsem.hpp"
 
