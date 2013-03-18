@@ -122,6 +122,12 @@ define([
             var actionEx = lang.exists("ActionEx", this) ? this.ActionEx : null;
             this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, actionEx));
         },
+        _ActionExSetter: function (ActionEx) {
+            if (this.StateID) {
+                this.ActionEx = ActionEx;
+                this.set("hasCompleted", WsWorkunits.isComplete(this.StateID, this.ActionEx));
+            }
+        },
         _VariablesSetter: function (Variables) {
             var variables = [];
             for (var i = 0; i < Variables.ECLResult.length; ++i) {
