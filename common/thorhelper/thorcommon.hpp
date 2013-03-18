@@ -25,6 +25,7 @@
 #include "thorhelper.hpp"
 #include "thorxmlwrite.hpp"
 
+#define DALI_RESULT_OUTPUTMAX 2000 // MB
 class THORHELPER_API CSizingSerializer : implements IRowSerializerTarget
 {
     size32_t totalsize;
