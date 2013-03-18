@@ -1283,6 +1283,8 @@ scopeFlag
     : EXPORT            {   $$.setInt(EXPORT_FLAG); $$.setPosition($1); }
     | SHARED            {   $$.setInt(SHARED_FLAG); $$.setPosition($1); }
     | LOCAL             {   $$.setInt(0); $$.setPosition($1); }
+    | EXPORT VIRTUAL    {   $$.setInt(EXPORT_FLAG|VIRTUAL_FLAG); $$.setPosition($1); }
+    | SHARED VIRTUAL    {   $$.setInt(SHARED_FLAG|VIRTUAL_FLAG); $$.setPosition($1); }
     ;
 
 // scopeflags needs to be explicitly included, rather than using an optScopeFlags production, otherwise you get shift reduce errors - since it is the first item on a line.
@@ -6723,6 +6725,13 @@ abstractModule
                             Owned<ITypeInfo> retType = $1.getType();
                             $$.setExpr(parser->leaveLamdaExpression($5), $7);
                         }
+    | IF '(' booleanExpr ',' abstractModule ',' abstractModule ')'
+                        {
+                            OwnedHqlExpr trueExpr = $5.getExpr();
+                            OwnedITypeInfo scopeType = trueExpr->getType();  // actually needs to be the common base class.
+                            OwnedHqlExpr module = createValue(no_if, scopeType.getClear(), $3.getExpr(), LINK(trueExpr), $7.getExpr());
+                            $$.setExpr(createDelayedScope(module.getClear()), $1);
+                        }
     ;
 
 scopeFunctionWithParameters
@@ -8662,9 +8671,6 @@ simpleDataSet
     | SORTED '(' startSortOrder dataSet ')' endSortOrder
                         {
                             OwnedHqlExpr dataset = $4.getExpr();
-                            if (!isKey(dataset))
-                                parser->reportError(ERR_EXPECTED_INDEX, $1, "SORTED(dataset) with no order, can only be used on INDEXes");
-
                             HqlExprArray args, sorted;
                             IHqlExpression * record = dataset->queryRecord();
                             unwindRecordAsSelects(sorted, record, dataset->queryNormalizedSelector());

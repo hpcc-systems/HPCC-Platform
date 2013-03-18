@@ -120,7 +120,7 @@ enum
 
 // generally applicable start from the top down
     HEFunbound                  = 0x00000010,
-    HEFinternalVirtual          = 0x00000020,
+    HEFinternalSelect          = 0x00000020,
     HEFcontainsDatasetAliasLocally= 0x00000040,
   HEF____unused2____          = 0x00000080,
   HEF____unused3____          = 0x00000100,
@@ -155,7 +155,7 @@ enum
 
 //Combinations used for processing elsewhere:
 //Don't ever inherit the following...
-    HEFalwaysInherit            = HEFunbound|HEFinternalVirtual,
+    HEFalwaysInherit            = HEFunbound|HEFinternalSelect,
     HEFassigninheritFlags       = ~(HEFhousekeeping|HEFalwaysInherit),          // An assign inherits all but this list from the rhs value 
 
 //  HEFcontextDependent         = (HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFcontainsSkip|HEFcontainsCounter|HEFtransformDependent|HEFtranslated|HEFonFailDependent|HEFcontextDependentException|HEFthrowscalar|HEFthrowds),
@@ -167,7 +167,7 @@ enum
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
                                    HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontextDependentException|HEFcontainsAlias|HEFcontainsAliasLocally|
-                                   HEFinternalVirtual|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally),
+                                   HEFinternalSelect|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally),
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
@@ -349,9 +349,9 @@ enum _node_operator {
         no_chooseds,
         no_alias,
         no_datasetfromdictionary,
-    no_unused20,
-    no_unused21,
-    no_unused22,
+        no_delayedscope,
+        no_assertconcrete,
+        no_unboundselect,
     no_unused23,
     no_unused24,
         no_dataset_from_transform,
@@ -667,7 +667,7 @@ enum _node_operator {
         no_virtualscope,
         no_concretescope,
         no_purevirtual,
-        no_internalvirtual,
+        no_internalselect,
         no_delayedselect,
         no_pure,
         no_libraryscope,
@@ -998,6 +998,7 @@ enum
     LSFignoreBase   = 0x0002,
     LSFrequired     = 0x0004,
     LSFimport       = 0x0008,
+    LSFfromderived  = 0x0010,
 };
 inline unsigned makeLookupFlags(bool sharedOK, bool ignoreBase, bool required)
 {
@@ -1018,6 +1019,7 @@ interface IHqlScope : public IInterface
     virtual const char * queryFullName() const = 0;
     virtual ISourcePath * querySourcePath() const = 0;
     virtual bool hasBaseClass(IHqlExpression * searchBase) = 0;
+    virtual bool allBasesFullyBound() const = 0;
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) = 0;
     virtual IHqlScope * queryConcreteScope() = 0;
@@ -1181,6 +1183,7 @@ interface IHqlNamedAnnotation : public IHqlAnnotation
     virtual bool isExported() const = 0;
     virtual bool isShared() const = 0;
     virtual bool isPublic() const = 0;
+    virtual bool isVirtual() const = 0;
     virtual int getStartLine() const = 0;
     virtual int getStartColumn() const = 0;
     virtual void setRepositoryFlags(unsigned _flags) = 0;  // To preserve flags like ob_locked, ob_sandbox, etc.
@@ -1337,7 +1340,7 @@ inline bool isNull(IHqlExpression * expr)       { return expr->getOperator() == 
 inline bool isNullAction(IHqlExpression * expr) { return isNull(expr) && expr->isAction(); }
 inline bool isFail(IHqlExpression * expr)       { return expr->getOperator() == no_fail; }
 
-extern HQL_API IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * moduleMarker, IHqlExpression * attr, bool ignoreBase);
+extern HQL_API IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * moduleMarker, IHqlExpression * attr, unsigned lookupFlags, HqlLookupContext & ctx);
 extern HQL_API IHqlExpression * createLibraryInstance(IHqlExpression * scopeFunction, HqlExprArray &operands);
 
 extern HQL_API IHqlExpression* createValue(node_operator op, ITypeInfo *type, HqlExprArray& operands);
@@ -1399,10 +1402,11 @@ extern HQL_API IHqlScope *createScope(node_operator op);
 extern HQL_API IHqlScope *createScope(IHqlScope * scope);
 extern HQL_API IHqlScope *createPrivateScope();
 extern HQL_API IHqlScope *createPrivateScope(IHqlScope * scope);
+extern HQL_API IHqlExpression * createDelayedScope(IHqlExpression * expr);
+extern HQL_API IHqlExpression * createDelayedScope(HqlExprArray &newkids);
 extern HQL_API IHqlRemoteScope *createRemoteScope(_ATOM name, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * _text, bool lazy, IEclSource * eclSource);
 extern HQL_API IHqlExpression * populateScopeAndClose(IHqlScope * scope, const HqlExprArray & children, const HqlExprArray & symbols);
 
-extern HQL_API IHqlScope* createContextScope();
 extern HQL_API IHqlExpression* createTemplateFunctionContext(IHqlExpression* body, IHqlScope* helperScope);
 extern HQL_API IHqlExpression* createFieldMap(IHqlExpression*, IHqlExpression*);
 extern HQL_API IHqlExpression * createNullDataset(IHqlExpression * ds);
@@ -1582,6 +1586,7 @@ extern HQL_API IHqlExpression * queryRecordProperty(IHqlExpression * record, _AT
 extern HQL_API bool isExported(IHqlExpression * expr);
 extern HQL_API bool isShared(IHqlExpression * expr);
 extern HQL_API bool isImport(IHqlExpression * expr);
+extern HQL_API bool isVirtualSymbol(IHqlExpression * expr);
 
 extern HQL_API IECLError * queryAnnotatedWarning(const IHqlExpression * expr);
 
@@ -1670,7 +1675,7 @@ inline bool isContextDependentExceptGraph(IHqlExpression * expr)
 inline bool isGraphDependent(IHqlExpression * expr)     { return (expr->getInfoFlags() & HEFgraphDependent) != 0; }
 inline bool containsTranslated(IHqlExpression * expr)   { return (expr->getInfoFlags() & (HEFtranslated)) != 0; }
 inline bool containsSideEffects(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFaction|HEFthrowscalar|HEFthrowds)) != 0; }
-inline bool containsInternalVirtual(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFinternalVirtual)) != 0; }
+inline bool containsInternalSelect(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFinternalSelect)) != 0; }
 inline bool containsThisNode(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFcontainsThisNode)) != 0; }
 
 inline bool containsWorkflow(IHqlExpression * expr)     { return (expr->getInfoFlags2() & (HEF2workflow)) != 0; }
