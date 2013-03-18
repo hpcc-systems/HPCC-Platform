@@ -2821,7 +2821,7 @@ int CActivityBase::getOptInt(const char *prop, int defVal) const
 {
     int def = queryJob().getOptInt(prop, defVal);
     VStringBuffer path("hint[@name=\"%s\"]/@value", prop);
-    return container.queryXGMML().getPropInt(path.str(), def);
+    return container.queryXGMML().getPropInt(path.toLowerCase().str(), def);
 }
 
 __int64 CActivityBase::getOptInt64(const char *prop, __int64 defVal) const
