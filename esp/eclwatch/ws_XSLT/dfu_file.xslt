@@ -271,14 +271,17 @@
                 <xsl:if test="string-length(MaxRecordSize)">
                     <tr><th>MaxRecordSize:</th><td><xsl:value-of select="MaxRecordSize"/></td></tr>
                 </xsl:if>
-                <xsl:if test="string-length(CsvSeparate)">
-                    <tr><th>CsvSeparate:</th><td><xsl:value-of select="CsvSeparate"/></td></tr>
+                <xsl:if test="string-length(Separators)">
+                    <tr><th>Separators:</th><td><xsl:value-of select="Separators"/></td></tr>
                 </xsl:if>
-                <xsl:if test="string-length(CsvQuote)">
-                    <tr><th>CsvQuote:</th><td><xsl:value-of select="CsvQuote"/></td></tr>
+                <xsl:if test="string-length(Quote)">
+                    <tr><th>Quote:</th><td><xsl:value-of select="Quote"/></td></tr>
                 </xsl:if>
-                <xsl:if test="string-length(CsvTerminate)">
-                    <tr><th>CsvTerminate:</th><td><xsl:value-of select="CsvTerminate"/></td></tr>   
+                <xsl:if test="string-length(Terminators)">
+                    <tr><th>Terminators:</th><td><xsl:value-of select="Terminators"/></td></tr>
+                </xsl:if>
+                <xsl:if test="string-length(Escape)">
+                    <tr><th>Escape:</th><td><xsl:value-of select="Escape"/></td></tr>
                 </xsl:if>
                     <xsl:if test="count(Graphs/ECLGraph)">
                         <th>Graphs:</th>
