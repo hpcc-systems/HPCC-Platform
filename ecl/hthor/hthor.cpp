@@ -5775,6 +5775,7 @@ void CHThorWorkUnitWriteActivity::execute()
     size32_t outputLimit = agent.queryWorkUnit()->getDebugValueInt("outputLimit", defaultWorkUnitWriteLimit);
     if (outputLimit>DALI_RESULT_OUTPUTMAX)
         throw MakeStringException(0, "Dali result outputs are restricted to a maximum of %d MB, the default limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, defaultWorkUnitWriteLimit);
+    assertex(outputLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
     outputLimit *= 0x100000;
     MemoryBuffer rowdata;
     __int64 rows = 0;

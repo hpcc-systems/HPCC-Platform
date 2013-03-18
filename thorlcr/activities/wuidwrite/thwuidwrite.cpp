@@ -53,6 +53,7 @@ public:
         workunitWriteLimit = getOptInt(THOROPT_OUTPUTLIMIT, DEFAULT_WUIDWRITE_LIMIT);
         if (workunitWriteLimit>DALI_RESULT_OUTPUTMAX)
             throw MakeActivityException(this, 0, "Dali result outputs are restricted to a maximum of %d MB, the default limit is %d MB. A huge dali result usually indicates the ECL needs altering.", DALI_RESULT_OUTPUTMAX, DEFAULT_WUIDWRITE_LIMIT);
+        assertex(workunitWriteLimit<=0x1000); // 32bit limit because MemoryBuffer/CMessageBuffers involved etc.
         workunitWriteLimit *= 0x100000;
 
         if (appendOutput)
