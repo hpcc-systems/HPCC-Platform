@@ -19,7 +19,7 @@
 #ifndef __JISEM__
 #define __JISEM__
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 #include "jsem.hpp"
 #include "jmutex.hpp"
 #include "jexcept.hpp"

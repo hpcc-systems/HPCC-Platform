@@ -20,7 +20,6 @@
 #ifndef __JTHREAD__
 #define __JTHREAD__
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 #include "jmutex.hpp"
 #include "jexcept.hpp"

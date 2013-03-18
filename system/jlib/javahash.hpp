@@ -20,7 +20,7 @@
 #ifndef JAVAHASH_HPP
 #define JAVAHASH_HPP
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 #include "jlib.hpp"
 #include "jobserve.hpp"
 #include "jiter.hpp"

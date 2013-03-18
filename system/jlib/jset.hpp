@@ -20,7 +20,7 @@
 #ifndef __JSET__
 #define __JSET__
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 
 
 

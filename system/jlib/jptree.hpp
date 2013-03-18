@@ -19,7 +19,6 @@
 #ifndef _PTREE_HPP
 #define _PTREE_HPP
 
-#include "jexpdef.hpp"
 #include "jlib.hpp"
 #include "jexcept.hpp"
 #include "jiter.hpp"

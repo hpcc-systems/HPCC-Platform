@@ -23,7 +23,6 @@
 //#define TRACE_HASH
 #undef expand
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 #include "jiter.hpp"
 #include "jstring.hpp"

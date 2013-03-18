@@ -20,7 +20,6 @@
 #ifndef JDEBUG_HPP
 #define JDEBUG_HPP
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 
 #define TIMING

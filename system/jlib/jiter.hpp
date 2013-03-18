@@ -20,7 +20,6 @@
 #ifndef JITER_HPP
 #define JITER_HPP
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 
 

@@ -20,7 +20,7 @@
 #ifndef __JSEM__
 #define __JSEM__
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 
 #ifdef _WIN32
 

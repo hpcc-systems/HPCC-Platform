@@ -19,7 +19,6 @@
 #ifndef JVMEM_HPP
 #define JVMEM_HPP
 
-#include "jexpdef.hpp"
 #include "jiface.hpp"
 
 interface IVMAllocator: extends IInterface

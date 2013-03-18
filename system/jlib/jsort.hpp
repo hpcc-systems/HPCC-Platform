@@ -20,7 +20,7 @@
 #ifndef JSORT_HPP
 #define JSORT_HPP
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 #include "jio.hpp"
 
 #ifndef ICOMPARE_DEFINED

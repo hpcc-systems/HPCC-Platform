@@ -22,7 +22,7 @@
 
 #include <limits.h>
 
-#include "jexpdef.hpp"
+#include "jiface.hpp"
 #include "jstring.hpp"
 
 /*********************** Regular Expression Class ***********************/
