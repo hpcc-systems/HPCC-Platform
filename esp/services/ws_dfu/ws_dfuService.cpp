@@ -1829,22 +1829,37 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     FileDetails.setPersistent(df->queryAttributes().queryProp("@persistent"));
 
    //@format - what format the file is (if not fixed with)
-    FileDetails.setFormat(df->queryAttributes().queryProp("@format"));
+    const char* format = df->queryAttributes().queryProp("@format");
+    if (format && strieq(format, "csv"))
+        FileDetails.setFormat("variable");
+    else
+        FileDetails.setFormat(format);
 
    //@maxRecordSize - what the maximum length of records is
     FileDetails.setMaxRecordSize(df->queryAttributes().queryProp("@maxRecordSize"));
 
    //@csvSeparate - separators between fields for a CSV/utf file
-    FileDetails.setCsvSeparate(df->queryAttributes().queryProp("@csvSeparate"));
+    if (version >= 1.21)
+        FileDetails.setSeparators(df->queryAttributes().queryProp("@csvSeparate"));
+    else
+        FileDetails.setCsvSeparate(df->queryAttributes().queryProp("@csvSeparate"));
 
    //@csvQuote - character used to quote fields for a csv/utf file.
-    FileDetails.setCsvQuote(df->queryAttributes().queryProp("@csvQuote"));
+    if (version >= 1.21)
+        FileDetails.setQuote(df->queryAttributes().queryProp("@csvQuote"));
+    else
+        FileDetails.setCsvQuote(df->queryAttributes().queryProp("@csvQuote"));
 
    //@csvTerminate - characters used to terminate a record in a csv.utf file
-    FileDetails.setCsvTerminate(df->queryAttributes().queryProp("@csvTerminate"));
+    if (version >= 1.21)
+        FileDetails.setTerminators(df->queryAttributes().queryProp("@csvTerminate"));
+    else
+        FileDetails.setCsvTerminate(df->queryAttributes().queryProp("@csvTerminate"));
 
    //@csvEscape - character used to define escape for a csv/utf file.
-    if (version > 1.19)
+    if (version >= 1.21)
+        FileDetails.setEscape(df->queryAttributes().queryProp("@csvEscape"));
+    else if (version >= 1.20)
         FileDetails.setCsvEscape(df->queryAttributes().queryProp("@csvEscape"));
 
   
