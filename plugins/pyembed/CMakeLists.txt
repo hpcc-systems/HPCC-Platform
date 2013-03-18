@@ -27,44 +27,44 @@ set ( debug_python Off )   # A lot slower but can assist in debugging...
 
 project( pyembed )
 
-find_package(PythonLibs)
-if ("${PYTHON_INCLUDE_DIR}" STREQUAL "")
-  message(FATAL_ERROR "MAKE_PYEMBED requested but python libraries not found")
+ADD_PLUGIN(pyembed PACKAGES PythonLibs OPTION MAKE_PYEMBED)
+
+if ( MAKE_PYEMBED )
+
+  set (    SRCS
+           pyembed.cpp
+      )
+
+  include_directories (
+           "${PYTHON_INCLUDE_DIR}"
+           ./../../system/include
+           ./../../rtl/eclrtl
+           ./../../rtl/include
+           ./../../common/deftype
+           ./../../system/jlib
+      )
+
+  ADD_DEFINITIONS( -D_USRDLL -DPYEMBED_EXPORTS )
+  if (debug_python)
+    ADD_DEFINITIONS(-DPy_DEBUG)
+  endif()
+
+  HPCC_ADD_LIBRARY( pyembed SHARED ${SRCS} )
+  if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
+    message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
+  else()
+    set_target_properties( pyembed PROPERTIES NO_SONAME 1 )
+  endif()
+
+  install ( TARGETS pyembed DESTINATION plugins )
+  if (debug_python)
+    target_link_libraries ( pyembed ${PYTHON_DEBUG_LIBRARY} )
+  else()
+    target_link_libraries ( pyembed ${PYTHON_LIBRARY} )
+  endif()
+
+  target_link_libraries ( pyembed
+      eclrtl
+      jlib
+      )
 endif()
-
-set (    SRCS
-         pyembed.cpp
-    )
-
-include_directories (
-         "${PYTHON_INCLUDE_DIR}"
-         ./../../system/include
-         ./../../rtl/eclrtl
-         ./../../rtl/include
-         ./../../common/deftype
-         ./../../system/jlib
-    )
-
-ADD_DEFINITIONS( -D_USRDLL -DPYEMBED_EXPORTS )
-if (debug_python)
-  ADD_DEFINITIONS(-DPy_DEBUG)
-endif()
-
-HPCC_ADD_LIBRARY( pyembed SHARED ${SRCS} )
-if (${CMAKE_VERSION} VERSION_LESS "2.8.9")
-  message("WARNING: Cannot set NO_SONAME. shlibdeps will give warnings when package is installed")
-else()
-  set_target_properties( pyembed PROPERTIES NO_SONAME 1 )
-endif()
-
-install ( TARGETS pyembed DESTINATION plugins )
-if (debug_python)
-  target_link_libraries ( pyembed ${PYTHON_DEBUG_LIBRARY} )
-else()
-  target_link_libraries ( pyembed ${PYTHON_LIBRARY} )
-endif()
-
-target_link_libraries ( pyembed
-    eclrtl
-    jlib
-    )
