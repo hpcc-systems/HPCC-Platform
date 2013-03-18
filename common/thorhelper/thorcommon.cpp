@@ -870,17 +870,6 @@ extern bool isActivitySink(ThorActivityKind kind)
     return false;
 }
 
-//------------------------------------------------------------------------------------------------
-
-byte * CStaticRowBuilder::ensureCapacity(size32_t required, const char * fieldName)
-{
-    if (required <= maxLength)
-        return static_cast<byte *>(self);
-    rtlReportFieldOverflow(required, maxLength, fieldName);
-    return NULL;
-}
-
-
 //=====================================================================================================
 
 

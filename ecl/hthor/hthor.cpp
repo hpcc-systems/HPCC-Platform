@@ -1046,8 +1046,8 @@ void CHThorIndexWriteActivity::execute()
         buildUserMetadata(metadata);
         buildLayoutMetadata(metadata);
         unsigned nodeSize = metadata ? metadata->getPropInt("_nodeSize", NODESIZE) : NODESIZE;
-        unsigned rawSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
-        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, rawSize, fileSize, nodeSize, helper.getKeyedSize(), 0);
+        size32_t keyMaxSize = helper.queryDiskRecordSize()->getRecordSize(NULL);
+        Owned<IKeyBuilder> builder = createKeyBuilder(out, flags, keyMaxSize, fileSize, nodeSize, helper.getKeyedSize(), 0);
         class BcWrapper : implements IBlobCreator
         {
             IKeyBuilder *builder;

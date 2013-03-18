@@ -570,7 +570,7 @@ IDataVal & CXmlToRawTransformer::transform(IDataVal & result, size32_t len, cons
 
 IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree &root, bool isDataSet)
 {
-    unsigned maxRecordSize = rowTransformer->queryRecordSize()->getRecordSize(NULL);
+    unsigned minRecordSize = rowTransformer->queryRecordSize()->getMinRecordSize();
     Owned <XmlColumnProvider> columns;
     Owned<IPropertyTreeIterator> rows;
     StringBuffer decodedXML;
@@ -618,12 +618,11 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
         ForEach(*rows)
         {
             columns->setRow(&rows->query());
-            void * self = raw.reserve(maxRecordSize);
             NullDiskCallback dummyCallback;
-            RtlStaticRowBuilder rowBuilder(self, maxRecordSize);    //GH MORE: Is this really correct? What about link counted rows?
+            MemoryBufferBuilder rowBuilder(raw, minRecordSize);
             size32_t thisSize = rowTransformer->transform(rowBuilder, columns, &dummyCallback);
             curLength += thisSize;
-            raw.setLength(curLength);
+            rowBuilder.finishRow(thisSize);
         }
         rows.setown(root.getElements("Item"));
     }
@@ -633,12 +632,11 @@ IDataVal & CXmlToRawTransformer::transformTree(IDataVal & result, IPropertyTree 
         ForEach(*rows)
         {
             columns->setRow(&rows->query());
-            void * self = raw.reserve(maxRecordSize);
             NullDiskCallback dummyCallback;
-            RtlStaticRowBuilder rowBuilder(self, maxRecordSize);    //GH MORE: Is this really correct? What about link counted rows?
+            MemoryBufferBuilder rowBuilder(raw, minRecordSize);
             size32_t thisSize = rowTransformer->transform(rowBuilder, columns, &dummyCallback);
             curLength += thisSize;
-            raw.setLength(curLength);
+            rowBuilder.finishRow(thisSize);
         }
     }
     result.setLen(raw.toByteArray(), curLength);
@@ -674,7 +672,7 @@ IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, cons
 
     csvSplitter.init(rowTransformer->getMaxColumns(), rowTransformer->queryCsvParameters(), NULL, NULL, NULL, NULL);
 
-    unsigned maxRecordSize = rowTransformer->queryRecordSize()->getRecordSize(NULL);
+    size32_t minRecordSize = rowTransformer->queryRecordSize()->getMinRecordSize();
     const byte *finger = (const byte *) text;
     MemoryBuffer raw;
     size32_t curLength = 0;
@@ -683,11 +681,11 @@ IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, cons
         unsigned thisLineLength = csvSplitter.splitLine(len, finger);
         finger += thisLineLength;
         len -= thisLineLength;
-        void * self = raw.reserve(maxRecordSize);
-        RtlStaticRowBuilder rowBuilder(self, maxRecordSize);    //GH MORE: Is this really correct? What about link counted rows?
+
+        MemoryBufferBuilder rowBuilder(raw, minRecordSize);
         unsigned thisSize = rowTransformer->transform(rowBuilder, csvSplitter.queryLengths(), (const char * *)csvSplitter.queryData(), 0);
         curLength += thisSize;
-        raw.setLength(curLength);
+        rowBuilder.finishRow(thisSize);
     }
     result.setLen(raw.toByteArray(), curLength);
     return result;
@@ -708,31 +706,6 @@ extern thorhelper_decl ICsvToRawTransformer * createCsvRawTransformer(ICsvToRowT
         return new CCsvToRawTransformer(*csvTransformer);
     return NULL;
 }
-
-#if 0
-// WIP
-IDataVal & CCsvToRawTransformer::transform(IDataVal & result, size32_t len, const void * text, bool isDataset)
-{
-    if (!isDataset)
-        UNIMPLEMENTED;
-    unsigned maxRecordSize = rowTransformer->queryRecordSize()->getRecordSize(NULL);
-    const byte *finger = (const byte *) text;
-    MemoryBuffer raw;
-    size32_t curLength = 0;
-    loop
-    {
-        unsigned thisLineLength = csvSplitter.splitLine(len, finger);
-        finger += thisLineLength;
-        void * self = raw.reserve(maxRecordSize);
-        unsigned thisSize = rowTransformer->transform(self, &csvSplitter, 0);
-        curLength += thisSize;
-        raw.setLength(curLength);
-    }
-    result.setLen(raw.toByteArray(), curLength);
-    return result;
-}
-
-#endif
 
 bool isContentXPath(const char *xpath, StringBuffer &head)
 {
