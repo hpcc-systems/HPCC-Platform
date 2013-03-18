@@ -115,21 +115,50 @@ private:
 
 //------------------------------------------------------------------------------------------------
 
-class THORHELPER_API CStaticRowBuilder : extends RtlRowBuilderBase
+class THORHELPER_API MemoryBufferBuilder : public RtlRowBuilderBase
 {
 public:
-    inline CStaticRowBuilder(const CachedOutputMetaData & _meta, void * _self)
-    { 
-        self = static_cast<byte *>(_self);
-        maxLength = _meta.getInitialSize();
+    MemoryBufferBuilder(MemoryBuffer & _buffer, unsigned _minSize)
+        : buffer(_buffer), minSize(_minSize)
+    {
+        reserved = 0;
     }
 
-    virtual byte * ensureCapacity(size32_t required, const char * fieldName);
+    virtual byte * ensureCapacity(size32_t required, const char * fieldName)
+    {
+        if (required > reserved)
+        {
+            void * next = buffer.reserve(required-reserved);
+            self = (byte *)next - reserved;
+            reserved = required;
+        }
+        return self;
+    }
+
+    void finishRow(size32_t length)
+    {
+        assertex(length <= reserved);
+        size32_t newLength = (buffer.length() - reserved) + length;
+        buffer.setLength(newLength);
+        self = NULL;
+        reserved = 0;
+    }
 
 protected:
-    size32_t maxLength;
+    virtual byte * createSelf()
+    {
+        return ensureCapacity(minSize, NULL);
+    }
+
+protected:
+    MemoryBuffer & buffer;
+    size32_t minSize;
+    size32_t reserved;
 };
 
+
+
+//------------------------------------------------------------------------------------------------
 
 //This class is only ever used to apply a delta to a self pointer, it is never finalized
 class THORHELPER_API CPrefixedRowBuilder : implements RtlRowBuilderBase
