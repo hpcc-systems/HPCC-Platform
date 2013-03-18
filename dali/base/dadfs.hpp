@@ -631,9 +631,6 @@ enum DistributedFileSystemError
 };
 
 
-// creation routines
-inline IDistributedFile *createDistributedFile(const char *logicalname,IUserDescriptor *user,bool writeaccess,IDistributedFileTransaction *transaction) { return queryDistributedFileDirectory().lookup(logicalname,user,writeaccess,transaction); }
-
 // utility routines (used by xref and dfu)
 extern da_decl RemoteFilename &constructPartFilename(IGroup *grp,unsigned partno,unsigned partmax,const char *name,const char *partmask,const char *partdir,unsigned copy,ClusterPartDiskMapSpec &mspec,RemoteFilename &rfn);
 // legacy version
