@@ -105,7 +105,7 @@ public:
             const char *arg = iter.query();
             if (*arg!='-')
             {
-                optQuerySet.set(arg);
+                optTargetCluster.set(arg);
                 continue;
             }
             if (iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED)||iter.matchOption(optTargetCluster, ECLOPT_CLUSTER_DEPRECATED_S))
@@ -230,7 +230,7 @@ public:
     {
         ActiveQueryMap queryMap(qs);
         if (qs.getQuerySetName())
-            fprintf(stdout, "\nQuerySet: %s\n", qs.getQuerySetName());
+            fprintf(stdout, "\nTarget: %s\n", qs.getQuerySetName());
         fputs("\n", stdout);
         fputs("                                   Time   Warn        Memory\n", stdout);
         fputs("Flags Query Id                     Limit  Limit  Pri  Limit      Comment\n", stdout);
@@ -250,7 +250,7 @@ public:
             client->setUsernameToken(optUsername.get(), optPassword.sget(), NULL);
 
         Owned<IClientWUMultiQuerySetDetailsRequest> req = client->createWUMultiQuerysetDetailsRequest();
-        req->setQuerySetName(optQuerySet.get());
+        req->setQuerySetName(optTargetCluster.get());
         req->setClusterName(optTargetCluster.get());
         req->setFilterType("All");
 
@@ -269,15 +269,14 @@ public:
     {
         fputs("\nUsage:\n"
             "\n"
-            "The 'queries list' command displays a list of the queries in one or more\n"
-            "querysets. If a cluster is provided the querysets associated with that\n"
-            "cluster will be shown. If no queryset or cluster is specified all querysets\n"
+            "The 'queries list' command displays a list of the queries published to one\n"
+            "or more target clusters. If a target is provided the querysets associated with\n"
+            "that cluster will be shown. If no queryset or cluster is specified all targets\n"
             "are shown.\n"
             "\n"
-            "ecl queries list [<queryset>][--target=<val>][--show=<flags>]\n\n"
+            "ecl queries list [<target>][--show=<flags>]\n\n"
             " Options:\n"
-            "   <queryset>             name of queryset to get list of queries for\n"
-            "   -t, --target=<val>     target cluster to get list of published queries for\n"
+            "   <target>               name of target cluster to get list of queries for\n"
             "   --show=<flags>         show only queries with matching flags\n"
             "   --inactive             show only queries that do not have an active alias\n"
             " Flags:\n"
@@ -291,7 +290,6 @@ public:
     }
 private:
     StringAttr optTargetCluster;
-    StringAttr optQuerySet;
     unsigned flags;
     bool optInactive;
 };
@@ -319,8 +317,8 @@ public:
             {
                 if (optSourceQueryPath.isEmpty())
                     optSourceQueryPath.set(arg);
-                else if (optTargetQuerySet.isEmpty())
-                    optTargetQuerySet.set(arg);
+                else if (optTargetCluster.isEmpty())
+                    optTargetCluster.set(arg);
                 else
                 {
                     fprintf(stderr, "\nunrecognized argument %s\n", arg);
@@ -361,14 +359,9 @@ public:
     {
         if (!EclCmdCommon::finalizeOptions(globals))
             return false;
-        if (optSourceQueryPath.isEmpty() || optTargetQuerySet.isEmpty())
+        if (optSourceQueryPath.isEmpty() && optTargetCluster.isEmpty())
         {
             fputs("source and target must both be specified.\n\n", stderr);
-            return false;
-        }
-        if (optSourceQueryPath.get()[0]=='/' && optSourceQueryPath.get()[1]=='/' && optTargetCluster.isEmpty())
-        {
-            fputs("cluster must be specified for remote copies.\n\n", stderr);
             return false;
         }
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
@@ -395,7 +388,7 @@ public:
 
         Owned<IClientWUQuerySetCopyQueryRequest> req = client->createWUQuerysetCopyQueryRequest();
         req->setSource(optSourceQueryPath.get());
-        req->setTarget(optTargetQuerySet.get());
+        req->setTarget(optTargetCluster.get());
         req->setCluster(optTargetCluster.get());
         req->setDaliServer(optDaliIP.get());
         req->setActivate(optActivate);
@@ -432,17 +425,16 @@ public:
             "which begins with '//' followed by the IP and Port of the source EclWatch\n"
             "and then followed by the source queryset and query.\n"
             "\n"
-            "ecl queries copy <source_query_path> <target_queryset> [--activate]\n"
+            "ecl queries copy <source_query_path> <target> [--activate]\n"
             "\n"
-            "ecl queries copy //IP:Port/queryset/query <target_queryset> [--activate]\n"
-            "ecl queries copy queryset/query <target_queryset> [--activate]\n"
+            "ecl queries copy //IP:Port/queryset/query <target> [--activate]\n"
+            "ecl queries copy queryset/query <target> [--activate]\n"
             "\n"
             " Options:\n"
             "   <source_query_path>    path of query to copy\n"
             "                          in the form: //ip:port/queryset/query\n"
             "                          or: queryset/query\n"
-            "   <target_queryset>      name of queryset to copy the query into\n"
-            "   -t, --target=<val>     Local target cluster to associate with remote workunit\n"
+            "   <target>               name of target cluster to copy the query to\n"
             "   --no-files             Do not copy files referenced by query\n"
             "   --daliip=<ip>          For file copying if remote version < 3.8\n"
             "   -A, --activate         Activate the new query\n"
