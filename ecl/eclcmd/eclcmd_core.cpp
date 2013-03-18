@@ -201,7 +201,7 @@ bool doDeploy(EclCmdWithEclTarget &cmd, IClientWsWorkunits *client, const char *
         if (cmd.optVerbose)
             fprintf(stdout, "Deployed\n   wuid: ");
         const char *state = resp->getWorkunit().getState();
-        bool isCompiled = strieq(state, "compiled");
+        bool isCompiled = (strieq(state, "compiled")||strieq(state, "completed"));
         if (displayWuid || cmd.optVerbose || !isCompiled)
             fprintf(stdout, "%s\n", w);
         if (cmd.optVerbose || !isCompiled)
