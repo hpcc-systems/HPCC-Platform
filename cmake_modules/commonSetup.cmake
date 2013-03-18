@@ -72,6 +72,12 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   option(USE_RESOURCE "Use resource download in ECLWatch" OFF)
   option(GENERATE_COVERAGE_INFO "Generate coverage info for gcov" OFF)
 
+  option(USE_PYTHON "Enable Python support" ON)
+  option(USE_V8 "Enable V8 JavaScript support" ON)
+  option(USE_JNI "Enable Java JNI support" ON)
+  option(USE_RINSIDE "Enable R support support" ON)
+
+  option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
   if ( USE_XALAN AND USE_LIBXSLT )
       set(USE_XALAN OFF)
@@ -283,7 +289,9 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
       foreach (dep ${pLOG_MDEPS})
         MESSAGE("---- WARNING -- Missing dependency: ${dep}")
       endforeach()
-
+      if (NOT USE_OPTIONAL)
+        message(FATAL_ERROR "Optional dependencies missing and USE_OPTIONAL not set")
+      endif()
     endif()
   endmacro()
 
@@ -313,7 +321,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
         set(${PLUGIN_MDEPS} ${${PLUGIN_MDEPS}} ${package})
       endif()
     ENDFOREACH()
-    option(${PLUGIN_OPTION} "Turn on Plugins that depend on python existing" ${PLUGIN_FOUND})
+    option(${PLUGIN_OPTION} "Turn on optional plugin based on availability of dependencies" ${PLUGIN_FOUND})
     LOG_PLUGIN(${PLUGIN_NAME} OPTION ${PLUGIN_OPTION} MDEPS ${${PLUGIN_MDEPS}})
     if(${PLUGIN_FOUND})
       set(bPLUGINS ${bPLUGINS} ${PLUGIN_NAME})
@@ -342,6 +350,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
   ENDIF ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 
   ###########################################################################
+
+  if (USE_OPTIONAL)
+    message ("-- USE_OPTIONAL set - missing dependencies for optional features will automatically disable them")
+  endif()
 
   if (NOT "${EXTERNALS_DIRECTORY}" STREQUAL "")
     message ("-- Using externals directory at ${EXTERNALS_DIRECTORY}")
