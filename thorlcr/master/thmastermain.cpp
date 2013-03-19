@@ -297,7 +297,7 @@ public:
                     if (TE_FailedToRegisterSlave == e->errorCode())
                     {
                         setExitCode(0); // to avoid thor auto-recycling
-                        return 0;
+                        return false;
                     }
                 }
                 registerNode(sender);
