@@ -133,14 +133,16 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         const char *_masterBuildTag = globals->queryProp("@masterBuildTag");
         const char *masterBuildTag = _masterBuildTag?_masterBuildTag:"no build tag";
         PROGLOG("Master build: %s", masterBuildTag);
-#ifndef _DEBUG
         if (!_masterBuildTag || 0 != strcmp(BUILD_TAG, _masterBuildTag))
         {
             StringBuffer errStr("Thor master/slave build mismatch, master = ");
-            replyError(errStr.append(masterBuildTag).append(", slave = ").append(BUILD_TAG).str());
+            errStr.append(masterBuildTag).append(", slave = ").append(BUILD_TAG);
+            ERRLOG("%s", errStr.str());
+#ifndef _DEBUG
+            replyError(errStr.str());
             return false;
-        }
 #endif
+        }
         msg.read((unsigned &)masterSlaveMpTag);
         msg.clear();
         msg.setReplyTag(MPTAG_THORREGISTRATION);
