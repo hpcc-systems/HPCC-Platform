@@ -942,6 +942,13 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
         refreshConfirm = false;
     }
 
+    var regEx = new RegExp('/\""<>[]', 'g');
+
+    if (attrName == 'name' && newValue.search(regEx) == -1)
+    {
+      alert("Invalid character in Component Name.");
+      return false;
+    }
     var xmlArgs = argsToXml(category, params, attrName, oldValue, newValue, recordIndex + 1, record.getData(column.key + '_onChange'));
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/SaveSetting', {
       success: function(o) {
