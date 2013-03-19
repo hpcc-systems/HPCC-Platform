@@ -401,6 +401,8 @@ public:
     virtual int sendException(IEspHttpException* e);
 
     void setTimeOut(unsigned int timeout);
+    void setETageCacheControl(const char *etag, const char *contenttype);
+    void setHTTPContent(bool modified, const char *lastModified, const char *etag, const char *contenttype, MemoryBuffer &content);
 };
 
 inline bool canRedirect(CHttpRequest &req)
