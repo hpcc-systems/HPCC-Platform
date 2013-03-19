@@ -2261,9 +2261,9 @@ StringBuffer & fillConfigurationDirectoryEntry(const char *dir,const char *name,
     return dirout;
 }
 
-IPropertyTree *getHPCCenvironment(const char *confloc)
+IPropertyTree *getHPCCEnvironment(const char *configFileName)
 {
-    StringBuffer configFileSpec(confloc);
+    StringBuffer configFileSpec(configFileName);
     if (!configFileSpec.length())
 #ifdef _WIN32 
         return NULL;
@@ -2271,16 +2271,20 @@ IPropertyTree *getHPCCenvironment(const char *confloc)
         configFileSpec.set(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
 #endif  
     Owned<IProperties> props = createProperties(configFileSpec.str());
-    if (props) {
+    if (props)
+    {
         StringBuffer envfile;
-        if (props->getProp("environment",envfile)&&envfile.length()) {
-            if (!isAbsolutePath(envfile.str())) {
+        if (props->getProp("environment",envfile)&&envfile.length())
+        {
+            if (!isAbsolutePath(envfile.str()))
+            {
                 StringBuffer tail(envfile);
                 splitDirTail(configFileSpec.str(),envfile.clear());
                 addPathSepChar(envfile).append(tail);
             }
             Owned<IFile> file = createIFile(envfile.str());
-            if (file) {
+            if (file)
+            {
                 Owned<IFileIO> fileio = file->open(IFOread);
                 if (fileio)
                     return createPTree(*fileio);
@@ -2292,7 +2296,7 @@ IPropertyTree *getHPCCenvironment(const char *confloc)
 
 static IPropertyTree *getOSSdirTree()
 {
-    Owned<IPropertyTree> envtree = getHPCCenvironment();
+    Owned<IPropertyTree> envtree = getHPCCEnvironment();
     if (envtree) {
         IPropertyTree *ret = envtree->queryPropTree("Software/Directories");
         if (ret) 
