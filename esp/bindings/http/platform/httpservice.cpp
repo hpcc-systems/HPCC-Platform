@@ -864,7 +864,7 @@ int CEspHttpServer::onGetFile(CHttpRequest* request, CHttpResponse* response, co
         filepath.append(path);
         if (httpContentFromFile(filepath.str(), mimetype, content, modified, lastModified, etag))
         {
-            response->setHTTPContent(modified, lastModified.str(), etag.str(), mimetype.str(), content);
+            response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), mimetype.str(), content);
         }
         else
         {
@@ -886,10 +886,11 @@ int CEspHttpServer::onGetXslt(CHttpRequest* request, CHttpResponse* response, co
         request->getHeader("If-None-Match", etag);
         request->getHeader("If-Modified-Since", lastModified);
 
-        StringBuffer filepath;
-        if (httpContentFromFile(filepath.append(getCFD()).append("smc_xslt/").append(path).str(), mimetype, content, modified, lastModified.clear(), etag) || httpContentFromFile(filepath.clear().append(getCFD()).append("xslt/").append(path).str(), mimetype, content, modified, lastModified.clear(), etag))
+        VStringBuffer filepath("%ssmc_xslt/%s", getCFD(), path);
+        if (httpContentFromFile(filepath.str(), mimetype, content, modified, lastModified.clear(), etag) ||
+            httpContentFromFile(filepath.clear().append(getCFD()).append("xslt/").append(path).str(), mimetype, content, modified, lastModified.clear(), etag))
         {
-            response->setHTTPContent(modified, lastModified.str(), etag.str(), mimetype.str(), content);
+            response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), mimetype.str(), content);
         }
         else
         {
@@ -967,7 +968,7 @@ int CEspHttpServer::onGet()
         m_request->getHeader("If-Modified-Since", lastModified);
         httpContentFromFile("esp.xml", mimetype, content, modified, lastModified, etag);
         m_response->setVersion(HTTP_VERSION);
-        m_response->setHTTPContent(modified, lastModified.str(), etag.str(), HTTP_TYPE_APPLICATION_XML_UTF8, content);
+        m_response->CheckModifiedHTTPContent(modified, lastModified.str(), etag.str(), HTTP_TYPE_APPLICATION_XML_UTF8, content);
         m_response->send();
     }
     else

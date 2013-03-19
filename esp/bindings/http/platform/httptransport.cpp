@@ -53,7 +53,7 @@ bool httpContentFromFile(const char *filepath, StringBuffer &mimetype, MemoryBuf
         {
             CDateTime createTime, accessedTime, modifiedTime;
             file->getTime( &createTime,  &modifiedTime, &accessedTime);
-            if ((lastModified.length() < 1) || (etag.length() > 0))
+            if (etag.length() || !lastModified.length())
             {
                 StringBuffer etagSource, etagForThisFile;
                 modifiedTime.getString(lastModified.clear());
@@ -2269,7 +2269,7 @@ bool CHttpResponse::httpContentFromFile(const char *filepath)
     return ok;
 }
 
-void CHttpResponse::setETageCacheControl(const char *etag, const char *contenttype)
+void CHttpResponse::setETagCacheControl(const char *etag, const char *contenttype)
 {
     if (etag && *etag)
         addHeader("Etag",  etag);
@@ -2284,18 +2284,18 @@ void CHttpResponse::setETageCacheControl(const char *etag, const char *contentty
         addHeader("Cache-control",  "max-age=300");
 }
 
-void CHttpResponse::setHTTPContent(bool modified, const char *lastmodified, const char *etag, const char *contenttype, MemoryBuffer &content)
+void CHttpResponse::CheckModifiedHTTPContent(bool modified, const char *lastmodified, const char *etag, const char *contenttype, MemoryBuffer &content)
 {
     if (!modified)
     {
         if (etag && *etag)
-            setETageCacheControl(etag, contenttype);
+            setETagCacheControl(etag, contenttype);
         setStatus(HTTP_STATUS_NOT_MODIFIED);
     }
     else
     {
         addHeader("Last-Modified", lastmodified);
-        setETageCacheControl(etag, contenttype);
+        setETagCacheControl(etag, contenttype);
         setContent(content.length(), content.toByteArray());
         setContentType(contenttype);
         setStatus(HTTP_STATUS_OK);
