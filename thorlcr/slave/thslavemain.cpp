@@ -307,12 +307,13 @@ int main( int argc, char *argv[]  )
         markNodeCentral(masterEp);
         if (RegisterSelf(masterEp))
         {
+            MilliSleep(20000);
             if (globals->getPropBool("Debug/@slaveDaliClient"))
                 enableThorSlaveAsDaliClient();
 
             IDaFileSrvHook *daFileSrvHook = queryDaFileSrvHook();
             if (daFileSrvHook) // probably always installed
-                daFileSrvHook->addSubnetFilters(globals->queryPropTree("NAS"), NULL);
+                daFileSrvHook->addFilters(globals->queryPropTree("NAS"), &slfEp);
 
             StringBuffer thorPath;
             globals->getProp("@thorPath", thorPath);

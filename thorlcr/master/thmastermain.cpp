@@ -609,9 +609,10 @@ int main( int argc, char *argv[]  )
 
         if (globals->getPropBool("@useNASTranslation", true))
         {
-            Owned<IPropertyTree> filteredNasConfig = envGetInstallNASHooks();
-            if (filteredNasConfig)
-                globals->setPropTree("NAS", filteredNasConfig.getClear()); // for use by slaves
+            Owned<IPropertyTree> nasConfig = envGetNASConfiguration();
+            if (nasConfig)
+                globals->setPropTree("NAS", nasConfig.getClear()); // for use by slaves
+            Owned<IPropertyTree> masterNasFilters = envGetInstallNASHooks(nasConfig, &thorEp);
         }
         
         HardwareInfo hdwInfo;
