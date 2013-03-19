@@ -1062,6 +1062,9 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
         result->setQueryId(id);
         try
         {
+            IPropertyTree *query = queryset->queryPropTree(xpath);
+            if (!query)
+                throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), id);
             switch (req.getAction())
             {
                 case CQuerySetQueryActionTypes_ToggleSuspend:
@@ -1074,13 +1077,8 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
                     setQuerySuspendedState(queryset, id, false, NULL);
                     break;
                 case CQuerySetQueryActionTypes_Activate:
-                {
-                    IPropertyTree *query = queryset->queryPropTree(xpath);
-                    if (!query)
-                        throw MakeStringException(ECLWATCH_QUERYID_NOT_FOUND, "Query %s/%s not found.", req.getQuerySetName(), id);
                     setQueryAlias(queryset, query->queryProp("@name"), id);
                     break;
-                }
                 case CQuerySetQueryActionTypes_Delete:
                     removeNamedQuery(queryset, id);
                     break;
@@ -1089,9 +1087,7 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
                     break;
             }
             result->setSuccess(true);
-            IPropertyTree *query = queryset->queryPropTree(xpath);
-            if (query)
-                result->setSuspended(query->getPropBool("@suspended"));
+            result->setSuspended(query->getPropBool("@suspended"));
         }
         catch(IException *e)
         {

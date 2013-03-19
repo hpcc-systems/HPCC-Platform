@@ -256,6 +256,7 @@ protected:
     IHqlExpression * optimizeTransfer(HqlExprArray & fields, HqlExprArray & values, IHqlExpression * expr, IHqlExpression * leftSelector);
     void optimizeExtractJoinFields();
     void optimizeTransfer(SharedHqlExpr & targetDataset, SharedHqlExpr & targetTransform, SharedHqlExpr & keyedFilter, OwnedHqlExpr * extraFilter);
+    IHqlExpression * querySimplifiedKey(IHqlExpression * expr);
     void splitFilter(IHqlExpression * filter, SharedHqlExpr & keyTarget);
 
 protected:
@@ -312,9 +313,15 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
     }
     else
     {
-        hasComplexIndex = true;
         originalKey.set(right);
-        key.setown(createKeyFromComplexKey(right));
+        //We could call key.set(querySimplifiedKey(right)) to succeed in some cases instead of generating an error.
+        if (translator.getTargetClusterType() == RoxieCluster)
+        {
+            hasComplexIndex = true;
+            key.setown(createKeyFromComplexKey(right));
+        }
+        else
+            translator.throwError1(HQLERR_KeyedJoinNoRightIndex_X, getOpString(right->getOperator()));
     }
 
     if (!originalKey)
@@ -336,6 +343,31 @@ KeyedJoinInfo::~KeyedJoinInfo()
     delete monitors;
 }
 
+
+IHqlExpression * KeyedJoinInfo::querySimplifiedKey(IHqlExpression * expr)
+{
+    loop
+    {
+        switch (expr->getOperator())
+        {
+        case no_sorted:
+        case no_distributed:
+        case no_sort:
+        case no_distribute:
+        case no_preservemeta:
+        case no_assertsorted:
+        case no_assertgrouped:
+        case no_assertdistributed:
+        case no_nofold:
+            break;
+        case no_newkeyindex:
+            return LINK(expr);
+        default:
+            return NULL;
+        }
+        expr = expr->queryChild(0);
+    }
+}
 
 IHqlExpression * KeyedJoinInfo::createKeyFromComplexKey(IHqlExpression * expr)
 {

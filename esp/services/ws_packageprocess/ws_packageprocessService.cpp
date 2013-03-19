@@ -233,8 +233,8 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
                             fileNames.append(subid);
                     }
                 }
-                mapTree->addPropTree("Package", LINK(&item));
             }
+            mapTree->addPropTree("Package", LINK(&item));
         }
         else
         {

@@ -29,6 +29,7 @@
   <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
   <emphasis>,replicate</emphasis> <emphasis role="bold">] [</emphasis>
   <emphasis>, compress </emphasis> <emphasis role="bold">])</emphasis>
+  <emphasis>, sourceCsvEscape </emphasis> <emphasis role="bold">])</emphasis>
   <emphasis></emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
@@ -56,6 +57,7 @@
   <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
   <emphasis>,replicate</emphasis> <emphasis role="bold">] [</emphasis>
   <emphasis>, compress </emphasis> <emphasis role="bold">]);</emphasis></para>
+  <emphasis>, sourceCsvEscape </emphasis> <emphasis role="bold">]);</emphasis></para>
 
   <informaltable colsep="0" frame="none" rowsep="0">
     <tgroup cols="2">
@@ -166,6 +168,13 @@
 
           <entry>Optional. A boolean TRUE or FALSE flag indicating whether to
           compress the new file. If omitted, the default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>sourceCsvEscape</emphasis></entry>
+
+          <entry>Optional. A null-terminated string containing the CSV escape
+          characters. If omitted, the default is none.</entry>
         </row>
 
         <row>

@@ -56,12 +56,12 @@ function print_usage {
 
 function print_components {
     if [ ! -z ${compList} ];then
-        echo >&2 "Components on this node as defined by ${CONFIG_DIR}/${ENV_CONF_FILE}:"
+        echo >&2 "Components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}:"
         IFS=$'\n'
         echo >&2 "${compList[*]}"
         unset IFS
     else
-        echo >&2 "No components on this node as defined by ${CONFIG_DIR}/${ENV_CONF_FILE}."
+        echo >&2 "No components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}."
     fi
     echo >&2
     exit 0
@@ -69,12 +69,12 @@ function print_components {
 
 function print_types {
     if [ ! -z ${compList} ];then
-        echo >&2 "Components types on this node as defined by ${CONFIG_DIR}/${ENV_CONF_FILE}:"
+        echo >&2 "Components types on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}:"
         IFS=$'\n'
         echo >&2 "${compTypeList[*]}"
         unset IFS
     else
-        echo >&2 "No components on this node as defined by ${CONFIG_DIR}/${ENV_CONF_FILE}."
+        echo >&2 "No components on this node as defined by ${CONFIG_DIR}/${ENV_XML_FILE}."
     fi
     echo >&2
     exit 0
@@ -242,6 +242,10 @@ while true ; do
 done
 for arg do arg=$arg; done
 
+if [ -z $arg ] || [ $# -ne 1 ]; then
+    print_usage
+fi
+
 if [ -z ${component} ]; then
     for (( i=0; i<=${compListLen}; i++ ));do
         component="$component ${compList[$i]}"
@@ -251,10 +255,6 @@ elif strstr ${component} "dafilesrv";then
     component=''
 else
     compDafilesrv=''
-fi
-
-if [ -z $arg ]; then
-    print_usage
 fi
 
 case "$arg" in 
