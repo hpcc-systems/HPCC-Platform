@@ -113,13 +113,13 @@ function DisplaySelectedProperties(items) {
     var propsText = '';
     for (var i = 0; i < items.length; ++i) {
         var props = pluginLHS().getProperties(items[i]);
-        propsText += '<table border="1">';
+        propsText += '<table border="1" style="margin:5px;">';
         propsText += '<tr><td colspan="2" align="center">';
         propsText += '<input type="button" style="cursor:hand;" onclick="javascript:centerOn(' + items[i] + ')" value="' + props['id'] + '" />'
         propsText += '</td></tr>';
         for (var key in props) {
             propsText += '<tr>';
-            propsText += '<td>' + key + '</td><td>' + props[key] + '</td>';
+            propsText += '<td style="padding:5px;">' + key + '</td><td style="padding:5px;">' + props[key] + '</td>';
             propsText += '</tr>';
         }
         propsText += '</table>';
@@ -609,7 +609,7 @@ function loadXGMMLGraph(xgmmlResponse) {
         if (gt != null) {
             clearTimeout(gt);
         }
-        gt = setTimeout("reloadGraph()", 15000);
+        gt = setTimeout("reloadGraph()", 8000);
     }
 
     update_details();
@@ -1034,7 +1034,7 @@ function sendWuInfoRequest() {
                 }
             }
             else {
-                gt = setTimeout("reloadGraph()", 15000);
+                gt = setTimeout("reloadGraph()", 8000);
                 hideElement('loadingMsg');
             }
         },
