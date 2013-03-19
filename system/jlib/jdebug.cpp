@@ -862,7 +862,7 @@ memsize_t getMapInfo(const char *type)
         if (strstr(ln, typeStr.str()))
         {
             unsigned __int64 addrLow, addrHigh;
-            if (2 == sscanf(ln, "%16Lx-%16Lx", &addrLow, &addrHigh))
+            if (2 == sscanf(ln, "%16"I64F"x-%16"I64F"x", &addrLow, &addrHigh))
             {
                 ret = (memsize_t)(addrHigh-addrLow);
                 break;

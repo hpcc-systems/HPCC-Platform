@@ -53,8 +53,7 @@ void HRPCtrace(const char *fmt, ...)
 
 
 #else 
-#define HRPCtrace if (0) (void)
-
+inline void HRPCtrace(const char *, ...) {}
 #endif
 
 

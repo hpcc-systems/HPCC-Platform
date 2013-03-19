@@ -1697,7 +1697,6 @@ static void buffer_destroy(void * buf)
 static void buffer_key_alloc()
 {
     pthread_key_create(&buffer_key, buffer_destroy);
-    DBGLOG("buffer_key=%d", buffer_key);
 }
 
 // Allocate the thread-specific buffer

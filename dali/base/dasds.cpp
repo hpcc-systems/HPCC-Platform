@@ -8482,6 +8482,12 @@ unsigned querySDSLockTimeoutCount()
     return SDSLockTimeoutCount;
 }
 
+ISDSException *MakeSDSException(int errorCode)
+{
+    ISDSException *ret = new CSDSException(errorCode);
+    return ret;
+}
+
 ISDSException *MakeSDSException(int errorCode, const char *errorMsg, ...)
 {
     if(errorCode == SDSExcpt_LockTimeout)

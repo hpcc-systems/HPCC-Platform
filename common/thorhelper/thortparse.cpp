@@ -22,11 +22,6 @@
 
 //#define TRACING
 
-#ifndef TRACING
-#undef LOG
-#define LOG (void)
-#endif
-
 //---------------------------------------------------------------------------
 void doUnwindRelease(GrammarSymbol * symbol, CIArrayOf<GrammarSymbol> & pending)
 {
@@ -578,7 +573,9 @@ bool LRActiveState::mergePackedNode(unsigned stateId, StackElement * next, bool 
                     if (curSymbol->canMerge(nextSymbol))
                     {
                         cur->shifted.setown(curSymbol->createMerged(nextSymbol));
+#ifdef TRACING
                         LOG(MCdebugProgress, unknownJob, "Nodes Merged: %p = %p, %p", cur->shifted.get(), curSymbol, nextSymbol);
+#endif
                         return true;
                     }
                 }
@@ -851,7 +848,9 @@ void LRParser::doShifts(LRActiveState * active, GrammarSymbol * next)
         state_id nextState = curState.getShift(nextid);
         if (nextState != NO_STATE)
         {
+#ifdef TRACING
             LOG(MCdebugProgress, unknownJob, "Shift to state %d", nextState);
+#endif
             activeOutput->addElementOwn(createState(&cur, nextState, next), chooseBest);
         }
         if (curState.canAccept(nextid))
@@ -860,7 +859,9 @@ void LRParser::doShifts(LRActiveState * active, GrammarSymbol * next)
             {
                 GrammarSymbol * sym = accept->shifted;
                 accepted.append(*LINK(sym));
+#ifdef TRACING
                 LOG(MCdebugProgress, unknownJob, "Accepted %p[%p]", accept, sym);
+#endif
             }
         }
     }

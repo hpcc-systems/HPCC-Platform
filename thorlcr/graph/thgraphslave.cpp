@@ -531,7 +531,7 @@ void CSlaveGraph::executeSubGraph(size32_t parentExtractSz, const byte *parentEx
     }
     catch (IException *e)
     {
-        GraphPrintLog(e, NULL);
+        GraphPrintLog(e, "In executeSubGraph");
         exception.setown(e);
     }
     if (TAG_NULL != executeReplyTag)
@@ -647,7 +647,7 @@ void CSlaveGraph::done()
     }
     catch (IException *e)
     {
-        GraphPrintLog(e, NULL);
+        GraphPrintLog(e, "In CSlaveGraph::done");
         exception.setown(e);
     }
     if (exception.get())
@@ -1204,7 +1204,7 @@ bool ensurePrimary(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIFil
     }
     catch (IException *e)
     {
-        ActPrintLog(&activity->queryContainer(), e, NULL);
+        ActPrintLog(&activity->queryContainer(), e, "In ensurePrimary");
         e->Release();
     }
     unsigned l;

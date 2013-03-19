@@ -1270,7 +1270,7 @@ public:
             exception->errorMessage(errStr);
             errStr.append(")");
             IException *e2 = MakeActivityException(this, TE_TooMuchData, "%s", errStr.str());
-            ActPrintLog(e2, NULL);
+            ActPrintLog(e2);
             throw e2;
         }
     }

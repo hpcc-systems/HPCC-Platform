@@ -10593,7 +10593,7 @@ IHqlExpression * HqlTreeNormalizer::transformMap(IHqlExpression * expr)
 {
     unsigned max = numRealChildren(expr);
     OwnedHqlExpr elseExpr = transform(expr->queryChild(max-1));
-    for (unsigned idx = max-1; idx-- != 0; idx)
+    for (unsigned idx = max-1; idx-- != 0; )
     {
         IHqlExpression * cur = expr->queryChild(idx);
         elseExpr.setown(createIf(transform(cur->queryChild(0)), transform(cur->queryChild(1)), elseExpr.getClear()));
