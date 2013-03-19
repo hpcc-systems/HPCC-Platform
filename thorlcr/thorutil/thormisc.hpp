@@ -345,8 +345,7 @@ inline void ActPrintLog(const CGraphElementBase *container, IException *e, const
 }
 inline void ActPrintLog(const CGraphElementBase *container, IException *e)
 {
-    va_list args;
-    ActPrintLogArgs(container, e, thorlog_null, MCexception(e, MSGCLS_error), NULL, args);
+    ActPrintLogEx(container, e, thorlog_null, MCexception(e, MSGCLS_error), "%s", "");
 }
 extern graph_decl void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args);
 extern graph_decl void GraphPrintLogArgs(CGraphBase *graph, IException *e, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args);

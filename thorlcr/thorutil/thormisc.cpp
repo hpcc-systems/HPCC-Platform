@@ -161,8 +161,7 @@ void ActPrintLog(const CActivityBase *activity, IException *e, const char *forma
 
 void ActPrintLog(const CActivityBase *activity, IException *e)
 {
-    va_list args;
-    ActPrintLogArgs(&activity->queryContainer(), e, thorlog_null, MCexception(e, MSGCLS_error), NULL, args);
+    ActPrintLog(activity, e, "%s", "");
 }
 
 void GraphPrintLogArgsPrep(StringBuffer &res, CGraphBase *graph, const ActLogEnum flags, const LogMsgCategory &logCat, const char *format, va_list args)
@@ -401,9 +400,7 @@ IThorException *MakeActivityException(CActivityBase *activity, IException *e, co
 
 IThorException *MakeActivityException(CActivityBase *activity, IException *e)
 {
-    va_list args;
-    IThorException *e2 = _MakeActivityException(activity->queryContainer(), e, NULL, args);
-    return e2;
+    return MakeActivityException(activity, e, "%s", "");
 }
 
 IThorException *MakeActivityWarning(CActivityBase *activity, int code, const char *format, ...)
@@ -448,9 +445,7 @@ IThorException *MakeActivityException(CGraphElementBase *container, IException *
 
 IThorException *MakeActivityException(CGraphElementBase *container, IException *e)
 {
-    va_list args;
-    IThorException *e2 = _MakeActivityException(*container, e, NULL, args);
-    return e2;
+    return MakeActivityException(container, e, "%s", "");
 }
 
 IThorException *MakeActivityWarning(CGraphElementBase *container, int code, const char *format, ...)

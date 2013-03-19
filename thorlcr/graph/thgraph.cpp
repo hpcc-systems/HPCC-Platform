@@ -448,8 +448,7 @@ void CGraphElementBase::ActPrintLog(IException *e, const char *format, ...)
 
 void CGraphElementBase::ActPrintLog(IException *e)
 {
-    va_list args;
-    ::ActPrintLogArgs(this, e, thorlog_all, MCexception(e), NULL, args);
+    ActPrintLog(e, "%s", "");
 }
 
 void CGraphElementBase::abort(IException *e)
@@ -1662,8 +1661,7 @@ void CGraphBase::GraphPrintLog(IException *e, const char *format, ...)
 
 void CGraphBase::GraphPrintLog(IException *e)
 {
-    va_list args;
-    ::GraphPrintLogArgs(this, e, thorlog_null, MCdebugProgress, NULL, args);
+    GraphPrintLog(e, "%s", "");
 }
 
 void CGraphBase::setLogging(bool tf)
@@ -2751,8 +2749,7 @@ void CActivityBase::ActPrintLog(IException *e, const char *format, ...)
 
 void CActivityBase::ActPrintLog(IException *e)
 {
-    va_list args;
-    ::ActPrintLogArgs(&queryContainer(), e, thorlog_all, MCexception(e), NULL, args);
+    ActPrintLog(e, "%s", "");
 }
 
 bool CActivityBase::fireException(IException *e)
