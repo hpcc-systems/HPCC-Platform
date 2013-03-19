@@ -332,24 +332,33 @@ function createTable(rows, tabDivName, index, compName) {
       var columnFields = new Array();
       var subTables = new Array();
 
-      if (typeof (rows) !== 'undefined' && rows.length > 0) {
-        for (var i in rows[0]) {
-          var lbl = i;
-          if (rows[0][i + "_caption"])
-            lbl = rows[0][i + "_caption"];
-          //if((i.indexOf('_extra') === -1) && (i.indexOf('_ctrlType') === -1) && (i.indexOf('params') === -1) && (i.indexOf('compType') === -1))
-          if ((i.indexOf('_') === -1) && (i.indexOf('params') === -1) && (i.indexOf('compType') === -1)) {
-            if (typeof (colIndex) !== 'undefined' && colIndex[i + tabDivName])
-              myColumnDefs[colIndex[i + tabDivName]] = { key: i, label: lbl, minWidth: 200, /*maxAutoWidth:auto,*/scrollable: true, resizeable: true, formatter: formatterDispatcher, editor: new YAHOO.widget.BaseCellEditor() };
-            else
-              myColumnDefs[colIndex1++] = { key: i, label: lbl, minWidth: 200, /*maxAutoWidth:auto,*/scrollable: true, resizeable: true, formatter: formatterDispatcher, editor: new YAHOO.widget.BaseCellEditor() };
+      if (typeof(rows) !== 'undefined' && rows.length > 0)
+      {
+        var topRow = rows[0];
+        for (var columnName in topRow)  // all rows should have the same columns as the top row
+        {
+          var columnLabel = topRow[columnName + "_caption"] ? topRow[columnName + "_caption"] : columnName;
+
+          if (columnName.indexOf('_') === - 1 && (columnName.indexOf('params') === -1) && (columnName.indexOf('compType') === -1))
+          {
+            myColumnDefs[colIndex1] = { key: columnName, label: columnLabel, minWidth: 200, scrollable: true, resizeable: true, formatter: formatterDispatcher, editor: new YAHOO.widget.BaseCellEditor() };
+
+            if (columnLabel == 'name')
+            {
+              var temp = myColumnDefs[0];
+              myColumnDefs[0] = myColumnDefs[colIndex1];
+              myColumnDefs[colIndex1] = temp;
+            }
+            colIndex1++;
           }
-          else if ((i.indexOf('_') === 0) && YAHOO.lang.isArray(rows[0][i]))
-            subTables[subTables.length] = createSubTable(rows[0][i], tabDivName, 0, i);
-          columnFields[colIndex2++] = i;
+          else if ((columnName.indexOf('_') === 0) && YAHOO.lang.isArray(topRow[columnName]))
+             subTables[subTables.length] = createSubTable(topRow[columnName], tabDivName, 0, columnName);
+
+          columnFields[colIndex2++] = columnName;
         }
       }
-      //Add missing columns or columns for tables with no rows
+
+     //Add missing columns or columns for tables with no rows
       if (typeof (tabCols) !== 'undefined' && YAHOO.lang.isArray(tabCols) && typeof (tabCols[tabDivName]) !== 'undefined' && tabCols[tabDivName].length > 0) {
         for (var colHdrIndex = 0; colHdrIndex < tabCols[tabDivName].length; colHdrIndex++) {
           if (typeof (tabCols[tabDivName][colHdrIndex]) !== 'undefined') {

@@ -495,7 +495,8 @@ IPropertyTree* CWizardInputs::createEnvironment()
   pCompTree->setProp(xpath.str(), "linuxmachine"); 
   xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_OPSYS);    
   pCompTree->setProp(xpath.str(), "linux"); 
-
+  xpath.clear().append(XML_TAG_COMPUTERTYPE).append("/").append(XML_ATTR_NICSPEED);
+  pCompTree->setProp(xpath.str(), "1000");
   unsigned x;
   IpAddress ipaddr;
 
