@@ -291,7 +291,15 @@ public:
                 StringBuffer str;
                 PROGLOG("Registration confirmation from %s", queryClusterGroup().queryNode(sender).endpoint().getUrlStr(str).str());
                 if (msg.length())
-                    throw deserializeException(msg);
+                {
+                    Owned<IException> e = deserializeException(msg);
+                    EXCLOG(e, "Registration error");
+                    if (TE_FailedToRegisterSlave == e->errorCode())
+                    {
+                        setExitCode(0); // to avoid thor auto-recycling
+                        return 0;
+                    }
+                }
                 registerNode(sender);
             }
             PROGLOG("Slaves initialized");

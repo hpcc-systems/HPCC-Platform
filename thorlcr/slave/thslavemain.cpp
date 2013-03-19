@@ -76,13 +76,13 @@ void mergeCmdParams(IPropertyTree *props)
         loadCmdProp(props, *cmdArgs++);
 }
 
-static void replyError(const char *errorMsg)
+static void replyError(unsigned errorCode, const char *errorMsg)
 {
     SocketEndpoint myEp = queryMyNode()->endpoint();
     StringBuffer str("Node '");
     myEp.getUrlStr(str);
     str.append("' exception: ").append(errorMsg);
-    Owned<IException> e = MakeStringException(0, "%s", str.str());
+    Owned<IException> e = MakeStringException(errorCode, "%s", str.str());
     CMessageBuffer msg;
     serializeException(e, msg);
     queryClusterComm().send(msg, 0, MPTAG_THORREGISTRATION);
@@ -107,7 +107,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         msg.read(vminor);
         if (vmajor != THOR_VERSION_MAJOR || vminor != THOR_VERSION_MINOR)
         {
-            replyError("Thor master/slave version mismatch");
+            replyError(TE_FailedToRegisterSlave, "Thor master/slave version mismatch");
             return false;
         }
         Owned<IGroup> group = deserializeIGroup(msg);
@@ -117,13 +117,13 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
         rank_t groupPos = group->rank(queryMyNode());
         if (RANK_NULL == groupPos)
         {
-            replyError("Node not part of thorgroup");
+            replyError(TE_FailedToRegisterSlave, "Node not part of thorgroup");
             return false;
         }
         if (globals->hasProp("@SLAVENUM") && (mySlaveNum != (unsigned)groupPos))
         {
             VStringBuffer errStr("Slave group rank[%d] does not match provided cmd line slaveNum[%d]", mySlaveNum, (unsigned)groupPos);
-            replyError(errStr.str());
+            replyError(TE_FailedToRegisterSlave, errStr.str());
             return false;
         }
         globals->Release();
@@ -139,7 +139,7 @@ static bool RegisterSelf(SocketEndpoint &masterEp)
             errStr.append(masterBuildTag).append(", slave = ").append(BUILD_TAG);
             ERRLOG("%s", errStr.str());
 #ifndef _DEBUG
-            replyError(errStr.str());
+            replyError(TE_FailedToRegisterSlave, errStr.str());
             return false;
 #endif
         }
