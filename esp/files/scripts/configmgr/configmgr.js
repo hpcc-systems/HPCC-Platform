@@ -852,9 +852,9 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
     var compName = top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('Name');
     var bldSet = top.document.navDT.getRecord(top.document.navDT.getSelectedRows()[0]).getData('BuildSet');
 
-    if (compName === "Hardware" && attrName === "netAddress") {
+    if (compName === "Hardware" && (attrName === "netAddress" || attrName === "mask" || attrName === "subnet")) {
       var errMsg = "";
-      errMsg = isValidIPAddress(newValue, "netAddress", true, false);
+      errMsg = isValidIPAddress(newValue, attrName, true, false);
 
       if (errMsg.length > 0) {
         alert(errMsg);
@@ -3232,6 +3232,8 @@ function onMenuItemClickHandleComputerItemsCopy(p_sType, p_aArgs, p_oValue)
     label = "Domain"
   else if (label === "Computers")
     label = "Computer"
+  else if (label === "NAS")
+    label = "NAS"
 
   var dt = top.document.RightTabView.getTab(top.document.RightTabView.get('activeIndex')).dt;
 
@@ -3431,7 +3433,7 @@ var oTarget = this.contextEventTarget, aMenuItems, aClasses;
 
     if (!aMenuItems) {
       if (isPresentInArr(menuEnabled, compTabToNode[parentName])) {
-        if (compTabToNode[parentName] === "Domain" || compTabToNode[parentName] === "Switch" || compTabToNode[parentName] === "ComputerType")
+        if (compTabToNode[parentName] === "Domain" || compTabToNode[parentName] === "Switch" || compTabToNode[parentName] === "ComputerType" || compTabToNode[parentName] === "NAS")
           parentName = "Hardware";
         else
           parentName = "GenericAddDelete";
