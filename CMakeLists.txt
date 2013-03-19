@@ -12,7 +12,7 @@
 #    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #    See the License for the specific language governing permissions and
 #    limitations under the License.
-################################################################################    
+################################################################################
 
 #
 #########################################################
@@ -25,7 +25,7 @@
 #   1. Check out sources (for example, to directory ~/hpcc)
 #   2. Create a build directory - either as a child of hpcc or elsewhere
 #   3. cd to the build directory
-#   4a.To create makefiles to build native release version for local machine, run 
+#   4a.To create makefiles to build native release version for local machine, run
 #       cmake ~/hpcc
 #   4b.To create makefiles to build native debug version, run
 #       cmake -DCMAKE_BUILD_TYPE=Debug ~/hpcc
@@ -39,7 +39,7 @@
 #   1. Check out sources (for example, to directory c:\hpcc)
 #   2. Create a build directory - either as a child of hpcc or elsewhere
 #   3. cd to the build directory
-#   4. To create a Visual Studio project, run 
+#   4. To create a Visual Studio project, run
 #       cmake c:\hpcc -G "Visual Studio 9 2008"
 #      The sln file hpccsystems-platform.sln will be created in the current directory, and will support debug and release targets
 #   5. To build the project, load the solution into the visual studio IDE and build in the usual way.
@@ -258,7 +258,7 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
         elseif ( "${packageManagement}" STREQUAL "RPM" )
             set ( CPACK_GENERATOR "${packageManagement}" )
             ###
-            ## CPack instruction required for RPM 
+            ## CPack instruction required for RPM
             ###
             message("-- Will build RPM package")
             message ("-- Packing BASH installation files")
@@ -291,7 +291,7 @@ else ( PLATFORM )
     endif()
     set ( CPACK_MONOLITHIC_INSTALL TRUE )
     set ( CPACK_PACKAGE_VENDOR "HPCC Systems" )
-    file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt" 
+    file(WRITE "${PROJECT_BINARY_DIR}/welcome.txt"
         "HPCC Systems - Client Tools\r"
         "===========================\r\r"
         "This installer will install the HPCC Systems Client Tools.")
