@@ -2046,7 +2046,7 @@ FILESERVICES_API void  FILESERVICES_CALL fsMoveExternalFile(ICodeContext * ctx,c
     torfn.setPath(ep,topath);
     Owned<IFile> fileto = createIFile(torfn);
     if (fileto->exists())
-        throw MakeStringException(-1,"fsMoveExternalFile: Destination %s already exists",frompath);
+        throw MakeStringException(-1,"fsMoveExternalFile: Destination %s already exists", topath);
     fileto.clear();
     Owned<IFile> file = createIFile(fromrfn);
     file->move(topath);
