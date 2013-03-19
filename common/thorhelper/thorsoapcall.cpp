@@ -910,8 +910,9 @@ public:
                 return row;
             // should only be here if setDone() triggered
             complete = true;
-            if (error.get())
-                throw error.getLink();
+            Owned<IException> e = getError();
+            if (e)
+                throw e.getClear();
             break;
         }
         return NULL;
@@ -975,9 +976,13 @@ protected:
     }
     void setDone()
     {
-        SpinBlock sb(outputQLock);
-        done++;
-        if (done == numRowThreads)
+        bool doStop;
+        {
+            SpinBlock sb(outputQLock);
+            done++;
+            doStop = (done == numRowThreads);
+        }
+        if (doStop)
             outputQ.stop();
     }
     void setErrorOwn(IException * e)
