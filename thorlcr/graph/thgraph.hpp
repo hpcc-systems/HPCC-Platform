@@ -289,6 +289,7 @@ public:
     IThorGraphDependencyIterator *getDependsIterator() const;
     void ActPrintLog(const char *format, ...)  __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
+    void ActPrintLog(IException *e);
     void setBoundGraph(IThorBoundLoopGraph *graph) { loopGraph.set(graph); }
     IThorBoundLoopGraph *queryLoopGraph() { return loopGraph; }
     bool executeDependencies(size32_t parentExtractSz, const byte *parentExtract, int controlId, bool async);
@@ -606,6 +607,7 @@ public:
     IThorActivityIterator *getTraverseIterator(bool all=false); // all traverses and includes conditionals, others traverses connected nodes only
     void GraphPrintLog(const char *msg, ...) __attribute__((format(printf, 2, 3)));
     void GraphPrintLog(IException *e, const char *msg, ...) __attribute__((format(printf, 3, 4)));
+    void GraphPrintLog(IException *e);
     void createFromXGMML(IPropertyTree *node, CGraphBase *owner, CGraphBase *parent, CGraphBase *resultsGraph);
     const bool &queryAborted() const { return aborted; }
     CJobBase &queryJob() const { return job; }
@@ -991,6 +993,7 @@ public:
 
     void ActPrintLog(const char *format, ...) __attribute__((format(printf, 2, 3)));
     void ActPrintLog(IException *e, const char *format, ...) __attribute__((format(printf, 3, 4)));
+    void ActPrintLog(IException *e);
 
 // IExceptionHandler
     bool fireException(IException *e);

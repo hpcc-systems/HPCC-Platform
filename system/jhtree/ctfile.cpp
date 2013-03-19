@@ -130,7 +130,7 @@ void CKeyHdr::load(KeyHdr &_hdr)
     SwapBigEndian(hdr);
 
     if (0xffff != hdr.version && KEYBUILD_VERSION < hdr.version)
-        throw MakeKeyException(KeyExcpt_IncompatVersion, "This build is compatible with key versions <= %hu. Key is version %hu", KEYBUILD_VERSION, hdr.version);
+        throw MakeKeyException(KeyExcpt_IncompatVersion, "This build is compatible with key versions <= %u. Key is version %u", KEYBUILD_VERSION, (unsigned) hdr.version);
 }
 
 void CKeyHdr::write(IWriteSeq *out, CRC32 *crc)

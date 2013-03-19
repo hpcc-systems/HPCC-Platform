@@ -378,6 +378,9 @@ class CSDSException : public CInterface, implements ISDSException
 public:
     IMPLEMENT_IINTERFACE;
 
+    CSDSException(int _errCode) : errCode(_errCode)
+    {
+    }
     CSDSException(int _errCode, const char *_errMsg, va_list &args) : errCode(_errCode)
     {
         if (_errMsg)
@@ -465,7 +468,8 @@ private:
     StringBuffer errMsg;
 };
 
-ISDSException *MakeSDSException(int errorCode, const char *errorMsg = NULL, ...) __attribute__((format(printf, 2, 3)));
+ISDSException *MakeSDSException(int errorCode, const char *errorMsg, ...) __attribute__((format(printf, 2, 3)));
+ISDSException *MakeSDSException(int errorCode);
 
 inline void throwMbException(const char *errorMsg, MemoryBuffer &mb)
 {

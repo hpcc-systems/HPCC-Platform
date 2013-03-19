@@ -34,6 +34,7 @@ class SecHandler : public CInterface
 private:
     bool authorizeTrial(ISecUser& user,const char* pszFeatureUrl, SecAccessFlags & required_access);
     void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...) __attribute__((format(printf, 5, 6)));
+    void AuditMessage(AuditType type, const char *filterType, const char *title);
 
 public:
     IMPLEMENT_IINTERFACE;

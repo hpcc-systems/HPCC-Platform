@@ -89,7 +89,7 @@ public:
             catch (IException *e)
             {
                 eos = true;
-                ActPrintLog(e, NULL);
+                ActPrintLog(e);
                 e->Release();
                 helper->onExceptionCaught();
             }
@@ -122,7 +122,7 @@ public:
             catch (IException *e)
             {
                 eos = true;
-                ActPrintLog(e, NULL);
+                ActPrintLog(e);
                 e->Release();
                 helper->onExceptionCaught();
             }

@@ -380,13 +380,13 @@ void CMasterActivity::main()
         else
             e2.setown(MakeActivityException(this, e, "Master exception"));
         e->Release();
-        ActPrintLog(e2, NULL);
+        ActPrintLog(e2, "In CMasterActivity::main");
         fireException(e2);
     }
     catch (CATCHALL)
     {
         Owned<IException> e = MakeThorFatal(NULL, TE_MasterProcessError, "FATAL: Unknown master process exception kind=%s, id=%"ACTPF"d", activityKindStr(container.getKind()), container.queryId());
-        ActPrintLog(e, NULL);
+        ActPrintLog(e, "In CMasterActivity::main");
         fireException(e);
     }
 }
@@ -2245,7 +2245,7 @@ void CMasterGraph::sendActivityInitData()
             }
             catch (IException *e)
             {
-                GraphPrintLog(e, NULL);
+                GraphPrintLog(e);
                 throw;
             }
             if (!job.queryJobComm().send(msg, w+1, mpTag, LONGTIMEOUT))
@@ -2613,7 +2613,11 @@ bool CMasterGraph::deserializeStats(unsigned node, MemoryBuffer &mb)
                     activity = (CMasterActivity *)element->queryActivity();
                     created = true; // means some activities created within this graph
                 }
-                catch (IException *_e) { e.setown(_e); GraphPrintLog(_e, NULL); }
+                catch (IException *_e)
+                {
+                    e.setown(_e);
+                    GraphPrintLog(_e, "In deserializeStats");
+                }
                 if (!activity || e.get())
                 {
                     GraphPrintLog("Activity id=%"ACTPF"d failed to created child query activity ready for progress", activityId);

@@ -422,7 +422,8 @@ SysAtomTable * sysAtomTable;
 
 _ATOM createSystemAtom(const char * s) { return sysAtomTable->create(s); }
 
-#define MAKESYSATOM(x)  static_cast<SysAtom *>(_##x##_Atom = createSystemAtom("$_" #x "_"))
+#define MAKESYSATOM(x)  _##x##_Atom = createSystemAtom("$_" #x "_")
+#define MAKESYSATOMX(x)  static_cast<SysAtom *>(_##x##_Atom = createSystemAtom("$_" #x "_"))
 
 MODULE_INIT(INIT_PRIORITY_HQLATOM)
 {
@@ -448,13 +449,13 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(assertConst);
     MAKEATOM(at);
     MAKEATOM(atmost);
-    MAKESYSATOM(attrAligned)->setAttrId(EAaligned);
-    MAKESYSATOM(attrLocationIndependent)->setAttrId(EAlocationIndependent);
-    MAKESYSATOM(attrRecordCount)->setAttrId(EArecordCount);
-    MAKESYSATOM(attrDiskSerializedForm)->setAttrId(EAdiskserializedForm);
-    MAKESYSATOM(attrInternalSerializedForm)->setAttrId(EAinternalserializedForm);
-    MAKESYSATOM(attrSize)->setAttrId(EAsize);
-    MAKESYSATOM(attrUnadorned)->setAttrId(EAunadorned);
+    MAKESYSATOMX(attrAligned)->setAttrId(EAaligned);
+    MAKESYSATOMX(attrLocationIndependent)->setAttrId(EAlocationIndependent);
+    MAKESYSATOMX(attrRecordCount)->setAttrId(EArecordCount);
+    MAKESYSATOMX(attrDiskSerializedForm)->setAttrId(EAdiskserializedForm);
+    MAKESYSATOMX(attrInternalSerializedForm)->setAttrId(EAinternalserializedForm);
+    MAKESYSATOMX(attrSize)->setAttrId(EAsize);
+    MAKESYSATOMX(attrUnadorned)->setAttrId(EAunadorned);
     MAKEATOM(ave);
     MAKEATOM(backup);
     MAKEATOM(bcd);

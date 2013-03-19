@@ -373,6 +373,7 @@ public:
     }
 
     void AuditMessage(AuditType type, const char *filterType, const char *title, const char *parms, ...);
+    void AuditMessage(AuditType type, const char *filterType, const char *title);
 
     IProperties * queryXslParameters()
     {
@@ -477,6 +478,12 @@ void CEspContext::AuditMessage(AuditType type, const char *filterType, const cha
     msg.valist_appendf(format.str(), args);
     
     va_end(args);
+    AUDIT(type, msg.str());
+}
+
+void CEspContext::AuditMessage(AuditType type, const char *filterType, const char *title)
+{
+    VStringBuffer msg("%s\n\tProcess: esp\n\tService: %s\n\tUser: %s", title, m_servName.str(), queryUserId());
     AUDIT(type, msg.str());
 }
 

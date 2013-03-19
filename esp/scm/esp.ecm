@@ -105,6 +105,7 @@ interface IEspContext : extends IInterface
     virtual void setServAddress(const char * host, short port) = 0;
     virtual void getServAddress(StringBuffer & host, short & port) = 0;
     virtual void AuditMessage(AuditType type, const char * filterType, const char * title, const char * parms, ...) __attribute__((format(printf, 5, 6))) = 0;
+    virtual void AuditMessage(AuditType type, const char * filterType, const char * title) = 0;
 
     virtual void setServiceName(const char *name)=0;
     virtual const char * queryServiceName(const char *name)=0;
