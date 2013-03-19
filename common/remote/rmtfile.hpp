@@ -39,10 +39,11 @@ extern REMOTE_API void filenameToUrl(StringBuffer & out, const char * filename);
 
 interface IDaFileSrvHook : extends IRemoteFileCreateHook
 {
-    virtual void addSubnetFilter(const char *subnet, const char *mask, const char *dir, bool trace) = 0;
-    virtual IPropertyTree *addSubnetFilters(IPropertyTree *filters, const IpAddress *ipAddress) = 0;
-    virtual IPropertyTree *addMySubnetFilters(IPropertyTree *filters) = 0;
-    virtual void clearSubNetFilters() = 0;
+    virtual void addSubnetFilter(const char *subnet, const char *mask, const char *dir, const char *sourceRange, bool trace) = 0;
+    virtual void addRangeFilter(const char *range, const char *dir, const char *sourceRange, bool trace) = 0;
+    virtual IPropertyTree *addFilters(IPropertyTree *filters, const SocketEndpoint *ipAddress) = 0;
+    virtual IPropertyTree *addMyFilters(IPropertyTree *filters, SocketEndpoint *myEp=NULL) = 0;
+    virtual void clearFilters() = 0;
 };
 extern REMOTE_API IDaFileSrvHook *queryDaFileSrvHook();
 extern REMOTE_API unsigned short getDaliServixPort();  // assumed just the one for now

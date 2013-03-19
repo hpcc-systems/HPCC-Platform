@@ -52,10 +52,11 @@ extern ENVIRONMENT_API bool getRemoteRunInfo(const char * keyName, const char * 
 extern ENVIRONMENT_API bool envGetConfigurationDirectory(const char *category, const char *component,const char *instance, StringBuffer &dirout);
 
 extern ENVIRONMENT_API IPropertyTree *envGetNASConfiguration(); // return NAS config from environment
-extern ENVIRONMENT_API void envInstallNASHooks(); // gets NAS config and sets up NAS hooks from it
-extern ENVIRONMENT_API void envInstallNASHooks(IPropertyTree *nasPTree); // Sets NAS hooks from user-supplied info
+// These methods filter the NAS hooks based on the callers IP, unless 'myEp' is supplied.
+extern ENVIRONMENT_API void envInstallNASHooks(SocketEndpoint *myEp=NULL); // gets NAS config and sets up NAS hooks from it
+extern ENVIRONMENT_API void envInstallNASHooks(IPropertyTree *nasPTree, SocketEndpoint *myEp=NULL); // Sets NAS hooks from user-supplied info
 // like envInstallNASHooks but also returns which filters were installed
-extern ENVIRONMENT_API IPropertyTree *envGetInstallNASHooks();
-extern ENVIRONMENT_API IPropertyTree *envGetInstallNASHooks(IPropertyTree *nasPTree);
+extern ENVIRONMENT_API IPropertyTree *envGetInstallNASHooks(SocketEndpoint *myEp=NULL);
+extern ENVIRONMENT_API IPropertyTree *envGetInstallNASHooks(IPropertyTree *nasPTree, SocketEndpoint *myEp=NULL);
 
 #endif
