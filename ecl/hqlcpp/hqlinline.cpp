@@ -731,8 +731,13 @@ bool HqlCppTranslator::isAlwaysCoLocal()
 GraphLocalisation HqlCppTranslator::getGraphLocalisation(IHqlExpression * expr, bool isInsideChildQuery)
 {
     if (isAlwaysCoLocal()) return GraphCoLocal;
-    if (targetThor() && !isInsideChildQuery)
-        return GraphNonLocal;
+    if (targetThor())
+    {
+        if (!isInsideChildQuery)
+            return GraphNonLocal;
+        else
+            return GraphCoLocal;
+    }
 
     TransformMutexBlock lock;
     return doGetGraphLocalisation(expr);

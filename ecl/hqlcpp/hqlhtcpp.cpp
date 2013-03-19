@@ -1817,8 +1817,20 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
         GraphLocalisation localisation = parentExtract->queryLocalisation();
         activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset);
 
-        if (translator.targetThor() && !translator.insideChildQuery(ctx))
-            executedRemotely = true;
+        if (translator.targetThor())
+        {
+            if (translator.insideChildQuery(ctx))
+            {
+                //All parts of child queries in thor are executed on the same node.
+                if (activityLocalisation == GraphNonLocal)
+                    activityLocalisation = GraphCoLocal;
+
+                //Thor doesn't currently support ALLNODES, but would need the following it if it did.
+                executedRemotely = (localisation == GraphRemote);
+            }
+            else
+                executedRemotely = true;
+        }
         else
             executedRemotely = ((activityLocalisation == GraphNonLocal) || (localisation == GraphRemote));
 
