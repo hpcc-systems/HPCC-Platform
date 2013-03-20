@@ -1587,13 +1587,12 @@ class HashDistributeSlaveBase : public CSlaveActivity, public CThorDataLink, imp
     bool inputstopped;
     CriticalSection stopsect;
     mptag_t mptag;
-
-public:
+protected:
     Owned<IRowStream> instrm;
     IHash *ihash;
     ICompare *mergecmp;     // if non-null is merge distribute
     bool eofin;
-
+public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     HashDistributeSlaveBase(CGraphElementBase *_container)
@@ -1997,8 +1996,7 @@ public:
 
 class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
 {
-    struct _tmp { virtual ~_tmp() { } };
-    class CKeyLookup : implements IHash, public _tmp
+    class CKeyLookup : implements IHash
     {
         IndexDistributeSlaveActivity &owner;
         Owned<IKeyIndex> tlk;
@@ -2024,8 +2022,7 @@ class IndexDistributeSlaveActivity : public HashDistributeSlaveBase
                 partNo--; // note that partNo==0 means lower than anything in the key - should be treated same as partNo==1 here
             return ((unsigned)partNo % numslaves);
         }
-    };
-    _tmp *lookup;
+    } *lookup;
 
 public:
     IndexDistributeSlaveActivity(CGraphElementBase *container) : HashDistributeSlaveBase(container), lookup(NULL)
@@ -2034,10 +2031,7 @@ public:
     ~IndexDistributeSlaveActivity()
     {
         if (lookup)
-        {
             delete lookup;
-            ihash = NULL;
-        }
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
@@ -2049,15 +2043,13 @@ public:
         data.read(tlkSz);
         Owned<IFileIO> iFileIO = createIFileI((size32_t)tlkSz, data.readDirect((size32_t)tlkSz));
 
+        // NB: this TLK is an in-memory TLK serialized from the master - the name is for tracing by the key code only
         OwnedRoxieString indexFileName(helper->getIndexFileName());
         StringBuffer name(indexFileName);
-        name.append("_tlk"); // MORE - this does not look right!
-        CKeyLookup *l = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, true, false)); // MORE - crc is not 0...
-        ihash = l;
-        lookup = l;
-
+        name.append("_tlk");
+        lookup = new CKeyLookup(*this, helper, createKeyIndex(name.str(), 0, *iFileIO, true, false)); // MORE - crc is not 0...
+        ihash = lookup;
     }
-friend class CKeyLookup;
 };
 
 //===========================================================================
