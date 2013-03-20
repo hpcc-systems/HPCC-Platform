@@ -138,7 +138,8 @@ void cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, ICons
     SCMStringBuffer processName;
     clusterInfo->getRoxieProcess(processName);
     wufiles->resolveFiles(processName.str(), lookupDaliIp, !overWrite, false);
-    wufiles->cloneAllInfo(overWrite, true);
+    Owned<IDFUhelper> helper = createIDFUhelper();
+    wufiles->cloneAllInfo(helper, overWrite, true);
 }
 
 void cloneFileInfoToDali(StringArray &fileNames, const char *lookupDaliIp, const char *target, bool overWrite, IUserDescriptor* userdesc)
@@ -515,13 +516,43 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
     StringArray errors;
     StringArray unmatchedQueries;
     StringArray unusedPackages;
+    StringArray unmatchedFiles;
 
-    Owned<IHpccPackageMap> map = createPackageMapFromXml(req.getInfo(), req.getTarget(), NULL);
-    map->validate(warnings, errors, unmatchedQueries, unusedPackages);
+    Owned<IHpccPackageSet> set;
+    Owned<IHpccPackageMap> ownedmap;
+    const IHpccPackageMap *map = NULL;
 
+    if (req.getActive()) //validate active map
+    {
+        set.setown(createPackageSet("*"));
+        if (!set)
+            throw MakeStringException(PKG_CREATE_PACKAGESET_FAILED, "Unable to create PackageSet");
+        map = set->queryActiveMap(req.getTarget());
+        if (!map)
+            throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Active package map not found");
+    }
+    else if (req.getPMID())
+    {
+        ownedmap.setown(createPackageMapFromPtree(getPackageMapById(req.getPMID(), true), req.getTarget(), req.getPMID()));
+        if (!ownedmap)
+            throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", req.getPMID());
+        map = ownedmap;
+    }
+    else
+    {
+        ownedmap.setown(createPackageMapFromXml(req.getInfo(), req.getTarget(), NULL));
+        if (!ownedmap)
+            throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error processing package file content");
+        map = ownedmap;
+    }
+
+    map->validate(req.getQueryIdToVerify(), warnings, errors, unmatchedQueries, unusedPackages, unmatchedFiles);
+
+    resp.setPMID(map->queryPackageId());
     resp.setWarnings(warnings);
     resp.setErrors(errors);
     resp.updateQueries().setUnmatched(unmatchedQueries);
     resp.updatePackages().setUnmatched(unusedPackages);
+    resp.updateFiles().setUnmatched(unmatchedFiles);
     return true;
 }

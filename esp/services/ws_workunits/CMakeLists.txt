@@ -34,8 +34,6 @@ set (    SRCS
          ${ESPSCM_GENERATED_DIR}/ws_fs_esp.cpp
          ${HPCC_SOURCE_DIR}/esp/scm/ws_workunits.ecm
          ${HPCC_SOURCE_DIR}/esp/clients/roxiecontrol.cpp
-         ${HPCC_SOURCE_DIR}/common/roxiemanager/referencedfilelist.cpp
-         ${HPCC_SOURCE_DIR}/common/roxiemanager/referencedfilelist.hpp
          ws_workunitsPlugin.cpp
          ws_workunitsService.cpp
          ws_workunitsService.hpp
@@ -76,6 +74,7 @@ include_directories (
          ./../../bindings
          ./../../smc/SMCLib
          ./../../bindings/SOAP/xpp
+         ${HPCC_SOURCE_DIR}/dali/dfu
     )
 
 ADD_DEFINITIONS( -D_USRDLL -DWS_WORKUNITS_EXPORTS )

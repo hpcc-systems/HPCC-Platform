@@ -114,6 +114,9 @@ ESPrequest ValidatePackageRequest
 {
     string Info;
     string Target;
+    bool Active;
+    string PMID;
+    string QueryIdToVerify;
 };
 
 ESPstruct ValidatePackageInfo
@@ -126,13 +129,20 @@ ESPstruct ValidatePackageQueries
     ESParray<string> Unmatched;
 };
 
+ESPstruct ValidatePackageFiles
+{
+    ESParray<string> Unmatched;
+};
+
 ESPresponse [exceptions_inline] ValidatePackageResponse
 {
+    string PMID;
     ESPstruct BasePackageStatus status;
     ESParray<string> Warnings;
     ESParray<string> Errors;
     ESPstruct ValidatePackageInfo packages;
     ESPstruct ValidatePackageQueries queries;
+    ESPstruct ValidatePackageFiles files;
 };
 
 ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess

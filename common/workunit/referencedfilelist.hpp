@@ -22,7 +22,6 @@
 #include "jlib.hpp"
 #include "workunit.hpp"
 #include "package.h"
-#include "dadfs.hpp"
 #include "dfuutil.hpp"
 
 #define RefFileNone           0x000
@@ -55,11 +54,11 @@ interface IReferencedFileList : extends IInterface
 
     virtual IReferencedFileIterator *getFiles()=0;
     virtual void resolveFiles(const char *process, const char *remoteIP, bool checkLocalFirst, bool addSubFiles)=0;
-    virtual void cloneAllInfo(bool overwrite, bool cloneSuperInfo)=0;
-    virtual void cloneFileInfo(bool overwrite, bool cloneSuperInfo)=0;
+    virtual void cloneAllInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo)=0;
+    virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo)=0;
     virtual void cloneRelationships()=0;
 };
 
-IReferencedFileList *createReferencedFileList(const char *user, const char *pw);
+extern WORKUNIT_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw);
 
 #endif //REFFILE_LIST_HPP
