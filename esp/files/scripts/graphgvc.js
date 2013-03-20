@@ -113,13 +113,13 @@ function DisplaySelectedProperties(items) {
     var propsText = '';
     for (var i = 0; i < items.length; ++i) {
         var props = pluginLHS().getProperties(items[i]);
-        propsText += '<table border="1">';
+        propsText += '<table border="1" style="margin:5px;">';
         propsText += '<tr><td colspan="2" align="center">';
         propsText += '<input type="button" style="cursor:hand;" onclick="javascript:centerOn(' + items[i] + ')" value="' + props['id'] + '" />'
         propsText += '</td></tr>';
         for (var key in props) {
             propsText += '<tr>';
-            propsText += '<td>' + key + '</td><td>' + props[key] + '</td>';
+            propsText += '<td style="padding:5px;">' + key + '</td><td style="padding:5px;">' + props[key] + '</td>';
             propsText += '</tr>';
         }
         propsText += '</table>';
@@ -254,7 +254,7 @@ function checkVersion() {
           showElement('no_control_msg');
           showElement('install_div');
           return false;
-       }        
+       }
     }
     return true;
 }
@@ -323,7 +323,7 @@ function selectGraphSubGraph(GraphNameToSelect, VertexIdToSelect)
     else
     {
         gotosubgraph = VertexIdToSelect;
-        selectGraph(GraphNameToSelect);        
+        selectGraph(GraphNameToSelect);
     }
 }
 
@@ -469,7 +469,7 @@ function selectGraphVertex(GraphToSelect, VertextToSelect)
     {
         gotovertex = VertextToSelect;
         initfind = true;
-        selectGraph(GraphToSelect);        
+        selectGraph(GraphToSelect);
     }
 
 }
@@ -481,7 +481,6 @@ function selectVertex(TargetVertex) {
 
 var forceFinalCountRefresh = true;
 
-        
 function reloadGraph()
 {
     if (isrunning == '1' || forceFinalCountRefresh)
@@ -547,7 +546,7 @@ function loadXGMMLGraph(xgmmlResponse) {
                 alert(xgmmlStr.substring(i + 9, j));
             }
         }
-        hideElement('loadingMsg'); 
+        hideElement('loadingMsg');
         return;
     }
     i = xgmmlStr.indexOf('<Name>' + graphName + '</Name');
@@ -631,7 +630,7 @@ function findEcl(NodeId) {
             if (a > -1) {
                 var b = xgmmldecoded.indexOf('">', a);
                 if (b) {
-                    Label = xgmmldecoded.substring(a + 7, b).replace(/&apos;/g, "'");  
+                    Label = xgmmldecoded.substring(a + 7, b).replace(/&apos;/g, "'");
                 }
             }
             var j = xgmmldecoded.indexOf('ecl" value="', i);
@@ -735,7 +734,7 @@ function loadWuInfo(xmlResponse)
             var graphstate = 0;
             if (typeof wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph.Failed != 'undefined' && wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph.Failed == '1')
             {
-                graphstate = 3;    
+                graphstate = 3;
             }
             if (typeof wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph.Complete != 'undefined' && wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph.Complete == '1')
             {
@@ -774,24 +773,24 @@ function loadWuInfo(xmlResponse)
                 var graphstate = '0';
                 if (typeof wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Failed != 'undefined')
                 {
-                    graphstate = 3;    
+                    graphstate = 3;
                 }
                 if (typeof wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Complete != 'undefined')
                 {
-                    graphstate = 1;    
+                    graphstate = 1;
                 }
                 addGraphElement(wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Name, graphstate, label);
               }
               catch(e)
               {
               
-                break; 
+                break;
               }
             }
           }
           
-          displayWsWorkunitsDetails();  
-          update_details();  
+          displayWsWorkunitsDetails();
+          update_details();
         }
     }
     return;
@@ -842,12 +841,12 @@ function getUrlParam( Url, Param)
     Url = Url.replace(/%3F/g, '?');
     Url = Url.replace(/%3D/g, '=');
     Url = Url.replace(/%26/g, '&');
-    var regexS = "[\\?&]"+Param+"=([^&#]*)";  
+    var regexS = "[\\?&]"+Param+"=([^&#]*)";
     var regex = new RegExp( regexS );  
     var results = regex.exec( Url );  
     if (results == null)
     {    
-        return "";  
+        return "";
     }
     return results[1];
 }
@@ -1014,7 +1013,7 @@ function sendWuInfoRequest() {
     if (wuinfoRequest != null)
     {
         wuinfoRequest.abort();
-        wuinfoRequest = null; 
+        wuinfoRequest = null;
     }
 
     // send request.
@@ -1149,12 +1148,12 @@ function selectGraph(GraphId) {
     if (gt != null)
     {
         clearTimeout(gt);
-    } 
+    }
     if (graphRequest != null)
     {
         graphRequest.abort();
         graphRequest = null;
-    }   
+    }
     resetFind();
     window.graphloaded = '0';
     graphName = 'graph' + GraphId;
