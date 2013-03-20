@@ -349,13 +349,15 @@ int main( int argc, char *argv[]  )
                 setBaseDirectory(overrideBaseDirectory, false);
             if (overrideReplicateDirectory&&*overrideBaseDirectory)
                 setBaseDirectory(overrideReplicateDirectory, true);
-            StringBuffer tempdirstr;
-            const char *tempdir = globals->queryProp("@thorTempDirectory");
-            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"),tempdirstr))
-                tempdir = tempdirstr.str();
+            StringBuffer tempDirStr;
+            if (getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"), tempDirStr))
+                globals->setProp("@thorTempDirectory", tempDirStr.str());
+            else
+                tempDirStr.append(globals->queryProp("@thorTempDirectory"));
+            logDiskSpace(); // Log before temp space is cleared
             StringBuffer tempPrefix("thtmp");
             tempPrefix.append(getMachinePortBase()).append("_");
-            SetTempDir(tempdir, tempPrefix.str(), true);
+            SetTempDir(tempDirStr.str(), tempPrefix.str(), true);
 
             useMemoryMappedRead(globals->getPropBool("@useMemoryMappedRead"));
 
