@@ -536,11 +536,8 @@ bool CMimeMultiPart::separateMultiParts(MemoryBuffer& firstPart, MemoryBuffer& o
     unsigned firstPartLength = offset;
     while ((firstPartLength > 0) && ((startPos[firstPartLength-1] == '\r') || (startPos[firstPartLength-1] == '\n')))
         firstPartLength--;
-    if(firstPartLength >= 0)
-    {
-        otherParts.append(totalLength - offset, startPos + offset);
-        firstPart.setLength(firstPartLength);
-    }
+    otherParts.append(totalLength - offset, startPos + offset);
+    firstPart.setLength(firstPartLength);
 
     return foundMultiParts;
 }
