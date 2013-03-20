@@ -358,6 +358,13 @@
     <para>The function must fill the passed structure with correct information
     for the features of the plug-in. The structure is defined as
     follows:</para>
+    
+    <para><emphasis role="bold">Warning:</emphasis> This function may be called 
+    without the plugin being loaded fully.  It should not make any library 
+    calls or assume that dependent modules have been loaded or that it has been 
+    initialised.  Specifically:  "The system does not call DllMain for process 
+    and thread initialization and termination.  Also, the system does not load 
+    additional executable modules that are referenced by the specified module."</para>
 
     <programlisting>Struct ECLPluginDefinitionBlock
   {
