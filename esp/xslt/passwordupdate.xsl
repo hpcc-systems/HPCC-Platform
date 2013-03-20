@@ -73,15 +73,7 @@
                         </xsl:otherwise>
                     </xsl:choose>
                 </b>
-                <form>
-                    <table>
-                        <tr>
-                            <td>
-                                <input type="button" class="sbutton" value="Close this window" onClick="window.close()"/>
-                            </td>
-                        </tr>
-                    </table>
-                </form>
+                <a href="/">Click here to continue.</a>
             </xsl:when>
             <xsl:otherwise>
                 <xsl:if test="number(Code) = 1">
