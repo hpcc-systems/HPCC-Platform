@@ -450,5 +450,7 @@ extern graph_decl IRowStream *createUngroupStream(IRowStream *input);
 interface IRowInterfaces;
 extern graph_decl void sendInChunks(ICommunicator &comm, rank_t dst, mptag_t mpTag, IRowStream *input, IRowInterfaces *rowIf);
 
+extern graph_decl void logDiskSpace();
+
 #endif
 
