@@ -254,7 +254,7 @@ function checkVersion() {
           showElement('no_control_msg');
           showElement('install_div');
           return false;
-       }        
+       }
     }
     return true;
 }
@@ -323,7 +323,7 @@ function selectGraphSubGraph(GraphNameToSelect, VertexIdToSelect)
     else
     {
         gotosubgraph = VertexIdToSelect;
-        selectGraph(GraphNameToSelect);        
+        selectGraph(GraphNameToSelect);
     }
 }
 
@@ -631,7 +631,7 @@ function findEcl(NodeId) {
             if (a > -1) {
                 var b = xgmmldecoded.indexOf('">', a);
                 if (b) {
-                    Label = xgmmldecoded.substring(a + 7, b).replace(/&apos;/g, "'");  
+                    Label = xgmmldecoded.substring(a + 7, b).replace(/&apos;/g, "'");
                 }
             }
             var j = xgmmldecoded.indexOf('ecl" value="', i);
@@ -774,11 +774,11 @@ function loadWuInfo(xmlResponse)
                 var graphstate = '0';
                 if (typeof wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Failed != 'undefined')
                 {
-                    graphstate = 3;    
+                    graphstate = 3;
                 }
                 if (typeof wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Complete != 'undefined')
                 {
-                    graphstate = 1;    
+                    graphstate = 1;
                 }
                 addGraphElement(wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Name, graphstate, label);
               }
@@ -790,7 +790,7 @@ function loadWuInfo(xmlResponse)
             }
           }
           
-          displayWsWorkunitsDetails();  
+          displayWsWorkunitsDetails();
           update_details();  
         }
     }
@@ -847,7 +847,7 @@ function getUrlParam( Url, Param)
     var results = regex.exec( Url );  
     if (results == null)
     {    
-        return "";  
+        return "";
     }
     return results[1];
 }
