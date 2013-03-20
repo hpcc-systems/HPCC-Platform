@@ -678,7 +678,9 @@ int main( int argc, char *argv[]  )
         const char *tempdir = globals->queryProp("@thorTempDirectory");
         if (getConfigurationDirectory(globals->queryPropTree("Directories"),"temp","thor",globals->queryProp("@name"),tempdirstr))
             tempdir = tempdirstr.str();
-        SetTempDir(tempdir,true);
+        StringBuffer tempPrefix("thtmp");
+        tempPrefix.append(getMasterPortBase()).append("_");
+        SetTempDir(tempdir, tempPrefix.str(), true);
 
         char thorPath[1024];
         if (!GetCurrentDirectory(1024, thorPath)) {

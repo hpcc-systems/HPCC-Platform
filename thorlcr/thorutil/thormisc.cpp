@@ -557,18 +557,11 @@ void SetLogName(const char *prefix, const char *logdir, const char *thorname, bo
 }
 #endif
 
-#ifdef __linux__
-int file_select(const struct dirent *entry)
-{
-    return strncmp(entry->d_name, "thtmp", 5) == 0;
-}
-#endif
-
 class CTempNameHandler
 {
 public:
     unsigned num;
-    StringAttr tempdir;
+    StringAttr tempdir, tempPrefix;
     StringAttr alttempdir; // only set if needed
     CriticalSection crit;
     bool altallowed;
@@ -580,25 +573,22 @@ public:
         altallowed = false;
         cleardir = false;
     }
-
     ~CTempNameHandler()
     {
         if (cleardir) 
             clearDirs(false);       // don't log as jlog may have closed
     }
-
-
     const char *queryTempDir(bool alt) 
     { 
         if (alt&&altallowed) 
             return alttempdir;
         return tempdir; 
     }
-
-    void setTempDir(const char *name,bool clear)
+    void setTempDir(const char *name, const char *_tempPrefix, bool clear)
     {
         CriticalBlock block(crit);
         assertex(tempdir.isEmpty()); // should only be called once
+        tempPrefix.set(_tempPrefix);
         StringBuffer base;
         if (name&&*name) {
             base.append(name);
@@ -621,7 +611,8 @@ public:
 #else
         altallowed = globals->getPropBool("@thor_dual_drive",true);
 #endif
-        if (altallowed) {
+        if (altallowed)
+        {
             unsigned d = getPathDrive(tempdir);
             if (d>1)
                 altallowed = false;
@@ -635,10 +626,10 @@ public:
         if (clear)
             clearDirs(true);
     }
-
     static void clearDir(const char *dir, bool log)
     {
-        if (dir&&*dir) {
+        if (dir&&*dir)
+        {
             Owned<IDirectoryIterator> iter = createDirectoryIterator(dir);
             ForEach (*iter)
             {
@@ -658,14 +649,11 @@ public:
             }
         }
     }
-
     void clearDirs(bool log)
     {
         clearDir(tempdir,log);
         clearDir(alttempdir,log);
     }
-
-
     void getTempName(StringBuffer &name, const char *suffix,bool alt)
     {
         CriticalBlock block(crit);
@@ -674,13 +662,11 @@ public:
             name.append(alttempdir);
         else
             name.append(tempdir);
-        name.append("thtmp").append((unsigned)GetCurrentProcessId()).append('_').append(++num);
+        name.append(tempPrefix).append((unsigned)GetCurrentProcessId()).append('_').append(++num);
         if (suffix)
             name.append("__").append(suffix);
         name.append(".tmp");
     }
-
-
 } TempNameHandler;
 
 
@@ -690,9 +676,9 @@ void GetTempName(StringBuffer &name, const char *prefix,bool altdisk)
     TempNameHandler.getTempName(name, prefix, altdisk);
 }
 
-void SetTempDir(const char *name,bool clear)
+void SetTempDir(const char *name, const char *tempPrefix, bool clear)
 {
-    TempNameHandler.setTempDir(name,clear);
+    TempNameHandler.setTempDir(name, tempPrefix, clear);
 }
 
 void ClearDir(const char *dir)
