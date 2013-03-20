@@ -3471,13 +3471,14 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
 {
     BuildCtx ctx(_ctx);
 
-    switch (expr->getOperator())
+    node_operator op = expr->getOperator();
+    switch (op)
     {
     case no_assign:
         doBuildStmtAssign(ctx, expr->queryChild(0), expr->queryChild(1));
         return;
     case no_assign_addfiles:
-        doBuildStmtAssignModify(ctx, expr->queryChild(0), expr->queryChild(1), expr->getOperator());
+        doBuildStmtAssignModify(ctx, expr->queryChild(0), expr->queryChild(1), op);
         return;
     case no_alias:
         doBuildExprAlias(ctx, expr, NULL);
@@ -3550,7 +3551,13 @@ void HqlCppTranslator::buildStmt(BuildCtx & _ctx, IHqlExpression * expr)
     case no_actionlist:
         {
             ForEachChild(idx, expr)
-                buildStmt(ctx, expr->queryChild(idx));
+            {
+                BuildCtx subctx(ctx);
+                //Add a group for each branch of a sequential to ensure all branches are independent
+                if (op == no_sequential)
+                    subctx.addGroup();
+                buildStmt(subctx, expr->queryChild(idx));
+            }
             return;
         }
     case no_wait:
