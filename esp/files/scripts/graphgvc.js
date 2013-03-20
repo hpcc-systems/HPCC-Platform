@@ -113,13 +113,13 @@ function DisplaySelectedProperties(items) {
     var propsText = '';
     for (var i = 0; i < items.length; ++i) {
         var props = pluginLHS().getProperties(items[i]);
-        propsText += '<table border="1">';
+        propsText += '<table border="1" style="margin:5px;">';
         propsText += '<tr><td colspan="2" align="center">';
         propsText += '<input type="button" style="cursor:hand;" onclick="javascript:centerOn(' + items[i] + ')" value="' + props['id'] + '" />'
         propsText += '</td></tr>';
         for (var key in props) {
             propsText += '<tr>';
-            propsText += '<td>' + key + '</td><td>' + props[key] + '</td>';
+            propsText += '<td style="padding:5px;">' + key + '</td><td style="padding:5px;">' + props[key] + '</td>';
             propsText += '</tr>';
         }
         propsText += '</table>';
@@ -254,7 +254,7 @@ function checkVersion() {
           showElement('no_control_msg');
           showElement('install_div');
           return false;
-       }        
+       }
     }
     return true;
 }
@@ -323,7 +323,7 @@ function selectGraphSubGraph(GraphNameToSelect, VertexIdToSelect)
     else
     {
         gotosubgraph = VertexIdToSelect;
-        selectGraph(GraphNameToSelect);        
+        selectGraph(GraphNameToSelect);
     }
 }
 
@@ -609,7 +609,7 @@ function loadXGMMLGraph(xgmmlResponse) {
         if (gt != null) {
             clearTimeout(gt);
         }
-        gt = setTimeout("reloadGraph()", 15000);
+        gt = setTimeout("reloadGraph()", 8000);
     }
 
     update_details();
@@ -631,7 +631,7 @@ function findEcl(NodeId) {
             if (a > -1) {
                 var b = xgmmldecoded.indexOf('">', a);
                 if (b) {
-                    Label = xgmmldecoded.substring(a + 7, b).replace(/&apos;/g, "'");  
+                    Label = xgmmldecoded.substring(a + 7, b).replace(/&apos;/g, "'");
                 }
             }
             var j = xgmmldecoded.indexOf('ecl" value="', i);
@@ -774,11 +774,11 @@ function loadWuInfo(xmlResponse)
                 var graphstate = '0';
                 if (typeof wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Failed != 'undefined')
                 {
-                    graphstate = 3;    
+                    graphstate = 3;
                 }
                 if (typeof wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Complete != 'undefined')
                 {
-                    graphstate = 1;    
+                    graphstate = 1;
                 }
                 addGraphElement(wuinfoJson.WUInfoResponse.Workunit.Graphs.ECLGraph[n].Name, graphstate, label);
               }
@@ -790,7 +790,7 @@ function loadWuInfo(xmlResponse)
             }
           }
           
-          displayWsWorkunitsDetails();  
+          displayWsWorkunitsDetails();
           update_details();  
         }
     }
@@ -847,7 +847,7 @@ function getUrlParam( Url, Param)
     var results = regex.exec( Url );  
     if (results == null)
     {    
-        return "";  
+        return "";
     }
     return results[1];
 }
@@ -1034,7 +1034,7 @@ function sendWuInfoRequest() {
                 }
             }
             else {
-                gt = setTimeout("reloadGraph()", 15000);
+                gt = setTimeout("reloadGraph()", 8000);
                 hideElement('loadingMsg');
             }
         },
