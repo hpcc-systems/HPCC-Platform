@@ -59,7 +59,6 @@ set (    SRCS
          result/thresult.cpp 
          rollup/throllup.cpp 
          selectnth/thselectnth.cpp 
-         soapcall/thsoapcall.cpp 
          spill/thspill.cpp 
          thdiskbase.cpp 
          topn/thtopn.cpp 
