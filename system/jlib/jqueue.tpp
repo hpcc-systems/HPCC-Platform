@@ -343,15 +343,20 @@ protected:
 public:
     SimpleInterThreadQueueOf<BASE, ALLOWNULLS>() 
     {
-        enqwaiting = 0;
-        deqwaiting = 0;
-        stopped = false; 
         limit = 0; // no limit
+        reset();
     }
 
     ~SimpleInterThreadQueueOf<BASE, ALLOWNULLS>() 
     {
         stop();
+    }
+
+    void reset()
+    {
+        enqwaiting = 0;
+        deqwaiting = 0;
+        stopped = false;
     }
 
     bool enqueue(BASE *e,unsigned timeout=INFINITE) 

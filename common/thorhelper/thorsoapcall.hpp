@@ -44,9 +44,6 @@ typedef IWSCRowProvider ISoapCallRowProvider;//DEPRECATED
 //Web Service Call Helper
 interface IWSCHelper : extends IInterface
 {
-    virtual bool rowAvailable() = 0;
-    virtual size32_t __deprecated__getRow(void * buffer) = 0;
-    virtual bool queryDone() = 0;
     virtual void start() = 0;
     virtual void abort() = 0;
     virtual void waitUntilDone() = 0;

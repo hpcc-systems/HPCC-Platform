@@ -17,8 +17,20 @@
 
 #include "thsoapcallslave.ipp"
 #include "thactivityutil.ipp"
+#include "dasess.hpp"
 
 //---------------------------------------------------------------------------
+
+
+static StringBuffer &buildAuthToken(IUserDescriptor *userDesc, StringBuffer &authToken)
+{
+    StringBuffer uidpair;
+    userDesc->getUserName(uidpair);
+    uidpair.append(":");
+    userDesc->getPassword(uidpair);
+    JBASE64_Encode(uidpair.str(), uidpair.length(), authToken);
+    return authToken;
+}
 
 class SoapRowCallSlaveActivity : public CSlaveActivity, public CThorDataLink, implements ISoapCallRowProvider
 {
@@ -33,11 +45,11 @@ public:
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        const char *authToken;
-        data.read(authToken);
+        StringBuffer authToken;
+        buildAuthToken(queryJob().queryUserDescriptor(), authToken);
         appendOutputLinked(this);
         if (container.queryLocalOrGrouped() || firstNode())
-            soaphelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken, SCrow, NULL, queryDummyContextLogger(),NULL));
+            soaphelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
     }
     // IThorDataLink methods
     virtual void start()
@@ -51,7 +63,8 @@ public:
     }
     virtual void stop()
     {
-        abortSoon = true;
+        if (soaphelper)
+            soaphelper->waitUntilDone();
         dataLinkStop();
     }
     CATCH_NEXTROW()
@@ -112,10 +125,10 @@ public:
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        const char *authToken;
-        data.read(authToken);
+        StringBuffer authToken;
+        buildAuthToken(queryJob().queryUserDescriptor(), authToken);
         appendOutputLinked(this);
-        soaphelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken, SCdataset, NULL, queryDummyContextLogger(),NULL));
+        soaphelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
     }
     // IThorDataLink methods
     virtual void start()
@@ -130,7 +143,7 @@ public:
     }
     virtual void stop()
     {
-        abortSoon = true;
+        eof = true;
         stopInput(input);
         dataLinkStop();
     }
@@ -173,7 +186,7 @@ public:
     virtual const void * getNextRow()
     {
         CriticalBlock b(crit);
-        if (abortSoon)
+        if (eof)
             return NULL;
         return input->nextRow();
     }
@@ -197,10 +210,10 @@ public:
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        const char *authToken;
-        data.read(authToken);
+        StringBuffer authToken;
+        buildAuthToken(queryJob().queryUserDescriptor(), authToken);
         if (container.queryLocalOrGrouped() || firstNode())
-            soaphelper.setown(createSoapCallHelper(this, NULL, authToken, SCrow, NULL, queryDummyContextLogger(),NULL));
+            soaphelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
     }
 
     // IThorSlaveProcess overloaded methods
@@ -249,10 +262,9 @@ public:
     // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        const char *authToken;
-        data.read(authToken);
-
-        soaphelper.setown(createSoapCallHelper(this, NULL, authToken, SCdataset, NULL, queryDummyContextLogger(),NULL));
+        StringBuffer authToken;
+        buildAuthToken(queryJob().queryUserDescriptor(), authToken);
+        soaphelper.setown(createSoapCallHelper(this, NULL, authToken.str(), SCdataset, NULL, queryDummyContextLogger(),NULL));
     }
 
     // IThorSlaveProcess overloaded methods
