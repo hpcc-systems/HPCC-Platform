@@ -21,7 +21,7 @@ Building the plugin to embed R in ECL code is not enabled by default - this is
 because it depends on a component (RInside) that can't be installed via standard
 package-management utilities on most distros.
 
-To install the prequisites for building R support, use the following (Ubuntu 12.04)
+To install the prerequisites for building R support, use the following (Ubuntu 12.04)
 or the equivalent for your distro.
 
 sudo apt-get install r-base r-cran-rcpp
