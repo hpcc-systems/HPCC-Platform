@@ -256,7 +256,7 @@ public:
 
 extern jlib_decl StringBuffer passwordInput(const char* prompt, StringBuffer& passwd);
 
-extern jlib_decl IPropertyTree *getHPCCenvironment(const char *confloc=NULL);
+extern jlib_decl IPropertyTree *getHPCCEnvironment(const char *configFileName=NULL);
 extern jlib_decl bool getConfigurationDirectory(const IPropertyTree *dirtree, // NULL to use HPCC config
                                                 const char *category, 
                                                 const char *component,

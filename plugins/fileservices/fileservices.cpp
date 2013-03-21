@@ -198,7 +198,7 @@ static IPropertyTree *getEnvironment()
             env.setown(createPTreeFromIPT(conn->queryRoot())); // we don't really need to copy here
     }
     if (!env.get())
-        env.setown(getHPCCenvironment());
+        env.setown(getHPCCEnvironment());
     return env.getClear();
 }
 

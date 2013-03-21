@@ -53,9 +53,9 @@
 
 #define DALI_SERVER_PORT                7070 
 #define DATA_TRANSFER_PORT              7080
-#define DAFILESRV_PORT                  7100 /// aka daliservix
-#define MP_BASE_PORT                    7101 //..7999 (for Dali too)
-#define MP_PORT_RANGE                   400
+#define DAFILESRV_PORT                  7100 // aka daliservix
+#define MP_START_PORT                   7101 // Default range for MP ports
+#define MP_END_PORT                     7500
 
 //ESP SERVICES
 //INSECURE
