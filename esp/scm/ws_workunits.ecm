@@ -1207,6 +1207,7 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
     string Wuid;
     string Dll;
     bool Suspended;
+    [min_ver("1.42")] bool Activated;
     string SuspendedBy;
     string PublishedBy;
     string Comment;
@@ -1337,7 +1338,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.41"), default_client_version("1.41"),
+    version("1.42"), default_client_version("1.42"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
