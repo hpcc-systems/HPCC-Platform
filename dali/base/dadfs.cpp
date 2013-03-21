@@ -987,17 +987,25 @@ protected:
     Linked<IDistributedFileTransaction> transaction;
     IArrayOf<IDistributedFile> lockedFiles;
     DFTransactionState state;
-    void addFileLock(IDistributedFile* file) {
+    void addFileLock(IDistributedFile* file)
+    {
         // derived's prepare must call this before locking
         lockedFiles.append(*LINK(file));
         // Make sure this is in transaction's cache
         transaction->addFile(file);
     }
-    bool lock() {
+    bool lock(bool *dirty=NULL)
+    {
         // Files most have been acquired already by derived's class prepare
-        ForEachItemIn(i,lockedFiles) {
-            try {
-                lockedFiles.item(i).lockProperties(SDS_SUB_LOCK_TIMEOUT);
+        ForEachItemIn(i,lockedFiles)
+        {
+            try
+            {
+                if (lockedFiles.item(i).lockProperties(SDS_SUB_LOCK_TIMEOUT)) // returns true if needs reload
+                {
+                    if (dirty)
+                        *dirty = true;
+                }
             }
             catch (ISDSException *e)
             {
@@ -1011,7 +1019,8 @@ protected:
         }
         return true;
     }
-    void unlock() {
+    void unlock()
+    {
         for(unsigned i=0; i<locked; i++)
             lockedFiles.item(i).unlockProperties(state);
         locked = 0;
@@ -3946,14 +3955,17 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             parent.setown(transaction->lookupSuperFile(parentlname));   
             if (!parent)
                 throw MakeStringException(-1,"addSubFile: SuperFile %s cannot be found",parentlname.get());
-            if (!subfile.isEmpty()) {
-                try {
+            if (!subfile.isEmpty())
+            {
+                try
+                {
                     sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
                     // Must validate before locking for update below, to check sub is not already in parent (and therefore locked already)
-                    CDistributedSuperFile *sf = QUERYINTERFACE(parent.get(),CDistributedSuperFile);
+                    CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());;
                     sf->validateAddSubFile(sub);
                 }
-                catch (IDFS_Exception *e) {
+                catch (IDFS_Exception *e)
+                {
                     if (e->errorCode()!=DFSERR_LookupConnectionTimout)
                         throw;
                     return false;
@@ -3964,8 +3976,19 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             // Try to lock all files
             addFileLock(parent);
             addFileLock(sub);
-            if (lock())
+            bool dirty=false;
+            if (lock(&dirty))
+            {
+                if (dirty)
+                {
+                    // in the process of previous attempt to lock for exclusive access, locks were released
+                    // need to reload to ensure position and # of files is correct
+                    CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());
+                    if (sf)
+                        sf->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
+                }
                 return true;
+            }
             unlock();
             return false;
         }
@@ -4008,11 +4031,14 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             parent.setown(transaction->lookupSuperFile(parentlname,true));
             if (!parent)
                 throw MakeStringException(-1,"removeSubFile: SuperFile %s cannot be found",parentlname.get());
-            if (!subfile.isEmpty()) {
-                try {
+            if (!subfile.isEmpty())
+            {
+                try
+                {
                     sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
                 }
-                catch (IDFS_Exception *e) {
+                catch (IDFS_Exception *e)
+                {
                     if (e->errorCode()!=DFSERR_LookupConnectionTimout)
                         throw;
                     return false;
@@ -4024,8 +4050,19 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             addFileLock(parent);
             if (sub)
                 addFileLock(sub);
-            if (lock())
+            bool dirty=false;
+            if (lock(&dirty))
+            {
+                if (dirty)
+                {
+                    // in the process of previous attempt to lock for exclusive access, locks were released
+                    // need to reload to ensure position and # of files is correct
+                    CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());
+                    if (sf)
+                        sf->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
+                }
                 return true;
+            }
             unlock();
             return false;
         }
@@ -4046,6 +4083,31 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         Linked<IDistributedSuperFile> file;
         StringAttr parentlname;
         StringAttr filelname;
+
+        bool refresh(IDistributedSuperFile *super) // returns true if any changes
+        {
+            if (!super)
+                return false;
+            IArrayOf<IDistributedFile> copyOfSubFiles;
+            unsigned s=0;
+            for (; s<super->numSubFiles(); s++)
+               copyOfSubFiles.append(*LINK(&super->querySubFile(s)));
+            CDistributedSuperFile *_super = dynamic_cast<CDistributedSuperFile *>(super);
+            _super->loadSubFiles(transaction, SDS_TRANSACTION_RETRY);
+            if (copyOfSubFiles.ordinality() != super->numSubFiles())
+                return true;
+            for (s=0; s<super->numSubFiles(); s++)
+            {
+                IDistributedFile *file = &(super->querySubFile(s));
+                if (file != &copyOfSubFiles.item(s))
+                    return true;
+            }
+            return false;
+        }
+        bool refresh() // returns true if any changes
+        {
+            return (refresh(parent.get()) || refresh(file.get()));
+        }
     public:
         cSwapFileAction(IDistributedFileTransaction *_transaction,const char *_parentlname,const char *_filelname)
             : CDFAction(_transaction), parentlname(_parentlname), filelname(_filelname)
@@ -4058,7 +4120,8 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             if (!parent)
                 throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",parentlname.get());
             file.setown(transaction->lookupSuperFile(filelname));
-            if (!file) {
+            if (!file)
+            {
                 parent.clear();
                 throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",filelname.get());
             }
@@ -4069,8 +4132,16 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
             addFileLock(file);
             for (unsigned i=0; i<file->numSubFiles(); i++)
                 addFileLock(&file->querySubFile(i));
-            if (lock())
-                return true;
+            bool dirty=false;
+            if (lock(&dirty))
+            {
+                if (!dirty)
+                    return true;
+                // in the process of previous attempt to lock for exclusive access, locks were released
+                // need to reload to ensure position and # of files is correct
+                if (!refresh()) // refreshes the supers and checks if any changes, if there are, transaction will unlock and retry
+                    return true;
+            }
             unlock();
             return false;
         }
