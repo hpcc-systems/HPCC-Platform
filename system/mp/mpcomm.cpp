@@ -397,7 +397,7 @@ class CMPConnectThread: public Thread
     CMPServer *parent;
     void checkSelfDestruct(void *p,size32_t sz);
 public:
-    CMPConnectThread(CMPServer *_parent,unsigned short port); 
+    CMPConnectThread(CMPServer *_parent, unsigned port);
     ~CMPConnectThread()
     {
         ::Release(listensock);
@@ -445,7 +445,7 @@ public:
     UserPacketHandler           *userpackethandler;         // default
 
 
-    CMPServer(unsigned short port);
+    CMPServer(unsigned _port);
     ~CMPServer();
     void start();
     void stop();
@@ -1547,30 +1547,51 @@ bool CMPChannel::sendPingReply(unsigned timeout,bool identifyself)
 }
     
 // --------------------------------------------------------
-CMPConnectThread::CMPConnectThread(CMPServer *_parent,unsigned short port)
+CMPConnectThread::CMPConnectThread(CMPServer *_parent, unsigned port)
     : Thread("MP Connection Thread")
 {
     parent = _parent;
-    if (port==0) {  // need to connect early to resolve clash
-        loop {
-            port = MP_BASE_PORT+getRandom()%MP_PORT_RANGE;
-            try {
-                listensock = ISocket::create(port,16);  // better not to have *too* many waiting
+    if (!port)
+    {
+        // need to connect early to resolve clash
+        Owned<IPropertyTree> env = getHPCCEnvironment();
+        unsigned minPort, maxPort;
+        if (env)
+        {
+            minPort = env->getPropInt("EnvSettings/ports/mpStart", MP_START_PORT);
+            maxPort = env->getPropInt("EnvSettings/ports/mpEnd", MP_END_PORT);
+        }
+        else
+        {
+            minPort = MP_START_PORT;
+            maxPort = MP_END_PORT;
+        }
+        assertex(maxPort >= minPort);
+        Owned<IJSOCK_Exception> lastErr;
+        unsigned numPorts = maxPort - minPort + 1;
+        for (int retries = 0; retries < numPorts * 3; retries++)
+        {
+            port = minPort + getRandom() % numPorts;
+            try
+            {
+                listensock = ISocket::create(port, 16);  // better not to have *too* many waiting
                 break;
             }
             catch (IJSOCK_Exception *e)
             {
                 if (e->errorCode()!=JSOCKERR_port_in_use)
                     throw;
-                e->Release();
+                lastErr.setown(e);
             }
         }
+        if (!listensock)
+            throw lastErr.getClear();
     }
     else 
         listensock = NULL;  // delay create till running
     parent->setPort(port);
 #ifdef _TRACE
-    LOG(MCdebugInfo(100), unknownJob, "MP Connect Thread Init Port = %d",port);
+    LOG(MCdebugInfo(100), unknownJob, "MP Connect Thread Init Port = %d", port);
 #endif
     running = false;
 }
@@ -1771,10 +1792,11 @@ CMPChannel &CMPServer::lookup(const SocketEndpoint &endpoint)
 }
 
 
-CMPServer::CMPServer(unsigned short _port) 
+CMPServer::CMPServer(unsigned _port)
 {
+    port = 0;   // connectthread tells me what port it actually connected on
     checkclosed = false;
-    connectthread = new CMPConnectThread(this,_port);
+    connectthread = new CMPConnectThread(this, _port);
     selecthandler = createSocketSelectHandler();
     pingpackethandler = new PingPacketHandler;              // TAG_SYS_PING
     pingreplypackethandler = new PingReplyPacketHandler;    // TAG_SYS_PING_REPLY
@@ -2493,16 +2515,19 @@ IInterCommunicator &queryWorldCommunicator()
     return *worldcomm;
 }
 
-void startMPServer(unsigned short port,bool paused)
+void startMPServer(unsigned port, bool paused)
 {
     assertex(sizeof(PacketHeader)==32);
     CriticalBlock block(CMPServer::serversect); 
-    if (CMPServer::servernest==0) {
-        if (!CMPServer::serverpaused) {
+    if (CMPServer::servernest==0)
+    {
+        if (!CMPServer::serverpaused)
+        {
             delete MPserver;
             MPserver = new CMPServer(port);
         }
-        if (paused) {
+        if (paused)
+        {
             CMPServer::serverpaused = true;
             return;
         }
