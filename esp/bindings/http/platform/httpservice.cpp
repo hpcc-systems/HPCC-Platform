@@ -323,7 +323,7 @@ int CEspHttpServer::processRequest()
             {
                 if (!rootAuth(ctx))
                     return 0;
-                if (ctx->queryUser()->getAuthenticateStatus() == AS_PASSWORD_EXPIRED)
+                if (ctx->queryUser() && (ctx->queryUser()->getAuthenticateStatus() == AS_PASSWORD_EXPIRED))
                     return 0;//allow user to change password
                 // authenticate optional groups
                 if (authenticateOptionalFailed(*ctx,NULL))
