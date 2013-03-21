@@ -66,6 +66,7 @@ include_directories (
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 
+         ./../../dali/dfu 
          ./../../roxie/roxiemem 
          ./../../common/dllserver 
          ./../../system/jlib 
