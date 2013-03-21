@@ -447,7 +447,8 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
         Owned<IHpccPackageSet> ps = createPackageSet(process.str());
         wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryid);
         wufiles->resolveFiles(process.str(), remoteIP, !overwrite, true);
-        wufiles->cloneAllInfo(overwrite, true);
+        Owned<IDFUhelper> helper = createIDFUhelper();
+        wufiles->cloneAllInfo(helper, overwrite, true);
     }
 }
 
