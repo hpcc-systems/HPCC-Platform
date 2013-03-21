@@ -301,7 +301,7 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   macro(ADD_PLUGIN)
     PARSE_ARGUMENTS(PLUGIN
-        "PACKAGES;OPTION"
+        "PACKAGES;OPTION;MINVERSION;MAXVERSION"
         ""
         ${ARGN}
     )
@@ -314,7 +314,16 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
     FOREACH(package ${PLUGIN_PACKAGES})
       set(findvar ${package}_FOUND)
       string(TOUPPER ${findvar} PACKAGE_FOUND)
-      find_package(${package})
+      if ("${PLUGIN_MINVERSION}" STREQUAL "")
+        find_package(${package})
+      else()
+        set(findvar ${package}_VERSION_STRING)
+        string(TOUPPER ${findvar} PACKAGE_VERSION_STRING)
+        find_package(${package} ${PLUGIN_MINVERSION} )
+        if ("${${PACKAGE_VERSION_STRING}}" VERSION_GREATER "${PLUGIN_MAXVERSION}")
+          set(${PLUGIN_FOUND} 0)
+        endif()
+      endif()
       if (${PACKAGE_FOUND})
         set(PLUGIN_FOUND 1)
       else()
