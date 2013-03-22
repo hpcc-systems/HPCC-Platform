@@ -251,7 +251,11 @@ bool DirectDiskDataSource::fetchRowData(MemoryBuffer & out, __int64 offset)
     physical.readData(out, offset, returnedMeta->getMaxRecordSize());
     if (out.length() == 0)
         return false;
-    out.setLength(returnedMeta->getRecordSize(out.toByteArray()));
+    size32_t actualLength = returnedMeta->getRecordSize(out.toByteArray());
+    if (actualLength > readBlockSize)
+        throwError(FVERR_RowTooLarge);
+
+    out.setLength(actualLength);
     return true;
 }
 

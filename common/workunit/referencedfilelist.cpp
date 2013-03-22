@@ -128,11 +128,11 @@ public:
     virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid);
 
     virtual IReferencedFileIterator *getFiles();
-    virtual void cloneFileInfo(bool overwrite, bool cloneSuperInfo);
+    virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo);
     virtual void cloneRelationships();
-    virtual void cloneAllInfo(bool overwrite, bool cloneSuperInfo)
+    virtual void cloneAllInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo)
     {
-        cloneFileInfo(overwrite, cloneSuperInfo);
+        cloneFileInfo(helper, overwrite, cloneSuperInfo);
         cloneRelationships();
     }
     virtual void resolveFiles(const char *process, const char *remoteIP, bool checkLocalFirst, bool addSubFiles);
@@ -472,9 +472,8 @@ void ReferencedFileList::resolveFiles(const char *_process, const char *remoteIP
         resolveSubFiles(subfiles, checkLocalFirst);
 }
 
-void ReferencedFileList::cloneFileInfo(bool overwrite, bool cloneSuperInfo)
+void ReferencedFileList::cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo)
 {
-    Owned<IDFUhelper> helper = createIDFUhelper();
     ReferencedFileIterator files(this);
     ForEach(files)
         files.queryObject().cloneInfo(helper, user, remote, process, overwrite);

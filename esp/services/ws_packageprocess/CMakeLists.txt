@@ -22,8 +22,6 @@ set (    SRCS
          ws_packageprocessService.cpp
          ws_packageprocessService.hpp
          packageprocess_errors.h
-         ${HPCC_SOURCE_DIR}/common/roxiemanager/referencedfilelist.cpp
-         ${HPCC_SOURCE_DIR}/common/roxiemanager/referencedfilelist.hpp
     )
 
 include_directories (

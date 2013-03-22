@@ -96,6 +96,7 @@ CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
 StringArray allQuerySetNames;
 
+bool allFilesDynamic;
 bool crcResources;
 bool useRemoteResources;
 bool checkFileDate;
@@ -645,6 +646,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
+        allFilesDynamic = topology->getPropBool("@allFilesDynamic", false);
         crcResources = topology->getPropBool("@crcResources", false);
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
         readTimeout = topology->getPropInt("@readTimeout", 300);

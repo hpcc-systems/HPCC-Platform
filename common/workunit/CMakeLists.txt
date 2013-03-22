@@ -29,6 +29,7 @@ set (    SRCS
          wujobq.cpp
          package.cpp
          workflow.cpp
+         referencedfilelist.cpp
                  
          workunit.hpp 
          wuerror.hpp
@@ -36,6 +37,7 @@ set (    SRCS
          package.h
          workflow.hpp
          pkgimpl.hpp
+         referencedfilelist.hpp
     )
 
 include_directories ( 
@@ -45,6 +47,7 @@ include_directories (
          ./../../common/deftype 
          ./../../system/include 
          ./../../dali/base 
+         ./../../dali/dfu
          ./../../rtl/include 
          ./../../common/dllserver 
          ./../../system/jlib

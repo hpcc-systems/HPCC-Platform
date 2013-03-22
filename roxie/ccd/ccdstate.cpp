@@ -513,9 +513,9 @@ public:
     {
         return BASE::isActive();
     }
-    virtual bool validate(StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages) const
+    virtual bool validate(const char *queryid, StringArray &wrn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
     {
-        return BASE::validate(wrn, err, unmatchedQueries, unusedPackages);
+        return BASE::validate(queryid, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles);
     }
 
     virtual const IRoxiePackage *queryRoxiePackage(const char *name) const

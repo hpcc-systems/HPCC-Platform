@@ -23,6 +23,7 @@
 #include "jptree.hpp"
 #include "jregexp.hpp"
 #include "package.h"
+#include "referencedfilelist.hpp"
 
 class CPackageSuperFileArray : public CInterface, implements ISimpleSuperFileEnquiry
 {
@@ -373,14 +374,14 @@ public:
         load(getPackageMapById(id, true));
     }
 
-    virtual bool validate(StringArray &warn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages) const
+    virtual bool validate(const char *queryToCheck, StringArray &warn, StringArray &err, 
+        StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
     {
         bool isValid = true;
         MapStringTo<bool> referencedPackages;
         Owned<IPropertyTree> qs = getQueryRegistry(querySet, true);
         if (!qs)
             throw MakeStringException(PACKAGE_TARGET_NOT_FOUND, "Target %s not found", querySet.sget());
-        Owned<IPropertyTreeIterator> queries = qs->getElements("Query");
         HashIterator it(packages);
         ForEach (it)
         {
@@ -404,11 +405,32 @@ public:
                     referencedPackages.setValue(baseId, true);
             }
         }
+        StringBuffer xpath("Query");
+        if (queryToCheck && *queryToCheck)
+            xpath.appendf("[@id='%s']", queryToCheck);
+        Owned<IPropertyTreeIterator> queries = qs->getElements(xpath);
+        if (!queries->first())
+        {
+            warn.append("No Queries found");
+            return isValid;
+        }
+
+        Owned<IWorkUnitFactory> wufactory = getWorkUnitFactory(NULL, NULL);
         ForEach(*queries)
         {
             const char *queryid = queries->query().queryProp("@id");
             if (queryid && *queryid)
             {
+                Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL);
+                Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(queries->query().queryProp("@wuid"), false);
+                filelist->addFilesFromQuery(cw, this, queryid);
+                Owned<IReferencedFileIterator> refFiles = filelist->getFiles();
+                ForEach(*refFiles)
+                {
+                    VStringBuffer fullname("%s/%s", queryid, refFiles->query().getLogicalName());
+                    unmatchedFiles.append(fullname);
+                }
+
                 const IHpccPackage *matched = matchPackage(queryid);
                 if (matched)
                 {

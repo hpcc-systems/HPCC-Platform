@@ -66,6 +66,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 
 #define ECLOPT_DONT_COPY_FILES "--no-files"
 
+#define ECLOPT_ACTIVE "--active"
+#define ECLOPT_ALL "--all"
 #define ECLOPT_INACTIVE "--inactive"
 #define ECLOPT_NO_ACTIVATE "--no-activate"
 #define ECLOPT_ACTIVATE "--activate"
@@ -110,6 +112,10 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_QUERYSET_S "-qs"
 #define ECLOPT_VERSION "--version"
 #define ECLOPT_SHOW "--show"
+#define ECLOPT_PMID "--pmid"
+#define ECLOPT_PMID_S "-pm"
+#define ECLOPT_QUERYID "--queryid"
+
 
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"

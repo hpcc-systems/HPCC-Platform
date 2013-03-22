@@ -598,7 +598,7 @@ private:
 class EclCmdPackageValidate : public EclCmdCommon
 {
 public:
-    EclCmdPackageValidate()
+    EclCmdPackageValidate() : optValidateActive(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -625,6 +625,12 @@ public:
                 }
                 continue;
             }
+            if (iter.matchFlag(optValidateActive, ECLOPT_ACTIVE))
+                continue;
+            if (iter.matchOption(optPMID, ECLOPT_PMID) || iter.matchOption(optPMID, ECLOPT_PMID_S))
+                continue;
+            if (iter.matchOption(optQueryId, ECLOPT_QUERYID))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -638,9 +644,18 @@ public:
             return false;
         }
         StringBuffer err;
-        if (optFileName.isEmpty())
-            err.append("\n ... Missing package file name\n\n");
-        else if (optTarget.isEmpty())
+        int pcount=0;
+        if (optFileName.length())
+            pcount++;
+        if (optPMID.length())
+            pcount++;
+        if (optValidateActive)
+            pcount++;
+        if (pcount==0)
+            err.append("\n ... Package file name, --pmid, or --active required\n\n");
+        else if (pcount > 1)
+            err.append("\n ... Package file name, --pmid, and --active are mutually exclusive\n\n");
+        if (optTarget.isEmpty())
             err.append("\n ... Specify a cluster name\n\n");
 
         if (err.length())
@@ -654,14 +669,20 @@ public:
     virtual int processCMD()
     {
         Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
-        StringBuffer pkgInfo;
-        pkgInfo.loadFile(optFileName);
-
-        fprintf(stdout, "\nvalidating packagemap file %s\n\n", optFileName.sget());
-
         Owned<IClientValidatePackageRequest> request = packageProcessClient->createValidatePackageRequest();
-        request->setInfo(pkgInfo);
+
+        if (optFileName.length())
+        {
+            StringBuffer pkgInfo;
+            pkgInfo.loadFile(optFileName);
+            fprintf(stdout, "\nvalidating packagemap file %s\n\n", optFileName.sget());
+            request->setInfo(pkgInfo);
+        }
+
+        request->setActive(optValidateActive);
+        request->setPMID(optPMID);
         request->setTarget(optTarget);
+        request->setQueryIdToVerify(optQueryId);
 
         Owned<IClientValidatePackageResponse> resp = packageProcessClient->ValidatePackage(request);
         if (resp->getExceptions().ordinality()>0)
@@ -698,6 +719,13 @@ public:
             ForEachItemIn(i, unusedPackages)
                 fprintf(stderr, "      %s\n", unusedPackages.item(i));
         }
+        StringArray &unusedFiles = resp->getFiles().getUnmatched();
+        if (unusedFiles.ordinality()>0)
+        {
+            fputs("\n   Files without matching package definitions:\n", stderr);
+            ForEachItemIn(i, unusedFiles)
+                fprintf(stderr, "      %s\n", unusedFiles.item(i));
+        }
 
         return 0;
     }
@@ -710,8 +738,10 @@ public:
                     "\n"
                     "ecl packagemap validate <target> <filename>\n"
                     " Options:\n"
-                    "   <target>                    name of target to use when adding package map information\n"
-                    "   <filename>                  name of file containing package map information\n",
+                    "   <target>                    name of target to use when validating package map information\n"
+                    "   <filename>                  name of file containing package map information\n"
+                    "   --active                    validate the active packagemap\n"
+                    "   -pm, --pmid                 id of packagemap to validate\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -719,6 +749,9 @@ public:
 private:
     StringAttr optFileName;
     StringAttr optTarget;
+    StringAttr optPMID;
+    StringAttr optQueryId;
+    bool optValidateActive;
 };
 
 IEclCommand *createPackageSubCommand(const char *cmdname)

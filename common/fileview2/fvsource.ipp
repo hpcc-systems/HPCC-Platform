@@ -25,7 +25,7 @@
 
 //Following constants configure different sizes etc.
 
-#define DISK_BLOCK_SIZE     8096            // Size of chunks read directly from file.
+#define DISK_BLOCK_SIZE     0x10000         // Size of chunks read directly from file.
 #define PAGED_WU_LIMIT      0x20000         // Page load work unit results >= this size.
 #define WU_BLOCK_SIZE       0x4000          // Size of chunks read from Work unit
 #define DISKREAD_PAGE_SIZE  200             // Number of rows to read in each chunk from file.

@@ -52,6 +52,7 @@
 #define FVERR_BadStringTermination              2026
 #define FVERR_CannotBrowseFile                  2027
 #define FVERR_PluginMismatch                    2028
+#define FVERR_RowTooLarge                       2029
 
 #define FVERR_CouldNotResolveX_Text             "Could not resolve file '%s' in DFS"
 #define FVERR_NoRecordDescription_Text          "DFS did not contain record description for '%s'"
@@ -81,5 +82,6 @@
 #define FVERR_UnrecognisedMappingFunctionXY_Text    "Unrecognised field mapping function %s.%s"
 #define FVERR_BadStringTermination_Text          "String not terminated correctly %.*s"
 #define FVERR_CannotBrowseFile_Text              "Cannot browse file '%s'"
+#define FVERR_RowTooLarge_Text                   "Row too large"
 
 #endif

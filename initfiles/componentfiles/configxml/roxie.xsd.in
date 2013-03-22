@@ -425,10 +425,17 @@
     </xs:attribute>
  </xs:attributeGroup>
  <xs:attributeGroup name="Options">
+    <xs:attribute name="allFilesDynamic" type="xs:boolean" use="optional" default="false">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>If enabled, files will be resolved per-query and not locked between queries</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="allowRoxieOnDemand" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>allow roxie to load, run, add queries meant to be run 1 time (no file data copies for these queries</tooltip>
+          <tooltip>Allow roxie to load, run, add queries meant to be run 1 time (no file data copies for these queries</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

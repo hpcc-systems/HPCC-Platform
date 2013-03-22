@@ -658,7 +658,6 @@ IHqlExpression * HqlThorBoundaryTransformer::createTransformed(IHqlExpression * 
     case no_field:
     case no_constant:
     case no_attr:
-    case no_attr_expr:
     case no_attr_link:
     case no_getresult:
     case no_left:
@@ -992,7 +991,8 @@ void HqlCppTranslator::markThorBoundaries(WorkflowArray & array)
     HqlThorBoundaryTransformer thorTransformer(wu(), targetRoxie(), options.maxRootMaybeThorActions, options.resourceConditionalActions, options.resourceSequential);
     ForEachItemIn(idx, array)
     {
-        HqlExprArray & exprs = array.item(idx).queryExprs();
+        WorkflowItem & cur = array.item(idx);
+        HqlExprArray & exprs = cur.queryExprs();
         HqlExprArray bounded;
 
         thorTransformer.transformRoot(exprs, bounded);

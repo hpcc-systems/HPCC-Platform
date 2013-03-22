@@ -51,7 +51,9 @@
                 <script language="JavaScript1.2">
                     var querySet = '<xsl:value-of select="QuerySet"/>';
                     var queryId = '<xsl:value-of select="QueryId"/>';
+                    var queryName = '<xsl:value-of select="QueryName"/>';
                     var suspended = '<xsl:value-of select="Suspended"/>';
+                    var activated = '<xsl:value-of select="Activated"/>';
                     <xsl:text disable-output-escaping="yes"><![CDATA[
                       function deleteQuery() {
                         actionWorkunits('Delete');
@@ -60,8 +62,12 @@
                       function toggleQuery() {
                         actionWorkunits('ToggleSuspend');
                       }
-                      function activateQuery() {
-                        actionWorkunits('Activate');
+
+                      function toggleActivated() {
+                        if (activated == 1)
+                          actionAliases('Deactivate');
+                        else
+                          actionWorkunits('Activate');
                       }
 
                       function getQueryActions(Action) {
@@ -75,8 +81,11 @@
                           var connectionCallback = {
                               success: function(o) {
                                   var xmlDoc = o.responseXML;
-                                  document.location.replace( document.location.href );
-
+                                  if (Action == 'Delete') {
+                                    document.location.replace( "/WsWorkunits/WUQuerysetDetails?QuerySetName=" + querySet);
+                                  } else {
+                                    document.location.replace(document.location.href);
+                                  }
                               },
                               failure: function(o) {
                                   alert('Failure:' + o.statusText);
@@ -94,6 +103,37 @@
                                   "/WsWorkunits/WUQuerysetQueryAction",
                                   connectionCallback, postBody);
                           return;
+                      }
+
+                      function getAliasActions(Action) {
+                          var soapXML = '<WUQuerysetAliasAction><QuerySetName>' + querySet + '</QuerySetName><Action>' + Action + '</Action><Aliases>';
+                          soapXML += '<Alias><Name>' + queryName + '</Name></Alias>';
+                          soapXML += '</Aliases></WUQuerysetAliasAction>';
+                          return soapXML;
+                      }
+
+                      function actionAliases(Action) {
+                          var connectionCallback = {
+                              success: function(o) {
+                                  var xmlDoc = o.responseXML;
+                                  document.location.replace( document.location.href );
+                              },
+                              failure: function(o) {
+                                  alert('Failure:' + o.statusText);
+                              }
+                          };
+
+                          var postBody = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:SOAP-ENC="http://schemas.xmlsoap.org/soap/encoding/" xmlns="http://webservices.seisint.com/ws_roxieconfig"><soap:Body>' + getAliasActions(Action) + '</soap:Body></soap:Envelope>';
+
+                          YAHOO.util.Connect.initHeader("SOAPAction", "/WsWorkunits/WUQuerysetActionAliases?");
+                          YAHOO.util.Connect.initHeader("Content-Type", "text/xml");
+                          YAHOO.util.Connect._use_default_post_header = false;
+
+                          var getXML = YAHOO.util.Connect.asyncRequest("POST",
+                                  "/WsWorkunits/WUQuerysetActionAliases",
+                                  connectionCallback, postBody);
+                          return;
+
                       }
 
                       function DFUFileDetails(fileName) {
@@ -155,6 +195,18 @@
                                 <td><xsl:value-of select="SuspendedBy"/></td>
                             </tr>
                         </xsl:if>
+                        <tr>
+                            <th>
+                                Activated:
+                            </th>
+                            <td>
+                                <input type="checkbox" onclick="toggleActivated();">
+                                    <xsl:if test="Activated=1">
+                                        <xsl:attribute name="checked"/>
+                                    </xsl:if>
+                                </input>
+                            </td>
+                        </tr>
                         <xsl:if test="string-length(Label)">
                             <tr>
                                 <th>Label:</th>
@@ -194,7 +246,6 @@
                     </table>
                 </form>
                 <input id="deleteBtn" type="button" value="Delete" onclick="deleteQuery();"> </input>
-                <input id="activateBtn" type="button" value="Activate" onclick="activateQuery();"> </input>
             </body>
         </html>
     </xsl:template>

@@ -24,6 +24,7 @@
 
 #include "fileview.hpp"
 #include "fvsource.ipp"
+#include "fverror.hpp"
 #include "hqlerror.hpp"
 #include "eclhelper.hpp"
 #include "hqlattr.hpp"
@@ -707,6 +708,8 @@ VariableRowBlock::VariableRowBlock(MemoryBuffer & _buffer, __int64 _start, __int
     {
         rowIndex.append(cur);
         cur += recordSize->getRecordSize(max-cur, buff + cur);
+        if (cur > max)
+            throwError(FVERR_RowTooLarge);
     }
     buffer.setLength(cur);
     rowIndex.append(cur);
