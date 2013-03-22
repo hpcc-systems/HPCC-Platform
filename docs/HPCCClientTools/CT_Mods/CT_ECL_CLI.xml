@@ -1971,12 +1971,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
       <sect2 id="eclpackagevalidate" role="brk">
         <title>ecl packagemap validate</title>
 
-        <para><emphasis role="bold">ecl packagemap validate &lt;filename&gt;
-        </emphasis></para>
+        <para><emphasis role="bold">ecl packagemap validate &lt;target&gt;
+        [&lt;filename&gt;] </emphasis></para>
 
         <para>Examples:</para>
 
-        <programlisting>ecl packagemap validate mypackagemap.pkg</programlisting>
+        <programlisting>ecl packagemap validate roxie mypackagemap.pkg
+ecl packagemap validate roxie --active</programlisting>
 
         <para>The packagemap validate command verifies that :</para>
 
@@ -1992,13 +1993,21 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
           </listitem>
 
           <listitem>
-            <para>All Roxie queries are defined in the package </para>
+            <para>All Roxie queries are defined in the package</para>
           </listitem>
         </itemizedlist>
 
-        <para></para>
+        <para>The result will also list any files that are used by queries but
+        not mapped in the packagemap.</para>
 
-        <para><informaltable colsep="0" frame="none" rowsep="0">
+        <para>Filename, --active, and --pmid are mutually exclusive. The
+        --active or --pmid options validate a packagemap that has already been
+        added instead of a local file. </para>
+
+        <para>The --queryid option checks the files in a query instead of all
+        the queries in the target queryset. This is quicker when you only need
+        to validate the files for a single query. <informaltable colsep="0"
+            frame="none" rowsep="0">
             <tgroup cols="2">
               <colspec align="left" colwidth="175.55pt" />
 
@@ -2008,7 +2017,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>ecl packagemap validate</entry>
 
-                  <entry>Calls the packagemap validate command. </entry>
+                  <entry>Calls the packagemap validate command.</entry>
                 </row>
 
                 <row>
@@ -2018,7 +2027,7 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 <row>
                   <entry>validate</entry>
 
-                  <entry>validates packagemap info</entry>
+                  <entry>Validates packagemap info</entry>
                 </row>
 
                 <row>
@@ -2029,6 +2038,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>filename</entry>
 
                   <entry>The filename containing the packagemap info to
+                  validate</entry>
+                </row>
+
+                <row>
+                  <entry>target</entry>
+
+                  <entry>The target containing the packagemap to
                   validate</entry>
                 </row>
 
@@ -2047,6 +2063,26 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
 
                   <entry>The IP Address or hostname of ESP server running
                   eclwatch services</entry>
+                </row>
+
+                <row>
+                  <entry>--active</entry>
+
+                  <entry>Validates the packagemap that is active for the given
+                  target</entry>
+                </row>
+
+                <row>
+                  <entry>--pmid=&lt;packagemapid&gt;</entry>
+
+                  <entry>Validates the given packagemap</entry>
+                </row>
+
+                <row>
+                  <entry>--queryid</entry>
+
+                  <entry>Validate the files for the given queryid if they are
+                  mapped in the packagemap</entry>
                 </row>
 
                 <row>
