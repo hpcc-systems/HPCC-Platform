@@ -3232,8 +3232,6 @@ function onMenuItemClickHandleComputerItemsCopy(p_sType, p_aArgs, p_oValue)
     label = "Domain"
   else if (label === "Computers")
     label = "Computer"
-  else if (label === "NAS")
-    label = "NAS"
 
   var dt = top.document.RightTabView.getTab(top.document.RightTabView.get('activeIndex')).dt;
 
