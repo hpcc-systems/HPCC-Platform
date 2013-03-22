@@ -714,6 +714,7 @@ struct HqlCppOptions
     bool                normalizeSelectorSequence;
     bool                removeXpathFromOutput;
     bool                canLinkConstantRows;
+    bool                checkAmbiguousRollupCondition;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -1859,6 +1860,8 @@ public:
     void checkNormalized(WorkflowArray & array);
     void checkNormalized(HqlExprArray & exprs);
     void checkNormalized(BuildCtx & ctx, IHqlExpression * expr);
+
+    void checkAmbiguousRollupCondition(IHqlExpression * expr);
 
 protected:
     HqlCppInstance *    code;

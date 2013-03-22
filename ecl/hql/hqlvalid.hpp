@@ -24,4 +24,8 @@ IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpressi
 extern HQL_API IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const IHqlExpression * locationExpr);
 extern HQL_API IHqlExpression * createLocationAttr(ISourcePath * filename, int lineno, int column, int position);
 
+extern HQL_API IHqlExpression * queryAmbiguousRollupCondition(IHqlExpression * expr, bool strict);
+extern HQL_API IHqlExpression * queryAmbiguousRollupCondition(IHqlExpression * expr, const HqlExprArray & selects);
+extern HQL_API void filterAmbiguousRollupCondition(HqlExprArray & ambiguousSelects, HqlExprArray & selects, IHqlExpression * expr);
+
 #endif

@@ -1352,8 +1352,13 @@ struct IHThorLinkedRawIteratorArg : public IHThorArg
 };
 
 
+enum {
+    RFrolledismatchleft = 0x00001,      // Is the value of left passed to matches() the result of the rollup?
+};
+
 struct IHThorRollupArg : public IHThorArg
 {
+    virtual unsigned getFlags() = 0;
     virtual bool matches(const void * _left, const void * _right) = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) = 0;
 };

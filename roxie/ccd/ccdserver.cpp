@@ -6746,7 +6746,11 @@ public:
                 unsigned outSize = helper.transform(rowBuilder, left, right);
                 if (outSize)
                     left.setown(rowBuilder.finalizeRowClear(outSize));
-                prev.set(left);
+
+                if (helper.getFlags() & RFrolledismatchleft)
+                    prev.set(left);
+                else
+                    prev.set(right);
             }
             catch(IException * E)
             {
