@@ -619,7 +619,7 @@ int main( int argc, char *argv[]  )
         {
             Owned<IPropertyTree> nasConfig = envGetNASConfiguration();
             if (nasConfig)
-                globals->setPropTree("NAS", nasConfig.getClear()); // for use by slaves
+                globals->setPropTree("NAS", nasConfig.getLink()); // for use by slaves
             Owned<IPropertyTree> masterNasFilters = envGetInstallNASHooks(nasConfig, &thorEp);
         }
         
