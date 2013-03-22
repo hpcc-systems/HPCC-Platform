@@ -6918,7 +6918,7 @@ public:
                 unsigned outSize = helper.transform(rowBuilder, left, right);
                 if (outSize)
                     left.setown(rowBuilder.finalizeRowClear(outSize));
-                prev.set(right);
+                prev.set(left);
             }
             catch(IException * E)
             {
