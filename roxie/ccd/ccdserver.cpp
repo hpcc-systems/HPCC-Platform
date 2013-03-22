@@ -11336,11 +11336,14 @@ public:
         properties.setPropInt64("@recordCount", reccount);
         SCMStringBuffer info;
         WorkunitUpdate workUnit = ctx->updateWorkUnit();
-        properties.setProp("@owner", workUnit->getUser(info).str());
-        info.clear();
-        properties.setProp("@workunit", workUnit->getWuid(info).str());
-        info.clear();
-        properties.setProp("@job", workUnit->getJobName(info).str());
+        if (workUnit)
+        {
+            properties.setProp("@owner", workUnit->getUser(info).str());
+            info.clear();
+            properties.setProp("@workunit", workUnit->getWuid(info).str());
+            info.clear();
+            properties.setProp("@job", workUnit->getJobName(info).str());
+        }
         char const * rececl = helper.queryRecordECL();
         if(rececl && *rececl)
             properties.setProp("ECL", rececl);
