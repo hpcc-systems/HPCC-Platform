@@ -942,11 +942,11 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
         refreshConfirm = false;
     }
 
-    var regEx = new RegExp('/\""<>[]', 'g');
+    var regEx = new RegExp("^[a-zA-Z0-9_]+$");
 
-    if (attrName == 'name' && newValue.search(regEx) == -1)
+    if (attrName == 'name' && regEx.test(newValue) == false)
     {
-      alert("Invalid character in Component Name.");
+      alert("Invalid character in component name. Only alpha-numerics and underscores '_' are allowed.");
       return false;
     }
     var xmlArgs = argsToXml(category, params, attrName, oldValue, newValue, recordIndex + 1, record.getData(column.key + '_onChange'));
