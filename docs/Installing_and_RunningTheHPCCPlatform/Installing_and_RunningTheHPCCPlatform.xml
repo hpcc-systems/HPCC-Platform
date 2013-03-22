@@ -1889,11 +1889,11 @@ OUTPUT(L);</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>Click on the Spray CSV hyperlink under the DFU Files menu on
-            the left.</para>
+            <para>Click on the Spray Variable hyperlink under the DFU Files
+            menu on the left.</para>
 
             <para><figure>
-                <title>Spray CSV</title>
+                <title>Spray Variable</title>
 
                 <mediaobject>
                   <imageobject>
@@ -1903,7 +1903,7 @@ OUTPUT(L);</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>The <emphasis role="bold">DFU Spray CSV</emphasis> page
+            <para>The <emphasis role="bold">DFU Spray Variable</emphasis> page
             displays.</para>
           </listitem>
 
