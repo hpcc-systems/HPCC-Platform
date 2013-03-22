@@ -122,6 +122,7 @@ public:
     
     ~CLazyFileIO()
     {
+        setFailure(); // ensures the open file count properly maintained
     }
 
     virtual void beforeDispose()
@@ -1150,7 +1151,7 @@ public:
         try
         {
             CriticalBlock b(crit);
-            ILazyFileIO *f = files.getValue(localLocation);
+            Linked<ILazyFileIO> f = files.getValue(localLocation);
             if (f && f->isAlive())
             {
                 if ((size != -1 && size != f->getSize()) ||
@@ -1177,7 +1178,7 @@ public:
                     throw MakeStringException(ROXIE_MISMATCH, "Different version of %s already loaded: sizes = %"I64F"d %"I64F"d  Date = %s  %s", id, size, f->getSize(), modifiedDt.str(), fileDt.str());
                 }
                 else
-                    return LINK(f);
+                    return f.getClear();
             }
 
             ret.setown(openFile(id, partNo, fileType, localLocation, peerRoxieCopiedLocationInfo, deployedLocationInfo, size, modified, memFile, crc, isCompressed));  // for now don't check crcs
@@ -1319,25 +1320,22 @@ public:
         ForEach(h)
         {
             ILazyFileIO *f = files.mapToValue(&h.query());
+            const char *fname = remote ? f->querySource()->queryFilename() : f->queryFilename();
             if (f->isAlive() && f->isOpen() && f->isRemote()==remote && !f->isCopying())
             {
                 unsigned age = msTick() - f->getLastAccessed();
                 if (age > maxFileAge[remote])
                 {
                     if (traceLevel > 5)
-                    {
-                        const char *fname;
-                        if (remote)
-                            fname = f->querySource()->queryFilename();
-                        else
-                            fname = f->queryFilename();
                         DBGLOG("Closing inactive %s file %s (last accessed %u ms ago)", remote ? "remote" : "local",  fname, age);
-                    }
                     f->close();
                 }
                 else
                     goers.append(*f);
             }
+            else if (traceLevel > 8)
+                DBGLOG("Ignoring idle %s file %s", remote ? "remote" : "local",  fname);
+
         }
         unsigned numFilesLeft = goers.ordinality(); 
         if (numFilesLeft > maxFilesOpen[remote])
