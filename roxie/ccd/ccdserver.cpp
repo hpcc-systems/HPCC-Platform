@@ -19639,14 +19639,16 @@ public:
             eof = true;
         else
         {
+            numParts = 0;
             if (variableFileName)
             {
                 varFileInfo.setown(resolveLFN(helper.getFileName(), isOpt));
-                Owned<IFilePartMap> map = varFileInfo->getFileMap();
-                if (map)
-                    numParts = map->getNumParts();
-                else
-                    numParts = 0;
+                if (varFileInfo)
+                {
+                    Owned<IFilePartMap> map = varFileInfo->getFileMap();
+                    if (map)
+                        numParts = map->getNumParts();
+                }
             }
             if (!numParts)
             {
@@ -20732,8 +20734,11 @@ protected:
     void setVariableFileInfo()
     {
         varFileInfo.setown(resolveLFN(indexHelper.getFileName(), isOpt));
-        translators.setown(new TranslatorArray) ;
-        keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+        if (varFileInfo)
+        {
+            translators.setown(new TranslatorArray) ;
+            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, isOpt, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+        }
         variableInfoPending = false;
     }
 
@@ -22749,7 +22754,8 @@ public:
         if (variableFileName)
         {
             varFileInfo.setown(resolveLFN(fetchContext->getFileName(), isOpt));
-            map.setown(varFileInfo->getFileMap());
+            if (varFileInfo)
+                map.setown(varFileInfo->getFileMap());
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->fetchPreload(), false, ctx);
     }
@@ -23429,9 +23435,12 @@ public:
         }
         else if (variableIndexFileName)
         {
-            varFileInfo.setown(resolveLFN(helper.getIndexFileName(), false));
-            translators.setown(new TranslatorArray);
-            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); // MORE - isLocal?
+            varFileInfo.setown(resolveLFN(helper.getIndexFileName(), (helper.getJoinFlags() & JFindexoptional) != 0));
+            if (varFileInfo)
+            {
+                translators.setown(new TranslatorArray);
+                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); // MORE - isLocal?
+            }
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->fullKeyedJoinPreload(), false, ctx);
     }
@@ -24084,8 +24093,10 @@ public:
         CRoxieServerKeyedJoinBase::start(parentExtractSize, parentExtract, paused);
         if (variableFetchFileName)
         {
-            varFetchFileInfo.setown(resolveLFN(helper.getFileName(), false));
-            map.setown(varFetchFileInfo->getFileMap());
+            bool isFetchOpt = (helper.getFetchFlags() & FFdatafileoptional) != 0;
+            varFetchFileInfo.setown(resolveLFN(helper.getFileName(), isFetchOpt));
+            if (varFetchFileInfo)
+                map.setown(varFetchFileInfo->getFileMap());
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->keyedJoinPreload(), false, ctx);
     }
@@ -24217,9 +24228,12 @@ public:
         }
         else if (variableIndexFileName)
         {
-            varFileInfo.setown(resolveLFN(helper.getIndexFileName(), false));
-            translators.setown(new TranslatorArray);
-            keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation())); 
+            varFileInfo.setown(resolveLFN(helper.getIndexFileName(), (helper.getJoinFlags() & JFindexoptional) != 0));
+            if (varFileInfo)
+            {
+                translators.setown(new TranslatorArray);
+                keySet.setown(varFileInfo->getKeyArray(factory->queryActivityMeta(), translators, false, isLocal ? factory->queryQueryFactory().queryChannel() : 0, factory->queryQueryFactory().getEnableFieldTranslation()));
+            }
         }
         puller.start(parentExtractSize, parentExtract, paused, ctx->keyedJoinPreload(), isSimple, ctx);
 
