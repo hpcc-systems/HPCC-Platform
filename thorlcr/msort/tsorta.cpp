@@ -535,7 +535,7 @@ void CThorKeyArray::split()
 
 offset_t CThorKeyArray::getFixedFilePos(unsigned i)
 {
-    return i*divisor*((offset_t)filerecsize);
+    return ((offset_t)i)*((offset_t)divisor)*((offset_t)filerecsize);
 }
 
 offset_t CThorKeyArray::getFilePos(unsigned idx)
