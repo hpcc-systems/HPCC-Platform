@@ -23,6 +23,12 @@
 #include "jexcept.hpp"
 #include "jiter.hpp"
 
+enum TextMarkupFormat
+{
+    MarkupFmt_Unknown=0,
+    MarkupFmt_XML,
+    MarkupFmt_JSON
+};
 enum PTreeExceptionCodes
 {
     PTreeExcpt_XPath_Ambiguity,

@@ -520,6 +520,10 @@ ECLRTL_API void outputXmlAttrUDecimal(const void *field, unsigned size, unsigned
 ECLRTL_API void outputXmlAttrUnicode(unsigned len, const UChar *field, const char *fieldname, StringBuffer &out);
 ECLRTL_API void outputXmlAttrUtf8(unsigned len, const char *field, const char *fieldname, StringBuffer &out);
 
+ECLRTL_API void outputJsonDecimal(const void *field, unsigned digits, unsigned precision, const char *fieldname, StringBuffer &out);
+ECLRTL_API void outputJsonUDecimal(const void *field, unsigned digits, unsigned precision, const char *fieldname, StringBuffer &out);
+ECLRTL_API void outputJsonUnicode(unsigned len, const UChar *field, const char *fieldname, StringBuffer &out);
+
 ECLRTL_API void deserializeRaw(unsigned size, void *record, MemoryBuffer & in);
 ECLRTL_API void deserializeDataX(size32_t & len, void * & data, MemoryBuffer &in);
 ECLRTL_API void deserializeStringX(size32_t & len, char * & data, MemoryBuffer &in);

@@ -239,3 +239,44 @@ void outputXmlAttrUtf8(unsigned len, const char *field, const char *fieldname, S
 }
 
 //---------------------------------------------------------------------------
+
+void outputJsonUnicode(unsigned len, const UChar *field, const char *fieldname, StringBuffer &out)
+{
+    char * buff = 0;
+    unsigned bufflen = 0;
+    rtlUnicodeToCodepageX(bufflen, buff, len, field, "utf-8");
+    appendJSONValue(out, fieldname, bufflen, buff); // output as UTF-8
+    rtlFree(buff);
+}
+
+void outputJsonDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
+{
+    char dec[50];
+    appendJSONNameOrDelimit(out, fieldname);
+    DecLock();
+    if (DecValid(true, size*2-1, field))
+    {
+        DecPushDecimal(field, size, precision);
+        DecPopCString(sizeof(dec), dec);
+        const char *finger = dec;
+        while(isspace(*finger)) finger++;
+        out.append(finger);
+    }
+    DecUnlock();
+}
+
+void outputJsonUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname, StringBuffer &out)
+{
+    char dec[50];
+    appendJSONNameOrDelimit(out, fieldname);
+    DecLock();
+    if (DecValid(false, size*2, field))
+    {
+        DecPushUDecimal(field, size, precision);
+        DecPopCString(sizeof(dec), dec);
+        const char *finger = dec;
+        while(isspace(*finger)) finger++;
+        out.append(finger);
+    }
+    DecUnlock();
+}

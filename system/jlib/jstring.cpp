@@ -1872,37 +1872,72 @@ jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name)
     return encodeJSON(s.append('"'), name).append("\": ");
 }
 
+jlib_decl StringBuffer &appendfJSONName(StringBuffer &s, const char *format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    StringBuffer vs;
+    vs.valist_appendf(format, args);
+    va_end(args);
+    return appendJSONName(s, vs);
+}
+
+static char hexchar[] = "0123456789ABCDEF";
+jlib_decl StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned len, const void *_value)
+{
+    appendJSONNameOrDelimit(s, name);
+    s.append('"');
+    const unsigned char *value = (const unsigned char *) _value;
+    for (unsigned int i = 0; i < len; i++)
+        s.append(hexchar[value[i] >> 4]).append(hexchar[value[i] & 0x0f]);
+    return s.append('"');
+}
+
+inline StringBuffer &encodeJSON(StringBuffer &s, const char ch)
+{
+    switch (ch)
+    {
+        case '\b':
+            s.append("\\b");
+            break;
+        case '\f':
+            s.append("\\f");
+            break;
+        case '\n':
+            s.append("\\n");
+            break;
+        case '\r':
+            s.append("\\r");
+            break;
+        case '\t':
+            s.append("\\t");
+            break;
+        case '\"':
+        case '\\':
+        case '/':
+            s.append('\\'); //fall through
+        default:
+            s.append(ch);
+    }
+    return s;
+}
+
+StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value)
+{
+    if (!value)
+        return s;
+    unsigned pos=0;
+    while(pos<len && value[pos]!=0)
+        encodeJSON(s, value[pos++]);
+    return s;
+}
+
 StringBuffer &encodeJSON(StringBuffer &s, const char *value)
 {
     if (!value)
         return s;
-    for (; *value; value++)
-    {
-        switch (*value)
-        {
-            case '\b':
-                s.append("\\b");
-                break;
-            case '\f':
-                s.append("\\f");
-                break;
-            case '\n':
-                s.append("\\n");
-                break;
-            case '\r':
-                s.append("\\r");
-                break;
-            case '\t':
-                s.append("\\t");
-                break;
-            case '\"':
-            case '\\':
-            case '/':
-                s.append('\\'); //fall through
-            default:
-                s.append(*value);
-        }
-    }
+    while (*value)
+        encodeJSON(s, *value++);
     return s;
 }
 

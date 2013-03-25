@@ -715,6 +715,9 @@ size32_t RtlSetTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
         target.outputBeginNested(outerTag, false);
     }
 
+    const char *innerPath = queryXPath(field);
+    target.outputBeginArray(innerPath);
+
     if (*(bool *)self)
         target.outputSetAll();
     else
@@ -726,6 +729,7 @@ size32_t RtlSetTypeInfo::toXML(const byte * self, const byte * selfrow, const Rt
         }
     }
 
+    target.outputEndArray(innerPath);
     if (outerTag)
         target.outputEndNested(outerTag);
     return max;
@@ -815,6 +819,9 @@ size32_t RtlDatasetTypeInfo::toXML(const byte * self, const byte * selfrow, cons
         target.outputBeginNested(outerTag, false);
     }
 
+    const char *innerPath = queryXPath(field);
+    target.outputBeginArray(innerPath);
+
     unsigned thisSize;
     if (isLinkCounted())
     {
@@ -840,6 +847,7 @@ size32_t RtlDatasetTypeInfo::toXML(const byte * self, const byte * selfrow, cons
         thisSize = max;
     }
 
+    target.outputEndArray(innerPath);
     if (outerTag)
         target.outputEndNested(outerTag);
 
@@ -889,6 +897,9 @@ size32_t RtlDictionaryTypeInfo::toXML(const byte * self, const byte * selfrow, c
         target.outputBeginNested(outerTag, false);
     }
 
+    const char *innerPath = queryXPath(field);
+    target.outputBeginArray(innerPath);
+
     unsigned thisSize;
     if (isLinkCounted())
     {
@@ -908,6 +919,7 @@ size32_t RtlDictionaryTypeInfo::toXML(const byte * self, const byte * selfrow, c
         UNIMPLEMENTED;
     }
 
+    target.outputEndArray(innerPath);
     if (outerTag)
         target.outputEndNested(outerTag);
 
