@@ -125,6 +125,144 @@ hr.dashedLine {
     margin-left:15px;
 }
 /*IDs************************/
+#files{
+    border:solid 1px #DBDBDB;
+    width:95%;
+    margin:auto;
+    padding:20px;
+}
+
+#hpccTitlebar {
+    background: rgb(46, 112, 150);
+    height: 51px;
+    margin: 0px;
+    padding: 2px;
+    overflow: hidden;
+}
+
+#hoverIcon :hover{
+    background-color:rgb(118, 157, 192);
+}
+
+#homeStackController .dijitToggleButton .dijitButtonNode {
+    background-color: #353535;
+    background:none;
+    box-shadow: none;
+}
+
+#homeStackController span:nth-child(1) {
+    background-image: url("../img/hpcc_systems_logo.png");
+    width: 180px;
+    height: 45px;
+}
+
+#homeStackController :hover{
+    background-color:rgb(118, 157, 192);
+}
+
+#homeStackController span:nth-child(2) {
+    background-image: url("../img/ecl_icon.png");
+    width: 45px;
+    height: 45px;
+}
+
+#homeStackController span:nth-child(3) {
+    background-image: url("../img/files_icon.png");
+    width: 45px;
+    height: 45px;
+}
+
+#homeStackController span:nth-child(4) {
+    background-image: url("../img/dfu_icon.png");
+    width: 45px;
+    height: 45px;
+}
+
+#homeStackController span:nth-child(5) {
+    background-image: url("../img/ops_icon.png");
+    width: 45px;
+    height: 45px;
+}
+
+#homeStackController .dijitButtonContents{
+    display:none;
+    border:none;
+}
+
+#homeStackController .dijitButtonNode{
+    border:none;
+}
+
+#homeStackController .dijitReset{
+    cursor: pointer;
+}
+
+#userTools{
+    float:right;
+}
+
+#userAccount{
+    float:left;
+    text-align: left;
+    padding:5px 20px 0 0;
+    text-align: right;
+    padding-top:10px;
+}
+
+#userAccount a{
+    color:rgb(0, 160, 224);
+}
+
+#userIcons{
+    float:left;
+    text-align: center;
+}
+
+#userIcons img{
+    border:none;
+}
+
+#userIcons .dijitDropDownButton .dijitButtonNode{
+    border:none;
+    padding:0;
+    background: none;
+    box-shadow: none;
+}
+
+#userIcons .holder span:nth-child(1) {
+    border:none;
+    margin:0 0 0 0;
+    padding:0;
+    outline: none;
+}
+
+#search-form{
+    padding:0;
+    margin:0;
+    float:left;
+    width:300px;
+    margin-top:8px;
+}
+
+#search-form :focus{
+    outline: none;
+}
+
+#search-form input{
+    color:#666;
+}
+
+#userIcons .dijitButtonText{
+    padding:0px;
+}
+
+#userIcons .dijitArrowButtonInner{
+    display:none;
+}
+
+#userIcons .dijitFocused{
+    border:none;
+}
 
 #myProgressBar{
     width:200px;
@@ -181,6 +319,150 @@ hr.dashedLine {
 }
 
 /*CLASSES******************/
+.holder :focus{
+    outline: none;
+}
+
+.roundForm {
+    width:250px;
+    border-radius: 5px;
+    padding: 3px 3px 3px 15px;
+}
+
+.corner {
+    border: 0px;
+    margin:0 0 3px -25px;
+    vertical-align:bottom;
+    background-color: transparent; /*important*/
+}
+
+.holder{
+    width:40px;
+    height:60px;
+    float:left;
+}
+
+.seperator{
+    width:1px;
+    height:40px;
+    float:left;
+    margin-left: 2px;
+    margin-top: 5px;
+    margin-right: 2px;
+    margin-bottom: 5px;
+}
+
+.titleLowLite {
+    background-color: rgb(24, 59, 79);
+}
+
+/*  Primary colour palette */
+.hpccRed {
+    background-color: rgb(237, 28, 36);
+}
+
+.hpccBlack {
+    background-color: rgb(0, 0, 0);
+}
+
+.hpccWhite {
+    background-color: rgb(255, 255, 255);
+}
+/*  Secondart colour palette */
+.hpccGreyLight {
+    background-color: rgb(188, 190, 192);
+}
+
+.hpccGreyMedium {
+    background-color: rgb(147, 149, 152);
+}
+
+.hpccGreyDark {
+    background-color: rgb(109, 111, 113);
+}
+
+.hpccCyan {
+    background-color: rgb(0, 157, 219);
+}
+
+.hpccCyan70 {
+    background-color: rgb(77, 186, 230);
+}
+
+.hpccCyan50 {
+    background-color: rgb(128, 206, 237);
+}
+
+.hpccCyan30 {
+    background-color: rgb(179, 226, 244);
+}
+
+.hpccGreen {
+    background-color: rgb(119, 184, 0);
+}
+
+.hpccGreen70 {
+    background-color: rgb(160, 205, 77);
+}
+
+.hpccGreen50 {
+    background-color: rgb(187, 220, 128);
+}
+
+.hpccGreen30 {
+    background-color: rgb(214, 234, 179);
+}
+
+.hpccPurple {
+    background-color: rgb(143, 43, 140);
+}
+
+.hpccPurple70 {
+    background-color: rgb(177, 107, 175);
+}
+
+.hpccPurple50 {
+    background-color: rgb(199, 149, 198);
+}
+
+.hpccPurple30 {
+    background-color: rgb(221, 191, 221);
+}
+
+.grey{
+background-color: rgb(80, 80, 80);
+}
+
+.white{
+    background-color:rgb(255,255,255);
+}
+.left{float:left;}
+
+.right{float:right;}
+
+.hidden{
+    color:rgb(214, 214, 214);
+    display: none !important;
+}
+
+.show{
+    display:block;
+}
+
+.hpccApp {
+    height: 100%;
+}
+
+.navBarLoggedin{
+    text-transform: uppercase;
+    color:rgb(255,255,255);
+    display: block;
+}
+
+.claro .hpccApp .hpccTitlebar {
+    background-color: rgb(0, 108, 204);
+}
+
 .hidden{
     color:rgb(214, 214, 214);
     display: none !important;

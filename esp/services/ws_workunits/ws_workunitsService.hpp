@@ -144,7 +144,8 @@ public:
             ensureNavLink(*folderQueryset, "Browse", "/WsWorkunits/WUQuerySets", "Browse Published Queries");
 
             IPropertyTree *folderTP = CEspBinding::ensureNavFolder(data, "Tech Preview", "Technical Preview");
-            CEspBinding::ensureNavLink(*folderTP, "ECL Workunits", "/esp/files/stub.htm?Widget=WUQueryWidget", "ECL Workunits", NULL, NULL, 1);
+            CEspBinding::ensureNavLink(*folderTP, "Homepage", "/esp/files/HPCCPlatform.html", "HPCC Platform Homepage", NULL, NULL, 1);
+            CEspBinding::ensureNavLink(*folderTP, "ECL Workunits", "/esp/files/stub.htm?Widget=WUQueryWidget", "ECL Workunits", NULL, NULL, 2);
         }
     }
 
