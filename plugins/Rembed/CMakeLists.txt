@@ -27,7 +27,7 @@ project( Rembed )
 
 ADD_PLUGIN(Rembed PACKAGES R OPTION MAKE_REMBED)
 
-if ( R_FOUND )
+if ( MAKE_REMBED )
     set (    SRCS
              Rembed.cpp
         )
