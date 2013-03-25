@@ -33,12 +33,12 @@ IF (NOT R_FOUND)
   ENDIF()
 
   FIND_PATH(R_INCLUDE_DIR R.h PATHS /usr/lib /usr/lib64 /usr/share /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/include)
-  FIND_PATH(RCPP_INCLUDE_DIR Rcpp.h PATHS /usr/lib /usr/lib64 /usr/share /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/Rcpp/include/)
-  FIND_PATH(RINSIDE_INCLUDE_DIR RInside.h PATHS /usr/lib /usr/lib64 /usr/share /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/RInside/include)
+  FIND_PATH(RCPP_INCLUDE_DIR Rcpp.h PATHS /usr/lib /usr/lib64 /usr/share /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/Rcpp/include/ R/site-library/Rcpp/include/)
+  FIND_PATH(RINSIDE_INCLUDE_DIR RInside.h PATHS /usr/lib /usr/lib64 /usr/share /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/RInside/include  R/site-library/RInside/include)
 
   FIND_LIBRARY (R_LIBRARY NAMES ${R_lib}  PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/lib)
-  FIND_LIBRARY (RCPP_LIBRARY NAMES ${Rcpp_lib} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/Rcpp/lib/)
-  FIND_LIBRARY (RINSIDE_LIBRARY NAMES ${RInside_lib} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/RInside/lib/)
+  FIND_LIBRARY (RCPP_LIBRARY NAMES ${Rcpp_lib} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/Rcpp/lib/ R/site-library/Rcpp/lib/)
+  FIND_LIBRARY (RINSIDE_LIBRARY NAMES ${RInside_lib} PATHS /usr/lib /usr/share /usr/lib64 /usr/local/lib /usr/local/lib64 PATH_SUFFIXES R/library/RInside/lib/ R/site-library/RInside/lib/)
 
   SET (R_INCLUDE_DIRS ${R_INCLUDE_DIR} ${RINSIDE_INCLUDE_DIR} ${RCPP_INCLUDE_DIR})
   SET (R_LIBRARIES ${R_LIBRARY} ${RINSIDE_LIBRARY} ${RCPP_LIBRARY})
