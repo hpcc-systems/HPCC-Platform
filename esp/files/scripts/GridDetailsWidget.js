@@ -47,6 +47,11 @@ define([
         store: null,
         grid: null,
 
+        postCreate: function (args) {
+            this.inherited(arguments);
+            this.gridTab = registry.byId(this.id + "_Grid");
+        },
+
         startup: function (args) {
             this.inherited(arguments);
             var context = this;
