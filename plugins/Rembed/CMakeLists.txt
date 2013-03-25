@@ -33,7 +33,7 @@ if ( R_FOUND )
         )
 
     include_directories (
-             "${R_INCLUDE_DIRS}"
+             ${R_INCLUDE_DIRS}
              ./../../system/include
              ./../../rtl/eclrtl
              ./../../rtl/include
