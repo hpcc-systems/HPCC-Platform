@@ -53,8 +53,8 @@
 
   <para>Package information is used as soon as it is added to Dali and the
   package is activated. This can be done using using <emphasis role="bold">ecl
-  package add --activate</emphasis> (or <emphasis role="bold">ecl package
-  add</emphasis> &amp; <emphasis role="bold">ecl package
+  packagemap add --activate</emphasis> (or <emphasis role="bold">ecl
+  packagemap add</emphasis> &amp; <emphasis role="bold">ecl packagemap
   activate</emphasis>).</para>
 
   <!--You should always validate or run the reporting step on the packages (NYI)-->
@@ -177,7 +177,7 @@
       </listitem>
     </itemizedlist>
 
-    <para><programlisting role="bold">ecl package add --activate</programlisting></para>
+    <para><programlisting role="bold">ecl packagemap add --activate</programlisting></para>
 
     <para></para>
 
