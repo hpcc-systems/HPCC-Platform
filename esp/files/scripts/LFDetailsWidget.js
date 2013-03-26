@@ -76,8 +76,6 @@ define([
         workunitWidgetLoaded: false,
         dfuWorkunitWidget: null,
         dfuWorkunitWidgetLoaded: false,
-        legacyPane: null,
-        legacyPaneLoaded: false,
 
         logicalFile: null,
         prevState: "",
@@ -93,7 +91,6 @@ define([
             this.filePartsWidget = registry.byId(this.id + "_FileParts");
             this.workunitWidget = registry.byId(this.id + "_Workunit");
             this.dfuWorkunitWidget = registry.byId(this.id + "_DFUWorkunit");
-            this.legacyPane = registry.byId(this.id + "_Legacy");
             this.copyTargetSelect = registry.byId(this.id + "CopyTargetSelect");
             this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
         },
@@ -216,12 +213,6 @@ define([
                 this.dfuWorkunitWidget.init({
                     Wuid: this.logicalFile.Wuid
                 });
-            } else if (currSel.id == this.legacyPane.id && !this.legacyPaneLoaded) {
-                this.legacyPaneLoaded = true;
-                this.legacyPane.set("content", dojo.create("iframe", {
-                    src: "/WsDfu/DFUInfo?Name=" + this.logicalFile.Name,//+ "&Cluster=" + this.logicalFile.cluster,
-                    style: "border: 0; width: 100%; height: 100%"
-                }));
             }
         },
 

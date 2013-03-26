@@ -39,9 +39,9 @@ define([
         baseClass: "ResultsWidget",
 
         //borderContainer: null,
-        tabContainer: null,
         tabMap: [],
         selectedTab: null,
+        TabPosition: "bottom",
 
         onErrorClick: function (line, col) {
         },

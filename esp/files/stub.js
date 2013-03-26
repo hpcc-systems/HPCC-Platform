@@ -14,6 +14,7 @@
 #    limitations under the License.
 ############################################################################## */
 define([
+    "dojo/_base/lang",
     "dojo/_base/fx",
     "dojo/_base/window",
     "dojo/dom",
@@ -25,7 +26,7 @@ define([
 
     "dojox/widget/Toaster",
     "dojox/widget/Standby"
-], function (fx, baseWindow, dom, domStyle, domGeometry, ioQuery, topic, ready,
+], function (lang, fx, baseWindow, dom, domStyle, domGeometry, ioQuery, topic, ready,
         Toaster, Standby) {
 
     var initUi = function () {
@@ -34,20 +35,19 @@ define([
         require(
             ["hpcc/" + params.Widget],
             function (WidgetClass) {
-                var params = {
+                var webParams = {
                     id: "stub",
                     "class": "hpccApp"
                 };
-                var widget = WidgetClass.fixCircularDependency ? new WidgetClass.fixCircularDependency(params) : new WidgetClass(params);
+                if (params.TabPosition) {
+                    lang.mixin(webParams, {
+                        TabPosition: params.TabPosition
+                    });
+                }
+                var widget = WidgetClass.fixCircularDependency ? new WidgetClass.fixCircularDependency(webParams) : new WidgetClass(webParams);
 
                 var standbyBackground = new Standby({
-                    /*
-                    color: "red",
-                    image: "img/loading.gif",
-                    imageText: "Loading...",
-                    duration: 1,
-                    zIndex: 1000,
-                    */
+                    color: "#FAFAFA",
                     text: "",
                     centerIndicator: "text",
                     target: "stub"

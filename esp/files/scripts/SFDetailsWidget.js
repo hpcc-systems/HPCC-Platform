@@ -68,8 +68,6 @@ define([
         borderContainer: null,
         tabContainer: null,
         summaryWidget: null,
-        legacyPane: null,
-        legacyPaneLoaded: false,
         subfilesGrid: null,
 
         logicalFile: null,
@@ -79,7 +77,6 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.summaryWidget = registry.byId(this.id + "_Summary");
-            this.legacyPane = registry.byId(this.id + "_Legacy");
             this.subfilesGrid = registry.byId(this.id + "SubfilesGrid");
         },
 
@@ -226,13 +223,6 @@ define([
 
         initTab: function () {
             var currSel = this.getSelectedChild();
-            if (currSel.id == this.legacyPane.id && !this.legacyPaneLoaded) {
-                this.legacyPaneLoaded = true;
-                this.legacyPane.set("content", dojo.create("iframe", {
-                    src: "/WsDfu/DFUInfo?Name=" + this.logicalFile.Name,//+ "&Cluster=" + this.logicalFile.cluster,
-                    style: "border: 0; width: 100%; height: 100%"
-                }));
-            }
         },
 
         showMessage: function (msg) {
