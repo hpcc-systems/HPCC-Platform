@@ -641,7 +641,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             lazyOpen = topology->getPropBool("@lazyOpen", false);
         bool useNasTranslation = topology->getPropBool("@useNASTranslation", true);
         if (useNasTranslation)
-            envInstallNASHooks(topology->queryPropTree("Environment/Hardware/NAS"));
+        {
+            Owned<IPropertyTree> nas = envGetNASConfiguration(topology);
+            envInstallNASHooks(nas);
+        }
         localSlave = topology->getPropBool("@localSlave", false);
         doIbytiDelay = topology->getPropBool("@doIbytiDelay", true);
         minIbytiDelay = topology->getPropInt("@minIbytiDelay", 2);
