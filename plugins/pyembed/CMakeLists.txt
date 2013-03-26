@@ -27,7 +27,7 @@ set ( debug_python Off )   # A lot slower but can assist in debugging...
 
 project( pyembed )
 
-ADD_PLUGIN(pyembed PACKAGES PythonLibs OPTION MAKE_PYEMBED MINVERSION 2.7 MAXVERSION 2.7)
+ADD_PLUGIN(pyembed PACKAGES PythonLibs OPTION MAKE_PYEMBED MINVERSION 2.6 MAXVERSION 2.7)
 
 if ( MAKE_PYEMBED )
 
