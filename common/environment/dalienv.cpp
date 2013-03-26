@@ -453,15 +453,40 @@ bool envGetConfigurationDirectory(const char *category, const char *component,co
     return false;
 }
 
+IPropertyTree *envGetNASConfiguration(IPropertyTree *source)
+{
+    if ((NULL==source) || !source->hasProp("NAS"))
+        return NULL;
+
+    // check for NAS node : <Hardware><NAS><Filter ....><Filter ....>..</NAS></Hardware>
+    if (source->hasProp("NAS/Filter"))
+        return createPTreeFromIPT(source->queryPropTree("NAS"));
+    else
+    {
+        // check for 'flat' format : <Hardware><NAS ...../><NAS ..../>....</Hardware>
+        Owned<IPropertyTreeIterator> nasIter = source->getElements("NAS");
+        if (!nasIter->first())
+            return NULL;
+        Owned<IPropertyTree> nas = createPTree("NAS");
+        do
+        {
+            IPropertyTree *filter = &nasIter->query();
+            nas->addPropTree("Filter", LINK(filter));
+        }
+        while (nasIter->next());
+        return nas.getClear();
+    }
+}
+
 IPropertyTree *envGetNASConfiguration()
 {
     SessionId sessid = myProcessSession();
     if (!sessid)
         return NULL;
-    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware/NAS", sessid, 0, SDS_CONNECT_TIMEOUT);
+    Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Hardware", sessid, 0, SDS_CONNECT_TIMEOUT);
     if (!conn)
         return NULL;
-    return createPTreeFromIPT(conn->queryRoot());
+    return envGetNASConfiguration(conn->queryRoot());
 }
 
 IPropertyTree *envGetInstallNASHooks(SocketEndpoint *myEp)
