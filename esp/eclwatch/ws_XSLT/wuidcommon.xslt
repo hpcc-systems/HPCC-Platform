@@ -45,6 +45,8 @@
                   <xsl:value-of select="$wuid"/>
                   &nbsp;
                   <a href="/esp/iframe?esp_iframe_title=ECL Workunit XML - {$wuid}&amp;inner=/WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Type%3dXML" >XML</a>
+                  &nbsp;
+                  <a href="/esp/iframe?esp_iframe_title=ECL Playground - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dECLPlaygroundWidget%26Wuid%3d{$wuid}%26Target%3d{Cluster}" >ECL Playground</a>
                 </xsl:otherwise>
               </xsl:choose>
             </td>
@@ -396,6 +398,8 @@
                 <A href="javascript:void(0)" onclick="toggleElement('Results');" id="explinkresults" class="wusectionexpand">
                   Results: (<xsl:value-of select="ResultCount"/>)
                 </A>
+                &nbsp;-&nbsp;
+                <a href="/esp/iframe?esp_iframe_title=Results - {$wuid}&amp;inner=/esp/files/stub.htm%3fWidget%3dResultsWidget%26Wuid%3d{$wuid}%26TabPosition%3dtop" >Show</a>
               </div>
             </div>
             <div id="Results" class="wusectioncontent">

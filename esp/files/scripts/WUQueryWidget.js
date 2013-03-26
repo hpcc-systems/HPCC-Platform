@@ -64,8 +64,6 @@ define([
 
         workunitsTab: null,
         workunitsGrid: null,
-        legacyPane: null,
-        legacyPaneLoaded: false,
 
         tabMap: [],
 
@@ -75,7 +73,6 @@ define([
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
-            this.legacyPane = registry.byId(this.id + "_Legacy");
         },
 
         startup: function (args) {
@@ -314,14 +311,6 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.id == this.workunitsTab.id) {
-                } else if (currSel.id == this.legacyPane.id) {
-                    if (!this.legacyPaneLoaded) {
-                        this.legacyPaneLoaded = true;
-                        this.legacyPane.set("content", dojo.create("iframe", {
-                            src: "/WsWorkunits/WUQuery",
-                            style: "border: 0; width: 100%; height: 100%"
-                        }));
-                    }
                 } else {
                     if (!currSel.initalized) {
                         currSel.init(currSel.params);
