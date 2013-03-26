@@ -1838,7 +1838,7 @@ IPropertyTree* generateTreeFromXsd(const IPropertyTree* pEnv, IPropertyTree* pSc
   return pCompTree.getLink();
 }
 
-bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut, IPropertyTree* pCompTree)
+bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut, IPropertyTree* pCompTree, bool bIncludeNAS)
 {
   if (pCompTree)
   {
@@ -1879,6 +1879,21 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     pDomain->addProp(xpath, sbdefaultValue.str());
     xpath.clear().append("@snmpSecurityString");
     pDomain->addProp(xpath, sbdefaultValue.str());
+
+    if (bIncludeNAS == true)
+    {
+      IPropertyTree* pNAS = pCompTree->addPropTree(XML_TAG_NAS, createPTree());
+      xpath.clear().append(XML_ATTR_NAME);
+      pNAS->addProp(xpath, sbdefaultValue.str());
+      xpath.clear().append(XML_ATTR_MASK);
+      pNAS->addProp(xpath, "255.255.255.255");
+      xpath.clear().append(XML_ATTR_SUBNET);
+      pNAS->addProp(xpath, "0.0.0.0");
+      xpath.clear().append(XML_ATTR_DIRECTORY);
+      pNAS->addProp(xpath, sbdefaultValue.str());
+      xpath.clear().append(XML_ATTR_TRACE);
+      pNAS->addProp(xpath, sbdefaultValue.str());
+    }
   }
   else
   {
@@ -1901,14 +1916,21 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_NETADDRESS, "", 0, 1, "", 1);
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_DOMAIN, "", 0, 1, XML_TAG_HARDWARE"/"XML_TAG_DOMAIN, 4);
     addItem(jsStrBuf, pEnv, XML_TAG_COMPUTER,  TAG_COMPUTERTYPE, "", 0, 1, XML_TAG_HARDWARE"/"XML_TAG_COMPUTERTYPE, 4);
+    addItem(jsStrBuf, pEnv, XML_TAG_NAS,  TAG_NAME, "", 0, 1, "", 1);
+    addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_SUBNET,       "", 0, 1, "", 1);
+    addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_DIRECTORY,       "", 0, 1, "", 1);
+    addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_MASK,       "", 0, 1, "", 1);
+    addItem(jsStrBuf, pEnv, XML_TAG_NAS,       TAG_TRACE,       "", 0, 1, "", 1);
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Computer Types';");
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Switches';");
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Domains';");
     jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'Computers';");
+    jsStrBuf.append("compTabs['Hardware'][compTabs['Hardware'].length]= 'NAS';");
     jsStrBuf.append("compTabToNode['Computer Types']= 'ComputerType';");
     jsStrBuf.append("compTabToNode['Switches']= 'Switch';");
     jsStrBuf.append("compTabToNode['Domains']= 'Domain';");
     jsStrBuf.append("compTabToNode['Computers']= 'Computer';");
+    jsStrBuf.append("compTabToNode['NAS']= 'NAS';");
 
     int index = 0;
     jsStrBuf.append("var colIndex = new Array();");
@@ -1926,6 +1948,13 @@ bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bo
     jsStrBuf.appendf("colIndex['netAddressComputers']=%d;", index++);
     jsStrBuf.appendf("colIndex['domainComputers']=%d;", index++);
     jsStrBuf.appendf("colIndex['computerTypeComputers']=%d;", index++);
+
+    index=0;
+    jsStrBuf.appendf("colIndex['nameNAS']=%d;", index++);
+    jsStrBuf.appendf("colIndex['maskNAS']=%d;", index++);
+    jsStrBuf.appendf("colIndex['subnetNAS']=%d;", index++);
+    jsStrBuf.appendf("colIndex['directoryNAS']=%d;", index++);
+    jsStrBuf.appendf("colIndex['traceNAS']=%d;", index++);
 
     sbDefn.clear().append(jsStrBuf);
 

@@ -47,7 +47,7 @@ class CWizardInputs;
 extern DEPLOYUTILS_API bool generateHeadersFromXsd(const IPropertyTree* pEnv, const char* xsdName, const char* jsName);
 extern DEPLOYUTILS_API bool generateHeaders(const IPropertyTree* pEnv, IConstEnvironment* pConstEnv);
 extern DEPLOYUTILS_API bool generateHeadersFromEnv(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut = false);
-extern DEPLOYUTILS_API bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut = false, IPropertyTree* pCompTree = NULL);
+extern DEPLOYUTILS_API bool generateHardwareHeaders(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut = false, IPropertyTree* pCompTree = NULL, bool bIncludeNAS = false);
 extern DEPLOYUTILS_API bool generateBuildHeaders(const IPropertyTree* pEnv, bool isPrograms, StringBuffer& sbDefn, bool writeOut = false);
 extern DEPLOYUTILS_API bool generateHeaderForTopology(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut = false);
 extern DEPLOYUTILS_API bool generateHeadersForEnvSettings(const IPropertyTree* pEnv, StringBuffer& sbDefn, bool writeOut = false);
