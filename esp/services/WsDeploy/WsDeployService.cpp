@@ -3518,6 +3518,7 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
     multiRowNodes->addProp("Node", "Domain");
     multiRowNodes->addProp("Node", "Computer");
     multiRowNodes->addProp("Node", "Switch");
+    multiRowNodes->addProp("Node", "NAS");
     toXML(multiRowNodes, sb);
     resp.setMultiRowNodes(sb.str());
     
@@ -4893,7 +4894,7 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
   {
     StringBuffer sbTemp;
     IPropertyTree* pCompTree = createPTree(XML_TAG_HARDWARE);
-    generateHardwareHeaders(pEnvRoot, sbTemp, false, pCompTree);
+    generateHardwareHeaders(pEnvRoot, sbTemp, false, pCompTree, true);
 
     StringBuffer sbNewName(type);
     xpath.clear().appendf("%s", type);
@@ -4963,7 +4964,9 @@ bool CWsDeployFileInfo::handleComputer(IEspContext &context, IEspHandleComputerR
         IPropertyTree& pComp = iter->query();
         const char* compName = pComp.queryProp(XML_ATTR_NAME);
         const char* parentName = pComp.queryName();
-        refs.append("\n").append(parentName).append(" name=").append(compName);
+
+        if (compName != NULL)
+          refs.append("\n").append(parentName).append(" name=").append(compName);
       }
 
       if (refs.length())
