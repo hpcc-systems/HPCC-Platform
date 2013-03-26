@@ -58,7 +58,7 @@
                             return o.checked ? '\n'+o.name : '';
 
                         var s='';
-                        var ch=o.children;
+                        var ch=o.childNodes;
                         if (ch)
                             for (var i in ch)
                                 s=s+getAllChecked(ch[i]);
@@ -86,19 +86,6 @@
                     {
                         validateInput();
                     }  
-
-                    function getSelected(o)
-                    {
-                        if (o.tagName=='INPUT' && o.type == 'checkbox' && o.value != 'on')
-                            return o.checked ? '\n'+o.value : '';
-
-                        var s='';
-                        var ch=o.children;
-                        if (ch)
-                            for (var i in ch)
-                                s=s+getSelected(ch[i]);
-                        return s;
-                    }
 
                     function toggleElement()
                     {
