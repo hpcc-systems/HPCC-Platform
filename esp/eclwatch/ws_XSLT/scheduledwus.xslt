@@ -50,7 +50,7 @@
                             return;
                         }
 
-                        var ch=o.children;
+                        var ch=o.childNodes;
                         if (ch)
                             for (var i in ch)
                                 checkSelected(ch[i]);

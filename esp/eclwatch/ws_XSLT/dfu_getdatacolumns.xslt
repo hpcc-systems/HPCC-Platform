@@ -109,7 +109,7 @@
                                 filterBy = len_name + len_value + oname + ovalue; 
                         }
 
-                        var ch=o.children;
+                        var ch=o.childNodes;
                         if (ch)
                             for (var i in ch)
                                 checkTextField(ch[i]);

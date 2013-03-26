@@ -63,24 +63,6 @@
                     </script>
                     <script language="JavaScript1.2">
                         <xsl:text disable-output-escaping="yes"><![CDATA[
-                            function onRowCheck(checked)
-                            {
-                                document.getElementById("deleteBtn").disabled = checkedCount == 0;
-                            }                            
-                            
-                            function getSelected(o)
-                            {
-                                if (o.tagName=='INPUT')
-                                    return o.checked ? '\n'+o.value : '';
-                            
-                                var s='';
-                                var ch=o.children;
-                                if (ch)
-                                    for (var i in ch)
-                                    s=s+getSelected(ch[i]);
-                                 return s;
-                            }
-
                             var countbySelected = 1;
                             var interval = "Year";
                             function onChangeCountType()
@@ -524,19 +506,6 @@
             </xsl:apply-templates>
          </tbody>
         </table>
-        <!--table id="btnTable" style="margin:20 0 0 0">
-            <colgroup>
-                <col span="8" width="100"/>
-            </colgroup>
-            <tr>
-                <td>
-                    <input type="button" class="sbutton" value="Clear" onclick="selectAll(false)"/>
-                </td>
-                <td>
-                    <input type="submit" class="sbutton" id="deleteBtn" value="Delete" disabled="true" onclick="return confirm('Are you sure you want to delete the following file(s) ?\n\n'+getSelected(document.forms['listitems']).substring(1,1000))"/>
-                </td>
-            </tr>
-        </table-->
     </xsl:template>
     
     <xsl:template match="DFUSpaceItem">
