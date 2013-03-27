@@ -57,9 +57,8 @@ ws_fs:
         Write - Access to DKC key files
 
 ws_fileio:
-    FileIO: Not defined in esp.xml but used by service.
+    FileIOAccess:
         Write - Access to files in dropzone... CreateFile, ReadFileData, WriteFileData
-    FileIOAccess: Defined in esp.xml but not used by service.
 
 ws_topology:
     ClusterTopologyAccess: 
