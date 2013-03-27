@@ -1,3 +1,5 @@
+//nothor
+
 IMPORT Python;
 
 Python.Language.syntaxcheck('1+2');
