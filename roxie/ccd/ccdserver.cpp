@@ -19569,11 +19569,11 @@ public:
             eof = true;
         else
         {
-            numParts = 0;
             if (variableFileName)
             {
                 OwnedRoxieString fileName(helper.getFileName());
                 varFileInfo.setown(resolveLFN(fileName, isOpt));
+                numParts = 0;
                 if (varFileInfo)
                 {
                     Owned<IFilePartMap> map = varFileInfo->getFileMap();
