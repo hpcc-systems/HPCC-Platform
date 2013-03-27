@@ -528,9 +528,9 @@ public:
                 break;
             RtlDynamicRowBuilder ret(queryRowAllocator());
             unsigned thisSize = ruhelper->transform(ret, keptTransformed, next);
-            kept.setown(next.getClear());
             if (thisSize)
                 keptTransformed.setown(ret.finalizeRowClear(thisSize));
+            kept.set(keptTransformed);
         }
         OwnedConstThorRow row = keptTransformed.getClear();
         kept.setown(next.getClear());
