@@ -20,6 +20,8 @@
 import lib_logging;
 import lib_workunitservices;
 
+#option('slaveDaliClient', true);
+
 export Display := 
     SERVICE
         unsigned4 echo(const string src) : eclrtl,library='eclrtl',entrypoint='rtlDisplay';
