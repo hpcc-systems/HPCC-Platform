@@ -23,13 +23,11 @@
       Number in the text of the message.</para>
 
       <para>LexisNexis and the Knowledge Burst logo are registered trademarks
-      of Reed Elsevier Properties Inc., used under license. HPCC Systems is a
-      registered trademark of LexisNexis Risk Data Management Inc.</para>
-
-      <para>Other products, logos, and services may be trademarks or
-      registered trademarks of their respective companies. All names and
-      example data used in this manual are fictitious. Any similarity to
-      actual persons, living or dead, is purely coincidental.</para>
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
 
       <para></para>
     </legalnotice>
@@ -417,7 +415,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             the first node is considered the head node and is used for this
             task, but this is up to you).</para>
 
-            <programlisting>sudo configmgr</programlisting>
+            <programlisting>sudo /opt/HPCCSystems/sbin/configmgr</programlisting>
 
             <para><graphic
             fileref="images/gs_img_configmgrStart.jpg" /></para>
@@ -527,25 +525,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
         </listitem>
       </itemizedlist>
 
-      <sect2 role="brk">
-        <title>XML View</title>
-
-        <para>In the advanced view of Configuration Manager, you can
-        optionally choose to work with the XML View.</para>
-
-        <para>To see the the configuration in XML View, click on the
-        Environment heading in the Navigator panel on the left side.</para>
-
-        <para><graphic fileref="images/CM-120.jpg" />You can access all
-        attributes through the XML view.</para>
-
-        <para>If you wish to add an attribute that does not exist, RT-CLICK on
-        one of the components then you can choose to add an attribute.</para>
-
-        <para><graphic fileref="images/CM-121.jpg" /></para>
-      </sect2>
-
-      <sect2 role="brk">
+      <sect2>
         <title>Hardware Section</title>
 
         <para>This section allows you to define your list of servers. When
@@ -812,7 +792,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <row>
                       <entry><emphasis>MinTime</emphasis></entry>
 
-                      <entry>min. time...</entry>
+                      <entry>min. time.</entry>
                     </row>
 
                     <row>
@@ -864,6 +844,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                       <entry><emphasis>checkScopeScans</emphasis></entry>
 
                       <entry>True or False</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis>filesBasedn</emphasis></entry>
+
+                      <entry>The Base File Type</entry>
                     </row>
 
                     <row>
@@ -1208,7 +1194,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <row>
                   <entry><emphasis role="bold">data</emphasis></entry>
 
-                  <entry></entry>
+                  <entry>/var/lib/[NAME]/hpcc-data/[COMPONENT]</entry>
 
                   <entry>Base Location for data files</entry>
                 </row>
@@ -1216,23 +1202,23 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <row>
                   <entry><emphasis role="bold">data2</emphasis></entry>
 
-                  <entry></entry>
+                  <entry>/var/lib/[NAME]/hpcc-data2/[COMPONENT]</entry>
 
-                  <entry></entry>
+                  <entry>additional location for data files</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">data3</emphasis></entry>
 
-                  <entry></entry>
+                  <entry>/var/lib/[NAME]/hpcc-data3/[COMPONENT]</entry>
 
-                  <entry></entry>
+                  <entry>additional location for data files</entry>
                 </row>
 
                 <row>
                   <entry><emphasis role="bold">mirror</emphasis></entry>
 
-                  <entry></entry>
+                  <entry>/var/lib/[NAME]/hpcc-mirror/[COMPONENT]</entry>
 
                   <entry>Base Location for mirror data files</entry>
                 </row>
@@ -1240,7 +1226,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                 <row>
                   <entry><emphasis role="bold">query</emphasis></entry>
 
-                  <entry></entry>
+                  <entry>/var/lib/[NAME]/queries/[INST]</entry>
 
                   <entry>Base Location for Queries</entry>
                 </row>
@@ -2363,15 +2349,14 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <row>
                       <entry><emphasis>xrefAt</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute
-                      description...</entry>
+                      <entry>SashaServer DfuXRef Attribute description</entry>
                     </row>
 
                     <row>
                       <entry><emphasis>xrefCutoff</emphasis></entry>
 
                       <entry>SashaServer DfuXRef Attribute
-                      description...</entry>
+                      description.</entry>
                     </row>
 
                     <row>
@@ -2389,15 +2374,13 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <row>
                       <entry><emphasis>xrefList</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute
-                      description...</entry>
+                      <entry>SashaServer DfuXRef Attribute description</entry>
                     </row>
 
                     <row>
                       <entry><emphasis>xrefMaxScanThreads</emphasis></entry>
 
-                      <entry>SashaServer DfuXRef Attribute
-                      description...</entry>
+                      <entry>SashaServer DfuXRef Attribute description</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -2657,6 +2640,21 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <sect4>
             <title>Changing Thor topology</title>
 
+            <para>The Topology tab allows you to to change aspects of your
+            Thor Cluster.</para>
+
+            <itemizedlist>
+              <listitem>
+                <para>CLICK on your Thor cluster to expand the list and
+                display your Thor nodes.</para>
+              </listitem>
+
+              <listitem>
+                <para>RT-CLICK on the Master node to perform operations on the
+                Master Node.</para>
+              </listitem>
+            </itemizedlist>
+
             <para>If you want to designate a different node as the Thor master
             when setting up a multi-node system, follow these steps.</para>
 
@@ -2679,8 +2677,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
               <listitem>
                 <?dbfo keep-together="always"?>
 
-                <para>Select the <emphasis role="bold">Swap Master</emphasis>
-                option.</para>
+                <para>Select the <emphasis role="bold">Replace
+                Master</emphasis> option.</para>
 
                 <para><graphic fileref="images/CM-111-2.jpg"
                 vendor="configmgrSS" /></para>
@@ -2976,7 +2974,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <row>
                       <entry><emphasis>SSHretries</emphasis></entry>
 
-                      <entry>The number of times...</entry>
+                      <entry>The number of retries</entry>
                     </row>
 
                     <row>
@@ -3042,19 +3040,19 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <row>
                       <entry><emphasis>SwapNodeCheckC</emphasis></entry>
 
-                      <entry>True or False. Set to True to ...</entry>
+                      <entry>True or False. Set to True if...</entry>
                     </row>
 
                     <row>
                       <entry><emphasis>SwapNodeCheckD</emphasis></entry>
 
-                      <entry>True or False. Set to True to...</entry>
+                      <entry>True or False. Set to True if...</entry>
                     </row>
 
                     <row>
                       <entry><emphasis>SwapNodeCheckScript</emphasis></entry>
 
-                      <entry></entry>
+                      <entry>Swap Node Check Script...</entry>
                     </row>
 
                     <row>
@@ -3130,16 +3128,6 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <para>This tab allows you to add any notes pertinent to the
             component's configuration. This can be useful to keep a record of
             changes and to communicate this information to peers.</para>
-          </sect4>
-
-          <sect4>
-            <title>Swap Master</title>
-
-            <para>The swap master option now allows you to easily swap out the
-            Thor Master.***</para>
-
-            <para><graphic fileref="images/CM-186.jpg"
-            vendor="configmgrSS" /></para>
           </sect4>
         </sect3>
 
