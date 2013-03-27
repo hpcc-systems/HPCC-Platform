@@ -13709,6 +13709,20 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDistribute(BuildCtx & ctx, IHq
 //---------------------------------------------------------------------------
 // no_rollup
 
+void HqlCppTranslator::checkAmbiguousRollupCondition(IHqlExpression * expr)
+{
+    IHqlExpression * select = queryAmbiguousRollupCondition(expr, false);
+    if (select)
+    {
+        IHqlExpression * dataset = expr->queryChild(0);
+        OwnedHqlExpr newSelect = replaceSelector(select, dataset->queryNormalizedSelector(), queryActiveTableSelector());
+        StringBuffer selectText;
+        getExprECL(newSelect, selectText);
+        reportWarning(queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupCondition), selectText.str());
+    }
+}
+
+
 ABoundActivity * HqlCppTranslator::doBuildActivityRollup(BuildCtx & ctx, IHqlExpression * expr)
 {
     StringBuffer s;
@@ -13733,8 +13747,20 @@ ABoundActivity * HqlCppTranslator::doBuildActivityRollup(BuildCtx & ctx, IHqlExp
 
     buildInstancePrefix(instance);
 
+    if (options.checkAmbiguousRollupCondition)
+        checkAmbiguousRollupCondition(expr);
+
     buildDedupFilterFunction(instance->startctx, equalities, conds, dataset, selSeq);
     buildRollupTransformFunction(instance->startctx, dataset, transform, selSeq);
+
+    OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
+    OwnedHqlExpr right = createSelector(no_right, dataset, selSeq);
+    StringBuffer flags;
+    if (cond->usesSelector(left) || cond->usesSelector(right))
+        flags.append("|RFrolledismatchleft");
+    if (flags.length())
+        doBuildUnsignedFunction(instance->classctx, "getFlags", flags.str()+1);
+    
     buildInstanceSuffix(instance);
 
     buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);

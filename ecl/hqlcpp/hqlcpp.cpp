@@ -1698,6 +1698,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.normalizeSelectorSequence,"normalizeSelectorSequence",false),  // For tracking down why projects are not commoned up
         DebugOption(options.removeXpathFromOutput,"removeXpathFromOutput",false),
         DebugOption(options.canLinkConstantRows,"canLinkConstantRows",true),
+        DebugOption(options.checkAmbiguousRollupCondition,"checkAmbiguousRollupCondition",true),
     };
 
     //get options values from workunit

@@ -1021,14 +1021,14 @@ bool transformReturnsSide(IHqlExpression * expr, node_operator side, unsigned in
     return isTrivialTransform(queryNewColumnProvider(expr), selector);
 }
 
-IHqlExpression * getExtractSelect(IHqlExpression * expr, IHqlExpression * field)
+IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * field)
 {
-    if (expr->getInfoFlags() & (HEFcontainsSkip))
+    if (transform->getInfoFlags() & (HEFcontainsSkip))
         return NULL;
 
-    ForEachChild(i, expr)
+    ForEachChild(i, transform)
     {
-        IHqlExpression * cur = expr->queryChild(i);
+        IHqlExpression * cur = transform->queryChild(i);
         switch (cur->getOperator())
         {
         case no_assignall:
@@ -1054,6 +1054,85 @@ IHqlExpression * getExtractSelect(IHqlExpression * expr, IHqlExpression * field)
     return NULL;
 }
 
+
+IHqlExpression * getExtractSelect(IHqlExpression * transform, IHqlExpression * selector, IHqlExpression * select)
+{
+    if (select->getOperator() != no_select)
+        return NULL;
+    IHqlExpression * ds = select->queryChild(0);
+    IHqlExpression * field = select->queryChild(1);
+    if (ds == selector)
+        return getExtractSelect(transform, field);
+    OwnedHqlExpr extracted = getExtractSelect(transform, selector, ds);
+    if (!extracted)
+        return NULL;
+    if (extracted->getOperator() == no_createrow)
+        return getExtractSelect(extracted->queryChild(0), field);
+    return createSelectExpr(extracted.getClear(), LINK(field));
+}
+
+static HqlTransformerInfo selectorFieldAnalyserInfo("SelectorFieldAnalyser");
+class HQL_API SelectorFieldAnalyser : public NewHqlTransformer
+{
+public:
+    SelectorFieldAnalyser(HqlExprCopyArray & _selects, IHqlExpression * _selector) 
+    : NewHqlTransformer(selectorFieldAnalyserInfo), selects(_selects), selector(_selector)
+    {
+    }
+
+protected:
+    virtual void analyseExpr(IHqlExpression * expr);
+    virtual void analyseSelector(IHqlExpression * expr);
+
+    void checkMatch(IHqlExpression * select);
+
+protected:
+    LinkedHqlExpr selector;
+    HqlExprCopyArray & selects;
+};
+
+
+void SelectorFieldAnalyser::analyseExpr(IHqlExpression * expr)
+{
+    if (!expr->usesSelector(selector))
+        return;
+
+    if (expr->getOperator() == no_select)
+    {
+        if (!isNewSelector(expr))
+        {
+            checkMatch(expr);
+            return;
+        }
+    }
+    NewHqlTransformer::analyseExpr(expr);
+}
+
+
+void SelectorFieldAnalyser::analyseSelector(IHqlExpression * expr)
+{
+    if (expr->getOperator() == no_select)
+        checkMatch(expr);
+}
+
+
+void SelectorFieldAnalyser::checkMatch(IHqlExpression * select)
+{
+    assertex(select->getOperator() == no_select);
+    if (queryDatasetCursor(select) == selector)
+    {
+        if (!selects.contains(*select))
+            selects.append(*select);
+    }
+}
+
+extern HQL_API void gatherSelects(HqlExprCopyArray & selects, IHqlExpression * expr, IHqlExpression * selector)
+{
+    SelectorFieldAnalyser analyser(selects, selector);
+    analyser.analyse(expr, 0);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 static IHqlExpression * getTrivialSelect(IHqlExpression * expr, IHqlExpression * selector, IHqlExpression * field)
 {
