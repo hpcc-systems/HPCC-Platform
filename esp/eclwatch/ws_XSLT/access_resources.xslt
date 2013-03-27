@@ -50,7 +50,7 @@
                         return o.checked ? '\n'+o.value : '';
 
                     var s='';
-                    var ch=o.children;
+                    var ch=o.childNodes;
                     if (ch)
                         for (var i in ch)
                             s=s+getSelected(ch[i]);
