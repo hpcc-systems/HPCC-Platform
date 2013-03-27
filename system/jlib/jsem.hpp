@@ -48,7 +48,7 @@ public:
         WaitForSingleObject(hSem, INFINITE);
     }
 
-    void reinit(unsigned initialCount)
+    void reinit(unsigned initialCount=0U)
     {
         CloseHandle(hSem);
         hSem = CreateSemaphore(NULL, initialCount, 0x7fffffff, NULL);
