@@ -1698,6 +1698,9 @@ function askUserToSave(navtable, dounlock) {
 }
 
 function lockEnvironment() {
+
+  if (typeof(chrome) === "object")
+    window.addEventListener("beforeunload", unlockUser, false);
   YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/NavMenuEvent', {
     success: function(o) {
       if (o.status === 200) {
@@ -1910,15 +1913,10 @@ function setSingleSelectionModeForInstances() {
 
 function promptSaveChanges() {
   var form = document.forms['treeForm'];
-  if (form.isChanged.value === "true")
+   if (form.isLocked.value === "true")
     return "You will lose your changes if you press OK.\nTo save your changes, press Cancel and select 'Save Environment' command.";
   else
     return "";
-  //  else if (form.isLocked.value === "true")
-  //  {
-  //    alert("No changes have been made. Unlocking the environment...");
-  //    unlockEnvironment(top.window.document.body.dt, false);
-  //  }
 }
 
 
