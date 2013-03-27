@@ -31,14 +31,35 @@ class THORHELPER_API HttpHelper : public CInterface
 {
 private:
     bool _isHttp;
-    StringBuffer authToken;
+    StringAttr authToken;
+    StringAttr contentType;
+private:
+    inline void setHttpHeaderValue(StringAttr &s, const char *v, bool ignoreExt)
+    {
+        if (!v || !*v)
+            return;
+        unsigned len=0;
+        while (v[len] && v[len]!='\r' && (!ignoreExt || v[len]!=';'))
+            len++;
+        if (len)
+            s.set(v, len);
+    }
 public:
     IMPLEMENT_IINTERFACE;
     HttpHelper() { _isHttp = false; };
     bool isHttp() { return _isHttp; };
     void setIsHttp(bool __isHttp) { _isHttp = __isHttp; };
-    const char *queryAuthToken() { return authToken.str(); };
-    void setAuthToken(const char *_authToken) { authToken.clear().append(_authToken); };
+    const char *queryAuthToken() { return authToken.sget(); };
+    inline void setAuthToken(const char *v)
+    {
+        setHttpHeaderValue(authToken, v, false);
+    };
+    const char *queryContentType() { return contentType.sget(); };
+    inline void setContentType(const char *v)
+    {
+        setHttpHeaderValue(contentType, v, true);
+    };
+    TextMarkupFormat queryContentFormat(){return (strieq(queryContentType(), "application/json")) ? MarkupFmt_JSON : MarkupFmt_XML;}
 };
 
 //========================================================================================= 
@@ -49,7 +70,7 @@ interface SafeSocket : extends IInterface
     virtual size32_t write(const void *buf, size32_t size, bool takeOwnership=false) = 0;
     virtual bool readBlock(MemoryBuffer &ret, unsigned maxBlockSize, unsigned timeout = (unsigned) WAIT_FOREVER) = 0;
     virtual bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize) = 0;
-    virtual void setHttpMode(const char *queryName, bool arrayMode) = 0;
+    virtual void setHttpMode(const char *queryName, bool arrayMode, TextMarkupFormat txtfmt) = 0;
     virtual void setHeartBeat() = 0;
     virtual bool sendHeartBeat(const IContextLogger &logctx) = 0;
     virtual void flush() = 0;
@@ -68,8 +89,9 @@ protected:
     Linked<ISocket> sock;
     bool httpMode;
     bool heartbeat;
-    StringBuffer xmlhead;
-    StringBuffer xmltail;
+    TextMarkupFormat mlFmt;
+    StringBuffer contentHead;
+    StringBuffer contentTail;
     PointerArray queued;
     UnsignedArray lengths;
     unsigned sent;
@@ -85,7 +107,7 @@ public:
     size32_t write(const void *buf, size32_t size, bool takeOwnership=false);
     bool readBlock(MemoryBuffer &ret, unsigned maxBlockSize, unsigned timeout = (unsigned) WAIT_FOREVER);
     bool readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHttpHelper, bool &, bool &, unsigned maxBlockSize);
-    void setHttpMode(const char *queryName, bool arrayMode);
+    void setHttpMode(const char *queryName, bool arrayMode, TextMarkupFormat txtfmt);
     void setHeartBeat();
     bool sendHeartBeat(const IContextLogger &logctx);
     void flush();
@@ -98,7 +120,7 @@ public:
 class THORHELPER_API FlushingStringBuffer : extends CInterface, implements IXmlStreamFlusher, implements IInterface
 {
     // MORE this code is yukky. Overdue for cleanup!
-
+protected:
     SafeSocket *sock;
     StringBuffer name;
     StringBuffer tail;
@@ -113,7 +135,7 @@ class THORHELPER_API FlushingStringBuffer : extends CInterface, implements IXmlS
     bool needsFlush(bool closing);
     void startBlock();
 public:
-    bool isXml;      // controls whether xml elements are output
+    TextMarkupFormat mlFmt;      // controls whether xml/json elements are output
     bool isRaw;      // controls whether output as binary or ascii
     bool isBlocked;
     bool isHttp;
@@ -127,21 +149,42 @@ public:
 
     IMPLEMENT_IINTERFACE;
 
-    FlushingStringBuffer(SafeSocket *_sock, bool _isBlocked, bool _isXml, bool _isRaw, bool _isHttp, const IContextLogger &_logctx);
+    FlushingStringBuffer(SafeSocket *_sock, bool _isBlocked, TextMarkupFormat _mlFmt, bool _isRaw, bool _isHttp, const IContextLogger &_logctx);
     ~FlushingStringBuffer();
-    void append(char data) {append(1, &data);}
-    void append(const char *data);
-    void append(unsigned len, const char *data);
-    void appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
-    void encodeXML(const char *x, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
+    virtual void append(char data) {append(1, &data);}
+    virtual void append(const char *data);
+    virtual void append(unsigned len, const char *data);
+    virtual void appendf(const char *format, ...) __attribute__((format(printf, 2, 3)));
+    virtual void encodeXML(const char *x, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
     virtual void flushXML(StringBuffer &current, bool isClosing);
-    void flush(bool closing) ;
-    void *getPayload(size32_t &length);
-    void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false);
-    void startScalar(const char *resultName, unsigned sequence);
-    void incrementRowCount();
+    virtual void flush(bool closing) ;
+    virtual void *getPayload(size32_t &length);
+    virtual void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false);
+    virtual void startScalar(const char *resultName, unsigned sequence);
+    virtual void incrementRowCount();
 };
 
+class THORHELPER_API FlushingJsonBuffer : public FlushingStringBuffer
+{
+public:
+    FlushingJsonBuffer(SafeSocket *_sock, bool _isBlocked, bool _isHttp, const IContextLogger &_logctx) :
+        FlushingStringBuffer(_sock, _isBlocked, MarkupFmt_JSON, false, _isHttp, _logctx)
+    {
+    }
+
+    void encodeXML(const char *x, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
+    void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false);
+    void startScalar(const char *resultName, unsigned sequence);
+};
+
+inline const char *getFormatName(TextMarkupFormat fmt)
+{
+    if (fmt==MarkupFmt_XML)
+        return "xml";
+    if (fmt==MarkupFmt_JSON)
+        return "json";
+    return "raw";
+}
 //==============================================================================================================
 
 class THORHELPER_API OwnedRowArray

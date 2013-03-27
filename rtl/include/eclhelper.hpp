@@ -167,6 +167,8 @@ public:
     virtual void outputEndNested(const char *fieldname) = 0;
     virtual void outputSetAll() = 0;
     virtual void outputUtf8(unsigned len, const char *field, const char *fieldname) = 0;
+    virtual void outputBeginArray(const char *fieldname) = 0;
+    virtual void outputEndArray(const char *fieldname) = 0;
     inline void outputCString(const char *field, const char *fieldname) { outputString((size32_t)strlen(field), field, fieldname); }
 };
 

@@ -415,7 +415,8 @@ bool CRHLimitedCompareHelper::getGroup(OwnedRowArray &group, const void *left)
 
 CSafeSocket::CSafeSocket(ISocket *_sock)
 {
-    httpMode = false; 
+    httpMode = false;
+    mlFmt = MarkupFmt_Unknown;
     sent = 0; 
     heartbeat = false; 
     sock.setown(_sock);
@@ -564,16 +565,11 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
 
                 // capture authentication token
                 if ((str = strstr(header, "Authorization: Basic ")) != NULL)
-                {
-                    char *authToken = str + strlen("Authorization: Basic ");
-                    str = strchr(authToken, '\r');
-                    if (str)
-                    {
-                        *str = 0;
-                        pHttpHelper->setAuthToken(authToken);
-                        *str = '\r';  // need to remove the 0 so other str comparisons will work
-                    }
-                }
+                    pHttpHelper->setAuthToken(str+21);
+
+                // capture content type
+                if ((str = strstr(header, "Content-Type: ")) != NULL)
+                    pHttpHelper->setContentType(str+14);
 
                 // determine payload length
                 str = strstr(header, "Content-Length: ");
@@ -627,22 +623,31 @@ bool CSafeSocket::readBlock(StringBuffer &ret, unsigned timeout, HttpHelper *pHt
     }
 }
 
-void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode)
+void CSafeSocket::setHttpMode(const char *queryName, bool arrayMode, TextMarkupFormat _mlfmt)
 {
     CriticalBlock c(crit); // Should not be needed
     httpMode = true;
+    mlFmt = _mlfmt;
     heartbeat = false;
-    assertex(xmlhead.length()==0 && xmltail.length()==0);
-    xmlhead.append(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-        "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
-        "<soap:Body>");
-    if (arrayMode)
+    assertex(contentHead.length()==0 && contentTail.length()==0);
+    if (mlFmt==MarkupFmt_JSON)
     {
-        xmlhead.append("<").append(queryName).append("ResponseArray>");
-        xmltail.append("</").append(queryName).append("ResponseArray>");
+        contentHead.append("{");
+        contentTail.append("}");
     }
-    xmltail.append("</soap:Body></soap:Envelope>");
+    else
+    {
+        contentHead.append(
+            "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+            "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+            "<soap:Body>");
+        if (arrayMode)
+        {
+            contentHead.append("<").append(queryName).append("ResponseArray>");
+            contentTail.append("</").append(queryName).append("ResponseArray>");
+        }
+        contentTail.append("</soap:Body></soap:Envelope>");
+    }
 }
 
 void CSafeSocket::setHeartBeat()
@@ -694,13 +699,13 @@ void CSafeSocket::flush()
 {
     if (httpMode)
     {
-        unsigned length = xmlhead.length() + xmltail.length();
+        unsigned length = contentHead.length() + contentTail.length();
         ForEachItemIn(idx, lengths)
             length += lengths.item(idx);
 
         StringBuffer header;
         header.append("HTTP/1.0 200 OK\r\n");
-        header.append("Content-Type: text/xml\r\n");
+        header.append("Content-Type: ").append(mlFmt == MarkupFmt_JSON ? "application/json" : "text/xml").append("\r\n");
         header.append("Content-Length: ").append(length).append("\r\n\r\n");
 
 
@@ -710,9 +715,9 @@ void CSafeSocket::flush()
         sock->write(header.str(), header.length());
         sent += header.length();
         if (traceLevel > 5)
-            DBGLOG("Writing xml head length %d to HTTP socket", xmlhead.length());
-        sock->write(xmlhead.str(), xmlhead.length());
-        sent += xmlhead.length();
+            DBGLOG("Writing content head length %d to HTTP socket", contentHead.length());
+        sock->write(contentHead.str(), contentHead.length());
+        sent += contentHead.length();
         ForEachItemIn(idx2, queued)
         {
             unsigned length = lengths.item(idx2);
@@ -722,9 +727,9 @@ void CSafeSocket::flush()
             sent += length;
         }
         if (traceLevel > 5)
-            DBGLOG("Writing xml tail length %d to HTTP socket", xmltail.length());
-        sock->write(xmltail.str(), xmltail.length());
-        sent += xmltail.length();
+            DBGLOG("Writing content tail length %d to HTTP socket", contentTail.length());
+        sock->write(contentTail.str(), contentTail.length());
+        sent += contentTail.length();
         if (traceLevel > 5)
             DBGLOG("Total written %d", sent);
     }
@@ -734,7 +739,7 @@ void CSafeSocket::sendException(const char *source, unsigned code, const char *m
 {
     try
     {
-        FlushingStringBuffer response(this, isBlocked, true, false, httpMode, logctx);
+        FlushingStringBuffer response(this, isBlocked, MarkupFmt_XML, false, httpMode, logctx);
         response.startDataset("Exception", NULL, (unsigned) -1);
         response.appendf("<Source>%s</Source><Code>%d</Code>", source, code);
         response.append("<Message>");
@@ -758,11 +763,11 @@ void CSafeSocket::sendException(const char *source, unsigned code, const char *m
 #define RESULT_FLUSH_THRESHOLD 10000u
 
 #ifdef _DEBUG
-#define SOAP_SPLIT_THRESHOLD 100u
-#define SOAP_SPLIT_RESERVE 200u
+#define HTTP_SPLIT_THRESHOLD 100u
+#define HTTP_SPLIT_RESERVE 200u
 #else
-#define SOAP_SPLIT_THRESHOLD 64000u
-#define SOAP_SPLIT_RESERVE 65535u
+#define HTTP_SPLIT_THRESHOLD 64000u
+#define HTTP_SPLIT_RESERVE 65535u
 #endif
 interface IXmlStreamFlusher;
 
@@ -783,7 +788,7 @@ void FlushingStringBuffer::startBlock()
 {
     size32_t len = 0;
     s.clear();
-    if (!isSoap)
+    if (!isHttp)
         append(sizeof(size32_t), (char *) &len);
     rowCount = 0;
     if (isBlocked)
@@ -801,8 +806,8 @@ void FlushingStringBuffer::startBlock()
     // MORE - should probably pre-reserve string at RESULT_FLUSH_THRESHOLD plus a bit
 }
 
-FlushingStringBuffer::FlushingStringBuffer(SafeSocket *_sock, bool _isBlocked, bool _isXml, bool _isRaw, bool _isHttp, const IContextLogger &_logctx) 
-  : sock(_sock), isBlocked(_isBlocked), isXml(_isXml), isRaw(_isRaw), isHttp(_isHttp), logctx(_logctx)
+FlushingStringBuffer::FlushingStringBuffer(SafeSocket *_sock, bool _isBlocked, TextMarkupFormat _mlFmt, bool _isRaw, bool _isHttp, const IContextLogger &_logctx)
+  : sock(_sock), isBlocked(_isBlocked), mlFmt(_mlFmt), isRaw(_isRaw), isHttp(_isHttp), logctx(_logctx)
 {
     sequenceNumber = 0;
     rowCount = 0;
@@ -878,44 +883,44 @@ void FlushingStringBuffer::encodeXML(const char *x, unsigned flags, unsigned len
 void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
 {
     CriticalBlock b(crit);
-    if (isSoap) // we don't do any chunking for non-SOAP yet
+    if (isHttp) // we don't do any chunking for non-HTTP yet
     {
-        if (isClosing || current.length() > SOAP_SPLIT_THRESHOLD)
+        if (isClosing || current.length() > HTTP_SPLIT_THRESHOLD)
         {
             if (s.length())
             {
                 lengths.append(s.length());
                 queued.append(s.detach());
-                s.ensureCapacity(SOAP_SPLIT_RESERVE);
+                s.ensureCapacity(HTTP_SPLIT_RESERVE);
             }
             lengths.append(current.length());
             queued.append(current.detach());
             if (!isClosing)
-                current.ensureCapacity(SOAP_SPLIT_RESERVE);
+                current.ensureCapacity(HTTP_SPLIT_RESERVE);
         }
     }
     else if (isClosing)
         append(current.length(), current.str());
 }
 
-    void FlushingStringBuffer::flush(bool closing) 
-    {
+void FlushingStringBuffer::flush(bool closing)
+{
     CriticalBlock b(crit);
     if (closing && tail.length())
     {
         s.append(tail);
         tail.clear();
     }
-    if (isSoap)
+    if (isHttp)
     {
         if (!closing)
         {
             unsigned length = s.length();
-            if (length > SOAP_SPLIT_THRESHOLD)
+            if (length > HTTP_SPLIT_THRESHOLD)
             {
                 queued.append(s.detach());
                 lengths.append(length);
-                s.ensureCapacity(SOAP_SPLIT_RESERVE);
+                s.ensureCapacity(HTTP_SPLIT_RESERVE);
             }
         }
     }
@@ -929,7 +934,7 @@ void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
         if (logctx.queryTraceLevel() > 1)
         {
             if (isBlocked)
-                logctx.CTXLOG("Sending reply: Sending blocked %s data", (isXml)?"xml":"raw");
+                logctx.CTXLOG("Sending reply: Sending blocked %s data", getFormatName(mlFmt));
             else
 #ifdef _DEBUG
                 logctx.CTXLOG("Sending reply length %d: %.1024s", (unsigned) (s.length() - sizeof(size32_t)), s.str()+sizeof(size32_t));
@@ -983,7 +988,7 @@ void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
 
 void *FlushingStringBuffer::getPayload(size32_t &length)
 {
-    assertex(isSoap);
+    assertex(isHttp);
     CriticalBlock b(crit);
     if (queued.ordinality())
     {
@@ -1008,7 +1013,7 @@ void FlushingStringBuffer::startDataset(const char *elementName, const char *res
         startBlock();
         if (!isBlocked)
         {
-            if (isXml)
+            if (mlFmt==MarkupFmt_XML)
             {
                 s.append('<').append(elementName);
                 if (isSoap && (resultName || (sequence != (unsigned) -1)))
@@ -1041,7 +1046,7 @@ void FlushingStringBuffer::startScalar(const char *resultName, unsigned sequence
     startBlock();
     if (!isBlocked)
     {
-        if (isXml)
+        if (mlFmt==MarkupFmt_XML)
         {
             tail.clear();
             s.append("<Dataset");
@@ -1083,6 +1088,53 @@ void FlushingStringBuffer::incrementRowCount()
     rowCount++;
 }
 
+void FlushingJsonBuffer::encodeXML(const char *x, unsigned flags, unsigned len, bool utf8)
+{
+    StringBuffer t;
+    ::encodeJSON(t, x);
+    append(t.length(), t.str());
+}
+
+void FlushingJsonBuffer::startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend)
+{
+    CriticalBlock b(crit);
+    extend = _extend;
+    if (isEmpty || !extend)
+    {
+        name.clear().append(resultName ? resultName : elementName);
+        sequenceNumber = 0;
+        startBlock();
+        if (!isBlocked)
+        {
+            StringBuffer seqName;
+            if (!resultName || !*resultName)
+                resultName = seqName.appendf("result_%d", sequence+1).str();
+            appendJSONName(s, resultName).append('{');
+            tail.set("}");
+        }
+        isEmpty = false;
+    }
+}
+
+void FlushingJsonBuffer::startScalar(const char *resultName, unsigned sequence)
+{
+    CriticalBlock b(crit);
+    assertex(!s.length());
+    name.set(resultName ? resultName : "Dataset");
+
+    sequenceNumber = 0;
+    startBlock();
+    if (!isBlocked)
+    {
+        StringBuffer seqName;
+        if (!resultName || !*resultName)
+            resultName = seqName.appendf("Result_%d", sequence+1).str();
+        appendJSONName(s, resultName).append('{');
+        appendJSONName(s, "Row").append("[{");
+        appendJSONName(s, resultName);
+        tail.set("}]}");
+    }
+}
 //=====================================================================================================
 
 ClusterWriteHandler::ClusterWriteHandler(char const * _logicalName, char const * _activityType)

@@ -19114,11 +19114,18 @@ public:
         if (!meta.queryOriginal()) // this is a bit of a hack - don't know why no meta on an output....
             meta.set(input->queryOutputMeta());
         Owned<IOutputRowSerializer> rowSerializer;
+        Owned<IXmlWriter> writer;
         if ((int) sequence >= 0)
         {
             response = serverContext->queryResult(sequence);
             if (response)
                 response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0);
+            if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
+            {
+                writer.setown(createIXmlWriter(serverContext->getXmlFlags(), 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
+                writer->outputBeginArray("Row");
+            }
+
         }
         if (serverContext->outputResultsToWorkUnit()||(response && response->isRaw))
         {
@@ -19173,12 +19180,11 @@ public:
                     rowSerializer->serialize(serializerTarget, (const byte *) row);
                     response->append(rowbuff.length(), rowbuff.toByteArray());
                 }
-                else if (response->isXml)
+                else if (writer)
                 {
-                    CommonXmlWriter xmlwrite(serverContext->getXmlFlags(), 1, response);
-                    xmlwrite.outputBeginNested("Row", false);
-                    helper.serializeXml((byte *) row, xmlwrite);
-                    xmlwrite.outputEndNested("Row");
+                    writer->outputBeginNested("Row", false);
+                    helper.serializeXml((byte *) row, *writer);
+                    writer->outputEndNested("Row");
                 }
                 else
                 {
@@ -19192,6 +19198,8 @@ public:
             }
             ReleaseRoxieRow(row);
         }
+        if (writer)
+            writer->outputEndArray("Row");
         if (saveInContext)
             serverContext->appendResultDeserialized(storedName, sequence, builder.getcount(), builder.linkrows(), (helper.getFlags() & POFextend) != 0, LINK(meta.queryOriginal()));
         if (serverContext->outputResultsToWorkUnit())

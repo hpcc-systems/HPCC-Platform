@@ -6368,12 +6368,12 @@ public:
         else
         {
             if ('{' == nextChar)
-                readObject("__root__");
+                readObject("__object__");
             else if ('[' == nextChar)
             {
-                iEvent->beginNode("__root__", curOffset);
+                iEvent->beginNode("__array__", curOffset);
                 readArray("__item__");
-                iEvent->endNode("__root__", 0, "", false, curOffset);
+                iEvent->endNode("__array__", 0, "", false, curOffset);
             }
             else
                 error("expected '{' or '['");

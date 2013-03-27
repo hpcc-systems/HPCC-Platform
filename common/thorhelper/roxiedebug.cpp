@@ -506,6 +506,14 @@ public:
     {
         // nothing for now
     }
+    virtual void outputBeginArray(const char *fieldname)
+    {
+        // nothing for now
+    }
+    virtual void outputEndArray(const char *fieldname)
+    {
+        // nothing for now
+    }
     virtual void outputSetAll()
     {
         // nothing for now

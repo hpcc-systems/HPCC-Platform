@@ -304,6 +304,221 @@ void CommonXmlWriter::outputSetAll()
         out.newline();
 }
 
+//=====================================================================================
+
+CommonJsonWriter::CommonJsonWriter(unsigned _flags, unsigned initialIndent, IXmlStreamFlusher *_flusher)
+{
+    flusher = _flusher;
+    flags = _flags;
+    indent = initialIndent;
+    nestLimit = flags & XWFnoindent ? (unsigned) -1 : 0;
+    needDelimiter = false;
+}
+
+CommonJsonWriter::~CommonJsonWriter()
+{
+    flush(true);
+}
+
+CommonJsonWriter & CommonJsonWriter::clear()
+{
+    out.clear();
+    indent = 0;
+    nestLimit = flags & XWFnoindent ? (unsigned) -1 : 0;
+    return *this;
+}
+
+void CommonJsonWriter::checkFormat(bool doDelimit, bool delimitNext, int inc)
+{
+    if (doDelimit && needDelimiter)
+    {
+        if (!out.length()) //new block
+           out.append(',');
+        else
+            delimitJSON(out);
+    }
+    if (!nestLimit)
+    {
+        out.append('\n').pad(indent);
+        if (inc!=0)
+            indent+=inc;
+    }
+    needDelimiter = delimitNext;
+}
+
+void CommonJsonWriter::checkDelimit(int inc)
+{
+    checkFormat(true, true, inc);
+}
+
+void CommonJsonWriter::outputQuoted(const char *text)
+{
+    checkDelimit();
+    appendJSONValue(out, NULL, text);
+}
+
+void CommonJsonWriter::outputString(unsigned len, const char *field, const char *fieldname)
+{
+    if (flags & XWFtrim)
+        len = rtlTrimStrLen(len, field);
+    if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
+        return;
+    checkDelimit();
+    appendJSONValue(out, fieldname, len, field);
+}
+
+void CommonJsonWriter::outputQString(unsigned len, const char *field, const char *fieldname)
+{
+    MemoryAttr tempBuffer;
+    char * temp;
+    if (len <= 100)
+        temp = (char *)alloca(len);
+    else
+        temp = (char *)tempBuffer.allocate(len);
+    rtlQStrToStr(len, temp, len, field);
+    outputString(len, temp, fieldname);
+}
+
+void CommonJsonWriter::outputBool(bool field, const char *fieldname)
+{
+    checkDelimit();
+    appendJSONValue(out, fieldname, field);
+}
+
+void CommonJsonWriter::outputData(unsigned len, const void *field, const char *fieldname)
+{
+    checkDelimit();
+    appendJSONValue(out, fieldname, len, field);
+}
+
+void CommonJsonWriter::outputInt(__int64 field, const char *fieldname)
+{
+    checkDelimit();
+    appendJSONValue(out, fieldname, field);
+}
+
+void CommonJsonWriter::outputUInt(unsigned __int64 field, const char *fieldname)
+{
+    checkDelimit();
+    appendJSONValue(out, fieldname, field);
+}
+
+void CommonJsonWriter::outputReal(double field, const char *fieldname)
+{
+    checkDelimit();
+    appendJSONValue(out, fieldname, field);
+}
+
+void CommonJsonWriter::outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname)
+{
+    checkDelimit();
+    outputJsonDecimal(field, size, precision, fieldname, out);
+}
+
+void CommonJsonWriter::outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname)
+{
+    checkDelimit();
+    outputJsonUDecimal(field, size, precision, fieldname, out);
+}
+
+void CommonJsonWriter::outputUnicode(unsigned len, const UChar *field, const char *fieldname)
+{
+    if (flags & XWFtrim)
+        len = rtlTrimUnicodeStrLen(len, field);
+    if ((flags & XWFopt) && (rtlTrimUnicodeStrLen(len, field) == 0))
+        return;
+    checkDelimit();
+    outputJsonUnicode(len, field, fieldname, out);
+}
+
+void CommonJsonWriter::outputUtf8(unsigned len, const char *field, const char *fieldname)
+{
+    if (flags & XWFtrim)
+        len = rtlTrimUtf8StrLen(len, field);
+    if ((flags & XWFopt) && (rtlTrimUtf8StrLen(len, field) == 0))
+        return;
+    checkDelimit();
+    appendJSONValue(out, fieldname, len, field);
+}
+
+void CommonJsonWriter::outputBeginArray(const char *fieldname)
+{
+    arrays.append(fieldname);
+    const char * sep = strchr(fieldname, '/');
+    while (sep)
+    {
+        StringAttr leading(fieldname, sep-fieldname);
+        appendJSONName(out, leading).append(" {");
+        fieldname = sep+1;
+        sep = strchr(fieldname, '/');
+    }
+    checkFormat(true, false, 1);
+    appendJSONName(out, fieldname).append('[');
+}
+
+void CommonJsonWriter::outputEndArray(const char *fieldname)
+{
+    arrays.pop();
+    checkFormat(false, true, -1);
+    out.append(']');
+    const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
+    while (sep)
+    {
+        out.append('}');
+        sep = strchr(sep+1, '/');
+    }
+}
+
+void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildren)
+{
+    const char *parentArray = (arrays.length()) ? arrays.tos() : NULL;
+    if (parentArray && !streq(parentArray, fieldname))
+        parentArray = NULL;
+    flush(false);
+    checkFormat(true, false, 1);
+    const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
+    while (sep)
+    {
+        if (!parentArray)
+        {
+            StringAttr leading(fieldname, sep-fieldname);
+            appendJSONName(out, leading).append("{");
+        }
+        fieldname = sep+1;
+        sep = strchr(fieldname, '/');
+    }
+    if (!parentArray)
+        appendJSONName(out, fieldname);
+    out.append("{");
+    if (!nestChildren && !nestLimit)
+        nestLimit = indent;
+}
+
+void CommonJsonWriter::outputEndNested(const char *fieldname)
+{
+    const char *parentArray = (arrays.length()) ? arrays.tos() : NULL;
+    if (parentArray && !streq(parentArray, fieldname))
+        parentArray = NULL;
+    flush(false);
+    checkFormat(false, true, -1);
+    const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
+    while (sep)
+    {
+        if (!parentArray)
+            out.append('}');
+        sep = strchr(sep+1, '/');
+    }
+    out.append("}");
+    if (indent==nestLimit)
+        nestLimit = 0;
+}
+
+void CommonJsonWriter::outputSetAll()
+{
+    flush(false);
+    checkDelimit();
+    appendJSONValue(out, NULL, "All");
+}
 
 //=====================================================================================
 
@@ -635,6 +850,15 @@ CommonXmlWriter * CreateCommonXmlWriter(unsigned _flags, unsigned _initialIndent
 
 //=====================================================================================
 
+IXmlWriter * createIXmlWriter(unsigned _flags, unsigned _initialIndent, IXmlStreamFlusher *_flusher, XMLWriterType xmlType)
+{
+    if (xmlType==WTJSON)
+        return new CommonJsonWriter(_flags, _initialIndent, _flusher);
+    return CreateCommonXmlWriter(_flags, _initialIndent, _flusher, xmlType);
+}
+
+//=====================================================================================
+
 SimpleOutputWriter::SimpleOutputWriter()
 {
     separatorNeeded = false;
@@ -731,15 +955,19 @@ void SimpleOutputWriter::outputUtf8(unsigned len, const char *field, const char 
     outputXmlUtf8(len, field, NULL, out);
 }
 
-void SimpleOutputWriter::outputBeginNested(const char *, bool)
+void SimpleOutputWriter::outputBeginNested(const char *s, bool)
 {
+    if (!s || !*s)
+        return;
     outputFieldSeparator();
     out.append('[');
     separatorNeeded = false;
 }
 
-void SimpleOutputWriter::outputEndNested(const char *)
+void SimpleOutputWriter::outputEndNested(const char *s)
 {
+    if (!s || !*s)
+        return;
     out.append(']');
     separatorNeeded = true;
 }

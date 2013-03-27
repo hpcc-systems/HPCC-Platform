@@ -1809,12 +1809,9 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
     CriticalSection daliUpdateCrit;
     Owned<IRoxiePackage> dynamicPackage;
 
-    bool isXml;
+    TextMarkupFormat mlFmt;
     bool isRaw;
-    bool isBlocked;
-    bool isHttp;
     bool sendHeartBeats;
-    bool trim;
     unsigned warnTimeLimit;
     unsigned lastSocketCheckTime;
     unsigned lastHeartBeat;
@@ -1822,6 +1819,9 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
 protected:
     Owned<WorkflowMachine> workflow;
     SafeSocket *client;
+    bool isBlocked;
+    bool isHttp;
+    bool trim;
 
     void doPostProcess()
     {
@@ -1838,7 +1838,7 @@ protected:
 
         if (probeQuery)
         {
-            FlushingStringBuffer response(client, isBlocked, true, false, isHttp, *this);
+            FlushingStringBuffer response(client, isBlocked, MarkupFmt_XML, false, isHttp, *this);
 
             // create output stream
             response.startDataset("_Probe", NULL, (unsigned) -1);  // initialize it
@@ -1866,7 +1866,7 @@ protected:
     {
         client = NULL;
         totSlavesReplyLen = 0;
-        isXml = true;
+        mlFmt = MarkupFmt_XML;
         isRaw = false;
         isBlocked = false;
         isHttp = false;
@@ -1962,13 +1962,13 @@ public:
         startWorkUnit();
     }
 
-    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, bool _isXml, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags)
+    CRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, TextMarkupFormat _mlFmt, bool _isRaw, bool _isBlocked, HttpHelper &httpHelper, bool _trim, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions _xmlReadFlags)
         : CSlaveContext(_factory, _logctx, 0, 0, NULL, false, false), serverQueryFactory(_factory)
     {
         init();
         context.set(_context);
         client = &_client;
-        isXml = _isXml;
+        mlFmt = _mlFmt;
         isRaw = _isRaw;
         isBlocked = _isBlocked;
         isHttp = httpHelper.isHttp();
@@ -2168,7 +2168,7 @@ public:
         FlushingStringBuffer *result = resultMap.item(sequence);
         if (!result)
         {
-            result = new FlushingStringBuffer(client, isBlocked, isXml, isRaw, isHttp, *this);
+            result = new FlushingStringBuffer(client, isBlocked, mlFmt, isRaw, isHttp, *this);
             result->isSoap = isHttp;
             result->trim = trim;
             result->queryName.set(context->queryName());
@@ -2393,12 +2393,19 @@ public:
                 r->startScalar(name, sequence);
                 if (isRaw)
                     r->append(len, (char *)data);
-                else if (isXml)
+                else if (mlFmt==MarkupFmt_XML)
                 {
                     assertex(transformer);
-                    CommonXmlWriter xmlwrite(getXmlFlags()|XWFnoindent, 0);
-                    transformer->toXML(isAll, len, (byte *)data, xmlwrite);
-                    r->append(xmlwrite.str());
+                    CommonXmlWriter writer(getXmlFlags()|XWFnoindent, 0);
+                    transformer->toXML(isAll, len, (byte *)data, writer);
+                    r->append(writer.str());
+                }
+                else if (mlFmt==MarkupFmt_JSON)
+                {
+                    assertex(transformer);
+                    CommonJsonWriter writer(getXmlFlags()|XWFnoindent, 0);
+                    transformer->toXML(isAll, len, (byte *)data, writer);
+                    r->append(writer.str());
                 }
                 else
                 {
@@ -2916,7 +2923,7 @@ private:
 
 public:
     CSoapRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
-        : CRoxieServerContext(_context, _factory, _client, true, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_XML, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
     {
         queryName.set(_context->queryName());
     }
@@ -2968,12 +2975,92 @@ public:
     }
 };
 
-IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
+class CJsonRoxieServerContext : public CRoxieServerContext
+{
+private:
+    StringAttr queryName;
+
+public:
+    CJsonRoxieServerContext(IPropertyTree *_context, const IQueryFactory *_factory, SafeSocket &_client, HttpHelper &httpHelper, unsigned _priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions xmlReadFlags)
+        : CRoxieServerContext(_context, _factory, _client, MarkupFmt_JSON, false, false, httpHelper, true, _priority, _logctx, xmlReadFlags)
+    {
+        queryName.set(_context->queryName());
+    }
+
+    virtual void process()
+    {
+        EclProcessFactory pf = (EclProcessFactory) factory->queryDll()->getEntry("createProcess");
+        Owned<IEclProcess> p = pf();
+        if (workflow)
+            workflow->perform(this, p);
+        else
+            p->perform(this, 0);
+    }
+
+    virtual void flush(unsigned seqNo)
+    {
+        CriticalBlock b(resultsCrit);
+        CriticalBlock b1(client->queryCrit());
+
+        StringBuffer responseHead, responseTail;
+        appendfJSONName(responseHead, "%sResponse", queryName.get()).append(" {");
+        appendJSONValue(responseHead, "sequence", seqNo);
+        appendJSONName(responseHead, "Results").append(" {");
+
+        unsigned len = responseHead.length();
+        client->write(responseHead.detach(), len, true);
+
+        ForEachItemIn(seq, resultMap)
+        {
+            FlushingStringBuffer *result = resultMap.item(seq);
+            if (result)
+            {
+                result->flush(true);
+                for(;;)
+                {
+                    size32_t length;
+                    void *payload = result->getPayload(length);
+                    if (!length)
+                        break;
+                    client->write(payload, length, true);
+                }
+            }
+        }
+
+        responseTail.append("}}");
+        len = responseTail.length();
+        client->write(responseTail.detach(), len, true);
+    }
+
+    virtual FlushingStringBuffer *queryResult(unsigned sequence)
+    {
+        if (!client && workUnit)
+            return NULL;    // when outputting to workunit only, don't output anything to stdout
+        CriticalBlock procedure(resultsCrit);
+        while (!resultMap.isItem(sequence))
+            resultMap.append(NULL);
+        FlushingStringBuffer *result = resultMap.item(sequence);
+        if (!result)
+        {
+            result = new FlushingJsonBuffer(client, isBlocked, isHttp, *this);
+            result->trim = trim;
+            result->queryName.set(context->queryName());
+            resultMap.replace(result, sequence);
+        }
+        return result;
+    }
+};
+
+IRoxieServerContext *createRoxieServerContext(IPropertyTree *context, const IQueryFactory *factory, SafeSocket &client, bool isXml, bool isRaw, bool isBlocked, HttpHelper &httpHelper, bool trim, unsigned priority, const IRoxieContextLogger &_logctx, PTreeReaderOptions readFlags)
 {
     if (httpHelper.isHttp())
-        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, xmlReadFlags);
+    {
+        if (httpHelper.queryContentFormat()==MarkupFmt_JSON)
+            return new CJsonRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, readFlags);
+        return new CSoapRoxieServerContext(context, factory, client, httpHelper, priority, _logctx, readFlags);
+    }
     else
-        return new CRoxieServerContext(context, factory, client, isXml, isRaw, isBlocked, httpHelper, trim, priority, _logctx, xmlReadFlags);
+        return new CRoxieServerContext(context, factory, client, isXml ? MarkupFmt_XML : MarkupFmt_Unknown, isRaw, isBlocked, httpHelper, trim, priority, _logctx, readFlags);
 }
 
 IRoxieServerContext *createOnceServerContext(const IQueryFactory *factory, const IRoxieContextLogger &_logctx)
