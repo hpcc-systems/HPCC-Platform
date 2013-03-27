@@ -951,6 +951,13 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
         refreshConfirm = false;
     }
 
+    var regEx = new RegExp("^[a-zA-Z0-9_]+$");
+
+    if (attrName == 'name' && regEx.test(newValue) == false)
+    {
+      alert("Invalid character in component name. Only alpha-numerics and underscores '_' are allowed.");
+      return false;
+    }
     var xmlArgs = argsToXml(category, params, attrName, oldValue, newValue, recordIndex + 1, record.getData(column.key + '_onChange'));
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/SaveSetting', {
       success: function(o) {
