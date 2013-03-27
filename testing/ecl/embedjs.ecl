@@ -1,3 +1,5 @@
+//nothor
+
 IMPORT javascript;
 
 javascript.Language.syntaxcheck('1+2');
