@@ -19,6 +19,8 @@ import Std.File AS FileServices;
 // Super File added to itself test
 //noRoxie
 
+#option('slaveDaliClient', true);
+
 string fsuper := '~t6::superfile';
 string fsub := '~t6::subfile';
 ds := DATASET ([{'aaa'}, {'bbb'}, {'ccc'}, {'ddd'}], {string name});

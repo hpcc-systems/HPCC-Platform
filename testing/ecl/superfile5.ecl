@@ -22,6 +22,8 @@ import Std.System.Thorlib;
 import Std.File AS FileServices;
 import Std.Str;
 
+#option('slaveDaliClient', true);
+
 rec :=
 RECORD
         integer i;
