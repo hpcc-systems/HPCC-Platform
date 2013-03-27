@@ -1272,6 +1272,15 @@ class CRowPullDistributor: public CDistributorBase
             cachefileio.clear();
             cachefile->remove();
         }
+        diskpos = 0;
+        if (txthread)
+        {
+            delete txthread;
+            txthread = NULL;
+        }
+        // JCSMORE - shouldn't really be necessary - pull distributor needs revisiting
+        selfready.reinit();
+        selfdone.reinit();
     }
 public:
     CRowPullDistributor(CActivityBase *activity, ICommunicator &_comm, mptag_t _tag, IRowInterfaces *_rowif,const bool &abort, bool doDedup, IStopInput *istop)
@@ -1517,8 +1526,8 @@ public:
     }
     void startTX()
     {
+        clean();
         stopping = false;
-        delete txthread;
         txthread = new cTxThread(*this);
         txthread->start();
     }
@@ -1526,7 +1535,8 @@ public:
     virtual void join() // probably does nothing
     {
         CDistributorBase::join();
-        if (txthread) {
+        if (txthread)
+        {
             txthread->join();
             delete txthread;
             txthread = NULL;

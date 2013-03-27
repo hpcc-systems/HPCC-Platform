@@ -66,7 +66,6 @@ class CThorKeyArray
     size32_t maxsamplesize;
     offset_t totalserialsize;
     size32_t serialrowsize;     // 0 when not known
-    unsigned index;
     unsigned divisor;
     ISortKeySerializer* keyserializer;
     ICompare *icompare;
@@ -78,13 +77,11 @@ class CThorKeyArray
     size32_t filerecnum;
     offset_t totalfilesize;
 
-
-
     void split();
     offset_t findLessEqRowPos(const void * row);
     offset_t findLessRowPos(const void * row);
     int keyRowCompare(unsigned keyidx,const void *row);
-    void expandfpos();
+    void expandFPos();
     const void *queryKey(unsigned idx) { return keys.query(idx); }
     const void *getRow(unsigned idx);
     int binchopPartition(const void * row,bool lt);
@@ -107,6 +104,7 @@ public:
     void calcPositions(IFile *file,CThorKeyArray &sample);
     void setSampling(size32_t _maxsamplesize, unsigned _divisor=0);
     int keyCompare(unsigned a,unsigned b);
+    offset_t getFixedFilePos(unsigned i);
     offset_t getFilePos(unsigned idx);
     void traceKey(const char *prefix,unsigned idx);
 };
