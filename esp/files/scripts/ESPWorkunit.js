@@ -131,7 +131,7 @@ define([
         _VariablesSetter: function (Variables) {
             var variables = [];
             for (var i = 0; i < Variables.ECLResult.length; ++i) {
-                context.variables.push(lang.mixin({
+                variables.push(lang.mixin({
                     ColumnType: Variables.ECLResult[i].ECLSchemas && Variables.ECLResult[i].ECLSchemas.ECLSchemaItem.length ? Variables.ECLResult[i].ECLSchemas.ECLSchemaItem[0].ColumnType : "unknown"
                 }, variables[i]));
             }
