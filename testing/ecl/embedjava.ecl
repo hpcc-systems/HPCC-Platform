@@ -1,3 +1,5 @@
+//nothor
+
 IMPORT java;
 
 integer add1(integer val) := IMPORT(java, 'JavaCat.add1:(I)I');
