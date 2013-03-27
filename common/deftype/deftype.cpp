@@ -3826,6 +3826,12 @@ void XmlSchemaBuilder::addSetField(const char * name, const char * itemname, ITy
     StringBuffer elementType;
     getXmlTypeName(elementType, *type.queryChildType());
 
+    if ((!itemname || !*itemname) && name) // xpaths 'Name', '/Name', and 'Name/' seem to be equivalent
+    {
+        itemname = name;
+        name = NULL;
+    }
+
     if (name && *name)
     {
         xml.append("<xs:element name=\"").append(name).append("\"");
