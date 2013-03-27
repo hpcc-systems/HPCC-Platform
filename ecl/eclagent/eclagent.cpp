@@ -399,7 +399,7 @@ public:
             sanitizeQuery(queryXml, queryName, sanitizedText, isHTTP, uid, isRequest, isRequestArray);
             DBGLOG("Received debug query %s", sanitizedText.str());
 
-            FlushingStringBuffer response(client, false, true, false, false, queryDummyContextLogger());
+            FlushingStringBuffer response(client, false, MarkupFmt_XML, false, false, queryDummyContextLogger());
             response.startDataset("Debug", NULL, (unsigned) -1);
 
             if (!debugCmdHandler.get())

@@ -431,7 +431,11 @@ inline StringBuffer &delimitJSON(StringBuffer &s, bool addNewline=false, bool es
 }
 
 jlib_decl StringBuffer &encodeJSON(StringBuffer &s, const char *value);
+jlib_decl StringBuffer &encodeJSON(StringBuffer &s, unsigned len, const char *value);
+
 jlib_decl StringBuffer &appendJSONName(StringBuffer &s, const char *name);
+jlib_decl StringBuffer &appendfJSONName(StringBuffer &s, const char *format, ...);
+jlib_decl StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned len, const void *_value);
 
 inline StringBuffer &appendJSONNameOrDelimit(StringBuffer &s, const char *name)
 {
@@ -476,6 +480,14 @@ inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned
 {
     appendJSONNameOrDelimit(s, name);
     return s.appendulong(value);
+}
+
+inline StringBuffer &appendJSONValue(StringBuffer& s, const char *name, unsigned len, const char *value)
+{
+    appendJSONNameOrDelimit(s, name);
+    if (!value)
+        return s.append("null");
+    return encodeJSON(s.append('"'), len, value).append('"');
 }
 
 extern jlib_decl void decodeCppEscapeSequence(StringBuffer & out, const char * in, bool errorIfInvalid);
