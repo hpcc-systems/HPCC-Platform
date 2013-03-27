@@ -571,40 +571,35 @@ ITypeInfo * containsSingleSimpleFieldBlankXPath(IResultSetMetaData * meta)
     return NULL;
 }
 
-    
+void fvSplitXPath(const char *xpath, StringBuffer &s, const char *&name, const char **childname=NULL)
+{
+    if (!xpath || !*xpath)
+        return;
+    const char * slash = strchr(xpath, '/');
+    if (!slash)
+    {
+        name = xpath;
+        if (childname)
+            *childname = NULL;
+    }
+    else
+    {
+        if (!childname || strchr(slash+1, '/')) //output ignores xpaths that are too deep
+            return;
+        name = s.clear().append(slash-xpath, xpath).str();
+        *childname = slash+1;
+    }
+}
+
 void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) const
 {
-    StringBuffer prefix, suffix;
+    StringBuffer xname;
     ForEachItemIn(idx, columns)
     {
         CResultSetColumnInfo & column = columns.item(idx);
         unsigned flag = column.flag;
         const char * name = meta->queryName(idx);
         const char * childname = NULL;
-        const char * xname = NULL;
-        if (useXPath)
-        {
-            xname = meta->queryXPath(idx);
-            if (xname)
-            {
-                const char * slash = strchr(xname, '/');
-                if (slash)
-                {
-                    const char * slash2 = strchr(slash+1, '/');
-                    prefix.clear().append(slash-xname, xname);
-                    name = prefix.str();
-                    if (slash2)
-                    {
-                        suffix.clear().append(slash2-(slash+1), slash+1);
-                        childname = suffix.str();
-                    }
-                    else
-                        childname = slash+1;
-                }
-                else
-                    name = xname;
-            }
-        }
 
         switch (flag)
         {
@@ -622,7 +617,9 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
             break;
         case FVFFdataset:
             {
-                if (!childname && (!xname || !*xname)) childname = "Row";
+                childname = "Row";
+                if (useXPath)
+                    fvSplitXPath(meta->queryXPath(idx), xname, name, &childname);
                 ITypeInfo * singleFieldType = (useXPath && name && *name && childname && *childname) ? containsSingleSimpleFieldBlankXPath(column.childMeta.get()) : NULL;
                 if (!singleFieldType || !builder.addSingleFieldDataset(name, childname, *singleFieldType))
                 {
@@ -639,11 +636,17 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
                 ITypeInfo & type = *column.type;
                 if (type.getTypeCode() == type_set)
                 {
-                    if (!childname) childname = "Item";
+                    childname = "Item";
+                    if (useXPath)
+                        fvSplitXPath(meta->queryXPath(idx), xname, name, &childname);
                     builder.addSetField(name, childname, type);
                 }
                 else
+                {
+                    if (useXPath)
+                        fvSplitXPath(meta->queryXPath(idx), xname, name);
                     builder.addField(name, type);
+                }
                 break;
             }
         }
