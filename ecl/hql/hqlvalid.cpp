@@ -28,6 +28,7 @@
 #include "hqlutil.hpp"
 #include "hqlvalid.hpp"
 #include "hqlerror.hpp"
+#include "hqlpmap.hpp"
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
@@ -153,3 +154,129 @@ IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpressi
     ECLlocation location(locationExpr);
     return checkCreateConcreteModule(errors, expr, location);
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static bool matchesIfSelect(IHqlExpression * expr, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
+{
+    if ((expr == leftSelect) || (expr == rightSelect))
+        return true;
+
+    node_operator op = expr->getOperator();
+    if (op == no_constant)
+        return true;
+    if (op == no_if)
+    {
+        if (matchesIfSelect(expr->queryChild(1), leftSelect, rightSelect) &&
+            matchesIfSelect(expr->queryChild(2), leftSelect, rightSelect))
+            return true;
+    }
+    if ((op == no_select) &&
+        (expr->queryChild(1) == leftSelect->queryChild(1)))
+        return matchesIfSelect(expr->queryChild(0), leftSelect->queryChild(0), rightSelect->queryChild(0));
+
+    return false;
+}
+
+IHqlExpression * queryAmbiguousRollupCondition(IHqlExpression * expr, bool strict)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * transform = expr->queryChild(2);
+    OwnedHqlExpr left = createSelector(no_left, dataset, querySelSeq(expr));
+    OwnedHqlExpr right = createSelector(no_right, dataset, querySelSeq(expr));
+    IHqlExpression * selector = dataset->queryNormalizedSelector();
+
+    HqlExprCopyArray selects;
+    gatherSelects(selects, expr->queryChild(1), selector);
+    ForEachItemIn(i, selects)
+    {
+        IHqlExpression * select = &selects.item(i);
+        IHqlExpression * value = getExtractSelect(transform, selector, select);
+        if (!value)
+            return select;
+
+        if (value->getOperator() == no_constant)
+            continue;
+
+        OwnedHqlExpr leftSelect = replaceSelector(select, selector, left);
+        if (value == leftSelect)
+            continue;
+
+        OwnedHqlExpr rightSelect = replaceSelector(select, selector, right);
+        if (value == rightSelect)
+            continue;
+
+        if (strict)
+            return select;
+
+        if (!matchesIfSelect(value, leftSelect, rightSelect))
+            return select;
+    }
+    return NULL;
+}
+
+
+IHqlExpression * queryAmbiguousRollupCondition(IHqlExpression * expr, const HqlExprArray & selects)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * transform = expr->queryChild(2);
+    OwnedHqlExpr left = createSelector(no_left, dataset, querySelSeq(expr));
+    OwnedHqlExpr right = createSelector(no_right, dataset, querySelSeq(expr));
+    IHqlExpression * selector = dataset->queryNormalizedSelector();
+
+    ForEachItemIn(i, selects)
+    {
+        IHqlExpression * select = &selects.item(i);
+        IHqlExpression * value = getExtractSelect(transform, selector, select);
+        if (!value)
+            return select;
+
+        if (value->getOperator() == no_constant)
+            continue;
+
+        OwnedHqlExpr leftSelect = replaceSelector(select, selector, left);
+        if (value == leftSelect)
+            continue;
+
+        OwnedHqlExpr rightSelect = replaceSelector(select, selector, right);
+        if (value == rightSelect)
+            continue;
+
+        return select;
+    }
+    return NULL;
+}
+
+
+void filterAmbiguousRollupCondition(HqlExprArray & ambiguousSelects, HqlExprArray & selects, IHqlExpression * expr)
+{
+    IHqlExpression * dataset = expr->queryChild(0);
+    IHqlExpression * transform = expr->queryChild(2);
+    OwnedHqlExpr left = createSelector(no_left, dataset, querySelSeq(expr));
+    OwnedHqlExpr right = createSelector(no_right, dataset, querySelSeq(expr));
+    IHqlExpression * selector = dataset->queryNormalizedSelector();
+
+    ForEachItemInRev(i, selects)
+    {
+        IHqlExpression * select = &selects.item(i);
+        IHqlExpression * value = getExtractSelect(transform, selector, select);
+        if (value)
+        {
+            if (value->getOperator() == no_constant)
+                continue;
+
+            OwnedHqlExpr leftSelect = replaceSelector(select, selector, left);
+            if (value == leftSelect)
+                continue;
+
+            OwnedHqlExpr rightSelect = replaceSelector(select, selector, right);
+            if (value == rightSelect)
+                continue;
+        }
+
+        ambiguousSelects.append(*LINK(select));
+        selects.remove(i);
+    }
+}
+
+

@@ -39,8 +39,8 @@ if the supplied pointer was not from the roxiemem heap. Usually an OwnedRoxieStr
 
 //Should be incremented whenever the virtuals in the context or a helper are changed, so
 //that a work unit can't be rerun.  Try as hard as possible to retain compatibility.
-#define ACTIVITY_INTERFACE_VERSION      147
-#define MIN_ACTIVITY_INTERFACE_VERSION  147             //minimum value that is compatible with current interface - without using selectInterface
+#define ACTIVITY_INTERFACE_VERSION      148
+#define MIN_ACTIVITY_INTERFACE_VERSION  148             //minimum value that is compatible with current interface - without using selectInterface
 
 typedef unsigned char byte;
 
@@ -1354,8 +1354,13 @@ struct IHThorLinkedRawIteratorArg : public IHThorArg
 };
 
 
+enum {
+    RFrolledismatchleft = 0x00001,      // Is the value of left passed to matches() the result of the rollup?
+};
+
 struct IHThorRollupArg : public IHThorArg
 {
+    virtual unsigned getFlags() = 0;
     virtual bool matches(const void * _left, const void * _right) = 0;
     virtual size32_t transform(ARowBuilder & rowBuilder, const void * _left, const void * _right) = 0;
 };

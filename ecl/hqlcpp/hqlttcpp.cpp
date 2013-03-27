@@ -2207,25 +2207,52 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 
         if (equalities.ordinality())
         {
-            OwnedHqlExpr groupOrder = createValueSafe(no_sortlist, makeSortListType(NULL), equalities);
+            OwnedHqlExpr left = createSelector(no_left, dataset, querySelSeq(expr));
 
-            if (isPartitionedForGroup(dataset, groupOrder, false))
-                return appendOwnedOperand(expr, createLocalAttribute());
+            //If anything in the join condition references LEFT then the whole condition is currently passed the modified row
+            //so remove any fields that are modified in the transform
+            HqlExprArray ambiguousSelects;
+            if (cond->usesSelector(left))
+                filterAmbiguousRollupCondition(ambiguousSelects, equalities, expr);
 
-            HqlExprArray groupArgs, rollupArgs;
-            groupArgs.append(*LINK(dataset));
-            groupArgs.append(*LINK(groupOrder));
-
-            OwnedHqlExpr group = createDataset(no_group, groupArgs);
-            group.setown(cloneInheritedAnnotations(expr, group));
-            rollupArgs.append(*LINK(group));
-            if (extra)
-                rollupArgs.append(*extra.getClear());
+            if (equalities.ordinality() == 0)
+            {
+                translator.reportWarning(queryLocation(expr), ECODETEXT(HQLWRN_AmbiguousRollupNoGroup));
+            }
             else
-                rollupArgs.append(*createConstant(true));
-            unwindChildren(rollupArgs, expr, 2);
-            OwnedHqlExpr ungroup = createDataset(no_group, expr->clone(rollupArgs), NULL);
-            return cloneInheritedAnnotations(expr, ungroup);
+            {
+                OwnedHqlExpr groupOrder = createValueSafe(no_sortlist, makeSortListType(NULL), equalities);
+
+                if (isPartitionedForGroup(dataset, groupOrder, false))
+                    return appendOwnedOperand(expr, createLocalAttribute());
+
+                //This list can only contain items if the filter is using left/right => expand to an equality
+                IHqlExpression * selector = dataset->queryNormalizedSelector();
+                OwnedHqlExpr right = createSelector(no_right, dataset, querySelSeq(expr));
+                ForEachItemIn(i, ambiguousSelects)
+                {
+                    IHqlExpression * select = &ambiguousSelects.item(i);
+                    OwnedHqlExpr leftSelect = replaceSelector(select, selector, left);
+                    OwnedHqlExpr rightSelect = replaceSelector(select, selector, right);
+                    IHqlExpression * eq = createBoolExpr(no_eq, leftSelect.getClear(), rightSelect.getClear());
+                    extendConditionOwn(extra, no_and, eq);
+                }
+
+                HqlExprArray groupArgs, rollupArgs;
+                groupArgs.append(*LINK(dataset));
+                groupArgs.append(*LINK(groupOrder));
+
+                OwnedHqlExpr group = createDataset(no_group, groupArgs);
+                group.setown(cloneInheritedAnnotations(expr, group));
+                rollupArgs.append(*LINK(group));
+                if (extra)
+                    rollupArgs.append(*extra.getClear());
+                else
+                    rollupArgs.append(*createConstant(true));
+                unwindChildren(rollupArgs, expr, 2);
+                OwnedHqlExpr ungroup = createDataset(no_group, expr->clone(rollupArgs), NULL);
+                return cloneInheritedAnnotations(expr, ungroup);
+            }
         }
     }
 

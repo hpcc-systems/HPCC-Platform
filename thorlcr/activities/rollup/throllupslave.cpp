@@ -530,7 +530,11 @@ public:
             unsigned thisSize = ruhelper->transform(ret, keptTransformed, next);
             if (thisSize)
                 keptTransformed.setown(ret.finalizeRowClear(thisSize));
-            kept.set(keptTransformed);
+
+            if (ruhelper->getFlags() & RFrolledismatchleft)
+                kept.set(keptTransformed);
+            else
+                kept.setown(next.getClear());
         }
         OwnedConstThorRow row = keptTransformed.getClear();
         kept.setown(next.getClear());

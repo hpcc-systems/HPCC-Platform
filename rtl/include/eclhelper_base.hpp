@@ -1112,6 +1112,7 @@ class CThorRollupArg : public CThorArg, implements IHThorRollupArg
         return NULL;
     }
 
+    virtual unsigned getFlags() { return 0; }
     virtual bool matches(const void * _left, const void * _right) { return true; }
 };
 

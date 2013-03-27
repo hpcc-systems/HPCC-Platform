@@ -2287,7 +2287,10 @@ const void *CHThorRollupActivity::nextInGroup()
             {
                 left.setown(rowBuilder.finalizeRowClear(outSize));
             }
-            prev.set(left);
+            if (helper.getFlags() & RFrolledismatchleft)
+                prev.set(left);
+            else
+                prev.set(right);
         }
         catch(IException * e)
         {
