@@ -2261,7 +2261,7 @@ const void *CHThorRollupActivity::nextInGroup()
             {
                 left.setown(rowBuilder.finalizeRowClear(outSize));
             }
-            prev.set(right);
+            prev.set(left);
         }
         catch(IException * e)
         {
