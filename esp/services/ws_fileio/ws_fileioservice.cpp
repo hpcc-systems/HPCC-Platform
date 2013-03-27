@@ -26,7 +26,7 @@
 #endif
 
 ///#define FILE_DESPRAY_URL "FileDesprayAccess"
-#define FILE_IO_URL     "FileIO"
+#define FILE_IO_URL     "FileIOAccess"
 
 void CWsFileIOEx::init(IPropertyTree *cfg, const char *process, const char *service)
 {
