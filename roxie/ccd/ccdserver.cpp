@@ -19642,10 +19642,10 @@ public:
             eof = true;
         else
         {
-            numParts = 0;
             if (variableFileName)
             {
                 varFileInfo.setown(resolveLFN(helper.getFileName(), isOpt));
+                numParts = 0;
                 if (varFileInfo)
                 {
                     Owned<IFilePartMap> map = varFileInfo->getFileMap();
