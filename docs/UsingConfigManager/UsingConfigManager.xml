@@ -1802,8 +1802,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <title>Esp - myesp AuthenticationTab</title>
 
             <para>This section describes the Esp - myesp Service
-            Authentication tab. LDAP is a feature only available in Enterprise
-            Edition.</para>
+            Authentication tab. </para>
 
             <para><graphic fileref="images/CM-img08-3.jpg"
             vendor="configmgrSS" /></para>
@@ -2642,12 +2641,12 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <title>Changing Thor topology</title>
 
             <para>The Topology tab allows you to to change aspects of your
-            Thor Cluster. </para>
+            Thor Cluster.</para>
 
             <itemizedlist>
               <listitem>
                 <para>CLICK on your Thor cluster to expand the list and
-                display your Thor nodes. </para>
+                display your Thor nodes.</para>
               </listitem>
 
               <listitem>
