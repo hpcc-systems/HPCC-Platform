@@ -33,7 +33,7 @@
       example data used in this manual are fictitious. Any similarity to
       actual persons, living or dead, is purely coincidental.</para>
 
-      <para> </para>
+      <para></para>
     </legalnotice>
 
     <xi:include href="common/Version.xml" xpointer="FooterInfo"
@@ -351,7 +351,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/vmimg07aa3.JPG" />
+                  <imagedata fileref="images/vmimg07b.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -954,11 +954,11 @@ OUTPUT(L);</programlisting></para>
             <listitem>
               <?dbfo keep-together="always"?>
 
-              <para>CLICK on the Spray CSV hyperlink under the DFU Files menu
-              on the left.</para>
+              <para>CLICK on the Spray Variable hyperlink under the DFU Files
+              menu on the left.</para>
 
               <para><figure>
-                  <title>Spray CSV</title>
+                  <title>Spray Variable</title>
 
                   <mediaobject>
                     <imageobject>
@@ -967,8 +967,8 @@ OUTPUT(L);</programlisting></para>
                   </mediaobject>
                 </figure></para>
 
-              <para>The <emphasis role="bold">DFU Spray CSV</emphasis> page
-              displays.</para>
+              <para>The <emphasis role="bold">DFU Spray Variable</emphasis>
+              page displays.</para>
             </listitem>
 
             <listitem>
@@ -1682,7 +1682,7 @@ OUTPUT(ValidWords)
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/vmimg07aa.JPG" />
+            <imagedata fileref="images/vmimg07a.jpg" />
           </imageobject>
         </mediaobject>
       </figure>

@@ -135,7 +135,8 @@
           <?dbfo keep-together="always"?>
 
           <para>Select the <emphasis role="bold">Authentication</emphasis>
-          tab<graphic fileref="../../images/gs-ht01.jpg" /></para>
+          tab<graphic fileref="../../images/gs-ht01.jpg"
+          vendor="configmgrSS" /></para>
         </listitem>
 
         <listitem>
@@ -157,7 +158,8 @@
           <?dbfo keep-together="always"?>
 
           <para>Click on the value column drop list to display the choices for
-          method. <graphic fileref="../../images/gs-ht02.jpg" /></para>
+          method. <graphic fileref="../../images/gs-ht02.jpg"
+          vendor="configmgrSS" /></para>
         </listitem>
 
         <listitem>
@@ -278,7 +280,8 @@
         <para>Rt-click on the table below computers and select <emphasis
         role="bold">New </emphasis>from the pop up menu.</para>
 
-        <para><graphic fileref="../../images/LDAP_001.jpg" /></para>
+        <para><graphic fileref="../../images/LDAP_001.jpg"
+        vendor="configmgrSS" /></para>
 
         <para>The <emphasis role="bold">Add New Computers</emphasis> dialog
         displays.</para>
@@ -288,7 +291,8 @@
         <para>Fill in the values for the <emphasis role="bold">Computer
         Attributes</emphasis></para>
 
-        <para><graphic fileref="../../images/LDAP_002.jpg" /></para>
+        <para><graphic fileref="../../images/LDAP_002.jpg"
+        vendor="configmgrSS" /></para>
       </listitem>
     </orderedlist>
 
@@ -341,7 +345,8 @@
         <para>Rt-click on <emphasis role="bold">Navigator</emphasis> Pane and
         choose <emphasis role="bold">New Components</emphasis> from the pop up
         menu, then choose <emphasis role="bold">ldapServer</emphasis> from the
-        pop-up menu. <graphic fileref="../../images/LDAP_003.jpg" /></para>
+        pop-up menu. <graphic fileref="../../images/LDAP_003.jpg"
+        vendor="configmgrSS" /></para>
 
         <para><emphasis role="bold">Note</emphasis>: The ldapServer component
         is merely a definition that specifies an existing LDAP server. It does
@@ -354,8 +359,8 @@
         <para>Fill in the <emphasis role="bold">LDAP Server Process</emphasis>
         properties:</para>
 
-        <para><graphic fileref="../../images/LDAP_004.jpg" /><orderedlist
-            numeration="loweralpha">
+        <para><graphic fileref="../../images/LDAP_004.jpg"
+        vendor="configmgrSS" /><orderedlist numeration="loweralpha">
             <listitem>
               <para>On the <emphasis role="bold">Instances</emphasis> tab,
               Rt-click on the table on the right hand side, choose <emphasis
@@ -414,7 +419,8 @@
         right hand side, select the <emphasis
         role="bold">Authentication</emphasis> tab.</para>
 
-        <para><graphic fileref="../../images/LDAP_005.jpg" /></para>
+        <para><graphic fileref="../../images/LDAP_005.jpg"
+        vendor="configmgrSS" /></para>
 
         <para>Fill in the appropriate values:</para>
 
@@ -460,7 +466,7 @@
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Dali
         Server – mydali </emphasis><graphic
-        fileref="../../images/LDAP_006.jpg" /></para>
+        fileref="../../images/LDAP_006.jpg" vendor="configmgrSS" /></para>
 
         <para>Fill in the values as appropriate:</para>
 
@@ -498,7 +504,7 @@
 
         <para>In the Navigator pane, click on the <emphasis role="bold">Roxie
         Clusrer – myroxie </emphasis><graphic
-        fileref="../../images/LDAP_007.jpg" /></para>
+        fileref="../../images/LDAP_007.jpg" vendor="configmgrSS" /></para>
 
         <para><orderedlist continuation="restarts" numeration="loweralpha">
             <listitem>
