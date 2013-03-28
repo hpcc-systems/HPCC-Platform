@@ -1753,7 +1753,6 @@ StringBuffer &appendJSONExceptionItem(StringBuffer &s, int code, const char *msg
     delimitJSON(s);
     s.append('{');
     appendJSONValue(s, "Code", code);
-    StringBuffer temp;
     appendJSONValue(s, "Message", msg);
     s.append('}');
     if (arrayName && *arrayName)
