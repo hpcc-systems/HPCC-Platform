@@ -483,6 +483,7 @@ public:
     virtual bool handleTopology(IEspContext &context, IEspHandleTopologyRequest &req, IEspHandleTopologyResponse &resp);
     virtual bool handleRows(IEspContext &context, IEspHandleRowsRequest &req, IEspHandleRowsResponse &resp);
     virtual bool handleAccessRules(IEspContext &context, IEspHandleAccessRulesRequest &req, IEspHandleAccessRulesResponse &resp);
+    virtual bool handleBaseAccessControlList(IEspContext &context, IEspHandleBaseAccessControlListRequest &req, IEspHandleBaseAccessControlListResponse &resp);
     virtual bool getNavTreeDefn(IEspContext &context, IEspGetNavTreeDefnRequest &req, IEspGetNavTreeDefnResponse &resp);
     virtual bool getValue(IEspContext &context, IEspGetValueRequest &req, IEspGetValueResponse &resp);
     virtual bool unlockUser(IEspContext &context, IEspUnlockUserRequest &req, IEspUnlockUserResponse &resp);
@@ -965,6 +966,7 @@ public:
     virtual bool onHandleTopology(IEspContext &context, IEspHandleTopologyRequest &req, IEspHandleTopologyResponse &resp);
     virtual bool onHandleRows(IEspContext &context, IEspHandleRowsRequest &req, IEspHandleRowsResponse &resp);
     virtual bool onHandleAccessRules(IEspContext &context, IEspHandleAccessRulesRequest &req, IEspHandleAccessRulesResponse &resp);
+    virtual bool onHandleBaseAccessControlList(IEspContext &context, IEspHandleBaseAccessControlListRequest &req, IEspHandleBaseAccessControlListResponse &resp);
     virtual bool onGetNavTreeDefn(IEspContext &context, IEspGetNavTreeDefnRequest &req, IEspGetNavTreeDefnResponse &resp);
     virtual bool onGetValue(IEspContext &context, IEspGetValueRequest &req, IEspGetValueResponse &resp);
     virtual bool onUnlockUser(IEspContext &context, IEspUnlockUserRequest &req, IEspUnlockUserResponse &resp);
@@ -1038,6 +1040,7 @@ public:
     virtual bool onHandleTopology(IEspContext &context, IEspHandleTopologyRequest &req, IEspHandleTopologyResponse &resp);
     virtual bool onHandleRows(IEspContext &context, IEspHandleRowsRequest &req, IEspHandleRowsResponse &resp);
     virtual bool onHandleAccessRules(IEspContext &context, IEspHandleAccessRulesRequest &req, IEspHandleAccessRulesResponse &resp);
+    virtual bool onHandleBaseAccessControlList(IEspContext &context, IEspHandleBaseAccessControlListRequest &req, IEspHandleBaseAccessControlListResponse &resp);
     virtual bool onGetNavTreeDefn(IEspContext &context, IEspGetNavTreeDefnRequest &req, IEspGetNavTreeDefnResponse &resp);
     virtual bool onGetValue(IEspContext &context, IEspGetValueRequest &req, IEspGetValueResponse &resp);
     virtual bool onLockEnvironmentForCloud(IEspContext &context, IEspLockEnvironmentForCloudRequest &req, IEspLockEnvironmentForCloudResponse &resp);

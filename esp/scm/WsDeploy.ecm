@@ -377,7 +377,20 @@ ESPrequest HandleAccessRulesRequest
     ESPstruct WsDeployReqInfo ReqInfo;
 };
 
+ESPrequest HandleBaseAccessControlListRequest
+{
+    string Operation;
+    string XmlArgs;
+    ESPstruct WsDeployReqInfo ReqInfo;
+};
+
+
 ESPresponse [exceptions_inline, encode(0)] HandleAccessRulesResponse
+{
+    string Status;
+};
+
+ESPresponse [exceptions_inline, encode(0)] HandleBaseAccessControlListResponse
 {
     string Status;
 };
@@ -608,6 +621,8 @@ ESPservice [exceptions_inline("xslt/exceptions.xslt")] WsDeploy
         HandleRows(HandleRowsRequest, HandleRowsResponse);
     ESPmethod[description("Handle Access Rules Requests suchs as add & delete e.t.c"), help("")]
         HandleAccessRules(HandleAccessRulesRequest, HandleAccessRulesResponse);
+    ESPmethod[description("Handle Base Access Control List Requests suchs as add & delete e.t.c"), help("")]
+        HandleBaseAccessControlList(HandleBaseAccessControlListRequest, HandleBaseAccessControlListResponse);
     ESPmethod[description("Return nav tree definition for display purposes"), help("")]
         GetNavTreeDefn(GetNavTreeDefnRequest, GetNavTreeDefnResponse);
     ESPmethod[description("Returns the value for the requested field"), help("")]       
