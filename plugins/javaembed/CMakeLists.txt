@@ -25,9 +25,9 @@
 
 project( javaembed )
 
-ADD_PLUGIN(javaembed PACKAGES JNI OPTION MAKE_JAVAEMBED)
-
-if ( MAKE_JAVAEMBED )
+if (USE_JNI)
+  ADD_PLUGIN(javaembed PACKAGES JNI OPTION MAKE_JAVAEMBED)
+  if ( MAKE_JAVAEMBED )
     set (    SRCS
              javaembed.cpp
         )
@@ -71,4 +71,7 @@ if ( MAKE_JAVAEMBED )
         eclrtl
         jlib
         )
+  endif()
 endif()
+# Even if not making the Java plugin, we want to install the header
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/java.ecllib DESTINATION plugins COMPONENT Runtime)
