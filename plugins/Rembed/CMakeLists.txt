@@ -25,9 +25,9 @@
 
 project( Rembed )
 
-ADD_PLUGIN(Rembed PACKAGES R OPTION MAKE_REMBED)
-
-if ( MAKE_REMBED )
+if (USE_RINSIDE)
+  ADD_PLUGIN(Rembed PACKAGES R OPTION MAKE_REMBED)
+  if ( MAKE_REMBED )
     set (    SRCS
              Rembed.cpp
         )
@@ -57,4 +57,8 @@ if ( MAKE_REMBED )
         eclrtl
         jlib
         )
+  endif()
 endif()
+
+# Even if not making the R plugin, we want to install the header
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/R.ecllib DESTINATION plugins COMPONENT Runtime)
