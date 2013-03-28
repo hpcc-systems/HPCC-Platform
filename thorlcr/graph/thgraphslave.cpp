@@ -113,17 +113,18 @@ CSlaveActivity::~CSlaveActivity()
 void CSlaveActivity::setInput(unsigned index, CActivityBase *inputActivity, unsigned inputOutIdx)
 {
     CActivityBase::setInput(index, inputActivity, inputOutIdx);
-    Owned<CActivityBase> nullAct;
+    Linked<IThorDataLink> outLink;
     if (!inputActivity)
     {
-        nullAct.setown(container.factory(TAKnull));
-        inputActivity = nullAct; // NB: output of nullAct linked, input of this act will own
+        Owned<CActivityBase> nullAct = container.factory(TAKnull);
+        outLink.set(((CSlaveActivity *)(nullAct.get()))->queryOutput(0)); // NB inputOutIdx irrelevant, null has single 'fake' output
+        nullAct->releaseIOs(); // normally done as graph winds up, clear now to avoid circular dependencies with outputs
     }
-
-    IThorDataLink *outLink = ((CSlaveActivity *)inputActivity)->queryOutput(inputOutIdx);
+    else
+        outLink.set(((CSlaveActivity *)inputActivity)->queryOutput(inputOutIdx));
     assertex(outLink);
     while (inputs.ordinality()<=index) inputs.append(NULL);
-    inputs.replace(LINK(outLink), index);
+    inputs.replace(outLink.getClear(), index);
 }
 
 IThorDataLink *CSlaveActivity::queryOutput(unsigned index)
