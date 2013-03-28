@@ -165,7 +165,7 @@ public:
     void buildSampleResponseXml(StringBuffer& msg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo);
     void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, WsEclWuInfo &wsinfo, unsigned flags);
     int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  WsEclWuInfo &wsinfo);
-    int onSubmitQueryOutputXML(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsEclWuInfo &wsinfo, const char *format);
+    int onSubmitQueryOutput(IEspContext &context, CHttpRequest* request, CHttpResponse* response,    WsEclWuInfo &wsinfo, const char *format);
     int onSubmitQueryOutputView(IEspContext &context, CHttpRequest* request, CHttpResponse* response, WsEclWuInfo &wsinfo);
 
     int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, const char *viewname=NULL, const char *xsltname=NULL);
