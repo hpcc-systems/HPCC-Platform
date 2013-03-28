@@ -59,7 +59,6 @@ unsigned numSlaveThreads = 30;
 unsigned numRequestArrayThreads = 5;
 unsigned headRegionSize;
 bool enableHeartBeat = true;
-unsigned keyedJoinFlowLimit = 1000;
 unsigned parallelLoopFlowLimit = 100;
 unsigned perChannelFlowLimit = 10;
 time_t startupTime;
@@ -67,11 +66,8 @@ unsigned statsExpiryTime = 3600;
 unsigned miscDebugTraceLevel = 0;  // separate trace settings purely for debugging specific items (i.e. all possible locations to look for files at startup)
 unsigned readTimeout = 300;
 unsigned indexReadChunkSize = 60000;
-unsigned smartSteppingChunkRows = 100;
 unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
-bool checkVersion = true;
-bool deleteUnneededFiles = true;
 bool checkPrimaries = true;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
@@ -107,7 +103,6 @@ unsigned initIbytiDelay; // In MillSec
 unsigned minIbytiDelay;  // In MillSec
 bool copyResources;
 bool enableKeyDiff = true;
-bool enableForceKeyDiffCopy = true;
 bool chunkingHeap = true;
 bool logFullQueries;
 bool blindLogging = false;
@@ -122,7 +117,6 @@ memsize_t defaultMemoryLimit;
 unsigned defaultTimeLimit[3] = {0, 0, 0};
 unsigned defaultWarnTimeLimit[3] = {0, 5000, 5000};
 
-int defaultCheckingHeap = 0;
 unsigned defaultParallelJoinPreload = 0;
 unsigned defaultPrefetchProjectPreload = 10;
 unsigned defaultConcatPreload = 0;
@@ -139,7 +133,6 @@ unsigned mtu_size = 1400; // upper limit on outbound buffer size - allow some he
 StringBuffer fileNameServiceDali;
 StringBuffer roxieName;
 bool trapTooManyActiveQueries;
-bool allowRoxieOnDemand;
 unsigned maxEmptyLoopIterations;
 unsigned maxGraphLoopIterations;
 bool probeAllRows;
@@ -628,7 +621,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         lowTimeout = topology->getPropInt("@lowTimeout", 10000);
         highTimeout = topology->getPropInt("@highTimeout", 2000);
         slaTimeout = topology->getPropInt("@slaTimeout", 2000);
-        keyedJoinFlowLimit = topology->getPropInt("@keyedJoinFlowLimit", 1000);
         parallelLoopFlowLimit = topology->getPropInt("@parallelLoopFlowLimit", 100);
         perChannelFlowLimit = topology->getPropInt("@perChannelFlowLimit", 10);
         copyResources = topology->getPropBool("@copyResources", true);
@@ -688,7 +680,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             DBGLOG("WARNING: ignoring udpSnifferEnabled setting as multicast not enabled");
 
         indexReadChunkSize = topology->getPropInt("@indexReadChunkSize", 60000);
-        smartSteppingChunkRows = topology->getPropInt("@smartSteppingChunkRows", 100);
         numSlaveThreads = topology->getPropInt("@slaveThreads", 30);
         numServerThreads = topology->getPropInt("@serverThreads", 30);
         numRequestArrayThreads = topology->getPropInt("@requestArrayThreads", 5);
@@ -713,11 +704,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         defaultFullKeyedJoinPreload = topology->getPropInt("@defaultFullKeyedJoinPreload", 0);
         defaultKeyedJoinPreload = topology->getPropInt("@defaultKeyedJoinPreload", 0);
         defaultPrefetchProjectPreload = topology->getPropInt("@defaultPrefetchProjectPreload", 10);
+        diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
 
-        defaultCheckingHeap = topology->getPropInt("@checkingHeap", 0);
-        checkVersion = topology->getPropBool("@checkVersion", true);
-        deleteUnneededFiles = topology->getPropBool("@deleteUnneededFiles", true);
         checkPrimaries = topology->getPropBool("@checkPrimaries", true);
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);
@@ -746,14 +735,12 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         dafilesrvLookupTimeout = topology->getPropInt("@dafilesrvLookupTimeout", 10000);
         topology->getProp("@daliServers", fileNameServiceDali);
         trapTooManyActiveQueries = topology->getPropBool("@trapTooManyActiveQueries", true);
-        allowRoxieOnDemand = topology->getPropBool("@allowRoxieOnDemand", false);
         maxEmptyLoopIterations = topology->getPropInt("@maxEmptyLoopIterations", 1000);
         maxGraphLoopIterations = topology->getPropInt("@maxGraphLoopIterations", 1000);
         useTreeCopy = topology->getPropBool("@useTreeCopy", true);
         mergeSlaveStatistics = topology->getPropBool("@mergeSlaveStatistics", true);
 
         enableKeyDiff = topology->getPropBool("@enableKeyDiff", true);
-        enableForceKeyDiffCopy = topology->getPropBool("@enableForceKeyDiffCopy", false);
 
         // MORE: Get parms from topology after it is populated from Hardware/computer types section in configenv
         //       Then if does not match and based on desired action in topolgy, either warn, or fatal exit or .... etc

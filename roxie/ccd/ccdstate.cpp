@@ -1367,11 +1367,6 @@ private:
             {
                 reply.appendf("<Alive restarts='%d'/>", restarts);
             }
-            else if (stricmp(queryName, "control:allowRoxieOnDemand")==0)
-            {
-                allowRoxieOnDemand= control->getPropBool("@val", true);
-                topology->setPropBool("@allowRoxieOnDemand", allowRoxieOnDemand);
-            }
             else
                 unknown = true;
             break;
@@ -1424,11 +1419,6 @@ private:
             {
                 dafilesrvLookupTimeout = control->getPropInt("@val", 10000);
                 topology->setPropInt("@dafilesrvLookupTimeout", dafilesrvLookupTimeout);
-            }
-            else if (stricmp(queryName, "control:defaultCheckingHeap")==0)
-            {
-                defaultCheckingHeap = control->getPropInt("@val", false);
-                topology->setPropInt("@checkingHeap", defaultCheckingHeap);
             }
             else if (stricmp(queryName, "control:defaultConcatPreload")==0)
             {
@@ -1511,11 +1501,6 @@ private:
             {
                 enableKeyDiff = control->getPropBool("@val", true);
                 topology->setPropBool("@enableKeyDiff", enableKeyDiff);
-            }
-            else if (stricmp(queryName, "control:enableForceKeyDiffCopy")==0)
-            {
-                enableForceKeyDiffCopy = control->getPropBool("@val", false);
-                topology->setPropBool("@enableForceKeyDiffCopy", enableForceKeyDiffCopy);
             }
             else
                 unknown = true;
