@@ -156,7 +156,9 @@ function setESPFormAction()  // reqType: 0: regular form, 1: soap, 2: form param
         else if (actval.value=="run_xslt")
             actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName)"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else if (actval.value=="xml")
-            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/query/', $queryPath, '/', $methodName, '?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/query/', $queryPath, '/', $methodName, '/xml?view=xml&amp;display')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
+        else if (actval.value=="json")
+            actionpath = "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/submit/query/', $queryPath, '/', $methodName, '/json')"/><xsl:text disable-output-escaping="yes"><![CDATA[";
         else
             actionpath= "]]></xsl:text><xsl:value-of disable-output-escaping="yes"  select="concat('/WsEcl/xslt/query/', $queryPath, '/', $methodName, '?view=')"/><xsl:text disable-output-escaping="yes"><![CDATA["+actval.value;
     }
@@ -308,10 +310,11 @@ function switchInputForm()
                         <xsl:for-each select="/FormInfo/CustomViews/Result">
                             <option><xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute><xsl:value-of select="."/></option>
                         </xsl:for-each>
-                        <option value="run_xslt">OUTPUT TABLES</option>
-                        <option value="xml">OUTPUT XML</option>
-                        <option value="esp_soap">SOAP TEST</option>
-                        <option value="esp_json">JSON TEST</option>
+                        <option value="run_xslt">Output Tables</option>
+                        <option value="xml">Output XML</option>
+                        <option value="json">Output JSON</option>
+                        <option value="esp_soap">SOAP Test</option>
+                        <option value="esp_json">JSON Test</option>
                     </select>&nbsp;
                    <input type='submit' value='Submit' name='S1'/>
 
