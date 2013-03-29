@@ -25,9 +25,9 @@
 
 project( v8embed )
 
-ADD_PLUGIN(v8embed PACKAGES V8 OPTION MAKE_V8EMBED)
-
-if ( MAKE_V8EMBED )
+if (USE_V8)
+  ADD_PLUGIN(v8embed PACKAGES V8 OPTION MAKE_V8EMBED)
+  if ( MAKE_V8EMBED )
     set (    SRCS
              v8embed.cpp
         )
@@ -57,4 +57,7 @@ if ( MAKE_V8EMBED )
         eclrtl
         jlib
         )
+  endif()
 endif()
+# Even if not making the V8 plugin, we want to install the header
+install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/javascript.ecllib DESTINATION plugins COMPONENT Runtime)
