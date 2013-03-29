@@ -54,4 +54,4 @@ withAnagrams := TABLE(NOFOLD(shortWords), { word, anagrams := findAnagrams(Word)
 
 moreThanOne := withAnagrams(count(anagrams)>1);
 
-OUTPUT(moreThanOne);
+OUTPUT(sort(moreThanOne, RECORD));
