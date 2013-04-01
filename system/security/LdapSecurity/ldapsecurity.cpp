@@ -1081,7 +1081,7 @@ IAuthMap * CLdapSecManager::createFeatureMap(IPropertyTree * authconfig)
 bool CLdapSecManager::updateUserPassword(ISecUser& user, const char* newPassword, const char* currPassword)
 {
     // Authenticate User first
-    if(!authenticate(&user) && user.getAuthenticateStatus() != AS_PASSWORD_EXPIRED)
+    if(!authenticate(&user) && user.getAuthenticateStatus() != AS_PASSWORD_VALID_BUT_EXPIRED)
     {
         return false;
     }
