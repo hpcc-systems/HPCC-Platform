@@ -122,9 +122,23 @@ protected:
             flusher->flushXML(out, isClose);
     }
 
-protected:
+    class CJsonWriterItem : public CInterface
+    {
+    public:
+        CJsonWriterItem(const char *_name) : name(_name), depth(0){}
+        IMPLEMENT_IINTERFACE;
+
+        StringAttr name;
+        unsigned depth;
+    };
+
+    const char *checkItemName(CJsonWriterItem *item, const char *name);
+    const char *checkItemName(const char *name);
+    const char *checkItemNameInc(const char *name);
+    const char *checkItemNameDec(const char *name);
+
     IXmlStreamFlusher *flusher;
-    StringArray arrays;
+    CIArrayOf<CJsonWriterItem> arrays;
     StringBuffer out;
     unsigned flags;
     unsigned indent;
