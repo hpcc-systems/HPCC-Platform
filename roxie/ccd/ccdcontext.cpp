@@ -3025,7 +3025,7 @@ public:
                         break;
                     if (needDelimiter)
                     {
-                        StringAttr s(",\n ");
+                        StringAttr s(",\n "); //write() will take ownership of buffer
                         size32_t len = s.length();
                         client->write((void *)s.detach(), len, true);
                         needDelimiter=false;
