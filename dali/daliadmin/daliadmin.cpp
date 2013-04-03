@@ -270,10 +270,20 @@ static void import(const char *path,const char *src,bool add)
         ERRLOG("Could not connect to %s",path);
         return;
     }
+    StringAttr newtail; // must be declared outside the following if
     Owned<IPropertyTree> root = conn->getRoot();
     if (!add) {
         Owned<IPropertyTree> child = root->getPropTree(tail);
         root->removeTree(child);
+
+        //If remoplacing a qualified branch then remove the qualifiers before calling addProp
+        const char * qualifier = strchr(tail, '[');
+
+        if (qualifier)
+        {
+            newtail.set(tail, qualifier-tail);
+            tail = newtail;
+        }
     }
     Owned<IPropertyTree> oldEnvironment;
     if (streq(path,"Environment"))
@@ -695,7 +705,9 @@ static void dfsunlink(const char *lname, IUserDescriptor *user)
             Owned<IDistributedSuperFileIterator> iter = file->getOwningSuperFiles();
             if (!iter->first())
                 break;
-            IDistributedSuperFile *sf = &iter->query();
+            file.clear();
+            Owned<IDistributedSuperFile> sf = &iter->get();
+            iter.clear();
             if (sf->removeSubFile(lname,false))
                 OUTLOG("removed %s from %s",lname,sf->queryLogicalName());
             else
