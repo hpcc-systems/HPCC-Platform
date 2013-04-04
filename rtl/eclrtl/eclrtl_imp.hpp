@@ -151,7 +151,7 @@ public:
     inline ~rtlUStrRegexFindInstance()          { rtlDestroyUStrRegExprFindInstance(instance); }
     inline IUStrRegExprFindInstance * operator -> () const { return instance; }
     
-    void find(rtlCompiledUStrRegex & regex, size32_t len, const UChar * str)
+    void find(const rtlCompiledUStrRegex & regex, size32_t len, const UChar * str)
     {
         IUStrRegExprFindInstance * search = regex->find(str, 0, len);
         if (instance)
