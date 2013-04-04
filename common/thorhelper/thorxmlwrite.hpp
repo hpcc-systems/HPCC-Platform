@@ -126,7 +126,6 @@ protected:
     {
     public:
         CJsonWriterItem(const char *_name) : name(_name), depth(0){}
-        IMPLEMENT_IINTERFACE;
 
         StringAttr name;
         unsigned depth;
@@ -134,8 +133,8 @@ protected:
 
     const char *checkItemName(CJsonWriterItem *item, const char *name);
     const char *checkItemName(const char *name);
-    const char *checkItemNameInc(const char *name);
-    const char *checkItemNameDec(const char *name);
+    const char *checkItemNameBeginNested(const char *name);
+    const char *checkItemNameEndNested(const char *name);
 
     IXmlStreamFlusher *flusher;
     CIArrayOf<CJsonWriterItem> arrays;

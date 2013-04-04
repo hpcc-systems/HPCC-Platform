@@ -364,7 +364,7 @@ const char *CommonJsonWriter::checkItemName(const char *name)
     return checkItemName(item, name);
 }
 
-const char *CommonJsonWriter::checkItemNameInc(const char *name)
+const char *CommonJsonWriter::checkItemNameBeginNested(const char *name)
 {
     CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
     name = checkItemName(item, name);
@@ -373,7 +373,7 @@ const char *CommonJsonWriter::checkItemNameInc(const char *name)
     return name;
 }
 
-const char *CommonJsonWriter::checkItemNameDec(const char *name)
+const char *CommonJsonWriter::checkItemNameEndNested(const char *name)
 {
     CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
     if (item)
@@ -503,7 +503,7 @@ void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildre
 {
     flush(false);
     checkFormat(true, false, 1);
-    fieldname = checkItemNameInc(fieldname);
+    fieldname = checkItemNameBeginNested(fieldname);
     if (fieldname)
     {
         const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
@@ -525,7 +525,7 @@ void CommonJsonWriter::outputEndNested(const char *fieldname)
 {
     flush(false);
     checkFormat(false, true, -1);
-    fieldname = checkItemNameDec(fieldname);
+    fieldname = checkItemNameEndNested(fieldname);
     if (fieldname)
     {
         const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
