@@ -558,6 +558,16 @@ define([
                 onGetResults: onFetchResults
             });
         },
+        fetchSourceFiles: function (onFetchSourceFiles) {
+            if (this.sourceFiles && this.sourceFiles.length) {
+                onFetchSourceFiles(this.sourceFiles);
+                return;
+            }
+
+            this.getInfo({
+                onGetSourceFiles: onFetchSourceFiles
+            });
+        },
         fetchTimers: function (onFetchTimers) {
             if (this.timers && this.timers.length) {
                 onFetchTimers(this.timers);

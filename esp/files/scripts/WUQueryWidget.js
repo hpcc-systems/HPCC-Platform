@@ -77,10 +77,8 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
-            this.initWorkunitsGrid();
             this.initFilter();
             this.initContextMenu();
-            this.refreshActionState();
         },
 
         resize: function (args) {
@@ -304,6 +302,12 @@ define([
                 return;
             this.initalized = true;
 
+            //TODO:  Should be easier generic way
+            if (params.Cluster) {
+                registry.byId(this.id + "Cluster").set("value", params.Cluster);
+            }
+            this.initWorkunitsGrid();
+            this.refreshActionState();
             this.selectChild(this.workunitsTab, true);
         },
 
@@ -434,8 +438,7 @@ define([
             ]);
 
             this.objectStore = ESPWorkunit.CreateWUQueryObjectStore();
-            this.workunitsGrid.setStore(this.objectStore);
-            this.workunitsGrid.setQuery(this.getFilter());
+            this.workunitsGrid.setStore(this.objectStore, this.getFilter());
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
 
             this.workunitsGrid.on("RowDblClick", function (evt) {
@@ -493,7 +496,6 @@ define([
             var hasNotProtected = false;
             var hasFailed = false;
             var hasNotFailed = false;
-            var hasFilter = this.hasFilter();
             var hasCompleted = false;
             var hasNotCompleted = false;
             for (var i = 0; i < selection.length; ++i) {
@@ -531,6 +533,11 @@ define([
             this.menuProtect.set("disabled", !hasNotProtected);
             this.menuUnprotect.set("disabled", !hasProtected);
 
+            this.refreshFilterState();
+        },
+
+        refreshFilterState: function () {
+            var hasFilter = this.hasFilter();
             dom.byId(this.id + "IconFilter").src = hasFilter ? "img/filter.png" : "img/noFilter.png";
         },
 
