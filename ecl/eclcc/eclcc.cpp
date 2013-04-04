@@ -201,6 +201,7 @@ public:
         logVerbose = false;
         logTimings = false;
         optArchive = false;
+        optCheckEclVersion = true;
         optGenerateMeta = false;
         optGenerateDepend = false;
         optIncludeMeta = false;
@@ -292,6 +293,7 @@ protected:
     bool logVerbose;
     bool logTimings;
     bool optArchive;
+    bool optCheckEclVersion;
     bool optGenerateMeta;
     bool optGenerateDepend;
     bool optIncludeMeta;
@@ -1012,7 +1014,8 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
     instance.ignoreUnknownImport = archiveTree->getPropBool("@ignoreUnknownImport", true);
 
     instance.eclVersion.set(archiveTree->queryProp("@eclVersion"));
-    checkEclVersionCompatible(instance.errs, instance.eclVersion);
+    if (optCheckEclVersion)
+        checkEclVersionCompatible(instance.errs, instance.eclVersion);
 
     Owned<IEclSourceCollection> archiveCollection;
     if (archiveTree->getPropBool("@testRemoteInterface", false))
@@ -1466,6 +1469,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optOnlyCompile, "-c"))
         {
         }
+        else if (iter.matchFlag(optCheckEclVersion, "-checkVersion"))
+        {
+        }
         else if (iter.matchFlag(optArchive, "-E"))
         {
         }
@@ -1701,6 +1707,7 @@ const char * const helpText[] = {
     "Other options:",
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",
+    "!   -checkVersion Enable/disable ecl version checking from archives",
 #ifdef _WIN32
     "!   -brk <n>      Trigger a break point in eclcc after nth allocation",
 #endif
