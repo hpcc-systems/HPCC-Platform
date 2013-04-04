@@ -27,6 +27,8 @@ define([
     "dojox/grid/enhanced/plugins/Pagination",
 
     "hpcc/ESPBase",
+    "hpcc/ESPWorkunit",
+    "hpcc/ESPLogicalFile",
 
     "dojo/text!../templates/ResultWidget.html",
 
@@ -38,7 +40,7 @@ define([
 ], function (declare, lang, dom, iframe,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 Pagination,
-                ESPBase,
+                ESPBase, ESPWorkunit, ESPLogicalFile,
                 template) {
     return declare("ResultWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -124,12 +126,34 @@ define([
             this.result = params.result;
             //TODO:  Encapsulate this IF into ESPResult.js
             if (params.result && params.result.canShowResults()) {
+                this.initResult(params.result);
+            } else if (params.Wuid && params.Sequence) {
+                var wu = ESPWorkunit.Get(params.Wuid);
                 var context = this;
-                params.result.fetchStructure(function (structure) {
+                wu.fetchResults(function (results) {
+                    context.initResult(results[params.Sequence]);
+                });
+            } else if (params.LogicalName) {
+                var logicalFile = ESPLogicalFile.Get(params.LogicalName);
+                var context = this;
+                logicalFile.getInfo({
+                    onGetAll: function(response) {
+                        context.initResult(logicalFile.result);
+                    }
+                });
+            } else {
+                this.initResult(null);
+            }
+        },
+
+        initResult: function (result) {
+            if (result) {
+                var context = this;
+                result.fetchStructure(function (structure) {
                     context.grid.setStructure(structure);
-                    context.grid.setStore(params.result.getObjectStore());
+                    context.grid.setStore(result.getObjectStore());
                     context.refresh();
-                })
+                });
             } else {
                 this.grid.setStructure([
                             {
