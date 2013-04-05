@@ -3005,11 +3005,12 @@ public:
         StringBuffer responseHead, responseTail;
         appendfJSONName(responseHead, "%sResponse", queryName.get()).append(" {");
         appendJSONValue(responseHead, "sequence", seqNo);
-        appendJSONName(responseHead, "Results").append(" {");
+        appendJSONName(responseHead, "Results").append(" {\n ");
 
         unsigned len = responseHead.length();
         client->write(responseHead.detach(), len, true);
 
+        bool needDelimiter = false;
         ForEachItemIn(seq, resultMap)
         {
             FlushingStringBuffer *result = resultMap.item(seq);
@@ -3022,8 +3023,16 @@ public:
                     void *payload = result->getPayload(length);
                     if (!length)
                         break;
+                    if (needDelimiter)
+                    {
+                        StringAttr s(",\n "); //write() will take ownership of buffer
+                        size32_t len = s.length();
+                        client->write((void *)s.detach(), len, true);
+                        needDelimiter=false;
+                    }
                     client->write(payload, length, true);
                 }
+                needDelimiter=true;
             }
         }
 
