@@ -128,15 +128,15 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
 
     if (needRefresh || embedded_url || !appFrameHtml.length())
     {
-        int passwordDaysRemaining = -1;
+        int passwordDaysRemaining = -1;//-1 means dont display change password screen
 #ifdef _USE_OPENLDAP
         ISecUser* user = ctx->queryUser();
         ISecManager* secmgr = ctx->querySecManager();
         if(user && secmgr)
         {
-            passwordDaysRemaining = user->getPasswordDaysRemaining();
-            unsigned passwordExpirationDays = secmgr->getPasswordExpirationWarningDays();
-            if ((unsigned) passwordDaysRemaining > passwordExpirationDays)
+            passwordDaysRemaining = user->getPasswordDaysRemaining();//-1 if expired, -2 if never expires
+            int passwordExpirationDays = (int)secmgr->getPasswordExpirationWarningDays();
+            if (passwordDaysRemaining==-2 || passwordDaysRemaining > passwordExpirationDays)
                 passwordDaysRemaining = -1;
         }
 #endif
