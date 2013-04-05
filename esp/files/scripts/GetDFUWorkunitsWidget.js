@@ -55,8 +55,6 @@ define([
         borderContainer: null,
         tabContainer: null,
         workunitsGrid: null,
-        legacyPane: null,
-        legacyPaneLoaded: false,
 
         tabMap: [],
 
@@ -69,19 +67,10 @@ define([
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.tabContainer = registry.byId(this.id + "TabContainer");
             this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
-            this.legacyPane = registry.byId(this.id + "Legacy");
 
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
                 if (nval.id == context.id + "Workunits") {
-                } else if (nval.id == context.id + "Legacy") {
-                    if (!context.legacyPaneLoaded) {
-                        context.legacyPaneLoaded = true;
-                        context.legacyPane.set("content", dojo.create("iframe", {
-                            src: "/FileSpray/GetDFUWorkunits",
-                            style: "border: 0; width: 100%; height: 100%"
-                        }));
-                    }
                 } else {
                     if (!nval.initalized) {
                         nval.init(nval.params);
@@ -332,7 +321,7 @@ define([
                 retVal = new DFUWUDetailsWidget({
                     Wuid: id,
                     title: id,
-                    closable: true,
+                    closable: false,
                     onClose: function () {
                         delete context.tabMap[id];
                         return true;
