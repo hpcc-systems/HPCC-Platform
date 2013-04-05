@@ -19,6 +19,7 @@
 
 #include "hqlexpr.hpp"
 
+extern HQL_API void checkIndependentOfScope(IHqlExpression * expr);
 extern HQL_API void checkNormalized(IHqlExpression * expr);
 extern HQL_API void checkNormalized(IHqlExpression * expr, HqlExprArray & activeTables);
 

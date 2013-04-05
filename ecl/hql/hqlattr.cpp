@@ -1362,7 +1362,12 @@ IHqlExpression * HqlUnadornedNormalizer::createTransformed(IHqlExpression * expr
             {
                 IHqlExpression * cur = expr->queryChild(idx);
                 if (cur->isAttribute())
-                    children.append(*transform(cur));
+                {
+                    IHqlExpression * mapped = transform(cur);
+                    children.append(*mapped);
+                    if (mapped != cur)
+                        same = false;
+                }
                 else
                     same = false;
             }
@@ -3323,7 +3328,12 @@ IHqlExpression * getPackedRecord(IHqlExpression * expr)
     return LINK(packed);
 }
 
-IHqlExpression * getUnadornedExpr(IHqlExpression * expr)
+/*
+ * This function can be called while parsing (or later) to find a "normalized" version of a record or a field.
+ * It ignores default values for fields, and removes named symbols/ other location specific information - so
+ * that identical records defined in macros etc. are treated as identical.
+ */
+IHqlExpression * getUnadornedRecordOrField(IHqlExpression * expr)
 {
     if (!expr)
         return NULL;
@@ -3341,8 +3351,9 @@ inline bool isAlwaysLocationIndependent(IHqlExpression * expr)
     case no_param:
     case no_quoted:
     case no_variable:
-    case no_attr:
         return true;
+    case no_attr:
+        return (expr->numChildren() == 0);
     }
     return false;
 }
@@ -3395,7 +3406,12 @@ IHqlExpression * HqlLocationIndependentNormalizer::doCreateTransformed(IHqlExpre
     switch (op)
     {
     case no_attr:
-        return LINK(expr);
+        {
+            //Original attributes cause chaos => remove all children from attributes
+            if (expr->numChildren() != 0)
+                return createAttribute(expr->queryName());
+            return LINK(expr);
+        }
     case no_field:
         {
             //Remove the default values from fields since they just confuse.
@@ -3405,7 +3421,12 @@ IHqlExpression * HqlLocationIndependentNormalizer::doCreateTransformed(IHqlExpre
             {
                 IHqlExpression * cur = expr->queryChild(idx);
                 if (cur->isAttribute())
-                    children.append(*transform(cur));
+                {
+                    IHqlExpression * mapped = transform(cur);
+                    children.append(*mapped);
+                    if (mapped != cur)
+                        same = false;
+                }
                 else
                     same = false;
             }

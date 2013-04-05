@@ -4068,13 +4068,13 @@ recordOption
     | MAXLENGTH '(' constExpression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | MAXSIZE '(' constExpression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | PACKED
@@ -4353,67 +4353,67 @@ fieldAttr
     | CARDINALITY '(' expression ')'    
                         {
                             parser->normalizeExpression($3, type_numeric, false);
-                            $$.setExpr(createAttribute(cardinalityAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(cardinalityAtom, $3.getExpr()));
                         }
     | CASE '(' expression ')'
                         { 
                             parser->normalizeExpression($3, type_set, false);
-                            $$.setExpr(createAttribute(caseAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(caseAtom, $3.getExpr()));
                         }
     | MAXCOUNT '(' expression ')' 
                         {
                             parser->normalizeExpression($3, type_int, true);
-                            $$.setExpr(createAttribute(maxCountAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxCountAtom, $3.getExpr()));
                         }
     | CHOOSEN '(' expression ')' 
                         {
                             parser->normalizeExpression($3, type_int, true);
-                            $$.setExpr(createAttribute(choosenAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(choosenAtom, $3.getExpr()));
                         }
     | MAXLENGTH '(' expression ')' 
                         {
                             parser->normalizeExpression($3, type_int, true);
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                         }
     | MAXSIZE '(' expression ')' 
                         {
                             parser->normalizeExpression($3, type_int, true);
-                            $$.setExpr(createAttribute(maxSizeAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxSizeAtom, $3.getExpr()));
                         }
     | NAMED '(' expression ')'  
                         {
                             parser->normalizeExpression($3, type_any, true);
-                            $$.setExpr(createAttribute(namedAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(namedAtom, $3.getExpr()));
                         }
     | RANGE '(' rangeExpr ')'           
                         {
-                            $$.setExpr(createAttribute(rangeAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(rangeAtom, $3.getExpr()));
                         }
     | VIRTUAL '(' LOGICALFILENAME ')'       
                         {
-                            $$.setExpr(createAttribute(virtualAtom, createAttribute(logicalFilenameAtom)));
+                            $$.setExpr(createExprAttribute(virtualAtom, createAttribute(logicalFilenameAtom)));
                         }
     | VIRTUAL '(' FILEPOSITION ')'  
                         {
-                            $$.setExpr(createAttribute(virtualAtom, createAttribute(filepositionAtom)));
+                            $$.setExpr(createExprAttribute(virtualAtom, createAttribute(filepositionAtom)));
                         }
     | VIRTUAL '(' LOCALFILEPOSITION ')' 
                         {
-                            $$.setExpr(createAttribute(virtualAtom, createAttribute(localFilePositionAtom)));
+                            $$.setExpr(createExprAttribute(virtualAtom, createAttribute(localFilePositionAtom)));
                         }
     | VIRTUAL '(' SIZEOF ')'            
                         {
-                            $$.setExpr(createAttribute(virtualAtom, createAttribute(sizeofAtom)));
+                            $$.setExpr(createExprAttribute(virtualAtom, createAttribute(sizeofAtom)));
                         }
     | XPATH '(' constExpression ')'
                         {
                             parser->normalizeExpression($3, type_string, false);
                             parser->validateXPath($3);
-                            $$.setExpr(createAttribute(xpathAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(xpathAtom, $3.getExpr()));
                         }
     | XMLDEFAULT '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(xmlDefaultAtom, $3.getExpr()), $1);
+                            $$.setExpr(createExprAttribute(xmlDefaultAtom, $3.getExpr()), $1);
                         }
     | DEFAULT '(' constExpression ')'
                         {
@@ -9692,12 +9692,12 @@ csvOption
                         }
     | MAXLENGTH '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | MAXSIZE '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
     | QUOTE '(' expression ')'
@@ -9769,11 +9769,11 @@ xmlOptions
 xmlOption
     : MAXLENGTH '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                         }
     | MAXSIZE '(' constExpression ')'
                         {
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                         }
     | NOROOT            {   $$.setExpr(createAttribute(noRootAtom)); }
     | HEADING '(' expression optCommaExpression ')'
@@ -10361,12 +10361,12 @@ parseFlag
     | MAXLENGTH '(' constExpression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                         }
     | MAXSIZE '(' constExpression ')'
                         {
                             parser->normalizeExpression($3, type_numeric, false);
-                            $$.setExpr(createAttribute(maxLengthAtom, $3.getExpr()));
+                            $$.setExpr(createExprAttribute(maxLengthAtom, $3.getExpr()));
                         }
     | PARALLEL
                         {

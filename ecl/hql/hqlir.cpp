@@ -2148,6 +2148,26 @@ extern HQL_API void dbglogIR(ITypeInfo * type)
     playIR(output, NULL, NULL, type);
 }
 
+extern HQL_API void dbglogIR(unsigned n, ...)
+{
+    DblgLogIRBuilder output(defaultDumpOptions);
+    ExpressionIRPlayer reader(&output);
+    va_list args;
+    va_start(args, n);
+    for (unsigned i=0; i < n;i++)
+    {
+        IInterface * next = va_arg(args, IInterface *);
+        IHqlExpression * expr = dynamic_cast<IHqlExpression *>(next);
+        ITypeInfo * type = dynamic_cast<ITypeInfo *>(next);
+        if (expr)
+            reader.play(expr);
+        else if (type)
+            reader.play(type);
+    }
+    va_end(args);
+}
+
+
 extern HQL_API void getIRText(StringBuffer & target, unsigned options, IHqlExpression * expr)
 {
     StringBufferIRBuilder output(target, options);
