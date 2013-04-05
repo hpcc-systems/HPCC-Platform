@@ -351,6 +351,36 @@ void CommonJsonWriter::checkDelimit(int inc)
     checkFormat(true, true, inc);
 }
 
+const char *CommonJsonWriter::checkItemName(CJsonWriterItem *item, const char *name)
+{
+    if (item && item->depth==0 && strieq(item->name, name))
+        return NULL;
+    return name;
+}
+
+const char *CommonJsonWriter::checkItemName(const char *name)
+{
+    CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
+    return checkItemName(item, name);
+}
+
+const char *CommonJsonWriter::checkItemNameBeginNested(const char *name)
+{
+    CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
+    name = checkItemName(item, name);
+    if (item)
+        item->depth++;
+    return name;
+}
+
+const char *CommonJsonWriter::checkItemNameEndNested(const char *name)
+{
+    CJsonWriterItem *item = (arrays.length()) ? &arrays.tos() : NULL;
+    if (item)
+        item->depth--;
+    return checkItemName(item, name);
+}
+
 void CommonJsonWriter::outputQuoted(const char *text)
 {
     checkDelimit();
@@ -364,7 +394,7 @@ void CommonJsonWriter::outputString(unsigned len, const char *field, const char 
     if ((flags & XWFopt) && (rtlTrimStrLen(len, field) == 0))
         return;
     checkDelimit();
-    appendJSONValue(out, fieldname, len, field);
+    appendJSONValue(out, checkItemName(fieldname), len, field);
 }
 
 void CommonJsonWriter::outputQString(unsigned len, const char *field, const char *fieldname)
@@ -382,43 +412,43 @@ void CommonJsonWriter::outputQString(unsigned len, const char *field, const char
 void CommonJsonWriter::outputBool(bool field, const char *fieldname)
 {
     checkDelimit();
-    appendJSONValue(out, fieldname, field);
+    appendJSONValue(out, checkItemName(fieldname), field);
 }
 
 void CommonJsonWriter::outputData(unsigned len, const void *field, const char *fieldname)
 {
     checkDelimit();
-    appendJSONValue(out, fieldname, len, field);
+    appendJSONValue(out, checkItemName(fieldname), len, field);
 }
 
 void CommonJsonWriter::outputInt(__int64 field, const char *fieldname)
 {
     checkDelimit();
-    appendJSONValue(out, fieldname, field);
+    appendJSONValue(out, checkItemName(fieldname), field);
 }
 
 void CommonJsonWriter::outputUInt(unsigned __int64 field, const char *fieldname)
 {
     checkDelimit();
-    appendJSONValue(out, fieldname, field);
+    appendJSONValue(out, checkItemName(fieldname), field);
 }
 
 void CommonJsonWriter::outputReal(double field, const char *fieldname)
 {
     checkDelimit();
-    appendJSONValue(out, fieldname, field);
+    appendJSONValue(out, checkItemName(fieldname), field);
 }
 
 void CommonJsonWriter::outputDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname)
 {
     checkDelimit();
-    outputJsonDecimal(field, size, precision, fieldname, out);
+    outputJsonDecimal(field, size, precision, checkItemName(fieldname), out);
 }
 
 void CommonJsonWriter::outputUDecimal(const void *field, unsigned size, unsigned precision, const char *fieldname)
 {
     checkDelimit();
-    outputJsonUDecimal(field, size, precision, fieldname, out);
+    outputJsonUDecimal(field, size, precision, checkItemName(fieldname), out);
 }
 
 void CommonJsonWriter::outputUnicode(unsigned len, const UChar *field, const char *fieldname)
@@ -428,7 +458,7 @@ void CommonJsonWriter::outputUnicode(unsigned len, const UChar *field, const cha
     if ((flags & XWFopt) && (rtlTrimUnicodeStrLen(len, field) == 0))
         return;
     checkDelimit();
-    outputJsonUnicode(len, field, fieldname, out);
+    outputJsonUnicode(len, field, checkItemName(fieldname), out);
 }
 
 void CommonJsonWriter::outputUtf8(unsigned len, const char *field, const char *fieldname)
@@ -438,12 +468,12 @@ void CommonJsonWriter::outputUtf8(unsigned len, const char *field, const char *f
     if ((flags & XWFopt) && (rtlTrimUtf8StrLen(len, field) == 0))
         return;
     checkDelimit();
-    appendJSONValue(out, fieldname, len, field);
+    appendJSONValue(out, checkItemName(fieldname), len, field);
 }
 
 void CommonJsonWriter::outputBeginArray(const char *fieldname)
 {
-    arrays.append(fieldname);
+    arrays.append(*new CJsonWriterItem(fieldname));
     const char * sep = strchr(fieldname, '/');
     while (sep)
     {
@@ -471,24 +501,21 @@ void CommonJsonWriter::outputEndArray(const char *fieldname)
 
 void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildren)
 {
-    const char *parentArray = (arrays.length()) ? arrays.tos() : NULL;
-    if (parentArray && !streq(parentArray, fieldname))
-        parentArray = NULL;
     flush(false);
     checkFormat(true, false, 1);
-    const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
-    while (sep)
+    fieldname = checkItemNameBeginNested(fieldname);
+    if (fieldname)
     {
-        if (!parentArray)
+        const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
+        while (sep)
         {
             StringAttr leading(fieldname, sep-fieldname);
             appendJSONName(out, leading).append("{");
+            fieldname = sep+1;
+            sep = strchr(fieldname, '/');
         }
-        fieldname = sep+1;
-        sep = strchr(fieldname, '/');
-    }
-    if (!parentArray)
         appendJSONName(out, fieldname);
+    }
     out.append("{");
     if (!nestChildren && !nestLimit)
         nestLimit = indent;
@@ -496,17 +523,17 @@ void CommonJsonWriter::outputBeginNested(const char *fieldname, bool nestChildre
 
 void CommonJsonWriter::outputEndNested(const char *fieldname)
 {
-    const char *parentArray = (arrays.length()) ? arrays.tos() : NULL;
-    if (parentArray && !streq(parentArray, fieldname))
-        parentArray = NULL;
     flush(false);
     checkFormat(false, true, -1);
-    const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
-    while (sep)
+    fieldname = checkItemNameEndNested(fieldname);
+    if (fieldname)
     {
-        if (!parentArray)
+        const char * sep = (fieldname) ? strchr(fieldname, '/') : NULL;
+        while (sep)
+        {
             out.append('}');
-        sep = strchr(sep+1, '/');
+            sep = strchr(sep+1, '/');
+        }
     }
     out.append("}");
     if (indent==nestLimit)
