@@ -330,19 +330,19 @@ CommonJsonWriter & CommonJsonWriter::clear()
 
 void CommonJsonWriter::checkFormat(bool doDelimit, bool delimitNext, int inc)
 {
-    if (doDelimit && needDelimiter)
+    if (doDelimit)
     {
-        if (!out.length()) //new block
-           out.append(',');
-        else
-            delimitJSON(out);
+        if (needDelimiter)
+        {
+            if (!out.length()) //new block
+               out.append(',');
+            else
+                delimitJSON(out);
+        }
+        if (!nestLimit)
+            out.append('\n').pad(indent);
     }
-    if (!nestLimit)
-    {
-        out.append('\n').pad(indent);
-        if (inc!=0)
-            indent+=inc;
-    }
+    indent+=inc;
     needDelimiter = delimitNext;
 }
 
@@ -452,7 +452,7 @@ void CommonJsonWriter::outputBeginArray(const char *fieldname)
         fieldname = sep+1;
         sep = strchr(fieldname, '/');
     }
-    checkFormat(true, false, 1);
+    checkFormat(false, false, 1);
     appendJSONName(out, fieldname).append('[');
 }
 
