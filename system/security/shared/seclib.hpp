@@ -134,7 +134,8 @@ enum authStatus
     AS_UNKNOWN = 1,//have not attempted to authenticate
     AS_UNEXPECTED_ERROR = 2,
     AS_INVALID_CREDENTIALS = 3,
-    AS_PASSWORD_EXPIRED = 4
+    AS_PASSWORD_EXPIRED = 4,
+    AS_PASSWORD_VALID_BUT_EXPIRED = 5//user entered valid password, but authentication failed because it is expired
 };
 
 class CDateTime;

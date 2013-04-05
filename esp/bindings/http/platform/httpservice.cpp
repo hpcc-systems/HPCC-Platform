@@ -162,7 +162,7 @@ bool CEspHttpServer::rootAuth(IEspContext* ctx)
         else
         {
             ISecUser *user = ctx->queryUser();
-            if (user && user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED)
+            if (user && user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
             {
                 m_response->redirect(*m_request.get(), "/esp/updatepasswordinput");
                 ret = true;
@@ -323,7 +323,8 @@ int CEspHttpServer::processRequest()
             {
                 if (!rootAuth(ctx))
                     return 0;
-                if (ctx->queryUser() && (ctx->queryUser()->getAuthenticateStatus() == AS_PASSWORD_EXPIRED))
+
+                if (ctx->queryUser() && ctx->queryUser()->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED)
                     return 0;//allow user to change password
                 // authenticate optional groups
                 if (authenticateOptionalFailed(*ctx,NULL))
@@ -436,7 +437,7 @@ int CEspHttpServer::processRequest()
             if (authState==authRequired)
             {
                 ISecUser *user = ctx->queryUser();
-                if (user && user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED)
+                if (user && (user->getAuthenticateStatus() == AS_PASSWORD_EXPIRED || user->getAuthenticateStatus() == AS_PASSWORD_VALID_BUT_EXPIRED))
                 {
                     DBGLOG("ESP password expired for %s", user->getName());
                     m_response->setContentType(HTTP_TYPE_TEXT_PLAIN);
