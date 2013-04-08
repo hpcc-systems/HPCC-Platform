@@ -44,6 +44,11 @@ define([
                         TabPosition: params.TabPosition
                     });
                 }
+                if (params.ReadOnly) {
+                    lang.mixin(webParams, {
+                        readOnly: params.ReadOnly
+                    });
+                }
                 var widget = WidgetClass.fixCircularDependency ? new WidgetClass.fixCircularDependency(webParams) : new WidgetClass(webParams);
 
                 var standbyBackground = new Standby({
