@@ -1224,7 +1224,7 @@ public:
             }
             if(rc != LDAP_SUCCESS)
             {
-                if (user.getPasswordDaysRemaining() == -1 || strstr(ldap_errstring, "data 532"))//80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0.
+                if (user.getPasswordDaysRemaining() == -1 || (ldap_errstring && *ldap_errstring && strstr(ldap_errstring, "data 532")))//80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0.
                 {
                     DBGLOG("ESP Password Expired for user %s", username);
                     user.setAuthenticateStatus(AS_PASSWORD_EXPIRED);
