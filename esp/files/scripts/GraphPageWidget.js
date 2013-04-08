@@ -47,7 +47,9 @@ define([
     "dijit/PopupMenuItem",
     "dijit/Menu",
     "dijit/MenuItem",
-    "dijit/form/TextBox"
+    "dijit/MenuSeparator",
+    "dijit/form/TextBox",
+    "dijit/form/DropDownButton"
 ], function (declare, lang, sniff, arrayUtil, dom, domConstruct, on, has, Memory, ObjectStore,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
             DataGrid, entities,

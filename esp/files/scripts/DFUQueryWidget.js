@@ -37,7 +37,7 @@ define([
     "hpcc/LFDetailsWidget",
     "hpcc/SFDetailsWidget",
 
-    "dojo/text!../templates/DFUWUQueryWidget.html",
+    "dojo/text!../templates/DFUQueryWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
@@ -60,9 +60,9 @@ define([
                 EnhancedGrid, Pagination, IndirectSelection,
                 _TabContainerWidget, WsDfu, ESPLogicalFile, LFDetailsWidget, SFDetailsWidget,
                 template) {
-    return declare("DFUWUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("DFUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
-        baseClass: "DFUWUQueryWidget",
+        baseClass: "DFUQueryWidget",
         workunitsTab: null,
         workunitsGrid: null,
 
@@ -256,8 +256,7 @@ define([
                 { name: "Modified (UTC/GMT)", field: "Modified", width: "12" }
             ]);
             var objStore = ESPLogicalFile.CreateLFQueryObjectStore();
-            this.workunitsGrid.setStore(objStore);
-            this.workunitsGrid.setQuery(this.getFilter());
+            this.workunitsGrid.setStore(objStore, this.getFilter());
 
             var context = this;
             this.workunitsGrid.on("RowDblClick", function (evt) {
