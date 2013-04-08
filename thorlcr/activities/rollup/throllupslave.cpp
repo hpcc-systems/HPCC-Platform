@@ -497,6 +497,12 @@ public:
     }
     virtual void stop()
     {
+        if (global && !eos) // if stopped early, ensure next informed
+        {
+            kept.clear();
+            keptTransformed.clear();
+            putNextKept();
+        }
         CDedupRollupBaseActivity::stop();
         dataLinkStop();
     }
