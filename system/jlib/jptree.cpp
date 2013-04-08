@@ -4125,19 +4125,16 @@ protected:
             readNext();
             while (']' == nextChar)
             {
-                char c1 = nextChar;
                 readNext();
-                if (']' == nextChar)
+                while (']' == nextChar)
                 {
-                    char c2 = nextChar;
                     readNext();
                     if ('>' == nextChar)
                         return;
                     else
-                        text.append(c1).append(c2);
+                        text.append(']');
                 }
-                else
-                    text.append(c1);
+                text.append(']');
             }
             text.append(nextChar);
         }           
