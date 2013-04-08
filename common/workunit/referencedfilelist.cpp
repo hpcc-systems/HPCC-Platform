@@ -35,7 +35,7 @@ bool getIsOpt(const IPropertyTree &graphNode)
         return graphNode.getPropBool("att[@name='_isIndexOpt']/@value", false);
 }
 
-const char *skipForeign(const char *name, StringBuffer *ip=NULL)
+const char *skipForeign(const char *name, StringBuffer *ip)
 {
     if (*name=='~')
         name++;
