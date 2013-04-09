@@ -4135,6 +4135,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 {
                     if (e->errorCode()!=DFSERR_LookupConnectionTimout)
                         throw;
+                    e->Release();
                     return false;
                 }
                 if (!sub.get())
@@ -4207,6 +4208,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 {
                     if (e->errorCode()!=DFSERR_LookupConnectionTimout)
                         throw;
+                    e->Release();
                     return false;
                 }
                 if (!parent->querySubFileNamed(subfile))

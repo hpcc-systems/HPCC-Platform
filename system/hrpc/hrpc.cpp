@@ -424,6 +424,7 @@ bool HRPCmodule::TryConnect(int msecs,bool raiseex,bool leaveunlocked)
             sync->unlock();
             if (raiseex) 
                 throw e;
+            e->Release();
         }
         catch (...) {
             sync->unlock();

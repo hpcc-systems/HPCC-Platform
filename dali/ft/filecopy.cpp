@@ -2575,9 +2575,10 @@ const char * FileSprayer::querySlaveExecutable(const IpAddress &ip, StringBuffer
         if (ret.length())
             return ret.str();
     }
-    catch (IException *) {
+    catch (IException * e) {
         if (!slave||!*slave)
             throw;
+        e->Release();
     }
     if (slave)
         ret.append(slave);
