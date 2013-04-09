@@ -55,8 +55,6 @@ define([
         borderContainer: null,
         tabContainer: null,
         workunitsGrid: null,
-        legacyPane: null,
-        legacyPaneLoaded: false,
 
         tabMap: [],
 
@@ -69,19 +67,10 @@ define([
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.tabContainer = registry.byId(this.id + "TabContainer");
             this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
-            this.legacyPane = registry.byId(this.id + "Legacy");
 
             var context = this;
             this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
                 if (nval.id == context.id + "Workunits") {
-                } else if (nval.id == context.id + "Legacy") {
-                    if (!context.legacyPaneLoaded) {
-                        context.legacyPaneLoaded = true;
-                        context.legacyPane.set("content", dojo.create("iframe", {
-                            src: "/FileSpray/GetDFUWorkunits",
-                            style: "border: 0; width: 100%; height: 100%"
-                        }));
-                    }
                 } else {
                     if (!nval.initalized) {
                         nval.init(nval.params);
@@ -93,8 +82,6 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
-            this.refreshActionState();
-            this.initWorkunitsGrid();
         },
 
         resize: function (args) {
@@ -217,6 +204,12 @@ define([
             if (this.initalized)
                 return;
             this.initalized = true;
+
+            if (params.ClusterName) {
+                registry.byId(this.id + "Cluster").set("value", params.ClusterName);
+            }
+            this.initWorkunitsGrid();
+            this.refreshActionState();
         },
 
         initWorkunitsGrid: function() {
@@ -266,8 +259,7 @@ define([
             ]);
             var store = new FileSpray.GetDFUWorkunits();
             var objStore = new ObjectStore({ objectStore: store });
-            this.workunitsGrid.setStore(objStore);
-            this.workunitsGrid.setQuery(this.getFilter());
+            this.workunitsGrid.setStore(objStore, this.getFilter());
 
             var context = this;
             this.workunitsGrid.on("RowDblClick", function (evt) {
@@ -328,19 +320,24 @@ define([
         ensurePane: function (id, params) {
             var retVal = this.tabMap[id];
             if (!retVal) {
-                var context = this;
-                retVal = new DFUWUDetailsWidget({
-                    Wuid: id,
-                    title: id,
-                    closable: true,
-                    onClose: function () {
-                        delete context.tabMap[id];
-                        return true;
-                    },
-                    params: params
-                });
+                retVal = registry.byId(id);
+                if (!retVal) {
+                    var context = this;
+                    retVal = new DFUWUDetailsWidget({
+                        Wuid: id,
+                        title: id,
+                        closable: true,
+                        onClose: function () {
+                            //  Workaround for http://bugs.dojotoolkit.org/ticket/16475
+                            context.tabContainer.removeChild(this);
+                            delete context.tabMap[this.id];
+                            return false;
+                        },
+                        params: params
+                    });
+                }
                 this.tabMap[id] = retVal;
-                this.tabContainer.addChild(retVal, 2);
+                this.tabContainer.addChild(retVal, 1);
             }
             return retVal;
         },

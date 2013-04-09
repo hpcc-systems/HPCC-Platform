@@ -537,19 +537,24 @@ define([
         ensurePane: function (id, params) {
             var retVal = this.tabMap[id];
             if (!retVal) {
-                var context = this;
-                retVal = new WUDetailsWidget({
-                    id: id,
-                    title: params.Wuid,
-                    closable: false,
-                    onClose: function () {
-                        delete context.tabMap[id];
-                        return true;
-                    },
-                    params: params
-                });
+                retVal = registry.byId(id);
+                if (!retVal) {
+                    var context = this;
+                    retVal = new WUDetailsWidget({
+                        id: id,
+                        title: params.Wuid,
+                        closable: true,
+                        onClose: function () {
+                            //  Workaround for http://bugs.dojotoolkit.org/ticket/16475
+                            context._tabContainer.removeChild(this);
+                            delete context.tabMap[this.id];
+                            return false;
+                        },
+                        params: params
+                    });
+                }
                 this.tabMap[id] = retVal;
-                this.addChild(retVal, 2);
+                this.addChild(retVal, 1);
             }
             return retVal;
         }
