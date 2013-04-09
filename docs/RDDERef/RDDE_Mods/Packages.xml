@@ -319,7 +319,11 @@
                 xpointer="eclpackageinfo"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <sect2>
+    <xi:include href="../../HPCCClientTools/CT_Mods/CT_ECL_CLI.xml"
+                xpointer="eclpackagevalidate"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <sect2 role="brk">
       <title>Tips:</title>
 
       <itemizedlist mark="bullet">
