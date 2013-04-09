@@ -131,7 +131,7 @@ define([
                             }
                         });
                         var currSel = context.getSelectedChild();
-                        if (currSel) {
+                        if (currSel && currSel.refresh) {
                             currSel.refresh();
                         }
                     }
