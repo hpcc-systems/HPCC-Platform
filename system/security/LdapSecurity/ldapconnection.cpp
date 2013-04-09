@@ -370,8 +370,7 @@ public:
         else if(m_serverType == IPLANET)
             m_sdfieldname.append("aci");
         else if(m_serverType == OPEN_LDAP)
-            m_sdfieldname.append("OpenLDAPaci");
-
+            m_sdfieldname.append("aci");
     }
 
     virtual LdapServerType getServerType()
@@ -585,7 +584,23 @@ public:
         {
             time(&m_lastaccesstime);
             m_connected = true;
-            DBGLOG("Connected to LdapServer %s using protocol %s", ldapserver, protocol);
+            const char * ldap = NULL;
+            switch (m_ldapconfig->getServerType())
+            {
+            case ACTIVE_DIRECTORY:
+                ldap = "Active Directory";
+                break;
+            case OPEN_LDAP:
+                ldap = "OpenLDAP";
+                break;
+            case IPLANET:
+                ldap = "iplanet";
+                break;
+            default:
+                ldap = "unknown";
+                break;
+            }
+            DBGLOG("Connected to '%s' LdapServer %s using protocol %s", ldap, ldapserver, protocol);
         }
         else
         {
@@ -1224,7 +1239,7 @@ public:
             }
             if(rc != LDAP_SUCCESS)
             {
-                if (user.getPasswordDaysRemaining() == -1 || strstr(ldap_errstring, "data 532"))//80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0.
+                if (user.getPasswordDaysRemaining() == -1 || (ldap_errstring && *ldap_errstring && strstr(ldap_errstring, "data 532")))//80090308: LdapErr: DSID-0C0903A9, comment: AcceptSecurityContext error, data 532, v1db0.
                 {
                     DBGLOG("ESP Password Expired for user %s", username);
                     user.setAuthenticateStatus(AS_PASSWORD_EXPIRED);
@@ -3367,17 +3382,18 @@ public:
         
         attrs[ind++] = &cn_attr;
         attrs[ind++] = &oc_attr;
-        if(m_ldapconfig->getServerType() == OPEN_LDAP)
-        {
-            attrs[ind++] = &member_attr;
-        }
-
         attrs[ind] = NULL;
 
         Owned<ILdapConnection> lconn = m_connections->getConnection();
         LDAP* ld = ((CLdapConnection*)lconn.get())->getLd();
         int rc = ldap_add_ext_s(ld, (char*)dn.str(), attrs, NULL, NULL);
-        if ( rc != LDAP_SUCCESS )
+        if ( rc == LDAP_INVALID_SYNTAX  && m_ldapconfig->getServerType() == OPEN_LDAP)//Fedora389 does not 'seem' to need this, openLDAP does
+        {
+            attrs[ind++] = &member_attr;
+            attrs[ind] = NULL;
+            rc = ldap_add_ext_s(ld, (char*)dn.str(), attrs, NULL, NULL);
+        }
+        if ( rc != LDAP_SUCCESS)
         {
             if(rc == LDAP_ALREADY_EXISTS)
             {
@@ -3852,7 +3868,8 @@ private:
 
         if(m_ldapconfig->getServerType() != ACTIVE_DIRECTORY)
         {
-        
+            if (strncmp(dn,"uid=",4))//Fedora389 returns "cn=Directory Administrators"
+                return;
             const char* comma = strchr(dn, ',');
             // DN is in the format of "uid=uuu,ou=ooo,dc=dd"
             uid.append(comma - dn - 4, dn + 4);

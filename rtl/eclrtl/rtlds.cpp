@@ -1003,6 +1003,7 @@ public:
     {
         unsigned pos = offset;
         offset += sizeof(size32_t);
+        builder.ensureCapacity(offset, "");
         return pos;
     }
 

@@ -221,6 +221,7 @@ public:
             {
                 StringBuffer s;
                 ActPrintLog("WARNING: input terminated for pipe with : %s", e->errorMessage(s).str());
+                e->Release();
             }
             else
                 throw;      

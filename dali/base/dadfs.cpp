@@ -4127,6 +4127,8 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 try
                 {
                     sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
+                    if (!sub)
+                        throw MakeStringException(-1,"cAddSubFileAction: sub file %s not found", subfile.sget());
                     // Must validate before locking for update below, to check sub is not already in parent (and therefore locked already)
                     CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());;
                     sf->validateAddSubFile(sub);
@@ -4135,6 +4137,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 {
                     if (e->errorCode()!=DFSERR_LookupConnectionTimout)
                         throw;
+                    e->Release();
                     return false;
                 }
                 if (!sub.get())
@@ -4207,6 +4210,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                 {
                     if (e->errorCode()!=DFSERR_LookupConnectionTimout)
                         throw;
+                    e->Release();
                     return false;
                 }
                 if (!parent->querySubFileNamed(subfile))
