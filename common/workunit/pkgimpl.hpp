@@ -85,6 +85,7 @@ protected:
 
     inline StringBuffer makeSuperFileXPath(StringBuffer &xpath, const char *superFileName) const
     {
+        superFileName = skipForeign(superFileName);
         return xpath.append("SuperFile[@id='").appendLower(strlen(superFileName), superFileName).append("']");
     }
 
@@ -244,8 +245,6 @@ public:
         if (!superFileName || !*superFileName || !TYPE::node)
             return false;
 
-        if (*superFileName=='~')
-            superFileName++;
         StringBuffer xpath;
         if (TYPE::hasProp(TYPE::makeSuperFileXPath(xpath, superFileName)))
             return true;
