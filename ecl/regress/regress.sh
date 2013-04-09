@@ -56,7 +56,7 @@ if [[ $1 = '' ]]; then
     exit -1
 fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:I:e:d:f:q:l:" opt; do
+    while getopts "t:c:I:e:d:f:q:l:x:" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -81,6 +81,9 @@ if [[ $* != '' ]]; then
                 ;;
             l)
                 userflags="$userflags --logdetail 999 --logfile $OPTARG"
+                ;;
+            x)
+                userflags="$userflags $OPTARG"
                 ;;
             :)
                 echo $syntax

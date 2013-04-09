@@ -37,6 +37,7 @@ define([
         templateString: template,
         baseClass: "GraphsWidget",
 
+        TabPosition: "bottom",
         tabMap: [],
 
         onErrorClick: function (line, col) {
@@ -63,6 +64,7 @@ define([
                 this.tabMap[id] = retVal;
                 this.addChild(retVal);
             }
+            return retVal;
         },
 
         init: function (params) {

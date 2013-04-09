@@ -59,6 +59,8 @@ interface IReferencedFileList : extends IInterface
     virtual void cloneRelationships()=0;
 };
 
+extern WORKUNIT_API const char *skipForeign(const char *name, StringBuffer *ip=NULL);
+
 extern WORKUNIT_API IReferencedFileList *createReferencedFileList(const char *user, const char *pw);
 
 #endif //REFFILE_LIST_HPP

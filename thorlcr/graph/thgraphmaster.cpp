@@ -2081,7 +2081,10 @@ void CMasterGraph::abort(IException *e)
         {
             GraphPrintLog(e, "Aborting slave graph");
             if (abortException)
+            {
+                e->Release();
                 throw LINK(abortException);
+            }
             throw;
         }
     }
@@ -2199,7 +2202,10 @@ void CMasterGraph::create(size32_t parentExtractSz, const byte *parentExtract)
                 {
                     GraphPrintLog(e, "Aborting graph create(2)");
                     if (abortException)
+                    {
+                        e->Release();
                         throw LINK(abortException);
+                    }
                     throw;
                 }
             }
@@ -2378,7 +2384,10 @@ void CMasterGraph::sendGraph()
     {
         GraphPrintLog(e, "Aborting sendGraph");
         if (abortException)
+        {
+            e->Release();
             throw LINK(abortException);
+        }
         throw;
     }
     GraphPrintLog("sendGraph took %d ms", atimer.elapsed());
@@ -2401,7 +2410,10 @@ bool CMasterGraph::preStart(size32_t parentExtractSz, const byte *parentExtract)
         {
             GraphPrintLog(e, "Aborting preStart");
             if (abortException)
+            {
+                e->Release();
                 throw LINK(abortException);
+            }
             throw;
         }
     }

@@ -1,4 +1,4 @@
-<Archive build="community_3.8.6-1" eclVersion="3.6.1" legacyMode="0">
+<Archive build="community_3.8.6-1" legacyMode="0">
  <Query attributePath="_local_directory_.xyz"/>
  <Module key="_local_directory_" name="_local_directory_">
   <Attribute key="xyz" name="xyz" sourcePath="C:\xyz.ecl">
