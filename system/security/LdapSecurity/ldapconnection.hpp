@@ -358,6 +358,13 @@ public:
                 return LDAP_INVALID_CREDENTIALS;
             }
             int rc = LdapSimpleBind(ld, (char*)userdn, (char*)password);
+            if (rc != LDAP_SUCCESS && server_type == OPEN_LDAP && strchr(userdn,','))
+            {   //Fedora389 is happier without the domain component specified
+                StringBuffer cn(userdn);
+                cn.replace(',',(char)NULL);
+                if (cn.length())//disallow call if no cn
+                    rc = LdapSimpleBind(ld, (char*)cn.str(), (char*)password);
+            }
             if (rc != LDAP_SUCCESS )
             {
                 // For Active Directory, try binding with NT format username
