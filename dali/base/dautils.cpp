@@ -2652,12 +2652,12 @@ void safeChangeModeWrite(IRemoteConnection *conn,const char *name,bool &reload, 
                     if (count==2)
                         PrintStackReport();
                 }
-                e->Release();
                 if (timeoutms!=INFINITE) {
                     timeoutms -= steptime;
                     if (timeoutms==0)
                         throw;
                 }
+                e->Release();
             }
             else
                 throw;
