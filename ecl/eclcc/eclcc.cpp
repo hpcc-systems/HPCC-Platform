@@ -1323,7 +1323,7 @@ bool EclCC::generatePrecompiledHeader()
     {
         StringBuffer fullpath;
         fullpath.append(paths.item(idx));
-        addPathSepChar(fullpath).append("eclinclude.hpp");
+        addPathSepChar(fullpath).append("eclinclude4.hpp");
         if (checkFileExists(fullpath))
         {
             foundPath = paths.item(idx);
@@ -1332,10 +1332,10 @@ bool EclCC::generatePrecompiledHeader()
     }
     if (!foundPath)
     {
-        ERRLOG("Cannot find eclinclude.hpp");
+        ERRLOG("Cannot find eclinclude4.hpp");
         return false;
     }
-    Owned<ICppCompiler> compiler = createCompiler("eclinclude.hpp", foundPath, NULL);
+    Owned<ICppCompiler> compiler = createCompiler("eclinclude4.hpp", foundPath, NULL);
     compiler->setDebug(true);  // a precompiled header with debug can be used for no-debug, but not vice versa
     compiler->setPrecompileHeader(true);
     if (compiler->compile())
@@ -1721,7 +1721,7 @@ const char * const helpText[] = {
     "!   -m            Enable leak checking",
 #endif
 #ifndef _WIN32
-    "!   -pch          Generate precompiled header for eclinclude.hpp",
+    "!   -pch          Generate precompiled header for eclinclude4.hpp",
 #endif
     "!   -P <path>     Specify the path of the output files (only with -b option)",
     "    -specs file   Read eclcc configuration from specified file",

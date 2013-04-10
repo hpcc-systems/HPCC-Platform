@@ -15,8 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef eclinclude_incl
-#define eclinclude_incl
+#ifndef eclinclude4_incl
+#define eclinclude4_incl
 
 // Gather all the includes used by generated code into a single file so that we can
 // take advantage of precompiled headers more easily
