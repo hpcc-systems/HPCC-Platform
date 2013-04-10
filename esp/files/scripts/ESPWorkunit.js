@@ -186,11 +186,10 @@ define([
             return this.hasCompleted;
         },
         monitor: function (callback) {
-            if (this.hasCompleted) {
-                if (callback) {
-                    callback(this);
-                }
-            } else {
+            if (callback) {
+                callback(this);
+            }
+            if (!this.hasCompleted) {
                 var context = this;
                 this.watch("changedCount", function (name, oldValue, newValue) {
                     if (oldValue !== newValue && newValue) {
