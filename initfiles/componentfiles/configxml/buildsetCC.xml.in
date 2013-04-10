@@ -113,7 +113,11 @@
                           path="ThorQueueAccess"
                           resource="ThorQueueAccess"
                           service="ws_smc"/>
-     <AuthenticateFeature description="Access to super computer environment"
+      <AuthenticateFeature description="Access to roxie control commands"
+                           path="RoxieControlAccess"
+                           resource="RoxieControlAccess"
+                           service="ws_smc"/>
+      <AuthenticateFeature description="Access to super computer environment"
                           path="ConfigAccess"
                           resource="ConfigAccess"
                           service="ws_config"/>
