@@ -434,6 +434,7 @@ public:
     }
 };
 
+#ifndef _WIN32
 static void generatePrecompiledHeader()
 {
     try
@@ -454,6 +455,12 @@ static void generatePrecompiledHeader()
         e->Release();
     }
 }
+
+static void removePrecompiledHeader()
+{
+    remove("eclinclude4.hpp.gch");
+}
+#endif
 
 //------------------------------------------------------------------------------------------------------------------
 // Class EclccServer manages a pool of compile threads
@@ -623,8 +630,12 @@ int main(int argc, const char *argv[])
 
     if (globals->getPropBool("@enableSysLog",true))
         UseSysLogForOperatorMessages();
+#ifndef _WIN32
     if (globals->getPropBool("@generatePrecompiledHeader",true))
         generatePrecompiledHeader();
+    else
+        removePrecompiledHeader();
+#endif
 
     const char *daliServers = globals->queryProp("@daliServers");
     if (!daliServers)
