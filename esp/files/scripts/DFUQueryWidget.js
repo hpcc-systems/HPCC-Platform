@@ -304,32 +304,39 @@ define([
             id = obj.join("");
             var retVal = this.tabMap[id];
             if (!retVal) {
-                var context = this;
-                if (params.isSuperfile) {
-                    retVal = new SFDetailsWidget.fixCircularDependency({
-                        id: id,
-                        title: params.Name,
-                        closable: false,
-                        onClose: function () {
-                            delete context.tabMap[id];
-                            return true;
-                        },
-                        _hpccParams: params
-                    });
-                } else {
-                    retVal = new LFDetailsWidget.fixCircularDependency({
-                        id: id,
-                        title: params.Name,
-                        closable: false,
-                        onClose: function () {
-                            delete context.tabMap[id];
-                            return true;
-                        },
-                        _hpccParams: params
-                    });
+                retVal = registry.byId(id);
+                if (!retVal) {
+                    var context = this;
+                    if (params.isSuperfile) {
+                        retVal = new SFDetailsWidget.fixCircularDependency({
+                            id: id,
+                            title: params.Name,
+                            closable: true,
+                            onClose: function () {
+                                //  Workaround for http://bugs.dojotoolkit.org/ticket/16475
+                                context._tabContainer.removeChild(this);
+                                delete context.tabMap[this.id];
+                                return false;
+                            },
+                            _hpccParams: params
+                        });
+                    } else {
+                        retVal = new LFDetailsWidget.fixCircularDependency({
+                            id: id,
+                            title: params.Name,
+                            closable: true,
+                            onClose: function () {
+                                //  Workaround for http://bugs.dojotoolkit.org/ticket/16475
+                                context._tabContainer.removeChild(this);
+                                delete context.tabMap[this.id];
+                                return false;
+                            },
+                            _hpccParams: params
+                        });
+                    }
                 }
                 this.tabMap[id] = retVal;
-                this.addChild(retVal, 2);
+                this.addChild(retVal, 1);
             }
             return retVal;
         },
