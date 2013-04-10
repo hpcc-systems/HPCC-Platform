@@ -131,8 +131,18 @@ void CThorKeyArray::add(const void *row)
     }
     if (maxsamplesize)
     {
+        bool splitDone=false;
         while (keys.ordinality()&&(totalserialsize+keySz>maxsamplesize))
+        {
             split();
+            splitDone = true;
+        }
+        // if split, current rec may well be candidate to filter out now.
+        if (splitDone && ((filerecnum-1)%divisor != 0))
+        {
+            ReleaseThorRow(row);
+            return;
+        }
     }
     if (filepos)
         filepos->append(totalfilesize);
