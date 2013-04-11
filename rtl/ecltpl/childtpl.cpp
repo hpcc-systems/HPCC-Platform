@@ -16,7 +16,7 @@ $?doNotIncludeInGeneratedCode$
 ##############################################################################*/
 
 $?$/* Template for generating a child module for query */
-#include "eclinclude.hpp"
+#include "eclinclude4.hpp"
 @include@
 @prototype@
 

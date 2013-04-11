@@ -39,7 +39,7 @@ set (    SRCS
          rtltype.cpp 
          rtlxml.cpp
          
-         eclinclude.hpp
+         eclinclude4.hpp
          eclrtl.hpp
          eclrtl_imp.hpp
          rtlbcd.hpp
@@ -85,7 +85,7 @@ target_link_libraries ( eclrtl
     )
 
 FOREACH( iFILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/eclinclude.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/eclinclude4.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/eclrtl_imp.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/rtlbcd.hpp
