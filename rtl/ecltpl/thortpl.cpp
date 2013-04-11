@@ -16,7 +16,7 @@ $?doNotIncludeInGeneratedCode$
 ############################################################################## */
 
 $?$/* Template for generating thor/hthor/roxie output */
-#include "eclinclude.hpp"
+#include "eclinclude4.hpp"
 @include@
 @prototype@
 $?multiFile$#include "$headerName$"
