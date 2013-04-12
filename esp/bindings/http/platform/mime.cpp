@@ -509,8 +509,9 @@ bool CMimeMultiPart::separateMultiParts(MemoryBuffer& firstPart, MemoryBuffer& r
     int offset = 0;
     while(offset < totalLength)
     {
-        if (totalLength - offset < boundaryLen)
+        if ((totalLength - offset) < (boundaryLen + 2))
         {//Do not check this line now since buffer size is not longer than boundary line.
+         //The boundary line has two extra '-'s before the boundary ID
             if (contentNotRead > 0)
             {
                 boundaryCheckState = PossibleBoundary;//a boundary line may be cut into two parts
