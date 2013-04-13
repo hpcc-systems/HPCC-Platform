@@ -635,8 +635,11 @@ int main( int argc, char *argv[]  )
                 maxMem = 2048;
 #else
 #ifndef __64BIT__
-            if (maxMem > 4096)
-                maxMem = 4096;
+            if (maxMem > 2048)
+            {
+            	// 32 bit OS doesn't handle whole physically installed RAM
+                maxMem = 2048;
+            }
 #endif
 #endif
             gmemSize = maxMem * 3 / 4; // default to 75% of total
