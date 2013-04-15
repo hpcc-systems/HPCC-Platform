@@ -276,7 +276,7 @@ static void import(const char *path,const char *src,bool add)
         Owned<IPropertyTree> child = root->getPropTree(tail);
         root->removeTree(child);
 
-        //If remoplacing a qualified branch then remove the qualifiers before calling addProp
+        //If replacing a qualified branch then remove the qualifiers before calling addProp
         const char * qualifier = strchr(tail, '[');
 
         if (qualifier)
