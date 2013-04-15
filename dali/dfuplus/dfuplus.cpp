@@ -318,7 +318,7 @@ bool CDfuPlusHelper::fixedSpray(const char* srcxml,const char* srcip,const char*
         req->setTransferBufferSize(globals->getPropInt("transferbuffersize"));
 
     if(srcxml == NULL)
-        info("\nSpraying from %s on %s to %s\n", srcfile, srcip, dstname);
+        info("\nFixed spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
         info("\nSpraying to %s\n", dstname);
 
@@ -424,7 +424,7 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
         req->setTransferBufferSize(globals->getPropInt("transferbuffersize"));
 
     if(srcxml == NULL)
-        info("\nSpraying from %s on %s to %s\n", srcfile, srcip, dstname);
+        info("\nVariable spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
         info("\nSpraying to %s\n", dstname);
     Owned<IClientSprayResponse> result = sprayclient->SprayVariable(req);
