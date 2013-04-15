@@ -466,7 +466,16 @@
         you for the required packages. Installation of these packages can vary
         depending on your platform. For details of the specific installation
         commands for obtaining and installing these packages, see the commands
-        specific to your Operating System.</para>
+        specific to your Operating System. <variablelist>
+            <varlistentry>
+              <term>Note:</term>
+
+              <listitem>
+                <para>For Centos installations, the Fedora EPEL repository is
+                required.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist></para>
       </sect2>
 
       <sect2 id="SSH_Keys" role="brk">
@@ -656,12 +665,15 @@
         <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
 
         <blockquote>
-          <para><emphasis role="bold">NOTE :</emphasis> For ANY version of
-          SuSe you must set a password for the hpcc user on all nodes. One way
-          to do do this is to issue the following command:</para>
+          <para><emphasis role="bold">Note:</emphasis> For ANY version of SuSe
+          you must set a password for the hpcc user on all nodes. One way to
+          do do this is to issue the following command:</para>
 
           <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
           set the password on ALL nodes.</para>
+
+          <para><emphasis role="bold">Note:</emphasis> For Centos
+          installations, the Fedora EPEL repository is required.</para>
         </blockquote>
 
         <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
