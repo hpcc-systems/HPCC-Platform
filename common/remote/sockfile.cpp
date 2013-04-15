@@ -1347,8 +1347,19 @@ public:
         size32_t rest = _buf.length()-_buf.getPos();
         const byte *rb = (const byte *)_buf.readDirect(rest);
         bool ret = true;
-        if (rest&&(rb[rest-1]!=0)) {
-            rest--;
+        // At the last byte of the rb (rb[rest-1]) is the stream live flag
+        //  True if the stream has more data
+        //  False at the end of stream
+        // The previous byte (rb[rest-2]) is the flag to signal there are more
+        // valid entries in this block
+        //  True if there are valid directory entry follows this flag
+        //  False if there are no more valid entry in this block aka end of block
+        // If there is more data in the stream, the end of block flag should be removed
+        if (rest&&(rb[rest-1]!=0)) 
+        {
+            rest--; // remove stream live flag
+            if(rest && (0 == rb[rest-1]))
+            	rest--; //Remove end of block flag
             ret = false;  // continuation
         }
         buf.append(rest,rb);
@@ -1379,9 +1390,9 @@ public:
             curisdir = false;
             if (buf.getPos()>=buf.length())
                 return false;
-            byte b;
-            buf.read(b);
-            curvalid = b!=0;
+            byte isValidEntry;
+            buf.read(isValidEntry);
+            curvalid = isValidEntry!=0;
             if (!curvalid) 
                 return false;
             buf.read(curisdir);
