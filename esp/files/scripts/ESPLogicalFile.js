@@ -136,8 +136,8 @@ define([
                 load: function (response) {
                     if (lang.exists("DFUInfoResponse.FileDetail", response)) {
                         context.updateData(response.DFUInfoResponse.FileDetail);
-                        if (args && args.onGetAll) {
-                            args.onGetAll(response.DFUInfoResponse.FileDetail);
+                        if (args && args.onAfterSend) {
+                            args.onAfterSend(response.DFUInfoResponse.FileDetail);
                         }
                     }
                 }
@@ -197,8 +197,8 @@ define([
                 load: function (response) {
                     if (lang.exists("DFUInfoResponse.FileDetail", response)) {
                         context.updateData(response.DFUInfoResponse.FileDetail);
-                        if (args && args.onGetAll) {
-                            args.onGetAll(response.DFUInfoResponse.FileDetail);
+                        if (args && args.onAfterSend) {
+                            args.onAfterSend(response.DFUInfoResponse.FileDetail);
                         }
                     }
                 }

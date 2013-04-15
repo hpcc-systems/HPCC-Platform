@@ -15,12 +15,13 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/_base/xhr",
+    "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/dom-style",
+    "dojo/query",
 
-    "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
@@ -32,24 +33,29 @@ define([
     "dijit/registry",
     "dijit/ProgressBar",
 
+    "hpcc/_TabContainerWidget",
+    "hpcc/FileSpray",
+    "hpcc/ESPDFUWorkunit",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/SampleSelectWidget",
     "hpcc/GraphWidget",
     "hpcc/ResultsWidget",
     "hpcc/InfoGridWidget",
-    "hpcc/ESPDFUWorkunit",
+    "hpcc/LFDetailsWidget",
 
-    "dojo/text!../templates/DFUWUDetailsWidget.html"
-], function (declare, xhr, dom, domClass, domStyle,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
-                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, DFUWorkunit,
+    "dojo/text!../templates/DFUWUDetailsWidget.html",
+
+    "dojox/layout/TableContainer"
+
+], function (declare, arrayUtil, dom, domAttr, domClass, domStyle, query,
+                _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
+                _TabContainerWidget, FileSpray, ESPDFUWorkunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, LFDetailsWidget,
                 template) {
-    return declare("DFUWUDetailsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("DFUWUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "DFUWUDetailsWidget",
-        borderContainer: null,
-        tabContainer: null,
+        summaryWidget: null,
         resultsWidget: null,
         resultsWidgetLoaded: false,
         filesWidget: null,
@@ -68,72 +74,51 @@ define([
         wu: null,
         loaded: false,
 
+        tabMap: [],
+
         buildRendering: function (args) {
             this.inherited(arguments);
         },
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this.borderContainer = registry.byId(this.id + "BorderContainer");
-            this.tabContainer = registry.byId(this.id + "TabContainer");
-            this.xmlWidget = registry.byId(this.id + "XML");
+            this.summaryWidget = registry.byId(this.id + "_Summary");
+            this.xmlWidget = registry.byId(this.id + "_XML");
+            var stateOptions = [];
+            for (var key in FileSpray.States) {
+                stateOptions.push({
+                    label: FileSpray.States[key],
+                    value: FileSpray.States[key]
+                });
+            }
+            var stateSelect = registry.byId(this.id + "StateMessage");
+            stateSelect.addOption(stateOptions);
+        },
 
+        //  Hitched actions  ---
+        _onRefresh: function (event) {
+            this.wu.refresh(true);
+        },
+        _onSave: function (event) {
+            var protectedCheckbox = registry.byId(this.id + "isProtected");
             var context = this;
-            this.tabContainer.watch("selectedChildWidget", function (name, oval, nval) {
-                if (nval.id == context.id + "Content" && !context.resultWidgetLoaded) {
-                    context.resultWidgetLoaded = true;
-                    context.resultWidget.init({
-                        result: context.logicalFile.result
-                    });
-                } else if (nval.id == context.id + "Source" && !context.sourceWidgetLoaded) {
-                    context.sourceWidgetLoaded = true;
-                    context.sourceWidget.init({
-                        ECL: context.logicalFile.DFUInfoResponse.Ecl
-                    });
-                } else if (nval.id == context.id + "DEF" && !context.defWidgetLoaded) {
-                    context.logicalFile.fetchDEF(function (response) {
-                        context.defWidgetLoaded = true;
-                        context.defWidget.init({
-                            ECL: response
-                        });
-                    });
-                } else if (nval.id == context.id + "XML" && !context.xmlWidgetLoaded) {
-                    context.wu.fetchXML(function (response) {
-                        context.xmlWidgetLoaded = true;
-                        context.xmlWidget.init({
-                            ECL: response
-                        });
-                    });
-                } else if (nval.id == context.id + "FileParts" && !context.filePartsWidgetLoaded) {
-                    context.filePartsWidgetLoaded = true;
-                    context.filePartsWidget.init({
-                        fileParts: lang.exists("logicalFile.DFUInfoResponse.DFUFileParts.DFUPart", context) ? context.logicalFile.DFUInfoResponse.DFUFileParts.DFUPart : []
-                    });
-                } else if (nval.id == context.id + "Workunit" && !context.workunitWidgetLoaded) {
-                    context.workunitWidgetLoaded = true;
-                    context.workunitWidget.init({
-                        Wuid: context.logicalFile.DFUInfoResponse.Wuid
-                    });
-                } else if (nval.id == context.id + "DFUWorkunit" && !context.workunitWidgetLoaded) {
-                    context.dfuWorkunitWidgetLoaded = true;
-                    context.dfuWorkunitWidget.init({
-                        Wuid: context.logicalFile.DFUInfoResponse.Wuid
-                    });
-                }
-            });
+            this.wu.update({
+                JobName: dom.byId(context.id + "JobName").value,
+                isProtected: protectedCheckbox.get("value")
+            }, null);
         },
-
-        startup: function (args) {
-            this.inherited(arguments);
+        _onDelete: function (event) {
+            this.wu.doDelete();
         },
-
-        resize: function (args) {
-            this.inherited(arguments);
-            this.borderContainer.resize();
+        _onAbort: function (event) {
+            this.wu.abort();
         },
-
-        layout: function (args) {
-            this.inherited(arguments);
+        _onResubmit: function (event) {
+            var context = this;
+            this.wu.resubmit();
+        },
+        _onModify: function (event) {
+            //TODO
         },
 
         //  Implementation  ---
@@ -144,18 +129,45 @@ define([
 
             //dom.byId("showWuid").innerHTML = params.Wuid;
             if (params.Wuid) {
-                registry.byId(this.id + "Summary").set("title", params.Wuid);
+                this.summaryWidget.set("title", params.Wuid);
+
                 dom.byId(this.id + "Wuid").innerHTML = params.Wuid;
 
-                this.wu = new DFUWorkunit({
-                    Wuid: params.Wuid
-                });
+                this.clearInput();
+                this.wu = ESPDFUWorkunit.Get(params.Wuid);
+                var data = this.wu.getData();
+                for (key in data) {
+                    this.updateInput(key, null, data[key]);
+                }
                 var context = this;
-                this.wu.monitor(function (workunit) {
-                    context.monitorDFUWorkunit(workunit);
+                this.wu.watch(function (name, oldValue, newValue) {
+                    context.updateInput(name, oldValue, newValue);
                 });
             }
-            // this.infoGridWidget.init(params);
+            this.selectChild(this.summaryWidget, true);
+        },
+
+        initTab: function () {
+            if (!this.wu) {
+                return
+            }
+            var currSel = this.getSelectedChild();
+            if (currSel.id == this.summaryWidget.id) {
+            } else if (currSel.id == this.xmlWidget.id) {
+                if (!this.xmlWidgetLoaded) {
+                    var context = this;
+                    this.wu.fetchXML(function (response) {
+                        context.xmlWidgetLoaded = true;
+                        context.xmlWidget.init({
+                            ECL: response
+                        });
+                    });
+                }
+            } else {
+                if (!currSel.initalized) {
+                    currSel.init(currSel._hpccParams);
+                }
+            }
         },
 
         objectToText: function (obj) {
@@ -174,135 +186,144 @@ define([
                 }
             }
             return text;
-
         },
-
-        //  Hitched actions  ---
 
         resetPage: function () {
         },
 
-        _onDelete: function (event) {
+        getAncestor: function (node, type) {
+            if (node) {
+                if (node.tagName === type) {
+                    return node;
+                }
+                return this.getAncestor(node.parentNode, type);
+            }
+            return null;
         },
 
-        _onSave: function (event) {
-            var protectedCheckbox = registry.byId(this.id + "Protected");
-            var context = this;
-            this.wu.update({
-                //Description: dom.byId(context.id + "Description").value,
-                //obname: dom.byId(context.id + "JobName").value,
-                Protected: protectedCheckbox.get("value")
-            }, null, {
-                load: function (response) {
-                    context.monitor();
+        setInnerHTML: function (id, value) {
+            var domNode = dom.byId(this.id + id);
+            var pNode = this.getAncestor(domNode, "LI");
+            if (typeof value != 'undefined') {
+                if (pNode) {
+                    domClass.remove(pNode, "hidden");
                 }
-            });
+                domNode.innerHTML = value;
+            } else {
+                if (pNode) {
+                    domClass.add(pNode, "hidden");
+                }
+            }
         },
 
-        _onAbort: function (event) {
-            var context = this;
-            this.wu.abort({
-                load: function (response) {
-                    context.monitor();
+        setValue: function (id, value) {
+            var domNode = dom.byId(this.id + id);
+            var pNode = this.getAncestor(domNode, "LI");
+            if (typeof value != 'undefined') {
+                if (pNode) {
+                    domClass.remove(pNode, "hidden");
                 }
-            });
-        },
-        _onResubmit: function (event) {
-            var context = this;
-            this.wu.resubmit({
-                load: function (response) {
-                    context.monitor();
-                }
-            });
-        },
-        _onModify: function (event) {
-            var context = this;
-            this.wu.resubmit({
-                load: function (response) {
-                    context.monitor();
-                }
-            });
-        },
-
-        monitorDFUWorkunit: function (response) {
-            if (!this.loaded) {
-                registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete());
-                registry.byId(this.id + "Delete").set("disabled", !this.wu.isComplete());
-                registry.byId(this.id + "Abort").set("disabled", this.wu.isComplete());
-                registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete());
-                registry.byId(this.id + "Modify").set("disabled", !this.wu.isComplete());
-                registry.byId(this.id + "Protected").set("readOnly", !this.wu.isComplete());
-
-                dom.byId(this.id + "ID").innerHTML = response.ID;
-                dom.byId(this.id + "ClusterName").value = response.ClusterName;
-                dom.byId(this.id + "JobName").value = response.JobName;
-                dom.byId(this.id + "Queue").innerHTML = response.Queue;
-                dom.byId(this.id + "TimeStarted").innerHTML = response.TimeStarted;
-                dom.byId(this.id + "TimeStopped").innerHTML = response.TimeStopped;
-                //dom.byId(this.id + "ProgressBar").value = response.PercentDone;
-                dom.byId(this.id + "ProgressMessage").innerHTML = response.ProgressMessage;
-                dom.byId(this.id + "SummaryMessage").innerHTML = response.SummaryMessage;
-                dom.byId(this.id + "MonitorSub").innerHTML = response.MonitorSub;
-                dom.byId(this.id + "Overwrite").innerHTML = response.Overwrite;
-                dom.byId(this.id + "Replicate").innerHTML = response.Replicate;
-                dom.byId(this.id + "Compress").innerHTML = response.Compress;
-                //dom.byId(this.id + "AutoRefresh").innerHTML = response.AutoRefresh;     
-                if (!response.AutoRefresh) {
-                    dom.byId(this.id + "AutoRefresh").innerHTML = "false";
-                }
-
-                if (response.Command == "6") {
-                    domClass.add(this.id + "ExportGroup", "hidden");
-                    dom.byId(this.id + "Command").innerHTML = "Spray";
-                    dom.byId(this.id + "SourceIP").innerHTML = response.SourceIP;
-                    dom.byId(this.id + "SourceFilePath").innerHTML = response.SourceFilePath;
-                    dom.byId(this.id + "SourceRecordSize").innerHTML = response.SourceRecordSize;
-                    dom.byId(this.id + "SourceFormat").innerHTML = response.SourceFormat;
-                    dom.byId(this.id + "SourceNumParts").innerHTML = response.SourceNumParts;
-                    dom.byId(this.id + "SourceDirectory").innerHTML = response.SourceDirectory;
-                    dom.byId(this.id + "DestGroupName").innerHTML = response.DestGroupName;
-                    dom.byId(this.id + "DestLogicalName").innerHTML = response.DestLogicalName;
-                    dom.byId(this.id + "DestDirectory").innerHTML = response.DestDirectory;
-                    dom.byId(this.id + "DestNumParts").innerHTML = response.DestNumParts;
+                var registryNode = registry.byId(this.id + id);
+                if (registryNode) {
+                    registryNode.set("value", value);
                 } else {
-                    domClass.add(this.id + "ImportGroup", "hidden");
-                    domClass.add(this.id + "ClusterLine", "hidden");
-                    dom.byId(this.id + "Command").innerHTML = "Despray";
-                    dom.byId(this.id + "SourceLogicalName").innerHTML = response.SourceLogicalName;
-                    dom.byId(this.id + "DestDirectory").innerHTML = response.DestDirectory;
-                    dom.byId(this.id + "DestIP").innerHTML = response.DestIP;
-                    dom.byId(this.id + "DestFilePath").innerHTML = response.DestFilePath;
-                    dom.byId(this.id + "DestFormat").innerHTML = response.DestFormat;
-                    dom.byId(this.id + "DestNumParts").innerHTML = response.DestNumParts;
-                    dom.byId(this.id + "MonitorSub").innerHTML = response.MonitorSub;
-                    dom.byId(this.id + "Overwrite").innerHTML = response.Overwrite;
-                    dom.byId(this.id + "Replicate").innerHTML = response.Replicate;
-                    dom.byId(this.id + "Compress").innerHTML = response.Compress;
+                    domNode.value = value;
                 }
-                //start progress bar
-
-                //end progress bar
-                this.loaded = true;
+            } else {
+                if (pNode) {
+                    domClass.add(pNode, "hidden");
+                }
             }
-            var context = this;
-            if (this.wu.isComplete()) {
-                this.wu.getInfo({
-                    onGetResults: function (response) {
-                    },
+        },
 
-                    onGetSourceFiles: function (response) {
-                    },
+        clearInput: function () {
+            var list = query("div#" + this.id + "_Summary form > ul > li");
+            arrayUtil.forEach(list, function (item, idx) {
+                domClass.add(item, "hidden");
+            });
+        },
 
-                    onGetTimers: function (response) {
-                    },
-
-                    onGetGraphs: function (response) {
-                    },
-
-                    onGetAll: function (response) {
+        updateInput: function (name, oldValue, newValue) {
+            var registryNode = registry.byId(this.id + name);
+            if (registryNode) {
+                this.setValue(name, newValue);
+            } else {
+                var domNode = dom.byId(this.id + name);
+                if (domNode) {
+                    switch (domNode.tagName) {
+                        case "SPAN":
+                        case "DIV":
+                            this.setInnerHTML(name, newValue);
+                            break;
+                        case "INPUT":
+                        case "TEXTAREA":
+                            this.setValue(name, newValue);
+                            break;
+                        default:
+                            alert(domNode.tagName + ":" + name);
                     }
-                });
+                }
             }
+            switch (name) {
+                case "CommandMessage":
+                    this.setInnerHTML("CommandMessage2", newValue);
+                    break;
+                case "isProtected":
+                    dom.byId(this.id + "ProtectedImage").src = this.wu.getProtectedImage();
+                    break;
+                case "State":
+                case "hasCompleted":
+                    this.refreshActionState();
+                    break;
+                case "SourceLogicalName":
+                    this.ensurePane(this.id + "_SourceLogicalName", "Source", {
+                        Name: newValue
+                    });
+                    break;
+                case "DestLogicalName":
+                    this.ensurePane(this.id + "_DestLogicalName", "Target", {
+                        Name: newValue
+                    });
+                    break;
+            }
+        },
+
+        refreshActionState: function () {
+            registry.byId(this.id + "Save").set("disabled", !this.wu.isComplete());
+            registry.byId(this.id + "Delete").set("disabled", !this.wu.isComplete());
+            registry.byId(this.id + "Abort").set("disabled", this.wu.isComplete());
+            registry.byId(this.id + "Resubmit").set("disabled", !this.wu.isComplete());
+            registry.byId(this.id + "Modify").set("disabled", true);  //TODO
+            registry.byId(this.id + "JobName").set("readOnly", !this.wu.isComplete());
+            registry.byId(this.id + "isProtected").set("readOnly", !this.wu.isComplete());
+
+            this.summaryWidget.set("iconClass", this.wu.getStateIconClass());
+            dom.byId(this.id + "StateIdImage").src = this.wu.getStateImage();
+        },
+
+        checkIfComplete: function() {
+        },
+
+        monitorWorkunit: function (response) {
+        },
+
+        ensurePane: function (id, title, params) {
+            var retVal = this.tabMap[id];
+            if (!retVal) {
+                retVal = registry.byId(id);
+                if (!retVal) {
+                    var context = this;
+                    retVal = new LFDetailsWidget.fixCircularDependency({
+                        id: id,
+                        title: title,
+                        closable: false,
+                        _hpccParams: params
+                    });
+                }
+                this.tabMap[id] = retVal;
+                this.addChild(retVal);
+            }
+            return retVal;
         }
     });
 });
