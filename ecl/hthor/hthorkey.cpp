@@ -869,6 +869,7 @@ bool CHThorIndexReadActivity::nextPart()
         klManager.setown(createKeyMerger(keyIndexCache, keySize, seekGEOffset, NULL));
         keyIndexCache.clear();
         initManager(klManager);
+        callback.setManager(klManager);
         return true;
     }
     else if (seekGEOffset || localSortKey)
