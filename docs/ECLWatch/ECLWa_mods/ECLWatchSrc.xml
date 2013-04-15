@@ -1,0 +1,736 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<book>
+  <title>Using ECL Watch 4.x</title>
+
+  <bookinfo>
+    <title>Using ECL Watch 4.x</title>
+
+    <mediaobject>
+      <imageobject>
+        <imagedata fileref="../../images/redswooshWithLogo3.jpg" />
+      </imageobject>
+    </mediaobject>
+
+    <author>
+      <surname>Boca Raton Documentation Team</surname>
+    </author>
+
+    <legalnotice>
+      <para>We welcome your comments and feedback about this document via
+      email to <email>docfeedback@hpccsystems.com</email> Please include
+      <emphasis role="bold">Documentation Feedback</emphasis> in the subject
+      line and reference the document name, page numbers, and current Version
+      Number in the text of the message.</para>
+
+      <para>LexisNexis and the Knowledge Burst logo are registered trademarks
+      of Reed Elsevier Properties Inc., used under license. Other products,
+      logos, and services may be trademarks or registered trademarks of their
+      respective companies. All names and example data used in this manual are
+      fictitious. Any similarity to actual persons, living or dead, is purely
+      coincidental.</para>
+
+      <para></para>
+    </legalnotice>
+
+    <xi:include href="../../common/Version.xml" xpointer="FooterInfo"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="../../common/Version.xml" xpointer="DateVer"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <corpname>HPCC Systems</corpname>
+
+    <xi:include href="../../common/Version.xml" xpointer="Copyright"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <mediaobject role="logo">
+      <imageobject>
+        <imagedata fileref="../../images/LN_Rightjustified.jpg" />
+      </imageobject>
+    </mediaobject>
+  </bookinfo>
+
+  <chapter>
+    <title>Introduction</title>
+
+    <para>This document depicts details about the newly redesigned ECL Watch.
+    The new design is more practical and offers many new features and
+    functionality. The new ECL Watch is bundled with the 4.x HPCC Platform
+    software.</para>
+
+    <sect1 id="ECLWatch4x">
+      <title>ECL Watch 4.x</title>
+
+      <para>ECL Watch provides an interface to the HPCC system and allows you
+      to view information and interrogate nodes to confirm all expected
+      processes are running. This provides a simple centric view into the
+      system and a means to perform Work Unit and data files
+      maintenance.***</para>
+
+      <para>Using ECL watch assumes your HPCC system is up and running, able
+      to process jobs, and workunits. You would use the ECL Watch interface to
+      both check the status of your jobs, and perform operations on those
+      jobs.</para>
+    </sect1>
+
+    <sect1 id="ECLWorkunits" role="brk">
+      <title>ECL Workunits Page</title>
+
+      <para>The ECL Workunits page contains a list of all the ECL workunits on
+      your system. It provides access to more details about the workunits. You
+      can also perform actions on the selected workunit using the Workunit
+      Action buttons.</para>
+
+      <para>Using the Navigator panel on the left, click on the <emphasis
+      role="bold">Browse Workunits </emphasis>link.</para>
+
+      <para>The page displays the ECL workunits on your system. Choose
+      the<emphasis role="bold"> Workunits</emphasis> Navigation tab to display
+      the workunits.</para>
+
+      <para><figure>
+          <title>ECL Watch Browse Workunits</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA401.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>To further examine a workunit or to perform some action on it, you
+      must select it. You can select the workunit by checking the check
+      box.<figure>
+          <title>Select ECL Workunit</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA403.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>When you select a workunit, the Action buttons are enabled. You
+      can also use the Context Menu when you right-click on a workunit to
+      perform an action on it.</para>
+
+      <para>You can select multiple workunits by checking the check box next
+      to each workunit. You can also click-and-drag over the workunit check
+      boxes to select multiple workunits.</para>
+
+      <para>The Action buttons allow you to perform actions on the selected
+      workunits.</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>Press the<emphasis role="bold"> Open </emphasis>button to open
+          the selected workunit(s).</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Delete </emphasis>button to
+          delete selected workunit(s).</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Set to Failed</emphasis>
+          button to set the state of the selected workunit(s) to
+          failed.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the<emphasis role="bold"> Abort </emphasis>button to
+          stop a selected workunit that is running and abort the job.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Protect </emphasis>button to
+          lock the selected workunit(s). This prevents it from archiving by
+          the Sasha server.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Unprotect</emphasis> button to
+          unlock the selected locked workunit(s).</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Reschedule</emphasis> button
+          to change a selected scheduled workunit.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Deschedule</emphasis> button
+          to stop a selected scheduled workunit from running.</para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Filter</emphasis> button to
+          display additional filter options. These options filter the
+          displayed list of workunits.</para>
+        </listitem>
+      </itemizedlist>
+
+      <sect2>
+        <title>Filter Options</title>
+
+        <para>You can filter the workunits displayed on the Workunits tab by
+        clicking on the<emphasis role="bold"> Filter</emphasis> Action button.
+        The Filter sub-menu displays. Fill in values to specify the filter
+        criteria, then press the <emphasis role="bold">Apply</emphasis>
+        button.</para>
+
+        <para><figure>
+            <title>The Filter sub-menu</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA406.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The workunit filter options allow you to filter workunits using
+        the specified criteria. Workunits can be filtered by:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Owner</emphasis> - filter workunits
+            for specific owners.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Job Name</emphasis> - filter workunits
+            by job name.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Cluster</emphasis> - filter workunits
+            by cluster. For example, thor, or roxie.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">State</emphasis> - filter workunits by
+            State. For example, completed, failed, or waiting.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">WUID</emphasis> - (not yet
+            implemented)</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">ECL Text </emphasis>- filter workunits
+            by specific ECL Text. For example,
+            <emphasis>:=dataset.</emphasis></para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Logical File</emphasis> - filter
+            workunits by Logical File name, or some portion of it.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">From date</emphasis> - filter
+            workunits from a specific date and/or time.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">To date</emphasis> - filter workunits
+            up to a specific date and/or time.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Last</emphasis> <emphasis>N</emphasis>
+            <emphasis role="bold">Days</emphasis> - filter workunits for a
+            certain number (N) of days. Enter a number in this field.</para>
+          </listitem>
+        </itemizedlist>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>Filter criteria is case-insensitive.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <sect3>
+          <title>Sorting Columns</title>
+
+          <para>You can sort a column by clicking on the column heading. Click
+          once for ascending, click again to toggle to descending. The arrow
+          shows the sort order. <figure>
+              <title>Sort by column</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA407.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>Context Menu</title>
+
+        <para>You can right-click on a workunit to get a context menu of
+        actions, including filter options. These are the same set of actions
+        that you could perform from the Action buttons.</para>
+
+        <para><figure>
+            <title>Context menu</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA405.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title role="brk">Workunit Details</title>
+
+        <para>The Workunit Details page provides more information about the
+        workunit. You can see more information about the selected workunit by
+        selecting the various Workunit Details tabs.</para>
+
+        <para>You can also perform certain actions on the selected workunit
+        using the Workunit Action buttons.</para>
+
+        <para><figure>
+            <title>Workunit Details</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLW402.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Workunit details Action Buttons allow you to perform an action
+        on the selected workunit.</para>
+
+        <para>Using the Workunit Action Buttons you can:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Press the<emphasis role="bold"> Refresh </emphasis>button to
+            refresh the workunit details.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Save </emphasis>button to
+            save any changes to the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Delete</emphasis> button the
+            workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Set To Failed</emphasis>
+            button to change the workunit state to failed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Abort</emphasis> button to
+            stop a running workunit and abort the job.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Clone</emphasis> button to
+            clone the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Resubmit</emphasis> button
+            to resubmit the job.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Restart</emphasis> button to
+            restart the workunit.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Publish</emphasis> button to
+            provide a name and and submit the workunit.</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="DFUWorkunits" role="brk">
+      <title>DFU Workunits Page</title>
+
+      <para>The DFU Workunits page contains a list of all the DFU workunits on
+      your system. It provides access to more details about the workunits. You
+      can also perform actions on the selected workunit using the Workunit
+      Action buttons.</para>
+
+      <para>In the Navigator panel of the ECL Watch, click on the<emphasis
+      role="bold"> Browse </emphasis>link under <emphasis role="bold">DFU
+      Workunits</emphasis> header. This opens the DFU Workunits page. The page
+      displays the DFU Workunits on your system.</para>
+
+      <para><figure>
+          <title>Browse DFU Workunits</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA410.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure>To further examine a workunit or to perform some action on it
+      you must select it. You can select the workunit by checking the check
+      box. <figure>
+          <title>Select DFU Workunit</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA411.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>You can select multiple workunits by checking the check box next
+      to each workunit. You can also click-and-drag over a group of workunit
+      check boxes to select multiple workunits.</para>
+
+      <para>The enabled Action buttons now allow you to perform some actions
+      on the selected workunits. <itemizedlist>
+          <listitem>
+            <para>Press the<emphasis role="bold"> Open </emphasis>button to
+            open the workunit(s) details tab.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Delete </emphasis>button to
+            delete selected workunit(s).</para>
+          </listitem>
+
+          <listitem>
+            <para>Press <emphasis role="bold">Set to Failed</emphasis> button
+            to set the workunit(s) state to failed.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Protect </emphasis>button to
+            lock the workunit(s). This prevents it from archiving by the Sasha
+            server.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Unprotect</emphasis> button
+            to unlock the selected protected workunit(s).</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Filter</emphasis> button to
+            display additional filter/search options.</para>
+
+            <para><variablelist>
+                <varlistentry>
+                  <term>Note:</term>
+
+                  <listitem>
+                    <para>Filter criteria is case-insensitive.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>When you select a workunit you can then press the <emphasis
+      role="bold">Open</emphasis> action button to view the workunit details.
+      You can also double-click on a particular workunit to open the details
+      tab.</para>
+
+      <sect2>
+        <title>DFU Workunit Details Page</title>
+
+        <para>When you open the selected workunit(s) you will see the workunit
+        details. The Workunit Details tab provides information about a
+        workunit. You can see more information about workunit details by
+        selecting the various Workunit Details tabs. You can also perform
+        actions on the selected workunits using the Workunit Action
+        buttons.</para>
+
+        <para><figure>
+            <title>Workunit Details</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA404.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Additional Workunit details are located in the Workunit Details
+        section of the page. Job name, queue, command, time, completion
+        percentage, along with specific process messages display here.</para>
+
+        <para>You can use the Workunit Action buttons on the Active Workunit
+        tab to perform actions on the selected workunit. Press the appropriate
+        Workunit Action button to perform the following actions. <itemizedlist>
+            <listitem>
+              <para>Press the <emphasis role="bold">Save</emphasis> button to
+              save the workunit.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Delete</emphasis> button
+              to delete the workunit.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Abort</emphasis> button to
+              abort a running workunit.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Resubmit</emphasis> button
+              to resubmit the workunit (not yet implemented).</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the<emphasis role="bold"> Modify</emphasis> button
+              to modify the workunit (not yet implemented).</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1 id="LogicalFiles" role="brk">
+      <title>Logical Files</title>
+
+      <para>The Logical Files page contains a list of all the logical files on
+      your system. It provides access to more details about the files. You can
+      also perform actions on selected files using the Workunit Action
+      buttons.</para>
+
+      <para>In the Navigator panel of ECL Watch, click on the <emphasis
+      role="bold">Browse Logical Files </emphasis>link under the <emphasis
+      role="bold">DFU Files</emphasis> header. This will open the Logical
+      Files page.</para>
+
+      <para><figure>
+          <title>Browse Logical Files</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/CSimg14.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure>You can browse or search for logical files from this page
+      using the Filter drop menu. <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>Filter criteria is case-insensitive.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist><figure>
+          <title>Logical Files Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA420.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>To see details for a particular file, or to perform some action on
+      it you must select it. You can select a file or files by checking the
+      check box. You can also click and drag your mouse over a group of check
+      boxes, to select multiple files. <figure>
+          <title>Select Files</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA421.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>There are three columns to indicate some file attributes:</para>
+
+      <para><informaltable colsep="1" frame="all">
+          <tgroup cols="2">
+            <colspec colwidth="46pt" />
+
+            <colspec colwidth="110pt" />
+
+            <tbody>
+              <row>
+                <entry>C</entry>
+
+                <entry>Compressed File</entry>
+              </row>
+
+              <row>
+                <entry>K</entry>
+
+                <entry>Key File (index)</entry>
+              </row>
+
+              <row>
+                <entry>S</entry>
+
+                <entry>Superfile</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable>You can also sort a column by clicking on the column
+      heading. Click once for ascending, click again to toggle to descending.
+      The arrow shows the sort order.</para>
+
+      <para>Once you have selected a file or files, the Action Buttons are
+      enabled. You can perform actions on selected files.</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>Press the<emphasis role="bold"> Open</emphasis> button to
+            open the Logical Files Details page(s).</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Delete</emphasis> button to
+            delete file(s).</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Add To Superfile</emphasis>
+            button to create and add file(s) to a superfile.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Filter</emphasis> button to
+            display additional filter options.</para>
+          </listitem>
+        </itemizedlist></para>
+
+      <para>You can press the <emphasis role="bold">Open</emphasis> button to
+      open a tab with the details for each selected file.</para>
+
+      <sect2 role="brk">
+        <title>Logical Files Details</title>
+
+        <para>The Logical Files Detail page shows specific details for the
+        file selected. You select the file to view by clicking the appropriate
+        tab from the Navigation Tabs at the top of the page.</para>
+
+        <para><figure>
+            <title>Logical Files Detail Page</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA422.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The Logical File details summary appears in the main File
+        Details portion of the files page. You can view other file details
+        using the <emphasis role="bold">File Details Tabs</emphasis> at the
+        top portion of the Page.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>Select the <emphasis role="bold">Summary</emphasis> tab to
+              view a summary of the file details.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Contents</emphasis> tab
+              to view file contents.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">ECL</emphasis> tab to
+              view the ECL code.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">DEF</emphasis> tab to
+              view the ECL definitions.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">XML</emphasis> tab to
+              view the underlying XML.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the<emphasis role="bold"> File Parts</emphasis> tab
+              to view information about the various file parts.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Workunit </emphasis>tab
+              to view the corresponding workunit details. Note that the
+              workunit tab shows you the same information that you would see
+              if you selected it through the workunit link.</para>
+            </listitem>
+          </itemizedlist>On the File Details Summary tab, you can perform some
+        actions on the selected file.</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Press the<emphasis role="bold"> Refresh</emphasis> button to
+            refresh the file details.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Save</emphasis> button to
+            save any changes you make to the file details.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Delete</emphasis> button to
+            delete the file.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Copy</emphasis> button to
+            copy a file. You can also modify some file attributes from the
+            drop menu.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Rename</emphasis> button to
+            provide a name and rename the file.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Despray</emphasis> button to
+            despray the file. You can also modify some despray options from
+            the drop menu.</para>
+          </listitem>
+        </itemizedlist>
+      </sect2>
+    </sect1>
+  </chapter>
+</book>
