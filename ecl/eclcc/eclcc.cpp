@@ -1484,9 +1484,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     for (; !iter.done(); iter.next())
     {
         const char * arg = iter.query();
-        if (strnicmp(arg, "--allow=", 8)==0)
+        if (iter.matchOption(tempArg, "--allow"))
         {
-            allowedPermissions.append(arg+8);
+            allowedPermissions.append(tempArg);
         }
         else if (iter.matchFlag(optBatchMode, "-b"))
         {
@@ -1507,13 +1507,12 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optCheckEclVersion, "-checkVersion"))
         {
         }
-        else if (stricmp(arg, "--deny=all")==0)
+        else if (iter.matchOption(tempArg, "--deny"))
         {
-            defaultAllowed = false;
-        }
-        else if (strnicmp(arg, "--deny=", 7)==0)
-        {
-            deniedPermissions.append(arg+7);
+            if (stricmp(tempArg, "all")==0)
+                defaultAllowed = false;
+            else
+                deniedPermissions.append(tempArg);
         }
         else if (iter.matchFlag(optArchive, "-E"))
         {
