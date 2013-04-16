@@ -2840,7 +2840,7 @@ bool CLocalWorkUnit::archiveWorkUnit(const char *base,bool del,bool ignoredllerr
     Owned<IPropertyTree> generatedDlls = createPTree("GeneratedDlls");
     ForEach(*iter) {
         IConstWUAssociatedFile & cur = iter->query();
-        cur.getName(name);
+        cur.getNameTail(name);
         if (name.length()) {
             Owned<IDllEntry> entry = queryDllServer().getEntry(name.str());
             if (entry.get()) {
