@@ -595,6 +595,9 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
                     return branches.item(whichBranch).prepare(agent, parentExtract, checkDependencies);
                 return true;
             }
+#if 0
+        // This may feel like a worthwhile opimization, but it causes issues with through spill activities.
+        // Unless/until through spill activities get replaced by splitters, this code should be disabled
         case TAKfilter:
         case TAKfiltergroup:
         case TAKfilterproject:
@@ -622,9 +625,10 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
                 }
                 break;
             }
+#endif
 #if 1
         //This doesn't really work - we really need to switch over to a similar create(),start()/stop(),reset() structure as roxie.
-        //Howver that is far from trivial, so for the moment conditional statements won't be supported by hthor.
+        //However that is far from trivial, so for the moment conditional statements won't be supported by hthor.
         case TAKifaction:
             {
                 Owned<IHThorArg> helper = createHelper(agent, NULL);
@@ -671,7 +675,7 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
             }
         }
 
-        if (!isEof)    //dont prepare unnecessary branches
+        if (!isEof)    //don't prepare unnecessary branches
         {
             ForEachItemIn(i1, branches)
             {
