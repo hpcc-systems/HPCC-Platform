@@ -64,7 +64,7 @@ add_subdirectory(UsingConfigManager)
 add_subdirectory(ECLPlayground)
 add_subdirectory(ECLPluginForEclipse)
 add_subdirectory(ECLScheduler)
-
+add_subdirectory(ECLWatch)
 
 
 #WIP -  Docs

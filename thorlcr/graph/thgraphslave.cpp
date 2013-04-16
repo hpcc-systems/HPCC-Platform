@@ -118,9 +118,9 @@ void CSlaveActivity::setInput(unsigned index, CActivityBase *inputActivity, unsi
     if (!inputActivity)
     {
         Owned<CActivityBase> nullAct = container.factory(TAKnull);
-        outLink.set(((CSlaveActivity *)nullAct.get())->queryOutput(inputOutIdx));
-        // avoid circular ref. leak, this activity is never referenced by graph or container and outputs never cleared elsewhere.
-        nullAct->releaseIOs();
+
+        outLink.set(((CSlaveActivity *)(nullAct.get()))->queryOutput(0)); // NB inputOutIdx irrelevant, null has single 'fake' output
+        nullAct->releaseIOs(); // normally done as graph winds up, clear now to avoid circular dependencies with outputs
     }
     else
         outLink.set(((CSlaveActivity *)inputActivity)->queryOutput(inputOutIdx));

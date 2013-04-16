@@ -6039,9 +6039,6 @@ primexpr1
     | TOK_ERROR '(' ')'         {
                             $$.setExpr(createValue(no_fail, makeAnyType()));
                         }
-    | TOK_ERROR         {
-                            $$.setExpr(createValue(no_fail, makeAnyType()));
-                        }
     | FAIL '(' scalarType ',' expression ',' expression ')'
                         {
                             $3.release();
