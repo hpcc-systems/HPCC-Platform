@@ -507,14 +507,13 @@ public:
                 StringAttr passwordenc;
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
-#ifdef _DALIUSER_STACKTRACE
+#ifndef _NO_DALIUSER_STACKTRACE
                 //following debug code to be removed
                 StringBuffer sb;
                 udesc->getUserName(sb);
-                if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
+                if (0==sb.length())
                 {
-                    DBGLOG("UNEXPECTED USER '%s' in dasess.cpp line %d",username.get(), __LINE__);
-                    PrintStackReport();
+                    DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CSessionRequestServer::processMessage() line %d", __LINE__);
                 }
 #endif
                 unsigned auditflags = 0;
@@ -770,14 +769,14 @@ public:
         CMessageBuffer mb;
         mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
-#ifdef _DALIUSER_STACKTRACE
+#ifndef _NO_DALIUSER_STACKTRACE
         //following debug code to be removed
         StringBuffer sb;
         if (udesc)
             udesc->getUserName(sb);
-        if (0==sb.length() || !stricmp(sb.str(), "daliuser"))
+        if (0==sb.length())
         {
-            DBGLOG("UNEXPECTED USER '%s' in dasess.cpp line %d",sb.str(),__LINE__);
+            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp getPermissionsLDAP() line %d",__LINE__);
             PrintStackReport();
         }
 #endif
@@ -922,6 +921,16 @@ public:
     {
         key.set(_key);
         obj.set(_obj); 
+#ifndef _NO_DALIUSER_STACKTRACE
+        StringBuffer sb;
+        if (udesc)
+            udesc->getUserName(sb);
+        if (sb.length()==0)
+        {
+            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CLdapWorkItem::start() line %d",__LINE__);
+            PrintStackReport();
+        }
+#endif
         udesc.set(_udesc);
         flags = _flags;
         ret = CLDAPE_ldapfailure;
@@ -1169,6 +1178,16 @@ public:
 #ifdef _NO_LDAP
         return -1;
 #else
+#ifndef _NO_DALIUSER_STACKTRACE
+        StringBuffer sb;
+        if (udesc)
+            udesc->getUserName(sb);
+        if (sb.length()==0)
+        {
+            DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CCovenSessionManager::getPermissionsLDAP() line %d",__LINE__);
+            PrintStackReport();
+        }
+#endif
         if ((ldapconn->getLDAPflags()&(DLF_SAFE|DLF_ENABLED))!=(DLF_SAFE|DLF_ENABLED))
             return ldapconn->getPermissions(key,obj,udesc,flags);
         atomic_inc(&ldapwaiting);
