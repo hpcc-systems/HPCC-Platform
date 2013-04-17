@@ -617,6 +617,7 @@ public:
     virtual DllLocationType isAvailable(const char * name) { throwUnexpected(); }
     virtual void removeDll(const char * name, bool removeDlls, bool removeDirectory) { throwUnexpected(); }
     virtual void registerDll(const char * name, const char * kind, const char * dllPath) { throwUnexpected(); }
+    virtual IDllEntry * createEntry(IPropertyTree *owner, IPropertyTree *entry) { throwUnexpected(); }
 
     virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location) 
     {
