@@ -63,11 +63,11 @@ void handleSyntax()
     out.append("        srcxml=<xml-file> -- replaces srcip and srcfile\n");
     out.append("        dstname=<destination-logical-name>\n");
     out.append("        dstcluster=<cluster-name>\n");
-    out.append("        format=fixed|csv|xml|variable|recfmv|recfmvb\n");
+    out.append("        format=fixed|csv|delimited|xml|variable|recfmv|recfmvb\n");
     out.append("        prefix=filename{:length},filesize{:[B|L][1-8]}\n");
     out.append("        options for fixed:\n");
     out.append("            recordsize=<record-size>\n");
-    out.append("        options for csv:\n");
+    out.append("        options for csv/delimited:\n");
     out.append("            encoding=ascii|utf8|utf8n|utf16|utf16le|utf16be|utf32|utf32le|utf32be -- optional, default is ascii\n");
     out.append("            maxrecordsize=<max-record-size> -- optional, default is 8192\n");
     out.append("            separator=<separator> -- optional, default is \\,\n");
