@@ -282,7 +282,7 @@ bool FileSystemFile::checkValid()
                 {
                     ECLPluginDefinitionBlock pb;
                     pb.size = sizeof(pb);
-                    if (p(&pb) && (pb.magicVersion == PLUGIN_VERSION))
+                    if (p(&pb) && (pb.magicVersion == PLUGIN_VERSION) && pb.ECL)
                     {
                         //Name in the plugin overrides the name of the plugin, and the filename where errors are reported.
                         eclName = createAtom(pb.moduleName);
@@ -298,7 +298,7 @@ bool FileSystemFile::checkValid()
                     }
                     else
                     {
-                        DBGLOG("Plugin %s exports getECLPluginDefinition but fails consistency check - not loading", filename);
+                        DBGLOG("Plugin %s exports getECLPluginDefinition but does not export ECL - not loading", filename);
                         return false;
                     }
                 }

@@ -4064,8 +4064,8 @@ IHqlExpression * HqlGram::createIndirectSelect(IHqlExpression * lhs, IHqlExpress
         if (match == field)
             return createSelect(lhs, LINK(match), errpos);
 
-        OwnedHqlExpr normalizedMatch = getUnadornedExpr(match);
-        OwnedHqlExpr normalizedField = getUnadornedExpr(field);
+        OwnedHqlExpr normalizedMatch = getUnadornedRecordOrField(match);
+        OwnedHqlExpr normalizedField = getUnadornedRecordOrField(field);
         if (normalizedMatch == normalizedField)
             return createSelect(lhs, LINK(match), errpos);
     }
