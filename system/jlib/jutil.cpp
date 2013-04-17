@@ -83,8 +83,6 @@ bool safe_ecvt(size_t len, char * buffer, double value, int numDigits, int * dec
 {
 #ifdef _WIN32
     return _ecvt_s(buffer, len, value, numDigits, decimal, sign) == 0;
-#elif defined(__FreeBSD__) || defined (__APPLE__)
-    UNIMPLEMENTED;
 #else
     SpinBlock block(*cvtLock);
     const char * result = ecvt(value, numDigits, decimal, sign);
@@ -99,8 +97,6 @@ bool safe_fcvt(size_t len, char * buffer, double value, int numPlaces, int * dec
 {
 #ifdef _WIN32
     return _fcvt_s(buffer, len, value, numPlaces, decimal, sign) == 0;
-#elif defined(__FreeBSD__) || defined (__APPLE__)
-    UNIMPLEMENTED;
 #else
     SpinBlock block(*cvtLock);
     const char * result = fcvt(value, numPlaces, decimal, sign);
