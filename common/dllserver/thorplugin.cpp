@@ -457,6 +457,7 @@ bool SafePluginMap::addPlugin(const char *path, const char *dllname)
     }
     catch (IException * e) // MORE - not sure why we don't throw exceptions back here...
     {
+        EXCLOG(e, "Loading plugin");
         e->Release();
         return false;
     }

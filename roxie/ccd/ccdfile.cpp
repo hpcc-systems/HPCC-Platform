@@ -1857,7 +1857,7 @@ public:
         if (dFile)
         {
             if (traceLevel > 5)
-                DBGLOG("Roxie server adding information for dynamic file %s", lfn.get());
+                DBGLOG("Roxie server adding information for file %s", lfn.get());
             IDistributedSuperFile *superFile = dFile->querySuperFile();
             if (superFile)
             {
