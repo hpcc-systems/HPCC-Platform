@@ -61,17 +61,17 @@ output(sort(twoways,record,local),,DG_FetchFilePreloadIndexedName,OVERWRITE);
 
 #IF (usePayload=false)
  sortedFile := SORT(DG_FETCHFILE, Lname,Fname,__filepos, LOCAL);
- BUILDINDEX(sortedFile,{Lname,Fname,__filepos},DG_FetchIndex1Name, OVERWRITE, SORTED);
- BUILDINDEX(sortedFile,{Lname,Fname, __filepos}, DG_FetchIndex2Name, OVERWRITE, SORTED);
+ BUILDINDEX(sortedFile,{Lname,Fname,STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos},DG_FetchIndex1Name, OVERWRITE, SORTED);
+ BUILDINDEX(sortedFile,{Lname,Fname,STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos}, DG_FetchIndex2Name, OVERWRITE, SORTED);
 #ELSE
  #IF (useVarIndex=true)
   sortedFile := SORT(DG_FETCHFILE, Lname,Fname,state ,__filepos, LOCAL);
-  BUILDINDEX(sortedFile,{Lname,Fname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex1Name, OVERWRITE, SORTED);
-  BUILDINDEX(sortedFile,{Lname,Fname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex2Name, OVERWRITE, SORTED);
+  BUILDINDEX(sortedFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING blobfield {blob}:= fname+lname, __filepos},DG_FetchIndex1Name, OVERWRITE, SORTED);
+  BUILDINDEX(sortedFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING blobfield {blob}:= fname+lname, __filepos},DG_FetchIndex2Name, OVERWRITE, SORTED);
  #ELSE
   sortedFile := SORT(DG_FETCHFILE, Lname,Fname,state ,__filepos, LOCAL);
-  BUILDINDEX(sortedFile,{Lname,Fname},{state, __filepos}, DG_FetchIndex1Name, OVERWRITE, SORTED);
-  BUILDINDEX(sortedFile,{Lname,Fname},{state, __filepos}, DG_FetchIndex2Name, OVERWRITE, SORTED);
+  BUILDINDEX(sortedFile,{Lname,Fname},{STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos}, DG_FetchIndex1Name, OVERWRITE, SORTED);
+  BUILDINDEX(sortedFile,{Lname,Fname},{STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos}, DG_FetchIndex2Name, OVERWRITE, SORTED);
  #END
 #END
 
