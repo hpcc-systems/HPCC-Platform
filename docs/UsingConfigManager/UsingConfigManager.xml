@@ -1531,6 +1531,72 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <para>To add a custom option, rt-click and select add.</para>
 
+            <para>Available Options:</para>
+
+            <informaltable colsep="0" frame="none" rowsep="0">
+              <tgroup cols="3">
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec align="left" colwidth="122.40pt" />
+
+                <colspec align="left" colwidth="122.40pt" />
+
+                <tbody>
+                  <row>
+                    <entry>allow</entry>
+
+                    <entry>cpp</entry>
+
+                    <entry>Grants permission to embed other languages inline
+                    (e.g., C++, JAVA, Python, R, etc.)</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis></emphasis></entry>
+
+                    <entry>pipe</entry>
+
+                    <entry>Grants permission to use the PIPE command to pipe
+                    to external executable processes</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis></emphasis></entry>
+
+                    <entry>all</entry>
+
+                    <entry>Grants permission for all of the above</entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis>deny</emphasis></entry>
+
+                    <entry>cpp</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis></emphasis></entry>
+
+                    <entry>pipe</entry>
+
+                    <entry></entry>
+                  </row>
+
+                  <row>
+                    <entry><emphasis></emphasis></entry>
+
+                    <entry>all</entry>
+
+                    <entry></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+
+            <para></para>
+
             <!--This feature allows the user to configure any options pertinent to the Ecl CC Server Process -->
 
             <para></para>
