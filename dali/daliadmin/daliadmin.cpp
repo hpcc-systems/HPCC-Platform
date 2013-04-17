@@ -44,6 +44,7 @@
 #include "rmtfile.hpp"
 
 #include "workunit.hpp"
+#include "dllserver.hpp"
 
 #ifdef _WIN32
 #include <conio.h>
@@ -112,10 +113,13 @@ void usage(const char *exe)
   printf("  daliping [ <num> ]              -- time dali server connect\n");
   printf("  getxref <destxmlfile>           -- get all XREF information\n");
   printf("  dalilocks [ <ip-pattern> ] [ files ] -- get all locked files/xpaths\n");
-  printf("  unlock <xpath or logicalfile>   --  unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
-  printf("  wuidcompress <wildcard> <type>  --  scan workunits that match <wildcard> and compress resources of <type>\n");
-  printf("  wuiddecompress <wildcard> <type> --  scan workunits that match <wildcard> and decompress resources of <type>\n");
-  printf("  xmlsize <filename> [<percentage>] --  analyse size usage in xml file, display individual items above 'percentage' \n");
+  printf("  unlock <xpath or logicalfile>   -- unlocks either matching xpath(s) or matching logical file(s), can contain wildcards\n");
+  printf("  validatestore [fix=<true|false>]\n"
+         "                [verbose=<true|false>]\n"
+         "                [deletefiles=<true|false>]-- perform some checks on dali meta data an optionally fix or remove redundant info \n");
+  printf("  wuidcompress <wildcard> <type>  -- scan workunits that match <wildcard> and compress resources of <type>\n");
+  printf("  wuiddecompress <wildcard> <type> -- scan workunits that match <wildcard> and decompress resources of <type>\n");
+  printf("  xmlsize <filename> [<percentage>] -- analyse size usage in xml file, display individual items above 'percentage'\n");
   printf("\n");
   printf("Common options\n");
   printf("  server=<dali-server-ip>         -- server ip\n");
@@ -2326,6 +2330,111 @@ static void wuidCompress(const char *match, const char *type, bool compress)
     }
 }
 
+static void validateStore(bool fix, bool deleteFiles, bool verbose)
+{
+    /*
+     * Place holder for client-side dali store verification/validation. Currently performs:
+     * 1) validates GeneratedDll entries correspond to current workunits (see HPCC-9146)
+     */
+    CTimeMon totalTime, ts;
+
+    PROGLOG("Gathering list of workunits");
+    Owned<IRemoteConnection> conn = querySDS().connect("/WorkUnits", myProcessSession(), RTM_LOCK_READ, 10000);
+    if (!conn)
+        throw MakeStringException(0, "Failed to connect to /WorkUnits");
+    AtomRefTable wuids;
+    Owned<IPropertyTreeIterator> wuidIter = conn->queryRoot()->getElements("*");
+    ForEach(*wuidIter)
+    {
+        IPropertyTree &wuid = wuidIter->query();
+        wuids.queryCreate(wuid.queryName());
+    }
+    PROGLOG("%d workunits gathered. Took %d ms", wuids.count(), ts.elapsed());
+    ts.reset(0);
+
+    StringArray uidsToDelete;
+    UnsignedArray indexToDelete;
+
+    PROGLOG("Gathering associated files");
+    conn.setown(querySDS().connect("/GeneratedDlls", myProcessSession(), fix?RTM_LOCK_WRITE:RTM_LOCK_READ, 10000));
+    IPropertyTree *root = conn->queryRoot()->queryBranch(NULL); // force all to download
+
+    Owned<IPropertyTreeIterator> gdIter = root->getElements("*");
+    RegExpr RE("^.*{W2[0-9][0-9][0-9][0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9][0-9][0-9]{-[0-9]+}?}{[^0-9].*|}$");
+
+    unsigned index=1;
+    ForEach(*gdIter)
+    {
+        IPropertyTree &gd = gdIter->query();
+        const char *name = gd.queryProp("@name");
+        if (name && *name)
+        {
+            if (RE.find(name))
+            {
+                StringBuffer wuid;
+                RE.substitute(wuid,"#1");
+                const char *w = wuid.str();
+                bool found = NULL != wuids.find(*w);
+                const char *uid = gd.queryProp("@uid");
+                if (!found)
+                {
+                    uidsToDelete.append(uid);
+                    indexToDelete.append(index);
+                }
+            }
+        }
+        ++index;
+    }
+    PROGLOG("%d out of %d workunit files not associated with any workunit. Took %d ms", indexToDelete.ordinality(), index, ts.elapsed());
+    ts.reset(0);
+
+    IArrayOf<IDllEntry> removedEntries;
+    unsigned numDeleted = 0;
+    ForEachItemInRev(d, indexToDelete)
+    {
+        const char *uid = uidsToDelete.item(d);
+        unsigned index = indexToDelete.item(d);
+        StringBuffer path("GeneratedDll[");
+        path.append(index).append("]");
+        IPropertyTree *gd = root->queryPropTree(path.str());
+        if (NULL == gd)
+            throwUnexpected();
+        const char *uidQuery = gd->queryProp("@uid");
+        if (0 != strcmp(uid, uidQuery))
+            throw MakeStringException(0, "Expecting uid=%s @ GeneratedDll[%d], but found uid=%s", uid, index, uidQuery);
+        if (verbose)
+            PROGLOG("Removing: %s, uid=%s", path.str(), uid);
+        if (fix)
+        {
+            Owned<IDllEntry> entry = queryDllServer().createEntry(root, gd);
+            entry->remove(false, false); // NB: This will remove child 'gd' element from root (GeneratedDlls)
+            if (deleteFiles) // delay until after meta info removed and /GeneratedDlls unlocked
+                removedEntries.append(*entry.getClear());
+        }
+        ++numDeleted;
+    }
+    if (fix)
+    {
+        conn->commit();
+        PROGLOG("Removed %d unassociated file entries. Took %d ms", numDeleted, ts.elapsed());
+        ts.reset(0);
+
+        if (deleteFiles)
+        {
+            PROGLOG("Deleting physical files..");
+            ForEachItemIn(r, removedEntries)
+            {
+                IDllEntry &entry = removedEntries.item(r);
+                PROGLOG("Removing files for: %s", entry.queryName());
+                entry.remove(true, false);
+            }
+            PROGLOG("Removed physical files. Took %d ms", ts.elapsed());
+        }
+    }
+    else
+        PROGLOG("%d unassociated file entries to remove - use 'fix=true'", numDeleted);
+    PROGLOG("Done time = %d secs", totalTime.elapsed()/1000);
+}
 
 //=============================================================================
 
@@ -2396,6 +2505,8 @@ int main(int argc, char* argv[])
             (memcmp(param,"user=",5)==0)||
             (memcmp(param,"password=",9)==0) ||
             (memcmp(param,"fix=",4)==0) ||
+            (memcmp(param,"verbose=",8)==0) ||
+            (memcmp(param,"deletefiles=",12)==0) ||
             (memcmp(param,"timeout=",4)==0))
             props->loadProp(param);
         else if ((i==1)&&(isdigit(*param)||(*param=='.'))&&ep.set(((*param=='.')&&param[1])?(param+1):param,DALI_SERVER_PORT))
@@ -2673,6 +2784,13 @@ int main(int argc, char* argv[])
                     else if (stricmp(cmd,"wuidDecompress")==0) {
                         CHECKPARAMS(2,2);
                         wuidCompress(params.item(1), params.item(2), false);
+                    }
+                    else if (stricmp(cmd,"validateStore")==0) {
+                        CHECKPARAMS(0,2);
+                        bool fix = props->getPropBool("fix");
+                        bool verbose = props->getPropBool("verbose");
+                        bool deleteFiles = props->getPropBool("deletefiles");
+                        validateStore(fix, deleteFiles, verbose);
                     }
                     else
                         ERRLOG("Unknown command %s",cmd);
