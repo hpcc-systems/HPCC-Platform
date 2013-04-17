@@ -10438,7 +10438,7 @@ void HqlCppTranslator::getRecordECL(IHqlExpression * deserializedRecord, StringB
         size32_t maxSize = getMaxRecordSize(record);
         HqlExprArray args;
         unwindChildren(args, record);
-        args.append(*createAttribute(maxLengthAtom, getSizetConstant(maxSize)));
+        args.append(*createExprAttribute(maxLengthAtom, getSizetConstant(maxSize)));
         OwnedHqlExpr annotatedRecord = record->clone(args);
         ::getRecordECL(annotatedRecord, eclText);
     }
@@ -17666,7 +17666,7 @@ void HqlCppTranslator::buildActivityFramework(ActivityInstance * instance, bool 
         node_operator op = search->getOperator();
         if ((op != no_select) && (op != no_workunit_dataset))
         {
-            OwnedHqlExpr searchNorm = getUnadornedExpr(search);
+            IHqlExpression * searchNorm = queryLocationIndependent(search);
             unsigned crc = getExpressionCRC(search);
             ForEachItemIn(i, tracking.activityExprs)
             {

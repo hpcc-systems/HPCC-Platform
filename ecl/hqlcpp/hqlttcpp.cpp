@@ -34,6 +34,7 @@
 #include "hqlpmap.hpp"
 #include "hqlopt.hpp"
 #include "hqlcerrors.hpp"
+#include "hqlscope.hpp"
 #include "hqlsource.ipp"
 #include "hqlvalid.hpp"
 #include "hqlerror.hpp"
@@ -5400,10 +5401,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 {
                     if (queryLocationIndependent(prevValue) != queryLocationIndependent(value))
                     {
-#ifdef _DEBUG
-                        debugFindFirstDifference(prevValue->queryBody(), value->queryBody());
-                        debugFindFirstDifference(queryLocationIndependent(prevValue), queryLocationIndependent(value));
-#endif
+                        EclIR::dbglogIR(2, queryLocationIndependent(prevValue), queryLocationIndependent(value));
                         if (curOp == no_stored)
                             throwError1(HQLERR_DuplicateStoredDefinition, s.str());
                         else
@@ -7076,11 +7074,9 @@ void ExplicitGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
             if (filename)
                 getExprECL(filename, s);
             translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
+
 #if 0
-            HqlExprCopyArray scopeUsed;
-            expr->gatherTablesUsed(NULL, &scopeUsed);
-            ForEachItemIn(i, scopeUsed)
-                dbglogExpr(&scopeUsed.item(i));
+            checkIndependentOfScope(expr);
 #endif
         }
         break;
@@ -11934,10 +11930,24 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 {
                     //Make sure we ignore any line number information on the parameters mangled with the uid - otherwise
                     //they may create too many unique ids.
-                    IHqlExpression * normalForm = queryLocationIndependent(expr);
+                    OwnedHqlExpr transformed = Parent::createTransformed(expr);
+                    IHqlExpression * normalForm = queryLocationIndependent(transformed);
+
+                    OwnedHqlExpr ret;
                     if (normalForm != expr)
-                        return transform(normalForm);
-                    return createSelectorSequence();
+                    {
+                        IHqlExpression * mapped = queryAlreadyTransformed(normalForm);
+                        if (!mapped)
+                        {
+                            ret.setown(createSelectorSequence());
+                            setTransformed(normalForm, ret);
+                        }
+                        else
+                            ret.set(mapped);
+                    }
+                    else
+                        ret.setown(createSelectorSequence());
+                    return ret.getClear();
                 }
             }
 #endif
@@ -11947,7 +11957,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             //If f(a + b) is then optimized to b this can lead to incompatible selectors, since
             //a and b are "compatible", but not identical.
             //This then causes chaos, so strip them as a precaution... but it is only a partial solution.
-            if (name == maxLengthAtom)
+            if (name == maxLengthAtom || name == maxCountAtom)
                 return transformChildrenNoAnnotations(expr);
             break;
         }
