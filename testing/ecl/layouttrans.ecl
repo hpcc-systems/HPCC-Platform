@@ -28,8 +28,8 @@ DG_FetchIndex1Alt1 := INDEX(DG_FetchFile,{Fname,Lname,__filepos},DG_FetchIndex1N
 DG_FetchIndex1Alt2 := INDEX(DG_FetchFile,{Fname,Lname,__filepos},DG_FetchIndex1Name);
 #ELSE
  #IF (useVarIndex=true)
- DG_FetchIndex1Alt1 := INDEX(DG_FetchFile,{Fname,Lname},{state, STRING100 x {blob}:= fname, STRING fn := TRIM(Fname), __filepos},DG_FetchIndex1Name);
- DG_FetchIndex1Alt2 := INDEX(DG_FetchFile,{Fname,Lname},{STRING100 x {blob}:= fname, __filepos},DG_FetchIndex1Name);
+ DG_FetchIndex1Alt1 := INDEX(DG_FetchFile,{Fname,Lname},{state, STRING blobfield {blob}:= fname, STRING tfn := TRIM(Fname), __filepos},DG_FetchIndex1Name);
+ DG_FetchIndex1Alt2 := INDEX(DG_FetchFile,{Fname,Lname},{ STRING blobfield {blob}:= fname, __filepos},DG_FetchIndex1Name);
  #ELSE
  DG_FetchIndex1Alt1 := INDEX(DG_FetchFile,{Fname,Lname},{state ,__filepos},DG_FetchIndex1Name);
  DG_FetchIndex1Alt2 := INDEX(DG_FetchFile,{Fname,Lname},{__filepos},DG_FetchIndex1Name);
