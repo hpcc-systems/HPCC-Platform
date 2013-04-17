@@ -264,6 +264,8 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                     eclccCmd.appendf(" -I%s", valueStr.str());
                 else if (stricmp(optName, "libraryPath") == 0)
                     eclccCmd.appendf(" -L%s", valueStr.str());
+                else if (stricmp(start, "-allow")==0)
+                    ; // Don't allow people to grant themselves permissions
                 else
                     eclccCmd.appendf(" -%s=%s", start, valueStr.str());
             }
