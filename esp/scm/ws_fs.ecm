@@ -60,15 +60,10 @@ ESPStruct [nil_remove] DFUWorkunit
     bool Overwrite;
     bool Compress;
 
-    [min_ver("1.04"), depr_ver("1.08")] string SourceCsvSeparate;
-    [min_ver("1.04"), depr_ver("1.08")] string SourceCsvQuote;
-    [min_ver("1.04"), depr_ver("1.08")] string SourceCsvTerminate;
-    [min_ver("1.05"), depr_ver("1.08")] string SourceCsvEscape;
-
-    [min_ver("1.08")] string SourceSeparators;
-    [min_ver("1.08")] string SourceQuote;
-    [min_ver("1.08")] string SourceTerminators;
-    [min_ver("1.08")] string SourceEscape;
+    [min_ver("1.04")] string SourceCsvSeparate;
+    [min_ver("1.04")] string SourceCsvQuote;
+    [min_ver("1.04")] string SourceCsvTerminate;
+    [min_ver("1.05")] string SourceCsvEscape;
 
     string TimeStarted;
     string TimeStopped;
@@ -321,16 +316,11 @@ ESPrequest [nil_remove] SprayVariable
     
     int sourceMaxRecordSize;
     int sourceFormat;
-    [depr_ver("1.08")] bool   NoSourceCsvSeparator(false);
-    [depr_ver("1.08")] string sourceCsvSeparate;
-    [depr_ver("1.08")] string sourceCsvTerminate;
-    [depr_ver("1.08")] string sourceCsvQuote;
-    [depr_ver("1.08")] string sourceCsvEscape;
-    [min_ver("1.08")] bool   NoSourceSeparator(false);
-    [min_ver("1.08")] string sourceSeparators;
-    [min_ver("1.08")] string sourceTerminators;
-    [min_ver("1.08")] string sourceQuote;
-    [min_ver("1.08")] string sourceEscape;
+    bool   NoSourceCsvSeparator(false);
+    string sourceCsvSeparate;
+    string sourceCsvTerminate;
+    string sourceCsvQuote;
+    string sourceCsvEscape;
     string sourceRowTag;
 
     string destGroup;
@@ -598,7 +588,7 @@ ESPresponse [exceptions_inline, nil_remove] DeleteDropZoneFilesResponse
 };
 
 ESPservice [
-    version("1.08"), default_client_version("1.08"),
+    version("1.07"), default_client_version("1.07"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;

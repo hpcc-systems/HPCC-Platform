@@ -358,33 +358,13 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
             StringBuffer separate, terminate, quote, escape;
             file->getCsvOptions(separate,terminate,quote, escape);
             if(separate.length() > 0)
-            {
-                if(version < 1.07)
-                    dest.setSourceCsvSeparate(separate.str());
-                else
-                    dest.setSourceSeparators(separate.str());
-            }
+                dest.setSourceCsvSeparate(separate.str());
             if(terminate.length() > 0)
-            {
-                if(version < 1.07)
-                    dest.setSourceCsvTerminate(terminate.str());
-                else
-                    dest.setSourceTerminators(terminate.str());
-            }
+                dest.setSourceCsvTerminate(terminate.str());
             if(quote.length() > 0)
-            {
-                if(version < 1.07)
-                    dest.setSourceCsvQuote(quote.str());
-                else
-                    dest.setSourceQuote(quote.str());
-            }
+                dest.setSourceCsvQuote(quote.str());
             if((version >= 1.05) && (escape.length() > 0))
-            {
-                if(version < 1.07)
-                    dest.setSourceCsvEscape(escape.str());
-                else
-                    dest.setSourceEscape(escape.str());
-            }
+                dest.setSourceCsvEscape(escape.str());
         }
     }
 
@@ -2052,35 +2032,21 @@ bool CFileSprayEx::onSprayVariable(IEspContext &context, IEspSprayVariable &req,
         }
         else
         {
-            const char* cs = req.getSourceSeparators();
-            if (!cs || !*cs)
-                cs = req.getSourceCsvSeparate();
-            bool noSourceSeparator = false;
-            if (!req.getNoSourceSeparator_isNull())
-                noSourceSeparator = req.getNoSourceSeparator();
-            else
-                noSourceSeparator = req.getNoSourceCsvSeparator();
-            if (noSourceSeparator)
+            const char* cs = req.getSourceCsvSeparate();
+            if (req.getNoSourceCsvSeparator())
             {
                 cs = "";
             }
             else if(cs == NULL || *cs == '\0')
                 cs = "\\,";
 
-            const char* ct = req.getSourceTerminators();
-            if (!ct || !*ct)
-                ct = req.getSourceCsvTerminate();
+            const char* ct = req.getSourceCsvTerminate();
             if(ct == NULL || *ct == '\0')
                 ct = "\\n,\\r\\n";
-            const char* cq = req.getSourceQuote();
-            if (!cq || !*cq)
-                cq = req.getSourceCsvQuote();
+            const char* cq = req.getSourceCsvQuote();
             if(cq== NULL)
                 cq = "'";
-            const char* ce = req.getSourceEscape();
-            if (!ce || !*ce)
-                ce = req.getSourceCsvEscape();
-            source->setCsvOptions(cs, ct, cq, ce);
+            source->setCsvOptions(cs, ct, cq, req.getSourceCsvEscape());
         }
 
         destination->setLogicalName(destname);

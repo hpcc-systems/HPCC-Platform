@@ -62,7 +62,7 @@ public:
         ensureNavLink(*folder, "Browse Logical Files", "/esp/files/stub.htm?Widget=DFUWUQueryWidget", "Browse a list of Logical Files", NULL, NULL, 6);
         ensureNavLink(*folder, "Browse Files by Scope", "/WsDfu/DFUFileView", "Browse a list of Logical Files by Scope", NULL, NULL, 7);
         ensureNavLink(*folder, "Spray Fixed", "/FileSpray/SprayFixedInput", "Spray a fixed width file", NULL, NULL, 8);
-        ensureNavLink(*folder, "Spray Variable", "/FileSpray/SprayVariableInput?submethod=variable", "Spray a variable length file with fields separated by delimiters", NULL, NULL, 9);
+        ensureNavLink(*folder, "Spray Delimited", "/FileSpray/SprayVariableInput?submethod=csv", "Spray a variable length file with fields separated by delimiters", NULL, NULL, 9);
         ensureNavLink(*folder, "Spray XML", "/FileSpray/SprayVariableInput?submethod=xml", "Spray an XML File", NULL, NULL, 10);
         ensureNavLink(*folder, "Remote Copy", "/FileSpray/CopyInput", "Copy a Logical File from one environment to another", NULL, NULL, 11);
         ensureNavLink(*folder, "XRef", "/WsDFUXRef/DFUXRefList", "View Xref result details or run the Xref utility", NULL, NULL, 12);
