@@ -273,7 +273,7 @@ protected:
 class DllEntry : public CInterface, implements IDllEntry
 {
 public:
-    DllEntry(IPropertyTree * root, const char *cacheRoot);
+    DllEntry(IPropertyTree *root, const char *cacheRoot, IPropertyTree *owner);
     IMPLEMENT_IINTERFACE
 
     virtual IIterator * createLocationIterator();
@@ -294,14 +294,15 @@ public:
     virtual void remove(bool removeFiles, bool removeDirectory);
 
 protected:
-    Owned<IPropertyTree> root;
+    Owned<IPropertyTree> root, owner;
     StringAttr cacheRoot;
 };
 
-DllEntry::DllEntry(IPropertyTree * _root, const char *_cacheRoot)
+DllEntry::DllEntry(IPropertyTree *_root, const char *_cacheRoot, IPropertyTree *_owner)
 : cacheRoot(_cacheRoot)
 {
     root.set(_root);
+    owner.set(_owner);
 }
 
 IIterator * DllEntry::createLocationIterator()
@@ -399,10 +400,15 @@ void DllEntry::remove(bool removeFiles, bool removeDirectory)
             isFirst = false;
         }
     }
-    StringBuffer path;
-    getPath(path, root->queryProp("@name"));
-    Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, 5000);
-    conn->close(true);
+    if (owner)
+        owner->removeTree(root);
+    else
+    {
+        StringBuffer path;
+        getPath(path, root->queryProp("@name"));
+        Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), RTM_LOCK_WRITE, 5000);
+        conn->close(true);
+    }
 }
 
 
@@ -420,14 +426,14 @@ public:
     {
         bool ok = TreeIteratorWrapper::first();
         if (ok)
-            cur.setown(new DllEntry(&iter->query(), cacheRoot));
+            cur.setown(new DllEntry(&iter->query(), cacheRoot, NULL));
         return ok;
     }
     virtual bool next()
     {
         bool ok = TreeIteratorWrapper::next();
         if (ok)
-            cur.setown(new DllEntry(&iter->query(), cacheRoot));
+            cur.setown(new DllEntry(&iter->query(), cacheRoot, NULL));
         return ok;
     }
 
@@ -455,6 +461,7 @@ public:
     virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location);
     virtual void removeDll(const char * name, bool removeDlls, bool removeDirectory);
     virtual void registerDll(const char * name, const char * kind, const char * dllPath);
+    virtual IDllEntry * createEntry(IPropertyTree *owner, IPropertyTree *entry);
 
 protected:
     void copyFileLocally(RemoteFilename & targetName, RemoteFilename & sourceName);
@@ -505,10 +512,14 @@ DllEntry * DllServer::doGetEntry(const char * name)
     getPath(path, name);
     Owned<IRemoteConnection> conn = querySDS().connect(path.str(), myProcessSession(), 0, 5000);
     if (conn)
-        return new DllEntry(conn->queryRoot(), rootDir);
+        return new DllEntry(conn->queryRoot(), rootDir, NULL);
     return NULL;
 }
 
+IDllEntry * DllServer::createEntry(IPropertyTree *owner, IPropertyTree *entry)
+{
+    return new DllEntry(entry, rootDir, owner);
+}
 
 void DllServer::doRegisterDll(const char * name, const char * kind, const char * dllPath, const char * libPath)
 {

@@ -83,6 +83,7 @@ interface IDllServer : extends IInterface
     virtual ILoadedDllEntry * loadDll(const char * name, DllLocationType location) = 0;
     virtual void removeDll(const char * name, bool removeDlls, bool removeDirectory) = 0;
     virtual void registerDll(const char * name, const char * kind, const char * dllPath) = 0;
+    virtual IDllEntry * createEntry(IPropertyTree *owner, IPropertyTree *entry) = 0;
 };
 
 extern DLLSERVER_API IDllServer & queryDllServer();
