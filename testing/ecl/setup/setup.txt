@@ -73,29 +73,29 @@ DG_FetchFilePreloadIndexed := PRELOAD(DATASET(DG_FetchFilePreloadIndexedName,{DG
 
 #IF (useLayoutTrans=false)
  #IF (usePayload=false)
-  DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname,__filepos},DG_FetchIndex1Name);
-  DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname, __filepos}, DG_FetchIndex2Name);
+  DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname,STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos},DG_FetchIndex1Name);
+  DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname,STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos}, DG_FetchIndex2Name);
  #ELSE
   #IF (useVarIndex=true)
-   DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex1Name);
-   DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex2Name);
+   DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING blobfield {blob}:= fname+lname, __filepos},DG_FetchIndex1Name);
+   DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname},{STRING tfn := TRIM(Fname), state, STRING blobfield {blob}:= fname+lname, __filepos},DG_FetchIndex2Name);
   #ELSE
-   DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{state ,__filepos},DG_FetchIndex1Name);
-   DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname},{state, __filepos}, DG_FetchIndex2Name);
+   DG_FetchIndex1 := INDEX(DG_FetchFile,{Lname,Fname},{STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos},DG_FetchIndex1Name);
+   DG_FetchIndex2 := INDEX(DG_FetchFile,{Lname,Fname},{STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos}, DG_FetchIndex2Name);
   #END
  #END
 #ELSE
  // Declare all indexes such that layout translation is required... Used at run-time only, not at setup time...
  #IF (usePayload=false)
-  DG_FetchIndex1 := INDEX(DG_FetchFile,{Fname,Lname,__filepos},DG_FetchIndex1Name);
-  DG_FetchIndex2 := INDEX(DG_FetchFile,{Fname,Lname, __filepos}, DG_FetchIndex2Name);
+  DG_FetchIndex1 := INDEX(DG_FetchFile,{Fname,Lname,STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos},DG_FetchIndex1Name);
+  DG_FetchIndex2 := INDEX(DG_FetchFile,{Fname,Lname,STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos}, DG_FetchIndex2Name);
  #ELSE
   #IF (useVarIndex=true)
-   DG_FetchIndex1 := INDEX(DG_FetchFile,{Fname,Lname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex1Name);
-   DG_FetchIndex2 := INDEX(DG_FetchFile,{Fname,Lname},{STRING fn := TRIM(Fname), state, STRING100 x {blob}:= fname, __filepos},DG_FetchIndex2Name);
+   DG_FetchIndex1 := INDEX(DG_FetchFile,{Fname,Lname},{STRING tfn := TRIM(Fname), state, STRING blobfield {blob}:= fname+lname, __filepos},DG_FetchIndex1Name);
+   DG_FetchIndex2 := INDEX(DG_FetchFile,{Fname,Lname},{STRING tfn := TRIM(Fname), state, STRING blobfield {blob}:= fname+fname, __filepos},DG_FetchIndex2Name);
   #ELSE
-   DG_FetchIndex1 := INDEX(DG_FetchFile,{Fname,Lname},{state ,__filepos},DG_FetchIndex1Name);
-   DG_FetchIndex2 := INDEX(DG_FetchFile,{Fname,Lname},{state, __filepos}, DG_FetchIndex2Name);
+   DG_FetchIndex1 := INDEX(DG_FetchFile,{Fname,Lname},{STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos},DG_FetchIndex1Name);
+   DG_FetchIndex2 := INDEX(DG_FetchFile,{Fname,Lname},{STRING100 tfn := TRIM(Fname), state, STRING100 blobfield := fname+lname, __filepos}, DG_FetchIndex2Name);
   #END
  #END
 #END
