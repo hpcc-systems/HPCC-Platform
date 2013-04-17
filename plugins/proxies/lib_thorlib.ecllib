@@ -1,0 +1,38 @@
+/*##############################################################################
+
+    Copyright (C) <2011>  <HPCC Systems>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+export thorlib :=
+    SERVICE
+unsigned integer4 node() : library='graph', ctxmethod, entrypoint='getNodeNum';
+varstring l2p(const varstring name, boolean create=false) : library='graph', ctxmethod, entrypoint='getFilePart';
+unsigned integer4 nodes() : library='graph', ctxmethod, entrypoint='getNodes';
+varstring wuid() : library='graph', once, ctxmethod, entrypoint='getWuid';
+unsigned integer getFileOffset(const varstring lfname) : library='graph', ctxmethod, entrypoint='getFileOffset';
+varstring daliServers() : library='graph', once, ctxmethod, entrypoint='getDaliServers';
+varstring jobname() : library='graph', once, ctxmethod, entrypoint='getJobName';
+varstring jobowner() : library='graph', once, ctxmethod, entrypoint='getJobOwner';
+varstring cluster() : library='graph', once, ctxmethod, entrypoint='getClusterName';
+unsigned integer4 priority() : library='graph', once, ctxmethod, entrypoint='getPriority';
+varstring platform() : library='graph', once, ctxmethod, entrypoint='getPlatform';
+varstring os() : library='graph', once, ctxmethod, entrypoint='getOS';
+varstring getenv(const varstring name, const varstring defaultValue) : library='graph', pure, ctxmethod, entrypoint='getEnv';
+varstring getExpandLogicalName(const varstring name) : library='graph', pure, ctxmethod, entrypoint='getExpandLogicalName';
+unsigned integer4 logString(const varstring text) : library='graph', ctxmethod, entrypoint='logString';
+varstring group() : library='graph', once, ctxmethod, entrypoint='getGroupName';
+
+    END;

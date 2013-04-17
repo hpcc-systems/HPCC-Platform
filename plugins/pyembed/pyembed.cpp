@@ -19,6 +19,7 @@
 #include "Python.h"
 #include "jexcept.hpp"
 #include "jthread.hpp"
+#include "hqlplugins.hpp"
 #include "deftype.hpp"
 #include "eclrtl.hpp"
 #include "eclrtl_imp.hpp"
@@ -28,6 +29,30 @@
 #else
 #define EXPORT
 #endif
+
+static const char * compatibleVersions[] = {
+    "Python2.7 Embed Helper 1.0.0",
+    NULL };
+
+static const char *version = "Python2.7 Embed Helper 1.0.0";
+
+extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
+{
+    if (pb->size == sizeof(ECLPluginDefinitionBlockEx))
+    {
+        ECLPluginDefinitionBlockEx * pbx = (ECLPluginDefinitionBlockEx *) pb;
+        pbx->compatibleVersions = compatibleVersions;
+    }
+    else if (pb->size != sizeof(ECLPluginDefinitionBlock))
+        return false;
+    pb->magicVersion = PLUGIN_VERSION;
+    pb->version = version;
+    pb->moduleName = "python";
+    pb->ECL = NULL;
+    pb->flags = PLUGIN_MULTIPLE_VERSIONS;
+    pb->description = "Python2.7 Embed Helper";
+    return true;
+}
 
 namespace pyembed {
 

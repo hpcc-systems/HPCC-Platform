@@ -3901,6 +3901,15 @@ unsigned CHqlExpression::getCachedEclCRC()
     case no_sortlist:
         //backward compatibility
         break;
+    case no_attr_expr:
+        {
+            const _ATOM name = queryBody()->queryName();
+            //Horrible backward compatibility "fix" for record crcs - they need to remain the same otherwise files
+            //will be incompatible.
+            if (name == maxLengthAtom || name == xpathAtom || name == cardinalityAtom || name == caseAtom || name == maxCountAtom || name == choosenAtom || name == maxSizeAtom || name == namedAtom || name == rangeAtom || name == xmlDefaultAtom || name == virtualAtom)
+                crc = no_attr;
+            //fallthrough
+        }
     default:
         {
             ITypeInfo * thisType = queryType();
@@ -3953,7 +3962,7 @@ unsigned CHqlExpression::getCachedEclCRC()
     case no_attr_expr:
     case no_attr_link:
         {
-            _ATOM name = queryBody()->queryName();
+            const _ATOM name = queryBody()->queryName();
             if (name == _uid_Atom)
                 return 0;
             const char * nameText = name->str();
@@ -8247,7 +8256,7 @@ static IHqlExpression * cloneFunction(IHqlExpression * expr)
         HqlExprArray attrs;
         unwindChildren(attrs, formal);
         OwnedHqlExpr newFormal = createParameter(formal->queryName(), seq, formal->getType(), attrs);
-        assertex(formal != newFormal);
+        assertex(formal != newFormal || seq == UnadornedParameterIndex);
         replacer.setMapping(formal, newFormal);
     }
     return replacer.transform(expr);
@@ -10622,8 +10631,8 @@ static void normalizeCallParameters(HqlExprArray & resolvedActuals, IHqlExpressi
                 }
                 else
                 {
-                    OwnedHqlExpr actualRecord = getUnadornedExpr(actual->queryRecord());
-                    OwnedHqlExpr formalRecord = getUnadornedExpr(::queryOriginalRecord(type));
+                    OwnedHqlExpr actualRecord = getUnadornedRecordOrField(actual->queryRecord());
+                    OwnedHqlExpr formalRecord = getUnadornedRecordOrField(::queryOriginalRecord(type));
                     if (actualRecord && formalRecord && formalRecord->numChildren() && (formalRecord->queryBody() != actualRecord->queryBody()))
                     {
                         //If the actual dataset is derived from the input dataset, then insert a project so types remain correct
@@ -11346,7 +11355,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                 transform = &parms.item(2);
                 globalActivityTransfersRows = true;
                 mapper.setMapping(transform, leftSelect);
-                assertex(recordTypesMatch(recordType, transform->queryRecordType()));
+                assertRecordTypesMatch(recordType, transform->queryRecordType());
                 break;
             case no_normalize:
                 transform = &parms.item(2);
@@ -15415,8 +15424,8 @@ bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right)
         return true;
 
     //This test compares the real record structure, ignoring names etc.   The code above just short-cicuits this test.
-    OwnedHqlExpr unadornedLeft = getUnadornedExpr(leftRecord);
-    OwnedHqlExpr unadornedRight = getUnadornedExpr(rightRecord);
+    OwnedHqlExpr unadornedLeft = getUnadornedRecordOrField(leftRecord);
+    OwnedHqlExpr unadornedRight = getUnadornedRecordOrField(rightRecord);
     if (unadornedLeft == unadornedRight)
         return true;
 
@@ -15432,7 +15441,7 @@ bool assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right)
     if (recordTypesMatch(left, right))
         return true;
 
-    EclIR::dump_ir(left, right);
+    EclIR::dbglogIR(2, left, right);
     throwUnexpected();
 }
 

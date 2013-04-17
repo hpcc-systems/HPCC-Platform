@@ -1198,11 +1198,11 @@ public:
             {
                 DBGLOG("LdapBind for user %s (retries=%d).", username, retries);
                 {
-#ifdef _DALIUSER_STACKTRACE
+#ifndef _NO_DALIUSER_STACKTRACE
                     //following debug code to be removed
-                    if (!username || !stricmp(username, "daliuser"))
+                    if (!username)
                     {
-                        DBGLOG("UNEXPECTED USER '%s' in ldapconnection.cpp line %d",username, __LINE__);
+                        DBGLOG("UNEXPECTED USER (NULL) in ldapconnection.cpp authenticate() line %d", __LINE__);
                         PrintStackReport();
                     }
 #endif
