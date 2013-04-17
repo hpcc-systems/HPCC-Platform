@@ -194,10 +194,27 @@ void ScopeConsistencyChecker::doAnalyseExpr(IHqlExpression * expr)
 
 
 
+extern HQL_API void checkIndependentOfScope(IHqlExpression * expr)
+{
+    if (!expr || expr->isIndependentOfScope())
+        return;
+
+    HqlExprCopyArray scopeUsed;
+    expr->gatherTablesUsed(NULL, &scopeUsed);
+
+    HqlExprArray exprs;
+    exprs.append(*LINK(expr));
+    ForEachItemIn(i, scopeUsed)
+        exprs.append(OLINK(scopeUsed.item(i)));
+
+    EclIR::dbglogIR(exprs);
+}
+
 extern HQL_API void checkNormalized(IHqlExpression * expr)
 {
     if (!expr)
         return;
+
     ScopeConsistencyChecker checker;
     HqlExprArray activeTables;
     checker.checkConsistent(expr, activeTables);

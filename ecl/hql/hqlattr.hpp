@@ -48,7 +48,9 @@ extern HQL_API bool recordSerializationDiffers(IHqlExpression * expr, _ATOM seri
 extern HQL_API IHqlExpression * getSerializedForm(IHqlExpression * expr, _ATOM variation);
 extern HQL_API ITypeInfo * getSerializedForm(ITypeInfo * type, _ATOM variation);
 extern HQL_API IHqlExpression * getPackedRecord(IHqlExpression * expr);
-extern HQL_API IHqlExpression * getUnadornedExpr(IHqlExpression * expr);
+
+//This returns a record that compares equal with another result if the normalized records will compare equal
+extern HQL_API IHqlExpression * getUnadornedRecordOrField(IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * queryUID(IHqlExpression * expr);
 extern HQL_API IHqlExpression * querySelf(IHqlExpression * record);
