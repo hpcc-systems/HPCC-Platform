@@ -1,0 +1,45 @@
+/*##############################################################################
+
+    Copyright (C) <2010>  <LexisNexis Risk Data Management Inc.>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as
+    published by the Free Software Foundation, either version 3 of the
+    License, or (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+############################################################################## */
+
+import lib_stringlib;
+
+lb(string l, string r) := length(trim(l)) > length(trim(r));
+export Lead_contains(string l, string r) := if( lb(l,r),
+                                                r=l[1..length(trim(r))],
+                                                l=r[1..length(trim(l))]);
+
+
+export Tails(string50 l, string50 r) := length(trim(l))>=length(trim(r)) and
+                    l[length(trim(l))-length(trim(r))+1..length(l)] = r;
+
+
+export StripTail(string l, string r) := if ( Tails(l,r),
+                                             l[1..length(trim(l))-length(trim(r))],
+                                             l );
+
+export string StripUptoWord(string s, integer n) := if ( lib_stringlib.stringlib.stringfind(s,' ',n)=0,
+                                                         '',
+                                                         s[lib_stringlib.stringlib.stringfind(s,' ',n)+1..length(s)]);
+
+
+sp(string s,integer1 n) := if( lib_stringlib.stringlib.stringfind(s,' ',n)=0,
+                               length(s),
+                               lib_stringlib.stringlib.stringfind(s,' ',n) );
+export string word(string s,integer1 n) := if ( n = 1,
+                                                s[1..sp(s,1)],
+                                                s[sp(s,n-1)+1..sp(s,n)]);
