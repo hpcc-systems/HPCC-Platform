@@ -1,4 +1,4 @@
-<Archive build="internal_3.0_beta0_Debug" eclVersion="4.0.99">
+<Archive build="internal_3.0_beta0_Debug" eclVersion="4.99.0">
 <!--
 
     HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
