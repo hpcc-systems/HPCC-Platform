@@ -99,10 +99,19 @@
   <emphasis>transform </emphasis>function, ROLLUP can keep the LEFT or RIGHT
   record, or any mixture of data from both.</para>
 
-  <para>Record matching is done solely based on the values in adjacent records
-  in the <emphasis>recordset</emphasis>. For the first match, the two matching
-  records from the <emphasis>recordset</emphasis> are passed to the
-  <emphasis>transform</emphasis>. For subsequent matches of the same values,
+  <para>
+  The first form of ROLLUP tests a condition using values from the records that
+  would be passed as LEFT and RIGHT to the <emphasis>transform</emphasis>.  
+  The records are combined if the condition is true.
+  The second form of ROLLUP compares values from adjacent records in the input
+  <emphasis>recordset</emphasis>, and combines them if they are the same.  
+  These two forms will behave differently if the <emphasis>transform</emphasis>
+  modifies some of the fields used in the matching condition (see example below).
+  </para>
+  
+  <para>For the first pair of candidate records, the LEFT record passed to the transform
+  is the first record of the pair, and the RIGHT record is the second.
+  For subsequent matches of the same values,
   the LEFT record passed is the result record from the previous call to the
   <emphasis>transform</emphasis> and the RIGHT record is the next record in
   the <emphasis>recordset</emphasis>, as in this example:</para>
@@ -114,11 +123,18 @@ d t(ds L, ds R) := TRANSFORM
   SELF.n := L.n + R.n;
 END;
 ROLLUP(ds, t(LEFT, RIGHT), r);
-ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
-/* Both ROLLUPs result in:
+/* results in:
    3  60
    3  40
    4  50
+*/
+ROLLUP(ds, LEFT.r = RIGHT.r,t(LEFT, RIGHT));
+/* results in:
+   2  30
+   1  30
+   3  40
+   4  50
+   the third record is not combined because the transform modified the value.
 */</programlisting>
 
   <sect2 id="TRANSFORM_Function_Requirements_Rollup">
