@@ -116,6 +116,9 @@ const char * cppSystemText[]  = {
     "   concatUnicodeF(unicode tgt) : eclrtl,pure,include,library='eclrtl',entrypoint='rtlConcatUnicodeF';",
     "   concatVUNicodeF(unicode tgt) : eclrtl,pure,include,library='eclrtl',entrypoint='rtlConcatVUnicodeF';",
 
+    "   string concatStrExtend(const string src) :  eclrtl,extend,pure,library='eclrtl',include,entrypoint='rtlConcatExtend';",
+    "   unicode concatUnicodeExtend(const unicode src) :  eclrtl,extend,pure,library='eclrtl',include,entrypoint='rtlConcatUnicodeExtend';",
+
     "   unsigned4 concatStr2Str(string tgt, unsigned4 idx, const string src) :  eclrtl,library='eclrtl',entrypoint='rtlConcatStrToStr';",
     "   unsigned4 concatVStr2Str(string tgt, unsigned4 idx, const varstring src) : eclrtl,library='eclrtl',entrypoint='rtlConcatVStrToStr';",
     "   unsigned4 concatUtf8ToUtf8(utf8 tgt, unsigned4 idx, const utf8 src) : eclrtl,library='eclrtl',entrypoint='rtlConcatUtf8ToUtf8';",

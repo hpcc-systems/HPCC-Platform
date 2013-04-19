@@ -1661,6 +1661,14 @@ void rtlConcatExtend(unsigned & tlen, char * & tgt, unsigned slen, const char * 
     tlen = len;
 }
 
+void rtlConcatUnicodeExtend(size32_t & tlen, UChar * & tgt, size32_t slen, const UChar * src)
+{
+    unsigned len = tlen + slen;
+    tgt = (UChar *)realloc(tgt, len * sizeof(UChar));
+    memcpy(tgt+tlen, src, slen * sizeof(UChar));
+    tlen = len;
+}
+
 //-----------------------------------------------------------------------------
 
 inline void normalizeFrom(unsigned & from, unsigned slen)
