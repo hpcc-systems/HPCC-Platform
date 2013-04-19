@@ -127,7 +127,7 @@ interface IFileTreeBrowser : public IInterface
     virtual IResultSetFilter * queryRootFilter() = 0;
 };
 
-extern FILEVIEW_API IViewFileWeb * createViewFileWeb(IResultSetFactory & resultSetFactory, const char * cluster);
+extern FILEVIEW_API IViewFileWeb * createViewFileWeb(IResultSetFactory & resultSetFactory, const char * cluster, IUserDescriptor *user);
 extern FILEVIEW_API void createERdiagram(StringBuffer & xgmml, IViewFileWeb & web);
 
 #endif

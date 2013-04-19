@@ -31,6 +31,7 @@
 #include "hqlcollect.hpp"
 #include "hqlrepository.hpp"
 #include "hqlerror.hpp"
+#include "dasess.hpp"
 
 static ViewTransformerRegistry * theTransformerRegistry;
 static ITypeInfo * stringType;
