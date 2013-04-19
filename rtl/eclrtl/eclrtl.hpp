@@ -192,6 +192,7 @@ ECLRTL_API void rtlConcatVStr(char * * tgt, ...);
 ECLRTL_API void rtlConcatUnicode(unsigned & tlen, UChar * * tgt, ...);
 ECLRTL_API void rtlConcatVUnicode(UChar * * tgt, ...);
 ECLRTL_API void rtlConcatExtend(unsigned & tlen, char * & tgt, unsigned slen, const char * src);
+ECLRTL_API void rtlConcatUnicodeExtend(size32_t & tlen, UChar * & tgt, size32_t slen, const UChar * src);
 
 ECLRTL_API void rtlConcatStrF(unsigned tlen, void * tgt, int fill, ...);
 ECLRTL_API void rtlConcatVStrF(unsigned tlen, char * tgt, ...);
