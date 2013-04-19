@@ -5581,6 +5581,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         //MORE: Test valid in this location...
         args.append(*createVariable("walker", makeBoolType()));
     }
+    IHqlExpression * extendAttr = external->queryProperty(extendAtom);
 
     bool doneAssign = false;
     CHqlBoundExpr localBound;
@@ -5639,7 +5640,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 lenVar.setown(ctx.getTempDeclare(sizetType, NULL));
             }
             args.append(*LINK(lenVar));
-            args.append(*createValue(no_reference, strVar->getType(), LINK(strVar)));
+            args.append(*createValue(no_reference, strVar->getType(), LINK(strVar), LINK(extendAttr)));
             localBound.length.set(lenVar);
             localBound.expr.set(strVar);
         }

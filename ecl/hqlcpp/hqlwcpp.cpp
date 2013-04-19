@@ -1237,6 +1237,7 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                 generateChildExpr(expr, 0);
                 if (hasWrapperModifier(child->queryType()))
                 {
+                    bool extend = expr->hasProperty(extendAtom);
                     out.append(".");
                     ITypeInfo * type = expr->queryType();
                     switch (type->getTypeCode())
@@ -1245,18 +1246,26 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                     case type_varstring:
                     case type_qstring:
                     case type_utf8:
-                        out.append("refstr()");
+                        if (extend)
+                            out.append("refexstr()");
+                        else
+                            out.append("refstr()");
                         break;
                     case type_data:
-                        out.append("refdata()");
+                        if (extend)
+                            out.append("refexdata()");
+                        else
+                            out.append("refdata()");
                         break;
                     case type_row:
+                        assertex(!extend);
                         out.append("getbytes()");
                         break;
                     case type_set:
                     case type_dictionary:
                     case type_table:
                     case type_groupedtable:
+                        assertex(!extend);
                         if (hasLinkCountedModifier(type))
                             out.append("refrows()");
                         else
@@ -1264,7 +1273,10 @@ StringBuffer & HqlCppWriter::generateExprCpp(IHqlExpression * expr)
                         break;
                     case type_unicode:
                     case type_varunicode:
-                        out.append("refustr()");
+                        if (extend)
+                            out.append("refexustr()");
+                        else
+                            out.append("refustr()");
                         break;
                     }
                 }
