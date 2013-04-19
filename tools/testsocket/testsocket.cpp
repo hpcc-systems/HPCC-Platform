@@ -583,7 +583,8 @@ int sendQuery(const char * ip, unsigned port, const char * base)
 
 void usage(int exitCode)
 {
-    printf("testsocket ip<:port> [flags] [query | -f[f] file.sql]\n");
+    printf("testsocket ip<:port> [flags] [query | -f[f] file.sql | -]\n");
+    printf("  -         take query from stdin\n");
     printf("  -a        abort before input recieved\n");
     printf("  -a1       abort after first packet receieved\n");
     printf("  -c        test sending response to a socket\n");
@@ -617,51 +618,13 @@ void usage(int exitCode)
 
 int main(int argc, char **argv) 
 {
-#if 0
-    {
-        SocketListCreator c;
-        SocketEndpoint ep;
-        ep.ip.ip[0] = 192;
-        ep.ip.ip[1] = 168;
-        ep.ip.ip[2] = 6;
-        ep.ip.ip[3] = 186;
-        ep.port = 3004;
-        c.addSocket(ep);
-        ep.ip.ip[3] = 180;
-        c.addSocket(ep);
-
-        c.addSocket("192.168.6.187", 3004);
-        c.addSocket("192.168.6.188", 3004);
-        c.addSocket("192.168.6.189", 3004);
-        c.addSocket("192.168.6.190", 3004);
-        c.addSocket("192.168.6.191", 3004);
-        c.addSocket("192.168.6.192", 3004);
-        c.addSocket("192.168.6.194", 3004);
-        c.addSocket("192.168.6.195", 3004);
-        c.addSocket("192.168.6.196", 3004);
-        c.addSocket("192.168.6.197", 3004);
-        c.addSocket("192.168.6.198", 3004);
-        c.addSocket("192.168.6.199", 3004);
-        c.addSocket("192.168.7.115", 3004);
-        printf("%s\n",c.getText());
-        SocketListParser p(c.getText());
-
-        p.first(0);
-        StringAttr ip;
-        unsigned port;
-        while (p.next(ip, port))
-            printf("%s:%d\n",ip.get(),port);
-        return 0;
-    }
-#endif
-
-
 #ifndef _WIN32
     InitModuleObjects();
 #endif
     StringAttr outputName("result.txt");
 
     bool fromFile = false;
+    bool fromStdIn = false;
     bool fromMultiFile = false;
     bool timedReplay = false;
     if (argc < 2 && !(argc==2 && strstr(argv[1], "::")))
@@ -705,6 +668,11 @@ int main(int argc, char **argv)
         else if (stricmp(argv[arg], "-http") == 0)
         {
             forceHTTP = true;
+            ++arg;
+        }
+        else if (stricmp(argv[arg], "-") == 0)
+        {
+            fromStdIn = true;
             ++arg;
         }
         else if (stricmp(argv[arg], "-f") == 0)
@@ -835,7 +803,7 @@ int main(int argc, char **argv)
     trace = fopen(outputName, "w");
     __int64 starttime,endtime;
     starttime = get_cycles_now();
-    if (arg < argc)
+    if (arg < argc || fromStdIn)
     {
         echoResults = echoSingle;
         do
@@ -911,9 +879,9 @@ int main(int argc, char **argv)
                 else
                     printf("File %s could not be opened\n", query);
             }
-            else if (fromFile)
+            else if (fromFile || fromStdIn)
             {
-                FILE *in = fopen(query, "rt");
+                FILE *in = fromStdIn ? stdin : fopen(query, "rt");
                 if (in)
                 {
                     StringBuffer fileContents;
@@ -941,6 +909,8 @@ int main(int argc, char **argv)
             }
         } while (--repeats > 0);
     }
+    else
+        usage(2);
 
     while (runningQueries--)
         done.wait();
