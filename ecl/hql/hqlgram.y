@@ -5115,7 +5115,7 @@ compareExpr
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($4);
                             parser->normalizeExpression($4, type_dictionary, false);
-                            IHqlExpression *dict = $4.getExpr();
+                            OwnedHqlExpr dict = $4.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
                             OwnedHqlExpr indict = createINDictExpr(parser->errorHandler, $4.pos, row, dict);
                             $$.setExpr(getInverse(indict));
@@ -5126,8 +5126,8 @@ compareExpr
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($4);
                             parser->normalizeExpression($4, type_dictionary, false);
-                            IHqlExpression *dict = $4.getExpr();
-                            IHqlExpression *row = $1.getExpr();
+                            OwnedHqlExpr dict = $4.getExpr();
+                            OwnedHqlExpr row = $1.getExpr();
                             OwnedHqlExpr indict = createINDictRow(parser->errorHandler, $4.pos, row, dict);
                             $$.setExpr(getInverse(indict));
                             $$.setPosition($3);
@@ -5137,7 +5137,7 @@ compareExpr
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($3, type_dictionary, false);
-                            IHqlExpression *dict = $3.getExpr();
+                            OwnedHqlExpr dict = $3.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), $1.getExpr());
                             $$.setExpr(createINDictExpr(parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
@@ -5147,8 +5147,8 @@ compareExpr
                             parser->normalizeExpression($1);
                             parser->normalizeExpression($3);
                             parser->normalizeExpression($3, type_dictionary, false);
-                            IHqlExpression *dict = $3.getExpr();
-                            IHqlExpression *row = $1.getExpr();
+                            OwnedHqlExpr dict = $3.getExpr();
+                            OwnedHqlExpr row = $1.getExpr();
                             $$.setExpr(createINDictRow(parser->errorHandler, $3.pos, row, dict));
                             $$.setPosition($2);
                         }
@@ -6859,8 +6859,9 @@ dataRow
                         {
                             HqlExprArray args;
                             $3.unwindCommaList(args);
+                            OwnedHqlExpr dict = $1.getExpr();
                             OwnedHqlExpr row = createValue(no_rowvalue, makeNullType(), args);
-                            $$.setExpr(createSelectMapRow(parser->errorHandler, $3.pos, $1.getExpr(), row.getClear()));
+                            $$.setExpr(createSelectMapRow(parser->errorHandler, $3.pos, dict, row));
                         }
     | dataSet '[' NOBOUNDCHECK expression ']'
                         {   

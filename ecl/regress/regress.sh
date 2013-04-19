@@ -37,6 +37,7 @@ userflags=
 eclcc=
 diff=
 query=
+valgrind=
 np=`grep -c processor /proc/cpuinfo`
 export ECLCC_ECLINCLUDE_PATH=
 
@@ -56,7 +57,7 @@ if [[ $1 = '' ]]; then
     exit -1
 fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:I:e:d:f:q:l:x:" opt; do
+    while getopts "t:c:I:e:d:f:q:l:x:v" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -85,6 +86,11 @@ if [[ $* != '' ]]; then
             x)
                 userflags="$userflags $OPTARG"
                 ;;
+            v)
+               	valgrind="valgrind --leak-check=full --suppressions=suppressions.txt "
+               	eclcc="$valgrind $eclcc"
+               	compare_dir=
+               	;;
             :)
                 echo $syntax
                 exit -1

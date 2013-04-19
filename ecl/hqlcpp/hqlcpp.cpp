@@ -7622,7 +7622,7 @@ void HqlCppTranslator::doBuildExprNot(BuildCtx & ctx, IHqlExpression * expr, CHq
     assertex(expr->queryChild(0)->isBoolean());
     CHqlBoundExpr bound;
     buildExpr(ctx, expr->queryChild(0), bound);
-    tgt.expr.set(getInverse(bound.expr));
+    tgt.expr.setown(getInverse(bound.expr));
 }
 
 

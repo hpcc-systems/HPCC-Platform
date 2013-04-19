@@ -1255,7 +1255,7 @@ ITypeInfo * getSerializedForm(ITypeInfo * type, _ATOM variation)
             IHqlExpression * serializedRecord = querySerializedForm(record, variation);
             if (record == serializedRecord)
                 return LINK(type);
-            return cloneModifiers(type, serializedRecord->getType());
+            return cloneModifiers(type, serializedRecord->queryType());
         }
     case type_row:
     case type_transform:
