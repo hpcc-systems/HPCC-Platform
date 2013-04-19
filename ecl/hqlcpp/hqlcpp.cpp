@@ -281,6 +281,8 @@ bool isSimpleTranslatedExpr(IHqlExpression * expr)
     case type_qstring:
     case type_varstring:
     case type_decimal:
+    case type_unicode:
+    case type_varunicode:
         //Less strict rules for strings (and decimal), because string temporaries are more expensive.
         return isSimpleTranslatedStringExpr(expr);
     case type_set:
