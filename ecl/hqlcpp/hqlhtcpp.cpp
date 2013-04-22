@@ -17158,6 +17158,8 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
     BuildCtx classctx(*code, goAtom);
     classctx.addQuotedCompound("struct MyEclProcess : public EclProcess", ";");
 
+    classctx.addQuoted("virtual unsigned getActivityVersion() const { return ACTIVITY_INTERFACE_VERSION; }");
+
     BuildCtx performctx(classctx);
     performctx.addQuotedCompound("virtual int perform(IGlobalCodeContext * gctx, unsigned wfid)");
     performctx.addQuoted("ICodeContext * ctx;");

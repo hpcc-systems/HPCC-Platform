@@ -1820,6 +1820,7 @@ void EclAgent::doProcess()
     try
     {
         LOG(MCrunlock, unknownJob, "Waiting for workunit lock");
+        unsigned eclccCodeVersion;
         {
             WorkunitUpdate w = updateWorkUnit();
             LOG(MCrunlock, unknownJob, "Obtained workunit lock");
@@ -1828,8 +1829,10 @@ void EclAgent::doProcess()
             w->setTracingValue("EclAgentBuild", BUILD_TAG);
             if (agentTopology->hasProp("@name"))
                 w->addProcess("EclAgent", agentTopology->queryProp("@name"), logname.str());
-            if (checkVersion && ((w->getCodeVersion() > ACTIVITY_INTERFACE_VERSION) || (w->getCodeVersion() < MIN_ACTIVITY_INTERFACE_VERSION)))
-                failv(0, "Workunit was compiled for eclagent interface version %d, this eclagent requires version %d..%d", w->getCodeVersion(), MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+
+            eclccCodeVersion = w->getCodeVersion();
+            if (checkVersion && ((eclccCodeVersion > ACTIVITY_INTERFACE_VERSION) || (eclccCodeVersion < MIN_ACTIVITY_INTERFACE_VERSION)))
+                failv(0, "Workunit was compiled for eclagent interface version %d, this eclagent requires version %d..%d", eclccCodeVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
             if(noRetry && (w->getState() == WUStateFailed))
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
@@ -1854,6 +1857,10 @@ void EclAgent::doProcess()
         {
             MTIME_SECTION(timer, "Process");
             Owned<IEclProcess> process = loadProcess();
+
+            if (checkVersion && (process->getActivityVersion() != eclccCodeVersion))
+                failv(0, "Inconsistent interface versions.  Workunit was created using eclcc for version %u, but the c++ compiler used version %u", eclccCodeVersion, process->getActivityVersion());
+
             PrintLog("Starting process");
             runProcess(process);
             failed = false;

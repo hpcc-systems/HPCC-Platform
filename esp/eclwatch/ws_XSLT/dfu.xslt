@@ -107,11 +107,6 @@
             {
               document.location.href='/FileSpray/DesprayInput?sourceLogicalName='+filename;
             }
-            function showRoxieQueries()
-            {
-              //document.location.href='/WsRoxieQuery/QueriesAction?Type=ListQueries&Cluster='+cluster+'&LogicalName='+filename;
-              document.location.href='/WsSMC/DisabledInThisVersion?form_';
-            }
             var xypos = YAHOO.util.Dom.getXY('mn' + PosId);
             if (oMenu) {
               oMenu.destroy();
@@ -137,15 +132,10 @@
             ]);
             }
 
-            if (roxiecluster != 0) {
-            oMenu.addItems([
-            { text: "ShowQuery", onclick: { fn: showRoxieQueries } }
-            ]);
-            }
-            else {
-            oMenu.addItems([
-            { text: "Despray", onclick: { fn: desprayDFUFile } }
-            ]);
+            if (roxiecluster == 0) {
+                oMenu.addItems([
+                    { text: "Despray", onclick: { fn: desprayDFUFile } }
+                ]);
             }
 
             //showPopup(menu,(window.event ? window.event.screenX : 0),  (window.event ? window.event.screenY : 0));

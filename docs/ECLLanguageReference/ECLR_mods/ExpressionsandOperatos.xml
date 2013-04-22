@@ -80,8 +80,42 @@
       </tgroup>
     </informaltable>
 
-    <para>Division (all three types) by zero (0) results in zero (0)—there is
-    no “divide by zero” error.</para>
+    <para>Division by zero<indexterm><primary>Division by zero</primary></indexterm>
+	defaults to generating a zero result (0), rather than reporting a “divide by zero” error.  
+	This avoids invalid or unexpected data aborting a long job.
+	The default behaviour can be changed using </para>
+	<programlisting>#option ('divideByZero', ...);</programlisting> 
+	<para>The #option can take the following values:
+	</para>
+     <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup align="left" cols="2">
+        <colspec colwidth="194.80pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry>'zero'</entry>
+
+            <entry>Evaluate to 0 - the default behaviour.</entry>
+          </row>
+          <row>
+            <entry>'fail'</entry>
+
+            <entry>Stop and report a division by zero error.</entry>
+          </row>
+          <row>
+            <entry>'nan'</entry>
+
+            <entry>This is only currently supported for real numbers.  Division by zero
+			creates a quiet NaN, which will propogate through any real expressions it is used in.
+			You can use NOT ISVALID(x) to test if the value is a NaN.
+			Integer and decimal division by zero continue to return 0.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
   </sect2>
 
   <sect2 id="Bitwise_Operators">

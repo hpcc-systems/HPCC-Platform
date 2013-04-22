@@ -278,18 +278,19 @@ void checkEclVersionCompatible(Shared<IErrorReceiver> & errors, const char * ecl
         if (extractVersion(major, minor, subminor, eclVersion))
         {
             if (major != LANGUAGE_VERSION_MAJOR)
-                throwError2(HQLERR_VersionMismatch, eclVersion, LANGUAGE_VERSION);
-            if (minor != LANGUAGE_VERSION_MINOR)
             {
-                StringBuffer msg;
-                msg.appendf("Mismatch in minor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
+                VStringBuffer msg("Mismatch in major version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
+                errors->reportWarning(HQLERR_VersionMismatch, msg.str(), NULL, 0, 0, 0);
+            }
+            else if (minor != LANGUAGE_VERSION_MINOR)
+            {
+                VStringBuffer msg("Mismatch in minor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
                 errors->reportWarning(HQLERR_VersionMismatch, msg.str(), NULL, 0, 0, 0);
             }
             else if (subminor != LANGUAGE_VERSION_SUB)
             {
                 //This adds the warning if any other warnings occur.
-                StringBuffer msg;
-                msg.appendf("Mismatch in subminor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
+                VStringBuffer msg("Mismatch in subminor version number (%s v %s)", eclVersion, LANGUAGE_VERSION);
                 Owned<IECLError> warning = createECLWarning(HQLERR_VersionMismatch, msg.str(), NULL, 0, 0);
                 errors.setown(new ErrorInserter(errors, warning));
             }
