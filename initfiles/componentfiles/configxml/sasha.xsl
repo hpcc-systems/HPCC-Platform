@@ -203,6 +203,11 @@
                 <xsl:attribute name="memoryLimit">
                    <xsl:value-of select="@xrefMaxMemory"/>
                 </xsl:attribute>
+                <xsl:if test="string(@suspendCoalescerDuringXref) != ''">
+                 <xsl:attribute name="suspendCoalescerDuringXref">
+                   <xsl:value-of select="@suspendCoalescerDuringXref"/>
+                 </xsl:attribute>
+                </xsl:if>
             </xsl:element>
             <xsl:element name="DfuExpiry">
                 <xsl:attribute name="interval">
