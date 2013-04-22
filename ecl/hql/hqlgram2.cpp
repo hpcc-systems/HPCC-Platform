@@ -8071,7 +8071,7 @@ void HqlGram::checkDistributer(attribute & err, HqlExprArray & args)
             unsigned inputKeyedFields = firstPayloadField(input->queryRecord(), inputPayload ? (unsigned)getIntValue(inputPayload->queryChild(0)) : 1);
             if (numKeyedFields != inputKeyedFields)
                 reportError(ERR_DISTRIBUTED_MISSING, err, "Index and DISTRIBUTE(index) have different numbers of keyed fields");
-            checkRecordTypes(args.item(0).queryRecord(), cur.queryChild(0)->queryRecord(), err, numKeyedFields);
+            checkRecordTypesSimilar(args.item(0).queryRecord(), cur.queryChild(0)->queryRecord(), err, numKeyedFields);
         }
     }
 }
@@ -8118,7 +8118,7 @@ void HqlGram::checkValidPipeRecord(const attribute & errpos, IHqlExpression * re
         checkValidCsvRecord(errpos, record);
 }
 
-int HqlGram::checkRecordTypes(IHqlExpression *left, IHqlExpression *right, attribute &atr, unsigned maxFields)
+int HqlGram::checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const attribute &atr, unsigned maxFields)
 {
     if (recordTypesMatch(left, right)) 
         return 0;
@@ -8187,15 +8187,15 @@ int HqlGram::checkRecordTypes(IHqlExpression *left, IHqlExpression *right, attri
         }
         
         // recursive call to check sub fields.
-        if(lchildrectype && rchildrectype && checkRecordTypes(lfield, rfield, atr) != 0) 
-            return -1;
+        if(lchildrectype && rchildrectype)
+            return checkRecordTypesSimilar(lfield, rfield, atr);
     }
 
     return 0;
 }
 
 
-bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, attribute &atr)
+bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const attribute &atr)
 {
     if (leftExpr->getOperator() != rightExpr->getOperator())
     {
@@ -8274,15 +8274,16 @@ bool HqlGram::checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression 
 }
 
 
-IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, attribute & errpos, bool rightIsRow)
+IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const attribute & errpos, bool rightIsRow)
 {
-    checkRecordTypes(left, right, errpos);
-
     //Need to add a project to make the field names correct, otherwise problems occur if one the left side is optimized away,
     //because that causes the record type and fields to change.
     if (recordTypesMatch(left, right)) 
         return LINK(right);
-    
+
+    if (checkRecordTypesSimilar(left, right, errpos) != 0)
+        return LINK(left); // error conditional - return something compatible with left
+
     HqlExprArray assigns;
     OwnedHqlExpr seq = createActiveSelectorSequence(right, NULL);
     OwnedHqlExpr rightSelect = createSelector(no_left, right, seq);
@@ -8302,14 +8303,53 @@ IHqlExpression * HqlGram::checkEnsureRecordsMatch(IHqlExpression * left, IHqlExp
         return createDataset(no_hqlproject, args);
 }
 
+void HqlGram::ensureMapToRecordsMatch(OwnedHqlExpr & defaultExpr, HqlExprArray & args, const attribute & errpos, bool isRow)
+{
+    //The record of the final result should match the record of the first argument.
+    IHqlExpression * expected = (args.ordinality() != 0) ? &args.item(0) : defaultExpr.get();
+    bool groupingDiffers = false;
+    ForEachItemIn(i, args)
+    {
+        IHqlExpression & mapTo = args.item(i);
+        IHqlExpression * value = mapTo.queryChild(1);
+        if (isGrouped(value) != isGrouped(expected))
+            groupingDiffers = true;
+        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, value, errpos, isRow);
+        if (value != checked)
+        {
+            args.replace(*replaceChild(&mapTo, 1, checked), i);
+            reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "Datasets in list have slightly different records");
+        }
+    }
+
+    if (defaultExpr)
+    {
+        if (isGrouped(defaultExpr) != isGrouped(expected))
+            groupingDiffers = true;
+        OwnedHqlExpr checked = checkEnsureRecordsMatch(expected, defaultExpr, errpos, isRow);
+        if (defaultExpr != checked)
+        {
+            defaultExpr.set(checked);
+            reportWarning(ERR_TYPE_INCOMPATIBLE, errpos.pos, "Default value has a slightly different record");
+        }
+    }
+
+    if (groupingDiffers)
+        reportError(ERR_GROUPING_MISMATCH, errpos, "Branches of the condition have different grouping");
+}
+
 void HqlGram::checkMergeSortOrder(attribute &atr, IHqlExpression *ds1, IHqlExpression *ds2, IHqlExpression * sortorder)
 {
     if (!recordTypesMatch(ds1, ds2)) 
         reportError(ERR_TYPE_INCOMPATIBLE, atr, "Datasets in list must have identical records");
     return;
-    checkRecordTypes(ds1, ds2, atr);
-    // MORE - should check that sort orders match
-    // but tricky because they don't have to apply to the same records...
+}
+
+void HqlGram::checkRecordTypesMatch(IHqlExpression *ds1, IHqlExpression *ds2, const attribute &errpos)
+{
+    if (!recordTypesMatch(ds1, ds2))
+        reportError(ERR_TYPE_INCOMPATIBLE, errpos, "Arguments must have the same record type");
+    return;
 }
 
 IHqlExpression * HqlGram::createScopedSequenceExpr()

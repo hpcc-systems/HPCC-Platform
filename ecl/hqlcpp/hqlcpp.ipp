@@ -715,6 +715,7 @@ struct HqlCppOptions
     bool                removeXpathFromOutput;
     bool                canLinkConstantRows;
     bool                checkAmbiguousRollupCondition;
+    bool                paranoidCheckSelects;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -2018,7 +2019,6 @@ extern bool filterIsTableInvariant(IHqlExpression * expr);
 extern bool mustEvaluateInContext(BuildCtx & ctx, IHqlExpression * expr);
 extern const char * boolToText(bool value);
 extern GraphLocalisation queryActivityLocalisation(IHqlExpression * expr);
-extern void checkDependencyConsistency(WorkflowArray & workflow);
 extern bool isGraphIndependent(IHqlExpression * expr, IHqlExpression * graph);
 extern IHqlExpression * adjustBoundIntegerValues(IHqlExpression * left, IHqlExpression * right, bool subtract);
 extern bool isNullAssign(const CHqlBoundTarget & target, IHqlExpression * expr);

@@ -1569,6 +1569,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.moveUnconditionalActions,"moveUnconditionalActions", false),
         DebugOption(options.paranoidCheckNormalized, "paranoidCheckNormalized", paranoid),
         DebugOption(options.paranoidCheckDependencies, "paranoidCheckDependencies", paranoid),
+        DebugOption(options.paranoidCheckSelects, "paranoidCheckSelects", paranoid),
         DebugOption(options.preventKeyedSplit,"preventKeyedSplit", true),
         DebugOption(options.preventSteppedSplit,"preventSteppedSplit", true),
         DebugOption(options.canGenerateSimpleAction,"canGenerateSimpleAction", true),

@@ -310,6 +310,7 @@ public:
 
 extern HQL_API void checkDependencyConsistency(IHqlExpression * expr);
 extern HQL_API void checkDependencyConsistency(const HqlExprArray & exprs);
+extern HQL_API void checkSelectConsistency(IHqlExpression * expr);
 extern HQL_API bool isUngroup(IHqlExpression * expr);
 extern HQL_API bool containsExpression(IHqlExpression * expr, IHqlExpression * search);
 extern HQL_API bool containsOperator(IHqlExpression * expr, node_operator search);

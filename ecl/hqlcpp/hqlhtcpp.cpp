@@ -17817,16 +17817,9 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
 
 void HqlCppTranslator::checkNormalized(WorkflowArray & workflow)
 {
-    if (options.paranoidCheckDependencies)
-        checkDependencyConsistency(workflow);
-
-    if (options.paranoidCheckNormalized)
+    ForEachItemIn(i, workflow)
     {
-        ForEachItemIn(i, workflow)
-        {
-            OwnedHqlExpr compound = createActionList(workflow.item(i).queryExprs());
-            ::checkNormalized(compound);
-        }
+        checkNormalized(workflow.item(i).queryExprs());
     }
 }
 
@@ -17839,6 +17832,9 @@ void HqlCppTranslator::checkNormalized(IHqlExpression * expr)
     {
         ::checkNormalized(expr);
     }
+
+    if (options.paranoidCheckSelects)
+        checkSelectConsistency(expr);
 }
 
 void HqlCppTranslator::checkNormalized(HqlExprArray & exprs)
@@ -17846,10 +17842,12 @@ void HqlCppTranslator::checkNormalized(HqlExprArray & exprs)
     if (options.paranoidCheckDependencies)
         checkDependencyConsistency(exprs);
 
-    if (options.paranoidCheckNormalized)
+    ForEachItemIn(i, exprs)
     {
-        ForEachItemIn(i, exprs)
+        if (options.paranoidCheckNormalized)
             ::checkNormalized(&exprs.item(i));
+        if (options.paranoidCheckSelects)
+            checkSelectConsistency(&exprs.item(i));
     }
 }
 
@@ -17873,6 +17871,9 @@ void HqlCppTranslator::checkNormalized(BuildCtx & ctx, IHqlExpression * expr)
 
         ::checkNormalized(expr, activeTables);
     }
+
+    if (options.paranoidCheckSelects)
+        checkSelectConsistency(expr);
 }
 
 

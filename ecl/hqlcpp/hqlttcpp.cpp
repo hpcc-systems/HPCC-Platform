@@ -234,12 +234,6 @@ static IHqlExpression * mergeLimitIntoDataset(IHqlExpression * dataset, IHqlExpr
     return addAttrOwnToDataset(dataset, createAttribute(limitAtom, LINK(limit->queryChild(1)), LINK(limit->queryChild(2))));
 }
 
-void checkDependencyConsistency(WorkflowArray & workflow)
-{
-    ForEachItemIn(icheck, workflow)
-        checkDependencyConsistency(workflow.item(icheck).queryExprs());
-}
-
 //---------------------------------------------------------------------------
 
 static bool isOptionTooLate(const char * name)

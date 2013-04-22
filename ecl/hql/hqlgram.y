@@ -7223,7 +7223,7 @@ simpleDictionary
                             ForEachItemIn(idx, args)
                             {
                                 IHqlExpression * cur = args.item(idx).queryChild(1);
-                                parser->checkRecordTypes(cur, elseDict, $5);
+                                parser->checkRecordTypesMatch(cur, elseDict, $5);
                             }
                             args.append(*elseDict);
                             $$.setExpr(::createDictionary(no_map, args));
@@ -7241,7 +7241,7 @@ simpleDictionary
                             ForEachItemIn(idx, args)
                             {
                                 IHqlExpression * cur = args.item(idx).queryChild(1);
-                                parser->checkRecordTypes(cur, elseDict, $1);
+                                parser->checkRecordTypesMatch(cur, elseDict, $1);
                             }
                             args.append(*elseDict);
                             $$.setExpr(::createDictionary(no_map, args));
@@ -7257,7 +7257,7 @@ simpleDictionary
                             ForEachItemIn(idx, args)
                             {
                                 IHqlExpression * cur = args.item(idx).queryChild(1);
-                                parser->checkRecordTypes(cur, elseDict, $8);
+                                parser->checkRecordTypesMatch(cur, elseDict, $8);
                             }
                             args.add(*$3.getExpr(),0);
                             args.append(*elseDict);
@@ -7278,7 +7278,7 @@ simpleDictionary
                             ForEachItemIn(idx, args)
                             {
                                 IHqlExpression * cur = args.item(idx).queryChild(1);
-                                parser->checkRecordTypes(cur, elseDict, $6);
+                                parser->checkRecordTypesMatch(cur, elseDict, $6);
                             }
                             args.add(*$3.getExpr(),0);
                             args.append(*elseDict);
@@ -7324,7 +7324,7 @@ simpleDictionary
                                 {
                                     if (compareDict)
                                     {
-                                        parser->checkRecordTypes(cur, compareDict, $5);
+                                        parser->checkRecordTypesMatch(cur, compareDict, $5);
                                     }
                                     else
                                         compareDict = cur;
@@ -7409,7 +7409,7 @@ dataSet
                         {
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $3.getExpr();
-                            parser->checkRecordTypes(left, right, $3);
+                            parser->checkRecordTypesSimilar(left, right, $3);
 
                             OwnedHqlExpr seq = parser->createActiveSelectorSequence(left, right);
                             OwnedHqlExpr leftSelect = createSelector(no_left, left, seq);
@@ -7425,7 +7425,7 @@ dataSet
                         {
                             OwnedHqlExpr left = $1.getExpr();
                             OwnedHqlExpr right = $3.getExpr();
-                            parser->checkRecordTypes(left, right, $3);
+                            parser->checkRecordTypesSimilar(left, right, $3);
 
                             OwnedHqlExpr seq = parser->createActiveSelectorSequence(left, right);
                             OwnedHqlExpr leftSelect = createSelector(no_left, left, seq);
@@ -8700,19 +8700,10 @@ simpleDataSet
     | MAP '(' mapDatasetSpec ',' dataSet ')'
                         {
                             HqlExprArray args;
-                            IHqlExpression * elseDs = $5.getExpr();
+                            OwnedHqlExpr elseExpr = $5.getExpr();
                             $3.unwindCommaList(args);
-                            bool groupingDiffers = false;
-                            ForEachItemIn(idx, args)
-                            {
-                                IHqlExpression * cur = args.item(idx).queryChild(1);
-                                if (isGrouped(cur) != isGrouped(elseDs))
-                                    groupingDiffers = true;
-                                parser->checkRecordTypes(cur, elseDs, $5);
-                            }
-                            if (groupingDiffers)
-                                parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
-                            args.append(*elseDs);
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $5, false);
+                            args.append(*elseExpr.getClear());
                             $$.setExpr(::createDataset(no_map, args));
                             $$.setPosition($1);
                         }
@@ -8720,22 +8711,14 @@ simpleDataSet
                         {
                             HqlExprArray args;
                             $3.unwindCommaList(args);
-                            IHqlExpression * elseDs;
+                            OwnedHqlExpr elseExpr;
                             if (args.ordinality())
-                                elseDs = createNullExpr(&args.item(0));
+                                elseExpr.setown(createNullExpr(&args.item(0)));
                             else
-                                elseDs = createDataset(no_null, LINK(queryNullRecord()));
-                            bool groupingDiffers = false;
-                            ForEachItemIn(idx, args)
-                            {
-                                IHqlExpression * cur = args.item(idx).queryChild(1);
-                                if (isGrouped(cur) != isGrouped(elseDs))
-                                    groupingDiffers = true;
-                                parser->checkRecordTypes(cur, elseDs, $1);
-                            }
-                            if (groupingDiffers)
-                                parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
-                            args.append(*elseDs);
+                                elseExpr.setown(createDataset(no_null, LINK(queryNullRecord())));
+
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $3, false);
+                            args.append(*elseExpr.getClear());
                             $$.setExpr(::createDataset(no_map, args));
                             $$.setPosition($1);
                         }
@@ -8743,21 +8726,14 @@ simpleDataSet
                         {
                             parser->normalizeExpression($3, type_scalar, false);
                             HqlExprArray args;
-                            IHqlExpression * elseDs = $8.getExpr();
+                            OwnedHqlExpr elseExpr = $8.getExpr();
                             parser->endList(args);
                             parser->checkCaseForDuplicates(args, $6);
-                            bool groupingDiffers = false;
-                            ForEachItemIn(idx, args)
-                            {
-                                IHqlExpression * cur = args.item(idx).queryChild(1);
-                                if (isGrouped(cur) != isGrouped(elseDs))
-                                    groupingDiffers = true;
-                                parser->checkRecordTypes(cur, elseDs, $8);
-                            }
-                            if (groupingDiffers)
-                                parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
+
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $8, false);
+
                             args.add(*$3.getExpr(),0);
-                            args.append(*elseDs);
+                            args.append(*elseExpr.getClear());
                             $$.setExpr(::createDataset(no_case, args));
                             $$.setPosition($1);
                         }
@@ -8766,24 +8742,17 @@ simpleDataSet
                             parser->normalizeExpression($3, type_scalar, false);
                             HqlExprArray args;
                             parser->endList(args);
-                            IHqlExpression * elseDs;
+                            OwnedHqlExpr elseDs;
                             if (args.ordinality())
-                                elseDs = createNullExpr(&args.item(0));
+                                elseDs.setown(createNullExpr(&args.item(0)));
                             else
-                                elseDs = createDataset(no_null, LINK(queryNullRecord()));
+                                elseDs.setown(createDataset(no_null, LINK(queryNullRecord())));
                             parser->checkCaseForDuplicates(args, $6);
-                            bool groupingDiffers = false;
-                            ForEachItemIn(idx, args)
-                            {
-                                IHqlExpression * cur = args.item(idx).queryChild(1);
-                                if (isGrouped(cur) != isGrouped(elseDs))
-                                    groupingDiffers = true;
-                                parser->checkRecordTypes(cur, elseDs, $6);
-                            }
-                            if (groupingDiffers)
-                                parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
+
+                            parser->ensureMapToRecordsMatch(elseDs, args, $6, false);
+
                             args.add(*$3.getExpr(),0);
-                            args.append(*elseDs);
+                            args.append(*elseDs.getClear());
                             $$.setExpr(::createDataset(no_case, args));
                             $$.setPosition($1);
                         }
@@ -8817,7 +8786,9 @@ simpleDataSet
                                     {
                                         if (isGrouped(cur) != isGrouped(compareDs))
                                             parser->reportError(ERR_GROUPING_MISMATCH, $1, "Branches of the condition have different grouping");
-                                        parser->checkRecordTypes(cur, compareDs, $5);
+                                        OwnedHqlExpr mapped = parser->checkEnsureRecordsMatch(compareDs, cur, $5, false);
+                                        if (mapped != cur)
+                                            args.replace(*mapped.getClear(), idx);
                                     }
                                     else
                                         compareDs = cur;
@@ -9069,14 +9040,12 @@ simpleDataSet
     | MAP '(' mapDatarowSpec ',' dataRow ')'
                         {
                             HqlExprArray args;
-                            IHqlExpression * elseDs = $5.getExpr();
+                            OwnedHqlExpr elseExpr = $5.getExpr();
                             $3.unwindCommaList(args);
-                            ForEachItemIn(idx, args)
-                            {
-                                IHqlExpression * cur = args.item(idx).queryChild(1);
-                                parser->checkRecordTypes(cur, elseDs, $5);
-                            }
-                            args.append(*elseDs);
+
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $5, true);
+
+                            args.append(*elseExpr.getClear());
                             $$.setExpr(::createRow(no_map, args));
                             $$.setPosition($1);
                         }
@@ -9084,16 +9053,14 @@ simpleDataSet
                         {
                             parser->normalizeExpression($3, type_scalar, false);
                             HqlExprArray args;
-                            IHqlExpression * elseDs = $8.getExpr();
+                            OwnedHqlExpr elseExpr = $8.getExpr();
                             parser->endList(args);
                             parser->checkCaseForDuplicates(args, $6);
-                            ForEachItemIn(idx, args)
-                            {
-                                IHqlExpression * cur = args.item(idx).queryChild(1);
-                                parser->checkRecordTypes(cur, elseDs, $8);
-                            }
+
+                            parser->ensureMapToRecordsMatch(elseExpr, args, $8, true);
+
                             args.add(*$3.getExpr(),0);
-                            args.append(*elseDs);
+                            args.append(*elseExpr.getClear());
                             $$.setExpr(::createRow(no_case, args), $1);
                         }
     | WHEN '(' dataSet ',' action sideEffectOptions ')'
@@ -11291,7 +11258,7 @@ mapDatasetItem
     : booleanExpr GOESTO dataSet
                         {
                             IHqlExpression *e3 = $3.getExpr();
-                            $$.setExpr(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
+                            $$.setExpr(createDataset(no_mapto, $1.getExpr(), e3));
                             $$.setPosition($3);
                         }
     ;
@@ -11309,7 +11276,7 @@ mapDictionaryItem
     : booleanExpr GOESTO dictionary
                         {
                             IHqlExpression *e3 = $3.getExpr();
-                            $$.setExpr(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
+                            $$.setExpr(createDictionary(no_mapto, $1.getExpr(), e3));
                             $$.setPosition($3);
                         }
     ;
@@ -11325,7 +11292,7 @@ caseDatasetItem
                             parser->normalizeExpression($1);
                             parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
-                            parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
+                            parser->addListElement(createDataset(no_mapto, $1.getExpr(), e3));
                             $$.clear();
                             $$.setPosition($3);
                         }
@@ -11342,7 +11309,7 @@ caseDictionaryItem
                             parser->normalizeExpression($1);
                             parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
-                            parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
+                            parser->addListElement(createDictionary(no_mapto, $1.getExpr(), e3));
                             $$.clear();
                             $$.setPosition($3);
                         }
@@ -11361,7 +11328,7 @@ mapDatarowItem
     : booleanExpr GOESTO dataRow
                         {
                             IHqlExpression *e3 = $3.getExpr();
-                            $$.setExpr(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
+                            $$.setExpr(createRow(no_mapto, $1.getExpr(), e3));
                             $$.setPosition($3);
                         }
     ;
@@ -11377,7 +11344,7 @@ caseDatarowItem
                             parser->normalizeExpression($1);
                             parser->applyDefaultPromotions($1, true);
                             IHqlExpression *e3 = $3.getExpr();
-                            parser->addListElement(createValue(no_mapto, e3->getType(), $1.getExpr(), e3));
+                            parser->addListElement(createRow(no_mapto, $1.getExpr(), e3));
                             $$.clear();
                             $$.setPosition($3);
                         }
