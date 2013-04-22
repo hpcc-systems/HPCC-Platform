@@ -3172,6 +3172,9 @@ unsigned getMaxRecordSize(IHqlExpression * record, unsigned defaultMaxRecordSize
         OwnedHqlExpr folded = foldHqlExpression(value);
         assertex(folded);
         maxSize = (unsigned)getIntValue(folded);
+        unsigned minSize = getIntValue(minSizeExpr);
+        if (maxSize < minSize)
+            maxSize = minSize;
         usedDefault = true;
     }
     else
