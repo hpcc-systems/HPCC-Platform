@@ -894,7 +894,8 @@ int main(int argc, char **argv)
                             break;
                         fileContents.append(buffer, 0, bytes);
                     }
-                    fclose(in);
+                    if (in != stdin)
+                        fclose(in);
                     ret = sendQuery(ip, socketPort, fileContents.toCharArray());
                 }
                 else
