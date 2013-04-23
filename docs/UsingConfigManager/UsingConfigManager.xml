@@ -1519,7 +1519,8 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
                     <row>
                       <entry><emphasis>traceLevel</emphasis></entry>
 
-                      <entry>The value ***</entry>
+                      <entry>The trace level value determines the amount of
+                      detail to write to log files.</entry>
                     </row>
                   </tbody>
                 </tgroup>
@@ -1529,7 +1530,11 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
           <sect4>
             <title>EclCC Server Process Options</title>
 
-            <para>To add a custom option, rt-click and select add.</para>
+            <para>To add a custom option, rt-click and select add. These
+            options are passed to the eclcc compiler. </para>
+
+            <para>See the ECL Compiler chapter in the Client Tools manual for
+            details.</para>
 
             <!--This feature allows the user to configure any options pertinent to the Ecl CC Server Process -->
 
