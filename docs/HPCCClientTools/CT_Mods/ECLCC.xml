@@ -118,15 +118,16 @@
       <title><emphasis>Using the ECL Compiler as a Stand Alone option
       </emphasis></title>
 
-      <para>The ECL Compiler is normally used through the ECL IDE, however,
-      you can use the ECL Compiler in a stand alone manner, to create stand
-      alone programs, or workunits. The ECL Compiler can read ECL code from
-      standard input, or can read it from a specified input file. It compiles
-      the code into an executable program (Such as an ‘EXE’ file in Windows).
-      The resulting program, when executed, runs the job, writing any output
-      to standard output. Alternatively, you could redirect the output to a
-      file or pipe into another process. With the ECL Compiler, you do not
-      need a supercomputer cluster to develop and run ECL code.</para>
+      <para>The ECL Compiler is normally used through the ECL IDE or Eclipse
+      using the ECL plug-in for Eclipse, however, you can use the ECL Compiler
+      in a stand alone manner, to create stand alone programs, or workunits.
+      The ECL Compiler can read ECL code from standard input, or can read it
+      from a specified input file. It compiles the code into an executable
+      program (Such as an ‘EXE’ file in Windows). The resulting program, when
+      executed, runs the job, writing any output to standard output.
+      Alternatively, you could redirect the output to a file or pipe into
+      another process. With the ECL Compiler, you do not need a supercomputer
+      cluster to develop and run ECL code.</para>
 
       <para>Running the ECL Compiler without any options (or specifying –help)
       will display the syntax.</para>
@@ -177,7 +178,8 @@
               <row>
                 <entry>-foption[=value]</entry>
 
-                <entry>Set an ecl option (#option)</entry>
+                <entry>Set an ecl option. See #OPTION in the <emphasis>ECL
+                Language Reference</emphasis> for details.</entry>
               </row>
 
               <row>
@@ -253,6 +255,18 @@
               </row>
 
               <row>
+                <entry>-M</entry>
+
+                <entry>Output meta information for the ecl files</entry>
+              </row>
+
+              <row>
+                <entry>-Md</entry>
+
+                <entry>Output dependency information</entry>
+              </row>
+
+              <row>
                 <entry>-q</entry>
 
                 <entry>Save ECL query text as part of workunit</entry>
@@ -266,6 +280,8 @@
             </tbody>
           </tgroup>
         </informaltable></para>
+
+      <?hard-pagebreak ?>
 
       <para></para>
 
@@ -287,9 +303,15 @@
               </row>
 
               <row>
+                <entry>-c</entry>
+
+                <entry>Compile only (don't link)</entry>
+              </row>
+
+              <row>
                 <entry>-g</entry>
 
-                <entry>Set an ecl option (#option)</entry>
+                <entry>Enable debug symbols in generated code</entry>
               </row>
 
               <row>
@@ -299,10 +321,35 @@
               </row>
 
               <row>
+                <entry>-Wl,xx</entry>
+
+                <entry>Pass option xx to the linker</entry>
+              </row>
+
+              <row>
+                <entry>-Wa,xx</entry>
+
+                <entry>Pass straight through to c++ compiler</entry>
+              </row>
+
+              <row>
+                <entry>-Wp,xx</entry>
+
+                <entry>Pass straight through to c++ compiler</entry>
+              </row>
+
+              <row>
+                <entry>-save-cpps</entry>
+
+                <entry>Do not delete generated c++ files (implied if
+                -g)</entry>
+              </row>
+
+              <row>
                 <entry>-shared</entry>
 
                 <entry>Generate workunit shared object instead of a
-                stand-alone exe</entry>
+                stand-alone executable</entry>
               </row>
             </tbody>
           </tgroup>
@@ -322,6 +369,18 @@
 
             <tbody>
               <row>
+                <entry>--allow=str</entry>
+
+                <entry>Allow use of named feature. (e.g., cpp, pipe,
+                all)<para></para><para><emphasis role="bold">cpp</emphasis>:
+                Allow embedded code within ECL (e.g., c++, JAVA, Javascript,
+                Python, R, etc.)</para><para><emphasis
+                role="bold">pipe</emphasis>: Allow the PIPE command to send
+                data to an external program.</para><para><emphasis
+                role="bold">all</emphasis>: Allow all features</para></entry>
+              </row>
+
+              <row>
                 <entry>-b</entry>
 
                 <entry>Batch mode. Each source file is processed in turn.
@@ -329,9 +388,28 @@
               </row>
 
               <row>
-                <entry>-c</entry>
+                <entry>-checkVersion</entry>
 
-                <entry>compile only (don't link)</entry>
+                <entry>Enable/disable ecl version checking from
+                archives</entry>
+              </row>
+
+              <row>
+                <entry>--deny=all</entry>
+
+                <entry>Disallow use of all named features not specifically
+                allowed using --allow</entry>
+              </row>
+
+              <row>
+                <entry>--deny=str</entry>
+
+                <entry>Disallow use of named feature<para><emphasis
+                role="bold">cpp</emphasis>: Disallow embedded code within ECL
+                (e.g., c++, JAVA, Javascript, Python, R,
+                etc.)</para><para><emphasis role="bold">pipe</emphasis>:
+                Disallow the PIPE command to send data to an external
+                program.</para></entry>
               </row>
 
               <row>
@@ -347,15 +425,40 @@
               </row>
 
               <row>
+                <entry>--internal</entry>
+
+                <entry>Run internal tests</entry>
+              </row>
+
+              <row>
+                <entry>--legacy</entry>
+
+                <entry>Use legacy import semantics (deprecated)</entry>
+              </row>
+
+              <row>
                 <entry>--logfile <emphasis>&lt;file&gt;</emphasis></entry>
 
                 <entry>Write log to specified file</entry>
               </row>
 
               <row>
+                <entry>--logdetail=<emphasis>n</emphasis></entry>
+
+                <entry>Set the level of detail in the log file</entry>
+              </row>
+
+              <row>
                 <entry>-specs <emphasis>&lt;file&gt;</emphasis></entry>
 
                 <entry>Read eclcc configuration from specified file</entry>
+              </row>
+
+              <row>
+                <entry>-split <emphasis>m:n</emphasis></entry>
+
+                <entry>Process a subset m of n input files (only with -b
+                option)</entry>
               </row>
 
               <row>
@@ -369,6 +472,12 @@
                 <entry>--version</entry>
 
                 <entry>Output version information</entry>
+              </row>
+
+              <row>
+                <entry>--timings</entry>
+
+                <entry>Output additional timing information</entry>
               </row>
             </tbody>
           </tgroup>
