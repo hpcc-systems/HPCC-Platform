@@ -457,7 +457,7 @@ void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
         finalRecord.setown(getPackedRecord(finalRecord));
 }
 
-void UsedFieldSet::gatherExpandSelectsUsed(HqlExprArray * selfSelects, SelectUsedArray * parentSelects, IHqlExpression * selector, IHqlExpression * source)
+void UsedFieldSet::gatherExpandSelectsUsed(HqlExprArray * selfSelects, HqlExprArray * parentSelects, IHqlExpression * selector, IHqlExpression * source)
 {
     assertex(selfSelects ? selector != NULL : true);
     for (unsigned i1 = maxGathered; i1 < fields.ordinality(); i1++)
@@ -507,7 +507,7 @@ inline bool isSelector(IHqlExpression * expr)
     return (expr->getOperator() == no_select) && !isNewSelector(expr);
 }
 
-void UsedFieldSet::gatherTransformValuesUsed(HqlExprArray * selfSelects, SelectUsedArray * parentSelects, HqlExprArray * values, IHqlExpression * selector, IHqlExpression * transform)
+void UsedFieldSet::gatherTransformValuesUsed(HqlExprArray * selfSelects, HqlExprArray * parentSelects, HqlExprArray * values, IHqlExpression * selector, IHqlExpression * transform)
 {
     for (unsigned i = maxGathered; i < fields.ordinality(); i++)
     {
@@ -2213,6 +2213,15 @@ void ImplicitProjectTransformer::processSelects(ComplexImplicitProjectInfo * ext
     }
 }
 
+void ImplicitProjectTransformer::processSelects(ComplexImplicitProjectInfo * extra, HqlExprArray const & selectsUsed, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
+{
+    ForEachItemIn(i2, selectsUsed)
+    {
+        IHqlExpression * curSelect = &selectsUsed.item(i2);
+        processSelect(extra, curSelect, ds, leftSelect, rightSelect);
+    }
+}
+
 
 void ImplicitProjectTransformer::processTransform(ComplexImplicitProjectInfo * extra, IHqlExpression * transform, IHqlExpression * dsSelect, IHqlExpression * leftSelect, IHqlExpression * rightSelect)
 {
@@ -2301,7 +2310,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                 extra->addAllOutputs();
 
             //MORE: querySelectsUsedForField() could be optimized by creating a map first, but it is only ~1% of time, so not really worth it.
-            SelectUsedArray parentSelects;
+            HqlExprArray parentSelects;
             HqlExprArray values;
             extra->outputFields.gatherTransformValuesUsed(NULL, &parentSelects, &values, NULL, transform);
             processSelects(extra, parentSelects, dsSelect, leftSelect, rightSelect);
@@ -2476,7 +2485,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
                 //NB: outputfields can extend...
                 while (!extra->outputFields.allGathered())
                 {
-                    SelectUsedArray parentSelects;
+                    HqlExprArray parentSelects;
                     HqlExprArray values;
                     HqlExprArray selfSelects;
                     extra->outputFields.gatherTransformValuesUsed(&selfSelects, &parentSelects, &values, dsSelect, transform);
@@ -2544,7 +2553,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
 
             while (!extra->outputFields.allGathered())
             {
-                SelectUsedArray parentSelects;
+                HqlExprArray parentSelects;
                 HqlExprArray values;
                 HqlExprArray selfSelects;
                 extra->outputFields.gatherTransformValuesUsed(&selfSelects, &parentSelects, &values, left, transform);

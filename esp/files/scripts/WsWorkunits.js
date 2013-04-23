@@ -40,7 +40,26 @@ define([
         },
 
         WUPublishWorkunit: function (params) {
-            return ESPRequest.send("WsWorkunits", "WUPublishWorkunit", params);
+            return ESPRequest.send("WsWorkunits", "WUPublishWorkunit", params).then(function (response) {
+                if (lang.exists("WUPublishWorkunitResponse", response)) {
+                    if (response.WUPublishWorkunitResponse.ErrorMesssage) {
+                        dojo.publish("hpcc/brToaster", {
+                            message: "<h4>Publish " + response.WUPublishWorkunitResponse.Wuid + "</h4>" + "<p>" + response.WUPublishWorkunitResponse.ErrorMesssage + "</p>",
+                            type: "error",
+                            duration: -1
+                        });
+                    } else {
+                        dojo.publish("hpcc/brToaster", {
+                            message: "<h4>Publish " + response.WUPublishWorkunitResponse.Wuid + "</h4>" + "<p><ul>" +
+                                "<li>Query ID:  " + response.WUPublishWorkunitResponse.QueryId + "</li>" +
+                                "<li>Query Name:  " + response.WUPublishWorkunitResponse.QueryName + "</li>" +
+                                "<li>Query Set:  " + response.WUPublishWorkunitResponse.QuerySet + "</li>" +
+                                "</ul></p>",
+                            type: "message"
+                        });
+                    }
+                }
+            });
         },
 
         WUQuery: function (params) {

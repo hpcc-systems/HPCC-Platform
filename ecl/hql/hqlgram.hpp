@@ -655,9 +655,11 @@ public:
 
     void enterType(const attribute &errpos, bool isParameteried);
     void leaveType(const YYSTYPE & errpos);
-    int checkRecordTypes(IHqlExpression *left, IHqlExpression *right, attribute &atr, unsigned maxFields = (unsigned)-1);
-    bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, attribute &atr);
-    IHqlExpression * checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, attribute & errpos, bool rightIsRow);
+    void checkRecordTypesMatch(IHqlExpression *ds1, IHqlExpression *ds2, const attribute & errpos);
+    int checkRecordTypesSimilar(IHqlExpression *left, IHqlExpression *right, const attribute &atr, unsigned maxFields = (unsigned)-1);
+    bool checkRecordCreateTransform(HqlExprArray & assigns, IHqlExpression *leftExpr, IHqlExpression *leftSelect, IHqlExpression *rightExpr, IHqlExpression *rightSelect, const attribute &atr);
+    IHqlExpression * checkEnsureRecordsMatch(IHqlExpression * left, IHqlExpression * right, const attribute & errpos, bool rightIsRow);
+    void ensureMapToRecordsMatch(OwnedHqlExpr & recordExpr, HqlExprArray & args, const attribute & errpos, bool isRow);
     void checkRecordIsValid(const attribute &atr, IHqlExpression *record);
     void checkValidRecordMode(IHqlExpression * dataset, attribute & atr, attribute & modeatr);
     void checkValidCsvRecord(const attribute & errpos, IHqlExpression * record);
@@ -965,7 +967,7 @@ protected:
     void transferOptions(attribute & filenameAttr, attribute & optionsAttr);
     IHqlExpression * extractTransformFromExtra(SharedHqlExpr & extra);
     void expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHqlSimpleScope * scope, ITypeInfo * & lastFieldType, const attribute & errpos);
-    void mergeDictionaryPayload(SharedHqlExpr & record, SharedHqlExpr & payload, const attribute & errpos);
+    void mergeDictionaryPayload(OwnedHqlExpr & record, IHqlExpression * payload, const attribute & errpos);
     void modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & payload, SharedHqlExpr & extra, const attribute & errpos);
 
     bool haveAssignedToChildren(IHqlExpression * select);

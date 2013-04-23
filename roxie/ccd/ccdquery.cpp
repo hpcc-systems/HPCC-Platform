@@ -1341,6 +1341,25 @@ public:
     }
 };
 
+static void checkWorkunitVersionConsistency(const IQueryDll *dll)
+{
+    assertex(dll->queryWorkUnit());
+    unsigned wuVersion = dll->queryWorkUnit()->getCodeVersion();
+    if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
+        throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+
+    EclProcessFactory processFactory = (EclProcessFactory) dll->queryDll()->getEntry("createProcess");
+    if (processFactory)
+    {
+        Owned<IEclProcess> process = processFactory();
+        assertex(process);
+        if (process->getActivityVersion() != wuVersion)
+            throw MakeStringException(ROXIE_MISMATCH, "Inconsistent interface versions.  Workunit was created using eclcc for version %u, but the c++ compiler used version %u", wuVersion, process->getActivityVersion());
+    }
+    else
+        throw MakeStringException(ROXIE_MISMATCH, "Workunit did not export createProcess function");
+}
+
 extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *dll, const IHpccPackage &package, const IPropertyTree *stateInfo)
 {
     CriticalBlock b(CQueryFactory::queryCreateLock);
@@ -1351,11 +1370,8 @@ extern IQueryFactory *createServerQueryFactory(const char *id, const IQueryDll *
         ::Release(dll);
         return cached;
     }
+    checkWorkunitVersionConsistency(dll);
     Owned<ISharedOnceContext> sharedOnceContext;
-    assertex(dll->queryWorkUnit());
-    unsigned wuVersion = dll->queryWorkUnit()->getCodeVersion();
-    if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
-        throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
     IPropertyTree *workflow = dll->queryWorkUnit()->queryWorkflowTree();
     if (workflow && workflow->hasProp("Item[@mode='once']"))
         sharedOnceContext.setown(new CSharedOnceContext);
@@ -1614,10 +1630,7 @@ IQueryFactory *createSlaveQueryFactory(const char *id, const IQueryDll *dll, con
         ::Release(dll);
         return cached;
     }
-    assertex(dll->queryWorkUnit());
-    unsigned wuVersion = dll->queryWorkUnit()->getCodeVersion();
-    if (wuVersion > ACTIVITY_INTERFACE_VERSION || wuVersion < MIN_ACTIVITY_INTERFACE_VERSION)
-        throw MakeStringException(ROXIE_MISMATCH, "Workunit was compiled for eclhelper interface version %d, this roxie requires version %d..%d", wuVersion, MIN_ACTIVITY_INTERFACE_VERSION, ACTIVITY_INTERFACE_VERSION);
+    checkWorkunitVersionConsistency(dll);
     Owned<IQueryFactory> serverFactory = createServerQueryFactory(id, LINK(dll), package, stateInfo); // Should always find a cached one
     Owned<CSlaveQueryFactory> newFactory = new CSlaveQueryFactory(id, dll, dynamic_cast<const IRoxiePackage&>(package), hashValue, channel, serverFactory->querySharedOnceContext());
     newFactory->load(stateInfo);

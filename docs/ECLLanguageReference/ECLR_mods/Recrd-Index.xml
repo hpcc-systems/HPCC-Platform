@@ -37,7 +37,7 @@
   INDEX(</emphasis><emphasis>index,newindexfile</emphasis><emphasis
   role="bold">);</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -69,9 +69,9 @@
           <emphasis>baserecset</emphasis>. Field names and types must match
           the <emphasis>baserecset</emphasis> fields (REAL and DECIMAL type
           fields are not supported). This may also contain additional fields
-          not present in the <emphasis>baserecset</emphasis>(computed fields).
-          If omitted, all fields in the <emphasis>baserecset</emphasis> are
-          used.</entry>
+          not present in the <emphasis>baserecset</emphasis> (computed
+          fields). If omitted, all fields in the
+          <emphasis>baserecset</emphasis> are used.</entry>
         </row>
 
         <row>
@@ -82,10 +82,13 @@
           <emphasis>baserecset</emphasis> is in the structure, it specifies
           “all other fields not already named in the <emphasis>keys</emphasis>
           parameter.” This may contain fields not present in the
-          <emphasis>baserecordset</emphasis>(computed fields). The
+          <emphasis>baserecordset</emphasis> (computed fields). The
           <emphasis>payload</emphasis> fields do not take up space in the
           non-leaf nodes of the index and cannot be referenced in a KEYED()
-          filter clause.</entry>
+          filter clause. Any field with the {BLOB} modifier (to allow more
+          than 32K of data per index entry) is stored within the
+          <emphasis>indexfile</emphasis>, but not with the rest of the record;
+          accessing the BLOB data requires an additional seek.</entry>
         </row>
 
         <row>
@@ -220,16 +223,21 @@ Bld := BUILDINDEX(AlphaInStateCity);</programlisting>
     <title>Payload INDEX</title>
 
     <para>This form defines an index file containing extra payload fields in
-    addition to the keys. This form is used primarily by “half-key” JOIN
-    operations to eliminate the need to directly access the
-    <emphasis>baserecset</emphasis>, thus increasing performance over the
-    “full-keyed” version of the same operation (done with the KEYED option on
-    the JOIN). By default, payload fields are sorted during the BUILD
-    action<indexterm>
+    addition to the keys. The payload may contain fields with the {BLOB}
+    modifier to allow more than 32K of data per index entry. These BLOB fields
+    are stored within the <emphasis>indexfile</emphasis>, but not with the
+    rest of the record; accessing the BLOB data requires an additional
+    seek.</para>
+
+    <para>This form is used primarily by “half-key” JOIN operations to
+    eliminate the need to directly access the <emphasis>baserecset</emphasis>,
+    thus increasing performance over the “full-keyed” version of the same
+    operation (done with the KEYED option on the JOIN). By default, payload
+    fields are not sorted during the BUILD action<indexterm>
         <primary>BUILD action</primary>
       </indexterm> to minimize space on the leaf nodes of the key. This
-    sorting can be controlled by using <emphasis>sortIndexPayload</emphasis>
-    in a #OPTION statement.</para>
+    sorting behavior can be controlled by using
+    <emphasis>sortIndexPayload</emphasis> in a #OPTION statement.</para>
 
     <para>Example:</para>
 

@@ -2007,6 +2007,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
         else
             sortorder[0] = WUSFwuid;
 
+        sortorder[0] = (WUSortField) (sortorder[0] | WUSFnocase);
         bool descending = req.getDescending();
         if (descending)
             sortorder[0] = (WUSortField) (sortorder[0] | WUSFreverse);

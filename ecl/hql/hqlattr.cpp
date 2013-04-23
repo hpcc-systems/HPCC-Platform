@@ -1255,7 +1255,7 @@ ITypeInfo * getSerializedForm(ITypeInfo * type, _ATOM variation)
             IHqlExpression * serializedRecord = querySerializedForm(record, variation);
             if (record == serializedRecord)
                 return LINK(type);
-            return cloneModifiers(type, serializedRecord->getType());
+            return cloneModifiers(type, serializedRecord->queryType());
         }
     case type_row:
     case type_transform:
@@ -3172,6 +3172,9 @@ unsigned getMaxRecordSize(IHqlExpression * record, unsigned defaultMaxRecordSize
         OwnedHqlExpr folded = foldHqlExpression(value);
         assertex(folded);
         maxSize = (unsigned)getIntValue(folded);
+        unsigned minSize = getIntValue(minSizeExpr);
+        if (maxSize < minSize)
+            maxSize = minSize;
         usedDefault = true;
     }
     else

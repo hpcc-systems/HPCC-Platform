@@ -13,7 +13,6 @@ d := nofold(DATASET(
    {1, [{'Richard' => 100}]},
    {1, [{'Richard' => 100}]}
   ], { unsigned top, DICTIONARY({STRING8 name => UNSIGNED iq}) nest}));
-//d := nofold(DATASET([{1, [{'Richard' , 50}]}, {1, [{'Richard' , 100}]}], { unsigned top, DATASET({STRING8 name , UNSIGNED iq}) nest}));
 
 d t(d L, d R) := TRANSFORM
   SELF.nest := L.nest + R.nest;

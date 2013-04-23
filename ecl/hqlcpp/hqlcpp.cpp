@@ -1571,6 +1571,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.moveUnconditionalActions,"moveUnconditionalActions", false),
         DebugOption(options.paranoidCheckNormalized, "paranoidCheckNormalized", paranoid),
         DebugOption(options.paranoidCheckDependencies, "paranoidCheckDependencies", paranoid),
+        DebugOption(options.paranoidCheckSelects, "paranoidCheckSelects", paranoid),
         DebugOption(options.preventKeyedSplit,"preventKeyedSplit", true),
         DebugOption(options.preventSteppedSplit,"preventSteppedSplit", true),
         DebugOption(options.canGenerateSimpleAction,"canGenerateSimpleAction", true),
@@ -7625,7 +7626,7 @@ void HqlCppTranslator::doBuildExprNot(BuildCtx & ctx, IHqlExpression * expr, CHq
     assertex(expr->queryChild(0)->isBoolean());
     CHqlBoundExpr bound;
     buildExpr(ctx, expr->queryChild(0), bound);
-    tgt.expr.set(getInverse(bound.expr));
+    tgt.expr.setown(getInverse(bound.expr));
 }
 
 

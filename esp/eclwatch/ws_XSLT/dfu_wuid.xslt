@@ -271,10 +271,10 @@
         <xsl:apply-templates select="RowTag"/>
         <xsl:apply-templates select="SourceNumParts"/>
         <xsl:apply-templates select="SourceDirectory"/>
-        <xsl:apply-templates select="SourceSeparators"/>
-        <xsl:apply-templates select="SourceEscape"/>
-        <xsl:apply-templates select="SourceTerminators"/>
-        <xsl:apply-templates select="SourceQuote"/>
+        <xsl:apply-templates select="SourceCsvSeparate"/>
+        <xsl:apply-templates select="SourceCsvEscape"/>
+        <xsl:apply-templates select="SourceCsvTerminate"/>
+        <xsl:apply-templates select="SourceCsvQuote"/>
         <xsl:apply-templates select="DestLogicalName"/>
         <xsl:apply-templates select="DestGroupName"/>
         <xsl:apply-templates select="DestDirectory"/>
@@ -372,7 +372,7 @@
             <td>
             <xsl:choose>
             <xsl:when test=". = 0">FIXED</xsl:when>
-            <xsl:when test=". = 1">Variable</xsl:when>
+            <xsl:when test=". = 1">Delimited</xsl:when>
             <xsl:when test=". = 2">UTF8</xsl:when>
             <xsl:when test=". = 3">UTF8N</xsl:when>
             <xsl:when test=". = 4">UTF16</xsl:when>
@@ -474,6 +474,34 @@
                     </xsl:otherwise>
                 </xsl:choose>
             </td>
+        </tr>
+    </xsl:template>
+
+    <xsl:template match="SourceCsvSeparate">
+        <tr>
+            <th>SourceSeparators</th><th>:</th>
+            <td><xsl:value-of select="."/></td>
+        </tr>
+    </xsl:template>
+
+    <xsl:template match="SourceCsvEscape">
+        <tr>
+            <th>SourceEscape</th><th>:</th>
+            <td><xsl:value-of select="."/></td>
+        </tr>
+    </xsl:template>
+
+    <xsl:template match="SourceCsvTerminate">
+        <tr>
+            <th>SourceTerminators</th><th>:</th>
+            <td><xsl:value-of select="."/></td>
+        </tr>
+    </xsl:template>
+
+    <xsl:template match="SourceCsvQuote">
+        <tr>
+            <th>SourceQuote</th><th>:</th>
+            <td><xsl:value-of select="."/></td>
         </tr>
     </xsl:template>
 

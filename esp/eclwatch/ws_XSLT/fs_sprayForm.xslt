@@ -21,7 +21,7 @@
    <xsl:param name="fullHtml" select="1"/>
    <xsl:param name="includeFormTag" select="1"/>
    <xsl:param name="method" select="'SprayVariable'"/>
-   <xsl:param name="submethod" select="'variable'"/>
+   <xsl:param name="submethod" select="'csv'"/>
    
    <xsl:template match="/Environment">
      <xsl:choose>
@@ -170,9 +170,9 @@
                      if (method == 'SprayVariable')
                      {
                         disable = (document.getElementById('sourceMaxRecordSize') != null && document.getElementById('sourceMaxRecordSize').value == 0) || 
-                                      (document.getElementById('sourceSeparators') != null && document.getElementById('sourceSeparators').value  == '') ||
-                                      (document.getElementById('sourceTerminators') != null && document.getElementById('sourceTerminators').value == '') ||
-                                      (document.getElementById('sourceQuote') != null && document.getElementById('sourceQuote').value == '') ||
+                                      (document.getElementById('sourceCsvSeparate') != null && document.getElementById('sourceCsvSeparate').value  == '') ||
+                                      (document.getElementById('sourceCsvTerminate') != null && document.getElementById('sourceCsvTerminate').value == '') ||
+                                      (document.getElementById('sourceCsvQuote') != null && document.getElementById('sourceCsvQuote').value == '') ||
                                       (document.getElementById('sourceRowTag') != null && document.getElementById('sourceRowTag').value == '');
                      }
                document.getElementById('submitBtn').readonly = disable;
@@ -239,7 +239,7 @@
 
             function setSourceCsvSeparator(noSeparatorCheckbox)
             {
-                var separatorInputField = document.getElementById("sourceSeparators");
+                var separatorInputField = document.getElementById("sourceCsvSeparate");
                 if (separatorInputField == NaN)
                     return;
 
@@ -279,7 +279,7 @@
                <h3>Spray <xsl:choose>
                      <xsl:when test="$method='SprayFixed'">Fixed</xsl:when>
                      <xsl:otherwise>
-                         <xsl:choose><xsl:when test="$submethod='variable'"> Variable</xsl:when><xsl:otherwise> XML</xsl:otherwise></xsl:choose>
+                         <xsl:choose><xsl:when test="$submethod='csv'"> Delimited</xsl:when><xsl:otherwise> XML</xsl:otherwise></xsl:choose>
                     </xsl:otherwise>
                   </xsl:choose>
                </h3>
@@ -374,7 +374,7 @@
                      <select id="sourceFormat" name="sourceFormat" onchange="onChangeFormat()" onblur="onChangeFormat()">
                      -->
                      <select id="sourceFormat" name="sourceFormat">
-                           <xsl:if test="$submethod='variable'">
+                           <xsl:if test="$submethod='csv'">
                            <option value="1">ASCII</option>
                            </xsl:if>
                            <xsl:choose>
@@ -483,35 +483,35 @@
                      <input type="text" id="sourceMaxRecordSize" name="sourceMaxRecordSize" value="{$rsz}" size="6" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
-              <xsl:choose><xsl:when test="$submethod='variable'">
+              <xsl:choose><xsl:when test="$submethod='csv'">
                <tr>
                   <td>Separators:</td>
                   <td>
-                     <input type="text" id="sourceSeparators" name="sourceSeparators" size="6" value="{$sep}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceCsvSeparate" name="sourceCsvSeparate" size="6" value="{$sep}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                <tr>
                   <td/>
                   <td>
-                      <input type="checkbox" id="NoSourceSeparator" name="NoSourceSeparator" value="1" onclick="return setSourceCsvSeparator(this)">No Separator</input>
+                      <input type="checkbox" id="NoSourceCsvSeparator" name="NoSourceCsvSeparator" value="1" onclick="return setSourceCsvSeparator(this)">No Separator</input>
                   </td>
                </tr>
                <tr>
                   <td>Escape:</td>
                   <td>
-                     <input type="text" id="sourceEscape" name="sourceEscape" size="6" value="" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceCsvEscape" name="sourceCsvEscape" size="6" value="" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                <tr>
                   <td>Line Terminators:</td>
                   <td>
-                     <input type="text" id="sourceTerminators" name="sourceTerminators" size="6" value="{$term}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceCsvTerminate" name="sourceCsvTerminate" size="6" value="{$term}" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                <tr>
                   <td>Quote:</td>
                   <td>
-                     <input type="text" id="sourceQuote" name="sourceQuote" size="6" value="{$quote}"  maxlength="1" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
+                     <input type="text" id="sourceCsvQuote" name="sourceCsvQuote" size="6" value="{$quote}"  maxlength="1" onchange="handleSubmitBtn()" onblur="handleSubmitBtn()"/>
                   </td>
                </tr>
                </xsl:when>
