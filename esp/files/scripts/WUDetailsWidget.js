@@ -124,6 +124,7 @@ define([
             this.wu.restart();
         },
         _onPublish: function (event) {
+            registry.byId(this.id + "Publish").closeDropDown();
             this.wu.publish(dom.byId(this.id + "Jobname2").value);
         },
 

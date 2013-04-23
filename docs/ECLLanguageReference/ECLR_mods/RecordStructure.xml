@@ -38,7 +38,7 @@
       <primary>RECORD structure</primary>
     </indexterm></emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -185,35 +185,75 @@
     <para>All field declarations in a RECORD Structure must use one of the
     following syntaxes:</para>
 
-    <para><emphasis> datatype identifier <emphasis role="bold">[
-    {</emphasis><emphasis>modifier</emphasis><emphasis role="bold">}
-    ]</emphasis> </emphasis><emphasis role="bold">[ :=</emphasis><emphasis>
-    defaultvalue</emphasis><emphasis role="bold">] </emphasis><emphasis
-    role="bold"> ;</emphasis><emphasis> </emphasis></para>
-
-    <para><emphasis> identifier </emphasis><emphasis role="bold"> :=
-    </emphasis><emphasis>defaultvalue</emphasis><emphasis role="bold">
-    ;</emphasis><emphasis> </emphasis></para>
-
-    <para><emphasis> defaultvalue</emphasis><emphasis role="bold">
-    ;</emphasis><emphasis role="bold"> </emphasis><emphasis></emphasis></para>
-
-    <para><emphasis> sourcefield</emphasis><emphasis role="bold">
-    ;</emphasis><emphasis> </emphasis></para>
-
-    <para><emphasis> recstruct</emphasis><emphasis role="bold"> [
-    </emphasis><emphasis>identifier </emphasis><emphasis role="bold">]
-    ;</emphasis><emphasis></emphasis></para>
-
-    <para><emphasis> sourcedataset</emphasis><emphasis role="bold">
-    ;</emphasis><emphasis> </emphasis></para>
-
-    <para><emphasis> childdataset</emphasis><emphasis role="bold">
-    </emphasis><emphasis> identifier </emphasis><emphasis role="bold">[ {
-    </emphasis><emphasis>modifier </emphasis><emphasis role="bold">}
-    ];</emphasis></para>
-
     <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry></entry>
+
+            <entry><emphasis> datatype identifier <emphasis role="bold">[
+            {</emphasis><emphasis>modifier</emphasis><emphasis role="bold">}
+            ]</emphasis> </emphasis><emphasis role="bold">[
+            :=</emphasis><emphasis> defaultvalue</emphasis><emphasis
+            role="bold">] </emphasis><emphasis role="bold">
+            ;</emphasis><emphasis> </emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis> identifier </emphasis><emphasis role="bold"> :=
+            </emphasis><emphasis>defaultvalue</emphasis><emphasis role="bold">
+            ;</emphasis><emphasis> </emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis> defaultvalue</emphasis><emphasis role="bold">
+            ;</emphasis><emphasis role="bold">
+            </emphasis><emphasis></emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis> sourcefield</emphasis><emphasis role="bold">
+            ;</emphasis><emphasis> </emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis> recstruct</emphasis><emphasis role="bold"> [
+            </emphasis><emphasis>identifier </emphasis><emphasis role="bold">]
+            ;</emphasis><emphasis></emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis> sourcedataset</emphasis><emphasis role="bold">
+            ;</emphasis><emphasis> </emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis> childdataset</emphasis><emphasis role="bold">
+            </emphasis><emphasis> identifier </emphasis><emphasis
+            role="bold">[ { </emphasis><emphasis>modifier </emphasis><emphasis
+            role="bold">} ];</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -428,46 +468,95 @@ END;</programlisting>
     <para>The following list of field modifiers are available for use on field
     definitions:</para>
 
-    <para><emphasis role="bold"> { MAXLENGTH<indexterm>
-        <primary>MAXLENGTH</primary>
-      </indexterm>( </emphasis><emphasis>length</emphasis><emphasis
-    role="bold"> ) }</emphasis><emphasis role="bold"> </emphasis></para>
-
-    <para><emphasis role="bold"> { MAXCOUNT<indexterm>
-        <primary>MAXCOUNT</primary>
-      </indexterm>( </emphasis><emphasis>records</emphasis><emphasis
-    role="bold"> ) }</emphasis></para>
-
-    <para><emphasis role="bold"> { XPATH<indexterm>
-        <primary>XPATH</primary>
-      </indexterm>(</emphasis><emphasis role="bold"> </emphasis><emphasis
-    role="bold">'</emphasis><emphasis>tag</emphasis><emphasis role="bold">' )
-    }</emphasis><emphasis role="bold"> </emphasis></para>
-
-    <para><emphasis role="bold"> { XMLDEFAULT<indexterm>
-        <primary>XMLDEFAULT</primary>
-      </indexterm>(</emphasis> <emphasis
-    role="bold">'</emphasis><emphasis>value</emphasis><emphasis role="bold">'
-    ) }</emphasis></para>
-
-    <para><emphasis role="bold"> { DEFAULT<indexterm>
-        <primary>DEFAULT</primary>
-      </indexterm>(</emphasis> <emphasis>value</emphasis><emphasis
-    role="bold"> ) }</emphasis></para>
-
-    <para><emphasis role="bold"> { VIRTUAL<indexterm>
-        <primary>Virtual</primary>
-      </indexterm><indexterm>
-        <primary>Virtual fileposition</primary>
-      </indexterm>(</emphasis><emphasis role="bold"> </emphasis><emphasis
-    role="bold">fileposition ) }</emphasis><emphasis role="bold">
-    </emphasis></para>
-
-    <para><emphasis role="bold"> { VIRTUAL<indexterm>
-        <primary>Virtual localfileposition</primary>
-      </indexterm>( localfileposition ) }</emphasis></para>
-
     <informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="50pt" />
+
+        <colspec />
+
+        <tbody>
+          <row>
+            <entry></entry>
+
+            <entry><emphasis role="bold"> { MAXLENGTH<indexterm>
+                <primary>MAXLENGTH</primary>
+              </indexterm>( </emphasis><emphasis>length</emphasis><emphasis
+            role="bold"> ) }</emphasis><emphasis role="bold">
+            </emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis role="bold"> { MAXCOUNT<indexterm>
+                <primary>MAXCOUNT</primary>
+              </indexterm>( </emphasis><emphasis>records</emphasis><emphasis
+            role="bold"> ) }</emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis role="bold"> { XPATH<indexterm>
+                <primary>XPATH</primary>
+              </indexterm>(</emphasis><emphasis role="bold">
+            </emphasis><emphasis
+            role="bold">'</emphasis><emphasis>tag</emphasis><emphasis
+            role="bold">' ) }</emphasis><emphasis role="bold">
+            </emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis role="bold"> { XMLDEFAULT<indexterm>
+                <primary>XMLDEFAULT</primary>
+              </indexterm>(</emphasis> <emphasis
+            role="bold">'</emphasis><emphasis>value</emphasis><emphasis
+            role="bold">' ) }</emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis role="bold"> { DEFAULT<indexterm>
+                <primary>DEFAULT</primary>
+              </indexterm>(</emphasis> <emphasis>value</emphasis><emphasis
+            role="bold"> ) }</emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis role="bold"> { VIRTUAL<indexterm>
+                <primary>Virtual</primary>
+              </indexterm><indexterm>
+                <primary>Virtual fileposition</primary>
+              </indexterm>(</emphasis><emphasis role="bold">
+            </emphasis><emphasis role="bold">fileposition )
+            }</emphasis><emphasis role="bold"> </emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis role="bold"> { VIRTUAL<indexterm>
+                <primary>Virtual localfileposition</primary>
+              </indexterm>( localfileposition ) }</emphasis></entry>
+          </row>
+
+          <row>
+            <entry></entry>
+
+            <entry><emphasis role="bold"> { BLOB<indexterm>
+                <primary>BLOB in INDEX</primary>
+              </indexterm> }</emphasis></entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
+
+  <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="200pt" />
 
@@ -554,11 +643,20 @@ END;</programlisting>
             when the file is loaded into memory from disk (hence, the
             “virtual”).</entry>
           </row>
+
+          <row>
+            <entry><emphasis role="bold">{ BLOB }</emphasis></entry>
+
+            <entry>Specifies the field is stored separately from the leaf node
+            entry in the INDEX. This is applicable specifically to fields in
+            the payload of an INDEX to allow more than 32K of data per index
+            entry. The BLOB data is stored within the index file, but not with
+            the rest of the record. Accessing the BLOB data requires an
+            additional seek.</entry>
+          </row>
         </tbody>
       </tgroup>
     </informaltable>
-
-    <para><emphasis role="bold"></emphasis></para>
   </sect2>
 
   <sect2 id="XPATH_Support">
@@ -572,7 +670,7 @@ END;</programlisting>
     <para><emphasis role="bold">node[qualifier] / node[qualifier]
     ...</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 

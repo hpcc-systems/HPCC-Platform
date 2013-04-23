@@ -4888,14 +4888,14 @@ IReferenceSelector * HqlCppTranslator::buildDatasetSelectMap(BuildCtx & ctx, IHq
 
     //MORE: This should really be a createDictionarySelector call.
     Owned<IHqlCppDatasetCursor> cursor = createDatasetSelector(ctx, dictionary);
-    BoundRow * row = cursor->buildSelectMap(ctx, expr);
+    Owned<BoundRow> row = cursor->buildSelectMap(ctx, expr);
 
     if (!row)
     {
         CHqlBoundExpr boundCleared;
         buildDefaultRow(ctx, dictionary, boundCleared);
         OwnedHqlExpr defaultRowPtr = getPointer(boundCleared.expr);
-        row = bindRow(ctx, expr, defaultRowPtr);
+        row.setown(bindRow(ctx, expr, defaultRowPtr));
     }
 
     return createReferenceSelector(row);

@@ -906,7 +906,7 @@ public:
         }
         if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
             assertex(copier);
-            if (!copier->copyFile(lfn,daliep,srclfn,user,UNKNOWN_USER))
+            if (!copier->copyFile(lfn,daliep,srclfn,srcuser,user))
                 throw MakeStringException(-1,"File %s could not be copied",lfn);
 
         }

@@ -2527,6 +2527,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_cogroup:
     case no_dataset_alias:
     case no_dataset_from_transform:
+    case no_mapto:
         return true;
     case no_select:
     case no_field:
@@ -9999,6 +10000,7 @@ IHqlExpression *createDictionary(node_operator op, HqlExprArray & parms)
         type.setown(makeDictionaryType(makeRowType(createRecordType(&parms.item(0)))));
         break;
     case no_select:
+    case no_mapto:
         type.set(parms.item(1).queryType());
         break;
     case no_addfiles:
@@ -11648,6 +11650,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             break;
         }
     case no_case:
+    case no_mapto:
         //following is wrong, but they get removed pretty quickly so I don't really care
         type.set(parms.item(1).queryType());
         break;
@@ -11962,10 +11965,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
             ITypeInfo * fieldType = field.queryType();
             type_t fieldTC = fieldType->getTypeCode();
             assertex(fieldTC == type_row);
-            if (fieldTC == type_row)
-                type = LINK(fieldType);
-            else
-                type = makeRowType(LINK(fieldType));
+            type = LINK(fieldType);
             break;
         }
     case no_embedbody:
@@ -11987,6 +11987,7 @@ extern IHqlExpression *createRow(node_operator op, HqlExprArray & args)
         }
     case no_compound:
     case no_case:
+    case no_mapto:
         type = args.item(1).getType();
         break;
     case no_translated:

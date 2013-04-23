@@ -7612,8 +7612,8 @@ void HqlCppTranslator::doBuildStmtEnsureResult(BuildCtx & ctx, IHqlExpression * 
         if (filename)
         {
             args.append(*LINK(filename));
-            IHqlExpression * fileExists = createValue(no_not, makeBoolType(), bindFunctionCall(fileExistsAtom, args));
-            checkExists.setown(createBoolExpr(no_or, checkExists.getClear(), fileExists));
+            OwnedHqlExpr fileExists = createValue(no_not, makeBoolType(), bindFunctionCall(fileExistsAtom, args));
+            checkExists.setown(createBoolExpr(no_or, checkExists.getClear(), fileExists.getClear()));
         }
     }
 
@@ -17158,6 +17158,8 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
     BuildCtx classctx(*code, goAtom);
     classctx.addQuotedCompound("struct MyEclProcess : public EclProcess", ";");
 
+    classctx.addQuoted("virtual unsigned getActivityVersion() const { return ACTIVITY_INTERFACE_VERSION; }");
+
     BuildCtx performctx(classctx);
     performctx.addQuotedCompound("virtual int perform(IGlobalCodeContext * gctx, unsigned wfid)");
     performctx.addQuoted("ICodeContext * ctx;");
@@ -17815,16 +17817,9 @@ void HqlCppTranslator::traceExpressions(const char * title, WorkflowArray & work
 
 void HqlCppTranslator::checkNormalized(WorkflowArray & workflow)
 {
-    if (options.paranoidCheckDependencies)
-        checkDependencyConsistency(workflow);
-
-    if (options.paranoidCheckNormalized)
+    ForEachItemIn(i, workflow)
     {
-        ForEachItemIn(i, workflow)
-        {
-            OwnedHqlExpr compound = createActionList(workflow.item(i).queryExprs());
-            ::checkNormalized(compound);
-        }
+        checkNormalized(workflow.item(i).queryExprs());
     }
 }
 
@@ -17837,6 +17832,9 @@ void HqlCppTranslator::checkNormalized(IHqlExpression * expr)
     {
         ::checkNormalized(expr);
     }
+
+    if (options.paranoidCheckSelects)
+        checkSelectConsistency(expr);
 }
 
 void HqlCppTranslator::checkNormalized(HqlExprArray & exprs)
@@ -17844,10 +17842,12 @@ void HqlCppTranslator::checkNormalized(HqlExprArray & exprs)
     if (options.paranoidCheckDependencies)
         checkDependencyConsistency(exprs);
 
-    if (options.paranoidCheckNormalized)
+    ForEachItemIn(i, exprs)
     {
-        ForEachItemIn(i, exprs)
+        if (options.paranoidCheckNormalized)
             ::checkNormalized(&exprs.item(i));
+        if (options.paranoidCheckSelects)
+            checkSelectConsistency(&exprs.item(i));
     }
 }
 
@@ -17871,6 +17871,9 @@ void HqlCppTranslator::checkNormalized(BuildCtx & ctx, IHqlExpression * expr)
 
         ::checkNormalized(expr, activeTables);
     }
+
+    if (options.paranoidCheckSelects)
+        checkSelectConsistency(expr);
 }
 
 

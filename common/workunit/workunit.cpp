@@ -2279,7 +2279,7 @@ public:
                 if (fmt&WUSFreverse) 
                     so.append('-');
                 if (fmt&WUSFnocase) 
-                    so.append('~');
+                    so.append('?');
                 if (fmt&WUSFnumeric) 
                     so.append('#');
                 so.append(getEnumText(fmt&0xff,sortFields));

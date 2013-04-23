@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 #include <sys/syscall.h>
 #include <sys/types.h>
+#include <sys/resource.h>
 #endif
 
 #if defined(_DEBUG) && defined(_WIN32) && !defined(USING_MPATROL)

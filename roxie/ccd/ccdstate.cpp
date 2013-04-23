@@ -238,7 +238,7 @@ protected:
             if (fileInfo)
             {
                 Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
-                result->addSubFile(createFileDescriptorFromRoxieXML(fileInfo));
+                result->addSubFile(createFileDescriptorFromRoxieXML(fileInfo), NULL);
                 return result.getClear();
             }
         }
@@ -255,7 +255,7 @@ protected:
             {
                 Owned<IDistributedFile> dFile = daliHelper->resolveLFN(fileName, cacheIt, writeAccess);
                 if (dFile)
-                    return createResolvedFile(fileName, NULL, dFile.getClear());
+                    return createResolvedFile(fileName, NULL, dFile.getClear(), daliHelper, cacheIt, writeAccess);
             }
             else if (!writeAccess)  // If we need write access and expect a dali, but don't have one, we should probably fail
             {
@@ -264,7 +264,8 @@ protected:
                 if (fd)
                 {
                     Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
-                    result->addSubFile(fd.getClear());
+                    Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt, writeAccess);
+                    result->addSubFile(fd.getClear(), remoteFDesc.getClear());
                     return result.getClear();
                 }
             }
@@ -398,6 +399,7 @@ public:
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, wu, false);
+        DBGLOG("lookupFileName %s", fileName.str());
 
         const IResolvedFile *result = lookupFile(fileName, cache, false, false);
         if (!result)

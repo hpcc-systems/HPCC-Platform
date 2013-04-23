@@ -255,8 +255,8 @@ unsigned BrowseCreateInfo::getNestingCount(const ViewFile * search)
 
 //---------------------------------------------------------------------------
 
-ViewFileWeb::ViewFileWeb(IResultSetFactory & resultSetFactory, const char * cluster) 
-: viewOptions(resultSetFactory, cluster), directory(queryDistributedFileDirectory())
+ViewFileWeb::ViewFileWeb(IResultSetFactory & resultSetFactory, const char * cluster, IUserDescriptor *user)
+: viewOptions(resultSetFactory, cluster), directory(queryDistributedFileDirectory()), udesc(user)
 {
     nextId = 0;
 }
@@ -373,7 +373,7 @@ void ViewFileWeb::gatherWebFromPattern(const char * filenamePattern, const ViewG
     if (!localOptions.kind)
         localOptions.kind = S_LINK_RELATIONSHIP_KIND;
 
-    Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator(filenamePattern, false, UNKNOWN_USER);
+    Owned<IDistributedFileIterator> iter = queryDistributedFileDirectory().getIterator(filenamePattern, false, udesc);
     if (iter->first())
     {
         do
@@ -426,7 +426,7 @@ ViewFile * ViewFileWeb::walkFile(const char * filename, IDistributedFile * alrea
         options.isExplicitFile = false;
     }
 
-    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,UNKNOWN_USER);//MORE:Pass IUserDescriptor
+    Owned<IDistributedFile> resolved = alreadyResolved ? LINK(alreadyResolved) : directory.lookup(filename,udesc);
     if (!resolved)
         return NULL;
 
@@ -845,9 +845,9 @@ void ViewXgmmlERdiagramVisitor::endCompound()
 }
 
 
-IViewFileWeb * createViewFileWeb(IResultSetFactory & resultSetFactory, const char * cluster)
+IViewFileWeb * createViewFileWeb(IResultSetFactory & resultSetFactory, const char * cluster, IUserDescriptor *user)
 {
-    return new ViewFileWeb(resultSetFactory, cluster);
+    return new ViewFileWeb(resultSetFactory, cluster, user);
 }
 
 void createERdiagram(StringBuffer & xgmml, IViewFileWeb & _web)

@@ -5054,17 +5054,26 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
 
     Owned<IResultSetFactory> resultSetFactory = getSecResultSetFactory(context.querySecManager(), context.queryUser(), context.queryUserId(), context.queryPassword());
     Owned<IViewFileWeb> web;
+
+    Owned<IUserDescriptor> udesc;
+    ISecUser * secUser = context.queryUser();
+    if(secUser->getName() && *secUser->getName())
+    {
+        udesc.setown(createUserDescriptor());
+        udesc->set(secUser->getName(), secUser->credentials().getPassword());
+    }
+
     if (cluster && *cluster)
     {
-        web.setown(createViewFileWeb(*resultSetFactory, cluster));
+        web.setown(createViewFileWeb(*resultSetFactory, cluster, udesc.getLink()));
     }
     else if (m_clusterName.length() > 0)
     {
-        web.setown(createViewFileWeb(*resultSetFactory, m_clusterName.str()));
+        web.setown(createViewFileWeb(*resultSetFactory, m_clusterName.str(), udesc.getLink()));
     }
     else
     {
-        web.setown(createViewFileWeb(*resultSetFactory, NULL));
+        web.setown(createViewFileWeb(*resultSetFactory, NULL, udesc.getLink()));
     }
 
     ViewGatherOptions options;
