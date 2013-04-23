@@ -7841,7 +7841,7 @@ void HqlGram::expandPayload(HqlExprArray & fields, IHqlExpression * payload, IHq
     }
 }
 
-void HqlGram::mergeDictionaryPayload(SharedHqlExpr & record, SharedHqlExpr & payload, const attribute & errpos)
+void HqlGram::mergeDictionaryPayload(OwnedHqlExpr & record, IHqlExpression * payload, const attribute & errpos)
 {
     checkRecordIsValid(errpos, record.get());
     IHqlSimpleScope * scope = record->querySimpleScope();
@@ -7948,7 +7948,7 @@ void HqlGram::extractIndexRecordAndExtra(SharedHqlExpr & record, SharedHqlExpr &
     if (payload)
     {
         extra.setown(createComma(extra.getClear(), LINK(payload)));
-        record.setown(removeProperty(record.getClear(), _payload_Atom));
+        record.setown(removeProperty(record, _payload_Atom));
     }
 }
 

@@ -1266,7 +1266,6 @@ void EclCC::generateOutput(EclCompileInstance & instance)
         else
         {
             // Output option settings
-            instance.wu->getDebugValues();
             Owned<IStringIterator> debugValues = &instance.wu->getDebugValues();
             ForEach (*debugValues)
             {

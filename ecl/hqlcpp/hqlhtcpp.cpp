@@ -7612,8 +7612,8 @@ void HqlCppTranslator::doBuildStmtEnsureResult(BuildCtx & ctx, IHqlExpression * 
         if (filename)
         {
             args.append(*LINK(filename));
-            IHqlExpression * fileExists = createValue(no_not, makeBoolType(), bindFunctionCall(fileExistsAtom, args));
-            checkExists.setown(createBoolExpr(no_or, checkExists.getClear(), fileExists));
+            OwnedHqlExpr fileExists = createValue(no_not, makeBoolType(), bindFunctionCall(fileExistsAtom, args));
+            checkExists.setown(createBoolExpr(no_or, checkExists.getClear(), fileExists.getClear()));
         }
     }
 
