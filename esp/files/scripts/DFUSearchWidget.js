@@ -232,7 +232,7 @@ define([
                         
                     },
 
-                    onGetAll: function (response) {
+                    onAfterSend: function (response) {
                         //dom.byId(context.id + "WUInfoResponse").innerHTML = context.objectToText(response);
 
                     }

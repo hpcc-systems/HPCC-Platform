@@ -15,10 +15,12 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/dom",
     "dojo/on",
     "dojo/dom-class",
+    "dojo/dom-form",
     "dojo/date",
 
     "dijit/_TemplatedMixin",
@@ -39,6 +41,7 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/WsWorkunits",
     "hpcc/WUDetailsWidget",
+    "hpcc/TargetSelectWidget",
 
     "dojo/text!../templates/WUQueryWidget.html",
 
@@ -52,11 +55,14 @@ define([
     "dijit/form/RadioButton",
     "dijit/form/Select",
     "dijit/Toolbar",
-    "dijit/TooltipDialog"
-], function (declare, arrayUtil, dom, on, domClass, date,
+    "dijit/TooltipDialog",
+
+    "dojox/layout/TableContainer"
+
+], function (declare, lang, arrayUtil, dom, on, domClass, domForm, date, 
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
                 EnhancedGrid, Pagination, IndirectSelection, Calendar,
-                _TabContainerWidget, ESPWorkunit, WsWorkunits, WUDetailsWidget,
+                _TabContainerWidget, ESPWorkunit, WsWorkunits, WUDetailsWidget, TargetSelectWidget,
                 template) {
     return declare("WUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -73,6 +79,7 @@ define([
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
+            this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
         },
 
         startup: function (args) {
@@ -83,7 +90,6 @@ define([
 
         resize: function (args) {
             this.inherited(arguments);
-
             //  TODO:  This should not be needed
             var context = this;
             setTimeout(function () {
@@ -165,36 +171,17 @@ define([
         },
         _onDeschedule: function (event) {
         },
-        _onClickFilterApply: function (event) {
-            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
-
-            this.refreshGrid();
-        },
         _onFilterApply: function (event) {
-            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
+            registry.byId(this.id + "FilterDropDown").closeDropDown();
             if (this.hasFilter()) {
-                registry.byId(this.id + "FilterDropDown").closeDropDown();
-                this.refreshGrid();
+                this.applyFilter();
             } else {
                 this.validateDialog.show();
             }
         },
         _onFilterClear: function (event, supressGridRefresh) {
-            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
-            dom.byId(this.id + "Owner").value = "";
-            dom.byId(this.id + "Jobname").value = "";
-            dom.byId(this.id + "Cluster").value = "";
-            dom.byId(this.id + "State").value = "";
-            dom.byId(this.id + "ECL").value = "";
-            dom.byId(this.id + "LogicalFile").value = "";
-            dom.byId(this.id + "LogicalFileSearchType").value = "";
-            dom.byId(this.id + "FromDate").value = "";
-            dom.byId(this.id + "FromTime").value = "";
-            dom.byId(this.id + "ToDate").value = "";
-            dom.byId(this.id + "LastNDays").value = "";
-            if (!supressGridRefresh) {
-                this.refreshGrid();
-            }
+            this.clearFilter();
+            this.applyFilter();
         },
         _onRowDblClick: function (wuid) {
             var wuTab = this.ensurePane(this.id + "_" + wuid, {
@@ -245,32 +232,29 @@ define([
         },
 
         //  Implementation  ---
+        clearFilter: function () {
+            arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
+                item.set('value', null);
+            });
+        },
+
         hasFilter: function () {
-            return dom.byId(this.id + "Owner").value !== "" ||
-               dom.byId(this.id + "Jobname").value !== "" ||
-               dom.byId(this.id + "Cluster").value !== "" ||
-               dom.byId(this.id + "State").value !== "" ||
-               dom.byId(this.id + "ECL").value !== "" ||
-               dom.byId(this.id + "LogicalFile").value !== "" ||
-               dom.byId(this.id + "FromDate").value !== "" ||
-               dom.byId(this.id + "FromTime").value !== "" ||
-               dom.byId(this.id + "ToDate").value !== "" ||
-               dom.byId(this.id + "LastNDays").value !== "";
+            var filter = domForm.toObject(this.id + "FilterForm");
+            for (var key in filter) {
+                if (filter[key] != ""){
+                    return true
+                }
+            }
+            return false
         },
 
         getFilter: function () {
-            var retVal = {
-                Owner: dom.byId(this.id + "Owner").value,
-                Jobname: dom.byId(this.id + "Jobname").value,
-                Cluster: dom.byId(this.id + "Cluster").value,
-                State: dom.byId(this.id + "State").value,
-                ECL: dom.byId(this.id + "ECL").value,
-                LogicalFile: dom.byId(this.id + "LogicalFile").value,
-                LogicalFileSearchType: registry.byId(this.id + "LogicalFileSearchType").get("value"),
+            var retVal = domForm.toObject(this.id + "FilterForm");
+            lang.mixin(retVal, {
+                Cluster: this.clusterTargetSelect.get("value"),
                 StartDate: this.getISOString("FromDate", "FromTime"),
-                EndDate: this.getISOString("ToDate", "ToTime"),
-                LastNDays: dom.byId(this.id + "LastNDays").value
-            };
+                EndDate: this.getISOString("ToDate", "ToTime")
+            });
             if (retVal.StartDate != "" && retVal.EndDate != "") {
                 retVal["DateRB"] = "0";
             } else if (retVal.LastNDays != "") {
@@ -280,6 +264,11 @@ define([
                 retVal.EndDate = now.toISOString();
             }
             return retVal;
+        },
+
+        applyFilter: function () {
+            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
+            this.refreshGrid();
         },
 
         getISOString: function (dateField, timeField) {
@@ -302,10 +291,12 @@ define([
                 return;
             this.initalized = true;
 
-            //TODO:  Should be easier generic way
-            if (params.Cluster) {
-                registry.byId(this.id + "Cluster").set("value", params.Cluster);
-            }
+            this.clusterTargetSelect.init({
+                Targets: true,
+                includeBlank: true,
+                Target: params.Cluster
+            });
+
             this.initWorkunitsGrid();
             this.refreshActionState();
             this.selectChild(this.workunitsTab, true);
@@ -369,36 +360,38 @@ define([
                 var pSubMenu = new Menu();
                 this.menuFilterOwner = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
-                        context._onFilterClear(null, true);
+                        context.clearFilter();
                         registry.byId(context.id + "Owner").set("value", context.menuFilterOwner.get("hpcc_value"));
-                        context._onClickFilterApply();
+                        context.applyFilter();
                     }
                 });
                 this.menuFilterJobname = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
-                        context._onFilterClear(null, true);
+                        context.clearFilter();
                         registry.byId(context.id + "Jobname").set("value", context.menuFilterJobname.get("hpcc_value"));
-                        context._onClickFilterApply();
+                        context.applyFilter();
                     }
                 });
                 this.menuFilterCluster = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
-                        context._onFilterClear(null, true);
-                        registry.byId(context.id + "Cluster").set("value", context.menuFilterCluster.get("hpcc_value"));
-                        context._onClickFilterApply();
+                        context.clearFilter();
+                        registry.byId(context.id + "ClusterTargetSelect").set("value", context.menuFilterCluster.get("hpcc_value"));
+                        context.applyFilter();
                     }
                 });
                 this.menuFilterState = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
-                        context._onFilterClear(null, true);
+                        context.clearFilter();
                         registry.byId(context.id + "State").set("value", context.menuFilterState.get("hpcc_value"));
-                        context._onClickFilterApply();
+                        context.applyFilter();
                     }
                 });
                 pSubMenu.addChild(new MenuSeparator());
                 this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
                     label: "Clear",
-                    onClick: function () { context._onFilterClear(); }
+                    onClick: function () {
+                        context._onFilterClear();
+                    }
                 });
                 pMenu.addChild(new PopupMenuItem({
                     label: "Filter",
@@ -475,10 +468,18 @@ define([
                 title: "Filter",
                 content: "No filter criteria specified."
             });
-            dojo.connect(registry.byId(this.id + "FromDate"), 'onClick', function (evt) {
-            });
-            dojo.connect(registry.byId(this.id + "ToDate"), 'onClick', function (evt) {
-            });
+            var stateOptions = [{
+                label: "any",
+                value: ""
+            }];
+            for (var key in WsWorkunits.States) {
+                stateOptions.push({
+                    label: WsWorkunits.States[key],
+                    value: WsWorkunits.States[key]
+                });
+            }
+            var stateSelect = registry.byId(this.id + "State");
+            stateSelect.addOption(stateOptions);
         },
 
         refreshGrid: function (args) {
