@@ -192,7 +192,7 @@ class CRelatedBrowseFile;
 class FILEVIEW_API ViewFileWeb : public CInterface, implements IViewFileWeb
 {
 public:
-    ViewFileWeb(IResultSetFactory & resultSetFactory, const char * cluster);
+    ViewFileWeb(IResultSetFactory & resultSetFactory, const char * cluster, IUserDescriptor *user);
     IMPLEMENT_IINTERFACE
 
     virtual void gatherWeb(const char * rootFilename, const ViewGatherOptions & options);
@@ -218,6 +218,7 @@ protected:
     IDistributedFileDirectory & directory;
     ViewFileArray files;
     ViewRelationArray relations;
+    Owned<IUserDescriptor> udesc;
 };
 
 //---------------------------------------------------------------------------
