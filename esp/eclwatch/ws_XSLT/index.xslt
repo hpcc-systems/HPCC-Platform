@@ -711,8 +711,8 @@
                     </xsl:choose>
                 </xsl:when>
                 <xsl:when test="($status2='1') or ($status2='2')"> Queue paused </xsl:when>
-                <xsl:when test="$status2='3'"> Queue paused - Cluster stopped </xsl:when>
-                <xsl:when test="$status2='5'"> Cluster stopped </xsl:when>
+                <xsl:when test="$status2='3'"> Queue paused - Cluster not attached </xsl:when>
+                <xsl:when test="$status2='5'"> Cluster not attached </xsl:when>
                 <xsl:otherwise></xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
@@ -777,11 +777,11 @@
                             </xsl:when>
                             <xsl:when test="$status2='3'">
                                 <xsl:attribute name="class">thorstoppedpausedqueuenojobs</xsl:attribute>
-                                <xsl:attribute name="title">Queue paused - Cluster stopped (NOC has stopped all ThorMasters on cluster)</xsl:attribute>
+                                <xsl:attribute name="title">Queue paused - Cluster not attached (NOC has stopped all ThorMasters on cluster)</xsl:attribute>
                             </xsl:when>
                             <xsl:when test="$status2='5'">
                                 <xsl:attribute name="class">thorstoppedrunningqueue</xsl:attribute>
-                                <xsl:attribute name="title">Queue running - Cluster Stopped</xsl:attribute>
+                                <xsl:attribute name="title">Queue running - Cluster not attached</xsl:attribute>
                             </xsl:when>
                             <xsl:otherwise>
                                 <xsl:attribute name="class">thorrunning</xsl:attribute>
