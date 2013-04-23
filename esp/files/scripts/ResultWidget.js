@@ -137,7 +137,7 @@ define([
                 var logicalFile = ESPLogicalFile.Get(params.LogicalName);
                 var context = this;
                 logicalFile.getInfo({
-                    onGetAll: function(response) {
+                    onAfterSend: function (response) {
                         context.initResult(logicalFile.result);
                     }
                 });

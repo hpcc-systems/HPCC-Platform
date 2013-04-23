@@ -30,55 +30,96 @@ define([
 ], function (declare, lang, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
     parser,
     ESPBase, ESPRequest) {
-    var GetDFUWorkunits = declare(null, {
-        idProperty: "ID",
-
-        constructor: function (options) {
-            declare.safeMixin(this, options);
-        },
-
-        getIdentity: function (object) {
-            return object[this.idProperty];
-        },
-
-        query: function (query, options) {
-            var request = {};
-            lang.mixin(request, options.query);
-            if (options.start)
-                request['PageStartFrom'] = options.start;
-            if (options.count)
-                request['PageSize'] = options.count;
-            if (options.sort) {
-                request['Sortby'] = options.sort[0].attribute;
-                request['Descending'] = options.sort[0].descending;
-            }
-
-            var results = ESPRequest.send("FileSpray", "GetDFUWorkunits", {
-                request: request
-            });
-
-            var deferredResults = new Deferred();
-            deferredResults.total = results.then(function (response) {
-                if (lang.exists("GetDFUWorkunitsResponse.NumWUs", response)) {
-                    return response.GetDFUWorkunitsResponse.NumWUs;
-                }
-                return 0;
-            });
-            Deferred.when(results, function (response) {
-                var workunits = [];
-                if (lang.exists("GetDFUWorkunitsResponse.results.DFUWorkunit", response)) {
-                    workunits = response.GetDFUWorkunitsResponse.results.DFUWorkunit;
-                }
-                deferredResults.resolve(workunits);
-            });
-
-            return QueryResults(deferredResults);
-        }
-    });
-
     return {
-        GetDFUWorkunits: GetDFUWorkunits,
+        States: {
+            0: "unknown",
+            1: "scheduled",
+            2: "queued",
+            3: "started",
+            4: "aborted",
+            5: "failed",
+            6: "finished",
+            7: "monitoring",
+            8: "aborting"
+        },
 
+        CommandMessages: {
+            1: "Copy",
+            2: "Remove",
+            3: "Move",
+            4: "Rename",
+            5: "Replicate",
+            6: "Spray (Import)",
+            7: "Despray (Export)",
+            8: "Add",
+            9: "Transfer",
+            10: "Save Map",
+            11: "Add Group",
+            12: "Server",
+            13: "Monitor",
+            14: "Copy Merge",
+            15: "Super Copy"
+        },
+
+        FormatMessages: {
+            0: "fixed",
+            1: "csv",
+            2: "utf8",
+            3: "utf8n",
+            4: "utf16",
+            5: "utf16le",
+            6: "utf16be",
+            7: "utf32",
+            8: "utf32le",
+            9: "utf32be",
+            10: "variable",
+            11: "recfmvb",
+            12: "recfmv",
+            13: "variablebigendian"
+        },
+
+        GetDFUWorkunits: function (params) {
+            return ESPRequest.send("FileSpray", "GetDFUWorkunits", params);
+        },
+
+        DFUWorkunitsAction: function (wuids, actionType, callback) {
+            var request = {
+                wuids: wuids,
+                Type: actionType
+            };
+            ESPRequest.flattenArray(request, "wuids", "ID");
+
+            return ESPRequest.send("FileSpray", "DFUWorkunitsAction", {
+                request: request,
+                load: function (response) {
+                    if (lang.exists("DFUWorkunitsActionResponse.ActionResults.WUActionResult", response)) {
+                        arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
+                            if (item.Result.indexOf("Failed:") === 0) {
+                                dojo.publish("hpcc/brToaster", {
+                                    message: "<h4>" + item.Action + " " + item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
+                                    type: "error",
+                                    duration: -1
+                                });
+                            } else {
+                                dojo.publish("hpcc/brToaster", {
+                                    message: "<h4>" + item.Action + " " + item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
+                                    type: "message"
+                                });
+                            }
+                        });
+                    }
+
+                    if (callback && callback.load) {
+                        callback.load(response);
+                    }
+                },
+                error: function (err) {
+                    if (callback && callback.error) {
+                        callback.error(err);
+                    }
+                }
+            });
+        },
         Despray: function (params) {
             return ESPRequest.send("FileSpray", "Despray", params);
         },
@@ -91,12 +132,23 @@ define([
         GetDFUWorkunit: function (params) {
             return ESPRequest.send("FileSpray", "GetDFUWorkunit", params);
         },
-
+        UpdateDFUWorkunit: function (params) {
+            return ESPRequest.send("FileSpray", "UpdateDFUWorkunit", params);
+        },
         DFUWUFile: function (params) {
             lang.mixin(params, {
                 handleAs: "text"
             });
             return ESPRequest.send("FileSpray", "DFUWUFile", params);
+        },
+        isComplete: function (state) {
+            switch (state) {
+                case 4:	
+                case 5:	
+                case 6:	
+                    return true;
+            }
+            return false;
         }
     };
 });
