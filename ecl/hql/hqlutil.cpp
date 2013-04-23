@@ -2332,6 +2332,57 @@ void checkDependencyConsistency(const HqlExprArray & exprs)
 
 //---------------------------------------------------------------------------
 
+static HqlTransformerInfo selectConsistencyCheckerInfo("SelectConsistencyChecker");
+class SelectConsistencyChecker  : public NewHqlTransformer
+{
+public:
+    SelectConsistencyChecker() : NewHqlTransformer(selectConsistencyCheckerInfo)
+    {
+    }
+
+    virtual void analyseExpr(IHqlExpression * expr)
+    {
+        if (alreadyVisited(expr))
+            return;
+
+        if (expr->getOperator() == no_select)
+            checkSelect(expr);
+
+        NewHqlTransformer::analyseExpr(expr);
+    }
+
+    virtual void analyseSelector(IHqlExpression * expr)
+    {
+        if (expr->getOperator() == no_select)
+            checkSelect(expr);
+
+        NewHqlTransformer::analyseSelector(expr);
+    }
+
+protected:
+    void checkSelect(IHqlExpression * expr)
+    {
+        IHqlExpression * ds = expr->queryChild(0);
+        IHqlExpression * field = expr->queryChild(1);
+        IHqlSimpleScope * scope = ds->queryRecord()->querySimpleScope();
+        OwnedHqlExpr match = scope->lookupSymbol(field->queryName());
+        if (match != field)
+        {
+            EclIR::dbglogIR(2, field, match.get());
+            throw MakeStringException(ERR_RECURSIVE_DEPENDENCY, "Inconsistent select - field doesn't match parent record's field");
+        }
+    }
+};
+
+
+void checkSelectConsistency(IHqlExpression * expr)
+{
+    SelectConsistencyChecker checker;
+    checker.analyse(expr, 0);
+}
+
+//---------------------------------------------------------------------------
+
 void DependencyGatherer::doGatherDependencies(IHqlExpression * expr)
 {
     if (expr->queryTransformExtra())
