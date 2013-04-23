@@ -706,10 +706,10 @@ struct CLogicalNameEntry: public CInterface
         if (!grp) 
             manager.warn(lname.get(),"No cluster group set");
     }
-    bool remove()
+    bool remove(IUserDescriptor *user)
     {
         IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
-        Owned<IDistributedFile> file = fdir.lookup(lname.get(),UNKNOWN_USER);
+        Owned<IDistributedFile> file = fdir.lookup(lname.get(),user);
         if (!file)
             return false;
         file->detach();
