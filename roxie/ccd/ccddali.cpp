@@ -23,6 +23,7 @@
 #include "dllserver.hpp"
 #include "ccddali.hpp"
 #include "ccdfile.hpp"
+#include "ccdlistener.hpp"
 #include "ccd.hpp"
 
 #include "jencrypt.hpp"
@@ -592,6 +593,7 @@ public:
                 ::closedownClientProcess(); // dali client closedown
                 isConnected = false;
                 disconnectSem.signal();
+                disconnectRoxieQueues();
             }
         }
     }
