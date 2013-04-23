@@ -893,8 +893,11 @@ void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
                 queued.append(s.detach());
                 s.ensureCapacity(HTTP_SPLIT_RESERVE);
             }
-            lengths.append(current.length());
-            queued.append(current.detach());
+            if (current.length())
+            {
+                lengths.append(current.length());
+                queued.append(current.detach());
+            }
             if (!isClosing)
                 current.ensureCapacity(HTTP_SPLIT_RESERVE);
         }
