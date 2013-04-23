@@ -1906,7 +1906,7 @@ id_t ExpressionIRPlayer::processExpr(IHqlExpression * expr)
     expr->setTransformExtraUnlinked(expr);
 
     id_t nextId = doProcessExpr(expr);
-    expr->setTransformExtra(new ExpressionId(nextId));
+    expr->setTransformExtraOwned(new ExpressionId(nextId));
     return nextId;
 }
 

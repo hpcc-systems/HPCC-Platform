@@ -130,7 +130,7 @@ public:
     IHqlExpression * createFilteredTransform(IHqlExpression * transform, const UsedFieldSet * exceptions) const;
     void calcFinalRecord(bool canPack, bool ignoreIfEmpty);
     NestedField * findNested(IHqlExpression * field) const;
-    void gatherTransformValuesUsed(HqlExprArray * selfSelects, SelectUsedArray * parentSelects, HqlExprArray * values, IHqlExpression * selector, IHqlExpression * transform);
+    void gatherTransformValuesUsed(HqlExprArray * selfSelects, HqlExprArray * parentSelects, HqlExprArray * values, IHqlExpression * selector, IHqlExpression * transform);
     void getText(StringBuffer & s) const;
     void intersectFields(const UsedFieldSet & source);
     bool isEmpty() const;
@@ -161,7 +161,7 @@ protected:
     void createFilteredAssigns(HqlExprArray & assigns, IHqlExpression * transform, IHqlExpression * newSelf, const UsedFieldSet * exceptions) const;
     IHqlExpression * createRowTransform(IHqlExpression * row, const UsedFieldSet * exceptions) const;
     void kill();
-    void gatherExpandSelectsUsed(HqlExprArray * selfSelects, SelectUsedArray * parentSelects, IHqlExpression * selector, IHqlExpression * source);
+    void gatherExpandSelectsUsed(HqlExprArray * selfSelects, HqlExprArray * parentSelects, IHqlExpression * selector, IHqlExpression * source);
     unsigned getOriginalPosition(IHqlExpression * field) const;
 
 protected:
@@ -380,6 +380,7 @@ protected:
 
     void processSelect(ComplexImplicitProjectInfo * extra, IHqlExpression * curSelect, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect);
     void processSelects(ComplexImplicitProjectInfo * extra, SelectUsedArray const & selectsUsed, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect);
+    void processSelects(ComplexImplicitProjectInfo * extra, HqlExprArray const & selectsUsed, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect);
     void processTransform(ComplexImplicitProjectInfo * extra, IHqlExpression * transform, IHqlExpression * ds, IHqlExpression * leftSelect, IHqlExpression * rightSelect);
 
 protected:
