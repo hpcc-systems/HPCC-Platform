@@ -204,7 +204,7 @@ protected:
     IHqlExpression * normalizeRollup(IHqlExpression * expr);
     IHqlExpression * normalizeScalarAggregate(IHqlExpression * expr);
     IHqlExpression * normalizeSelect(IHqlExpression * expr);
-    IHqlExpression * normalizeShuffle(IHqlExpression * expr);
+    IHqlExpression * normalizeSubSort(IHqlExpression * expr);
     IHqlExpression * normalizeSort(IHqlExpression * expr);
     IHqlExpression * normalizeSortSteppedIndex(IHqlExpression * expr, _ATOM attrName);
     IHqlExpression * normalizeTempTable(IHqlExpression * expr);
@@ -1194,7 +1194,7 @@ protected:
         bool outputRowsAsDatasets;
         bool constantFoldNormalize;
         bool allowActivityForKeyedJoin;
-        bool implicitShuffle;
+        bool implicitSubSort;
     } options;
     unsigned nextSequenceValue;
     bool seenForceLocal;

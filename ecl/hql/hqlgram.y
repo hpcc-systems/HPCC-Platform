@@ -388,7 +388,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   SERVICE
   SET
   SHARED
-  SHUFFLE
   SIMPLE_TYPE
   SIN
   SINGLE
@@ -407,6 +406,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   STEPPED
   STORED
   STREAMED
+  SUBSORT
   SUCCESS
   SUM
   SWAPPED
@@ -8635,13 +8635,13 @@ simpleDataSet
                             $$.setExpr(parser->createSortExpr(no_sort, $4, $7, sortItems));
                             $$.setPosition($1);
                         }
-    | SHUFFLE '(' startSortOrder startTopFilter ',' sortListExpr ',' sortListExpr optCommonAttrs ')'  endSortOrder endTopFilter
+    | SUBSORT '(' startSortOrder startTopFilter ',' sortListExpr ',' sortListExpr optCommonAttrs ')'  endSortOrder endTopFilter
                         {
                             OwnedHqlExpr options = $9.getExpr();
                             if (isGrouped($4.queryExpr()))
-                                parser->reportError(HQLERR_CannotBeGrouped, $1, "SHUFFLE not yet supported on grouped datasets");
+                                parser->reportError(HQLERR_CannotBeGrouped, $1, "SUBSORT not yet supported on grouped datasets");
                             //NB: $6 and $8 are reversed in their internal representation to make consistent with no_sort
-                            $$.setExpr(createDataset(no_shuffle, $4.getExpr(), createComma($8.getExpr(), $6.getExpr(), options.getClear())), $1);
+                            $$.setExpr(createDataset(no_subsort, $4.getExpr(), createComma($8.getExpr(), $6.getExpr(), options.getClear())), $1);
                         }
     | SORTED '(' startSortOrder startTopFilter ',' beginList sortListOptCurleys ')' endSortOrder endTopFilter
                         {
