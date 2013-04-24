@@ -316,6 +316,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   NOTHOR
   NOTIFY
   NOTRIM
+  NOXPATH
   OF
   OMITTED
   ONCE
@@ -3172,6 +3173,10 @@ outputFlag
                             $$.setExpr(createAttribute(workunitAtom));              // need a better keyword, but WORKUNIT is no good
                             $$.setPosition($1);
                         }
+    | NOXPATH           {
+                            $$.setExpr(createAttribute(noXpathAtom));
+                            $$.setPosition($1);
+                        }
     ;
 
 soapFlags
@@ -3419,6 +3424,10 @@ outputWuFlag
                         }
     | UPDATE            {
                             $$.setExpr(createComma(createAttribute(updateAtom), createAttribute(overwriteAtom)));
+                            $$.setPosition($1);
+                        }
+    | NOXPATH           {
+                            $$.setExpr(createAttribute(noXpathAtom));
                             $$.setPosition($1);
                         }
     | commonAttribute

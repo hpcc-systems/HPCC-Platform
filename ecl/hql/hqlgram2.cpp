@@ -10175,6 +10175,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case NOTHOR: msg.append("NOTHOR"); break;
     case NOTIFY: msg.append("NOTIFY"); break;
     case NOTRIM: msg.append("NOTRIM"); break;
+    case NOXPATH: msg.append("NOXPATH"); break;
     case OF: msg.append("OF"); break;
     case OMITTED: msg.append("OMITTED"); break;
     case ONCE: msg.append("ONCE"); break;

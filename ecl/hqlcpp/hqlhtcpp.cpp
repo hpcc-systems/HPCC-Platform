@@ -1779,7 +1779,10 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     if ((op == no_setgraphresult) && translator.queryOptions().minimizeActivityClasses)
         outputDataset = dataset->queryChild(0);
 
-    IHqlExpression * record = queryRecord(outputDataset);
+    bool removeXpath = dataset->hasProperty(noXpathAtom) || (op == no_output && translator.queryOptions().removeXpathFromOutput);
+    LinkedHqlExpr record = queryRecord(outputDataset);
+    if (removeXpath)
+        record.setown(removePropertyFromFields(record, xpathAtom));
     meta.setMeta(translator, record, ::isGrouped(outputDataset));
 
     activityId = translator.nextActivityId();
@@ -10313,7 +10316,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             }
         }
 
-        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), dataset->queryRecord(), (kind != TAKcsvwrite) && (kind != TAKxmlwrite), true);
+        IHqlExpression * outputRecord = instance->meta.queryRecord();
+        OwnedHqlExpr outputDs = createDataset(no_null, LINK(outputRecord));
+        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), outputRecord, (kind != TAKcsvwrite) && (kind != TAKxmlwrite), true);
         if (expr->hasProperty(resultAtom))
             result->setResultRowLimit(-1);
 
@@ -10327,9 +10332,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
         //Both csv write and pipe with csv/xml format
         if (csvAttr)
-            buildCsvWriteMembers(instance, dataset, csvAttr);
+            buildCsvWriteMembers(instance, outputDs, csvAttr);
         if (xmlAttr)
-            buildXmlWriteMembers(instance, dataset, xmlAttr);
+            buildXmlWriteMembers(instance, outputDs, xmlAttr);
 
         buildEncryptHelper(instance->startctx, expr->queryProperty(encryptAtom));
     }
@@ -10891,17 +10896,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
             buildReturn(namectx, name, constUnknownVarStringType);
         }
 
-        LinkedHqlExpr cleanedRecord = record;
-        if (options.removeXpathFromOutput)
-            cleanedRecord.setown(removePropertyFromFields(cleanedRecord, xpathAtom));
-
-        Owned<IWUResult> result = createDatasetResultSchema(seq, name, cleanedRecord, true, false);
+        IHqlExpression * outputRecord = instance->meta.queryRecord();
+        Owned<IWUResult> result = createDatasetResultSchema(seq, name, outputRecord, true, false);
         if (result)
         {
             result->setResultRowLimit(-1);
 
             if (sequence >= 0)
-                buildXmlSerialize(instance->startctx, dataset, "serializeXml", false);
+            {
+                OwnedHqlExpr outputDs = createDataset(no_null, LINK(outputRecord));
+                buildXmlSerialize(instance->startctx, outputDs, "serializeXml", false);
+            }
         }
 
         if (flags.length())
