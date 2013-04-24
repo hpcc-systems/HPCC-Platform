@@ -417,9 +417,9 @@ define([
                 },
                 {
                     name: "Wuid", field: "Wuid", width: "15",
-                    formatter: function (Wuid) {
+                    formatter: function (Wuid, idx) {
                         var wu = ESPWorkunit.Get(Wuid);
-                        return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# class='WuidClick'>" +  Wuid + "</a>";
+                        return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='WuidClick' Wuid=>" + Wuid + "</a>";
                     }
                 },
                 { name: "Owner", field: "Owner", width: "8" },
@@ -435,7 +435,9 @@ define([
 
             on(document, ".WuidClick:click", function (evt) {
                 if (context._onRowContextMenu) {
-                    context._onRowDblClick(evt.srcElement.innerText);
+                    var idx = evt.target.getAttribute("rowIndex");
+                    var item = context.workunitsGrid.getItem(idx);
+                    context._onRowDblClick(item.Wuid);
                 }
             });
 
