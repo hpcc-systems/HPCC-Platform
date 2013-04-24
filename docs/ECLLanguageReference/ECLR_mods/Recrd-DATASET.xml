@@ -6,23 +6,23 @@
       <primary>DATASET</primary>
     </indexterm></title>
 
-  <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+  <para><emphasis>attr</emphasis><emphasis role="bold"> :=
   DATASET(</emphasis><emphasis> file, struct, filetype </emphasis><emphasis
   role="bold">);</emphasis></para>
 
-  <para><emphasis> attr</emphasis><emphasis role="bold"> :=
+  <para><emphasis>attr</emphasis><emphasis role="bold"> :=
   DATASET(</emphasis><emphasis> dataset, file, filetype </emphasis><emphasis
   role="bold">);</emphasis></para>
 
-  <para><emphasis role="bold"> </emphasis><emphasis> attr</emphasis><emphasis
-  role="bold"> := DATASET(</emphasis><emphasis> </emphasis><emphasis
+  <para><emphasis>attr</emphasis><emphasis role="bold"> :=
+  DATASET(</emphasis><emphasis> </emphasis><emphasis
   role="bold">WORKUNIT<indexterm>
       <primary>WORKUNIT</primary>
     </indexterm>( </emphasis>[ <emphasis>wuid ,</emphasis> ]<emphasis>
   namedoutput </emphasis><emphasis role="bold">)</emphasis><emphasis>, struct
   </emphasis><emphasis role="bold">);</emphasis></para>
 
-  <para><emphasis role="bold"> [ </emphasis><emphasis>attr</emphasis><emphasis
+  <para><emphasis role="bold">[ </emphasis><emphasis>attr</emphasis><emphasis
   role="bold"> := ] DATASET(</emphasis><emphasis> recordset
   </emphasis><emphasis role="bold">[</emphasis><emphasis>, recstruct
   </emphasis><emphasis role="bold">] );</emphasis></para>
@@ -46,6 +46,10 @@
 
   <para><emphasis role="bold">[GROUPED<indexterm>
       <primary>GROUPED</primary>
+    </indexterm>] [LINKCOUNTED<indexterm>
+      <primary>LINKCOUNTED</primary>
+    </indexterm>] [STREAMED<indexterm>
+      <primary>STREAMED</primary>
     </indexterm>] DATASET<indexterm>
       <primary>DATASET</primary>
     </indexterm>(</emphasis><emphasis> struct </emphasis><emphasis
@@ -54,7 +58,7 @@
   <para><emphasis role="bold">DATASET(</emphasis><emphasis> dict
   </emphasis><emphasis role="bold">)</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -127,11 +131,11 @@
 
           <entry><para>A set of in-line data records. This can simply name a
           previously-defined set definition or explicitly use square brackets
-          to indicate an inline set definition. Within the square brackets
+          to indicate an in-line set definition. Within the square brackets
           records are separated by commas. The records are specified by
           either:</para><para>1) Using curly braces ({}) to surround the field
           values for each record. The field values within each record are
-          comma-delimited.</para><para>2) A comma-delimited list of inline
+          comma-delimited.</para><para>2) A comma-delimited list of in-line
           transform functions that produce the data rows. All the transform
           functions in the list must produce records in the same result
           format.</para></entry>
@@ -144,7 +148,7 @@
           <emphasis>recordset.</emphasis> Omittable <emphasis
           role="underline">only</emphasis> if the
           <emphasis>recordset</emphasis> parameter is just one record or a
-          list of inline transform functions.</entry>
+          list of in-line transform functions.</entry>
         </row>
 
         <row>
@@ -214,6 +218,26 @@
 
           <entry>Specifies the DATASET being passed has been grouped using the
           GROUP function.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">LINKCOUNTED</emphasis></entry>
+
+          <entry>Specifies the DATASET being passed or returned uses the link
+          counted format (each row is stored as a separate memory allocation)
+          instead of the default (embedded) format where the rows of a dataset
+          are all stored in a single block of memory. This is primarily for
+          use in BEGINC++ functions or external C++ library functions.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis role="bold">STREAMED</emphasis></entry>
+
+          <entry>Specifies the DATASET being returned is returned as a pointer
+          to an IRowStream interface (see the eclhelper.hpp include file for
+          the definition).<emphasis role="bold">Valid only as a return
+          type.</emphasis> This is primarily for use in BEGINC++ functions or
+          external C++ library functions.</entry>
         </row>
 
         <row>
@@ -1199,9 +1223,15 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
   <sect2 id="DATASET_as_a_Parameter_Type">
     <title>DATASET as a Parameter Type</title>
 
-    <para><emphasis role="bold"> [GROUPED<indexterm>
+    <para><emphasis role="bold">[GROUPED<indexterm>
         <primary>GROUPED</primary>
-      </indexterm>] DATASET(</emphasis><emphasis> struct </emphasis><emphasis
+      </indexterm>] [LINKCOUNTED<indexterm>
+        <primary>LINKCOUNTED</primary>
+      </indexterm>] [STREAMED<indexterm>
+        <primary>STREAMED</primary>
+      </indexterm>] DATASET<indexterm>
+        <primary>DATASET</primary>
+      </indexterm>(</emphasis><emphasis> struct </emphasis><emphasis
     role="bold">)</emphasis></para>
 
     <para>This form is only used as a Value Type for passing
@@ -1209,9 +1239,9 @@ r := ROLLUP(fatIn, id, makeChildren(LEFT, RIGHT));</programlisting>
         <primary>Passing a DATASET parameter</primary>
       </indexterm>, specifying function return types, or defining a SET OF
     datasets. If GROUPED is present, the passed parameter must have been
-    grouped using the GROUP function<indexterm>
-        <primary>GROUP function</primary>
-      </indexterm>.</para>
+    grouped using the GROUP function. The LINKCOUNTED and STREAMED keywords
+    are primarily for use in BEGINC++ functions or external C++ library
+    functions.</para>
 
     <para>Example:</para>
 
