@@ -2245,6 +2245,7 @@ private:
             else if (stricmp(queryName, "control:unlockDali")==0)
             {
                 topology->setPropBool("@lockDali", false);
+                // Dali will reattach via the timer that checks every so often if can reattach...
             }
             else if (stricmp(queryName, "control:unsuspend")==0)
             {

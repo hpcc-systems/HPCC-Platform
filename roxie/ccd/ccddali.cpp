@@ -23,6 +23,7 @@
 #include "dllserver.hpp"
 #include "ccddali.hpp"
 #include "ccdfile.hpp"
+#include "ccdlistener.hpp"
 #include "ccd.hpp"
 
 #include "jencrypt.hpp"
@@ -556,12 +557,6 @@ public:
         return isConnected;
     }
 
-    virtual void waitConnected()
-    {
-        while (!isConnected)
-            Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
-    }
-
     // connect handles the operations generally performed by Dali clients at startup.
     virtual bool connect(unsigned timeout)
     {
@@ -620,6 +615,7 @@ public:
                 ::closedownClientProcess(); // dali client closedown
                 isConnected = false;
                 disconnectSem.signal();
+                disconnectRoxieQueues();
             }
         }
     }
