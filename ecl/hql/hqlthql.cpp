@@ -1278,7 +1278,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             }
             break;
         }
-        case no_shuffle:
+        case no_subsort:
             {
                 s.append(getEclOpString(expr->getOperator()));
                 s.append('(');

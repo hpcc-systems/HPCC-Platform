@@ -835,7 +835,7 @@ enum ThorActivityKind
     TAKcaseaction,
     TAKwhen_dataset,
     TAKwhen_action,
-    TAKshuffle,
+    TAKsubsort,
     TAKindexgroupexists,
     TAKindexgroupcount,
     TAKhashdistributemerge,
@@ -981,7 +981,7 @@ enum ActivityInterfaceEnum
     TAIstreamediteratorarg_1,
     TAIexternal_1,
     TAIinlinetablearg_1,
-    TAIshuffleextra_1,
+    TAIsubsortextra_1,
     TAIdictionaryworkunitwritearg_1,
     TAIdictionaryresultwritearg_1,
 
@@ -1531,12 +1531,12 @@ struct IHThorTopNArg : public IHThorSortArg, public IHThorTopNExtra
     COMMON_NEWTHOR_FUNCTIONS
 };
 
-struct IHThorShuffleExtra : public IInterface
+struct IHThorSubSortExtra : public IInterface
 {
     virtual bool isSameGroup(const void * _left, const void * _right) = 0;
 };
 
-struct IHThorShuffleArg : public IHThorSortArg, public IHThorShuffleExtra
+struct IHThorSubSortArg : public IHThorSortArg, public IHThorSubSortExtra
 {
     COMMON_NEWTHOR_FUNCTIONS
 };

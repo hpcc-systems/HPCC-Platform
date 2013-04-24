@@ -345,7 +345,7 @@ enum _node_operator {
         no_crc,
         no_return_stmt,
         no_update,    
-        no_shuffle,
+        no_subsort,
         no_chooseds,
         no_alias,
         no_datasetfromdictionary,

@@ -295,7 +295,7 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_fetch:
     case no_join:
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
     case no_dedup:
     case no_enth:
@@ -1616,7 +1616,7 @@ bool isLocalActivity(IHqlExpression * expr)
     case no_cogroup:
     case no_cosort:
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
     case no_topn:
     case no_iterate:
@@ -1820,7 +1820,7 @@ bool localChangesActivityAction(IHqlExpression * expr)
     case no_cogroup:
     case no_cosort:
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
     case no_topn:
     case no_iterate:
@@ -2463,7 +2463,7 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_assertgrouped:
     case no_assertdistributed:
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_nohoist:
     case no_section:
     case no_sectioninput:

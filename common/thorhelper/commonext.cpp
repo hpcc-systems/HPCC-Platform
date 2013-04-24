@@ -197,7 +197,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKexternalsink] = "externalsink";
     kindArray[TAKexternalprocess] = "externalprocess";
     kindArray[TAKwhen_action] = "when_action";
-    kindArray[TAKshuffle] = "shuffle";
+    kindArray[TAKsubsort] = "subsort";
     kindArray[TAKdictionaryworkunitwrite] = "dictionaryworkunitwrite";
     kindArray[TAKdictionaryresultwrite] = "dictionaryresultwrite";
 
