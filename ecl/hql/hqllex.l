@@ -811,6 +811,7 @@ __NOSTREAMING__     { RETURNSYM(__NOSTREAMING__); }
 NOTHOR              { RETURNSYM(NOTHOR); }
 NOTIFY              { RETURNSYM(NOTIFY); }
 NOTRIM              { RETURNSYM(NOTRIM); }
+NOXPATH             { RETURNSYM(NOXPATH); }
 OF                  { RETURNSYM(OF); }
 OMITTED             { RETURNSYM(OMITTED); }
 ONCE                { RETURNSYM(ONCE); }
