@@ -13,7 +13,10 @@
   role="bold"> [, [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">] [</emphasis><emphasis>,file </emphasis><emphasis
   role="bold">[</emphasis><emphasis>thorfileoptions </emphasis><emphasis
-  role="bold"> ] ] )</emphasis></para>
+  role="bold"> ] ] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+  role="bold"> NOXPATH<indexterm>
+      <primary>NOXPATH</primary>
+    </indexterm> ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -25,7 +28,8 @@
     </indexterm> [ (</emphasis><emphasis>csvoptions</emphasis><emphasis
   role="bold">) ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>csvfileoptions </emphasis><emphasis
-  role="bold"> ] )</emphasis></para>
+  role="bold"> ] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+  role="bold"> NOXPATH ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -37,7 +41,8 @@
     </indexterm> [ (</emphasis><emphasis>xmloptions</emphasis><emphasis
   role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
   role="bold">[</emphasis><emphasis>xmlfileoptions </emphasis><emphasis
-  role="bold"> ] )</emphasis></para>
+  role="bold"> ] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+  role="bold"> NOXPATH ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -45,8 +50,8 @@
   [</emphasis><emphasis> format </emphasis><emphasis role="bold">]
   </emphasis><emphasis> ,</emphasis><emphasis role="bold">PIPE<indexterm>
       <primary>PIPE</primary>
-    </indexterm>(</emphasis><emphasis> pipeoptions </emphasis><emphasis
-  role="bold"> )</emphasis></para>
+    </indexterm>(</emphasis><emphasis> pipeoptions </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+  role="bold"> NOXPATH ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -60,21 +65,24 @@
     </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
   role="bold">ALL<indexterm>
       <primary>ALL</primary>
-    </indexterm>])</emphasis></para>
+    </indexterm>] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+  role="bold"> NOXPATH ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> expression
   </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
   role="bold"> NAMED(</emphasis><emphasis> name </emphasis><emphasis
-  role="bold">) ] )</emphasis></para>
+  role="bold">) ] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+  role="bold"> NOXPATH ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> recordset
   ,</emphasis><emphasis role="bold"> THOR<indexterm>
       <primary>THOR</primary>
-    </indexterm> )</emphasis></para>
+    </indexterm> </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
+  role="bold"> NOXPATH ] );</emphasis></para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="93.80pt" />
 
@@ -125,16 +133,25 @@
           </row>
 
           <row>
+            <entry><emphasis role="bold">NOXPATH</emphasis></entry>
+
+            <entry>Specifies any XPATHs defined in the <emphasis>format</emphasis> 
+            or the RECORD structure of the <emphasis>recordset</emphasis> are ignored and field names are used instead.
+            This allows control of whether XPATHs are used for output, so that 
+            XPATHs that were meant only for xml input can be ignored for output.</entry>
+          </row>
+
+          <row>
             <entry><emphasis role="bold">CSV</emphasis></entry>
 
-            <entry>Specifies the file is a comma separated values ASCII
+            <entry>Specifies the file is a field-delimited (usually comma separated values) ASCII
             file.</entry>
           </row>
 
           <row>
             <entry><emphasis>csvoptions</emphasis></entry>
 
-            <entry>Optional. A comma separated options list defining how the
+            <entry>Optional. A comma-delimited list of options defining how the
             file is delimited.</entry>
           </row>
 
@@ -289,7 +306,7 @@
       </indexterm>( [</emphasis><emphasis> days </emphasis><emphasis
     role="bold">] ) ] ] ] )</emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="93.80pt" />
 
@@ -436,7 +453,7 @@ OUTPUT(People(Attr1=FALSE));
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
     role="bold">] ) ] )</emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="93.80pt" />
 
@@ -543,7 +560,7 @@ OUTPUT(People(Attr1=FALSE));
         <primary>UNICODE</primary>
       </indexterm></emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="95.80pt" />
 
@@ -681,7 +698,7 @@ OUTPUT(XMLds,,'~thor::outdata.xml',CSV(HEADING('&lt;XML&gt;','&lt;/XML&gt;')));
       </indexterm>( [ </emphasis><emphasis>days </emphasis><emphasis
     role="bold">] ) ] )</emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="93.80pt" />
 
@@ -777,7 +794,7 @@ OUTPUT(XMLds,,'~thor::outdata.xml',CSV(HEADING('&lt;XML&gt;','&lt;/XML&gt;')));
         <primary>TRIM OPT</primary>
       </indexterm></emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="84.45pt" />
 
@@ -886,7 +903,7 @@ OUTPUT(B,,'fred3.xml',XML('MyRow',TRIM,OPT));
         <primary>REPEAT</primary>
       </indexterm>] )</emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="93.80pt" />
 
