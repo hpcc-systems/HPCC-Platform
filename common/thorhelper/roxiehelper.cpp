@@ -880,6 +880,16 @@ void FlushingStringBuffer::encodeXML(const char *x, unsigned flags, unsigned len
     append(t.length(), t.str());
 }
 
+void FlushingStringBuffer::addPayload(StringBuffer &s, unsigned int reserve)
+{
+    if (!s.length())
+        return;
+    lengths.append(s.length());
+    queued.append(s.detach());
+    if (reserve)
+        s.ensureCapacity(reserve);
+}
+
 void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
 {
     CriticalBlock b(crit);
@@ -887,19 +897,8 @@ void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
     {
         if (isClosing || current.length() > HTTP_SPLIT_THRESHOLD)
         {
-            if (s.length())
-            {
-                lengths.append(s.length());
-                queued.append(s.detach());
-                s.ensureCapacity(HTTP_SPLIT_RESERVE);
-            }
-            if (current.length())
-            {
-                lengths.append(current.length());
-                queued.append(current.detach());
-            }
-            if (!isClosing)
-                current.ensureCapacity(HTTP_SPLIT_RESERVE);
+            addPayload(s, HTTP_SPLIT_RESERVE);
+            addPayload(current, isClosing ? 0 : HTTP_SPLIT_RESERVE);
         }
     }
     else if (isClosing)
@@ -916,16 +915,8 @@ void FlushingStringBuffer::flush(bool closing)
     }
     if (isHttp)
     {
-        if (!closing)
-        {
-            unsigned length = s.length();
-            if (length > HTTP_SPLIT_THRESHOLD)
-            {
-                queued.append(s.detach());
-                lengths.append(length);
-                s.ensureCapacity(HTTP_SPLIT_RESERVE);
-            }
-        }
+        if (!closing && s.length() > HTTP_SPLIT_THRESHOLD)
+            addPayload(s, HTTP_SPLIT_RESERVE);
     }
     else if (needsFlush(closing))
     {
