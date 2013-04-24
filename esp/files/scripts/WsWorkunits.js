@@ -22,6 +22,24 @@ define([
 ], function (declare, lang, arrayUtil,
     ESPRequest) {
     return {
+        States: {
+            0: "unknown",
+            1: "compiled",
+            2: "running",
+            3: "completed",
+            4: "aborting",
+            5: "aborted",
+            6: "blocked",
+            7: "submitted",
+            8: "wait",
+            9: "failed",
+            10: "compiling",
+            11: "uploading_files",
+            12: "debugging",
+            13: "debug_running",
+            14: "paused"
+        },
+
         WUCreate: function (params) {
             return ESPRequest.send("WsWorkunits", "WUCreate", params);
         },

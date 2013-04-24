@@ -19,7 +19,7 @@
       <primary>ENDC++</primary>
     </indexterm>;</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -106,21 +106,26 @@ SET OF ... xyz       bool isAllXyz, size32_t lenXyz, void *  xyz</programlisting
     number of characters, not the size (i.e. qstring/unicode), followed by a
     pointer to the data, like this (size32_t is an UNSIGNED4):</para>
 
-    <programlisting>string ABC -&gt; size32_t lenAbc, const char * abc;
-unicode ABC -&gt; size32_t lenABC, const UChar * abc;</programlisting>
+    <programlisting>STRING  ABC -&gt; size32_t lenAbc, const char * abc;
+UNICODE ABC -&gt; size32_t lenABC, const UChar * abc;</programlisting>
 
     <para>A dataset is passed as a size/pointer pair. The length gives the
     size of the following dataset in bytes. The same naming convention is
     used:</para>
 
-    <programlisting>dataset(r) ABC -&gt; size32_t lenAbc, const void * abc</programlisting>
+    <programlisting>DATASET(r)              ABC -&gt; size32_t lenAbc, const void * abc
+  The rows are accessed as x+0, x + length(row1), x + length(row1) + length(row2)
+
+LINKCOUNTED DATASET(r)  ABC -&gt; size32_t countAbc, const byte * * abc
+  The rows are accessed as x[0], x[1], x[2]
+</programlisting>
 
     <para>NOTE: variable length strings within a record are stored as a 4 byte
     number of characters, followed by the string data.</para>
 
     <para>Sets are passed as a set of parameters (all, size, pointer):</para>
 
-    <programlisting>set of unsigned4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
+    <programlisting>SET OF UNSIGNED4 ABC -&gt; bool isAllAbc, size32_t lenAbc, const void * abc</programlisting>
 
     <para>Return types are handled as C++ functions returning the same types
     with some exceptions. The exceptions have some extra initial parameters to
@@ -135,8 +140,16 @@ DATA&lt;nn&gt; xyz       void * __result
 STRING&lt;nn&gt; xyz     char * __result
 QSTRING&lt;nn&gt; xyz    char * __result
 UNICODE&lt;nn&gt; xyz    UChar * __result
-SET OF ... xyz     bool __isAllResult, size32_t &amp;  __lenResult,
-                      void * &amp; __result</programlisting>
+SET OF ... xyz     bool __isAllResult, size32_t &amp;  __lenResult, void * &amp; __result
+
+DATASET(r)         size32_t &amp; __lenResult, void * &amp; __result
+
+LINKCOUNTED DATASET(r)
+                   size32_t &amp; __countResult, byte * * &amp; __result
+
+STREAMED DATASET(r) 
+                   returns a pointer to an IRowStream interface 
+                   (see the eclhelper.hpp include file for the definition)</programlisting>
 
     <para>For example,</para>
 
@@ -151,24 +164,50 @@ SET OF ... xyz     bool __isAllResult, size32_t &amp;  __lenResult,
   <sect2 id="Available_Options">
     <title>Available Options</title>
 
-    <para><emphasis role="bold">#option pure</emphasis>By default, embedded
-    C++ functions are assumed to have side-effects, which means the generated
-    code won't be as efficient as it might be since the calls can't be shared.
-    Adding #option pure inside the embedded C++ <emphasis>code</emphasis>
-    causes it to be treated as a pure function without side effects.</para>
+    <informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec align="left" colwidth="122.40pt" />
 
-    <para><emphasis role="bold">#option once</emphasis>Indicates the function
-    has no side effects and is evaluated at query execution time, even if the
-    parameters are constant, allowing the optimizer to make more efficient
-    calls to the function in some cases.</para>
+        <colspec />
 
-    <para><emphasis role="bold">#option action</emphasis>Indicates side
-    effects, requiring the optimizer to keep all calls to the function.</para>
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">#option pure</emphasis></entry>
 
-    <para><emphasis role="bold">#body</emphasis> Delimits the beginning of
-    executable code. All <emphasis>code</emphasis> that precedes #body (such
-    as #include) is generated outside the function definition; all code that
-    follows it is generated inside the function definition.</para>
+            <entry>By default, embedded C++ functions are assumed to have
+            side-effects, which means the generated code won't be as efficient
+            as it might be since the calls can't be shared. Adding #option
+            pure inside the embedded C++ <emphasis>code</emphasis> causes it
+            to be treated as a pure function without side effects.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">#option once</emphasis></entry>
+
+            <entry>Indicates the function has no side effects and is evaluated
+            at query execution time, even if the parameters are constant,
+            allowing the optimizer to make more efficient calls to the
+            function in some cases.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">#option action</emphasis></entry>
+
+            <entry>Indicates side effects, requiring the optimizer to keep all
+            calls to the function.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">#body</emphasis></entry>
+
+            <entry>Delimits the beginning of executable code. All
+            <emphasis>code</emphasis> that precedes #body (such as #include)
+            is generated outside the function definition; all code that
+            follows it is generated inside the function definition.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable>
 
     <para>Example:</para>
 
@@ -221,9 +260,83 @@ STRING buildString(INTEGER4 value) := BEGINC++
      out[i] = 'X';
      __lenResult = value;
      __result = out;
-ENDC++;</programlisting>
+ENDC++;
+
+//examples of embedded, LINKCOUNTED, and STREAMED DATASETs
+inRec := { unsigned id };
+doneRec := { unsigned4 execid };
+out1rec := { unsigned id; };
+out2rec := { real id; };
+
+DATASET(doneRec) doSomethingNasty(DATASET(inRec) input) := BEGINC++
+  __lenResult = 4;
+  __result = rtlMalloc(8);
+  *(unsigned *)__result = 91823;
+ENDC++;
+
+DATASET(out1Rec) extractResult1(doneRec done) := BEGINC++
+   const unsigned id = *(unsigned *)done;
+   const unsigned cnt = 10;
+   __lenResult = cnt * sizeof(unsigned __int64);
+   __result = rtlMalloc(__lenResult);
+   for (unsigned i=0; i &lt; cnt; i++)
+       ((unsigned __int64 *)__result)[i] = id + i + 1;
+ENDC++;
+
+LINKCOUNTED DATASET(out2Rec) extractResult2(doneRec done) := BEGINC++
+   const unsigned id = *(unsigned *)done;   
+   const unsigned cnt = 10;
+   __countResult = cnt;
+   __result = _resultAllocator-&gt;createRowset(cnt);
+   for (unsigned i=0; i &lt; cnt; i++)
+   {
+       size32_t allocSize;
+        void * row = _resultAllocator-&gt;createRow(allocSize);
+        *(double *)row = id + i + 1;
+        __result[i] =  (byte *)_resultAllocator-&gt;finalizeRow(allocSize, row, allocSize);
+   }
+ENDC++;
+
+STREAMED DATASET(out1Rec) extractResult3(doneRec done) := BEGINC++
+   class myStream : public IRowStream, public RtlCInterface
+   {
+    public:
+        myStream(IEngineRowAllocator * _allocator, unsigned _id) : allocator(_allocator), id(_id), idx(0) {}
+        RTLIMPLEMENT_IINTERFACE
+
+        virtual const void *nextRow()
+        {
+            if (idx &gt;= 10)
+               return NULL;
+            size32_t allocSize;
+            void * row = allocator-&gt;createRow(allocSize);
+            *(unsigned __int64 *)row = id + ++idx;
+            return allocator-&gt;finalizeRow(allocSize, row, allocSize);
+        }
+        virtual void stop() {}
+    private:
+        unsigned id;
+        unsigned idx;
+        Linked&lt;IEngineRowAllocator&gt; allocator;
+    };
+    #body
+    const unsigned id = *(unsigned *)done;
+    return new myStream(_resultAllocator, id);
+ENDC++;
+
+ds := DATASET([1,2,3,4], inRec);
+
+processed := doSomethingNasty(ds);
+
+out1 := NORMALIZE(processed, extractResult1(LEFT), TRANSFORM(RIGHT));
+out2 := NORMALIZE(processed, extractResult2(LEFT), TRANSFORM(RIGHT));
+out3 := NORMALIZE(processed, extractResult3(LEFT), TRANSFORM(RIGHT));
+
+SEQUENTIAL(OUTPUT(out1),OUTPUT(out2),OUTPUT(out3));
+</programlisting>
 
     <para>See Also: <link linkend="External_Service_Implementation">External
-    Service Implementation</link>, <link linkend="EMBED_Structure">EMBED Structure</link></para>
+    Service Implementation</link>, <link linkend="EMBED_Structure">EMBED
+    Structure</link></para>
   </sect2>
 </sect1>
