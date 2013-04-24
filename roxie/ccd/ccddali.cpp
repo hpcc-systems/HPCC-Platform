@@ -529,12 +529,6 @@ public:
         return isConnected;
     }
 
-    virtual void waitConnected()
-    {
-        while (!isConnected)
-            Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
-    }
-
     // connect handles the operations generally performed by Dali clients at startup.
     virtual bool connect(unsigned timeout)
     {

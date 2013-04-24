@@ -51,7 +51,6 @@ interface IRoxieDaliHelper : extends IInterface
     virtual void releaseSubscription(IDaliPackageWatcher *subscription) = 0;
     virtual bool connect(unsigned timeout) = 0;
     virtual void disconnect() = 0;
-    virtual void waitConnected() = 0;
     virtual void noteQueuesRunning(const char *queueNames) = 0;
     virtual void noteWorkunitRunning(const char *wu, bool running) = 0;
 };

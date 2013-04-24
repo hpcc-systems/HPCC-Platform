@@ -917,7 +917,8 @@ public:
             {
                 if (traceLevel)
                     DBGLOG("roxie: Waiting for dali connection before waiting for queue");
-                daliHelper->waitConnected();
+                while (running && !daliHelper->connected())
+                    Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
             }
         }
         return 0;
