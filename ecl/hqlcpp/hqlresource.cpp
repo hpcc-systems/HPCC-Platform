@@ -150,7 +150,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         resources.setLightweight();
         setHashResources(expr, resources, options);
         break;
-    case no_shuffle:
+    case no_subsort:
         if (expr->hasProperty(manyAtom))
             resources.setHeavyweight();
         else

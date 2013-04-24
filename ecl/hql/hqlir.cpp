@@ -265,7 +265,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,crc);
     EXPAND_CASE(no,return_stmt);
     EXPAND_CASE(no,update);
-    EXPAND_CASE(no,shuffle);
+    EXPAND_CASE(no,subsort);
     EXPAND_CASE(no,chooseds);
     EXPAND_CASE(no,alias);
     EXPAND_CASE(no,datasetfromdictionary);

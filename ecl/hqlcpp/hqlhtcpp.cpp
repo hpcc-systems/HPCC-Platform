@@ -5800,7 +5800,7 @@ double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluste
         if (isThorCluster(cluster))
             complexity = 5;
         break;
-    case no_shuffle:
+    case no_subsort:
         complexity = 1;
         break;
     case no_sort:
@@ -6367,12 +6367,12 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityProcess(ctx, expr);
                 break;
             case no_group:
-                //Special case group(shuffle) which will be mapped to group(group(sort(group))) to remove
+                //Special case group(subsort) which will be mapped to group(group(sort(group))) to remove
                 //the redundant group
-                if (!options.supportsShuffleActivity && (expr->queryChild(0)->getOperator() == no_shuffle))
+                if (!options.supportsSubSortActivity && (expr->queryChild(0)->getOperator() == no_subsort))
                 {
-                    IHqlExpression * shuffle = expr->queryChild(0);
-                    OwnedHqlExpr groupedSort = convertShuffleToGroupedSort(shuffle);
+                    IHqlExpression * subsort = expr->queryChild(0);
+                    OwnedHqlExpr groupedSort = convertSubSortToGroupedSort(subsort);
                     assertex(groupedSort->getOperator() == no_group);
                     OwnedHqlExpr newGroup = replaceChild(expr, 0, groupedSort->queryChild(0));
                     result = doBuildActivityGroup(ctx, newGroup);
@@ -6433,10 +6433,10 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_sub:
                 result = doBuildActivitySub(ctx, expr);
                 break;
-            case no_shuffle:
-                if (!options.supportsShuffleActivity)
+            case no_subsort:
+                if (!options.supportsSubSortActivity)
                 {
-                    OwnedHqlExpr groupedSort = convertShuffleToGroupedSort(expr);
+                    OwnedHqlExpr groupedSort = convertSubSortToGroupedSort(expr);
                     result = buildCachedActivity(ctx, groupedSort);
                 }
                 else
@@ -15790,9 +15790,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             helper = "Sort";
             break;
         }
-    case no_shuffle:
-        actKind = TAKshuffle;
-        helper = "Shuffle";
+    case no_subsort:
+        actKind = TAKsubsort;
+        helper = "SubSort";
         break;
     default:
         {
@@ -15849,7 +15849,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
     buildSkewThresholdMembers(instance->classctx, expr);
 
-    if (expr->getOperator() == no_shuffle)
+    if (expr->getOperator() == no_subsort)
         doBuildFuncIsSameGroup(instance->startctx, dataset, expr->queryChild(2));
 
     if (limit)

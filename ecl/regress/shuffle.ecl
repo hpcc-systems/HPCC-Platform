@@ -28,6 +28,6 @@ integer2        d;
 namesTable := dataset('x', namesRecord, thor);
 
 s1 := sort(namesTable, a, b, c);
-s2 := shuffle(s1, {d},{a,b},local); // sort and grouping are round the wrong way!
+s2 := subsort(s1, {d},{a,b},local); // sort and grouping are round the wrong way!
 s3 := sorted(s2, {a,b,d}, assert);
 output(s3);

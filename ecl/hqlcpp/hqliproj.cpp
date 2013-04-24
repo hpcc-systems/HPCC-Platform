@@ -813,7 +813,7 @@ static unsigned getActivityCost(IHqlExpression * expr, ClusterType targetCluster
                 if (!expr->hasProperty(localAtom))
                     return CostNetworkCopy;
                 return CostManyCopy;
-            case no_shuffle:
+            case no_subsort:
                 if (!expr->hasProperty(localAtom) && !isGrouped(expr))
                     return CostNetworkCopy;
                 break;

@@ -1161,7 +1161,7 @@ More on JOIN:
     seek(d, c, z);
     could optionally check that (a, b) w/y (c, d), but probably better to just handle via the post filter.
 
-Indexes and shuffle information:
+Indexes and subsort information:
 
   i := rawindex
   p := project(i, logicalindex);

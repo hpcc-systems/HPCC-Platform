@@ -10298,7 +10298,6 @@ static void getTokenText(StringBuffer & msg, int token)
     case HTTPHEADER: msg.append("HTTPHEADER"); break;
     case PROXYADDRESS: msg.append("PROXYADDRESS"); break;
     case HTTPCALL: msg.append("HTTPCALL"); break;
-    case SHUFFLE: msg.append("SHUFFLE"); break;
     case SOAPCALL: msg.append("SOAPCALL"); break;
     case SORT: msg.append("SORT"); break;
     case SORTED: msg.append("SORTED"); break;
@@ -10308,6 +10307,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case STEPPED: msg.append("STEPPED"); break;
     case STORED: msg.append("STORED"); break;
     case STREAMED: msg.append("STREAMED"); break;
+    case SUBSORT: msg.append("SUBSORT"); break;
     case SUCCESS: msg.append("SUCCESS"); break;
     case SUM: msg.append("SUM"); break;
     case SWAPPED: msg.append("SWAPPED"); break;
@@ -10497,7 +10497,7 @@ void HqlGram::simplifyExpected(int *expected)
                        GROUP, GROUPED, KEYED, UNGROUP, JOIN, PULL, ROLLUP, ITERATE, PROJECT, NORMALIZE, PIPE, DENORMALIZE, CASE, MAP, 
                        HTTPCALL, SOAPCALL, LIMIT, PARSE, FAIL, MERGE, PRELOAD, ROW, TOPN, ALIAS, LOCAL, NOFOLD, NOHOIST, NOTHOR, IF, GLOBAL, __COMMON__, __COMPOUND__, TOK_ASSERT, _EMPTY_,
                        COMBINE, ROWS, REGROUP, XMLPROJECT, SKIP, LOOP, CLUSTER, NOLOCAL, REMOTE, PROCESS, ALLNODES, THISNODE, GRAPH, MERGEJOIN, STEPPED, NONEMPTY, HAVING,
-                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SHUFFLE, TOK_ERROR, CHOOSE, 0);
+                       TOK_CATCH, '@', SECTION, WHEN, IFF, COGROUP, HINT, INDEX, PARTITION, AGGREGATE, SUBSORT, TOK_ERROR, CHOOSE, 0);
     simplify(expected, EXP, ABS, SIN, COS, TAN, SINH, COSH, TANH, ACOS, ASIN, ATAN, ATAN2, 
                        COUNT, CHOOSE, MAP, CASE, IF, HASH, HASH32, HASH64, HASHMD5, CRC, LN, TOK_LOG, POWER, RANDOM, ROUND, ROUNDUP, SQRT, 
                        TRUNCATE, LENGTH, TRIM, INTFORMAT, REALFORMAT, ASSTRING, TRANSFER, MAX, MIN, EVALUATE, SUM,

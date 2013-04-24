@@ -1021,7 +1021,7 @@ const char *getOpString(node_operator op)
     case no_enth: return "ENTH";
     case no_sample: return "SAMPLE";
     case no_sort: return "SORT";
-    case no_shuffle: return "SHUFFLE";
+    case no_subsort: return "SUBSORT";
     case no_sorted: return "SORTED";
     case no_choosen: return "CHOOSEN";
     case no_choosesets: return "CHOOSESETS";
@@ -1812,7 +1812,7 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_cosort:
     case no_keyed:
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
     case no_stepped:
     case no_transformebcdic:
@@ -2082,7 +2082,7 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_sample:
     case no_selectnth:
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
     case no_stepped:
     case no_assertsorted:
@@ -2375,7 +2375,7 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_section:
     case no_sample:
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
     case no_stepped:
     case no_assertsorted:
@@ -5892,7 +5892,7 @@ void CHqlDataset::cacheParent()
     case no_keyed:
     // change ordering
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
     case no_stepped:
     case no_cosort:
@@ -11299,12 +11299,12 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
             type.setown(getTypeDistribute(datasetType, newDistribution, NULL));
             break;
         }
-    case no_shuffle:
+    case no_subsort:
         {
             bool isLocal = queryProperty(localAtom, parms) != NULL;
             OwnedHqlExpr normalizedSortOrder = replaceSelector(&parms.item(1), dataset, cachedActiveTableExpr);
             OwnedHqlExpr mappedGrouping = replaceSelector(&parms.item(2), dataset, cachedActiveTableExpr);
-            type.setown(getTypeShuffle(datasetType, mappedGrouping, normalizedSortOrder, isLocal));
+            type.setown(getTypeSubSort(datasetType, mappedGrouping, normalizedSortOrder, isLocal));
             break;
         }
     case no_cosort:

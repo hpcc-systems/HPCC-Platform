@@ -889,7 +889,6 @@ SERVICE             { RETURNHARD(SERVICE); }
 SET                 { RETURNSYM(SET); }
 __SET_DEBUG_OPTION__ { RETURNSYM(HASH_OPTION); }
 SHARED              { RETURNHARD(SHARED); }
-SHUFFLE             { RETURNSYM(SHUFFLE); }
 SIN                 { RETURNSYM(SIN); }
 SINGLE              { RETURNSYM(SINGLE); }
 SINH                { RETURNSYM(SINH); }
@@ -906,6 +905,7 @@ STABLE              { RETURNSYM(STABLE); }
 STEPPED             { RETURNSYM(STEPPED); }
 STORED              { RETURNSYM(STORED); }
 STREAMED            { RETURNSYM(STREAMED); }
+SUBSORT             { RETURNSYM(SUBSORT); }
 SUCCESS             { RETURNSYM(SUCCESS); }
 SUM                 { RETURNSYM(SUM); }
 TABLE               { RETURNSYM(TABLE); }
