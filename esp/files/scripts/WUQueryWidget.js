@@ -419,7 +419,7 @@ define([
                     name: "Wuid", field: "Wuid", width: "15",
                     formatter: function (Wuid) {
                         var wu = ESPWorkunit.Get(Wuid);
-                        return ("<img src='../files/" + wu.getStateImage() + "'>&nbsp" + Wuid);
+                        return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# class='WuidClick'>" +  Wuid + "</a>";
                     }
                 },
                 { name: "Owner", field: "Owner", width: "8" },
@@ -429,10 +429,15 @@ define([
                 { name: "State", field: "State", width: "8" },
                 { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
             ]);
-
             this.objectStore = ESPWorkunit.CreateWUQueryObjectStore();
             this.workunitsGrid.setStore(this.objectStore, this.getFilter());
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
+
+            on(document, ".WuidClick:click", function (evt) {
+                if (context._onRowContextMenu) {
+                    context._onRowDblClick(evt.srcElement.innerText);
+                }
+            });
 
             this.workunitsGrid.on("RowDblClick", function (evt) {
                 if (context._onRowDblClick) {
