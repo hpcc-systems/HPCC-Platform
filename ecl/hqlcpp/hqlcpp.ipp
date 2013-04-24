@@ -699,16 +699,16 @@ struct HqlCppOptions
     bool                createImplicitAliases;
     bool                combineSiblingGraphs;
     bool                optimizeSharedGraphInputs;
-    bool                supportsShuffleActivity;  // Does the target engine support SHUFFLE?
-    bool                implicitShuffle;  // convert sort when partially sortted to shuffle (group,sort,ungroup)
-    bool                implicitBuildIndexShuffle;  // use shuffle when building indexes?
-    bool                implicitJoinShuffle;  // use shuffle for paritially sorted join inputs when possible
-    bool                implicitGroupShuffle;  // use shuffle if some sort conditions match when grouping
-    bool                implicitGroupHashAggregate;  // convert aggreate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
+    bool                supportsSubSortActivity;  // Does the target engine support SUBSORT?
+    bool                implicitSubSort;  // convert sort when partially sorted to subsort (group,sort,ungroup)
+    bool                implicitBuildIndexSubSort;  // use subsort when building indexes?
+    bool                implicitJoinSubSort;  // use subsort for partially sorted join inputs when possible
+    bool                implicitGroupSubSort;  // use subsort if some sort conditions match when grouping
+    bool                implicitGroupHashAggregate;  // convert aggregate(sort(x,a),{..},a,d) to aggregate(group(sort(x,a),a_,{},d))
     bool                implicitGroupHashDedup;
     bool                reportFieldUsage;
     bool                reportFileUsage;
-    bool                shuffleLocalJoinConditions;
+    bool                subsortLocalJoinConditions;
     bool                projectNestedTables;
     bool                showSeqInGraph;
     bool                normalizeSelectorSequence;

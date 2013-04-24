@@ -28,6 +28,6 @@ integer2        d;
 namesTable := dataset('x', namesRecord, thor);
 
 s1 := sort(namesTable, a, b, c);
-s2 := shuffle(nofold(s1), {a,b}, {d});
+s2 := subsort(nofold(s1), {a,b}, {d});
 s3 := sorted(nofold(s2), {a,b,d}, assert);
 output(s3);
