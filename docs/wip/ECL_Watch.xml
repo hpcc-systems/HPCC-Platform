@@ -935,15 +935,15 @@
     </sect1>
 
     <sect1>
-      <title>Spray Variable</title>
+      <title>Spray Delimited</title>
 
       <itemizedlist>
         <listitem>
-          <para>Click on the <emphasis role="bold">Spray Variable</emphasis>
+          <para>Click on the <emphasis role="bold">Spray Delimited</emphasis>
           hyperlink below <emphasis role="bold">DFU </emphasis>in the menu on
           the left.</para>
 
-          <para>The <emphasis role="bold">Spray Variable</emphasis> page
+          <para>The <emphasis role="bold">Spray Delimited</emphasis> page
           displays.</para>
         </listitem>
 

@@ -375,11 +375,11 @@ Blankline</programlisting></para>
           <listitem>
             <?dbfo keep-together="always"?>
 
-            <para>CLICK on the Spray Variable hyperlink under the DFU Files
+            <para>CLICK on the Spray Delimited hyperlink under the DFU Files
             menu on the left.</para>
 
             <para><figure>
-                <title>Spray Variable</title>
+                <title>Spray Delimited</title>
 
                 <mediaobject>
                   <imageobject>
@@ -389,8 +389,8 @@ Blankline</programlisting></para>
                 </mediaobject>
               </figure></para>
 
-            <para>The <emphasis role="bold">DFU Spray Variable</emphasis> page
-            displays.</para>
+            <para>The <emphasis role="bold">DFU Spray Delimited</emphasis>
+            page displays.</para>
           </listitem>
 
           <listitem>
@@ -506,7 +506,7 @@ Blankline</programlisting></para>
 
             <para><itemizedlist>
                 <listitem>
-                  <para>Click on the Spray Variable link.</para>
+                  <para>Click on the Spray Delimited link.</para>
                 </listitem>
 
                 <listitem>
