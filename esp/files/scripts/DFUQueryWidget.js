@@ -18,6 +18,7 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-class",
     "dojo/dom-form",
     "dojo/data/ObjectStore",
     "dojo/date",
@@ -26,6 +27,11 @@ define([
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+    "dijit/Dialog",
+    "dijit/Menu",
+    "dijit/MenuItem",
+    "dijit/MenuSeparator",
+    "dijit/PopupMenuItem",
 
     "dojox/grid/EnhancedGrid",
     "dojox/grid/enhanced/plugins/Pagination",
@@ -36,6 +42,7 @@ define([
     "hpcc/ESPLogicalFile",
     "hpcc/LFDetailsWidget",
     "hpcc/SFDetailsWidget",
+    "hpcc/TargetSelectWidget",
 
     "dojo/text!../templates/DFUQueryWidget.html",
 
@@ -51,14 +58,12 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog",
 
-    "dojox/layout/TableContainer",
+    "dojox/layout/TableContainer"
 
-    "hpcc/TargetSelectWidget"
-
-], function (declare, lang, arrayUtil, dom, domForm, ObjectStore, date, on,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+], function (declare, lang, arrayUtil, dom, domClass, domForm, ObjectStore, date, on,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 EnhancedGrid, Pagination, IndirectSelection,
-                _TabContainerWidget, WsDfu, ESPLogicalFile, LFDetailsWidget, SFDetailsWidget,
+                _TabContainerWidget, WsDfu, ESPLogicalFile, LFDetailsWidget, SFDetailsWidget, TargetSelectWidget,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -77,8 +82,9 @@ define([
 
         startup: function (args) {
             this.inherited(arguments);
-            this.refreshActionState();
             this.initWorkunitsGrid();
+            this.initFilter();
+            this.refreshActionState();
         },
 
         //  Hitched actions  ---
@@ -99,6 +105,7 @@ define([
                 this.selectChild(firstTab, true);
             }
         },
+
         _onDelete: function (event) {
             if (confirm('Delete selected files?')) {
                 var context = this;
@@ -110,6 +117,7 @@ define([
                 });
             }
         },
+
         _onAddToSuperfileOk: function (event) {
             var context = this;
             var formData = domForm.toObject(this.id + "AddToSuperfileForm");
@@ -122,25 +130,24 @@ define([
             var d = registry.byId(this.id + "AddtoDropDown");
             registry.byId(this.id + "AddtoDropDown").closeDropDown();
         },
+
         _onAddToSuperfileCancel: function (event) {
             var d = registry.byId(this.id + "AddtoDropDown");
             registry.byId(this.id + "AddtoDropDown").closeDropDown();
         },
+
         _onFilterApply: function (event) {
-            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
-            this.refreshGrid();
+            registry.byId(this.id + "FilterDropDown").closeDropDown();
+            if (this.hasFilter()) {
+                this.applyFilter();
+            } else {
+                this.validateDialog.show();
+            }
         },
+
         _onFilterClear: function(event) {
-            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
-            var context = this;
-            arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
-                if (item.id == context.id + "ClusterTargetSelect") {
-                    item.setValue("");
-                } else {
-                    item.set('value', null);
-                }
-            });
-            this.refreshGrid();
+            this.clearFilter();
+            this.applyFilter();
         },
 
         getISOString: function (dateField, timeField) {
@@ -157,20 +164,66 @@ define([
             return "";
         },
 
+        onRowContextMenu: function (idx, item, colField, mystring) {
+            var selection = this.workunitsGrid.selection.getSelected();
+            var found = arrayUtil.indexOf(selection, item);
+            if (found == -1) {
+                this.workunitsGrid.selection.deselectAll();
+                this.workunitsGrid.selection.setSelected(idx, true);
+            }
+            this.menuFilterOwner.set("disabled", false);
+            this.menuFilterCluster.set("disabled", false);
+
+            if (item) {
+                this.menuFilterOwner.set("label", "Owner:  " + item.Owner);
+                this.menuFilterOwner.set("hpcc_value", item.Owner);
+                this.menuFilterCluster.set("label", "Cluster:  " + item.ClusterName);
+                this.menuFilterCluster.set("hpcc_value", item.ClusterName);
+            }
+            if (item.Owner == "") {
+                this.menuFilterOwner.set("disabled", true);
+                this.menuFilterOwner.set("label", "Owner:  " + "N/A");
+            }
+            if (item.ClusterName == "") {
+                this.menuFilterCluster.set("disabled", true);
+                this.menuFilterCluster.set("label", "Cluster:  " + "N/A");
+            }
+        },
+
+        clearFilter: function() {
+            arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
+                item.set('value', null);
+            });
+        },
+
+        hasFilter: function () {
+            var filter = domForm.toObject(this.id + "FilterForm")
+            for (var key in filter) {
+                if (filter[key] != ""){
+                    return true
+                }
+            }
+            return false
+        },
+
         getFilter: function () {
             var retVal = domForm.toObject(this.id + "FilterForm");
             lang.mixin(retVal, {
-                ClusterName: this.clusterTargetSelect.getValue(),
                 StartDate: this.getISOString("FromDate", "FromTime"),
                 EndDate: this.getISOString("ToDate", "ToTime")
             });
             if (retVal.StartDate != "" && retVal.EndDate != "") {
-            } else if (retVal.LastNDays) {
+            } else if (retVal.FirstN) {
                 var now = new Date();
                 retVal.StartDate = date.add(now, "day", dom.byId(this.id + "LastNDays").value * -1).toISOString();
                 retVal.EndDate = now.toISOString();
             }
             return retVal;
+        },
+
+        applyFilter: function () {
+            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
+            this.refreshGrid();
         },
 
         getISOString: function (dateField, timeField) {
@@ -192,7 +245,6 @@ define([
             if (this.initalized)
                 return;
             this.initalized = true;
-
             this.clusterTargetSelect.init({
                 Groups: true,
                 includeBlank: true
@@ -211,7 +263,66 @@ define([
             }
         },
 
+        addMenuItem: function (menu, details) {
+            var menuItem = new MenuItem(details);
+            menu.addChild(menuItem);
+            return menuItem;
+        },
+
         initWorkunitsGrid: function() {
+            var context = this;
+            var pMenu = new Menu({
+                targetNodeIds: [this.id + "WorkunitsGrid"]
+            });
+            pMenu.addChild(new MenuItem({
+                label: "Refresh",
+                onClick: function(args){context._onRefresh();}
+            }));
+            pMenu.addChild(new MenuSeparator());
+            pMenu.addChild(new MenuItem({
+                label: "Open",
+                onClick: function(args){context._onOpen();}
+            }));
+            pMenu.addChild(new MenuItem({
+                label: "Delete",
+                onClick: function(args){context._onDelete();}
+            }));
+            pMenu.addChild(new MenuItem({
+                label: "Add To Superfile",
+                onClick: function(args){dijit.byId(context.id+"AddtoDropDown").openDropDown()}
+            }));
+            pMenu.addChild(new MenuSeparator());
+            {
+                var pSubMenu = new Menu();
+                this.menuFilterOwner = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context.clearFilter();
+                        registry.byId(context.id + "Owner").set("value", context.menuFilterOwner.get("hpcc_value"));
+                        context.applyFilter();
+                    }
+                });
+                this.menuFilterCluster = this.addMenuItem(pSubMenu, {
+                    onClick: function (args) {
+                        context.clearFilter();
+                        registry.byId(context.id + "ClusterTargetSelect").set("value", context.menuFilterCluster.get("hpcc_value"));
+                        context.applyFilter();
+                    }
+                });
+                pSubMenu.addChild(new MenuSeparator());
+                this.menuFilterClearFilter = this.addMenuItem(pSubMenu, {
+                    label: "Clear",
+                    onClick: function () { 
+                        context._onFilterClear(); 
+                    }
+                });
+
+                pMenu.addChild(new PopupMenuItem({
+                    label: "Filter",
+                    popup: pSubMenu
+                }));
+            }
+            pMenu.startup();
+
             this.workunitsGrid.setStructure([
                 {
                     name: "C",
@@ -257,6 +368,7 @@ define([
             ]);
             var objStore = ESPLogicalFile.CreateLFQueryObjectStore();
             this.workunitsGrid.setStore(objStore, this.getFilter());
+            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Logical Files(check filter).</span>";
 
             var context = this;
             this.workunitsGrid.on("RowDblClick", function (evt) {
@@ -264,6 +376,16 @@ define([
                     var idx = evt.rowIndex;
                     var item = this.getItem(idx);
                     context.onRowDblClick(item);
+                }
+            }, true);
+
+             this.workunitsGrid.on("RowContextMenu", function (evt){
+                if (context.onRowContextMenu) {
+                    var idx = evt.rowIndex;
+                    var colField = evt.cell.field;
+                    var item = this.getItem(idx);
+                    var mystring = "item." + colField;
+                    context.onRowContextMenu(idx,item,colField,mystring);
                 }
             }, true);
 
@@ -277,6 +399,13 @@ define([
             this.workunitsGrid.startup();
         },
 
+        initFilter: function () {
+            this.validateDialog = new Dialog({
+                title: "Filter",
+                content: "No filter criteria specified."
+            });
+        },
+
         refreshGrid: function (args) {
             this.workunitsGrid.setQuery(this.getFilter());
             var context = this;
@@ -288,6 +417,7 @@ define([
         refreshActionState: function () {
             var selection = this.workunitsGrid.selection.getSelected();
             var hasSelection = false;
+            var hasFilter = this.hasFilter();
             for (var i = 0; i < selection.length; ++i) {
                 hasSelection = true;
             }
@@ -295,6 +425,7 @@ define([
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
             registry.byId(this.id + "Delete").set("disabled", !hasSelection);
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
+            dom.byId(this.id + "IconFilter").src = hasFilter ? "img/filter.png" : "img/noFilter.png";
         },
 
         ensurePane: function (id, params) {

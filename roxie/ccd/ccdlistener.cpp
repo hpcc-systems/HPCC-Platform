@@ -862,6 +862,15 @@ public:
         }
     }
 
+    virtual void disconnectQueue()
+    {
+        if (queue)
+        {
+            DBGLOG("RoxieWorkUnitListener::disconnectQueue");
+            queue->cancelAcceptConversation();
+        }
+    }
+
     virtual int run()
     {
         running = true;
@@ -882,7 +891,7 @@ public:
                         queue.setown(createJobQueue(queueNames.str()));
                         queue->connect();
                         daliHelper->noteQueuesRunning(queueNames.str());
-                        while (running)
+                        while (running && daliHelper->connected())
                         {
                             Owned<IJobQueueItem> item = queue->dequeue();
                             if (item.get())
@@ -894,7 +903,7 @@ public:
                         }
                         queue.clear();
                     }
-                    catch (IDaliClient_Exception *E)
+                    catch (IException *E)
                     {
                         if (traceLevel)
                             EXCLOG(E, "roxie: Dali connection lost");
@@ -908,7 +917,8 @@ public:
             {
                 if (traceLevel)
                     DBGLOG("roxie: Waiting for dali connection before waiting for queue");
-                daliHelper->waitConnected();
+                while (running && !daliHelper->connected())
+                    Sleep(ROXIE_DALI_CONNECT_TIMEOUT);
             }
         }
         return 0;
@@ -938,6 +948,11 @@ public:
         if (socket)
             socket->cancel_accept();
         return RoxieListener::stop(timeout);
+    }
+
+    virtual void disconnectQueue()
+    {
+        // This is for dali queues only
     }
 
     virtual void stopListening()
@@ -1870,6 +1885,14 @@ readAnother:
 //=================================================================================
 
 IArrayOf<IRoxieListener> socketListeners;
+
+extern void disconnectRoxieQueues()
+{
+    ForEachItemIn(idx, socketListeners)
+    {
+        socketListeners.item(idx).disconnectQueue();
+    }
+}
 
 IPooledThread *RoxieWorkUnitListener::createNew()
 {

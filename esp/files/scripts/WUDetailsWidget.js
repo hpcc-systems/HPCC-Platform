@@ -147,7 +147,6 @@ define([
                 this.wu.watch(function (name, oldValue, newValue) {
                     context.updateInput(name, oldValue, newValue);
                 });
-                //this.wu.refresh(true);
             }
             this.infoGridWidget.init(params);
             this.selectChild(this.summaryWidget, true);

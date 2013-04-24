@@ -37,6 +37,7 @@ require([
         baseClass: "TargetSelectWidget",
 
         targetSelectControl: null,
+        name: "",
         _value: "",
 
         postCreate: function (args) {
@@ -110,7 +111,18 @@ require([
             }
         },
 
+        _setValueAttr: function (target) {
+            if (target !== null && this._value != target) {
+                this._value = target;
+                this.targetSelectControl.set("value", target);
+            }
+        },
+
         getValue: function () {
+            return this._value;
+        },
+
+        _getValueAttr: function () {
             return this._value;
         },
 

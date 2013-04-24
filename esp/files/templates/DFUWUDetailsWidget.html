@@ -1,8 +1,10 @@
 <div class="${baseClass}">
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
         <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
-            <div id="${id}Summary" style="width: 100%; height: 100%" data-dojo-props='title:"Summary", iconClass:"iconWorkunit"' data-dojo-type="dijit.layout.BorderContainer">
+            <div id="${id}_Summary" style="width: 100%; height: 100%" data-dojo-props='title:"Summary", iconClass:"iconWorkunit"' data-dojo-type="dijit.layout.BorderContainer">
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+                    <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <div id="${id}Save" data-dojo-attach-event="onClick:_onSave" data-dojo-type="dijit.form.Button">Save</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
@@ -15,7 +17,7 @@
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div class="rounded">
                         <h2>
-                            <img id="${id}ProtectedImage" src="img/locked.png" />&nbsp<img id="${id}StateIdImage" src="img/workunit.png" />&nbsp<span id="${id}Wuid" class="bold">WUID</span>
+                            <img id="${id}ProtectedImage" src="img/locked.png" />&nbsp<img id="${id}StateIdImage" src="img/workunit.png" />&nbsp<span id="${id}Wuid" class="bold">WUID</span>&nbsp<span id="${id}CommandMessage2" class="bold">Command</span>
                         </h2>
                         <form>
                             <ul>
@@ -23,202 +25,198 @@
                                     <label for="${id}ID">ID:</label>
                                     <div id="${id}ID"></div>
                                 </li>
-                                <li id="${id}ClusterLine">
-                                    <label for="Cluster Name">Cluster Name:</label>
-                                    <div>
-                                        <input id="${id}ClusterName" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" />
-                                    </div>
+                                <li>
+                                    <label for="${id}ClusterName">Cluster Name:</label>
+                                    <div id="${id}ClusterName"></div>
                                 </li>
                                 <li>
-                                    <label for="Owner">Job name:</label>
-                                    <div>
-                                        <input id="${id}JobName" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" />
-                                    </div>
+                                    <label for="${id}JobName">Job name:</label>
+                                    <input id="${id}JobName" data-dojo-props="trim:true" data-dojo-type="dijit.form.TextBox" />
                                 </li>
                                 <li>
-                                    <label for="Queue">Queue:</label>
+                                    <label for="${id}DFUServerName">DFU Server Name:</label>
+                                    <div id="${id}DFUServerName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}Queue">Queue:</label>
                                     <div id="${id}Queue"></div>
                                 </li>
-                                <!--<li>
-                                <label for="User">User:</label>
-                                <div id="${id}User"></div>
-                                </li>-->
                                 <li>
-                                    <label for="Protected">Protected:</label>
-                                    <div>
-                                        <input id="${id}Protected" data-dojo-type="dijit.form.CheckBox" />
-                                    </div>
+                                    <label for="${id}User">User:</label>
+                                    <div id="${id}User"></div>
                                 </li>
                                 <li>
-                                    <label for="Command">Command:</label>
-                                    <div id="${id}Command"></div>
+                                    <label for="isProtected">Protected:</label>
+                                    <input id="${id}isProtected" value=true data-dojo-type="dijit.form.CheckBox" />
                                 </li>
                                 <li>
-                                    <label for="Time Started">Time Started:</label>
+                                    <label for="${id}CommandMessage">Command:</label>
+                                    <div id="${id}CommandMessage"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}StateMessage">State:</label>
+                                    <select id="${id}StateMessage" name="SelectType" data-dojo-type="dijit/form/Select">
+                                    </select>
+                                </li>
+                                <li>
+                                    <label for="${id}TimeStarted">Time Started:</label>
                                     <div id="${id}TimeStarted"></div>
                                 </li>
                                 <li>
-                                    <label for="Time Stopped">Time Stopped:</label>
+                                    <label for="${id}TimeStopped">Time Stopped:</label>
                                     <div id="${id}TimeStopped"></div>
                                 </li>
                                 <li>
-                                    <label for="Percent Done">Percent Done:</label>
-                                    <!-- TODO Need to write a IE8 fallback -->
-                                    <!--<div><progress id="${id}ProgressBar" max='100' style='width:197px'></progress></div>-->
-                                    <div id="${id}downloadProgress" style="width: 190px"
-                                        data-dojo-id="myProgressBar" jsid="jsProgress" data-dojo-props="maximum:10" data-dojo-type="dijit/ProgressBar">
-                                    </div>
+                                    <label for="${id}PercentDone">Percent Done:</label>
+                                    <div id="${id}PercentDone" style="width: 190px" data-dojo-props="maximum:10" data-dojo-type="dijit/ProgressBar"></div>
                                 </li>
                                 <li>
-                                    <label for="Progress Message">Progress Message:</label>
+                                    <label for="${id}ProgressMessage">Progress Message:</label>
                                     <div id="${id}ProgressMessage"></div>
                                 </li>
                                 <li>
-                                    <label for="Summary Message">SummaryMessage:</label>
+                                    <label for="${id}SecsLeft">Seconds Remaining:</label>
+                                    <div id="${id}SecsLeft"></div>
+                                </li>
+                                <li>
+                                    <label for="Summary Message">Summary Message:</label>
                                     <div id="${id}SummaryMessage"></div>
                                 </li>
                             </ul>
                         </form>
                     </div>
-                    <div id="${id}ImportGroup" class="rounded">
-                        <h1>Spray Details</h1>
+                    <div class="rounded">
+                        <h1>Source</h1>
                         <form>
                             <ul>
                                 <li>
-                                    <label for="State">State:</label>
-                                    <div>
-                                        <select id="${id}State" name="SelectType" data-dojo-type="dijit/form/Select">
-                                            <option value="Finished">Finished</option>
-                                            <option value="Failed">Failed</option>
-                                        </select>
-                                    </div>
-                                </li>
-                                <li>
-                                    <label for="Source IP">Source IP:</label>
+                                    <label for="${id}SourceIP">IP:</label>
                                     <div id="${id}SourceIP"></div>
                                 </li>
                                 <li>
-                                    <label for="Source File Path">SourceFilePath:</label>
-                                    <div id="${id}SourceFilePath"></div>
-                                </li>
-                                <li>
-                                    <label for="Source Record Size">SourceRecordSize:</label>
-                                    <div id="${id}SourceRecordSize"></div>
-                                </li>
-                                <li>
-                                    <label for="Source Format">SourceFormat:</label>
-                                    <div id="${id}SourceFormat"></div>
-                                </li>
-                                <li>
-                                    <label for="Source Num Parts">SourceNumParts:</label>
-                                    <div id="${id}SourceNumParts"></div>
-                                </li>
-                                <li>
-                                    <label for="Source Directory">SourceDirectory:</label>
+                                    <label for="${id}SourceDirectory">Directory:</label>
                                     <div id="${id}SourceDirectory"></div>
                                 </li>
                                 <li>
-                                    <label for="DestLogicalName">DestLogicalName:</label>
-                                    <div id="${id}DestLogicalName"></div>
+                                    <label for="${id}SourceFilePath">File Path:</label>
+                                    <div id="${id}SourceFilePath"></div>
                                 </li>
                                 <li>
-                                    <label for="Destination Group Name">DestGroupName:</label>
-                                    <div id="${id}DestGroupName"></div>
+                                    <label for="${id}SourceLogicalName">Logical Name:</label>
+                                    <div id="${id}SourceLogicalName"></div>
                                 </li>
                                 <li>
-                                    <label for="Destination Directory">DestDirectory:</label>
-                                    <div id="${id}DestDirectory"></div>
+                                    <label for="${id}SourceNumParts">Number of Parts:</label>
+                                    <div id="${id}SourceNumParts"></div>
                                 </li>
                                 <li>
-                                    <label for="Destination Number Parts">DestNumParts:</label>
-                                    <div id="${id}DestNumParts"></div>
+                                    <label for="${id}SourceDali">Dali:</label>
+                                    <div id="${id}SourceDali"></div>
                                 </li>
                                 <li>
-                                    <label for="Monitor Sub">MonitorSub:</label>
-                                    <div id="${id}MonitorSub"></div>
+                                    <label for="${id}SourceFormatMessage">Format:</label>
+                                    <div id="${id}SourceFormatMessage"></div>
                                 </li>
                                 <li>
-                                    <label for="Overwrite">Overwrite:</label>
-                                    <div id="${id}Overwrite"></div>
+                                    <label for="${id}SourceRecordSize">Record Size:</label>
+                                    <div id="${id}SourceRecordSize"></div>
                                 </li>
                                 <li>
-                                    <label for="Replicate">Replicate:</label>
-                                    <div id="${id}Replicate"></div>
+                                    <label for="${id}RowTag">Row Tag:</label>
+                                    <div id="${id}RowTag"></div>
                                 </li>
                                 <li>
-                                    <label for="Compress">Compress:</label>
-                                    <div id="${id}Compress"></div>
+                                    <label for="${id}SourceSeperators">Seperators:</label>
+                                    <div id="${id}SourceSeperators"></div>
                                 </li>
                                 <li>
-                                    <label for="Auto Refresh">AutoRefresh:</label>
-                                    <div id="${id}AutoRefresh"></div>
+                                    <label for="${id}SourceEscape">Escape:</label>
+                                    <div id="${id}SourceEscape"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceTerminators">Terminators:</label>
+                                    <div id="${id}SourceTerminators"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}SourceQuote">Quote:</label>
+                                    <div id="${id}SourceQuote"></div>
                                 </li>
                             </ul>
                         </form>
                     </div>
-                    <div id="${id}ExportGroup" class="rounded">
-                        <h1>Despray Details</h1>
+                    <div class="rounded">
+                        <h1>Target</h1>
                         <form>
                             <ul>
                                 <li>
-                                    <label for="State">State:</label>
-                                    <div>
-                                        <select id="${id}State2" name="SelectType" data-dojo-type="dijit/form/Select">
-                                            <option value="Finished">Finished</option>
-                                            <option value="Failed">Failed</option>
-                                        </select>
-                                    </div>
-                                </li>
-                                <li>
-                                    <label for="Source Logical Name">SourceLogicalName:</label>
-                                    <div id="${id}SourceLogicalName"></div>
-                                </li>
-                                <li>
-                                    <label for="Destination Directory">DestDirectory:</label>
-                                    <div id="${id}DestDirectory"></div>
-                                </li>
-                                <li>
-                                    <label for="Destination IP">DestIP:</label>
+                                    <label for="${id}DestIP">IP:</label>
                                     <div id="${id}DestIP"></div>
                                 </li>
                                 <li>
-                                    <label for="Destination File Path">DestFilePath:</label>
+                                    <label for="${id}DestDirectory">Directory:</label>
+                                    <div id="${id}DestDirectory"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestFilePath">File Path:</label>
                                     <div id="${id}DestFilePath"></div>
                                 </li>
                                 <li>
-                                    <label for="Destination Format">DestFormat:</label>
-                                    <div id="${id}DestFormat"></div>
+                                    <label for="${id}DestLogicalName">Logical Name:</label>
+                                    <div id="${id}DestLogicalName"></div>
                                 </li>
                                 <li>
-                                    <label for="Destination Number Parts">DestNumParts:</label>
+                                    <label for="${id}DestGroupName">Group Name:</label>
+                                    <div id="${id}DestGroupName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestNumParts">Number of Parts:</label>
                                     <div id="${id}DestNumParts"></div>
                                 </li>
                                 <li>
-                                    <label for="Monitor Sub">MonitorSub:</label>
+                                    <label for="${id}DestFormatMessage">Format:</label>
+                                    <div id="${id}DestFormatMessage"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}DestRecordSize">Record Size:</label>
+                                    <div id="${id}DestRecordSize"></div>
+                                </li>
+                            </ul>
+                        </form>
+                    </div>
+                    <div class="rounded">
+                        <h1>Other</h1>
+                        <form>
+                            <ul>
+                                <li>
+                                    <label for="${id}MonitorEventName">Monitor Event Name:</label>
+                                    <div id="${id}MonitorEventName"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}MonitorSub">Monitor Sub:</label>
                                     <div id="${id}MonitorSub"></div>
                                 </li>
                                 <li>
-                                    <label for="Overwrite">Overwrite:</label>
+                                    <label for="${id}MonitorShotLimit">Monitor Shot Limit:</label>
+                                    <div id="${id}MonitorShotLimit"></div>
+                                </li>
+                                <li>
+                                    <label for="${id}Overwrite">Overwrite:</label>
                                     <div id="${id}Overwrite"></div>
                                 </li>
                                 <li>
-                                    <label for="Replicate">Replicate:</label>
+                                    <label for="${id}Replicate">Replicate:</label>
                                     <div id="${id}Replicate"></div>
                                 </li>
                                 <li>
-                                    <label for="Compress">Compress:</label>
+                                    <label for="${id}Compress">Compress:</label>
                                     <div id="${id}Compress"></div>
-                                </li>
-                                <li>
-                                    <label for="Auto Refresh">AutoRefresh:</label>
-                                    <div id="${id}AutoRefresh"></div>
                                 </li>
                             </ul>
                         </form>
                     </div>
                 </div>
             </div>
-            <div id="${id}XML" title="XML" data-dojo-props="WUXml: true" data-dojo-type="ECLSourceWidget">
+            <div id="${id}_XML" title="XML" data-dojo-props="WUXml: true" data-dojo-type="ECLSourceWidget">
             </div>
         </div>
     </div>
