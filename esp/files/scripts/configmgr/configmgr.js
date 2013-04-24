@@ -952,10 +952,16 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
     }
 
     var regEx = new RegExp("^[a-zA-Z0-9_]+$");
+    var regEx2 = new RegExp("^[a-zA-Z0-9_-]+$");
 
-    if (attrName == 'name' && regEx.test(newValue) == false)
+    if (attrName == 'name' && record.getData('compType') == 'EclCCServerProcess' && !regEx2.test(newValue))
     {
-      alert("Invalid character in component name. Only alpha-numerics and underscores '_' are allowed.");
+      alert("Invalid character in component name. Only alpha-numerics, underscores, and dashes are allowed.");
+      return false;
+    }
+    else if (attrName == 'name' && !(record.getData('compType') == 'EclCCServerProcess') && !regEx.test(newValue))
+    {
+      alert("Invalid character in component name. Only alpha-numerics and underscores are allowed.");
       return false;
     }
     var xmlArgs = argsToXml(category, params, attrName, oldValue, newValue, recordIndex + 1, record.getData(column.key + '_onChange'));

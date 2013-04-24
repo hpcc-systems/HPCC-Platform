@@ -980,9 +980,15 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
     return true;
 }//onNavMenuEvent
 
-bool CWsDeployFileInfo::isAlphaNumeric(const char *pstr) const
+bool CWsDeployFileInfo::isAlphaNumeric(const char *pstr, const char *pExprOverride) const
 {
-  RegExpr expr("[A-Za-z0-9-_]+");
+  StringBuffer regExpStr;
+
+  if (pExprOverride == NULL)
+      regExpStr.append("[A-Za-z0-9_]+");
+  else
+      regExpStr.append(pExprOverride);
+  RegExpr expr(regExpStr.str());
 
   return (expr.find(pstr) && expr.findlen(0) == strlen(pstr));
 }
@@ -1346,7 +1352,7 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
         {
           ensureUniqueName(pEnvRoot, pComp, pszNewValue);
 
-          if (isAlphaNumeric(pszNewValue) == false)
+          if (strcmp(pszCompType, "EclCCServerProcess") ? isAlphaNumeric(pszNewValue) == false : isAlphaNumeric(pszNewValue, "[-A-Za-z0-9_]+") == false)
           {
             throw MakeStringException(-1, "Invalid Character in name '%s'.", pszNewValue);
           }
