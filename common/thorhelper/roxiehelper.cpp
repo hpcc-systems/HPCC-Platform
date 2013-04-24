@@ -449,19 +449,23 @@ bool CSafeSocket::checkConnection() const
 size32_t CSafeSocket::write(const void *buf, size32_t size, bool takeOwnership)
 {
     CriticalBlock c(crit); // NOTE: anyone needing to write multiple times without interleave should have already locked this. We lock again for the simple cases.
+    OwnedMalloc<void> ownedBuffer;
+    if (takeOwnership)
+        ownedBuffer.setown((void *) buf);
+    if (!size)
+        return 0;
     try
     {
         if (httpMode)
         {
             if (!takeOwnership)
             {
-                void *newbuf = malloc(size);
-                if (!newbuf)
+                ownedBuffer.setown(malloc(size));
+                if (!ownedBuffer)
                     throw MakeStringException(THORHELPER_INTERNAL_ERROR, "Out of memory in CSafeSocket::write (requesting %d bytes)", size);
-                memcpy(newbuf, buf, size);
-                buf = newbuf;
+                memcpy(ownedBuffer, buf, size);
             }
-            queued.append((void *) buf);
+            queued.append(ownedBuffer.getClear());
             lengths.append(size);
             return size;
         }
@@ -469,16 +473,12 @@ size32_t CSafeSocket::write(const void *buf, size32_t size, bool takeOwnership)
         {
             sent += size;
             size32_t written = sock->write(buf, size);
-            if (takeOwnership)
-                free((void *) buf);
             return written;
         }
     }
     catch(...)
     {
         heartbeat = false;
-        if (takeOwnership)
-            free((void *) buf);
         throw;
     }
 }
