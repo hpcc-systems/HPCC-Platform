@@ -371,7 +371,7 @@ define([
 
             on(document, ".LogicalNameClick:click", function (evt) {
                 if (context.onRowDblClick) {
-                    var idx = evt.srcElement.getAttribute("rowIndex");
+                    var idx = evt.target.getAttribute("rowIndex");
                     var item = context.workunitsGrid.getItem(idx);
                     context.onRowDblClick(item);
                 }
