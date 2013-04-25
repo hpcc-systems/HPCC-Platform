@@ -301,11 +301,23 @@ else ( PLATFORM )
     if (WIN32)
       set ( CPACK_NSIS_DISPLAY_NAME "Client Tools" )
       set ( CPACK_PACKAGE_INSTALL_DIRECTORY "${DIR_NAME}\\\\${version}\\\\clienttools")
-      set ( CPACK_PACKAGE_INSTALL_REGISTRY_KEY "${DIR_NAME}\\\\${version}\\\\clienttools")
+      set ( CPACK_PACKAGE_INSTALL_REGISTRY_KEY "clienttools_${version}")
+      set ( CPACK_NSIS_ENABLE_UNINSTALL_BEFORE_INSTALL "ON" )
+      set ( CPACK_NSIS_URL_INFO_ABOUT "http:\\\\\\\\hpccsystems.com" )
+      set ( CPACK_NSIS_CONTACT ${CPACK_PACKAGE_CONTACT} )
       set ( CPACK_NSIS_DEFINES "
-        !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
+        !define MUI_STARTMENUPAGE_DEFAULTFOLDER \\\"${CPACK_PACKAGE_VENDOR}\\\\${version}\\\\${CPACK_NSIS_DISPLAY_NAME}\\\"
         !define MUI_FINISHPAGE_NOAUTOCLOSE
       ")
+
+      file(STRINGS "${PROJECT_SOURCE_DIR}/../sign/passphrase.txt" PFX_PASSWORD LIMIT_COUNT 1)
+
+      add_custom_target(SIGN 
+          COMMAND signtool sign /f "${PROJECT_SOURCE_DIR}/../sign/hpcc_code_signing.pfx" /p "${PFX_PASSWORD}" /t "http://timestamp.verisign.com/scripts/timstamp.dll" "${CMAKE_BINARY_DIR}/${CPACK_PACKAGE_NAME}*.exe"
+          COMMENT "Digital Signature"
+      )
+      add_dependencies(SIGN PACKAGE)
+      set_property(TARGET SIGN PROPERTY FOLDER "CMakePredefinedTargets")
     endif()
 endif( PLATFORM )
 
