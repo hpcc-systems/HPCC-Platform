@@ -53,6 +53,7 @@ enum StatisticType
 
     STATS_ACCEPTED,
     STATS_REJECTED,
+    STATS_ATMOST,
 
     STATS_DISK_SEEKS,
 
