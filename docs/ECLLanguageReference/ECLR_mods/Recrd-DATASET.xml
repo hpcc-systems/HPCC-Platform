@@ -329,7 +329,7 @@
     [,ENCRYPT(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
     ]);</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -474,7 +474,9 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
     role="bold"> ) ] [, QUOTE<indexterm>
         <primary>QUOTE</primary>
       </indexterm>( </emphasis><emphasis>characters</emphasis><emphasis
-    role="bold"> ) ]</emphasis><emphasis role="bold"> [, MAXLENGTH<indexterm>
+    role="bold"> ) ]</emphasis><emphasis role="bold"> [, ESCAPE<indexterm>
+        <primary>ESCAPE</primary>
+      </indexterm>( </emphasis><emphasis>esc</emphasis><emphasis role="bold"> ) ] [, MAXLENGTH<indexterm>
         <primary>MAXLENGTH</primary>
       </indexterm>( </emphasis><emphasis>size</emphasis><emphasis role="bold">
     ) ]</emphasis></para>
@@ -492,7 +494,7 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
     ]);</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -564,6 +566,23 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
             <entry><para>A single string constant, or set of string constants,
             that define the character(s) used as the string value
             delimiter.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis role="bold">ESCAPE</emphasis></entry>
+
+            <entry><para>Optional. The string escape character used to indicate 
+            the next character (usually a control character) is part of the data and not to be
+            interpreted as a field or row delimiter. If omitted, the default is a backslash ('\\') 
+            or the escape character specified in the spray operation that put the file on
+            disk.</para></entry>
+          </row>
+
+          <row>
+            <entry><emphasis>esc</emphasis></entry>
+
+            <entry><para>A single string constant, or set of string constants,
+            that define the character(s) used to escape control characters.</para></entry>
           </row>
 
           <row>
@@ -662,7 +681,7 @@ file3 := DATASET('MyFile.CSV',
       </indexterm>(</emphasis><emphasis>key</emphasis><emphasis role="bold">)
     ]);</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -778,7 +797,7 @@ books := DATASET('MyFile',rform,XML('library/book'));</programlisting>
         <primary>XML</primary>
       </indexterm> ]) );</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
