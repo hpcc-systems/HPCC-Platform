@@ -1633,6 +1633,7 @@ private:
                 topology->setPropBool("@lockDali", true);
                 if (daliHelper)
                     daliHelper->disconnect();
+                saveTopology();
             }
             else if (stricmp(queryName, "control:logfullqueries")==0)
             {
@@ -2106,6 +2107,7 @@ private:
             else if (stricmp(queryName, "control:unlockDali")==0)
             {
                 topology->setPropBool("@lockDali", false);
+                saveTopology();
             }
             else if (stricmp(queryName, "control:unsuspend")==0)
             {
