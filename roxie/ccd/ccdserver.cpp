@@ -19123,11 +19123,13 @@ public:
         {
             response = serverContext->queryResult(sequence);
             if (response)
-                response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0);
-            if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
             {
-                writer.setown(createIXmlWriter(serverContext->getXmlFlags(), 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
-                writer->outputBeginArray("Row");
+                response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0);
+                if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
+                {
+                    writer.setown(createIXmlWriter(serverContext->getXmlFlags(), 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
+                    writer->outputBeginArray("Row");
+                }
             }
 
         }
