@@ -345,6 +345,8 @@ public:
                 continue;
             if (iter.matchOption(optComment, ECLOPT_COMMENT))
                 continue;
+            if (iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverwrite, ECLOPT_OVERWRITE_S))
+                continue;
             if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
