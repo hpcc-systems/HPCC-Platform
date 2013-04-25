@@ -1423,17 +1423,11 @@ private:
         dflist.append(*file);
         // Also add subfiles to cache
         IDistributedSuperFile * sfile = file->querySuperFile();
-        if (sfile) {
+        if (sfile)
+        {
             Owned<IDistributedFileIterator> iter = sfile->getSubFileIterator();
-            ForEach(*iter) {
-                IDistributedFile *f = &iter->query();
-                if (f->querySuperFile()) {
-                    addFileToCache(f);
-                } else {
-                    f->Link();
-                    dflist.append(*f);
-                }
-            }
+            ForEach(*iter)
+                addFileToCache(&iter->query());
         }
     }
 };
