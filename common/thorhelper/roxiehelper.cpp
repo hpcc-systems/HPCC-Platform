@@ -449,19 +449,23 @@ bool CSafeSocket::checkConnection() const
 size32_t CSafeSocket::write(const void *buf, size32_t size, bool takeOwnership)
 {
     CriticalBlock c(crit); // NOTE: anyone needing to write multiple times without interleave should have already locked this. We lock again for the simple cases.
+    OwnedMalloc<void> ownedBuffer;
+    if (takeOwnership)
+        ownedBuffer.setown((void *) buf);
+    if (!size)
+        return 0;
     try
     {
         if (httpMode)
         {
             if (!takeOwnership)
             {
-                void *newbuf = malloc(size);
-                if (!newbuf)
+                ownedBuffer.setown(malloc(size));
+                if (!ownedBuffer)
                     throw MakeStringException(THORHELPER_INTERNAL_ERROR, "Out of memory in CSafeSocket::write (requesting %d bytes)", size);
-                memcpy(newbuf, buf, size);
-                buf = newbuf;
+                memcpy(ownedBuffer, buf, size);
             }
-            queued.append((void *) buf);
+            queued.append(ownedBuffer.getClear());
             lengths.append(size);
             return size;
         }
@@ -469,16 +473,12 @@ size32_t CSafeSocket::write(const void *buf, size32_t size, bool takeOwnership)
         {
             sent += size;
             size32_t written = sock->write(buf, size);
-            if (takeOwnership)
-                free((void *) buf);
             return written;
         }
     }
     catch(...)
     {
         heartbeat = false;
-        if (takeOwnership)
-            free((void *) buf);
         throw;
     }
 }
@@ -880,6 +880,16 @@ void FlushingStringBuffer::encodeXML(const char *x, unsigned flags, unsigned len
     append(t.length(), t.str());
 }
 
+void FlushingStringBuffer::addPayload(StringBuffer &s, unsigned int reserve)
+{
+    if (!s.length())
+        return;
+    lengths.append(s.length());
+    queued.append(s.detach());
+    if (reserve)
+        s.ensureCapacity(reserve);
+}
+
 void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
 {
     CriticalBlock b(crit);
@@ -887,16 +897,8 @@ void FlushingStringBuffer::flushXML(StringBuffer &current, bool isClosing)
     {
         if (isClosing || current.length() > HTTP_SPLIT_THRESHOLD)
         {
-            if (s.length())
-            {
-                lengths.append(s.length());
-                queued.append(s.detach());
-                s.ensureCapacity(HTTP_SPLIT_RESERVE);
-            }
-            lengths.append(current.length());
-            queued.append(current.detach());
-            if (!isClosing)
-                current.ensureCapacity(HTTP_SPLIT_RESERVE);
+            addPayload(s, HTTP_SPLIT_RESERVE);
+            addPayload(current, isClosing ? 0 : HTTP_SPLIT_RESERVE);
         }
     }
     else if (isClosing)
@@ -913,16 +915,8 @@ void FlushingStringBuffer::flush(bool closing)
     }
     if (isHttp)
     {
-        if (!closing)
-        {
-            unsigned length = s.length();
-            if (length > HTTP_SPLIT_THRESHOLD)
-            {
-                queued.append(s.detach());
-                lengths.append(length);
-                s.ensureCapacity(HTTP_SPLIT_RESERVE);
-            }
-        }
+        if (!closing && s.length() > HTTP_SPLIT_THRESHOLD)
+            addPayload(s, HTTP_SPLIT_RESERVE);
     }
     else if (needsFlush(closing))
     {
