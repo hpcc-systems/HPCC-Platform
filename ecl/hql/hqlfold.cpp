@@ -3371,7 +3371,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
             break;
         }
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
         {
             //If action does not change the type information, then it can't have done anything...
@@ -5588,7 +5588,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_keyeddistribute:
     case no_cosort:
     case no_sort:
-    case no_shuffle:
+    case no_subsort:
     case no_sorted:
     case no_assertsorted:
     case no_topn:

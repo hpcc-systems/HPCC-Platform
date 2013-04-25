@@ -260,6 +260,7 @@ extern HQL_API _ATOM notMatchedOnlyAtom;
 extern HQL_API _ATOM _noStreaming_Atom;
 extern HQL_API _ATOM noTrimAtom;
 extern HQL_API _ATOM noTypeAtom;
+extern HQL_API _ATOM noXpathAtom;
 extern HQL_API _ATOM oldSetFormatAtom;
 extern HQL_API _ATOM omethodAtom;
 extern HQL_API _ATOM _omitted_Atom;

@@ -256,6 +256,7 @@ _ATOM notMatchedAtom;
 _ATOM notMatchedOnlyAtom;
 _ATOM noTrimAtom;
 _ATOM noTypeAtom;
+_ATOM noXpathAtom;
 _ATOM oldSetFormatAtom;
 _ATOM omethodAtom;
 _ATOM _omitted_Atom;
@@ -668,6 +669,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     notMatchedOnlyAtom = createLowerCaseAtom("NOT MATCHED ONLY");
     MAKEATOM(noTrim);
     MAKEATOM(noType);
+    MAKEATOM(noXpath);
     MAKEATOM(oldSetFormat);
     MAKEATOM(omethod);
     MAKESYSATOM(omitted);

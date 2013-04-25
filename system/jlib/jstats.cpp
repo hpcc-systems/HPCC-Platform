@@ -45,6 +45,7 @@ extern jlib_decl const char *getStatName(unsigned i)
 
     case STATS_ACCEPTED: return "Accepted index reads";
     case STATS_REJECTED: return "Rejected index reads";
+    case STATS_ATMOST: return "ATMOST events triggered";
 
     case STATS_DISK_SEEKS: return "Disk seeks";
 
@@ -78,6 +79,7 @@ extern jlib_decl const char *getStatShortName(unsigned i)
 
     case STATS_ACCEPTED: return "accepted";
     case STATS_REJECTED: return "rejected";
+    case STATS_ATMOST: return "atmost";
 
     case STATS_DISK_SEEKS: return "fseeks";
     default:
@@ -106,6 +108,7 @@ extern jlib_decl StatisticCombineType getStatCombineMode(unsigned  i)
     case STATS_SERVERCACHEHIT:
     case STATS_ACCEPTED:
     case STATS_REJECTED:
+    case STATS_ATMOST:
     case STATS_DISK_SEEKS:
     default: 
         return STATSMODE_COMBINE_SUM;

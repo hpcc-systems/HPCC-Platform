@@ -1536,7 +1536,7 @@ class CThorTopNArg : public CThorArg, implements IHThorTopNArg
     virtual int compareBest(const void * _left) { return +1; }
 };
 
-class CThorShuffleArg : public CThorArg, implements IHThorShuffleArg
+class CThorSubSortArg : public CThorArg, implements IHThorSubSortArg
 {
     virtual void Link() const { RtlCInterface::Link(); }
     virtual bool Release() const { return RtlCInterface::Release(); }
@@ -1549,8 +1549,8 @@ class CThorShuffleArg : public CThorArg, implements IHThorShuffleArg
         case TAIarg:
         case TAIsortarg_1:
             return static_cast<IHThorSortArg *>(this);
-        case TAIshuffleextra_1:
-            return static_cast<IHThorShuffleExtra *>(this);
+        case TAIsubsortextra_1:
+            return static_cast<IHThorSubSortExtra *>(this);
         }
         return NULL;
     }

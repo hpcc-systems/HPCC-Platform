@@ -28,6 +28,6 @@ integer2        d;
 namesTable := dataset('x', namesRecord, thor);
 
 s1 := sort(namesTable, a, b, c);
-s2 := shuffle(s1, {a,b}, {d}, local);
+s2 := subsort(s1, {a,b}, {d}, local);
 s3 := sorted(s2, {a,b,d}, assert);
 output(s3);

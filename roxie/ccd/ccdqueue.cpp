@@ -1711,7 +1711,11 @@ public:
         int udpQueueSize = topology->getPropInt("@udpQueueSize", UDP_QUEUE_SIZE);
         int udpSendQueueSize = topology->getPropInt("@udpSendQueueSize", UDP_SEND_QUEUE_SIZE);
         int udpMaxSlotsPerClient = topology->getPropInt("@udpMaxSlotsPerClient", 0x7fffffff);
+#ifdef _DEBUG
         bool udpResendEnabled = topology->getPropBool("@udpResendEnabled", false);
+#else
+        bool udpResendEnabled = false;  // As long as it is known to be broken, we don't want it accidentally enabled in any release version
+#endif
         openReceiveSocket();
         maxPacketSize = sock->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))

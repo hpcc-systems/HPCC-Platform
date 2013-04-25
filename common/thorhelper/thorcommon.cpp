@@ -782,7 +782,7 @@ extern const char * getActivityText(ThorActivityKind kind)
     case TAKexternalsink:           return "User Output";
     case TAKexternalprocess:        return "User Proceess";
     case TAKwhen_action:            return "When";
-    case TAKshuffle:                return "Shuffle";
+    case TAKsubsort:                return "Sub Sort";
     case TAKdictionaryworkunitwrite:return "Dictionary Write";
     case TAKdictionaryresultwrite:  return "Dictionary Result";
     }
