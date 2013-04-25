@@ -462,7 +462,7 @@ public:
     virtual bool navMenuEvent(IEspContext &context, IEspNavMenuEventRequest &req, 
                                             IEspNavMenuEventResponse &resp);
     virtual bool displaySettings(IEspContext &context, IEspDisplaySettingsRequest &req, IEspDisplaySettingsResponse &resp);
-    virtual bool isAlphaNumeric(const char *pstr, const char *pExprOverride = NULL) const;
+    virtual bool isAlphaNumeric(const char *pstr) const;
     virtual bool saveSetting(IEspContext &context, IEspSaveSettingRequest &req, IEspSaveSettingResponse &resp);
     virtual bool getBuildSetInfo(IEspContext &context, IEspGetBuildSetInfoRequest &req, IEspGetBuildSetInfoResponse &resp);
     virtual bool getDeployableComps(IEspContext &context, IEspGetDeployableCompsRequest &req, IEspGetDeployableCompsResponse &resp);
