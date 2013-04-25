@@ -1374,18 +1374,13 @@ public:
     IDistributedSuperFile *lookupSuperFile(const char *name, unsigned timeout)
     {
         IDistributedSuperFile *ret;
-        IDistributedFile * f = findFile(name);
-        if (f) {
-            ret = f->querySuperFile();
-            if (ret)
-                return LINK(ret);
-        }
-        ret = queryDistributedFileDirectory().lookupSuperFile(name,udesc,this,timeout);
-        if (!ret)
-            return NULL;
-        if (isactive) {
+        IDistributedFile *f = findFile(name);
+        if (f)
+            ret = LINK(f->querySuperFile());
+        else
+            ret = queryDistributedFileDirectory().lookupSuperFile(name,udesc,this,timeout);
+        if (isactive && ret)
             addFileToCache(ret);
-        }
         return ret;
     }
 
@@ -1413,17 +1408,11 @@ private:
         dflist.append(*file);
         // Also add subfiles to cache
         IDistributedSuperFile * sfile = file->querySuperFile();
-        if (sfile) {
+        if (sfile)
+        {
             Owned<IDistributedFileIterator> iter = sfile->getSubFileIterator();
-            ForEach(*iter) {
-                IDistributedFile *f = &iter->query();
-                if (f->querySuperFile()) {
-                    addFileToCache(f);
-                } else {
-                    f->Link();
-                    dflist.append(*f);
-                }
-            }
+            ForEach(*iter)
+                addFileToCache(&iter->query());
         }
     }
 
@@ -4133,7 +4122,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         virtual ~cAddSubFileAction() {}
         bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname));   
+            parent.setown(transaction->lookupSuperFileCached(parentlname));
             if (!parent)
                 throw MakeStringException(-1,"addSubFile: SuperFile %s cannot be found",parentlname.get());
             if (!subfile.isEmpty())
@@ -4143,9 +4132,6 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
                     sub.setown(transaction->lookupFile(subfile,SDS_SUB_LOCK_TIMEOUT));
                     if (!sub)
                         throw MakeStringException(-1,"cAddSubFileAction: sub file %s not found", subfile.sget());
-                    // Must validate before locking for update below, to check sub is not already in parent (and therefore locked already)
-                    CDistributedSuperFile *sf = dynamic_cast<CDistributedSuperFile *>(parent.get());;
-                    sf->validateAddSubFile(sub);
                 }
                 catch (IDFS_Exception *e)
                 {
@@ -4211,7 +4197,7 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         virtual ~cRemoveSubFileAction() {}
         bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname,true));
+            parent.setown(transaction->lookupSuperFileCached(parentlname,true));
             if (!parent)
                 throw MakeStringException(-1,"removeSubFile: SuperFile %s cannot be found",parentlname.get());
             if (!subfile.isEmpty())
@@ -4318,10 +4304,10 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         virtual ~cSwapFileAction() {}
         bool prepare()
         {
-            parent.setown(transaction->lookupSuperFile(parentlname));
+            parent.setown(transaction->lookupSuperFileCached(parentlname));
             if (!parent)
                 throw MakeStringException(-1,"swapSuperFile: SuperFile %s cannot be found",parentlname.get());
-            file.setown(transaction->lookupSuperFile(filelname));
+            file.setown(transaction->lookupSuperFileCached(filelname));
             if (!file)
             {
                 parent.clear();

@@ -380,9 +380,9 @@ define([
                 },
                 { 
                     name: "ID", field: "ID", width: "15", 
-                    formatter: function (Wuid, idx) {
-                        var wu = ESPDFUWorkunit.Get(Wuid);
-                        return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# class='WuidClick'>" +  Wuid + "</a>";
+                    formatter: function (ID, idx) {
+                        var wu = ESPDFUWorkunit.Get(ID);
+                        return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='IDClick'>" + ID + "</a>";
                     }
                 },
                 {
@@ -404,9 +404,11 @@ define([
             this.workunitsGrid.setStore(objStore, this.getFilter());
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero DFU Workunits (check filter).</span>";
 
-            on(document, ".WuidClick:click", function (evt) {
+            on(document, ".IDClick:click", function (evt) {
                 if (context._onRowDblClick) {
-                    context._onRowDblClick(evt.srcElement.innerText);
+                    var idx = evt.target.getAttribute("rowIndex");
+                    var item = context.workunitsGrid.getItem(idx);
+                    context._onRowDblClick(item.ID);
                 }
             });
 
