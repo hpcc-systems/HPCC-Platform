@@ -982,7 +982,7 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
 
 bool CWsDeployFileInfo::isAlphaNumeric(const char *pstr) const
 {
-  RegExpr expr("[A-Za-z0-9-_]+");
+  RegExpr expr("[A-Za-z0-9_-]+");
 
   return (expr.find(pstr) && expr.findlen(0) == strlen(pstr));
 }
