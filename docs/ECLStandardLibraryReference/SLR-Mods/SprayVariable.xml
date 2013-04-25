@@ -56,7 +56,7 @@
   role="bold">]</emphasis> <emphasis role="bold"> [</emphasis>
   <emphasis>,allowoverwrite</emphasis> <emphasis role="bold">] [</emphasis>
   <emphasis>,replicate</emphasis> <emphasis role="bold">] [</emphasis>
-  <emphasis>, compress </emphasis> <emphasis role="bold">]);</emphasis></para>
+  <emphasis>, compress </emphasis> <emphasis role="bold">]);</emphasis>
   <emphasis>, sourceCsvEscape </emphasis> <emphasis role="bold">]);</emphasis></para>
 
   <informaltable colsep="0" frame="none" rowsep="0">
