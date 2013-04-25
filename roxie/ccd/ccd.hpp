@@ -452,6 +452,7 @@ inline unsigned getBondedChannel(unsigned partNo)
 
 extern void FatalError(const char *format, ...)  __attribute__((format(printf, 1, 2)));
 extern unsigned getNextInstanceId();
+extern void saveTopology();
 
 #define LOGGING_INTERCEPTED     0x01
 #define LOGGING_TIMEACTIVITIES  0x02
