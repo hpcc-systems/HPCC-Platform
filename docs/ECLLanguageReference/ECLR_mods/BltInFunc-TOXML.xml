@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<sect1 id="TOXML">
+  <title>TOXML</title>
+
+  <para><emphasis role="bold">TOXML<indexterm>
+      <primary>TOXML</primary>
+    </indexterm><indexterm>
+      <primary>TOXML function</primary>
+    </indexterm>(</emphasis><emphasis> record </emphasis><emphasis
+  role="bold">)</emphasis></para>
+
+  <para><informaltable colsep="0" frame="none" rowsep="0">
+      <tgroup cols="2">
+        <colspec colwidth="77.95pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis>record</emphasis></entry>
+
+            <entry>The row (record) of data to convert to an XML
+            format.</entry>
+          </row>
+
+          <row>
+            <entry>Return:</entry>
+
+            <entry>TOXML returns a STRING.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">TOXML </emphasis>function returns a single
+  string with the data in the <emphasis>record</emphasis> re-formatted as XML.
+  If the RECORD structure of the <emphasis>record</emphasis> has XPATHs
+  defined, then they will be used, otherwise the lower-cased field names are
+  used as the XML tag names.</para>
+
+  <para>Example:</para>
+
+  <programlisting>namesRec1 := RECORD
+  UNSIGNED2 EmployeeID{xpath('EmpID')};
+  STRING10  Firstname{xpath('FName')};
+  STRING10  Lastname{xpath('LName')};
+END;
+rec1 := TOXML(ROW({42,'Fred','Flintstone'},namesRec1));
+OUTPUT(rec1);
+//returns this string:
+//<EmpID>'&lt;EmpID&gt;42&lt;/EmpID&gt;&lt;FName&gt;Fred&lt;/FName&gt;&lt;LName&gt;Flintstone&lt;/LName&gt;'</EmpID><FName /><LName />
+
+namesRec2 := RECORD
+  UNSIGNED2 EmployeeID;
+  STRING10  Firstname;
+  STRING10  Lastname;
+END;
+rec2 := TOXML(ROW({42,'Fred','Flintstone'},namesRec2));
+OUTPUT(rec2);
+//returns this string:
+//'&lt;employeeid&gt;42&lt;/employeeid&gt;&lt;firstname&gt;Fred&lt;/firstname&gt;&lt;lastname&gt;Flintstone&lt;/lastname&gt;'<employeeid /><firstname /><lastname />
+</programlisting>
+
+  <para>See Also: <link linkend="ROW">ROW</link>, <link
+  linkend="FROMXML">FROMXML</link></para>
+</sect1>
