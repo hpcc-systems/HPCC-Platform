@@ -139,7 +139,7 @@ Problems of constants, unknown attributes and duplicates:
 
 =>
 - Distributions are either fully mapped, unknown or sorted(list of components, terminated by unknown).  This latter may possibly useful for 
-  knowing we could use group to shuffle instead of resorting.
+  knowing we could use group to subsort instead of resorting.
 - Global sort lists do not include any trailing unknown attributes.
 - Local sort lists may contain a trailing unknown attribute if they are partial.
 - Grouped sort lists do not include unknown attributes.
@@ -1006,7 +1006,7 @@ ITypeInfo * getTypeFromMeta(IHqlExpression * record, IHqlExpression * meta, unsi
 }
 
 
-extern HQL_API ITypeInfo * getTypeShuffle(ITypeInfo * prevType, IHqlExpression * grouping, IHqlExpression * sortOrder, bool isLocal)
+extern HQL_API ITypeInfo * getTypeSubSort(ITypeInfo * prevType, IHqlExpression * grouping, IHqlExpression * sortOrder, bool isLocal)
 {
     Owned<ITypeInfo> groupedType = getTypeGrouped(prevType, grouping, isLocal);
     Owned<ITypeInfo> sortedType = getTypeGroupSort(groupedType, sortOrder);
@@ -1071,7 +1071,7 @@ bool isSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isL
 }
 
 
-IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal, bool alwaysLocal, bool allowShuffle)
+IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal, bool alwaysLocal, bool allowSubSort)
 {
     if (isSortedForGroup(table, sortList, isLocal||alwaysLocal))
         return LINK(table);
@@ -1333,9 +1333,9 @@ bool isWorthShuffling(IHqlExpression * dataset, HqlExprArray & newSort, bool isL
 
 //--------------------------------------------------------------------------------------------------------------------
 
-//Convert SHUFFLE(ds, <sort>, <grouping>, ?LOCAL, options) to
+//Convert SUBSORT(ds, <sort>, <grouping>, ?LOCAL, options) to
 //g := GROUP(ds, grouping, ?LOCAL); s := SORT(g, <sort>, options); GROUP(s);
-IHqlExpression * convertShuffleToGroupedSort(IHqlExpression * expr)
+IHqlExpression * convertSubSortToGroupedSort(IHqlExpression * expr)
 {
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * newOrder = expr->queryChild(1);
@@ -1354,11 +1354,11 @@ IHqlExpression * convertShuffleToGroupedSort(IHqlExpression * expr)
     return createDataset(no_group, sorted.getClear());
 }
 
-static IHqlExpression * createShuffled(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
+static IHqlExpression * createSubSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
 {
-    bool isGroupedShuffle = !ignoreGrouping && isGrouped(dataset);
+    bool isGroupedSubSort = !ignoreGrouping && isGrouped(dataset);
     unsigned sortedElements = numElementsAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping);
-    if ((sortedElements == 0) || isGroupedShuffle)
+    if ((sortedElements == 0) || isGroupedSubSort)
         return NULL;
 
     HqlExprArray components;
@@ -1371,47 +1371,47 @@ static IHqlExpression * createShuffled(IHqlExpression * dataset, IHqlExpression 
     OwnedHqlExpr newOrder = createValueSafe(no_sortlist, makeSortListType(NULL), components, sortedElements, components.ordinality());
 
     OwnedHqlExpr attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
-    OwnedHqlExpr shuffle = createDatasetF(no_shuffle, LINK(dataset), LINK(newOrder), LINK(alreadySorted), LINK(attr), NULL);
-    //Grouped shuffles never generated, global shuffles (if generated) get converted to a global group
+    OwnedHqlExpr subsort = createDatasetF(no_subsort, LINK(dataset), LINK(newOrder), LINK(alreadySorted), LINK(attr), NULL);
+    //Grouped subsorts never generated, global subsorts (if generated) get converted to a global group
     if (!isLocal && !alwaysLocal)
-        shuffle.setown(convertShuffleToGroupedSort(shuffle));
+        subsort.setown(convertSubSortToGroupedSort(subsort));
 
-    assertex(isAlreadySorted(shuffle, order, isLocal||alwaysLocal, ignoreGrouping));
-    return shuffle.getClear();
+    assertex(isAlreadySorted(subsort, order, isLocal||alwaysLocal, ignoreGrouping));
+    return subsort.getClear();
 }
 
-IHqlExpression * getShuffleSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
+IHqlExpression * getSubSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
 {
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return NULL;
 
     OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), order);
     OwnedHqlExpr mappedSortlist = replaceSelector(sortlist, queryActiveTableSelector(), dataset);
-    return createShuffled(dataset, mappedSortlist, isLocal, ignoreGrouping, alwaysLocal);
+    return createSubSorted(dataset, mappedSortlist, isLocal, ignoreGrouping, alwaysLocal);
 }
 
-IHqlExpression * getShuffleSort(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
+IHqlExpression * getSubSort(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
 {
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return NULL;
 
-    return createShuffled(dataset, order, isLocal, ignoreGrouping, alwaysLocal);
+    return createSubSorted(dataset, order, isLocal, ignoreGrouping, alwaysLocal);
 }
 
 //--------------------------------------------------------------------------------------------------------------------
 
-IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowShuffle)
+IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowSubSort)
 {
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return LINK(dataset);
 
-    if (allowShuffle && (isLocal || alwaysLocal))
+    if (allowSubSort && (isLocal || alwaysLocal))
     {
         if (isWorthShuffling(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         {
-            OwnedHqlExpr shuffled = createShuffled(dataset, order, isLocal, ignoreGrouping, alwaysLocal);
-            if (shuffled)
-                return shuffled.getClear();
+            OwnedHqlExpr subsorted = createSubSorted(dataset, order, isLocal, ignoreGrouping, alwaysLocal);
+            if (subsorted)
+                return subsorted.getClear();
         }
     }
 

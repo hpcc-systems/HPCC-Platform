@@ -1779,7 +1779,10 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     if ((op == no_setgraphresult) && translator.queryOptions().minimizeActivityClasses)
         outputDataset = dataset->queryChild(0);
 
-    IHqlExpression * record = queryRecord(outputDataset);
+    bool removeXpath = dataset->hasProperty(noXpathAtom) || (op == no_output && translator.queryOptions().removeXpathFromOutput);
+    LinkedHqlExpr record = queryRecord(outputDataset);
+    if (removeXpath)
+        record.setown(removePropertyFromFields(record, xpathAtom));
     meta.setMeta(translator, record, ::isGrouped(outputDataset));
 
     activityId = translator.nextActivityId();
@@ -5800,7 +5803,7 @@ double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluste
         if (isThorCluster(cluster))
             complexity = 5;
         break;
-    case no_shuffle:
+    case no_subsort:
         complexity = 1;
         break;
     case no_sort:
@@ -6367,12 +6370,12 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
                 result = doBuildActivityProcess(ctx, expr);
                 break;
             case no_group:
-                //Special case group(shuffle) which will be mapped to group(group(sort(group))) to remove
+                //Special case group(subsort) which will be mapped to group(group(sort(group))) to remove
                 //the redundant group
-                if (!options.supportsShuffleActivity && (expr->queryChild(0)->getOperator() == no_shuffle))
+                if (!options.supportsSubSortActivity && (expr->queryChild(0)->getOperator() == no_subsort))
                 {
-                    IHqlExpression * shuffle = expr->queryChild(0);
-                    OwnedHqlExpr groupedSort = convertShuffleToGroupedSort(shuffle);
+                    IHqlExpression * subsort = expr->queryChild(0);
+                    OwnedHqlExpr groupedSort = convertSubSortToGroupedSort(subsort);
                     assertex(groupedSort->getOperator() == no_group);
                     OwnedHqlExpr newGroup = replaceChild(expr, 0, groupedSort->queryChild(0));
                     result = doBuildActivityGroup(ctx, newGroup);
@@ -6433,10 +6436,10 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_sub:
                 result = doBuildActivitySub(ctx, expr);
                 break;
-            case no_shuffle:
-                if (!options.supportsShuffleActivity)
+            case no_subsort:
+                if (!options.supportsSubSortActivity)
                 {
-                    OwnedHqlExpr groupedSort = convertShuffleToGroupedSort(expr);
+                    OwnedHqlExpr groupedSort = convertSubSortToGroupedSort(expr);
                     result = buildCachedActivity(ctx, groupedSort);
                 }
                 else
@@ -10313,7 +10316,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
             }
         }
 
-        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), dataset->queryRecord(), (kind != TAKcsvwrite) && (kind != TAKxmlwrite), true);
+        IHqlExpression * outputRecord = instance->meta.queryRecord();
+        OwnedHqlExpr outputDs = createDataset(no_null, LINK(outputRecord));
+        Owned<IWUResult> result = createDatasetResultSchema(seq, queryResultName(expr), outputRecord, (kind != TAKcsvwrite) && (kind != TAKxmlwrite), true);
         if (expr->hasProperty(resultAtom))
             result->setResultRowLimit(-1);
 
@@ -10327,9 +10332,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutput(BuildCtx & ctx, IHqlExp
 
         //Both csv write and pipe with csv/xml format
         if (csvAttr)
-            buildCsvWriteMembers(instance, dataset, csvAttr);
+            buildCsvWriteMembers(instance, outputDs, csvAttr);
         if (xmlAttr)
-            buildXmlWriteMembers(instance, dataset, xmlAttr);
+            buildXmlWriteMembers(instance, outputDs, xmlAttr);
 
         buildEncryptHelper(instance->startctx, expr->queryProperty(encryptAtom));
     }
@@ -10891,17 +10896,17 @@ ABoundActivity * HqlCppTranslator::doBuildActivityOutputWorkunit(BuildCtx & ctx,
             buildReturn(namectx, name, constUnknownVarStringType);
         }
 
-        LinkedHqlExpr cleanedRecord = record;
-        if (options.removeXpathFromOutput)
-            cleanedRecord.setown(removePropertyFromFields(cleanedRecord, xpathAtom));
-
-        Owned<IWUResult> result = createDatasetResultSchema(seq, name, cleanedRecord, true, false);
+        IHqlExpression * outputRecord = instance->meta.queryRecord();
+        Owned<IWUResult> result = createDatasetResultSchema(seq, name, outputRecord, true, false);
         if (result)
         {
             result->setResultRowLimit(-1);
 
             if (sequence >= 0)
-                buildXmlSerialize(instance->startctx, dataset, "serializeXml", false);
+            {
+                OwnedHqlExpr outputDs = createDataset(no_null, LINK(outputRecord));
+                buildXmlSerialize(instance->startctx, outputDs, "serializeXml", false);
+            }
         }
 
         if (flags.length())
@@ -15790,9 +15795,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
             helper = "Sort";
             break;
         }
-    case no_shuffle:
-        actKind = TAKshuffle;
-        helper = "Shuffle";
+    case no_subsort:
+        actKind = TAKsubsort;
+        helper = "SubSort";
         break;
     default:
         {
@@ -15849,7 +15854,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySort(BuildCtx & ctx, IHqlExpre
 
     buildSkewThresholdMembers(instance->classctx, expr);
 
-    if (expr->getOperator() == no_shuffle)
+    if (expr->getOperator() == no_subsort)
         doBuildFuncIsSameGroup(instance->startctx, dataset, expr->queryChild(2));
 
     if (limit)

@@ -158,6 +158,7 @@ public:
     virtual void encodeXML(const char *x, unsigned flags=0, unsigned len=(unsigned)-1, bool utf8=false);
     virtual void flushXML(StringBuffer &current, bool isClosing);
     virtual void flush(bool closing) ;
+    virtual void addPayload(StringBuffer &s, unsigned int reserve=0);
     virtual void *getPayload(size32_t &length);
     virtual void startDataset(const char *elementName, const char *resultName, unsigned sequence, bool _extend = false);
     virtual void startScalar(const char *resultName, unsigned sequence);

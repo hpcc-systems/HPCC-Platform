@@ -325,9 +325,7 @@ define([
 
             this.workunitsGrid.setStructure([
                 {
-                    name: "C",
-                    field: "isZipfile",
-                    width: "16px",
+                    name: "C", field: "isZipfile", width: "16px",
                     formatter: function (compressed) {
                         if (compressed == true) {
                             return "C";
@@ -336,9 +334,7 @@ define([
                     }
                 },
                 {
-                    name: "K",
-                    field: "IsKeyFile",
-                    width: "16px",
+                    name: "K", field: "IsKeyFile", width: "16px",
                     formatter: function (keyfile) {
                         if (keyfile == true) {
                             return "K";
@@ -347,9 +343,7 @@ define([
                     }
                 },
                 {
-                    name: "S",
-                    field: "isSuperfile",
-                    width: "16px",
+                    name: "S", field: "isSuperfile", width: "16px",
                     formatter: function (superfile) {
                         if (superfile == true) {
                             return "S";
@@ -357,7 +351,12 @@ define([
                         return "";
                     }
                 },
-                { name: "Logical Name", field: "Name", width: "32" },
+                {
+                    name: "Logical Name", field: "Name", width: "32",
+                    formatter: function (name, idx) {
+                        return "<a href=# rowIndex=" + idx + " class='LogicalNameClick'>" + name + "</a>";
+                    }
+                },
                 { name: "Owner", field: "Owner", width: "8" },
                 { name: "Description", field: "Description", width: "12" },
                 { name: "Cluster", field: "ClusterName", width: "12" },
@@ -370,7 +369,14 @@ define([
             this.workunitsGrid.setStore(objStore, this.getFilter());
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Logical Files(check filter).</span>";
 
-            var context = this;
+            on(document, ".LogicalNameClick:click", function (evt) {
+                if (context.onRowDblClick) {
+                    var idx = evt.srcElement.getAttribute("rowIndex");
+                    var item = context.workunitsGrid.getItem(idx);
+                    context.onRowDblClick(item);
+                }
+            });
+
             this.workunitsGrid.on("RowDblClick", function (evt) {
                 if (context.onRowDblClick) {
                     var idx = evt.rowIndex;
@@ -379,13 +385,13 @@ define([
                 }
             }, true);
 
-             this.workunitsGrid.on("RowContextMenu", function (evt){
+            this.workunitsGrid.on("RowContextMenu", function (evt) {
                 if (context.onRowContextMenu) {
                     var idx = evt.rowIndex;
                     var colField = evt.cell.field;
                     var item = this.getItem(idx);
                     var mystring = "item." + colField;
-                    context.onRowContextMenu(idx,item,colField,mystring);
+                    context.onRowContextMenu(idx, item, colField, mystring);
                 }
             }, true);
 

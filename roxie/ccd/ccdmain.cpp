@@ -88,6 +88,7 @@ unsigned udpMulticastBufferSize = 262142;
 bool roxieMulticastEnabled = true;
 
 IPropertyTree* topology;
+StringBuffer topologyFile;
 CriticalSection ccdChannelsCrit;
 IPropertyTree* ccdChannels;
 StringArray allQuerySetNames;
@@ -401,6 +402,23 @@ int myhook(int alloctype, void *, size_t nSize, int p1, long allocSeq, const uns
 }
 #endif
 
+void saveTopology()
+{
+    // Write back changes that have been made via certain control:xxx changes, so that they survive a roxie restart
+    // Note that they are overwritten when Roxie is manually stopped/started via hpcc-init service - these changes
+    // are only intended to be temporary for the current session
+    try
+    {
+        saveXML(topologyFile.str(), topology);
+    }
+    catch (IException *E)
+    {
+        // If we can't save the topology, then tough. Carry on without it. Changes will not survive an unexpected roxie restart
+        EXCLOG(E, "Error saving topology file");
+        E->Release();
+    }
+}
+
 int STARTQUERY_API start_query(int argc, const char *argv[])
 {
     EnableSEHtoExceptionMapping();
@@ -482,7 +500,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         Owned<IFile> sentinelFile = createSentinelTarget();
         removeSentinelFile(sentinelFile);
 
-        StringBuffer topologyFile;
         if (globals->hasProp("--topology"))
             globals->getProp("--topology", topologyFile);
         else

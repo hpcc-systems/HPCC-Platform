@@ -15,19 +15,23 @@
     limitations under the License.
 ############################################################################## */
 
-#option ('targetClusterType', 'roxie');
-
 namesRecord :=
             RECORD
-string20        a;
-string10        b;
-integer2        c;
-integer2        d;
+string20        surname{xpath('SURnamE')};
+string10        forename{xpath('fOrEnAmE')};
+integer2        age{xpath('_age_')} := 25;
             END;
 
-namesTable := dataset('x', namesRecord, thor);
+namesTable := dataset([
+        {'Hawthorn','Gavin',31},
+        {'Hawthorn','Mia',30},
+        {'Smithe','Pru',10},
+        {'X','Z'}], namesRecord);
 
-s1 := sort(namesTable, a, b, c);
-s2 := subsort(s1, {d},{a,b},local); // sort and grouping are round the wrong way!
-s3 := sorted(s2, {a,b,d}, assert);
-output(s3);
+output(namesTable,,XML,NOXPATH);
+
+output(namesTable,,'out.xml',XML,NOXPATH);
+
+output(namesTable,,'out.raw',NOXPATH);
+
+output(namesTable,,'out.csv',CSV,NOXPATH);

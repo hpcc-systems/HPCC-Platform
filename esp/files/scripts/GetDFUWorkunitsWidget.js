@@ -380,9 +380,9 @@ define([
                 },
                 { 
                     name: "ID", field: "ID", width: "15", 
-                    formatter: function (Wuid) {
+                    formatter: function (Wuid, idx) {
                         var wu = ESPDFUWorkunit.Get(Wuid);
-                        return ("<img src='../files/" + wu.getStateImage() + "'>&nbsp" + Wuid);
+                        return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# class='WuidClick'>" +  Wuid + "</a>";
                     }
                 },
                 {
@@ -403,6 +403,12 @@ define([
             var objStore = new ESPDFUWorkunit.CreateWUQueryObjectStore();
             this.workunitsGrid.setStore(objStore, this.getFilter());
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero DFU Workunits (check filter).</span>";
+
+            on(document, ".WuidClick:click", function (evt) {
+                if (context._onRowDblClick) {
+                    context._onRowDblClick(evt.srcElement.innerText);
+                }
+            });
 
             this.workunitsGrid.on("RowDblClick", function (evt) {
                 if (context._onRowDblClick) {
