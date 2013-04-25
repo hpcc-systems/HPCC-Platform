@@ -11298,6 +11298,7 @@ class CRoxieServerJoinActivity : public CRoxieServerTwoInputActivity
     unsigned joinLimit;
     unsigned atmostLimit;
     unsigned abortLimit;
+    unsigned atmostsTriggered;
     bool betweenjoin;
 
     OwnedRowArray right;
@@ -11372,6 +11373,7 @@ public:
         keepLimit = 0;   // wait until ctx available 
         atmostLimit = 0; // wait until ctx available 
         abortLimit = 0;  // wait until ctx available 
+        atmostsTriggered = 0;
         assertex((joinFlags & (JFfirst | JFfirstleft | JFfirstright)) == 0);
         left = NULL;
         pendingRight = NULL;
@@ -11392,6 +11394,7 @@ public:
         keepLimit = helper.getKeepLimit();
         if (keepLimit == 0) 
             keepLimit = (unsigned)-1;
+        atmostsTriggered = 0;
         atmostLimit = helper.getJoinLimit();
         if(atmostLimit == 0)
             atmostLimit = (unsigned)-1;
@@ -11413,6 +11416,8 @@ public:
 
     virtual void reset()
     {
+        if (atmostsTriggered)
+            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
         right.clear();
         ReleaseClearRoxieRow(left);
         ReleaseClearRoxieRow(pendingRight);
@@ -11541,6 +11546,7 @@ public:
                 }
                 else if(groupCount==atmostLimit)
                 {
+                    atmostsTriggered++;
                     right.clear();
                     groupCount = 0;
                     while(next) 
@@ -16414,6 +16420,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
     unsigned rightOuterIndex;
     unsigned joinLimit;
     unsigned atmostLimit;
+    unsigned atmostsTriggered;
     unsigned abortLimit;
     unsigned keepLimit;
     bool leftOuterJoin;
@@ -16474,6 +16481,7 @@ class CRoxieServerSelfJoinActivity : public CRoxieServerActivity
             }
             else if(groupCount==atmostLimit)
             {
+                atmostsTriggered++;
                 if(leftOuterJoin)
                 {
                     group.append(next);
@@ -16582,6 +16590,7 @@ public:
         first = true;
         keepLimit = 0;
         atmostLimit = 0;
+        atmostsTriggered = 0;
         unsigned joinFlags = helper.getJoinFlags();
         leftOuterJoin = (joinFlags & JFleftouter) != 0;
         rightOuterJoin = (joinFlags & JFrightouter) != 0;
@@ -16610,6 +16619,7 @@ public:
         keepLimit = helper.getKeepLimit();
         if(keepLimit == 0)
             keepLimit = (unsigned)-1;
+        atmostsTriggered = 0;
         atmostLimit = helper.getJoinLimit();
         if(atmostLimit == 0)
             atmostLimit = (unsigned)-1;
@@ -16639,6 +16649,8 @@ public:
 
     virtual void reset()
     {
+        if (atmostsTriggered)
+            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
         group.clear();
         CRoxieServerActivity::reset();
         defaultLeft.clear();
@@ -16913,6 +16925,7 @@ private:
     Owned<LookupTable> table;
     unsigned keepLimit;
     unsigned atmostLimit;
+    unsigned atmostsTriggered;
     unsigned limitLimit;
     bool limitFail;
     bool limitOnFail;
@@ -16959,6 +16972,7 @@ public:
         keepLimit = 0;
         keepCount = 0;
         atmostLimit = 0;
+        atmostsTriggered = 0;
         limitLimit = 0;
         hasGroupLimit = false;
         getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
@@ -16997,6 +17011,8 @@ public:
 
     virtual void reset()
     {
+        if (atmostsTriggered)
+            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
         CRoxieServerTwoInputActivity::reset();
         ReleaseClearRoxieRow(left);
         defaultRight.clear();
@@ -17013,6 +17029,7 @@ public:
         CRoxieServerTwoInputActivity::start(parentExtractSize, parentExtract, paused);
         keepLimit = helper.getKeepLimit();
         if(keepLimit==0) keepLimit = static_cast<unsigned>(-1);
+        atmostsTriggered = 0;
         atmostLimit = helper.getJoinLimit();
         limitLimit = helper.getMatchAbortLimit();
         hasGroupLimit = ((atmostLimit > 0) || (limitLimit > 0));
@@ -17320,6 +17337,7 @@ private:
             }
             if(rightGroup.ordinality() > atmostLimit)
             {
+                atmostsTriggered++;
                 rightGroup.kill();
                 break;
             }
@@ -23598,6 +23616,7 @@ protected:
     Owned<IEngineRowAllocator> defaultRightAllocator;
     unsigned joinFlags;
     unsigned atMost;
+    unsigned atmostsTriggered;
     unsigned abortLimit;
     unsigned keepLimit;
     bool limitFail;
@@ -23680,6 +23699,7 @@ public:
         }
         remote.onStart(parentExtractSize, parentExtract);
         remote.setLimits(helper.getRowLimit(), (unsigned __int64) -1, I64C(0x7FFFFFFFFFFFFFFF));
+        atmostsTriggered = 0;
         atMost = helper.getJoinLimit();
         if (atMost == 0) atMost = (unsigned)-1;
         abortLimit = helper.getMatchAbortLimit();
@@ -23728,6 +23748,8 @@ public:
         defaultRight.clear();
         if (indexReadInput)
             indexReadInput->reset();
+        if (atmostsTriggered)
+            noteStatistic(STATS_ATMOST, atmostsTriggered, 1);
         CRoxieServerActivity::reset(); 
         puller.reset();
         while (groups.ordinality())
@@ -23876,6 +23898,8 @@ public:
         }
         else if (!matched || jg->candidateCount() > atMost)
         {
+            if (jg->candidateCount() > atMost)
+                atmostsTriggered++;
             switch (joinFlags & JFtypemask)
             {
             case JFleftouter:
