@@ -13,7 +13,7 @@
   outstructure</emphasis> <emphasis role="bold">[</emphasis><emphasis>,
   options </emphasis><emphasis role="bold"> ] );</emphasis></para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="121.70pt" />
 
@@ -71,7 +71,7 @@
 
   <para>Valid <emphasis>options</emphasis> are:</para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="135.80pt" />
 

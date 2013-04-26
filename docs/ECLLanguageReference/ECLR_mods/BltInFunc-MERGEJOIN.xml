@@ -17,7 +17,7 @@
       <primary>DEDUP</primary>
     </indexterm> ])</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="82.00pt" />
 
@@ -121,7 +121,7 @@
     types of results, based on the records matching produced by the
     <emphasis>joincondition</emphasis>:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="94.80pt" />
 

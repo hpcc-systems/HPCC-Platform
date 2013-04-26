@@ -1434,26 +1434,38 @@ IPartDescriptor *queryMatchingRemotePart(IPartDescriptor *pdesc, IFileDescriptor
     return NULL;
 }
 
-inline bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned copy, const char *process)
+inline bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const char *process)
 {
     StringBuffer s;
-    unsigned clusterNo = pdesc->copyClusterNum(copy);
     return strieq(process, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
 }
 
-inline void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, bool checkSelf, unsigned maxAppend=2)
+inline bool checkClusterCount(UnsignedArray &counts, unsigned clusterNo, unsigned max)
 {
+    while (!counts.isItem(clusterNo))
+        counts.append(0);
+    unsigned count = counts.item(clusterNo);
+    if (count>=max)
+        return false;
+    counts.replace(++count, clusterNo);
+    return true;
+}
+
+inline void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, bool checkSelf)
+{
+    UnsignedArray clusterCounts;
     unsigned numCopies = pdesc->numCopies();
-    unsigned appended = 0;
-    for (unsigned copy = 0; appended < maxAppend && copy < numCopies; copy++)
+    for (unsigned copy = 0; copy < numCopies; copy++)
     {
-        if (checkSelf && isCopyFromCluster(pdesc, copy, roxieName.str())) //don't add ourself
+        unsigned clusterNo = pdesc->copyClusterNum(copy);
+        if (!checkClusterCount(clusterCounts, clusterNo, 2))
+            continue;
+        if (checkSelf && isCopyFromCluster(pdesc, clusterNo, roxieName.str())) //don't add ourself
             continue;
         RemoteFilename r;
         pdesc->getFilename(copy,r);
         StringBuffer path;
         locations.append(r.getRemotePath(path).str());
-        appended++;
     }
 }
 

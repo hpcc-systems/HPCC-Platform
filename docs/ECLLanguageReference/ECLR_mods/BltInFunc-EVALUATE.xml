@@ -15,7 +15,7 @@
       </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
     role="bold">) ;</emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="80.60pt" />
 
@@ -68,7 +68,7 @@ APPLY(ds, EVALUATE(doSomething(ds.text)));
       </indexterm><emphasis>onerecord, value</emphasis><emphasis
     role="bold">)</emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="79.15pt" />
 
