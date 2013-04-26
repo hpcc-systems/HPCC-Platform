@@ -5113,7 +5113,7 @@ void CLocalWorkUnit::setTimerInfo(const char *name, const char *subname, unsigne
     }
     timing->setPropInt("@count", count);
     timing->setPropInt("@duration", ms);
-    if (!max && 1==count) max = ms * 1000000; // max is in nanoseconds
+    if (!max && 1==count) max = (unsigned __int64)ms * 1000000; // max is in nanoseconds
     if (max)
         timing->setPropInt64("@max", max);
 }
