@@ -13,8 +13,9 @@
   role="bold"> [, [</emphasis><emphasis> format </emphasis><emphasis
   role="bold">] [</emphasis><emphasis>,file </emphasis><emphasis
   role="bold">[</emphasis><emphasis>thorfileoptions </emphasis><emphasis
-  role="bold"> ] ] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-  role="bold"> NOXPATH<indexterm>
+  role="bold"> ] ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold">
+  NOXPATH<indexterm>
       <primary>NOXPATH</primary>
     </indexterm> ] );</emphasis></para>
 
@@ -28,8 +29,9 @@
     </indexterm> [ (</emphasis><emphasis>csvoptions</emphasis><emphasis
   role="bold">) ] </emphasis><emphasis
   role="bold">[</emphasis><emphasis>csvfileoptions </emphasis><emphasis
-  role="bold"> ] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-  role="bold"> NOXPATH ] );</emphasis></para>
+  role="bold"> ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -41,8 +43,9 @@
     </indexterm> [ (</emphasis><emphasis>xmloptions</emphasis><emphasis
   role="bold">) ]</emphasis><emphasis role="bold"> </emphasis><emphasis
   role="bold">[</emphasis><emphasis>xmlfileoptions </emphasis><emphasis
-  role="bold"> ] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-  role="bold"> NOXPATH ] );</emphasis></para>
+  role="bold"> ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -50,8 +53,9 @@
   [</emphasis><emphasis> format </emphasis><emphasis role="bold">]
   </emphasis><emphasis> ,</emphasis><emphasis role="bold">PIPE<indexterm>
       <primary>PIPE</primary>
-    </indexterm>(</emphasis><emphasis> pipeoptions </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-  role="bold"> NOXPATH ] );</emphasis></para>
+    </indexterm>(</emphasis><emphasis> pipeoptions </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ]
@@ -65,22 +69,25 @@
     </indexterm>] [</emphasis><emphasis>,</emphasis><emphasis
   role="bold">ALL<indexterm>
       <primary>ALL</primary>
-    </indexterm>] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-  role="bold"> NOXPATH ] );</emphasis></para>
+    </indexterm>] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> expression
   </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
   role="bold"> NAMED(</emphasis><emphasis> name </emphasis><emphasis
-  role="bold">) ] </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-  role="bold"> NOXPATH ] );</emphasis></para>
+  role="bold">) ] </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] );</emphasis></para>
 
   <para><emphasis role="bold">[</emphasis><emphasis>attr</emphasis>
   :=<emphasis role="bold"> ] OUTPUT(</emphasis><emphasis> recordset
   ,</emphasis><emphasis role="bold"> THOR<indexterm>
       <primary>THOR</primary>
-    </indexterm> </emphasis><emphasis role="bold">[</emphasis><emphasis>,</emphasis><emphasis
-  role="bold"> NOXPATH ] );</emphasis></para>
+    </indexterm> </emphasis><emphasis
+  role="bold">[</emphasis><emphasis>,</emphasis><emphasis role="bold"> NOXPATH
+  ] );</emphasis></para>
 
   <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
@@ -108,11 +115,14 @@
           <row>
             <entry><emphasis>format</emphasis></entry>
 
-            <entry>Optional. The format of the output records. This must be
-            either the name of a previously defined RECORD structure
-            definition or an "on-the-fly" record layout enclosed within curly
-            braces ({}). If omitted, all fields in the recordset are
-            output.</entry>
+            <entry>Optional. The format of the output records. If omitted, all
+            fields in the <emphasis>recordset</emphasis> are output. If not
+            omitted, this must be either the name of a previously defined
+            RECORD structure definition or an "on-the-fly" record layout
+            enclosed within curly braces ({}), and must meet the same
+            requirements as a RECORD structure for the TABLE function (the
+            "vertical slice" form) by defining the type, name, and source of
+            the data for each field.</entry>
           </row>
 
           <row>
@@ -135,24 +145,26 @@
           <row>
             <entry><emphasis role="bold">NOXPATH</emphasis></entry>
 
-            <entry>Specifies any XPATHs defined in the <emphasis>format</emphasis> 
-            or the RECORD structure of the <emphasis>recordset</emphasis> are ignored and field names are used instead.
-            This allows control of whether XPATHs are used for output, so that 
-            XPATHs that were meant only for xml input can be ignored for output.</entry>
+            <entry>Specifies any XPATHs defined in the
+            <emphasis>format</emphasis> or the RECORD structure of the
+            <emphasis>recordset</emphasis> are ignored and field names are
+            used instead. This allows control of whether XPATHs are used for
+            output, so that XPATHs that were meant only for xml input can be
+            ignored for output.</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">CSV</emphasis></entry>
 
-            <entry>Specifies the file is a field-delimited (usually comma separated values) ASCII
-            file.</entry>
+            <entry>Specifies the file is a field-delimited (usually comma
+            separated values) ASCII file.</entry>
           </row>
 
           <row>
             <entry><emphasis>csvoptions</emphasis></entry>
 
-            <entry>Optional. A comma-delimited list of options defining how the
-            file is delimited.</entry>
+            <entry>Optional. A comma-delimited list of options defining how
+            the file is delimited.</entry>
           </row>
 
           <row>
@@ -187,9 +199,9 @@
           <row>
             <entry><emphasis role="bold">PIPE</emphasis></entry>
 
-            <entry>Indicates the specified command executes with the recordset
-            provided as standard input to the command. This is a "write"
-            pipe.</entry>
+            <entry>Indicates the specified command executes with the
+            <emphasis>recordset</emphasis> provided as standard input to the
+            command. This is a "write" pipe.</entry>
           </row>
 
           <row>
@@ -227,8 +239,8 @@
           <row>
             <entry><emphasis role="bold">ALL</emphasis></entry>
 
-            <entry>Optional. Specifies all records in the recordset are output
-            to the ECL IDE.</entry>
+            <entry>Optional. Specifies all records in the
+            <emphasis>recordset</emphasis> are output to the ECL IDE.</entry>
           </row>
 
           <row>
