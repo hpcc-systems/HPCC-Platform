@@ -1477,13 +1477,32 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
 
-            <para>You may want to create a script to push this command out to
-            every node. A sample script is provided with HPCC. Use the
-            following command to start HPCC on all nodes:</para>
+            <para> </para>
 
-            <para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start
-</programlisting>This script can also be used to stop HPCC on all nodes and to
-            stop and start individual components on all nodes. See the
+            <informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="images/OSSgr3.png" /></entry>
+
+                    <entry><para>You may want to create a script to push this
+                    command out to every node. A sample script is provided
+                    with HPCC. Use the following command to start HPCC on all
+                    nodes:</para><para><programlisting>sudo -u hpcc /opt/HPCCSystems/sbin/hpcc-run.sh -a hpcc-init start</programlisting></para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable>
+
+            <para>This script can also be used to stop HPCC on all nodes and
+            to stop and start individual components on all nodes. See the
             appendix for more details.</para>
           </listitem>
         </orderedlist>
