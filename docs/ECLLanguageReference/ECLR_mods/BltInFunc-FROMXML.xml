@@ -11,7 +11,7 @@
     </indexterm>(</emphasis><emphasis> record, xmlstring </emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="77.95pt" />
 
