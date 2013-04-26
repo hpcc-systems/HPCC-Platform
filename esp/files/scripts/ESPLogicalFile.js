@@ -62,13 +62,13 @@ define([
         },
 
         query: function (query, options) {
-            var request = {};
+            var request = query;
             lang.mixin(request, options.query);
-            if (options.start)
+            if (options.start !== undefined)
                 request['PageStartFrom'] = options.start;
-            if (options.count)
+            if (options.count !== undefined)
                 request['Count'] = options.count;
-            if (options.sort) {
+            if (options.sort !== undefined) {
                 request['Sortby'] = options.sort[0].attribute;
                 request['Descending'] = options.sort[0].descending;
             }
@@ -242,10 +242,15 @@ define([
             return store.get(name);
         },
 
-        CreateLFQueryObjectStore: function (options) {
+        CreateLFQueryStore: function (options) {
             var store = new Store(options);
-            store = Observable(store);
-            var objStore = new ObjectStore({ objectStore: store });
+            return Observable(store);
+        },
+
+        CreateLFQueryObjectStore: function (options) {
+            var objStore = new ObjectStore({
+                objectStore: this.CreateLFQueryStore()
+            });
             return objStore;
         }
     };
