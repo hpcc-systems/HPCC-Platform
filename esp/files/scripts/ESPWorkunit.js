@@ -60,15 +60,15 @@ define([
         },
 
         query: function (query, options) {
-            var request = {};
+            var request = query;
             lang.mixin(request, options.query);
-            if (options.start)
-                request['PageStartFrom'] = options.start;
-            if (options.count)
-                request['Count'] = options.count;
-            if (options.sort) {
-                request['Sortby'] = options.sort[0].attribute;
-                request['Descending'] = options.sort[0].descending;
+            if (options.start !== undefined)
+                request["PageStartFrom"] = options.start;
+            if (options.count !== undefined)
+                request["Count"] = options.count;
+            if (options.sort !== undefined) {
+                request["Sortby"] = options.sort[0].attribute;
+                request["Descending"] = options.sort[0].descending;
             }
 
             var results = WsWorkunits.WUQuery({
@@ -629,11 +629,13 @@ define([
             return store.get(wuid);
         },
 
-        CreateWUQueryObjectStore: function (options) {
+        CreateWUQueryStore: function (options) {
             var store = new Store(options);
-            store = Observable(store);
-            var objStore = new ObjectStore({ objectStore: store });
-            return objStore;
+            return Observable(store);
+        },
+
+        CreateWUQueryObjectStore: function (options) {
+            return new ObjectStore({ objectStore: this.CreateWUQueryStore(options) });
         }
     };
 });

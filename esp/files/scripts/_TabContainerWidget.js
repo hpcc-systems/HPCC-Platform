@@ -124,12 +124,14 @@ define([
 
         routerCallback: function (evt) {
             var currSel = this.getSelectedChild();
-            var newSel = this.id + "_" + evt.params.sel;
-            if (currSel.id != newSel) {
-                this.selectChild(newSel, null);
-            }
-            if (this.initTab) {
-                this.initTab();
+            if (currSel) {
+                var newSel = this.id + "_" + evt.params.sel;
+                if (currSel.id != newSel) {
+                    this.selectChild(newSel, null);
+                }
+                if (this.initTab) {
+                    this.initTab();
+                }
             }
         },
 

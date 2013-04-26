@@ -16,6 +16,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/store/util/QueryResults",
     "dojo/store/JsonRest", 
@@ -27,7 +28,7 @@ define([
 
     "hpcc/ESPBase",
     "hpcc/ESPRequest"
-], function (declare, lang, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
+], function (declare, lang, arrayUtil, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
     parser,
     ESPBase, ESPRequest) {
     return {
@@ -82,9 +83,9 @@ define([
             return ESPRequest.send("FileSpray", "GetDFUWorkunits", params);
         },
 
-        DFUWorkunitsAction: function (wuids, actionType, callback) {
+        DFUWorkunitsAction: function (workunits, actionType, callback) {
             var request = {
-                wuids: wuids,
+                wuids: workunits,
                 Type: actionType
             };
             ESPRequest.flattenArray(request, "wuids", "ID");
@@ -92,6 +93,10 @@ define([
             return ESPRequest.send("FileSpray", "DFUWorkunitsAction", {
                 request: request,
                 load: function (response) {
+                    arrayUtil.forEach(workunits, function (item, index) {
+                        item.refresh();
+                    });
+                    /*  TODO:  Revisit after HPCC-9241 is fixed
                     if (lang.exists("DFUWorkunitsActionResponse.ActionResults.WUActionResult", response)) {
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
                             if (item.Result.indexOf("Failed:") === 0) {
@@ -108,7 +113,7 @@ define([
                             }
                         });
                     }
-
+                    */
                     if (callback && callback.load) {
                         callback.load(response);
                     }

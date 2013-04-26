@@ -93,7 +93,7 @@ function(_StoreMixin, declare, lang, Deferred, on, query, string, has, put, i18n
 				var sizeSelect = put(paginationNode, 'select.dgrid-page-size'),
 					i;
 				for(i = 0; i < pageSizeOptions.length; i++){
-					put(sizeSelect, 'option', pageSizeOptions[i], {value: pageSizeOptions[i]});
+					put(sizeSelect, 'option', pageSizeOptions[i], { value: pageSizeOptions[i], selected: this.rowsPerPage === pageSizeOptions[i] });
 				}
 				this._listeners.push(on(sizeSelect, "change", function(){
 					grid.rowsPerPage = +sizeSelect.value;
@@ -395,7 +395,23 @@ function(_StoreMixin, declare, lang, Deferred, on, query, string, has, put, i18n
 				// A synchronous error occurred; reject the promise.
 				dfd.reject();
 			}
-			return dfd.promise;
+
+			var self = this;
+			return dfd.promise.then(function (results) {
+				// Emit on a separate turn to enable event to be used consistently for
+				// initial render, regardless of whether the backing store is async
+				setTimeout(function () {
+					on.emit(self.domNode, "dgrid-page-complete", {
+						bubbles: true,
+						cancelable: false,
+						grid: self,
+						page: page,
+						results: results // QueryResults object (may be a wrapped promise)
+					});
+				}, 0);
+
+				return results;
+			});
 		}
 	});
 });

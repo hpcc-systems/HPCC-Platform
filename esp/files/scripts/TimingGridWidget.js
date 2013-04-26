@@ -16,24 +16,32 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/store/Memory",
-    "dojo/data/ObjectStore",
+    "dojo/store/Observable",
 
     "dijit/registry",
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
 
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+
+    "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
 
-    "dojo/text!../templates/TimingGridWidget.html",
-
-    "dojox/grid/DataGrid"
+    "dojo/text!../templates/TimingGridWidget.html"
 ],
-    function (declare, array, Memory, ObjectStore,
+    function (declare, lang, arrayUtil, Memory, Observable,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
-            ESPWorkunit,
+            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+            ESPUtil, ESPWorkunit,
             template) {
         return declare("TimingGridWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
@@ -50,26 +58,35 @@ define([
 
             postCreate: function (args) {
                 this.inherited(arguments);
-                this.timingGrid = registry.byId(this.id + "TimingGrid");
-                this.timingGrid.setStructure([
-                    { name: "Component", field: "Name", width: "auto" },
-                    { name: "Time (Seconds)", field: "Seconds", width: "auto" }
-                ]);
-
-                var context = this;
-                this.timingGrid.on("RowClick", function (evt) {
-                    var items = context.timingGrid.selection.getSelected();
-                    context.onClick(items);
-                });
-
-                this.timingGrid.on("RowDblClick", function (evt) {
-                    var item = context.timingGrid.getItem(evt.rowIndex);
-                    context.onDblClick(item);
-                });
             },
 
             startup: function (args) {
                 this.inherited(arguments);
+                var store = new Memory({
+                    idProperty: "id",
+                    data: []
+                });
+                this.timingStore = Observable(store);
+
+                this.timingGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                    columns: {
+                        id: { label: "##", width: 45 },
+                        Name: { label: "Component" },
+                        Seconds: { label: "Time (Seconds)", width: 54 }
+                    },
+                    store: this.timingStore
+                }, this.id + "TimingGrid");
+
+                var context = this;
+                this.timingGrid.on(".dgrid-row:click", function (evt) {
+                    var item = context.timingGrid.row(evt).data;
+                    context.onClick(item);
+                });
+                this.timingGrid.on(".dgrid-row:dblclick", function (evt) {
+                    var item = context.timingGrid.row(evt).data;
+                    context.onDblClick(item);
+                });
+                this.timingGrid.startup();
             },
 
             resize: function (args) {
@@ -114,11 +131,9 @@ define([
 
             setQuery: function (graphName) {
                 if (!graphName || graphName == "*") {
-                    this.timingGrid.setQuery({
-                        GraphName: "*"
-                    });
+                    this.timingGrid.refresh();
                 } else {
-                    this.timingGrid.setQuery({
+                    this.timingGrid.set("query", {
                         GraphName: graphName,
                         HasSubGraphId: true
                     });
@@ -126,20 +141,32 @@ define([
             },
 
             getSelected: function () {
-                return this.timingGrid.selection.getSelected();
+                return this.timingGrid.getSelected();
+            },
+
+            setSelectedAsGlobalID: function (selItems) {
+                var selectedItems = [];
+                arrayUtil.forEach(this.timingStore.data, function (item, idx) {
+                    if (item.SubGraphId) {
+                        if (item.SubGraphId && arrayUtil.indexOf(selItems, item.SubGraphId) >= 0) {
+                            selectedItems.push(item);
+                        }
+                    }
+                });
+                this.setSelected(selectedItems);
             },
 
             setSelected: function (selItems) {
-                for (var i = 0; i < this.timingGrid.rowCount; ++i) {
-                    var row = this.timingGrid.getItem(i);
-                    this.timingGrid.selection.setSelected(i, (row.SubGraphId && array.indexOf(selItems, row.SubGraphId) != -1));
-                }
+                this.timingGrid.setSelected(selItems);
             },
 
             loadTimings: function (timers) {
-                var store = new Memory({ data: timers });
-                var dataStore = new ObjectStore({ objectStore: store });
-                this.timingGrid.setStore(dataStore);
+                arrayUtil.forEach(timers, function (item, idx) {
+                    lang.mixin(item, {
+                        id: idx
+                    });
+                });
+                this.timingStore.setData(timers);
                 this.setQuery(this.defaultQuery);
             }
         });

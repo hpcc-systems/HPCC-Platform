@@ -18,20 +18,26 @@ define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/store/Memory",
-    "dojo/data/ObjectStore",
+    "dojo/store/Observable",
 
     "dijit/registry",
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
 
-    "dojo/text!../templates/FilePartsWidget.html",
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
 
-    "dojox/grid/DataGrid"
+    "dojo/text!../templates/FilePartsWidget.html"
 
 ],
-    function (declare, array, Memory, ObjectStore,
+    function (declare, array, Memory, Observable,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
+            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
             template) {
         return declare("FilePartsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
@@ -48,19 +54,27 @@ define([
 
             postCreate: function (args) {
                 this.inherited(arguments);
-                this.filePartsGrid = registry.byId(this.id + "FilePartsGrid");
-
-                var context = this;
-                this.filePartsGrid.setStructure([
-                    { name: "Number", field: "Id", width: 4 },
-                    { name: "IP", field: "Ip", width: 15 },
-                    { name: "Size", field: "Partsize", width: 12 },
-                    { name: "Actual Size", field: "ActualSize", width: 12 }
-                ]);
             },
 
             startup: function (args) {
                 this.inherited(arguments);
+                var store = new Memory({
+                    idProperty: "Id",
+                    data: []
+                });
+                this.filePartsStore = Observable(store);
+
+                this.filePartsGrid = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry])({
+                    allowSelectAll: true,
+                    columns: {
+                        Id: { label: "Part", width: 40 },
+                        Ip: { label: "IP" },
+                        Partsize: { label: "Size", width: 120 },
+                        ActualSize: { label: "Actual Size", width: 120 }
+                    },
+                    store: this.filePartsStore
+                }, this.id + "FilePartsGrid");
+                this.filePartsGrid.startup();
             },
 
             resize: function (args) {
@@ -78,10 +92,8 @@ define([
                     return;
                 this.initalized = true;
 
-                var memory = new Memory({ data: params.fileParts });
-                this.store = new ObjectStore({ objectStore: memory });
-                this.filePartsGrid.setStore(this.store);
-                this.filePartsGrid.setQuery({
+                this.filePartsStore.setData(params.fileParts);
+                this.filePartsGrid.set("query", {
                     Copy: "1"
                 });
             }
