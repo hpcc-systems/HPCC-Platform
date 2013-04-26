@@ -22,7 +22,7 @@
   role="bold">) [</emphasis><emphasis>, jointype</emphasis><emphasis
   role="bold">] )</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="82.00pt" />
 
@@ -158,7 +158,7 @@
     <para>The record matching <emphasis>joincondition</emphasis> is processed
     internally as two parts:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="82pt" />
 
@@ -260,7 +260,7 @@
         <primary>PARALLEL</primary>
       </indexterm> ]</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="92.05pt" />
 
@@ -673,7 +673,7 @@
     types of results, based on the records matching produced by the
     <emphasis>joincondition</emphasis>:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="82.00pt" />
 
@@ -888,7 +888,7 @@ SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
     <para>The <emphasis>transform</emphasis> function must take at least one
     parameter which must take either of two forms:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="87.10pt" />
 
@@ -929,7 +929,7 @@ SEQUENTIAL(PtblOut,Bld1,Bld2,OUTPUT(FilledRecs1),OUTPUT(FilledRecs2))
     types of results, based on the records matching produced by the
     <emphasis>joincondition</emphasis>:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="94.80pt" />
 

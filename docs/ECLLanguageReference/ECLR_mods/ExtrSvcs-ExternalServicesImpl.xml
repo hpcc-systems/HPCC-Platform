@@ -97,7 +97,7 @@
     <para>This is the list of valid keywords for use in service function
     prototypes:</para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="115.95pt" />
 

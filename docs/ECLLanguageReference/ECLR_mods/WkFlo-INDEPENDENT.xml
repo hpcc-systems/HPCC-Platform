@@ -11,7 +11,7 @@
       <primary>INDEPENDENT workflow service</primary>
     </indexterm>;</para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="79.65pt" />
 

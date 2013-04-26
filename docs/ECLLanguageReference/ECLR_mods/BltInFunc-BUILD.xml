@@ -30,7 +30,7 @@
   <para><emphasis role="bold">BUILD(</emphasis><emphasis> library
   </emphasis><emphasis role="bold">);</emphasis></para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="78.50pt" />
 
@@ -181,7 +181,7 @@
         <primary>DEDUP</primary>
       </indexterm>]</emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="95.85pt" />
 
