@@ -366,8 +366,9 @@ replicate=1</programlisting>
                     <entry><emphasis>format</emphasis></entry>
 
                     <entry>Optional. One of the following values: <emphasis
-                    role="bold">fixed csv xml recfmv recfmb</emphasis> If
-                    omitted, the default is fixed.</entry>
+                    role="bold">fixed csv delimited xml recfmv
+                    recfmb</emphasis> If omitted, the default is
+                    fixed.</entry>
                   </row>
 
                   <row>
@@ -382,7 +383,7 @@ replicate=1</programlisting>
                   </row>
 
                   <row>
-                    <entry><emphasis role="bold">csv</emphasis>
+                    <entry><emphasis role="bold">csv/delimited</emphasis>
                     <emphasis>format </emphasis>options:</entry>
                   </row>
 
