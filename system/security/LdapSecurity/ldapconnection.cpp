@@ -901,7 +901,8 @@ class CLdapClient : public CInterface, implements ILdapClient
 private:
     Owned<ILdapConnectionPool> m_connections;
     IPermissionProcessor* m_pp;     
-    //int                  m_defaultFileScopePermission;
+    time_t               m_lastDefaultFileScopePermissionCheck;
+    int                  m_defaultFileScopePermission;
     //int                  m_defaultWorkunitScopePermission;
     Owned<CLdapConfig>   m_ldapconfig;
     StringBuffer         m_pwscheme;
@@ -931,7 +932,9 @@ public:
             m_connections.setown(new CLdapConnectionPool(m_ldapconfig.get()));  
         m_pp = NULL;
         m_lastPwdAgeCheck = 0;
-        //m_defaultFileScopePermission = -2;
+
+        m_lastDefaultFileScopePermissionCheck = 0;
+        m_defaultFileScopePermission = -2;
         //m_defaultWorkunitScopePermission = -2;
     }
 
@@ -1325,8 +1328,7 @@ public:
 
         if(rtype == RT_FILE_SCOPE)
         {
-            int defaultFileScopePermission = -2;
-            //if(m_defaultFileScopePermission == -2)
+            if(0 == m_lastDefaultFileScopePermissionCheck || ((msTick() - m_lastDefaultFileScopePermissionCheck) > 30*60*1000))
             {
                 const char* basebasedn = strchr(basedn, ',') + 1;
                 StringBuffer baseresource;
@@ -1335,10 +1337,8 @@ public:
                 base_resources.append(*(new CLdapSecResource(baseresource.str())));
                 bool baseok = authorizeScope(user, base_resources, basebasedn);
                 if(baseok)
-                {
-                    //m_defaultFileScopePermission = base_resources.item(0).getAccessFlags();
-                    defaultFileScopePermission = base_resources.item(0).getAccessFlags();
-                }
+                    m_defaultFileScopePermission = base_resources.item(0).getAccessFlags();
+                m_lastDefaultFileScopePermissionCheck = msTick();
             }
             IArrayOf<ISecResource> non_emptylist;
             ForEachItemIn(x, resources)
@@ -1346,20 +1346,19 @@ public:
                 ISecResource& res = resources.item(x);
                 const char* res_name = res.getName();
                 if(res_name == NULL || *res_name == '\0')
-                    res.setAccessFlags(defaultFileScopePermission); //res.setAccessFlags(m_defaultFileScopePermission);
+                    res.setAccessFlags(m_defaultFileScopePermission);
                 else 
                     non_emptylist.append(*LINK(&res));
             }
 
             ok = authorizeScope(user, non_emptylist, basedn);
-            //if(ok && m_defaultFileScopePermission != -2)
-            if(ok && defaultFileScopePermission != -2)
+            if(ok && m_defaultFileScopePermission != -2)
             {
                 ForEachItemIn(x, non_emptylist)
                 {
                     ISecResource& res = non_emptylist.item(x);
                     if(res.getAccessFlags() == -1)
-                        res.setAccessFlags(defaultFileScopePermission); //res.setAccessFlags(m_defaultFileScopePermission);
+                        res.setAccessFlags(m_defaultFileScopePermission);
                 }
             }
 
