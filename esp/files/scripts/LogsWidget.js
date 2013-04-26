@@ -19,7 +19,7 @@ define([
     "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/store/Memory",
-    "dojo/data/ObjectStore",
+    "dojo/store/Observable",
     "dojo/request/iframe",
 
     "dijit/registry",
@@ -27,17 +27,23 @@ define([
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
 
-    "dojox/grid/EnhancedGrid",
-    "dojox/grid/enhanced/plugins/IndirectSelection",
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
 
+    "hpcc/ESPUtil",
+    "hpcc/ESPRequest",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/LogsWidget.html"
 ],
-    function (declare, array, lang, Memory, ObjectStore, iframe,
+    function (declare, array, lang, Memory, Observable, iframe,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
-            EnhancedGrid, IndirectSelection,
-            ESPWorkunit,
+            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+            ESPUtil, ESPRequest, ESPWorkunit,
             template) {
         return declare("LogsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
@@ -45,9 +51,9 @@ define([
             borderContainer: null,
             logsGrid: null,
 
-            dataStore: null,
-
             lastSelection: null,
+
+            downloadFrameID: 0,
 
             buildRendering: function (args) {
                 this.inherited(arguments);
@@ -56,31 +62,34 @@ define([
             postCreate: function (args) {
                 this.inherited(arguments);
                 this.borderContainer = registry.byId(this.id + "BorderContainer");
-                this.logsGrid = new dojox.grid.EnhancedGrid({
-                    id: this.id + "LogsGrid",
-                    structure: [
-                        { name: "Type", field: "Type", width: 8 },
-                        { name: "Description", field: "Description", width: "100%" }
-                    ],
-                    plugins: {
-                        indirectSelection: {
-                            headerSelector: true, width: "40px", styles: "text-align: center;"
-                        }
-                    }
-                });
-                this.logsGrid.placeAt(this.id + 'CenterPane');
-                this.logsGrid.startup();
-
-                var context = this;
-                this.logsGrid.on("RowClick", function (evt) {
-                });
-
-                this.logsGrid.on("RowDblClick", function (evt) {
-                });
             },
 
             startup: function (args) {
                 this.inherited(arguments);
+                var store = new Memory({
+                    idProperty: "id",
+                    data: []
+                });
+                this.logsStore = Observable(store);
+
+                this.logsGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                    allowSelectAll: true,
+                    columns: {
+                        sel: selector({
+                            width: 27,
+                            selectorType: 'checkbox'
+                        }),
+                        Type: {
+                            field: "Type",
+                            width: 117
+                        },
+                        Description: {
+                            field: "Description"
+                        }
+                    },
+                    store: this.logsStore
+                }, this.id + "LogsGrid");
+                this.logsGrid.startup();
             },
 
             resize: function (args) {
@@ -93,10 +102,10 @@ define([
             },
 
             _doDownload: function (option) {
-                var selection = this.logsGrid.selection.getSelected();
+                var selection = this.logsGrid.getSelected();
 
                 for (var i = 0; i < selection.length; ++i) {
-                    var downloadPdfIframeName = "downloadIframe_" + i;
+                    var downloadPdfIframeName = "downloadIframe_" + this.downloadFrameID++;
                     var frame = iframe.create(downloadPdfIframeName);
                     var params = "";
 
@@ -112,6 +121,8 @@ define([
                             params = "/WUFile/res.txt?Wuid=" + this.wu.Wuid + "&Type=" + selection[i].Orig.Type;
                             break;
                         case "ThorLog":
+                            params = "/WUFile/" + selection[i].Type + "?Wuid=" + this.wu.Wuid + "&Name=" + selection[i].Orig.Name + "&Type=" + selection[i].Orig.Type;
+                            break;
                         case "EclAgentLog":
                             params = "/WUFile/" + selection[i].Type + "?Wuid=" + this.wu.Wuid + "&Process=" + selection[i].Orig.Description + "&Type=" + selection[i].Orig.Type;
                             break;
@@ -123,7 +134,7 @@ define([
                             break;
                     }
 
-                    var url = this.wu.getBaseURL() + params + (option ? "&Option=" + option : "&Option=1");
+                    var url = ESPRequest.getBaseURL() + params + (option ? "&Option=" + option : "&Option=1");
                     iframe.setSrc(frame, url, true);
                 }
 
@@ -152,6 +163,7 @@ define([
                             context.logData = [];
                             if (response.HasArchiveQuery) {
                                 context.logData.push({
+                                    id: "A:0",
                                     Type: "Archive Query"
                                 });
                             }
@@ -161,12 +173,8 @@ define([
                             if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
                                 context.loadThorLogInfo(response.ThorLogList.ThorLogInfo);
                             }
-                            var memory = new Memory({ data: context.logData });
-                            var store = new ObjectStore({ objectStore: memory });
-                            context.logsGrid.setStore(store);
-                            context.logsGrid.setQuery({
-                                Type: "*"
-                            });
+                            context.logsStore.setData(context.logData);
+                            context.logsGrid.refresh();
                         }
                     });
                 });
@@ -175,6 +183,7 @@ define([
             loadHelpers: function (helpers) {
                 for (var i = 0; i < helpers.length; ++i) {
                     this.logData.push({
+                        id: "H:" + i,
                         Type: helpers[i].Type,
                         Description: helpers[i].IPAddress ? "//" + helpers[i].IPAddress + helpers[i].Name : helpers[i].Name,
                         Orig: helpers[i]
@@ -186,6 +195,7 @@ define([
                 for (var i = 0; i < thorLogInfo.length; ++i) {
                     for (var j = 0; j < thorLogInfo[i].NumberSlaves; ++j) {
                         this.logData.push({
+                            id: "T:" + i + "_" + j,
                             Type: "ThorSlaveLog",
                             Description: thorLogInfo[i].ClusterGroup + "." + thorLogInfo[i].LogDate + ".log (slave " + (j + 1) + " of " + thorLogInfo[i].NumberSlaves + ")",
                             Orig: lang.mixin({

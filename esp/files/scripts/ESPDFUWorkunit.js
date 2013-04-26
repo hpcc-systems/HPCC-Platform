@@ -60,14 +60,26 @@ define([
         },
 
         query: function (query, options) {
-            var request = {};
+            var request = query;
             lang.mixin(request, options.query);
-            if (options.start)
+            if (options.start !== undefined)
                 request['PageStartFrom'] = options.start;
-            if (options.count)
+            if (options.count !== undefined)
                 request['PageSize'] = options.count;
-            if (options.sort) {
-                request['Sortby'] = options.sort[0].attribute;
+            if (options.sort !== undefined) {
+                switch (options.sort[0].attribute) {
+                    case "ClusterName":
+                        request['Sortby'] = "Cluster";
+                        break;
+                    case "Command":
+                        request['Sortby'] = "Type";
+                        break;
+                    case "StateMessage":
+                        request['Sortby'] = "State";
+                        break;
+                    default:
+                        request['Sortby'] = options.sort[0].attribute;
+                }
                 request['Descending'] = options.sort[0].descending;
             }
 
@@ -96,7 +108,7 @@ define([
                         workunits.push(wu);
                         context._watched[wu.Wuid] = wu.watch("changedCount", function (name, oldValue, newValue) {
                             if (oldValue !== newValue) {
-                                context.notify(wu, wu.Wuid);
+                                context.notify(wu, context.getIdentity(wu));
                             }
                         });
                     });
@@ -320,10 +332,16 @@ define([
             return store.get(wuid);
         },
 
-        CreateWUQueryObjectStore: function (options) {
+        CreateWUQueryStore: function (options) {
             var store = new Store(options);
             store = Observable(store);
-            var objStore = new ObjectStore({ objectStore: store });
+            return store;
+        },
+
+        CreateWUQueryObjectStore: function (options) {
+            var objStore = new ObjectStore({
+                objectStore: this.CreateWUQueryStore()
+            });
             return objStore;
         }
     };

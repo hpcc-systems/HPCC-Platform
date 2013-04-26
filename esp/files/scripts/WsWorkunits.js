@@ -103,9 +103,9 @@ define([
             return ESPRequest.send("WsWorkunits", "WUFile", params);
         },
 
-        WUAction: function (wuids, actionType, callback) {
+        WUAction: function (workunits, actionType, callback) {
             var request = {
-                Wuids: wuids,
+                Wuids: workunits,
                 ActionType: actionType
             };
             ESPRequest.flattenArray(request, "Wuids", "Wuid");
@@ -113,6 +113,9 @@ define([
             return ESPRequest.send("WsWorkunits", "WUAction", {
                 request: request,
                 load: function (response) {
+                    arrayUtil.forEach(workunits, function (item, index) {
+                        item.refresh();
+                    });
                     if (lang.exists("WUActionResponse.ActionResults.WUActionResult", response)) {
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
                             if (item.Result.indexOf("Failed:") === 0) {
@@ -120,11 +123,6 @@ define([
                                     message: "<h4>" + item.Action + " " + item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
                                     type: "error",
                                     duration: -1
-                                });
-                            } else {
-                                dojo.publish("hpcc/brToaster", {
-                                    message: "<h4>" + item.Action + " " + item.Wuid + "</h4>" + "<p>" + item.Result + "</p>",
-                                    type: "message"
                                 });
                             }
                         });
