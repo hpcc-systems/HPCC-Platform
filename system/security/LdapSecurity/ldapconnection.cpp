@@ -909,6 +909,9 @@ private:
     __int64              m_maxPwdAge;
     time_t               m_lastPwdAgeCheck;
 
+    IArrayOf<ISecResource> m_managedFileScopes;//array of file scopes we need to check permissions for
+    time_t                 m_lastManagedFileScopesCheck;
+
     class CLDAPMessage
     {
     public:
@@ -931,6 +934,7 @@ public:
             m_connections.setown(new CLdapConnectionPool(m_ldapconfig.get()));  
         m_pp = NULL;
         m_lastPwdAgeCheck = 0;
+        m_lastManagedFileScopesCheck = 0;
         //m_defaultFileScopePermission = -2;
         //m_defaultWorkunitScopePermission = -2;
     }
@@ -1281,6 +1285,47 @@ public:
         return true;
     };
 
+    virtual bool isManagedFileScope(const char * scope)
+    {
+        if (!scope || !*scope)
+            return false;
+        if (0==m_lastManagedFileScopesCheck || (msTick() - m_lastManagedFileScopesCheck) > (60*30*1000))
+        {   //refresh managed file scope cache
+            m_managedFileScopes.kill();
+            getResourcesEx(RT_FILE_SCOPE, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), NULL, NULL, m_managedFileScopes);
+            m_lastManagedFileScopesCheck = msTick();
+        }
+
+        int scopeLen = strlen(scope);
+        int matchedLen = 0;
+        ISecResource* matchedRes = NULL;
+        ForEachItemIn(x, m_managedFileScopes)
+        {
+            ISecResource* res = &m_managedFileScopes.item(x);
+            if (!res)
+                continue;
+            int mScopeLen = strlen(res->getName());
+            if (scopeLen < mScopeLen)
+                continue;
+            bool match = strnicmp(scope, res->getName(), mScopeLen) ? false : true;
+            if (match && (mScopeLen == scopeLen || (scopeLen > mScopeLen && scope[mScopeLen+1] == ':')))//could be a child of a parent scope
+            {
+                if (mScopeLen > matchedLen)
+                {
+                    matchedLen = mScopeLen;
+                    matchedRes = res;
+                }//continue searching for a deeper managed scope
+            }
+        }
+#ifdef _DEBUG
+        if (matchedRes && matchedLen)
+            DBGLOG("FILESCOPE '%s' MANAGED BY '%s'",scope, matchedRes->getName());
+        else
+            DBGLOG("FILESCOPE '%s' NOT MANAGED",scope);
+#endif
+        return matchedRes != NULL;
+    }
+
     virtual bool authorize(SecResourceType rtype, ISecUser& user, IArrayOf<ISecResource>& resources)
     {
         bool ok = false;
@@ -1345,7 +1390,7 @@ public:
             {
                 ISecResource& res = resources.item(x);
                 const char* res_name = res.getName();
-                if(res_name == NULL || *res_name == '\0')
+                if(res_name == NULL || *res_name == '\0' || !isManagedFileScope(res_name))
                     res.setAccessFlags(defaultFileScopePermission); //res.setAccessFlags(m_defaultFileScopePermission);
                 else 
                     non_emptylist.append(*LINK(&res));
