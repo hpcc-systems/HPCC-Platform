@@ -48,13 +48,13 @@
 
   <programlisting>namesRec := RECORD
   UNSIGNED2 EmployeeID{xpath('EmpID')};
-  STRING10  Firstname{xpath('Name/FName')};
-  STRING10  Lastname{xpath('Name/LName')};
+  STRING10  Firstname{xpath('FName')};
+  STRING10  Lastname{xpath('LName')};
 END;
-x := '&lt;Row&gt;&lt;Name&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;Jetson&lt;/LName&gt;&lt;/Name&gt;&lt;EmpID&gt;42&lt;/EmpID&gt;&lt;/Row&gt;'; 
+x := '&lt;Row&gt;&lt;FName&gt;George&lt;/FName&gt;&lt;LName&gt;Jetson&lt;/LName&gt;&lt;EmpID&gt;42&lt;/EmpID&gt;&lt;/Row&gt;'; 
 
 rec := FROMXML(namesRec,x);
 OUTPUT(rec);</programlisting>
 
-  <para>See Also: <link linkend="ROW">ROW</link></para>
+  <para>See Also: <link linkend="ROW">ROW</link>, <link linkend="TOXML">TOXML</link></para>
 </sect1>

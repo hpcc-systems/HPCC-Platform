@@ -88,12 +88,9 @@ namesTable := DATASET([
   {'Halligan','Kevin',31},
   {'Halligan','Liz',30},
   {'Salter','Abi',10},
-  {'X','Z'}], namesRecord);
+  {'X','Z',5}], namesRecord);
 
 DISTRIBUTION(namesTable, surname, forename, NAMED('Stats'));
-x := DATASET(ROW(TRANSFORM({STRING line},
-       SELF.line := WORKUNIT('Stats', STRING))));
-
 /* The result comes back looking like this:
 &lt;XML&gt;
 &lt;Field name="surname" distinct="3"&gt;
@@ -109,5 +106,16 @@ x := DATASET(ROW(TRANSFORM({STRING line},
 &lt;/Field&gt;
 &lt;/XML&gt;
 */
+
+//Post-processing the result with PARSE:
+x := DATASET(ROW(TRANSFORM({STRING line},
+       SELF.line := WORKUNIT('Stats', STRING))));
+res := RECORD
+  STRING Fieldname := XMLTEXT('@name');
+  STRING Cnt := XMLTEXT('@distinct');
+END;
+
+out := PARSE(x, line, res, XML('XML/Field'));
+out;
 </programlisting>
 </sect1>
