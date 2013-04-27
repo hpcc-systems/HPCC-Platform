@@ -9,7 +9,7 @@
     </indexterm>( </emphasis><emphasis> option, value </emphasis><emphasis
   role="bold">);</emphasis></para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="75.80pt" />
 
@@ -45,7 +45,7 @@
     <para>These definitions are "internal-only" terms used in the
     <emphasis>option</emphasis> definitions that follow.</para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="78.10pt" />
 
@@ -129,7 +129,7 @@
     <para><emphasis role="bold">The following options are generally useful:
     </emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="3">
           <colspec colwidth="178.45pt" />
 
@@ -390,7 +390,7 @@
     Non-exported (local) attributes are represented as
     &lt;module&gt;.&lt;exported-attribute&gt;::&lt;non-exported-name&gt;</para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="3">
           <colspec colwidth="178.45pt" />
 
@@ -723,7 +723,7 @@
     role="bold">options</emphasis><emphasis role="bold"> are useful for
     debugging: </emphasis></para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="3">
           <colspec colwidth="178.45pt" />
 
@@ -844,7 +844,7 @@
     of these settings to work around a problem that you encounter, but
     otherwise the default settings are recommended in all cases.</para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="3">
           <colspec colwidth="178.45pt" />
 

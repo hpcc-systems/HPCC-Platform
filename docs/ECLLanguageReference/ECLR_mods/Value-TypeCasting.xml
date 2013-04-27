@@ -84,7 +84,7 @@ STRING1 MyVal := (&gt;STRING1&lt;) MyInt; //MyVal is "A" (ASCII 65)</programlist
         <primary>Casting Rules</primary>
       </indexterm></title>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">
         <colspec colwidth="90pt" />
 

@@ -22,7 +22,7 @@
       </indexterm> are supported for use in expressions, listed here in their
     evaluation precedence:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
         <colspec colwidth="194.80pt" />
 
@@ -87,7 +87,7 @@
 	<programlisting>#option ('divideByZero', ...);</programlisting> 
 	<para>The #option can take the following values:
 	</para>
-     <informaltable colsep="0" frame="none" rowsep="0">
+     <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
         <colspec colwidth="194.80pt" />
 
@@ -126,7 +126,7 @@
       </indexterm> are supported for use in expressions, listed here in their
     evaluation precedence:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
         <colspec colwidth="194.80pt" />
 
@@ -178,7 +178,7 @@
         <primary>Bitshift operators</primary>
       </indexterm> are supported for use in integer expressions:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
         <colspec colwidth="194.80pt" />
 
@@ -218,7 +218,7 @@
         <primary>Equivalence</primary>
       </indexterm> = returns TRUE or FALSE</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="3">
         <colspec colwidth="194.80pt" />
 

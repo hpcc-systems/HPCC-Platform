@@ -8,7 +8,7 @@
       <primary>string operator</primary>
     </indexterm> is supported:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup align="left" cols="2">
         <colspec colwidth="94.80pt" />
 
