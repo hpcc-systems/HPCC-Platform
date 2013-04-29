@@ -19,7 +19,7 @@
 
 person := dataset('person', { unsigned8 person_id, string1 per_sex, string2 per_st, string40 per_first_name, string40 per_last_name}, thor);
 
-inlist(string x, set of string y) := if ( x in y, 'yes','no');
+inlist(string x, set of string y) := if ( NOFOLD(x) in y, 'yes','no');
 inlist2(string x, set of string20 y) := inlist(x, y);
 
 'one' in ['Gavin','Jason','Emma','Vicky'];

@@ -16,11 +16,11 @@
 ############################################################################## */
 
 #option ('globalFold', false);
-string1 getcity1(string1 city_char) := if(city_char in
+string1 getcity1(string1 city_char) := if(NOFOLD(city_char) in
 ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R'
 ,'S','T','U','V','W','X','Y','Z'], city_char, ' ');
 
-string1 getcity2(string1 city_char) := if((string) city_char in
+string1 getcity2(string1 city_char) := if(NOFOLD((string) city_char) in
 ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R'
 ,'S','T','U','V','W','X','Y','Z'], city_char, ' ');
 
