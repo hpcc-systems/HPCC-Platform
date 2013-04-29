@@ -11,14 +11,13 @@
   INTERFACE<indexterm>
       <primary>INTERFACE</primary>
     </indexterm> [ (</emphasis><emphasis> inherit </emphasis><emphasis
-  role="bold">) ]</emphasis><emphasis role="bold">
-  </emphasis><emphasis></emphasis></para>
+  role="bold">) ]</emphasis><emphasis role="bold"> </emphasis></para>
 
   <para><emphasis>members;</emphasis></para>
 
-  <para><emphasis></emphasis><emphasis role="bold">END;</emphasis></para>
+  <para><emphasis role="bold">END;</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -28,7 +27,7 @@
         <row>
           <entry><emphasis>interfacename</emphasis></entry>
 
-          <entry>The ECL attribute name of the interface.</entry>
+          <entry>The ECL definition name of the interface.</entry>
         </row>
 
         <row>
@@ -55,13 +54,13 @@
         <row>
           <entry><emphasis>members</emphasis></entry>
 
-          <entry>Attribute definitions, which may be EXPORTed or SHARED. These
-          may be similar to fields defined in a RECORD structure where only
-          the type and name are defined—the expression that defines the value
-          may be left off (except in some cases where the expression defines
-          the type of attribute, like TRANSFORM structures). If no default
-          value is defined for a <emphasis>member</emphasis>, any MODULE
-          derived from the INTERFACE must define a value for that
+          <entry>Definitions, which may be EXPORTed or SHARED. These may be
+          similar to fields defined in a RECORD structure where only the type
+          and name are defined—the expression that defines the value may be
+          left off (except in some cases where the expression defines the type
+          of attribute, like TRANSFORM structures). If no default value is
+          defined for a <emphasis>member</emphasis>, any MODULE derived from
+          the INTERFACE must define a value for that
           <emphasis>member</emphasis> before that MODULE can be used. These
           may not include other INTERFACE or abstract MODULE
           structures.</entry>
@@ -84,25 +83,41 @@
 
   <para>Example:</para>
 
-  <programlisting>//define an interface
-EXPORT IHeaderFileSearch := INTERFACE
-  EXPORT STRING120 company_val;
-  EXPORT STRING2 state_val;
-  EXPORT STRING25 city_val := '';
+  <programlisting>HeaderRec := RECORD
+  UNSIGNED4 RecID;
+  STRING20  company;
+  STRING25  address;
+  STRING25  city;
+  STRING2   state;
+  STRING5   zip;
 END;
-//*****************************************************************
+HeaderFile := DATASET([{1,'ABC Co','123 Main','Boca Raton','FL','33487'},
+                       {2,'XYZ Co','456 High','Jackson','MI','49202'},
+                       {3,'ABC Co','619 Eaton','Jackson','MI','49202'},
+                       {4,'XYZ Co','999 Yamato','Boca Raton','FL','33487'},
+                       {5,'Joes Eats','666 Slippery Lane','Nether','SC','12345'}
+                      ],HeaderRec);
+
+//define an interface
+IHeaderFileSearch := INTERFACE
+  EXPORT STRING20 company_val;
+  EXPORT STRING2   state_val;
+  EXPORT STRING25  city_val := '';
+END;
+
 //define a function that uses that interface
-EXPORT Fetch_Address(IHeaderFileSearch opts) := FUNCTION
+FetchAddress(IHeaderFileSearch opts) := FUNCTION
         
   //define passed values tests
   CompanyPassed := opts.company_val &lt;&gt; '';
   StatePassed := opts.state_val &lt;&gt; '';
-  CityPassed := opts.state_val &lt;&gt; '';
+  CityPassed := opts.city_val &lt;&gt; '';
 
    //define passed value filters
-   NFilter := HeaderFile.CompanyName = opts.company_val;
+   NFilter := HeaderFile.Company = opts.company_val;
    SFilter := HeaderFile.State = opts.state_val;
    CFilter := HeaderFile.City = opts.city_val;
+
    //define the actual filter to use based on the passed values
    filter := MAP(CompanyPassed AND StatePassed AND CityPassed
                     =&gt; NFilter AND SFilter AND CFilter,
@@ -118,44 +133,44 @@ EXPORT Fetch_Address(IHeaderFileSearch opts) := FUNCTION
             TRUE);
    RETURN HeaderFile(filter);
 END;
-    
+        
 //*****************************************************************
-//and the definition of a SOAP service query
-// that uses the interfaced function
-/*--SOAP--
-&lt;message name="HeaderSearchService"&gt;
-  &lt;part name="CompanyName" type="xsd:string"/&gt;
-  &lt;part name="State" type="xsd:string"/&gt;
-  &lt;part name="City" type="xsd:string"/&gt;
-&lt;/message&gt;
-*/
-EXPORT HeaderSearchService() := MACRO
+//then you can use the interface
 
-  //this MODULE creates a concrete instance of the interface
-  CompatibleHeaderFileSearch := MODULE(IHeaderFileSearch)
-    EXPORT STRING120 company_val := '' :
-    STORED('CompanyName');
-    EXPORT STRING2 state_val := '' : STORED('State');
-    EXPORT STRING25 city_val := '' : STORED('City');
-  END;
-      
-  OUTPUT(Fetch_Address(CompatibleHeaderFileSearch));
+InRec  := {HeaderRec AND NOT [RecID,Address,Zip]};
 
-ENDMACRO;
-      
-//*****************************************************************
-//this MODULE creates another concrete instance
-  EXPORT BatchHeaderSearch(InFile l) := MODULE(IHeaderFileSearch)
-    EXPORT STRING120 company_val := l.company_name;
-    EXPORT STRING2 state_val := l.state;
-    EXPORT STRING25 city_val := l.city;
+//this MODULE creates a concrete instance
+BatchHeaderSearch(InRec l) := MODULE(IHeaderFileSearch)
+  EXPORT STRING120 company_val := l.company;
+  EXPORT STRING2 state_val := l.state;
+  EXPORT STRING25 city_val := l.city;
 END;
-       
-//allowing PROJECT to run the query once for each record in InFile
-batchHeaderLookup :=
-   PROJECT(InFile,
-        TRANSFORM({RECORDOF(HeaderFile) results},
-        SELF.results := FetchAddress(BatchHeaderSearch(LEFT))));</programlisting>
 
-  <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>, <link linkend="LIBRARY">LIBRARY</link></para>
+//that can be used like this       
+FetchAddress(BatchHeaderSearch(ROW({'ABC Co','',''},InRec))); 
+ 
+//or we can define an input dataset
+InFile := DATASET([{'ABC Co','Boca Raton','FL'},
+                   {'XYZ Co','Jackson','MI'},
+                   {'ABC Co','',''},
+                   {'XYZ Co','',''},
+                   {'Joes Eats','',''}
+                  ],InRec);
+
+//and an output nested child structure
+HeaderRecs := RECORD
+  UNSIGNED4 Pass;
+  DATASET(HeaderRec) Headers;
+END;
+
+//and allow PROJECT to run the query once for each record in InFile
+HeaderRecs XF(InRec L, INTEGER C) :=  TRANSFORM
+  SELF.Pass := C;
+  SELF.Headers := FetchAddress(BatchHeaderSearch(L));
+END;
+batchHeaderLookup := PROJECT(InFile,XF(LEFT,COUNTER));
+batchHeaderLookup;</programlisting>
+
+  <para>See Also: <link linkend="MODULE_Structure">MODULE Structure</link>,
+  <link linkend="LIBRARY">LIBRARY</link></para>
 </sect1>

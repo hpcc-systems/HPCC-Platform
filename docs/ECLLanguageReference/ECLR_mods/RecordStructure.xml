@@ -185,7 +185,7 @@
     <para>All field declarations in a RECORD Structure must use one of the
     following syntaxes:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="50pt" />
 
@@ -366,7 +366,7 @@
       </indexterm> (AND, OR, and NOT) to include/exclude certain fields from
     the inheritance, as described here:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="3">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -468,7 +468,7 @@ END;</programlisting>
     <para>The following list of field modifiers are available for use on field
     definitions:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="50pt" />
 

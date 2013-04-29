@@ -13,7 +13,7 @@
   </emphasis><emphasis>parsepattern</emphasis><emphasis
   role="bold">;</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -48,7 +48,7 @@
   </emphasis><emphasis>parsepattern</emphasis><emphasis
   role="bold">;</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -86,7 +86,7 @@
   </emphasis><emphasis>parsepattern</emphasis><emphasis
   role="bold">;</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -151,7 +151,7 @@
     <para>A <emphasis>parsepattern </emphasis>may contain any combination of
     the following elements:</para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="125.50pt" />
 

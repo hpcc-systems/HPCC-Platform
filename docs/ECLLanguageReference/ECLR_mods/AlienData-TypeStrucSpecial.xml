@@ -15,7 +15,7 @@
       </indexterm>(</emphasis><emphasis>PhysicalType alias) :=
     expression;</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -67,7 +67,7 @@
       </indexterm>(</emphasis><emphasis>LogicalType alias) :=
     expression;</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -119,7 +119,7 @@
       </indexterm>(</emphasis><emphasis>type alias) :=
     expression;</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -162,7 +162,7 @@
         <primary><emphasis role="bold">MAXLENGTH</emphasis></primary>
       </indexterm></emphasis><emphasis> := expression;</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -194,7 +194,7 @@
       </indexterm>(</emphasis><emphasis>PhysicalType alias) :=
     expression;</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 

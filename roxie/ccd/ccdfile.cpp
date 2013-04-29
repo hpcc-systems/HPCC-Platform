@@ -1434,26 +1434,38 @@ IPartDescriptor *queryMatchingRemotePart(IPartDescriptor *pdesc, IFileDescriptor
     return NULL;
 }
 
-inline bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned copy, const char *process)
+inline bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const char *process)
 {
     StringBuffer s;
-    unsigned clusterNo = pdesc->copyClusterNum(copy);
     return strieq(process, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
 }
 
-inline void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, bool checkSelf, unsigned maxAppend=2)
+inline bool checkClusterCount(UnsignedArray &counts, unsigned clusterNo, unsigned max)
 {
+    while (!counts.isItem(clusterNo))
+        counts.append(0);
+    unsigned count = counts.item(clusterNo);
+    if (count>=max)
+        return false;
+    counts.replace(++count, clusterNo);
+    return true;
+}
+
+inline void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, bool checkSelf)
+{
+    UnsignedArray clusterCounts;
     unsigned numCopies = pdesc->numCopies();
-    unsigned appended = 0;
-    for (unsigned copy = 0; appended < maxAppend && copy < numCopies; copy++)
+    for (unsigned copy = 0; copy < numCopies; copy++)
     {
-        if (checkSelf && isCopyFromCluster(pdesc, copy, roxieName.str())) //don't add ourself
+        unsigned clusterNo = pdesc->copyClusterNum(copy);
+        if (!checkClusterCount(clusterCounts, clusterNo, 2))
+            continue;
+        if (checkSelf && isCopyFromCluster(pdesc, clusterNo, roxieName.str())) //don't add ourself
             continue;
         RemoteFilename r;
         pdesc->getFilename(copy,r);
         StringBuffer path;
         locations.append(r.getRemotePath(path).str());
-        appended++;
     }
 }
 
@@ -1914,6 +1926,23 @@ public:
         }
         return fileMap.getLink();
     }
+    virtual void serializeFDesc(MemoryBuffer &mb, IFileDescriptor *fdesc, unsigned channel, bool isLocal) const
+    {
+        // Find all the partno's that go to this channel
+        unsigned numParts = fdesc->numParts();
+        if (numParts > 1 && fileType==ROXIE_KEY && isLocal)
+            numParts--; // don't want to send TLK
+        UnsignedArray partNos;
+        for (unsigned i = 1; i <= numParts; i++)
+        {
+            IPartDescriptor *pdesc = fdesc->queryPart(i-1);
+            if (getBondedChannel(i)==channel || !isLocal)
+            {
+                partNos.append(i-1);
+            }
+        }
+        fdesc->serializeParts(mb, partNos);
+    }
     virtual void serializePartial(MemoryBuffer &mb, unsigned channel, bool isLocal) const
     {
         if (traceLevel > 6)
@@ -1929,20 +1958,15 @@ public:
         {
             mb.append(subNames.item(idx));
             IFileDescriptor *fdesc = subFiles.item(idx);
-            // Find all the partno's that go to this channel
-            unsigned numParts = fdesc->numParts();
-            if (numParts > 1 && fileType==ROXIE_KEY && isLocal)
-                numParts--; // don't want to send TLK
-            UnsignedArray partNos;
-            for (unsigned i = 1; i <= numParts; i++)
+            serializeFDesc(mb, fdesc, channel, isLocal);
+            IFileDescriptor *remoteFDesc = remoteSubFiles.item(idx);
+            if (remoteFDesc)
             {
-                IPartDescriptor *pdesc = fdesc->queryPart(i-1);
-                if (getBondedChannel(i)==channel || !isLocal) 
-                {
-                    partNos.append(i-1);
-                }
+                mb.append(true);
+                serializeFDesc(mb, remoteFDesc, channel, isLocal);
             }
-            fdesc->serializeParts(mb, partNos);
+            else
+                mb.append(false);
             if (fileType == ROXIE_KEY) // for now we only support translation on index files
             {
                 IDefRecordMeta *meta = diskMeta.item(idx);
@@ -2058,9 +2082,9 @@ public:
                         if (fdesc) // NB there may be no parts for this channel 
                         {
                             IPartDescriptor *pdesc = fdesc->queryPart(partNo-1);
-                            IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, partNo-1);
                             if (pdesc)
                             {
+                                IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, partNo-1);
                                 part.setown(createDynamicFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_KEY, fdesc->numParts(), cached != NULL));
                                 pdesc->getCrc(crc);
                             }
@@ -2309,16 +2333,13 @@ public:
                     StringBuffer subName;
                     serverData.read(subName);
                     subNames.append(subName.str());
-                    IArrayOf<IPartDescriptor> parts;
-                    deserializePartFileDescriptors(serverData, parts);
-                    if (parts.length())
-                        subFiles.append(LINK(&parts.item(0).queryOwner()));
+                    deserializeFilePart(serverData, subFiles, fileNo, false);
+                    bool remotePresent;
+                    serverData.read(remotePresent);
+                    if (remotePresent)
+                        deserializeFilePart(serverData, remoteSubFiles, fileNo, true);
                     else
-                    { 
-                        if (traceLevel > 6)
-                            DBGLOG("No information for subFile %d of file %s", fileNo, lfn.get());
-                        subFiles.append(NULL);
-                    }
+                        remoteSubFiles.append(NULL);
                     if (fileType==ROXIE_KEY)
                     {
                         bool diskMetaPresent;
@@ -2343,6 +2364,22 @@ public:
             throw;
         }
         ROQ->removePendingCallback(callback);
+    }
+private:
+    void deserializeFilePart(MemoryBuffer &serverData, PointerIArrayOf<IFileDescriptor> &files, unsigned fileNo, bool remote)
+    {
+        IArrayOf<IPartDescriptor> parts;
+        deserializePartFileDescriptors(serverData, parts);
+        if (parts.length())
+        {
+            files.append(LINK(&parts.item(0).queryOwner()));
+        }
+        else
+        {
+            if (traceLevel > 6)
+                DBGLOG("No information for %s subFile %d of file %s", remote ? "remote" : "", fileNo, lfn.get());
+            files.append(NULL);
+        }
     }
 };
 

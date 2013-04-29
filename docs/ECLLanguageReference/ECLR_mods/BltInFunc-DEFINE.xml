@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE sect1 PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
 <sect1 id="DEFINE">
@@ -11,7 +11,7 @@
     </indexterm>(</emphasis><emphasis> pattern, symbol </emphasis><emphasis
   role="bold">)</emphasis></para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="79.35pt" />
 
