@@ -28,7 +28,7 @@
   =</emphasis><emphasis>DefaultValue</emphasis><emphasis role="bold"> ] ) :=
   </emphasis>expression<emphasis role="bold">;</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 
@@ -253,7 +253,7 @@ MyFunc(ds1,ds2);  //returns 4 records: '1', '2', '3', and '4'
 
     <para><emphasis>PrototypeName</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -359,7 +359,7 @@ OUTPUT(doMany(2, applyValue4, applyValue2,multiValues));
     role="bold"> := </emphasis><emphasis>value </emphasis><emphasis
     role="bold">);</emphasis></para>
 
-    <informaltable colsep="0" frame="none" rowsep="0">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 

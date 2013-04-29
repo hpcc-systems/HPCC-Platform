@@ -13,7 +13,7 @@
     </indexterm>(</emphasis> <emphasis> file, mapping </emphasis> <emphasis
   role="bold">);</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="80.50pt" />
 
@@ -48,7 +48,7 @@
   <para><emphasis role="bold">&lt;field&gt;{set(&lt;transform&gt;(
   args),...),get(&lt;transform&gt;,...),displayname(&lt;name&gt;)}</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec colwidth="80.50pt" />
 

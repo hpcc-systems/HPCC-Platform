@@ -11,7 +11,7 @@
   <para><emphasis>value </emphasis><emphasis role="bold">IN
   </emphasis><emphasis>value_set</emphasis></para>
 
-  <informaltable colsep="0" frame="none" rowsep="0">
+  <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
       <colspec align="left" colwidth="122.40pt" />
 

@@ -37,7 +37,7 @@
     </indexterm> [ ( </emphasis><emphasis>algorithm</emphasis><emphasis
   role="bold"> )] ] )</emphasis></para>
 
-  <para><informaltable colsep="0" frame="none" rowsep="0">
+  <para><informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec colwidth="89.75pt" />
 
@@ -201,7 +201,7 @@
     invalid algorithm for the targeted platform will generate a warning and
     the default algorithm for that platform will be implemented.</para>
 
-    <para><informaltable colsep="0" frame="none" rowsep="0">
+    <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="84.55pt" />
 
