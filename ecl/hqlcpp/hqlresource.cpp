@@ -999,6 +999,7 @@ ResourcerInfo::ResourcerInfo(IHqlExpression * _original, CResourceOptions * _opt
     currentSource = 0;
     linkedFromChild = false;
     neverSplit = false;
+    isConditionalFilter = false;
 }
 
 void ResourcerInfo::setConditionSource(IHqlExpression * condition, bool isFirst)            
@@ -2709,6 +2710,13 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
         case no_filter:
             if (options.preventKeyedSplit && filterIsKeyed(expr))
                 insideNeverSplit = true;
+            else
+            {
+                LinkedHqlExpr invariant;
+                OwnedHqlExpr cond = extractFilterConditions(invariant, expr, expr->queryNormalizedSelector(), false);
+                if (invariant)
+                    info->isConditionalFilter = true;
+            }
             break;
         case no_hqlproject:
         case no_newusertable:
@@ -2911,6 +2919,14 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
             if (!options.noConditionalLinks || expr->isAction())
                 forceNewChildGraph = true;
             break;
+        case no_filter:
+            if (info->isConditionalFilter)
+            {
+                thisGraph->mergedConditionSource = true;
+                if (!options.noConditionalLinks)
+                    forceNewChildGraph = true;
+            }
+            break;
 //      case no_nonempty:
         case no_sequential:
             {
@@ -3110,6 +3126,20 @@ void EclResourcer::markAsUnconditional(IHqlExpression * expr, ResourceGraphInfo 
         }
         markChildDependentsAsUnconditional(info, condition);
         return;
+    case no_filter:
+        if (!info->isConditionalFilter || options.noConditionalLinks)
+            break;
+
+        if (condition)
+            markCondition(expr, condition, wasConditional);
+        else
+        {
+            //This list is processed in a second phase.
+            if (rootConditions.find(*expr) == NotFound)
+                rootConditions.append(*LINK(expr));
+        }
+        markChildDependentsAsUnconditional(info, condition);
+        return;
     case no_sequential:
 //  case no_nonempty:
         if (!options.isChildQuery)
@@ -3165,8 +3195,15 @@ void EclResourcer::markConditionBranch(unsigned childIndex, IHqlExpression * exp
 
 void EclResourcer::markCondition(IHqlExpression * expr, IHqlExpression * condition, bool wasConditional)
 {
-    ForEachChildFrom(i, expr, 1)
-        markConditionBranch(i, expr, condition, wasConditional);
+    if (expr->getOperator() == no_filter)
+    {
+        markConditionBranch(0, expr, condition, wasConditional);
+    }
+    else
+    {
+        ForEachChildFrom(i, expr, 1)
+            markConditionBranch(i, expr, condition, wasConditional);
+    }
 }
 
 void EclResourcer::markConditions(HqlExprArray & exprs)
@@ -3868,8 +3905,8 @@ bool EclResourcer::queryMergeGraphLink(ResourceGraphLink & link)
                         ResourcerInfo * sinkInfo = queryResourceInfo(cur.sinkNode);
 
                         //If this is conditional, don't merge if there is a link to another graph
-                        if ((!cur.isDependency() && sinkInfo->isConditionExpr()) || 
-                        //if (sinkInfo->isConditionExpr() || 
+                        if ((!cur.isDependency() && sinkInfo->isConditionExpr()) ||
+                        //if (sinkInfo->isConditionExpr() ||
                             (!sinkInfo->isUnconditional() && sinkInfo->conditions.ordinality()))
                             isConditionalInSinkGraph = true;
                     }
