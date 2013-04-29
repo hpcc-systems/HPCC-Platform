@@ -2555,6 +2555,30 @@ bool canReorderMatchExistingLocalSort(HqlExprArray & newElements1, HqlExprArray 
 }
 
 
+bool ThorHqlTransformer::isLightweightJoinCandidate(IHqlExpression * expr, bool isLocal, bool isLimitedSubstringJoin)
+{
+    //This is equally applicable to hthor and roxie.  However non lookup joins currently generate group activities on
+    //the inputs which look less efficient.  It may still be better to enable it though.
+    if (!translator.targetThor())
+        return false;
+
+    if (!options.spotLocalMerge || isLimitedSubstringJoin || !isLocal)
+        return false;
+
+    if (expr->hasProperty(_lightweight_Atom))
+        return false;
+
+    switch (expr->getOperator())
+    {
+    case no_join:
+    case no_selfjoin:
+    case no_denormalizegroup:
+    case no_denormalize:
+        return true;
+    }
+    return false;
+}
+
 IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression * expr)
 {
     IHqlExpression * leftDs = expr->queryChild(0);
@@ -2677,9 +2701,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Try and convert local joins to a lightweight join that doesn't require any sorting of the inputs.
     //Improves resourcing for thor, and prevents lookup conversion for hthor/roxie
     //Worthwhile even for lookup joins
-    if (translator.targetThor() &&
-        options.spotLocalMerge && !isLimitedSubstringJoin &&
-        ((op == no_join) || (op == no_selfjoin)) && isLocal && !expr->hasProperty(_lightweight_Atom))
+    if (isLightweightJoinCandidate(expr, isLocal, isLimitedSubstringJoin))
     {
         if (isAlreadySorted(leftDs, leftSorts, true, true) &&
             isAlreadySorted(rightDs, rightSorts, true, true))
