@@ -467,9 +467,12 @@ void CRemoteSlave::run(int argc, char * argv[])
                     msg.clear();
                     if (catchReadBuffer(masterSocket, msg, RMTTIME_RESPONSE_MASTER))
                     {
+                        LOG(MCdebugProgress, unknownJob, "Terminate acknowledgement received from master for slave %d", info.replyTag);
                         msg.read(ok);
                         assertex(ok);
                     }
+                    else
+                        LOG(MCdebugProgress, unknownJob, "No terminate acknowledgement received from master for slave %d", info.replyTag);
 
                     if (error)
                         break;
