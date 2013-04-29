@@ -595,9 +595,9 @@ bool EclGraphElement::prepare(IAgentContext & agent, const byte * parentExtract,
                     return branches.item(whichBranch).prepare(agent, parentExtract, checkDependencies);
                 return true;
             }
-#if 0
+#if 1
         // This may feel like a worthwhile opimization, but it causes issues with through spill activities.
-        // Unless/until through spill activities get replaced by splitters, this code should be disabled
+        // However, disabling it causes issues with unwanted side effects getting evaluated
         case TAKfilter:
         case TAKfiltergroup:
         case TAKfilterproject:
