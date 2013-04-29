@@ -1076,7 +1076,7 @@ public:
 //  virtual IHqlExpression * transformSelector(IHqlExpression * expr);
 
 protected:
-    AnnotationTransformInfo * queryCommonExtra(IHqlExpression * expr);
+    AnnotationTransformInfo * queryLocationIndependentExtra(IHqlExpression * expr);
 };
 
 void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs);
@@ -1169,7 +1169,7 @@ protected:
 protected:
     IHqlExpression * transformChildrenNoAnnotations(IHqlExpression * expr);
     IHqlExpression * makeRecursiveName(_ATOM searchModule, _ATOM searchName);
-    HqlTreeNormalizerInfo * queryCommonExtra(IHqlExpression * expr);
+    HqlTreeNormalizerInfo * queryLocationIndependentExtra(IHqlExpression * expr);
     IHqlExpression * transformSimpleConst(IHqlExpression * expr)
     {
         if (expr->isConstant())
