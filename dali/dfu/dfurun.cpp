@@ -166,7 +166,7 @@ class CDFUengine: public CInterface, implements IDFUengine
                 PROGLOG("ABORT notified");
             abort = true;
         }
-    } abortnotify;
+    };
 
 
     class cDFUlistener: public Thread

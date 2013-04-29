@@ -535,26 +535,21 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
             return; // recursive
 
         int startlen = out.length();
-        out.appendf("<%s", tag);
+        appendXMLOpenTag(out, tag, NULL, false);
         if (ns)
             out.append(' ').append(ns);
         int taglen=out.length()+1;
         for (size_t i=0; i<type->getAttrCount(); i++)
         {
             IXmlAttribute* attr = type->queryAttr(i);
+            StringBuffer s;
+            const char *attrval;
             if (parmtree)
-            {
-                StringBuffer attrpath("@");
-                const char *attrval = parmtree->queryProp(attrpath.append(attr->queryName()).str());
-                if (attrval)
-                    out.appendf(" %s='", attr->queryName()).append(attrval);
-            }
+                attrval = parmtree->queryProp(s.append('@').append(attr->queryName()));
             else
-            {
-                out.appendf(" %s='", attr->queryName());
-                attr->getSampleValue(out);
-            }
-            out.append('\'');
+                attrval = attr->getSampleValue(s);
+            if (attrval)
+                appendXMLAttr(out, attr->queryName(), attrval);
         }
         out.append('>');
         if (typeName)
@@ -567,9 +562,9 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
             assertex(flds==0);
             if (parmtree)
             {
-                const char *attrval = parmtree->queryProp(NULL);
-                if (attrval)
-                    out.append(attrval);
+                const char *val = parmtree->queryProp(NULL);
+                if (val)
+                    encodeXML(val, out);
             }
             else if (flags & REQXML_SAMPLE_DATA)
                 type->queryFieldType(0)->getSampleValue(out,tag);
@@ -592,7 +587,7 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
         if ((flags & REQXML_TRIM) && !(flags & REQXML_ROOT) && out.length()==taglen)
             out.setLength(startlen);
         else
-            out.appendf("</%s>",tag);
+            appendXMLCloseTag(out, tag);
     }
     else if (type->isArray())
     {
@@ -608,7 +603,7 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
             parent.push_back(typeName);
 
         int startlen = out.length();
-        out.appendf("<%s", tag);
+        appendXMLOpenTag(out, tag);
         if (ns)
             out.append(' ').append(ns);
         out.append(">");
@@ -656,7 +651,7 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
         if ((flags & REQXML_TRIM) && !(flags & REQXML_ROOT) && out.length()==taglen)
             out.setLength(startlen);
         else
-            out.appendf("</%s>",tag);
+            appendXMLCloseTag(out, tag);
     }
     else // simple type
     {
@@ -672,18 +667,12 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
             {
                 if (!strieq(parmval, "default"))
                 {
-                    out.appendf("<%s>", tag);
-                    if (parmval.length())
-                        out.append((strieq(parmval.str(),"1")||strieq(parmval.str(),"true")||strieq(parmval.str(), "on")) ? '1' : '0');
-                    out.appendf("</%s>", tag);
+                    bool val = (strieq(parmval.str(),"1")||strieq(parmval.str(),"true")||strieq(parmval.str(), "on"));
+                    appendXMLTag(out, tag, val ? "1" : "0");
                 }
             }
             else
-            {
-                out.appendf("<%s>", tag);
-                out.append(parmval);
-                out.appendf("</%s>", tag);
-            }
+                appendXMLTag(out, tag, parmval);
         }
     }
 }
