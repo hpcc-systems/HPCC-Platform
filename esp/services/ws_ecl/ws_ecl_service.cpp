@@ -535,7 +535,7 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
             return; // recursive
 
         int startlen = out.length();
-        appendXMLOpenTag(out, tag);
+        appendXMLOpenTag(out, tag, NULL, false);
         if (ns)
             out.append(' ').append(ns);
         int taglen=out.length()+1;
