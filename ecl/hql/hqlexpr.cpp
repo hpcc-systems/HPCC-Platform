@@ -314,19 +314,6 @@ ISourcePath * createSourcePath(size32_t len, const char *value)
 
 //==============================================================================================================
 
-void HqlExprArray::swapWith(HqlExprArray & other)
-{
-    void * saved_head = _head;
-    _head = other._head;
-    other._head = saved_head;
-    aindex_t savedused = used;
-    used = other.used;
-    other.used = savedused;
-    aindex_t savedmax = max;
-    max = other.max;
-    other.max = savedmax;
-}
-
 bool HqlExprArray::containsBody(IHqlExpression & expr)
 {
     IHqlExpression * body = expr.queryBody();
