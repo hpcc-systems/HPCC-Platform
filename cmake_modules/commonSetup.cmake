@@ -79,6 +79,10 @@ IF ("${COMMONSETUP_DONE}" STREQUAL "")
 
   option(USE_OPTIONAL "Automatically disable requested features with missing dependencies" ON)
 
+  if ( USE_PYTHON OR USE_V8 OR USE_JNI OR USE_RINSIDE )
+      set( WITH_PLUGINS ON )
+  endif()
+
   if ( USE_XALAN AND USE_LIBXSLT )
       set(USE_XALAN OFF)
   endif()
