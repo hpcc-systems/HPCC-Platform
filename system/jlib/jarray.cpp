@@ -186,4 +186,16 @@ void Allocator::_doSort(size32_t _size, StdCompare compare)
         qsort(_head, used, _size, compare);
 }
 
+void Allocator::doSwapWith(Allocator & other)
+{
+    void * saveHead = _head;
+    _head = other._head;
+    other._head = saveHead;
+    aindex_t saveUsed = used;
+    used = other.used;
+    other.used = saveUsed;
+    aindex_t saveMax = max;
+    max = other.max;
+    other.max = saveMax;
+}
 
