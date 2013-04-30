@@ -41,7 +41,6 @@ class CDaliPackageWatcher : public CInterface, implements ISDSSubscription, impl
     ISDSSubscription *notifier;
     StringAttr id;
     StringAttr xpath;
-    mutable CriticalSection crit;
 public:
     IMPLEMENT_IINTERFACE;
     CDaliPackageWatcher(const char *_id, const char *_xpath, ISDSSubscription *_notifier)
@@ -54,7 +53,6 @@ public:
     }
     virtual void subscribe()
     {
-        CriticalBlock b(crit);
         try
         {
             change = querySDS().subscribe(xpath, *this, true);
@@ -67,7 +65,6 @@ public:
     }
     virtual void unsubscribe()
     {
-        CriticalBlock b(crit);
         notifier = NULL;
         try
         {
@@ -86,16 +83,12 @@ public:
     }
     virtual void onReconnect()
     {
-        Linked<CDaliPackageWatcher> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
-        CriticalBlock b(crit);
         change = querySDS().subscribe(xpath, *this, true);
         if (notifier)
             notifier->notify(0, NULL, SDSNotify_None);
     }
     virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
-        Linked<CDaliPackageWatcher> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
-        CriticalBlock b(crit);
         if (notifier)
             notifier->notify(subid, xpath, flags, valueLen, valueData);
     }
