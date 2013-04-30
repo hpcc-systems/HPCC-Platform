@@ -11230,12 +11230,18 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                     TableProjectMapper mapper;
                     mapper.setMapping(mapTransform, leftSelect);
                     type.setown(getTypeProject(type, transform->queryRecord(), mapper));
+
+                    //For no_denormalize information is only preserved if it is the same whether or not the transform was called.
+                    if (op == no_denormalize)
+                        type.setown(getTypeIntersection(type, datasetType));
                 }
                 else
                     type.setown(getTypeCannotProject(type, transform->queryRecord()));
             }
             else if (isLocal)
             {
+                OwnedITypeInfo ungroupedDatasetType = getTypeUngroup(datasetType);
+
                 //local operation so try and preserve the current distribution, no clue about the following sort order, 
                 //and result is never grouped.
                 if (queryProperty(_lightweight_Atom, parms) && !createDefaultLeft)
@@ -11245,8 +11251,7 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                     TableProjectMapper mapper;
                     mapper.setMapping(transform, leftSelect);
 
-                    type.setown(getTypeUngroup(datasetType));
-                    type.setown(getTypeProject(type, transform->queryRecord(), mapper));
+                    type.setown(getTypeProject(ungroupedDatasetType, transform->queryRecord(), mapper));
                 }
                 else
                 {
@@ -11271,6 +11276,10 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                         newDistributeInfo = getUnknownAttribute();
                     type.setown(makeTableType(makeRowType(LINK(transform->queryRecordType())), newDistributeInfo, NULL, NULL));
                 }
+
+                //For no_denormalize information is only preserved if it is the same whether or not the transform was called.
+                if (op == no_denormalize)
+                    type.setown(getTypeIntersection(type, ungroupedDatasetType));
             }
             else if (isHashJoin)
             {

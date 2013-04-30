@@ -11705,10 +11705,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, argName);
     if (isLightweight)
     {
-        if ((kind == TAKselfjoinlight) || (kind == TAKselfjoin))
-            instance->graphLabel.set("Lightweight Self Join");
-        else
-            instance->graphLabel.set("Lightweight Join");
+        StringBuffer graphLabel;
+        if (kind != TAKselfjoinlight)
+            graphLabel.append("Lightweight ");
+        graphLabel.append(getActivityText(kind));
+        instance->graphLabel.set(graphLabel.str());
     }
 
     instance->setLocal(isLocalJoin);
