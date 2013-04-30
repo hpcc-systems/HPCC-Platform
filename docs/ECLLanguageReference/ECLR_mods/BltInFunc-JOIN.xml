@@ -14,9 +14,8 @@
   jointype</emphasis><emphasis role="bold">] [</emphasis><emphasis>,
   joinflags</emphasis><emphasis role="bold">] )</emphasis></para>
 
-  <para><emphasis role="bold"></emphasis><emphasis
-  role="bold">JOIN(</emphasis><emphasis>setofdatasets, joincondition,
-  transform</emphasis>,<emphasis role="bold"> SORTED<indexterm>
+  <para><emphasis role="bold">JOIN(</emphasis><emphasis>setofdatasets,
+  joincondition, transform</emphasis>,<emphasis role="bold"> SORTED<indexterm>
       <primary>SORTED</primary>
     </indexterm>( </emphasis><emphasis>fields</emphasis><emphasis
   role="bold">) [</emphasis><emphasis>, jointype</emphasis><emphasis
@@ -166,7 +165,7 @@
 
         <tbody>
           <row>
-            <entry>"equality"</entry>
+            <entry>"equality" (hard match)</entry>
 
             <entry>All the simple "LEFT.field = RIGHT.field" logic that
             defines matching records. For JOINs that use keys, all these must
@@ -177,7 +176,7 @@
           </row>
 
           <row>
-            <entry>"non-equality"</entry>
+            <entry>"non-equality" (soft match)</entry>
 
             <entry>All other matching criteria in the
             <emphasis>joincondition</emphasis> logic, such as "LEFT.field &gt;
@@ -461,13 +460,18 @@
             whereas LIMIT would either fail the job entirely, or SKIP the
             record (eliminating the <emphasis>leftrecset</emphasis> record
             entirely from the output). If omitted, the default is
-            LIMIT(10000); LIMIT(0) is unlimited.</entry>
+            LIMIT(10000). The LIMIT is applied to the set of records that meet
+            the the hard match ("equality") portion of the
+            <emphasis>joincondition</emphasis> but before the soft match
+            ("non-equality") portion of the <emphasis>joincondition</emphasis>
+            is evaluated. </entry>
           </row>
 
           <row>
             <entry><emphasis>value</emphasis></entry>
 
-            <entry>The maximum number of matches allowed.</entry>
+            <entry>The maximum number of matches allowed; LIMIT(0) is
+            unlimited.</entry>
           </row>
 
           <row>
@@ -481,16 +485,17 @@
           <row>
             <entry><emphasis>transform</emphasis></entry>
 
-            <entry>Optional. Specifies outputting a single record produced 
-            by the <emphasis>transform</emphasis> instead of failing the workunit 
+            <entry>Optional. Specifies outputting a single record produced by
+            the <emphasis>transform</emphasis> instead of failing the workunit
             (similar to the ONFAIL option of the LIMIT function).</entry>
           </row>
 
           <row>
             <entry><emphasis role="bold">FAIL</emphasis></entry>
 
-            <entry>Optional. Specifies using the <link linkend="FAIL">FAIL</link> action to configure the error 
-            message when the job fails.</entry>
+            <entry>Optional. Specifies using the <link
+            linkend="FAIL">FAIL</link> action to configure the error message
+            when the job fails.</entry>
           </row>
 
           <row>
@@ -681,7 +686,7 @@
 
         <tbody>
           <row>
-            <entry>INNER (default)</entry>
+            <entry>inner (default)</entry>
 
             <entry>Only those records that exist in both the
             <emphasis>leftrecset</emphasis> and
