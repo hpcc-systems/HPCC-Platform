@@ -69,8 +69,8 @@ static const char * EclDefinition =
 "  boolean StringWildExactMatch(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringWildExactMatch'; \n"
 "  boolean StringContains(const string src, const string _pattern, boolean _noCase) : c, pure,entrypoint='slStringContains'; \n"
 "  string StringExtractMultiple(const string src, unsigned8 mask) : c,pure,entrypoint='slStringExtractMultiple'; \n"
-"  unsigned integer4 EditDistance(const string l, const string r) : c, pure,entrypoint='slEditDistance'; \n"
-"  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadius'; \n"
+"  unsigned integer4 EditDistance(const string l, const string r) : c, pure,entrypoint='slEditDistanceV2'; \n"
+"  boolean EditDistanceWithinRadius(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
 "  unsigned integer4 EditDistanceV2(const string l, const string r) : c, pure,entrypoint='slEditDistanceV2'; \n"
 "  boolean EditDistanceWithinRadiusV2(const string l, const string r, unsigned4 radius) : c,pure,entrypoint='slEditDistanceWithinRadiusV2'; \n"
 "  string StringGetNthWord(const string src, unsigned4 n) : c, pure,entrypoint='slStringGetNthWord'; \n"
@@ -158,134 +158,10 @@ inline unsigned min3(unsigned a, unsigned b, unsigned c)
     return mi;
 }
 
-class CEditDistance
-{
-private:
-    unsigned char da[256][256];
-
-public:
-    unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
-    {
-        unsigned i, j, cost;
-        char l_i, r_j;
-
-        clip(leftLen, left);
-        clip(rightLen, right);
-
-        if (leftLen > 255)
-        {
-            leftLen = 255;
-        }
-        if (rightLen > 255)
-        {
-            rightLen = 255;
-        }
-
-        if (leftLen == 0)
-        {
-            return rightLen;
-        }
-        if (rightLen == 0)
-        {
-            return leftLen;
-        }
-
-        for (i = 0; i <= leftLen; i++)
-        {
-            da[i][0] = i;
-        }
-
-        for (j = 0; j <= rightLen; j++)
-        {
-            da[0][j] = j;
-        }
-
-        for (i = 1; i <= leftLen; i++)
-        {
-            l_i = left[i - 1];
-
-            for (j = 1; j <= rightLen; j++)
-            {
-                    r_j = right[j - 1];
-                    cost = (l_i == r_j) ? 0 : 1;
-                    da[i][j] = min3(da[i-1][j]+1, da[i][j-1]+1, da[i-1][j-1] + cost);
-            }
-        }
-
-        return da[leftLen][rightLen];
-    }
-
-    unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
-    {
-        unsigned i, j, cost;
-        char l_i, r_j;
-
-        clip(leftLen, left);
-        clip(rightLen, right);
-
-        if (leftLen > 255)
-        {
-            leftLen = 255;
-        }
-        if (rightLen > 255)
-        {
-            rightLen = 255;
-        }
-
-        if (leftLen == 0)
-        {
-            return rightLen;
-        }
-        if (rightLen == 0)
-        {
-            return leftLen;
-        }
-
-        if (leftLen > rightLen)
-        {
-            const char *tstr = left;
-            left = right;
-            right = tstr;
-
-            unsigned tlen = leftLen;
-            leftLen = rightLen;
-            rightLen = tlen;
-        }
-
-        for (i = 0; i <= leftLen; i++)
-        {
-            da[i][0] = i;
-        }
-
-        for (j = 0; j <= rightLen; j++)
-        {
-            da[0][j] = j;
-        }
-
-        for (i = 1; i <= leftLen; i++)
-        {
-            l_i = left[i - 1];
-
-            for (j = 1; j <= rightLen; j++)
-            {
-                    r_j = right[j - 1];
-                    cost = (l_i == r_j) ? 0 : 1;
-                    da[i][j] = min3(da[i-1][j]+1, da[i][j-1]+1, da[i-1][j-1] + cost);
-            }
-
-            // bail out early if ed can't possibly be <= radius
-            if ((da[i][rightLen] - (leftLen - i)) > radius)
-                return da[i][rightLen];
-        }
-
-        return da[leftLen][rightLen];
-    }
-};
-
-//--- Optimized versions of the edit distance functions above.
+//--- Optimized versions of the edit distance functions
 inline unsigned mask(unsigned x) { return x & 1; }
 
-unsigned editDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
+unsigned editDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
 {
     unsigned i, j;
 
@@ -340,89 +216,13 @@ unsigned editDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, 
     return da[mask(leftLen-1)][rightLen-1];
 }
 
-unsigned editDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
-{
-    unsigned i, j;
-
-    clip(leftLen, left);
-    clip(rightLen, right);
-
-    unsigned minED = (leftLen < rightLen)? rightLen - leftLen: leftLen - rightLen;
-    if (minED > radius)
-        return minED;
-
-    if (leftLen > 255)
-        leftLen = 255;
-
-    if (rightLen > 255)
-        rightLen = 255;
-
-    //Checking for leading common substrings actually slows the function down.
-    if (leftLen == 0)
-        return rightLen;
-
-    if (rightLen == 0)
-        return leftLen;
-
-    /*
-    This function applies two optimizations over the function above.
-    a) Adding a charcter (next row) can at most decrease the edit distance by 1, so short circuit when
-       we there is no possiblity of getting within the distance.
-    b) We only need to evaluate the martix da[i-radius..i+radius][j-radius..j+radius]
-       not taking into account values outside that range [can use max value to prevent access]
-    */
-
-    //Optimize the storage requirements by
-    //i) Only storing two stripes
-    //ii) Calculate, but don't store the row comparing against the null string
-    //NB: A byte array is ok because the +1 is added after the minimum, and that will always include 254 as an option.
-    unsigned char da[2][255];
-    char r_0 = right[0];
-    char l_0 = left[0];
-    bool matched_l0 = false;
-    for (j = 0; j < rightLen; j++)
-    {
-        if (right[j] == l_0) matched_l0 = true;
-        da[0][j] = (matched_l0) ? j : j+1;
-    }
-
-    bool matched_r0 = (l_0 == r_0);
-    for (i = 1; i < leftLen; i++)
-    {
-        char l_i = left[i];
-        if (l_i == r_0)
-            matched_r0 = true;
-
-        byte da_i_0 = matched_r0 ? i : i+1;
-        da[mask(i)][0] = da_i_0;
-        byte da_i_prevj = da_i_0;
-
-        unsigned first = (i > radius) ? i-radius : 1;
-        unsigned last = (i + radius > rightLen) ? rightLen : i + radius;
-        for (j = 1; j < rightLen; j++)
-        {
-            char r_j = right[j];
-            unsigned char next = (l_i == r_j) ? da[mask(i-1)][j-1] :
-                        min3(da[mask(i-1)][j], da_i_prevj, da[mask(i-1)][j-1]) + 1;
-            da[mask(i)][j] = next;
-            da_i_prevj = next;
-        }
-
-        // bail out early if ed can't possibly be <= radius
-        unsigned maxdelta = (leftLen - (i+1));
-        if (da_i_prevj > radius + maxdelta)         // if da_i_prvj - maxdelta > radius can't ever get low enough
-            return da_i_prevj;
-    }
-
-    return da[mask(leftLen-1)][rightLen-1];
-}
 
 //This could be further improved in the following ways:
 // * Only use 2*radius bytes of temporary storage - I doubt it is worth it.
 // * special case edit1 - you could use variables for the 6 interesting array elements, and get
 //   rid of the array completely.  You could also unwind the first (and last iterations).
 // * I suspect the early exit condition could be improved depending the lengths of the strings.
-extern STRINGLIB_API unsigned editDistanceV3(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
+extern STRINGLIB_API unsigned editDistanceWithinRadius(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
 {
     if (radius >= 255)
         return 255;
@@ -1127,41 +927,15 @@ STRINGLIB_API bool STRINGLIB_CALL slStringContains(unsigned srcLen, const char *
     return true;
 }
 
-STRINGLIB_API unsigned STRINGLIB_CALL slEditDistance(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
-{
-    CEditDistance * ed = new CEditDistance();
-    unsigned rval = ed->editDistance(leftLen, left, rightLen, right);
-    delete ed;
-    return rval;
-}
-
-
-STRINGLIB_API bool STRINGLIB_CALL slEditDistanceWithinRadius(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
-{
-    unsigned minED = (leftLen < rightLen)? rightLen - leftLen: leftLen - rightLen;
-
-    if (minED > radius)
-    {
-        return false;
-    }
-    else
-    {
-        CEditDistance *ed = new CEditDistance();
-        unsigned rval = ed->editDistance(leftLen, left, rightLen, right, radius);
-        delete ed;
-        return (rval <= radius);
-    }
-}
-
 STRINGLIB_API unsigned STRINGLIB_CALL slEditDistanceV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right)
 {
-    return nsStringlib::editDistanceV2(leftLen, left, rightLen, right);
+    return nsStringlib::editDistance(leftLen, left, rightLen, right);
 }
 
 
 STRINGLIB_API bool STRINGLIB_CALL slEditDistanceWithinRadiusV2(unsigned leftLen, const char * left, unsigned rightLen, const char * right, unsigned radius)
 {
-    return nsStringlib::editDistanceV3(leftLen, left, rightLen, right, radius) <= radius;
+    return nsStringlib::editDistanceWithinRadius(leftLen, left, rightLen, right, radius) <= radius;
 }
 
 inline bool isWordSeparator(char x)
