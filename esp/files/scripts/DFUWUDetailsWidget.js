@@ -135,14 +135,11 @@ define([
 
                 this.clearInput();
                 this.wu = ESPDFUWorkunit.Get(params.Wuid);
-                var data = this.wu.getData();
-                for (key in data) {
-                    this.updateInput(key, null, data[key]);
-                }
                 var context = this;
                 this.wu.watch(function (name, oldValue, newValue) {
                     context.updateInput(name, oldValue, newValue);
                 });
+                this.wu.refresh();
             }
             this.selectChild(this.summaryWidget, true);
         },
