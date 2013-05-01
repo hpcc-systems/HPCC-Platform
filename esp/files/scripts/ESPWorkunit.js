@@ -48,7 +48,6 @@ define([
                 _workunits[id] = new Workunit({
                     Wuid: id
                 });
-                _workunits[id].refresh();
             }
             return _workunits[id];
         },
