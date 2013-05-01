@@ -927,6 +927,7 @@ class CDiskGroupAggregateSlave
     Owned<CThorRowAggregator> localAggTable;
     Owned<IEngineRowAllocator> allocator;
     bool merging;
+    Owned<IHashDistributor> distributor;
     
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -1008,7 +1009,7 @@ public:
             {
                 BooleanOnOff onOff(merging);
                 bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
-                localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mpTag, ordered));
+                localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mpTag, ordered));
             }
         }
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();
