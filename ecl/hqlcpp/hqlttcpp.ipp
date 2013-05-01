@@ -212,6 +212,8 @@ protected:
     IHqlExpression * skipGroupsWithinGroup(IHqlExpression * expr, bool isLocal);
     IHqlExpression * skipOverGroups(IHqlExpression * dataset, bool isLocal);
 
+    bool isLightweightJoinCandidate(IHqlExpression * expr, bool isLocal, bool isLimitedSubstringJoin);
+
 protected:
     typedef NewHqlTransformer PARENT;
     HqlCppTranslator &  translator;
