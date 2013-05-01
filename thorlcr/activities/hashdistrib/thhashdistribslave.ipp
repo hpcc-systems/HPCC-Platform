@@ -30,7 +30,7 @@ interface IRowStreamWithMetaData: extends IRowStream
 
 interface IHashDistributor: extends IInterface
 {
-    virtual IRowStream *connect(IRowStream *in, IHash *ihash, ICompare *icompare)=0;
+    virtual IRowStream *connect(IRowInterfaces *rowIf, IRowStream *in, IHash *ihash, ICompare *icompare)=0;
     virtual void disconnect(bool stop)=0;
     virtual void join()=0;
     virtual void setBufferSizes(unsigned sendBufferSize, unsigned outputBufferSize, unsigned pullBufferSize) = 0;
@@ -41,12 +41,11 @@ IHashDistributor *createHashDistributor(
     CActivityBase *activity,
     ICommunicator &comm, 
     mptag_t tag, 
-    IRowInterfaces *_rowif, 
     const bool &abort,
     bool dedup,
     IStopInput *istop);
 
-CThorRowAggregator *mergeLocalAggs(CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, bool ordered);
+CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivityBase &activity, IHThorRowAggregator &helper, IHThorHashAggregateExtra &helperExtra, CThorRowAggregator *localAggTable, mptag_t mptag, bool ordered);
 
 activityslaves_decl CActivityBase *createHashDistributeSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createHashDistributeMergeSlave(CGraphElementBase *container);
