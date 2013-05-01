@@ -130,6 +130,7 @@ public:
     IHqlExpression * createFilteredTransform(IHqlExpression * transform, const UsedFieldSet * exceptions) const;
     void calcFinalRecord(bool canPack, bool ignoreIfEmpty);
     NestedField * findNested(IHqlExpression * field) const;
+    NestedField * findNestedByName(IHqlExpression * field) const;
     void gatherTransformValuesUsed(HqlExprArray * selfSelects, HqlExprArray * parentSelects, HqlExprArray * values, IHqlExpression * selector, IHqlExpression * transform);
     void getText(StringBuffer & s) const;
     void intersectFields(const UsedFieldSet & source);
