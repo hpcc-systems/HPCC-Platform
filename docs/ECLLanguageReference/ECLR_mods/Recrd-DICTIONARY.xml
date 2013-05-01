@@ -93,7 +93,6 @@
     of the data. This data type usage allows you to specify a DICTIONARY as a
     child dataset, similar to the way DATASET may be used to define a child
     dataset. This may also be used to pass a DICTIONARY as a parameter.</para>
-  </sect2>
 
   <para>Example:</para>
 
@@ -163,4 +162,5 @@ MyDCTfunc(DsDCT,'Brown');      //Seth
   <para>See Also: <link linkend="DATASET">DATASET</link>, <link
   linkend="RECORD_Structure">RECORD Structure</link>, <link
   linkend="INDEX">INDEX</link>, <link linkend="IN_Operator">IN Operator</link></para>
+</sect2>
 </sect1>
