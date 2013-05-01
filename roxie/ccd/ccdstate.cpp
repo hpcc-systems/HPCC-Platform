@@ -1463,8 +1463,13 @@ private:
         else
             newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, numChannels));
         // Hold the lock for as little time as we can
-        WriteLockBlock b(packageCrit);
-        allQueryPackages.setown(newPackages.getClear());
+        // Note that we must NOT hold the lock during the delete of the old object - or we deadlock.
+        // Hence the slightly convoluted code below
+        Owned<CRoxiePackageSetWatcher> oldPackages = allQueryPackages.getLink();  // To ensure that the setown just below does not delete it
+        {
+            WriteLockBlock b(packageCrit);
+            allQueryPackages.setown(newPackages.getClear());
+        }
     }
 
     // Common code used by control:queries and control:getQueryXrefInfo

@@ -200,49 +200,58 @@
 
         <itemizedlist>
           <listitem>
+            <para><emphasis role="bold">WUID</emphasis> - filter workunits for
+            specific workunit ID (wuid).</para>
+          </listitem>
+
+          <listitem>
             <para><emphasis role="bold">Owner</emphasis> - filter workunits
-            for specific owners.</para>
+            for specific owners. Supports wildcards.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">Job Name</emphasis> - filter workunits
-            by job name.</para>
+            by job name. Supports wildcards.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">Cluster</emphasis> - filter workunits
-            by cluster. For example, thor, or roxie.</para>
+            by cluster. Select the cluster from the drop list. </para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">State</emphasis> - filter workunits by
-            State. For example, completed, failed, or waiting.</para>
+            State. Select the state from the drop list.</para>
           </listitem>
 
           <listitem>
-            <para><emphasis role="bold">WUID</emphasis> - (not yet
-            implemented)</para>
-          </listitem>
-
-          <listitem>
-            <para><emphasis role="bold">ECL Text </emphasis>- filter workunits
-            by specific ECL Text. For example,
-            <emphasis>:=dataset.</emphasis></para>
+            <para><emphasis role="bold">ECL </emphasis>- filter workunits by
+            specific ECL. For example, <emphasis>:=dataset.
+            </emphasis>Supports wildcards.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">Logical File</emphasis> - filter
-            workunits by Logical File name, or some portion of it.</para>
+            workunits by Logical File name, or some portion of it. Supports
+            wildcards.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Logical File Type</emphasis> - filter
+            workunits by Logical File type. Select the Logical file type from
+            the drop list.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">From date</emphasis> - filter
-            workunits from a specific date and/or time.</para>
+            workunits from a specific date and/or time. Select the date and
+            time from the drop list.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">To date</emphasis> - filter workunits
-            up to a specific date and/or time.</para>
+            up to a specific date and/or time. Select the date and time from
+            the drop list.</para>
           </listitem>
 
           <listitem>
@@ -252,12 +261,18 @@
           </listitem>
         </itemizedlist>
 
+        <para>Some filter fields support wild card filtering. Wildcards can
+        substitute for one or more characters when filtering data in the
+        filter. The wild card characters are *, and ?. Where * can substituted
+        for all possible characters, and a ? can be substituted for any single
+        character.</para>
+
         <variablelist>
           <varlistentry>
             <term>Note:</term>
 
             <listitem>
-              <para>Filter criteria is case-insensitive.</para>
+              <para>Filter criteria is not case sensitive.</para>
             </listitem>
           </varlistentry>
         </variablelist>
@@ -266,8 +281,8 @@
           <title>Sorting Columns</title>
 
           <para>You can sort a column by clicking on the column heading. Click
-          once for ascending, click again to toggle to descending. The arrow
-          shows the sort order. <figure>
+          once for ascending, click again to toggle to descending. The
+          direction of the arrow indicates the sort order. <figure>
               <title>Sort by column</title>
 
               <mediaobject>
@@ -463,6 +478,84 @@
       tab.</para>
 
       <sect2>
+        <title>DFU Filter Options</title>
+
+        <para>You can filter the workunits displayed on the Workunits tab by
+        clicking on the<emphasis role="bold"> Filter</emphasis> Action button.
+        The Filter sub-menu displays. Fill in values to specify the filter
+        criteria, then press the <emphasis role="bold">Apply</emphasis>
+        button.</para>
+
+        <para><figure>
+            <title>The DFU Filter sub-menu</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA412.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The DFU filter options allow you to filter workunits using the
+        specified criteria. Workunits can be filtered by:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Owner</emphasis> - filter workunits
+            for specific owners. Supports wildcards.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Job Name</emphasis> - filter workunits
+            by job name. Supports wildcards.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Cluster</emphasis> - filter workunits
+            by cluster. Select the cluster from the drop list. </para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">State</emphasis> - filter workunits by
+            state. Select the state from the drop list. </para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Archived Only</emphasis> - when
+            checked, this filter will search only archived workunits.</para>
+          </listitem>
+        </itemizedlist>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>Filter criteria is not case sensitive.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <sect3>
+          <title>Sorting Columns</title>
+
+          <para>You can sort a column by clicking on the column heading. Click
+          once for ascending, click again to toggle to descending. The
+          direction of the arrow indicates the sort order. <figure>
+              <title>DFU Sort by column</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA413.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
+
+      <sect2>
         <title>DFU Workunit Details Page</title>
 
         <para>When you open the selected workunit(s) you will see the workunit
@@ -546,7 +639,7 @@
             <term>Note:</term>
 
             <listitem>
-              <para>Filter criteria is case-insensitive.</para>
+              <para>Filter criteria is not case sensitive.</para>
             </listitem>
           </varlistentry>
         </variablelist><figure>
@@ -633,6 +726,107 @@
 
       <para>You can press the <emphasis role="bold">Open</emphasis> button to
       open a tab with the details for each selected file.</para>
+
+      <sect2>
+        <title>Logical Files Filter Options</title>
+
+        <para>You can filter the logIcal files displayed on the Logical Files
+        tab by clicking on the<emphasis role="bold"> Filter</emphasis> Action
+        button. The Filter sub-menu displays. Fill in values to specify the
+        filter criteria, then press the <emphasis role="bold">Apply</emphasis>
+        button.</para>
+
+        <para><figure>
+            <title>Logical Files Filter sub-menu</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA423.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The logical file filter options allow you to filter files using
+        the specified criteria. Logical files can be filtered by:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><emphasis role="bold">Name</emphasis> - filter files by
+            name. Supports wildcards.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Description</emphasis> - filter files
+            by description. Supports wildcards.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Owner</emphasis> - filter files by
+            owners. Supports wildcards.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Cluster</emphasis> - filter files by
+            cluster. Select the cluster from the drop list. </para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">From Sizes</emphasis> - filter files
+            from a specific size.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">To Sizes</emphasis> - filter files up
+            to a specific size.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">From date</emphasis> - filter files
+            from a specific date and/or time. Select the date and time from
+            the drop list.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">To date</emphasis> - filter files up
+            to a specific date and/or time. Select the date and time from the
+            drop list.</para>
+          </listitem>
+
+          <listitem>
+            <para><emphasis role="bold">Last</emphasis> <emphasis>N</emphasis>
+            <emphasis role="bold">Days</emphasis> - filter files for a certain
+            number (N) of days. Enter a number in this field.</para>
+          </listitem>
+        </itemizedlist>
+
+        <variablelist>
+          <varlistentry>
+            <term>Note:</term>
+
+            <listitem>
+              <para>Filter criteria is not case sensitive.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <sect3>
+          <title>Sorting Columns</title>
+
+          <para>You can sort a column by clicking on the column heading. Click
+          once for ascending, click again to toggle to descending. The
+          direction of the arrow indicates the sort order. <figure>
+              <title>Logical File sort by column</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/ECLWA424.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </sect3>
+      </sect2>
 
       <sect2 role="brk">
         <title>Logical Files Details</title>

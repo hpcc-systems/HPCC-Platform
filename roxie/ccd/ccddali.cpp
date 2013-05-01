@@ -87,6 +87,9 @@ public:
     virtual void onReconnect()
     {
         Linked<CDaliPackageWatcher> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
+        // It's tempting to think you can avoid holding the critsec during the notify call, and that you only need to hold it while looking up notifier
+        // Despite the danger of deadlocks (that requires careful code in the notifier to avoid), I think it is neccessary to hold the lock during the call,
+        // as otherwise notifier may point to a deleted object.
         CriticalBlock b(crit);
         change = querySDS().subscribe(xpath, *this, true);
         if (notifier)
