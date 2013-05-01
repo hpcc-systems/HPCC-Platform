@@ -1462,7 +1462,6 @@ private:
             newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, standAloneDll, numChannels, "roxie"));
         else
             newPackages.setown(new CRoxiePackageSetWatcher(daliHelper, this, numChannels));
-        // Hold the lock for as little time as we can
         WriteLockBlock b(packageCrit);
         allQueryPackages.setown(newPackages.getClear());
     }
