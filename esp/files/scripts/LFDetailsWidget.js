@@ -144,13 +144,7 @@ define([
 
             var context = this;
             if (params.Name) {
-                //dom.byId(this.id + "Name").innerHTML = params.Name;
-                //dom.byId(this.id + "LogicalFileName2").value = params.Name;
                 this.logicalFile = ESPLogicalFile.Get(params.Name);
-                var data = this.logicalFile.getData();
-                for (key in data) {
-                    this.updateInput(key, null, data[key]);
-                }
                 this.logicalFile.watch(function (name, oldValue, newValue) {
                     context.updateInput(name, oldValue, newValue);
                 });
