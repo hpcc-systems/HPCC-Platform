@@ -1540,17 +1540,16 @@ bool callExternalProgram(const char *progname, const StringBuffer &input, String
         pipe2.CloseRead();
         pipe2.SetStdout();
 
-        const char *cmd[] = { progname, NULL };
         if (env_in)
         {
             const char **envp = (const char **) alloca((env_in->ordinality()+1) * sizeof(const char *));
             ForEachItemIn(index, *env_in)
                 envp[index]=env_in->item(index);
             envp[env_in->ordinality()] = NULL;
-            execvpe(progname, (char * const *)cmd, (char * const *)envp);  // will not return, on success
+            execle(progname, progname, (const char *) NULL, (char * const *)envp);  // will not return, on success
         }
         else
-            execvp(progname, (char * const *)cmd);  // will not return, on success
+            execlp(progname, progname, (const char *) NULL);  // will not return, on success
         _exit(EXIT_FAILURE); // must be _exit!!
     }
     else
