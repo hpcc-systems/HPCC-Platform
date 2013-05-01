@@ -781,6 +781,7 @@ class CIndexGroupAggregateSlaveActivity : public CIndexReadSlaveBase, public CTh
     bool gathered, eoi, merging;
     Owned<CThorRowAggregator> localAggTable;
     memsize_t maxMem;
+    Owned<IHashDistributor> distributor;
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
@@ -850,7 +851,7 @@ public:
             {
                 BooleanOnOff tf(merging);
                 bool ordered = 0 != (TDRorderedmerge & helper->getFlags());
-                localAggTable.setown(mergeLocalAggs(*this, *helper, *helper, localAggTable, mpTag, ordered));
+                localAggTable.setown(mergeLocalAggs(distributor, *this, *helper, *helper, localAggTable, mpTag, ordered));
             }
         }       
         Owned<AggregateRowBuilder> next = localAggTable->nextResult();
