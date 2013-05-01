@@ -174,8 +174,8 @@ public:
     {
         fposHash = new CFPosHandler(*iFetchHandler, offsetCount, offsetTable);
         keyIn.set(_keyIn);
-        distributor = createHashDistributor(&owner, owner.queryContainer().queryJob().queryJobComm(), tag, keyRowIf, abortSoon, false, this);
-        keyOutStream.setown(distributor->connect(keyIn, fposHash, NULL));
+        distributor = createHashDistributor(&owner, owner.queryContainer().queryJob().queryJobComm(), tag, abortSoon, false, this);
+        keyOutStream.setown(distributor->connect(keyRowIf, keyIn, fposHash, NULL));
     }
     virtual IRowStream *queryOutput() { return this; }
     virtual IFileIO *queryPartIO(unsigned part) { assertex(part<files); return fPosMultiPartTable[part].file->queryFileIO(); }
