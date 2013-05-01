@@ -287,7 +287,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         PointerIArrayOf<CSendBucket> buckets;
         UnsignedArray candidates;
         size32_t totalSz;
-        bool senderFull, doDedup, aborted;
+        bool senderFull, doDedup, aborted, initialized;
         Semaphore senderFullSem;
         Linked<IException> exception;
         OwnedMalloc<bool> senderFinished;
@@ -295,7 +295,6 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         Owned<IThreadPool> writerPool;
         PointerArrayOf<CSendBucketQueue> pendingBuckets;
         unsigned numActiveWriters;
-        unsigned runs; // counter of times CSender::process used
 
         void init()
         {
@@ -316,6 +315,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 pendingBuckets.append(new CSendBucketQueue);
             numActiveWriters = 0;
             aborted = false;
+            initialized = true;
         }
         void reset()
         {
@@ -331,11 +331,8 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                         break;
                     ::Release(bucket);
                 }
-            }
-            unsigned n;
-            for (unsigned n=0; n<owner.numnodes; n++)
                 buckets.replace(NULL, n);
-
+            }
             totalSz = 0;
             senderFull = false;
             numFinished = 0;
@@ -343,7 +340,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         }
         void reinit()
         {
-            if (runs)
+            if (initialized)
                 reset();
             else
                 init();
@@ -458,7 +455,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
 
         CSender(CDistributorBase &_owner) : owner(_owner)
         {
-            runs = 0;
+            initialized = false;
         }
         ~CSender()
         {
@@ -582,7 +579,6 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         {
             ActPrintLog(owner.activity, "Distribute send start");
             reinit();
-            ++runs;
             CCycleTimer timer;
             rowcount_t totalSent = 0;
             try
