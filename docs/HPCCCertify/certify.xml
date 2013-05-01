@@ -1415,6 +1415,32 @@ Copyright is used for the copyright line on title page. The ID attribute is Copy
             </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your
             ESP Server’s IP Address and pppp is the port. The default port is
             8010)</emphasis></para>
+
+            <para><informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="images/OSSgr3.png" /></entry>
+
+                      <entry><para><emphasis role="bold">NOTE</emphasis>: To
+                      copy a URL to the clipboard, click the <inlinegraphic
+                      fileref="images/CS-1421.jpg" /> icon from the row of
+                      icons along the top of the ECL Watch page.
+                      </para><para>This opens a window with the full URL.
+                      Select the entire URL and you can copy it to the
+                      clipboard to paste elsewhere. </para><para>
+                      </para></entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
           </listitem>
 
           <listitem>
