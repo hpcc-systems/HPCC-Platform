@@ -1094,13 +1094,15 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
                     break;
                 case CQuerySetQueryActionTypes_Delete:
                     removeNamedQuery(queryset, id);
+                    query = NULL;
                     break;
                 case CQuerySetQueryActionTypes_RemoveAllAliases:
                     removeAliasesFromNamedQuery(queryset, id);
                     break;
             }
             result->setSuccess(true);
-            result->setSuspended(query->getPropBool("@suspended"));
+            if (query)
+                result->setSuspended(query->getPropBool("@suspended"));
         }
         catch(IException *e)
         {
