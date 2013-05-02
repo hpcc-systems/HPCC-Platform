@@ -164,7 +164,7 @@ public:
     void getMachineInfo(IEspTpMachine& machineInfo,IPropertyTree& machine,const char* ParentPath,const char* MachineType,const char* nodenametag);
 
     void getTpDaliServers(IArrayOf<IConstTpDali>& list);
-    void getTpEclServers(IArrayOf<IConstTpEclServer>& ServiceList);
+    void getTpEclServers(IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);
     void getTpEclCCServers(IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);
     void getTpEclCCServers(IPropertyTree* environmentSoftware, IArrayOf<IConstTpEclServer>& ServiceList, const char* name = NULL);
     void getTpEclAgents(IArrayOf<IConstTpEclAgent>& list, const char* name = NULL);
