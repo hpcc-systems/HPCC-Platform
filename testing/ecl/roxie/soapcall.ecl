@@ -54,7 +54,7 @@ END;
 
 output(SORT(SOAPCALL(d, 'http://127.0.0.1:9876|http://127.0.0.1:9875','soapbase', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),RETRY(0), log('SOAP: ' + unkname),TIMEOUT(1)), record));
 output(SORT(SOAPCALL('http://127.0.0.1:9876','soapbase', { string unkname := 'FAIL' }, dataset(ServiceOutRecord),onFail(doError2),RETRY(0), LOG(MIN)),record));
-output(SORT(SOAPCALL(d, 'http://127.0.0.1:9876','soapbaseNOSUCHQUERY', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),MERGE(25),RETRY(0), LOG(MIN)), record));
+output(SORT(SOAPCALL(d, 'http://127.0.0.1:9876','soapbaseNOSUCHQUERY', { unkname }, DATASET(ServiceOutRecord), onFail(doError(LEFT)),MERGE(25),PARALLEL(1),RETRY(0), LOG(MIN)), record));
 
 childRecord := record
 unsigned            id;
