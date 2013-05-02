@@ -63,8 +63,14 @@ define([
     });
 
     var Monitor = declare(null, {
-        startMonitor: function () {
-            this._timerTickCount = 0;
+        isMonitoring: function () {
+            return this._timer && this._timer > 0;
+        },
+        startMonitor: function (aggressive) {
+            if (this.isMonitoring()) 
+                return;
+
+            this._timerTickCount = aggressive ? 0 : Math.floor((Math.random() * 40) + 70);
             this._timer = 1000;
             this.onMonitor();
         },

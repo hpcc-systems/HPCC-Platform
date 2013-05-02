@@ -203,7 +203,9 @@ define([
             var context = this;
             WsWorkunits.WUCreate({
                 load: function (response) {
-                    _workunits[response.WUCreateResponse.Workunit.Wuid] = context
+                    _workunits[response.WUCreateResponse.Workunit.Wuid] = context;
+                    context.Wuid = response.WUCreateResponse.Workunit.Wuid;
+                    context.startMonitor(true);
                     context.updateData(response.WUCreateResponse.Workunit);
                     context.onCreate();
                 }
