@@ -1100,7 +1100,8 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
                     break;
             }
             result->setSuccess(true);
-            result->setSuspended(query->getPropBool("@suspended"));
+            if (req.getAction() != CQuerySetQueryActionTypes_Delete)
+                result->setSuspended(query->getPropBool("@suspended"));
         }
         catch(IException *e)
         {
