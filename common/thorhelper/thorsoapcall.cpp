@@ -686,7 +686,7 @@ public:
 class CWSCHelper : public CInterface, implements IWSCHelper
 {
 private:
-    SimpleInterThreadQueueOf<const void, false> outputQ;
+    SimpleInterThreadQueueOf<const void, true> outputQ;
     SpinLock outputQLock;
     CriticalSection toXmlCrit, transformCrit, onfailCrit, timeoutCrit;
     unsigned done;
@@ -972,6 +972,7 @@ protected:
 
     void putRow(const void * row)
     {
+        assertex(row);
         outputQ.enqueue(row);
     }
     void setDone()
@@ -983,7 +984,12 @@ protected:
             doStop = (done == numRowThreads);
         }
         if (doStop)
-            outputQ.stop();
+        {
+            // Note - Don't stop the queue - that effectively discards what's already on there,
+            // which is not what we want.
+            // Instead, push a NULL to indicate the end of the output.
+            outputQ.enqueue(NULL);
+        }
     }
     void setErrorOwn(IException * e)
     {
