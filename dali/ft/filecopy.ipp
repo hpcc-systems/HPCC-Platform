@@ -258,9 +258,8 @@ protected:
     bool usePullOperation();
     void updateSizeRead();
     void waitForTransferSem(Semaphore & sem);
-    void addPrefix(size32_t len, const void * data, unsigned idx);
-    void publishHeaders();
-
+    void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);
+    
 private:
     bool calcUsePull();
 
@@ -314,7 +313,6 @@ protected:
     size32_t                transferBufferSize;
     StringAttr              encryptKey;
     StringAttr              decryptKey;
-    PartitionPointArray     partitionWork;
 };
 
 
