@@ -1883,6 +1883,15 @@ void FileSprayer::cloneHeaderFooter(unsigned idx, bool isHeader)
         partition.add(next, idx+1);
 }
 
+void FileSprayer::addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork)
+{
+    //Merge header and original partition item into partitionWork array
+    PartitionPoint & header = createLiteral(len, data, idx);
+    partitionWork.append(header);
+
+    PartitionPoint &  partData = partition.item(idx);
+    partitionWork.append(OLINK(partData));
+}
 
 void FileSprayer::insertHeaders()
 {
@@ -1982,6 +1991,7 @@ void FileSprayer::insertHeaders()
         if (glue || header || footer)
             throwError(DFTERR_PrefixCannotAlsoAddHeader);
 
+        PartitionPointArray partitionWork;
         MemoryBuffer filePrefix;
         filePrefix.setEndian(__LITTLE_ENDIAN);
         for (unsigned idx = 0; idx < partition.ordinality(); idx++)
@@ -2067,10 +2077,10 @@ void FileSprayer::insertHeaders()
                 else
                     throwError1(DFTERR_InvalidPrefixFormat, command.get());
             }
-
-            addHeaderFooter(filePrefix.length(), filePrefix.toByteArray(), idx, true);
-            idx++;
+            addPrefix(filePrefix.length(), filePrefix.toByteArray(), idx, partitionWork);
         }
+        LOG(MCdebugProgress, job, "Publish headers");
+        partition.swapWith(partitionWork);
     }
 }
 
@@ -2706,7 +2716,10 @@ void FileSprayer::spray()
     }
     assignPartitionFilenames();     // assign source filenames - used in insertHeaders..
     if (!replicate)
+    {
+        LOG(MCdebugProgress, job, "Insert headers");
         insertHeaders();
+    }
     addEmptyFilesToPartition();
     
     derivePartitionExtra();
