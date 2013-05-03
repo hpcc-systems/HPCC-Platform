@@ -13813,7 +13813,6 @@ public:
 //=================================================================================
 
 typedef SafeQueueOf<const void, true> SafeRowQueue;
-typedef SimpleInterThreadQueueOf<const void, true> InterThreadRowQueue;
 
 class CRowQueuePseudoInput : public CPseudoRoxieInput
 {
