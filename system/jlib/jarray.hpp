@@ -123,7 +123,7 @@ public:
     MEMBER *getArray(aindex_t = 0) const;
     void sort(CompareFunc);
     void swap(aindex_t pos1, aindex_t pos2);
-    void swapWith(SELF & other) { doSwapWith(other); }
+    void swapWith(SELF & other) { this->doSwapWith(other); }
 };
 
 template <class MEMBER, class PARAM>
