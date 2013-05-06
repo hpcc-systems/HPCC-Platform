@@ -307,7 +307,7 @@ public:
 };
 
 
-class jlib_decl PTree : public CInterface, implements IPropertyTree
+class jlib_decl PTree : public CInterfaceOf<IPropertyTree>
 {
 friend class SingleIdIterator;
 friend class PTLocalIteratorBase;
@@ -315,9 +315,6 @@ friend class PTIdMatchIterator;
 friend class ChildMap;
 
 public:
-    IMPLEMENT_IINTERFACE;
-    virtual bool IsShared() const { return CInterface::IsShared(); }
-
     PTree(MemoryBuffer &mb);
     PTree(const char *_name=NULL, byte _flags=0, IPTArrayValue *_value=NULL, ChildMap *_children=NULL);
     ~PTree();
