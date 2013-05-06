@@ -80,6 +80,8 @@ public:
         return true;
     }
     virtual bool createUserScopes() { return false; }
+    virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) { return 0; }
+    virtual int queryDefaultPermission(ISecUser& user) { return SecAccess_Full; }
 };
 
 class CLocalSecurityManager : public CDefaultSecurityManager
