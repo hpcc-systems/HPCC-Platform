@@ -5178,6 +5178,32 @@ private:
         Owned<ISecResource> resource = new CLdapSecResource(resName.str());
         return addResource(RT_FILE_SCOPE, user, resource, PT_ADMINISTRATORS_AND_USER, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE));
     }
+
+    virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes)
+    {
+        getResourcesEx(RT_FILE_SCOPE, m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE), NULL, NULL, scopes);
+        return scopes.length();
+    }
+
+    virtual int queryDefaultPermission(ISecUser& user)
+    {
+        const char* basedn = m_ldapconfig->getResourceBasedn(RT_FILE_SCOPE);
+        if(basedn == NULL || *basedn == '\0')
+        {
+            DBGLOG("corresponding basedn is not defined");
+            return -2;
+        }
+        const char* basebasedn = strchr(basedn, ',') + 1;
+        StringBuffer baseresource;
+        baseresource.append(basebasedn-basedn-4, basedn+3);
+        IArrayOf<ISecResource> base_resources;
+        base_resources.append(*new CLdapSecResource(baseresource.str()));
+        bool baseok = authorizeScope(user, base_resources, basebasedn);
+        if(baseok)
+            return base_resources.item(0).getAccessFlags();
+        else
+            return -2;
+    }
 };
 
 int LdapUtils::getServerInfo(const char* ldapserver, int ldapport, StringBuffer& domainDN, LdapServerType& stype, const char* domainname)

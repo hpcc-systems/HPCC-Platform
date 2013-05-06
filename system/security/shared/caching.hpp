@@ -137,10 +137,13 @@ public:
 class CPermissionsCache
 {
 public:
-    CPermissionsCache() 
+    CPermissionsCache()
     { 
         m_cacheTimeout = 300;
         m_transactionalEnabled = false;
+        m_secMgr = NULL;
+        m_lastManagedFileScopesRefresh = 0;
+        m_defaultPermission = SecAccess_Unknown;
     }
     virtual ~CPermissionsCache();
 
@@ -165,7 +168,14 @@ public:
     const int getCacheTimeout() { return m_cacheTimeout; }
     bool  isCacheEnabled() { return m_cacheTimeout > 0; }
     void setTransactionalEnabled(bool enable) { m_transactionalEnabled = enable; }
-    bool isTransactionalEnabled() { return m_transactionalEnabled;} 
+    bool isTransactionalEnabled() { return m_transactionalEnabled;}
+
+    bool addManagedFileScopes(IArrayOf<ISecResource>& scopes);
+    void removeManagedFileScopes(IArrayOf<ISecResource>& scopes);
+    void removeAllManagedFileScopes();
+    bool queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, int * accessFlags);
+    void setSecManager(ISecManager * secMgr) { m_secMgr = secMgr; }
+    int  queryDefaultPermission(ISecUser& user);
 private:
 
     typedef std::map<string, CResPermissionsCache*> MapResPermissionsCache;
@@ -180,6 +190,14 @@ private:
 
     MapUserCache m_userCache;
     Monitor m_userCacheMonitor;
+
+
+    //Managed File Scope support
+    int                         m_defaultPermission;
+    map<string, ISecResource*>  m_managedFileScopesMap;
+    Monitor                     m_managedFileScopesCacheMonitor;
+    ISecManager *               m_secMgr;
+    time_t                      m_lastManagedFileScopesRefresh;
 };
 
 time_t getThreadCreateTime();
