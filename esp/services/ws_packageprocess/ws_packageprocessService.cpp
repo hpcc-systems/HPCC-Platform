@@ -197,7 +197,7 @@ void addPackageMapInfo(IPropertyTree *pkgSetRegistry, const char *target, const 
 
 
     mapTree = root->addPropTree("PackageMap", createPTree());
-    mapTree->addProp("@id", packageMapName);
+    mapTree->addProp("@id", lcName);
 
     StringArray fileNames;
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
