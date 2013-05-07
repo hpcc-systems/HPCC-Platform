@@ -5604,6 +5604,20 @@ IAtom * rtlCreateFieldNameAtom(const char * name)
 }
 
 
+void rtlBase64Decode(unsigned & tlen, void * & tgt, unsigned slen, const char * src)
+{
+
+
+}
+
+void rtlBase64Encode(unsigned & tlen, char * & tgt, unsigned slen, const void * src)
+{
+
+
+}
+
+
+
 //---------------------------------------------------------------------------
 
 void RtlCInterface::Link() const            { atomic_inc(&xxcount); }
