@@ -2798,9 +2798,15 @@ IRowInterfaces *CActivityBase::getRowInterfaces()
 bool CActivityBase::receiveMsg(CMessageBuffer &mb, const rank_t rank, const mptag_t mpTag, rank_t *sender, unsigned timeout)
 {
     BooleanOnOff onOff(receiving);
-    if (cancelledReceive)
-        return false;
-    return container.queryJob().queryJobComm().recv(mb, rank, mpTag, sender, timeout);
+    CTimeMon t(timeout);
+    unsigned remaining = timeout;
+    // check 'cancelledReceive' every 10 secs
+    while (!cancelledReceive && ((MP_WAIT_FOREVER==timeout) || !t.timedout(&remaining)))
+    {
+        if (container.queryJob().queryJobComm().recv(mb, rank, mpTag, sender, remaining>10000?10000:remaining))
+            return true;
+    }
+    return false;
 }
 
 void CActivityBase::cancelReceiveMsg(const rank_t rank, const mptag_t mpTag)
