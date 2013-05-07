@@ -2363,8 +2363,13 @@ protected:
     void checkSelect(IHqlExpression * expr)
     {
         IHqlExpression * ds = expr->queryChild(0);
+        if (ds->getOperator() == no_activetable)
+            return;
+
         IHqlExpression * field = expr->queryChild(1);
-        IHqlSimpleScope * scope = ds->queryRecord()->querySimpleScope();
+        IHqlExpression * record = ds->queryRecord();
+        assertex(record);
+        IHqlSimpleScope * scope = record->querySimpleScope();
         OwnedHqlExpr match = scope->lookupSymbol(field->queryName());
         if (match != field)
         {
