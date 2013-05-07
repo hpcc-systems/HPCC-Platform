@@ -1199,6 +1199,7 @@ ESPrequest WUQueryDetailsRequest
 {
     string QueryId;
     string QuerySet;
+    bool   IncludeStateOnClusters(false);
 };
 
 ESPresponse [exceptions_inline] WUQueryDetailsResponse
@@ -1211,6 +1212,7 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
     bool Suspended;
     [min_ver("1.42")] bool Activated;
     string SuspendedBy;
+    [min_ver("1.43")] ESParray<ESPstruct ClusterQueryState> Clusters;
     string PublishedBy;
     string Comment;
 
@@ -1252,7 +1254,7 @@ ESPenum QuerySetQueryActionTypes : string
 
 ESPStruct QuerySetQueryClientState
 {
-    bool Suspended;
+    string Suspended;
 };
 
 ESPStruct QuerySetQueryActionItem
