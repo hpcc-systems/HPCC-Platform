@@ -91,9 +91,6 @@ protected:
     
     void addToQueryString(StringBuffer &queryString, const char *name, const char *value);
     int doFileCheck(const char* mask, const char* netaddr, const char* osStr, const char* path);
-    virtual bool doCopyForRoxie(IEspContext &context,   const char * srcName, const char * srcDali, const char * srcUser, 
-        const char * srcPassword, const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy, 
-        DFUclusterPartDiskMapping val, StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp);
     void getInfoFromSasha(IEspContext &context, const char *sashaServer, const char* wuid, IEspDFUWorkunit *info);
     bool getArchivedWUInfo(IEspContext &context, IEspGetDFUWorkunit &req, IEspGetDFUWorkunitResponse &resp);
     bool GetArchivedDFUWorkunits(IEspContext &context, IEspGetDFUWorkunits &req, IEspGetDFUWorkunitsResponse &resp);
