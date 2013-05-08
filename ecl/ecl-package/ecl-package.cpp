@@ -28,7 +28,6 @@
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
 
-#define ECLOPT_PACKAGEMAPID "--pkgId"
 
 //=========================================================================================
 
@@ -509,7 +508,7 @@ public:
                 }
                 continue;
             }
-            if (iter.matchOption(optPackageId, ECLOPT_PACKAGEMAPID))
+            if (iter.matchOption(optPackageMapId, ECLOPT_PMID))
                 continue;
             if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
                 continue;
@@ -545,13 +544,13 @@ public:
         if (optProcess.isEmpty())
             optProcess.set("*");
 
-        if (optPackageId.isEmpty())
+        if (optPackageMapId.isEmpty())
         {
             StringBuffer name;
             splitFilename(optFileName.get(), NULL, NULL, &name, &name);
-            optPackageId.set(name.str());
+            optPackageMapId.set(name.str());
         }
-        optPackageId.toLowerCase();
+        optPackageMapId.toLowerCase();
         return true;
     }
     virtual int processCMD()
@@ -566,7 +565,7 @@ public:
         request->setActivate(optActivate);
         request->setInfo(pkgInfo);
         request->setTarget(optTarget);
-        request->setPackageMap(optPackageId);
+        request->setPackageMap(optPackageMapId);
         request->setProcess(optProcess);
         request->setDaliIp(optDaliIP);
         request->setOverWrite(optOverWrite);
@@ -589,7 +588,7 @@ public:
                     "   -O, --overwrite             overwrite existing information\n"
                     "   -A, --activate              activate the package information\n"
                     "   --daliip=<ip>               ip of the remote dali to use for logical file lookups\n"
-                   "   --pkgId                      id of package map - will default to filename if not specified."
+                   "   --pmid                       id of package map - defaults to filename if not specified."
 // NOT-YET          "  --packageprocessname         if not set use this package process name for all clusters"
                     "   <target>                    name of target to use when adding package map information\n"
                     "   <filename>                  name of file containing package map information\n",
@@ -605,7 +604,7 @@ private:
     bool optOverWrite;
     StringBuffer pkgInfo;
     StringAttr optDaliIP;
-    StringAttr optPackageId;
+    StringAttr optPackageMapId;
 };
 
 class EclCmdPackageValidate : public EclCmdCommon
