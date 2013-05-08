@@ -923,8 +923,8 @@ public:
         obj.set(_obj); 
 #ifndef _NO_DALIUSER_STACKTRACE
         StringBuffer sb;
-        if (udesc)
-            udesc->getUserName(sb);
+        if (_udesc)
+            _udesc->getUserName(sb);
         if (sb.length()==0)
         {
             DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CLdapWorkItem::start() line %d",__LINE__);
