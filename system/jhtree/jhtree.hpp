@@ -49,7 +49,7 @@ interface jhtree_decl IKeyCursor : public IInterface
     virtual size32_t getSize() = 0;
     virtual offset_t getFPos() = 0;
     virtual void serializeCursorPos(MemoryBuffer &mb) = 0;
-    virtual void deserializeCursorPos(MemoryBuffer &mb) = 0;
+    virtual void deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer) = 0;
     virtual unsigned __int64 getSequence() = 0;
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize) = 0;
     virtual void releaseBlobs() = 0;

@@ -3574,7 +3574,9 @@ public:
                             }
                             else
                             {
-                                // MORE - this is actually pretty fatal fo smart-stepping case
+                                // This is actually pretty fatal for smart-stepping case
+                                if (logctx.queryTraceLevel())
+                                    logctx.CTXLOG("Indexread unable to return partial result set");
                                 continuationFailed = true;
                             }
                         }

@@ -872,8 +872,6 @@ public:
         {
             keyCursor->serializeCursorPos(mb);
             mb.append(matched);
-            if (!matched)
-                mb.append(keySize, keyBuffer);
         }
     }
 
@@ -882,10 +880,9 @@ public:
         mb.read(eof);
         if (!eof)
         {
-            keyCursor->deserializeCursorPos(mb);
+            assertex(keyBuffer);
+            keyCursor->deserializeCursorPos(mb, keyBuffer);
             mb.read(matched);
-            if (!matched)
-                mb.read(keySize, keyBuffer);
         }
     }
 
@@ -1911,13 +1908,17 @@ void CKeyCursor::serializeCursorPos(MemoryBuffer &mb)
     }
 }
 
-void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb)
+void CKeyCursor::deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer)
 {
     offset_t nodeAddress;
     mb.read(nodeAddress);
     mb.read(nodeKey);
     if (nodeAddress)
+    {
         node.setown(key.getNode(nodeAddress, ctx));
+        if (node && keyBuffer)
+            node->getValueAt(nodeKey, keyBuffer);
+    }
     else
         node.clear();
 }
@@ -2809,7 +2810,6 @@ public:
             cursors[key]->serializeCursorPos(mb);
             mb.append(matcheds[key]);
             mb.append(fposes[key]);
-            mb.append(keySize, buffers[key]);
         }
     }
 
@@ -2823,15 +2823,14 @@ public:
             mb.read(keyno);
             keyNoArray.append(keyno);
             keyCursor = keyset->queryPart(keyno)->getCursor(ctx);
+            keyBuffer = (char *) malloc(keySize);
             cursorArray.append(*keyCursor);
-            keyCursor->deserializeCursorPos(mb);
+            keyCursor->deserializeCursorPos(mb, keyBuffer);
             mb.read(matched);
             matchedArray.append(matched);
             offset_t fpos;
             mb.read(fpos);
             fposArray.append(fpos);
-            keyBuffer = (char *) malloc(keySize);
-            mb.read(keySize, keyBuffer);
             bufferArray.append(keyBuffer);
             void *fixedValue = (char *) malloc(sortFieldOffset);
             memcpy(fixedValue, keyBuffer, sortFieldOffset); // If it's not at EOF then it must match
