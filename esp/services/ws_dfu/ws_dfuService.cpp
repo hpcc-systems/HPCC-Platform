@@ -5057,7 +5057,7 @@ int CWsDfuEx::GetIndexData(IEspContext &context, bool bSchemaOnly, const char* i
 
     Owned<IUserDescriptor> udesc;
     ISecUser * secUser = context.queryUser();
-    if(secUser->getName() && *secUser->getName())
+    if(secUser && secUser->getName() && *secUser->getName())
     {
         udesc.setown(createUserDescriptor());
         udesc->set(secUser->getName(), secUser->credentials().getPassword());
