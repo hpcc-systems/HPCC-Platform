@@ -109,9 +109,12 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-frunssh $INSTANCE_DIR/slaves "killall backupnode" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
-echo frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA %n %c %a %x $2 > $LOGPATH/${LOGDATE}_node%n.log 2>&1'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
-frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA %n %c %a %x $2 > $LOGPATH/${LOGDATE}_node%n.log 2>&1'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -b >> $LOGFILE 2>&1
+# maximum number of threads frunssh will be permitted to use (capped by # slaves)
+MAXTHREADS=1000
+
+frunssh $INSTANCE_DIR/slaves "killall backupnode" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$MAXTHREADS -b >> $LOGFILE 2>&1
+echo frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA %n %c %a %x $2 > $LOGPATH/${LOGDATE}_node%n.log 2>&1'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$MAXTHREADS -b >> $LOGFILE 2>&1
+frunssh $INSTANCE_DIR/slaves "/bin/sh -c 'mkdir -p `dirname $LOGPATH/${LOGDATE}_node%n.log`; mkdir -p $INSTANCE_DIR; $DEPLOY_DIR/backupnode -T -X $BACKUPNODE_REMOTEDATA %n %c %a %x $2 > $LOGPATH/${LOGDATE}_node%n.log 2>&1'" -i:$SSHidentityfile -u:$SSHusername -pe:$SSHpassword -t:$SSHtimeout -a:$SSHretries -n:$MAXTHREADS -b >> $LOGFILE 2>&1
 
 echo ------------------------------
 sleep 5
