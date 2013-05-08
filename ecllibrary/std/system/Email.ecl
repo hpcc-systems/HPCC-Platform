@@ -2,6 +2,8 @@
 ## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
+import lib_fileservices;
+
 RETURN MODULE
 
 /*

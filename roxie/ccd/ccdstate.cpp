@@ -399,7 +399,8 @@ public:
     {
         StringBuffer fileName;
         expandLogicalFilename(fileName, _fileName, wu, false);
-        DBGLOG("lookupFileName %s", fileName.str());
+        if (traceLevel > 5)
+            DBGLOG("lookupFileName %s", fileName.str());
 
         const IResolvedFile *result = lookupFile(fileName, cache, false, false);
         if (!result)

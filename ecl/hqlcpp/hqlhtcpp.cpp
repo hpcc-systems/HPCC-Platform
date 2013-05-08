@@ -9044,6 +9044,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
     LinkedHqlExpr resourced = expr;
     // Second attempt to spot compound disk reads - this time of spill files for thor.
     resourced.setown(optimizeCompoundSource(resourced, csfFlags));
+    checkNormalized(resourced);
     //insert projects after compound created...
     if (options.optimizeResourcedProjects)
     {
@@ -9051,6 +9052,7 @@ IHqlExpression * HqlCppTranslator::optimizeGraphPostResource(IHqlExpression * ex
         OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), options.optimizeSpillProject);
         DEBUG_TIMER("EclServer: implicit projects", msTick()-time);
         traceExpression("AfterResourcedImplicit", resourced);
+        checkNormalized(optimized);
 
         if (optimized != resourced)
             resourced.setown(optimizeCompoundSource(optimized, csfFlags));
