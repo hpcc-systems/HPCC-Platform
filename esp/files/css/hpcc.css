@@ -75,6 +75,7 @@ form label{
     padding-top: 4px;
     font-weight:bold;
     height:20px;
+    color:rgb(71, 71, 71);
 }
 
 form textarea{
@@ -102,11 +103,27 @@ form li{
 form div{
     margin:4px 0 0 0;
 }
-
+form h1{
+    font-size: 1.5em;
+    margin-left:15px;
+}
 form h2{
     padding:5px 0;
+    color:rgb(22, 22, 22);
 }
 
+/* Double-color dashed line */
+        
+hr.dashedLine {
+    border: 0;
+    border-bottom: 1px dashed #ccc;
+    background-color: rgb(0, 170, 213);
+    background: none;
+}
+
+ h2 img:first-of-type{
+    margin-left:15px;
+}
 /*IDs************************/
 
 #myProgressBar{
@@ -182,17 +199,6 @@ vertical-align: middle;
 margin-left:-20px;
 }
 
-.rounded{
-    border-radius: 5px;
-    -moz-border-radius:10px;
-    -webkit-border-radius:10px;
-    -khtml-border-radius:10px;
-    box-shadow: inset 0 2px 0 #fff;
-    background:rgb(244,244,244);
-    padding:10px;
-    margin:10px 0;
-    border:solid 1px rgb(214,214,214); 
-}
 
 .pageOverlay{
     left: 0;
