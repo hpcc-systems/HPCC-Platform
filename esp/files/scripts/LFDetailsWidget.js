@@ -145,6 +145,10 @@ define([
             var context = this;
             if (params.Name) {
                 this.logicalFile = ESPLogicalFile.Get(params.Name);
+                var data = this.logicalFile.getData();
+                for (key in data) {
+                    this.updateInput(key, null, data[key]);
+                }
                 this.logicalFile.watch(function (name, oldValue, newValue) {
                     context.updateInput(name, oldValue, newValue);
                 });
@@ -217,19 +221,24 @@ define([
         },*/
 
         updateInput: function (name, oldValue, newValue) {
-            var domElem = dom.byId(this.id + name);
-            if (domElem) {
-                switch(domElem.tagName) {
-                    case "SPAN":
-                    case "DIV":
-                        domAttr.set(this.id + name, "innerHTML", newValue)
-                        break;
-                    case "INPUT":
-                    case "TEXTAREA":
-                        domAttr.set(this.id + name, "value", newValue)
-                        break;
-                    default:
-                        alert(domElem.tagName);
+            var registryNode = registry.byId(this.id + name);
+            if (registryNode) {
+                registryNode.set("value", newValue);
+            } else {
+                var domElem = dom.byId(this.id + name);
+                if (domElem) {
+                    switch (domElem.tagName) {
+                        case "SPAN":
+                        case "DIV":
+                            domAttr.set(this.id + name, "innerHTML", newValue);
+                            break;
+                        case "INPUT":
+                        case "TEXTAREA":
+                            domAttr.set(this.id + name, "value", newValue);
+                            break;
+                        default:
+                            alert(domElem.tagName);
+                    }
                 }
             }
             if (name === "Wuid") {
