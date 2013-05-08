@@ -1523,6 +1523,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
+                  <entry>--pmid=&lt;packagemapid&gt;</entry>
+
+                  <entry>id of package map - defaults to filename if not
+                  specified</entry>
+                </row>
+
+                <row>
                   <entry>-v, --verbose</entry>
 
                   <entry>Output additional tracing information</entry>
@@ -2002,7 +2009,7 @@ ecl packagemap validate roxie --active</programlisting>
 
         <para>Filename, --active, and --pmid are mutually exclusive. The
         --active or --pmid options validate a packagemap that has already been
-        added instead of a local file. </para>
+        added instead of a local file.</para>
 
         <para>The --queryid option checks the files in a query instead of all
         the queries in the target queryset. This is quicker when you only need

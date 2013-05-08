@@ -179,7 +179,7 @@ public:
     virtual size32_t getSize();
     virtual offset_t getFPos(); 
     virtual void serializeCursorPos(MemoryBuffer &mb);
-    virtual void deserializeCursorPos(MemoryBuffer &mb);
+    virtual void deserializeCursorPos(MemoryBuffer &mb, char *keyBuffer);
     virtual unsigned __int64 getSequence(); 
     virtual const byte *loadBlob(unsigned __int64 blobid, size32_t &blobsize);
     virtual void releaseBlobs();

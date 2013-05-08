@@ -9707,6 +9707,10 @@ _ATOM HqlGram::getNameFromExpr(attribute& attr)
     OwnedHqlExpr expr = attr.getExpr();
     loop
     {
+        IHqlExpression * name = queryNamedSymbol(expr);
+        if (name)
+            return name->queryName();
+
         switch (expr->getOperator())
         {
         case no_select:
