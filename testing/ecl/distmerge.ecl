@@ -15,16 +15,11 @@
     limitations under the License.
 ############################################################################## */
 
-// temporary hack to get around codegen optimizing platform(),once call into global (and therefore hthor) context.
-nononcelib :=
-    SERVICE
-varstring platform() : library='graph', include='eclhelper.hpp', ctxmethod, entrypoint='getPlatform';
-    END;
-
 // Testing DISTRIBUTE,MERGE
 
-unsigned numrecs := 1000000 : stored('numrecs');
+IMPORT std;
 
+unsigned numrecs := 1000000 : stored('numrecs');
 
 rec1 := record
          string20 key;
@@ -61,7 +56,7 @@ rollup_ds := ROLLUP(hdsds,checksort(LEFT, RIGHT),TRUE,LOCAL);
 
 
 SEQUENTIAL(
-  IF (COUNT(rollup_ds) = IF(nononcelib.platform()='roxie',1,CLUSTERSIZE),
+  IF (COUNT(rollup_ds) = IF(Std.System.Thorlib.platform()='roxie',1,CLUSTERSIZE),
      output('Sort order verified'), 
      FAIL('ERROR: rollup count did not match expected!')
   ),
