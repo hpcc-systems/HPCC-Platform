@@ -36,10 +36,63 @@ define([
         action: "FileList",
         responseQualifier: "files.PhysicalFileStruct",
         idProperty: "calculatedID",
+        create: function (id) {
+            var retVal = {
+                lfEncode: function(path) {
+                    var retVal = "";
+                    for (var i = 0; i < path.length; ++i) {
+                        switch (path[i]) {
+                            case "/":
+                            case "\\":
+                                retVal += "::";
+                                break;
+                            case "A":
+                            case "B":
+                            case "C":
+                            case "D":
+                            case "E":
+                            case "F":
+                            case "G":
+                            case "H":
+                            case "I":
+                            case "J":
+                            case "K":
+                            case "L":
+                            case "M":
+                            case "N":
+                            case "O":
+                            case "P":
+                            case "Q":
+                            case "R":
+                            case "S":
+                            case "T":
+                            case "U":
+                            case "V":
+                            case "W":
+                            case "X":
+                            case "Y":
+                            case "Z":
+                                retVal += "^" + path[i];
+                                break;
+                            default:
+                                retVal += path[i];
+                        }
+                    }
+                    return retVal;
+                },
+                getLogicalFile: function () {
+                    //var filePath = this.DropZone.Path + "/" + 
+                    return "~file::" + this.DropZone.NetAddress + this.lfEncode(this.fullPath);
+                }
+            };
+            retVal[this.idProperty] = id;
+            return retVal;
+        },
         preProcessRow: function (row) {
+            var fullPath = this.parent.fullPath + row.name + (row.isDir ? "/" : "");
             lang.mixin(row, {
-                calculatedID: this.parent.calculatedID + "/" + row.name,
-                Subfolder: this.parent.Subfolder + row.name + "/",
+                calculatedID: this.parent.DropZone.NetAddress + fullPath,
+                fullPath: fullPath,
                 DropZone: this.parent.DropZone,
                 displayName: row.name,
                 type: row.isDir ? "folder" : "file"
@@ -74,7 +127,7 @@ define([
                 calculatedID: row.NetAddress,
                 displayName: row.Name,
                 type: "dropzone",
-                Subfolder: "/",
+                fullPath: row.Path + "/",
                 DropZone: row
             });
         },
@@ -92,7 +145,7 @@ define([
             }));
             return store.query({
                 Netaddr: parent.DropZone.NetAddress,
-                Path: parent.DropZone.Path + (parent.Subfolder ? "/" + parent.Subfolder : ""),
+                Path: parent.fullPath,
                 Mask: "",
                 OS: parent.DropZone.Linux === "true" ? 1 : 0
             });
@@ -159,6 +212,11 @@ define([
 
         CreateLandingZonesStore: function (options) {
             var store = new LandingZonesStore(options);
+            return Observable(store);
+        },
+
+        CreateFileListStore: function (options) {
+            var store = new FileListStore(options);
             return Observable(store);
         },
 
