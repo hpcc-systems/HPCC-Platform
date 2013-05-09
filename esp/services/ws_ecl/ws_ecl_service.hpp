@@ -170,8 +170,6 @@ public:
 
     int submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, const char *viewname=NULL, const char *xsltname=NULL);
 
-    void addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree);
-    
     void handleHttpPost(CHttpRequest *request, CHttpResponse *response);
     void handleJSONPost(CHttpRequest *request, CHttpResponse *response);
 
