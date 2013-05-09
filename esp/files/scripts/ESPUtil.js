@@ -48,7 +48,7 @@ define([
             if (this instanceof SingletonData) {
                 return (SingletonData)(this);
             }
-            return {};
+            return this;
         },
         updateData: function (response) {
             var changed = false;

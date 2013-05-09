@@ -1,0 +1,11 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-props="splitter: false" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
+            <label class="Prompt" for="${id}Width">Width:</label>
+            <input id="${id}Width" data-dojo-attach-event="onChange:_onWidthChange" data-dojo-props="smallDelta:1, constraints:{min:1, max:32000, places:0}, intermediateChanges:true, value:16" data-dojo-type="dijit.form.NumberSpinner" />
+            <span data-dojo-type="dijit.ToolbarSeparator"></span>
+        </div>
+        <div id="${id}HexView" data-dojo-props="region: 'center', WUXml: true" data-dojo-type="ECLSourceWidget">
+        </div>
+    </div>
+</div>

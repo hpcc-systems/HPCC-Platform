@@ -305,7 +305,7 @@ define([
                         request[this.countProperty] = options.count;
                     }
                 }
-                if (options.sort !== undefined && options.sort[0].attribute !== undefined) {
+                if (options !== undefined && options.sort !== undefined && options.sort[0].attribute !== undefined) {
                     request['Sortby'] = options.sort[0].attribute;
                     if (options.sort[0].descending) {
                         request['Descending'] = options.sort[0].descending;
