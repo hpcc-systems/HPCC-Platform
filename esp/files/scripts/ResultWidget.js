@@ -24,7 +24,7 @@ define([
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
-    "dgrid/OnDemandGrid",
+    "dgrid/Grid",
     "dgrid/Keyboard",
     "dgrid/Selection",
     "dgrid/selector",
@@ -44,7 +44,7 @@ define([
     "dijit/ToolbarSeparator"
 ], function (declare, lang, dom, iframe,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
+                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 ESPBase, ESPWorkunit, ESPLogicalFile,
                 template) {
     return declare("ResultWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -155,7 +155,7 @@ define([
             if (result) {
                 var context = this;
                 result.fetchStructure(function (structure) {
-                    context.grid = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry, Pagination])({
+                    context.grid = new declare([Grid, Pagination, Keyboard, ColumnResizer, DijitRegistry])({
                         columns: structure,
                         rowsPerPage: 50,
                         pagingLinks: 1,
@@ -167,7 +167,7 @@ define([
                     context.grid.startup();
                 });
             } else {
-                this.grid = new declare([OnDemandGrid, DijitRegistry])({
+                this.grid = new declare([Grid, DijitRegistry])({
                     columns: [
                             {
                                 label: "##",

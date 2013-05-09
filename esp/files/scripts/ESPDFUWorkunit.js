@@ -24,13 +24,56 @@ define([
 
     "hpcc/FileSpray",
     "hpcc/ESPUtil",
+    "hpcc/ESPRequest",
     "hpcc/ESPResult"
 ], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable,
-    FileSpray, ESPUtil, ESPResult) {
+    FileSpray, ESPUtil, ESPRequest, ESPResult) {
+
+    var Store = declare([ESPRequest.Store], {
+        service: "FileSpray",
+        action: "GetDFUWorkunits",
+        responseQualifier: "results.DFUWorkunit",
+        responseTotalQualifier: "NumWUs",
+        idProperty: "ID",
+        startProperty: "PageStartFrom",
+        countProperty: "PageSize",
+
+        _watched: [],
+        preRequest: function (request) {
+            switch (request.Sortby) {
+                case "ClusterName":
+                    request.Sortby = "Cluster";
+                    break;
+                case "Command":
+                    request.Sortby = "Type";
+                    break;
+                case "StateMessage":
+                    request.Sortby = "State";
+                    break;
+            }
+        },
+        create: function (id) {
+            return new Workunit({
+                ID: id,
+                Wuid: id
+            });
+        },
+        update: function (id, item) {
+            var storeItem = this.get(id);
+            storeItem.updateData(item);
+            if (!this._watched[id]) {
+                var context = this;
+                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                    if (oldValue !== newValue) {
+                        context.notify(storeItem, id);
+                    }
+                });
+            }
+        }
+    });
 
     var _workunits = {};
-
-    var Store = declare(null, {
+    var StoreOld = declare(null, {
         idProperty: "Wuid",
 
         _watched: {},
