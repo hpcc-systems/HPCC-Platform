@@ -288,6 +288,8 @@ public:
     virtual void renderSingleResult(const char *viewName, const char *resultname, StringBuffer &html);
     virtual void expandResults(const char *xml, StringBuffer &out, unsigned flags);
     virtual void expandResults(StringBuffer &out, unsigned flags);
+    virtual void createWuidResponse(StringBuffer &out, unsigned flags);
+
     virtual void applyResultsXSLT(const char *filename, const char *xml, StringBuffer &out);
     virtual void applyResultsXSLT(const char *filename, StringBuffer &out);
     virtual StringBuffer &aggregateResources(const char *type, StringBuffer &content);
@@ -568,6 +570,18 @@ void WuWebView::expandResults(const char *xml, StringBuffer &out, unsigned flags
     WuExpandedResultBuffer expander(name.str(), flags);
     expander.appendDatasetsFromXML(xml);
     expander.appendManifestSchemas(*ensureManifest(), loadDll());
+    expander.finalize();
+    out.append(expander.buffer);
+}
+
+void WuWebView::createWuidResponse(StringBuffer &out, unsigned flags)
+{
+    flags &= ~WWV_ADD_RESULTS_TAG;
+    flags |= WWV_OMIT_RESULT_TAG;
+
+    WuExpandedResultBuffer expander(name.str(), flags);
+    SCMStringBuffer wuid;
+    appendXMLTag(expander.buffer, "Wuid", cw->getWuid(wuid).str());
     expander.finalize();
     out.append(expander.buffer);
 }
