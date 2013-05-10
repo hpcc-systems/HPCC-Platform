@@ -722,8 +722,8 @@ ECLRTL_API void rtlFreeException(IException * e);
 
 ECLRTL_API IAtom * rtlCreateFieldNameAtom(const char * name);
 
-ECLRTL_API void rtlBase64Decode(unsigned & tlen, void * & tgt, unsigned slen, const char * src);
-ECLRTL_API void rtlBase64Encode(unsigned & tlen, char * & tgt, unsigned slen, const void * src);
+ECLRTL_API void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * src);
+ECLRTL_API void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * src);
 
 //Test functions:
 ECLRTL_API void rtlTestGetPrimes(size32_t & len, void * & data);

@@ -5603,17 +5603,55 @@ IAtom * rtlCreateFieldNameAtom(const char * name)
     return createAtom(name);
 }
 
-
-void rtlBase64Decode(unsigned & tlen, void * & tgt, unsigned slen, const char * src)
+void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * src)
 {
+    tlen = 0;
+    if (0 < slen )
+    {
+        StringBuffer out;
+        JBASE64_Encode(src, slen, out);
 
+        tlen = out.length();
+        if( 0 < tlen)
+        {
+            char * data  = (char *)malloc(tlen);
 
+            if(NULL == data)
+            {
+                StringBuffer msg;
+                msg.append("Memory allocation error in ").append(__FILE__).append(" at line ").append(__LINE__).append(" for size ");
+                rtlFail(0, msg);
+            }
+
+            out.getChars(0, tlen, data);
+            tgt = data;
+        }
+    }
 }
 
-void rtlBase64Encode(unsigned & tlen, char * & tgt, unsigned slen, const void * src)
+void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * src)
 {
+    tlen = 0;
+    if( 0 < slen )
+    {
+        StringBuffer out;
+        JBASE64_Decode(src, slen, out);
 
+        tlen = out.length();
+        if( 0 < tlen)
+        {
+            char * data  = (char *)malloc(tlen);
+            if(NULL == data)
+            {
+                StringBuffer msg;
+                msg.append("Memory allocation error in ").append(__FILE__).append(" at line ").append(__LINE__).append(" for size ");
+                rtlFail(0, msg);
+            }
 
+            out.getChars(0, tlen, data);
+            tgt = (void *)data;
+        }
+    }
 }
 
 

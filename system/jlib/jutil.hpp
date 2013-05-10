@@ -129,6 +129,7 @@ extern jlib_decl StringBuffer &JBASE64_Decode(const char *in, StringBuffer &out)
 extern jlib_decl MemoryBuffer &JBASE64_Decode(const char *in, MemoryBuffer &out);
 extern jlib_decl StringBuffer &JBASE64_Decode(ISimpleReadStream &in, StringBuffer &out);
 extern jlib_decl MemoryBuffer &JBASE64_Decode(ISimpleReadStream &in, MemoryBuffer &out);
+extern jlib_decl void JBASE64_Decode(const char *in, long length, StringBuffer &out);
 
 extern jlib_decl void JBASE32_Encode(const char *in,StringBuffer &out);  // result all lower
 extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);  

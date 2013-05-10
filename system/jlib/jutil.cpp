@@ -1145,6 +1145,40 @@ MemoryBuffer &JBASE64_Decode(const char *incs, MemoryBuffer &out)
     return out;
 }
 
+void JBASE64_Decode(const char *incs, long length, StringBuffer &out)
+{
+    out.ensureCapacity(length / 4 * 3);
+
+    unsigned char c1, c2, c3, c4;
+    unsigned char d1, d2, d3, d4;
+
+    for(long index = 0; index < length; index+=4)
+    {
+        c1 = *incs++;
+        if (!isspace(c1))
+        {
+            c2 = *incs++;
+            c3 = *incs++;
+            c4 = *incs++;
+            d1 = BASE64_dec[c1];
+            d2 = BASE64_dec[c2];
+            d3 = BASE64_dec[c3];
+            d4 = BASE64_dec[c4];
+
+            out.append((char)((d1 << 2) | (d2 >> 4)));
+
+            if(c3 == pad)
+                break;
+
+            out.append((char)((d2 << 4) | (d3 >> 2)));
+
+            if(c4 == pad)
+                break;
+
+            out.append((char)((d3 << 6) | d4));
+        }
+    }
+}
 
 static inline void encode5_32(const byte *in,StringBuffer &out)
 {

@@ -2,7 +2,17 @@
 ## HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.  All rights reserved.
 ############################################################################## */
 
+
+externals := 
+    SERVICE
+string EncodeBase64(const data src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Encode';
+data DecodeBase64(const string src) :   eclrtl,pure,include,library='eclrtl',entrypoint='rtlBase64Decode';
+    END;
+
 EXPORT Str := MODULE
+
+EXPORT STRING EncodeBase64(data value) := externals.EncodeBase64(value);
+EXPORT DATA DecodeBase64(STRING value) := externals.DecodeBase64(value);
 
 /*
   Since this is primarily a wrapper for a plugin, all the definitions for this standard library
