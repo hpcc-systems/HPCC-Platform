@@ -25,50 +25,7 @@ define([
     "hpcc/ESPRequest"
 ], function (declare, lang, xhr, Deferred, QueryResults,
     ESPBase, ESPRequest) {
-    var TpServiceQuery =  declare(ESPBase, {
-        idProperty: "Wuid",
-
-        constructor: function (options) {
-            declare.safeMixin(this, options);
-        },
-
-        getIdentity: function (object) {
-            return object[this.idProperty];
-        },
-
-        query: function (query, options) {
-            var request = {
-                    Type: "ALLSERVICES"
-            };
-            lang.mixin(request, options.query);
-            request['rawxml_'] = "1";
-
-            var results = xhr.get({
-                url: this.getBaseURL("WsTopology") + "/TpServiceQuery",
-                handleAs: "xml",
-                content: request
-            });
-
-            var context = this;
-            var parsedResults = results.then(function (domXml) {
-                var data = context.getValues(domXml, "TpDropZone", ["TpMachine"]);
-                return data;
-            });
-
-            lang.mixin(parsedResults, {
-                total: Deferred.when(parsedResults, function (data) {
-                    return data.length;
-                })
-            });
-
-            return QueryResults(parsedResults);
-        }
-    });
-
-
     return {
-        TpServiceQuery: TpServiceQuery,
-
         TpServiceQuery: function (params) {
             lang.mixin(params.request, {
                 Type: "ALLSERVICES"
