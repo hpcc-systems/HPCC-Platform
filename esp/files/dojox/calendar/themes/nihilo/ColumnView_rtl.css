@@ -30,8 +30,9 @@
   border-left: 1px solid #cccccc;
   border-right: none;
 }
-.nihilo .dojoxCalendarColumnViewRtl .dojoxCalendarRowHeaderTable td span {
-  padding-left: 4px;
+.nihilo .dojoxCalendarColumnViewRtl .dojoxCalendarRowHeaderLabel {
+  right: auto;
+  left: 4px;
 }
 .nihilo .dojoxCalendarColumnViewRtl .dojoxCalendarEvent .summary {
   text-align: right;

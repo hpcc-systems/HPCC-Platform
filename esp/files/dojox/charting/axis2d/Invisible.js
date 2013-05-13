@@ -1,5 +1,5 @@
 //>>built
-define("dojox/charting/axis2d/Invisible",["dojo/_base/lang","dojo/_base/declare","./Base","../scaler/linear","dojox/gfx","dojox/lang/utils"],function(_1,_2,_3,_4,g,du){
+define("dojox/charting/axis2d/Invisible",["dojo/_base/lang","dojo/_base/declare","./Base","../scaler/linear","dojox/lang/utils"],function(_1,_2,_3,_4,du){
 return _2("dojox.charting.axis2d.Invisible",_3,{defaultParams:{vertical:false,fixUpper:"none",fixLower:"none",natural:false,leftBottom:true,includeZero:false,fixed:true},optionalParams:{min:0,max:1,from:0,to:1,majorTickStep:4,minorTickStep:2,microTickStep:1},constructor:function(_5,_6){
 this.opt=_1.clone(this.defaultParams);
 du.updateWithObject(this.opt,_6);

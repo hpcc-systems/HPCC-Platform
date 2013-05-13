@@ -1,8 +1,7 @@
 //>>built
-require({cache:{"url:dojox/calendar/templates/SimpleColumnView.html":"<div data-dojo-attach-events=\"keydown:_onKeyDown\">\t\n\t<div data-dojo-attach-point=\"header\" class=\"dojoxCalendarHeader\">\n\t\t<div class=\"dojoxCalendarYearColumnHeader\" data-dojo-attach-point=\"yearColumnHeader\">\n\t\t\t<table><tr><td><span data-dojo-attach-point=\"yearColumnHeaderContent\"></span></td></tr></table>\t\t\n\t\t</div>\n\t\t<div data-dojo-attach-point=\"columnHeader\" class=\"dojoxCalendarColumnHeader\">\n\t\t\t<table data-dojo-attach-point=\"columnHeaderTable\" class=\"dojoxCalendarColumnHeaderTable\" cellpadding=\"0\" cellspacing=\"0\"></table>\n\t\t</div>\n\t</div>\t\n\t<div data-dojo-attach-point=\"vScrollBar\" class=\"dojoxCalendarVScrollBar\">\n\t\t<div data-dojo-attach-point=\"vScrollBarContent\" style=\"visibility:hidden;position:relative; width:1px; height:1px;\" ></div>\n\t</div>\t\n\t<div data-dojo-attach-point=\"scrollContainer\" class=\"dojoxCalendarScrollContainer\">\n\t\t<div data-dojo-attach-point=\"sheetContainer\" style=\"position:relative;left:0;right:0;margin:0;padding:0\">\n\t\t\t<div data-dojo-attach-point=\"rowHeader\" class=\"dojoxCalendarRowHeader\">\n\t\t\t\t<table data-dojo-attach-point=\"rowHeaderTable\" class=\"dojoxCalendarRowHeaderTable\" cellpadding=\"0\" cellspacing=\"0\"></table>\n\t\t\t</div>\n\t\t\t<div data-dojo-attach-point=\"grid\" class=\"dojoxCalendarGrid\">\n\t\t\t\t<table data-dojo-attach-point=\"gridTable\" class=\"dojoxCalendarGridTable\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%\"></table>\n\t\t\t</div>\n\t\t\t<div data-dojo-attach-point=\"itemContainer\" class=\"dojoxCalendarContainer\" data-dojo-attach-event=\"mousedown:_onGridMouseDown,mouseup:_onGridMouseUp,ondblclick:_onGridDoubleClick,touchstart:_onGridTouchStart,touchmove:_onGridTouchMove,touchend:_onGridTouchEnd\">\n\t\t\t\t<table data-dojo-attach-point=\"itemContainerTable\" class=\"dojoxCalendarContainerTable\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%\"></table>\n\t\t\t</div>\n\t\t</div> \n\t</div>\n</div>\n\n"}});
 define("dojox/calendar/SimpleColumnView",["./ViewBase","dijit/_TemplatedMixin","./_VerticalScrollBarBase","dojo/text!./templates/SimpleColumnView.html","dojo/_base/declare","dojo/_base/event","dojo/_base/lang","dojo/_base/array","dojo/_base/sniff","dojo/_base/fx","dojo/_base/html","dojo/on","dojo/dom","dojo/dom-class","dojo/dom-style","dojo/dom-geometry","dojo/dom-construct","dojo/mouse","dojo/query","dojox/html/metrics"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,fx,_a,on,_b,_c,_d,_e,_f,_10,_11,_12){
-return _5("dojox.calendar.SimpleColumnView",[_1,_2],{baseClass:"dojoxCalendarSimpleColumnView",templateString:_4,viewKind:"columns",_setTabIndexAttr:"domNode",renderData:null,startDate:null,columnCount:7,minHours:8,maxHours:18,hourSize:100,timeSlotDuration:15,verticalRenderer:null,percentOverlap:70,horizontalGap:4,_columnHeaderHandlers:null,constructor:function(){
-this.invalidatingProperties=["columnCount","startDate","minHours","maxHours","hourSize","verticalRenderer","rowHeaderTimePattern","columnHeaderDatePattern","timeSlotDuration","percentOverlap","horizontalGap","scrollBarRTLPosition","itemToRendererKindFunc","layoutPriorityFunction","formatItemTimeFunc","textDir","items"];
+return _5("dojox.calendar.SimpleColumnView",[_1,_2],{baseClass:"dojoxCalendarSimpleColumnView",templateString:_4,viewKind:"columns",_setTabIndexAttr:"domNode",renderData:null,startDate:null,columnCount:7,minHours:8,maxHours:18,hourSize:100,timeSlotDuration:15,rowHeaderGridSlotDuration:60,rowHeaderLabelSlotDuration:60,rowHeaderLabelOffset:2,rowHeaderFirstLabelOffset:2,verticalRenderer:null,percentOverlap:70,horizontalGap:4,_columnHeaderHandlers:null,constructor:function(){
+this.invalidatingProperties=["columnCount","startDate","minHours","maxHours","hourSize","verticalRenderer","rowHeaderTimePattern","columnHeaderDatePattern","timeSlotDuration","rowHeaderGridSlotDuration","rowHeaderLabelSlotDuration","rowHeaderLabelOffset","rowHeaderFirstLabelOffset","percentOverlap","horizontalGap","scrollBarRTLPosition","itemToRendererKindFunc","layoutPriorityFunction","formatItemTimeFunc","textDir","items"];
 this._columnHeaderHandlers=[];
 },destroy:function(_13){
 this._cleanupColumnHeader();
@@ -35,6 +34,7 @@ _16.maxHours=this.get("maxHours");
 _16.hourSize=this.get("hourSize");
 _16.hourCount=_16.maxHours-_16.minHours;
 _16.slotDuration=this.get("timeSlotDuration");
+_16.rowHeaderGridSlotDuration=this.get("rowHeaderGridSlotDuration");
 _16.slotSize=Math.ceil(_16.hourSize/(60/_16.slotDuration));
 _16.hourSize=_16.slotSize*(60/_16.slotDuration);
 _16.sheetHeight=_16.hourSize*_16.hourCount;
@@ -74,19 +74,19 @@ return _16;
 },_validateProperties:function(){
 this.inherited(arguments);
 var v=this.minHours;
-if(v<0||v>24||isNaN(v)){
+if(v<0||v>23||isNaN(v)){
 this.minHours=0;
 }
 v=this.maxHours;
-if(v<0||v>24||isNaN(v)){
+if(v<1||v>24||isNaN(v)){
 this.minHours=24;
 }
 if(this.minHours>this.maxHours){
 var t=this.maxHours;
 this.maxHours=this.minHours;
-this.maxHours=t;
+this.minHours=t;
 }
-if(v-this.minHours<1){
+if(this.maxHours-this.minHours<1){
 this.minHours=0;
 this.maxHours=24;
 }
@@ -94,7 +94,7 @@ if(this.columnCount<1||isNaN(this.columnCount)){
 this.columnCount=1;
 }
 v=this.percentOverlap;
-if(this.percentOverlap<0||this.percentOverlap>100||isNaN(this.percentOverlap)){
+if(v<0||v>100||isNaN(v)){
 this.percentOverlap=70;
 }
 if(this.hourSize<5||isNaN(this.hourSize)){
@@ -102,7 +102,7 @@ this.hourSize=10;
 }
 v=this.timeSlotDuration;
 if(v<1||v>60||isNaN(v)){
-v=15;
+this.timeSlotDuration=15;
 }
 },_setStartDateAttr:function(_17){
 this.displayedItemsInvalidated=true;
@@ -360,120 +360,163 @@ _3e.pop().remove();
 }
 }
 },styleColumnHeaderCell:function(_3f,_40,_41){
+_c.add(_3f,this._cssDays[_40.getDay()]);
 if(this.isToday(_40)){
-return _c.add(_3f,"dojoxCalendarToday");
+_c.add(_3f,"dojoxCalendarToday");
 }else{
 if(this.isWeekEnd(_40)){
-return _c.add(_3f,"dojoxCalendarWeekend");
+_c.add(_3f,"dojoxCalendarWeekend");
 }
 }
-},_buildRowHeader:function(_42,_43){
-var _44=this.rowHeaderTable;
-if(!_44){
+},_addMinutesClasses:function(_42,_43){
+switch(_43){
+case 0:
+_c.add(_42,"hour");
+break;
+case 30:
+_c.add(_42,"halfhour");
+break;
+case 15:
+case 45:
+_c.add(_42,"quarterhour");
+break;
+}
+},_buildRowHeader:function(_44,_45){
+var _46=this.rowHeaderTable;
+if(!_46){
 return;
 }
-_d.set(_44,"height",_42.sheetHeight+"px");
-var _45=_11("tbody",_44);
-var _46,tr,td;
-if(_45.length==1){
-_46=_45[0];
-}else{
-_46=_f.create("tbody",null,_44);
+if(this._rowHeaderLabelContainer==null){
+this._rowHeaderLabelContainer=_f.create("div",{"class":"dojoxCalendarRowHeaderLabelContainer"},this.rowHeader);
 }
-var _47=_42.hourCount-(_43?_43.hourCount:0);
-if(_47>0){
-for(var i=0;i<_47;i++){
-tr=_f.create("tr",null,_46);
+_d.set(_46,"height",_44.sheetHeight+"px");
+var _47=_11("tbody",_46);
+var _48,tr,td;
+if(_47.length==1){
+_48=_47[0];
+}else{
+_48=_f.create("tbody",null,_46);
+}
+var _49=Math.floor(60/_44.rowHeaderGridSlotDuration)*_44.hourCount;
+var _4a=_49-(_45?Math.floor(60/_45.rowHeaderGridSlotDuration)*_45.hourCount:0);
+if(_4a>0){
+for(var i=0;i<_4a;i++){
+tr=_f.create("tr",null,_48);
 td=_f.create("td",null,tr);
 }
 }else{
-_47=-_47;
-for(var i=0;i<_47;i++){
-_46.removeChild(_46.lastChild);
+_4a=-_4a;
+for(var i=0;i<_4a;i++){
+_48.removeChild(_48.lastChild);
 }
 }
+var rd=this.renderData;
+var _4b=Math.ceil(_44.hourSize/(60/_44.rowHeaderGridSlotDuration));
 var d=new Date(2000,0,1,0,0,0);
-_11("tr",_44).forEach(function(tr,i){
+_11("tr",_46).forEach(function(tr,i){
 var td=_11("td",tr)[0];
 td.className="";
-var _48=_42.hourSize;
-if(_9("ie")==7){
-_48-=2;
-}
-_d.set(tr,"height",_48+"px");
-d.setHours(this.renderData.minHours+(i));
-this.styleRowHeaderCell(td,d.getHours(),_42);
-this._setText(td,this._formatRowHeaderLabel(d));
+_d.set(tr,"height",(_9("ie")==7)?_4b-2*(60/_44.rowHeaderGridSlotDuration):_4b+"px");
+this.styleRowHeaderCell(td,d.getHours(),d.getMinutes(),rd);
+var m=(i*this.renderData.rowHeaderGridSlotDuration)%60;
+this._addMinutesClasses(td,m);
 },this);
-},styleRowHeaderCell:function(_49,h,_4a){
-},_buildGrid:function(_4b,_4c){
-var _4d=this.gridTable;
-if(!_4d){
+var lc=this._rowHeaderLabelContainer;
+_4a=(Math.floor(60/this.rowHeaderLabelSlotDuration)*_44.hourCount)-lc.childNodes.length;
+var _4c;
+if(_4a>0){
+for(var i=0;i<_4a;i++){
+_4c=_f.create("span",null,lc);
+_c.add(_4c,"dojoxCalendarRowHeaderLabel");
+}
+}else{
+_4a=-_4a;
+for(var i=0;i<_4a;i++){
+lc.removeChild(lc.lastChild);
+}
+}
+_4b=Math.ceil(_44.hourSize/(60/this.rowHeaderLabelSlotDuration));
+_11(">span",lc).forEach(function(_4d,i){
+d.setHours(0);
+d.setMinutes(_44.minHours*60+(i*this.rowHeaderLabelSlotDuration));
+this._configureRowHeaderLabel(_4d,d,i,_4b*i,rd);
+},this);
+},_configureRowHeaderLabel:function(_4e,d,_4f,pos,_50){
+this._setText(_4e,this._formatRowHeaderLabel(d));
+_d.set(_4e,"top",(pos+(_4f==0?this.rowHeaderFirstLabelOffset:this.rowHeaderLabelOffset))+"px");
+var m=(_4f*this.rowHeaderLabelSlotDuration)%60;
+_c.remove(_4e,["hour","halfhour","quarterhour"]);
+this._addMinutesClasses(_4e,m);
+},styleRowHeaderCell:function(_51,h,m,_52){
+},_buildGrid:function(_53,_54){
+var _55=this.gridTable;
+if(!_55){
 return;
 }
-_d.set(_4d,"height",_4b.sheetHeight+"px");
-var _4e=Math.floor(60/_4b.slotDuration)*_4b.hourCount;
-var _4f=_4e-(_4c?Math.floor(60/_4c.slotDuration)*_4c.hourCount:0);
-var _50=_4f>0;
-var _51=_4b.columnCount-(_4c?_4c.columnCount:0);
+_d.set(_55,"height",_53.sheetHeight+"px");
+var _56=Math.floor(60/_53.slotDuration)*_53.hourCount;
+var _57=_56-(_54?Math.floor(60/_54.slotDuration)*_54.hourCount:0);
+var _58=_57>0;
+var _59=_53.columnCount-(_54?_54.columnCount:0);
 if(_9("ie")==8){
 if(this._gridTableSave==null){
-this._gridTableSave=_7.clone(_4d);
+this._gridTableSave=_7.clone(_55);
 }else{
-if(_51<0){
-this.grid.removeChild(_4d);
-_f.destroy(_4d);
-_4d=_7.clone(this._gridTableSave);
-this.gridTable=_4d;
-this.grid.appendChild(_4d);
-_51=_4b.columnCount;
-_4f=_4e;
-_50=true;
+if(_59<0){
+this.grid.removeChild(_55);
+_f.destroy(_55);
+_55=_7.clone(this._gridTableSave);
+this.gridTable=_55;
+this.grid.appendChild(_55);
+_59=_53.columnCount;
+_57=_56;
+_58=true;
 }
 }
 }
-var _52=_11("tbody",_4d);
-var _53;
-if(_52.length==1){
-_53=_52[0];
+var _5a=_11("tbody",_55);
+var _5b;
+if(_5a.length==1){
+_5b=_5a[0];
 }else{
-_53=_f.create("tbody",null,_4d);
+_5b=_f.create("tbody",null,_55);
 }
-if(_50){
-for(var i=0;i<_4f;i++){
-_f.create("tr",null,_53);
+if(_58){
+for(var i=0;i<_57;i++){
+_f.create("tr",null,_5b);
 }
 }else{
-_4f=-_4f;
-for(var i=0;i<_4f;i++){
-_53.removeChild(_53.lastChild);
+_57=-_57;
+for(var i=0;i<_57;i++){
+_5b.removeChild(_5b.lastChild);
 }
 }
-var _54=Math.floor(60/_4b.slotDuration)*_4b.hourCount-_4f;
-var _55=_50||_51>0;
-_51=_55?_51:-_51;
-_11("tr",_4d).forEach(function(tr,i){
-if(_55){
-var len=i>=_54?_4b.columnCount:_51;
+var _5c=Math.floor(60/_53.slotDuration)*_53.hourCount-_57;
+var _5d=_58||_59>0;
+_59=_5d?_59:-_59;
+_11("tr",_55).forEach(function(tr,i){
+if(_5d){
+var len=i>=_5c?_53.columnCount:_59;
 for(var i=0;i<len;i++){
 _f.create("td",null,tr);
 }
 }else{
-for(var i=0;i<_51;i++){
+for(var i=0;i<_59;i++){
 tr.removeChild(tr.lastChild);
 }
 }
 });
-_11("tr",_4d).forEach(function(tr,i){
-_d.set(tr,"height",_4b.slotSize+"px");
+_11("tr",_55).forEach(function(tr,i){
+_d.set(tr,"height",_53.slotSize+"px");
 if(i==0){
 _c.add(tr,"first-child");
 }else{
-if(i==_4e-1){
+if(i==_56-1){
 _c.add(tr,"last-child");
 }
 }
 var m=(i*this.renderData.slotDuration)%60;
+var h=this.minHours+Math.floor((i*this.renderData.slotDuration)/60);
 _11("td",tr).forEach(function(td,col){
 td.className="";
 if(col==0){
@@ -483,179 +526,176 @@ if(col==this.renderData.columnCount-1){
 _c.add(td,"last-child");
 }
 }
-var d=_4b.dates[col];
-this.styleGridColumn(td,d,_4b);
-switch(m){
-case 0:
-_c.add(td,"hour");
-break;
-case 30:
-_c.add(td,"halfhour");
-break;
-case 15:
-case 45:
-_c.add(td,"quarterhour");
-break;
-}
+var d=_53.dates[col];
+this.styleGridCell(td,d,h,m,_53);
+this._addMinutesClasses(td,m);
 },this);
 },this);
-},styleGridColumn:function(_56,_57,_58){
-if(this.isToday(_57)){
-return _c.add(_56,"dojoxCalendarToday");
+},styleGridCellFunc:null,defaultStyleGridCell:function(_5e,_5f,_60,_61,_62){
+_c.add(_5e,[this._cssDays[_5f.getDay()],"H"+_60,"M"+_61]);
+if(this.isToday(_5f)){
+return _c.add(_5e,"dojoxCalendarToday");
 }else{
-if(this.isWeekEnd(_57)){
-return _c.add(_56,"dojoxCalendarWeekend");
+if(this.isWeekEnd(_5f)){
+return _c.add(_5e,"dojoxCalendarWeekend");
 }
 }
-},_buildItemContainer:function(_59,_5a){
-var _5b=this.itemContainerTable;
-if(!_5b){
+},styleGridCell:function(_63,_64,_65,_66,_67){
+if(this.styleGridCellFunc){
+this.styleGridCellFunc(_63,_64,_65,_66,_67);
+}else{
+this.defaultStyleGridCell(_63,_64,_65,_66,_67);
+}
+},_buildItemContainer:function(_68,_69){
+var _6a=this.itemContainerTable;
+if(!_6a){
 return;
 }
-var _5c=[];
-_d.set(_5b,"height",_59.sheetHeight+"px");
-var _5d=_59.columnCount-(_5a?_5a.columnCount:0);
+var _6b=[];
+_d.set(_6a,"height",_68.sheetHeight+"px");
+var _6c=_68.columnCount-(_69?_69.columnCount:0);
 if(_9("ie")==8){
 if(this._itemTableSave==null){
-this._itemTableSave=_7.clone(_5b);
+this._itemTableSave=_7.clone(_6a);
 }else{
-if(_5d<0){
-this.itemContainer.removeChild(_5b);
+if(_6c<0){
+this.itemContainer.removeChild(_6a);
 this._recycleItemRenderers(true);
-_f.destroy(_5b);
-_5b=_7.clone(this._itemTableSave);
-this.itemContainerTable=_5b;
-this.itemContainer.appendChild(_5b);
-_5d=_59.columnCount;
+_f.destroy(_6a);
+_6a=_7.clone(this._itemTableSave);
+this.itemContainerTable=_6a;
+this.itemContainer.appendChild(_6a);
+_6c=_68.columnCount;
 }
 }
 }
-var _5e=_11("tbody",_5b);
-var trs=_11("tr",_5b);
-var _5f,tr,td;
-if(_5e.length==1){
-_5f=_5e[0];
+var _6d=_11("tbody",_6a);
+var trs=_11("tr",_6a);
+var _6e,tr,td;
+if(_6d.length==1){
+_6e=_6d[0];
 }else{
-_5f=_f.create("tbody",null,_5b);
+_6e=_f.create("tbody",null,_6a);
 }
 if(trs.length==1){
 tr=trs[0];
 }else{
-tr=_f.create("tr",null,_5f);
+tr=_f.create("tr",null,_6e);
 }
-if(_5d>0){
-for(var i=0;i<_5d;i++){
+if(_6c>0){
+for(var i=0;i<_6c;i++){
 td=_f.create("td",null,tr);
 _f.create("div",{"className":"dojoxCalendarContainerColumn"},td);
 }
 }else{
-_5d=-_5d;
-for(var i=0;i<_5d;i++){
+_6c=-_6c;
+for(var i=0;i<_6c;i++){
 tr.removeChild(tr.lastChild);
 }
 }
-_11("td>div",_5b).forEach(function(div,i){
-_d.set(div,{"height":_59.sheetHeight+"px"});
-_5c.push(div);
+_11("td>div",_6a).forEach(function(div,i){
+_d.set(div,{"height":_68.sheetHeight+"px"});
+_6b.push(div);
 },this);
-_59.cells=_5c;
-},_overlapLayoutPass2:function(_60){
-var i,j,_61,_62;
-_61=_60[_60.length-1];
-for(j=0;j<_61.length;j++){
-_61[j].extent=1;
+_68.cells=_6b;
+},_overlapLayoutPass2:function(_6f){
+var i,j,_70,_71;
+_70=_6f[_6f.length-1];
+for(j=0;j<_70.length;j++){
+_70[j].extent=1;
 }
-for(i=0;i<_60.length-1;i++){
-_61=_60[i];
-for(var j=0;j<_61.length;j++){
-_62=_61[j];
-if(_62.extent==-1){
-_62.extent=1;
-var _63=0;
-var _64=false;
-for(var k=i+1;k<_60.length&&!_64;k++){
-var _65=_60[k];
-for(var l=0;l<_65.length&&!_64;l++){
-var _66=_65[l];
-if(_62.start<_66.end&&_66.start<_62.end){
-_64=true;
-}
-}
-if(!_64){
-_63++;
+for(i=0;i<_6f.length-1;i++){
+_70=_6f[i];
+for(var j=0;j<_70.length;j++){
+_71=_70[j];
+if(_71.extent==-1){
+_71.extent=1;
+var _72=0;
+var _73=false;
+for(var k=i+1;k<_6f.length&&!_73;k++){
+var _74=_6f[k];
+for(var l=0;l<_74.length&&!_73;l++){
+var _75=_74[l];
+if(_71.start<_75.end&&_75.start<_71.end){
+_73=true;
 }
 }
-_62.extent+=_63;
+if(!_73){
+_72++;
+}
+}
+_71.extent+=_72;
 }
 }
 }
-},_defaultItemToRendererKindFunc:function(_67){
+},_defaultItemToRendererKindFunc:function(_76){
 return "vertical";
-},_layoutInterval:function(_68,_69,_6a,end,_6b){
-var _6c=[];
-_68.colW=this.itemContainer.offsetWidth/_68.columnCount;
-for(var i=0;i<_6b.length;i++){
-var _6d=_6b[i];
-if(this._itemToRendererKind(_6d)=="vertical"){
-_6c.push(_6d);
+},_layoutInterval:function(_77,_78,_79,end,_7a){
+var _7b=[];
+_77.colW=this.itemContainer.offsetWidth/_77.columnCount;
+for(var i=0;i<_7a.length;i++){
+var _7c=_7a[i];
+if(this._itemToRendererKind(_7c)=="vertical"){
+_7b.push(_7c);
 }
 }
-if(_6c.length>0){
-this._layoutVerticalItems(_68,_69,_6a,end,_6c);
+if(_7b.length>0){
+this._layoutVerticalItems(_77,_78,_79,end,_7b);
 }
-},_layoutVerticalItems:function(_6e,_6f,_70,_71,_72){
+},_layoutVerticalItems:function(_7d,_7e,_7f,_80,_81){
 if(this.verticalRenderer==null){
 return;
 }
-var _73=_6e.cells[_6f];
-var _74=[];
-for(var i=0;i<_72.length;i++){
-var _75=_72[i];
-var _76=this.computeRangeOverlap(_6e,_75.startTime,_75.endTime,_70,_71);
-var top=this.computeProjectionOnDate(_6e,_70,_76[0],_6e.sheetHeight);
-var _77=this.computeProjectionOnDate(_6e,_70,_76[1],_6e.sheetHeight);
-if(_77>top){
-var _78=_7.mixin({start:top,end:_77,range:_76,item:_75},_75);
-_74.push(_78);
+var _82=_7d.cells[_7e];
+var _83=[];
+for(var i=0;i<_81.length;i++){
+var _84=_81[i];
+var _85=this.computeRangeOverlap(_7d,_84.startTime,_84.endTime,_7f,_80);
+var top=this.computeProjectionOnDate(_7d,_7f,_85[0],_7d.sheetHeight);
+var _86=this.computeProjectionOnDate(_7d,_7f,_85[1],_7d.sheetHeight);
+if(_86>top){
+var _87=_7.mixin({start:top,end:_86,range:_85,item:_84},_84);
+_83.push(_87);
 }
 }
-var _79=this.computeOverlapping(_74,this._overlapLayoutPass2).numLanes;
-var _7a=this.percentOverlap/100;
-for(i=0;i<_74.length;i++){
-_75=_74[i];
-var _7b=_75.lane;
-var _7c=_75.extent;
+var _88=this.computeOverlapping(_83,this._overlapLayoutPass2).numLanes;
+var _89=this.percentOverlap/100;
+for(i=0;i<_83.length;i++){
+_84=_83[i];
+var _8a=_84.lane;
+var _8b=_84.extent;
 var w;
-var _7d;
-if(_7a==0){
-w=_79==1?_6e.colW:((_6e.colW-(_79-1)*this.horizontalGap)/_79);
-_7d=_7b*(w+this.horizontalGap);
-w=_7c==1?w:w*_7c+(_7c-1)*this.horizontalGap;
-w=100*w/_6e.colW;
-_7d=100*_7d/_6e.colW;
+var _8c;
+if(_89==0){
+w=_88==1?_7d.colW:((_7d.colW-(_88-1)*this.horizontalGap)/_88);
+_8c=_8a*(w+this.horizontalGap);
+w=_8b==1?w:w*_8b+(_8b-1)*this.horizontalGap;
+w=100*w/_7d.colW;
+_8c=100*_8c/_7d.colW;
 }else{
-w=_79==1?100:(100/(_79-(_79-1)*_7a));
-_7d=_7b*(w-_7a*w);
-w=_7c==1?w:w*(_7c-(_7c-1)*_7a);
+w=_88==1?100:(100/(_88-(_88-1)*_89));
+_8c=_8a*(w-_89*w);
+w=_8b==1?w:w*(_8b-(_8b-1)*_89);
 }
-var ir=this._createRenderer(_75,"vertical",this.verticalRenderer,"dojoxCalendarVertical");
-_d.set(ir.container,{"top":_75.start+"px","left":_7d+"%","width":w+"%","height":(_75.end-_75.start+1)+"px"});
-var _7e=this.isItemBeingEdited(_75);
-var _7f=this.isItemSelected(_75);
-var _80=this.isItemHovered(_75);
-var _81=this.isItemFocused(_75);
-var _82=ir.renderer;
-_82.set("hovered",_80);
-_82.set("selected",_7f);
-_82.set("edited",_7e);
-_82.set("focused",this.showFocus?_81:false);
-_82.set("moveEnabled",this.isItemMoveEnabled(_75,"vertical"));
-_82.set("resizeEnabled",this.isItemResizeEnabled(_75,"vertical"));
-this.applyRendererZIndex(_75,ir,_80,_7f,_7e,_81);
-if(_82.updateRendering){
-_82.updateRendering(w,_75.end-_75.start+1);
+var ir=this._createRenderer(_84,"vertical",this.verticalRenderer,"dojoxCalendarVertical");
+_d.set(ir.container,{"top":_84.start+"px","left":_8c+"%","width":w+"%","height":(_84.end-_84.start+1)+"px"});
+var _8d=this.isItemBeingEdited(_84);
+var _8e=this.isItemSelected(_84);
+var _8f=this.isItemHovered(_84);
+var _90=this.isItemFocused(_84);
+var _91=ir.renderer;
+_91.set("hovered",_8f);
+_91.set("selected",_8e);
+_91.set("edited",_8d);
+_91.set("focused",this.showFocus?_90:false);
+_91.set("storeState",this.getItemStoreState(_84));
+_91.set("moveEnabled",this.isItemMoveEnabled(_84._item,"vertical"));
+_91.set("resizeEnabled",this.isItemResizeEnabled(_84._item,"vertical"));
+this.applyRendererZIndex(_84,ir,_8f,_8e,_8d,_90);
+if(_91.updateRendering){
+_91.updateRendering(w,_84.end-_84.start+1);
 }
-_f.place(ir.container,_73);
+_f.place(ir.container,_82);
 _d.set(ir.container,"display","block");
 }
 },_sortItemsFunction:function(a,b){
@@ -664,16 +704,16 @@ if(res==0){
 res=-1*this.dateModule.compare(a.endTime,b.endTime);
 }
 return this.isLeftToRight()?res:-res;
-},getTime:function(e,x,y,_83){
+},getTime:function(e,x,y,_92){
 if(e!=null){
-var _84=_e.position(this.itemContainer,true);
+var _93=_e.position(this.itemContainer,true);
 if(e.touches){
-_83=_83==undefined?0:_83;
-x=e.touches[_83].pageX-_84.x;
-y=e.touches[_83].pageY-_84.y;
+_92=_92==undefined?0:_92;
+x=e.touches[_92].pageX-_93.x;
+y=e.touches[_92].pageY-_93.y;
 }else{
-x=e.pageX-_84.x;
-y=e.pageY-_84.y;
+x=e.pageX-_93.x;
+y=e.pageY-_93.y;
 }
 }
 var r=_e.getContentBox(this.itemContainer);
@@ -696,14 +736,14 @@ y=r.h-1;
 }
 var col=Math.floor(x/(_e.getMarginBox(this.itemContainer).w/this.renderData.columnCount));
 var t=this.getTimeOfDay(y,this.renderData);
-var _85=null;
+var _94=null;
 if(col<this.renderData.dates.length){
-_85=this.newDate(this.renderData.dates[col]);
-_85=this.floorToDay(_85,true);
-_85.setHours(t.hours);
-_85.setMinutes(t.minutes);
+_94=this.newDate(this.renderData.dates[col]);
+_94=this.floorToDay(_94,true);
+_94.setHours(t.hours);
+_94.setMinutes(t.minutes);
 }
-return _85;
+return _94;
 },_onGridMouseUp:function(e){
 this.inherited(arguments);
 if(this._gridMouseDown){
@@ -723,24 +763,24 @@ _6.stop(e);
 return;
 }
 if(this._gridProps&&!this._isEditing){
-var _86={x:e.touches[0].screenX,y:e.touches[0].screenY};
+var _95={x:e.touches[0].screenX,y:e.touches[0].screenY};
 var p=this._edProps;
-if(!p||p&&(Math.abs(_86.x-p.start.x)>25||Math.abs(_86.y-p.start.y)>25)){
+if(!p||p&&(Math.abs(_95.x-p.start.x)>25||Math.abs(_95.y-p.start.y)>25)){
 this._gridProps.moved=true;
 var d=e.touches[0].screenY-this._gridProps.start;
-var _87=this._gridProps.scrollTop-d;
+var _96=this._gridProps.scrollTop-d;
 var max=this.itemContainer.offsetHeight-this.scrollContainer.offsetHeight;
-if(_87<0){
+if(_96<0){
 this._gridProps.start=e.touches[0].screenY;
 this._setScrollImpl(0);
 this._gridProps.scrollTop=0;
 }else{
-if(_87>max){
+if(_96>max){
 this._gridProps.start=e.touches[0].screenY;
 this._setScrollImpl(max);
 this._gridProps.scrollTop=max;
 }else{
-this._setScrollImpl(_87);
+this._setScrollImpl(_96);
 }
 }
 }
@@ -774,78 +814,78 @@ this._gridProps=null;
 this._dispatchCalendarEvt(e,"onColumnHeaderClick");
 },onColumnHeaderClick:function(e){
 },getTimeOfDay:function(pos,rd){
-var _88=rd.minHours*60;
-var _89=rd.maxHours*60;
-var _8a=_88+(pos*(_89-_88)/rd.sheetHeight);
-var d={hours:Math.floor(_8a/60),minutes:Math.floor(_8a%60)};
-return d;
-},_isItemInView:function(_8b){
+var _97=rd.minHours*60;
+var _98=rd.maxHours*60;
+var _99=_97+(pos*(_98-_97)/rd.sheetHeight);
+return {hours:Math.floor(_99/60),minutes:Math.floor(_99%60)};
+},_isItemInView:function(_9a){
 var res=this.inherited(arguments);
 if(res){
 var rd=this.renderData;
-var len=rd.dateModule.difference(_8b.startTime,_8b.endTime,"millisecond");
-var _8c=(24-rd.maxHours+rd.minHours)*3600000;
-if(len>_8c){
+var len=rd.dateModule.difference(_9a.startTime,_9a.endTime,"millisecond");
+var _9b=(24-rd.maxHours+rd.minHours)*3600000;
+if(len>_9b){
 return true;
 }
-var _8d=_8b.startTime.getHours()*60+_8b.startTime.getMinutes();
-var _8e=_8b.endTime.getHours()*60+_8b.endTime.getMinutes();
+var _9c=_9a.startTime.getHours()*60+_9a.startTime.getMinutes();
+var _9d=_9a.endTime.getHours()*60+_9a.endTime.getMinutes();
 var sV=rd.minHours*60;
 var eV=rd.maxHours*60;
-if(_8d>0&&_8d<sV||_8d>eV&&_8d<=1440){
+if(_9c>0&&_9c<sV||_9c>eV&&_9c<=1440){
 return false;
 }
-if(_8e>0&&_8e<sV||_8e>eV&&_8e<=1440){
+if(_9d>0&&_9d<sV||_9d>eV&&_9d<=1440){
 return false;
 }
 }
 return res;
-},_ensureItemInView:function(_8f){
-var _90;
-var _91=_8f.startTime;
-var _92=_8f.endTime;
+},_ensureItemInView:function(_9e){
+var _9f;
+var _a0=_9e.startTime;
+var _a1=_9e.endTime;
 var rd=this.renderData;
 var cal=rd.dateModule;
-var len=Math.abs(cal.difference(_8f.startTime,_8f.endTime,"millisecond"));
-var _93=(24-rd.maxHours+rd.minHours)*3600000;
-if(len>_93){
+var len=Math.abs(cal.difference(_9e.startTime,_9e.endTime,"millisecond"));
+var _a2=(24-rd.maxHours+rd.minHours)*3600000;
+if(len>_a2){
 return false;
 }
-var _94=_91.getHours()*60+_91.getMinutes();
-var _95=_92.getHours()*60+_92.getMinutes();
+var _a3=_a0.getHours()*60+_a0.getMinutes();
+var _a4=_a1.getHours()*60+_a1.getMinutes();
 var sV=rd.minHours*60;
 var eV=rd.maxHours*60;
-if(_94>0&&_94<sV){
-this.floorToDay(_8f.startTime,true,rd);
-_8f.startTime.setHours(rd.minHours);
-_8f.endTime=cal.add(_8f.startTime,"millisecond",len);
-_90=true;
+if(_a3>0&&_a3<sV){
+this.floorToDay(_9e.startTime,true,rd);
+_9e.startTime.setHours(rd.minHours);
+_9e.endTime=cal.add(_9e.startTime,"millisecond",len);
+_9f=true;
 }else{
-if(_94>eV&&_94<=1440){
-this.floorToDay(_8f.startTime,true,rd);
-_8f.startTime=cal.add(_8f.startTime,"day",1);
-_8f.startTime.setHours(rd.minHours);
-_8f.endTime=cal.add(_8f.startTime,"millisecond",len);
-_90=true;
+if(_a3>eV&&_a3<=1440){
+this.floorToDay(_9e.startTime,true,rd);
+_9e.startTime=cal.add(_9e.startTime,"day",1);
+_9e.startTime.setHours(rd.minHours);
+_9e.endTime=cal.add(_9e.startTime,"millisecond",len);
+_9f=true;
 }
 }
-if(_95>0&&_95<sV){
-this.floorToDay(_8f.endTime,true,rd);
-_8f.endTime=cal.add(_8f.endTime,"day",-1);
-_8f.endTime.setHours(rd.maxHours);
-_8f.startTime=cal.add(_8f.endTime,"millisecond",-len);
-_90=true;
+if(_a4>0&&_a4<sV){
+this.floorToDay(_9e.endTime,true,rd);
+_9e.endTime=cal.add(_9e.endTime,"day",-1);
+_9e.endTime.setHours(rd.maxHours);
+_9e.startTime=cal.add(_9e.endTime,"millisecond",-len);
+_9f=true;
 }else{
-if(_95>eV&&_95<=1440){
-this.floorToDay(_8f.endTime,true,rd);
-_8f.endTime.setHours(rd.maxHours);
-_8f.startTime=cal.add(_8f.endTime,"millisecond",-len);
-_90=true;
+if(_a4>eV&&_a4<=1440){
+this.floorToDay(_9e.endTime,true,rd);
+_9e.endTime.setHours(rd.maxHours);
+_9e.startTime=cal.add(_9e.endTime,"millisecond",-len);
+_9f=true;
 }
 }
-_90=_90||this.inherited(arguments);
-return _90;
+_9f=_9f||this.inherited(arguments);
+return _9f;
 },_onScrollTimer_tick:function(){
 this._scrollToPosition(this._getScrollPosition()+this._scrollProps.scrollStep);
 },snapUnit:"minute",snapSteps:15,minDurationUnit:"minute",minDurationSteps:15,liveLayout:false,stayInView:true,allowStartEndSwap:true,allowResizeLessThan24H:true});
 });
+require({cache:{"url:dojox/calendar/templates/SimpleColumnView.html":"<div data-dojo-attach-events=\"keydown:_onKeyDown\">\t\n\t<div data-dojo-attach-point=\"header\" class=\"dojoxCalendarHeader\">\n\t\t<div class=\"dojoxCalendarYearColumnHeader\" data-dojo-attach-point=\"yearColumnHeader\">\n\t\t\t<table><tr><td><span data-dojo-attach-point=\"yearColumnHeaderContent\"></span></td></tr></table>\t\t\n\t\t</div>\n\t\t<div data-dojo-attach-point=\"columnHeader\" class=\"dojoxCalendarColumnHeader\">\n\t\t\t<table data-dojo-attach-point=\"columnHeaderTable\" class=\"dojoxCalendarColumnHeaderTable\" cellpadding=\"0\" cellspacing=\"0\"></table>\n\t\t</div>\n\t</div>\t\n\t<div data-dojo-attach-point=\"vScrollBar\" class=\"dojoxCalendarVScrollBar\">\n\t\t<div data-dojo-attach-point=\"vScrollBarContent\" style=\"visibility:hidden;position:relative; width:1px; height:1px;\" ></div>\n\t</div>\t\n\t<div data-dojo-attach-point=\"scrollContainer\" class=\"dojoxCalendarScrollContainer\">\n\t\t<div data-dojo-attach-point=\"sheetContainer\" style=\"position:relative;left:0;right:0;margin:0;padding:0\">\n\t\t\t<div data-dojo-attach-point=\"rowHeader\" class=\"dojoxCalendarRowHeader\">\n\t\t\t\t<table data-dojo-attach-point=\"rowHeaderTable\" class=\"dojoxCalendarRowHeaderTable\" cellpadding=\"0\" cellspacing=\"0\"></table>\n\t\t\t</div>\n\t\t\t<div data-dojo-attach-point=\"grid\" class=\"dojoxCalendarGrid\">\n\t\t\t\t<table data-dojo-attach-point=\"gridTable\" class=\"dojoxCalendarGridTable\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%\"></table>\n\t\t\t</div>\n\t\t\t<div data-dojo-attach-point=\"itemContainer\" class=\"dojoxCalendarContainer\" data-dojo-attach-event=\"mousedown:_onGridMouseDown,mouseup:_onGridMouseUp,ondblclick:_onGridDoubleClick,touchstart:_onGridTouchStart,touchmove:_onGridTouchMove,touchend:_onGridTouchEnd\">\n\t\t\t\t<table data-dojo-attach-point=\"itemContainerTable\" class=\"dojoxCalendarContainerTable\" cellpadding=\"0\" cellspacing=\"0\" style=\"width:100%\"></table>\n\t\t\t</div>\n\t\t</div> \n\t</div>\n</div>\n\n"}});

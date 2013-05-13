@@ -48,20 +48,25 @@
 	.border-box;
 }
 
-.soria .dojoxCalendarColumnView .dojoxCalendarGridTable .hour	{
-	border-top: @hour-stroke;
-}
-
 .soria .dojoxCalendarColumnView .dojoxCalendarGridTable tr:first-child td	{
 	border-top: 1px solid transparent;
 }
 
-.soria .dojoxCalendarColumnView .dojoxCalendarGridTable .halfhour	{
-	border-top: @half-hour-stroke;
+.soria .dojoxCalendarColumnView td.hour {
+	border-top: @hour-stroke;
 }
 
-.soria .dojoxCalendarColumnView .dojoxCalendarGridTable .quarterhour	{
+.soria .dojoxCalendarColumnView td.halfhour{
+	border-top: @half-hour-stroke;	
+}
+
+.soria .dojoxCalendarColumnView  td.quarterhour{
 	border-top: @quarter-hour-stroke;
+}
+
+.soria .dojoxCalendarColumnView span.hour {
+	color: @label-color;
+	background-color: @row-color;
 }
 
 /* 
@@ -217,6 +222,17 @@
 	.select-none;
 }
 
+.soria .dojoxCalendarColumnView .dojoxCalendarRowHeaderLabelContainer{
+	width: 100%;
+	height: 100%;
+	z-index: 10;
+}
+
+.soria .dojoxCalendarColumnView .dojoxCalendarRowHeaderLabel{	
+	right: 4px;		
+	position: absolute;	
+}
+
 .soria .dojoxCalendarColumnView .dojoxCalendarRowHeaderTable {
 	border-collapse: collapse;
 	table-layout: fixed;
@@ -235,9 +251,6 @@
  * The ColumnView.styleRowHeaderCell method that can be subclassed to add/remove css classes per hour.
  */
 .soria .dojoxCalendarColumnView .dojoxCalendarRowHeaderTable td {	
-	vertical-align: top;			
-	text-align: right;	
-	border-top: @outer-border; 	
 	background-color: @row-color;
 	color: @label-color;
 	.border-box;

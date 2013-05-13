@@ -1,133 +1,238 @@
 //>>built
-define("dojox/app/controllers/Transition",["dojo/_base/lang","dojo/_base/declare","dojo/has","dojo/on","dojo/Deferred","dojo/when","dojox/css3/transit","../Controller"],function(_1,_2,_3,on,_4,_5,_6,_7){
-return _2("dojox.app.controllers.Transition",_7,{proceeding:false,waitingQueue:[],constructor:function(_8,_9){
-this.events={"transition":this.transition,"startTransition":this.onStartTransition};
-this.inherited(arguments);
-},transition:function(_a){
-this.proceedTransition(_a);
-},onStartTransition:function(_b){
-if(_b.preventDefault){
-_b.preventDefault();
+define("dojox/app/controllers/Transition",["require","dojo/_base/lang","dojo/_base/declare","dojo/has","dojo/on","dojo/Deferred","dojo/when","dojo/dom-style","../Controller","../utils/constraints"],function(_1,_2,_3,_4,on,_5,_6,_7,_8,_9){
+var _a;
+return _3("dojox.app.controllers.Transition",_8,{proceeding:false,waitingQueue:[],constructor:function(_b,_c){
+this.events={"app-transition":this.transition,"app-domNode":this.onDomNodeChange};
+_1([this.app.transit||"dojox/css3/transit"],function(t){
+_a=t;
+});
+if(this.app.domNode){
+this.onDomNodeChange({oldNode:null,newNode:this.app.domNode});
 }
-_b.cancelBubble=true;
-if(_b.stopPropagation){
-_b.stopPropagation();
+},transition:function(_d){
+var _e=_d.viewId||"";
+this.proceedingSaved=this.proceeding;
+var _f=_e.split("+");
+var _10,_11;
+if(_f.length>0){
+while(_f.length>1){
+_10=_f.shift();
+_11=_2.clone(_d);
+_11.viewId=_10;
+this.proceeding=true;
+this.proceedTransition(_11);
 }
-var _c=_b.detail.target;
-var _d=/#(.+)/;
-if(!_c&&_d.test(_b.detail.href)){
-_c=_b.detail.href.match(_d)[1];
+_10=_f.shift();
+var _12=_10.split("-");
+if(_12.length>0){
+_10=_12.shift();
+while(_12.length>0){
+var _13=_12.shift();
+_11=_2.clone(_d);
+_11.viewId=_13;
+this._doTransition(_11.viewId,_11.opts,_11.opts.params,_d.opts.data,this.app,true,_11._doResize);
 }
-this.transition({"viewId":_c,opts:_1.mixin({},_b.detail)});
-},proceedTransition:function(_e){
+}
+if(_10.length>0){
+this.proceeding=this.proceedingSaved;
+_d.viewId=_10;
+_d._doResize=true;
+this.proceedTransition(_d);
+}
+}else{
+_d._doResize=true;
+this.proceedTransition(_d);
+}
+},onDomNodeChange:function(evt){
+if(evt.oldNode!=null){
+this.unbind(evt.oldNode,"startTransition");
+}
+this.bind(evt.newNode,"startTransition",_2.hitch(this,this.onStartTransition));
+},onStartTransition:function(evt){
+if(evt.preventDefault){
+evt.preventDefault();
+}
+evt.cancelBubble=true;
+if(evt.stopPropagation){
+evt.stopPropagation();
+}
+var _14=evt.detail.target;
+var _15=/#(.+)/;
+if(!_14&&_15.test(evt.detail.href)){
+_14=evt.detail.href.match(_15)[1];
+}
+this.transition({"viewId":_14,opts:_2.mixin({},evt.detail),data:evt.detail.data});
+},proceedTransition:function(_16){
 if(this.proceeding){
-this.app.log("in app/controllers/Transition proceedTransition push event",_e);
-this.waitingQueue.push(_e);
+this.app.log("in app/controllers/Transition proceedTransition push event",_16);
+this.waitingQueue.push(_16);
+this.processingQueue=false;
 return;
 }
-this.proceeding=true;
-this.app.log("in app/controllers/Transition proceedTransition calling trigger load",_e);
-var _f=_e.params||{};
-if(_e.opts&&_e.opts.params){
-_f=_e.params||_e.opts.params;
+if(this.waitingQueue.length>0&&!this.processingQueue){
+this.processingQueue=true;
+this.waitingQueue.push(_16);
+_16=this.waitingQueue.shift();
 }
-this.app.trigger("load",{"viewId":_e.viewId,"params":_f,"callback":_1.hitch(this,function(){
-var _10=this._doTransition(_e.viewId,_e.opts,_f,this.app);
-_5(_10,_1.hitch(this,function(){
+this.proceeding=true;
+this.app.log("in app/controllers/Transition proceedTransition calling trigger load",_16);
+if(!_16.opts){
+_16.opts={};
+}
+var _17=_16.params||_16.opts.params;
+this.app.emit("app-load",{"viewId":_16.viewId,"params":_17,"callback":_2.hitch(this,function(){
+var _18=this._doTransition(_16.viewId,_16.opts,_17,_16.opts.data,this.app,false,_16._doResize);
+_6(_18,_2.hitch(this,function(){
 this.proceeding=false;
-var _11=this.waitingQueue.shift();
-if(_11){
-this.proceedTransition(_11);
+var _19=this.waitingQueue.shift();
+if(_19){
+this.proceedTransition(_19);
 }
 }));
 })});
-},_getDefaultTransition:function(_12){
-var _13=_12;
-var _14=_13.defaultTransition;
-while(!_14&&_13.parent){
-_13=_13.parent;
-_14=_13.defaultTransition;
+},_getTransition:function(_1a,_1b,_1c){
+var _1d=_1a;
+var _1e=null;
+if(_1d.views[_1b]){
+_1e=_1d.views[_1b].transition;
 }
-return _14;
-},_doTransition:function(_15,_16,_17,_18){
-this.app.log("in app/controllers/Transition._doTransition transitionTo=[",_15,"], parent.name=[",_18.name,"], opts=",_16);
-if(!_18){
+if(!_1e){
+_1e=_1d.transition;
+}
+var _1f=_1d.defaultTransition;
+while(!_1e&&_1d.parent){
+_1d=_1d.parent;
+_1e=_1d.transition;
+if(!_1f){
+_1f=_1d.defaultTransition;
+}
+}
+return _1e||_1c.transition||_1f||"none";
+},_getParamsForView:function(_20,_21){
+var _22={};
+for(var _23 in _21){
+var _24=_21[_23];
+if(_2.isObject(_24)){
+if(_23==_20){
+_22=_2.mixin(_22,_24);
+}
+}else{
+if(_23&&_24!=null){
+_22[_23]=_21[_23];
+}
+}
+}
+return _22;
+},_doTransition:function(_25,_26,_27,_28,_29,_2a,_2b,_2c){
+if(!_29){
 throw Error("view parent not found in transition.");
 }
-var _19,_1a,_1b,_1c,_17,_1d=_18.selectedChild;
-if(_15){
-_19=_15.split(",");
+this.app.log("in app/controllers/Transition._doTransition transitionTo=[",_25,"], removeView = [",_2a,"] parent.name=[",_29.name,"], opts=",_26);
+var _2d,_2e,_2f,_30;
+if(_25){
+_2d=_25.split(",");
 }else{
-_19=_18.defaultView.split(",");
+_2d=_29.defaultView.split(",");
 }
-_1a=_19.shift();
-_1b=_19.join(",");
-_1c=_18.children[_18.id+"_"+_1a];
-if(!_1c){
-throw Error("child view must be loaded before transition.");
-}
-_1c.params=_17||_1c.params;
-if(!_1b&&_1c.defaultView){
-_1b=_1c.defaultView;
-}
-if(!_1d){
-this.app.log("> in Transition._doTransition calling next.beforeActivate next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"],  !current path,");
-_1c.beforeActivate();
-this.app.log("> in Transition._doTransition calling next.afterActivate next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"],  !current path");
-_1c.afterActivate();
-this.app.log("  > in Transition._doTransition calling app.triggger select view next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], !current path");
-this.app.trigger("select",{"parent":_18,"view":_1c});
+_2e=_2d.shift();
+_2f=_2d.join(",");
+_30=_29.children[_29.id+"_"+_2e];
+if(!_30){
+if(_2a){
+this.app.log("> in Transition._doTransition called with removeView true, but that view is not available to remove");
 return;
 }
-if(_1c!==_1d){
-var _1e=_1d.selectedChild;
-while(_1e){
-this.app.log("< in Transition._doTransition calling subChild.beforeDeactivate subChild name=[",_1e.name,"], parent.name=[",_1e.parent.name,"], next!==current path");
-_1e.beforeDeactivate();
-_1e=_1e.selectedChild;
+throw Error("child view must be loaded before transition.");
 }
-this.app.log("< in Transition._doTransition calling current.beforeDeactivate current name=[",_1d.name,"], parent.name=[",_1d.parent.name,"], next!==current path");
-_1d.beforeDeactivate();
-this.app.log("> in Transition._doTransition calling next.beforeActivate next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], next!==current path");
-_1c.beforeActivate();
-this.app.log("> in Transition._doTransition calling app.triggger select view next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], next!==current path");
-this.app.trigger("select",{"parent":_18,"view":_1c});
-var _1f=true;
-if(!_3("ie")){
-var _20=_1.mixin({},_16);
-_20=_1.mixin({},_20,{reverse:(_20.reverse||_20.transitionDir===-1)?true:false,transition:_20.transition||this._getDefaultTransition(_18)||"none"});
-_1f=_6(_1d.domNode,_1c.domNode,_20);
+var _31=_9.getSelectedChild(_29,_30.constraint);
+_30.params=this._getParamsForView(_30.name,_27);
+if(!_2f&&_30.defaultView){
+_2f=_30.defaultView;
 }
-_5(_1f,_1.hitch(this,function(){
-var _21=_1d.selectedChild;
-while(_21){
-this.app.log("  < in Transition._doTransition calling subChild.afterDeactivate subChild name=[",_21.name,"], parent.name=[",_21.parent.name,"], next!==current path");
-_21.afterDeactivate();
-_21=_21.selectedChild;
+if(_2a){
+if(_30!==_31){
+this.app.log("> in Transition._doTransition called with removeView true, but that view is not available to remove");
+return;
 }
-this.app.log("  < in Transition._doTransition calling current.afterDeactivate current name=[",_1d.name,"], parent.name=[",_1d.parent.name,"], next!==current path");
-_1d.afterDeactivate();
-this.app.log("  > in Transition._doTransition calling next.afterActivate next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], next!==current path");
-_1c.afterActivate();
-if(_1b){
-this._doTransition(_1b,_16,_17,_1c);
+_30=null;
+}
+if(_30!==_31){
+var _32=_9.getAllSelectedChildren(_31);
+for(var i=0;i<_32.length;i++){
+var _33=_32[i];
+if(_33&&_33.beforeDeactivate){
+this.app.log("< in Transition._doTransition calling subChild.beforeDeactivate subChild name=[",_33.name,"], parent.name=[",_33.parent.name,"], next!==current path");
+_33.beforeDeactivate();
+}
+}
+if(_31){
+this.app.log("< in Transition._doTransition calling current.beforeDeactivate current name=[",_31.name,"], parent.name=[",_31.parent.name,"], next!==current path");
+_31.beforeDeactivate(_30,_28);
+}
+if(_30){
+this.app.log("> in Transition._doTransition calling next.beforeActivate next name=[",_30.name,"], parent.name=[",_30.parent.name,"], next!==current path");
+_30.beforeActivate(_31,_28);
+}
+this.app.log("> in Transition._doTransition calling app.emit layoutView view next");
+if(!_2a){
+this.app.emit("app-layoutView",{"parent":_29,"view":_30});
+}
+if(_2b&&!_2f){
+this.app.emit("app-resize");
+}
+var _34=true;
+if(_a&&(!_2c||_31!=null)){
+var _35=_2.mixin({},_26);
+_35=_2.mixin({},_35,{reverse:(_35.reverse||_35.transitionDir===-1)?true:false,transition:this._getTransition(_29,_25,_35)});
+if(_30){
+this.app.log("    > in Transition._doTransition calling transit for current ="+_30.name);
+}
+_34=_a(_31&&_31.domNode,_30&&_30.domNode,_35);
+}
+_6(_34,_2.hitch(this,function(){
+if(_30){
+this.app.log("    < in Transition._doTransition back from transit for next ="+_30.name);
+}
+if(_2a){
+this.app.emit("app-layoutView",{"parent":_29,"view":_31,"removeView":true});
+}
+var _36=_9.getAllSelectedChildren(_31);
+for(var i=0;i<_36.length;i++){
+var _37=_36[i];
+if(_37&&_37.beforeDeactivate){
+this.app.log("  < in Transition._doTransition calling subChild.afterDeactivate subChild name=[",_37.name,"], parent.name=[",_37.parent.name,"], next!==current path");
+_37.afterDeactivate();
+}
+}
+if(_31){
+this.app.log("  < in Transition._doTransition calling current.afterDeactivate current name=[",_31.name,"], parent.name=[",_31.parent.name,"], next!==current path");
+_31.afterDeactivate(_30,_28);
+}
+if(_30){
+this.app.log("  > in Transition._doTransition calling next.afterActivate next name=[",_30.name,"], parent.name=[",_30.parent.name,"], next!==current path");
+_30.afterActivate(_31,_28);
+}
+if(_2f){
+this._doTransition(_2f,_26,_27,_28,_30||_29,_2a,_2b,true);
 }
 }));
-return _1f;
-}else{
-this.app.log("< in Transition._doTransition calling next.beforeDeactivate next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], next==current path");
-_1c.beforeDeactivate();
-this.app.log("  < in Transition._doTransition calling next.afterDeactivate next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], next==current path");
-_1c.afterDeactivate();
-this.app.log("> in Transition._doTransition calling next.beforeActivate next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], next==current path");
-_1c.beforeActivate();
-this.app.log("  > in Transition._doTransition calling next.afterActivate next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], next==current path");
-_1c.afterActivate();
-this.app.log("> in Transition._doTransition calling app.triggger select view next name=[",_1c.name,"], parent.name=[",_1c.parent.name,"], next==current path");
-this.app.trigger("select",{"parent":_18,"view":_1c});
+return _34;
 }
-if(_1b){
-return this._doTransition(_1b,_16,_17,_1c);
+this.app.log("< in Transition._doTransition calling next.beforeDeactivate refresh current view next name=[",_30.name,"], parent.name=[",_30.parent.name,"], next==current path");
+_30.beforeDeactivate(_31,_28);
+this.app.log("  < in Transition._doTransition calling next.afterDeactivate refresh current view next name=[",_30.name,"], parent.name=[",_30.parent.name,"], next==current path");
+_30.afterDeactivate(_31,_28);
+this.app.log("> in Transition._doTransition calling next.beforeActivate next name=[",_30.name,"], parent.name=[",_30.parent.name,"], next==current path");
+_30.beforeActivate(_31,_28);
+this.app.log("> in Transition._doTransition calling app.triggger layoutView view next name=[",_30.name,"], removeView = [",_2a,"], parent.name=[",_30.parent.name,"], next==current path");
+this.app.emit("app-layoutView",{"parent":_29,"view":_30,"removeView":_2a});
+if(_2b&&!_2f){
+this.app.emit("app-resize");
+}
+this.app.log("  > in Transition._doTransition calling next.afterActivate next name=[",_30.name,"], parent.name=[",_30.parent.name,"], next==current path");
+_30.afterActivate(_31,_28);
+if(_2f){
+return this._doTransition(_2f,_26,_27,_28,_30,_2a);
 }
 }});
 });

@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dojox/form/resources/_CheckedMultiSelectMenuItem.html":"<tr class=\"dijitReset dijitMenuItem\" dojoAttachPoint=\"focusNode\" role=\"menuitemcheckbox\" tabIndex=\"-1\"\n\tdojoAttachEvent=\"ondijitclick:_onClick\"\n\t><td class=\"dijitReset dijitMenuItemIconCell\" role=\"presentation\"\n\t\t><div src=\"${_blankGif}\" alt=\"\" class=\"dijitMenuItemIcon ${_iconClass}\" dojoAttachPoint=\"iconNode\"\n\t\t\t><input class=\"dojoxCheckedMultiSelectCheckBoxInput\" dojoAttachPoint=\"inputNode\" type=\"${_type.type}\"\n\t\t/></div></td\n\t><td class=\"dijitReset dijitMenuItemLabel\" colspan=\"2\" dojoAttachPoint=\"containerNode,labelNode\"></td\n\t><td class=\"dijitReset dijitMenuItemAccelKey\" style=\"display: none\" dojoAttachPoint=\"accelKeyNode\"></td\n\t><td class=\"dijitReset dijitMenuArrowCell\" role=\"presentation\">&nbsp;</td\n></tr>","url:dojox/form/resources/_CheckedMultiSelectItem.html":"<div class=\"dijitReset ${baseClass}\"\n\t><input class=\"${baseClass}Box\" data-dojo-type=\"dijit.form.CheckBox\" data-dojo-attach-point=\"checkBox\" \n\t\tdata-dojo-attach-event=\"_onClick:_changeBox\" type=\"${_type.type}\" baseClass=\"${_type.baseClass}\"\n\t/><div class=\"dijitInline ${baseClass}Label\" data-dojo-attach-point=\"labelNode\" data-dojo-attach-event=\"onclick:_onClick\"></div\n></div>\n","url:dojox/form/resources/CheckedMultiSelect.html":"<div class=\"dijit dijitReset dijitInline dijitLeft\" id=\"widget_${id}\"\n\t><div data-dojo-attach-point=\"comboButtonNode\"\n\t></div\n\t><div data-dojo-attach-point=\"selectNode\" class=\"dijit dijitReset dijitInline ${baseClass}Wrapper\" data-dojo-attach-event=\"onmousedown:_onMouseDown,onclick:focus\"\n\t\t><select class=\"${baseClass}Select dojoxCheckedMultiSelectHidden\" multiple=\"true\" data-dojo-attach-point=\"containerNode,focusNode\"></select\n\t\t><div data-dojo-attach-point=\"wrapperDiv\"></div\n\t></div\n></div>"}});
 define("dojox/form/CheckedMultiSelect",["dojo/_base/declare","dojo/_base/lang","dojo/_base/array","dojo/_base/event","dojo/dom-geometry","dojo/dom-class","dojo/dom-construct","dojo/i18n","dijit/_WidgetBase","dijit/_TemplatedMixin","dijit/_WidgetsInTemplateMixin","dijit/registry","dijit/Menu","dijit/MenuItem","dijit/Tooltip","dijit/form/_FormSelectWidget","dijit/form/ComboButton","dojo/text!dojox/form/resources/_CheckedMultiSelectMenuItem.html","dojo/text!dojox/form/resources/_CheckedMultiSelectItem.html","dojo/text!dojox/form/resources/CheckedMultiSelect.html","dojo/i18n!dojox/form/nls/CheckedMultiSelect","dijit/form/CheckBox"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d,_e,_f,_10,_11,_12,_13,_14,_15){
 var _16=_1("dojox.form._CheckedMultiSelectItem",[_9,_a,_b],{templateString:_13,baseClass:"dojoxMultiSelectItem",option:null,parent:null,disabled:false,readOnly:false,postMixInProperties:function(){
 this._type=this.parent.multiple?{type:"checkbox",baseClass:"dijitCheckBox"}:{type:"radio",baseClass:"dijitRadio"};
@@ -112,18 +111,7 @@ this.onChange(this.option.selected);
 }
 this.inherited(arguments);
 }});
-var _1e=_1("dojox.form.CheckedMultiSelect",_10,{templateString:_14,baseClass:"dojoxCheckedMultiSelect",required:false,invalidMessage:"$_unset_$",_message:"",dropDown:false,labelText:"",tooltipPosition:[],setStore:function(_1f,_20,_21){
-this.inherited(arguments);
-var _22=function(_23){
-var _24=_3.map(_23,function(_25){
-return _25.value[0];
-});
-if(_24.length){
-this.set("value",_24);
-}
-};
-this.store.fetch({query:{selected:true},onComplete:_22,scope:this});
-},postMixInProperties:function(){
+var _1e=_1("dojox.form.CheckedMultiSelect",_10,{templateString:_14,baseClass:"dojoxCheckedMultiSelect",required:false,invalidMessage:"$_unset_$",_message:"",dropDown:false,labelText:"",tooltipPosition:[],postMixInProperties:function(){
 this.inherited(arguments);
 this._nlsResources=_8.getLocalization("dojox.form","CheckedMultiSelect",this.lang);
 if(this.invalidMessage=="$_unset_$"){
@@ -153,36 +141,36 @@ return true;
 return _3.some(this.getOptions(),function(opt){
 return opt.selected&&opt.value!=null&&opt.value.toString().length!=0;
 });
-},validate:function(_26){
+},validate:function(_1f){
 _f.hide(this.domNode);
-var _27=this.isValid(_26);
-if(!_27){
+var _20=this.isValid(_1f);
+if(!_20){
 this.displayMessage(this.invalidMessage);
 }
-return _27;
-},isValid:function(_28){
+return _20;
+},isValid:function(_21){
 return this.validator();
-},getErrorMessage:function(_29){
+},getErrorMessage:function(_22){
 return this.invalidMessage;
-},displayMessage:function(_2a){
+},displayMessage:function(_23){
 _f.hide(this.domNode);
-if(_2a){
-_f.show(_2a,this.domNode,this.tooltipPosition);
+if(_23){
+_f.show(_23,this.domNode,this.tooltipPosition);
 }
-},onAfterAddOptionItem:function(_2b,_2c){
-},_addOptionItem:function(_2d){
-var _2e;
+},onAfterAddOptionItem:function(_24,_25){
+},_addOptionItem:function(_26){
+var _27;
 if(this.dropDown){
-_2e=new _1b({option:_2d,parent:this.dropDownMenu});
-this.dropDownMenu.addChild(_2e);
+_27=new _1b({option:_26,parent:this.dropDownMenu});
+this.dropDownMenu.addChild(_27);
 }else{
-_2e=new _16({option:_2d,parent:this});
-this.wrapperDiv.appendChild(_2e.domNode);
+_27=new _16({option:_26,parent:this});
+this.wrapperDiv.appendChild(_27.domNode);
 }
-this.onAfterAddOptionItem(_2e,_2d);
+this.onAfterAddOptionItem(_27,_26);
 },_refreshState:function(){
 this.validate(this.focused);
-},onChange:function(_2f){
+},onChange:function(_28){
 this._refreshState();
 },reset:function(){
 this.inherited(arguments);
@@ -190,24 +178,24 @@ _f.hide(this.domNode);
 },_updateSelection:function(){
 this.inherited(arguments);
 this._handleOnChange(this.value);
-_3.forEach(this._getChildren(),function(_30){
-_30._updateBox();
+_3.forEach(this._getChildren(),function(_29){
+_29._updateBox();
 });
 _7.empty(this.containerNode);
-var _31=this;
-_3.forEach(this.value,function(_32){
-var opt=_7.create("option",{"value":_32,"label":_32,"selected":"selected"});
-_7.place(opt,_31.containerNode);
+var _2a=this;
+_3.forEach(this.value,function(_2b){
+var opt=_7.create("option",{"value":_2b,"label":_2b,"selected":"selected"});
+_7.place(opt,_2a.containerNode);
 });
 if(this.dropDown&&this.dropDownButton){
-var i=0,_33="";
-_3.forEach(this.options,function(_34){
-if(_34.selected){
+var i=0,_2c="";
+_3.forEach(this.options,function(_2d){
+if(_2d.selected){
 i++;
-_33=_34.label;
+_2c=_2d.label;
 }
 });
-this.dropDownButton.set("label",this.multiple?_2.replace(this._nlsResources.multiSelectLabelText,{num:i}):_33);
+this.dropDownButton.set("label",this.multiple?_2.replace(this._nlsResources.multiSelectLabelText,{num:i}):_2c);
 }
 },_getChildren:function(){
 if(this.dropDown){
@@ -217,40 +205,41 @@ return _3.map(this.wrapperDiv.childNodes,function(n){
 return _c.byNode(n);
 });
 }
-},invertSelection:function(_35){
+},invertSelection:function(_2e){
 if(this.multiple){
 _3.forEach(this.options,function(i){
 i.selected=!i.selected;
 });
 this._updateSelection();
 }
-},_setDisabledAttr:function(_36){
+},_setDisabledAttr:function(_2f){
 this.inherited(arguments);
 if(this.dropDown){
-this.dropDownButton.set("disabled",_36);
+this.dropDownButton.set("disabled",_2f);
 }
-_3.forEach(this._getChildren(),function(_37){
-if(_37&&_37.set){
-_37.set("disabled",_36);
+_3.forEach(this._getChildren(),function(_30){
+if(_30&&_30.set){
+_30.set("disabled",_2f);
 }
 });
-},_setReadOnlyAttr:function(_38){
+},_setReadOnlyAttr:function(_31){
 this.inherited(arguments);
 if("readOnly" in this.attributeMap){
-this._attrToDom("readOnly",_38);
+this[this.attributeMap.readOnly].setAttribute("readonly",_31);
 }
-this.readOnly=_38;
-_3.forEach(this._getChildren(),function(_39){
-if(_39&&_39.set){
-_39.set("readOnly",_38);
+this.readOnly=_31;
+_3.forEach(this._getChildren(),function(_32){
+if(_32&&_32.set){
+_32.set("readOnly",_31);
 }
 });
 },uninitialize:function(){
 _f.hide(this.domNode);
-_3.forEach(this._getChildren(),function(_3a){
-_3a.destroyRecursive();
+_3.forEach(this._getChildren(),function(_33){
+_33.destroyRecursive();
 });
 this.inherited(arguments);
 }});
 return _1e;
 });
+require({cache:{"url:dojox/form/resources/_CheckedMultiSelectItem.html":"<div class=\"dijitReset ${baseClass}\"\n\t><input class=\"${baseClass}Box\" data-dojo-type=\"dijit.form.CheckBox\" data-dojo-attach-point=\"checkBox\" \n\t\tdata-dojo-attach-event=\"_onClick:_changeBox\" type=\"${_type.type}\" baseClass=\"${_type.baseClass}\"\n\t/><div class=\"dijitInline ${baseClass}Label\" data-dojo-attach-point=\"labelNode\" data-dojo-attach-event=\"onclick:_onClick\"></div\n></div>\n","url:dojox/form/resources/_CheckedMultiSelectMenuItem.html":"<tr class=\"dijitReset dijitMenuItem\" dojoAttachPoint=\"focusNode\" role=\"menuitemcheckbox\" tabIndex=\"-1\"\n\tdojoAttachEvent=\"ondijitclick:_onClick\"\n\t><td class=\"dijitReset dijitMenuItemIconCell\" role=\"presentation\"\n\t\t><div src=\"${_blankGif}\" alt=\"\" class=\"dijitMenuItemIcon ${_iconClass}\" dojoAttachPoint=\"iconNode\"\n\t\t\t><input class=\"dojoxCheckedMultiSelectCheckBoxInput\" dojoAttachPoint=\"inputNode\" type=\"${_type.type}\"\n\t\t/></div></td\n\t><td class=\"dijitReset dijitMenuItemLabel\" colspan=\"2\" dojoAttachPoint=\"containerNode,labelNode\"></td\n\t><td class=\"dijitReset dijitMenuItemAccelKey\" style=\"display: none\" dojoAttachPoint=\"accelKeyNode\"></td\n\t><td class=\"dijitReset dijitMenuArrowCell\" role=\"presentation\">&nbsp;</td\n></tr>","url:dojox/form/resources/CheckedMultiSelect.html":"<div class=\"dijit dijitReset dijitInline dijitLeft\" id=\"widget_${id}\"\n\t><div data-dojo-attach-point=\"comboButtonNode\"\n\t></div\n\t><div data-dojo-attach-point=\"selectNode\" class=\"dijit dijitReset dijitInline ${baseClass}Wrapper\" data-dojo-attach-event=\"onmousedown:_onMouseDown,onclick:focus\"\n\t\t><select class=\"${baseClass}Select dojoxCheckedMultiSelectHidden\" multiple=\"true\" data-dojo-attach-point=\"containerNode,focusNode\"></select\n\t\t><div data-dojo-attach-point=\"wrapperDiv\"></div\n\t></div\n></div>"}});

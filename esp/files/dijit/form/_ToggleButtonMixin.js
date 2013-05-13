@@ -9,14 +9,19 @@ return _5;
 },_setCheckedAttr:function(_6,_7){
 this._set("checked",_6);
 var _8=this.focusNode||this.domNode;
+if(this._created){
+if(_2.get(_8,"checked")!=!!_6){
 _2.set(_8,"checked",!!_6);
-if(_6){
-_8.setAttribute("checked","");
-}else{
-_8.removeAttribute("checked");
+}
 }
 _8.setAttribute(this._aria_attr,String(_6));
 this._handleOnChange(_6,_7);
+},postCreate:function(){
+this.inherited(arguments);
+var _9=this.focusNode||this.domNode;
+if(this.checked){
+_9.setAttribute("checked","checked");
+}
 },reset:function(){
 this._hasBeenBlurred=false;
 this.set("checked",this.params.checked||false);

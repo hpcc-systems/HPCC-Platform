@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -134,6 +134,8 @@ _19[_1a]=this[_1a];
 var _1b=this;
 this.parseDeferred=_7.parse({rootNode:_18,noStart:!this.startup,inherited:_19,scope:this.parserScope}).then(function(_1c){
 return _1b.parseResults=_1c;
+},function(e){
+_1b._onError("Content",e,"Error parsing in _ContentSetter#"+this.id);
 });
 }
 catch(e){

@@ -133,6 +133,10 @@ _1e.left=(_1c.w-_1d.w-1-_1c.l)+"px";
 }else{
 if(pd.match(/^[tb]l-/)){
 _1e.left=0+"px";
+}else{
+if(pd.match(/^[tb]c-/)){
+_1e.left=Math.round((_1c.w-_1d.w-1-_1c.l)/2)+"px";
+}
 }
 }
 _1e.clip="rect(0px, "+_1d.w+"px, "+_1d.h+"px, 0px)";

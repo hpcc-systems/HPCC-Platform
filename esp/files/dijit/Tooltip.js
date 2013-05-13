@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dijit/templates/Tooltip.html":"<div class=\"dijitTooltip dijitTooltipLeft\" id=\"dojoTooltip\"\n\t><div class=\"dijitTooltipContainer dijitTooltipContents\" data-dojo-attach-point=\"containerNode\" role='alert'></div\n\t><div class=\"dijitTooltipConnector\" data-dojo-attach-point=\"connectorNode\"></div\n></div>\n"}});
 define("dijit/Tooltip",["dojo/_base/array","dojo/_base/declare","dojo/_base/fx","dojo/dom","dojo/dom-class","dojo/dom-geometry","dojo/dom-style","dojo/_base/lang","dojo/mouse","dojo/on","dojo/sniff","./_base/manager","./place","./_Widget","./_TemplatedMixin","./BackgroundIframe","dojo/text!./templates/Tooltip.html","./main"],function(_1,_2,fx,_3,_4,_5,_6,_7,_8,on,_9,_a,_b,_c,_d,_e,_f,_10){
 var _11=_2("dijit._MasterTooltip",[_c,_d],{duration:_a.defaultDuration,templateString:_f,postCreate:function(){
 this.ownerDocumentBody.appendChild(this.domNode);
@@ -86,8 +85,10 @@ if(this._onDeck){
 this.show.apply(this,this._onDeck);
 this._onDeck=null;
 }
-},_setAutoTextDir:function(_24){
-this.applyTextDir(_24,_9("ie")?_24.outerText:_24.textContent);
+}});
+if(_9("dojo-bidi")){
+_11.extend({_setAutoTextDir:function(_24){
+this.applyTextDir(_24);
 _1.forEach(_24.children,function(_25){
 this._setAutoTextDir(_25);
 },this);
@@ -99,6 +100,7 @@ this._setAutoTextDir(this.containerNode);
 this.containerNode.dir=this.textDir;
 }
 }});
+}
 _10.showTooltip=function(_27,_28,_29,rtl,_2a){
 if(_29){
 _29=_1.map(_29,function(val){
@@ -206,3 +208,4 @@ _16.hide=_10.hideTooltip;
 _16.defaultPosition=["after-centered","before-centered"];
 return _16;
 });
+require({cache:{"url:dijit/templates/Tooltip.html":"<div class=\"dijitTooltip dijitTooltipLeft\" id=\"dojoTooltip\"\n\t><div class=\"dijitTooltipConnector\" data-dojo-attach-point=\"connectorNode\"></div\n\t><div class=\"dijitTooltipContainer dijitTooltipContents\" data-dojo-attach-point=\"containerNode\" role='alert'></div\n></div>\n"}});

@@ -35,7 +35,6 @@ if(!this.rangeMessage){
 this.messages=_2.getLocalization("dijit.form","validate",this.lang);
 this.rangeMessage=this.messages.rangeMessage;
 }
-},applyTextDir:function(){
 }});
 return _4;
 });

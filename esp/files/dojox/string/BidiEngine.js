@@ -1,46 +1,46 @@
 //>>built
 define("dojox/string/BidiEngine",["dojo/_base/lang","dojo/_base/declare"],function(_1,_2){
 _1.getObject("string",true,dojox);
-_2("dojox.string.BidiEngine",null,{bidiTransform:function(_3,_4,_5){
-if(!_3){
+var _3=_2("dojox.string.BidiEngine",null,{bidiTransform:function(_4,_5,_6){
+if(!_4){
 return "";
 }
-if(!_4&&!_5){
-return _3;
+if(!_5&&!_6){
+return _4;
 }
-var _6=/^[(I|V)][(L|R|C|D)][(Y|N)][(S|N)][N]$/;
-if(!_6.test(_4)||!_6.test(_5)){
+var _7=/^[(I|V)][(L|R|C|D)][(Y|N)][(S|N)][N]$/;
+if(!_7.test(_5)||!_7.test(_6)){
 throw new Error("dojox.string.BidiEngine: the bidi layout string is wrong!");
 }
-if(_4==_5){
-return _3;
+if(_5==_6){
+return _4;
 }
-var _7=_8(_4.charAt(1)),_9=_8(_5.charAt(1)),_a=(_4.charAt(0)=="I")?"L":_4.charAt(0),_b=(_5.charAt(0)=="I")?"L":_5.charAt(0),_c=_a+_7,_d=_b+_9,_e=_4.charAt(2)+_5.charAt(2);
-if(_c){
-_f.defInFormat=_c;
-}
+var _8=_9(_5.charAt(1)),_a=_9(_6.charAt(1)),_b=(_5.charAt(0)=="I")?"L":_5.charAt(0),_c=(_6.charAt(0)=="I")?"L":_6.charAt(0),_d=_b+_8,_e=_c+_a,_f=_5.charAt(2)+_6.charAt(2);
 if(_d){
-_f.defOutFormat=_d;
+bdx.defInFormat=_d;
 }
 if(_e){
-_f.defSwap=_e;
+bdx.defOutFormat=_e;
 }
-var _10=_11(_3,_a+_7,_b+_9,_4.charAt(2)+_5.charAt(2)),_12=false;
-if(_5.charAt(1)=="R"){
+if(_f){
+bdx.defSwap=_f;
+}
+var _10=_11(_4,_b+_8,_c+_a,_5.charAt(2)+_6.charAt(2)),_12=false;
+if(_6.charAt(1)=="R"){
 _12=true;
 }else{
-if(_5.charAt(1)=="C"||_5.charAt(1)=="D"){
+if(_6.charAt(1)=="C"||_6.charAt(1)=="D"){
 _12=this.checkContextual(_10);
 }
 }
-if(_4.charAt(3)==_5.charAt(3)){
+if(_5.charAt(3)==_6.charAt(3)){
 return _10;
 }else{
-if(_5.charAt(3)=="S"){
+if(_6.charAt(3)=="S"){
 return _13(_12,_10,true);
 }
 }
-if(_5.charAt(3)=="N"){
+if(_6.charAt(3)=="N"){
 return _14(_10,_12,true);
 }
 },checkContextual:function(_15){
@@ -69,13 +69,13 @@ return false;
 }});
 function _11(_1f,_20,_21,_22){
 if(_20==undefined){
-_20=_f.defInFormat;
+_20=bdx.defInFormat;
 }
 if(_21==undefined){
-_21=_f.defOutFormat;
+_21=bdx.defOutFormat;
 }
 if(_22==undefined){
-_22=_f.defSwap;
+_22=bdx.defSwap;
 }
 if(_20==_21){
 return _1f;
@@ -107,16 +107,16 @@ _21=_25+_26;
 if(_20==_21){
 return _1f;
 }
-_f.inFormat=_20;
-_f.outFormat=_21;
-_f.swap=_22;
+bdx.inFormat=_20;
+bdx.outFormat=_21;
+bdx.swap=_22;
 if((_23=="L")&&(_21=="VLTR")){
 if(_24=="LTR"){
-_f.dir=LTR;
+bdx.dir=LTR;
 return _28(_1f);
 }
 if(_24=="RTL"){
-_f.dir=RTL;
+bdx.dir=RTL;
 return _28(_1f);
 }
 }
@@ -125,16 +125,16 @@ return _29(_1f);
 }
 if((_23=="L")&&(_21=="VRTL")){
 if(_24=="LTR"){
-_f.dir=LTR;
+bdx.dir=LTR;
 _1f=_28(_1f);
 }else{
-_f.dir=RTL;
+bdx.dir=RTL;
 _1f=_28(_1f);
 }
 return _29(_1f);
 }
 if((_20=="VLTR")&&(_21=="LLTR")){
-_f.dir=LTR;
+bdx.dir=LTR;
 return _28(_1f);
 }
 if((_23=="V")&&(_25=="L")&&(_24!=_26)){
@@ -145,19 +145,19 @@ if((_20=="VRTL")&&(_21=="LRTL")){
 return _11(_1f,"LRTL","VRTL",_22);
 }
 if((_23=="L")&&(_25=="L")){
-var _2a=_f.swap;
-_f.swap=_2a.substr(0,1)+"N";
+var _2a=bdx.swap;
+bdx.swap=_2a.substr(0,1)+"N";
 if(_24=="RTL"){
-_f.dir=RTL;
+bdx.dir=RTL;
 _1f=_28(_1f);
-_f.swap="N"+_2a.substr(1,2);
-_f.dir=LTR;
+bdx.swap="N"+_2a.substr(1,2);
+bdx.dir=LTR;
 _1f=_28(_1f);
 }else{
-_f.dir=LTR;
+bdx.dir=LTR;
 _1f=_28(_1f);
-_f.swap="N"+_2a.substr(1,2);
-_1f=_11(_1f,"VLTR","LRTL",_f.swap);
+bdx.swap="N"+_2a.substr(1,2);
+_1f=_11(_1f,"VLTR","LRTL",bdx.swap);
 }
 return _1f;
 }
@@ -321,11 +321,11 @@ _57(1,_53,_54);
 return _53.join("");
 };
 function _55(_58,_59){
-var len=_58.length,_5a=_f.dir?_5b:_5c,_5d=null,_5e=null,_5f=null,_60=0,_61=null,_62=null,_63=-1,i=null,ix=null,_64=[],_65=[];
-_f.hiLevel=_f.dir;
-_f.lastArabic=false;
-_f.hasUBAT_AL=false,_f.hasUBAT_B=false;
-_f.hasUBAT_S=false;
+var len=_58.length,_5a=bdx.dir?_5b:_5c,_5d=null,_5e=null,_5f=null,_60=0,_61=null,_62=null,_63=-1,i=null,ix=null,_64=[],_65=[];
+bdx.hiLevel=bdx.dir;
+bdx.lastArabic=false;
+bdx.hasUBAT_AL=false,bdx.hasUBAT_B=false;
+bdx.hasUBAT_S=false;
 for(i=0;i<len;i++){
 _64[i]=_4a(_58[i]);
 }
@@ -362,15 +362,15 @@ _63=-1;
 if(_64[ix]==_1e){
 _59[ix]=0;
 }
-_f.hiLevel|=_5f;
+bdx.hiLevel|=_5f;
 }
-if(_f.hasUBAT_S){
+if(bdx.hasUBAT_S){
 for(i=0;i<len;i++){
 if(_64[i]==_69){
-_59[i]=_f.dir;
+_59[i]=bdx.dir;
 for(var j=i-1;j>=0;j--){
 if(_64[j]==_6a){
-_59[j]=_f.dir;
+_59[j]=bdx.dir;
 }else{
 break;
 }
@@ -380,7 +380,7 @@ break;
 }
 };
 function _56(_6b,_6c){
-if(_f.hiLevel==0||_f.swap.substr(0,1)==_f.swap.substr(1,2)){
+if(bdx.hiLevel==0||bdx.swap.substr(0,1)==bdx.swap.substr(1,2)){
 return;
 }
 for(var i=0;i<_6b.length;i++){
@@ -442,10 +442,10 @@ return true;
 return false;
 };
 function _57(lev,_7c,_7d){
-if(_f.hiLevel<lev){
+if(bdx.hiLevel<lev){
 return;
 }
-if(lev==1&&_f.dir==RTL&&!_f.hasUBAT_B){
+if(lev==1&&bdx.dir==RTL&&!bdx.hasUBAT_B){
 _7c.reverse();
 return;
 }
@@ -471,15 +471,15 @@ var _82=_80[ix],_83,_84,len,i;
 switch(_82){
 case _47:
 case _1c:
-_f.lastArabic=false;
+bdx.lastArabic=false;
 case _85:
 case _86:
 return _82;
 case _87:
-return _f.lastArabic?_86:_87;
+return bdx.lastArabic?_86:_87;
 case _1d:
-_f.lastArabic=true;
-_f.hasUBAT_AL=true;
+bdx.lastArabic=true;
+bdx.hasUBAT_AL=true;
 return _1c;
 case _6a:
 return _85;
@@ -487,7 +487,7 @@ case _88:
 if(ix<1||(ix+1)>=_80.length||((_83=_81[ix-1])!=_87&&_83!=_86)||((_84=_80[ix+1])!=_87&&_84!=_86)){
 return _85;
 }
-if(_f.lastArabic){
+if(bdx.lastArabic){
 _84=_86;
 }
 return _84==_83?_84:_85;
@@ -501,7 +501,7 @@ case _8a:
 if(ix>0&&_81[ix-1]==_87){
 return _87;
 }
-if(_f.lastArabic){
+if(bdx.lastArabic){
 return _85;
 }
 i=ix+1;
@@ -514,7 +514,7 @@ return _87;
 }
 return _85;
 case _8b:
-if(_f.inFormat=="VLTR"){
+if(bdx.inFormat=="VLTR"){
 len=_80.length;
 i=ix+1;
 while(i<len&&_80[i]==_8b){
@@ -534,10 +534,10 @@ return _85;
 return _81[ix-1];
 case _1e:
 lastArabic=false;
-_f.hasUBAT_B=true;
-return _f.dir;
+bdx.hasUBAT_B=true;
+return bdx.dir;
 case _69:
-_f.hasUBAT_S=true;
+bdx.hasUBAT_S=true;
 return _85;
 case _8d:
 case _8e:
@@ -592,7 +592,7 @@ return c;
 function _35(c){
 return (c>="ً"&&c<="ٕ")?true:false;
 };
-function _8(oc){
+function _9(oc){
 if(oc=="L"){
 return "LTR";
 }
@@ -632,7 +632,7 @@ return _51[i];
 }
 return 0;
 };
-var _f={dir:0,defInFormat:"LLTR",defoutFormat:"VLTR",defSwap:"YN",inFormat:"LLTR",outFormat:"VLTR",swap:"YN",hiLevel:0,lastArabic:false,hasUBAT_AL:false,hasBlockSep:false,hasSegSep:false};
+var bdx={dir:0,defInFormat:"LLTR",defoutFormat:"VLTR",defSwap:"YN",inFormat:"LLTR",outFormat:"VLTR",swap:"YN",hiLevel:0,lastArabic:false,hasUBAT_AL:false,hasBlockSep:false,hasSegSep:false};
 var _67=5;
 var _68=6;
 var LTR=0;
@@ -732,5 +732,5 @@ delete PDF;
 delete LRO;
 delete RLO;
 delete BN;
-return dojox.string.BidiEngine;
+return _3;
 });

@@ -8,19 +8,27 @@ if(this._resultsWatchHandle){
 this._resultsWatchHandle.unwatch();
 }
 this._removals=[];
-var _9=this;
-return _3(this.inherited(arguments),function(_a){
+var _9=this,_a=this.inherited(arguments),_b=_3(_a,function(_c){
 if(_9._beingDestroyed){
 return;
 }
-if(_2.isArray(_a)){
-_9._resultsWatchHandle=_a.watchElements(function(_b,_c,_d){
-[].push.apply(_9._removals,_c);
+if(_2.isArray(_c)){
+_9._resultsWatchHandle=_c.watchElements(function(_d,_e,_f){
+[].push.apply(_9._removals,_e);
 });
 }
-return _a;
+return _c;
 });
-},getStore:function(id,_e){
+if(_b.then){
+_b=_2.delegate(_b);
+}
+for(var s in _a){
+if(isNaN(s)&&_a.hasOwnProperty(s)&&_2.isFunction(_a[s])){
+_b[s]=_a[s];
+}
+}
+return _b;
+},getStore:function(id,_10){
 if(this._resultsWatchHandle){
 this._resultsWatchHandle.unwatch();
 }
@@ -32,13 +40,13 @@ this.store.remove(this.store.getIdentity(this._removals[i]));
 }
 this._removals=[];
 }
-var _f=_4(this.get(this._refEditModelProp),this.getPlainValueOptions);
-if(_2.isArray(_f)){
-for(var i=0;i<_f.length;i++){
-this.store.put(_f[i]);
+var _11=_4(this.get(this._refEditModelProp),this.getPlainValueOptions);
+if(_2.isArray(_11)){
+for(var i=0;i<_11.length;i++){
+this.store.put(_11[i]);
 }
 }else{
-this.store.put(_f);
+this.store.put(_11);
 }
 this.inherited(arguments);
 },reset:function(){
