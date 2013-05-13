@@ -74,8 +74,6 @@ define([
         workunitsGrid: null,
         clusterTargetSelect: null,
 
-        tabMap: [],
-
         postCreate: function (args) {
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
@@ -469,25 +467,15 @@ define([
         },
 
         ensurePane: function (id, params) {
-            var retVal = this.tabMap[id];
+            var retVal = registry.byId(id);
             if (!retVal) {
-                retVal = registry.byId(id);
-                if (!retVal) {
-                    var context = this;
-                    retVal = new DFUWUDetailsWidget({
-                        id: id,
-                        title: params.Wuid,
-                        closable: true,
-                        onClose: function () {
-                            //  Workaround for http://bugs.dojotoolkit.org/ticket/16475
-                            context._tabContainer.removeChild(this);
-                            delete context.tabMap[this.id];
-                            return false;
-                        },
-                        params: params
-                    });
-                }
-                this.tabMap[id] = retVal;
+                var context = this;
+                retVal = new DFUWUDetailsWidget({
+                    id: id,
+                    title: params.Wuid,
+                    closable: true,
+                    params: params
+                });
                 this.addChild(retVal, 1);
             }
             return retVal;
