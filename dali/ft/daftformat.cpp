@@ -227,6 +227,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
     offset_t nextInputOffset = cursor.nextInputOffset;
     const byte *buffer = bufferBase();
 
+    processFullBuffer = true;
     while (nextInputOffset < splitOffset)
     {
 
@@ -234,7 +235,14 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 
         ensureBuffered(headerSize);
         assertex((headerSize ==0) || (numInBuffer != bufferOffset));
+
+        if(processFullBuffer &&  (splitOffset - nextInputOffset < blockSize) )
+        {
+            processFullBuffer = false;
+        }
+
         unsigned size = getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset);
+
         if (size==0)
             throwError1(DFTERR_PartitioningZeroSizedRowLink,((offset_t)(buffer+bufferOffset)));
         ensureBuffered(size); 
@@ -272,8 +280,8 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 CInputBasePartitioner::CInputBasePartitioner(unsigned _headerSize, unsigned expectedRecordSize)
 {
     headerSize = _headerSize;
-    blockSize = 0x10000;
-    bufferSize = 2 * blockSize + expectedRecordSize;
+    blockSize = 0x40000;
+    bufferSize = 4 * blockSize + expectedRecordSize;
     doInputCRC = false;
     CriticalBlock block(openfilecachesect);
     if (!openfilecache) 
@@ -546,6 +554,53 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     addActionList(matcher, format.terminate.get() ? format.terminate.get() : "\\n,\\r\\n", TERMINATOR, &maxElementLength);
     matcher.queryAddEntry(1, " ", WHITESPACE);
     matcher.queryAddEntry(1, "\t", WHITESPACE);
+    useCsvMatcher = true;
+
+    const char* terminator = format.terminate.get();
+    if(terminator && *terminator)
+    {
+        bool success = csvMatcher.addTerminator(terminator);
+
+        if( !success )
+        {
+            useCsvMatcher = false;
+        }
+    }
+
+    const char* separator = format.separate.get();
+    if(useCsvMatcher && separator && *separator)
+    {
+        bool success = csvMatcher.addSeparator(separator);
+
+        if( !success )
+        {
+            useCsvMatcher = false;
+        }
+    }
+
+    const char* quote = format.quote.get();
+    if(useCsvMatcher && quote && *quote)
+    {
+        if( strlen(quote) == 1)
+        {
+            csvMatcher.changeQuote(*quote);
+        }
+        else
+        {
+            useCsvMatcher = false;
+        }
+    }
+
+    if(useCsvMatcher)
+    {
+        LOG(MCdebugProgress, unknownJob, "Using CCsvMatcher.");
+    }
+    else
+    {
+        LOG(MCdebugProgress, unknownJob, "Using StringMatcher.");
+    }
+
+    processFullBuffer = false;
 }
 
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool ateof)
@@ -556,10 +611,22 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
     const byte * end = start + maxToRead;
     const byte * startOfColumn = cur;
 
+    const byte * last = start;
     while (cur != end)
     {
         unsigned matchLen;
-        unsigned match = matcher.getMatch(end-cur, (const char *)cur, matchLen);
+        unsigned match;
+
+        if( useCsvMatcher)
+        {
+            match = csvMatcher.match(*cur);
+            matchLen = (match ? 1 : 0);
+        }
+        else
+        {
+            match = matcher.getMatch(end-cur, (const char *)cur, matchLen);
+        }
+
         switch (match & 255)
         {
         case NONE:
@@ -581,7 +648,14 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         case TERMINATOR:
             if (quote == 0)
             {
-                return cur + matchLen - start;
+                if(processFullBuffer)
+                {
+                    last = cur + matchLen;
+                }
+                else
+                {
+                    return cur + matchLen - start;
+                }
             }
             break;
         case QUOTE:
@@ -602,6 +676,12 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         }
         cur += matchLen;
     }
+
+    if(processFullBuffer && (last != start))
+    {
+        return last - start;
+    }
+
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
     LOG(MCdebugProgress, unknownJob, "CSV splitRecordSize(%d) at end of file", (unsigned) (end - start));
@@ -1712,4 +1792,3 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
 
     return new CRemotePartitioner(ep, srcFormat, tgtFormat, slave, wuid);
 }
-

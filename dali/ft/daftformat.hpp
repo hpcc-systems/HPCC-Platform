@@ -97,4 +97,160 @@ extern DALIFT_API IOutputProcessor * createOutputProcessor(const FileFormat & fo
 
 extern DALIFT_API IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid);
 
+
+#include <string.h>
+
+class CCsvMatcher
+{
+    static const char DEFAULT_SEPARATOR_CHAR  = ',';
+    static const char DEFAULT_TERMINATOR_CHAR = '\n';
+    static const char DEFAULT_QUOTE_CHAR      = '\'';
+    static const char DEFAULT_SPACE_CHAR      = ' ';
+    static const char DEFAULT_TAB_CHAR        = '\t';
+
+public:
+    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4 };
+
+    CCsvMatcher() { init(); };
+    ~CCsvMatcher() {};
+
+    bool addSeparator(const char * aNewSeparator)
+        {
+            charMatch[DEFAULT_SEPARATOR_CHAR] = NONE;
+            bool success = processParam(aNewSeparator, SEPARATOR);
+            if( false == success)
+            {
+                // Restore default separator
+                charMatch[DEFAULT_SEPARATOR_CHAR] = SEPARATOR;
+            }
+            return success;
+        };
+
+    bool addTerminator(const char * aNewTerminator)
+        {
+            charMatch[DEFAULT_TERMINATOR_CHAR] = NONE;
+            bool success = processParam(aNewTerminator, TERMINATOR);
+            if( false == success)
+            {
+                // Restore default separator
+                charMatch[DEFAULT_TERMINATOR_CHAR] = TERMINATOR;
+            }
+            return success;
+        };
+
+    void changeQuote(const char aNewQuote)
+        {
+            // Handle only one quote char
+            charMatch[DEFAULT_QUOTE_CHAR] = NONE;
+            charMatch[aNewQuote] = QUOTE;
+        };
+
+    unsigned char match(unsigned int aIndex)
+        {
+            return charMatch[aIndex&255];
+        };
+
+private:
+    void init(void)
+        {
+            for( int i = 0; i < 256; ++i)
+            {
+                charMatch[i] = NONE;
+            }
+
+            charMatch[DEFAULT_SEPARATOR_CHAR]  = SEPARATOR;
+            charMatch[DEFAULT_TERMINATOR_CHAR] = TERMINATOR;
+            charMatch[DEFAULT_QUOTE_CHAR]      = QUOTE;
+            charMatch[DEFAULT_SPACE_CHAR]      = WHITESPACE;
+            charMatch[DEFAULT_TAB_CHAR]        = WHITESPACE;
+       };
+
+    void clearAllSpecChar(unsigned aSpecChar)
+        {
+            for( int i = 0; i < 256; ++i)
+            {
+                if( charMatch[i] == aSpecChar )
+                    charMatch[i] = NONE;
+            }
+        };
+
+    bool processParam(const char * aParam, unsigned aSpecType)
+        {
+            char * temp = strdup(aParam);
+            bool retVal = true;
+            char delim[] = ",";
+            char * anchor;
+            char * token = strtok_r(temp, delim, &anchor);
+
+            while( NULL != token)
+            {
+                int len = strlen(token);
+                if( (1 < len) && ('\\' != *token))
+                {
+                    retVal = false;
+                    break;
+                }
+                else
+                {
+                    char specChar = *token;
+                    if( '\\' == specChar )
+                    {
+                        token++;
+                        switch(*token)
+                        {
+                        case 'b':
+                            specChar = '\b';
+                            break;
+
+                        case 'f':
+                            specChar = '\f';
+                            break;
+
+                        case 'n':
+                            specChar = '\n';
+                            break;
+
+                        case 'r':
+                            // Check if process TERMINATOR and token is "\r\n"
+                            if((TERMINATOR == aSpecType) && ( '\\' == *(token+1)) && ('n' == *(token+2)) )
+                            {
+                                specChar = '\n';
+                            }
+                            else
+                            {
+                                specChar = '\r';
+                            }
+                            break;
+
+                        case 't':
+                            specChar = '\t';
+                            break;
+
+                        case '\\':
+                        case '\'':
+                            specChar = *token+1;
+                            break;
+
+                        }
+                    }
+                    charMatch[specChar] = aSpecType;
+                }
+
+                // Get next token:
+                token = strtok_r(NULL, delim, &anchor);
+            }
+
+            if(false == retVal)
+            {
+                // Restore original state
+                clearAllSpecChar(aSpecType);
+            }
+            return retVal;
+        }
+
+private:
+    unsigned char charMatch[256];
+
+};
+
 #endif

@@ -140,30 +140,31 @@ public:
     virtual void setInputCRC(crc32_t value) { doInputCRC = true; inputCRC = value; }
 
 protected:
-            bool ensureBuffered(unsigned required);
+    bool ensureBuffered(unsigned required);
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor);
     virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead) = 0;
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead) = 0;
     void seekInput(offset_t offset);
     offset_t tellInput();
-
+	
     inline byte *bufferBase()  
     { 
         return (byte *)((bufattr.length()!=bufferSize)?bufattr.allocate(bufferSize):bufattr.bufferBase()); 
     }
     virtual void killBuffer()  { bufattr.clear(); }
 protected: 
-    Owned<IFileIOStream>        inStream;
-    MemoryAttr                      bufattr;
-    size32_t                        headerSize;
-    size32_t                        blockSize;
-    size32_t                        bufferSize;
-    size32_t                        numInBuffer;
-    size32_t                        bufferOffset;
-    unsigned                    inputCRC;
-    bool                        doInputCRC;
-    static IFileIOCache *openfilecache;
+    Owned<IFileIOStream>   inStream;
+    MemoryAttr             bufattr;
+    size32_t               headerSize;
+    size32_t               blockSize;
+    size32_t               bufferSize;
+    size32_t               numInBuffer;
+    size32_t               bufferOffset;
+    unsigned               inputCRC;
+    bool                   doInputCRC;
+    static IFileIOCache    *openfilecache;
     static CriticalSection openfilecachesect;
+    bool                   processFullBuffer;
 };
 
 
@@ -237,12 +238,16 @@ protected:
     {
         return getSplitRecordSize(record,maxToRead,true);
     }
-
+    
 protected:
     enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4 };
     unsigned        maxElementLength;
     FileFormat      format;
     StringMatcher   matcher;
+    
+    bool            useCsvMatcher;
+    CCsvMatcher     csvMatcher;
+    
 };
 
 
