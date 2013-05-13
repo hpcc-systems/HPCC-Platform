@@ -2172,7 +2172,11 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     workunit->resetWorkflow();
     workunit->setClusterName(wsinfo.qsetname.sget());
     workunit->setUser(context.queryUserId());
-    
+
+    const char *jobname = context.queryRequestParameters()->queryProp("_jobname");
+    if (jobname && *jobname)
+        workunit->setJobName(jobname);
+
     SCMStringBuffer wuid;
     workunit->getWuid(wuid);
 
