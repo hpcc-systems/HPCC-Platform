@@ -324,7 +324,7 @@
   text-align: center;
 }
 .nihilo .dojoxCalendarMatrixView .dojoxCalendarExpand span {
-  position: inline-block;
+  display: inline-block;
   vertical-align: middle;
 }
 .nihilo .dojoxCalendarMatrixView .dojoxCalendarExpand .bg {

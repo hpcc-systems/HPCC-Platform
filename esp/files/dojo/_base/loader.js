@@ -1,11 +1,11 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
 
 //>>built
-define("dojo/_base/loader",["./kernel","../has","require","module","./json","./lang","./array"],function(_1,_2,_3,_4,_5,_6,_7){
+define("dojo/_base/loader",["./kernel","../has","require","module","../json","./lang","./array"],function(_1,_2,_3,_4,_5,_6,_7){
 if(!1){
 console.error("cannot load the Dojo v1.x loader with a foreign loader");
 return 0;
@@ -196,7 +196,7 @@ for(var p in _13("dojo",_4a).result.scopeMap){
 _4d.push(p);
 _4e.push("\""+p+"\"");
 }
-return "// xdomain rewrite of "+_4a.mid+"\n"+"define('"+id+"',{\n"+"\tnames:"+_1.toJson(_4d)+",\n"+"\tdef:function("+_4d.join(",")+"){"+_4c[1]+"}"+"});\n\n"+"define("+_1.toJson(_4d.concat(["dojo/loadInit!"+id]))+", function("+_4d.join(",")+"){\n"+_4c[0]+"});";
+return "// xdomain rewrite of "+_4a.mid+"\n"+"define('"+id+"',{\n"+"\tnames:"+_5.stringify(_4d)+",\n"+"\tdef:function("+_4d.join(",")+"){"+_4c[1]+"}"+"});\n\n"+"define("+_5.stringify(_4d.concat(["dojo/loadInit!"+id]))+", function("+_4d.join(",")+"){\n"+_4c[0]+"});";
 },_4f=_3.initSyncLoader(_e,_15,_49),_50=_4f.sync,_18=_4f.requested,_51=_4f.arrived,_52=_4f.nonmodule,_53=_4f.executing,_54=_4f.executed,_55=_4f.syncExecStack,_17=_4f.modules,_56=_4f.execQ,_13=_4f.getModule,_14=_4f.injectModule,_57=_4f.setArrived,_33=_4f.signal,_58=_4f.finishExec,_59=_4f.execModule,_5a=_4f.getLegacyMode,_19=_4f.guardCheckComplete;
 _e=_4f.dojoRequirePlugin;
 _1.provide=function(mid){

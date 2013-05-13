@@ -1,11 +1,11 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
 
 //>>built
-define("dojo/store/DataStore",["../_base/lang","../_base/declare","../_base/Deferred","../_base/array","./util/QueryResults","./util/SimpleQueryEngine"],function(_1,_2,_3,_4,_5,_6){
+define("dojo/store/DataStore",["../_base/lang","../_base/declare","../Deferred","../_base/array","./util/QueryResults","./util/SimpleQueryEngine"],function(_1,_2,_3,_4,_5,_6){
 var _7=null;
 return _2("dojo.store.DataStore",_7,{target:"",constructor:function(_8){
 _1.mixin(this,_8);

@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -11,8 +11,8 @@ return function when(_3,_4,_5,_6){
 var _7=_3&&typeof _3.then==="function";
 var _8=_7&&_3 instanceof _2;
 if(!_7){
-if(_4){
-return _4(_3);
+if(arguments.length>1){
+return _4?_4(_3):_3;
 }else{
 return new _1().resolve(_3);
 }

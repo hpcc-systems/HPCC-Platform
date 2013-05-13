@@ -362,7 +362,7 @@
   text-align: center;
 }
 .dojoxCalendarMatrixView .dojoxCalendarExpand span {
-  position: inline-block;
+  display: inline-block;
   vertical-align: middle;
 }
 .dojoxCalendarMatrixView .dojoxCalendarExpand .bg {
@@ -486,8 +486,9 @@
   border-left: 1px solid #cccccc;
   border-right: none;
 }
-.dojoxCalendarColumnViewRtl .dojoxCalendarRowHeaderTable td span {
-  padding-left: 4px;
+.dojoxCalendarColumnViewRtl .dojoxCalendarRowHeaderLabel {
+  right: auto;
+  left: 4px;
 }
 .dojoxCalendarColumnViewRtl .dojoxCalendarEvent .summary {
   text-align: right;

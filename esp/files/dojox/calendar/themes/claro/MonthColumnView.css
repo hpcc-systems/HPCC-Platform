@@ -1,3 +1,18 @@
+.event-header {
+  font-weight: bold;
+  border-top-left-radius: 5px;
+  border-top-right-radius: 5px;
+  -webkit-border-top-left-radius: 5px;
+  -webkit-border-top-right-radius: 5px;
+  -moz-border-top-right-radius: 5px;
+  -moz-border-top-left-radius: 5px;
+  background-color: #6c0000;
+  white-space: nowrap;
+  padding: 1px 2px 2px 1px;
+  border-top: 1px solid #260000;
+  border-left: 1px solid #260000;
+  border-right: 1px solid #260000;
+}
 .claro .dojoxCalendarMonthColumnView {
   cursor: default;
   -webkit-user-select: none;
@@ -28,6 +43,7 @@
   position: relative;
   margin: 0;
   padding: 0;
+  
 }
 .claro .dojoxCalendarMonthColumnView .dojoxCalendarGridTable td {
   border-top: dotted 1px #B5BCC7;
@@ -179,23 +195,9 @@
   border-radius: 5px;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
-  background-color: #9F0000;
+  background-color: #9f0000;
   filter: alpha(opacity=90);
   opacity: 0.9;
-}
-.claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent.Hovered .bg {
-  background-color: #CC0000;
-}
-.claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent.Selected .bg {
-  background-color: #660000;
-}
-.claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent.Edited .bg {
-  border: dashed 1px #FFFFFF;
-  filter: alpha(opacity=70);
-  opacity: 0.7;
-}
-.claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent.Focused .bg {
-  border: dashed 1px #FFFFFF;
 }
 .claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent .startTime {
   font-weight: bold;
@@ -253,6 +255,20 @@
   margin: 0;
   padding: 0 3px;
   text-align: left;
+}
+.claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent.Hovered .bg {
+  background-color: #CC0000;
+}
+.claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent.Selected .bg {
+  background-color: #660000;
+}
+.claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent.Edited .bg {
+  border: dashed 1px #FFFFFF;
+  filter: alpha(opacity=70);
+  opacity: 0.7;
+}
+.claro .dojoxCalendarMonthColumnView .dojoxCalendarEvent.Focused .bg {
+  border: dashed 1px #FFFFFF;
 }
 .claro .dojoxCalendarMonthColumnView .dojoxCalendarVScrollBar {
   position: absolute;

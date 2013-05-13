@@ -169,7 +169,6 @@ _c=e;
 }
 }
 this.focus.setFocusCell(_c.cell,_c.rowIndex);
-this.onRowClick(_c);
 this.edit.setEditCell(_c.cell,_c.rowIndex);
 this.onRowDblClick(e);
 },onCellContextMenu:function(e){
