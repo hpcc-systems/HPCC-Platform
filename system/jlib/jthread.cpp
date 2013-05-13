@@ -564,6 +564,8 @@ void CThreadedPersistent::main()
         }
         catch (IException *e)
         {
+            VStringBuffer errMsg("CThreadedPersistent (%s)", athread.getName());
+            EXCLOG(e, errMsg.str());
             exception.setown(e);
             joinSem.signal(); // leave in running state, signal to join to handle
             continue;
