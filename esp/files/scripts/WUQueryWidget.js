@@ -75,8 +75,6 @@ define([
         workunitsTab: null,
         workunitsGrid: null,
 
-        tabMap: [],
-
         validateDialog: null,
 
         postCreate: function (args) {
@@ -507,25 +505,15 @@ define([
         },
 
         ensurePane: function (id, params) {
-            var retVal = this.tabMap[id];
+            var retVal = registry.byId(id);
             if (!retVal) {
-                retVal = registry.byId(id);
-                if (!retVal) {
-                    var context = this;
-                    retVal = new WUDetailsWidget({
-                        id: id,
-                        title: params.Wuid,
-                        closable: true,
-                        onClose: function () {
-                            //  Workaround for http://bugs.dojotoolkit.org/ticket/16475
-                            context._tabContainer.removeChild(this);
-                            delete context.tabMap[this.id];
-                            return false;
-                        },
-                        params: params
-                    });
-                }
-                this.tabMap[id] = retVal;
+                var context = this;
+                retVal = new WUDetailsWidget({
+                    id: id,
+                    title: params.Wuid,
+                    closable: true,
+                    params: params
+                });
                 this.addChild(retVal, 1);
             }
             return retVal;
