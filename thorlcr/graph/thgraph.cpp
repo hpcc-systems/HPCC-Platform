@@ -554,16 +554,20 @@ void CGraphElementBase::onCreate()
 
 void CGraphElementBase::onStart(size32_t parentExtractSz, const byte *parentExtract)
 {
-    if (nullAct ||onStartCalled) return;
-    if (haveStartCtx)
-    {
-        baseHelper->onStart(parentExtract, &startCtxMb);
-        startCtxMb.reset();
-        haveStartCtx = false;
-    }
-    else
-        baseHelper->onStart(parentExtract, NULL);
+    if (onStartCalled)
+        return;
     onStartCalled = true;
+    if (!nullAct)
+    {
+        if (haveStartCtx)
+        {
+            baseHelper->onStart(parentExtract, &startCtxMb);
+            startCtxMb.reset();
+            haveStartCtx = false;
+        }
+        else
+            baseHelper->onStart(parentExtract, NULL);
+    }
 }
 
 bool CGraphElementBase::executeDependencies(size32_t parentExtractSz, const byte *parentExtract, int controlId, bool async)
