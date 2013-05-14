@@ -20,11 +20,18 @@ define([
     "dojo/dom-class",
     "dojo/query",
     "dojo/store/Memory",
-    "dojo/data/ObjectStore",
+    "dojo/store/Observable",
 
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
 
     "hpcc/_TabContainerWidget",
     "hpcc/ESPWorkunit",
@@ -48,8 +55,9 @@ define([
     "dijit/Toolbar",
     "dijit/TooltipDialog",
     "dijit/TitlePane"
-], function (declare, dom, domAttr, domClass, query, Memory, ObjectStore,
+], function (declare, dom, domAttr, domClass, query, Memory, Observable,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -90,6 +98,26 @@ define([
             this.xmlWidget = registry.byId(this.id + "_XML");
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
+        },
+
+        startup: function (args) {
+            this.inherited(arguments);
+            var store = new Memory({
+                idProperty: "Id",
+                data: []
+            });
+            this.variablesStore = Observable(store);
+
+            this.variablesGrid = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry])({
+                allowSelectAll: true,
+                columns: {
+                    Name: { label: "Name", width: 160 },
+                    ColumnType: { label: "Type", width: 100 },
+                    Value: { label: "Default Value" }
+                },
+                store: this.variablesStore
+            }, this.id + "VariablesGrid");
+            this.variablesGrid.startup();
         },
 
         //  Hitched actions  ---
@@ -251,18 +279,8 @@ define([
                 this.updateInput("Jobname2", oldValue, newValue);
             } else if (name === "variable") {
                 registry.byId(context.id + "Variables").set("title", "Variables " + "(" + newValue.length + ")");
-                context.variablesGrid = registry.byId(context.id + "VariablesGrid");
-                context.variablesGrid.setStructure([
-                    { name: "Name", field: "Name", width: 16 },
-                    { name: "Type", field: "ColumnType", width: 10 },
-                    { name: "Default Value", field: "Value", width: 32 }
-                ]);
-                var memory = new Memory({ data: newValue });
-                var store = new ObjectStore({ objectStore: memory });
-                context.variablesGrid.setStore(store);
-                context.variablesGrid.setQuery({
-                    Name: "*"
-                });
+                this.variablesStore.setData(newValue);
+                this.variablesGrid.refresh();
             } else if (name === "results") {
                 this.resultsWidget.set("title", "Outputs " + "(" + newValue.length + ")");
                 var tooltip = "";

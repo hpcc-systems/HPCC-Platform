@@ -16,7 +16,11 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/_base/array",
+    "dojo/dom-class",
+    "dojo/store/Memory",
+    "dojo/store/Observable",
 
     "dijit/registry",
     "dijit/layout/_LayoutWidget",
@@ -25,19 +29,26 @@ define([
 
     "dojox/data/AndOrReadStore",
 
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+
+    "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/InfoGridWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
-    "dijit/form/CheckBox",
-    "dojox/grid/DataGrid"
+    "dijit/form/CheckBox"
 ],
-    function (declare, arrayUtil,
+    function (declare, lang, arrayUtil, domClass, Memory, Observable,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
             AndOrReadStore,
-            ESPWorkunit,
+            OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
+            ESPUtil, ESPWorkunit,
             template) {
         return declare("InfoGridWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
             templateString: template,
@@ -72,33 +83,55 @@ define([
             postCreate: function (args) {
                 this.inherited(arguments);
                 this.borderContainer = registry.byId(this.id + "BorderContainer");
-                this.infoGrid = registry.byId(this.id + "InfoGrid");
                 this.errorsCheck = registry.byId(this.id + "Errors");
                 this.warningsCheck = registry.byId(this.id + "Warnings");
                 this.infoCheck = registry.byId(this.id + "Info");
-
-                var context = this;
-                this.infoGrid.setStructure([
-                    { name: "Severity", field: "Severity", width: 8, formatter: context.test },
-                    { name: "Source", field: "Source", width: 8 },
-                    { name: "Code", field: "Code", width: 4 },
-                    { name: "Message", field: "Message", width: "40" },
-                    { name: "Col", field: "Column", width: 3 },
-                    { name: "Line", field: "LineNo", width: 3 },
-                    { name: "FileName", field: "FileName", width: "40" }
-                ]);
-                
-                this.infoGrid.on("RowClick", function (evt) {
-                    var idx = evt.rowIndex;
-                    var item = this.getItem(idx);
-                    var line = parseInt(this.store.getValue(item, "LineNo"), 10);
-                    var col = parseInt(this.store.getValue(item, "Column"), 10);
-                    context.onErrorClick(line, col);
-                }, true);
             },
 
             startup: function (args) {
                 this.inherited(arguments);
+                var context = this;
+                var store = new Memory({
+                    idProperty: "id",
+                    data: []
+                });
+                this.infoStore = Observable(store);
+
+                this.infoGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                    selectionMode: "single",
+                    columns: {
+                        Severity: {
+                            label: "Severity", field: "", width: 72, sortable: false,
+                            renderCell: function (object, value, node, options) {
+                                switch (value) {
+                                    case "Error":
+                                        domClass.add(node, "ErrorCell");
+                                        break;
+
+                                    case "Warning":
+                                        domClass.add(node, "WarningCell");
+                                        break;
+                                }
+                                node.innerText = value;
+                            }
+                        }, 
+                        Source: { label: "Source", field: "", width: 72, sortable: false },
+                        Code: { label: "Code", field: "", width: 45, sortable: false },
+                        Message: { label: "Message", field: "", sortable: false },
+                        Column: { label: "Col", field: "", width: 36, sortable: false },
+                        LineNo: { label: "Line", field: "", width: 36, sortable: false },
+                        FileName: { label: "FileName", field: "", width: 360, sortable: false }
+                    },
+                    store: this.infoStore
+                }, this.id + "InfoGrid");
+
+                this.infoGrid.on(".dgrid-row:click", function (evt) {
+                    var item = context.infoGrid.row(evt).data;
+                    var line = parseInt(item.LineNo, 10);
+                    var col = parseInt(item.Column, 10);
+                    context.onErrorClick(line, col);
+                });
+                this.infoGrid.startup();
             },
 
             resize: function (args) {
@@ -162,25 +195,35 @@ define([
             },
 
             refreshFilter: function (graphName) {
+                var data = [];
                 var filter = "";
-                if (this.errorsCheck.get("checked")) {
-                    filter = "Severity: 'Error'";
-                }
-                if (this.warningsCheck.get("checked")) {
-                    if (filter.length) {
-                        filter += " OR ";
+                var errorChecked = this.errorsCheck.get("checked");
+                var warningChecked = this.warningsCheck.get("checked");
+                var infoChecked = this.infoCheck.get("checked");
+                arrayUtil.forEach(this.infoData, function (item, idx) {
+                    lang.mixin(item, {
+                        id: idx
+                    });
+                    switch(item.Severity) {
+                        case "Error":
+                            if (errorChecked) {
+                                data.push(item);
+                            }
+                            break;
+                        case "Warning":
+                            if (warningChecked) {
+                                data.push(item);
+                            }
+                            break;
+                        case "Info":
+                            if (infoChecked) {
+                                data.push(item);
+                            }
+                            break;
                     }
-                    filter += "Severity: 'Warning'";
-                }
-                if (this.infoCheck.get("checked")) {
-                    if (filter.length) {
-                        filter += " OR ";
-                    }
-                    filter += "Severity: 'Info'";
-                }
-                this.infoGrid.setQuery({
-                    complexQuery: filter
                 });
+                this.infoStore.setData(data);
+                this.infoGrid.refresh();
             },
 
             getSelected: function () {
@@ -209,13 +252,7 @@ define([
                     }
                     return l.Severity > r.Severity;
                 });
-                var data = {
-                    'items': exceptions
-                };
-                this.store = new AndOrReadStore({
-                    data: data
-                });
-                this.infoGrid.setStore(this.store);
+                this.infoData = exceptions;
                 this.refreshFilter();
             }
         });
