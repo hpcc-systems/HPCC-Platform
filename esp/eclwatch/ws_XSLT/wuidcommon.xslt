@@ -1230,7 +1230,7 @@
       <xsl:if test="Type = 'cpp'">
         <td>
           <a href="/WsWorkunits/WUFile/{Name}?Wuid={$wuid}&amp;Name={Name}&amp;IPAddress={IPAddress}&amp;Description={Description}&amp;Type=cpp" >
-            <xsl:value-of select="Description"/>
+            <xsl:value-of select="Description"/><xsl:if test="number(FileSize)>640000"> (Truncated to 640K bytes)</xsl:if>
           </a>
         </td>
         <td>
@@ -1254,7 +1254,7 @@
         <td>
           <a href="/esp/iframe?esp_iframe_title=ECL Workunit - {$wuid} - {Description}&amp;inner=
                    /WsWorkunits/WUFile%3fWuid%3d{$wuid}%26Name%3d{Name}%26IPAddress%3d{IPAddress}%26Description%3d{Description}%26Type%3dXML" >
-            <xsl:value-of select="Description"/>
+            <xsl:value-of select="Description"/><xsl:if test="number(FileSize)>640000"> (Truncated to 640K bytes)</xsl:if>
           </a>
         </td>
         <td>
