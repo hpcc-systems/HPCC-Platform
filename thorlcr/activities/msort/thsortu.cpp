@@ -576,6 +576,7 @@ public:
                         case TAKjoin:
                         case TAKhashjoin:
                         case TAKselfjoin:
+                        case TAKselfjoinlight:
                             gotsz = helper->transform(ret, defaultLeft, nextright);
                             nextR();
                             break;
@@ -626,6 +627,7 @@ public:
                     case TAKjoin:
                     case TAKhashjoin:
                     case TAKselfjoin:
+                    case TAKselfjoinlight:
                         if (!rightgroupmatched[rightidx]) 
                             gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx));
                         rightidx++;
@@ -650,6 +652,7 @@ public:
                     case TAKjoin:
                     case TAKhashjoin:
                     case TAKselfjoin:
+                    case TAKselfjoinlight:
                         gotsz = helper->transform(ret, nextleft, defaultRight);
                         break;
                     default:
@@ -706,6 +709,7 @@ public:
                         case TAKjoin:
                         case TAKhashjoin:
                         case TAKselfjoin:
+                        case TAKselfjoinlight:
                             gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx));
                             break;
                         default:
@@ -1475,7 +1479,7 @@ public:
     void doMatch(cWorkItem &work,SimpleInterThreadQueueOf<cOutItem,false> &outqueue) 
     {
         MemoryBuffer rmatchedbuf;  
-        CThorExpandingRowArray &rgroup = (kind==TAKselfjoin)?work.lgroup:work.rgroup;
+        CThorExpandingRowArray &rgroup = (kind==TAKselfjoin||kind==TAKselfjoinlight)?work.lgroup:work.rgroup;
         bool *rmatched;
         if (rightouter) {
             rmatched = (bool *)rmatchedbuf.clear().reserve(rgroup.ordinality());
@@ -1624,7 +1628,7 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         {
             PROGLOG("CMultiCoreJoinHelper::cWorker started");
             MemoryBuffer rmatchedbuf;  
-            bool selfjoin = (parent->kind==TAKselfjoin);
+            bool selfjoin = (parent->kind==TAKselfjoin||parent->kind==TAKselfjoinlight);
             loop {
                 work.clear();
                 workready.signal();
