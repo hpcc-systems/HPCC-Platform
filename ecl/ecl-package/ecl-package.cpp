@@ -278,7 +278,7 @@ public:
             for (unsigned i=0; i<num; i++)
             {
                 IConstPackageListMapData& req = pkgMapInfo.item(i);
-                printf("\nPackage Name = %s  active = %d\n", req.getId(), req.getActive());
+                printf("\nPackage Id = %s  active = %d\n", req.getId(), req.getActive());
 
                 IArrayOf<IConstPackageListData> &pkgInfo = req.getPkgListData();
                 unsigned int numPkgs = pkgInfo.ordinality();
@@ -288,9 +288,9 @@ public:
                     const char *id = req.getId();
                     const char *queries = req.getQueries();
                     if (queries && *queries)
-                        printf("\t\tid = %s  queries = %s\n", id, queries);
+                        printf("\t\tname = %s  queries = %s\n", id, queries);
                     else
-                        printf("\t\tid = %s\n", id);
+                        printf("\t\tname = %s\n", id);
                 }
             }
         }
