@@ -73,14 +73,21 @@ define([
                     return;
                 this.initalized = true;
 
+                var mode = "ecl";
+                if (params.sourceMode !== undefined) {
+                    mode = params.sourceMode;
+                } else if (this.WUXml) {
+                    mode = "xml";
+                }
+
                 this.editor = CodeMirror.fromTextArea(document.getElementById(this.id + "EclCode"), {
                     tabMode: "indent",
                     matchBrackets: true,
                     gutter: true,
                     lineNumbers: true,
-                    mode: this.WUXml ? "xml" : "ecl",
+                    mode: mode,
                     readOnly: this.readOnly,
-                    gutter: this.WUXml ? true : false,
+                    gutter: mode === "xml" ? true : false,
                     onGutterClick: CodeMirror.newFoldFunction(CodeMirror.tagRangeFinder)
                 });
                 dom.byId(this.id + "EclContent").style.backgroundColor = this.readOnly ? 0xd0d0d0 : 0xffffff;

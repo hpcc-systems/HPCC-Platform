@@ -24,87 +24,39 @@ define([
 
     "hpcc/WsWorkunits",
     "hpcc/ESPUtil",
+    "hpcc/ESPRequest",
     "hpcc/ESPResult"
 ], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable,
-    WsWorkunits, ESPUtil, ESPResult) {
+    WsWorkunits, ESPUtil, ESPRequest, ESPResult) {
 
     var _workunits = {};
 
-    var Store = declare(null, {
+    var Store = declare([ESPRequest.Store], {
+        service: "WsWorkunits",
+        action: "WUQuery",
+        responseQualifier: "Workunits.ECLWorkunit",
+        responseTotalQualifier: "NumWUs",
         idProperty: "Wuid",
+        startProperty: "PageStartFrom",
+        countProperty: "Count",
 
-        _watched: {},
-
-        constructor: function (options) {
-            declare.safeMixin(this, options);
+        _watched: [],
+        create: function (id) {
+            return new Workunit({
+                Wuid: id
+            });
         },
-
-        getIdentity: function (object) {
-            return object[this.idProperty];
-        },
-
-        get: function (id) {
-            if (!_workunits[id]) {
-                _workunits[id] = new Workunit({
-                    Wuid: id
+        update: function (id, item) {
+            var storeItem = this.get(id);
+            storeItem.updateData(item);
+            if (!this._watched[id]) {
+                var context = this;
+                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                    if (oldValue !== newValue) {
+                        context.notify(storeItem, id);
+                    }
                 });
             }
-            return _workunits[id];
-        },
-
-        remove: function (item) {
-            if (_workunits[this.getIdentity(item)]) {
-                _workunits[this.getIdentity(item)].stopMonitor();
-                delete _workunits[this.getIdentity(item)];
-            }
-        },
-
-        query: function (query, options) {
-            var request = {};
-            lang.mixin(request, options.query);
-            if (options.start)
-                request['PageStartFrom'] = options.start;
-            if (options.count)
-                request['Count'] = options.count;
-            if (options.sort) {
-                request['Sortby'] = options.sort[0].attribute;
-                request['Descending'] = options.sort[0].descending;
-            }
-
-            var results = WsWorkunits.WUQuery({
-                request: request
-            });
-
-            var deferredResults = new Deferred();
-            deferredResults.total = results.then(function (response) {
-                if (lang.exists("WUQueryResponse.NumWUs", response)) {
-                    return response.WUQueryResponse.NumWUs;
-                }
-                return 0;
-            });
-            var context = this;
-            Deferred.when(results, function (response) {
-                var workunits = [];
-                for (key in context._watched) {
-                    context._watched[key].unwatch();
-                }
-                this._watched = {};
-                if (lang.exists("WUQueryResponse.Workunits.ECLWorkunit", response)) {
-                    arrayUtil.forEach(response.WUQueryResponse.Workunits.ECLWorkunit, function (item, index) {
-                        var wu = context.get(item.Wuid);
-                        wu.updateData(item);
-                        workunits.push(wu);
-                        context._watched[wu.Wuid] = wu.watch("changedCount", function (name, oldValue, newValue) {
-                            if (oldValue !== newValue) {
-                                context.notify(wu, wu.Wuid);
-                            }
-                        });
-                    });
-                }
-                deferredResults.resolve(workunits);
-            });
-
-            return QueryResults(deferredResults);
         }
     });
 
@@ -631,11 +583,13 @@ define([
             return store.get(wuid);
         },
 
-        CreateWUQueryObjectStore: function (options) {
+        CreateWUQueryStore: function (options) {
             var store = new Store(options);
-            store = Observable(store);
-            var objStore = new ObjectStore({ objectStore: store });
-            return objStore;
+            return Observable(store);
+        },
+
+        CreateWUQueryObjectStore: function (options) {
+            return new ObjectStore({ objectStore: this.CreateWUQueryStore(options) });
         }
     };
 });

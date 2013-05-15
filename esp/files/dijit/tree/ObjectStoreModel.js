@@ -1,6 +1,6 @@
 //>>built
 define("dijit/tree/ObjectStoreModel",["dojo/_base/array","dojo/aspect","dojo/_base/declare","dojo/_base/lang","dojo/when"],function(_1,_2,_3,_4,_5){
-return _3("dijit.tree.ObjectStoreModel",null,{store:null,labelAttr:"name",root:null,query:null,constructor:function(_6){
+return _3("dijit.tree.ObjectStoreModel",null,{store:null,labelAttr:"name",labelType:"text",root:null,query:null,constructor:function(_6){
 _4.mixin(this,_6);
 this.childrenCache={};
 },destroy:function(){
@@ -45,21 +45,19 @@ _5(_f,_4.hitch(this,"onChildrenChange",_c));
 }
 },isItem:function(){
 return true;
-},fetchItemByIdentity:function(_12){
-this.store.get(_12.identity).then(_4.hitch(_12.scope,_12.onItem),_4.hitch(_12.scope,_12.onError));
-},getIdentity:function(_13){
-return this.store.getIdentity(_13);
-},getLabel:function(_14){
-return _14[this.labelAttr];
-},newItem:function(_15,_16,_17,_18){
-return this.store.put(_15,{parent:_16,before:_18});
-},pasteItem:function(_19,_1a,_1b,_1c,_1d,_1e){
-if(!_1c){
-var _1f=[].concat(this.childrenCache[this.getIdentity(_1a)]),_20=_1.indexOf(_1f,_19);
-_1f.splice(_20,1);
-this.onChildrenChange(_1a,_1f);
+},getIdentity:function(_12){
+return this.store.getIdentity(_12);
+},getLabel:function(_13){
+return _13[this.labelAttr];
+},newItem:function(_14,_15,_16,_17){
+return this.store.put(_14,{parent:_15,before:_17});
+},pasteItem:function(_18,_19,_1a,_1b,_1c,_1d){
+if(!_1b){
+var _1e=[].concat(this.childrenCache[this.getIdentity(_19)]),_1f=_1.indexOf(_1e,_18);
+_1e.splice(_1f,1);
+this.onChildrenChange(_19,_1e);
 }
-return this.store.put(_19,{overwrite:true,parent:_1b,before:_1e});
+return this.store.put(_18,{overwrite:true,parent:_1a,before:_1d});
 },onChange:function(){
 },onChildrenChange:function(){
 },onDelete:function(){

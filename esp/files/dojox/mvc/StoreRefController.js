@@ -15,6 +15,9 @@ _b=_4(_b,_8.getStatefulOptions);
 _8.set(_8._refSourceModelProp,_b);
 return _b;
 });
+if(_a.then){
+_a=_2.delegate(_a);
+}
 for(var s in _9){
 if(isNaN(s)&&_9.hasOwnProperty(s)&&_2.isFunction(_9[s])){
 _a[s]=_9[s];

@@ -1,0 +1,58 @@
+<!DOCTYPE HTML>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<title>Test Core Functionality</title>
+<style>
+test-variable=var: 163px;
+test-expression=var: test;
+
+test-component = section {
+	=>
+		h1 (label) { color: red},
+		p (content) {
+			color: green;
+			width: var(test-variable);
+		},
+		div (test-expression);
+	main-color=var: #00f;
+	label=var: Label;
+	content=var: cont asdfkadskf anskldf naskldfn adsklnf dsklanfl kadsnent;
+	background-color: #ddd;
+	display: block;
+	width: 200px;
+	height: 200px;
+	color: var(main-color);
+	border: 4px solid var(main-color);
+};
+
+.with-content {
+	test-component: #aaa test;
+	background-color: yellow;
+	label: Should not show up;
+}
+pink-background = {
+	background-color: #faa;
+}
+hello-world = test-component, pink-background {
+	label: Hello world;
+	main-color: #888;
+}
+body {
+	=> test-component {
+		label: Hi there;
+		content: some content;
+	},
+	hello-world, .with-content;
+}
+</style>
+
+<script src="../../dojo/dojo.js" data-dojo-config="async:true, deps:['xstyle/main']"></script>
+
+</head>
+<body>
+
+<div class="widget"></div>
+
+</body>
+</html>

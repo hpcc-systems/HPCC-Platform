@@ -38,7 +38,6 @@ define([
         baseClass: "GraphsWidget",
 
         TabPosition: "bottom",
-        tabMap: [],
 
         onErrorClick: function (line, col) {
         },
@@ -51,7 +50,7 @@ define([
         },
 
         ensurePane: function (id, params) {
-            var retVal = this.tabMap[id];
+            var retVal = registry.byId(id);
             if (!retVal) {
                 if (lang.exists("graph", params)) {
                     retVal = new GraphPageWidget({
@@ -61,7 +60,6 @@ define([
                         title: params.graph.Name
                     });
                 }
-                this.tabMap[id] = retVal;
                 this.addChild(retVal);
             }
             return retVal;

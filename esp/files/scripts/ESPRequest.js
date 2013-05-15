@@ -15,11 +15,16 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/array",
     "dojo/_base/lang",
     "dojo/_base/config",
+    "dojo/_base/Deferred",
     "dojo/request",
-    "dojo/request/script"
-], function (declare, lang, config, request, script) {
+    "dojo/request/script",
+    "dojo/store/util/QueryResults",
+    "dojo/store/Observable"
+
+], function (declare, arrayUtil, lang, config, Deferred, request, script, QueryResults, Observable) {
     var RequestHelper = declare(null, {
 
         serverIP: null,
@@ -196,6 +201,7 @@ define([
         }
     });
 
+    _StoreSingletons = [];
     return {
         flattenArray: function (target, arrayName, arrayID) {
             if (lang.exists(arrayName + ".length", target)) {
@@ -226,9 +232,126 @@ define([
             return target;
         },
 
+        getBaseURL: function (service) {
+            var helper = new RequestHelper();
+            return helper.getBaseURL(service);
+        },
+
         send: function (service, action, params) {
             var helper = new RequestHelper();
             return helper.send(service, action, params);
-        }
+        },
+
+        Store: declare(null, {
+            constructor: function (options) {
+                if (!this.service) {
+                    throw new Error("service:  Undefined - Missing service name (eg 'WsWorkunts').");
+                }
+                if (!this.action) {
+                    throw new Error("action:  Undefined - Missing action name (eg 'WUQuery').");
+                }
+                if (!this.responseQualifier) {
+                    throw new Error("responseQualifier:  Undefined - Missing action name (eg 'Workunits.ECLWorkunit').");
+                }
+                if (!this.idProperty) {
+                    throw new Error("idProperty:  Undefined - Missing ID field (eg 'Wuid').");
+                }
+                declare.safeMixin(this, options);
+            },
+
+            getIdentity: function (item) {
+                return item[this.idProperty];
+            },
+
+            exists: function (id) {
+                return lang.exists(this.service + "." + this.action + "." + id, _StoreSingletons);
+            },
+
+            get: function (id) {
+                if (!this.exists(id)) {
+                    var retVal = lang.getObject(this.service + "." + this.action + "." + id, true, _StoreSingletons);
+                    lang.mixin(retVal, this.create(id))
+                    return retVal;
+                }
+                return lang.getObject(this.service + "." + this.action + "." + id, false, _StoreSingletons);
+            },
+
+            create: function (id) {
+                var retVal = {
+                };
+                retVal[this.idProperty] = id;
+                return retVal;
+            },
+
+            update: function (id, item) {
+                lang.mixin(this.get(id), item);
+            },
+
+            _hasResponseContent: function(response) {
+                return lang.exists(this.action + "Response." + this.responseQualifier, response);
+            },
+
+            _getResponseContent: function(response) {
+                return lang.getObject(this.action + "Response." + this.responseQualifier, false, response);
+            },
+
+            query: function (query, options) {
+                var request = query;
+                if (options !== undefined && options.start !== undefined && options.count !== undefined) {
+                    if (this.startProperty) {
+                        request[this.startProperty] = options.start;
+                    }
+                    if (this.countProperty) {
+                        request[this.countProperty] = options.count;
+                    }
+                }
+                if (options !== undefined && options.sort !== undefined && options.sort[0].attribute !== undefined) {
+                    request['Sortby'] = options.sort[0].attribute;
+                    if (options.sort[0].descending) {
+                        request['Descending'] = options.sort[0].descending;
+                    }
+                }
+                if (this.preRequest) {
+                    this.preRequest(request);
+                }
+                var helper = new RequestHelper();
+                var results = helper.send(this.service, this.action, {
+                    request: request
+                });
+
+                var deferredResults = new Deferred();
+                var context = this;
+                deferredResults.total = results.then(function (response) {
+                    if (context.responseTotalQualifier) {
+                        return lang.getObject(context.action + "Response." + context.responseTotalQualifier, false, response);
+                    } else if (context._hasResponseContent(response)) {
+                        return context._getResponseContent(response).length;
+                    }
+                    return 0;
+                });
+                Deferred.when(results, function (response) {
+                    var items = [];
+                    if (context._hasResponseContent(response)) {
+                        if (context.preProcessResponse) {
+                            context.preProcessResponse(lang.getObject(context.action + "Response", false, response), request);
+                        }
+                        arrayUtil.forEach(context._getResponseContent(response), function (item, index) {
+                            if (context.preProcessRow) {
+                                context.preProcessRow(item);
+                            }
+                            var storeItem = context.get(context.getIdentity(item));
+                            context.update(context.getIdentity(item), item);
+                            items.push(storeItem);
+                        });
+                    }
+                    if (context.postProcessResults) {
+                        context.postProcessResults(items);
+                    }
+                    deferredResults.resolve(items);
+                });
+
+                return QueryResults(deferredResults);
+            }
+        })
     };
 });

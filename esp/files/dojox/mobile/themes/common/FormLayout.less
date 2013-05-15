@@ -1,0 +1,218 @@
+/* Single Column Layout */
+/**********************************************************************************************************************/
+
+/*** columns == 'auto' ***/
+@media all and (max-width: 500px) {
+	.mblFormLayout.mblFormLayoutAuto fieldset {
+		padding-left: 0;
+		padding-right: 0;
+	}
+
+	/* A gap between rows */
+	.mblFormLayout.mblFormLayoutAuto > * + * {
+		margin-top: 0.6em;
+	}
+
+	/* Text widgets */
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.TextArea"],
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.TextBox"],
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.ComboBox"],
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.SearchBox"]{
+		width: 100%;
+		box-sizing: border-box;
+	}
+}
+
+/*** columns == 'single' ***/
+.mblFormLayout.mblFormLayoutSingleCol fieldset {
+	padding-left: 0;
+	padding-right: 0;
+}
+
+/* A gap between rows */
+.mblFormLayout.mblFormLayoutSingleCol > * + * {
+	margin-top: 0.6em;
+}
+
+/* Text widgets */
+.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.TextArea"],
+.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
+.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.TextBox"],
+.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.ComboBox"],
+.mblFormLayout.mblFormLayoutSingleCol *[data-dojo-type="dojox.mobile.SearchBox"]{
+	width: 100%;
+	box-sizing: border-box;
+}
+
+
+/* Two Columns Layout */
+/**********************************************************************************************************************/
+
+/*** columns == 'auto' ***/
+@media all and (min-width: 500px) {
+	/* Form layout selector*/
+	.mblFormLayout.mblFormLayoutAuto {
+		display: table;
+		width: 100%;
+	}
+
+	/* Form rows */
+	.mblFormLayout.mblFormLayoutAuto > * {
+		display: table-row;
+	}
+	/* Form cells */
+	.mblFormLayout.mblFormLayoutAuto > * > * {
+		display: table-cell;
+		vertical-align: top;
+		padding: 0.5em 0;
+	}
+
+	/* Left cells */
+	.mblFormLayout.mblFormLayoutAuto > * > *:first-child {
+		width:20%;
+		padding-right: 0.5em;
+	}
+
+	/* mblFormLayoutRightAlign optional selector definition */
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child {
+		text-align: right;
+	}
+
+	/* Force right margin of last elements of the right column, no way to select elements followed by a <br> */
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.Button"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ToggleButton"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.CheckBox"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.Switch"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.RadioButton"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ComboBox"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.TextArea"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ExpandingTextArea"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.TextBox"]:last-child,
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.SearchBox"]:last-child {
+		margin-right: 0;
+	}
+
+	/* The Slider sticks to its bounds when margin=10px */
+	.mblFormLayout.mblFormLayoutAuto.mblFormLayoutRightAlign > * > *:last-child > .mblSlider:last-child {
+		display: inline-block;
+		margin-right: 10px;
+		margin-top: 0px;
+	}
+
+	/* Text widgets */
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.TextArea"],
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.TextBox"],
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.ComboBox"],
+	.mblFormLayout.mblFormLayoutAuto *[data-dojo-type="dojox.mobile.SearchBox"]{
+		width: 50%;
+		box-sizing: border-box;
+	}
+}
+
+/*** columns == 'two' ***/
+
+/* Form layout selector*/
+.mblFormLayout.mblFormLayoutTwoCol {
+	display: table;
+	width: 100%;
+}
+
+/* Form rows */
+.mblFormLayout.mblFormLayoutTwoCol > * {
+	display: table-row;
+}
+/* Form cells */
+.mblFormLayout.mblFormLayoutTwoCol > * > * {
+	display: table-cell;
+	vertical-align: top;
+	padding: 0.5em 0;
+}
+
+/* Left cells */
+.mblFormLayout.mblFormLayoutTwoCol > * > *:first-child {
+	width:20%;
+	padding-right: 0.5em;
+}
+
+/* mblFormLayoutRightAlign optional selector definition */
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child {
+	text-align: right;
+}
+
+/* Force right margin of last elements of the right column, no way to select elements followed by a <br> */
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.Button"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ToggleButton"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.CheckBox"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.Switch"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.RadioButton"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ComboBox"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.TextArea"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.ExpandingTextArea"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.TextBox"]:last-child,
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > *[data-dojo-type="dojox.mobile.SearchBox"]:last-child {
+	margin-right: 0;
+}
+
+/* The Slider sticks to its bounds when margin=10px */
+.mblFormLayout.mblFormLayoutTwoCol.mblFormLayoutRightAlign > * > *:last-child > .mblSlider:last-child {
+	display: inline-block;
+	margin-right: 10px;
+	margin-top: 0px;
+}
+
+/* Text widgets */
+.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.TextArea"],
+.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
+.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.TextBox"],
+.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.ComboBox"],
+.mblFormLayout.mblFormLayoutTwoCol *[data-dojo-type="dojox.mobile.SearchBox"]{
+	width: 50%;
+	box-sizing: border-box;
+}
+
+/* Common Rules*/
+/**********************************************************************************************************************/
+
+.mblFormLayout fieldset {
+	border: none;
+	margin: 0;
+}
+
+/* Bold widget labels */
+.mblFormLayout > * > *:first-child {
+	font-weight: bold;
+}
+
+/* Whatever the screen width, force left margin of first elements and elements following a <br> */
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.Button"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.ToggleButton"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.CheckBox"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.Switch"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.RadioButton"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.ComboBox"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.TextArea"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.ExpandingTextArea"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.TextBox"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > *[data-dojo-type="dojox.mobile.SearchBox"]:first-child,
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.Button"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.ToggleButton"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.CheckBox"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.Switch"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.RadioButton"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.ComboBox"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.TextArea"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.ExpandingTextArea"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.TextBox"],
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > br + *[data-dojo-type="dojox.mobile.SearchBox"] {
+	margin-left: 0;
+}
+
+/* The Slider sticks to its bounds when margin=10px */
+.mblFormLayout:not(.mblFormLayoutRightAlign) > * > *:last-child > .mblSlider:first-child {
+	display: inline-block;
+	margin-left: 10px;
+	margin-top: 0;
+	margin-bottom: 0;
+}

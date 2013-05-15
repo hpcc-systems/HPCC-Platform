@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dojox/form/resources/TriStateCheckBox.html":"<div class=\"dijit dijitReset dijitInline\" role=\"presentation\"\n\t><div class=\"dojoxTriStateCheckBoxInner\" dojoAttachPoint=\"stateLabelNode\"></div\n\t><input ${!nameAttrSetting} type=\"${type}\" role=\"${type}\" dojoAttachPoint=\"focusNode\"\n\tclass=\"dijitReset dojoxTriStateCheckBoxInput\" dojoAttachEvent=\"onclick:_onClick\"\n/></div>\n"}});
 define("dojox/form/TriStateCheckBox",["dojo/_base/kernel","dojo/_base/declare","dojo/_base/array","dojo/_base/lang","dojo/_base/event","dojo/query","dojo/dom-attr","dojo/text!./resources/TriStateCheckBox.html","dijit/form/Button","dijit/form/_ToggleButtonMixin","dojo/NodeList-dom"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a){
 return _2("dojox.form.TriStateCheckBox",[_9,_a],{templateString:_8,baseClass:"dojoxTriStateCheckBox",type:"checkbox",states:"",_stateLabels:null,stateValue:null,_currentState:0,_stateType:"False",readOnly:false,checked:"",_aria_attr:"aria-checked",constructor:function(){
 this.states=[false,"mixed",true];
@@ -108,3 +107,4 @@ return _17?(_17=="mixed"?"Mixed":"True"):"False";
 this.mouseFocus=true;
 }});
 });
+require({cache:{"url:dojox/form/resources/TriStateCheckBox.html":"<div class=\"dijit dijitReset dijitInline\" role=\"presentation\"\n\t><div class=\"dojoxTriStateCheckBoxInner\" dojoAttachPoint=\"stateLabelNode\"></div\n\t><input ${!nameAttrSetting} type=\"${type}\" role=\"${type}\" dojoAttachPoint=\"focusNode\"\n\tclass=\"dijitReset dojoxTriStateCheckBoxInput\" dojoAttachEvent=\"onclick:_onClick\"\n/></div>\n"}});
