@@ -82,24 +82,19 @@ define([
             },
 
             syncSelectionFrom: function (sourceControl) {
-                var selItems = [];
+                var items = [];
 
                 //  Get Selected Items  ---
                 if (sourceControl == this.timingGrid || sourceControl == this.timingTreeMap) {
-                    var items = sourceControl.getSelected();
-                    for (var i = 0; i < items.length; ++i) {
-                        if (items[i].SubGraphId) {
-                            selItems.push(items[i].SubGraphId);
-                        }
-                    }
+                    items = sourceControl.getSelected();
                 }
 
                 //  Set Selected Items  ---
                 if (sourceControl != this.timingGrid) {
-                    this.timingGrid.setSelected(selItems);
+                    this.timingGrid.setSelected(items);
                 }
                 if (sourceControl != this.timingTreeMap) {
-                    this.timingTreeMap.setSelected(selItems);
+                    this.timingTreeMap.setSelected(items);
                 }
             }
         });

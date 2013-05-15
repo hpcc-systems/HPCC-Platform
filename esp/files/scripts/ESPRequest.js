@@ -226,6 +226,11 @@ define([
             return target;
         },
 
+        getBaseURL: function (service) {
+            var helper = new RequestHelper();
+            return helper.getBaseURL(service);
+        },
+
         send: function (service, action, params) {
             var helper = new RequestHelper();
             return helper.send(service, action, params);

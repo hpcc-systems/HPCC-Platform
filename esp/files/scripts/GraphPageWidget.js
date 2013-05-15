@@ -23,7 +23,7 @@ define([
     "dojo/on",
     "dojo/has",
     "dojo/store/Memory",
-    "dojo/data/ObjectStore",
+    "dojo/store/Observable",
 
     "dijit/layout/_LayoutWidget",
     "dijit/_TemplatedMixin",
@@ -34,10 +34,17 @@ define([
     "dijit/registry",
     "dijit/Dialog",
 
-    "dojox/grid/DataGrid",
     "dojox/html/entities",
 
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+
     "hpcc/GraphWidget",
+    "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
     "hpcc/TimingGridWidget",
     "hpcc/TimingTreeMapWidget",
@@ -50,10 +57,11 @@ define([
     "dijit/MenuSeparator",
     "dijit/form/TextBox",
     "dijit/form/DropDownButton"
-], function (declare, lang, sniff, arrayUtil, dom, domConstruct, on, has, Memory, ObjectStore,
+], function (declare, lang, sniff, arrayUtil, dom, domConstruct, on, has, Memory, Observable,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
-            DataGrid, entities,
-            GraphWidget, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
+            entities,
+            OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+            GraphWidget, ESPUtil, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
             template) {
     return declare("GraphPageWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -82,11 +90,18 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
-            this._initControls();
+            this.borderContainer = registry.byId(this.id + "BorderContainer");
+            this.rightBorderContainer = registry.byId(this.id + "RightBorderContainer");
+            this.findField = registry.byId(this.id + "FindField");
+            this._initGraphControls();
+            this._initTimings();
         },
 
         startup: function (args) {
             this.inherited(arguments);
+
+            this._initVertices();
+            this._initEdges();
 
             var splitter = this.borderContainer.getSplitter("right");
             this.main.watchSplitter(splitter);
@@ -111,16 +126,6 @@ define([
         },
 
         //  Implementation  ---
-        _initControls: function () {
-            this.borderContainer = registry.byId(this.id + "BorderContainer");
-            this.rightBorderContainer = registry.byId(this.id + "RightBorderContainer");
-            this.findField = registry.byId(this.id + "FindField");
-            this._initGraphControls();
-            this._initTimings();
-            this._initVertices();
-            this._initEdges();
-        },
-
         _initGraphControls: function () {
             var context = this;
             this.main = registry.byId(this.id + "MainGraphWidget");
@@ -177,44 +182,42 @@ define([
 
         _initItemGrid: function (grid) {
             var context = this;
-            grid.on("RowClick", function (evt) {
+            grid.on(".dgrid-row:click", function (evt) {
                 context.syncSelectionFrom(grid);
-            }, true);
-
-            var context = this;
-            grid.on("RowDblClick", function (evt) {
-                var idx = evt.rowIndex;
-                var item = this.getItem(idx);
-                if (this.store.getValue(item, "_globalID")) {
-                    var globalID = this.store.getValue(item, "_globalID");
-                    var mainItem = context.main.getItem(globalID);
+            });
+            grid.on(".dgrid-row:dblclick", function (evt) {
+                var item = grid.row(evt).data;
+                if (item._globalID) {
+                    var mainItem = context.main.getItem(item._globalID);
                     context.main.centerOnItem(mainItem, true);
                 }
-
-            }, true);
+            });
         },
 
         _initVertices: function () {
-            this.verticesGrid = registry.byId(this.id + "VerticesGrid");
+            var store = new Memory({
+                idProperty: "id",
+                data: []
+            });
+            this.verticesStore = Observable(store);
+            this.verticesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                store: this.verticesStore
+            }, this.id + "VerticesGrid");
+
             this._initItemGrid(this.verticesGrid);
         },
 
         _initEdges: function () {
-            this.edgesGrid = registry.byId(this.id + "EdgesGrid");
-            this._initItemGrid(this.edgesGrid);
-        },
-
-        _initProperties: function () {
-            this.propertyGrid = new DataGrid({
-                //store: objStore,
-                query: { id: "*" },
-                structure: [
-                { name: "Property", field: "key", width: "auto" },
-                { name: "Value", field: "value", width: "auto" }
-                ]
+            var store = new Memory({
+                idProperty: "id",
+                data: []
             });
-            this.propertyGrid.placeAt(this.id + "Properties");
-            this.propertyGrid.startup();
+            this.edgesStore = Observable(store);
+            this.edgesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                store: this.edgesStore
+            }, this.id + "EdgesGrid");
+
+            this._initItemGrid(this.edgesGrid);
         },
 
         _onLayout: function () {
@@ -384,23 +387,19 @@ define([
                 }
             }
 
-            var layout = [[
-                { 'name': 'ID', 'field': 'id', 'width': '50px' },
-                { 'name': 'Label', 'field': 'label', 'width': '150px' }
-            ]];
+            var layout = [
+                { label: "ID", field: "id", width: 50 },
+                { label: "Label", field: "label", width: 150 }
+            ];
 
             for (var key in layoutMap) {
-                layout[0].push({ 'name': key, 'field': key, 'width': '200px' });
+                layout.push({ label: key, field: key, width: 200 });
             }
-            layout[0].push({ 'name': "ECL", 'field': "ecl", 'width': '1024px' });
+            layout.push({ label: "ECL", field: "ecl", width: 1024 });
 
-            var store = new Memory({ data: vertices });
-            var dataStore = new ObjectStore({ objectStore: store });
-            this.verticesGrid.setStructure(layout);
-            this.verticesGrid.setStore(dataStore);
-            this.verticesGrid.setQuery({
-                id: "*"
-            });
+            this.verticesStore.setData(vertices);
+            this.verticesGrid.set("columns", layout);
+            this.verticesGrid.refresh();
         },
 
         loadEdges: function () {
@@ -415,80 +414,84 @@ define([
                 }
             }
 
-            var layout = [[
-                { 'name': 'ID', 'field': 'id', 'width': '50px' }
-            ]];
+            var layout = [
+                { label: "ID", field: "id", width: 50 }
+            ];
 
             for (var key in layoutMap) {
-                layout[0].push({ 'name': key, 'field': key, 'width': '100px' });
+                layout.push({ label: key, field: key, width: 100 });
             }
 
-            var store = new Memory({ data: edges });
-            var dataStore = new ObjectStore({ objectStore: store });
-            this.edgesGrid.setStructure(layout);
-            this.edgesGrid.setStore(dataStore);
-            this.edgesGrid.setQuery({
-                id: "*"
-            });
+            this.edgesStore.setData(edges);
+            this.edgesGrid.set("columns", layout);
+            this.edgesGrid.refresh();
         },
 
         syncSelectionFrom: function (sourceControl) {
-            var selItems = [];
+            var selectedGlobalIDs = [];
 
             //  Get Selected Items  ---
             if (sourceControl == this.timingGrid || sourceControl == this.timingTreeMap) {
                 var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (items[i].SubGraphId) {
-                        selItems.push(items[i].SubGraphId);
+                        selectedGlobalIDs.push(items[i].SubGraphId);
                     }
                 }
             } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid) {
-                var items = sourceControl.selection.getSelected();
+                var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (items[i]._globalID) {
-                        selItems.push(items[i]._globalID);
+                        selectedGlobalIDs.push(items[i]._globalID);
                     }
                 }
             } else {
-                selItems = sourceControl.getSelectionAsGlobalID();
+                selectedGlobalIDs = sourceControl.getSelectionAsGlobalID();
             }
 
             //  Set Selected Items  ---
             if (sourceControl != this.timingGrid) {
-                this.timingGrid.setSelected(selItems);
+                this.timingGrid.setSelectedAsGlobalID(selectedGlobalIDs);
             }
             if (sourceControl != this.timingTreeMap) {
-                this.timingTreeMap.setSelected(selItems);
+                this.timingTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
             }
             if (sourceControl != this.verticesGrid && this.verticesGrid.store) {
                 var context = this;
-                arrayUtil.forEach(this.verticesGrid.store.objectStore.data, function (item, idx) {
-                    context.verticesGrid.selection.setSelected(idx, (item._globalID && arrayUtil.indexOf(selItems, item._globalID) != -1));
+                var selectedItems = [];
+                arrayUtil.forEach(this.verticesStore.data, function (item, idx) {
+                    if (item._globalID && arrayUtil.indexOf(selectedGlobalIDs, item._globalID) >= 0) {
+                        selectedItems.push(item);
+                    }
                 });
+                this.verticesGrid.setSelected(selectedItems);
             }
             if (sourceControl != this.edgesGrid && this.edgesGrid.store) {
                 var context = this;
-                arrayUtil.forEach(this.edgesGrid.store.objectStore.data, function (item, idx) {
-                    context.edgesGrid.selection.setSelected(idx, (item._globalID && arrayUtil.indexOf(selItems, item._globalID) != -1));
+                var selectedItems = [];
+                arrayUtil.forEach(this.edgesStore.data, function (item, idx) {
+                    if (item._globalID && arrayUtil.indexOf(selectedGlobalIDs, item._globalID) >= 0) {
+                        selectedItems.push(item);
+                    }
                 });
+                this.edgesGrid.setSelected(selectedItems);
             }
             if (sourceControl != this.main) {
-                this.main.setSelectedAsGlobalID(selItems);
+                this.main.setSelectedAsGlobalID(selectedGlobalIDs);
             }
             if (sourceControl != this.overview) {
-                this.overview.setSelectedAsGlobalID(selItems);
+                this.overview.setSelectedAsGlobalID(selectedGlobalIDs);
             }
 
             var mainItems = [];
-            for (var i = 0; i < selItems.length; ++i) {
-                mainItems.push(this.main.getItem(selItems[i]));
+            for (var i = 0; i < selectedGlobalIDs.length; ++i) {
+                mainItems.push(this.main.getItem(selectedGlobalIDs[i]));
             }
 
             if (sourceControl != this.local) {
                 var xgmml = this.main.getLocalisedXGMML(mainItems, 2);
                 this.local.loadXGMML(xgmml);
-                this.local.setSelectedAsGlobalID(selItems);
+                this.local.setSelectedAsGlobalID(selectedGlobalIDs);
             }
 
             var propertiesDom = dom.byId(this.id + "Properties");

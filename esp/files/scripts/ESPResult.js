@@ -210,23 +210,23 @@ define([
                     var type = node.getAttribute("type");
                     if (name && type) {
                         retVal.push({
-                            name: name,
+                            label: name,
                             field: name,
-                            width: this.extractWidth(type, name),
+                            width: this.extractWidth(type, name) * 9,
                             classes: "resultGridCell"
                         });
                     }
                     if (node.hasChildNodes()) {
                         var context = this;
                         retVal.push({
-                            name: name,
+                            label: name,
                             field: name,
                             formatter: function (cell, row, grid) {
                                 var div = document.createElement("div");
                                 div.appendChild(context.rowToTable(cell));
                                 return div.innerHTML;
                             },
-                            width: this.getRowWidth(node),
+                            width: this.getRowWidth(node) * 9,
                             classes: "resultGridCell"
                         });
                     }
@@ -241,7 +241,7 @@ define([
                 if (key != "myInjectedRowNum") {
                     var context = this;
                     retVal.push({
-                        name: key,
+                        label: key,
                         field: key,
                         formatter: function (cell, row, grid) {
                             if (cell && cell.Row) {
@@ -251,7 +251,7 @@ define([
                             }
                             return cell;
                         },
-                        width: context.extractWidth("string12", key),
+                        width: context.extractWidth("string12", key) * 9,
                         classes: "resultGridCell"
                     });
                 }
@@ -265,7 +265,7 @@ define([
                     cells: [
                         [
                             {
-                                name: "##", field: this.store.idProperty, width: "6", classes: "resultGridCell"
+                                label: "##", field: this.store.idProperty, width: 54, classes: "resultGridCell"
                             }
                         ]
                     ]
@@ -278,7 +278,7 @@ define([
             for (var i = 0; i < innerStruct.length; ++i) {
                 structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
             }
-            return structure;
+            return structure[0].cells[0];
         },
 
         fetchStructure: function (callback) {
@@ -377,6 +377,10 @@ define([
                 retVal = name.length;
 
             return retVal;
+        },
+
+        getStore: function () {
+            return this.store;
         },
 
         getObjectStore: function () {
