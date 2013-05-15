@@ -418,7 +418,7 @@ require([
             },
 
             watchSelect: function (select) {
-                if (has("chrome") && select) {
+                if (select) {
                     //  Only chrome needs to monitor select drop downs.
                     var context = this;
                     select.watch("_opened", function () {
@@ -449,16 +449,20 @@ require([
                     //  Hijack the dojo style class replacement call and monitor for elements in our watchList. 
                     aspect.around(domClass, "replace", function (origFunc) {
                         return function (node, addStyle, removeStyle) {
-                            if (node.id in watchList) {
+                            if (node.firstChild && (node.firstChild.id in watchList)) {
                                 if (addStyle == "dijitHidden") {
-                                    watchList[node.id] = true;
+                                    watchList[node.firstChild.id] = true;
                                     dojo.style(node, "width", "1px");
                                     dojo.style(node, "height", "1px");
+                                    dojo.style(node.firstChild, "width", "1px");
+                                    dojo.style(node.firstChild, "height", "1px");
                                     return;
-                                } else if (addStyle == "dijitVisible" && watchList[node.id] == true) {
-                                    watchList[node.id] = false;
+                                } else if (addStyle == "dijitVisible" && watchList[node.firstChild.id] == true) {
+                                    watchList[node.firstChild.id] = false;
                                     dojo.style(node, "width", "100%");
                                     dojo.style(node, "height", "100%");
+                                    dojo.style(node.firstChild, "width", "100%");
+                                    dojo.style(node.firstChild, "height", "100%");
                                     return;
                                 }
                             }
