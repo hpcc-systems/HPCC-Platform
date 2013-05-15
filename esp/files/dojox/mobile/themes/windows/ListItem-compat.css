@@ -1,0 +1,38 @@
+
+.mblDomButtonGrayArrow, .mblDomButtonArrow {
+	background-image: url("../common/domButtons/compat/mblDomButtonGrayArrow.png");
+	background-repeat: no-repeat;
+}
+.mblDomButtonGrayArrow div, .mblDomButtonArrow div {
+	display: none;
+}
+.mblDomButtonDarkBlueCheck, .mblDomButtonCheck {
+	background-image: url("../common/domButtons/compat/mblDomButtonDarkBlueCheck.png");
+	background-repeat: no-repeat;
+}
+.mblDomButtonDarkBlueCheck div, .mblDomButtonCheck div {
+	display: none;
+}
+.mblToolBarButtonHasArrow-styles {
+  width: 27px;
+  height: 27px;
+  border-radius: 20px;
+  border: 2px solid #ffffff;
+  padding: 0px;
+  margin: 0px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  background-image: url("images/dark/back.png");
+  background-position: 50% 50%;
+  background-size: 27px 27px;
+  background-repeat: no-repeat;
+}
+.mblListItemSelected {
+  background-color: Highlight;
+}
+.dj_gecko .mblListItemSelected {
+  background-image: none;
+}
+.dj_ie6 .mblListItem {
+  vertical-align: bottom;
+}

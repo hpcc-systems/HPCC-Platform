@@ -7,9 +7,8 @@ a._watchElementCallbacks();
 return a;
 };
 var _4=function(a){
-var _5=_1._toArray(a);
+var _5=_1._toArray(a||[]);
 var _6=_4;
-_6._meta={bases:[_2]};
 _5.constructor=_6;
 return _1.mixin(_5,{pop:function(){
 return this.splice(this.get("length")-1,1)[0];
@@ -41,7 +40,7 @@ return _8;
 this.splice.apply(this,[0,0].concat(_1._toArray(arguments)));
 return this.get("length");
 },concat:function(a){
-return new _4([].concat(this).concat(a));
+return new _4([].concat.apply(this,arguments));
 },join:function(_a){
 var _b=[];
 for(var l=this.get("length"),i=0;i<l;i++){
@@ -97,7 +96,10 @@ _2.prototype.set.call(this,"length",this.length);
 }
 return this;
 }
+},isInstanceOf:function(cls){
+return _2.prototype.isInstanceOf.apply(this,arguments)||cls==_4;
 }});
 };
+_4._meta={bases:[_2]};
 return _1.setObject("dojox.mvc.StatefulArray",_4);
 });

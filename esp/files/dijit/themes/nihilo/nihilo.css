@@ -59,6 +59,7 @@ table.dijitInline {
 }
 TABLE.dijitSelect {
 	padding: 0 !important; 
+	border-collapse: separate; 
 }
 .dijitTextBox .dijitSpinnerButtonContainer,
 .dijitTextBox .dijitArrowButtonContainer,
@@ -81,7 +82,7 @@ TABLE.dijitSelect {
 }
 .dijitOffScreen { 
 	position: absolute !important;
-	left: 50% !important;
+	left: -10000px !important;
 	top: -10000px !important;
 }
 .dijitPopup {
@@ -90,6 +91,7 @@ TABLE.dijitSelect {
 	margin: 0;
 	border: 0;
 	padding: 0;
+	-webkit-overflow-scrolling: touch;
 }
 .dijitPositionOnly {
 	
@@ -268,6 +270,7 @@ td.dijitButtonContents {
 .dijitButtonNode,
 .dijitButtonNode * {
 	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
 }
 .dj_ie .dijitButtonNode {
 	
@@ -733,6 +736,11 @@ body .dijitAlignClient { position: absolute; }
 }
 .dj_ie .dijitSplitterCover {
 	background: white;
+	opacity: 0;
+}
+.dj_ie6 .dijitSplitterCover,
+.dj_ie7 .dijitSplitterCover,
+.dj_ie8 .dijitSplitterCover {
 	filter: alpha(opacity=0);
 }
 .dijitSplitterH {
@@ -740,21 +748,19 @@ body .dijitAlignClient { position: absolute; }
 	border-top:1px;
 	border-bottom:1px;
 	cursor: row-resize;
+	-webkit-tap-highlight-color: transparent;
 }
 .dijitSplitterV {
 	width: 7px;
 	border-left:1px;
 	border-right:1px;
 	cursor: col-resize;
+	-webkit-tap-highlight-color: transparent;
 }
 .dijitSplitContainer {
 	position: relative;
 	overflow: hidden;
 	display: block;
-}
-.dj_ff3 .dj_a11y div.dijitSplitter:focus {
-	outline-style:dotted;
-	outline-width: 2px;
 }
 .dijitSplitPane {
 	position: absolute;
@@ -804,6 +810,7 @@ body .dijitAlignClient { position: absolute; }
 .dijitContentPane {
 	display: block;
 	overflow: auto;	
+	-webkit-overflow-scrolling: touch;
 }
 .dijitContentPaneSingleChild {
 	
@@ -817,8 +824,12 @@ body .dijitAlignClient { position: absolute; }
 	display: block;
 	overflow: hidden;
 }
-.dijitTitlePaneTitle {
+.dijitFieldset {
+	border: 1px solid gray;
+}
+.dijitTitlePaneTitle, .dijitFieldset legend {
 	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
 }
 .dijitFixedOpen, .dijitFixedClosed {
 	
@@ -832,16 +843,16 @@ body .dijitAlignClient { position: absolute; }
 .dijitTitlePaneTitle * {
 	vertical-align: middle;
 }
-.dijitTitlePane .dijitArrowNodeInner {
+.dijitTitlePane .dijitArrowNodeInner, .dijitFieldset .dijitArrowNodeInner {
 	
 	display: none;
 }
-.dj_a11y .dijitTitlePane .dijitArrowNodeInner {
+.dj_a11y .dijitTitlePane .dijitArrowNodeInner, .dj_a11y .dijitFieldset .dijitArrowNodeInner {
 	
 	display:inline !important;
 	font-family: monospace;		
 }
-.dj_a11y .dijitTitlePane .dijitArrowNode {
+.dj_a11y .dijitTitlePane .dijitArrowNode, .dj_a11y .dijitFieldset .dijitArrowNode {
 	
 	display:none;
 }
@@ -916,6 +927,7 @@ body .dijitAlignClient { position: absolute; }
 }
 .dijitAccordionTitle {
 	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
 }
 .dijitAccordionTitleSelected {
 	cursor: default;
@@ -962,6 +974,7 @@ body .dijitAlignClient { position: absolute; }
 .dijitCalendarPreviousYear,
 .dijitCalendarNextYear {
 	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
 }
 .dijitCalendarDisabledDate {
 	color: gray;
@@ -995,6 +1008,7 @@ body .dijitAlignClient { position: absolute; }
 	white-space: nowrap;
 	padding:.1em .2em;
 	cursor:pointer;
+	-webkit-tap-highlight-color: transparent;
 }
 .dijitMenuItem:focus {
 	outline: none
@@ -1026,10 +1040,6 @@ body .dijitAlignClient { position: absolute; }
 .dj_a11y .dijitMenuItemSelected {
 	border: 1px dotted black !important;	
 }
-.dj_ff3 .dj_a11y .dijitMenuItem td {
-	padding: 0 !important;
-	background:none !important;
-}
 .dj_a11y .dijitMenuItemSelected .dijitMenuItemLabel {
 	border-width: 1px;
 	border-style: solid;
@@ -1059,18 +1069,16 @@ body .dijitAlignClient { position: absolute; }
 	margin-bottom:3px;
 	font-size: 1px;
 }
-.dijitCheckedMenuItemIconChar {
-	vertical-align: middle;
-	visibility:hidden;
+.dijitMenuItemIconChar {
+	display: none;		
+	visibility: hidden;	
 }
-.dijitCheckedMenuItemChecked .dijitCheckedMenuItemIconChar {
-	visibility: visible;
+.dj_a11y .dijitMenuItemIconChar {
+	display: inline;	
 }
-.dj_a11y .dijitCheckedMenuItemIconChar {
-	display:inline !important;
-}
-.dj_a11y .dijitCheckedMenuItemIcon {
-	display: none;
+.dijitCheckedMenuItemChecked .dijitMenuItemIconChar,
+.dijitRadioMenuItemChecked .dijitMenuItemIconChar {
+	visibility: visible; 
 }
 .dj_ie .dj_a11y .dijitMenuBar .dijitMenuItem {
 	
@@ -1081,7 +1089,7 @@ body .dijitAlignClient { position: absolute; }
 }
 .dijitTabContainer {
     z-index: 0; 
-    overflow-y: visible; 
+    overflow: visible; 
 }
 .dj_ie6 .dijitTabContainer {
     
@@ -1155,6 +1163,7 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .dijitTab {
 	position:relative;
 	cursor:pointer;
+	-webkit-tap-highlight-color: transparent;
 	white-space:nowrap;
 	z-index:3;
 }
@@ -1246,6 +1255,10 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 }
 .dijitTree {
 	overflow: auto;	
+	-webkit-tap-highlight-color: transparent;
+}
+.dijitTreeContainer {
+	float: left;	
 }
 .dijitTreeIndent {
 	
@@ -1253,6 +1266,10 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 }
 .dijitTreeRow, .dijitTreeContent {
 	white-space: nowrap;
+}
+.dj_ie .dijitTreeLabel:focus {
+	
+	outline: 1px dotted black;
 }
 .dijitTreeRow img {
 	
@@ -1289,6 +1306,10 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 }
 .dijitDialogCloseIcon {
 	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.dijitDialogPaneContent {
+	-webkit-overflow-scrolling: touch;
 }
 .dijitDialogUnderlayWrapper {
 	position: absolute;
@@ -1339,6 +1360,7 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 	width:0;
 	height:0;
 	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
 }
 .dj_iequirks .dj_a11y .dijitSliderImageHandle {
 	font-size: 0;
@@ -1367,6 +1389,7 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 	border-style:solid;
 	border-color:black;
 	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
 }
 .dijitSliderBarContainerV {
 	position:relative;
@@ -1464,6 +1487,7 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 }
 .dijitSliderButtonContainer * {
 	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
 }
 .dijitSlider .dijitButtonNode {
 	padding:0;
@@ -1551,9 +1575,6 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .dj_a11y .dijitSelect .dijitButtonText {
 	display: inline-block !important;
 }
-.dijitSelectError .dijitButtonContents .dijitButtonText {
-	display: none !important;
-}
 .dijitTextArea {
 	width:100%;
 	overflow-y: auto;	
@@ -1586,6 +1607,26 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .dijitEditorReadOnly {
 	color: gray;
 }
+.dijitTimePicker {
+	background-color: white;
+}
+.dijitTimePickerItem {
+	cursor:pointer;
+	-webkit-tap-highlight-color: transparent;
+}
+.dijitTimePickerItemHover {
+	background-color:gray;
+	color:white;
+}
+.dijitTimePickerItemSelected {
+	font-weight:bold;
+	color:#333;
+	background-color:#b7cdee;
+}
+.dijitTimePickerItemDisabled {
+	color:gray;
+	text-decoration:line-through;
+}
 .dijitTimePickerItemInner {
 	text-align:center;
 	border:0;
@@ -1604,20 +1645,6 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .dijitTimePickerMarker {
 	color:black;
 	background-color:#CCC;
-}
-.dijitTimePickerItemSelected {
-	font-weight:bold;
-	color:#333;
-	background-color:#b7cdee;
-}
-.dijitTimePickerItemHover {
-	background-color:gray;
-	color:white;
-	cursor:pointer;
-}
-.dijitTimePickerItemDisabled {
-	color:gray;
-	text-decoration:line-through;
 }
 .dj_a11y .dijitTimePickerItemSelected .dijitTimePickerItemInner {
 	border: solid 4px black;
@@ -1711,10 +1738,6 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .dijitSelectMenu {
 	border-width: 1px;
 }
-.dijitSelectMenu .dijitMenuTable {
-	margin: 0;
-	background-color: transparent;
-}
 .dijitForceStatic {
 	position: static !important;
 }
@@ -1762,6 +1785,9 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .dj_gecko .dijitArrowButtonInner INPUT,
 .dj_gecko INPUT.dijitArrowButtonInner {
 	-moz-user-focus:ignore;
+}
+.dijitFocused .dijitMenuItemShortcutKey {
+	text-decoration: underline;
 }
 .dijitIconSave,
 .dijitIconPrint,
@@ -1993,14 +2019,18 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .nihilo .dijitMenuSeparatorBottom {
 	border-top: 1px solid #d3d3d3;
 }
-.nihilo .dijitCheckedMenuItemIconChar {
-	display: none;
-}
-.nihilo .dijitCheckedMenuItemIcon {
+.nihilo .dijitCheckedMenuItem .dijitMenuItemIcon  {
 	background-image: url("images/spriteCheckbox.gif");
 	background-position: -80px;
 }
-.nihilo .dijitCheckedMenuItemChecked .dijitCheckedMenuItemIcon {
+.nihilo .dijitCheckedMenuItemChecked .dijitMenuItemIcon {
+	background-position: -64px;
+}
+.nihilo .dijitRadioMenuItem .dijitMenuItemIcon {
+	background-image: url("images/spriteRadio.gif");
+	background-position: -80px;
+}
+.nihilo .dijitRadioMenuItemChecked .dijitMenuItemIcon {
 	background-position: -64px;
 }
 .nihilo .dijitTabContainer .tabStripRBtn {
@@ -2911,7 +2941,8 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 	background:#f0f0f0 url("images/progressBarFull.png") repeat-x center center;
 }
 .nihilo .dijitProgressBarFull {
-	border-right:1px solid #f8d582;
+	border: 0px solid #f8d582;
+	border-right-width: 1px;
 }
 .nihilo .dijitProgressBarLabel {
 	
@@ -2933,24 +2964,24 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .nihilo .dijitTitlePaneTitleHover  {
 	background: #f9f9f9 url("images/accordionItemActive.png") top repeat-x;
 }
-.nihilo .dijitTitlePane .dijitOpen .dijitArrowNode,
-.nihilo .dijitTitlePane .dijitClosed .dijitArrowNode {
+.nihilo .dijitTitlePane .dijitArrowNode,
+.nihilo .dijitFieldset .dijitArrowNode {
 	width:15px;
 	height:15px;
 }
 .nihilo .dijitTitlePaneTextNode {
 	color: #243C5F;
 }
-.nihilo .dijitTitlePane .dijitClosed .dijitArrowNode {
+.nihilo .dijitTitlePane .dijitClosed .dijitArrowNode, .nihilo .dijitFieldset .dijitFieldsetTitleClosed .dijitArrowNode {
 	background: url("images/spriteRoundedIconsSmall.png") no-repeat -30px top;
 }
-.dj_ie6 .nihilo .dijitTitlePane .dijitClosed .dijitArrowNode {
+.dj_ie6 .nihilo .dijitTitlePane .dijitClosed .dijitArrowNode, .dj_ie6 .nihilo .dijitFieldset .dijitFieldsetTitleClosed .dijitArrowNode {
 	background:url("images/spriteRoundedIconsSmall.gif") no-repeat -30px top;
 }
-.nihilo .dijitTitlePane .dijitOpen .dijitArrowNode {
+.nihilo .dijitTitlePane .dijitOpen .dijitArrowNode, .nihilo .dijitFieldset .dijitFieldsetTitleOpen .dijitArrowNode {
 	background:url("images/spriteRoundedIconsSmall.png") no-repeat -15px top;
 }
-.dj_ie6 .nihilo .dijitTitlePane .dijitOpen .dijitArrowNode {
+.dj_ie6 .nihilo .dijitTitlePane .dijitOpen .dijitArrowNode, .dj_ie6 .nihilo .dijitFieldset .dijitFieldsetTitleClosed .dijitArrowNode {
 	background:url("images/spriteRoundedIconsSmall.gif") no-repeat -15px top;
 }
 .nihilo .dijitTitlePaneContentOuter {
@@ -3104,7 +3135,7 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 	border-color: #eeeeee;
 }
 .nihilo .dijitTimePickerTick {
-	color:white;
+	color: gray;
 }
 .nihilo .dijitTimePickerMarker {
 	background:#d3d3d3 url("images/titleBar.png") repeat-x top;
@@ -3119,26 +3150,11 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 	background: #d6d6dd none;
 	color:black;
 }
-.nihilo .dijitTimePickerItemHover,
-.nihilo .dijitTimePickerItemSelected {
-	position: relative;
-	z-index: 10;
-}
 .nihilo .dijitTimePickerTick .dijitTimePickerItemInner {
-	font-size:0.4em;
+	font-size: 0.8em;
 }
-.nihilo .dijitTimePickerItemHover .dijitTimePickerItemInner,
 .nihilo .dijitTimePickerItemSelected .dijitTimePickerItemInner {
-	font-size:1em;
-}
-.nihilo .dijitTimePickerMarkerHover {
-	border-top: 1px solid #eeeeee;
-}
-.nihilo .dijitTimePickerTickHover,
-.nihilo .dijitTimePickerTickSelected {
-	margin-top:-0.3em;
-	margin-bottom:-0.3em;
-	border-bottom: none;
+	font-size: 1em;
 }
 .nihilo .dijitToolbar {
 	border-bottom: 1px solid #ccc;
@@ -3370,14 +3386,18 @@ div.dijitTabDisabled, .dj_ie div.dijitTabDisabled {
 .nihilo .dijitMenuSeparatorBottom {
 	border-top: 1px solid #d3d3d3;
 }
-.nihilo .dijitCheckedMenuItemIconChar {
-	display: none;
-}
-.nihilo .dijitCheckedMenuItemIcon {
+.nihilo .dijitCheckedMenuItem .dijitMenuItemIcon  {
 	background-image: url("images/spriteCheckbox.gif");
 	background-position: -80px;
 }
-.nihilo .dijitCheckedMenuItemChecked .dijitCheckedMenuItemIcon {
+.nihilo .dijitCheckedMenuItemChecked .dijitMenuItemIcon {
+	background-position: -64px;
+}
+.nihilo .dijitRadioMenuItem .dijitMenuItemIcon {
+	background-image: url("images/spriteRadio.gif");
+	background-position: -80px;
+}
+.nihilo .dijitRadioMenuItemChecked .dijitMenuItemIcon {
 	background-position: -64px;
 }
 .nihilo .dijitToolbar .dijitToolbarSeparator {

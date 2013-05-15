@@ -318,7 +318,7 @@
   text-align: center;
 }
 .tundra .dojoxCalendarMatrixView .dojoxCalendarExpand span {
-  position: inline-block;
+  display: inline-block;
   vertical-align: middle;
 }
 .tundra .dojoxCalendarMatrixView .dojoxCalendarExpand .bg {

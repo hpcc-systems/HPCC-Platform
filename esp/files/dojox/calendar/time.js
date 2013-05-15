@@ -20,7 +20,7 @@ return d;
 if(typeof _6=="string"){
 d=_4.fromISOString(_6);
 if(d===null){
-d=new _7(_6);
+throw new Error("Cannot parse date string ("+_6+"), specify a \"decodeDate\" function that translates this string into a Date object");
 }else{
 if(_7!==Date){
 d=new _7(d.getTime());

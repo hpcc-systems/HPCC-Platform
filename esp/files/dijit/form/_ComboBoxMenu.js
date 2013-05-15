@@ -6,6 +6,7 @@ if(!this.isLeftToRight()){
 _2.add(this.previousButton,"dijitMenuItemRtl");
 _2.add(this.nextButton,"dijitMenuItemRtl");
 }
+this.containerNode.setAttribute("role","listbox");
 },_createMenuItem:function(){
 var _9=this.ownerDocument.createElement("div");
 _9.className="dijitReset dijitMenuItem"+(this.isLeftToRight()?"":" dijitMenuItemRtl");

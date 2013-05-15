@@ -24,20 +24,33 @@ return null;
 }
 var _c=this;
 var _d=this.store.query(this.query,this.queryOptions);
+if(this._observe_h){
+this._observe_h.remove();
+}
 _1.when(_d,function(_e){
 if(_e.items){
 _e=_e.items;
 }
 if(_d.observe){
-_d.observe(function(_f,_10,_11){
-if(_10>-1){
+_c._observe_h=_d.observe(function(_f,_10,_11){
+if(_10!=-1){
+if(_11!=_10){
 _c.onDelete(_f,_10);
 }else{
-if(_11>-1){
+if(_c.onAdd){
 _c.onUpdate(_f,_11);
 }
 }
-});
+}else{
+if(_11!=-1){
+if(_c.onAdd){
+_c.onAdd(_f,_11);
+}else{
+_c.onUpdate(_f,_11);
+}
+}
+}
+},true);
 }
 _c.onComplete(_e);
 },function(_12){

@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dojox/grid/resources/Expando.html":"<div class=\"dojoxGridExpando\"\n\t><div class=\"dojoxGridExpandoNode\" dojoAttachEvent=\"onclick:onToggle\"\n\t\t><div class=\"dojoxGridExpandoNodeInner\" dojoAttachPoint=\"expandoInner\"></div\n\t></div\n></div>\n"}});
 define("dojox/grid/LazyTreeGrid",["dojo/_base/kernel","dojo/_base/declare","dojo/_base/lang","dojo/_base/event","dojo/_base/array","dojo/query","dojo/parser","dojo/dom-construct","dojo/dom-class","dojo/dom-style","dojo/dom-geometry","dojo/dom","dojo/keys","dojo/text!./resources/Expando.html","dijit/_Widget","dijit/_TemplatedMixin","./TreeGrid","./_Builder","./_View","./_Layout","./cells/tree","./_RowManager","./_FocusManager","./_EditManager","./DataSelection","./util"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d,_e,_f,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_1a){
 var _1b=_2("dojox.grid._LazyExpando",[_f,_10],{grid:null,view:null,rowIdx:-1,cellIdx:-1,level:0,itemId:"",templateString:_e,onToggle:function(evt){
 if(this.grid._treeCache.items[this.rowIdx]){
@@ -191,7 +190,12 @@ var _4f=this.grid.edit.info,d=this.get?this.get(_4c,_4d):(this.value||this.defau
 if(this.editable&&(this.alwaysEditing||(_4f.rowIndex===_4c&&_4f.cell===this))){
 return this.formatEditing(d,_4c);
 }else{
-return this._defaultFormat(d,[d,_4c,_4e,this]);
+var dir=this.textDir||this.grid.textDir;
+var ret=this._defaultFormat(d,[d,_4c,_4e,this]);
+if(dir&&this._enforceTextDirWithUcc){
+ret=this._enforceTextDirWithUcc(dir,ret);
+}
+return ret;
 }
 }});
 var _50=_2("dojox.grid._LazyTreeLayout",_14,{setStructure:function(_51){
@@ -603,3 +607,4 @@ return _11.markupFactory(_af,_b0,_b1,_b2);
 };
 return _5b;
 });
+require({cache:{"url:dojox/grid/resources/Expando.html":"<div class=\"dojoxGridExpando\"\n\t><div class=\"dojoxGridExpandoNode\" dojoAttachEvent=\"onclick:onToggle\"\n\t\t><div class=\"dojoxGridExpandoNodeInner\" dojoAttachPoint=\"expandoInner\"></div\n\t></div\n></div>\n"}});

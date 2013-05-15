@@ -1,6 +1,6 @@
 //>>built
 define("dojox/treemap/TreeMap",["dojo/_base/array","dojo/_base/lang","dojo/_base/declare","dojo/_base/event","dojo/_base/Color","dojo/touch","dojo/when","dojo/on","dojo/query","dojo/dom-construct","dojo/dom-geometry","dojo/dom-class","dojo/dom-style","./_utils","dijit/_WidgetBase","dojox/widget/_Invalidating","dojox/widget/Selection","dojo/_base/sniff","dojo/uacss"],function(_1,_2,_3,_4,_5,_6,_7,on,_8,_9,_a,_b,_c,_d,_e,_f,_10,has){
-return _3("dojox.treemap.TreeMap",[_e,_f,_10],{baseClass:"dojoxTreeMap",store:null,query:{},itemToRenderer:null,_dataChanged:false,rootItem:null,_rootItemChanged:false,tooltipAttr:"",areaAttr:"",_areaChanged:false,labelAttr:"label",labelThreshold:NaN,colorAttr:"",colorModel:null,_coloringChanged:false,groupAttrs:[],groupFuncs:null,_groupFuncs:null,_groupingChanged:false,constructor:function(){
+return _3("dojox.treemap.TreeMap",[_e,_f,_10],{baseClass:"dojoxTreeMap",store:null,query:{},queryOptions:null,itemToRenderer:null,_dataChanged:false,rootItem:null,_rootItemChanged:false,tooltipAttr:"",areaAttr:"",_areaChanged:false,labelAttr:"label",labelThreshold:NaN,colorAttr:"",colorModel:null,_coloringChanged:false,groupAttrs:[],groupFuncs:null,_groupFuncs:null,_groupingChanged:false,constructor:function(){
 this.itemToRenderer={};
 this.invalidatingProperties=["colorModel","groupAttrs","groupFuncs","areaAttr","areaFunc","labelAttr","labelFunc","labelThreshold","tooltipAttr","tooltipFunc","colorAttr","colorFunc","rootItem"];
 },getIdentity:function(_11){
@@ -12,9 +12,9 @@ this.invalidateRendering();
 }
 },postCreate:function(){
 this.inherited(arguments);
-this.connect(this.domNode,"mouseover",this._onMouseOver);
-this.connect(this.domNode,"mouseout",this._onMouseOut);
-this.connect(this.domNode,_6.release,this._onMouseUp);
+this.own(on(this.domNode,"mouseover",_2.hitch(this,this._onMouseOver)));
+this.own(on(this.domNode,"mouseout",_2.hitch(this,this._onMouseOut)));
+this.own(on(this.domNode,_6.release,_2.hitch(this,this._onMouseUp)));
 this.domNode.setAttribute("role","presentation");
 this.domNode.setAttribute("aria-label","treemap");
 },buildRendering:function(){
@@ -72,10 +72,14 @@ this._rootItemChanged=true;
 this._set("rootItem",_15);
 },_setStoreAttr:function(_16){
 var r;
+if(this._observeHandler){
+this._observeHandler.remove();
+this._observeHandler=null;
+}
 if(_16!=null){
-var _17=_16.query(this.query);
+var _17=_16.query(this.query,this.queryOptions);
 if(_17.observe){
-_17.observe(_2.hitch(this,this._updateItem),true);
+this._observeHandler=_17.observe(_2.hitch(this,this._updateItem),true);
 }
 r=_7(_17,_2.hitch(this,this._initItems));
 }else{

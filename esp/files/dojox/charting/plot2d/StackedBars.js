@@ -15,8 +15,8 @@ y=_3.getIndexValue(this.series,_7,x);
 }else{
 x=_5.x-1;
 y=_3.getValue(this.series,_7,_5.x);
-y=y?y.y:null;
+y=[y[0]?y[0].y:null,y[1]?y[1]:null];
 }
-return {y:y,x:x};
+return {x:x,y:y[0],py:y[1]};
 }});
 });

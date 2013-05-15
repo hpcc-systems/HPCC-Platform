@@ -15,7 +15,7 @@ _e.y2=_a;
 }
 return _7.createPolyline(gp).setFill(_e).setStroke(_f);
 },_defaultVerticalShapeFunc:function(_10,_11,_12,_13,_14,_15,_16,_17,_18,_19){
-var gp=[_13,_14,_13,_15,_13+_17,_15,_13,_14+_16,_13,_14];
+var gp=[_13,_14,_13,_15,_13+_17,_15,_13+_16,_14,_13,_14];
 if(_18&&_18.colors){
 _18.x1=_13;
 _18.y1=_14;

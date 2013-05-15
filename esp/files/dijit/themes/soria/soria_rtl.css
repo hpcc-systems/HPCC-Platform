@@ -1,4 +1,9 @@
 
+.dijitRtl .dijitOffScreen {
+	
+	left: auto !important;
+	right: -10000px !important;
+}
 .dijitRtl .dijitPlaceHolder {
 	left: auto;
 	right: 0;
@@ -109,6 +114,9 @@ div.dijitNumberTextBoxRtl {
 	border-style: none none none solid;
 	text-align: right;
 }
+.dijitTreeRtl .dijitTreeContainer {
+	float: right;	
+}
 .dijitRtl .dojoDndHorizontal .dojoDndItemBefore {
     border-width: 0 2px 0 0;
     padding: 2px 0 2px 2px;
@@ -206,10 +214,7 @@ div.dijitNumberTextBoxRtl {
 	
 	background-image: url("images/spriteTree_rtl.gif");
 }
-.dijitRtl .soria .dijitTitlePane .dijitClosed .dijitArrowNode {
-	background-position: 0 top;
-}
-.dj_ie6-rtl .soria .dijitTitlePane .dijitClosed .dijitArrowNode {
+.soria .dijitTitlePaneRtl .dijitClosed .dijitArrowNode, .soria .dijitFieldsetRtl .dijitFieldsetTitleClosed .dijitArrowNode {
 	background-position: 0 top;
 }
 .dijitRtl .soria .dijitCalendarDecrease {
@@ -225,6 +230,10 @@ div.dijitNumberTextBoxRtl {
 .dijitRtl .soria .dijitDialogTitleBar .dijitDialogCloseIcon {
 	right: auto;
 	left: 5px;
+}
+.soria  .dijitProgressBarRtl .dijitProgressBarFull {
+	border-left-width: 1px;
+	border-right: 0px;
 }
 .dijitRtl .soria .dijitMenuItem .dijitMenuItemIcon {
 	padding-left: 3px;
