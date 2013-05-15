@@ -18,28 +18,32 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/dom",
-    "dojo/on",
     "dojo/dom-class",
     "dojo/dom-form",
     "dojo/date",
+    "dojo/on",
 
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+    "dijit/Dialog",
     "dijit/Menu",
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
-    "dijit/Dialog",
 
-    "dojox/grid/EnhancedGrid",
-    "dojox/grid/enhanced/plugins/Pagination",
-    "dojox/grid/enhanced/plugins/IndirectSelection",
-    "dojox/widget/Calendar",
+    "dgrid/Grid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+    "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
-    "hpcc/ESPWorkunit",
     "hpcc/WsWorkunits",
+    "hpcc/ESPUtil",
+    "hpcc/ESPWorkunit",
     "hpcc/WUDetailsWidget",
     "hpcc/TargetSelectWidget",
 
@@ -59,51 +63,39 @@ define([
 
     "dojox/layout/TableContainer"
 
-], function (declare, lang, arrayUtil, dom, on, domClass, domForm, date, 
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
-                EnhancedGrid, Pagination, IndirectSelection, Calendar,
-                _TabContainerWidget, ESPWorkunit, WsWorkunits, WUDetailsWidget, TargetSelectWidget,
+], function (declare, lang, arrayUtil, dom, domClass, domForm, date, on,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
+                _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, WUDetailsWidget, TargetSelectWidget,
                 template) {
-    return declare("WUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("WUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "WUQueryWidget",
 
         workunitsTab: null,
         workunitsGrid: null,
 
-        tabMap: [],
-
         validateDialog: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
-            this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
         },
 
         startup: function (args) {
             this.inherited(arguments);
-            this.initFilter();
             this.initContextMenu();
-        },
-
-        resize: function (args) {
-            this.inherited(arguments);
-            //  TODO:  This should not be needed
-            var context = this;
-            setTimeout(function () {
-                context.borderContainer.resize();
-            }, 100);
+            this.initFilter();
         },
 
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.refreshGrid();
         },
+
         _onOpen: function (event) {
-            //dojo.publish("hpcc/standbyForegroundShow");
-            var selections = this.workunitsGrid.selection.getSelected();
+            var selections = this.workunitsGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
                 var tab = this.ensurePane(this.id + "_" + selections[i].Wuid, {
@@ -116,61 +108,42 @@ define([
             if (firstTab) {
                 this.selectChild(firstTab);
             }
-            //dojo.publish("hpcc/standbyForegroundHide");
         },
+
         _onDelete: function (event) {
             if (confirm('Delete selected workunits?')) {
                 var context = this;
-                var selection = this.workunitsGrid.selection.getSelected();
+                var selection = this.workunitsGrid.getSelected();
                 WsWorkunits.WUAction(selection, "Delete", {
                     load: function (response) {
-                        arrayUtil.forEach(selection, function (item, idx) {
-                            context.objectStore.objectStore.remove(item);
-                        });
-                        context.workunitsGrid.rowSelectCell.toggleAllSelection(false);
                         context.refreshGrid(response);
                     }
                 });
             }
         },
+
         _onSetToFailed: function (event) {
-            var context = this;
-            WsWorkunits.WUAction(this.workunitsGrid.selection.getSelected(), "SetToFailed", {
-                load: function (response) {
-                    context.refreshGrid(response);
-                }
-            });
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "SetToFailed");
         },
+
         _onAbort: function (event) {
-            var context = this;
-            WsWorkunits.WUAction(this.workunitsGrid.selection.getSelected(), "Abort", {
-                load: function (response) {
-                    context.refreshGrid(response);
-                }
-            });
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Abort");
         },
+
         _onProtect: function (event) {
-            var context = this;
-            var selection = this.workunitsGrid.selection.getSelected();
-            WsWorkunits.WUAction(selection, "Protect", {
-                load: function (response) {
-                    context.refreshGrid(response);
-                }
-            });
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Protect");
         },
+
         _onUnprotect: function (event) {
-            var context = this;
-            var selection = this.workunitsGrid.selection.getSelected();
-            WsWorkunits.WUAction(selection, "Unprotect", {
-                load: function (response) {
-                    context.refreshGrid(response);
-                }
-            });
+            WsWorkunits.WUAction(this.workunitsGrid.getSelected(), "Unprotect");
         },
+
         _onReschedule: function (event) {
         },
+
         _onDeschedule: function (event) {
         },
+
         _onFilterApply: function (event) {
             registry.byId(this.id + "FilterDropDown").closeDropDown();
             if (this.hasFilter()) {
@@ -179,24 +152,20 @@ define([
                 this.validateDialog.show();
             }
         },
-        _onFilterClear: function (event, supressGridRefresh) {
+
+        _onFilterClear: function (event) {
             this.clearFilter();
             this.applyFilter();
         },
+
         _onRowDblClick: function (wuid) {
             var wuTab = this.ensurePane(this.id + "_" + wuid, {
                 Wuid: wuid
             });
             this.selectChild(wuTab);
         },
-        _onRowContextMenu: function (idx, item, colField, mystring) {
-            var selection = this.workunitsGrid.selection.getSelected();
-            var found = arrayUtil.indexOf(selection, item);
-            if (found == -1) {
-                this.workunitsGrid.selection.deselectAll();
-                this.workunitsGrid.selection.setSelected(idx, true);
-            }
 
+        _onRowContextMenu: function (item, colField, mystring) {
             this.menuFilterOwner.set("disabled", false);
             this.menuFilterJobname.set("disabled", false);
             this.menuFilterCluster.set("disabled", false);
@@ -241,11 +210,11 @@ define([
         hasFilter: function () {
             var filter = domForm.toObject(this.id + "FilterForm");
             for (var key in filter) {
-                if (filter[key] != ""){
-                    return true
+                if (filter[key] != "") {
+                    return true;
                 }
             }
-            return false
+            return false;
         },
 
         getFilter: function () {
@@ -267,22 +236,7 @@ define([
         },
 
         applyFilter: function () {
-            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
             this.refreshGrid();
-        },
-
-        getISOString: function (dateField, timeField) {
-            var d = registry.byId(this.id + dateField).attr("value");
-            var t = registry.byId(this.id + timeField).attr("value");
-            if (d) {
-                if (t) {
-                    d.setHours(t.getHours());
-                    d.setMinutes(t.getMinutes());
-                    d.setSeconds(t.getSeconds());
-                }
-                return d.toISOString();
-            }
-            return "";
         },
 
         //  Implementation  ---
@@ -298,7 +252,6 @@ define([
             });
 
             this.initWorkunitsGrid();
-            this.refreshActionState();
             this.selectChild(this.workunitsTab, true);
         },
 
@@ -402,69 +355,75 @@ define([
         },
 
         initWorkunitsGrid: function () {
-            var context = this;
-            this.workunitsGrid.setStructure([
-                {
-                    name: "<img src='../files/img/locked.png'>",
-                    field: "Protected",
-                    width: "16px",
-                    formatter: function (protected) {
-                        if (protected == true) {
-                            return ("<img src='../files/img/locked.png'>");
+            var store = new ESPWorkunit.CreateWUQueryStore();
+            this.workunitsGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
+                allowSelectAll: true,
+                deselectOnRefresh: false,
+                store: store,
+                rowsPerPage: 25,
+                firstLastArrows: true,
+                pageSizeOptions: [25, 50, 100],
+                columns: {
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox'
+                    }),
+                    Protected: {
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = "<img src='../files/img/locked.png'>";
+                        },
+                        width: 25,
+                        sortable: false,
+                        formatter: function (protected) {
+                            if (protected == true) {
+                                return ("<img src='../files/img/locked.png'>");
+                            }
+                            return "";
                         }
-                        return "";
-                    }
-                },
-                {
-                    name: "Wuid", field: "Wuid", width: "15",
-                    formatter: function (Wuid, idx) {
-                        var wu = ESPWorkunit.Get(Wuid);
-                        return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='WuidClick' Wuid=>" + Wuid + "</a>";
-                    }
-                },
-                { name: "Owner", field: "Owner", width: "8" },
-                { name: "Job Name", field: "Jobname", width: "16" },
-                { name: "Cluster", field: "Cluster", width: "8" },
-                { name: "Roxie Cluster", field: "RoxieCluster", width: "8" },
-                { name: "State", field: "State", width: "8" },
-                { name: "Total Thor Time", field: "TotalThorTime", width: "8" }
-            ]);
-            this.objectStore = ESPWorkunit.CreateWUQueryObjectStore();
-            this.workunitsGrid.setStore(this.objectStore, this.getFilter());
+                    },
+                    Wuid: {
+                        label: "Wuid", width: 162,
+                        formatter: function (Wuid, idx) {
+                            var wu = ESPWorkunit.Get(Wuid);
+                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='WuidClick' Wuid=>" + Wuid + "</a>";
+                        }
+                    },
+                    Owner: { label: "Owner", width: 90 },
+                    Jobname: { label: "Job Name"},
+                    Cluster: { label: "Cluster", width: 90 },
+                    RoxieCluster: { label: "Roxie Cluster", width: 99 },
+                    State: { label: "State", width: 90 },
+                    TotalThorTime: { label: "Total Thor Time", width: 117 }
+                }
+            }, this.id + "WorkunitsGrid");
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
 
+            var context = this;
             on(document, ".WuidClick:click", function (evt) {
-                if (context._onRowContextMenu) {
-                    var idx = evt.target.getAttribute("rowIndex");
-                    var item = context.workunitsGrid.getItem(idx);
+                if (context._onRowDblClick) {
+                    var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item.Wuid);
                 }
             });
-
-            this.workunitsGrid.on("RowDblClick", function (evt) {
+            this.workunitsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onRowDblClick) {
-                    var idx = evt.rowIndex;
-                    var item = this.getItem(idx);
-                    var Wuid = this.store.getValue(item, "Wuid");
-                    context._onRowDblClick(Wuid);
+                    var item = context.workunitsGrid.row(evt).data;
+                    context._onRowDblClick(item.Wuid);
                 }
-            }, true);
-
-            this.workunitsGrid.on("RowContextMenu", function (evt) {
+            });
+            this.workunitsGrid.on(".dgrid-row:contextmenu", function (evt) {
                 if (context._onRowContextMenu) {
-                    var idx = evt.rowIndex;
-                    var colField = evt.cell.field;
-                    var item = this.getItem(idx);
+                    var item = context.workunitsGrid.row(evt).data;
+                    var cell = context.workunitsGrid.cell(evt);
+                    var colField = cell.column.field;
                     var mystring = "item." + colField;
-                    context._onRowContextMenu(idx, item, colField, mystring);
+                    context._onRowContextMenu(item, colField, mystring);
                 }
-            }, true);
-            var today = new Date();
-
-            dojo.connect(this.workunitsGrid.selection, 'onSelected', function (idx) {
+            });
+            this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            dojo.connect(this.workunitsGrid.selection, 'onDeselected', function (idx) {
+            this.workunitsGrid.onContentChanged(function (object, removedFrom, insertedInto) {
                 context.refreshActionState();
             });
             this.workunitsGrid.startup();
@@ -490,15 +449,11 @@ define([
         },
 
         refreshGrid: function (args) {
-            this.workunitsGrid.setQuery(this.getFilter());
-            var context = this;
-            setTimeout(function () {
-                context.refreshActionState()
-            }, 200);
+            this.workunitsGrid.set("query", this.getFilter());
         },
 
         refreshActionState: function () {
-            var selection = this.workunitsGrid.selection.getSelected();
+            var selection = this.workunitsGrid.getSelected();
             var hasSelection = false;
             var hasProtected = false;
             var hasNotProtected = false;
@@ -550,25 +505,15 @@ define([
         },
 
         ensurePane: function (id, params) {
-            var retVal = this.tabMap[id];
+            var retVal = registry.byId(id);
             if (!retVal) {
-                retVal = registry.byId(id);
-                if (!retVal) {
-                    var context = this;
-                    retVal = new WUDetailsWidget({
-                        id: id,
-                        title: params.Wuid,
-                        closable: true,
-                        onClose: function () {
-                            //  Workaround for http://bugs.dojotoolkit.org/ticket/16475
-                            context._tabContainer.removeChild(this);
-                            delete context.tabMap[this.id];
-                            return false;
-                        },
-                        params: params
-                    });
-                }
-                this.tabMap[id] = retVal;
+                var context = this;
+                retVal = new WUDetailsWidget({
+                    id: id,
+                    title: params.Wuid,
+                    closable: true,
+                    params: params
+                });
                 this.addChild(retVal, 1);
             }
             return retVal;

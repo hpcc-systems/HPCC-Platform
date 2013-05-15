@@ -30,9 +30,7 @@ break;
 _8=_a;
 }
 }
-this._attachTemplateNodes(_8,function(n,p){
-return n.getAttribute(p);
-});
+this._attachTemplateNodes(_8);
 if(this.widgetsInTemplate){
 var _b=_7,_c,_d;
 if(_b._query!="[dojoType]"){
@@ -46,9 +44,17 @@ if(_c){
 _b._query=_c;
 _b._attrName=_d;
 }
-this._attachTemplateNodes(cw,function(n,p){
+for(var i=0;i<cw.length;i++){
+this._processTemplateNode(cw[i],function(n,p){
 return n[p];
+},function(_e,_f,_10){
+if(_f in _e){
+return aspect.after(_e,_f,_10,true);
+}else{
+return _e.on(_f,_10,true);
+}
 });
+}
 }
 if(this.domNode){
 _3.place(_8,this.domNode,"before");
@@ -57,20 +63,25 @@ _3.destroy(this.domNode);
 }
 this.domNode=_8;
 this._fillContent(this.srcNodeRef);
-},_templateCache:{},getCachedTemplate:function(_e,_f,_10){
-var _11=this._templateCache;
-var key=_f||_e;
-if(_11[key]){
-return _11[key];
+},_processTemplateNode:function(_11,_12,_13){
+if(this.widgetsInTemplate&&(_12(_11,"dojoType")||_12(_11,"data-dojo-type"))){
+return true;
 }
-_f=_6.trim(_f||_4(_e,{sanitize:true}));
-if(this._dijitTemplateCompat&&(_10||_f.match(/\$\{([^\}]+)\}/g))){
-_f=this._stringRepl(_f);
+this.inherited(arguments);
+},_templateCache:{},getCachedTemplate:function(_14,_15,_16){
+var _17=this._templateCache;
+var key=_15||_14;
+if(_17[key]){
+return _17[key];
 }
-if(_10||!_f.match(/\{[{%]([^\}]+)[%}]\}/g)){
-return _11[key]=_3.toDom(_f);
+_15=_6.trim(_15||_4(_14,{sanitize:true}));
+if(this._dijitTemplateCompat&&(_16||_15.match(/\$\{([^\}]+)\}/g))){
+_15=this._stringRepl(_15);
+}
+if(_16||!_15.match(/\{[{%]([^\}]+)[%}]\}/g)){
+return _17[key]=_3.toDom(_15);
 }else{
-return _11[key]=new dd.Template(_f);
+return _17[key]=new dd.Template(_15);
 }
 },render:function(){
 this.buildRendering();

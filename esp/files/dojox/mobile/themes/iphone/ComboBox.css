@@ -5,7 +5,8 @@
   position: absolute;
   border: 0;
   background-color: transparent;
-  -webkit-box-shadow: 0 0 50px black;
+  -webkit-box-shadow: 0 0 50px #000000;
+  box-shadow: 0 0 50px #000000;
   border-radius: 0;
 }
 .mblReset {
@@ -35,9 +36,11 @@
 }
 .mblComboBoxMenuItemSelected {
   background-image: -webkit-gradient(linear, left top, left bottom, from(#048bf4), to(#005ce5));
+  background-image: linear-gradient(to bottom, #048bf4 0%, #005ce5 100%);
   color: white;
 }
-.mblComboBoxMenuPreviousButton, .mblComboBoxMenuNextButton {
+.mblComboBoxMenuPreviousButton,
+.mblComboBoxMenuNextButton {
   font-style: italic;
   overflow: hidden;
 }

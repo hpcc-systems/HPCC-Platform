@@ -55,7 +55,8 @@ return {major:(v[0]!=null)?parseInt(v[0]):0,minor:(v[1]!=null)?parseInt(v[1]):0,
 }
 return {major:0,minor:0,rev:0};
 })();
-_1.addOnUnload(function(){
+_1.addOnWindowUnload(function(){
+console.warn("***************UNLOAD");
 var _e=function(){
 };
 var _f=_1.query("object").reverse().style("display","none").forEach(function(i){

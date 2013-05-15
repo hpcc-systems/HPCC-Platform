@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -83,17 +83,24 @@ return 1;
 return _3(_12).opacity;
 };
 var _13=_1("ie")<9||(_1("ie")<10&&_1("quirks"))?function(_14,_15){
-var ov=_15*100,_16=_15==1;
-_14.style.zoom=_16?"":1;
-if(!af(_14)){
+if(_15===""){
+_15=1;
+}
+var ov=_15*100,_16=_15===1;
 if(_16){
-return _15;
+_14.style.zoom="";
+if(af(_14)){
+_14.style.filter=_14.style.filter.replace(new RegExp("\\s*progid:"+_f+"\\([^\\)]+?\\)","i"),"");
 }
-_14.style.filter+=" progid:"+_f+"(Opacity="+ov+")";
 }else{
+_14.style.zoom=1;
+if(af(_14)){
 af(_14,1).Opacity=ov;
+}else{
+_14.style.filter+=" progid:"+_f+"(Opacity="+ov+")";
 }
-af(_14,1).Enabled=!_16;
+af(_14,1).Enabled=true;
+}
 if(_14.tagName.toLowerCase()=="tr"){
 for(var td=_14.firstChild;td;td=td.nextSibling){
 if(td.tagName.toLowerCase()=="td"){
@@ -133,24 +140,24 @@ _19[_1d]=_1a.test(_1d);
 }
 return _19[_1d]?_8(_1c,_1e):_1e;
 };
-var _1f=_1("ie")?"styleFloat":"cssFloat",_20={"cssFloat":_1f,"styleFloat":_1f,"float":_1f};
-_4.get=function getStyle(_21,_22){
-var n=_2.byId(_21),l=arguments.length,op=(_22=="opacity");
+var _1f={cssFloat:1,styleFloat:1,"float":1};
+_4.get=function getStyle(_20,_21){
+var n=_2.byId(_20),l=arguments.length,op=(_21=="opacity");
 if(l==2&&op){
 return _10(n);
 }
-_22=_20[_22]||_22;
+_21=_1f[_21]?"cssFloat" in n.style?"cssFloat":"styleFloat":_21;
 var s=_4.getComputedStyle(n);
-return (l==1)?s:_1b(n,_22,s[_22]||n.style[_22]);
+return (l==1)?s:_1b(n,_21,s[_21]||n.style[_21]);
 };
-_4.set=function setStyle(_23,_24,_25){
-var n=_2.byId(_23),l=arguments.length,op=(_24=="opacity");
-_24=_20[_24]||_24;
+_4.set=function setStyle(_22,_23,_24){
+var n=_2.byId(_22),l=arguments.length,op=(_23=="opacity");
+_23=_1f[_23]?"cssFloat" in n.style?"cssFloat":"styleFloat":_23;
 if(l==3){
-return op?_13(n,_25):n.style[_24]=_25;
+return op?_13(n,_24):n.style[_23]=_24;
 }
-for(var x in _24){
-_4.set(_23,x,_24[x]);
+for(var x in _23){
+_4.set(_22,x,_23[x]);
 }
 return _4.getComputedStyle(n);
 };

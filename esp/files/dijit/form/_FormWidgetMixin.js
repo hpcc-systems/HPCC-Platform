@@ -1,5 +1,5 @@
 //>>built
-define("dijit/form/_FormWidgetMixin",["dojo/_base/array","dojo/_base/declare","dojo/dom-attr","dojo/dom-style","dojo/_base/lang","dojo/mouse","dojo/sniff","dojo/window","../a11y"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9){
+define("dijit/form/_FormWidgetMixin",["dojo/_base/array","dojo/_base/declare","dojo/dom-attr","dojo/dom-style","dojo/_base/lang","dojo/mouse","dojo/on","dojo/sniff","dojo/window","../a11y"],function(_1,_2,_3,_4,_5,_6,on,_7,_8,_9){
 return _2("dijit.form._FormWidgetMixin",null,{name:"",alt:"",value:"",type:"text","aria-label":"focusNode",tabIndex:"0",_setTabIndexAttr:"focusNode",disabled:false,intermediateChanges:false,scrollOnFocus:true,_setIdAttr:"focusNode",_setDisabledAttr:function(_a){
 this._set("disabled",_a);
 _3.set(this.focusNode,"disabled",_a);
@@ -26,17 +26,21 @@ this.set("tabIndex",this.tabIndex);
 }
 },_onFocus:function(by){
 if(by=="mouse"&&this.isFocusable()){
-var _e=this.connect(this.focusNode,"onfocus",function(){
-this.disconnect(_f);
-this.disconnect(_e);
-});
-var _f=this.connect(this.ownerDocumentBody,"onmouseup",function(){
-this.disconnect(_f);
-this.disconnect(_e);
+var _e=this.own(on(this.focusNode,"focus",function(){
+_f.remove();
+_e.remove();
+}))[0];
+var _f=this.own(on(this.ownerDocumentBody,"mouseup, touchend",_5.hitch(this,function(evt){
+_f.remove();
+_e.remove();
 if(this.focused){
+if(evt.type=="touchend"){
+this.defer("focus");
+}else{
 this.focus();
 }
-});
+}
+})))[0];
 }
 if(this.scrollOnFocus){
 this.defer(function(){

@@ -83,9 +83,6 @@ require([
             if (params.callback) {
                 this.callback = params.callback;
             }
-            if (params.callback) {
-                this.callback = params.callback;
-            }
             if (params.includeBlank) {
             }
         },

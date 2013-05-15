@@ -15,28 +15,32 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/array",
     "dojo/dom",
     "dojo/dom-class",
     "dojo/dom-form",
-    "dojo/data/ObjectStore",
     "dojo/date",
     "dojo/on",
-    "dojo/_base/array",
 
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
+    "dijit/Dialog",
     "dijit/Menu",
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
-    "dijit/Dialog",
 
-    "dojox/grid/EnhancedGrid",
-    "dojox/grid/enhanced/plugins/Pagination",
-    "dojox/grid/enhanced/plugins/IndirectSelection",
+    "dgrid/Grid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+    "dgrid/extensions/Pagination",
 
     "hpcc/_TabContainerWidget",
+    "hpcc/ESPUtil",
     "hpcc/ESPDFUWorkunit",
     "hpcc/FileSpray",
     "hpcc/DFUWUDetailsWidget",
@@ -57,28 +61,22 @@ define([
 
     "dojox/layout/TableContainer"
 
-], function (declare, dom, domClass, domForm, ObjectStore, date, on, arrayUtil, 
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Menu, MenuItem, MenuSeparator, PopupMenuItem, Dialog,
-                EnhancedGrid, Pagination, IndirectSelection,
-                _TabContainerWidget, ESPDFUWorkunit, FileSpray, DFUWUDetailsWidget, TargetSelectWidget,
+], function (declare, arrayUtil,dom, domClass, domForm, date, on,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
+                _TabContainerWidget, ESPUtil, ESPDFUWorkunit, FileSpray, DFUWUDetailsWidget, TargetSelectWidget,
                 template) {
     return declare("GetDFUWorkunitsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "GetDFUWorkunitsWidget",
+
         workunitsTab: null,
         workunitsGrid: null,
         clusterTargetSelect: null,
 
-        tabMap: [],
-
-        buildRendering: function (args) {
-            this.inherited(arguments);
-        },
-
         postCreate: function (args) {
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
-            this.workunitsGrid = registry.byId(this.id + "WorkunitsGrid");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
         },
 
@@ -87,16 +85,13 @@ define([
             this.initFilter();
         },
 
-        resize: function (args) {
-            this.inherited(arguments);
-        },
-
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.refreshGrid();
         },
+
         _onOpen: function (event) {
-            var selections = this.workunitsGrid.selection.getSelected();
+            var selections = this.workunitsGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
                 var tab = this.ensurePane(this.id + "_" + selections[i].ID, {
@@ -110,40 +105,28 @@ define([
                 this.selectChild(firstTab);
             }
         },
+
         _onDelete: function (event) {
             if (confirm('Delete selected workunits?')) {
                 var context = this;
-                FileSpray.DFUWorkunitsAction(this.workunitsGrid.selection.getSelected(), "Delete", {
+                FileSpray.DFUWorkunitsAction(this.workunitsGrid.getSelected(), "Delete", {
                     load: function (response) {
-                        context.workunitsGrid.rowSelectCell.toggleAllSelection(false);
                         context.refreshGrid(response);
                     }
                 });
             }
         },
+
         _onSetToFailed: function (event) {
-            var context = this;
-            FileSpray.DFUWorkunitsAction(this.workunitsGrid.selection.getSelected(), "SetToFailed", {
-                load: function (response) {
-                    context.refreshGrid(response);
-                }
-            });
+            FileSpray.DFUWorkunitsAction(this.workunitsGrid.getSelected(), "SetToFailed");
         },
+
         _onProtect: function (event) {
-            var context = this;
-            FileSpray.DFUWorkunitsAction(this.workunitsGrid.selection.getSelected(), "Protect", {
-                load: function (response) {
-                    context.refreshGrid(response);
-                }
-            });
+            FileSpray.DFUWorkunitsAction(this.workunitsGrid.getSelected(), "Protect");
         },
+
         _onUnprotect: function (event) {
-            var context = this;
-            FileSpray.DFUWorkunitsAction(this.workunitsGrid.selection.getSelected(), "Unprotect", {
-                load: function (response) {
-                    context.refreshGrid(response);
-                }
-            });
+            FileSpray.DFUWorkunitsAction(this.workunitsGrid.getSelected(), "Unprotect");
         },
 
         _onFilterApply: function (event) {
@@ -167,22 +150,12 @@ define([
             this.selectChild(wuTab);
         },
 
-        _onRowContextMenu: function (idx, item, colField, mystring) {
-            var selection = this.workunitsGrid.selection.getSelected();
-            var found = arrayUtil.indexOf(selection, item);
-            if (found == -1) {
-                this.workunitsGrid.selection.deselectAll();
-                this.workunitsGrid.selection.setSelected(idx, true);
-            }
+        _onRowContextMenu: function (item, colField, mystring) {
             this.menuFilterJobname.set("disabled", false);
             this.menuFilterCluster.set("disabled", false);
             this.menuFilterState.set("disabled", false);
 
             if (item) {
-                //this.menuFilterType.set("label", "Type:  " + item.Type);
-                //this.menuFilterType.set("hpcc_value", item.Type);
-                //this.menuFilterOwner.set("label", "Owner:  " + item.Owner);
-                //this.menuFilterOwner.set("hpcc_value", item.Owner);
                 this.menuFilterJobname.set("label", "Jobname:  " + item.JobName);
                 this.menuFilterJobname.set("hpcc_value", item.JobName);
                 this.menuFilterCluster.set("label", "Cluster:  " + item.ClusterName);
@@ -190,10 +163,6 @@ define([
                 this.menuFilterState.set("label", "State:  " + item.StateMessage);
                 this.menuFilterState.set("hpcc_value", item.StateMessage);
             }
-            /*if (item.Type == "") {
-                this.menuFilterType.set("disabled", true);
-                this.menuFilterType.set("label", "Type:  " + "N/A");
-            }*/
             if (item.Owner == "") {
                 this.menuFilterOwner.set("disabled", true);
                 this.menuFilterOwner.set("label", "Owner:  " + "N/A");
@@ -212,14 +181,14 @@ define([
             }
         },
 
-        clearFilter: function() {
+        clearFilter: function () {
             arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
                 item.set('value', null);
             });
         },
 
         hasFilter: function () {
-            var filter = domForm.toObject(this.id + "FilterForm")
+            var filter = domForm.toObject(this.id + "FilterForm");
             for (var key in filter) {
                 if (filter[key] != "") {
                     return true;
@@ -234,22 +203,7 @@ define([
         },
 
         applyFilter: function () {
-            this.workunitsGrid.rowSelectCell.toggleAllSelection(false);
             this.refreshGrid();
-        },
-
-        getISOString: function (dateField, timeField) {
-            var d = registry.byId(this.id + dateField).attr("value");
-            var t = registry.byId(this.id + timeField).attr("value");
-            if (d) {
-                if (t) {
-                    d.setHours(t.getHours());
-                    d.setMinutes(t.getMinutes());
-                    d.setSeconds(t.getSeconds());
-                }
-                return d.toISOString();
-            }
-            return "";
         },
 
         //  Implementation  ---
@@ -261,8 +215,8 @@ define([
             if (params.ClusterName) {
                 registry.byId(this.id + "Cluster").set("value", params.ClusterName);
             }
+            this.initContextMenu();
             this.initWorkunitsGrid();
-            this.refreshActionState();
             this.clusterTargetSelect.init({
                 Groups: true,
                 includeBlank: true
@@ -288,31 +242,31 @@ define([
             return menuItem;
         },
 
-        initWorkunitsGrid: function() {
+        initContextMenu: function () {
             var context = this;
             var pMenu = new Menu({
                 targetNodeIds: [this.id + "WorkunitsGrid"]
             });
             pMenu.addChild(new MenuItem({
                 label: "Open",
-                onClick: function(){context._onOpen();}
+                onClick: function () { context._onOpen(); }
             }));
             pMenu.addChild(new MenuItem({
                 label: "Delete",
-                onClick: function(){context._onDelete();}
+                onClick: function () { context._onDelete(); }
             }));
             pMenu.addChild(new MenuItem({
                 label: "Set To Failed",
-                onClick: function(){context._onRename();}
+                onClick: function () { context._onRename(); }
             }));
             pMenu.addChild(new MenuSeparator());
             pMenu.addChild(new MenuItem({
                 label: "Protect",
-                onClick: function(){context._onProtect();}
+                onClick: function () { context._onProtect(); }
             }));
             pMenu.addChild(new MenuItem({
                 label: "Unprotect",
-                onClick: function(){context._onUnprotect();}
+                onClick: function () { context._onUnprotect(); }
             }));
             pMenu.addChild(new MenuSeparator());
             {
@@ -366,78 +320,90 @@ define([
                 }));
             }
             pMenu.startup();
-            this.workunitsGrid.setStructure([
-                {
-                    name: "<img src='../files/img/locked.png'>",
-                    field: "isProtected",
-                    width: "16px",
-                    formatter: function (_protected) {
-                        if (_protected == true) {
-                            return ("<img src='../files/img/locked.png'>");
-                        }
-                        return "";
-                    }
-                },
-                { 
-                    name: "ID", field: "ID", width: "15", 
-                    formatter: function (ID, idx) {
-                        var wu = ESPDFUWorkunit.Get(ID);
-                        return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='IDClick'>" + ID + "</a>";
-                    }
-                },
-                {
-                    name: "Type", field: "Command", width: "8",
-                    formatter: function (command) {
-                        if (command in FileSpray.CommandMessages) {
-                            return FileSpray.CommandMessages[command];
-                        }
-                        return "Unknown";
-                    }
-                },
-                { name: "Owner", field: "Owner", width: "8" },
-                { name: "Job Name", field: "JobName", width: "16" },
-                { name: "Cluster", field: "ClusterName", width: "8" },
-                { name: "State", field: "StateMessage", width: "8" },
-                { name: "% Complete", field: "PercentDone", width: "8" }
-            ]);
-            var objStore = new ESPDFUWorkunit.CreateWUQueryObjectStore();
-            this.workunitsGrid.setStore(objStore, this.getFilter());
-            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero DFU Workunits (check filter).</span>";
+        },
 
+        initWorkunitsGrid: function() {
+            var store = new ESPDFUWorkunit.CreateWUQueryStore();
+            this.workunitsGrid = new declare([Grid, Pagination, Selection, ColumnResizer, Keyboard, DijitRegistry, ESPUtil.GridHelper])({
+                allowSelectAll: true,
+                deselectOnRefresh: false,
+                store: store,
+                rowsPerPage: 25,
+                firstLastArrows: true,
+                pageSizeOptions: [25, 50, 100],
+                columns: {
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox'
+                    }),
+                    isProtected: {
+                        renderHeaderCell: function (node) {
+                            node.innerHTML = "<img src='../files/img/locked.png'>";
+                        },
+                        width: 25,
+                        sortable: false,
+                        formatter: function (_protected) {
+                            if (_protected == true) {
+                                return ("<img src='../files/img/locked.png'>");
+                            }
+                            return "";
+                        }
+                    },
+                    ID: {
+                        label: "ID",
+                        width: 162,
+                        formatter: function (ID, idx) {
+                            var wu = ESPDFUWorkunit.Get(ID);
+                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='IDClick'>" + ID + "</a>";
+                        }
+                    },
+                    Command: {
+                        label: "Type",
+                        width: 117,
+                        formatter: function (command) {
+                            if (command in FileSpray.CommandMessages) {
+                                return FileSpray.CommandMessages[command];
+                            }
+                            return "Unknown";
+                        }
+                    },
+                    Owner: { label: "Owner", width: 90 },
+                    JobName: { label: "Job Name" },
+                    ClusterName: { label: "Cluster", width: 126 },
+                    StateMessage: { label: "State", width: 72 },
+                    PercentDone: { label: "% Complete", width: 90, sortable: false}
+                }
+            }, this.id + "WorkunitsGrid");
+            this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
+
+            var context = this;
             on(document, ".IDClick:click", function (evt) {
                 if (context._onRowDblClick) {
-                    var idx = evt.target.getAttribute("rowIndex");
-                    var item = context.workunitsGrid.getItem(idx);
+                    var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item.ID);
                 }
             });
-
-            this.workunitsGrid.on("RowDblClick", function (evt) {
+            this.workunitsGrid.on(".dgrid-row:dblclick", function (evt) {
                 if (context._onRowDblClick) {
-                    var idx = evt.rowIndex;
-                    var item = this.getItem(idx);
-                    var Wuid = this.store.getValue(item, "ID");
-                    context._onRowDblClick(Wuid);
+                    var item = context.workunitsGrid.row(evt).data;
+                    context._onRowDblClick(item.ID);
                 }
-            }, true);
-
-            this.workunitsGrid.on("RowContextMenu", function (evt) {
+            });
+            this.workunitsGrid.on(".dgrid-row:contextmenu", function (evt) {
                 if (context._onRowContextMenu) {
-                    var idx = evt.rowIndex;
-                    var colField = evt.cell.field;
-                    var item = this.getItem(idx);
+                    var item = context.workunitsGrid.row(evt).data;
+                    var cell = context.workunitsGrid.cell(evt);
+                    var colField = cell.column.field;
                     var mystring = "item." + colField;
-                    context._onRowContextMenu(idx, item, colField, mystring);
+                    context._onRowContextMenu(item, colField, mystring);
                 }
-            }, true);
-
-            dojo.connect(this.workunitsGrid.selection, 'onSelected', function (idx) {
+            });
+            this.workunitsGrid.onSelectionChanged(function (event) {
                 context.refreshActionState();
             });
-            dojo.connect(this.workunitsGrid.selection, 'onDeselected', function (idx) {
+            this.workunitsGrid.onContentChanged(function (object, removedFrom, insertedInto) {
                 context.refreshActionState();
             });
-
             this.workunitsGrid.startup();
         },
 
@@ -461,15 +427,11 @@ define([
         },
 
         refreshGrid: function (args) {
-            this.workunitsGrid.setQuery(this.getFilter());
-            var context = this;
-            setTimeout(function () {
-                context.refreshActionState()
-            }, 200);
+            this.workunitsGrid.set("query", this.getFilter());
         },
 
         refreshActionState: function () {
-            var selection = this.workunitsGrid.selection.getSelected();
+            var selection = this.workunitsGrid.getSelected();
             var hasSelection = false;
             var hasProtected = false;
             var hasNotProtected = false;
@@ -505,25 +467,15 @@ define([
         },
 
         ensurePane: function (id, params) {
-            var retVal = this.tabMap[id];
+            var retVal = registry.byId(id);
             if (!retVal) {
-                retVal = registry.byId(id);
-                if (!retVal) {
-                    var context = this;
-                    retVal = new DFUWUDetailsWidget({
-                        id: id,
-                        title: params.Wuid,
-                        closable: true,
-                        onClose: function () {
-                            //  Workaround for http://bugs.dojotoolkit.org/ticket/16475
-                            context._tabContainer.removeChild(this);
-                            delete context.tabMap[this.id];
-                            return false;
-                        },
-                        params: params
-                    });
-                }
-                this.tabMap[id] = retVal;
+                var context = this;
+                retVal = new DFUWUDetailsWidget({
+                    id: id,
+                    title: params.Wuid,
+                    closable: true,
+                    params: params
+                });
                 this.addChild(retVal, 1);
             }
             return retVal;

@@ -1,25 +1,31 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
 
 //>>built
-define("dojo/request/handlers",["../json","../_base/kernel","../_base/array","../has"],function(_1,_2,_3,_4){
+define("dojo/request/handlers",["../json","../_base/kernel","../_base/array","../has","../selector/_loader"],function(_1,_2,_3,_4){
 _4.add("activex",typeof ActiveXObject!=="undefined");
-var _5;
+_4.add("dom-parser",function(_5){
+return "DOMParser" in _5;
+});
+var _6;
 if(_4("activex")){
 var dp=["Msxml2.DOMDocument.6.0","Msxml2.DOMDocument.4.0","MSXML2.DOMDocument.3.0","MSXML.DOMDocument"];
-_5=function(_6){
-var _7=_6.data;
-if(!_7||!_7.documentElement){
-var _8=_6.text;
+_6=function(_7){
+var _8=_7.data;
+if(_8&&_4("dom-qsa2.1")&&!_8.querySelectorAll&&_4("dom-parser")){
+_8=new DOMParser().parseFromString(_7.text,"application/xml");
+}
+if(!_8||!_8.documentElement){
+var _9=_7.text;
 _3.some(dp,function(p){
 try{
-var _9=new ActiveXObject(p);
-_9.async=false;
-_9.loadXML(_8);
-_7=_9;
+var _a=new ActiveXObject(p);
+_a.async=false;
+_a.loadXML(_9);
+_8=_a;
 }
 catch(e){
 return false;
@@ -27,21 +33,21 @@ return false;
 return true;
 });
 }
-return _7;
+return _8;
 };
 }
-var _a={"javascript":function(_b){
-return _2.eval(_b.text||"");
-},"json":function(_c){
-return _1.parse(_c.text||null);
-},"xml":_5};
-function _d(_e){
-var _f=_a[_e.options.handleAs];
-_e.data=_f?_f(_e):(_e.data||_e.text);
+var _b={"javascript":function(_c){
+return _2.eval(_c.text||"");
+},"json":function(_d){
+return _1.parse(_d.text||null);
+},"xml":_6};
+function _e(_f){
+var _10=_b[_f.options.handleAs];
+_f.data=_10?_10(_f):(_f.data||_f.text);
+return _f;
+};
+_e.register=function(_11,_12){
+_b[_11]=_12;
+};
 return _e;
-};
-_d.register=function(_10,_11){
-_a[_10]=_11;
-};
-return _d;
 });

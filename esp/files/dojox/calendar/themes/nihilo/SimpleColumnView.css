@@ -46,17 +46,21 @@
   -moz-box-sizing: border-box;
   box-sizing: border-box;
 }
-.nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarGridTable .hour {
-  border-top: 1px solid #cccccc;
-}
 .nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarGridTable tr:first-child td {
   border-top: 1px solid transparent;
 }
-.nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarGridTable .halfhour {
+.nihilo .dojoxCalendarColumnView td.hour {
+  border-top: 1px solid #cccccc;
+}
+.nihilo .dojoxCalendarColumnView td.halfhour {
   border-top: dotted 1px #cccccc;
 }
-.nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarGridTable .quarterhour {
+.nihilo .dojoxCalendarColumnView td.quarterhour {
   border-top: dotted 1px #cccccc;
+}
+.nihilo .dojoxCalendarColumnView span.hour {
+  color: #293a4b;
+  background-color: #ffffff;
 }
 .nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarGridTable .dojoxCalendarToday {
   background-color: #fff2d2;
@@ -202,6 +206,19 @@
   khtml-user-select: none;
   user-select: none;
 }
+.nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderLabel {
+  right: 4px;
+  position: absolute;
+}
+.nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderTable {
+  border-collapse: collapse;
+  table-layout: fixed;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+}
 .nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarRowHeaderTable {
   border-collapse: collapse;
   table-layout: fixed;
@@ -226,9 +243,6 @@
 }
 .nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarRowHeaderTable tr:first-child td {
   border-top: 1px solid #ffffff;
-}
-.nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarRowHeaderTable td span {
-  padding-right: 4px;
 }
 .nihilo .dojoxCalendarSimpleColumnView .dojoxCalendarEvent {
   position: absolute;

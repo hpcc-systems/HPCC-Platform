@@ -16,20 +16,89 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/store/util/QueryResults",
-    "dojo/store/JsonRest", 
-    "dojo/store/Memory", 
-    "dojo/store/Cache", 
+    "dojo/store/JsonRest",
+    "dojo/store/Memory",
+    "dojo/store/Cache",
     "dojo/store/Observable",
-    
-    "dojox/xml/parser",    
+
+    "dojox/xml/parser",
 
     "hpcc/ESPBase",
     "hpcc/ESPRequest"
-], function (declare, lang, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
+], function (declare, lang, arrayUtil, Deferred, QueryResults, JsonRest, Memory, Cache, Observable,
     parser,
     ESPBase, ESPRequest) {
+    var FileListStore = declare([ESPRequest.Store], {
+        service: "FileSpray",
+        action: "FileList",
+        responseQualifier: "files.PhysicalFileStruct",
+        idProperty: "calculatedID",
+        preProcessRow: function (row) {
+            lang.mixin(row, {
+                calculatedID: this.parent.calculatedID + "/" + row.name,
+                Subfolder: this.parent.Subfolder + row.name + "/",
+                DropZone: this.parent.DropZone,
+                displayName: row.name,
+                type: row.isDir ? "folder" : "file"
+            });
+        },
+        postProcessResults: function (items) {
+            items.sort(function (l, r) {
+                if (l.isDir === r.isDir) {
+                    if (l.displayName === r.displayName)
+                        return 0;
+                    else if (l.displayName < r.displayName)
+                        return -1;
+                    return 1;
+                } else if (l.isDir) {
+                    return -1;
+                }
+                return 1;
+            });
+        }
+    });
+
+    var LandingZonesStore = declare([ESPRequest.Store], {
+        service: "FileSpray",
+        action: "DropZoneFiles",
+        responseQualifier: "DropZones.DropZone",
+        idProperty: "calculatedID",
+        constructor: function (options) {
+            declare.safeMixin(this, options);
+        },
+        preProcessRow: function (row) {
+            lang.mixin(row, {
+                calculatedID: row.NetAddress,
+                displayName: row.Name,
+                type: "dropzone",
+                Subfolder: "/",
+                DropZone: row
+            });
+        },
+        mayHaveChildren: function (item) {
+            switch (item.type) {
+                case "dropzone":
+                case "folder":
+                    return true;
+            }
+            return false;
+        },
+        getChildren: function (parent, options) {
+            var store = Observable(new FileListStore({
+                parent: parent
+            }));
+            return store.query({
+                Netaddr: parent.DropZone.NetAddress,
+                Path: parent.DropZone.Path + (parent.Subfolder ? "/" + parent.Subfolder : ""),
+                Mask: "",
+                OS: parent.DropZone.Linux === "true" ? 1 : 0
+            });
+        }
+    });
+
     return {
         States: {
             0: "unknown",
@@ -41,6 +110,16 @@ define([
             6: "finished",
             7: "monitoring",
             8: "aborting"
+        },
+
+        isComplete: function (state) {
+            switch (state) {
+                case 4:
+                case 5:
+                case 6:
+                    return true;
+            }
+            return false;
         },
 
         CommandMessages: {
@@ -78,13 +157,18 @@ define([
             13: "variablebigendian"
         },
 
+        CreateLandingZonesStore: function (options) {
+            var store = new LandingZonesStore(options);
+            return Observable(store);
+        },
+
         GetDFUWorkunits: function (params) {
             return ESPRequest.send("FileSpray", "GetDFUWorkunits", params);
         },
 
-        DFUWorkunitsAction: function (wuids, actionType, callback) {
+        DFUWorkunitsAction: function (workunits, actionType, callback) {
             var request = {
-                wuids: wuids,
+                wuids: workunits,
                 Type: actionType
             };
             ESPRequest.flattenArray(request, "wuids", "ID");
@@ -92,6 +176,10 @@ define([
             return ESPRequest.send("FileSpray", "DFUWorkunitsAction", {
                 request: request,
                 load: function (response) {
+                    arrayUtil.forEach(workunits, function (item, index) {
+                        item.refresh();
+                    });
+                    /*  TODO:  Revisit after HPCC-9241 is fixed
                     if (lang.exists("DFUWorkunitsActionResponse.ActionResults.WUActionResult", response)) {
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {
                             if (item.Result.indexOf("Failed:") === 0) {
@@ -108,7 +196,7 @@ define([
                             }
                         });
                     }
-
+                    */
                     if (callback && callback.load) {
                         callback.load(response);
                     }
@@ -141,14 +229,11 @@ define([
             });
             return ESPRequest.send("FileSpray", "DFUWUFile", params);
         },
-        isComplete: function (state) {
-            switch (state) {
-                case 4:	
-                case 5:	
-                case 6:	
-                    return true;
-            }
-            return false;
+        FileList: function (params) {
+            return ESPRequest.send("FileSpray", "FileList", params);
+        },
+        DropZoneFiles: function (params) {
+            return ESPRequest.send("FileSpray", "DropZoneFiles", params);
         }
     };
 });
