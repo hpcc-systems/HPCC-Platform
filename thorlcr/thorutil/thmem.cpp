@@ -1249,8 +1249,16 @@ protected:
         }
         ++outStreams;
 
-        // NB: CStreamFileOwner, shares reference so CFileOwner, last usage, will auto delete file
-        // which may be one of these streams of CThorRowCollectorBase itself
+        /* Ensure existing callback is cleared, before:
+         * a) instreams are built, since new spillFiles can be added to as long as existing callback is active
+         * b) locked CThorSpillableRowArrayLock section below, which in turn may add a new callback.
+         *    Otherwise, once this section has the lock, the existing callback may be called by roxiemem and block,
+         *    causing this section to deadlock inside roxiemem, if it tries to add a new callback.
+         */
+        clearSpillingCallback();
+
+        // NB: CStreamFileOwner links CFileOwner - last usage will auto delete file
+        // which may be one of these streams or CThorRowCollectorBase itself
         IArrayOf<IRowStream> instrms;
         ForEachItemIn(f, spillFiles)
         {
@@ -1265,10 +1273,6 @@ protected:
         }
 
         {
-            // Ensure existing callback is cleared, before locked section below, which in turn may add a new callback
-            // Otherwise there is potential for deadlock with the callback mechanism, if it is in the midst of calling this callback.
-            clearSpillingCallback();
-
             CThorSpillableRowArray::CThorSpillableRowArrayLock block(spillableRows);
             if (spillableRowSet)
                 instrms.append(*spillableRowSet->createRowStream());
@@ -1277,7 +1281,7 @@ protected:
                 totalRows += spillableRows.numCommitted();
                 if (iCompare && (1 == outStreams))
                     spillableRows.sort(*iCompare, maxCores);
-                // NB: if rc_allDiskOrAllMem and some disk already, will have been spilt already (see above) and not each here
+                // NB: if rc_allDiskOrAllMem and some disk already, will have been spilt already (see above) and not reach here
                 if (rc_allDiskOrAllMem == diskMemMix || (NULL!=allMemRows && (rc_allMem == diskMemMix)))
                 {
                     assertex(allMemRows);
