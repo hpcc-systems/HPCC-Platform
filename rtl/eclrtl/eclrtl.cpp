@@ -65,9 +65,17 @@ MODULE_EXIT()
 //=============================================================================
 // Miscellaneous string functions...
 
-ECLRTL_API void * rtlMalloc(size32_t size)
+ECLRTL_API void * rtlMalloc(size32_t size, const char * aFile, unsigned aLine)
 {
-    return malloc(size);
+    void * retVal = malloc(size);
+
+    if( NULL == retVal)
+    {
+        StringBuffer msg;
+        msg.append("Memory allocation error in ").append(aFile).append(" at line ").append(aLine).append(" for size ").append(size).append(" Bytes!");
+        rtlFail(0, msg.str());
+    }
+    return retVal;
 }
 
 void rtlFree(void *ptr)
@@ -75,9 +83,17 @@ void rtlFree(void *ptr)
     free(ptr);
 }
 
-ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size)
+ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size, const char * aFile, unsigned aLine)
 {
-    return realloc(_ptr, size);
+    void * retVal = realloc(_ptr, size);
+
+    if( (0 < size) && (NULL == retVal))
+    {
+        StringBuffer msg;
+        msg.append("Memory reallocation error in ").append(aFile).append(" at line ").append(aLine).append(" for size ").append(size).append(" Bytes!");
+        rtlFail(0, msg.str());
+    }
+    return retVal;
 }
 
 //=============================================================================

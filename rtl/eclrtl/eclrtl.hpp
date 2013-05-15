@@ -92,9 +92,9 @@ interface ICompiledUStrRegExpr
 
 //-----------------------------------------------------------------------------
 
-ECLRTL_API void * rtlMalloc(size32_t size);
+ECLRTL_API void * rtlMalloc(size32_t size, const char * aFile = __FILE__, unsigned aLine = __LINE__);
 ECLRTL_API void rtlFree(void * x);
-ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size);
+ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size, const char * aFile = __FILE__, unsigned aLine = __LINE__);
 ECLRTL_API __int64 rtlRound(double x);
 ECLRTL_API double rtlRoundTo(double x, int places);
 ECLRTL_API __int64 rtlRoundDown(double x);
