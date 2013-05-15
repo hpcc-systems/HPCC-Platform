@@ -1370,8 +1370,10 @@ static IHqlExpression * createSubSorted(IHqlExpression * dataset, IHqlExpression
     OwnedHqlExpr alreadySorted = createValueSafe(no_sortlist, makeSortListType(NULL), components, 0, sortedElements);
     OwnedHqlExpr newOrder = createValueSafe(no_sortlist, makeSortListType(NULL), components, sortedElements, components.ordinality());
 
+    const bool removeGrouping = ignoreGrouping && isGrouped(dataset);
     OwnedHqlExpr attr = isLocal ? createLocalAttribute() : (isGrouped(dataset) && ignoreGrouping) ? createAttribute(globalAtom) : NULL;
-    OwnedHqlExpr subsort = createDatasetF(no_subsort, LINK(dataset), LINK(newOrder), LINK(alreadySorted), LINK(attr), NULL);
+    OwnedHqlExpr input = removeGrouping ? createDataset(no_group, LINK(dataset)) : LINK(dataset);
+    OwnedHqlExpr subsort = createDatasetF(no_subsort, LINK(input), LINK(newOrder), LINK(alreadySorted), LINK(attr), NULL);
     //Grouped subsorts never generated, global subsorts (if generated) get converted to a global group
     if (!isLocal && !alwaysLocal)
         subsort.setown(convertSubSortToGroupedSort(subsort));
