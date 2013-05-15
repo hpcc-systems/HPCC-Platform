@@ -180,7 +180,7 @@ CDaliServixFilter *createDaliServixFilter(IPropertyTree &filterProps)
     CDaliServixFilter *filter = NULL;
     const char *dir = filterProps.queryProp("@directory");
     const char *sourceRange = filterProps.queryProp("@sourcerange");
-    bool trace = filterProps.queryProp("@trace");
+    bool trace = filterProps.getPropBool("@trace");
     if (filterProps.hasProp("@subnet"))
         filter = new CDaliServixSubnetFilter(filterProps.queryProp("@subnet"), filterProps.queryProp("@mask"), dir, sourceRange, trace);
     else if (filterProps.hasProp("@range"))
