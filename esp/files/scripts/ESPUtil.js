@@ -15,8 +15,12 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
-    "dojo/Stateful"
-], function (declare, Stateful) {
+    "dojo/_base/array",
+    "dojo/Stateful",
+
+    "dijit/registry",
+], function (declare, arrayUtil, Stateful,
+    registry) {
 
     var SingletonData = declare([Stateful], {
         //  Attributes  ---
@@ -44,7 +48,7 @@ define([
             if (this instanceof SingletonData) {
                 return (SingletonData)(this);
             }
-            return {};
+            return this;
         },
         updateData: function (response) {
             var changed = false;
@@ -113,6 +117,71 @@ define([
 
     return {
         Singleton: SingletonData,
-        Monitor: Monitor
+        Monitor: Monitor,
+
+        FormHelper: declare(null, {
+            getISOString: function (dateField, timeField) {
+                var d = registry.byId(this.id + dateField).attr("value");
+                var t = registry.byId(this.id + timeField).attr("value");
+                if (d) {
+                    if (t) {
+                        d.setHours(t.getHours());
+                        d.setMinutes(t.getMinutes());
+                        d.setSeconds(t.getSeconds());
+                    }
+                    return d.toISOString();
+                }
+                return "";
+            }
+        }),
+
+        GridHelper: declare(null, {
+            workunitsGridObserver: [],
+
+            onSelectionChanged: function (callback) {
+                this.on("dgrid-select", function (event) {
+                    callback(event);
+                });
+                this.on("dgrid-deselect", function (event) {
+                    callback(event);
+                });
+            },
+
+            onContentChanged: function (callback) {
+                var context = this;
+                this.on("dgrid-page-complete", function (event) {
+                    callback();
+                    if (context.workunitsGridObserver[event.page]) {
+                        context.workunitsGridObserver[event.page].cancel();
+                    }
+                    context.workunitsGridObserver[event.page] = event.results.observe(function (object, removedFrom, insertedInto) {
+                        callback(object, removedFrom, insertedInto);
+                    }, true);
+                });
+            },
+
+            setSelected: function (items) {
+                var selection = [];
+                var context = this;
+                arrayUtil.forEach(items, function (item, idx) {
+                    selection.push(item[context.store.idProperty]);
+                });
+                arrayUtil.forEach(this.store.data, function (item, idx) {
+                    if (item[context.store.idProperty] && arrayUtil.indexOf(selection, item[context.store.idProperty]) >= 0) {
+                        context.select(idx);
+                    } else {
+                        context.deselect(idx);
+                    }
+                });
+            },
+
+            getSelected: function() {
+                var retVal = [];
+                for (var id in this.selection) {
+                    retVal.push(this.store.get(id));
+                }
+                return retVal;
+            }
+        })
     };
 });

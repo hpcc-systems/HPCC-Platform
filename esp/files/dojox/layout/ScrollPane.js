@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dojox/layout/resources/ScrollPane.html":"<div class=\"dojoxScrollWindow\" dojoAttachEvent=\"onmouseenter: _enter, onmouseleave: _leave\">\n    <div class=\"dojoxScrollWrapper\" style=\"${style}\" dojoAttachPoint=\"wrapper\" dojoAttachEvent=\"onmousemove: _calc\">\n\t<div class=\"dojoxScrollPane\" dojoAttachPoint=\"containerNode\"></div>\n    </div>\n    <div dojoAttachPoint=\"helper\" class=\"dojoxScrollHelper\"><span class=\"helperInner\">|</span></div>\n</div>"}});
 define("dojox/layout/ScrollPane",["dojo/_base/kernel","dojo/_base/declare","dojo/_base/html","dojo/_base/fx","dijit/_Templated","dijit/layout/ContentPane","dojo/dom-class","dojo/text!./resources/ScrollPane.html"],function(_1,_2,_3,_4,_5,_6,_7,_8){
 _1.experimental("dojox.layout.ScrollPane");
 var _9=_2("dojox.layout.ScrollPane",[_6,_5],{_line:null,_lo:null,_offset:15,orientation:"vertical",autoHide:true,templateString:_8,resize:function(_a){
@@ -72,3 +71,4 @@ this._hideAnim.play();
 }});
 return _9;
 });
+require({cache:{"url:dojox/layout/resources/ScrollPane.html":"<div class=\"dojoxScrollWindow\" dojoAttachEvent=\"onmouseenter: _enter, onmouseleave: _leave\">\n    <div class=\"dojoxScrollWrapper\" style=\"${style}\" dojoAttachPoint=\"wrapper\" dojoAttachEvent=\"onmousemove: _calc\">\n\t<div class=\"dojoxScrollPane\" dojoAttachPoint=\"containerNode\"></div>\n    </div>\n    <div dojoAttachPoint=\"helper\" class=\"dojoxScrollHelper\"><span class=\"helperInner\">|</span></div>\n</div>"}});

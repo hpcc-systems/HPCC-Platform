@@ -125,7 +125,7 @@ define([
         routerCallback: function (evt) {
             var currSel = this.getSelectedChild();
             var newSel = this.id + "_" + evt.params.sel;
-            if (currSel.id != newSel) {
+            if (!currSel || currSel.id != newSel) {
                 this.selectChild(newSel, null);
             }
             if (this.initTab) {
@@ -165,18 +165,14 @@ define([
         },
 
         removeChild: function (child) {
-            var context = this;
-            setTimeout(function () {
-                context._tabContainer.removeChild(child);
-                //child.destroyRecursive();
-            }, 100);
+            this._tabContainer.removeChild(child);
+            child.destroyRecursive();
         },
 
         removeAllChildren: function() {
             var tabs = this._tabContainer.getChildren();
             for (var i = 0; i < tabs.length; ++i) {
-                this._tabContainer.removeChild(tabs[i]);
-                tabs[i].destroyRecursive();
+                this.removeChild(tabs[i]);
             }
         },
 

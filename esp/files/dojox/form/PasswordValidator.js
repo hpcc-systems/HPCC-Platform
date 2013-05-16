@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dojox/form/resources/PasswordValidator.html":"<div dojoAttachPoint=\"containerNode\">\n\t<input type=\"hidden\" name=\"${name}\" value=\"\" dojoAttachPoint=\"focusNode\" />\n</div>"}});
 define("dojox/form/PasswordValidator",["dojo/_base/array","dojo/_base/lang","dojo/dom-attr","dojo/i18n","dojo/query","dojo/keys","dijit/form/_FormValueWidget","dijit/form/ValidationTextBox","dojo/text!./resources/PasswordValidator.html","dojo/i18n!./nls/PasswordValidator","dojo/_base/declare"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b){
 var _c=_b("dojox.form._ChildTextBox",_8,{containerWidget:null,type:"password",reset:function(){
 _8.prototype._setValueAttr.call(this,"",true);
@@ -149,3 +148,4 @@ this._inputWidgets[1].focus();
 }
 }});
 });
+require({cache:{"url:dojox/form/resources/PasswordValidator.html":"<div dojoAttachPoint=\"containerNode\">\n\t<input type=\"hidden\" name=\"${name}\" value=\"\" dojoAttachPoint=\"focusNode\" />\n</div>"}});

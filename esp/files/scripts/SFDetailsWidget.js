@@ -24,7 +24,7 @@ define([
     "dojo/dom-form",
     "dojo/query",
     "dojo/store/Memory",
-    "dojo/data/ObjectStore",
+    "dojo/store/Observable",
 
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
@@ -41,6 +41,13 @@ define([
     "dijit/TitlePane",
     "dijit/registry",
 
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+
     "hpcc/_TabContainerWidget",
     "hpcc/ResultWidget",
     "hpcc/ECLSourceWidget",
@@ -48,19 +55,17 @@ define([
     "hpcc/WUDetailsWidget",
     "hpcc/DFUWUDetailsWidget",
     "hpcc/TargetSelectWidget",
+    "hpcc/ESPUtil",
     "hpcc/ESPLogicalFile",
 
     "dojo/text!../templates/SFDetailsWidget.html",
 
-    "dojox/grid/EnhancedGrid",
-    "dojox/grid/enhanced/plugins/Pagination",
-    "dojox/grid/enhanced/plugins/IndirectSelection",
-
     "dijit/TooltipDialog"
-], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, ObjectStore,
+], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query, Memory, Observable,
                 _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
+                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget,
-                ESPLogicalFile,
+                ESPUtil, ESPLogicalFile,
                 template) {
     exports.fixCircularDependency = declare("SFDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -77,7 +82,6 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.summaryWidget = registry.byId(this.id + "_Summary");
-            this.subfilesGrid = registry.byId(this.id + "SubfilesGrid");
         },
 
         startup: function (args) {
@@ -99,7 +103,7 @@ define([
             }
         },
         _onRemove: function (event) {
-            this.logicalFile.removeSubfiles(this.subfilesGrid.selection.getSelected());
+            this.logicalFile.removeSubfiles(this.subfilesGrid.getSelected());
         },
         _onCopyOk: function (event) {
             this.logicalFile.copy({
@@ -152,70 +156,57 @@ define([
         },
 
         initSubfilesGrid: function () {
-            this.subfilesGrid.setStructure([
-                {
-                    name: "C",
-                    field: "isZipfile",
-                    width: "16px",
-                    formatter: function (compressed) {
-                        if (compressed == true) {
-                            return "C";
-                        }
-                        return "";
-                    }
-                },
-                {
-                    name: "K",
-                    field: "IsKeyFile",
-                    width: "16px",
-                    formatter: function (keyfile) {
-                        if (keyfile == true) {
-                            return "K";
-                        }
-                        return "";
-                    }
-                },
-                {
-                    name: "S",
-                    field: "isSuperfile",
-                    width: "16px",
-                    formatter: function (superfile) {
-                        if (superfile == true) {
-                            return "S";
-                        }
-                        return "";
-                    }
-                },
-                { name: "Logical Name", field: "Name", width: "32" },
-                { name: "Owner", field: "Owner", width: "8" },
-                { name: "Description", field: "Description", width: "12" },
-                { name: "Cluster", field: "ClusterName", width: "12" },
-                { name: "Records", field: "RecordCount", width: "8" },
-                { name: "Size", field: "Totalsize", width: "8" },
-                { name: "Parts", field: "Parts", width: "4" },
-                { name: "Modified (UTC/GMT)", field: "Modified", width: "12" }
-            ]);
-            /*
-            var objStore = ESPLogicalFile.CreateLFQueryObjectStore();
-            this.subfilesGrid.setStore(objStore);
-            this.subfilesGrid.setQuery(this.getFilter());
-
-            var context = this;
-            this.subfilesGrid.on("RowDblClick", function (evt) {
-                if (context.onRowDblClick) {
-                    var idx = evt.rowIndex;
-                    var item = this.getItem(idx);
-                    context.onRowDblClick(item);
-                }
-            }, true);
-
-            dojo.connect(this.subfilesGrid.selection, 'onSelected', function (idx) {
-                context.refreshActionState();
+            var store = new Memory({
+                idProperty: "Name",
+                data: []
             });
-            dojo.connect(this.subfilesGrid.selection, 'onDeselected', function (idx) {
-                context.refreshActionState();
-            });
-            */
+            this.subfilesStore = Observable(store);
+
+            this.subfilesGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                allowSelectAll: true,
+                columns: {
+                    sel: selector({
+                        width: 27,
+                        selectorType: 'checkbox'
+                    }),
+                    isZipfile: {
+                        label: "C", width: 16, sortable: false,
+                        formatter: function (compressed) {
+                            if (compressed == true) {
+                                return "C";
+                            }
+                            return "";
+                        }
+                    },
+                    IsKeyFile: {
+                        label: "K", width: 16, sortable: false,
+                        formatter: function (keyfile) {
+                            if (keyfile == true) {
+                                return "K";
+                            }
+                            return "";
+                        }
+                    },
+                    isSuperfile: {
+                        label: "S", width: 16, sortable: false,
+                        formatter: function (superfile) {
+                            if (superfile == true) {
+                                return "S";
+                            }
+                            return "";
+                        }
+                    },
+                    Name: { label: "Logical Name" },
+                    Owner: { label: "Owner", width: 72 },
+                    Description: { label: "Description", width: 153 },
+                    ClusterName: { label: "Cluster", width: 108 },
+                    RecordCount: { label: "Records", width: 72, sortable: false },
+                    Totalsize: { label: "Size", width: 72, sortable: false },
+                    Parts: { label: "Parts", width: 45, sortable: false },
+                    Modified: { label: "Modified (UTC/GMT)", width: 155, sortable: false }
+                },
+                store: this.subfilesStore
+            }, this.id + "SubfilesGrid");
             this.subfilesGrid.startup();
         },
 
@@ -252,13 +243,8 @@ define([
                 arrayUtil.forEach(newValue.Item, function (item, idx) {
                     data.push(ESPLogicalFile.Get(item));
                 });
-
-                this.subfilesGrid.rowSelectCell.toggleAllSelection(false);
-                var dataStore = new ObjectStore({ objectStore: new Memory({ data: data }) });
-                this.subfilesGrid.setStore(dataStore);
-                this.subfilesGrid.setQuery({
-                    Name: "*"
-                });
+                this.subfilesStore.setData(data);
+                this.subfilesGrid.refresh();
             }
         }
     });

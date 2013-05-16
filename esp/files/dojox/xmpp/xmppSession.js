@@ -63,6 +63,7 @@ case "chat":
 this.chatHandler(_b);
 break;
 case "normal":
+break;
 default:
 this.simpleMessageHandler(_b);
 }
@@ -154,12 +155,13 @@ case "thread":
 _12.chatid=n.firstChild.nodeValue;
 break;
 case "body":
-if(!n.getAttribute("xmlns")||(n.getAttribute("xmlns")=="")){
+if(!n.getAttribute("xmlns")||(n.getAttribute("xmlns")==="")){
 _12.body=n.firstChild.nodeValue;
 }
 break;
 case "subject":
 _12.subject=n.firstChild.nodeValue;
+break;
 case "html":
 if(n.getAttribute("xmlns")==_3.xmpp.xmpp.XHTML_IM_NS){
 _12.xhtml=n.getElementsByTagName("body")[0];
@@ -195,12 +197,12 @@ var _15=this.chatRegister[_14];
 _15.setState(_13);
 if(_15.firstMessage){
 if(_13==_3.xmpp.chat.ACTIVE_STATE){
-_15.useChatState=(_13!=null)?true:false;
+_15.useChatState=(_13!==null)?true:false;
 _15.firstMessage=false;
 }
 }
 }
-if((!_12.body||_12.body=="")&&!_12.xhtml){
+if((!_12.body||_12.body==="")&&!_12.xhtml){
 return;
 }
 if(_14>-1){
@@ -240,6 +242,7 @@ break;
 var req={id:_19,to:to||this.domain,type:"result",from:this.jid+"/"+this.resource};
 this.dispatchPacket(_3.xmpp.util.createElement("iq",req,true));
 },rosterSetHandler:function(_1a){
+var r;
 for(var i=0;i<_1a.childNodes.length;i++){
 var n=_1a.childNodes[i];
 if(n.nodeName=="item"){
@@ -248,7 +251,7 @@ var _1c=-1;
 var _1d=null;
 var _1e=null;
 for(var x=0;x<this.roster.length;x++){
-var r=this.roster[x];
+r=this.roster[x];
 if(n.getAttribute("jid")==r.jid){
 _1b=true;
 if(n.getAttribute("subscription")=="remove"){
@@ -324,10 +327,10 @@ case "show":
 p[n.nodeName]=n.firstChild.nodeValue;
 break;
 case "priority":
-p.priority=parseInt(n.firstChild.nodeValue);
+p.priority=parseInt(n.firstChild.nodeValue,10);
 break;
 case "x":
-if(n.firstChild&&n.firstChild.firstChild&&n.firstChild.firstChild.nodeValue!=""){
+if(n.firstChild&&n.firstChild.firstChild&&n.firstChild.firstChild.nodeValue!==""){
 p.avatarHash=n.firstChild.firstChild.nodeValue;
 p.hasAvatar=true;
 }

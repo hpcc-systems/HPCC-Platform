@@ -15,6 +15,7 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/array",
     "dojo/_base/Deferred",
     "dojo/_base/lang",
     "dojo/data/ObjectStore",
@@ -27,70 +28,36 @@ define([
     "dojox/html/entities",
 
     "hpcc/ESPBase",
+    "hpcc/ESPRequest",
     "hpcc/WsWorkunits"
-], function (declare, Deferred, lang, ObjectStore, QueryResults, Observable, domConstruct,
+], function (declare, arrayUtil, Deferred, lang, ObjectStore, QueryResults, Observable, domConstruct,
             parser, DomParser, entities,
-            ESPBase, WsWorkunits) {
-    var Store = declare(ESPBase, {
-        idProperty: "myInjectedRowNum",
-        wuid: "",
-        sequence: 0,
-        isComplete: false,
+            ESPBase, ESPRequest, WsWorkunits) {
 
-        constructor: function (args) {
-            declare.safeMixin(this, args);
-        },
-
-        getIdentity: function (object) {
-            return object[this.idProperty];
-        },
-
-        queryWhenComplete: function (query, options, deferredResults) {
-            var context = this;
-            if (this.isComplete === true) {
-                var request = {};
-                if (this.name) {
-                    request['LogicalName'] = this.name;
-                } else {
-                    request['Wuid'] = this.wuid;
-                    request['Sequence'] = this.sequence;
-                }
-                request['Start'] = options.start;
-                request['Count'] = options.count;
-
-                var results = WsWorkunits.WUResult({
-                    request: request
-                });
-
-                Deferred.when(results, function (response) {
-                    if (lang.exists("WUResultResponse.Total", response)) {
-                        deferredResults.total.resolve(response.WUResultResponse.Total);
-                    } else {
-                        deferredResults.total.resolve(0);
-                    }
-
-                    var rows = [];
-                    if (lang.exists("WUResultResponse.Result", response)) {
-                        var xml = "<Result>" + response.WUResultResponse.Result + "</Result>";
-                        var domXml = parser.parse(xml);
-                        rows = context.getValues(domXml, "Row");
-                        for (var i = 0; i < rows.length; ++i) {
-                            rows[i].myInjectedRowNum = options.start + i + 1;
-                        }
-                    }
-                    deferredResults.resolve(rows);
-                });
+    var Store = declare([ESPRequest.Store, ESPBase], {
+        service: "WsWorkunits",
+        action: "WUResult",
+        responseQualifier: "Result",
+        responseTotalQualifier: "Total",
+        idProperty: "rowNum",
+        startProperty: "Start",
+        countProperty: "Count",
+        preRequest: function (request) {
+            if (this.name) {
+                request['LogicalName'] = this.name;
             } else {
-                setTimeout(function () {
-                    context.queryWhenComplete(query, options, deferredResults);
-                }, 100);
+                request['Wuid'] = this.wuid;
+                request['Sequence'] = this.sequence;
             }
         },
-        query: function (query, options) {
-            var deferredResults = new Deferred();
-            deferredResults.total = new Deferred();
-            this.queryWhenComplete(query, options, deferredResults);
-            return QueryResults(deferredResults);
+        preProcessResponse: function (response, request) {
+            var xml = "<Result>" + response.Result + "</Result>";
+            var domXml = parser.parse(xml);
+            rows = this.getValues(domXml, "Row");
+            arrayUtil.forEach(rows, function (item, index) {
+                item.rowNum = request.Start + index + 1;
+            });
+            response.Result = rows;
         }
     });
 
@@ -210,24 +177,26 @@ define([
                     var type = node.getAttribute("type");
                     if (name && type) {
                         retVal.push({
-                            name: name,
+                            label: name,
                             field: name,
-                            width: this.extractWidth(type, name),
-                            classes: "resultGridCell"
+                            width: this.extractWidth(type, name) * 9,
+                            className: "resultGridCell",
+                            sortable: false
                         });
                     }
                     if (node.hasChildNodes()) {
                         var context = this;
                         retVal.push({
-                            name: name,
+                            label: name,
                             field: name,
                             formatter: function (cell, row, grid) {
                                 var div = document.createElement("div");
                                 div.appendChild(context.rowToTable(cell));
                                 return div.innerHTML;
                             },
-                            width: this.getRowWidth(node),
-                            classes: "resultGridCell"
+                            width: this.getRowWidth(node) * 9,
+                            className: "resultGridCell",
+                            sortable: false
                         });
                     }
                 }
@@ -241,7 +210,7 @@ define([
                 if (key != "myInjectedRowNum") {
                     var context = this;
                     retVal.push({
-                        name: key,
+                        label: key,
                         field: key,
                         formatter: function (cell, row, grid) {
                             if (cell && cell.Row) {
@@ -251,8 +220,8 @@ define([
                             }
                             return cell;
                         },
-                        width: context.extractWidth("string12", key),
-                        classes: "resultGridCell"
+                        width: context.extractWidth("string12", key) * 9,
+                        className: "resultGridCell"
                     });
                 }
             }
@@ -265,7 +234,7 @@ define([
                     cells: [
                         [
                             {
-                                name: "##", field: this.store.idProperty, width: "6", classes: "resultGridCell"
+                                label: "##", field: this.store.idProperty, width: 54, className: "resultGridCell", sortable: false
                             }
                         ]
                     ]
@@ -278,7 +247,7 @@ define([
             for (var i = 0; i < innerStruct.length; ++i) {
                 structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
             }
-            return structure;
+            return structure[0].cells[0];
         },
 
         fetchStructure: function (callback) {
@@ -377,6 +346,10 @@ define([
                 retVal = name.length;
 
             return retVal;
+        },
+
+        getStore: function () {
+            return this.store;
         },
 
         getObjectStore: function () {

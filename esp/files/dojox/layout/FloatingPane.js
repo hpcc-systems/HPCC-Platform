@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dojox/layout/resources/FloatingPane.html":"<div class=\"dojoxFloatingPane\" id=\"${id}\">\n\t<div tabindex=\"0\" role=\"button\" class=\"dojoxFloatingPaneTitle\" dojoAttachPoint=\"focusNode\">\n\t\t<span dojoAttachPoint=\"closeNode\" dojoAttachEvent=\"onclick: close\" class=\"dojoxFloatingCloseIcon\"></span>\n\t\t<span dojoAttachPoint=\"maxNode\" dojoAttachEvent=\"onclick: maximize\" class=\"dojoxFloatingMaximizeIcon\">&thinsp;</span>\n\t\t<span dojoAttachPoint=\"restoreNode\" dojoAttachEvent=\"onclick: _restore\" class=\"dojoxFloatingRestoreIcon\">&thinsp;</span>\t\n\t\t<span dojoAttachPoint=\"dockNode\" dojoAttachEvent=\"onclick: minimize\" class=\"dojoxFloatingMinimizeIcon\">&thinsp;</span>\n\t\t<span dojoAttachPoint=\"titleNode\" class=\"dijitInline dijitTitleNode\"></span>\n\t</div>\n\t<div dojoAttachPoint=\"canvas\" class=\"dojoxFloatingPaneCanvas\">\n\t\t<div dojoAttachPoint=\"containerNode\" role=\"region\" tabindex=\"-1\" class=\"${contentClass}\">\n\t\t</div>\n\t\t<span dojoAttachPoint=\"resizeHandle\" class=\"dojoxFloatingResizeHandle\"></span>\n\t</div>\n</div>\n"}});
 define("dojox/layout/FloatingPane",["dojo/_base/kernel","dojo/_base/lang","dojo/_base/window","dojo/_base/declare","dojo/_base/fx","dojo/_base/connect","dojo/_base/array","dojo/_base/sniff","dojo/window","dojo/dom","dojo/dom-class","dojo/dom-geometry","dojo/dom-construct","dijit/_TemplatedMixin","dijit/_Widget","dijit/BackgroundIframe","dojo/dnd/Moveable","./ContentPane","./ResizeHandle","dojo/text!./resources/FloatingPane.html","./Dock"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d,_e,_f,_10,_11,_12,_13,_14,_15){
 _1.experimental("dojox.layout.FloatingPane");
 var _16=_4("dojox.layout.FloatingPane",[_12,_e],{closable:true,dockable:true,resizable:false,maxable:false,resizeAxis:"xy",title:"",dockTo:"",duration:400,contentClass:"dojoxFloatingPaneContent",_showAnim:null,_hideAnim:null,_dockNode:null,_restoreState:{},_allFPs:[],_startZ:100,templateString:_14,attributeMap:_2.delegate(_f.prototype.attributeMap,{title:{type:"innerHTML",node:"titleNode"}}),postCreate:function(){
@@ -103,7 +102,8 @@ this._dockNode.destroy();
 this._dockNode=null;
 }
 })}).play();
-this.resize(_c.position(this.domNode));
+var _1e=_c.getContentBox(this.domNode);
+this.resize(_2.mixin(_c.position(this.domNode),{w:_1e.w,h:_1e.h}));
 this._onShow();
 },minimize:function(){
 if(!this._isDocked){
@@ -152,21 +152,21 @@ dns.left=dim.x+"px";
 }
 dns.width=dim.w+"px";
 dns.height=dim.h+"px";
-var _1e={l:0,t:0,w:dim.w,h:(dim.h-this.focusNode.offsetHeight)};
-_c.setMarginBox(this.canvas,_1e);
+var _1f={l:0,t:0,w:dim.w,h:(dim.h-this.focusNode.offsetHeight)};
+_c.setMarginBox(this.canvas,_1f);
 this._checkIfSingleChild();
 if(this._singleChild&&this._singleChild.resize){
-this._singleChild.resize(_1e);
+this._singleChild.resize(_1f);
 }
 },bringToTop:function(){
-var _1f=_7.filter(this._allFPs,function(i){
+var _20=_7.filter(this._allFPs,function(i){
 return i!==this;
 },this);
-_1f.sort(function(a,b){
+_20.sort(function(a,b){
 return a.domNode.style.zIndex-b.domNode.style.zIndex;
 });
-_1f.push(this);
-_7.forEach(_1f,function(w,x){
+_20.push(this);
+_7.forEach(_20,function(w,x){
 w.domNode.style.zIndex=this._startZ+(x*2);
 _b.remove(w.domNode,"dojoxFloatingPaneFg");
 },this);
@@ -180,3 +180,4 @@ this.inherited(arguments);
 }});
 return _16;
 });
+require({cache:{"url:dojox/layout/resources/FloatingPane.html":"<div class=\"dojoxFloatingPane\" id=\"${id}\">\n\t<div tabindex=\"0\" role=\"button\" class=\"dojoxFloatingPaneTitle\" dojoAttachPoint=\"focusNode\">\n\t\t<span dojoAttachPoint=\"closeNode\" dojoAttachEvent=\"onclick: close\" class=\"dojoxFloatingCloseIcon\"></span>\n\t\t<span dojoAttachPoint=\"maxNode\" dojoAttachEvent=\"onclick: maximize\" class=\"dojoxFloatingMaximizeIcon\">&thinsp;</span>\n\t\t<span dojoAttachPoint=\"restoreNode\" dojoAttachEvent=\"onclick: _restore\" class=\"dojoxFloatingRestoreIcon\">&thinsp;</span>\t\n\t\t<span dojoAttachPoint=\"dockNode\" dojoAttachEvent=\"onclick: minimize\" class=\"dojoxFloatingMinimizeIcon\">&thinsp;</span>\n\t\t<span dojoAttachPoint=\"titleNode\" class=\"dijitInline dijitTitleNode\"></span>\n\t</div>\n\t<div dojoAttachPoint=\"canvas\" class=\"dojoxFloatingPaneCanvas\">\n\t\t<div dojoAttachPoint=\"containerNode\" role=\"region\" tabindex=\"-1\" class=\"${contentClass}\">\n\t\t</div>\n\t\t<span dojoAttachPoint=\"resizeHandle\" class=\"dojoxFloatingResizeHandle\"></span>\n\t</div>\n</div>\n"}});

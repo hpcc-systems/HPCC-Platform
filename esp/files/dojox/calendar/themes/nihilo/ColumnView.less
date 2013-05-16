@@ -48,21 +48,33 @@
 	.border-box;
 }
 
-.nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable .hour	{
-	border-top: @hour-stroke;
-}
-
 .nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable tr:first-child td	{
 	border-top: 1px solid transparent;
 }
 
-.nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable .halfhour	{
-	border-top: @half-hour-stroke;
+.nihilo .dojoxCalendarColumnView td.hour {
+	border-top: @hour-stroke;
 }
 
-.nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable .quarterhour	{
+.nihilo .dojoxCalendarColumnView td.halfhour{
+	border-top: @half-hour-stroke;	
+}
+
+.nihilo .dojoxCalendarColumnView  td.quarterhour{
 	border-top: @quarter-hour-stroke;
 }
+
+.nihilo .dojoxCalendarColumnView span.hour {
+	color: @label-color;
+	background-color: @row-color;
+}
+
+.nihilo .dojoxCalendarColumnView span.halfhour,
+.nihilo .dojoxCalendarColumnView span.quarterhour{
+	color: @secondary-label-color;
+	background-color: @row-color;
+}
+
 
 /* 
  * The dojoxCalendarToday & dojoxCalendarWeekend classes is added by the 
@@ -217,6 +229,17 @@
 	.select-none;
 }
 
+.nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderLabelContainer{
+	width: 100%;
+	height: 100%;
+	z-index: 10;
+}
+
+.nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderLabel{	
+	right: 4px;		
+	position: absolute;	
+}
+
 .nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderTable {
 	border-collapse: collapse;
 	table-layout: fixed;
@@ -235,9 +258,6 @@
  * The ColumnView.styleRowHeaderCell method that can be subclassed to add/remove css classes per hour.
  */
 .nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderTable td {	
-	vertical-align: top;			
-	text-align: right;	
-	border-top: @outer-border; 	
 	background-color: @row-color;
 	color: @label-color;
 	.border-box;

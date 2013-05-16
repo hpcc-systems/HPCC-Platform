@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dijit/layout/templates/TabContainer.html":"<div class=\"dijitTabContainer\">\n\t<div class=\"dijitTabListWrapper\" data-dojo-attach-point=\"tablistNode\"></div>\n\t<div data-dojo-attach-point=\"tablistSpacer\" class=\"dijitTabSpacer ${baseClass}-spacer\"></div>\n\t<div class=\"dijitTabPaneWrapper ${baseClass}-container\" data-dojo-attach-point=\"containerNode\"></div>\n</div>\n"}});
 define("dijit/layout/_TabContainerBase",["dojo/text!./templates/TabContainer.html","./StackContainer","./utils","../_TemplatedMixin","dojo/_base/declare","dojo/dom-class","dojo/dom-geometry","dojo/dom-style"],function(_1,_2,_3,_4,_5,_6,_7,_8){
 return _5("dijit.layout._TabContainerBase",[_2,_4],{tabPosition:"top",baseClass:"dijitTabContainer",tabStrip:false,nested:false,templateString:_1,postMixInProperties:function(){
 this.baseClass+=this.tabPosition.charAt(0).toUpperCase()+this.tabPosition.substr(1).replace(/-.*/,"");
@@ -35,8 +34,8 @@ return;
 var sc=this.selectedChildWidget;
 if(this.doLayout){
 var _a=this.tabPosition.replace(/-h/,"");
-this.tablist.layoutAlign=_a;
-var _b=[this.tablist,{domNode:this.tablistSpacer,layoutAlign:_a},{domNode:this.containerNode,layoutAlign:"client"}];
+this.tablist.region=_a;
+var _b=[this.tablist,{domNode:this.tablistSpacer,region:_a},{domNode:this.containerNode,region:"center"}];
 _3.layoutChildren(this.domNode,this._contentBox,_b);
 this._containerContentBox=_3.marginBox2contentBox(this.containerNode,_b[2]);
 if(sc&&sc.resize){
@@ -54,10 +53,11 @@ if(sc&&sc.resize){
 sc.resize();
 }
 }
-},destroy:function(){
+},destroy:function(_d){
 if(this.tablist){
-this.tablist.destroy();
+this.tablist.destroy(_d);
 }
 this.inherited(arguments);
 }});
 });
+require({cache:{"url:dijit/layout/templates/TabContainer.html":"<div class=\"dijitTabContainer\">\n\t<div class=\"dijitTabListWrapper\" data-dojo-attach-point=\"tablistNode\"></div>\n\t<div data-dojo-attach-point=\"tablistSpacer\" class=\"dijitTabSpacer ${baseClass}-spacer\"></div>\n\t<div class=\"dijitTabPaneWrapper ${baseClass}-container\" data-dojo-attach-point=\"containerNode\"></div>\n</div>\n"}});

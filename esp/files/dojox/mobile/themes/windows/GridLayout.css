@@ -1,0 +1,37 @@
+.mblToolBarButtonHasArrow-styles {
+  width: 27px;
+  height: 27px;
+  border-radius: 20px;
+  border: 2px solid #ffffff;
+  padding: 0px;
+  margin: 0px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  background-image: url("images/dark/back.png");
+  background-position: 50% 50%;
+  background-size: 27px 27px;
+  background-repeat: no-repeat;
+}
+.mblGridLayout {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+}
+.mblGridLayout > div {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  float: left;
+  min-height: 1px;
+}
+.mblGridItemFirstColumn {
+  clear: left;
+}
+.mblGridItemTerminator {
+  clear: both;
+}
+.mblGridItemLastItem:after {
+  content: "";
+  display: block;
+  clear: both;
+}

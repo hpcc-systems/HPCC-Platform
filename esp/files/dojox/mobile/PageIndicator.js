@@ -4,15 +4,15 @@ return _2("dojox.mobile.PageIndicator",[_8,_7],{refId:"",baseClass:"mblPageIndic
 this.inherited(arguments);
 this._tblNode=_5.create("table",{className:"mblPageIndicatorContainer"},this.domNode);
 this._tblNode.insertRow(-1);
-this._clickHandle=this.connect(this.domNode,"onclick","_onClick");
+this.connect(this.domNode,"onclick","_onClick");
 this.subscribe("/dojox/mobile/viewChanged",function(_9){
 this.reset();
 });
 },startup:function(){
 var _a=this;
-setTimeout(function(){
+_a.defer(function(){
 _a.reset();
-},0);
+});
 },reset:function(){
 var r=this._tblNode.rows[0];
 var i,c,a=[],_b;
