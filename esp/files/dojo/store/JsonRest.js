@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -10,7 +10,7 @@ var _6=null;
 return _4("dojo.store.JsonRest",_6,{constructor:function(_7){
 this.headers={};
 _4.safeMixin(this,_7);
-},headers:{},target:"",idProperty:"id",get:function(id,_8){
+},headers:{},target:"",idProperty:"id",ascendingPrefix:"+",descendingPrefix:"-",get:function(id,_8){
 _8=_8||{};
 var _9=_2.mixin({Accept:this.accepts},this.headers,_8.headers||_8);
 return _1("GET",{url:this.target+id,handleAs:"json",headers:_9});
@@ -44,7 +44,7 @@ var _15=this.sortParam;
 _11+=(_11||_14?"&":"?")+(_15?_15+"=":"sort(");
 for(var i=0;i<_12.sort.length;i++){
 var _16=_12.sort[i];
-_11+=(i>0?",":"")+(_16.descending?"-":"+")+encodeURIComponent(_16.attribute);
+_11+=(i>0?",":"")+(_16.descending?this.descendingPrefix:this.ascendingPrefix)+encodeURIComponent(_16.attribute);
 }
 if(!_15){
 _11+=")";

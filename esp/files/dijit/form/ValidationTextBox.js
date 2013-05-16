@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dijit/form/templates/ValidationTextBox.html":"<div class=\"dijit dijitReset dijitInline dijitLeft\"\n\tid=\"widget_${id}\" role=\"presentation\"\n\t><div class='dijitReset dijitValidationContainer'\n\t\t><input class=\"dijitReset dijitInputField dijitValidationIcon dijitValidationInner\" value=\"&#935; \" type=\"text\" tabIndex=\"-1\" readonly=\"readonly\" role=\"presentation\"\n\t/></div\n\t><div class=\"dijitReset dijitInputField dijitInputContainer\"\n\t\t><input class=\"dijitReset dijitInputInner\" data-dojo-attach-point='textbox,focusNode' autocomplete=\"off\"\n\t\t\t${!nameAttrSetting} type='${type}'\n\t/></div\n></div>\n"}});
 define("dijit/form/ValidationTextBox",["dojo/_base/declare","dojo/_base/kernel","dojo/i18n","./TextBox","../Tooltip","dojo/text!./templates/ValidationTextBox.html","dojo/i18n!./nls/validate"],function(_1,_2,_3,_4,_5,_6){
 var _7;
 return _7=_1("dijit.form.ValidationTextBox",_4,{templateString:_6,required:false,promptMessage:"",invalidMessage:"$_unset_$",missingMessage:"$_unset_$",message:"",constraints:{},pattern:".*",regExp:"",regExpGen:function(){
@@ -10,18 +9,18 @@ this.set("pattern",_9);
 }
 },_setRegExpGenAttr:function(_a){
 this._deprecateRegExp("regExpGen",_a);
-this.regExpGen=this._getPatternAttr;
+this._set("regExpGen",this._computeRegexp);
 },_setRegExpAttr:function(_b){
 this._deprecateRegExp("regExp",_b);
 },_setValueAttr:function(){
 this.inherited(arguments);
-this.validate(this.focused);
+this._refreshState();
 },validator:function(_c,_d){
-return (new RegExp("^(?:"+this._getPatternAttr(_d)+")"+(this.required?"":"?")+"$")).test(_c)&&(!this.required||!this._isEmpty(_c))&&(this._isEmpty(_c)||this.parse(_c,_d)!==undefined);
+return (new RegExp("^(?:"+this._computeRegexp(_d)+")"+(this.required?"":"?")+"$")).test(_c)&&(!this.required||!this._isEmpty(_c))&&(this._isEmpty(_c)||this.parse(_c,_d)!==undefined);
 },_isValidSubset:function(){
 return this.textbox.value.search(this._partialre)==0;
 },isValid:function(){
-return this.validator(this.textbox.value,this.constraints);
+return this.validator(this.textbox.value,this.get("constraints"));
 },_isEmpty:function(_e){
 return (this.trim?/^\s*$/:/^$/).test(_e);
 },getErrorMessage:function(){
@@ -80,14 +79,13 @@ this._set("constraints",_18);
 this._refreshState();
 },_setPatternAttr:function(_19){
 this._set("pattern",_19);
-},_getPatternAttr:function(_1a){
+},_computeRegexp:function(_1a){
 var p=this.pattern;
-var _1b=(typeof p).toLowerCase();
-if(_1b=="function"){
-p=this.pattern(_1a||this.constraints);
+if(typeof p=="function"){
+p=p.call(this,_1a);
 }
 if(p!=this._lastRegExp){
-var _1c="";
+var _1b="";
 this._lastRegExp=p;
 if(p!=".*"){
 p.replace(/\\.|\[\]|\[.*?[^\\]{1}\]|\{.*?\}|\(\?[=:!]|./g,function(re){
@@ -100,41 +98,41 @@ case "^":
 case "$":
 case "|":
 case "(":
-_1c+=re;
+_1b+=re;
 break;
 case ")":
-_1c+="|$)";
+_1b+="|$)";
 break;
 default:
-_1c+="(?:"+re+"|$)";
+_1b+="(?:"+re+"|$)";
 break;
 }
 });
 }
 try{
-"".search(_1c);
+"".search(_1b);
 }
 catch(e){
-_1c=this.pattern;
+_1b=this.pattern;
 console.warn("RegExp error in "+this.declaredClass+": "+this.pattern);
 }
-this._partialre="^(?:"+_1c+")$";
+this._partialre="^(?:"+_1b+")$";
 }
 return p;
 },postMixInProperties:function(){
 this.inherited(arguments);
 this.messages=_3.getLocalization("dijit.form","validate",this.lang);
 this._setConstraintsAttr(this.constraints);
-},_setDisabledAttr:function(_1d){
+},_setDisabledAttr:function(_1c){
 this.inherited(arguments);
 this._refreshState();
-},_setRequiredAttr:function(_1e){
-this._set("required",_1e);
-this.focusNode.setAttribute("aria-required",_1e);
+},_setRequiredAttr:function(_1d){
+this._set("required",_1d);
+this.focusNode.setAttribute("aria-required",_1d);
 this._refreshState();
-},_setMessageAttr:function(_1f){
-this._set("message",_1f);
-this.displayMessage(_1f);
+},_setMessageAttr:function(_1e){
+this._set("message",_1e);
+this.displayMessage(_1e);
 },reset:function(){
 this._maskValidSubsetError=true;
 this.inherited(arguments);
@@ -143,3 +141,4 @@ this.displayMessage("");
 this.inherited(arguments);
 }});
 });
+require({cache:{"url:dijit/form/templates/ValidationTextBox.html":"<div class=\"dijit dijitReset dijitInline dijitLeft\"\n\tid=\"widget_${id}\" role=\"presentation\"\n\t><div class='dijitReset dijitValidationContainer'\n\t\t><input class=\"dijitReset dijitInputField dijitValidationIcon dijitValidationInner\" value=\"&#935; \" type=\"text\" tabIndex=\"-1\" readonly=\"readonly\" role=\"presentation\"\n\t/></div\n\t><div class=\"dijitReset dijitInputField dijitInputContainer\"\n\t\t><input class=\"dijitReset dijitInputInner\" data-dojo-attach-point='textbox,focusNode' autocomplete=\"off\"\n\t\t\t${!nameAttrSetting} type='${type}'\n\t/></div\n></div>\n"}});

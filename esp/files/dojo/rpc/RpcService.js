@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -26,7 +26,7 @@ this.processSmd(_4.eval("("+_8.smdStr+")"));
 if(_8.serviceUrl){
 this.serviceUrl=_8.serviceUrl;
 }
-this.timeout=_8.timeout||3000;
+this.timeout=_8.timeout||0;
 if("strictArgChecks" in _8){
 this.strictArgChecks=_8.strictArgChecks;
 }

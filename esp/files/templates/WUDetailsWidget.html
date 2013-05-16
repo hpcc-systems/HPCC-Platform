@@ -73,8 +73,10 @@
                 <div id="${id}InfoContainer" style="height: 33%" data-dojo-props="region: 'bottom', splitter: true, minSize: 120" data-dojo-type="InfoGridWidget">
                 </div>
             </div>
-            <div id="${id}_Variables" title="Variables" data-dojo-type="dijit.layout.ContentPane">
-                <div id="${id}VariablesGrid" data-dojo-type="dojox.grid.DataGrid">
+            <div id="${id}_Variables" title="Variables" data-dojo-type="dijit.layout.BorderContainer">
+                <div style="border: 0px; padding: 0px; border-color: none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}VariablesGrid">
+                    </div>
                 </div>
             </div>
             <div id="${id}_Results" title="Outputs" data-dojo-type="ResultsWidget">

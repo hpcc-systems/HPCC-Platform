@@ -1,0 +1,25 @@
+.mblToolBarButtonHasArrow-styles {
+  width: 27px;
+  height: 27px;
+  border-radius: 20px;
+  border: 2px solid #ffffff;
+  padding: 0px;
+  margin: 0px;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  background-image: url("images/dark/back.png");
+  background-position: 50% 50%;
+  background-size: 27px 27px;
+  background-repeat: no-repeat;
+}
+.mblRoundRectCategory {
+  margin: 18px 0 0 20px;
+  padding: 0;
+  font-family: Helvetica;
+  font-size: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: #ffffff;
+  margin: 0px;
+}

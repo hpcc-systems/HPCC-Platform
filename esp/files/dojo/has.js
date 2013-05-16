@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -25,7 +25,7 @@ return _c&&_3(_a);
 }
 if(1){
 _3.add("dom-addeventlistener",!!document.addEventListener);
-_3.add("touch","ontouchstart" in document);
+_3.add("touch","ontouchstart" in document||window.navigator.msMaxTouchPoints>0);
 _3.add("device-width",screen.availWidth||innerWidth);
 var _e=document.createElement("form");
 _3.add("dom-attributes-explicit",_e.attributes.length==0);

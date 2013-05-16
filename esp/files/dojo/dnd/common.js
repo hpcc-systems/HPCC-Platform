@@ -1,13 +1,15 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
 
 //>>built
-define("dojo/dnd/common",["../_base/connect","../_base/kernel","../_base/lang","../dom"],function(_1,_2,_3,_4){
+define("dojo/dnd/common",["../sniff","../_base/kernel","../_base/lang","../dom"],function(_1,_2,_3,_4){
 var _5=_3.getObject("dojo.dnd",true);
-_5.getCopyKeyState=_1.isCopyKey;
+_5.getCopyKeyState=function(_6){
+return _6[_1("mac")?"metaKey":"ctrlKey"];
+};
 _5._uniqueId=0;
 _5.getUniqueId=function(){
 var id;

@@ -1,7 +1,7 @@
 //>>built
-define("dojox/charting/Element",["dojo/_base/lang","dojo/_base/array","dojo/dom-construct","dojo/_base/declare","dojox/gfx","dojox/gfx/shape"],function(_1,_2,_3,_4,_5,_6){
-return _4("dojox.charting.Element",null,{chart:null,group:null,htmlElements:null,dirty:true,constructor:function(_7){
-this.chart=_7;
+define("dojox/charting/Element",["dojo/_base/array","dojo/dom-construct","dojo/_base/declare","dojox/gfx","dojox/gfx/shape"],function(_1,_2,_3,_4,_5){
+return _3("dojox.charting.Element",null,{chart:null,group:null,htmlElements:null,dirty:true,constructor:function(_6){
+this.chart=_6;
 this.group=null;
 this.htmlElements=[];
 this.dirty=true;
@@ -10,48 +10,76 @@ this._events=[];
 },purgeGroup:function(){
 this.destroyHtmlElements();
 if(this.group){
-this.group.removeShape();
-var _8=this.group.children;
-for(var i=0;i<_8.length;++i){
-_6.dispose(_8[i],true);
+this.getGroup().removeShape();
+var _7=this.getGroup().children;
+if(_5.dispose){
+for(var i=0;i<_7.length;++i){
+_5.dispose(_7[i],true);
+}
+}
+if(this.getGroup().rawNode){
+_2.empty(this.getGroup().rawNode);
+}
+this.getGroup().clear();
+if(_5.dispose){
+_5.dispose(this.getGroup(),true);
+}
+if(this.getGroup()!=this.group){
+if(this.group.rawNode){
+_2.empty(this.group.rawNode);
 }
 this.group.clear();
-_6.dispose(this.group,true);
+if(_5.dispose){
+_5.dispose(this.group,true);
+}
+}
 this.group=null;
 }
 this.dirty=true;
 if(this._events.length){
-_2.forEach(this._events,function(_9){
-_9.shape.disconnect(_9.handle);
+_1.forEach(this._events,function(_8){
+_8.shape.disconnect(_8.handle);
 });
 this._events=[];
 }
 return this;
-},cleanGroup:function(_a){
+},cleanGroup:function(_9){
 this.destroyHtmlElements();
-if(!_a){
-_a=this.chart.surface;
+if(!_9){
+_9=this.chart.surface;
 }
 if(this.group){
-var _b=this.group.children;
+var _a;
+var _b=this.getGroup().children;
+if(_5.dispose){
 for(var i=0;i<_b.length;++i){
-_6.dispose(_b[i],true);
+_5.dispose(_b[i],true);
 }
-this.group.clear();
+}
+if(this.getGroup().rawNode){
+_a=this.getGroup().bgNode;
+_2.empty(this.getGroup().rawNode);
+}
+this.getGroup().clear();
+if(_a){
+this.getGroup().rawNode.appendChild(_a);
+}
 }else{
-this.group=_a.createGroup();
+this.group=_9.createGroup();
 }
 this.dirty=true;
 return this;
+},getGroup:function(){
+return this.group;
 },destroyHtmlElements:function(){
 if(this.htmlElements.length){
-_2.forEach(this.htmlElements,_3.destroy);
+_1.forEach(this.htmlElements,_2.destroy);
 this.htmlElements=[];
 }
 },destroy:function(){
 this.purgeGroup();
 },getTextWidth:function(s,_c){
-return _5._base._getTextBox(s,{font:_c}).w||0;
+return _4._base._getTextBox(s,{font:_c}).w||0;
 },getTextWithLimitLength:function(s,_d,_e,_f){
 if(!s||s.length<=0){
 return {text:"",truncated:_f||false};
@@ -101,7 +129,7 @@ var _1d=_1b.space,_1e;
 switch(_1b.type){
 case "linear":
 if(_1d==="plot"||_1d==="shapeX"||_1d==="shapeY"){
-_1b=_5.makeParameters(_5.defaultLinearGradient,_1b);
+_1b=_4.makeParameters(_4.defaultLinearGradient,_1b);
 _1b.space=_1d;
 if(_1d==="plot"||_1d==="shapeX"){
 _1e=dim.height-_1c.t-_1c.b;
@@ -117,7 +145,7 @@ _1b.x2=_1c.l+_1e*_1b.x2/100;
 break;
 case "radial":
 if(_1d==="plot"){
-_1b=_5.makeParameters(_5.defaultRadialGradient,_1b);
+_1b=_4.makeParameters(_4.defaultRadialGradient,_1b);
 _1b.space=_1d;
 var _1f=dim.width-_1c.l-_1c.r,_20=dim.height-_1c.t-_1c.b;
 _1b.cx=_1c.l+_1f*_1b.cx/100;
@@ -127,7 +155,7 @@ _1b.r=_1b.r*Math.sqrt(_1f*_1f+_20*_20)/200;
 break;
 case "pattern":
 if(_1d==="plot"||_1d==="shapeX"||_1d==="shapeY"){
-_1b=_5.makeParameters(_5.defaultPattern,_1b);
+_1b=_4.makeParameters(_4.defaultPattern,_1b);
 _1b.space=_1d;
 if(_1d==="plot"||_1d==="shapeX"){
 _1e=dim.height-_1c.t-_1c.b;
@@ -151,7 +179,7 @@ var _23=_21.space,_24;
 switch(_21.type){
 case "linear":
 if(_23==="shape"||_23==="shapeX"||_23==="shapeY"){
-_21=_5.makeParameters(_5.defaultLinearGradient,_21);
+_21=_4.makeParameters(_4.defaultLinearGradient,_21);
 _21.space=_23;
 if(_23==="shape"||_23==="shapeX"){
 _24=_22.width;
@@ -167,7 +195,7 @@ _21.y2=_22.y+_24*_21.y2/100;
 break;
 case "radial":
 if(_23==="shape"){
-_21=_5.makeParameters(_5.defaultRadialGradient,_21);
+_21=_4.makeParameters(_4.defaultRadialGradient,_21);
 _21.space=_23;
 _21.cx=_22.x+_22.width/2;
 _21.cy=_22.y+_22.height/2;
@@ -176,7 +204,7 @@ _21.r=_21.r*_22.width/200;
 break;
 case "pattern":
 if(_23==="shape"||_23==="shapeX"||_23==="shapeY"){
-_21=_5.makeParameters(_5.defaultPattern,_21);
+_21=_4.makeParameters(_4.defaultPattern,_21);
 _21.space=_23;
 if(_23==="shape"||_23==="shapeX"){
 _24=_22.width;
@@ -197,7 +225,7 @@ if(!_25||_25.type!=="radial"||_25.space!=="shape"){
 return _25;
 }
 var _29=_25.space;
-_25=_5.makeParameters(_5.defaultRadialGradient,_25);
+_25=_4.makeParameters(_4.defaultRadialGradient,_25);
 _25.space=_29;
 if(arguments.length<4){
 _25.cx=_26.x;
@@ -207,6 +235,5 @@ return _25;
 }
 var _2a=arguments.length<5?_28:(end+_28)/2;
 return {type:"linear",x1:_26.x,y1:_26.y,x2:_26.x+_25.r*_27*Math.cos(_2a)/100,y2:_26.y+_25.r*_27*Math.sin(_2a)/100,colors:_25.colors};
-return _25;
 }});
 });

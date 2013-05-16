@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dojox/grid/enhanced/templates/FilterStatusPane.html":"<div class=\"dojoxGridFStatusTip\"\n\t><div class=\"dojoxGridFStatusTipHead\"\n\t\t><span class=\"dojoxGridFStatusTipTitle\" dojoAttachPoint=\"statusTitle\"></span\n\t\t><span class=\"dojoxGridFStatusTipRel\" dojoAttachPoint=\"statusRel\"></span\n\t></div\n\t><div class=\"dojoxGridFStatusTipDetail\" dojoAttachPoint=\"statusDetailNode\"\n\t></div\n></div>\n"}});
 define("dojox/grid/enhanced/plugins/filter/FilterStatusTip",["dojo/_base/declare","dojo/_base/array","dojo/_base/lang","dojo/query","dojo/string","dojo/date/locale","dijit/_Widget","dijit/_TemplatedMixin","dijit/_WidgetsInTemplateMixin","dijit/TooltipDialog","dijit/form/Button","dijit/_base/popup","dojo/text!../../templates/FilterStatusPane.html","dojo/i18n!../../nls/Filter"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d){
 var _e="",_f="",_10="",_11="",_12="dojoxGridFStatusTipOddRow",_13="dojoxGridFStatusTipHandle",_14="dojoxGridFStatusTipCondition",_15="dojoxGridFStatusTipDelRuleBtnIcon",_16="</tbody></table>";
 var _17=_1("dojox.grid.enhanced.plugins.filter.FilterStatusPane",[_7,_8],{templateString:_d});
@@ -76,3 +75,4 @@ var p=this.plugin;
 p.filterDefDialog.showDialog(p.filterBar.getColumnIdx(this._pos.x));
 }});
 });
+require({cache:{"url:dojox/grid/enhanced/templates/FilterStatusPane.html":"<div class=\"dojoxGridFStatusTip\"\n\t><div class=\"dojoxGridFStatusTipHead\"\n\t\t><span class=\"dojoxGridFStatusTipTitle\" dojoAttachPoint=\"statusTitle\"></span\n\t\t><span class=\"dojoxGridFStatusTipRel\" dojoAttachPoint=\"statusRel\"></span\n\t></div\n\t><div class=\"dojoxGridFStatusTipDetail\" dojoAttachPoint=\"statusDetailNode\"\n\t></div\n></div>\n"}});

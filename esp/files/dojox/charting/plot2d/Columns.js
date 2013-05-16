@@ -1,45 +1,41 @@
 //>>built
-define("dojox/charting/plot2d/Columns",["dojo/_base/lang","dojo/_base/array","dojo/_base/declare","./CartesianBase","./_PlotEvents","./common","dojox/lang/functional","dojox/lang/functional/reversed","dojox/lang/utils","dojox/gfx/fx"],function(_1,_2,_3,_4,_5,dc,df,_6,du,fx){
-var _7=_6.lambda("item.purgeGroup()");
-return _3("dojox.charting.plot2d.Columns",[_4,_5],{defaultParams:{hAxis:"x",vAxis:"y",gap:0,animate:null,enableCache:false},optionalParams:{minBarSize:1,maxBarSize:1,stroke:{},outline:{},shadow:{},fill:{},styleFunc:null,font:"",fontColor:""},constructor:function(_8,_9){
-this.opt=_1.clone(this.defaultParams);
-du.updateWithObject(this.opt,_9);
-du.updateWithPattern(this.opt,_9,this.optionalParams);
-this.series=[];
-this.hAxis=this.opt.hAxis;
-this.vAxis=this.opt.vAxis;
+define("dojox/charting/plot2d/Columns",["dojo/_base/lang","dojo/_base/array","dojo/_base/declare","dojo/has","./CartesianBase","./_PlotEvents","./common","dojox/lang/functional","dojox/lang/functional/reversed","dojox/lang/utils","dojox/gfx/fx"],function(_1,_2,_3,_4,_5,_6,dc,df,_7,du,fx){
+var _8=_7.lambda("item.purgeGroup()");
+return _3("dojox.charting.plot2d.Columns",[_5,_6],{defaultParams:{gap:0,animate:null,enableCache:false},optionalParams:{minBarSize:1,maxBarSize:1,stroke:{},outline:{},shadow:{},fill:{},filter:{},styleFunc:null,font:"",fontColor:""},constructor:function(_9,_a){
+this.opt=_1.clone(_1.mixin(this.opt,this.defaultParams));
+du.updateWithObject(this.opt,_a);
+du.updateWithPattern(this.opt,_a,this.optionalParams);
 this.animate=this.opt.animate;
 },getSeriesStats:function(){
-var _a=dc.collectSimpleStats(this.series);
-_a.hmin-=0.5;
-_a.hmax+=0.5;
-return _a;
-},createRect:function(_b,_c,_d){
-var _e;
-if(this.opt.enableCache&&_b._rectFreePool.length>0){
-_e=_b._rectFreePool.pop();
-_e.setShape(_d);
-_c.add(_e);
+var _b=dc.collectSimpleStats(this.series);
+_b.hmin-=0.5;
+_b.hmax+=0.5;
+return _b;
+},createRect:function(_c,_d,_e){
+var _f;
+if(this.opt.enableCache&&_c._rectFreePool.length>0){
+_f=_c._rectFreePool.pop();
+_f.setShape(_e);
+_d.add(_f);
 }else{
-_e=_c.createRect(_d);
+_f=_d.createRect(_e);
 }
 if(this.opt.enableCache){
-_b._rectUsePool.push(_e);
+_c._rectUsePool.push(_f);
 }
-return _e;
-},render:function(_f,_10){
+return _f;
+},render:function(dim,_10){
 if(this.zoom&&!this.isDataDirty()){
-return this.performZoom(_f,_10);
+return this.performZoom(dim,_10);
 }
-this.getSeriesStats();
 this.resetEvents();
 this.dirty=this.isDirty();
 var s;
 if(this.dirty){
-_2.forEach(this.series,_7);
+_2.forEach(this.series,_8);
 this._eventSeries={};
 this.cleanGroup();
-s=this.group;
+s=this.getGroup();
 df.forEachRev(this.series,function(_11){
 _11.cleanGroup(s);
 });
@@ -79,28 +75,35 @@ _1a=t.addMixin(_15,"column",_1c,true);
 _1a=t.post(_15,"column");
 }
 if(bar.width>=1&&h>=0){
-var _1d={x:_10.l+ht(val.x+0.5)+bar.gap+bar.thickness*i,y:_f.height-_10.b-(val.y>_12?vv:_13),width:bar.width,height:h};
+var _1d={x:_10.l+ht(val.x+0.5)+bar.gap+bar.thickness*i,y:dim.height-_10.b-(val.y>_12?vv:_13),width:bar.width,height:h};
 if(_1a.series.shadow){
 var _1e=_1.clone(_1d);
 _1e.x+=_1a.series.shadow.dx;
 _1e.y+=_1a.series.shadow.dy;
 _1b=this.createRect(run,s,_1e).setFill(_1a.series.shadow.color).setStroke(_1a.series.shadow);
 if(this.animate){
-this._animateColumn(_1b,_f.height-_10.b+_13,h);
+this._animateColumn(_1b,dim.height-_10.b+_13,h);
 }
 }
-var _1f=this._plotFill(_1a.series.fill,_f,_10);
+var _1f=this._plotFill(_1a.series.fill,dim,_10);
 _1f=this._shapeFill(_1f,_1d);
 var _20=this.createRect(run,s,_1d).setFill(_1f).setStroke(_1a.series.stroke);
+if(_20.setFilter&&_1a.series.filter){
+_20.setFilter(_1a.series.filter);
+}
 run.dyn.fill=_20.getFill();
 run.dyn.stroke=_20.getStroke();
 if(_14){
-var o={element:"column",index:j,run:run,shape:_20,shadow:_1b,x:val.x+0.5,y:val.y};
+var o={element:"column",index:j,run:run,shape:_20,shadow:_1b,cx:val.x+0.5,cy:val.y,x:_17?j:run.data[j].x,y:_17?run.data[j]:run.data[j].y};
 this._connectEvents(o);
 _16[j]=o;
 }
+if(!isNaN(val.py)&&val.py>_12){
+_1d.height=vv-vt(val.py);
+}
+this.createLabel(s,_19,_1d,_1a);
 if(this.animate){
-this._animateColumn(_20,_f.height-_10.b-_13,h);
+this._animateColumn(_20,dim.height-_10.b-_13,h);
 }
 }
 }
@@ -109,6 +112,9 @@ this._eventSeries[run.name]=_16;
 run.dirty=false;
 }
 this.dirty=false;
+if(_4("dojo-bidi")){
+this._checkOrientation(this.group,dim,_10);
+}
 return this;
 },getValue:function(_21,j,_22,_23){
 var y,x;
@@ -123,7 +129,7 @@ x=j;
 y=_21.y;
 x=_21.x-1;
 }
-return {y:y,x:x};
+return {x:x,y:y};
 },getBarProperties:function(){
 var f=dc.calculateBarSize(this._hScaler.bounds.scale,this.opt);
 return {gap:f.gap,width:f.size,thickness:0};

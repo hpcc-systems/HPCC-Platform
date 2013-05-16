@@ -70,6 +70,7 @@ public:
         IPropertyTree *folderTP = CEspBinding::ensureNavFolder(data, "Tech Preview", "Technical Preview");
         CEspBinding::ensureNavLink(*folderTP, "DFU Workunits", "/esp/files/stub.htm?Widget=GetDFUWorkunitsWidget", "DFU Workunits", NULL, NULL, 2);
         CEspBinding::ensureNavLink(*folderTP, "Logical Files", "/esp/files/stub.htm?Widget=DFUQueryWidget", "Logical Files", NULL, NULL, 3);
+        CEspBinding::ensureNavLink(*folderTP, "Landing Zones", "/esp/files/stub.htm?Widget=LZBrowseWidget", "Landing Zone Files", NULL, NULL, 4);
     }
 
     int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);

@@ -46,17 +46,26 @@
   -moz-box-sizing: border-box;
   box-sizing: border-box;
 }
-.nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable .hour {
-  border-top: 1px solid #cccccc;
-}
 .nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable tr:first-child td {
   border-top: 1px solid transparent;
 }
-.nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable .halfhour {
+.nihilo .dojoxCalendarColumnView td.hour {
+  border-top: 1px solid #cccccc;
+}
+.nihilo .dojoxCalendarColumnView td.halfhour {
   border-top: dotted 1px #cccccc;
 }
-.nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable .quarterhour {
+.nihilo .dojoxCalendarColumnView td.quarterhour {
   border-top: dotted 1px #cccccc;
+}
+.nihilo .dojoxCalendarColumnView span.hour {
+  color: #293a4b;
+  background-color: #ffffff;
+}
+.nihilo .dojoxCalendarColumnView span.halfhour,
+.nihilo .dojoxCalendarColumnView span.quarterhour {
+  color: #555555;
+  background-color: #ffffff;
 }
 .nihilo .dojoxCalendarColumnView .dojoxCalendarGridTable .dojoxCalendarToday {
   background-color: #fff2d2;
@@ -202,6 +211,15 @@
   khtml-user-select: none;
   user-select: none;
 }
+.nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderLabelContainer {
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+}
+.nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderLabel {
+  right: 4px;
+  position: absolute;
+}
 .nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderTable {
   border-collapse: collapse;
   table-layout: fixed;
@@ -215,9 +233,6 @@
   border-top: 1px solid #ffffff;
 }
 .nihilo .dojoxCalendarColumnView .dojoxCalendarRowHeaderTable td {
-  vertical-align: top;
-  text-align: right;
-  border-top: 1px solid #cccccc;
   background-color: #ffffff;
   color: #293a4b;
   -webkit-box-sizing: border-box;
@@ -383,11 +398,9 @@
   border-right: 1px solid #cccccc;
 }
 .nihilo .dojoxCalendarColumnView .dojoxCalendarMatrixView .dojoxCalendarRowHeaderTable td {
-  border-top: 1px solid #e5e5e5;
-  border-left: 1px solid #cccccc;
-  border-right: 1px solid #cccccc;
-  border-bottom: 1px solid #cccccc;
-  background-color: #ffffff;
+    border: 1px solid #cccccc;
+    border-top-color: #e5e5e5;
+    background-color: #ffffff;
 }
 .nihilo .dojoxCalendarColumnView .dojoxCalendarMatrixView .dojoxCalendarEvent .handle {
   z-index: 2;

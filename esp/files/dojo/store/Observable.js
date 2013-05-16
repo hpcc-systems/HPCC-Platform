@@ -1,11 +1,11 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
 
 //>>built
-define("dojo/store/Observable",["../_base/kernel","../_base/lang","../_base/Deferred","../_base/array"],function(_1,_2,_3,_4){
+define("dojo/store/Observable",["../_base/kernel","../_base/lang","../when","../_base/array"],function(_1,_2,_3,_4){
 var _5=function(_6){
 var _7,_8=[],_9=0;
 _6=_2.delegate(_6);
@@ -30,7 +30,7 @@ var _14=[],_15;
 _10.observe=function(_16,_17){
 if(_14.push(_16)==1){
 _8.push(_15=function(_18,_19){
-_3.when(_10,function(_1a){
+_3(_10,function(_1a){
 var _1b=_1a.length!=_f.count;
 var i,l,_16;
 if(++_13!=_9){
@@ -109,7 +109,7 @@ return _28.apply(this,arguments);
 _24=true;
 try{
 var _2a=_28.apply(this,arguments);
-_3.when(_2a,function(_2b){
+_3(_2a,function(_2b){
 _27((typeof _2b=="object"&&_2b)||_29);
 });
 return _2a;

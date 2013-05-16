@@ -7,7 +7,9 @@
             <div data-dojo-attach-event="onClick:_onDownloadXLS" data-dojo-type="dijit.form.Button">XLS</div>
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
         </div>
-        <div id="${id}Grid" data-dojo-props="region: 'center', plugins: { pagination: { pageSizes: [25, 50, 100, 'All'], defaultPageSize: 50, description: true, sizeSwitch: true, pageStepper: true, gotoButton: true, maxPageStep: 4, position: 'bottom', } }" data-dojo-type="dojox.grid.EnhancedGrid">
+        <div id="${id}GridCP" style="padding: 0px; border:0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+            <div id="${id}Grid">
+            </div>
         </div>
     </div>
 </div>

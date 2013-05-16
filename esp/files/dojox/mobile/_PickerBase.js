@@ -13,8 +13,10 @@ this.slots[_6]=_7;
 if(this._started){
 return;
 }
+this._duringStartup=true;
 this.inherited(arguments);
 this.reset();
+delete this._duringStartup;
 },getSlots:function(){
 return this.slots.length?this.slots:_1.filter(this.getChildren(),function(c){
 return c.declaredClass.indexOf("Slot")!==-1;

@@ -854,5 +854,5 @@ return new dd._DomTextNode(_9b||"");
 },getTemplate:function(loc){
 return new dd.DomTemplate(_b.getTemplate(loc));
 }});
-return dojox.dtl.dom;
+return _b;
 });
