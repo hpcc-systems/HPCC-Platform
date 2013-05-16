@@ -109,11 +109,24 @@ define([
                 return this.treeMap.selectedItems;
             },
 
-            setSelected: function (selItems) {
+            setSelectedAsGlobalID: function (selItems) {
                 if (this.store) {
                     var selectedItems = [];
                     for (var i = 0; i < selItems.length; ++i) {
                         var item = this.store.get(selItems[i]);
+                        if (item) {
+                            selectedItems.push(item);
+                        }
+                    }
+                    this.treeMap.set("selectedItems", selectedItems);
+                }
+            },
+
+            setSelected: function (selItems) {
+                if (this.store) {
+                    var selectedItems = [];
+                    for (var i = 0; i < selItems.length; ++i) {
+                        var item = this.store.get(selItems[i].SubGraphId);
                         if (item) {
                             selectedItems.push(item);
                         }
