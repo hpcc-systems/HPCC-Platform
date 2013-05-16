@@ -229,9 +229,7 @@ define([
             if (currSel && !currSel.initalized) {
                 if (currSel.id == this.workunitsTab.id) {
                 } else {
-                    if (!currSel.initalized) {
-                        currSel.init(currSel.params);
-                    }
+                    currSel.init(currSel.params);
                 }
             }
         },
