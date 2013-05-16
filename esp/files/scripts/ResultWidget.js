@@ -24,7 +24,13 @@ define([
     "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
-    "dojox/grid/enhanced/plugins/Pagination",
+    "dgrid/Grid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
+    "dgrid/extensions/Pagination",
 
     "hpcc/ESPBase",
     "hpcc/ESPWorkunit",
@@ -35,11 +41,10 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/Toolbar",
     "dijit/form/Button",
-    "dijit/ToolbarSeparator",
-    "dojox/grid/EnhancedGrid"
+    "dijit/ToolbarSeparator"
 ], function (declare, lang, dom, iframe,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                Pagination,
+                Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 ESPBase, ESPWorkunit, ESPLogicalFile,
                 template) {
     return declare("ResultWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
@@ -150,17 +155,28 @@ define([
             if (result) {
                 var context = this;
                 result.fetchStructure(function (structure) {
-                    context.grid.setStructure(structure);
-                    context.grid.setStore(result.getObjectStore());
-                    context.refresh();
+                    context.grid = new declare([Grid, Pagination, Keyboard, ColumnResizer, DijitRegistry])({
+                        columns: structure,
+                        rowsPerPage: 50,
+                        pagingLinks: 1,
+                        pagingTextBox: true,
+                        firstLastArrows: true,
+                        pageSizeOptions: [25, 50, 100],
+                        store: result.getStore()
+                    }, context.id + "Grid");
+                    context.grid.startup();
                 });
             } else {
-                this.grid.setStructure([
+                this.grid = new declare([Grid, DijitRegistry])({
+                    columns: [
                             {
-                                name: "##", width: "6"
+                                label: "##",
+                                width: 54
                             }
-                ]);
-                this.grid.showMessage("[undefined]");
+                    ]
+                }, this.id + "Grid");
+                this.grid.set("noDataMessage", "[undefined]");
+                this.grid.startup();
             }
         },
 
@@ -169,7 +185,7 @@ define([
                 this.grid.showMessage(this.result.getLoadingMessage());
             } else if (!this.loaded) {
                 this.loaded = true;
-                this.grid.setQuery({
+                this.grid.set("query", {
                     id: "*"
                 });
             }
