@@ -884,7 +884,7 @@ CMergeJoinProcessor::CMergeJoinProcessor(IHThorNWayMergeJoinArg & _arg) : helper
 
     assertex(helper.numOrderFields() == mergeSteppingMeta->getNumFields());
     bool hasPostfilter = false;
-    thisSteppingMeta.init(mergeSteppingMeta->getNumFields(), mergeSteppingMeta->queryFields(), stepCompare, mergeSteppingMeta->queryDistance(), hasPostfilter);
+    thisSteppingMeta.init(mergeSteppingMeta->getNumFields(), mergeSteppingMeta->queryFields(), stepCompare, mergeSteppingMeta->queryDistance(), hasPostfilter, SSFhaspriority|SSFisjoin);
 }
 
 CMergeJoinProcessor::~CMergeJoinProcessor()
@@ -898,6 +898,13 @@ void CMergeJoinProcessor::addInput(ISteppedInput * _input)
     IInputSteppingMeta * _meta = _input->queryInputSteppingMeta();
     verifySteppingCompatible(_meta, mergeSteppingMeta);
     rawInputs.append(*LINK(_input));
+    if (!_meta->hasPriority())
+        thisSteppingMeta.removePriority();
+    else
+        thisSteppingMeta.intersectPriority(_meta->getPriority());
+
+    if (_meta->isDistributed())
+        thisSteppingMeta.setDistributed();
 }
 
 void CMergeJoinProcessor::afterProcessing()
@@ -1190,6 +1197,22 @@ void CMergeJoinProcessor::setCandidateRow(const void * row, bool inputsMayBeEmpt
     outputProcessor->beforeProcessCandidates(restrictionRow, inputsMayBeEmpty, matched);
 }
 
+void CMergeJoinProcessor::connectRemotePriorityInputs()
+{
+    CIArrayOf<OrderedInput> orderedInputs;
+
+    ForEachItemIn(i, inputs)
+    {
+        CSteppedInputLookahead & cur = inputs.item(i);
+        if (!cur.hasPriority() || !cur.readsRowsRemotely())
+            return;
+
+        orderedInputs.append(*new OrderedInput(cur, i, false));
+    }
+    orderedInputs.sort(compareInitialInputOrder);
+    associateRemoteInputs(orderedInputs, orderedInputs.ordinality());
+    combineConjunctions = false;
+}
 
 //---------------------------------------------------------------------------
 
@@ -1200,6 +1223,7 @@ CAndMergeJoinProcessor::CAndMergeJoinProcessor(IHThorNWayMergeJoinArg & _arg) : 
 void CAndMergeJoinProcessor::beforeProcessing(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator)
 {
     CMergeJoinProcessor::beforeProcessing(_inputAllocator, _outputAllocator);
+    connectRemotePriorityInputs();
     if (flags & IHThorNWayMergeJoinArg::MJFtransform)
         createEqualityJoinProcessor();
     else

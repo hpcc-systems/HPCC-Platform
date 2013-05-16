@@ -3252,16 +3252,24 @@ public:
             assertex(numSeeks); // Given that we put the first seek in here to there should always be at least one!
             steppingRow = smartStepInfoValue; // the first of them...
             stepExtra.set(flags, NULL);
-#ifdef _DEBUG
-            logctx.CTXLOG("%d seek rows provided", numSeeks);
-            for (unsigned i = 0; i < numSeeks; i++)
+            if (logctx.queryTraceLevel() > 10)
             {
-                StringBuffer b;
-                for (unsigned j = 0; j < steppingLength; j++)
-                    b.appendf("%02x ", steppingRow[i*steppingLength + j]);
-                logctx.CTXLOG("Seek row %d: %s", i+1, b.str());
+                logctx.CTXLOG("%d seek rows provided. mismatch(%d) readahead(%d) onlyfirst(%d)", numSeeks,
+                             (int)stepExtra.returnMismatches(), (int)stepExtra.readAheadManyResults(), (int)stepExtra.onlyReturnFirstSeekMatch());
+
+                for (unsigned i = 0; i < numSeeks; i++)
+                {
+                    StringBuffer b;
+                    for (unsigned j = 0; j < steppingLength; j++)
+                        b.appendf("%02x ", steppingRow[i*steppingLength + j]);
+                    logctx.CTXLOG("Seek row %d: %s", i+1, b.str());
+                }
             }
-#endif
+        }
+        else
+        {
+            if (logctx.queryTraceLevel() > 10)
+                logctx.CTXLOG("0 seek rows provided.");
         }
     }
 

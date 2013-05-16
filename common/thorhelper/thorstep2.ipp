@@ -106,7 +106,8 @@ public:
 
     inline bool canOptimizeOrder() { return optimizeOrder; }
     inline unsigned getNumSamples() { return numSamples; }
-    inline bool hasPriority() { return (stepFlags & SSFhaspriority) != 0; }
+    inline bool hasPriority() const { return (stepFlags & SSFhaspriority) != 0; }
+    inline bool isJoin() const { return (stepFlags & SSFisjoin) != 0; }
     inline double getPriority() { return priority; }
     inline bool readsRowsRemotely() { return input->readsRowsRemotely(); }
 
@@ -204,5 +205,8 @@ protected:
 private:
     unsigned nextToMatch() const;
 };
+
+void associateRemoteInputs(CIArrayOf<OrderedInput> & orderedInputs, unsigned numPriorityInputs);
+int compareInitialInputOrder(CInterface * * _left, CInterface * * _right);
 
 #endif

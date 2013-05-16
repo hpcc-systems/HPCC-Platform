@@ -2225,6 +2225,7 @@ enum
     SSFalwaysfilter     = 0x0001,
     SSFhaspriority      = 0x0002,
     SSFhasprefetch      = 0x0004,
+    SSFisjoin           = 0x0008,
 };
 
 interface IHThorSteppedSourceExtra : extends IInterface

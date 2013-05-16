@@ -28,8 +28,10 @@ interface IInputSteppingMeta : public ISteppingMeta
 //??virtual ISteppingMeta * querySteppingMeta() const = 0
     virtual bool hasPostFilter() = 0;                           // make this const?
     virtual bool isDistributed() const = 0;
-    virtual unsigned getSteppedFlags() = 0;
+    virtual unsigned getSteppedFlags() const = 0;
     virtual double getPriority() = 0;
+
+    inline bool hasPriority() const { return (getSteppedFlags() & SSFhaspriority) != 0; }
 };
 
 
