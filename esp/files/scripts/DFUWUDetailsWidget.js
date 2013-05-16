@@ -14,6 +14,7 @@
 #   limitations under the License.
 ############################################################################## */
 define([
+    "exports",
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/dom",
@@ -37,39 +38,21 @@ define([
     "hpcc/FileSpray",
     "hpcc/ESPDFUWorkunit",
     "hpcc/ECLSourceWidget",
-    "hpcc/TargetSelectWidget",
-    "hpcc/SampleSelectWidget",
-    "hpcc/GraphWidget",
-    "hpcc/ResultsWidget",
-    "hpcc/InfoGridWidget",
     "hpcc/LFDetailsWidget",
 
     "dojo/text!../templates/DFUWUDetailsWidget.html",
 
     "dojox/layout/TableContainer"
 
-], function (declare, arrayUtil, dom, domAttr, domClass, domStyle, query,
+], function (exports, declare, arrayUtil, dom, domAttr, domClass, domStyle, query,
                 _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry, ProgressBar,
-                _TabContainerWidget, FileSpray, ESPDFUWorkunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, LFDetailsWidget,
+                _TabContainerWidget, FileSpray, ESPDFUWorkunit, ECLSourceWidget, LFDetailsWidget,
                 template) {
-    return declare("DFUWUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    exports.fixCircularDependency = declare("DFUWUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
         baseClass: "DFUWUDetailsWidget",
         summaryWidget: null,
-        resultsWidget: null,
-        resultsWidgetLoaded: false,
-        filesWidget: null,
-        filesWidgetLoaded: false,
-        timersWidget: null,
-        timersWidgetLoaded: false,
-        graphsWidget: null,
-        graphsWidgetLoaded: false,
-        sourceWidget: null,
-        sourceWidgetLoaded: false,
-        playgroundWidget: null,
-        playgroundWidgetLoaded: false,
         xmlWidget: null,
-        xmlWidgetLoaded: false,
 
         wu: null,
         loaded: false,
@@ -150,20 +133,18 @@ define([
             if (!this.wu) {
                 return
             }
+
             var currSel = this.getSelectedChild();
-            if (currSel.id == this.summaryWidget.id) {
-            } else if (currSel.id == this.xmlWidget.id) {
-                if (!this.xmlWidgetLoaded) {
+            if (!currSel.initalized) {
+                if (currSel.id == this.summaryWidget.id) {
+                } else if (currSel.id == this.xmlWidget.id) {
                     var context = this;
                     this.wu.fetchXML(function (response) {
-                        context.xmlWidgetLoaded = true;
                         context.xmlWidget.init({
                             ECL: response
                         });
                     });
-                }
-            } else {
-                if (!currSel.initalized) {
+                } else {
                     currSel.init(currSel._hpccParams);
                 }
             }
