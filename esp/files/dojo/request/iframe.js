@@ -1,11 +1,11 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
 
 //>>built
-define("dojo/request/iframe",["module","require","./watch","./util","./handlers","../_base/lang","../io-query","../query","../has","../dom","../dom-construct","../_base/window"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c){
+define("dojo/request/iframe",["module","require","./watch","./util","./handlers","../_base/lang","../io-query","../query","../has","../dom","../dom-construct","../_base/window","../NodeList-dom"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c){
 var _d=_1.id.replace(/[\/\.\-]/g,"_"),_e=_d+"_onload";
 if(!_c.global[_e]){
 _c.global[_e]=function(){
@@ -172,10 +172,10 @@ _25.setAttribute("method",_24.method);
 }
 }else{
 if(!_2e||!_2e.value){
-if(mthdNode){
-mthdNode.value=_24.method;
+if(_2e){
+_2e.value=_24.method;
 }else{
-fn.setAttribute("method",_24.method);
+_25.setAttribute("method",_24.method);
 }
 }
 }

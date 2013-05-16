@@ -9,12 +9,12 @@ for(var j=0;j<_6.data.length;j++){
 var x,y;
 if(_6.data[j]!==null){
 if(typeof _6.data[j]=="number"||!_6.data[j].hasOwnProperty("x")){
-y=_3.getIndexValue(_4,i,j);
+y=_3.getIndexValue(_4,i,j)[0];
 x=j+1;
 }else{
 x=_6.data[j].x;
 if(x!==null){
-y=_3.getValue(_4,i,x);
+y=_3.getValue(_4,i,x)[0];
 y=y!=null&&y.y?y.y:null;
 }
 }
@@ -27,8 +27,9 @@ _5.vmax=Math.max(_5.vmax,y);
 }
 return _5;
 },getIndexValue:function(_7,i,_8){
-var _9=0,v,j;
+var _9=0,v,j,_a;
 for(j=0;j<=i;++j){
+_a=_9;
 v=_7[j].data[_8];
 if(v!=null){
 if(isNaN(v)){
@@ -37,22 +38,23 @@ v=v.y||0;
 _9+=v;
 }
 }
-return _9;
-},getValue:function(_a,i,x){
-var _b=null,j,z;
+return [_9,_a];
+},getValue:function(_b,i,x){
+var _c=null,j,z,v,_d;
 for(j=0;j<=i;++j){
-for(z=0;z<_a[j].data.length;z++){
-v=_a[j].data[z];
+for(z=0;z<_b[j].data.length;z++){
+_d=_c;
+v=_b[j].data[z];
 if(v!==null){
 if(v.x==x){
-if(!_b){
-_b={x:x};
+if(!_c){
+_c={x:x};
 }
 if(v.y!=null){
-if(_b.y==null){
-_b.y=0;
+if(_c.y==null){
+_c.y=0;
 }
-_b.y+=v.y;
+_c.y+=v.y;
 }
 break;
 }else{
@@ -63,6 +65,6 @@ break;
 }
 }
 }
-return _b;
+return [_c,_d];
 }});
 });

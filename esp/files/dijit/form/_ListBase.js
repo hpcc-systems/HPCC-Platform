@@ -55,13 +55,12 @@ if(this.selected!=_10){
 var _11=this.selected;
 if(_11){
 this.onDeselect(_11);
-this.selected=null;
 }
 if(_10){
-this.selected=_10;
 _2.scrollIntoView(_10);
 this.onSelect(_10);
 }
+this._set("selected",_10);
 }else{
 if(_10){
 this.onSelect(_10);

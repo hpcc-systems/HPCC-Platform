@@ -2549,7 +2549,7 @@ void CJobBase::addDependencies(IPropertyTree *xgmml, bool failIfMissing)
                     subGraph.setGlobal(true);
             }
         }
-        bool log = queryForceLogging(subGraph.queryGraphId(), subGraph.isGlobal());
+        bool log = queryForceLogging(subGraph.queryGraphId(), (NULL == subGraph.queryOwner()) || subGraph.isGlobal());
         subGraph.setLogging(log);
     }
 }

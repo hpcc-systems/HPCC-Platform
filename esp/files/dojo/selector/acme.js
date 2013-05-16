@@ -1,5 +1,5 @@
 /*
-	Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+	Copyright (c) 2004-2011, The Dojo Foundation All Rights Reserved.
 	Available via Academic Free License >= 2.1 OR the modified BSD license.
 	see: http://dojotoolkit.org/license for details
 */
@@ -728,32 +728,28 @@ var _c1=function(arr){
 if(arr&&arr.nozip){
 return arr;
 }
-var ret=[];
 if(!arr||!arr.length){
-return ret;
-}
-if(arr[0]){
-ret.push(arr[0]);
+return [];
 }
 if(arr.length<2){
-return ret;
+return [arr[0]];
 }
+var ret=[];
 _bb++;
 var x,te;
 if(_2("ie")&&_b){
 var _c2=_bb+"";
-arr[0].setAttribute(_c0,_c2);
-for(x=1;te=arr[x];x++){
-if(arr[x].getAttribute(_c0)!=_c2){
+for(x=0;x<arr.length;x++){
+if((te=arr[x])&&te.getAttribute(_c0)!=_c2){
 ret.push(te);
-}
 te.setAttribute(_c0,_c2);
+}
 }
 }else{
 if(_2("ie")&&arr.commentStrip){
 try{
-for(x=1;te=arr[x];x++){
-if(_25(te)){
+for(x=0;x<arr.length;x++){
+if((te=arr[x])&&_25(te)){
 ret.push(te);
 }
 }
@@ -761,14 +757,11 @@ ret.push(te);
 catch(e){
 }
 }else{
-if(arr[0]){
-arr[0][_c0]=_bb;
-}
-for(x=1;te=arr[x];x++){
-if(arr[x][_c0]!=_bb){
+for(x=0;x<arr.length;x++){
+if((te=arr[x])&&te[_c0]!=_bb){
 ret.push(te);
-}
 te[_c0]=_bb;
+}
 }
 }
 }

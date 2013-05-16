@@ -95,13 +95,18 @@
 	background-color: #fff;
 	background-repeat: repeat-x;
 	background-position: top left;
+	background-image: -moz-linear-gradient(rgba(127, 127, 127, 0.2) 0%, rgba(127, 127, 127, 0) 2px);
+	background-image: -webkit-linear-gradient(rgba(127, 127, 127, 0.2) 0%, rgba(127, 127, 127, 0) 2px);
+	background-image: linear-gradient(rgba(127, 127, 127, 0.2) 0%, rgba(127, 127, 127, 0) 2px);
 	line-height:normal;
 	padding:0.2em 0.3em;
 }
 .claro .dijitFileInputButton,
 .claro .dijitFileInputText {
-	background-position: center top;
-	background-repeat: repeat-x;
+	background-image: -moz-linear-gradient(rgba(127, 127, 127, 0.2) 0%, rgba(127, 127, 127, 0) 2px);
+	background-image: -webkit-linear-gradient(rgba(127, 127, 127, 0.2) 0%, rgba(127, 127, 127, 0) 2px);
+	background-image: -o-linear-gradient(rgba(127, 127, 127, 0.2) 0%, rgba(127, 127, 127, 0) 2px);
+	background-image: linear-gradient(rgba(127, 127, 127, 0.2) 0%, rgba(127, 127, 127, 0) 2px);
 	background-color: #cde3f6;
 	border: 1px solid #799ab7;
 	border-radius: 4px;

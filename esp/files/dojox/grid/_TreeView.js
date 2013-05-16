@@ -1,5 +1,4 @@
 //>>built
-require({cache:{"url:dojox/grid/resources/Expando.html":"<div class=\"dojoxGridExpando\"\n\t><div class=\"dojoxGridExpandoNode\" dojoAttachEvent=\"onclick:onToggle\"\n\t\t><div class=\"dojoxGridExpandoNodeInner\" dojoAttachPoint=\"expandoInner\"></div\n\t></div\n></div>\n"}});
 define("dojox/grid/_TreeView",["dijit/registry","../main","dojo/_base/declare","dojo/_base/array","dojo/_base/lang","dojo/_base/event","dojo/dom-attr","dojo/dom-class","dojo/dom-style","dojo/dom-construct","dojo/query","dojo/parser","dojo/text!./resources/Expando.html","dijit/_Widget","dijit/_TemplatedMixin","./_View","./_Builder","./util"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d,_e,_f,_10,_11,_12){
 _3("dojox.grid._Expando",[_e,_f],{open:false,toggleClass:"",itemId:"",cellIdx:-1,view:null,rowNode:null,rowIdx:-1,expandoCell:null,level:0,templateString:_d,_toggleRows:function(_13,_14){
 if(!_13||!this.rowNode){
@@ -399,3 +398,4 @@ this._cleanupExpandoCache();
 this.inherited(arguments);
 }});
 });
+require({cache:{"url:dojox/grid/resources/Expando.html":"<div class=\"dojoxGridExpando\"\n\t><div class=\"dojoxGridExpandoNode\" dojoAttachEvent=\"onclick:onToggle\"\n\t\t><div class=\"dojoxGridExpandoNodeInner\" dojoAttachPoint=\"expandoInner\"></div\n\t></div\n></div>\n"}});

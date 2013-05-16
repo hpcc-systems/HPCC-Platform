@@ -1,125 +1,136 @@
 //>>built
-define("dojox/charting/plot2d/Bubble",["dojo/_base/lang","dojo/_base/declare","dojo/_base/array","./CartesianBase","./_PlotEvents","./common","dojox/lang/functional","dojox/lang/functional/reversed","dojox/lang/utils","dojox/gfx/fx"],function(_1,_2,_3,_4,_5,dc,df,_6,du,fx){
-var _7=_6.lambda("item.purgeGroup()");
-return _2("dojox.charting.plot2d.Bubble",[_4,_5],{defaultParams:{hAxis:"x",vAxis:"y",animate:null},optionalParams:{stroke:{},outline:{},shadow:{},fill:{},styleFunc:null,font:"",fontColor:""},constructor:function(_8,_9){
-this.opt=_1.clone(this.defaultParams);
-du.updateWithObject(this.opt,_9);
-du.updateWithPattern(this.opt,_9,this.optionalParams);
-this.series=[];
-this.hAxis=this.opt.hAxis;
-this.vAxis=this.opt.vAxis;
+define("dojox/charting/plot2d/Bubble",["dojo/_base/lang","dojo/_base/declare","dojo/_base/array","dojo/has","./CartesianBase","./_PlotEvents","./common","dojox/lang/functional","dojox/lang/functional/reversed","dojox/lang/utils","dojox/gfx/fx"],function(_1,_2,_3,_4,_5,_6,dc,df,_7,du,fx){
+var _8=_7.lambda("item.purgeGroup()");
+return _2("dojox.charting.plot2d.Bubble",[_5,_6],{defaultParams:{animate:null},optionalParams:{stroke:{},outline:{},shadow:{},fill:{},filter:{},styleFunc:null,font:"",fontColor:""},constructor:function(_9,_a){
+this.opt=_1.clone(_1.mixin(this.opt,this.defaultParams));
+du.updateWithObject(this.opt,_a);
+du.updateWithPattern(this.opt,_a,this.optionalParams);
+if(!this.opt.labelFunc){
+this.opt.labelFunc=function(_b,_c,_d){
+return this._getLabel(_b.size,_c,_d);
+};
+}
 this.animate=this.opt.animate;
-},render:function(_a,_b){
+},render:function(_e,_f){
+var s;
 if(this.zoom&&!this.isDataDirty()){
-return this.performZoom(_a,_b);
+return this.performZoom(_e,_f);
 }
 this.resetEvents();
 this.dirty=this.isDirty();
 if(this.dirty){
-_3.forEach(this.series,_7);
+_3.forEach(this.series,_8);
 this._eventSeries={};
 this.cleanGroup();
-var s=this.group;
-df.forEachRev(this.series,function(_c){
-_c.cleanGroup(s);
+s=this.getGroup();
+df.forEachRev(this.series,function(_10){
+_10.cleanGroup(s);
 });
 }
-var t=this.chart.theme,ht=this._hScaler.scaler.getTransformerFromModel(this._hScaler),vt=this._vScaler.scaler.getTransformerFromModel(this._vScaler),_d=this.events();
+var t=this.chart.theme,ht=this._hScaler.scaler.getTransformerFromModel(this._hScaler),vt=this._vScaler.scaler.getTransformerFromModel(this._vScaler),_11=this.events();
 for(var i=this.series.length-1;i>=0;--i){
-var _e=this.series[i];
-if(!this.dirty&&!_e.dirty){
+var run=this.series[i];
+if(!this.dirty&&!run.dirty){
 t.skip();
-this._reconnectEvents(_e.name);
+this._reconnectEvents(run.name);
 continue;
 }
-_e.cleanGroup();
-if(!_e.data.length){
-_e.dirty=false;
+run.cleanGroup();
+if(!run.data.length){
+run.dirty=false;
 t.skip();
 continue;
 }
-if(typeof _e.data[0]=="number"){
-console.warn("dojox.charting.plot2d.Bubble: the data in the following series cannot be rendered as a bubble chart; ",_e);
+if(typeof run.data[0]=="number"){
+console.warn("dojox.charting.plot2d.Bubble: the data in the following series cannot be rendered as a bubble chart; ",run);
 continue;
 }
-var _f=t.next("circle",[this.opt,_e]),s=_e.group,_10=_3.map(_e.data,function(v,i){
-return v?{x:ht(v.x)+_b.l,y:_a.height-_b.b-vt(v.y),radius:this._vScaler.bounds.scale*(v.size/2)}:null;
+s=run.group;
+var _12=t.next("circle",[this.opt,run]),_13=_3.map(run.data,function(v){
+return v?{x:ht(v.x)+_f.l,y:_e.height-_f.b-vt(v.y),radius:this._vScaler.bounds.scale*(v.size/2)}:null;
 },this);
-var _11=null,_12=null,_13=null,_14=this.opt.styleFunc;
-var _15=function(_16){
-if(_14){
-return t.addMixin(_f,"circle",[_16,_14(_16)],true);
+var _14=null,_15=null,_16=null,_17=this.opt.styleFunc;
+var _18=function(_19){
+if(_17){
+return t.addMixin(_12,"circle",[_19,_17(_19)],true);
 }
-return t.addMixin(_f,"circle",_16,true);
+return t.addMixin(_12,"circle",_19,true);
 };
-if(_f.series.shadow){
-_13=_3.map(_10,function(_17,i){
-if(_17!==null){
-var _18=_15(_e.data[i]),_19=_18.series.shadow;
-var _1a=s.createCircle({cx:_17.x+_19.dx,cy:_17.y+_19.dy,r:_17.radius}).setStroke(_19).setFill(_19.color);
+if(_12.series.shadow){
+_16=_3.map(_13,function(_1a,i){
+if(_1a!==null){
+var _1b=_18(run.data[i]),_1c=_1b.series.shadow;
+var _1d=s.createCircle({cx:_1a.x+_1c.dx,cy:_1a.y+_1c.dy,r:_1a.radius}).setStroke(_1c).setFill(_1c.color);
 if(this.animate){
-this._animateBubble(_1a,_a.height-_b.b,_17.radius);
+this._animateBubble(_1d,_e.height-_f.b,_1a.radius);
 }
-return _1a;
+return _1d;
 }
 return null;
 },this);
-if(_13.length){
-_e.dyn.shadow=_13[_13.length-1].getStroke();
+if(_16.length){
+run.dyn.shadow=_16[_16.length-1].getStroke();
 }
 }
-if(_f.series.outline){
-_12=_3.map(_10,function(_1b,i){
-if(_1b!==null){
-var _1c=_15(_e.data[i]),_1d=dc.makeStroke(_1c.series.outline);
-_1d.width=2*_1d.width+_f.series.stroke.width;
-var _1e=s.createCircle({cx:_1b.x,cy:_1b.y,r:_1b.radius}).setStroke(_1d);
+if(_12.series.outline){
+_15=_3.map(_13,function(_1e,i){
+if(_1e!==null){
+var _1f=_18(run.data[i]),_20=dc.makeStroke(_1f.series.outline);
+_20.width=2*_20.width+_12.series.stroke.width;
+var _21=s.createCircle({cx:_1e.x,cy:_1e.y,r:_1e.radius}).setStroke(_20);
 if(this.animate){
-this._animateBubble(_1e,_a.height-_b.b,_1b.radius);
+this._animateBubble(_21,_e.height-_f.b,_1e.radius);
 }
-return _1e;
+return _21;
 }
 return null;
 },this);
-if(_12.length){
-_e.dyn.outline=_12[_12.length-1].getStroke();
+if(_15.length){
+run.dyn.outline=_15[_15.length-1].getStroke();
 }
 }
-_11=_3.map(_10,function(_1f,i){
-if(_1f!==null){
-var _20=_15(_e.data[i]),_21={x:_1f.x-_1f.radius,y:_1f.y-_1f.radius,width:2*_1f.radius,height:2*_1f.radius};
-var _22=this._plotFill(_20.series.fill,_a,_b);
-_22=this._shapeFill(_22,_21);
-var _23=s.createCircle({cx:_1f.x,cy:_1f.y,r:_1f.radius}).setFill(_22).setStroke(_20.series.stroke);
+_14=_3.map(_13,function(_22,i){
+if(_22!==null){
+var _23=_18(run.data[i]),_24={x:_22.x-_22.radius,y:_22.y-_22.radius,width:2*_22.radius,height:2*_22.radius};
+var _25=this._plotFill(_23.series.fill,_e,_f);
+_25=this._shapeFill(_25,_24);
+var _26=s.createCircle({cx:_22.x,cy:_22.y,r:_22.radius}).setFill(_25).setStroke(_23.series.stroke);
+if(_26.setFilter&&_23.series.filter){
+_26.setFilter(_23.series.filter);
+}
 if(this.animate){
-this._animateBubble(_23,_a.height-_b.b,_1f.radius);
+this._animateBubble(_26,_e.height-_f.b,_22.radius);
 }
-return _23;
+this.createLabel(s,run.data[i],_24,_23);
+return _26;
 }
 return null;
 },this);
-if(_11.length){
-_e.dyn.fill=_11[_11.length-1].getFill();
-_e.dyn.stroke=_11[_11.length-1].getStroke();
+if(_14.length){
+run.dyn.fill=_14[_14.length-1].getFill();
+run.dyn.stroke=_14[_14.length-1].getStroke();
 }
-if(_d){
-var _24=new Array(_11.length);
-_3.forEach(_11,function(s,i){
+if(_11){
+var _27=new Array(_14.length);
+_3.forEach(_14,function(s,i){
 if(s!==null){
-var o={element:"circle",index:i,run:_e,shape:s,outline:_12&&_12[i]||null,shadow:_13&&_13[i]||null,x:_e.data[i].x,y:_e.data[i].y,r:_e.data[i].size/2,cx:_10[i].x,cy:_10[i].y,cr:_10[i].radius};
+var o={element:"circle",index:i,run:run,shape:s,outline:_15&&_15[i]||null,shadow:_16&&_16[i]||null,x:run.data[i].x,y:run.data[i].y,r:run.data[i].size/2,cx:_13[i].x,cy:_13[i].y,cr:_13[i].radius};
 this._connectEvents(o);
-_24[i]=o;
+_27[i]=o;
 }
 },this);
-this._eventSeries[_e.name]=_24;
+this._eventSeries[run.name]=_27;
 }else{
-delete this._eventSeries[_e.name];
+delete this._eventSeries[run.name];
 }
-_e.dirty=false;
+run.dirty=false;
 }
 this.dirty=false;
+if(_4("dojo-bidi")){
+this._checkOrientation(this.group,_e,_f);
+}
 return this;
-},_animateBubble:function(_25,_26,_27){
-fx.animateTransform(_1.delegate({shape:_25,duration:1200,transform:[{name:"translate",start:[0,_26],end:[0,0]},{name:"scale",start:[0,1/_27],end:[1,1]},{name:"original"}]},this.animate)).play();
+},_animateBubble:function(_28,_29,_2a){
+fx.animateTransform(_1.delegate({shape:_28,duration:1200,transform:[{name:"translate",start:[0,_29],end:[0,0]},{name:"scale",start:[0,1/_2a],end:[1,1]},{name:"original"}]},this.animate)).play();
 }});
 });

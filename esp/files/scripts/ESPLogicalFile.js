@@ -25,88 +25,40 @@ define([
 
     "hpcc/WsDfu",
     "hpcc/FileSpray",
+    "hpcc/ESPRequest",
     "hpcc/ESPUtil",
     "hpcc/ESPResult"
 ], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable, Stateful,
-        WsDfu, FileSpray, ESPUtil, ESPResult) {
+        WsDfu, FileSpray, ESPRequest, ESPUtil, ESPResult) {
 
     var _logicalFiles = {};
 
-    var Store = declare(null, {
+    var Store = declare([ESPRequest.Store], {
+        service: "WsDfu",
+        action: "DFUQuery",
+        responseQualifier: "DFULogicalFiles.DFULogicalFile",
+        responseTotalQualifier: "NumFiles",
         idProperty: "Name",
+        startProperty: "PageStartFrom",
+        countProperty: "Count",
 
-        _watched: {},
-
-        constructor: function (options) {
-            declare.safeMixin(this, options);
+        _watched: [],
+        create: function (id) {
+            return new LogicalFile({
+                Name: id
+            });
         },
-
-        getIdentity: function (object) {
-            return object[this.idProperty];
-        },
-
-        get: function (name) {
-            if (!_logicalFiles[name]) {
-                _logicalFiles[name] = new LogicalFile({
-                    Name: name
+        update: function (id, item) {
+            var storeItem = this.get(id);
+            storeItem.updateData(item);
+            if (!this._watched[id]) {
+                var context = this;
+                this._watched[id] = storeItem.watch("changedCount", function (name, oldValue, newValue) {
+                    if (oldValue !== newValue) {
+                        context.notify(storeItem, id);
+                    }
                 });
             }
-            return _logicalFiles[name];
-        },
-
-        remove: function (item) {
-            if (_logicalFiles[this.getIdentity(item)]) {
-                _logicalFiles[this.getIdentity(item)].stopMonitor();
-                delete _logicalFiles[this.getIdentity(item)];
-            }
-        },
-
-        query: function (query, options) {
-            var request = {};
-            lang.mixin(request, options.query);
-            if (options.start)
-                request['PageStartFrom'] = options.start;
-            if (options.count)
-                request['Count'] = options.count;
-            if (options.sort) {
-                request['Sortby'] = options.sort[0].attribute;
-                request['Descending'] = options.sort[0].descending;
-            }
-
-            var results = WsDfu.DFUQuery({
-                request: request
-            });
-
-            var deferredResults = new Deferred();
-            deferredResults.total = results.then(function (response) {
-                if (lang.exists("DFUQueryResponse.NumFiles", response)) {
-                    return response.DFUQueryResponse.NumFiles;
-                }
-                return 0;
-            });
-            var context = this;
-            Deferred.when(results, function (response) {
-                var logicalFiles = [];
-                for (key in context._watched) {
-                    context._watched[key].unwatch();
-                }
-                this._watched = {};
-                if (lang.exists("DFUQueryResponse.DFULogicalFiles.DFULogicalFile", response)) {
-                    arrayUtil.forEach(response.DFUQueryResponse.DFULogicalFiles.DFULogicalFile, function (item, index) {
-                        var logicalFile = context.get(item.Name);
-                        logicalFile.updateData(item);
-                        logicalFiles.push(logicalFile);
-                        context._watched[logicalFile.Name] = logicalFile.watch("changedCount", function (name, oldValue, newValue) {
-                            if (oldValue !== newValue) {
-                                context.notify(logicalFile, logicalFile.Name);
-                            }
-                        });
-                    });
-                }
-                deferredResults.resolve(logicalFiles);
-            });
-
-            return QueryResults(deferredResults);
         }
     });
 
@@ -242,10 +194,15 @@ define([
             return store.get(name);
         },
 
-        CreateLFQueryObjectStore: function (options) {
+        CreateLFQueryStore: function (options) {
             var store = new Store(options);
-            store = Observable(store);
-            var objStore = new ObjectStore({ objectStore: store });
+            return Observable(store);
+        },
+
+        CreateLFQueryObjectStore: function (options) {
+            var objStore = new ObjectStore({
+                objectStore: this.CreateLFQueryStore()
+            });
             return objStore;
         }
     };

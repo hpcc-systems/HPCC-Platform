@@ -24,49 +24,6 @@ define([
     "hpcc/ESPRequest"
 ], function (declare, lang, Deferred, arrayUtil, QueryResults,
     ESPRequest) {
-    var DFUQuery = declare(null, {
-        idProperty: "Name",
-
-        constructor: function (options) {
-            declare.safeMixin(this, options);
-        },
-
-        getIdentity: function (object) {
-            return object[this.idProperty];
-        },
-
-        query: function (query, options) {
-            var request = {};
-            lang.mixin(request, options.query);
-            request['PageStartFrom'] = options.start;
-            request['PageSize'] = options.count;
-            if (options.sort) {
-                request['Sortby'] = options.sort[0].attribute;
-                request['Descending'] = options.sort[0].descending;
-            }
-
-            var results = ESPRequest.send("WsDfu", "DFUQuery", {
-                request: request
-            });
-
-            var deferredResults = new Deferred();
-            deferredResults.total = results.then(function (response) {
-                if (lang.exists("DFUQueryResponse.NumFiles", response)) {
-                    return response.DFUQueryResponse.NumFiles;
-                }
-                return 0;
-            });
-            Deferred.when(results, function (response) {
-                var workunits = [];
-                if (lang.exists("DFUQueryResponse.DFULogicalFiles.DFULogicalFile", response)) {
-                    workunits = response.DFUQueryResponse.DFULogicalFiles.DFULogicalFile;
-                }
-                deferredResults.resolve(workunits);
-            });
-
-            return QueryResults(deferredResults);
-        }
-    });
 
     return {
         DFUArrayAction: function (logicalFiles, actionType, callback) {

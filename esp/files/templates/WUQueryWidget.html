@@ -49,13 +49,9 @@
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 </div>
-                <div id="${id}WorkunitsGrid" data-dojo-props="region: 'center', plugins: { pagination: { pageSizes: [25, 50, 100, 'All'], defaultPageSize: 50, description: true, sizeSwitch: true, pageStepper: true, gotoButton: true, maxPageStep: 4, position: 'bottom' }
-                    , indirectSelection: {
-                        headerSelector: true,
-                        width: '20px',
-                        styles: 'text-align: center;'
-                    }
-                }" data-dojo-type="dojox.grid.EnhancedGrid">
+                <div id="${id}WorkunitsGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}WorkunitsGrid">
+                    </div>
                 </div>
             </div>
         </div>

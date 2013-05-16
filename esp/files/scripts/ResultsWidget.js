@@ -38,8 +38,6 @@ define([
         templateString: template,
         baseClass: "ResultsWidget",
 
-        //borderContainer: null,
-        tabMap: [],
         selectedTab: null,
         TabPosition: "bottom",
 
@@ -54,7 +52,7 @@ define([
         },
 
         ensurePane: function (id, params) {
-            var retVal = this.tabMap[id];
+            var retVal = registry.byId(id);
             if (!retVal) {
                 if (lang.exists("Name", params) && lang.exists("Cluster", params)) {
                     retVal = new LFDetailsWidget.fixCircularDependency({
@@ -75,7 +73,6 @@ define([
                         params: params
                     });
                 }
-                this.tabMap[id] = retVal;
                 this.addChild(retVal);
             }
             return retVal;
@@ -141,7 +138,6 @@ define([
 
         clear: function () {
             this.removeAllChildren();
-            this.tabMap = [];
             this.selectedTab = null;
             this.initalized = false;
         },

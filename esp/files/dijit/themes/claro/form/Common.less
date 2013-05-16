@@ -27,7 +27,7 @@
 
 .claro .dijitValidationTextBoxError .dijitValidationIcon {
 	width: 0;
-	background-color: transparent !important; /* so the INPUT doesn't obscure the border in rtl+a11y */
+	background-color: transparent; /* so the INPUT doesn't obscure the border in rtl+a11y */
 }
 
 /* Padding for the input area of TextBox based widgets, and corresponding padding for the
@@ -191,7 +191,8 @@
  * button, depending on the openOnClick setting for the widget.
  */
 .claro .dijitComboBoxOpenOnClickHover .dijitButtonNode,
-.claro .dijitComboBox .dijitDownArrowButtonHover {
+.claro .dijitComboBox .dijitDownArrowButtonHover,
+.claro .dijitComboBoxFocused .dijitArrowButton {
 	background-color:@arrowbutton-hovered-background-color;
 }
 

@@ -75,7 +75,7 @@ var d=this.pointsToData();
 obj={start:{x:d.x1,y:d.y1},x:d.x2,y:d.y2};
 }
 var _11=this.util.length(obj);
-var _12=_3.angle(obj);
+var _12=_3.angle(obj.start,obj);
 _12<0?_12=360+_12:_12;
 _12=_12>135&&_12<315?this.style.zAngle:this.util.oppAngle(this.style.zAngle);
 return this.util.pointOnCircle(obj.start.x,obj.start.y,_11,_12);
@@ -84,7 +84,7 @@ p=p||this.points;
 var _13=0;
 var obj={start:{x:p[0].x,y:p[0].y},x:p[1].x,y:p[1].y};
 if(this.style.zAxis&&(this.util.length(obj)>this.minimumSize)){
-var _14=_3.angle(obj);
+var _14=_3.angle(obj.start,obj);
 _14<0?_14=360+_14:_14;
 _13=_14>135&&_14<315?1:-1;
 }

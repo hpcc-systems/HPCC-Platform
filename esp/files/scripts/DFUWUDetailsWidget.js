@@ -74,8 +74,6 @@ define([
         wu: null,
         loaded: false,
 
-        tabMap: [],
-
         buildRendering: function (args) {
             this.inherited(arguments);
         },
@@ -309,19 +307,15 @@ define([
         },
 
         ensurePane: function (id, title, params) {
-            var retVal = this.tabMap[id];
+            var retVal = registry.byId(id);
             if (!retVal) {
-                retVal = registry.byId(id);
-                if (!retVal) {
-                    var context = this;
-                    retVal = new LFDetailsWidget.fixCircularDependency({
-                        id: id,
-                        title: title,
-                        closable: false,
-                        _hpccParams: params
-                    });
-                }
-                this.tabMap[id] = retVal;
+                var context = this;
+                retVal = new LFDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: title,
+                    closable: false,
+                    _hpccParams: params
+                });
                 this.addChild(retVal);
             }
             return retVal;
