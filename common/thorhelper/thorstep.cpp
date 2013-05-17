@@ -898,13 +898,18 @@ void CMergeJoinProcessor::addInput(ISteppedInput * _input)
     IInputSteppingMeta * _meta = _input->queryInputSteppingMeta();
     verifySteppingCompatible(_meta, mergeSteppingMeta);
     rawInputs.append(*LINK(_input));
-    if (!_meta->hasPriority())
-        thisSteppingMeta.removePriority();
-    else
-        thisSteppingMeta.intersectPriority(_meta->getPriority());
+    if (_meta)
+    {
+        if (!_meta->hasPriority())
+            thisSteppingMeta.removePriority();
+        else
+            thisSteppingMeta.intersectPriority(_meta->getPriority());
 
-    if (_meta->isDistributed())
-        thisSteppingMeta.setDistributed();
+        if (_meta->isDistributed())
+            thisSteppingMeta.setDistributed();
+    }
+    else
+        thisSteppingMeta.removePriority();
 }
 
 void CMergeJoinProcessor::afterProcessing()
