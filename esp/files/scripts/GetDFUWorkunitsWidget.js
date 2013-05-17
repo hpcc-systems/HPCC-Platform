@@ -468,7 +468,7 @@ define([
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
-                retVal = new DFUWUDetailsWidget({
+                retVal = new DFUWUDetailsWidget.fixCircularDependency({
                     id: id,
                     title: params.Wuid,
                     closable: true,
