@@ -481,7 +481,7 @@ boolean splitBibleBook(string s) := function
         'THE ACTS OF|' +
         'THE ([A-Z]+ )?EPISTLE|' +
         'THE APOCALYPSE OF' +
-        ')', s);
+        ')|([0-9]+:[0-9]+)', s);
 END;
 
 boolean splitEncyclopedia(string s) := REGEXFIND('^A[A-Z]+ ', s);               // poor, but good enough for our purposes.

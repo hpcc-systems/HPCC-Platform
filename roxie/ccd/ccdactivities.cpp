@@ -3169,6 +3169,7 @@ protected:
     unsigned steppingLength;
     unsigned short numSkipFields;
     unsigned numSeeks;
+    bool seeksAreEof;
     bool lastRowCompleteMatch;
     CIndexTransformCallback callback;
 
@@ -3235,6 +3236,7 @@ public:
         keyprocessed = 0;
         numSkipFields = 0;
         lastRowCompleteMatch = true; // default is we only return complete matches....
+        seeksAreEof = false;
         steppingLength = 0;
         steppingRow = NULL;
         numSeeks = 0;
@@ -3247,21 +3249,34 @@ public:
             smartStepInfoValue += sizeof(unsigned short);
             unsigned flags = * (unsigned short *) smartStepInfoValue;
             smartStepInfoValue += sizeof(unsigned short);
+            seeksAreEof = * (bool *) smartStepInfoValue;
+            smartStepInfoValue += sizeof(bool);
             numSeeks = * (unsigned *) smartStepInfoValue;
             smartStepInfoValue += sizeof(unsigned);
             assertex(numSeeks); // Given that we put the first seek in here to there should always be at least one!
             steppingRow = smartStepInfoValue; // the first of them...
             stepExtra.set(flags, NULL);
-#ifdef _DEBUG
-            logctx.CTXLOG("%d seek rows provided", numSeeks);
-            for (unsigned i = 0; i < numSeeks; i++)
+            if (logctx.queryTraceLevel() > 10)
             {
-                StringBuffer b;
-                for (unsigned j = 0; j < steppingLength; j++)
-                    b.appendf("%02x ", steppingRow[i*steppingLength + j]);
-                logctx.CTXLOG("Seek row %d: %s", i+1, b.str());
+                logctx.CTXLOG("%d seek rows provided. mismatch(%d) readahead(%d) onlyfirst(%d)", numSeeks,
+                             (int)stepExtra.returnMismatches(), (int)stepExtra.readAheadManyResults(), (int)stepExtra.onlyReturnFirstSeekMatch());
+
+                if (logctx.queryTraceLevel() > 15)
+                {
+                    for (unsigned i = 0; i < numSeeks; i++)
+                    {
+                        StringBuffer b;
+                        for (unsigned j = 0; j < steppingLength; j++)
+                            b.appendf("%02x ", steppingRow[i*steppingLength + j]);
+                        logctx.CTXLOG("Seek row %d: %s", i+1, b.str());
+                    }
+                }
             }
-#endif
+        }
+        else
+        {
+            if (logctx.queryTraceLevel() > 10)
+                logctx.CTXLOG("0 seek rows provided.");
         }
     }
 
@@ -3508,11 +3523,24 @@ public:
                         }
                         if (diff >= 0)
                         {
+                            if (diff > 0 && seeksAreEof)
+                            {
+                                assertex(!steppingRow);
+                                break;
+                            }
                             rowBuilder.ensureRow();
                             transformedSize = readHelper->transform(rowBuilder, keyRow);
                             callback.finishedRow();
                             if (transformedSize)
                             {
+                                if (logctx.queryTraceLevel() > 15)
+                                {
+                                    StringBuffer b;
+                                    for (unsigned j = 0; j < (steppingLength ? steppingLength : 6); j++)
+                                        b.appendf("%02x ", keyRow[steppingOffset + j]);
+                                    logctx.CTXLOG("Returning seek row %s", b.str());
+                                }
+
                                 // Did get a match
                                 processed++;
                                 if (limit && processed > limit)
@@ -3592,7 +3620,11 @@ public:
         if (tlk) // a very early abort can mean it is NULL.... MORE is this the right place to put it or should it be inside the loop??
         {
             if (logctx.queryTraceLevel() > 10 && !aborted)
+            {
                 logctx.CTXLOG("Indexread returning result set %d rows from %d seeks, %d scans, %d skips", processed-processedBefore, tlk->querySeeks(), tlk->queryScans(), tlk->querySkips());
+                if (steppingOffset)
+                    logctx.CTXLOG("Indexread return: steppingOffset %d, steppingRow %p, stepExtra.returnMismatches() %d",steppingOffset, steppingRow, (int) stepExtra.returnMismatches());
+            }
             logctx.noteStatistic(STATS_ACCEPTED, processed-processedBefore, 1);
             logctx.noteStatistic(STATS_REJECTED, skipped, 1);
         }
