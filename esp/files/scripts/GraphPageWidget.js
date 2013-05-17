@@ -76,6 +76,7 @@ define([
         local: null,
         timingGrid: null,
         timingTreeMap: null,
+        subgraphsGrid: null,
         verticesGrid: null,
         edgesGrid: null,
         findField: null,
@@ -100,6 +101,7 @@ define([
         startup: function (args) {
             this.inherited(arguments);
 
+            this._initSubgraphs();
             this._initVertices();
             this._initEdges();
 
@@ -192,6 +194,19 @@ define([
                     context.main.centerOnItem(mainItem, true);
                 }
             });
+        },
+
+        _initSubgraphs: function () {
+            var store = new Memory({
+                idProperty: "id",
+                data: []
+            });
+            this.subgraphsStore = Observable(store);
+            this.subgraphsGrid = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                store: this.subgraphsStore
+            }, this.id + "SubgraphsGrid");
+
+            this._initItemGrid(this.subgraphsGrid);
         },
 
         _initVertices: function () {
@@ -351,6 +366,7 @@ define([
                 context.main.setMessage("Loading Data...");
                 context.main.loadXGMML(xgmml);
                 context.overview.loadXGMML(context.main.getLocalisedXGMML([0]));
+                context.loadSubgraphs();
                 context.loadVertices();
                 context.loadEdges();
                 if (svg) {
@@ -370,9 +386,35 @@ define([
             var context = this;
             wu.fetchGraphXgmmlByName(graphName, function (xgmml) {
                 context.main.mergeXGMML(xgmml);
+                context.loadSubgraphs();
                 context.loadVertices();
                 context.loadEdges();
             });
+        },
+
+        loadSubgraphs: function () {
+            var subgraphs = this.main.getSubgraphsWithProperties();
+
+            var layoutMap = [];
+            for (var i = 0; i < subgraphs.length; ++i) {
+                for (var key in subgraphs[i]) {
+                    if (key != "id" && key.substring(0, 1) != "_") {
+                        layoutMap[key] = true;
+                    }
+                }
+            }
+
+            var layout = [
+                { label: "ID", field: "id", width: 50 }
+            ];
+
+            for (var key in layoutMap) {
+                layout.push({ label: key, field: key, width: 100 });
+            }
+
+            this.subgraphsStore.setData(subgraphs);
+            this.subgraphsGrid.set("columns", layout);
+            this.subgraphsGrid.refresh();
         },
 
         loadVertices: function () {
@@ -438,7 +480,7 @@ define([
                         selectedGlobalIDs.push(items[i].SubGraphId);
                     }
                 }
-            } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid) {
+            } else if (sourceControl == this.verticesGrid || sourceControl == this.edgesGrid || sourceControl == this.subgraphsGrid) {
                 var items = sourceControl.getSelected();
                 for (var i = 0; i < items.length; ++i) {
                     if (items[i]._globalID) {
@@ -456,25 +498,14 @@ define([
             if (sourceControl != this.timingTreeMap) {
                 this.timingTreeMap.setSelectedAsGlobalID(selectedGlobalIDs);
             }
+            if (sourceControl != this.subgraphsGrid && this.subgraphsGrid.store) {
+                this.subgraphsGrid.setSelection(selectedGlobalIDs);
+            }
             if (sourceControl != this.verticesGrid && this.verticesGrid.store) {
-                var context = this;
-                var selectedItems = [];
-                arrayUtil.forEach(this.verticesStore.data, function (item, idx) {
-                    if (item._globalID && arrayUtil.indexOf(selectedGlobalIDs, item._globalID) >= 0) {
-                        selectedItems.push(item);
-                    }
-                });
-                this.verticesGrid.setSelected(selectedItems);
+                this.verticesGrid.setSelection(selectedGlobalIDs);
             }
             if (sourceControl != this.edgesGrid && this.edgesGrid.store) {
-                var context = this;
-                var selectedItems = [];
-                arrayUtil.forEach(this.edgesStore.data, function (item, idx) {
-                    if (item._globalID && arrayUtil.indexOf(selectedGlobalIDs, item._globalID) >= 0) {
-                        selectedItems.push(item);
-                    }
-                });
-                this.edgesGrid.setSelected(selectedItems);
+                this.edgesGrid.setSelection(selectedGlobalIDs);
             }
             if (sourceControl != this.main) {
                 this.main.setSelectedAsGlobalID(selectedGlobalIDs);
