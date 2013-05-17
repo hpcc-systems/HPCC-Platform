@@ -261,8 +261,13 @@ define([
             this._doFind(true);
         },
 
-        _showDialog: function(params) {
-            myDialog = new Dialog(params);
+        _showDialog: function (params) {
+            var myDialog = registry.byId(params.id);
+            if (myDialog) {
+                myDialog.set("content", params.content);
+            } else {
+                myDialog = new Dialog(params);
+            }
             if (has("chrome")) {
                 this.main.hide();
                 this.overview.hide();
@@ -276,10 +281,12 @@ define([
                 });
             }
             myDialog.show();
+            return myDialog;
         },
 
         _onAbout: function () {
             this._showDialog({
+                id: this.id + "AboutSVGDialog",
                 title: "About HPCC Systems Graph Control",
                 content: "Version:  " + this.main.getVersion() + "<br/>" + this.main.getResourceLinks(),
                 style: "width: 320px"
@@ -288,8 +295,9 @@ define([
 
         _onGetSVG: function () {
             this._showDialog({
+                id: this.id + "SourceSVGDialog",
                 title: "SVG Source",
-                content: entities.encode(this.main.getSVG())
+                content: "<textarea rows=50 cols=80>" + entities.encode(this.main.getSVG()) + "</textarea>"
             });
         },
 
@@ -297,6 +305,7 @@ define([
             var context = this
             this.main.localLayout(function (svg) {
                 context._showDialog({
+                    id: this.id + "RenderedSVGDialog",
                     title: "Rendered SVG",
                     content: svg
                 });
@@ -304,9 +313,22 @@ define([
         },
 
         _onGetXGMML: function () {
-            this._showDialog({
+            var dlg = this._showDialog({
+                id: this.id + "XGMMLDialog",
                 title: "XGMML",
-                content: entities.encode(this.main.getXGMML())
+                content: "<textarea id='" + this.id + "DialogXGMML' rows=50 cols=80>" + entities.encode(this.main.getXGMML()) + "</textarea><br/>" +
+                    "<p><button id='" + this.id + "DialogApply'>Apply</button> <button id='" + this.id + "DialogClose'>Close</button></p>"
+            });
+            var context = this;
+            var applySignal = on(dom.byId(this.id + "DialogApply"), "click", function (event) {
+                var xgmml = entities.decode(dom.byId(context.id + "DialogXGMML").innerHTML);
+                dlg.hide();
+                applySignal.remove();
+                context.loadGraphFromSource(xgmml);
+            });
+            var closeSignal = on(dom.byId(this.id + "DialogClose"), "click", function (event) {
+                dlg.hide();
+                closeSignal.remove();
             });
         },
 
@@ -345,24 +367,28 @@ define([
 
         },
 
+        loadGraphFromSource: function(xgmml, svg) {
+            this.main.setMessage("Loading Data...");
+            this.main.loadXGMML(xgmml);
+            this.overview.loadXGMML(this.main.getLocalisedXGMML([0]));
+            this.loadVertices();
+            this.loadEdges();
+            if (svg) {
+                this.main.setMessage("Loading Layout...");
+                if (this.main.mergeSVG(svg)) {
+                    this.main.centerOnItem(0, true);
+                    this.main.setMessage("");
+                    return;
+                }
+            }
+            this.main.setMessage("Performing Layout...");
+            this.main.startLayout("dot");
+        },
+
         loadGraph: function (wu, graphName) {
             var context = this;
             wu.fetchGraphXgmmlByName(graphName, function (xgmml, svg) {
-                context.main.setMessage("Loading Data...");
-                context.main.loadXGMML(xgmml);
-                context.overview.loadXGMML(context.main.getLocalisedXGMML([0]));
-                context.loadVertices();
-                context.loadEdges();
-                if (svg) {
-                    context.main.setMessage("Loading Layout...");
-                    if (context.main.mergeSVG(svg)) {
-                        context.main.centerOnItem(0, true);
-                        context.main.setMessage("");
-                        return;
-                    }
-                }
-                context.main.setMessage("Performing Layout...");
-                context.main.startLayout("dot");
+                context.loadGraphFromSource(xgmml, svg);
             });
         },
 
