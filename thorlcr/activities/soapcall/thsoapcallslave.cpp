@@ -49,7 +49,19 @@ public:
         buildAuthToken(queryJob().queryUserDescriptor(), authToken);
         appendOutputLinked(this);
         if (container.queryLocalOrGrouped() || firstNode())
-            soaphelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
+        {
+            switch (container.getKind())
+            {
+                case TAKsoap_rowdataset:
+                    soaphelper.setown(createSoapCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
+                    break;
+                case TAKhttp_rowdataset:
+                    soaphelper.setown(createHttpCallHelper(this, queryRowAllocator(), authToken.str(), SCrow, NULL, queryDummyContextLogger(),NULL));
+                    break;
+                default:
+                    throwUnexpected();
+            }
+        }
     }
     // IThorDataLink methods
     virtual void start()
