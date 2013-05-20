@@ -160,6 +160,14 @@ define([
                 });
             },
 
+            setSelection: function (arrayOfIDs) {
+                this.clearSelection();
+                var context = this;
+                arrayUtil.forEach(arrayOfIDs, function (item, idx) {
+                    context.select(item);
+                });
+            },
+
             setSelected: function (items) {
                 this.clearSelection();
                 var context = this;
