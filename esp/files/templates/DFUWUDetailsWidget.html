@@ -15,7 +15,6 @@
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                 </div>
                 <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
-                    <div class="rounded">
                         <h2>
                             <img id="${id}ProtectedImage" src="img/locked.png" />&nbsp<img id="${id}StateIdImage" src="img/workunit.png" />&nbsp<span id="${id}Wuid" class="bold">WUID</span>&nbsp<span id="${id}CommandMessage2" class="bold">Command</span>
                         </h2>
@@ -84,10 +83,9 @@
                                 </li>
                             </ul>
                         </form>
-                    </div>
-                    <div class="rounded">
-                        <h1>Source</h1>
+                    <hr class="dashedLine">
                         <form>
+                            <h1>Source</h1>
                             <ul>
                                 <li>
                                     <label for="${id}SourceIP">IP:</label>
@@ -143,10 +141,9 @@
                                 </li>
                             </ul>
                         </form>
-                    </div>
-                    <div class="rounded">
-                        <h1>Target</h1>
+                    <hr class="dashedLine">
                         <form>
+                            <h1>Target</h1>
                             <ul>
                                 <li>
                                     <label for="${id}DestIP">IP:</label>
@@ -182,10 +179,9 @@
                                 </li>
                             </ul>
                         </form>
-                    </div>
-                    <div class="rounded">
-                        <h1>Other</h1>
+                        <hr class="dashedLine">
                         <form>
+                            <h1>Other</h1>
                             <ul>
                                 <li>
                                     <label for="${id}MonitorEventName">Monitor Event Name:</label>
@@ -213,7 +209,6 @@
                                 </li>
                             </ul>
                         </form>
-                    </div>
                 </div>
             </div>
             <div id="${id}_XML" title="XML" data-dojo-props="WUXml: true" data-dojo-type="ECLSourceWidget">
