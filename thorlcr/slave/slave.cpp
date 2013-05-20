@@ -668,8 +668,10 @@ public:
                     ret = createGlobalMergeSlave(this);
                 break;
             case TAKsoap_rowdataset:
-            case TAKhttp_rowdataset:
                 ret = createSoapRowCallSlave(this);
+                break;
+            case TAKhttp_rowdataset:
+                ret = createHttpRowCallSlave(this);
                 break;
             case TAKsoap_rowaction:
                 ret = createSoapRowActionSlave(this);

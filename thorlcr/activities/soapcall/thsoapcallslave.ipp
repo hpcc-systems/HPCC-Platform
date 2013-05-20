@@ -23,6 +23,7 @@
 #include "thorsoapcall.hpp"
 
 activityslaves_decl CActivityBase *createSoapRowCallSlave(CGraphElementBase *container);
+activityslaves_decl CActivityBase *createHttpRowCallSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createSoapRowActionSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createSoapDatasetCallSlave(CGraphElementBase *container);
 activityslaves_decl CActivityBase *createSoapDatasetActionSlave(CGraphElementBase *container);
