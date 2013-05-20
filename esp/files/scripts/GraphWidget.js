@@ -326,9 +326,9 @@ require([
                 return null;
             },
 
-            getLocalisedXGMML: function (items) {
+            getLocalisedXGMML: function (items, depth, distance) {
                 if (this._plugin) {
-                    return this._plugin.getLocalisedXGMML(items);
+                    return this._plugin.getLocalisedXGMML(items, depth, distance);
                 }
                 return null;
             },
@@ -373,6 +373,13 @@ require([
                     return this._plugin.setSelectedAsGlobalID(items);
                 }
                 return null;
+            },
+
+            getSelection: function () {
+                if (this._plugin) {
+                    return this._plugin.getSelection();
+                }
+                return [];
             },
 
             getSelectionAsGlobalID: function () {

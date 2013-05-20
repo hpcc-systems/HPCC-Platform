@@ -57,6 +57,7 @@ define([
     "dijit/Dialog",
     "dijit/form/TextBox",
     "dijit/form/SimpleTextarea",
+    "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton"
 ], function (declare, lang, arrayUtil, dom, domConstruct, on, html, Memory, Observable,
             _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
@@ -86,6 +87,9 @@ define([
         findText: "",
         found: [],
         foundIndex: 0,
+        overviewDepth: null,
+        localDepth: null,
+        localDistance: null,
         initalized: false,
 
         buildRendering: function (args) {
@@ -97,6 +101,10 @@ define([
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.rightBorderContainer = registry.byId(this.id + "RightBorderContainer");
             this.findField = registry.byId(this.id + "FindField");
+            this.overviewDepth = registry.byId(this.id + "OverviewDepth");
+            this.localDepth = registry.byId(this.id + "LocalDepth");
+            this.localDistance = registry.byId(this.id + "LocalDistance");
+
             this._initGraphControls();
             this._initTimings();
             this._initDialogs();
@@ -326,6 +334,18 @@ define([
             this.xgmmlDialog.show();
         },
 
+        _onOverviewDepthChange: function (value) {
+            this.refreshOverview();
+        },
+
+        _onLocalDepthChange: function (value) {
+            this.refreshLocal(this.main.getSelection());
+        },
+
+        _onLocalDistanceChange: function (value) {
+            this.refreshLocal(this.main.getSelection());
+        },
+
         init: function (params) {
             if (this.initalized) {
                 return;
@@ -364,7 +384,7 @@ define([
         loadGraphFromSource: function(xgmml, svg) {
             this.main.setMessage("Loading Data...");
             this.main.loadXGMML(xgmml);
-            this.overview.loadXGMML(this.main.getLocalisedXGMML([0]));
+            this.refreshOverview();
             this.loadSubgraphs();
             this.loadVertices();
             this.loadEdges();
@@ -525,8 +545,7 @@ define([
             }
 
             if (sourceControl != this.local) {
-                var xgmml = this.main.getLocalisedXGMML(mainItems, 2);
-                this.local.loadXGMML(xgmml);
+                this.refreshLocal(mainItems);
                 this.local.setSelectedAsGlobalID(selectedGlobalIDs);
             }
 
@@ -539,6 +558,16 @@ define([
 
         resetPage: function () {
             this.main.clear();
+        },
+
+        refreshOverview: function() {
+            var xgmml = this.main.getLocalisedXGMML([0], this.overviewDepth.get("value"));
+            this.overview.loadXGMML(xgmml);
+        },
+
+        refreshLocal: function (selection) {
+            var xgmml = this.main.getLocalisedXGMML(selection, this.localDepth.get("value"), this.localDistance.get("value"));
+            this.local.loadXGMML(xgmml);
         },
 
         displayGraphs: function (graphs) {
