@@ -56,7 +56,7 @@ So the latest approach is as follows:
    occasionally skips a long way (e.g. state) it will get corrected/used. 
 
   */
-static int compareInitialInputOrder(CInterface * * _left, CInterface * * _right)
+int compareInitialInputOrder(CInterface * * _left, CInterface * * _right)
 {
     OrderedInput * left = static_cast<OrderedInput *>(*_left);
     OrderedInput * right = static_cast<OrderedInput *>(*_right);
@@ -298,6 +298,38 @@ void CSteppedConjunctionOptimizer::afterProcessing()
 
 }
 
+void associateRemoteInputs(CIArrayOf<OrderedInput> & orderedInputs, unsigned numPriorityInputs)
+{
+    //If we know for sure the primary input, then tag it as worth reading ahead - otherwise it will be dynamically set later.
+    if (numPriorityInputs > 0)
+    {
+        OrderedInput & input0 = orderedInputs.item(0);
+        //Only read ahead etc. if this is a real index - not if it is a join.
+        if (!input0.isJoin())
+        {
+            input0.setReadAhead(true);
+            input0.setAlwaysReadExact();
+        }
+    }
+
+    //Work out the last input of known priority which is read remotely.
+    unsigned maxPriorityRemote = numPriorityInputs;
+    while ((maxPriorityRemote >= 2) && !orderedInputs.item(maxPriorityRemote-1).readsRowsRemotely())
+        maxPriorityRemote--;
+
+    //If the second ordered input is known to be read remotely, then we want to send multiple seek requests at the same time.
+    //MORE: Maybe we should consider doing this to all other inputs if only one priority input is known.
+    if (maxPriorityRemote >= 2)
+    {
+        for (unsigned i=1; i < maxPriorityRemote; i++)
+        {
+            IMultipleStepSeekInfo * seekInfo = orderedInputs.item(i-1).createMutipleReadWrapper();
+            orderedInputs.item(i).createMultipleSeekWrapper(seekInfo);
+        }
+    }
+}
+
+
 void CSteppedConjunctionOptimizer::beforeProcessing()
 {
     //NB: This function is only called once, after we have decided it is worth processing.
@@ -324,30 +356,10 @@ void CSteppedConjunctionOptimizer::beforeProcessing()
     }
 
     maxOptimizeInput = numPriorityInputs + numOptimizeInputs;
-    //If we know for sure the primary input, then tag it as worth reading ahead - otherwise it will be dynamically set later.
-    if (numPriorityInputs > 0)
-    {
-        orderedInputs.item(0).setReadAhead(true);
-        orderedInputs.item(0).setAlwaysReadExact();
-    }
 
-    //Work out the last input of known priority whis is read remotely.
-    unsigned maxPriorityRemote = numPriorityInputs;
-    while ((maxPriorityRemote >= 2) && !orderedInputs.item(maxPriorityRemote-1).readsRowsRemotely())
-        maxPriorityRemote--;
-
-    //If the second ordered input is known to be read remotely, then we want to send multiple seek requests at the same time.
-    //MORE: Maybe we should consider doing this to all other inputs if only one priority input is known.
-    if (maxPriorityRemote >= 2)
-    {
-        for (unsigned i=1; i < maxPriorityRemote; i++)
-        {
-            IMultipleStepSeekInfo * seekInfo = orderedInputs.item(i-1).createMutipleReadWrapper();
-            orderedInputs.item(i).createMultipleSeekWrapper(seekInfo);
-        }
-    }
+    associateRemoteInputs(orderedInputs, numPriorityInputs);
     
-    //MORE: If some inputs have known priroity, and other remote inputs don't, then we could consider 
+    //MORE: If some inputs have known priority, and other remote inputs don't, then we could consider
     //      connecting the unknown inputs to the last known inputs.
     ForEachItemIn(i4, joins)
         joins.item(i4).markRestrictedJoin(numEqualFields);

@@ -12,13 +12,12 @@
                         <span>Copy</span>
                         <div data-dojo-type="dijit.TooltipDialog">
                             <div id="${id}CopyDialog" data-dojo-type="dijit.form.Form" style="width: 460px;">
+                                <h2>Source</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <h2>Source</h2>
-                                    <div id="${id}CopySourceName" style="width: 100%;" title="Logical&nbsp;File:" colspan="2">
-                                    </div>
+                                    <input id="${id}CopySourceName" title="Logical&nbsp;File:" style="width: 100%;" name="sourceLogicalName" colspan="2" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
                                 </div>
+                                <h2>Target</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <h2>Target</h2>
                                     <input id="${id}CopyTargetSelect" title="Group:" name="destGroup" colspan="2" style="width:100%;" data-dojo-type="TargetSelectWidget" style="display: inline-block; vertical-align: middle" />
                                     <input id="${id}CopyTargetName"  title="Logical&nbsp;File:" name="destLogicalName" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
                                     <input id="${id}CopyTargetWrap" title="Wrap:" name="Wrap" data-dojo-type="dijit/form/CheckBox" />
@@ -38,7 +37,7 @@
                             <div id="${id}RenameDialog" style="width: 460px;" data-dojo-type="dijit.form.Form">
                                 <h2>Source</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <input id="${id}RenameSourceName" title="Logical&nbsp;File:" style="width: 100%;" name="RenameSourceName" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+                                    <input id="${id}RenameSourceName" title="Logical&nbsp;File:" style="width: 100%;" name="RenameSourceName" colspan="2" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
                                 </div>
                                 <h2>Target</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
@@ -53,10 +52,10 @@
                     <div id="${id}DesprayDropDown" data-dojo-type="dijit.form.DropDownButton">
                         <span>Despray</span>
                         <div data-dojo-type="dijit.TooltipDialog">
-                            <h2>Source</h2>
                             <div id="${id}DesprayDialog" style="width: 460px;" data-dojo-type="dijit.form.Form">
+                                <h2>Source</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                                    <input id="${id}DespraySourceName" title="Logical&nbsp;File:" style="width: 100%;" name="DespraySourceName" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+                                    <input id="${id}DespraySourceName" title="Logical&nbsp;File:" style="width: 100%;" name="DespraySourceName" colspan="2" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
                                 </div>
                                 <h2>Target</h2>
                                 <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">

@@ -121,10 +121,8 @@ define([
                             params = "/WUFile/res.txt?Wuid=" + this.wu.Wuid + "&Type=" + selection[i].Orig.Type;
                             break;
                         case "ThorLog":
-                            params = "/WUFile/" + selection[i].Type + "?Wuid=" + this.wu.Wuid + "&Name=" + selection[i].Orig.Name + "&Type=" + selection[i].Orig.Type;
-                            break;
                         case "EclAgentLog":
-                            params = "/WUFile/" + selection[i].Type + "?Wuid=" + this.wu.Wuid + "&Process=" + selection[i].Orig.Description + "&Type=" + selection[i].Orig.Type;
+                            params = "/WUFile/" + selection[i].Type + "?Wuid=" + this.wu.Wuid + "&Name=" + selection[i].Orig.Name + "&Type=" + selection[i].Orig.Type;
                             break;
                         case "ThorSlaveLog":
                             params = "/WUFile?Wuid=" + this.wu.Wuid + "&Process=" + selection[i].Orig.ProcessName + "&ClusterGroup=" + selection[i].Orig.ProcessName + "&LogDate=" + selection[i].Orig.LogDate + "&SlaveNumber=" + selection[i].Orig.SlaveNumber + "&Type=" + selection[i].Type;
@@ -154,30 +152,49 @@ define([
                     return;
                 this.initalized = true;
 
-                this.wu = ESPWorkunit.Get(params.Wuid);
-
+                this.logData = [];
                 var context = this;
-                this.wu.monitor(function () {
-                    context.wu.getInfo({
-                        onAfterSend: function (response) {
-                            context.logData = [];
-                            if (response.HasArchiveQuery) {
-                                context.logData.push({
-                                    id: "A:0",
-                                    Type: "Archive Query"
-                                });
-                            }
-                            if (response.Helpers && response.Helpers.ECLHelpFile) {
-                                context.loadHelpers(response.Helpers.ECLHelpFile);
-                            }
-                            if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
-                                context.loadThorLogInfo(response.ThorLogList.ThorLogInfo);
-                            }
-                            context.logsStore.setData(context.logData);
-                            context.logsGrid.refresh();
-                        }
+                if (params.wu) {
+                    this.wu = params.wu;
+                    this.wu.fetchLogs(function (logs) {
+                        context.loadLogs(logs);
+                        context.logsStore.setData(context.logData);
+                        context.logsGrid.refresh();
                     });
-                });
+                } else {
+                    this.wu = ESPWorkunit.Get(params.Wuid);
+                    this.wu.monitor(function () {
+                        context.wu.getInfo({
+                            onAfterSend: function (response) {
+                                if (response.HasArchiveQuery) {
+                                    context.logData.push({
+                                        id: "A:0",
+                                        Type: "Archive Query"
+                                    });
+                                }
+                                if (response.Helpers && response.Helpers.ECLHelpFile) {
+                                    context.loadHelpers(response.Helpers.ECLHelpFile);
+                                }
+                                if (response.ThorLogList && response.ThorLogList.ThorLogInfo) {
+                                    context.loadThorLogInfo(response.ThorLogList.ThorLogInfo);
+                                }
+                                context.logsStore.setData(context.logData);
+                                context.logsGrid.refresh();
+                            }
+                        });
+                    });
+                }
+            },
+
+            loadLogs: function (logs) {
+                for (var i = 0; i < logs.length; ++i) {
+                    this.logData.push({
+                        id: "L:" + i,
+                        Type: "dfulog",
+                        Description: logs[i],
+                        Orig: logs[i]
+                    });
+                }
             },
 
             loadHelpers: function (helpers) {
