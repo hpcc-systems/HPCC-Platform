@@ -79,9 +79,9 @@
 class CDistributorBase : public CSimpleInterface, implements IHashDistributor, implements IExceptionHandler
 {
     Linked<IRowInterfaces> rowIf;
-    Linked<IEngineRowAllocator> allocator;
-    Linked<IOutputRowSerializer> serializer;
-    Linked<IOutputMetaData> meta;
+    IEngineRowAllocator *allocator;
+    IOutputRowSerializer *serializer;
+    IOutputMetaData *meta;
     const bool &abort;
     IHash *ihash;
     Owned<IRowStream> input;
@@ -95,6 +95,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     size32_t fixedEstSize;
     Owned<IRowWriter> pipewr;
     roxiemem::IRowManager *rowManager;
+    Owned<ISmartRowBuffer> piperd;
 
     /*
      * CSendBucket - a collection of rows destinate for a particular destination target(slave)
@@ -701,8 +702,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     };
 
 protected:
-    Owned<ISmartRowBuffer> piperd;
-    Linked<IOutputRowDeserializer> deserializer;
+    IOutputRowDeserializer *deserializer;
 
     class cRecvThread: implements IThreaded
     {
@@ -832,10 +832,10 @@ public:
         ActPrintLog(activity, "HASHDISTRIB: connect");
 
         rowIf.set(_rowIf);
-        allocator.set(_rowIf->queryRowAllocator());
-        meta.set(_rowIf->queryRowMetaData());
-        serializer.set(_rowIf->queryRowSerializer());
-        deserializer.set(_rowIf->queryRowDeserializer());
+        allocator = _rowIf->queryRowAllocator();
+        meta = _rowIf->queryRowMetaData();
+        serializer = _rowIf->queryRowSerializer();
+        deserializer = _rowIf->queryRowDeserializer();
 
         fixedEstSize = meta->querySerializedDiskMeta()->getFixedSize();
 
@@ -882,6 +882,17 @@ public:
             if (recvException.get())
                 throw recvException.getClear();
         }
+        rowIf.clear();
+        allocator = NULL;;
+        meta = NULL;;
+        serializer = NULL;;
+        deserializer = NULL;;
+        fixedEstSize = 0;
+        input.clear();
+        piperd.clear();
+        pipewr.clear();
+        ihash = NULL;
+        iCompare = NULL;
     }
 
     virtual void recvloop()
@@ -3420,7 +3431,8 @@ CThorRowAggregator *mergeLocalAggs(Owned<IHashDistributor> &distributor, CActivi
         Owned<IRowStream> localAggregatedStream = new CRowAggregatedStream(localAggTable);
         if (!distributor)
             distributor.setown(createHashDistributor(&activity, activity.queryContainer().queryJob().queryJobComm(), mptag, activity.queryAbortSoon(), false, NULL));
-        strm.setown(distributor->connect(&activity, localAggregatedStream, helperExtra.queryHashElement(), NULL));
+        Owned<IRowInterfaces> rowIf = activity.getRowInterfaces(); // create new rowIF / avoid using activities IRowInterface, otherwise suffer from circular link
+        strm.setown(distributor->connect(rowIf, localAggregatedStream, helperExtra.queryHashElement(), NULL));
         loop
         {
             OwnedConstThorRow row = strm->nextRow();
