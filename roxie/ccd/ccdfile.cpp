@@ -1841,7 +1841,7 @@ public:
                     Owned<IFileDescriptor> fDesc = sub.getFileDescriptor();
                     Owned<IFileDescriptor> remoteFDesc;
                     if (daliHelper)
-                        remoteFDesc.setown(daliHelper->checkClonedFromRemote(NULL, fDesc, cacheIt, writeAccess));
+                        remoteFDesc.setown(daliHelper->checkClonedFromRemote(sub.queryLogicalName(), fDesc, cacheIt, writeAccess));
                     addFile(sub.queryLogicalName(), fDesc.getClear(), remoteFDesc.getClear());
                 }
             }
