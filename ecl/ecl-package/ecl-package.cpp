@@ -455,6 +455,8 @@ public:
         Owned<IClientDeletePackageResponse> resp = packageProcessClient->DeletePackage(request);
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
+        else
+            printf("Successfully deleted package %s\n", optPackageMap.get());
 
         return 0;
     }

@@ -479,6 +479,13 @@ require([
                 return [];
             },
 
+            getSubgraphsWithProperties: function () {
+                if (this._plugin) {
+                    return this._plugin.getSubgraphsWithProperties();
+                }
+                return [];
+            },
+
             getVerticesWithProperties: function () {
                 if (this._plugin) {
                     return this._plugin.getVerticesWithProperties();

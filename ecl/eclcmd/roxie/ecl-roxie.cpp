@@ -324,6 +324,17 @@ public:
     }
     virtual void usage()
     {
+        if (reload)
+            fputs("\nUsage:\n"
+                "\n"
+                "The 'roxie reload' command requests Roxie to reload queryset information from dali,\n"
+                "and waits until it has done so.\n"
+                "\n"
+                "ecl roxie reload <process_cluster>\n"
+                " Options:\n"
+                "   <process_cluster>      the roxie process cluster to reload\n",
+                stdout);
+        else
             fputs("\nUsage:\n"
                 "\n"
                 "The 'roxie check' command verifies that the state of all nodes in\n"

@@ -229,9 +229,7 @@ define([
             if (currSel && !currSel.initalized) {
                 if (currSel.id == this.workunitsTab.id) {
                 } else {
-                    if (!currSel.initalized) {
-                        currSel.init(currSel.params);
-                    }
+                    currSel.init(currSel.params);
                 }
             }
         },
@@ -470,7 +468,7 @@ define([
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
-                retVal = new DFUWUDetailsWidget({
+                retVal = new DFUWUDetailsWidget.fixCircularDependency({
                     id: id,
                     title: params.Wuid,
                     closable: true,

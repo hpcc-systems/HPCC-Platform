@@ -160,18 +160,19 @@ define([
                 });
             },
 
+            setSelection: function (arrayOfIDs) {
+                this.clearSelection();
+                var context = this;
+                arrayUtil.forEach(arrayOfIDs, function (item, idx) {
+                    context.select(item);
+                });
+            },
+
             setSelected: function (items) {
-                var selection = [];
+                this.clearSelection();
                 var context = this;
                 arrayUtil.forEach(items, function (item, idx) {
-                    selection.push(item[context.store.idProperty]);
-                });
-                arrayUtil.forEach(this.store.data, function (item, idx) {
-                    if (item[context.store.idProperty] && arrayUtil.indexOf(selection, item[context.store.idProperty]) >= 0) {
-                        context.select(idx);
-                    } else {
-                        context.deselect(idx);
-                    }
+                    context.select(context.store.getIdentity(item));
                 });
             },
 

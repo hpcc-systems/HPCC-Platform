@@ -65,10 +65,10 @@ public:
     void intersect(IInputSteppingMeta * inputMeta);
     void init(ISteppingMeta * meta, bool _postFiltered)
     {
-        init(meta->getNumFields(), meta->queryFields(), meta->queryCompare(), meta->queryDistance(), _postFiltered);
+        init(meta->getNumFields(), meta->queryFields(), meta->queryCompare(), meta->queryDistance(), _postFiltered, 0);
     }
 
-    void init(unsigned _numFields, const CFieldOffsetSize * _fields, IRangeCompare * _rangeCompare, IDistanceCalculator * _distance, bool _postFiltered)
+    void init(unsigned _numFields, const CFieldOffsetSize * _fields, IRangeCompare * _rangeCompare, IDistanceCalculator * _distance, bool _postFiltered, unsigned flags)
     {
         hadStepExtra = false;
         numFields = _numFields;
@@ -76,7 +76,15 @@ public:
         rangeCompare = _rangeCompare;
         distance = _distance;
         postFiltered = _postFiltered;
+        stepFlags = flags;
+        priority = 1.0e+300;
     }
+    void intersectPriority(double value)
+    {
+        if (priority > value)
+            priority = value;
+    }
+    void removePriority() { stepFlags &= ~SSFhaspriority; }
     void setDistributed() { distributed = true; }
     void setExtra(IHThorSteppedSourceExtra * extra)
     {
@@ -111,7 +119,7 @@ public:
         return postFiltered;
     }
 
-    virtual unsigned getSteppedFlags() { return stepFlags; }
+    virtual unsigned getSteppedFlags() const { return stepFlags; }
     virtual double getPriority() { return priority; }
 
 protected:
@@ -255,6 +263,7 @@ protected:
     bool paranoid;
     bool readAheadRowIsExactMatch;
     bool isPostFiltered;
+    bool eof;
 };
 
 class DummySteppedInput : public CSteppedInputLookahead
@@ -599,6 +608,7 @@ protected:
         if (hasCandidates())
             finishCandidates();
     }
+    void connectRemotePriorityInputs();
     bool createConjunctionOptimizer();
     void setCandidateRow(const void * row, bool inputsMayBeEmpty, const bool * matched);
 

@@ -47,13 +47,14 @@ define([
     "hpcc/DFUWUDetailsWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/ESPLogicalFile",
+    "hpcc/ESPDFUWorkunit",
 
     "dojo/text!../templates/LFDetailsWidget.html",
 
     "dijit/TooltipDialog"
 ], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query,
                 _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
-                _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, ESPLogicalFile,
+                _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit,
                 template) {
     exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -62,19 +63,12 @@ define([
         tabContainer: null,
         summaryWidget: null,
         contentWidget: null,
-        contentWidgetLoaded: false,
         sourceWidget: null,
-        sourceWidgetLoaded: false,
         defWidget: null,
-        defWidgetLoaded: false,
         xmlWidget: null,
-        xmlWidgetLoaded: false,
         filePartsWidget: null,
-        filePartsWidgetLoaded: false,
         workunitWidget: null,
-        workunitWidgetLoaded: false,
         dfuWorkunitWidget: null,
-        dfuWorkunitWidgetLoaded: false,
 
         logicalFile: null,
         prevState: "",
@@ -108,32 +102,54 @@ define([
                 }
             });
         },
+
+        _handleResponse: function (wuidQualifier, response) {
+            if (lang.exists(wuidQualifier, response)) {
+                var wu = ESPDFUWorkunit.Get(lang.getObject(wuidQualifier, false, response));
+                wu.startMonitor(true);
+                var tab = this.ensurePane(this.id + "_" + wu.ID, {
+                    Wuid: wu.ID
+                });
+                if (tab) {
+                    this.selectChild(tab);
+                }
+            }
+        },
         _onCopyOk: function (event) {
+            var context = this;
             this.logicalFile.copy({
                 request: domForm.toObject(this.id + "CopyDialog")
+            }).then(function (response) {
+                context._handleResponse("CopyResponse.result", response);
             });
             registry.byId(this.id + "CopyDropDown").closeDropDown();
         },
         _onCopyCancel: function (event) {
             registry.byId(this.id + "CopyDropDown").closeDropDown();
         },
-        _onDesprayOk: function (event) {
-            this.logicalFile.despray({
-                request: domForm.toObject(this.id + "DesprayDialog")
-            });
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
-        },
-        _onDesprayCancel: function (event) {
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
-        },
         _onRenameOk: function (event) {
+            var context = this;
             this.logicalFile.rename({
                 request: domForm.toObject(this.id + "RenameDialog")
+            }).then(function (response) {
+                context._handleResponse("RenameResponse.wuid", response);
             });
             registry.byId(this.id + "RenameDropDown").closeDropDown();
         },
         _onRenameCancel: function (event) {
             registry.byId(this.id + "RenameDropDown").closeDropDown();
+        },
+        _onDesprayOk: function (event) {
+            var context = this;
+            this.logicalFile.despray({
+                request: domForm.toObject(this.id + "DesprayDialog")
+            }).then(function (response) {
+                context._handleResponse("DesprayResponse.wuid", response);
+            });
+            registry.byId(this.id + "DesprayDropDown").closeDropDown();
+        },
+        _onDesprayCancel: function (event) {
+            registry.byId(this.id + "DesprayDropDown").closeDropDown();
         },
 
         //  Implementation  ---
@@ -169,47 +185,45 @@ define([
 
         initTab: function() {
             var currSel = this.getSelectedChild();
-            if (currSel.id == this.contentWidget.id && !this.contentWidgetLoaded) {
-                this.contentWidgetLoaded = true;
-                this.contentWidget.init({
-                    result: this.logicalFile.result
-                });
-            } else if (currSel.id == this.sourceWidget.id && !this.sourceWidgetLoaded) {
-                this.sourceWidgetLoaded = true;
-                this.sourceWidget.init({
-                    ECL: this.logicalFile.Ecl
-                });
-            } else if (currSel.id == this.defWidget.id && !this.defWidgetLoaded) {
-                var context = this;
-                this.logicalFile.fetchDEF(function (response) {
-                    context.defWidgetLoaded = true;
-                    context.defWidget.init({
-                        ECL: response
+            if (currSel && !currSel.initalized) {
+                if (currSel.id == this.summaryWidget.id) {
+                } else if (currSel.id == this.contentWidget.id) {
+                    this.contentWidget.init({
+                        result: this.logicalFile.result
                     });
-                });
-            } else if (currSel.id == this.xmlWidget.id && !this.xmlWidgetLoaded) {
-                var context = this;
-                this.logicalFile.fetchXML(function (response) {
-                    context.xmlWidgetLoaded = true;
-                    context.xmlWidget.init({
-                        ECL: response
+                } else if (currSel.id == this.sourceWidget.id) {
+                    this.sourceWidget.init({
+                        ECL: this.logicalFile.Ecl
                     });
-                });
-            } else if (currSel.id == this.filePartsWidget.id && !this.filePartsWidgetLoaded) {
-                this.filePartsWidgetLoaded = true;
-                this.filePartsWidget.init({
-                    fileParts: lang.exists("logicalFile.DFUFileParts.DFUPart", this) ? this.logicalFile.DFUFileParts.DFUPart : []
-                });
-            } else if (this.workunitWidget && currSel.id == this.workunitWidget.id && !this.workunitWidgetLoaded) {
-                this.workunitWidgetLoaded = true;
-                this.workunitWidget.init({
-                    Wuid: this.logicalFile.Wuid
-                });
-            } else if (this.dfuWorkunitWidget && currSel.id == this.dfuWorkunitWidget.id && !this.workunitWidgetLoaded) {
-                this.dfuWorkunitWidgetLoaded = true;
-                this.dfuWorkunitWidget.init({
-                    Wuid: this.logicalFile.Wuid
-                });
+                } else if (currSel.id == this.defWidget.id) {
+                    var context = this;
+                    this.logicalFile.fetchDEF(function (response) {
+                        context.defWidget.init({
+                            ECL: response
+                        });
+                    });
+                } else if (currSel.id == this.xmlWidget.id) {
+                    var context = this;
+                    this.logicalFile.fetchXML(function (response) {
+                        context.xmlWidget.init({
+                            ECL: response
+                        });
+                    });
+                } else if (currSel.id == this.filePartsWidget.id) {
+                    this.filePartsWidget.init({
+                        fileParts: lang.exists("logicalFile.DFUFileParts.DFUPart", this) ? this.logicalFile.DFUFileParts.DFUPart : []
+                    });
+                } else if (this.workunitWidget && currSel.id == this.workunitWidget.id) {
+                    this.workunitWidget.init({
+                        Wuid: this.logicalFile.Wuid
+                    });
+                } else if (this.dfuWorkunitWidget && currSel.id == this.dfuWorkunitWidget.id) {
+                    this.dfuWorkunitWidget.init({
+                        Wuid: this.logicalFile.Wuid
+                    });
+                } else {
+                    currSel.init(currSel.params);
+                }
             }
         },
 
@@ -311,6 +325,21 @@ define([
             dom.byId(this.id + "Filesize").innerHTML = fileDetails.Filesize;
             dom.byId(this.id + "PathMask").innerHTML = fileDetails.PathMask;
             */
+        },
+
+        ensurePane: function (id, params) {
+            var retVal = registry.byId(id);
+            if (!retVal) {
+                var context = this;
+                retVal = new DFUWUDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: params.Wuid,
+                    closable: true,
+                    params: params
+                });
+                this.addChild(retVal);
+            }
+            return retVal;
         }
 
     });
