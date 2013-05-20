@@ -3825,7 +3825,7 @@ public:
 
     const void * nextSteppedGE(const void *seek, const void *rawSeek, unsigned numFields, unsigned seekLen, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
     {
-        if (activity.queryLogCtx().queryTraceLevel() > 10)
+        if (activity.queryLogCtx().queryTraceLevel() > 20)
         {
             StringBuffer recstr;
             unsigned i;
@@ -6016,6 +6016,18 @@ public:
     {
         //helper already initialised from the gratherIterationUsage() call.
         iter.set(processor.connectIterationOutput(helper.querySequence(), probeManager, probes, this, 0));
+    }
+
+    virtual IInputSteppingMeta * querySteppingMeta()
+    {
+        assertex(iter);
+        return iter->querySteppingMeta();
+    }
+
+    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    {
+        assertex(iter);
+        return iter->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
     }
 };
 
@@ -21152,6 +21164,7 @@ public:
                 lookahead  = maxSeekLookahead;
             seeks->ensureFilled(seek, numFields, lookahead);
 
+            out.append(lookahead != seeks->ordinality()); // seeksAreEof flag
             unsigned serialized = 1; // rawseek is always serialized...
             unsigned patchLength = out.length();
             out.append(serialized);  // NOTE - we come back and patch with the actual value...
@@ -21187,6 +21200,7 @@ public:
         }
         else
         {
+            out.append(false);
             out.append(1);
             out.append(seekLen, rawSeek);
         }

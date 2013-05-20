@@ -143,6 +143,7 @@ CSteppedInputLookahead::CSteppedInputLookahead(ISteppedInput * _input, IInputSte
     isPostFiltered = inputStepping ? inputStepping->hasPostFilter() : false;
     setRestriction(NULL, 0);
     lowestFrequencyInput = NULL;
+    eof = false;
 }
 
 CSteppedInputLookahead::~CSteppedInputLookahead()
@@ -158,7 +159,12 @@ const void * CSteppedInputLookahead::nextInputRow()
 {
     if (readAheadRows.ordinality())
         return readAheadRows.dequeue();
-    return input->nextInputRow();
+    if (eof)
+        return NULL;
+    const void * ret = input->nextInputRow();
+    if (!ret)
+        eof = true;
+    return ret;
 }
     
 const void * CSteppedInputLookahead::nextInputRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
@@ -172,7 +178,12 @@ const void * CSteppedInputLookahead::nextInputRowGE(const void * seek, unsigned 
             return (void *)next.getClear();
         }
     }
-    return input->nextInputRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+    if (eof)
+        return NULL;
+    const void * ret = input->nextInputRowGE(seek, numFields, wasCompleteMatch, stepExtra);
+    if (!ret)
+        eof = true;
+    return ret;
 }
 
 void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields, unsigned maxcount)
@@ -204,6 +215,9 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
         }
     }
 
+    if (eof)
+        return;
+
     //Return mismatches is selected because we don't want it to seek exact matches beyond the last seek position
     unsigned flags = (SSEFreturnMismatches & ~stepFlagsMask) | stepFlagsValue;
     SmartStepExtra inputStepExtra(flags, lowestFrequencyInput);
@@ -213,7 +227,10 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
         bool wasCompleteMatch = true;
         const void * next = input->nextInputRowGE(seek, numFields, wasCompleteMatch, inputStepExtra);
         if (!next)
+        {
+            eof = true;
             break;
+        }
         //wasCompleteMatch can be false if we've just read the last row returned from a block of reads, 
         //but if so the next read request will do another blocked read, so just ignore this one.
         if (wasCompleteMatch)
@@ -867,7 +884,7 @@ CMergeJoinProcessor::CMergeJoinProcessor(IHThorNWayMergeJoinArg & _arg) : helper
 
     assertex(helper.numOrderFields() == mergeSteppingMeta->getNumFields());
     bool hasPostfilter = false;
-    thisSteppingMeta.init(mergeSteppingMeta->getNumFields(), mergeSteppingMeta->queryFields(), stepCompare, mergeSteppingMeta->queryDistance(), hasPostfilter);
+    thisSteppingMeta.init(mergeSteppingMeta->getNumFields(), mergeSteppingMeta->queryFields(), stepCompare, mergeSteppingMeta->queryDistance(), hasPostfilter, SSFhaspriority|SSFisjoin);
 }
 
 CMergeJoinProcessor::~CMergeJoinProcessor()
@@ -881,6 +898,18 @@ void CMergeJoinProcessor::addInput(ISteppedInput * _input)
     IInputSteppingMeta * _meta = _input->queryInputSteppingMeta();
     verifySteppingCompatible(_meta, mergeSteppingMeta);
     rawInputs.append(*LINK(_input));
+    if (_meta)
+    {
+        if (!_meta->hasPriority())
+            thisSteppingMeta.removePriority();
+        else
+            thisSteppingMeta.intersectPriority(_meta->getPriority());
+
+        if (_meta->isDistributed())
+            thisSteppingMeta.setDistributed();
+    }
+    else
+        thisSteppingMeta.removePriority();
 }
 
 void CMergeJoinProcessor::afterProcessing()
@@ -1173,6 +1202,22 @@ void CMergeJoinProcessor::setCandidateRow(const void * row, bool inputsMayBeEmpt
     outputProcessor->beforeProcessCandidates(restrictionRow, inputsMayBeEmpty, matched);
 }
 
+void CMergeJoinProcessor::connectRemotePriorityInputs()
+{
+    CIArrayOf<OrderedInput> orderedInputs;
+
+    ForEachItemIn(i, inputs)
+    {
+        CSteppedInputLookahead & cur = inputs.item(i);
+        if (!cur.hasPriority() || !cur.readsRowsRemotely())
+            return;
+
+        orderedInputs.append(*new OrderedInput(cur, i, false));
+    }
+    orderedInputs.sort(compareInitialInputOrder);
+    associateRemoteInputs(orderedInputs, orderedInputs.ordinality());
+    combineConjunctions = false;
+}
 
 //---------------------------------------------------------------------------
 
@@ -1183,6 +1228,7 @@ CAndMergeJoinProcessor::CAndMergeJoinProcessor(IHThorNWayMergeJoinArg & _arg) : 
 void CAndMergeJoinProcessor::beforeProcessing(IEngineRowAllocator * _inputAllocator, IEngineRowAllocator * _outputAllocator)
 {
     CMergeJoinProcessor::beforeProcessing(_inputAllocator, _outputAllocator);
+    connectRemotePriorityInputs();
     if (flags & IHThorNWayMergeJoinArg::MJFtransform)
         createEqualityJoinProcessor();
     else
