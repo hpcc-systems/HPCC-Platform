@@ -961,6 +961,7 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKrollupgroup:
         case TAKcombinegroup:
         case TAKsoap_rowdataset:
+        case TAKhttp_rowdataset:
         case TAKsoap_rowaction:
         case TAKsoap_datasetdataset:
         case TAKsoap_datasetaction:
