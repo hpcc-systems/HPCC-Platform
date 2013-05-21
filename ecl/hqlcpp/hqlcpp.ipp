@@ -445,7 +445,7 @@ class WorkflowItem : public CInterface
 {
     friend class WorkflowTransformer;
 public:
-    WorkflowItem(unsigned _wfid) : wfid(_wfid) { }
+    WorkflowItem(unsigned _wfid, node_operator _workflowOp) : wfid(_wfid), workflowOp(_workflowOp) { }
     WorkflowItem(IHqlExpression * _function);
 
     bool isFunction() const { return function != NULL; }
@@ -455,9 +455,10 @@ public:
 
 private:
     LinkedHqlExpr function;
-    unsigned wfid;
     HqlExprArray exprs;
     UnsignedArray dependencies;
+    unsigned wfid;
+    node_operator workflowOp;
 };
 
 typedef CIArrayOf<WorkflowItem> WorkflowArray;

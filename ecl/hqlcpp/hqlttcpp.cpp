@@ -5282,9 +5282,9 @@ void WorkflowTransformer::setWorkflowPersist(IWorkflowItem * wf, char const * pe
     wf->setPersistInfo(persistName, persistWfid);
 }
 
-WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, unsigned persistWfid)
+WorkflowItem * WorkflowTransformer::createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp)
 {
-    WorkflowItem * item = new WorkflowItem(wfid);
+    WorkflowItem * item = new WorkflowItem(wfid, workflowOp);
     expr->unwindList(item->queryExprs(), no_comma);
     gatherIndirectDependencies(item->dependencies, expr);
     return item;
@@ -5341,7 +5341,7 @@ unsigned WorkflowTransformer::ensureWorkflowAction(IHqlExpression * expr)
         return (unsigned)getIntValue(expr->queryChild(0));
     unsigned wfid = ++wfidCount;
     Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(expr), rootCluster);
-    workflowOut->append(*createWorkflowItem(expr, wfid));
+    workflowOut->append(*createWorkflowItem(expr, wfid, no_actionlist));
     return wfid;
 }
 
@@ -5359,10 +5359,49 @@ unsigned WorkflowTransformer::splitValue(IHqlExpression * value)
     info.splitGlobalDefinition(value->queryType(), value, wu, setValue, 0, (translator.getTargetClusterType() == RoxieCluster));
     inheritDependencies(setValue);
     unsigned wfid = ++wfidCount;
-    workflowOut->append(*createWorkflowItem(setValue, wfid));
+    workflowOut->append(*createWorkflowItem(setValue, wfid, no_global));
     return wfid;
 }
 
+
+WorkflowItem * WorkflowTransformer::findWorkflowItem(unsigned wfid)
+{
+    ForEachItemIn(i, *workflowOut)
+    {
+        WorkflowItem & cur = workflowOut->item(i);
+        if (cur.wfid == wfid)
+            return &cur;
+    }
+    return NULL;
+}
+
+void WorkflowTransformer::extractDependentInputs(UnsignedArray & visited, DependenciesUsed & dependencies, const UnsignedArray & wfids)
+{
+    ForEachItemIn(i, wfids)
+    {
+        unsigned wfid = wfids.item(i);
+        if (wfid == trivialStoredWfid)
+            continue;
+
+        if (visited.contains(wfid))
+            continue;
+
+        visited.append(wfid);
+
+        const WorkflowItem * match = findWorkflowItem(wfid);
+        assertex(match);
+        switch (match->workflowOp)
+        {
+        case no_persist:
+        case no_stored:
+            continue;
+        }
+
+        extractDependentInputs(visited, dependencies, match->dependencies);
+        ForEachItemIn(iExpr, match->exprs)
+            gatherDependencies(&match->exprs.item(iExpr), dependencies, GatherAll);
+   }
+}
 
 IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransformed, IHqlExpression * expr)
 {
@@ -5622,6 +5661,8 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
 
             Owned<IWorkflowItem> wfPersist = addWorkflowToWorkunit(persistWfid, WFTypeNormal, WFModeNormal, NULL);
             DependenciesUsed dependencies(false);
+            UnsignedArray visited;
+            extractDependentInputs(visited, dependencies, queryDirectDependencies(setValue));
             gatherDependencies(setValue, dependencies, GatherAll);
             dependencies.removeInternalReads();
 
@@ -5634,8 +5675,8 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             if (expr->isDataset())
                 checkArgs.append(*createAttribute(fileAtom));
             OwnedHqlExpr check = createValue(no_persist_check, makeVoidType(), checkArgs);
-            workflowOut->append(*createWorkflowItem(check, persistWfid));
-            workflowOut->append(*createWorkflowItem(setValue, wfid, persistWfid));
+            workflowOut->append(*createWorkflowItem(check, persistWfid, no_actionlist));
+            workflowOut->append(*createWorkflowItem(setValue, wfid, no_persist));
         }
         else
         {
@@ -5646,7 +5687,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
                 setValue.set(cluster);
             }
             Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, info.queryCluster());
-            workflowOut->append(*createWorkflowItem(setValue, wfid));
+            workflowOut->append(*createWorkflowItem(setValue, wfid, info.persistOp));
         }
     }
 
@@ -5656,7 +5697,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
             schedWfid = ++wfidCount;
         Owned<IWorkflowItem> wf = addWorkflowToWorkunit(schedWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(getValue), info.queryCluster());
         setWorkflowSchedule(wf, sched);
-        workflowOut->append(*createWorkflowItem(getValue, schedWfid));
+        workflowOut->append(*createWorkflowItem(getValue, schedWfid, no_none));
         getValue.setown(createValue(no_null, makeVoidType()));
     }
     else
@@ -5714,7 +5755,7 @@ IHqlExpression * WorkflowTransformer::extractCommonWorkflow(IHqlExpression * exp
     copySetValueDependencies(transformedExtra, setValue);
 
     Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(setValue), conts, NULL);
-    workflowOut->append(*createWorkflowItem(setValue, wfid));
+    workflowOut->append(*createWorkflowItem(setValue, wfid, no_actionlist));
 
     queryBodyExtra(getValue.get())->addDependency(wfid);
     return getValue.getClear();
@@ -5958,7 +5999,7 @@ UnsignedArray const & WorkflowTransformer::queryDirectDependencies(IHqlExpressio
 
 void WorkflowTransformer::cacheWorkflowDependencies(unsigned wfid, UnsignedArray & extra)
 {
-    WorkflowItem * item = new WorkflowItem(wfid);
+    WorkflowItem * item = new WorkflowItem(wfid, no_actionlist);
     ForEachItemIn(i, extra)
     {
         unsigned wfid = extra.item(i);
@@ -6182,7 +6223,7 @@ IHqlExpression * WorkflowTransformer::createIfWorkflow(IHqlExpression * expr)
             unsigned wfid = ++wfidCount;
             Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeCondition, dependencies, rootCluster);
 
-            WorkflowItem * item = new WorkflowItem(wfid);
+            WorkflowItem * item = new WorkflowItem(wfid, no_if);
             cloneDependencies(item->dependencies, dependencies);
 
             if (falseExpr)
@@ -6226,7 +6267,7 @@ IHqlExpression * WorkflowTransformer::createWaitWorkflow(IHqlExpression * expr)
     Owned<IWorkflowItem> wf = addWorkflowToWorkunit(endWaitWfid, WFTypeNormal, WFModeWait, noDependencies, rootCluster);
     setWorkflowSchedule(wf, sched);
     OwnedHqlExpr doNothing = createValue(no_null, makeVoidType());
-    workflowOut->append(*createWorkflowItem(doNothing, endWaitWfid));
+    workflowOut->append(*createWorkflowItem(doNothing, endWaitWfid, no_wait));
 
     //Now create a wait entry, with the EndWait as the dependency
     UnsignedArray dependencies;
@@ -6387,7 +6428,7 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
         OwnedHqlExpr onceExpr = createActionList(onceExprs);
         Owned<IWorkflowItem> wf = addWorkflowToWorkunit(onceWfid, WFTypeNormal, WFModeOnce, queryDirectDependencies(onceExpr), NULL);
         wf->setScheduledNow();
-        out.append(*createWorkflowItem(onceExpr, onceWfid));
+        out.append(*createWorkflowItem(onceExpr, onceWfid, no_once));
     }
 
     if (trivialStoredExprs.length())
@@ -6395,7 +6436,7 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
         //By definition they don't have any dependencies, so no need to call inheritDependencies.
         OwnedHqlExpr trivialStoredExpr = createActionList(trivialStoredExprs);
         Owned<IWorkflowItem> wf = addWorkflowToWorkunit(trivialStoredWfid, WFTypeNormal, WFModeNormal, queryDirectDependencies(trivialStoredExpr), NULL);
-        out.append(*createWorkflowItem(trivialStoredExpr, trivialStoredWfid));
+        out.append(*createWorkflowItem(trivialStoredExpr, trivialStoredWfid, no_stored));
     }
 
     if (transformed.ordinality())
@@ -6428,7 +6469,7 @@ void WorkflowTransformer::transformRoot(const HqlExprArray & in, WorkflowArray &
                 ScheduleData sched;
                 Owned<IWorkflowItem> wf = addWorkflowToWorkunit(wfid, WFTypeNormal, WFModeNormal, dependencies, NULL);
                 setWorkflowSchedule(wf, sched);
-                out.append(*createWorkflowItem(combinedItems, wfid));
+                out.append(*createWorkflowItem(combinedItems, wfid, no_actionlist));
             }
             else
                 wfid = ensureWorkflowAction(combinedItems);

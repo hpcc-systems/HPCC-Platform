@@ -463,6 +463,9 @@ protected:
     void                      copyDependencies(WorkflowTransformInfo * source, WorkflowTransformInfo * dest);
     void                      copySetValueDependencies(WorkflowTransformInfo * source, IHqlExpression * expr);
 
+    void                      extractDependentInputs(UnsignedArray & visited, DependenciesUsed & dependencies, const UnsignedArray & wfids);
+    WorkflowItem *            findWorkflowItem(unsigned wfid);
+
     unsigned                  splitValue(IHqlExpression * value);
     IHqlExpression *          extractWorkflow(IHqlExpression * untransformed, IHqlExpression * transformed);
     IHqlExpression *          extractClusterWorkflow(IHqlExpression * expr);
@@ -483,7 +486,7 @@ protected:
     IHqlExpression *          createWorkflowAction(unsigned wfid);
     unsigned                  ensureWorkflowAction(IHqlExpression * expr);
     void                      ensureWorkflowAction(UnsignedArray & dependencies, IHqlExpression * expr);
-    WorkflowItem *            createWorkflowItem(IHqlExpression * expr, unsigned wfid, unsigned persistWfid = 0);
+    WorkflowItem *            createWorkflowItem(IHqlExpression * expr, unsigned wfid, node_operator workflowOp);
     void percolateScheduledIds(WorkflowArray & workflow);
 
     void                      cacheWorkflowDependencies(unsigned wfid, UnsignedArray & extra);

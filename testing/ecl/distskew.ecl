@@ -15,17 +15,34 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _THSOAPCALLSLAVE_IPP
-#define _THSOAPCALLSLAVE_IPP
+IMPORT std;
 
-#include "slave.ipp"
-#include "thactivityutil.ipp"
-#include "thorsoapcall.hpp"
+unsigned numRecs := 10000 : STORED('numRecs');
 
-activityslaves_decl CActivityBase *createSoapRowCallSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createHttpRowCallSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createSoapRowActionSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createSoapDatasetCallSlave(CGraphElementBase *container);
-activityslaves_decl CActivityBase *createSoapDatasetActionSlave(CGraphElementBase *container);
+rec1 := RECORD
+ string20 key;
+END;
 
-#endif
+seed := dataset([{'[A]\n'}], rec1);
+
+rec1 addNodeNum(rec1 L, unsigned4 c) := TRANSFORM
+ SELF.key := (string) c;
+ SELF := L;
+END;
+
+one_per_node := DISTRIBUTE(NORMALIZE(seed, CLUSTERSIZE, addNodeNum(LEFT, COUNTER)),(unsigned)key);
+
+rec1 generatePseudoRandom(rec1 L, unsigned4 c) := TRANSFORM
+ SELF.key := '['+(string17) RANDOM()+']\n';
+END;
+
+bigstream := NORMALIZE(one_per_node, numRecs*(Std.System.Thorlib.node()+1), generatePseudoRandom(LEFT, COUNTER));
+
+deskew := DISTRIBUTE(bigstream, SKEW(0.1));
+
+SEQUENTIAL(
+  IF (COUNT(bigstream) = COUNT(NOFOLD(deskew)),
+     OUTPUT('Count after de-skew matched'),
+     FAIL('ERROR: Count after de-skew did not match!')
+  )
+);
