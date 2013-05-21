@@ -1807,7 +1807,6 @@ class CRoxieServerContext : public CSlaveContext, implements IRoxieServerContext
 {
     const IQueryFactory *serverQueryFactory;
     CriticalSection daliUpdateCrit;
-    Owned<IRoxiePackage> dynamicPackage;
 
     TextMarkupFormat mlFmt;
     bool isRaw;
@@ -2013,11 +2012,6 @@ public:
         ctxPrefetchProjectPreload = context->getPropInt("_PrefetchProjectPreload", defaultPrefetchProjectPreload);
 
         traceActivityTimes = context->getPropBool("_TraceActivityTimes", false) || context->getPropBool("@timing", false);
-    }
-
-    ~CRoxieServerContext()
-    {
-        dynamicPackage.clear(); // do this before disconnect from dali
     }
 
     virtual roxiemem::IRowManager &queryRowManager()
@@ -2760,22 +2754,12 @@ public:
 
     virtual const IResolvedFile *resolveLFN(const char *filename, bool isOpt)
     {
-        CriticalBlock b(daliUpdateCrit);
-        if (!dynamicPackage)
-        {
-            dynamicPackage.setown(createRoxiePackage(NULL, NULL));
-        }
-        return dynamicPackage->lookupFileName(filename, isOpt, true, workUnit);
+        return factory->queryPackage().lookupFileName(filename, isOpt, true, workUnit);
     }
 
     virtual IRoxieWriteHandler *createLFN(const char *filename, bool overwrite, bool extend, const StringArray &clusters)
     {
-        CriticalBlock b(daliUpdateCrit);
-        if (!dynamicPackage)
-        {
-            dynamicPackage.setown(createRoxiePackage(NULL, NULL));
-        }
-        return dynamicPackage->createFileName(filename, overwrite, extend, clusters, workUnit);
+        return factory->queryPackage().createFileName(filename, overwrite, extend, clusters, workUnit);
     }
 
     virtual void onFileCallback(const RoxiePacketHeader &header, const char *lfn, bool isOpt, bool isLocal)
