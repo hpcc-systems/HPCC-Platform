@@ -376,7 +376,8 @@ public:
     {
         if (isConnected)
         {
-            DBGLOG("Dali lookup %s", logicalName);
+            if (traceLevel > 1)
+                DBGLOG("Dali lookup %s", logicalName);
             CDfsLogicalFileName lfn;
             lfn.set(logicalName);
             Owned<IDistributedFile> dfsFile = queryDistributedFileDirectory().lookup(lfn, userdesc.get(), writeAccess, cacheIt);
