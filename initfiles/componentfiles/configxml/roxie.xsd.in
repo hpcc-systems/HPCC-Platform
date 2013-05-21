@@ -1029,6 +1029,43 @@
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
+  <xs:attributeGroup name="Ports">
+    <xs:attribute name="multicastPort" type="xs:nonNegativeInteger" use="optional" default="8887">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Port used for multicast (server->slave) data</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="serverFlowPort" type="xs:nonNegativeInteger" use="optional" default="9000">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Port used for UDP (slave->server) server flow control messages</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="dataPort" type="xs:nonNegativeInteger" use="optional" default="9001">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Port used for UDP (slave->server) data</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="clientFlowPort" type="xs:nonNegativeInteger" use="optional" default="9002">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Port used for UDP (slave->server) client flow control messages</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="snifferPort" type="xs:nonNegativeInteger" use="optional" default="9003">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Port used for UDP (slave->server) sniffer</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
   <xs:attributeGroup name="Debug">
     <xs:attribute name="checkCompleted" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
