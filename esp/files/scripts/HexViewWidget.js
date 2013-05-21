@@ -32,7 +32,8 @@ define([
 
     "dojo/text!../templates/HexViewWidget.html",
 
-    "dijit/form/NumberSpinner"
+    "dijit/form/NumberSpinner",
+    "dijit/form/CheckBox"
 ],
     function (declare, arrayUtil, lang, Memory, Observable, iframe,
             registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
@@ -46,8 +47,9 @@ define([
             widthField: null,
             hexView: null,
             wu: null,
-            unknownChar:  String.fromCharCode(0xb7),
+            unknownChar:  String.fromCharCode(8226),
             lineLength: 16,
+            showEbcdic: false,
             bufferLength: 16 * 1024,
 
             buildRendering: function (args) {
@@ -77,6 +79,13 @@ define([
             _onWidthChange: function (event) {
                 if (this.lineLength != event) {
                     this.lineLength = event;
+                    this.displayHex();
+                }
+            },
+
+            _onEbcdicChange: function (event) {
+                if (this.showEbcdic != event) {
+                    this.showEbcdic = event;
                     this.displayHex();
                 }
             },
@@ -117,7 +126,7 @@ define([
                         case "hasCompleted": 
                             if (newValue === true) {
                                 context.wu.fetchResults(function (results) {
-                                    context.cachedResponse = [];
+                                    context.cachedResponse = "";
                                     arrayUtil.forEach(results, function (result, idx) {
                                         var store = result.getStore();
                                         var result = store.query({
@@ -125,9 +134,8 @@ define([
                                             start: 0,
                                             count: context.bufferLength
                                         }).then(function (response) {
-                                            context.cachedResponse[idx] = response;
-                                            if (context.cachedResponse.length === 1)
-                                                context.displayHex();
+                                            context.cachedResponse = response;
+                                            context.displayHex();
                                             context.wu.doDelete();
                                         });
                                     });
@@ -135,15 +143,26 @@ define([
                             }
                             break;
                         case "State":
-                            if (!context.wu.isComplete()) {
-                                context.hexView.setText("..." + newValue + "...");
-                            }
-                            break;
-                        default:
+                            context.hexView.setText("..." + (context.wu.isComplete() ? "fetching results" : newValue) + "...");
                             break;
                     }
                 });
-                this.wu.monitor();
+            },
+
+            isCharCodePrintable: function (charCode) {
+                if (charCode < 32)
+                    return false;
+                else if (charCode >= 127 && charCode <= 159)
+                    return false;
+                else if (charCode === 173)
+                    return false;
+                else if (charCode > 255)
+                    return false;
+                return true;
+            },
+
+            isCharPrintable: function (char) {
+                return this.isCharCodePrintable(char.charCodeAt(0));
             },
 
             displayHex: function() {
@@ -166,7 +185,7 @@ define([
                 var hexRow = "";
                 var strRow = "";
                 var charIdx = 0;
-                arrayUtil.some(this.cachedResponse[0], function (item, idx) {
+                arrayUtil.some(this.cachedResponse, function (item, idx) {
                     if (idx >= context.lineLength * 100) {
                         return false;
                     }
@@ -185,17 +204,11 @@ define([
                     if (hexRow) 
                         hexRow += " ";
                     hexRow += item.char;
-                    //strRow += context.cachedResponse[1][idx].char;
-                    var charCode = parseInt(item.char, 16);
-                    if (charCode < 32 || charCode >= 127) {
-                        strRow += context.unknownChar;
+
+                    if (context.showEbcdic) {
+                        strRow += context.isCharPrintable(item.estr1) ? item.estr1 : context.unknownChar;
                     } else {
-                        var char = String.fromCharCode(charCode);
-                        if (char.length === 0) {
-                            strRow += context.unknownChar;
-                        } else {
-                            strRow += String.fromCharCode(charCode);
-                        }
+                        strRow += context.isCharPrintable(item.str1) ? item.str1 : context.unknownChar;
                     }
                     ++charIdx;
                 });
@@ -204,21 +217,22 @@ define([
             },
 
             getQuery: function () {
-                return "data_layout := record\n" + 
-                    " data1 char;\n" +
-                    "end;\n" +
-                    "data_dataset := dataset('" + this.logicalFile + "', data_layout, thor);\n" +
-                    "choosen(data_dataset, " + this.bufferLength + ");\n" +
-                    "ascii_layout := record\n" +
-                    " string1 char;\n" +
-                    "end;\n" +
-                    "ascii_dataset := dataset('" + this.logicalFile + "', ascii_layout, thor);\n" +
-                    "//choosen(ascii_dataset, " + this.bufferLength + ");\n" +
-                    "ebcdic_layout := record\n" +
-                    " ebcdic string1 char;\n" +
-                    "end;\n" +
-                    "ebcdic_dataset := dataset('" + this.logicalFile + "', ebcdic_layout, thor);\n" +
-                    "//choosen(ebcdic_dataset, " + this.bufferLength + ");\n"
+                return  "data_layout := record\n" + 
+                        "    data1 char;\n" +
+                        "end;\n" +
+                        "data_dataset := dataset('" + this.logicalFile + "', data_layout, thor);\n" +
+                        "analysis_layout := record\n" +
+                        "    data1 char;\n" +
+                        "    string1 str1;\n" +
+                        "    ebcdic string1 estr1;\n" +
+                        "end;\n" +
+                        "analysis_layout calcAnalysis(data_layout l) := transform\n" +
+                        "    self.char := l.char;\n" +
+                        "    self.str1 := transfer(l.char, string1);\n" +
+                        "    self.estr1 := transfer(l.char, string1);\n" +
+                        "end;\n" +
+                        "analysis_dataset := project(data_dataset, calcAnalysis(left));\n" +
+                        "choosen(analysis_dataset, " + this.bufferLength + ");\n"
             }
         });
     });
