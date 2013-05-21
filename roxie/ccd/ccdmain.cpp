@@ -58,6 +58,7 @@ unsigned numServerThreads = 30;
 unsigned numSlaveThreads = 30;
 unsigned numRequestArrayThreads = 5;
 unsigned headRegionSize;
+unsigned ccdMulticastPort;
 bool enableHeartBeat = true;
 unsigned parallelLoopFlowLimit = 100;
 unsigned perChannelFlowLimit = 10;
@@ -335,7 +336,7 @@ void addChannel(unsigned channel, const char *dataDirectory, bool isMe, bool sus
     }
     if (!localSlave)
     {
-        addEndpoint(channel, slaveIp, CCD_MULTICAST_PORT);
+        addEndpoint(channel, slaveIp, ccdMulticastPort);
     }
 }
 
@@ -629,6 +630,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         bool isCCD = false;
 
         headRegionSize = topology->getPropInt("@headRegionSize", 50);
+        ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         numChannels = topology->getPropInt("@numChannels", 0);
         numActiveChannels = topology->getPropInt("@numActiveChannels", numChannels);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);

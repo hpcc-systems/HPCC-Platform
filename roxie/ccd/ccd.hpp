@@ -320,6 +320,7 @@ extern unsigned lowTimeout;
 extern unsigned highTimeout;
 extern unsigned slaTimeout;
 extern unsigned headRegionSize;
+extern unsigned ccdMulticastPort;
 extern CriticalSection ccdChannelsCrit;
 extern IPropertyTree* ccdChannels;
 extern IPropertyTree* topology;
