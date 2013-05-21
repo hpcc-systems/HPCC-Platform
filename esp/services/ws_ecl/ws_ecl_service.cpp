@@ -2106,69 +2106,6 @@ int CWsEclBinding::getWsEcl2Form(CHttpRequest* request, CHttpResponse* response,
     return 0;
 }
 
-void CWsEclBinding::addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult &vardef, IResultSetMetaData &metadef, const char *varname, IPropertyTree *valtree)
-{
-    if (!varname || !*varname)
-        return;
-
-    Owned<IWUResult> var = workunit->updateVariableByName(varname);
-    if (!vardef.isResultScalar())
-    {
-        StringBuffer ds;
-        if (valtree->hasChildren())
-            toXML(valtree, ds);
-        else
-        {
-            const char *val = valtree->queryProp(NULL);
-            if (val)
-                decodeXML(val, ds);
-        }
-        if (ds.length())
-            var->setResultRaw(ds.length(), ds.str(), ResultFormatXml);
-    }
-    else
-    {
-        const char *val = valtree->queryProp(NULL);
-        if (val && *val)
-        {
-            switch (metadef.getColumnDisplayType(0))
-            {
-                case TypeBoolean:
-                    var->setResultBool(strieq(val, "1") || strieq(val, "true") || strieq(val, "on"));
-                    break;
-                case TypeInteger:
-                    var->setResultInt(_atoi64(val));
-                    break;
-                case TypeUnsignedInteger:
-                    var->setResultInt(_atoi64(val));
-                    break;
-                case TypeReal:
-                    var->setResultReal(atof(val));
-                    break;
-                case TypeSet:
-                case TypeDataset:
-                case TypeData:
-                    var->setResultRaw(strlen(val), val, ResultFormatRaw);
-                    break;
-                case TypeUnicode: {
-                    MemoryBuffer target;
-                    convertUtf(target, UtfReader::Utf16le, strlen(val), val, UtfReader::Utf8);
-                    var->setResultUnicode(target.toByteArray(), (target.length()>1) ? target.length()/2 : 0);
-                    }
-                    break;
-                case TypeString:
-                case TypeUnknown:
-                default:
-                    var->setResultString(val, strlen(val));
-                    break;
-                    break;
-            }
-
-            var->setResultStatus(ResultStatusSupplied);
-        }
-    }
-}
-
 int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, const char *viewname, const char *xsltname)
 {
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
@@ -2201,22 +2138,7 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
         start=start->queryPropTree("Envelope");
     if (start->hasProp("Body"))
         start=start->queryPropTree("Body/*[1]");
-
-    Owned<IResultSetFactory> resultSetFactory(getResultSetFactory(context.queryUserId(), context.queryPassword()));
-    Owned<IPropertyTreeIterator> it = start->getElements("*");
-    ForEach(*it)
-    {
-        IPropertyTree &eclparm=it->query();
-        const char *varname = eclparm.queryName();
-
-        IConstWUResult *vardef = wsinfo.wu->getVariableByName(varname);
-        if (vardef)
-        {
-            Owned<IResultSetMetaData> metadef = resultSetFactory->createResultSetMeta(vardef);
-            if (metadef)
-                addParameterToWorkunit(workunit.get(), *vardef, *metadef, varname, &eclparm);
-        }
-    }
+    workunit->setXmlParams(LINK(start));
 
     workunit->schedule();
     workunit.clear();
