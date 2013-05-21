@@ -143,7 +143,6 @@ CSteppedInputLookahead::CSteppedInputLookahead(ISteppedInput * _input, IInputSte
     isPostFiltered = inputStepping ? inputStepping->hasPostFilter() : false;
     setRestriction(NULL, 0);
     lowestFrequencyInput = NULL;
-    eof = false;
 }
 
 CSteppedInputLookahead::~CSteppedInputLookahead()
@@ -159,12 +158,7 @@ const void * CSteppedInputLookahead::nextInputRow()
 {
     if (readAheadRows.ordinality())
         return readAheadRows.dequeue();
-    if (eof)
-        return NULL;
-    const void * ret = input->nextInputRow();
-    if (!ret)
-        eof = true;
-    return ret;
+    return input->nextInputRow();
 }
     
 const void * CSteppedInputLookahead::nextInputRowGE(const void * seek, unsigned numFields, bool & wasCompleteMatch, const SmartStepExtra & stepExtra)
@@ -178,12 +172,7 @@ const void * CSteppedInputLookahead::nextInputRowGE(const void * seek, unsigned 
             return (void *)next.getClear();
         }
     }
-    if (eof)
-        return NULL;
-    const void * ret = input->nextInputRowGE(seek, numFields, wasCompleteMatch, stepExtra);
-    if (!ret)
-        eof = true;
-    return ret;
+    return input->nextInputRowGE(seek, numFields, wasCompleteMatch, stepExtra);
 }
 
 void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields, unsigned maxcount)
@@ -215,9 +204,6 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
         }
     }
 
-    if (eof)
-        return;
-
     //Return mismatches is selected because we don't want it to seek exact matches beyond the last seek position
     unsigned flags = (SSEFreturnMismatches & ~stepFlagsMask) | stepFlagsValue;
     SmartStepExtra inputStepExtra(flags, lowestFrequencyInput);
@@ -227,10 +213,7 @@ void CSteppedInputLookahead::ensureFilled(const void * seek, unsigned numFields,
         bool wasCompleteMatch = true;
         const void * next = input->nextInputRowGE(seek, numFields, wasCompleteMatch, inputStepExtra);
         if (!next)
-        {
-            eof = true;
             break;
-        }
         //wasCompleteMatch can be false if we've just read the last row returned from a block of reads, 
         //but if so the next read request will do another blocked read, so just ignore this one.
         if (wasCompleteMatch)

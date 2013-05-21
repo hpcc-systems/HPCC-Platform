@@ -263,7 +263,6 @@ protected:
     bool paranoid;
     bool readAheadRowIsExactMatch;
     bool isPostFiltered;
-    bool eof;
 };
 
 class DummySteppedInput : public CSteppedInputLookahead
