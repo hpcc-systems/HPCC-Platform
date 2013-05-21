@@ -2579,6 +2579,21 @@ bool ThorHqlTransformer::isLightweightJoinCandidate(IHqlExpression * expr, bool 
     return false;
 }
 
+static IHqlExpression * createDistributedInput(IHqlExpression * ds, IHqlExpression * sortlist, bool internal)
+{
+    //could use a more optimal hash function since comparing against self, so fields are same type
+    IHqlExpression * internalExpr = internal ?  createAttribute(internalAtom) : NULL;
+    OwnedHqlExpr activeDist = createValue(no_hash32, LINK(unsignedType), LINK(sortlist), internalExpr);
+    OwnedHqlExpr dist = replaceSelector(activeDist, queryActiveTableSelector(), ds);
+    return createDataset(no_distribute, LINK(ds), LINK(dist));
+}
+
+static IHqlExpression * createDistributedInput(IHqlExpression * ds, const HqlExprArray & sorts, bool internal)
+{
+    OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), sorts);
+    return createDistributedInput(ds, sortlist, internal);
+}
+
 IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression * expr)
 {
     IHqlExpression * leftDs = expr->queryChild(0);
@@ -2608,7 +2623,6 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         HqlExprArray args;
         unwindChildren(args, expr);
         removeProperty(args, hashAtom);
-//      args.append(*createAttribute(_normalized_Atom));
         return expr->clone(args);
     }
 
@@ -2682,13 +2696,34 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         if (isDistributedCoLocally(leftDs, rightDs, leftSorts, rightSorts))
             return appendOwnedOperand(expr, createLocalAttribute());
 
-        //MORE: If left side (assumed to be the largest) is already distributed, it would be more efficient
-        //to redistribute the rhs by a matching hash function (or use cosort), and then join locally.
-        //Be careful about the persist scaling factors though.
-        if (!isPersistDistribution(queryDistribution(leftDs)) && isPartitionedForGroup(leftDs, leftSorts, true))
+        if (options.matchExistingDistributionForJoin)
         {
-            DBGLOG("MORE: Potential for distributed join optimization");
-            //MORE: May need a flag to stop this - to prevent issues with skew.
+            //Should this exclude lookup joins??
+            //On balance it is probably worthwhile since it means that only 1/clustersize data is on each node.
+
+            //If left side (assumed to be the largest) is already distributed, it would be more efficient
+            //to redistribute the rhs by a matching hash function (or use cosort), and then join locally.
+            //Be careful about the persist scaling factors though.
+            //SORT partitions should be supported once they are persisted by the system
+            IHqlExpression * leftDistribution = queryDistribution(leftDs);
+            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, leftSorts, true))
+            {
+                //MORE: May need a flag to stop this - to prevent issues with skew.
+                OwnedHqlExpr newHash = createMatchingDistribution(leftDistribution, leftSorts, rightSorts);
+                if (newHash)
+                {
+                    OwnedHqlExpr dist = replaceSelector(newHash, queryActiveTableSelector(), rightDs);
+                    OwnedHqlExpr newRhs = createDataset(no_distribute, LINK(rightDs), LINK(dist));
+                    OwnedHqlExpr newJoin = replaceChild(expr, 1, newRhs);
+                    return appendOwnedOperand(newJoin, createLocalAttribute());
+                }
+            }
+        }
+        else
+        {
+            IHqlExpression * leftDistribution = queryDistribution(leftDs);
+            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, leftSorts, true))
+                DBGLOG("MORE: Potential for distributed join optimization");
         }
     }
 
@@ -2826,11 +2861,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             //Only likely to catch this partition test if isLimitedSubstringJoin true, otherwise caught above
             if (!isPartitionedForGroup(leftDs, sortlist, true))
             {
-                //could use a more optimal hash function since comparing against self, so fields are same type
-                OwnedHqlExpr activeDist = createValue(no_hash32, LINK(unsignedType), LINK(sortlist), createAttribute(internalAtom));
-                //OwnedHqlExpr activeDist = createValue(no_hash, LINK(unsignedType), LINK(sortlist));
-                OwnedHqlExpr dist = replaceSelector(activeDist, queryActiveTableSelector(), leftDs);
-                distribute.setown(createDataset(no_distribute, LINK(leftDs), LINK(dist)));
+                distribute.setown(createDistributedInput(leftDs, sortlist, true));
                 distribute.setown(cloneInheritedAnnotations(expr, distribute));
             }
             else
@@ -2843,6 +2874,17 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             args.append(*createLocalAttribute());
             return expr->clone(args);
         }
+    }
+
+    if (options.expandHashJoin && isThorCluster(targetClusterType) && expr->hasProperty(hashAtom) && !isLimitedSubstringJoin)
+    {
+        HqlExprArray args;
+        args.append(*createDistributedInput(leftDs, leftSorts, false));
+        args.append(*createDistributedInput(rightDs, rightSorts, false));
+        unwindChildren(args, expr, 2);
+        removeProperty(args, hashAtom);
+        args.append(*createLocalAttribute());
+        return expr->clone(args);
     }
 
     if (isThorCluster(targetClusterType) && isLocal && options.implicitJoinSubSort)

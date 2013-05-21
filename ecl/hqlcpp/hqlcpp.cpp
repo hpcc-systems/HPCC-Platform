@@ -1615,7 +1615,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.resourceMaxHeavy, "resourceMaxHeavy", 1),
         DebugOption(options.resourceMaxDistribute, "resourceMaxDistribute", 2),
         DebugOption(options.unlimitedResources,"unlimitedResources", false),
-        DebugOption(options.resourceUseMpForDistribute,"resourceUseMpForDistribute", false),
         DebugOption(options.filteredReadSpillThreshold, "filteredReadSpillThreshold", 999),
         DebugOption(options.allowThroughSpill,"allowThroughSpill", true),
         DebugOption(options.minimiseSpills,"minimiseSpills", false),
@@ -1702,6 +1701,8 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.removeXpathFromOutput,"removeXpathFromOutput",false),
         DebugOption(options.canLinkConstantRows,"canLinkConstantRows",true),
         DebugOption(options.checkAmbiguousRollupCondition,"checkAmbiguousRollupCondition",true),
+        DebugOption(options.matchExistingDistributionForJoin,"matchExistingDistributionForJoin",true),
+        DebugOption(options.expandHashJoin,"expandHashJoin",false),
     };
 
     //get options values from workunit
@@ -1738,7 +1739,6 @@ void HqlCppTranslator::cacheOptions()
 
     //The following cases handle options whose default values are dependent on other options.  
     //Or where one debug options sets more than one option
-    options.hasResourceUseMpForDistribute = wu()->hasDebugValue("resourceUseMpForDistribute");
     if (options.spanMultipleCpp)
     {
         options.activitiesPerCpp = wu()->getDebugValueInt("activitiesPerCpp", DEFAULT_ACTIVITIES_PER_CPP);
