@@ -670,6 +670,9 @@ public:
             case TAKsoap_rowdataset:
                 ret = createSoapRowCallSlave(this);
                 break;
+            case TAKhttp_rowdataset:
+                ret = createHttpRowCallSlave(this);
+                break;
             case TAKsoap_rowaction:
                 ret = createSoapRowActionSlave(this);
                 break;

@@ -698,23 +698,25 @@ public:
         request->setTarget(optTarget);
         request->setQueryIdToVerify(optQueryId);
 
+        bool validateMessages = false;
         Owned<IClientValidatePackageResponse> resp = packageProcessClient->ValidatePackage(request);
         if (resp->getExceptions().ordinality()>0)
-            outputMultiExceptions(resp->getExceptions());
-        StringArray &errors = resp->getErrors();
-        if (errors.ordinality()==0)
-            fputs("   No errors found\n", stdout);
-        else
         {
+            validateMessages = true;
+            outputMultiExceptions(resp->getExceptions());
+        }
+        StringArray &errors = resp->getErrors();
+        if (errors.ordinality()>0)
+        {
+            validateMessages = true;
             fputs("   Error(s):\n", stderr);
             ForEachItemIn(i, errors)
                 fprintf(stderr, "      %s\n", errors.item(i));
         }
         StringArray &warnings = resp->getWarnings();
-        if (warnings.ordinality()==0)
-            fputs("   No warnings found\n", stdout);
-        else
+        if (warnings.ordinality()>0)
         {
+            validateMessages = true;
             fputs("   Warning(s):\n", stderr);
             ForEachItemIn(i, warnings)
                 fprintf(stderr, "      %s\n", warnings.item(i));
@@ -722,6 +724,7 @@ public:
         StringArray &unmatchedQueries = resp->getQueries().getUnmatched();
         if (unmatchedQueries.ordinality()>0)
         {
+            validateMessages = true;
             fputs("\n   Queries without matching package:\n", stderr);
             ForEachItemIn(i, unmatchedQueries)
                 fprintf(stderr, "      %s\n", unmatchedQueries.item(i));
@@ -729,6 +732,7 @@ public:
         StringArray &unusedPackages = resp->getPackages().getUnmatched();
         if (unusedPackages.ordinality()>0)
         {
+            validateMessages = true;
             fputs("\n   Packages without matching queries:\n", stderr);
             ForEachItemIn(i, unusedPackages)
                 fprintf(stderr, "      %s\n", unusedPackages.item(i));
@@ -740,6 +744,9 @@ public:
             ForEachItemIn(i, unusedFiles)
                 fprintf(stderr, "      %s\n", unusedFiles.item(i));
         }
+
+        if (!validateMessages)
+            fputs("   Validation was successful\n", stdout);
 
         return 0;
     }
