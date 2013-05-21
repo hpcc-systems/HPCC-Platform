@@ -1462,6 +1462,7 @@ int CWsEclBinding::getXsdDefinition(IEspContext &context, CHttpRequest *request,
             content.append("<xsd:complexType>");
             content.append("<xsd:all>");
             content.append("<xsd:element name=\"Exceptions\" type=\"tns:ArrayOfEspException\" minOccurs=\"0\"/>");
+            content.append("<xsd:element name=\"Wuid\" type=\"xsd:string\" minOccurs=\"0\"/>");
 
             Owned<IPropertyTreeIterator> result_xsds =xsdtree->getElements("Result");
             if (!result_xsds->first())
@@ -1829,14 +1830,24 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
             node = node->queryPropTree("Body");
         if (node->hasProp(element))
             node = node->queryPropTree(element);
+        const char *wuid = node->queryProp("Wuid");
         if (node->hasProp("Results"))
             node = node->queryPropTree("Results");
         if (node->hasProp("Result"))
             node = node->queryPropTree("Result");
 
-        jsonmsg.appendf("{\n  \"%s\": {\n    \"Results\": {\n", element.str());
-
+        jsonmsg.appendf("{\n  \"%s\": {\n", element.str());
         Owned<IPropertyTreeIterator> exceptions = node->getElements("Exception");
+        Owned<IPropertyTreeIterator> datasets = node->getElements("Dataset");
+        if (wuid && *wuid)
+            appendJSONValue(jsonmsg.pad(3), "Wuid", wuid);
+        if ((!exceptions || !exceptions->first()) && (!datasets || !datasets->first()))
+        {
+            jsonmsg.append("  }\n}");
+            return;
+        }
+
+        appendJSONName(jsonmsg.pad(3), "Results").append("{\n");
         if (exceptions && exceptions->first())
         {
             appendJSONName(jsonmsg.pad(3), "Exceptions").append("{\n");
@@ -1846,7 +1857,6 @@ void CWsEclBinding::getWsEclJsonResponse(StringBuffer& jsonmsg, IEspContext &con
             jsonmsg.append("\n   ]\n    }\n");
         }
 
-        Owned<IPropertyTreeIterator> datasets = node->getElements("Dataset");
         ForEach(*datasets)
         {
             IPropertyTree &ds = datasets->query();
@@ -2159,7 +2169,6 @@ void CWsEclBinding::addParameterToWorkunit(IWorkUnit * workunit, IConstWUResult 
     }
 }
 
-
 int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinfo, const char *xml, StringBuffer &out, unsigned flags, const char *viewname, const char *xsltname)
 {
     Owned <IWorkUnitFactory> factory = getSecWorkUnitFactory(*context.querySecManager(), *context.queryUser());
@@ -2214,9 +2223,11 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
 
     runWorkUnit(wuid.str(), wsinfo.qsetname.sget());
 
+    bool async = context.queryRequestParameters()->hasProp("_async");
+
     //don't wait indefinately, in case submitted to an inactive queue wait max + 5 mins
     int wutimeout = 300000;
-    if (waitForWorkUnitToComplete(wuid.str(), wutimeout))
+    if (!async && waitForWorkUnitToComplete(wuid.str(), wutimeout))
     {
         Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
         if (!web)
@@ -2233,10 +2244,13 @@ int CWsEclBinding::submitWsEclWorkunit(IEspContext & context, WsEclWuInfo &wsinf
     }
     else
     {
-        DBGLOG("WS-ECL request timed out, WorkUnit %s", wuid.str());
+        if (!async)
+            DBGLOG("WS-ECL request timed out, WorkUnit %s", wuid.str());
+        Owned<IWuWebView> web = createWuWebView(wuid.str(), wsinfo.queryname.get(), getCFD(), true);
+        web->createWuidResponse(out, flags);
     }
 
-    DBGLOG("WS-ECL Request processed [using Doxie]");
+    DBGLOG("WS-ECL Request processed");
     return true;
 }
 
@@ -2714,6 +2728,11 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
 
         StringBuffer methodName;
         nextPathNode(thepath, methodName);
+        if (strieq(methodName, "async"))
+        {
+            parms->setProp("_async", 1);
+            methodName.set("submit");
+        }
 
         if (!stricmp(methodName.str(), "tabview"))
         {
@@ -2847,6 +2866,8 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
 
         StringBuffer action;
         nextPathNode(thepath, action);
+        if (strieq(action, "async"))
+            parms->setProp("_async", 1);
 
         StringBuffer lookup;
         nextPathNode(thepath, lookup);
@@ -2958,6 +2979,8 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
 
     StringBuffer action;
     nextPathNode(thepath, action);
+    if (strieq(action, "async"))
+        parms->setProp("_async", 1);
 
     StringBuffer lookup;
     nextPathNode(thepath, lookup);
