@@ -1145,39 +1145,70 @@ MemoryBuffer &JBASE64_Decode(const char *incs, MemoryBuffer &out)
     return out;
 }
 
-void JBASE64_Decode(const char *incs, long length, StringBuffer &out)
+
+
+bool JBASE64_Decode(const char *incs, long length, StringBuffer &out)
 {
-    out.ensureCapacity(length / 4 * 3);
+    out.ensureCapacity(((length / 4) + 1) * 3);
 
-    unsigned char c1, c2, c3, c4;
+    const char * end = incs + length;
+    unsigned char c1;
+    unsigned char c[4];
+    unsigned char cIndex = 0;
     unsigned char d1, d2, d3, d4;
+    bool fullQuartetDecoded = false;
 
-    for(long index = 0; index < length; index+=4)
+    while(incs < end)
     {
         c1 = *incs++;
-        if (!isspace(c1))
+
+        if( isspace(c1) || ('\n' == c1) )
+            continue;
+
+        if( !BASE64_dec[c1] && (pad != c1)  )
         {
-            c2 = *incs++;
-            c3 = *incs++;
-            c4 = *incs++;
-            d1 = BASE64_dec[c1];
-            d2 = BASE64_dec[c2];
-            d3 = BASE64_dec[c3];
-            d4 = BASE64_dec[c4];
+            // Forbidden char
+            fullQuartetDecoded = false;
+            break;
+        }
+
+        c[cIndex++] = c1;
+        fullQuartetDecoded = false;
+
+        if( 4 == cIndex )
+        {
+            d1 = BASE64_dec[c[0]];
+            d2 = BASE64_dec[c[1]];
+            d3 = BASE64_dec[c[2]];
+            d4 = BASE64_dec[c[3]];
 
             out.append((char)((d1 << 2) | (d2 >> 4)));
 
-            if(c3 == pad)
+            if(pad == c[2])
+            {
+                fullQuartetDecoded = true;
                 break;
+            }
 
             out.append((char)((d2 << 4) | (d3 >> 2)));
 
-            if(c4 == pad)
+            if( pad == c[3])
+            {
+                fullQuartetDecoded = true;
                 break;
+            }
 
             out.append((char)((d3 << 6) | d4));
+
+            cIndex = 0;
+            fullQuartetDecoded = true;
         }
     }
+
+    if(fullQuartetDecoded)
+        return true;
+    else
+        return false;
 }
 
 static inline void encode5_32(const byte *in,StringBuffer &out)

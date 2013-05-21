@@ -5635,9 +5635,9 @@ void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * 
     if( 0 < slen )
     {
         StringBuffer out;
-        JBASE64_Decode(src, slen, out);
+        if( JBASE64_Decode(src, slen, out) )
+                    tlen = out.length();
 
-        tlen = out.length();
         if( 0 < tlen)
         {
             char * data  = (char *)malloc(tlen);
