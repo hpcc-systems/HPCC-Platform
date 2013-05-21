@@ -49,6 +49,11 @@ int main( int argc, char *argv[] )
 
 
     InitModuleObjects();
+
+#ifndef __64BIT__
+    Thread::setDefaultStackSize(0x10000);   // NB under windows requires linker setting (/stack:)
+#endif
+
     try  {
         StringBuffer logname;
         splitFilename(argv[0], NULL, NULL, &logname, NULL);

@@ -361,7 +361,7 @@ public:
 
 };
 
-bool outputPartsFiles(const char *daliserver,const char *cluster,const char *outdir, StringBuffer &errstr)
+bool outputPartsFiles(const char *daliserver,const char *cluster,const char *outdir, StringBuffer &errstr, bool verbose)
 {
     errstr.clear();
     bool dalistarted;
@@ -372,6 +372,7 @@ bool outputPartsFiles(const char *daliserver,const char *cluster,const char *out
             initClientProcess(serverGroup, DCR_BackupGen, 0, NULL, NULL, 1000*60*5);
             dalistarted = true;
             CFileListWriter writer;
+            writer.verbose = verbose;
             Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
             if (group) {
                 IArrayOf<IFileIOStream> outStreams;
