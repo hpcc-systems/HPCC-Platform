@@ -222,6 +222,7 @@ interface IThreadPool : extends IInterface
         virtual unsigned runningCount()=0;                  // number of currently running threads
         virtual PooledThreadHandle startNoBlock(void *param)=0; // starts a new thread if it can do so without blocking, else throws exception
         virtual PooledThreadHandle startNoBlock(void *param,const char *name)=0;    // starts a new thread if it can do so without blocking, else throws exception
+        virtual void setStartDelayTracing(unsigned secs) = 0;        // set start delay tracing period
 };
 
 extern jlib_decl IThreadPool *createThreadPool(
