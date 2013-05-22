@@ -223,6 +223,33 @@ protected:
     bool bigendian;
 };
 
+class CCsvMatcher
+{
+public:
+    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4 };
+
+    CCsvMatcher() { init(); };
+
+    bool addSeparator(const char * aNewSeparator);
+    bool addTerminator(const char * aNewTerminator);
+    void changeQuote(const unsigned char aNewQuote);
+    unsigned char match(unsigned int aIndex) { return charMatch[aIndex&255]; };
+    unsigned char match(unsigned maxLen, const char * text, unsigned & matchLen);
+
+private:
+    static const char DEFAULT_SEPARATOR_CHAR  = ',';
+    static const char DEFAULT_TERMINATOR_CHAR = '\n';
+    static const char DEFAULT_QUOTE_CHAR      = '\'';
+    static const char DEFAULT_SPACE_CHAR      = ' ';
+    static const char DEFAULT_TAB_CHAR        = '\t';
+
+    void init(void);
+    void clearAllSpecChar(unsigned aSpecChar);
+    bool processParam(const char * aParam, unsigned aSpecType);
+
+private:
+    unsigned char charMatch[256];
+};
 
 class DALIFT_API CCsvPartitioner : public CInputBasePartitioner
 {
@@ -603,5 +630,7 @@ protected:
     UtfReader::UtfFormat utfFormat;
     MemoryBuffer transformed;
 };
+
+
 
 #endif
