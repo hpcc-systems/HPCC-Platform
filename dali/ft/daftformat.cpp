@@ -236,10 +236,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
         ensureBuffered(headerSize);
         assertex((headerSize ==0) || (numInBuffer != bufferOffset));
 
-        if(processFullBuffer &&  (splitOffset - nextInputOffset < blockSize) )
-        {
-            processFullBuffer = false;
-        }
+        processFullBuffer =  (nextInputOffset + blockSize) < splitOffset;
 
         unsigned size = getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset);
 
@@ -542,9 +539,6 @@ unsigned CRECFMvbPartitioner::transformBlock(offset_t endOffset, TransformCursor
 
 //----------------------------------------------------------------------------
 
-
-
-
 CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartitioner(_format.maxRecordSize, _format.maxRecordSize)
 {
     maxElementLength = 1;
@@ -554,28 +548,20 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     addActionList(matcher, format.terminate.get() ? format.terminate.get() : "\\n,\\r\\n", TERMINATOR, &maxElementLength);
     matcher.queryAddEntry(1, " ", WHITESPACE);
     matcher.queryAddEntry(1, "\t", WHITESPACE);
-    useCsvMatcher = true;
 
+    useCsvMatcher = true;
     const char* terminator = format.terminate.get();
     if(terminator && *terminator)
     {
-        bool success = csvMatcher.addTerminator(terminator);
-
-        if( !success )
-        {
+        if( !csvMatcher.addTerminator(terminator) )
             useCsvMatcher = false;
-        }
     }
 
     const char* separator = format.separate.get();
     if(useCsvMatcher && separator && *separator)
     {
-        bool success = csvMatcher.addSeparator(separator);
-
-        if( !success )
-        {
+        if( !csvMatcher.addSeparator(separator) )
             useCsvMatcher = false;
-        }
     }
 
     const char* quote = format.quote.get();
@@ -619,8 +605,7 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
 
         if( useCsvMatcher)
         {
-            match = csvMatcher.match(*cur);
-            matchLen = (match ? 1 : 0);
+            match = csvMatcher.match(end-cur, (const char *)cur, matchLen);
         }
         else
         {
@@ -1791,4 +1776,150 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
         slave = queryFtSlaveExecutable(ep, name);
 
     return new CRemotePartitioner(ep, srcFormat, tgtFormat, slave, wuid);
+}
+
+//----------------------------------------------------------------------------
+
+// Public
+bool CCsvMatcher::addSeparator(const char * aNewSeparator)
+{
+    charMatch[DEFAULT_SEPARATOR_CHAR] = NONE;
+    bool success = processParam(aNewSeparator, SEPARATOR);
+    if(!success)
+    {
+        // Restore default separator
+        charMatch[DEFAULT_SEPARATOR_CHAR] = SEPARATOR;
+    }
+    return success;
+}
+
+bool CCsvMatcher::addTerminator(const char * aNewTerminator)
+{
+    charMatch[DEFAULT_TERMINATOR_CHAR] = NONE;
+    bool success = processParam(aNewTerminator, TERMINATOR);
+    if( !success)
+    {
+        // Restore default separator
+        charMatch[DEFAULT_TERMINATOR_CHAR] = TERMINATOR;
+    }
+    return success;
+}
+
+void CCsvMatcher::changeQuote(const unsigned char aNewQuote)
+{
+    // Handle only one quote char
+    charMatch[DEFAULT_QUOTE_CHAR] = NONE;
+    charMatch[aNewQuote] = QUOTE;
+}
+
+unsigned char CCsvMatcher::match(unsigned maxLen, const char * text, unsigned & matchLen)
+{
+    matchLen = 0;
+    unsigned char retVal = charMatch[(unsigned char) *text];
+    if( retVal )
+    {
+        ++matchLen;
+        if( ('\r' == *text ) && (1 < maxLen) )
+        {
+            if( '\n' == *(text+1) )
+                ++matchLen;
+        }
+    }
+    return retVal;
+}
+
+// private
+void CCsvMatcher::init(void)
+{
+    for( int i = 0; i < 256; ++i)
+    {
+        charMatch[i] = NONE;
+    }
+
+    charMatch[DEFAULT_SEPARATOR_CHAR]  = SEPARATOR;
+    charMatch[DEFAULT_TERMINATOR_CHAR] = TERMINATOR;
+    charMatch[DEFAULT_QUOTE_CHAR]      = QUOTE;
+    charMatch[DEFAULT_SPACE_CHAR]      = WHITESPACE;
+    charMatch[DEFAULT_TAB_CHAR]        = WHITESPACE;
+}
+
+void CCsvMatcher::clearAllSpecChar(unsigned aSpecChar)
+{
+    for( int i = 0; i < 256; ++i)
+    {
+        if( charMatch[i] == aSpecChar )
+            charMatch[i] = NONE;
+    }
+}
+
+bool CCsvMatcher::processParam(const char * aParam, unsigned aSpecType)
+{
+    bool valid = true;
+    const char * curr = aParam;
+
+    while(*curr)
+    {
+        unsigned char specChar = *curr;
+        if( '\\' == *curr )
+        {
+            curr++;
+            switch(*curr)
+            {
+            case 'b':
+                specChar = '\b';
+                break;
+
+            case 'f':
+                specChar = '\f';
+                break;
+
+            case 'n':
+                specChar = '\n';
+                break;
+
+            case 'r':
+                specChar = '\r';
+                break;
+
+            case 't':
+                specChar = '\t';
+                break;
+
+            case ',':
+                specChar = ',';
+                break;
+
+            case '\\':
+            case '\'':
+                specChar = *curr;
+                break;
+            }
+        }
+
+        charMatch[specChar] = aSpecType;
+        ++curr;
+
+        if (*curr)
+        {
+            if( ',' == *curr)
+            {
+                ++curr;
+                continue;
+            }
+            else if('\\' == *curr && ( '\r' == specChar))
+                continue;
+            else
+            {
+                valid = false;
+                break;
+            }
+        }
+    }
+
+    if( !valid )
+    {
+        // Restore original state
+        clearAllSpecChar(aSpecType);
+    }
+    return valid;
 }
