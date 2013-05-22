@@ -69,6 +69,9 @@ EXPORT TestBase64Codec := MODULE
     EXPORT DATA decodedText := Str.DecodeBase64(encodedText);
     EXPORT TEST33 := ASSERT(decodedText = text);
 
+    /* Test encoder for zero length and full zero data input string. */
+    EXPORT TEST34 := ASSERT(Str.DecodeBase64('') = d'');
+    EXPORT TEST35 := ASSERT(Str.DecodeBase64(''+x'00000000') = d'');
   END;
 
   EXPORT Main := [EVALUATE(TestConst)]; 

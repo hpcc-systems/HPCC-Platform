@@ -11,8 +11,6 @@ data DecodeBase64(const string src) :   eclrtl,pure,include,library='eclrtl',ent
 
 EXPORT Str := MODULE
 
-EXPORT STRING EncodeBase64(data value) := externals.EncodeBase64(value);
-EXPORT DATA DecodeBase64(STRING value) := externals.DecodeBase64(value);
 
 /*
   Since this is primarily a wrapper for a plugin, all the definitions for this standard library
@@ -400,5 +398,35 @@ EXPORT string ToHexPairs(data value) := lib_stringlib.StringLib.Data2String(valu
  */
 
 EXPORT data FromHexPairs(string hex_pairs) := lib_stringlib.StringLib.String2Data(hex_pairs);
+
+/*
+ * Encode binary data to base64 string.
+ *
+ * Every 3 data bytes encoded to 4 base64 chars. If the length of binary data is not divisible 
+ * by 3 then extra 1 or 2 bytes with value 0 added into it. 
+ * At the encoded string there is one or two '=' indicates at the end of original data is one or 
+ * two valid byte exists. 
+ *
+ *
+ * @param value         The binary data array to process.
+ * @return              Base 64 encoded string.
+ */
+
+EXPORT STRING EncodeBase64(data value) := externals.EncodeBase64(value);
+
+/*
+ * Decode base64 encoded string to binary data.
+ *
+ * Decoder handles zero length input, input string with '\n' and/or space chars as valid input.
+ *
+ * If the input has length error (not enough valid base 64 char to decode or missing pad '=' char(s))
+ * or the input contains invalid (not base 64) chars then returns with zero length data array. 
+ *
+ *
+ * @param value        The base 64 encoded string.
+ * @return             Decoded binary data if the input is valid else zero length data.
+ */
+
+EXPORT DATA DecodeBase64(STRING value) := externals.DecodeBase64(value);
 
 END;

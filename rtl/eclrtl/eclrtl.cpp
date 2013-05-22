@@ -5606,6 +5606,7 @@ IAtom * rtlCreateFieldNameAtom(const char * name)
 void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * src)
 {
     tlen = 0;
+    tgt = NULL;
     if (0 < slen )
     {
         StringBuffer out;
@@ -5614,7 +5615,7 @@ void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * 
         tlen = out.length();
         if( 0 < tlen)
         {
-            char * data  = (char *)malloc(tlen);
+            char * data  = (char *)rtlMalloc(tlen);
 
             if(NULL == data)
             {
@@ -5636,11 +5637,11 @@ void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * 
     {
         StringBuffer out;
         if( JBASE64_Decode(src, slen, out) )
-                    tlen = out.length();
+            tlen = out.length();
 
         if( 0 < tlen)
         {
-            char * data  = (char *)malloc(tlen);
+            char * data  = (char *)rtlMalloc(tlen);
             if(NULL == data)
             {
                 StringBuffer msg;

@@ -1154,7 +1154,7 @@ bool JBASE64_Decode(const char *incs, long length, StringBuffer &out)
     const char * end = incs + length;
     unsigned char c1;
     unsigned char c[4];
-    unsigned char cIndex = 0;
+    unsigned cIndex = 0;
     unsigned char d1, d2, d3, d4;
     bool fullQuartetDecoded = false;
 
@@ -1162,10 +1162,10 @@ bool JBASE64_Decode(const char *incs, long length, StringBuffer &out)
     {
         c1 = *incs++;
 
-        if( isspace(c1) || ('\n' == c1) )
+        if( isspace(c1) )
             continue;
 
-        if( !BASE64_dec[c1] && (pad != c1)  )
+        if( !BASE64_dec[c1] && ('A' != c1) && (pad != c1)  )
         {
             // Forbidden char
             fullQuartetDecoded = false;
@@ -1183,32 +1183,23 @@ bool JBASE64_Decode(const char *incs, long length, StringBuffer &out)
             d4 = BASE64_dec[c[3]];
 
             out.append((char)((d1 << 2) | (d2 >> 4)));
+            fullQuartetDecoded = true;
 
             if(pad == c[2])
-            {
-                fullQuartetDecoded = true;
                 break;
-            }
 
             out.append((char)((d2 << 4) | (d3 >> 2)));
 
             if( pad == c[3])
-            {
-                fullQuartetDecoded = true;
                 break;
-            }
 
             out.append((char)((d3 << 6) | d4));
 
             cIndex = 0;
-            fullQuartetDecoded = true;
         }
     }
 
-    if(fullQuartetDecoded)
-        return true;
-    else
-        return false;
+    return fullQuartetDecoded;
 }
 
 static inline void encode5_32(const byte *in,StringBuffer &out)
