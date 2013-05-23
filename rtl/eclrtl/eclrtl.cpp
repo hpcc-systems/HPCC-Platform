@@ -5616,14 +5616,6 @@ void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * 
         if( 0 < tlen)
         {
             char * data  = (char *)rtlMalloc(tlen);
-
-            if(NULL == data)
-            {
-                StringBuffer msg;
-                msg.append("Memory allocation error in ").append(__FILE__).append(" at line ").append(__LINE__).append(" for size ");
-                rtlFail(0, msg);
-            }
-
             out.getChars(0, tlen, data);
             tgt = data;
         }
@@ -5636,19 +5628,12 @@ void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * 
     if( 0 < slen )
     {
         StringBuffer out;
-        if( JBASE64_Decode(src, slen, out) )
+        if( JBASE64_Decode(slen, src, out) )
             tlen = out.length();
 
         if( 0 < tlen)
         {
             char * data  = (char *)rtlMalloc(tlen);
-            if(NULL == data)
-            {
-                StringBuffer msg;
-                msg.append("Memory allocation error in ").append(__FILE__).append(" at line ").append(__LINE__).append(" for size ");
-                rtlFail(0, msg);
-            }
-
             out.getChars(0, tlen, data);
             tgt = (void *)data;
         }
