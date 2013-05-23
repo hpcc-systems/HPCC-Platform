@@ -6248,7 +6248,6 @@ class CRoxieServerDedupActivity : public CRoxieServerActivity
 {
 protected:
     IHThorDedupArg &helper;
-    IRangeCompare * stepCompare;
     unsigned numKept;
     unsigned numToKeep;
 
@@ -6259,7 +6258,6 @@ public:
     {
         numKept = 0;
         numToKeep = 0;
-        stepCompare = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
@@ -6267,15 +6265,12 @@ public:
         numKept = 0;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         numToKeep = helper.numToKeep();
-        IInputSteppingMeta * stepMeta = input->querySteppingMeta();
-        stepCompare = NULL;
-        if (stepMeta)
-            stepCompare = stepMeta->queryCompare();
     }
 };
 
 class CRoxieServerDedupKeepLeftActivity : public CRoxieServerDedupActivity
 {
+    IRangeCompare * stepCompare;
     const void *prev;
 
 public:
@@ -6284,12 +6279,17 @@ public:
         : CRoxieServerDedupActivity(_factory, _probeManager)
     {
         prev = NULL;
+        stepCompare = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         prev = NULL;
         CRoxieServerDedupActivity::start(parentExtractSize, parentExtract, paused);
+        IInputSteppingMeta * stepMeta = input->querySteppingMeta();
+        stepCompare = NULL;
+        if (stepMeta)
+            stepCompare = stepMeta->queryCompare();
     }
 
     virtual void reset()

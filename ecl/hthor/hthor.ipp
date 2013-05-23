@@ -448,17 +448,48 @@ public:
     CHThorGroupDedupActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind);
 
     virtual void ready();
+
+protected:
+    IHThorDedupArg &helper;
+    unsigned     numKept;
+    unsigned     numToKeep;
+};
+
+class CHThorGroupDedupKeepLeftActivity : public CHThorGroupDedupActivity
+{
+public:
+    CHThorGroupDedupKeepLeftActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind);
+
+    virtual void ready();
+    virtual void done();
+
+    //interface IHThorInput
+    virtual const void *nextInGroup();
+
+    virtual const void *nextGE(const void * seek, unsigned numFields);
+
+    virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector);
+    virtual void resetEOF();
+    virtual void setInput(unsigned, IHThorInput *);
+    virtual IInputSteppingMeta * querySteppingMeta();
+private:
+    OwnedConstRoxieRow prev;
+    IInputSteppingMeta * inputStepping;
+};
+
+class CHThorGroupDedupKeepRightActivity : public CHThorGroupDedupActivity
+{
+public:
+    CHThorGroupDedupKeepRightActivity(IAgentContext &agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind);
+
+    virtual void ready();
     virtual void done();
 
     //interface IHThorInput
     virtual const void *nextInGroup();
 
 private:
-    IHThorDedupArg &helper;
     OwnedConstRoxieRow kept;
-    unsigned     numKept;
-    unsigned     numToKeep;
-    bool         keepLeft;
     bool         firstDone;
 };
 
