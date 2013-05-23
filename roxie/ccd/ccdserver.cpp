@@ -6246,31 +6246,180 @@ void CHThorLocalResultSpillActivity::done()
 
 class CRoxieServerDedupActivity : public CRoxieServerActivity
 {
+protected:
     IHThorDedupArg &helper;
-    bool keepLeft;
-    bool first;
+    IRangeCompare * stepCompare;
     unsigned numKept;
     unsigned numToKeep;
-    const void *kept;
 
 public:
 
-    CRoxieServerDedupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager, bool _keepLeft)
+    CRoxieServerDedupActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
         : CRoxieServerActivity(_factory, _probeManager), helper((IHThorDedupArg &)basehelper)
     {
-        keepLeft = _keepLeft;
-        kept = NULL;
         numKept = 0;
-        first = true;
         numToKeep = 0;
+        stepCompare = NULL;
     }
 
     virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
     {
         numKept = 0;
-        first = true;
         CRoxieServerActivity::start(parentExtractSize, parentExtract, paused);
         numToKeep = helper.numToKeep();
+        IInputSteppingMeta * stepMeta = input->querySteppingMeta();
+        stepCompare = NULL;
+        if (stepMeta)
+            stepCompare = stepMeta->queryCompare();
+    }
+};
+
+class CRoxieServerDedupKeepLeftActivity : public CRoxieServerDedupActivity
+{
+    const void *prev;
+
+public:
+
+    CRoxieServerDedupKeepLeftActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerDedupActivity(_factory, _probeManager)
+    {
+        prev = NULL;
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        prev = NULL;
+        CRoxieServerDedupActivity::start(parentExtractSize, parentExtract, paused);
+    }
+
+    virtual void reset()
+    {
+        ReleaseClearRoxieRow(prev);
+        CRoxieServerDedupActivity::reset();
+    }
+
+    virtual const void * nextInGroup()
+    {
+        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        const void * next;
+        loop
+        {
+            next = input->nextInGroup();
+            if (!prev || !next || !helper.matches(prev,next))
+            {
+                numKept = 0;
+                break;
+            }
+
+            if (numKept < numToKeep-1)
+            {
+                numKept++;
+                break;
+            }
+
+            ReleaseRoxieRow(next);
+        }
+
+        ReleaseRoxieRow(prev);
+        prev = next;
+        if (next)
+        {
+            LinkRoxieRow(next);
+            processed++;
+        }
+        return next;
+    }
+
+    virtual const void * nextSteppedGE(const void * seek, unsigned numFields, bool &wasCompleteMatch, const SmartStepExtra & stepExtra)
+    {
+        ActivityTimer t(totalCycles, timeActivities, ctx->queryDebugContext());
+        const void * next;
+        loop
+        {
+            next = input->nextSteppedGE(seek, numFields, wasCompleteMatch, stepExtra);
+
+            //If the record was an in-exact match from the index then return it immediately
+            //and don't cause it to dedup following legal records.
+            if (!wasCompleteMatch)
+            {
+                assertex(stepExtra.returnMismatches());
+                return next;
+            }
+
+            if (!prev || !next || !helper.matches(prev,next))
+            {
+                numKept = 0;
+                break;
+            }
+
+            if (numKept < numToKeep-1)
+            {
+                numKept++;
+                break;
+            }
+
+            //Unusual - deduping by x,y stepped on x,y,z - still want any record back as soon as possible.
+            if (stepExtra.returnMismatches())
+            {
+                //If asked to return mismatches we are only interested in mismatches that will force the stepped
+                //condition to advance
+                if (stepCompare->docompare(next, seek, numFields) != 0)
+                {
+                    wasCompleteMatch = false;
+                    break;
+                }
+            }
+
+            ReleaseRoxieRow(next);
+        }
+
+        ReleaseRoxieRow(prev);
+        prev = next;
+        if (next)
+        {
+            LinkRoxieRow(next);
+            processed++;
+        }
+        return next;
+    }
+
+    virtual bool gatherConjunctions(ISteppedConjunctionCollector & collector)
+    {
+        return input->gatherConjunctions(collector);
+    }
+
+    virtual void resetEOF()
+    {
+        input->resetEOF();
+    }
+
+    IInputSteppingMeta * querySteppingMeta()
+    {
+        return input->querySteppingMeta();
+    }
+};
+
+//=================================================================================
+
+class CRoxieServerDedupKeepRightActivity : public CRoxieServerDedupActivity
+{
+    const void *kept;
+    bool first;
+
+public:
+
+    CRoxieServerDedupKeepRightActivity(const IRoxieServerActivityFactory *_factory, IProbeManager *_probeManager)
+        : CRoxieServerDedupActivity(_factory, _probeManager)
+    {
+        kept = NULL;
+        first = true;
+    }
+
+    virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
+    {
+        first = true;
+        kept = NULL;
+        CRoxieServerDedupActivity::start(parentExtractSize, parentExtract, paused);
     }
 
     virtual void reset()
@@ -6303,15 +6452,8 @@ public:
                 break;
             }
 
-            if (keepLeft)
-            {
-                ReleaseRoxieRow(next);
-            }
-            else
-            {
-                ReleaseRoxieRow(kept);
-                kept = next;
-            }
+            ReleaseRoxieRow(kept);
+            kept = next;
         }
 
         const void * ret = kept;
@@ -6320,7 +6462,6 @@ public:
         if (ret) processed++;
         return ret;
     }
-
 };
 
 class CRoxieServerDedupAllActivity : public CRoxieServerActivity
@@ -6521,8 +6662,10 @@ public:
     {
         if (compareAll)
             return new CRoxieServerDedupAllActivity(this, _probeManager, keepLeft);
+        else if (keepLeft)
+            return new CRoxieServerDedupKeepLeftActivity(this, _probeManager);
         else
-            return new CRoxieServerDedupActivity(this, _probeManager, keepLeft);
+            return new CRoxieServerDedupKeepRightActivity(this, _probeManager);
     }
 };
 
@@ -9162,6 +9305,8 @@ public:
                 return nextInGroup();
             }
 
+            //If asked to return mismatches we are only interested in mismatches that will force the stepped
+            //condition to advance
             if (stepCompare->docompare(ret, seek, numFields) != 0)
             {
                 wasCompleteMatch = false;
