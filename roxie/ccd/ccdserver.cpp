@@ -23680,6 +23680,7 @@ public:
         activityKind = _factory->getKind();
         indexReadInput = NULL;
         rootIndex = NULL;
+        atmostsTriggered = 0;
         // MORE - code would be easier to read if I got more values from helper rather than passing from factory
     }
 
