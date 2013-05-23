@@ -64,50 +64,33 @@ MODULE_EXIT()
 
 //=============================================================================
 // Miscellaneous string functions...
-void * rtlMalloc(size32_t size, const char * aFile, const char * aFunction, unsigned aLine)
+ECLRTL_API void * rtlMalloc(size32_t size)
 {
     void * retVal = malloc(size);
 
     if( NULL == retVal)
     {
-        StringBuffer msg;
-        msg.append("Memory allocation error in ").append(aFile).append(" at ").append(aFunction).append("():").append(aLine).append(" for size ").append(size).append(" Bytes!");
-        rtlThrowOutOfMemory(0, msg.str());
+        PrintStackReport();
+        rtlThrowOutOfMemory(0, "Memory allocation error!");
     }
     return retVal;
 }
-
-#define RTL_MALLOC(size) rtlMalloc(size, __FILE__, __FUNCTION__, __LINE__);
-
-ECLRTL_API void * rtlMalloc(size32_t size)
-{
-    return rtlMalloc(size, __FILE__, __FUNCTION__, __LINE__);
-}
-
 
 void rtlFree(void *ptr)
 {
     free(ptr);
 }
 
-void * rtlRealloc(void * _ptr, size32_t size, const char * aFile, const char * aFunction, unsigned aLine)
+ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size)
 {
     void * retVal = realloc(_ptr, size);
 
     if( (0 < size) && (NULL == retVal))
     {
-        StringBuffer msg;
-        msg.append("Memory reallocation error in ").append(aFile).append(" at ").append(aFunction).append("():").append(aLine).append(" for size ").append(size).append(" Bytes!");
-        rtlThrowOutOfMemory(0, msg.str());
+        PrintStackReport();
+        rtlThrowOutOfMemory(0, "Memory reallocation error!");
     }
     return retVal;
-}
-
-#define RTL_REALLOC(ptr, size) rtlRealloc(ptr, size, __FILE__, __FUNCTION__, __LINE__);
-
-ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size)
-{
-    return rtlRealloc( _ptr, size, __FILE__, __FUNCTION__, __LINE__);
 }
 
 //=============================================================================
@@ -321,7 +304,7 @@ bool vunicodeNeedsNormalize(UChar * in, UErrorCode * err)
 
 void unicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 {
-    UChar * buff = (UChar *)RTL_MALLOC(inlen*2);
+    UChar * buff = (UChar *)rtlMalloc(inlen*2);
     unsigned len = unorm_normalize(in, inlen, UNORM_NFC, 0, buff, inlen, err);
     while(len<inlen) buff[len++] = 0x0020;
     memcpy(in, buff, inlen);
@@ -330,7 +313,7 @@ void unicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 
 void vunicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 {
-    UChar * buff = (UChar *)RTL_MALLOC(inlen*2);
+    UChar * buff = (UChar *)rtlMalloc(inlen*2);
     unsigned len = unorm_normalize(in, -1, UNORM_NFC, 0, buff, inlen-1, err);
     buff[len] = 0x0000;
     memcpy(in, buff, inlen);
@@ -340,14 +323,14 @@ void vunicodeReplaceNormalized(unsigned inlen, UChar * in, UErrorCode * err)
 void unicodeGetNormalized(unsigned & outlen, UChar * & out, unsigned inlen, UChar * in, UErrorCode * err)
 {
     outlen = unorm_normalize(in, inlen, UNORM_NFC, 0, 0, 0, err);
-    out = (UChar *)RTL_MALLOC(outlen*2);
+    out = (UChar *)rtlMalloc(outlen*2);
     unorm_normalize(in, inlen, UNORM_NFC, 0, out, outlen, err);
 }
 
 void vunicodeGetNormalized(UChar * & out, unsigned inlen, UChar * in, UErrorCode * err)
 {
     unsigned outlen = unorm_normalize(in, inlen, UNORM_NFC, 0, 0, 0, err);
-    out = (UChar *)RTL_MALLOC((outlen+1)*2);
+    out = (UChar *)rtlMalloc((outlen+1)*2);
     unorm_normalize(in, inlen, UNORM_NFC, 0, out, outlen, err);
     out[outlen] = 0x0000;
 }
@@ -576,7 +559,7 @@ void rtlInt8ToStr(size32_t l, char * t, __int64 val)
 
 #define intToUnknownStringBody() \
     unsigned len = numtostr(temp, val); \
-    char * result = (char *)RTL_MALLOC(len); \
+    char * result = (char *)rtlMalloc(len); \
     memcpy(result, temp, len); \
     l = len; \
     t = result;
@@ -656,7 +639,7 @@ void rtl_ls82en(size32_t l, char * t, __int64 val)
 #define intToUnknownEbcdicStringBody() \
     unsigned alen = numtostr(astr, val); \
     rtlStrToEStrX(elen,estr,alen,astr); \
-    char * result = (char *)RTL_MALLOC(elen); \
+    char * result = (char *)rtlMalloc(elen); \
     memcpy(result, estr, elen); \
     l = elen; \
     t = result;
@@ -849,7 +832,7 @@ void rtlRealToStrX(size32_t & l, char * & t, double val)
     StringBuffer temp;
     temp.append(val);
     unsigned len = temp.length();
-    char * result = (char *)RTL_MALLOC(len);
+    char * result = (char *)rtlMalloc(len);
     memcpy(result,temp.str(),len);
     l = len;
     t = result;
@@ -860,7 +843,7 @@ void rtlRealToStrX(size32_t & l, char * & t, float val)
     StringBuffer temp;
     temp.append(val);
     unsigned len = temp.length();
-    char * result = (char *)RTL_MALLOC(len);
+    char * result = (char *)rtlMalloc(len);
     memcpy(result,temp.str(),len);
     l = len;
     t = result;
@@ -1178,7 +1161,7 @@ void rtlIntFormat(unsigned & len, char * & target, __int64 value, unsigned width
         return;
     }
     len = width;
-    target = (char *)RTL_MALLOC(width);
+    target = (char *)rtlMalloc(width);
     holeIntFormat(width, target, value, width, flags);
 }
 
@@ -1191,7 +1174,7 @@ void rtlRealFormat(unsigned & len, char * & target, double value, unsigned width
         return;
     }
     len = width;
-    target = (char *)RTL_MALLOC(width);
+    target = (char *)rtlMalloc(width);
     holeRealFormat(width, target, value, width, places);
 }
 
@@ -1232,7 +1215,7 @@ void rtlBoolToStrX(unsigned & tlen, char * & tgt, bool src)
 {
     if (src)
     {
-        char * ret = (char *)RTL_MALLOC(1);
+        char * ret = (char *)rtlMalloc(1);
         ret[0] = '1';
         tlen = 1;
         tgt = ret;
@@ -1349,7 +1332,7 @@ void rtlVStrToVStr(unsigned tlen, void * tgt, const char * src)
 char *rtlCreateQuotedString(unsigned _len_tgt,char * tgt)
 {
     // Add ' at start and end. MORE! also needs to handle embedded quotes
-    char * result = (char *)RTL_MALLOC(_len_tgt + 3);
+    char * result = (char *)rtlMalloc(_len_tgt + 3);
     result[0] = '\'';
     memcpy(result+1, tgt, _len_tgt);
     result[_len_tgt+1] = '\'';
@@ -1376,7 +1359,7 @@ void rtlConcat(unsigned & tlen, char * * tgt, ...)
     }
     va_end(args);
 
-    char * buffer = (char *)RTL_MALLOC(totalLength);
+    char * buffer = (char *)rtlMalloc(totalLength);
     char * cur = buffer;
     va_start(args, tgt);
     for (;;)
@@ -1410,7 +1393,7 @@ void rtlConcatVStr(char * * tgt, ...)
     }
     va_end(args);
 
-    char * buffer = (char *)RTL_MALLOC(totalLength+1);
+    char * buffer = (char *)rtlMalloc(totalLength+1);
     char * cur = buffer;
     va_start(args, tgt);
     for (;;)
@@ -1444,7 +1427,7 @@ void rtlConcatUnicode(unsigned & tlen, UChar * * tgt, ...)
     }
     va_end(args);
 
-    UChar * buffer = (UChar *)RTL_MALLOC(totalLength*2); //I *believe* this is a valid upper limit, as an NFC concatenation can only be shorter than the sum of its parts
+    UChar * buffer = (UChar *)rtlMalloc(totalLength*2); //I *believe* this is a valid upper limit, as an NFC concatenation can only be shorter than the sum of its parts
     unsigned idx = 0;
     UErrorCode err = U_ZERO_ERROR;
     va_start(args, tgt);
@@ -1479,7 +1462,7 @@ void rtlConcatVUnicode(UChar * * tgt, ...)
     }
     va_end(args);
 
-    UChar * buffer = (UChar *)RTL_MALLOC((totalLength+1)*2); //I *believe* this is a valid upper limit, as an NFC concatenation can only be shorter than the sum of its parts
+    UChar * buffer = (UChar *)rtlMalloc((totalLength+1)*2); //I *believe* this is a valid upper limit, as an NFC concatenation can only be shorter than the sum of its parts
     unsigned idx = 0;
     UErrorCode err = U_ZERO_ERROR;
     va_start(args, tgt);
@@ -1686,7 +1669,7 @@ void rtlUnicodeStrcpy(UChar * tgt, UChar const * src)
 void rtlConcatExtend(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
 {
     unsigned len = tlen + slen;
-    tgt = (char *)RTL_REALLOC(tgt, len);
+    tgt = (char *)rtlRealloc(tgt, len);
     memcpy(tgt+tlen, src, slen);
     tlen = len;
 }
@@ -1694,7 +1677,7 @@ void rtlConcatExtend(unsigned & tlen, char * & tgt, unsigned slen, const char * 
 void rtlConcatUnicodeExtend(size32_t & tlen, UChar * & tgt, size32_t slen, const UChar * src)
 {
     unsigned len = tlen + slen;
-    tgt = (UChar *)RTL_REALLOC(tgt, len * sizeof(UChar));
+    tgt = (UChar *)rtlRealloc(tgt, len * sizeof(UChar));
     memcpy(tgt+tlen, src, slen * sizeof(UChar));
     tlen = len;
 }
@@ -1735,7 +1718,7 @@ void * doSubStrFT(unsigned & tlen, unsigned slen, const void * src, unsigned fro
     clipFromTo(from, to, slen);
 
     unsigned copylen = to - from;
-    char * buffer = (char *)RTL_MALLOC(len);
+    char * buffer = (char *)rtlMalloc(len);
     memcpy(buffer, (byte *)src+from, copylen);
     if (copylen < len)
         memset(buffer+copylen, fillChar, len-copylen);
@@ -1748,7 +1731,7 @@ void rtlSubStrFX(unsigned & tlen, char * & tgt, unsigned slen, const char * src,
     normalizeFrom(from, slen);
 
     tlen = slen-from;
-    tgt = (char *) RTL_MALLOC(tlen);
+    tgt = (char *) rtlMalloc(tlen);
     memcpy(tgt, src+from, tlen);
 }
 
@@ -1795,7 +1778,7 @@ void rtlSubDataFX(unsigned & tlen, void * & tgt, unsigned slen, const void * src
     normalizeFrom(from, slen);
 
     tlen = slen-from;
-    tgt = (char *) RTL_MALLOC(tlen);
+    tgt = (char *) rtlMalloc(tlen);
     memcpy(tgt, (const byte *)src+from, tlen);
 }
 
@@ -1805,7 +1788,7 @@ void rtlUnicodeSubStrFTX(unsigned & tlen, UChar * & tgt, unsigned slen, UChar co
     tlen = to - from;
     clipFromTo(from, to, slen);
 
-    tgt = (UChar *)RTL_MALLOC(tlen*2);
+    tgt = (UChar *)rtlMalloc(tlen*2);
     unsigned copylen = to - from;
     memcpy(tgt, src+from, copylen*2);
     while(copylen<tlen)
@@ -1817,7 +1800,7 @@ void rtlUnicodeSubStrFX(unsigned & tlen, UChar * & tgt, unsigned slen, UChar con
     normalizeFrom(from, slen);
 
     tlen = slen - from;
-    tgt = (UChar *)RTL_MALLOC(tlen*2);
+    tgt = (UChar *)rtlMalloc(tlen*2);
     memcpy(tgt, src+from, tlen*2);
 }
 
@@ -1828,7 +1811,7 @@ void rtlSubQStrFTX(unsigned & tlen, char * & tgt, unsigned slen, char const * sr
     tlen = to - from;
     clipFromTo(from, to, slen);
 
-    tgt = (char *)RTL_MALLOC(rtlQStrSize(tlen));
+    tgt = (char *)rtlMalloc(rtlQStrSize(tlen));
     copyQStrRange(tlen, tgt, src, from, to);
 }
 
@@ -1837,7 +1820,7 @@ void rtlSubQStrFX(unsigned & tlen, char * & tgt, unsigned slen, char const * src
     normalizeFrom(from, slen);
 
     tlen = slen - from;
-    tgt = (char *)RTL_MALLOC(rtlQStrSize(tlen));
+    tgt = (char *)rtlMalloc(rtlQStrSize(tlen));
 
     copyQStrRange(tlen, tgt, src, from, slen);
 }
@@ -1977,7 +1960,7 @@ inline void rtlTrimUtf8Start(unsigned & trimLen, size32_t & trimSize, size32_t l
 
 inline char * rtlDupSubString(const char * src, unsigned len)
 {
-    char * buffer = (char *)RTL_MALLOC(len + 1);
+    char * buffer = (char *)rtlMalloc(len + 1);
     memcpy(buffer, src, len);
     buffer[len] = 0;
     return buffer;
@@ -1985,7 +1968,7 @@ inline char * rtlDupSubString(const char * src, unsigned len)
 
 inline UChar * rtlDupSubUnicode(UChar const * src, unsigned len)
 {
-    UChar * buffer = (UChar *)RTL_MALLOC((len + 1) * 2);
+    UChar * buffer = (UChar *)rtlMalloc((len + 1) * 2);
     memcpy(buffer, src, len*2);
     buffer[len] = 0x00;
     return buffer;
@@ -2226,7 +2209,7 @@ unsigned rtlTrimVStrLenNonBlank(const char * t)
 void rtlTrimAll(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
 {
     tlen = rtlTrimStrLenNonBlank(slen, src);
-    char * buffer = (char *)RTL_MALLOC(tlen + 1);
+    char * buffer = (char *)rtlMalloc(tlen + 1);
     int ind = 0;
     for(unsigned i = 0; i < slen; i++) {
         if(src[i] != ' ') {
@@ -2248,7 +2231,7 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
     UnicodeString tgtStr;
     normalizeUnicodeString(rawStr, tgtStr); // normalized in case crazy string like [combining accent] [space] [vowel]
     tlen = tgtStr.length();
-    tgt = (UChar *)RTL_MALLOC((tlen+1)*2);
+    tgt = (UChar *)rtlMalloc((tlen+1)*2);
     tgtStr.extract(0, tlen, tgt);
     tgt[tlen] = 0x0000;
 }
@@ -2256,7 +2239,7 @@ void rtlTrimUnicodeAll(unsigned & tlen, UChar * & tgt, unsigned slen, const UCha
 void rtlTrimVAll(unsigned & tlen, char * & tgt, const char * src)
 {
     tlen = rtlTrimVStrLenNonBlank(src);
-    char * buffer = (char *)RTL_MALLOC(tlen + 1);
+    char * buffer = (char *)rtlMalloc(tlen + 1);
     int ind = 0;
     int i = 0;
     while(src[i] != 0) {
@@ -2543,7 +2526,7 @@ void rtlKeyUnicodeX(unsigned & tlen, void * & tgt, unsigned slen, const UChar * 
     while(slen && u_isUWhiteSpace(src[slen-1])) slen--;
     UCollator * coll = queryRTLLocale(locale)->queryCollator();
     tlen = ucol_getSortKey(coll, src, slen, 0, 0);
-    tgt = RTL_MALLOC(tlen);
+    tgt = rtlMalloc(tlen);
     ucol_getSortKey(coll, src, slen, (unsigned char *)tgt, tlen);
 }
 
@@ -2552,7 +2535,7 @@ void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned slen, const 
     while(slen && u_isUWhiteSpace(src[slen-1])) slen--;
     UCollator * coll = queryRTLLocale(locale)->queryCollator(strength);
     tlen = ucol_getSortKey(coll, src, slen, 0, 0);
-    tgt = RTL_MALLOC(tlen);
+    tgt = rtlMalloc(tlen);
     ucol_getSortKey(coll, src, slen, (unsigned char *)tgt, tlen);
 }
 
@@ -2619,7 +2602,7 @@ void rtlStringToUpper(size32_t l, char * t)
 
 void rtlUnicodeToLower(size32_t l, UChar * t, char const * locale)
 {
-    UChar * buff = (UChar *)RTL_MALLOC(l*2);
+    UChar * buff = (UChar *)rtlMalloc(l*2);
     UErrorCode err = U_ZERO_ERROR;
     u_strToLower(buff, l, t, l, locale, &err);
     unicodeNormalizedCopy(buff, t, l);
@@ -2627,7 +2610,7 @@ void rtlUnicodeToLower(size32_t l, UChar * t, char const * locale)
 
 void rtlUnicodeToLowerX(size32_t & lenout, UChar * & out, size32_t l, const UChar * t, char const * locale)
 {
-    out = (UChar *)RTL_MALLOC(l*2);
+    out = (UChar *)rtlMalloc(l*2);
     lenout = l;
     UErrorCode err = U_ZERO_ERROR;
     u_strToLower(out, l, t, l, locale, &err);
@@ -2635,7 +2618,7 @@ void rtlUnicodeToLowerX(size32_t & lenout, UChar * & out, size32_t l, const UCha
 
 void rtlUnicodeToUpper(size32_t l, UChar * t, char const * locale)
 {
-    UChar * buff = (UChar *)RTL_MALLOC(l*2);
+    UChar * buff = (UChar *)rtlMalloc(l*2);
     UErrorCode err = U_ZERO_ERROR;
     u_strToUpper(buff, l, t, l, locale, &err);
     unicodeNormalizedCopy(buff, t, l);
@@ -3087,7 +3070,7 @@ void rtlCodepageToUnicodeX(unsigned & outlen, UChar * & out, unsigned inlen, cha
     UErrorCode err = U_ZERO_ERROR;
     outlen = ucnv_toUChars(conv, 0, 0, in, inlen, &err);
     if(err==U_BUFFER_OVERFLOW_ERROR) err = U_ZERO_ERROR;
-    out = (UChar *)RTL_MALLOC(outlen*2);
+    out = (UChar *)rtlMalloc(outlen*2);
     ucnv_toUChars(conv, out, outlen, in, inlen, &err);
 }
 
@@ -3099,7 +3082,7 @@ UChar * rtlCodepageToVUnicodeX(unsigned inlen, char const * in, char const * cod
     UErrorCode err = U_ZERO_ERROR;
     unsigned outlen = ucnv_toUChars(conv, 0, 0, in, inlen, &err);
     if(err == U_BUFFER_OVERFLOW_ERROR) err = U_ZERO_ERROR;
-    UChar * out = (UChar *)RTL_MALLOC((outlen+1)*2);
+    UChar * out = (UChar *)rtlMalloc((outlen+1)*2);
     ucnv_toUChars(conv,  out, outlen, in, inlen, &err);
     out[outlen] = 0x0000;
     vunicodeEnsureIsNormalizedX(outlen, out);
@@ -3125,7 +3108,7 @@ void rtlCodepageToUnicodeXUnescape(unsigned & outlen, UChar * & out, unsigned in
     UnicodeString normalized;
     normalizeUnicodeString(unescaped, normalized);
     outlen = normalized.length();
-    out = (UChar *)RTL_MALLOC(outlen*2);
+    out = (UChar *)rtlMalloc(outlen*2);
     normalized.extract(0, outlen, out);
 }
 
@@ -3139,7 +3122,7 @@ void rtlUnicodeToCodepageX(unsigned & outlen, char * & out, unsigned inlen, UCha
     UErrorCode err = U_ZERO_ERROR;
     outlen = ucnv_fromUChars(conv, 0, 0, in, inlen, &err);
     if(err == U_BUFFER_OVERFLOW_ERROR) err = U_ZERO_ERROR;
-    out = (char *)RTL_MALLOC(outlen);
+    out = (char *)rtlMalloc(outlen);
     ucnv_fromUChars(conv, out, outlen, in, inlen, &err);
 }
 
@@ -3158,7 +3141,7 @@ char * rtlUnicodeToVCodepageX(unsigned inlen, UChar const * in, char const * cod
     UErrorCode err = U_ZERO_ERROR;
     unsigned outlen = ucnv_fromUChars(conv, 0, 0, in, inlen, &err);
     if(err == U_BUFFER_OVERFLOW_ERROR) err = U_ZERO_ERROR;
-    char * out = (char *)RTL_MALLOC(outlen+1);
+    char * out = (char *)rtlMalloc(outlen+1);
     ucnv_fromUChars(conv, out, outlen, in, inlen, &err);
     out[outlen] = 0x00;
     return out;
@@ -3199,7 +3182,7 @@ void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UC
     StringBuffer outbuff;
     escapeUnicode(inlen, in, outbuff);
     outlen = outbuff.length();
-    out = (char *)RTL_MALLOC(outlen);
+    out = (char *)rtlMalloc(outlen);
     memcpy(out, outbuff.str(), outlen);
 }
 
@@ -3209,7 +3192,7 @@ void rtlUnicodeToQuotedUTF8X(unsigned & outlen, char * & out, unsigned inlen, UC
     unicode.findAndReplace("'", "\\'");
     //pre-flight length - may be more efficient to guess length and only re-extract if guess no good, but what to guess?
     outlen = unicode.extract(0, unicode.length(), 0, 0, UTF8_CODEPAGE);
-    out = (char *)RTL_MALLOC(outlen);
+    out = (char *)rtlMalloc(outlen);
     unicode.extract(0, unicode.length(), out, outlen, UTF8_CODEPAGE);
 }
 
@@ -3233,7 +3216,7 @@ bool rtlCodepageToCodepageX(unsigned & outlen, char * & out, unsigned maxoutlen,
     UErrorCode err = U_ZERO_ERROR;
 
     //GH->PG is there a better way of coding this with out temporary buffer?
-    char * tempBuffer = (char *)RTL_MALLOC(maxoutlen);
+    char * tempBuffer = (char *)rtlMalloc(maxoutlen);
     char * target = tempBuffer;
     ucnv_convertEx(outconv, inconv, &target, tempBuffer+maxoutlen, &in, in+inlen, NULL, NULL, NULL, NULL, TRUE, TRUE, &err);
     unsigned len = target - tempBuffer;
@@ -3242,7 +3225,7 @@ bool rtlCodepageToCodepageX(unsigned & outlen, char * & out, unsigned maxoutlen,
         out = tempBuffer;
     else
     {
-        out = (char *)RTL_REALLOC(tempBuffer, len);
+        out = (char *)rtlRealloc(tempBuffer, len);
         if (!out)
             out = tempBuffer;
     }
@@ -3265,7 +3248,7 @@ int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char co
 
 void rtlStrToDataX(unsigned & tlen, void * & tgt, unsigned slen, const void * src)
 {
-    void * data  = RTL_MALLOC(slen);
+    void * data  = rtlMalloc(slen);
     memcpy(data, src, slen);
 
     tgt = data;
@@ -3274,7 +3257,7 @@ void rtlStrToDataX(unsigned & tlen, void * & tgt, unsigned slen, const void * sr
 
 void rtlStrToStrX(unsigned & tlen, char * & tgt, unsigned slen, const void * src)
 {
-    char * data  = (char *)RTL_MALLOC(slen);
+    char * data  = (char *)rtlMalloc(slen);
     memcpy(data, src, slen);
 
     tgt = data;
@@ -3283,7 +3266,7 @@ void rtlStrToStrX(unsigned & tlen, char * & tgt, unsigned slen, const void * src
 
 char * rtlStrToVStrX(unsigned slen, const void * src)
 {
-    char * data  = (char *)RTL_MALLOC(slen+1);
+    char * data  = (char *)rtlMalloc(slen+1);
     memcpy(data, src, slen);
     data[slen] = 0;
     return data;
@@ -3298,7 +3281,7 @@ char * rtlEStrToVStrX(unsigned slen, const char * src)
 
 void rtlEStrToStrX(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
 {
-    char * data  = (char *)RTL_MALLOC(slen);
+    char * data  = (char *)rtlMalloc(slen);
     rtlEStrToStr(slen, data, slen, src);
 
     tgt = data;
@@ -3307,7 +3290,7 @@ void rtlEStrToStrX(unsigned & tlen, char * & tgt, unsigned slen, const char * sr
 
 void rtlStrToEStrX(unsigned & tlen, char * & tgt, unsigned slen, const char * src)
 {
-    char * data  = (char *)RTL_MALLOC(slen);
+    char * data  = (char *)rtlMalloc(slen);
     rtlStrToEStr(slen, data, slen, src);
 
     tgt = data;
@@ -3663,7 +3646,7 @@ ECLRTL_API void rtlTestGetPrimes(unsigned & num, void * & data)
     unsigned numPrimes = 6;
     unsigned size = sizeof(unsigned) * numPrimes;
 
-    unsigned * primes = (unsigned *)RTL_MALLOC(size);
+    unsigned * primes = (unsigned *)rtlMalloc(size);
     primes[0] = 1;
     primes[1] = 2;
     primes[2] = 3;
@@ -3678,7 +3661,7 @@ ECLRTL_API void rtlTestGetPrimes(unsigned & num, void * & data)
 ECLRTL_API void rtlTestFibList(bool & outAll, size32_t & outSize, void * & outData, bool inAll, size32_t inSize, const void * inData)
 {
     const unsigned * inList = (const unsigned *)inData;
-    unsigned * outList = (unsigned *)RTL_MALLOC(inSize);
+    unsigned * outList = (unsigned *)rtlMalloc(inSize);
     unsigned * curOut = outList;
     unsigned count = inSize / sizeof(*inList);
     unsigned prev = 0;
@@ -3783,7 +3766,7 @@ void deserializeDataX(size32_t & len, void * & data, MemoryBuffer &in)
 {
     free(data);
     in.read(sizeof(len), &len);
-    data = RTL_MALLOC(len);
+    data = rtlMalloc(len);
     in.read(len, data);
 }
 
@@ -3791,7 +3774,7 @@ void deserializeStringX(size32_t & len, char * & data, MemoryBuffer &in)
 {
     free(data);
     in.read(sizeof(len), &len);
-    data = (char *)RTL_MALLOC(len);
+    data = (char *)rtlMalloc(len);
     in.read(len, data);
 }
 
@@ -3799,7 +3782,7 @@ char * deserializeCStringX(MemoryBuffer &in)
 {
     unsigned len;
     in.read(sizeof(len), &len);
-    char * data = (char *)RTL_MALLOC(len+1);
+    char * data = (char *)rtlMalloc(len+1);
     in.read(len, data);
     data[len] = 0;
     return data;
@@ -3809,7 +3792,7 @@ void deserializeUnicodeX(size32_t & len, UChar * & data, MemoryBuffer &in)
 {
     free(data);
     in.read(sizeof(len), &len);
-    data = (UChar *)RTL_MALLOC(len*sizeof(UChar));
+    data = (UChar *)rtlMalloc(len*sizeof(UChar));
     in.read(len*sizeof(UChar), data);
 }
 
@@ -3818,7 +3801,7 @@ void deserializeUtf8X(size32_t & len, char * & data, MemoryBuffer &in)
     free(data);
     in.read(sizeof(len), &len);
     unsigned size = rtlUtf8Size(len, in.readDirect(0));
-    data = (char *)RTL_MALLOC(size);
+    data = (char *)rtlMalloc(size);
     in.read(size, data);
 }
 
@@ -3826,7 +3809,7 @@ UChar * deserializeVUnicodeX(MemoryBuffer &in)
 {
     unsigned len;
     in.read(sizeof(len), &len);
-    UChar * data = (UChar *)RTL_MALLOC((len+1)*sizeof(UChar));
+    UChar * data = (UChar *)rtlMalloc((len+1)*sizeof(UChar));
     in.read(len*sizeof(UChar), data);
     data[len] = 0;
     return data;
@@ -3837,7 +3820,7 @@ void deserializeSet(bool & isAll, size32_t & len, void * & data, MemoryBuffer &i
     free(data);
     in.read(isAll);
     in.read(sizeof(len), &len);
-    data = RTL_MALLOC(len);
+    data = rtlMalloc(len);
     in.read(len, data);
 }
 
@@ -4149,14 +4132,14 @@ void rtlVUnicodeToVUnicode(size32_t outlen, UChar * out, UChar const *in)
 
 void rtlUnicodeToUnicodeX(unsigned & tlen, UChar * & tgt, unsigned slen, UChar const * src)
 {
-    tgt  = (UChar *)RTL_MALLOC(slen*2);
+    tgt  = (UChar *)rtlMalloc(slen*2);
     memcpy(tgt, src, slen*2);
     tlen = slen;
 }
 
 UChar * rtlUnicodeToVUnicodeX(unsigned slen, UChar const * src)
 {
-    UChar * data  = (UChar *)RTL_MALLOC((slen+1)*2);
+    UChar * data  = (UChar *)rtlMalloc((slen+1)*2);
     memcpy(data, src, slen*2);
     data[slen] = 0x0000;
     return data;
@@ -4245,7 +4228,7 @@ void rtlUtf8ToStrX(size32_t & outlen, char * & out, size32_t inlen, const char *
 char * rtlUtf8ToVStr(size32_t inlen, const char *in)
 {
     unsigned utfSize = rtlUtf8Size(inlen, in);
-    char *ret = (char *) RTL_MALLOC(inlen+1);
+    char *ret = (char *) rtlMalloc(inlen+1);
     rtlCodepageToCodepage(inlen, ret, utfSize, in, ASCII_LIKE_CODEPAGE, UTF8_CODEPAGE);
     ret[inlen] = 0;
     return ret;
@@ -4295,7 +4278,7 @@ void rtlUtf8ToUtf8(size32_t outlen, char * out, size32_t inlen, const char *in)
 void rtlUtf8ToUtf8X(size32_t & outlen, char * & out, size32_t inlen, const char *in)
 {
     unsigned insize = rtlUtf8Size(inlen, in);
-    char * buffer = (char *)RTL_MALLOC(insize);
+    char * buffer = (char *)rtlMalloc(insize);
     memcpy(buffer, in, insize);
     outlen = inlen;
     out = buffer;
@@ -4439,7 +4422,7 @@ ECLRTL_API void rtlUtf8SubStrFTX(unsigned & tlen, char * & tgt, unsigned slen, c
     unsigned startOffset = rtlUtf8Size(from, src);
     unsigned copySize = rtlUtf8Size(copylen, src+startOffset);
 
-    char * buffer = (char *)RTL_MALLOC(copySize + fillSize);
+    char * buffer = (char *)rtlMalloc(copySize + fillSize);
     memcpy(buffer, (byte *)src+startOffset, copySize);
     if (fillSize)
         memset(buffer+copySize, ' ', fillSize);
@@ -4454,7 +4437,7 @@ ECLRTL_API void rtlUtf8SubStrFX(unsigned & tlen, char * & tgt, unsigned slen, ch
     unsigned startOffset = rtlUtf8Size(from, src);
     unsigned copySize = rtlUtf8Size(len, src+startOffset);
 
-    char * buffer = (char *)RTL_MALLOC(copySize);
+    char * buffer = (char *)rtlMalloc(copySize);
     memcpy(buffer, (byte *)src+startOffset, copySize);
     tlen = len;
     tgt = buffer;
@@ -4618,7 +4601,7 @@ public:
         {
             if (_keep)
             {
-                sample = (char *)RTL_MALLOC(_len + 1);  //required for findstr
+                sample = (char *)rtlMalloc(_len + 1);  //required for findstr
                 memcpy(sample, _str + _from, _len);
                 sample[_len] = (char)NULL;
                 matched = boost::regex_search(sample, subs, *regEx);
@@ -4649,7 +4632,7 @@ public:
         if (matched && (n < subs.size()))
         {
             outlen = subs[n].second - subs[n].first;
-            out = (char *)RTL_MALLOC(outlen);
+            out = (char *)rtlMalloc(outlen);
             memcpy(out, subs[n].first, outlen);
         }
         else
@@ -4719,7 +4702,7 @@ public:
             throw MakeStringException(0, "Error in regex replace: %s (regex: %s)", e.what(), regEx.str().c_str());
         }
         outlen = tgt.length();
-        out = (char *)RTL_MALLOC(outlen);
+        out = (char *)rtlMalloc(outlen);
         memcpy(out, tgt.data(), outlen);
     }
 
@@ -4788,7 +4771,7 @@ public:
             int32_t start = n ? matcher->start(n, uerr) : matcher->start(uerr);
             int32_t end = n ? matcher->end(n, uerr) : matcher->end(uerr);
             outlen = end - start;
-            out = (UChar *)RTL_MALLOC(outlen*2);
+            out = (UChar *)rtlMalloc(outlen*2);
             sample.extract(start, outlen, out);
         }
         else
@@ -4872,7 +4855,7 @@ public:
         UnicodeString const fmt(replace, rlen);
         UnicodeString const tgt = replacer->replaceAll(fmt, err);
         outlen = tgt.length();
-        out = (UChar *)RTL_MALLOC(outlen*2);
+        out = (UChar *)rtlMalloc(outlen*2);
         tgt.extract(0, outlen, out);
         delete replacer;
     }
@@ -4980,7 +4963,7 @@ ECLRTL_API void rtlCreateRange(size32_t & outlen, char * & out, unsigned fieldLe
     }
 
     outlen = fieldLen;
-    out = (char *)RTL_MALLOC(fieldLen);
+    out = (char *)rtlMalloc(fieldLen);
     if (len >= compareLen)
         memcpy(out, str, compareLen);
     else
@@ -5053,7 +5036,7 @@ ECLRTL_API void rtlCreateUnicodeRange(size32_t & outlen, UChar * & out, unsigned
     }
 
     outlen = fieldLen;
-    out = (UChar *)RTL_MALLOC(fieldLen*sizeof(UChar));
+    out = (UChar *)rtlMalloc(fieldLen*sizeof(UChar));
     if (len >= compareLen)
         memcpy(out, str, compareLen*sizeof(UChar));
     else
@@ -5132,13 +5115,13 @@ public:
     {
         //convert from source to utf-16: try to avoid preflighting by guessing upper bound
         //unicode length in UChars equal source length in chars if single byte encoding, and be less for multibyte
-        UChar * ubuff = (UChar *)RTL_MALLOC(sourceLength*2);
+        UChar * ubuff = (UChar *)rtlMalloc(sourceLength*2);
         int32_t ulen = ucnv_toUChars(srccnv, ubuff, sourceLength, source, sourceLength, &uerr);
         if(ulen > (int32_t)sourceLength)
         {
             //okay, so our guess was wrong, and we have to reallocate
             free(ubuff);
-            ubuff = (UChar *)RTL_MALLOC(ulen*2);
+            ubuff = (UChar *)rtlMalloc(ulen*2);
             ucnv_toUChars(srccnv, ubuff, ulen, source, sourceLength, &uerr);
         }
         if(preflight)
@@ -5146,13 +5129,13 @@ public:
             //convert from utf-16 to target: preflight to get buffer of exactly the right size
             UErrorCode uerr2 = uerr; //preflight has to use copy of error code, as it is considered an 'error'
             int32_t tlen = ucnv_fromUChars(tgtcnv, 0, 0, ubuff, ulen, &uerr2);
-            target = (char *)RTL_MALLOC(tlen);
+            target = (char *)rtlMalloc(tlen);
             targetLength = ucnv_fromUChars(tgtcnv, target, tlen, ubuff, ulen, &uerr);
         }
         else
         {
             //convert from utf-16 to target: avoid preflighting by allocating buffer of maximum size
-            target = (char *)RTL_MALLOC(ulen*tgtMaxRatio);
+            target = (char *)rtlMalloc(ulen*tgtMaxRatio);
             targetLength = ucnv_fromUChars(tgtcnv, target, ulen*tgtMaxRatio, ubuff, ulen, &uerr);
         }
         free(ubuff);
@@ -5482,7 +5465,7 @@ void rtlRowBuilder::forceAvailable(size32_t size)
 {
     const size32_t chunkSize = 64;
     maxsize = (size + chunkSize-1) & ~(chunkSize-1);
-    ptr = RTL_REALLOC(ptr, maxsize);
+    ptr = rtlRealloc(ptr, maxsize);
 }
 
 //---------------------------------------------------------------------------
