@@ -66,7 +66,10 @@ MODULE_EXIT()
 // Miscellaneous string functions...
 ECLRTL_API void * rtlMalloc(size32_t size)
 {
-    void * retVal = malloc(size);
+    void * retVal = NULL;
+
+    if( 0 != size )
+        retVal = malloc(size);
 
     if( NULL == retVal)
     {
@@ -3712,7 +3715,7 @@ void rtlSysFail(int code, const char *msg)
 
 void rtlThrowOutOfMemory(int code, const char *msg)
 {
-    throw dynamic_cast<IUserException *>(new CRtlFailException(code, msg));
+    throw static_cast<IUserException *>(new CRtlFailException(code, msg));
 }
 
 void rtlReportRowOverflow(unsigned size, unsigned max)
