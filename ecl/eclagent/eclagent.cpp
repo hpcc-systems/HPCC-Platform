@@ -2218,7 +2218,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
         agent.decachePersist(name.str());
     else
         agent.startPersist(name.str());
-    doExecuteItemDependency(item, item.queryPersistWfid(), wfid);
+    doExecuteItemDependency(item, item.queryPersistWfid(), wfid, true);
     if(!persist)
     {
         StringBuffer errmsg;
