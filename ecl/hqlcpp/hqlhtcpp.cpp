@@ -17180,13 +17180,13 @@ void HqlCppTranslator::buildWorkflow(WorkflowArray & workflow)
     BuildCtx switchctx(performctx);
     IHqlStmt * switchStmt = switchctx.addSwitch(function);
 
-    optimizePersists(workflow);
     ForEachItemIn(idx, workflow)
     {
         WorkflowItem & action = workflow.item(idx);
         HqlExprArray & exprs = action.queryExprs();
         unsigned wfid = action.queryWfid();
 
+        optimizePersists(exprs);
         bool isEmpty = exprs.ordinality() == 0;
         if (exprs.ordinality() == 1 && (exprs.item(0).getOperator() == no_workflow_action))
             isEmpty = true;
@@ -17921,12 +17921,6 @@ void HqlCppTranslator::optimizePersists(HqlExprArray & exprs)
     createCompoundEnsure(exprs, 0, max-1);
 }
 
-void HqlCppTranslator::optimizePersists(WorkflowArray & workflow)
-{
-    ForEachItemIn(idx, workflow)
-        optimizePersists(workflow.item(idx).queryExprs());
-}
-
 IHqlExpression * HqlCppTranslator::extractGlobalCSE(IHqlExpression * expr)
 {
     AutoScopeMigrateTransformer transformer(wu(), *this);
@@ -18014,13 +18008,12 @@ void HqlCppTranslator::spotGlobalCSE(HqlExprArray & exprs)
     }
 }
 
-void HqlCppTranslator::spotGlobalCSE(WorkflowArray & array)
+void HqlCppTranslator::spotGlobalCSE(WorkflowItem & curWorkflow)
 {
     if (!insideLibrary() && options.globalAutoHoist)
     {
         unsigned startTime = msTick();
-        ForEachItemIn(idx, array)
-            spotGlobalCSE(array.item(idx).queryExprs());
+        spotGlobalCSE(curWorkflow.queryExprs());
         DEBUG_TIMER("EclServer: tree transform: spot global cse", msTick()-startTime);
     }
 }
@@ -18300,14 +18293,14 @@ void HqlCppTranslator::pickBestEngine(HqlExprArray & exprs)
 }
 
 
-void HqlCppTranslator::pickBestEngine(WorkflowArray & array)
+void HqlCppTranslator::pickBestEngine(WorkflowArray & workflow)
 {
     if (targetThor())
     {
         unsigned time = msTick();
-        ForEachItemIn(idx2, array)
+        ForEachItemIn(idx2, workflow)
         {
-            HqlExprArray & exprs = array.item(idx2).queryExprs();
+            HqlExprArray & exprs = workflow.item(idx2).queryExprs();
             ForEachItemIn(idx, exprs)
             {
                 if (needsRealThor(&exprs.item(idx)))
