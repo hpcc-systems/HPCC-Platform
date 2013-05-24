@@ -787,7 +787,7 @@ void retrieveQuerysetDetailsByCluster(IArrayOf<IEspWUQuerySetDetail> &details, c
         const SocketEndpointArray &eps = info->getRoxieServers();
         if (eps.length())
         {
-            Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), 5);
+            Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), 10000);
             queriesOnCluster.setown(sendRoxieControlQuery(sock, "<control:queries/>", 5));
         }
     }
