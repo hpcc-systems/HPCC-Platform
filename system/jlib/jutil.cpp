@@ -1147,7 +1147,7 @@ MemoryBuffer &JBASE64_Decode(const char *incs, MemoryBuffer &out)
 
 
 
-bool JBASE64_Decode(const char *incs, long length, StringBuffer &out)
+bool JBASE64_Decode(size32_t length, const char *incs, StringBuffer &out)
 {
     out.ensureCapacity(((length / 4) + 1) * 3);
 
