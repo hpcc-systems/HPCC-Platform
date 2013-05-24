@@ -6191,7 +6191,7 @@ void CCovenSDSManager::loadStore(const char *storeName, const bool *abort)
     Owned<IRemoteConnection> conn = connect("/", 0, RTM_INTERNAL, INFINITE);
     initializeInternals(conn->queryRoot());
     conn.clear();
-    bool forceGroupUpdate = config.getPropBool("@forceGroupUpdate");
+    bool forceGroupUpdate = config.getPropBool("DFS/@forceGroupUpdate");
     StringBuffer response;
     initClusterGroups(forceGroupUpdate, response, oldEnvironment);
     if (response.length())

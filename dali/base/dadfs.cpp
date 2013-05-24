@@ -48,8 +48,8 @@
 #define SDS_SUB_LOCK_TIMEOUT (10000)
 #define SDS_TRANSACTION_RETRY (60000)
 
-#define DFSSERVER_THROTTLE_COUNT 20
-#define DFSSERVER_THROTTLE_TIME 1000
+#define DEFAULT_NUM_DFS_THREADS 30
+#define TIMEOUT_ON_CLOSEDOWN 120000 // On closedown, give up on trying to join a thread in CDaliDFSServer after two minutes
 
 #if _INTERNAL_EDITION == 1
 #ifndef _MSC_VER
@@ -8203,11 +8203,12 @@ bool removeClusterSpares(const char *clusterName, const char *type, SocketEndpoi
 
 
 
-class CDaliDFSServer: public Thread, public CTransactionLogTracker, implements IDaliServer
+class CDaliDFSServer: public Thread, public CTransactionLogTracker, implements IDaliServer, implements IExceptionHandler
 {  // Coven size
     
     bool stopped;
     unsigned defaultTimeout;
+    unsigned numThreads;
 
 public:
 
@@ -8218,6 +8219,8 @@ public:
     {
         stopped = true;
         defaultTimeout = INFINITE; // server uses default
+        numThreads = config->getPropInt("DFS/@numThreads", DEFAULT_NUM_DFS_THREADS);
+        PROGLOG("DFS Server: numThreads=%d", numThreads);
     }
 
     ~CDaliDFSServer()
@@ -8249,29 +8252,24 @@ public:
     int run()
     {
         ICoven &coven=queryCoven();
+        CMessageHandler<CDaliDFSServer> handler("CDaliDFSServer", this, &CDaliDFSServer::processMessage, this, numThreads, TIMEOUT_ON_CLOSEDOWN, INFINITE);
         CMessageBuffer mb;
         stopped = false;
-        unsigned throttlecount = 0;
-        unsigned last;
-        while (!stopped) {
-            try {
+        while (!stopped)
+        {
+            try
+            {
                 mb.clear();
-                if (coven.recv(mb,RANK_ALL,MPTAG_DFS_REQUEST,NULL)) {
-                    if (throttlecount&&(last-msTick()<10))
-                        throttlecount--;
-                    else
-                        throttlecount = DFSSERVER_THROTTLE_COUNT;
-                    processMessage(mb);
-                    if (throttlecount==0) {
-                        WARNLOG("Throttling CDaliDFSServer");
-                        Sleep(DFSSERVER_THROTTLE_TIME);
-                    }
-                    last = msTick();
+                if (coven.recv(mb,RANK_ALL,MPTAG_DFS_REQUEST,NULL))
+                {
+                    handler.handleMessage(mb);
+                    mb.clear(); // ^ has copied mb
                 }   
                 else
                     stopped = true;
             }
-            catch (IException *e) {
+            catch (IException *e)
+            {
                 EXCLOG(e, "CDaliDFSServer");
                 e->Release();
             }
@@ -8624,6 +8622,13 @@ public:
         default:
             return ret.append("UNKNOWN");
         }
+    }
+    // IExceptionHandler impl.
+    virtual bool fireException(IException *e)
+    {
+        EXCLOG(e, "CDaliDFSServer exception");
+        e->Release();
+        return true;
     }
 } *daliDFSServer = NULL;
 
