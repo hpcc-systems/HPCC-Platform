@@ -885,6 +885,25 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
     case no_libraryscope:
     case no_forwardscope:
         return doCreateTransformedScope(expr);
+    case no_delayedscope:
+        {
+            OwnedHqlExpr newScope = transform(expr->queryChild(0));
+            if (newScope->queryScope())
+                return newScope.getClear();
+            break;
+        }
+    case no_assertconcrete:
+        {
+            OwnedHqlExpr newScope = transform(expr->queryChild(0));
+            IHqlScope * scope = newScope->queryScope();
+            if (scope)
+            {
+                IHqlScope * concrete = scope->queryConcreteScope();
+                if (concrete)
+                    return newScope.getClear();
+            }
+            break;
+        }
     case no_type:
         return transformAlienType(expr);
     case no_enum:
@@ -919,6 +938,20 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
             transformChildren(expr, children);
             if (type != newType)
                 return createParameter(expr->queryName(), (unsigned)expr->querySequenceExtra(), newType.getClear(), children);
+            break;
+        }
+    case no_delayedselect:
+        {
+            IHqlExpression * oldModule = expr->queryChild(1);
+            OwnedHqlExpr newModule = transform(oldModule);
+            if (oldModule != newModule)
+            {
+                _ATOM selectedName = expr->queryChild(3)->queryName();
+                HqlDummyLookupContext dummyctx(errors);
+                IHqlScope * newScope = newModule->queryScope();
+                if (newScope)
+                    return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+            }
             break;
         }
     }

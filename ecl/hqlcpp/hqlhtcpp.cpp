@@ -5730,10 +5730,13 @@ bool HqlCppTranslator::buildCpp(IHqlCppInstance & _code, HqlQueryContext & query
             DEBUG_TIMER("EclServer: peephole optimize", msTick()-time);
         }
     }
-    catch (IException *)
+    catch (IException * e)
     {
         ensureWorkUnitUpdated();
-        throw;
+        if (e->errorCode() != HQLERR_ErrorAlreadyReported)
+            throw;
+        e->Release();
+        return false;
     }
     catch (...)
     {

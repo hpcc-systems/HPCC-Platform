@@ -148,6 +148,8 @@ public:
         return parser->lookupSymbol(name, errpos);
     }
 
+    virtual IHqlScope * queryConcreteScope() { return this; }
+    virtual bool allBasesFullyBound() const { return true; }
 };
 
 

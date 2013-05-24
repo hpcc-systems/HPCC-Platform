@@ -5463,8 +5463,9 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     case no_getgraphloopresult:
     case no_getresult:
     case no_rows:
-    case no_internalvirtual:
+    case no_internalselect:
     case no_delayedselect:
+    case no_unboundselect:
     case no_libraryselect:
     case no_purevirtual:
     case no_libraryinput:

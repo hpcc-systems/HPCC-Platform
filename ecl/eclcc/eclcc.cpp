@@ -34,6 +34,7 @@
 #include "hqlcollect.hpp"
 #include "hqlrepository.hpp"
 #include "hqlerror.hpp"
+#include "hqlcerrors.hpp"
 
 #include "hqlgram.hpp"
 #include "hqltrans.ipp"
@@ -699,9 +700,12 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
         }
         catch (IException * e)
         {
-            StringBuffer exceptionText;
-            e->errorMessage(exceptionText);
-            errs->reportError(ERR_INTERNALEXCEPTION, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
+            if (e->errorCode() != HQLERR_ErrorAlreadyReported)
+            {
+                StringBuffer exceptionText;
+                e->errorMessage(exceptionText);
+                errs->reportError(ERR_INTERNALEXCEPTION, exceptionText.toCharArray(), queryFullName, 1, 0, 0);
+            }
             e->Release();
         }
 
