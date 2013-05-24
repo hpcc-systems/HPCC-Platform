@@ -27,6 +27,7 @@
 
 #include <list>
 #include <vector>
+#include <functional>
 
 namespace ws_workunits {
 
