@@ -669,7 +669,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             s.append('D');
         if (containsAnyDataset(expr))
             s.append('A');
-        if (containsInternalVirtual(expr))
+        if (containsInternalSelect(expr))
             s.append('V');
         if (expr->getInfoFlags() & HEFaction)
             s.append('N');
@@ -1458,8 +1458,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 else if (expr->querySequenceExtra())
                 {
                     //Not sure any of these should be included
-                    if (expandProcessed || (name != virtualAtom))
-                        s.append("(").append(expr->querySequenceExtra()).append(")");
+                    s.append("(").append(expr->querySequenceExtra()).append(")");
                 }
                 break;
             }
@@ -2640,7 +2639,7 @@ void HqltHql::defaultChildrenToECL(IHqlExpression *expr, StringBuffer &s, bool i
     {
         s.append('(');
         bool needComma = false;
-        if (!xgmmlGraphText || !child0->queryDataset())
+        if (!xgmmlGraphText || (!child0->queryDataset() && !isInternalAttribute(child0)))
         {
             toECL(child0, s, false, inType);
             needComma = true;
