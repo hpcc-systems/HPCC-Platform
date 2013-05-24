@@ -329,7 +329,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     }
 
     StringBuffer keybuf;
-    keybuf.appendf("%s-%s", xpath, xpathFull);
+    keybuf.appendf("%p-%p", t1, t2);
     std::string key = keybuf.str();
     if(m_compcache.getValue(key.c_str()) != NULL)
     {
