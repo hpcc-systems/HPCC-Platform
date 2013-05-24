@@ -130,6 +130,18 @@ extern jlib_decl MemoryBuffer &JBASE64_Decode(const char *in, MemoryBuffer &out)
 extern jlib_decl StringBuffer &JBASE64_Decode(ISimpleReadStream &in, StringBuffer &out);
 extern jlib_decl MemoryBuffer &JBASE64_Decode(ISimpleReadStream &in, MemoryBuffer &out);
 
+/**
+ * Decode base 64 encoded string.
+ * It handles forbidden printable and non-printable chars. Space(s) inserted among the valid chars,
+ * missing pad chars and invalid length.
+ *
+ * @param length        Length of the input string.
+ * @param in            Pointer to base64 encoded string
+ * @param out           Decoded string if the input is valid
+ * @return              True when success
+ */
+extern jlib_decl bool JBASE64_Decode(size32_t length, const char *in, StringBuffer &out);
+
 extern jlib_decl void JBASE32_Encode(const char *in,StringBuffer &out);  // result all lower
 extern jlib_decl void JBASE32_Decode(const char *in,StringBuffer &out);  
 
