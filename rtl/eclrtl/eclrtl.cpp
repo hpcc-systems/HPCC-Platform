@@ -5621,6 +5621,41 @@ IAtom * rtlCreateFieldNameAtom(const char * name)
     return createAtom(name);
 }
 
+void rtlBase64Encode(size32_t & tlen, char * & tgt, size32_t slen, const void * src)
+{
+    tlen = 0;
+    tgt = NULL;
+    if (slen)
+    {
+        StringBuffer out;
+        JBASE64_Encode(src, slen, out);
+        tlen = out.length();
+        if (tlen)
+        {
+            char * data  = (char *) rtlMalloc(tlen);
+            out.getChars(0, tlen, data);
+            tgt = data;
+        }
+    }
+}
+
+void rtlBase64Decode(size32_t & tlen, void * & tgt, size32_t slen, const char * src)
+{
+    tlen = 0;
+    if (slen)
+    {
+        StringBuffer out;
+        if (JBASE64_Decode(slen, src, out))
+            tlen = out.length();
+        if (tlen)
+        {
+            char * data = (char *) rtlMalloc(tlen);
+            out.getChars(0, tlen, data);
+            tgt = (void *) data;
+        }
+    }
+}
+
 
 //---------------------------------------------------------------------------
 

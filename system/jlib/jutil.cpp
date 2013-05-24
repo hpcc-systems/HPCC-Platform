@@ -1146,6 +1146,62 @@ MemoryBuffer &JBASE64_Decode(const char *incs, MemoryBuffer &out)
 }
 
 
+
+bool JBASE64_Decode(size32_t length, const char *incs, StringBuffer &out)
+{
+    out.ensureCapacity(((length / 4) + 1) * 3);
+
+    const char * end = incs + length;
+    unsigned char c1;
+    unsigned char c[4];
+    unsigned cIndex = 0;
+    unsigned char d1, d2, d3, d4;
+    bool fullQuartetDecoded = false;
+
+    while (incs < end)
+    {
+        c1 = *incs++;
+
+        if (isspace(c1))
+            continue;
+
+        if (!BASE64_dec[c1] && ('A' != c1) && (pad != c1))
+        {
+            // Forbidden char
+            fullQuartetDecoded = false;
+            break;
+        }
+
+        c[cIndex++] = c1;
+        fullQuartetDecoded = false;
+
+        if (4 == cIndex)
+        {
+            d1 = BASE64_dec[c[0]];
+            d2 = BASE64_dec[c[1]];
+            d3 = BASE64_dec[c[2]];
+            d4 = BASE64_dec[c[3]];
+
+            out.append((char)((d1 << 2) | (d2 >> 4)));
+            fullQuartetDecoded = true;
+
+            if (pad == c[2])
+                break;
+
+            out.append((char)((d2 << 4) | (d3 >> 2)));
+
+            if( pad == c[3])
+                break;
+
+            out.append((char)((d3 << 6) | d4));
+
+            cIndex = 0;
+        }
+    }
+
+    return fullQuartetDecoded;
+}
+
 static inline void encode5_32(const byte *in,StringBuffer &out)
 {
     // 5 bytes in 8 out
