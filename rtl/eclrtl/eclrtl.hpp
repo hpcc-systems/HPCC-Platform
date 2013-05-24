@@ -91,7 +91,6 @@ interface ICompiledUStrRegExpr
 };
 
 //-----------------------------------------------------------------------------
-
 ECLRTL_API void * rtlMalloc(size32_t size);
 ECLRTL_API void rtlFree(void * x);
 ECLRTL_API void * rtlRealloc(void * _ptr, size32_t size);
@@ -384,6 +383,7 @@ ECLRTL_API void rtlSysFail(int code, const char *msg);
 ECLRTL_API void rtlFailUnexpected();
 ECLRTL_API void rtlFailOnAssert();
 ECLRTL_API void rtlFailDivideByZero();
+ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg);
 
 ECLRTL_API void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name);
 ECLRTL_API void rtlReportRowOverflow(unsigned size, unsigned max);
