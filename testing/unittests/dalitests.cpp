@@ -460,6 +460,7 @@ class DaliTests : public CppUnit::TestFixture
         CPPUNIT_TEST(testDFSPromote);
         CPPUNIT_TEST(testDFSDel);
         CPPUNIT_TEST(testDFSRename);
+        CPPUNIT_TEST(testDFSHammer);
     CPPUNIT_TEST_SUITE_END();
 
 #ifndef COMPAT
@@ -608,7 +609,7 @@ class DaliTests : public CppUnit::TestFixture
                 ASSERT(dir.removeEntry(super.str(), user) && "Can't remove super-file");
         }
 
-        logctx.CTXLOG("Creating 'regress::trans' subfiles(1,4)");
+        logctx.CTXLOG("Creating 'regress::trans' subfiles(1,%d)", subsToCreate);
         for (unsigned i=1; i<=subsToCreate; i++) {
             StringBuffer name;
             name.append("sub").append(i);
@@ -1502,6 +1503,66 @@ public:
         printf("Renaming 'regress::rename::other2 to 'sub2' on auto-commit\n");
         dir.renamePhysical("regress::rename::other2", "regress::rename::sub2", user, transaction);
         ASSERT(dir.exists("regress::rename::sub2", user, true, false) && "Renamed from other2 failed");
+    }
+
+    void testDFSHammer()
+    {
+        unsigned numFiles = 100;
+        unsigned numReads = 40000;
+        unsigned hammerThreads = 10;
+        setupDFS("hammer", 0, numFiles);
+
+        StringBuffer msg("Reading ");
+        msg.append(numFiles).append(" files").append(numReads).append(" times, on ").append(hammerThreads).append(" threads");
+        logctx.CTXLOG("%s", msg.str());
+
+        class CHammerFactory : public CSimpleInterface, implements IThreadFactory
+        {
+        public:
+            IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+            virtual IPooledThread *createNew()
+            {
+                class CHammerThread : public CSimpleInterface, implements IPooledThread
+                {
+                    StringAttr filename;
+                public:
+                    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+                    virtual void init(void *param)
+                    {
+                        filename.set((const char *)param);
+                    }
+                    virtual void main()
+                    {
+                        try
+                        {
+                            Owned<IPropertyTree> tree = queryDistributedFileDirectory().getFileTree(filename,user);
+                        }
+                        catch (IException *e)
+                        {
+                            PrintExceptionLog(e, NULL);
+                        }
+                    }
+                    virtual bool stop() { return true; }
+                    virtual bool canReuse() { return true; }
+                };
+                return new CHammerThread();
+            }
+        } poolFactory;
+
+        CTimeMon tm;
+        Owned<IThreadPool> pool = createThreadPool("TSDSTest", &poolFactory, NULL, hammerThreads, 2000);
+        while (numReads--)
+        {
+            StringBuffer filename("regress::hammer::sub");
+            unsigned fn = 1+(getRandom()%numFiles);
+            filename.append(fn);
+            PROGLOG("Hammer file: %s", filename.str());
+            pool->start((void *)filename.str());
+        }
+        pool->joinAll();
+        PROGLOG("Hammer test took: %d ms", tm.elapsed());
     }
 };
 
