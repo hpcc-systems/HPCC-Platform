@@ -287,12 +287,19 @@ bool CXmlDiff::cmpAttributes(IPTree* t1, IPTree* t2, const char* xpathFull, bool
     if (a1->isValid() || a2->isValid())
         diff = true;
 
-    if (diff && print)
+    if (diff && print && xpathFull)
     {
         StringBuffer xpathFullBuf(xpathFull);
-        int pos = strrchr(xpathFull, '[') - xpathFull;
-        int len = strrchr(xpathFull, ']') - strrchr(xpathFull, '[');
-        xpathFullBuf.remove(pos, len + 1);
+        const char* r = strrchr(xpathFull, ']');
+        const char* slash = strrchr(xpathFull, '/');
+        if(r > slash) //Only remove the attributes in the last tag
+        {
+            const char* l = strrchr(xpathFull, '[');
+            if(l > slash && l < r)
+            {
+                xpathFullBuf.remove(l - xpathFull, r - l + 1);
+            }
+        }
         StringBuffer attrString;
         getAttrString(t1, attrString);
         printDiff("< %s[%s]\n", xpathFullBuf.str(), attrString.str());
@@ -322,7 +329,7 @@ bool CXmlDiff::cmpPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2,
     }
 
     StringBuffer keybuf;
-    keybuf.appendf("%s-%s", xpath, xpathFull);
+    keybuf.appendf("%p-%p", t1, t2);
     std::string key = keybuf.str();
     if(m_compcache.getValue(key.c_str()) != NULL)
     {
@@ -786,6 +793,18 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
         return false;
     }
 
+    StringBuffer initialPath, initialPathFull;
+    if(!xpath || !*xpath)
+    {
+        initialPath.appendf("%s", name1);
+        xpath = initialPath.str();
+    }
+    if(!xpathFull || !*xpathFull)
+    {
+        initialPathFull.appendf("%s", name1);
+        xpathFull = initialPathFull.str();
+    }
+
     bool isEqual = true;
 
   // compare attrs
@@ -1075,7 +1094,6 @@ bool CXmlDiff::diffPtree(const char* xpath, IPropertyTree* t1, IPropertyTree* t2
     {
         const char* val1 = t1->queryProp(".");
         const char* val2 = t2->queryProp(".");
-        StringBuffer keyBuf;
 
         if((val1 && !val2) || (!val1 && val2) || (val1 && val2 && strcmp(val1, val2) != 0))
         {
@@ -1099,6 +1117,22 @@ void CXmlDiff::printPtree(const char* prefix, const char* xpath, IPropertyTree* 
     {
         if(m_ignoredXPaths.find(xpath) != m_ignoredXPaths.end())
             return;
+    }
+
+    StringBuffer initialPath, initialPathFull;
+    if(!xpath || !*xpath)
+    {
+        initialPath.appendf("%s", t->queryName());
+        xpath = initialPath.str();
+    }
+    if(!xpathFull || !*xpathFull)
+    {
+        initialPathFull.appendf("%s", t->queryName());
+        StringBuffer attrString;
+        getAttrString(t, attrString);
+        if(attrString.length())
+            initialPathFull.appendf("[%s]", attrString.str());
+        xpathFull = initialPathFull.str();
     }
 
     if(t->hasChildren())

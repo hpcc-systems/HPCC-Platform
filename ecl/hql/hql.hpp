@@ -75,6 +75,7 @@ enum object_type
     ob_shared       = 0x0002,
     ob_import       = 0x0004,
     ob_member       = 0x0008,       // is a member of a module
+    ob_virtual      = 0x0010,
 
 //attributes returned from the repository to show the vcs status
     ob_sandbox      = 0x00010000,

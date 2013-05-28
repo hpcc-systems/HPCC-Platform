@@ -541,6 +541,7 @@ public:
     virtual bool isExported() const { return (symbolFlags&ob_exported)!=0; };
     virtual bool isShared() const { return (symbolFlags&ob_shared)!=0; };
     virtual bool isPublic() const { return (symbolFlags&(ob_shared|ob_exported))!=0; };
+    virtual bool isVirtual() const { return (symbolFlags & ob_virtual)!=0; };
     virtual void setRepositoryFlags(unsigned _flags) { symbolFlags |= (_flags & ob_registryflags); }
 
 protected:
@@ -945,6 +946,7 @@ public:
     virtual const char * queryFullName() const  { throwUnexpected(); }
     virtual ISourcePath * querySourcePath() const   { throwUnexpected(); }
     virtual bool hasBaseClass(IHqlExpression * searchBase);
+    virtual bool allBasesFullyBound() const { return false; } // Assume the worst
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
 
@@ -955,7 +957,7 @@ public:
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
 
-    virtual IHqlScope * queryConcreteScope() { return this; }
+    virtual IHqlScope * queryConcreteScope();
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context) { return this; }
 
     virtual IHqlExpression * queryExpression() { return this; }
@@ -974,8 +976,6 @@ protected:
     StringAttr fullName;                //Fully qualified name of this nested module   E.g.: PARENT.CHILD.GRANDCHILD
     SymbolTable symbols;
 
-    IHqlDataset *lookupDataset(_ATOM name);
-
     virtual bool equals(const IHqlExpression & other) const;
 
 public:
@@ -988,7 +988,7 @@ public:
     IHqlScope * cloneAndClose(HqlExprArray & children, HqlExprArray & symbols);
 
 //interface IHqlExpression
-    virtual IHqlScope *queryScope() { return this; };
+    virtual IHqlScope *queryScope() { return this; }
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual void sethash();
 
@@ -1014,7 +1014,6 @@ public:
     virtual void    getSymbols(HqlExprArray& exprs) const;
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols) { throwUnexpected(); }
     virtual bool hasBaseClass(IHqlExpression * searchBase);
-    virtual IHqlScope * queryConcreteScope()    { return this; }
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context)  { return this; }
     virtual IFileContents * queryDefinitionText() const { return text; }
 
@@ -1099,6 +1098,8 @@ public:
     virtual void defineSymbol(IHqlExpression * expr);
     using CHqlScope::defineSymbol;
 
+    virtual bool allBasesFullyBound() const { return true; }
+    virtual IHqlScope * queryConcreteScope()    { return this; }
     virtual IFileContents * queryDefinitionText() const;
 
     virtual void getSymbols(HqlExprArray& exprs) const;
@@ -1126,7 +1127,8 @@ public:
     virtual void sethash();
 
 //interface IHqlScope
-
+    virtual bool allBasesFullyBound() const { return true; }
+    virtual IHqlScope * queryConcreteScope()    { return this; }
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols);
 };
 
@@ -1136,13 +1138,16 @@ protected:
     Owned<IHqlScope> concrete;
     bool isAbstract;
     bool complete;
-    bool isVirtual;
+    bool containsVirtual;
+    bool allVirtual;
     bool fullyBoundBase;
 
 protected:
     virtual bool equals(const IHqlExpression & other) const;
     IHqlScope * deriveConcreteScope();
-    void ensureVirtual();
+    IHqlExpression * lookupBaseSymbol(IHqlExpression * & definitionModule, _ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    void resolveUnboundSymbols();
+    void ensureVirtualSeq();
 
 public:
     CHqlVirtualScope(_ATOM _name, const char * _fullName);
@@ -1154,12 +1159,13 @@ public:
     virtual IHqlExpression *closeExpr();
     virtual void defineSymbol(IHqlExpression * expr);
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual bool queryForceSymbolVirtual(_ATOM searchName, HqlLookupContext & ctx);
     virtual void sethash();
 
 //interface IHqlScope
-
+    virtual bool allBasesFullyBound() const { return fullyBoundBase; }
     virtual _ATOM   queryName() const {return name;}
-    virtual IHqlScope * queryConcreteScope() { return isVirtual ? concrete.get() : this; }
+    virtual IHqlScope * queryConcreteScope() { return containsVirtual ? concrete.get() : this; }
 };
 
 
@@ -1172,8 +1178,10 @@ public:
 
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx);
+    virtual bool allBasesFullyBound() const;
     virtual bool isImplicit() const;
     virtual bool isPlugin() const;
+    virtual IHqlScope * queryConcreteScope()    { return this; }
 
 protected:
     CriticalSection cs;
@@ -1181,37 +1189,21 @@ protected:
     bool mergedAll;
 };
 
-/*
-Used for syntax checking an attribute.  It allows specific attributes within a module to be overridden,
-so that syntax check can work as if it is checking a particular attribute
-I suspect it should be done a different way...
-*/
-
-class CHqlSyntaxCheckScope : public CHqlScope
-{
-private:
-    IHqlScope *parent;
-    SymbolTable redefine;
-
-public:
-    CHqlSyntaxCheckScope(IHqlScope *parent, IEclRepository *_ds, const char *attribute, bool clearImportedModule);
-
-    virtual void defineSymbol(_ATOM name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags, IFileContents *, int lineno, int column, int _startpos, int _bodypos, int _endpos);
-    virtual void defineSymbol(_ATOM name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags);
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
-};
-
+//Used in the parser to allow symbols to be looked up in a list of multiple independent scopes.
 class CHqlMultiParentScope : public CHqlScope
 {
 protected:
     CopyArray parents;
 
 public:
-    CHqlMultiParentScope(_ATOM, IHqlScope *parent1, ...);
+    CHqlMultiParentScope(_ATOM, ...);
 
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlScope * queryConcreteScope() { return this; }
+    virtual bool allBasesFullyBound() const { return true; }
 };
 
+//MORE: I'm not 100% sure why this is different from a CLocalScope... it should be merged
 class CHqlContextScope : public CHqlScope
 {
 protected:
@@ -1227,6 +1219,9 @@ public:
 
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
     {  return defined.getLinkedValue(searchName); }
+
+    virtual IHqlScope * queryConcreteScope()    { return this; }
+    virtual bool allBasesFullyBound() const { return false; }
 
 };
 
@@ -1368,16 +1363,20 @@ public:
     virtual bool equals(const IHqlExpression & other) const;
     virtual StringBuffer &toString(StringBuffer &ret);
 
-//IHqlDataset
+//IHqlScope
     virtual void defineSymbol(IHqlExpression * expr)            { throwUnexpected(); }
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
 
     virtual void getSymbols(HqlExprArray& exprs) const          { typeScope->getSymbols(exprs); }
+    virtual IHqlScope * queryConcreteScope() { return NULL; }
+    virtual bool allBasesFullyBound() const { return false; }
 
     virtual IHqlExpression * clone(HqlExprArray & children);
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols);
 };
 
+
+//I'm not convinced that this should be derived from CHqlScope.
 class CHqlLibraryInstance : public CHqlScope
 {
 protected:
@@ -1393,14 +1392,62 @@ public:
     virtual bool equals(const IHqlExpression & other) const;
     virtual IHqlExpression * clone(HqlExprArray & children);
 
-//IHqlDataset
+//IHqlScope
     virtual void defineSymbol(IHqlExpression * expr)            { throwUnexpected(); }
     virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual bool hasBaseClass(IHqlExpression * searchBase)      { return libraryScope->hasBaseClass(searchBase); }
+    virtual bool allBasesFullyBound() const { return false; }
+    virtual IHqlScope * queryConcreteScope()    { return this; }
 
     virtual void getSymbols(HqlExprArray& exprs) const          { libraryScope->getSymbols(exprs); }
 
     virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols);
+};
+
+class HQL_API CHqlDelayedScope : public CHqlExpressionWithTables, implements IHqlScope
+{
+public:
+    CHqlDelayedScope(HqlExprArray & _ownedOperands);
+    IMPLEMENT_IINTERFACE_USING(CHqlExpression)
+
+//IHqlExpression
+    virtual bool assignableFrom(ITypeInfo * source);
+    virtual bool equals(const IHqlExpression & other) const;
+    virtual IHqlExpression * clone(HqlExprArray & children);
+    virtual ITypeInfo *queryType() const;
+    virtual ITypeInfo *getType();
+    virtual IHqlScope *queryScope() { return this; }
+
+//IHqlScope
+    virtual IHqlExpression * queryExpression() { return this; }
+    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+
+    virtual void    getSymbols(HqlExprArray& exprs) const;
+    virtual _ATOM   queryName() const { return NULL; }
+    virtual const char * queryFullName() const { return NULL; }
+    virtual ISourcePath * querySourcePath() const { return NULL; }
+    virtual bool hasBaseClass(IHqlExpression * searchBase);
+    virtual bool allBasesFullyBound() const { return false; }
+
+    virtual IHqlScope * clone(HqlExprArray & children, HqlExprArray & symbols);
+    virtual IHqlScope * queryConcreteScope();
+    virtual IHqlScope * queryResolvedScope(HqlLookupContext * context);
+    virtual void ensureSymbolsDefined(HqlLookupContext & ctx);
+
+    virtual bool isImplicit() const { return false; }
+    virtual bool isPlugin() const { return false; }
+    virtual int getPropInt(_ATOM, int dft) const { return dft; }
+    virtual bool getProp(_ATOM, StringBuffer &) const { return false; }
+
+//IHqlCreateScope
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags, IFileContents *fc, int lineno, int column, int _startpos, int _bodypos, int _endpos) { throwUnexpected(); }
+    virtual void defineSymbol(_ATOM name, _ATOM moduleName, IHqlExpression *value, bool isExported, bool isShared, unsigned flags) { throwUnexpected(); }
+    virtual void defineSymbol(IHqlExpression * expr) { throwUnexpected(); }
+    virtual void removeSymbol(_ATOM name) { throwUnexpected(); }
+
+protected:
+    ITypeInfo * type;
+    IHqlScope * typeScope;
 };
 
 class CHqlVariable : public CHqlExpressionWithType
@@ -1625,8 +1672,8 @@ public:
 
 //IHqlExpression
     virtual IHqlExpression *queryFunctionDefinition() const;
-    virtual IHqlScope *queryScope() { return scope; };
-    virtual IHqlSimpleScope *querySimpleScope() { return this; };
+    virtual IHqlScope *queryScope() { return scope; }
+    virtual IHqlSimpleScope *querySimpleScope() { return this; }
     virtual bool equals(const IHqlExpression & other) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual void sethash();
@@ -1705,7 +1752,7 @@ public:
     ~CHqlEnumType();
 
 //IHqlExpression
-    virtual IHqlScope *queryScope() { return scope; };
+    virtual IHqlScope *queryScope() { return scope; }
     virtual bool equals(const IHqlExpression & other) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual void sethash();

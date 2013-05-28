@@ -748,23 +748,26 @@ bool WorkflowMachine::doExecuteItemDependencies(IRuntimeWorkflowItem & item, uns
     Owned<IWorkflowDependencyIterator> iter = item.getDependencies();
     for(iter->first(); iter->isValid(); iter->next())
     {
-        if (!doExecuteItemDependency(item, iter->query(), scheduledWfid))
+        if (!doExecuteItemDependency(item, iter->query(), scheduledWfid, false))
             return false;
     }
     return true;
 }
 
-bool WorkflowMachine::doExecuteItemDependency(IRuntimeWorkflowItem & item, unsigned dep, unsigned scheduledWfid)
+bool WorkflowMachine::doExecuteItemDependency(IRuntimeWorkflowItem & item, unsigned wfid, unsigned scheduledWfid, bool alwaysEvaluate)
 {
     try
     {
-        return executeItem(dep, scheduledWfid);
+        if (alwaysEvaluate)
+            workflow->queryWfid(wfid).setState(WFStateNull);
+
+        return executeItem(wfid, scheduledWfid);
     }
     catch(WorkflowException * e)
     {
         if(e->queryType() == WorkflowException::ABORT)
             throw;
-        if(!attemptRetry(item, dep, scheduledWfid))
+        if(!attemptRetry(item, wfid, scheduledWfid))
         {
             handleFailure(item, e, true);
             throw;
@@ -819,12 +822,12 @@ bool WorkflowMachine::doExecuteConditionItem(IRuntimeWorkflowItem & item, unsign
     if(iter->next()) wfidFalse = iter->query();
     if(iter->next()) throwUnexpected();
 
-    if (!doExecuteItemDependency(item, wfidCondition, scheduledWfid))
+    if (!doExecuteItemDependency(item, wfidCondition, scheduledWfid, true))
         return false;
     if(condition)
-        return doExecuteItemDependency(item, wfidTrue, scheduledWfid);
+        return doExecuteItemDependency(item, wfidTrue, scheduledWfid, false);
     else if (wfidFalse)
-        return doExecuteItemDependency(item, wfidFalse, scheduledWfid);
+        return doExecuteItemDependency(item, wfidFalse, scheduledWfid, false);
     return true;
 }
 

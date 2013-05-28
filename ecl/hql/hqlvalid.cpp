@@ -119,9 +119,19 @@ IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpressi
         return LINK(queryExpression(concrete));
     }
 
-    if (!areAllBasesFullyBound(expr))
-        return LINK(expr);
+    if (expr->getOperator() == no_delayedscope)
+    {
+        if (expr->queryChild(0)->getOperator() == no_assertconcrete)
+            return LINK(expr);
+    }
 
+    OwnedHqlExpr check = createValue(no_assertconcrete, expr->getType(), LINK(expr), errpos.createLocationAttr());
+    return createDelayedScope(check.getClear());
+}
+
+void reportAbstractModule(IErrorReceiver * errors, IHqlExpression * expr, const ECLlocation & errpos)
+{
+    IHqlScope * scope = expr->queryScope();
     StringBuffer fieldText;
     if (scope)
     {
@@ -146,7 +156,6 @@ IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpressi
         reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (INTERFACE must be instantiated)");
     else
         reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context");
-    return LINK(expr);
 }
 
 IHqlExpression * checkCreateConcreteModule(IErrorReceiver * errors, IHqlExpression * expr, const IHqlExpression * locationExpr)

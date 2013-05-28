@@ -420,6 +420,7 @@
 #define HQLERR_CannotBeGrouped      2389
 #define HQLERR_CannotAccessShared   2390
 #define ERR_PluginNoScripting       2391
+#define ERR_ZERO_SIZE_VIRTUAL       2392
 
 #define ERR_ASSERTION_FAILS         100000
 
@@ -462,6 +463,7 @@
 #define HQLERR_UnexpectedOperator               3125
 #define HQLERR_UnexpectedType                   3126
 #define HQLERR_PayloadMismatch                  3127
+#define HQLERR_MemberXContainsVirtualRef        3128
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contain an illegal cycle/recursive definition %s"
@@ -491,6 +493,7 @@
 #define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s has the wrong type"
 #define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on a IFBLOCK for a inline table"
 #define HQLERR_PayloadMismatch_Text             "Mismatched => in inline dictionary definition"
+#define HQLERR_MemberXContainsVirtualRef_Text   "Member %s contains virtual references but not supported as virtual"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

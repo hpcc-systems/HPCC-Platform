@@ -2672,6 +2672,7 @@ public:
     virtual const char * queryFullName() const { PSEUDO_UNIMPLEMENTED; return NULL; }
     virtual ISourcePath * querySourcePath() const { PSEUDO_UNIMPLEMENTED; return NULL; }
     virtual bool hasBaseClass(IHqlExpression * searchBase) { return false; }
+    virtual bool allBasesFullyBound() const { return true; }
 
     virtual void ensureSymbolsDefined(HqlLookupContext & ctx) { }
 
@@ -2727,7 +2728,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
         return;
 
     IHqlExpression * scopeExpr = queryExpression(scope);
-    if (scopeExpr->hasProperty(virtualAtom))
+    if (scopeExpr->hasProperty(_virtualSeq_Atom))
     {
         reportError(ERR_NO_FORWARD_VIRTUAL, errpos, "Cannot use FORWARD in combination with a VIRTUAL module ");
         return;
@@ -2967,11 +2968,7 @@ bool HqlGram::checkValidBaseModule(const attribute & attr, SharedHqlExpr & expr)
         return true;
     }
 
-    if (op == no_param)
-        reportError(ERR_EXPECTED_MODULE, attr, "Cannot derive a module from a parameter");
-    else
-        reportError(ERR_EXPECTED_MODULE, attr, "Expected the name of a module definition");
-    return false;
+    return true;
 }
 
 
@@ -3018,15 +3015,10 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
     LinkedHqlExpr projectInterface = _projectInterface;
     if (projectInterface->getOperator() == no_funcdef)
         projectInterface.set(projectInterface->queryChild(0));
-    IHqlScope * implementScope = implementModule->queryScope()->queryConcreteScope();
-    if (!implementScope)
-    {
-        if (projectInterface->queryScope()->queryConcreteScope())
-            reportError(ERR_ABSTRACT_MODULE, modpos, "PROJECT(interface, module) - module is abstract.  (Parameters round the wrong way?)");
-        else
-            reportError(ERR_ABSTRACT_MODULE, modpos, "Cannot PROJECT an abstract module to a new interface");
-        return LINK(projectInterface);
-    }
+
+    OwnedHqlExpr concreteModule = checkCreateConcreteModule(lookupCtx.errs, implementModule, modpos.pos);
+    IHqlScope * scope = concreteModule->queryScope();
+    assertex(scope);
 
     Owned<IHqlScope> newScope = createVirtualScope();
     IHqlExpression * newScopeExpr = queryExpression(newScope);
@@ -3058,7 +3050,7 @@ IHqlExpression * HqlGram::implementInterfaceFromModule(const attribute & modpos,
         {
             IHqlExpression & baseSym = syms.item(iSym);
             _ATOM name = baseSym.queryName();
-            OwnedHqlExpr match  = implementScope->lookupSymbol(name, LSFpublic, lookupCtx);
+            OwnedHqlExpr match  = scope->lookupSymbol(name, LSFpublic, lookupCtx);
             if (match)
             {
                 HqlExprArray parameters;
@@ -3172,7 +3164,7 @@ IHqlExpression *HqlGram::lookupSymbol(IHqlScope * scope, _ATOM searchName)
     return scope->lookupSymbol(searchName, LSFpublic, lookupCtx);
 }
 
-unsigned HqlGram::extraLookupFlags(IHqlScope * scope)
+unsigned HqlGram::getExtraLookupFlags(IHqlScope * scope)
 {
     if (scope == containerScope)
         return LSFsharedOK;
@@ -3339,7 +3331,7 @@ IHqlExpression *HqlGram::lookupSymbol(_ATOM searchName, const attribute& errpos)
         ForEachItemIn(idx2, defaultScopes)
         {
             IHqlScope &plugin = defaultScopes.item(idx2);
-            IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic|extraLookupFlags(&plugin), lookupCtx);
+            IHqlExpression *ret = plugin.lookupSymbol(searchName, LSFpublic|getExtraLookupFlags(&plugin), lookupCtx);
             if (ret)
             {
                 recordLookupInTemplateContext(searchName, ret, templateScope);
@@ -8645,8 +8637,12 @@ bool HqlGram::isVirtualFunction(DefineIdSt * defineid, const attribute & errpos)
             reportError(ERR_BAD_VIRTUAL, errpos, "VIRTUAL can only be used inside a local module definition");
             return false;
         }
-        if (scope && queryExpression(scope)->hasProperty(virtualAtom))
-            return true;
+        if (scope)
+        {
+            IHqlExpression * scopeExpr = scope->queryExpression();
+            if (scopeExpr->hasProperty(interfaceAtom) || scopeExpr->hasProperty(virtualAtom))
+                return true;
+        }
     }
 
     if (defineid->scope & VIRTUAL_FLAG)
@@ -8655,26 +8651,28 @@ bool HqlGram::isVirtualFunction(DefineIdSt * defineid, const attribute & errpos)
 }
 
 //Allow the types to be grouped by different expressions, and sorted by different fields.
-static bool isEquivalentType(ITypeInfo * l, ITypeInfo * r)
+static bool isEquivalentType(ITypeInfo * derivedType, ITypeInfo * baseType)
 {
     loop
     {
-        if (isSameUnqualifiedType(l, r))
+        if (isSameUnqualifiedType(derivedType, baseType))
             return true;
-        if (l->getTypeCode() != r->getTypeCode())
+        if (derivedType->getTypeCode() != baseType->getTypeCode())
             return false;
-        switch (l->getTypeCode())
+        switch (derivedType->getTypeCode())
         {
         case type_table:
         case type_groupedtable:
         case type_row:
             {
-                l = l->queryChildType();
-                r = r->queryChildType();
-                if (!l || !r)
+                derivedType = derivedType->queryChildType();
+                baseType = baseType->queryChildType();
+                if (!derivedType || !baseType)
                     return false;
                 break;
             }
+        case type_scope:
+            return baseType->assignableFrom(derivedType);
         default:
             return false;
         }
@@ -8912,6 +8910,18 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
     if (scopeExpr && scopeExpr->getOperator() == no_virtualscope)
         symbolFlags |= ob_member;
 
+    if (defineid->scope & VIRTUAL_FLAG)
+    {
+        symbolFlags |= ob_virtual;
+        ITypeInfo * type = expr->queryType();
+        if (type && type->isScalar() && type->getSize() == 0)
+        {
+            StringBuffer typeText;
+            type->getECLType(typeText);
+            reportError(ERR_ZERO_SIZE_VIRTUAL, idattr, "A VIRTUAL with zero length type %s makes no sense", typeText.str());
+        }
+    }
+
     HqlExprCopyArray activeParameters;
     gatherActiveParameters(activeParameters);
 
@@ -8965,6 +8975,7 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
     else
     {
         expr.setown(createPureVirtual(type));
+        defineid->scope |= VIRTUAL_FLAG;
 
         if (!(defineid->scope & (EXPORT_FLAG|SHARED_FLAG)))
             reportError(ERR_SHOULD_BE_EXPORTED, nameattr, "Pure definitions should be exported or shared");
@@ -9041,6 +9052,12 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
         OwnedHqlExpr anyMatch = localScope->lookupSymbol(name, LSFsharedOK, lookupCtx);
         OwnedHqlExpr localMatch  = localScope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
 
+        if (localScopeExpr->hasProperty(virtualAtom) || localScopeExpr->hasProperty(interfaceAtom))
+        {
+            if (canBeVirtual(expr))
+                defineid->scope |= VIRTUAL_FLAG;
+        }
+
         if (!(defineid->scope & (EXPORT_FLAG|SHARED_FLAG)))
         {
             if (anyMatch && !localMatch)
@@ -9058,13 +9075,16 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
         }
         else
         {
-            if (anyMatch && !localScopeExpr->hasProperty(virtualAtom))
+            if (anyMatch && !localScopeExpr->hasProperty(_virtualSeq_Atom))
             {
                 //Not quite right - it is a problem if the place it is defined in isn't virtual
                 reportError(ERR_CANNOT_REDEFINE, nameattr, "Cannot redefine definition %s from a non-virtual MODULE", name->str());
             }
             else if (anyMatch && !localMatch)
             {
+                if (isVirtualSymbol(anyMatch))
+                    defineid->scope |= VIRTUAL_FLAG;
+
                 ITypeInfo * matchType = stripFunctionType(anyMatch->queryType());
                 //check the parameters and return type (if specified) are compatible, promote expression return type to same
                 if (type)
@@ -9337,55 +9357,66 @@ void HqlGram::processIfScope(const attribute & errpos, IHqlExpression * cond, IH
 void HqlGram::cloneInheritedAttributes(IHqlScope * scope, const attribute & errpos)
 {
     IHqlExpression * scopeExpr = queryExpression(scope);
-    AtomArray derived;
-    IHqlExpression * virtualAttr = scopeExpr->queryProperty(virtualAtom);
+    AtomArray inherited;
+    IHqlExpression * virtualSeqAttr = scopeExpr->queryProperty(_virtualSeq_Atom);
     ForEachChild(i, scopeExpr)
     {
-        LinkedHqlExpr cur = scopeExpr->queryChild(i);
-        IHqlScope * base = cur->queryScope();
-        if (cur->getOperator() == no_param)
+        IHqlExpression * cur = scopeExpr->queryChild(i);
+        IHqlScope * curBase = cur->queryScope();
+        if (curBase)
         {
-            cur.setown(base->lookupSymbol(_parameterScopeType_Atom, LSFpublic, lookupCtx));
-            base = cur->queryScope();
-        }
-        if (base)
-        {
-            IHqlExpression * baseVirtualAttr = cur->queryProperty(virtualAtom);
-            IHqlScope * concreteBase = base->queryConcreteScope();
+            IHqlExpression * baseVirtualAttr = cur->queryProperty(_virtualSeq_Atom);
             bool baseIsLibrary = cur->getOperator() == no_libraryscopeinstance;
 
+            //Find all the symbols exported by this base module
             HqlExprArray syms;
-            base->getSymbols(syms);
+            curBase->getSymbols(syms);
             syms.sort(compareSymbolsByName);
+
             ForEachItemIn(iSym, syms)
             {
-                IHqlExpression & baseSym = syms.item(iSym);
-                _ATOM name = baseSym.queryName();
+                _ATOM name = syms.item(iSym).queryName();
+                OwnedHqlExpr baseSym = curBase->lookupSymbol(name, LSFsharedOK|LSFfromderived, lookupCtx);
                 OwnedHqlExpr match  = scope->lookupSymbol(name, LSFsharedOK|LSFignoreBase, lookupCtx);
-                LinkedHqlExpr mapped = &baseSym;
-                if (baseIsLibrary)
-                    mapped.setown(concreteBase->lookupSymbol(name, LSFsharedOK, lookupCtx));        // creates a no_libraryselect
-                else if (baseVirtualAttr)
-                    mapped.setown(quickFullReplaceExpression(&baseSym, baseVirtualAttr, virtualAttr));
+
+                LinkedHqlExpr mapped = baseSym;
+                //Replace any references to the base module attribute with this new module.
+                if (baseVirtualAttr)
+                    mapped.setown(quickFullReplaceExpression(mapped, baseVirtualAttr, virtualSeqAttr));
+
                 if (match)
                 {
-                    if (derived.contains(*name))
+                    if (inherited.contains(*name) && (match->getOperator() != no_purevirtual))
                     {
+                        //Inheriting the definition from more than one base module => check they are compatible.
                         //Ignore differences in the named symbol.  Should think about setting start/end to 0.  What would it break?
                         if (mapped->queryBody() != match->queryBody())
+                        {
+                            //MORE: Could allow it to be ambiguous (by creating a no_purevirtual), but better to require immediate resolution
                             reportError(ERR_AMBIGUOUS_DEF, errpos, "Definition %s must be specified, it has different definitions in base modules", name->str());
+                        }
                     }
                 }
                 else
                 {
+                    //If this base class is unbound then we need a different kind of delayed reference..
+                    if (!curBase->allBasesFullyBound())
+                    {
+                        assertex(virtualSeqAttr || baseIsLibrary);
+                        if (virtualSeqAttr)
+                        {
+                            mapped.setown(createDelayedReference(no_unboundselect, virtualSeqAttr, mapped, LSFsharedOK|LSFfromderived, lookupCtx));
+                        }
+                    }
+
                     scope->defineSymbol(mapped.getClear());
-                    derived.append(*name);
+                    inherited.append(*name);
                 }
             }
         }
     }
 
-    if (virtualAttr)
+    if (virtualSeqAttr)
         scopeExpr->addOperand(errpos.pos.createLocationAttr());
 }
 
@@ -9523,7 +9554,9 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
                 newValue.setown(createPureVirtual(ds->queryType()));
                 needToMapOutputs = true;
             }
-            newSymbols.append(*cur.cloneAllAnnotations(newValue));
+            OwnedHqlExpr newSymbol = cur.cloneAllAnnotations(newValue);
+            assertex(isVirtualSymbol(newSymbol));
+            newSymbols.append(*newSymbol.getClear());
         }
     }
     unwindChildren(args, body);
@@ -9591,7 +9624,7 @@ IHqlExpression * HqlGram::createEvaluateOutputModule(const attribute & errpos, I
 
 IHqlExpression * HqlGram::createStoredModule(const attribute & errpos, IHqlExpression * scopeExpr)
 {
-    if (!scopeExpr->queryProperty(virtualAtom))
+    if (!scopeExpr->queryProperty(_virtualSeq_Atom))
         reportError(ERR_NOT_INTERFACE, errpos, "Argument must be an interface or virtual module");
     return ::createStoredModule(scopeExpr);
 }

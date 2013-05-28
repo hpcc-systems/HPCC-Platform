@@ -3264,7 +3264,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         useFunction(tgt.expr);
         return;
     case no_purevirtual:
-    case no_internalvirtual:
+    case no_internalselect:
         {
             //This shouldn't happen we should have an no_checkconcrete wrapper inserted into the tree like checkconstant,
             //but it currently can in obscure library contexts (e.g., library3ie2.xhql)
@@ -3277,6 +3277,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
         break;
     }
 
+    EclIR::dbglogIR(expr);
     StringBuffer msg;
     msg.append("Unexpected operator '").append(getOpString(op)).append("' in: HqlCppTranslator::buildExpr(");
     toECL(expr, msg, true);
@@ -5545,7 +5546,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     else
     {
         IHqlExpression * def = expr->queryBody()->queryFunctionDefinition();
-        assertex(def);
+        assertex(def && def->getOperator() == no_funcdef);
         funcdef.setown(doBuildInternalFunction(def));
     }
 

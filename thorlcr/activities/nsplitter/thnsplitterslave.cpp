@@ -180,6 +180,8 @@ class NSplitterSlaveActivity : public CSlaveActivity
     {
         Owned<CSplitterOutputBase> input;
         Linked<NSplitterSlaveActivity> activity;
+        mutable SpinLock processActiveLock;
+
         unsigned id;
 
     public:
@@ -188,6 +190,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
         CDelayedInput(NSplitterSlaveActivity &_activity) : CThorDataLink(&_activity), activity(&_activity), id(0) { }
         void setInput(CSplitterOutputBase *_input, unsigned _id=0)
         {
+            SpinBlock b(processActiveLock);
             input.setown(_input);
             id = _id;
         }
@@ -222,6 +225,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
         }
         virtual unsigned __int64 queryTotalCycles() const
         {
+            SpinBlock b(processActiveLock);
             if (!input)
                 return 0;
             return input->queryTotalCycles();
