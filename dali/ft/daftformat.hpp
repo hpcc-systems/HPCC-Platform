@@ -97,6 +97,4 @@ extern DALIFT_API IOutputProcessor * createOutputProcessor(const FileFormat & fo
 
 extern DALIFT_API IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const FileFormat & srcFormat, const FileFormat & tgtFormat, bool calcOutput, const char * slave, const char *wuid);
 
-
-
 #endif
