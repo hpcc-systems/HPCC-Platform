@@ -11841,6 +11841,13 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             }
             return folded.getClear();
         }
+    case no_assertconcrete:
+        {
+            ECLlocation errpos;
+            errpos.extractLocationAttr(expr->queryChild(1));
+            reportAbstractModule(translator.queryErrors(), expr->queryChild(0), errpos);
+            throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
+        }
     case no_pat_instance:
         {
             OwnedHqlExpr child = transform(expr->queryChild(0));
@@ -12003,9 +12010,20 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 return transformChildrenNoAnnotations(expr);
             break;
         }
-
     case no_call:
-        return transformCall(expr);
+        {
+            IHqlExpression * oldFuncdef = expr->queryFunctionDefinition();
+            if (oldFuncdef->getOperator() == no_delayedselect)
+            {
+                IHqlExpression * module = oldFuncdef->queryChild(1);
+                ECLlocation errpos(module);
+                //errpos.extractLocationAttr(expr->queryChild(1));
+                reportAbstractModule(translator.queryErrors(), module, errpos);
+                throw MakeStringException(HQLERR_ErrorAlreadyReported, "%s", "");
+            }
+            assertex(oldFuncdef->getOperator() == no_funcdef);
+            return transformCall(expr);
+        }
     case no_externalcall:
         //Yuk.... Because we ensure that all records have a name, we need to make sure that external functions that return records
         //also have there return value normalized - otherwise (jtolbert2.xhql) you can create an ambiguity
@@ -12442,7 +12460,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     DEBUG_TIMER("EclServer: tree transform: normalize", msTick()-time1);
 
     if (wu()->getDebugValueBool("dumpIR", false))
-        EclIR::dump_ir(exprs);
+        EclIR::dbglogIR(exprs);
 
     checkNormalized(exprs);
 #ifdef PICK_ENGINE_EARLY

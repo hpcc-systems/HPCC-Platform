@@ -96,7 +96,7 @@ protected:
 
     // Iterate through dependencies and execute them
     bool doExecuteItemDependencies(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
-    bool doExecuteItemDependency(IRuntimeWorkflowItem & item, unsigned dep, unsigned scheduledWfid);
+    bool doExecuteItemDependency(IRuntimeWorkflowItem & item, unsigned dep, unsigned scheduledWfid, bool alwaysEvaluate);
     // Execute an item (wrapper to deal with exceptions)
     void doExecuteItem(IRuntimeWorkflowItem & item, unsigned scheduledWfid);
     // Actually executes item: calls process->perform()

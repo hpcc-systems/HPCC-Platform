@@ -129,6 +129,7 @@
       <xs:attributeGroup ref="Store"/>
       <xs:attributeGroup ref="Backup"/>
       <xs:attributeGroup ref="LDAP"/>
+      <xs:attributeGroup ref="DFS"/>
       <xs:attribute name="build" type="buildType" use="required">
         <xs:annotation>
           <xs:appinfo>
@@ -285,10 +286,17 @@
     </xs:attribute>
   </xs:attributeGroup>
    <xs:attributeGroup name="DFS">
-    <xs:attribute name="forceGroupUpdate" use="optional" default="false">
+    <xs:attribute name="forceGroupUpdate" type="xs:boolean" use="optional" default="false">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Force group updates on startup, if environment mismatch</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="numThreads" type="xs:nonNegativeInteger" use="optional" default="30">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Number of threads to use to process DFS requests</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>

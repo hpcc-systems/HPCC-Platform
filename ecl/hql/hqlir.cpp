@@ -269,9 +269,9 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,chooseds);
     EXPAND_CASE(no,alias);
     EXPAND_CASE(no,datasetfromdictionary);
-    EXPAND_CASE(no,unused20);
-    EXPAND_CASE(no,unused21);
-    EXPAND_CASE(no,unused22);
+    EXPAND_CASE(no,delayedscope);
+    EXPAND_CASE(no,assertconcrete);
+    EXPAND_CASE(no,unboundselect);
     EXPAND_CASE(no,unused23);
     EXPAND_CASE(no,unused24);
     EXPAND_CASE(no,dataset_from_transform);
@@ -587,7 +587,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,virtualscope);
     EXPAND_CASE(no,concretescope);
     EXPAND_CASE(no,purevirtual);
-    EXPAND_CASE(no,internalvirtual);
+    EXPAND_CASE(no,internalselect);
     EXPAND_CASE(no,delayedselect);
     EXPAND_CASE(no,pure);
     EXPAND_CASE(no,libraryscope);
@@ -743,6 +743,7 @@ inline type_t getRequiredTypeCode(node_operator op)
     case no_attr:
     case no_attr_expr:
     case no_attr_link:
+    case no_service:
         return type_null;
 
     //These must never have the type
@@ -823,6 +824,7 @@ public:
     _ATOM name;
     unsigned __int64 sequence;
     IdArray args;
+    IdArray special;
     IdArray comment;
 };
 
@@ -1276,9 +1278,11 @@ public:
         case annotate_symbol:
             line.append("symbol ").append(info.name);
             if (info.value & ob_exported)
-                line.append("exported");
+                line.append(" exported");
             else if (info.value & ob_shared)
-                line.append("shared");
+                line.append(" shared");
+            if (info.value & ob_virtual)
+                line.append(" virtual");
             break;
         case annotate_location:
             line.append("location '").append(info.name);
@@ -1438,6 +1442,17 @@ protected:
                 appendId(info.args.item(i));
             }
             line.append(")");
+        }
+        if (info.special.ordinality())
+        {
+            line.append("[");
+            ForEachItemIn(i, info.special)
+            {
+                if (i)
+                    line.append(",");
+                appendId(info.special.item(i));
+            }
+            line.append("]");
         }
         type_t tc = getRequiredTypeCode(op);
         if (tc == type_none)
@@ -1852,6 +1867,7 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
                 return target->addCompoundType(tc, info);
             }
         case type_function:
+        case type_feature:
             return target->addUnknownType(tc);
         case type_none:
         case type_ifblock:
@@ -1860,7 +1876,6 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_pointer:
         case type_class:
         case type_array:
-        case type_feature:
             throwUnexpected();
             break;
         default:
@@ -1953,6 +1968,25 @@ id_t ExpressionIRPlayer::doProcessExpr(IHqlExpression * expr)
     }
 #endif
 
+    switch (op)
+    {
+    case no_externalcall:
+        info.special.append(processExpr(expr->queryExternalDefinition()));
+        break;
+    case no_call:
+        info.special.append(processExpr(expr->queryBody()->queryFunctionDefinition()));
+        break;
+    case no_virtualscope:
+    case no_concretescope:
+        {
+            HqlExprArray scopeSymbols;
+            expr->queryScope()->getSymbols(scopeSymbols);
+            ForEachItemIn(i, scopeSymbols)
+                info.special.append(processExpr(&scopeSymbols.item(i)));
+            break;
+        }
+    }
+
     if (getRequiredTypeCode(op) == type_none)
         info.type = processType(expr->queryType());
     info.sequence = expr->querySequenceExtra();
@@ -2012,6 +2046,8 @@ id_t ExpressionIRPlayer::doProcessAnnotation(IHqlExpression * expr)
             IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(expr->queryAnnotation());
             info.name = expr->queryName()->str();
             info.value = annotation->isExported() ? ob_exported : annotation->isShared() ? ob_shared : 0;
+            if (annotation->isVirtual())
+                info.value |= ob_virtual;
             break;
         }
     case annotate_location:
@@ -2121,8 +2157,13 @@ extern HQL_API void dump_irn(unsigned n, ...)
     va_start(args, n);
     for (unsigned i=0; i < n;i++)
     {
-        IHqlExpression * expr = va_arg(args, IHqlExpression *);
-        reader.play(expr);
+        IInterface * next = va_arg(args, IInterface *);
+        IHqlExpression * expr = dynamic_cast<IHqlExpression *>(next);
+        ITypeInfo * type = dynamic_cast<ITypeInfo *>(next);
+        if (expr)
+            reader.play(expr);
+        else if (type)
+            reader.play(type);
     }
     va_end(args);
 }
@@ -2134,7 +2175,6 @@ extern HQL_API void dbglogIR(IHqlExpression * expr)
     DblgLogIRBuilder output(defaultDumpOptions);
     playIR(output, expr, NULL, NULL);
 }
-
 
 extern HQL_API void dbglogIR(const HqlExprArray & exprs)
 {

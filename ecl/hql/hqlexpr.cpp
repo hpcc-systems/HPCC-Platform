@@ -1363,7 +1363,7 @@ const char *getOpString(node_operator op)
     case no_virtualscope: return "MODULE";
     case no_concretescope: return "MODULE";
     case no_purevirtual: return "__PURE__";
-    case no_internalvirtual: return "no_internalvirtual";
+    case no_internalselect: return "no_internalselect";
     case no_delayedselect: return "no_delayedselect";
 //  case no_func: return "no_func";
     case no_libraryselect: return "no_libraryselect";
@@ -1436,10 +1436,13 @@ const char *getOpString(node_operator op)
     case no_createdictionary: return "DICTIONARY";
     case no_chooseds: return "CHOOSE";
     case no_datasetfromdictionary: return "DATASET";
+    case no_delayedscope: return "no_delayedscope";
+    case no_assertconcrete: return "no_assertconcrete";
+    case no_unboundselect: return "no_unboundselect";
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused20: case no_unused21: case no_unused22: case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
+    case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
@@ -1569,7 +1572,7 @@ bool checkConstant(node_operator op)
     case no_forcenolocal:
     case no_allnodes:
     case no_thisnode:
-    case no_internalvirtual:
+    case no_internalselect:
     case no_purevirtual:
     case no_libraryinput:
     case no_libraryselect:
@@ -1782,7 +1785,8 @@ childDatasetType getChildDatasetType(IHqlExpression * expr)
     case no_external:
     case no_delayedselect:
     case no_libraryselect:
-    case no_internalvirtual:
+    case no_internalselect:
+    case no_unboundselect:
     case no_purevirtual:
     case no_libraryinput:
     case no_rowsetindex:
@@ -2201,8 +2205,9 @@ inline unsigned doGetNumChildTables(IHqlExpression * dataset)
     case no_dataset_from_transform:
         return 0;
     case no_delayedselect:
+    case no_unboundselect:
     case no_libraryselect:
-    case no_internalvirtual:
+    case no_internalselect:
     case no_purevirtual:
     case no_libraryinput:
         return 0;
@@ -2496,8 +2501,9 @@ bool definesColumnList(IHqlExpression * dataset)
     case no_combinegroup:
     case no_rollupgroup:
     case no_cluster:
-    case no_internalvirtual:
+    case no_internalselect:
     case no_delayedselect:
+    case no_unboundselect:
     case no_libraryselect:
     case no_purevirtual:
     case no_libraryinput:
@@ -3219,8 +3225,8 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_libraryinput:
         infoFlags |= HEFgraphDependent;
         break;
-    case no_internalvirtual:
-        infoFlags |= HEFinternalVirtual;
+    case no_internalselect:
+        infoFlags |= HEFinternalSelect;
         break;
     case no_colon:
         infoFlags2 |= HEF2workflow;
@@ -3406,6 +3412,7 @@ void CHqlExpression::updateFlagsAfterOperands()
         break;
     case no_delayedselect:
     case no_libraryselect:
+    case no_unboundselect:
         //kill any flag derived from selecting pure virtual members
         infoFlags &= ~HEFcontextDependentException;
         break;
@@ -3894,6 +3901,7 @@ unsigned CHqlExpression::getCachedEclCRC()
         crc = no_self;
         break;
     case no_assertconstant:
+    case no_assertconcrete:
         return queryChild(0)->getCachedEclCRC();
     case no_sortlist:
         //backward compatibility
@@ -5960,10 +5968,11 @@ void CHqlDataset::cacheParent()
     case no_rows:
     case no_rowsetindex:
     case no_rowsetrange:
-    case no_internalvirtual:
+    case no_internalselect:
     case no_delayedselect:
     case no_libraryselect:
     case no_purevirtual:
+    case no_unboundselect:
     case no_libraryscopeinstance:
     case no_libraryinput:
         rootTable = this;
@@ -6662,8 +6671,8 @@ CHqlSymbolAnnotation::CHqlSymbolAnnotation(_ATOM _name, _ATOM _module, IHqlExpre
     symbolFlags = _symbolFlags;
     module = _module;
     funcdef = _funcdef;
-    if (funcdef && containsInternalVirtual(funcdef))
-        infoFlags |= HEFinternalVirtual;
+    if (funcdef && containsInternalSelect(funcdef))
+        infoFlags |= HEFinternalSelect;
 }
 
 void CHqlSymbolAnnotation::sethash()
@@ -7497,14 +7506,6 @@ void CHqlScope::removeSymbol(_ATOM name)
 }
 
 
-IHqlDataset *CHqlScope::lookupDataset(_ATOM name)
-{
-    IHqlExpression *expr = symbols.getLinkedValue(name);
-    if (expr)
-        return expr->queryDataset();
-    return NULL;
-}
-
 IHqlExpression *CHqlScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr ret = symbols.getLinkedValue(searchName);
@@ -7710,6 +7711,7 @@ IHqlExpression *CHqlRemoteScope::clone(HqlExprArray &newkids)
     Link();
     return this;
 }
+
 
 IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
@@ -8002,6 +8004,8 @@ c) Ensure all system plugins are parsed (so that (d) works, and allows the parsi
 
 void CHqlMergedScope::addScope(IHqlScope * scope)
 {
+    //This only supports real scopes - it can't be based on modile definitions that could be virtual.
+    assertex(!scope->queryExpression()->queryProperty(_virtualSeq_Atom));
     if (mergedScopes.ordinality())
     {
         const char * name0 = mergedScopes.item(0).queryFullName();
@@ -8009,6 +8013,16 @@ void CHqlMergedScope::addScope(IHqlScope * scope)
         assertex(name0 == name1 || (name0 && name1 && (stricmp(name0, name1) == 0)));
     }
     mergedScopes.append(*LINK(scope));
+}
+
+bool CHqlMergedScope::allBasesFullyBound() const
+{
+    ForEachItemIn(i, mergedScopes)
+    {
+        if (!mergedScopes.item(i).allBasesFullyBound())
+            return false;
+    }
+    return true;
 }
 
 inline bool canMergeDefinition(IHqlExpression * expr)
@@ -8210,7 +8224,7 @@ IHqlExpression *CHqlLibraryInstance::lookupSymbol(_ATOM searchName, unsigned loo
     if ((lookupFlags & LSFignoreBase))
         return ret.getClear();
     
-    return createDelayedReference(no_libraryselect, this, ret, (lookupFlags & LSFignoreBase) != 0);
+    return createDelayedReference(no_libraryselect, this, ret, lookupFlags, ctx);
 }
 
 IHqlExpression * createLibraryInstance(IHqlExpression * scopeFunction, HqlExprArray &operands)
@@ -8260,7 +8274,7 @@ static IHqlExpression * cloneFunction(IHqlExpression * expr)
 }
 
 
-IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * moduleMarker, IHqlExpression * attr, bool ignoreBase)
+IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * moduleMarker, IHqlExpression * attr, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     IHqlExpression * record = queryOriginalRecord(attr);
     if (!record)
@@ -8273,7 +8287,7 @@ IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * modul
     args.append(*LINK(moduleMarker));
     args.append(*LINK(attr));
     args.append(*createOpenNamedValue(no_attrname, makeVoidType(), attr->queryName())->closeExpr());
-    if (ignoreBase)
+    if (lookupFlags & LSFignoreBase)
         args.append(*createAttribute(ignoreBaseAtom));
     if (grouping)
         args.append(*createAttribute(groupedAtom, LINK(grouping)));
@@ -8290,14 +8304,22 @@ IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * modul
     else
         ret.setown(createValue(op, attr->getType(), args));
 
+    if (attr->isScope())
+    {
+        if (attr->getOperator() != no_funcdef)
+            ret.setown(createDelayedScope(ret.getClear()));
+    }
+
     return attr->cloneAllAnnotations(ret);
 }
 
-static HqlTransformerInfo virtualSymbolReplacerInfo("VirtualSymbolReplacer");
+//---------------------------------------------------------------------------------------------------------------------
+
 class VirtualSymbolReplacer : public QuickHqlTransformer
 {
 public:
-    VirtualSymbolReplacer(IErrorReceiver * _errors, IHqlExpression * _searchModule, SymbolTable & _symbols) : QuickHqlTransformer(virtualSymbolReplacerInfo, _errors), symbols(_symbols) 
+    VirtualSymbolReplacer(HqlTransformerInfo & _info, IErrorReceiver * _errors, IHqlExpression * _searchModule)
+    : QuickHqlTransformer(_info, _errors)
     { 
         visited.setown(createAttribute(alreadyVisitedAtom));
         searchModule = _searchModule;
@@ -8326,7 +8348,7 @@ public:
         }
 
         IHqlExpression * ret;
-        if (containsInternalVirtual(expr))
+        if (containsInternalSelect(expr))
         {
             expr->setTransformExtraUnlinked(visited);
             ret = createTransformed(expr);
@@ -8347,12 +8369,13 @@ public:
         node_operator op = expr->getOperator();
         switch (op)
         {
-        case no_internalvirtual:
+        case no_unboundselect:
+            throwUnexpected();
+        case no_internalselect:
             if (expr->queryChild(1) == searchModule)
             {
                 _ATOM name = expr->queryChild(3)->queryName();
-                OwnedHqlExpr value = symbols.getLinkedValue(name);
-                return transform(value);
+                return getVirtualReplacement(name);
             }
             break;
         }
@@ -8360,19 +8383,180 @@ public:
         return QuickHqlTransformer::createTransformedBody(expr);
     }
 
+protected:
+    virtual IHqlExpression * getVirtualReplacement(_ATOM name) = 0;
 
 protected:
-    SymbolTable & symbols;
     OwnedHqlExpr visited;
     IHqlExpression * searchModule;
 };
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static HqlTransformerInfo concreteVirtualSymbolReplacerInfo("ConcreteVirtualSymbolReplacer");
+class ConcreteVirtualSymbolReplacer : public VirtualSymbolReplacer
+{
+public:
+    ConcreteVirtualSymbolReplacer(IErrorReceiver * _errors, IHqlExpression * _searchModule, SymbolTable & _symbols)
+    : VirtualSymbolReplacer(concreteVirtualSymbolReplacerInfo, _errors, _searchModule), symbols(_symbols)
+    {
+    }
+
+    virtual IHqlExpression * getVirtualReplacement(_ATOM name)
+    {
+        OwnedHqlExpr value = symbols.getLinkedValue(name);
+        return transform(value);
+    }
+
+protected:
+    SymbolTable & symbols;
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+static HqlTransformerInfo parameterVirtualSymbolReplacerInfo("ParameterVirtualSymbolReplacer");
+class ParameterVirtualSymbolReplacer : public VirtualSymbolReplacer
+{
+public:
+    ParameterVirtualSymbolReplacer(HqlLookupContext & _ctx, IHqlScope * _paramScope, IHqlExpression * _virtualAttribute, unsigned _lookupFlags)
+    : VirtualSymbolReplacer(concreteVirtualSymbolReplacerInfo, _ctx.errs, _virtualAttribute),
+      ctx(_ctx), paramScope(_paramScope), lookupFlags(_lookupFlags)
+    {
+    }
+
+    virtual IHqlExpression * getVirtualReplacement(_ATOM name)
+    {
+        return paramScope->lookupSymbol(name, lookupFlags, ctx);
+    }
+
+protected:
+    HqlLookupContext & ctx;
+    IHqlScope * paramScope;
+    unsigned lookupFlags;
+};
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+/*
+Modules, members, scopes and virtual members.
+
+ECL allows some modules to be "virtual"
+- MODULE,VIRTUAL and INTERFACE indicate that every member within that module is virtual
+- EXPORT VIRTUAL and SHARED VIRTUAL before a definition mark that definition as virtual
+- If an EXPORTED of SHARED symbol is VIRTUAL in a base module it is virtual in this module.
+
+Each module that contains any virtuals has a unique virtualSeq attribute associated with it.
+While a virtual module is being defined it is marked as incomplete:
+* When defining a member of a virtual class, references to other members of the class need to be delayed.  (The might
+  be redefined in this module, or in a module that inherits from this one.)
+  This is done by adding an expression no_internalselect(virtual-attribute, <resolved-member>, flags, ...)
+  - <resolved> is used for the name and for the type - its value is not used.
+* Whenever a member is selected from an incomplete module it must be a reference from one of its own members, so
+  lookupSymbol() returns an expression in this form.
+* Some types of expressions (e.g., records) must currently be returned as no_record and can't be delayed.  In this case
+  the value is returned (along with no_internalselects for members it references).
+
+When a module is completed *in the parser* the following happens:
+* Any definitions that haven't been overridden are extracted from the base modules.
+  o If the base module is unbound then create a no_unboundselect as a delayed reference.
+  o If the base definition is non-virtual, inherit the same definition (add test!)
+  o Otherwise use the definition from the base with the base module's virtual uid replaced with references
+    to the current module's virtual uid. [definition could also be unbound or undefined]
+  o If the definition is defined in multiple base classes ambiguously then complain.
+    (An alternative would be to convert it to a no_purevirtual definition and allow it to be overridden later.)
+  o If some definitions are no_unboundselect then add a $hasUnknownBase internal attribute.
+  - NOTE: Issue HPCC-9325 proposes changing the way inherited members are processed.
+
+When a module expression is closed:
+* If all bases are bound:
+  o If the module has a $hasUnknownBase attribute then re-resolve all no_unboundselect definitions, and remove the attribute.
+
+Parameters:
+* A parameter needs to be projected to the type of the argument to avoid symbols in a derived module from clashing
+  with those defined inside the function.  (Stops the interface becoming polluted with new names).
+* Could get syntax errors from incompatible definitions (e.g., derived from parameter) and derived argument.
+
+The concrete module is created on demand if the module is not abstract.
+
+When a value is retrieved from a virtual module the following happens:
+* If being accessed from a derived module just return the definition
+* If has a concrete value then return it.
+* If it doesn't have any unbound bases then it is an error accessing an abstract class.
+* If the type of the value cannot be virtual
+  o return the value with all no_internalselects and no_unboundselects recursively expanded as no_delayedselects.
+* Create no_assertconcrete node for the current scope. - may not be needed.
+  Create a no_delayedselect(<asserted-concrete>, <resolved-member>, flags, ...)
+
+Delayedselects/internalselects
+* Create a <op>(scope, <resolved-member>, flags, ...)
+* If results is a module wrap it in a no_delayedscope
+* If it is a function.....then it will create a CHqlDelayedCall
+
+The following opcodes are used
+
+no_internalselect - a reference to another member within the same module definition
+no_unboundselect - a reference to a member in a base module definition that is currently unbound.
+no_delayedselect - a (delayed) reference to a member in another module.
+no_purevirtual - a member that has no associated definition.
+
+*/
+
+bool canBeDelayed(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    //The fewer entries in here the better
+    case no_enum:
+    case no_typedef:
+    case no_macro:
+    case no_record:             // LEFT has problems because queryRecord() is the unbound funcdef
+    case no_keyindex:           // BUILD() and other functions a reliant on this being expanded out
+    case no_newkeyindex:
+        return false;
+    case no_funcdef:
+        return canBeDelayed(expr->queryChild(0));
+    }
+    return true;
+}
+
+bool canBeVirtual(IHqlExpression * expr)
+{
+    switch (expr->getOperator())
+    {
+    case no_record:
+    case no_enum:
+    case no_typedef:
+    case no_type:
+    case no_macro:
+        return false;
+    case no_virtualscope:
+    case no_delayedscope:
+    case no_call:
+        return true;
+    case no_concretescope:
+    case no_libraryscope:
+    case no_libraryscopeinstance:
+    case no_forwardscope:
+        return false;
+    case no_scope:
+        throwUnexpected();
+    case no_funcdef:
+        return canBeVirtual(expr->queryChild(0));
+    }
+    assertex(!expr->isScope());
+    return true;
+}
 
 CHqlVirtualScope::CHqlVirtualScope(_ATOM _name, const char * _fullName) 
 : CHqlScope(no_virtualscope, _name, _fullName)
 {
     isAbstract = false;
     complete = false;
-    isVirtual = false;
+    containsVirtual = false;
+    allVirtual = false;
     fullyBoundBase =true;
 }
 
@@ -8381,52 +8565,46 @@ IHqlExpression *CHqlVirtualScope::addOperand(IHqlExpression * arg)
     if (arg->isAttribute())
     {
         _ATOM name = arg->queryName();
-        if (name == virtualAtom)
+        if (name == _virtualSeq_Atom)
         {
             if (arg->querySequenceExtra() == 0)
             {
                 //create a virtual attribute with a unique id.
-                ensureVirtual();
+                ensureVirtualSeq();
                 arg->Release();
                 return this;
             }
-            assertex(!hasProperty(virtualAtom));
-            isVirtual = true;
+            assertex(!hasProperty(_virtualSeq_Atom));
+            containsVirtual = true;
         }
-        else if (name == interfaceAtom)
+        else if (name == interfaceAtom || name == virtualAtom)
         {
-            ensureVirtual();
-            isAbstract = true;
+            ensureVirtualSeq();
+            isAbstract = (name == interfaceAtom);
+            allVirtual = true;
         }
     }
     else if (arg->isScope())
     {
-        if (arg->hasProperty(virtualAtom))
-            ensureVirtual();
+        if (arg->hasProperty(_virtualSeq_Atom))
+            ensureVirtualSeq();
         else if (arg->getOperator() == no_param)
-        {
-            //if param type is virtual
-            isAbstract = true;  // no point trying to create a concrete version.
-            fullyBoundBase = false;
-            ensureVirtual();
-        }
+            ensureVirtualSeq();    // yuk- needs another member function.
+
         if (!areAllBasesFullyBound(arg))
-        {
-            isAbstract = true;
             fullyBoundBase = false;
-        }
     }
     return CHqlScope::addOperand(arg);
 }
 
 
 static UniqueSequenceCounter virtualSequence;
-void CHqlVirtualScope::ensureVirtual()
+void CHqlVirtualScope::ensureVirtualSeq()
 {
-    if (!isVirtual)
+    if (!containsVirtual)
     {
-        CHqlScope::addOperand(createSequence(no_attr, makeNullType(), virtualAtom, virtualSequence.next()));
-        isVirtual = true;
+        CHqlScope::addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
+        containsVirtual = true;
     }
 }
 
@@ -8460,6 +8638,13 @@ IHqlScope * CHqlVirtualScope::clone(HqlExprArray & children, HqlExprArray & symb
     return cloned->cloneAndClose(children, symbols);
 }
 
+extern HQL_API bool isVirtualSymbol(IHqlExpression * expr)
+{
+    IHqlNamedAnnotation * symbol = static_cast<IHqlNamedAnnotation *>(expr->queryAnnotation());
+    if (symbol && symbol->getAnnotationKind() == annotate_symbol);
+        return symbol->isVirtual();
+    return false;
+}
 
 void CHqlVirtualScope::defineSymbol(IHqlExpression * expr)
 {
@@ -8469,54 +8654,138 @@ void CHqlVirtualScope::defineSymbol(IHqlExpression * expr)
     if (isPureVirtual(expr))
     {
         isAbstract = true;
-        ensureVirtual();        // a little bit too late... but probably good enough
+        ensureVirtualSeq();        // a little bit too late... but probably good enough. should be an error if not virtual.
     }
+    else
+    {
+        if (isVirtualSymbol(expr))
+        {
+            ensureVirtualSeq();
+        }
+        else
+        {
+            //MORE: If this is virtual in the base class then it is an error if virtual flag not set
+        }
+    }
+
     CHqlScope::defineSymbol(expr);
+}
+
+bool CHqlVirtualScope::queryForceSymbolVirtual(_ATOM searchName, HqlLookupContext & ctx)
+{
+    if (allVirtual)
+        return true;
+
+    IHqlExpression * definitionModule = NULL;
+    OwnedHqlExpr match = lookupBaseSymbol(definitionModule, searchName, LSFsharedOK, ctx);
+    if (match)
+    {
+        IHqlNamedAnnotation * symbol = static_cast<IHqlNamedAnnotation *>(match->queryAnnotation());
+        assertex(symbol && symbol->getAnnotationKind() == annotate_symbol);
+        return symbol->isVirtual();
+    }
+    return false;
+}
+
+IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitionModule, _ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+{
+    ForEachChild(i, this)
+    {
+        IHqlExpression * child = queryChild(i);
+        IHqlScope * base = child->queryScope();
+        if (base)
+        {
+            IHqlExpression * match = base->lookupSymbol(searchName, lookupFlags|LSFfromderived, ctx);
+            if (match)
+            {
+                definitionModule = child;
+                return match;
+            }
+        }
+    }
+    return NULL;
 }
 
 IHqlExpression *CHqlVirtualScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     //Are we just trying to find out what the definition in this scope is?
-    if ((lookupFlags & LSFignoreBase))
+    if (lookupFlags & LSFignoreBase)
         return CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
 
     //The scope is complete=>this is a reference from outside the scope
     if (complete)
     {
-        //Not completely convinced about this...
-        if (concrete)
+        //NOTE: If the members are virtual, then all that is significant is whether a match exists or not.
+        if (concrete && !(lookupFlags & LSFfromderived))
             return concrete->lookupSymbol(searchName, lookupFlags, ctx);
 
+        //The class is not concrete...
+        //1. It is based on a parameter, and not complete because the parameter hasn't been substituted.
+        //2. A reference from a derived module accessing the base definition.
+        //3. An illegal access to a member of an abstract class
         OwnedHqlExpr match = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
-        if (!fullyBoundBase)
-            return createDelayedReference(no_delayedselect, this, match, (lookupFlags & LSFignoreBase) != 0);
+        if (!match)
+            return NULL;
+
+        if (!containsVirtual || (lookupFlags & LSFfromderived))
+            return match.getClear();
+
+        if (!isVirtualSymbol(match))
+        {
+            //Select from a parameter where the item is not defined in the parameter's scope => error
+            if (match->getOperator() == no_unboundselect)
+                throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
+
+            if (containsInternalSelect(match))
+            {
+                //All internal references need to be recursively replaced with no_delayedselect
+                //e.g., if fields used to provide default values for records.
+                ParameterVirtualSymbolReplacer replacer(ctx, this, queryProperty(_virtualSeq_Atom), LSFsharedOK);
+                return replacer.transform(match);
+            }
+            return match.getClear();
+        }
+        assertex(canBeVirtual(match));
+
+        match.setown(createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx));
 
         //module.x can be used for accessing a member of a base module - even if it is abstract
         return match.getClear();
     }
 
-    //check to see if it is defined
+    //check to see if it is defined in the current module
     OwnedHqlExpr match = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
+    IHqlExpression * definitionModule = this;
     if (!match)
-    {
-        ForEachChild(i, this)
-        {
-            IHqlScope * base = queryChild(i)->queryScope();
-            if (base)
-            {
-                match.setown(base->lookupSymbol(searchName, lookupFlags, ctx));
-                if (match)
-                    break;
-            }
-        }
-    }
+        match.setown(lookupBaseSymbol(definitionModule, searchName, lookupFlags, ctx));
 
     if (match)
     {
-        if (!isVirtual || !canBeVirtual(match))
+        if (!containsVirtual)
             return match.getClear();
 
-        return createDelayedReference(no_internalvirtual, queryProperty(virtualAtom), match, (lookupFlags & LSFignoreBase) != 0);
+        if (!isVirtualSymbol(match))
+        {
+            //Select from a parameter where the item is not defined in the parameter's scope => error
+            node_operator matchOp = match->getOperator();
+            if (matchOp == no_unboundselect || matchOp == no_purevirtual)
+                throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
+
+            if (containsInternalSelect(match))
+            {
+                //throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
+                //All internal references need to be recursively replaced with no_internalselect
+                //e.g., if fields used to provide default values for records.
+                ParameterVirtualSymbolReplacer replacer(ctx, this, definitionModule->queryProperty(_virtualSeq_Atom), LSFsharedOK|LSFfromderived);
+                return replacer.transform(match);
+            }
+            return match.getClear();
+        }
+        assertex(canBeVirtual(match));
+
+        //References to "virtual" members are always represented with a delayed reference,
+        //so that the correct definition will be used.
+        return createDelayedReference(no_internalselect, queryProperty(_virtualSeq_Atom), match, lookupFlags, ctx);
     }
 
     return NULL;
@@ -8524,11 +8793,12 @@ IHqlExpression *CHqlVirtualScope::lookupSymbol(_ATOM searchName, unsigned lookup
 
 IHqlExpression * CHqlVirtualScope::closeExpr()
 {
-    if (isVirtual && !isAbstract)
+    if (containsVirtual && !isAbstract && fullyBoundBase)
     {
+        resolveUnboundSymbols();
         concrete.setown(deriveConcreteScope());
-        if (!containsInternalVirtual(concrete->queryExpression()))
-            infoFlags &= ~HEFinternalVirtual;
+        if (!containsInternalSelect(concrete->queryExpression()))
+            infoFlags &= ~HEFinternalSelect;
     }
 
     return CHqlScope::closeExpr();
@@ -8544,7 +8814,7 @@ IHqlScope * CHqlVirtualScope::deriveConcreteScope()
 
     //begin scope
     {
-        VirtualSymbolReplacer replacer(NULL, queryProperty(virtualAtom), symbols);
+        ConcreteVirtualSymbolReplacer replacer(NULL, queryProperty(_virtualSeq_Atom), symbols);
         SymbolTableIterator iter(symbols);
         ForEach(iter)
         {
@@ -8559,48 +8829,50 @@ IHqlScope * CHqlVirtualScope::deriveConcreteScope()
 }
 
 
-bool canBeDelayed(IHqlExpression * expr)
+void CHqlVirtualScope::resolveUnboundSymbols()
 {
-    switch (expr->getOperator())
+    IHqlExpression * virtualAttr = queryProperty(_virtualSeq_Atom);
+    ThrowingErrorReceiver errors;
+    HqlDummyLookupContext localCtx(&errors);
+    SymbolTableIterator iter(symbols);
+    HqlExprArray defines;
+    ForEach(iter)
     {
-    //The fewer entries in here the better
-    case no_enum:
-    case no_typedef:
-    case no_macro:
-    case no_record:             // LEFT has problems because queryRecord() is the unbound funcdef
-    case no_keyindex:           // BUILD() and other functions a reliant on this being expanded out
-    case no_newkeyindex:
-        return false;
-    case no_funcdef:
-        return canBeDelayed(expr->queryChild(0));
+        IHqlExpression *cur = symbols.mapToValue(&iter.query());
+        if (cur->getOperator() == no_unboundselect)
+        {
+            _ATOM searchName = cur->queryName();
+            OwnedHqlExpr match;
+            ForEachChild(i, this)
+            {
+                IHqlExpression * child = queryChild(i);
+                IHqlScope * base = child->queryScope();
+                if (base)
+                {
+                    OwnedHqlExpr resolved = base->lookupSymbol(searchName, LSFsharedOK|LSFfromderived, localCtx);
+                    if (resolved)
+                    {
+                        //Select from a parameter where the item is not defined in the parameter's scope => error
+                        node_operator resolvedOp = resolved->getOperator();
+                        if (resolvedOp == no_unboundselect || resolvedOp == no_purevirtual)
+                            throwError1(HQLERR_MemberXContainsVirtualRef, searchName->str());
+
+                        match.setown(quickFullReplaceExpression(resolved, child->queryProperty(_virtualSeq_Atom), virtualAttr));
+                        break;
+                    }
+                }
+            }
+
+            assertex(match);
+            defines.append(*match.getClear());
+        }
     }
-    return true;
+
+    //Define the symbols after the iterator so the hash table isn't invalidated
+    ForEachItemIn(i, defines)
+        defineSymbol(LINK(&defines.item(i)));
 }
 
-bool canBeVirtual(IHqlExpression * expr)
-{
-    switch (expr->getOperator())
-    {
-    case no_record:
-    case no_enum:
-    case no_typedef:
-    case no_type:
-    case no_macro:
-        return false;
-    case no_concretescope:
-    case no_virtualscope:
-    case no_libraryscope:
-    case no_libraryscopeinstance:
-    case no_forwardscope:
-        return false;
-    case no_scope:
-        throwUnexpected();
-    case no_funcdef:
-        return canBeVirtual(expr->queryChild(0));
-    }
-    assertex(!expr->isScope());
-    return true;
-}
 
 //==============================================================================================================
 
@@ -8749,97 +9021,23 @@ void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName,
 
 //==============================================================================================================
 
-//#define TRACE_PARTIAL
-
-CHqlSyntaxCheckScope::CHqlSyntaxCheckScope(IHqlScope *_parent, IEclRepository * _repository, const char *attributes, bool clearImportedModule)
-  : CHqlScope(no_scope, _parent->queryName(), _parent->queryFullName()), parent(_parent)        // Check my arguments
-{
-    StringBuffer s;
-    OwnedHqlExpr null = createValue(no_none);
-    while (*attributes)
-    {
-        if (*attributes==',')
-        {
-            if (s.length())
-            {
-#ifdef TRACE_PARTIAL
-                DBGLOG("CHqlSyntaxCheckScope adding %s to redefine list", s.toCharArray());
-#endif
-                redefine.setValue(createIdentifierAtom(s.toCharArray()), null);
-            }
-            s.clear();
-        }
-        else
-            s.append(*attributes);
-        attributes++;
-    }
-    if (s.length()>0)
-    {
-#ifdef TRACE_PARTIAL
-        DBGLOG("CHqlSyntaxCheckScope adding %s to redefine list", s.toCharArray());
-#endif
-        redefine.setValue(createIdentifierAtom(s.toCharArray()), null);
-    }
-
-}
-
-void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags, IFileContents *_fc, int lineno, int column, int _startpos, int _bodypos, int _endpos)
-{
-#ifdef TRACE_PARTIAL
-    DBGLOG("CHqlSyntaxCheckScope::defineSymbol(1) %s", _name->getAtomNamePtr());
-#endif
-    redefine.setValue(_name, NULL);
-    // MORE: define func/macro etc with parameter?
-    CHqlScope::defineSymbol(_name, _moduleName, value, exported, shared, symbolFlags, _fc, lineno, column, _startpos, _bodypos, _endpos);
-}
-
-void CHqlSyntaxCheckScope::defineSymbol(_ATOM _name, _ATOM _moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags)
-{
-#ifdef TRACE_PARTIAL
-    DBGLOG("CHqlSyntaxCheckScope::defineSymbol(2) %s", _name->getAtomNamePtr());
-#endif
-    redefine.setValue(_name, NULL);
-    CHqlScope::defineSymbol(_name, _moduleName, value, exported, shared, symbolFlags);
-}
-
-IHqlExpression *CHqlSyntaxCheckScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
-{
-#ifdef TRACE_PARTIAL
-    DBGLOG("CHqlSyntaxCheckScope::lookupSymbol %s", searchName->getAtomNamePtr());
-#endif
-    IHqlExpression *ret = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
-    if (!ret)
-    {
-        OwnedHqlExpr match = redefine.getLinkedValue(searchName);
-#ifdef TRACE_PARTIAL
-        DBGLOG("CHqlSyntaxCheckScope::lookupSymbol checking redefine for %s, got %x", searchName->getAtomNamePtr(), ret);
-#endif
-        if (!match)
-        {
-            ret = parent->lookupSymbol(searchName, lookupFlags, ctx);
-#ifdef TRACE_PARTIAL
-            DBGLOG("CHqlSyntaxCheckScope::lookupSymbol %s parent lookup got %x", searchName->getAtomNamePtr(), ret);
-#endif
-        }
-    }
-    return ret;
-}
-
-//==============================================================================================================
-
-CHqlMultiParentScope::CHqlMultiParentScope(_ATOM _name, IHqlScope *parent1, ...)
+CHqlMultiParentScope::CHqlMultiParentScope(_ATOM _name, ...)
  : CHqlScope(no_privatescope, _name, _name->str())
 {
-    parents.append(*parent1);
     va_list args;
-    va_start(args, parent1);
+    va_start(args, _name);
     for (;;)
     {
         IHqlScope *parent = va_arg(args, IHqlScope*);
         if (!parent)
             break;
+
+        //This should only be used for parser scopes (which are real and non virtual).
+        IHqlExpression * parentExpr = parent->queryExpression();
+        assertex(!parentExpr->hasProperty(_virtualSeq_Atom));
         parents.append(*parent);
     }
+    va_end(args);
 }
 
 IHqlExpression *CHqlMultiParentScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -8973,12 +9171,15 @@ CHqlScopeParameter::CHqlScopeParameter(_ATOM _name, unsigned _idx, ITypeInfo *_t
     idx = _idx;
     typeScope = ::queryScope(type);
     infoFlags |= HEFunbound;
+    if (!hasProperty(_virtualSeq_Atom))
+        addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
 bool CHqlScopeParameter::assignableFrom(ITypeInfo * source) 
 { 
     return type->assignableFrom(source);
 }
+
 
 bool CHqlScopeParameter::equals(const IHqlExpression & _other) const
 {
@@ -9022,15 +9223,133 @@ StringBuffer &CHqlScopeParameter::toString(StringBuffer &ret)
 
 IHqlExpression * CHqlScopeParameter::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    if (searchName == _parameterScopeType_Atom)
-        return LINK(typeScope->queryExpression());
+    OwnedHqlExpr match = typeScope->lookupSymbol(searchName, lookupFlags|LSFfromderived, ctx);
+    if (!match)
+        return NULL;
+    if (lookupFlags & (LSFignoreBase|LSFfromderived))
+        return match.getClear();
+
+    if (!canBeVirtual(match))
+    {
+        if (containsInternalSelect(match))
+        {
+            IHqlExpression * typeScopeExpr = ::queryExpression(typeScope);
+            ParameterVirtualSymbolReplacer replacer(ctx, this, typeScopeExpr->queryProperty(_virtualSeq_Atom), LSFsharedOK);
+            match.setown(replacer.transform(match));
+        }
+
+        return match.getClear();
+    }
+
+    return createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx);
+}
+
+//==============================================================================================================
+
+CHqlDelayedScope::CHqlDelayedScope(HqlExprArray &_ownedOperands)
+ : CHqlExpressionWithTables(no_delayedscope)
+{
+    setOperands(_ownedOperands); // after type is initialized
+    type = queryChild(0)->queryType();
+
+    ITypeInfo * scopeType = type;
+    if (scopeType->getTypeCode() == type_function)
+        scopeType = scopeType->queryChildType();
+
+    typeScope = ::queryScope(scopeType);
+    assertex(typeScope);
+
+    if (!hasProperty(_virtualSeq_Atom))
+        addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
+}
+
+bool CHqlDelayedScope::assignableFrom(ITypeInfo * source)
+{
+    return type->assignableFrom(source);
+}
+
+bool CHqlDelayedScope::equals(const IHqlExpression & _other) const
+{
+    if (!CHqlExpressionWithTables::equals(_other))
+        return false;
+    return true;
+}
+
+IHqlExpression *CHqlDelayedScope::clone(HqlExprArray &newkids)
+{
+    return createDelayedScope(newkids);
+}
+
+IHqlScope * CHqlDelayedScope::clone(HqlExprArray & children, HqlExprArray & symbols)
+{
+    throwUnexpected();
+}
+
+IHqlExpression * CHqlDelayedScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+{
+    IHqlScope * scope = queryChild(0)->queryScope();
+    if (scope)
+        return scope->lookupSymbol(searchName, lookupFlags, ctx);
+
     OwnedHqlExpr match = typeScope->lookupSymbol(searchName, lookupFlags, ctx);
     if (!match)
         return NULL;
-    if (!canBeVirtual(match) || (lookupFlags & LSFignoreBase))
+
+    if (lookupFlags & LSFignoreBase)
         return match.getClear();
 
-    return createDelayedReference(no_delayedselect, this, match, (lookupFlags & LSFignoreBase) != 0);
+    if (!canBeVirtual(match))
+        return match.getClear();
+
+    return createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx);
+}
+
+
+void CHqlDelayedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
+{
+}
+
+void CHqlDelayedScope::getSymbols(HqlExprArray& exprs) const
+{
+    typeScope->getSymbols(exprs);
+}
+
+ITypeInfo * CHqlDelayedScope::queryType() const
+{
+    return type;
+}
+
+ITypeInfo * CHqlDelayedScope::getType()
+{
+    return LINK(type);
+}
+
+bool CHqlDelayedScope::hasBaseClass(IHqlExpression * searchBase)
+{
+    return typeScope->hasBaseClass(searchBase);
+}
+
+IHqlScope * CHqlDelayedScope::queryConcreteScope()
+{
+    return NULL;
+}
+
+IHqlScope * CHqlDelayedScope::queryResolvedScope(HqlLookupContext * context)
+{
+    return this;
+}
+
+IHqlExpression * createDelayedScope(HqlExprArray &newkids)
+{
+    CHqlDelayedScope * scope = new CHqlDelayedScope(newkids);
+    return scope->closeExpr();
+}
+
+IHqlExpression * createDelayedScope(IHqlExpression * expr)
+{
+    HqlExprArray args;
+    args.append(*expr);
+    return createDelayedScope(args);
 }
 
 //==============================================================================================================
@@ -9389,6 +9708,8 @@ CHqlDelayedScopeCall::CHqlDelayedScopeCall(IHqlExpression * _param, ITypeInfo * 
 : CHqlDelayedCall(_param, type, parms) 
 {
     typeScope = ::queryScope(type); // no need to link
+    if (!hasProperty(_virtualSeq_Atom))
+        addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
 IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
@@ -9399,12 +9720,17 @@ IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(_ATOM searchName, unsigned l
     if (lookupFlags & LSFignoreBase)
         return match.getClear();
 
-    return createDelayedReference(no_delayedselect, this, match, false);
+    return createDelayedReference(no_delayedselect, this, match, lookupFlags, ctx);
 }
 
 void CHqlDelayedScopeCall::getSymbols(HqlExprArray& exprs) const
 {
     typeScope->getSymbols(exprs);
+}
+
+IHqlScope * CHqlDelayedScopeCall::queryConcreteScope()
+{
+    return NULL;
 }
 
 _ATOM CHqlDelayedScopeCall::queryName() const
@@ -10390,15 +10716,13 @@ protected:
                 if (oldModule != newModule)
                 {
                     _ATOM selectedName = expr->queryChild(3)->queryName();
-                    if (!areAllBasesFullyBound(oldModule) && areAllBasesFullyBound(newModule))
-                    {
-                        newModule.setown(checkCreateConcreteModule(ctx.errors, newModule, newModule->queryProperty(_location_Atom)));
-                    }
+                    newModule.setown(checkCreateConcreteModule(ctx.errors, newModule, newModule->queryProperty(_location_Atom)));
 
                     HqlDummyLookupContext dummyctx(ctx.errors);
                     IHqlScope * newScope = newModule->queryScope();
-                    assertex(newScope);
-                    return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+                    if (newScope)
+                        return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+                    return ::replaceChild(expr, 1, newModule);
                 }
                 break;
             }
@@ -10486,6 +10810,9 @@ IHqlExpression * ParameterBindTransformer::createExpandedCall(IHqlExpression * c
 {
     HqlExprArray actuals;
     unwindChildren(actuals, call);
+    while (actuals.ordinality() && actuals.tos().isAttribute())
+        actuals.pop();
+
     return createExpandedCall(call->queryBody()->queryFunctionDefinition(), actuals);
 }
 
@@ -11072,8 +11399,9 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
     case no_getgraphloopresult:
     case no_getresult:
     case no_rows:
-    case no_internalvirtual:
+    case no_internalselect:
     case no_delayedselect:
+    case no_unboundselect:
     case no_libraryselect:
     case no_purevirtual:
     case no_libraryinput:
@@ -12704,11 +13032,6 @@ IHqlExpression * populateScopeAndClose(IHqlScope * scope, const HqlExprArray & c
     return scopeExpr->closeExpr();
 }
 
-
-extern HQL_API IHqlScope* createContextScope()
-{
-    return new CHqlContextScope();
-}
 
 extern HQL_API IHqlExpression* createTemplateFunctionContext(IHqlExpression* expr, IHqlScope* scope)
 {
@@ -15841,14 +16164,24 @@ IHqlExpression * queryNonDelayedBaseAttribute(IHqlExpression * expr)
     loop
     {
         node_operator op = expr->getOperator();
-        if ((op == no_call) || (op == no_libraryscopeinstance))
+        switch (op)
+        {
+        case no_call:
+        case no_libraryscopeinstance:
             expr = expr->queryDefinition();
-        else if (op == no_funcdef)
+            break;
+        case no_funcdef:
             expr = expr->queryChild(0);
-        else if ((op == no_delayedselect) || (op == no_internalvirtual) || (op == no_libraryselect))
+            break;
+        case no_delayedselect:
+        case no_internalselect:
+        case no_libraryselect:
+        case no_unboundselect:
             expr = expr->queryChild(2);
-        else
+            break;
+        default:
             return expr;
+        }
     }
 }
 

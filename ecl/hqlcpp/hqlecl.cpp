@@ -392,8 +392,11 @@ bool HqlDllGenerator::generateCode(HqlQueryContext & query)
         }
         catch (IECLError * e)
         {
-            StringBuffer s;
-            errs->reportError(e->errorCode(), e->errorMessage(s).str(), e->getFilename(), e->getLine(), e->getColumn(), e->getPosition());
+            if (e->errorCode() != HQLERR_ErrorAlreadyReported)
+            {
+                StringBuffer s;
+                errs->reportError(e->errorCode(), e->errorMessage(s).str(), e->getFilename(), e->getLine(), e->getColumn(), e->getPosition());
+            }
             e->Release();
             return false;
         }
