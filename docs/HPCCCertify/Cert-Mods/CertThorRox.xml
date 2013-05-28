@@ -1,0 +1,862 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Certify Thor &amp; Roxie</title>
+
+  <para>The following sections will help you to Certify that the Thor, hThor,
+  and Roxie components of your system are all working correctly.</para>
+
+  <sect1 role="nobrk">
+    <title>Build Data on Thor</title>
+
+    <para><orderedlist>
+        <listitem>
+          <para>Open <emphasis role="bold">the ECL IDE</emphasis></para>
+
+          <para><emphasis role="bold">Enter the <emphasis role="bold">Login
+          ID</emphasis> and <emphasis role="bold">Password</emphasis>
+          provided.</emphasis><informaltable colsep="1" rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="80pt" />
+
+                <colspec colwidth="100pt" />
+
+                <tbody>
+                  <row>
+                    <entry>Login ID</entry>
+
+                    <entry>hpccdemo</entry>
+                  </row>
+
+                  <row>
+                    <entry>Password</entry>
+
+                    <entry>hpccdemo</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Open the <emphasis
+          role="bold">_Certification.BuildDataFiles</emphasis> file.
+          <itemizedlist>
+              <listitem>
+                <para>In the lower right corner of the ECL IDE you will see a
+                section labeled <emphasis
+                role="bluebold">Repository</emphasis>, containing a few
+                folders. These folders contain the ECL files. Click the + sign
+                next to <emphasis role="bluebold">Samples</emphasis>, open the
+                folder.</para>
+              </listitem>
+
+              <listitem>
+                <para>Navigate to the <emphasis
+                role="bluebold">_Certification</emphasis> folder and click the
+                + sign next to it to. Open it and view the contents.</para>
+
+                <para><figure>
+                    <title>ECL Files in _Certification</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/CSimg10-1.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Double-click on the <emphasis
+                role="bold">BuildDataFiles</emphasis> file to open it.</para>
+
+                <para>In the BuildDataFiles file, you will see some ECL code
+                in the file as follows:</para>
+
+                <programlisting>  Base := Cert.Setup.NodeMult1; //max = 20
+  Mult := Cert.Setup.NodeMult2; //max = 20
+</programlisting>
+
+                <para>These two multipliers, <emphasis
+                role="bold">NodeMult1</emphasis> and <emphasis
+                role="bold">NodeMult2</emphasis> define the total number of
+                millions of records. The values as configured in the
+                _Certification sample generate 2,000,000 records. Typically
+                you would want to generate 1 million records per node, up to
+                400 nodes. The maximum data set size is 18,800,000,000 bytes
+                (47 * 400 million). The code used in this example is designed
+                to generate a maximum of 400 million records. A larger number
+                of nodes will result in fewer records per node, however the
+                code will still work as intended for this exercise.</para>
+
+                <?hard-pagebreak ?>
+              </listitem>
+            </itemizedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Select <emphasis role="bold">thor</emphasis> as Target from
+          the drop menu on the right side.</para>
+
+          <para><figure>
+              <title>Target thor</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg10-2.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit</emphasis>
+          button.</para>
+        </listitem>
+      </orderedlist></para>
+
+    <para><figure>
+        <title>Submit button</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/CSimg10.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
+    <para><emphasis role="bold">Note:</emphasis> This code generates a data
+    file and writes it to disk.</para>
+
+    <para></para>
+
+    <sect2 id="Expected_result_Generate_Data_file">
+      <title>EXPECTED RESULT:</title>
+
+      <para>Look for the green checkmark indicating successful
+      completion</para>
+
+      <para><figure>
+          <title>Green Checkmark</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/CS-img11-2.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <orderedlist>
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para><emphasis role="bold">Open ECLWatch </emphasis>and look at the
+          Workunit details page. This illustrates the steps of the query in
+          real-time.</para>
+
+          <para>This process generates 2,000,000 - 47-byte records in a file
+          with the logical name of <emphasis
+          role="bold">certification::full_test_distributed</emphasis></para>
+
+          <para><emphasis role="bold"><!--***OK, I EXPECTED LESS ROWS***--></emphasis></para>
+
+          <para><emphasis role="bold">Note</emphasis>: The filename and other
+          variables are defined in the <emphasis
+          role="bold">_Certification.Setup </emphasis>file.</para>
+
+          <para><figure>
+              <title>Workunit details page</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg12.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>View the result by selecting the <emphasis
+          role="bold">Result1</emphasis> tab (should be similar to the
+          following):</para>
+
+          <para><figure>
+              <title>View the Result</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg13.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Certify_Data_Refinery_functionality">
+    <title>Certify Thor Functionality</title>
+
+    <para>This section certifies:</para>
+
+    <itemizedlist mark="bullet">
+      <listitem>
+        <para>Certify Data Refinery full sort capabilities</para>
+      </listitem>
+
+      <listitem>
+        <para>Certify Data Refinery local sort capabilities</para>
+      </listitem>
+
+      <listitem>
+        <para>Certify Data Refinery local dedup capabilities</para>
+      </listitem>
+
+      <listitem>
+        <para>Certify Data Refinery hash dedup capabilities</para>
+      </listitem>
+
+      <listitem>
+        <para>Certify Data Refinery compress I/O capabilities</para>
+      </listitem>
+
+      <listitem>
+        <para>Certify Data Refinery string search capabilities</para>
+      </listitem>
+    </itemizedlist>
+
+    <para></para>
+
+    <sect2>
+      <title id="Certify_DR">Certify Thor</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Open the <emphasis role="bold">ECL IDE</emphasis></para>
+
+          <para><emphasis role="bold">Enter the <emphasis role="bold">Login
+          ID</emphasis> and <emphasis
+          role="bold">Password</emphasis>.</emphasis><informaltable colsep="1"
+              rowsep="1">
+              <tgroup cols="2">
+                <colspec colwidth="80pt" />
+
+                <colspec colwidth="100pt" />
+
+                <tbody>
+                  <row>
+                    <entry>Login ID</entry>
+
+                    <entry>hpccdemo</entry>
+                  </row>
+
+                  <row>
+                    <entry>Password</entry>
+
+                    <entry>hpccdemo</entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Open the <emphasis
+          role="bold">_Certification.Certify_DR</emphasis> file.</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para>In the lower right corner of the ECL IDE you will see a
+                section labeled as Repository, containing a few folders. This
+                contains the ECL files. Click the + sign next to
+                <emphasis>Samples</emphasis>, to open the folder.</para>
+              </listitem>
+
+              <listitem>
+                <para>Navigate to the _Certification folder and click the +
+                sign next to it to open it and view the contents.</para>
+
+                <para><figure>
+                    <title>ECL Certify_DR File</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/CSimg10-3.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Double-click on the <emphasis
+                role="bold">Certify_DR</emphasis> file to open it.</para>
+              </listitem>
+            </itemizedlist></para>
+        </listitem>
+
+        <listitem>
+          <para>Select <emphasis role="bold">thor</emphasis> as the Target
+          from the drop menu on the right side.</para>
+
+          <para><figure>
+              <title>Target: thor</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg10-2.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit</emphasis>
+          button.</para>
+
+          <para><figure>
+              <title>Submit button</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg10-S.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Note:</emphasis> This file uses the
+      previously generated data and tests a series of Thor capabilities. It
+      does not write data to disk. It will take a few minutes to complete,
+      depending on the size of your system.</para>
+
+      <para></para>
+    </sect2>
+
+    <sect2 id="CEertify_DR_Expected_Result">
+      <title>EXPECTED RESULT</title>
+
+      <para>Look for the Green checkmark indicating successful
+      completion.</para>
+
+      <para><figure>
+          <title>Green checkmark</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/CSimg11.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>The ECL Watch <emphasis role="bold">Results</emphasis> tab section
+      should be as follows:</para>
+
+      <blockquote>
+        <para>Result 1 Full Global Join - should = 2 million : 2000000</para>
+
+        <para>Result 2 Local Join - should = 2 million (local): 2000000</para>
+
+        <para>Result 3 Dedup - should = 2 million (joined): 2000000</para>
+
+        <para>Result 4 Complex I/O - should = 2 million: 2000000</para>
+
+        <para>Result 5 Hash Aggregate (Should be 2 records): 2</para>
+
+        <para>Result 6 Global Aggregate (Should be 2 records): 2</para>
+
+        <para>Result 7 Local Aggregate (Should be 2 records): 2</para>
+
+        <para>Result 8 Global Grouped Rollup (Should be 2 records): 2</para>
+
+        <para>Result 9 Local Rollup (Should be 2 records): 2</para>
+
+        <para>Result 10 Local Grouped Rollup (Should be 2 records): 2</para>
+
+        <para>Result 11 Global It/Srt/Ddp (Should be 2 records): 2</para>
+
+        <para>Result 12 Global Grouped It/Srt/Ddp (Should be 2 records):
+        2</para>
+
+        <para>Result 13 Local It/Srt/Ddp (Should be 2 records): 2</para>
+
+        <para>Result 14 Local Grouped It/Srt/Ddp (Should be 2 records):
+        2</para>
+
+        <para>Result 15 String Search Results: 100000</para>
+      </blockquote>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Certify_DDE">
+    <title>Certify Key build capabilities</title>
+
+    <para>This section will certify that the system can perform its key build
+    capabilities.</para>
+
+    <orderedlist>
+      <listitem>
+        <para>Open the <emphasis role="bold">ECL IDE</emphasis></para>
+
+        <para><emphasis role="bold">Enter the <emphasis role="bold">Login
+        ID</emphasis> and <emphasis
+        role="bold">Password</emphasis>.</emphasis><informaltable colsep="1"
+            rowsep="1">
+            <tgroup cols="2">
+              <colspec colwidth="80pt" />
+
+              <colspec colwidth="100pt" />
+
+              <tbody>
+                <row>
+                  <entry>Login ID</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+
+                <row>
+                  <entry>Password</entry>
+
+                  <entry>hpccdemo</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </listitem>
+
+      <listitem>
+        <para>Open <emphasis role="bold">_Certification.build_index</emphasis>
+        file.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>In the lower right corner of the ECL IDE you will see a
+              section labeled as Repository, containing a couple of folders.
+              This contains the ECL files. Select the + sign next to it
+              Samples, open the folder.</para>
+            </listitem>
+
+            <listitem>
+              <para>Navigate to the <emphasis
+              role="bold">_Certification</emphasis> folder and select the +
+              sign next to it to open it and view the contents.</para>
+
+              <para><figure>
+                  <title>Expand the _Certification folder</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/CSimg10-4.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Double-click on the <emphasis role="bold">build_index
+              </emphasis>file to open it.</para>
+            </listitem>
+          </itemizedlist></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Select <emphasis role="bold">thor</emphasis> as Target from the
+        drop menu on the right side.</para>
+
+        <para><figure>
+            <title>Target: thor</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CSimg10-2.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Press the <emphasis role="bold">Submit</emphasis> button.</para>
+
+        <para><figure>
+            <title>Submit button</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CSimg10-S.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+    </orderedlist>
+
+    <para><emphasis role="bold">Note:</emphasis> This file uses the previously
+    generated data. It builds an index on one of those data files.</para>
+
+    <sect2 id="Expected_Result_Certify_DR">
+      <title>EXPECTED RESULT</title>
+
+      <para>Look for the green checkmark indicating successful
+      completion.</para>
+
+      <para><figure>
+          <title>Green checkmark</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/CSimg11-1.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>The file we created earlier is indexed by Last Name and the index
+      file, <emphasis
+      role="bold">thor::full_test_distributed_index</emphasis>, is written to
+      disk.</para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Verify the Index Build</title>
+
+    <orderedlist>
+      <listitem>
+        <para>Open ECL Watch in your browser using the following URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+        </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+        Server’s IP Address and pppp is the port. The default port is
+        8010)</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Click on the <emphasis>Browse Logical Files</emphasis> link
+        under DFU Files.</para>
+
+        <para><figure>
+            <title>Browse Logical Files link</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CSimg14.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Click on the <inlinegraphic fileref="images/RM-19.jpg" /> button
+        next to the file listing for <emphasis
+        role="bold">thor::full_test_distributed_index</emphasis> , then select
+        <emphasis role="bold">Details</emphasis> to open the logical file
+        details page.</para>
+      </listitem>
+    </orderedlist>
+
+    <para><figure>
+        <title>Details</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="images/CSimg14-2.jpg" />
+          </imageobject>
+        </mediaobject>
+      </figure><!--***dont we need to add more content here as to what exact Details we should see??***--></para>
+  </sect1>
+
+  <sect1 id="Certify_Thor_access_to_index_data" role="brk">
+    <title>Certify Thor Access to Indexed Data</title>
+
+    <para>This section certifies Thor access to indexed data.</para>
+
+    <sect2>
+      <title>Certify Thor Access</title>
+
+      <orderedlist>
+        <listitem>
+          <para>Open the <emphasis
+          role="bold">_Certification.read_index</emphasis> file.</para>
+
+          <para><itemizedlist>
+              <listitem>
+                <para>In the lower right corner of the ECL IDE you will see a
+                section labeled as Repository, containing a couple of folders.
+                This contains the ECL files. Click the + sign next to
+                <emphasis>Samples</emphasis>, open the folder.</para>
+              </listitem>
+
+              <listitem>
+                <para>Navigate to the <emphasis
+                role="bold">_Certification</emphasis> folder and click the +
+                sign next to it to open it and view the contents.</para>
+
+                <para><figure>
+                    <title>Expand the _Certification folder</title>
+
+                    <mediaobject>
+                      <imageobject>
+                        <imagedata fileref="images/CSimg10-5.jpg" />
+                      </imageobject>
+                    </mediaobject>
+                  </figure></para>
+              </listitem>
+
+              <listitem>
+                <para>Double-click on the <emphasis role="bold">read_index
+                </emphasis>file to open it.</para>
+              </listitem>
+            </itemizedlist></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Select <emphasis role="bold">thor</emphasis> as Target from
+          the drop menu on the right side.</para>
+
+          <para><figure>
+              <title>Target: thor</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg10-2.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Press the <emphasis role="bold">Submit</emphasis>
+          button.</para>
+
+          <para><figure>
+              <title>Submit button</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="images/CSimg10-S.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2>
+      <title>EXPECTED RESULT:</title>
+
+      <para>The first 100 records from the query display, looking similar to
+      the following (BRYANT in last name).</para>
+
+      <para><figure>
+          <title>Results page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/CSimg13-1.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para></para>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Compile and Publish a Roxie Query</title>
+
+    <orderedlist>
+      <listitem>
+        <para>Open the <emphasis
+        role="bold">_Certification.ReadIndexService</emphasis> file, If you do
+        not have it open already.</para>
+
+        <para><itemizedlist>
+            <listitem>
+              <para>In the lower right corner of the ECL IDE you will see a
+              section labeled as Repository, containing a couple of folders.
+              This contains the ECL files. Click the + sign next to <emphasis
+              role="bold">Samples</emphasis>, open the folder.</para>
+            </listitem>
+
+            <listitem>
+              <para>Navigate to the <emphasis
+              role="bold">_Certification</emphasis> folder and click the +
+              sign next to it to open it and view the contents.</para>
+
+              <para><figure>
+                  <title>_Certification folder</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/CSimg10-6.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Double-click on the <emphasis role="bold">ReadIndexService
+              </emphasis>file to open it.</para>
+            </listitem>
+          </itemizedlist></para>
+      </listitem>
+
+      <listitem>
+        <para>Select <emphasis role="bold">roxie</emphasis> as Target from the
+        drop menu on the right side.</para>
+
+        <para><figure>
+            <title>Target roxie</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CSimg24.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>In the upper left corner the <emphasis
+        role="bold">Submit</emphasis> button has an arrow next to it. Select
+        the arrow to expose the <emphasis role="bold">Compile</emphasis>
+        option.</para>
+
+        <para>Select <emphasis role="bold">Compile</emphasis> from the drop
+        list under the submit button.</para>
+
+        <para><figure>
+            <title>Compile</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CSimg14-3.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>Look for a green circle indicating successful completion. Once
+        complete, select the Workunit next to the the green circle.</para>
+
+        <para><figure>
+            <title>Completed Workunit: Green circle</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CS-1102.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Select the <emphasis role="bold">ECL Watch</emphasis> button at
+        the lower left corner of the window.</para>
+
+        <para><figure>
+            <title>Select ECL Watch</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CS-1913.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Select the <emphasis role="bold">Publish</emphasis> button from
+        the ECL Watch tab that you just opened. (you may have to scroll down
+        in the main window)<figure>
+            <title>ECL Watch Publish button</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CS-1411.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Open the ESP page in your browser using the following
+        URL:</para>
+
+        <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+        </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+        Server’s IP Address and pppp is the port. The default port is
+        8002)</emphasis></para>
+
+        <para><figure>
+            <title>Roxie ESP</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CSimg18.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Click the + sign next to <emphasis role="bold">roxie</emphasis>,
+        to expand it</para>
+      </listitem>
+
+      <listitem>
+        <para>Click <emphasis role="bold">readindexservice</emphasis></para>
+      </listitem>
+
+      <listitem>
+        <para>Enter the name BRYANT in the <emphasis
+        role="bold">lname</emphasis> field.<!--(output xml || output tables... )***--></para>
+
+        <para><figure>
+            <title>Enter lnamein</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="images/CS-1802.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Submit</emphasis> button at the
+        bottom of the form.</para>
+      </listitem>
+    </orderedlist>
+
+    <sect2 id="The_Expected_Result">
+      <title>EXPECTED RESULT:</title>
+
+      <para>A list of 100 records should display, looking similar to the
+      following (BRYANT in last name).</para>
+
+      <para><figure>
+          <title>Result</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="images/CSimg20.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+    </sect2>
+  </sect1>
+</chapter>

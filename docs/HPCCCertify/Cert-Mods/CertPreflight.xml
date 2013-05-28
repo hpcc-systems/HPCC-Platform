@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Preflight</title>
+
+  <para>The first step in certifying that the platform is installed and
+  configured properly is to run a preflight check on the components. This
+  ensures that all machines are operating and have the proper executables
+  running. This also confirms there is adequate disk space, available memory,
+  and acceptable available CPU % values.</para>
+
+  <itemizedlist mark="bullet">
+    <listitem>
+      <para>Open ECL Watch in your browser using the following URL:</para>
+
+      <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+      </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+      Server’s IP Address and pppp is the port. The default port is
+      8010)</emphasis></para>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic
+              fileref="../../images/caution.png" /></entry>
+
+              <entry><emphasis role="bold">Note:</emphasis> That your IP
+              address could be different from the ones provided in these
+              figures. Please use the IP address provided by your
+              installation.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </listitem>
+  </itemizedlist>
+
+  <sect1 id="Preflight_system_servers">
+    <title>Preflight System Servers</title>
+
+    <orderedlist>
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Click on the <emphasis role="bold">System Servers</emphasis>
+        link under Topology.</para>
+
+        <para><figure>
+            <title>System Servers link</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg01.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>A screen similar to the following displays.</para>
+
+        <para><figure>
+            <title>System Servers page</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg02.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <?dbfo keep-together="always"?>
+
+        <para>Press the <emphasis role="bold">Submit</emphasis> button at the
+        bottom of this page to start preflight.</para>
+
+        <para><figure>
+            <title>Submit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg03.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+    </orderedlist>
+
+    <sect2 id="Systems_Expected_results">
+      <title>EXPECTED RESULTS:</title>
+
+      <para>After pressing Submit, a screen similar to the following
+      displays.</para>
+
+      <para><figure>
+          <title>System Component Inforamtion</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/CSimg04.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure>This screen displays information on several system
+      components. This information indicates whether several components are
+      actually up and running appropriately. The resulting page shows useful
+      information about each component. The component name, the condition, the
+      component state, how long the component has been up and running, the
+      amount of disk usage, memory usage and other information is available at
+      a glance.</para>
+
+      <?hard-pagebreak ?>
+
+      <para>If there are any failed components, they are highlighted in
+      orange, indicating they are not ready.</para>
+
+      <figure>
+        <title>Failed Component</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/CS-sysfail.jpg"
+                       vendor="eclwatchSS" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Preflight_Data_Refinery">
+    <title>Preflight Thor</title>
+
+    <orderedlist>
+      <listitem>
+        <para>Click on the <emphasis role="bold">Cluster Processes</emphasis>
+        link under Topology.</para>
+
+        <para><figure>
+            <title>Cluster Processes Link</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg05.jpg"
+                           vendor="eclwatchSS, topology" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">mythor</emphasis>
+        link.</para>
+
+        <para><figure>
+            <title>mythor link</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg06.jpg"
+                           vendor="eclwatchSS" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Check the <emphasis role="bold">Select All</emphasis> checkbox
+        (if necessary).</para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Submit</emphasis> button to
+        start preflight.</para>
+
+        <para><figure>
+            <title>Submit</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg03.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+    </orderedlist>
+
+    <sect2 id="Expected_Results_Data_refinery">
+      <title>EXPECTED RESULTS:</title>
+
+      <para>After pressing Submit, a screen similar to the following should
+      display.</para>
+
+      <para><figure>
+          <title>ESP mythor system component information</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/CSimg07.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure>This screen displays information on Thor components. This
+      information indicates whether the components are actually up and running
+      appropriately. The resulting page shows useful information about each
+      component. The component name, the condition, the component state, how
+      long the component has been up and running, the amount of disk usage,
+      memory usage and other information is available at a glance.</para>
+
+      <para><informaltable colsep="1" frame="all" rowsep="1">
+          <?dbfo keep-together="always"?>
+
+          <tgroup cols="2">
+            <colspec colwidth="49.50pt" />
+
+            <colspec />
+
+            <tbody>
+              <row>
+                <entry><inlinegraphic
+                fileref="../../images/tip.jpg" /></entry>
+
+                <entry>If your system has more than 1 Thor cluster, repeat
+                these steps for each cluster.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </informaltable></para>
+
+      <?hard-pagebreak ?>
+
+      <para>If there are any failed components, they are highlighted in
+      orange, indicating they are not ready.</para>
+
+      <figure>
+        <title>Failed Component</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="../../images/CS-1912.jpg" vendor="eclwatchSS" />
+          </imageobject>
+        </mediaobject>
+      </figure>
+    </sect2>
+  </sect1>
+
+  <sect1 id="Preflight_Roxie">
+    <title>Preflight the Roxie Cluster</title>
+
+    <orderedlist>
+      <listitem>
+        <para>Click on the <emphasis role="bold">Cluster Processes</emphasis>
+        link under Topology.</para>
+
+        <para><figure>
+            <title>Cluster Processes Link</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg05.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Click on the <emphasis role="bold">myroxie</emphasis> link.
+        <figure>
+            <title>myroxie link</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/CSimg08.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+      </listitem>
+
+      <listitem>
+        <para>Press the <emphasis role="bold">Submit</emphasis> button to
+        start preflight.</para>
+      </listitem>
+    </orderedlist>
+
+    <sect2 id="Expected_results_roxie">
+      <title>EXPECTED RESULTS</title>
+
+      <para>After pressing Submit, a screen similar to the following should
+      display.</para>
+
+      <para><figure>
+          <title>Roxie system information</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/CSimg09.jpg" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>This indicates whether the Roxie nodes are up and running, and
+      some information about them.</para>
+
+      <informaltable colsep="1" frame="all" rowsep="1">
+        <?dbfo keep-together="always"?>
+
+        <tgroup cols="2">
+          <colspec colwidth="49.50pt" />
+
+          <colspec />
+
+          <tbody>
+            <row>
+              <entry><inlinegraphic
+              fileref="../../images/OSSgr3.png" /></entry>
+
+              <entry>If your system has more than 1 Roxie cluster, repeat
+              these steps for each cluster.</entry>
+            </row>
+          </tbody>
+        </tgroup>
+      </informaltable>
+    </sect2>
+  </sect1>
+</chapter>
