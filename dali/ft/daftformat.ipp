@@ -142,7 +142,7 @@ public:
 protected:
     bool ensureBuffered(unsigned required);
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor);
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead) = 0;
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer) = 0;
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead) = 0;
     void seekInput(offset_t offset);
     offset_t tellInput();
@@ -164,7 +164,6 @@ protected:
     bool                   doInputCRC;
     static IFileIOCache    *openfilecache;
     static CriticalSection openfilecachesect;
-    bool                   processFullBuffer;
 };
 
 
@@ -174,7 +173,7 @@ public:
     CFixedPartitioner(unsigned _recordSize);
 
 protected:
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead);
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer);
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
 
 protected:
@@ -196,7 +195,7 @@ class DALIFT_API CRECFMvbPartitioner : public CInputBasePartitioner
     bool isBlocked;
 protected:
     virtual size32_t getRecordSize(const byte * record, unsigned maxToRead);
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead);
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer);
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
 public:
     CRECFMvbPartitioner(bool blocked);
@@ -214,7 +213,7 @@ public:
     virtual void setTarget(IOutputProcessor * _target);
 
 protected:
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead);
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer);
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
     size32_t getRecordSize(const byte * record, unsigned maxToRead);
 
@@ -259,11 +258,11 @@ public:
     virtual void setTarget(IOutputProcessor * _target);
 
 protected:
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool ateof);
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer, bool ateof);
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead)
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
     {
-        return getSplitRecordSize(record,maxToRead,true);
+        return getSplitRecordSize(record,maxToRead,processFullBuffer,true);
     }
     
 protected:
@@ -318,11 +317,11 @@ public:
     virtual void setTarget(IOutputProcessor * _target);
 
 protected:
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool ateof);
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer, bool ateof);
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead)
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
     {
-        return getSplitRecordSize(record,maxToRead,false);
+        return getSplitRecordSize(record,maxToRead,processFullBuffer,false);
     }
 
 protected:
@@ -403,7 +402,7 @@ public:
     virtual void setTarget(IOutputProcessor * _target);
 
 protected:
-    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead);
+    virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer);
     virtual size32_t getTransformRecordSize(const byte * record, unsigned maxToRead);
 
 protected:
