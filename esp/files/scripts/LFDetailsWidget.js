@@ -230,10 +230,6 @@ define([
         showMessage: function (msg) {
         },
 
-        /*isComplete: function () {
-            return true;
-        },*/
-
         updateInput: function (name, oldValue, newValue) {
             var registryNode = registry.byId(this.id + name);
             if (registryNode) {
@@ -276,55 +272,6 @@ define([
                 this.updateInput("CopySourceName", oldValue, newValue);
                 this.updateInput("CopyTargetName", oldValue, newValue);
             }
-
-            /*
-            var widget = registry.byId(this.id + name);
-            if (widget) {
-                if (widget.has("innerHTML")) {
-                    widget.set("innerHTML", newValue);
-                } else {
-                    widget.set("value", newValue);
-                }
-            } else {
-                var element = dom.byId(this.id + name);
-                if (element) {
-                    if (element.innerHTML) {
-                        element.innerHTML = newValue;
-                    } else {
-                        element.value = newValue;
-                    }
-                }
-            }
-            if (name === "Filename") {
-                registry.byId(this.id + "_Summary").set("title", newValue);
-            }
-            */
-        },
-        refreshFileDetails: function (fileDetails) {
-            /*
-            if (fileDetails.Wuid && fileDetails.Wuid[0] == "D" && this.workunitWidget) {
-                this.removeChild(this.workunitWidget);
-                this.workunitWidget = null;
-            } else if (this.dfuWorkunitWidget) {
-                this.removeChild(this.dfuWorkunitWidget);
-                this.dfuWorkunitWidget = null;
-            }
-            registry.byId(this.id + "_Summary").set("title", fileDetails.Filename);
-            //registry.byId(this.id + "Summary").set("iconClass", "iconRefresh");
-            //domClass.remove(this.id + "Test");
-            //domClass.add(this.id + "Test", "iconRefresh");
-            dom.byId(this.id + "Owner").innerHTML = fileDetails.Owner;
-            dom.byId(this.id + "Description").value = fileDetails.Description;
-            dom.byId(this.id + "JobName").innerHTML = fileDetails.JobName;
-            dom.byId(this.id + "Wuid").innerHTML = fileDetails.Wuid;
-            dom.byId(this.id + "Modification").innerHTML = fileDetails.Modified + " (UTC/GMT)";
-            dom.byId(this.id + "Dir").innerHTML = fileDetails.Dir;
-            dom.byId(this.id + "RecordSize").innerHTML = fileDetails.RecordSize;
-            dom.byId(this.id + "Count").innerHTML = fileDetails.RecordCount;
-            this.contentWidget.set("title", "Content " + "(" + fileDetails.RecordCount + ")");
-            dom.byId(this.id + "Filesize").innerHTML = fileDetails.Filesize;
-            dom.byId(this.id + "PathMask").innerHTML = fileDetails.PathMask;
-            */
         },
 
         ensurePane: function (id, params) {
