@@ -227,6 +227,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
     offset_t nextInputOffset = cursor.nextInputOffset;
     const byte *buffer = bufferBase();
 
+    bool processFullBuffer = true;
     while (nextInputOffset < splitOffset)
     {
 
@@ -234,7 +235,11 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 
         ensureBuffered(headerSize);
         assertex((headerSize ==0) || (numInBuffer != bufferOffset));
-        unsigned size = getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset);
+
+        processFullBuffer =  (nextInputOffset + blockSize) < splitOffset;
+
+        unsigned size = getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, processFullBuffer);
+
         if (size==0)
             throwError1(DFTERR_PartitioningZeroSizedRowLink,((offset_t)(buffer+bufferOffset)));
         ensureBuffered(size); 
@@ -272,8 +277,8 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 CInputBasePartitioner::CInputBasePartitioner(unsigned _headerSize, unsigned expectedRecordSize)
 {
     headerSize = _headerSize;
-    blockSize = 0x10000;
-    bufferSize = 2 * blockSize + expectedRecordSize;
+    blockSize = 0x40000;
+    bufferSize = 4 * blockSize + expectedRecordSize;
     doInputCRC = false;
     CriticalBlock block(openfilecachesect);
     if (!openfilecache) 
@@ -381,7 +386,7 @@ CFixedPartitioner::CFixedPartitioner(size32_t _recordSize) : CInputBasePartition
     recordSize = _recordSize;
 }
 
-size32_t CFixedPartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead)
+size32_t CFixedPartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
 {
     return recordSize;
 }
@@ -424,7 +429,7 @@ size32_t CVariablePartitioner::getRecordSize(const byte * record, unsigned maxTo
 }
 
 
-size32_t CVariablePartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead)
+size32_t CVariablePartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
 {
     return getRecordSize(record, maxToRead);
 }
@@ -460,7 +465,7 @@ size32_t CRECFMvbPartitioner::getRecordSize(const byte * record, unsigned maxToR
 }
 
 
-size32_t CRECFMvbPartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead)
+size32_t CRECFMvbPartitioner::getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer)
 {
     return getRecordSize(record, maxToRead);
 }
@@ -548,7 +553,7 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     matcher.queryAddEntry(1, "\t", WHITESPACE);
 }
 
-size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool ateof)
+size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
 {
     //more complicated processing of quotes etc....
     unsigned quote = 0;
@@ -556,6 +561,7 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
     const byte * end = start + maxToRead;
     const byte * startOfColumn = cur;
 
+    const byte * last = start;
     while (cur != end)
     {
         unsigned matchLen;
@@ -581,7 +587,14 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         case TERMINATOR:
             if (quote == 0)
             {
-                return cur + matchLen - start;
+                if(processFullBuffer)
+                {
+                    last = cur + matchLen;
+                }
+                else
+                {
+                    return cur + matchLen - start;
+                }
             }
             break;
         case QUOTE:
@@ -602,6 +615,12 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         }
         cur += matchLen;
     }
+
+    if(processFullBuffer && (last != start))
+    {
+        return last - start;
+    }
+
     if (!ateof)
         throwError(DFTERR_EndOfRecordNotFound);
     LOG(MCdebugProgress, unknownJob, "CSV splitRecordSize(%d) at end of file", (unsigned) (end - start));
@@ -642,6 +661,7 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                 eof = !ensureBuffered(blockSize);
             else
                 eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
+            bool fullBuffer = false;
             //Could be end of file - if no elements read.
             if (numInBuffer != bufferOffset)
             {
@@ -660,7 +680,7 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                 if (numInBuffer != bufferOffset)
                 {
                     if (format.maxRecordSize <= blockSize)
-                        bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, eof);
+                        bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
                     else
                     {
                         //For large 
@@ -671,7 +691,7 @@ void CCsvQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                             {
                                 //There is still going to be enough buffered for a whole record.
                                 eof = !ensureBuffered(ensureSize);
-                                bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, eof);
+                                bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
                                 break;
                             }
                             catch (IException * e)
@@ -715,7 +735,7 @@ CUtfPartitioner::CUtfPartitioner(const FileFormat & _format) : CInputBasePartiti
     unitSize = format.getUnitSize();
 }
 
-size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool ateof)
+size32_t CUtfPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
 {
     //If we need more complicated processing...
     const byte * cur = start;
@@ -769,6 +789,7 @@ void CUtfQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
             eof = !ensureBuffered(blockSize);
         else
             eof = !ensureBuffered(format.maxRecordSize + maxElementLength);
+        bool fullBuffer = false;
         //Could be end of file - if no elements read.
         if (numInBuffer != bufferOffset)
         {
@@ -787,7 +808,7 @@ void CUtfQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
             if (numInBuffer != bufferOffset)
             {
                 if (format.maxRecordSize <= blockSize)
-                    bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, eof);
+                    bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
                 else
                 {
                     //For large 
@@ -798,7 +819,7 @@ void CUtfQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                         {
                             //There is still going to be enough buffered for a whole record.
                             eof = !ensureBuffered(ensureSize);
-                            bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, eof);
+                            bufferOffset += getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, fullBuffer, eof);
                             break;
                         }
                         catch (IException * e)
@@ -1095,7 +1116,7 @@ CXmlPartitioner::CXmlPartitioner(const FileFormat & _format) : CInputBasePartiti
     utfFormat = getUtfFormatType(format.type);
 }
 
-size32_t CXmlPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead)
+size32_t CXmlPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer)
 {
     return splitter.getRecordSize(start, maxToRead, true);
 }
@@ -1712,4 +1733,3 @@ IFormatPartitioner * createFormatPartitioner(const SocketEndpoint & ep, const Fi
 
     return new CRemotePartitioner(ep, srcFormat, tgtFormat, slave, wuid);
 }
-
