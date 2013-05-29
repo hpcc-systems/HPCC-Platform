@@ -431,7 +431,7 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
     }
 }
 
-void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *target, const char *queryid, bool overwrite)
+void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *target, const char *queryname, bool overwrite)
 {
     if (!target || !*target)
         return;
@@ -445,7 +445,10 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
             return;
         Owned<IReferencedFileList> wufiles = createReferencedFileList(context.queryUserId(), context.queryPassword());
         Owned<IHpccPackageSet> ps = createPackageSet(process.str());
-        wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryid);
+        StringBuffer queryid;
+        if (queryname && *queryname)
+            queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
+        wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryname);
         wufiles->resolveFiles(process.str(), remoteIP, !overwrite, true);
         Owned<IDFUhelper> helper = createIDFUhelper();
         wufiles->cloneAllInfo(helper, overwrite, true);
