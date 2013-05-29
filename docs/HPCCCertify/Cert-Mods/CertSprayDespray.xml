@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter id="Cert_Spray_Despray">
+  <title>Spray and Despray Data</title>
+
+  <para>This section verifies the systems ability to Spray and Despray
+  data.</para>
+
+  <para>Spraying takes a file and distributes pieces of it across the nodes.
+  Despray is the opposite--the system combines the data from the multiple
+  nodes into a single file.</para>
+
+  <sect1 id="Move_data_to_Landing_Zone">
+    <title>Certify Despray</title>
+
+    <para>The next step to verify that your system is working properly is to
+    test the Despray capabilities. Despray is when the system combines the
+    data from the multiple clusters into a singular file that can be moved to
+    the Landing Zone from the Data Refinery.</para>
+
+    <sect2>
+      <title>Despray from ECL Watch</title>
+
+      <!--The following cromulent information can also be found in the DataTutorial.***-->
+
+      <para>Despray is the opposite of spraying, is a good way to certify that
+      piece is working properly.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>To despray, go to ECL Watch in a browser window.</para>
+
+          <para>Open ECL Watch in your browser using the following URL:</para>
+
+          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+          </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+          Server’s IP Address and pppp is the port. The default port is
+          8010)</emphasis></para>
+
+          <para><informaltable colsep="1" frame="all" rowsep="1">
+              <?dbfo keep-together="always"?>
+
+              <tgroup cols="2">
+                <colspec colwidth="49.50pt" />
+
+                <colspec />
+
+                <tbody>
+                  <row>
+                    <entry><inlinegraphic
+                    fileref="../../images/tip.jpg" /></entry>
+
+                    <entry><para><emphasis role="bold">NOTE</emphasis>: To
+                    copy a URL to the clipboard, click the <inlinegraphic
+                    fileref="../../images/CS-1421.jpg" /> icon from the row of
+                    icons along the top of the ECL Watch page.
+                    </para><para>This opens a window with the full URL. Select
+                    the entire URL and you can copy it to the clipboard to
+                    paste elsewhere. </para><para> </para></entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </informaltable></para>
+        </listitem>
+
+        <listitem>
+          <para>Click the <emphasis>Browse Logical Files </emphasis>link under
+          DFU Files.</para>
+
+          <para><figure>
+              <title>Browse Files</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/CSimg14.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the <inlinegraphic
+          fileref="../../images/RM-19.jpg" /> button next to the file listing
+          for <emphasis
+          role="bold">certification::full_test_distributed</emphasis>, then
+          select <emphasis role="bold">Despray.</emphasis></para>
+        </listitem>
+      </orderedlist>
+
+      <para><graphic fileref="../../images/CSimg15.jpg" /></para>
+
+      <sect3 id="Desprays">
+        <title>Desprays</title>
+
+        <para>After you select Despray, the <emphasis role="bold">Despray
+        File</emphasis> page opens.</para>
+
+        <!--***Do we need an image of the Despray File Page?***-->
+
+        <itemizedlist>
+          <listitem>
+            <para>Check the <emphasis role="bold">Source</emphasis>
+            information that is already filled in, this is the name of the
+            file you selected.</para>
+          </listitem>
+
+          <listitem>
+            <para>Provide <emphasis role="bold">Destination</emphasis>
+            information.</para>
+
+            <para><informaltable colsep="0" frame="none" rowsep="0">
+                <tgroup cols="2">
+                  <colspec align="left" colwidth="122.40pt" />
+
+                  <colspec colwidth="333.00pt" />
+
+                  <tbody>
+                    <row>
+                      <entry><emphasis role="bold">Destination
+                      Machine/dropzone</emphasis></entry>
+
+                      <entry>Use the drop list to select the machine to
+                      despray to. The items in the list are landing zones
+                      defined in the system’s confguration. Your system may
+                      have only one.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Destination IP
+                      Address</emphasis></entry>
+
+                      <entry>This is prefilled based upon the selected
+                      machine.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Destination Local
+                      Path</emphasis></entry>
+
+                      <entry>Provide the complete file path of the destination
+                      including file name and extention.</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis role="bold">Destination<emphasis
+                      role="bold"> Network Path</emphasis></emphasis></entry>
+
+                      <entry>The complete network path of the destination
+                      including file name and extension. (read only)</entry>
+                    </row>
+
+                    <row>
+                      <entry><emphasis
+                      role="bold">Overwrite</emphasis></entry>
+
+                      <entry>Check this box to overwrite a file with the same
+                      name if it exists.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Submit</emphasis>
+            button.</para>
+
+            <para>The <emphasis role="bold">DFU Workunit</emphasis>
+            displays.<graphic fileref="../../images/CS-1911.jpg"
+            vendor="eclwatchSS" /></para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Press the <emphasis role="bold">Refresh</emphasis> button
+            periodically until the status of your request indicates it is
+            <emphasis role="bold">Finished</emphasis> or click on the
+            <emphasis role="bold">View Progress</emphasis> hyperlink to see a
+            progress indicator.</para>
+
+            <para><graphic fileref="../../images/DHMan-5.jpg"
+            vendor="eclwatchSS" />The Progress window shows a green progress
+            bar indicating the percentage of completion, as well as other
+            information related to the operation.</para>
+
+            <para>If a job fails, information related to the cause of the
+            failure also displays.</para>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+
+      <sect3>
+        <title id="LandingZone_Expected_Results">EXPECTED RESULTS:</title>
+
+        <para>Upon completion of the despray operation you will have a single
+        file. You can then retrieve the file from the landing zone. This will
+        certify that the despray operation is working correctly.</para>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Certify Spray</title>
+
+    <para>The file will be sprayed from the Landing Zone to the Data Refinery,
+    this will certify that data can be moved from Landing Zone to the Data
+    Refinery.</para>
+
+    <!--The following is a comment***
+
+-->
+
+    <sect2 id="Spray_the_Data_File_to_your_DR-THOR_Cluster">
+      <title>Spray a Data File to your THOR Cluster</title>
+
+      <para>To use a data file in our HPCC cluster, we must first “spray” it
+      to a Thor cluster. A <emphasis>spray</emphasis> or
+      <emphasis>import</emphasis> is the relocation of a data file from one
+      location to a Thor cluster. The term spray was adopted due to the nature
+      of the file movement – the file is partitioned across all nodes within a
+      cluster.</para>
+
+      <para>For this example, we will spray the full_test_distributed file
+      that we just put out on our landing zone.</para>
+
+      <para>We are going to spray the file to our Thor cluster and give it a
+      logical name of <emphasis
+      role="bold">certification::full_test_distributed</emphasis>. The
+      Distrubuted File Utility maintains a list of logical files and their
+      corresponding physical file locations.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Open ECL Watch in your browser using the following URL:</para>
+
+          <para><emphasis role="bold">http://nnn.nnn.nnn.nnn:pppp
+          </emphasis><emphasis role="bold">(where nnn.nnn.nnn.nnn is your ESP
+          Server’s IP Address and pppp is the port. The default port is
+          8010)</emphasis></para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the <emphasis role="bold">Spray Fixed</emphasis>
+          hyperlink under the DFU Files menu on the left.</para>
+
+          <para>The <emphasis role="bold">Spray Fixed</emphasis> page
+          displays.</para>
+        </listitem>
+
+        <listitem>
+          <para>Using the Source <emphasis
+          role="bold">Machine/dropzone</emphasis> drop list, select the
+          Landing Zone where the file was placed.</para>
+
+          <para>Your system may have only one Landing Zone.</para>
+
+          <para>The IP Address is automatically filled and the Local Path is
+          partially filled with the default folder on your landing
+          zone.</para>
+        </listitem>
+
+        <listitem>
+          <para>Complete the <emphasis role="bold">Local Path</emphasis> to
+          include the complete file name or use the <emphasis
+          role="bold">Choose File</emphasis> button to select the file from a
+          list of files in the folder. (The file to choose is
+          <emphasis>full_test_distributed</emphasis>)</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in the <emphasis role="bold">Record Length</emphasis>
+          (47).</para>
+        </listitem>
+
+        <listitem>
+          <para>Fill in the <emphasis role="bold">Label</emphasis> using the
+          naming convention described earlier: <emphasis
+          role="bold">certification::</emphasis><emphasis
+          role="bold">full_test_distributed</emphasis>.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Make sure the <emphasis
+          role="bold">Replicate</emphasis><emphasis role="bold">
+          </emphasis>tab is checked.</para>
+
+          <para><emphasis role="bold">Note:</emphasis> If replication is
+          disabled in your Thor settings, this checkbox does not
+          appear.</para>
+
+          <para><figure>
+              <title>Dropzones and Files</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/CS-1909.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Press the <emphasis role="bold">Submit<emphasis role="bold">
+          </emphasis></emphasis>button.</para>
+        </listitem>
+
+        <listitem>
+          <?dbfo keep-together="always"?>
+
+          <para>Click on the <emphasis role="bold">View Progress</emphasis>
+          hyperlink</para>
+
+          <para><figure>
+              <title>View Progress</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/DTimg02.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure>The Workunit progress page displays.</para>
+
+          <para><figure>
+              <title>Spray Complete</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/DTimg03.jpg"
+                             vendor="eclwatchSS" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+
+    <sect2 id="SPRAY_RESULTS" role="brk">
+      <title>EXPECTED RESULTS</title>
+
+      <orderedlist>
+        <listitem>
+          <para>To verify the spray, in ECL Watch, select the Browse Logical
+          Files link under DFU Files.</para>
+
+          <para><figure>
+              <title>Browse Logical Files</title>
+
+              <mediaobject>
+                <imageobject>
+                  <imagedata fileref="../../images/CS-1910.jpg" />
+                </imageobject>
+              </mediaobject>
+            </figure></para>
+        </listitem>
+
+        <listitem>
+          <para>Click on the <inlinegraphic
+          fileref="../../images/RM-19.jpg" /> button next to the file listing
+          for <emphasis
+          role="bold">certification::full_test_distributed</emphasis>, then
+          select <emphasis role="bold">Details</emphasis> to open the logical
+          file statistics.</para>
+        </listitem>
+
+        <listitem>
+          <para>View the details.</para>
+        </listitem>
+      </orderedlist>
+    </sect2>
+  </sect1>
+</chapter>

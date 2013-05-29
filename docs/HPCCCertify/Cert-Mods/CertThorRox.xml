@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE article PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<chapter>
+<chapter id="Generate_Certification_data_file">
   <title>Certify Thor &amp; Roxie</title>
 
   <para>The following sections will help you to Certify that the Thor, hThor,
@@ -62,7 +62,7 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/CSimg10-1.jpg" />
+                        <imagedata fileref="../../images/CSimg10-1.jpg" />
                       </imageobject>
                     </mediaobject>
                   </figure></para>
@@ -105,7 +105,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/CSimg10-2.jpg" />
+                  <imagedata fileref="../../images/CSimg10-2.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -122,7 +122,7 @@
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/CSimg10.jpg" />
+            <imagedata fileref="../../images/CSimg10.jpg" />
           </imageobject>
         </mediaobject>
       </figure></para>
@@ -143,7 +143,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/CS-img11-2.jpg" />
+              <imagedata fileref="../../images/CS-img11-2.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -171,7 +171,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/CSimg12.jpg" />
+                  <imagedata fileref="../../images/CSimg12.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -189,7 +189,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/CSimg13.jpg" />
+                  <imagedata fileref="../../images/CSimg13.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -285,7 +285,7 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/CSimg10-3.jpg" />
+                        <imagedata fileref="../../images/CSimg10-3.jpg" />
                       </imageobject>
                     </mediaobject>
                   </figure></para>
@@ -307,7 +307,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/CSimg10-2.jpg" />
+                  <imagedata fileref="../../images/CSimg10-2.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -322,7 +322,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/CSimg10-S.jpg" />
+                  <imagedata fileref="../../images/CSimg10-S.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -348,7 +348,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/CSimg11.jpg" />
+              <imagedata fileref="../../images/CSimg11.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -450,7 +450,7 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/CSimg10-4.jpg" />
+                      <imagedata fileref="../../images/CSimg10-4.jpg" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
@@ -474,7 +474,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CSimg10-2.jpg" />
+                <imagedata fileref="../../images/CSimg10-2.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -490,7 +490,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CSimg10-S.jpg" />
+                <imagedata fileref="../../images/CSimg10-S.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -511,7 +511,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/CSimg11-1.jpg" />
+              <imagedata fileref="../../images/CSimg11-1.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -547,7 +547,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CSimg14.jpg" />
+                <imagedata fileref="../../images/CSimg14.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -556,8 +556,8 @@
       <listitem>
         <?dbfo keep-together="always"?>
 
-        <para>Click on the <inlinegraphic fileref="images/RM-19.jpg" /> button
-        next to the file listing for <emphasis
+        <para>Click on the <inlinegraphic fileref="../../images/RM-19.jpg" />
+        button next to the file listing for <emphasis
         role="bold">thor::full_test_distributed_index</emphasis> , then select
         <emphasis role="bold">Details</emphasis> to open the logical file
         details page.</para>
@@ -569,7 +569,7 @@
 
         <mediaobject>
           <imageobject>
-            <imagedata fileref="images/CSimg14-2.jpg" />
+            <imagedata fileref="../../images/CSimg14-2.jpg" />
           </imageobject>
         </mediaobject>
       </figure><!--***dont we need to add more content here as to what exact Details we should see??***--></para>
@@ -606,7 +606,7 @@
 
                     <mediaobject>
                       <imageobject>
-                        <imagedata fileref="images/CSimg10-5.jpg" />
+                        <imagedata fileref="../../images/CSimg10-5.jpg" />
                       </imageobject>
                     </mediaobject>
                   </figure></para>
@@ -630,7 +630,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/CSimg10-2.jpg" />
+                  <imagedata fileref="../../images/CSimg10-2.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -647,7 +647,7 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/CSimg10-S.jpg" />
+                  <imagedata fileref="../../images/CSimg10-S.jpg" />
                 </imageobject>
               </mediaobject>
             </figure></para>
@@ -666,7 +666,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/CSimg13-1.jpg" />
+              <imagedata fileref="../../images/CSimg13-1.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
@@ -702,7 +702,7 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="images/CSimg10-6.jpg" />
+                      <imagedata fileref="../../images/CSimg10-6.jpg" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
@@ -724,7 +724,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CSimg24.jpg" />
+                <imagedata fileref="../../images/CSimg24.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -744,7 +744,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CSimg14-3.jpg" />
+                <imagedata fileref="../../images/CSimg14-3.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -757,7 +757,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CS-1102.jpg" />
+                <imagedata fileref="../../images/CS-1102.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -772,7 +772,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CS-1913.jpg" />
+                <imagedata fileref="../../images/CS-1913.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -786,7 +786,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CS-1411.jpg" />
+                <imagedata fileref="../../images/CS-1411.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -806,7 +806,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CSimg18.jpg" />
+                <imagedata fileref="../../images/CSimg18.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -830,7 +830,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="images/CS-1802.jpg" />
+                <imagedata fileref="../../images/CS-1802.jpg" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -853,7 +853,7 @@
 
           <mediaobject>
             <imageobject>
-              <imagedata fileref="images/CSimg20.jpg" />
+              <imagedata fileref="../../images/CSimg20.jpg" />
             </imageobject>
           </mediaobject>
         </figure></para>
