@@ -51,16 +51,8 @@
 
 static void setHashResources(IHqlExpression * expr, CResources & resources, const CResourceOptions & options)
 {
-    if (options.useMpForDistribute)
-    {
-        unsigned memneeded = MEM_Const_Minimal+resources.clusterSize*4*DISTRIBUTE_SINGLE_BUFFER_SIZE+DISTRIBUTE_PULL_BUFFER_SIZE;
-        resources.set(RESslavememory, memneeded).set(REShashdist, 1);
-    }
-    else
-    {
-        resources.set(RESslavememory, MEM_Const_Minimal+DISTRIBUTE_PULL_BUFFER_SIZE).set(REShashdist, 1);
-        resources.setManyToManySockets(2);
-    }
+    unsigned memneeded = MEM_Const_Minimal+resources.clusterSize*4*DISTRIBUTE_SINGLE_BUFFER_SIZE+DISTRIBUTE_PULL_BUFFER_SIZE;
+    resources.set(RESslavememory, memneeded).set(REShashdist, 1);
 }
 
 
@@ -1781,11 +1773,6 @@ EclResourcer::EclResourcer(IErrorReceiver * _errors, IConstWorkUnit * _wu, Clust
         resourceLimit->set(RESslavesocket, 0xffffffff).set(RESmastermemory,0xffffffff);
     }
 
-
-    options.useMpForDistribute = (targetClusterType == ThorLCRCluster);
-    
-    if (_translatorOptions.hasResourceUseMpForDistribute)
-        options.useMpForDistribute = _translatorOptions.resourceUseMpForDistribute;
 
     options.isChildQuery = false;
     options.targetClusterType = targetClusterType;
