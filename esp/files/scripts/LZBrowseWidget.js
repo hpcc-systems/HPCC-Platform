@@ -18,8 +18,10 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-attr",
     "dojo/dom-class",
     "dojo/dom-form",
+    "dojo/request/iframe",
     "dojo/date",
     "dojo/on",
 
@@ -44,13 +46,18 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/FileSpray",
     "hpcc/ESPUtil",
+    "hpcc/ESPRequest",
+    "hpcc/ESPDFUWorkunit",
     "hpcc/HexViewWidget",
+    "hpcc/DFUWUDetailsWidget",
+    "hpcc/TargetSelectWidget",
 
     "dojo/text!../templates/LZBrowseWidget.html",
 
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
+    "dijit/form/Form",
     "dijit/form/Textarea",
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
@@ -60,13 +67,16 @@ define([
     "dijit/Toolbar",
     "dijit/ToolbarSeparator",
     "dijit/TooltipDialog",
+    "dijit/form/DropDownButton",
 
-    "dojox/layout/TableContainer"
+    "dojox/layout/TableContainer",
+    "dojox/form/Uploader",
+    "dojox/form/uploader/FileList"
 
-], function (declare, lang, arrayUtil, dom, domClass, domForm, date, on,
+], function (declare, lang, arrayUtil, dom, domAttr, domClass, domForm, iframe, date, on,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 OnDemandGrid, tree, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, FileSpray, ESPUtil, HexViewWidget,
+                _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, HexViewWidget, DFUWUDetailsWidget, TargetSelectWidget,
                 template) {
     return declare("LZBrowseWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ESPUtil.FormHelper], {
         templateString: template,
@@ -82,10 +92,45 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.landingZonesTab = registry.byId(this.id + "_LandingZones");
+            this.uploader = registry.byId(this.id + "Upload");
+            this.uploadFileList = registry.byId(this.id + "UploadFileList");
+            this.uploadFileList.uploaderId = this.id + "Upload";
+            this.sprayFixedDestinationSelect = registry.byId(this.id + "SprayFixedDestination");
+            this.sprayVariableDestinationSelect = registry.byId(this.id + "SprayVariableDestination");
+            this.sprayXmlDestinationSelect = registry.byId(this.id + "SprayXmlDestinationSelect");
+            this.dropZoneSelect = registry.byId(this.id + "DropZoneTargetSelect");
+            this.fileListDialog = registry.byId(this.id + "FileListDialog");
+
+            var context = this;
+            this.connect(this.uploader, "onComplete", function () {
+                context.fileListDialog.hide();
+                context.refreshGrid();
+            });
+            //  Workaround for HPCC-9414  --->
+            this.connect(this.uploader, "onError", function (msg, e) {
+                if (msg === "Error parsing server result:") {   
+                    context.fileListDialog.hide();
+                    context.refreshGrid();
+                }
+            });
+            //  <---  Workaround for HPCC-9414
         },
 
         startup: function (args) {
             this.inherited(arguments);
+        },
+
+        _handleResponse: function (wuidQualifier, response) {
+            if (lang.exists(wuidQualifier, response)) {
+                var wu = ESPDFUWorkunit.Get(lang.getObject(wuidQualifier, false, response));
+                wu.startMonitor(true);
+                var tab = this.ensurePane("dfu", this.id + "_" + wu.ID, wu.ID, {
+                    Wuid: wu.ID
+                });
+                if (tab) {
+                    this.selectChild(tab);
+                }
+            }
         },
 
         //  Hitched actions  ---
@@ -93,12 +138,46 @@ define([
             this.refreshGrid();
         },
 
+        _onUpload: function (event) {
+            this.uploadFileList.hideProgress();
+            this.fileListDialog.show();
+        },
+
+        _onDownload: function (event) {
+            var context = this;
+            arrayUtil.forEach(this.landingZonesGrid.getSelected(), function (item, idx) {
+                var downloadIframeName = "downloadIframe_" + item.calculatedID;
+                var frame = iframe.create(downloadIframeName);
+                var url = ESPRequest.getBaseURL("FileSpray") + "/DownloadFile?Name=" + encodeURIComponent(item.partialPath) + "&NetAddress=" + item.DropZone.NetAddress + "&Path=" + encodeURIComponent(item.DropZone.Path) + "&OS=" + item.DropZone.OS;
+                iframe.setSrc(frame, url, true);
+            });
+        },
+
+        _onDelete: function (event) {
+            if (confirm('Delete selected files?')) {
+                var context = this;
+                arrayUtil.forEach(this.landingZonesGrid.getSelected(), function(item, idx) {
+                    FileSpray.DeleteDropZoneFile({
+                        request:{
+                            NetAddress:	item.DropZone.NetAddress,
+                            Path: item.DropZone.Path,
+                            OS: item.DropZone.OS,
+                            Names: item.partialPath
+                        },
+                        load: function (response) {
+                            context.refreshGrid();
+                        }
+                    });
+                });
+            }
+        },
+
         _onHexPreview: function (event) {
             var selections = this.landingZonesGrid.getSelected();
             var firstTab = null;
             var context = this;
             arrayUtil.forEach(selections, function (item, idx) {
-                var tab = context.ensurePane(context.id + "_" + item.calculatedID, item.displayName, {
+                var tab = context.ensurePane("hex", context.id + "_" + item.calculatedID, item.displayName, {
                     logicalFile: item.getLogicalFile()
                 });
                 if (firstTab === null) {
@@ -108,6 +187,85 @@ define([
             if (firstTab) {
                 this.selectChild(firstTab);
             }
+        },
+
+        _onUploadSubmit: function (event) {
+            this.uploader.set("uploadUrl", this.uploadUrl);
+            this.uploader.upload();
+        },
+
+        _onUploadCancel: function (event) {
+            registry.byId(this.id + "FileListDialog").hide();
+        },
+
+        _onSprayFixed: function (event) {
+            var context = this;
+            var selections = this.landingZonesGrid.getSelected();
+            var context = this;
+            arrayUtil.forEach(selections, function (item, idx) {
+                var formData = domForm.toObject(context.id + "SprayFixedDialog");
+                lang.mixin(formData, {
+                    sourceIP: item.DropZone.NetAddress,
+                    sourcePath: item.fullPath
+                });
+
+                FileSpray.SprayFixed({
+                    request: formData
+                }).then(function (response) {
+                    context._handleResponse("SprayFixedResponse.wuid", response);
+                })
+            });
+             registry.byId(this.id + "SprayFixedDropDown").closeDropDown();
+        },
+
+        _onSprayFixedCancel: function (event) {
+            registry.byId(this.id + "SprayFixedDropDown").closeDropDown();
+        },
+
+        _onSprayVariable: function(event) {
+            var context = this;
+            var selections = this.landingZonesGrid.getSelected();
+            var context = this;
+            arrayUtil.forEach(selections, function (item, idx) {
+                var formData = domForm.toObject(context.id + "SprayVariableDialog");
+                lang.mixin(formData, {
+                    sourceIP: item.DropZone.NetAddress,
+                    sourcePath: item.DropZone.fullPath
+                });
+                FileSpray.SprayVariable({
+                    request: formData
+                }).then(function (response) {
+                    context._handleResponse("SprayResponse.wuid", response);
+                });
+            });
+             registry.byId(this.id + "SprayVariableDropDown").closeDropDown();
+        },
+
+        _onSprayVariableCancel: function (event) {
+            registry.byId(this.id + "SprayVariableDropDown").closeDropDown();
+        },
+
+        _onSprayXml: function(event) {
+            var context = this;
+            var selections = this.landingZonesGrid.getSelected();
+            var context = this;
+            arrayUtil.forEach(selections, function (item, idx) {
+                var formData = domForm.toObject(context.id + "SprayXmlDialog");
+                lang.mixin(formData, {
+                    sourceIP: item.DropZone.NetAddress,
+                    sourcePath: item.DropZone.fullPath
+                });
+                FileSpray.SprayVariable({
+                    request: formData
+                }).then(function (response) {
+                    context._handleResponse("SprayResponse.wuid", response);
+                });
+            });
+             registry.byId(this.id + "SprayXmlDropDown").closeDropDown();
+        },
+
+        _onSprayXmlCancel: function (event) {
+            registry.byId(this.id + "SprayXmlDropDown").closeDropDown();
         },
 
         _onRowDblClick: function (wuid) {
@@ -127,6 +285,23 @@ define([
             this.initalized = true;
             this.initLandingZonesGrid();
             this.selectChild(this.landingZonesTab, true);
+            var context = this;
+            this.sprayFixedDestinationSelect.init({
+                Groups: true
+            });
+            this.sprayVariableDestinationSelect.init({
+                Groups: true
+            });
+            this.sprayXmlDestinationSelect.init({
+                Groups: true
+            });
+            this.dropZoneSelect.init({
+                DropZones: true,
+                callback: function (value, item) {
+                    context.uploadUrl = "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + item.machine.Netaddress + "&OS=" + item.machine.OS + "&Path=" + item.machine.Directory;
+                }
+            });
+            
         },
 
         initTab: function () {
@@ -195,7 +370,7 @@ define([
                     return retVal;
                 }
             }, this.id + "LandingZonesGrid");
-            this.landingZonesGrid.set("noDataMessage", "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>");
+            this.landingZonesGrid.set("noDataMessage", "<span>Zero Files (Upload Some Files).</span>");
 
             var context = this;
             on(document, ".WuidClick:click", function (evt) {
@@ -239,64 +414,38 @@ define([
             var selection = this.landingZonesGrid.getSelected();
             var hasSelection = selection.length;
             registry.byId(this.id + "HexPreview").set("disabled", !hasSelection);
-            /*
-            var hasSelection = false;
-            var hasProtected = false;
-            var hasNotProtected = false;
-            var hasFailed = false;
-            var hasNotFailed = false;
-            var hasCompleted = false;
-            var hasNotCompleted = false;
-            for (var i = 0; i < selection.length; ++i) {
-                hasSelection = true;
-                if (selection[i] && selection[i].Protected !== null) {
-                    if (selection[i].Protected != "0") {
-                        hasProtected = true;
-                    } else {
-                        hasNotProtected = true;
-                    }
-                }
-                if (selection[i] && selection[i].StateID !== null) {
-                    if (selection[i].StateID == "4") {
-                        hasFailed = true;
-                    } else {
-                        hasNotFailed = true;
-                    }
-                    if (WsWorkunits.isComplete(selection[i].StateID)) {
-                        hasCompleted = true;
-                    } else {
-                        hasNotCompleted = true;
-                    }
-                }
-            }
-
-            registry.byId(this.id + "Open").set("disabled", !hasSelection);
-            registry.byId(this.id + "Delete").set("disabled", !hasNotProtected);
-            registry.byId(this.id + "Abort").set("disabled", !hasNotCompleted);
-            registry.byId(this.id + "SetToFailed").set("disabled", !hasNotProtected);
-            registry.byId(this.id + "Protect").set("disabled", !hasNotProtected);
-            registry.byId(this.id + "Unprotect").set("disabled", !hasProtected);
-            registry.byId(this.id + "Reschedule").set("disabled", true);    //TODO
-            registry.byId(this.id + "Deschedule").set("disabled", true);    //TODO
-
-            this.menuProtect.set("disabled", !hasNotProtected);
-            this.menuUnprotect.set("disabled", !hasProtected);
-
-            this.refreshFilterState();
-            */
+            registry.byId(this.id + "Download").set("disabled", !hasSelection);
+            registry.byId(this.id + "Delete").set("disabled", !hasSelection);
+            registry.byId(this.id + "SprayFixedDropDown").set("disabled", !hasSelection);
+            registry.byId(this.id + "SprayVariableDropDown").set("disabled", !hasSelection);
+            registry.byId(this.id + "SprayXmlDropDown").set("disabled", !hasSelection);
         },
 
-        ensurePane: function (id, title, params) {
+        ensurePane: function (type, id, title, params) {
             var retVal = registry.byId(id);
             if (!retVal) {
                 var context = this;
-                retVal = new HexViewWidget({
-                    id: id,
-                    title: title,
-                    closable: true,
-                    params: params
-                });
-                this.addChild(retVal);
+                switch (type) {
+                    case "hex":
+                        retVal = new HexViewWidget({
+                            id: id,
+                            title: title,
+                            closable: true,
+                            params: params
+                        });
+                        break;
+                    case "dfu":
+                        retVal = new DFUWUDetailsWidget.fixCircularDependency({
+                            id: id,
+                            title: title,
+                            closable: true,
+                            params: params
+                        });
+                        break;
+                }
+                if (retVal) {
+                    this.addChild(retVal);
+                }
             }
             return retVal;
         }

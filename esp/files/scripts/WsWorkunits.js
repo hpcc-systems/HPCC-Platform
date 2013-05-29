@@ -114,7 +114,9 @@ define([
                 request: request,
                 load: function (response) {
                     arrayUtil.forEach(workunits, function (item, index) {
-                        item.refresh();
+                        if (item.refresh) { //  if action is delete then there will be no refresh
+                            item.refresh();
+                        }
                     });
                     if (lang.exists("WUActionResponse.ActionResults.WUActionResult", response)) {
                         arrayUtil.forEach(response.WUActionResponse.ActionResults.WUActionResult, function (item, index) {

@@ -226,20 +226,20 @@ define([
         _action: function (action) {
             this._assertHasWuid();
             var context = this;
-            WsWorkunits.WUAction([{ Wuid: this.Wuid }], action, {
+            return WsWorkunits.WUAction([{ Wuid: this.Wuid }], action, {
                 load: function (response) {
                     context.refresh();
                 }
             });
         },
         setToFailed: function () {
-            this._action("setToFailed");
+            return this._action("setToFailed");
         },
         abort: function () {
-            this._action("Abort");
+            return this._action("Abort");
         },
         doDelete: function () {
-            this._action("Delete");
+            return this._action("Delete");
         },
         publish: function (jobName) {
             this._assertHasWuid();
