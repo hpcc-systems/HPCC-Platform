@@ -46,6 +46,8 @@ include_directories (
          ${HPCC_SOURCE_DIR}/esp/bindings
          ${HPCC_SOURCE_DIR}/esp/bindings/SOAP/xpp
          ${HPCC_SOURCE_DIR}/esp/smc/SMCLib
+         ${HPCC_SOURCE_DIR}/dali/base
+         ${HPCC_SOURCE_DIR}/system/mp
     )
 
 # NOTE - this should not be needed, it's the result of poor encapsulation and using CLdapSecManager directly 

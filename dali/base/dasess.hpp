@@ -110,6 +110,7 @@ interface ISessionManager: extends IInterface
     virtual bool checkScopeScansLDAP()=0;
     virtual unsigned getLDAPflags()=0;
     virtual void setLDAPflags(unsigned flags)=0;
+    virtual bool clearPermissionsCache(IUserDescriptor *udesc)=0;
 
 };
 

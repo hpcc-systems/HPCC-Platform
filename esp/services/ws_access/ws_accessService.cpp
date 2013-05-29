@@ -21,6 +21,7 @@
 
 #include "ws_accessService.hpp"
 #include "exception_util.hpp"
+#include "dasess.hpp"
 
 #include <set>
 
@@ -1893,6 +1894,30 @@ bool Cws_accessEx::onPermissionsResetInput(IEspContext &context, IEspPermissions
     return true;
 }
 
+bool Cws_accessEx::onClearPermissionsCache(IEspContext &context, IEspClearPermissionsCacheRequest &req, IEspClearPermissionsCacheResponse &resp)
+{
+    ISecManager* secmgr = context.querySecManager();
+    if(secmgr == NULL)
+        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+    //Clear local cache
+    Owned<ISecUser> user = secmgr->createUser(context.queryUserId());
+    ISecCredentials& cred = user->credentials();
+    cred.setPassword(context.queryPassword());
+    bool ok = secmgr->clearPermissionsCache(*user);
+
+    //Request DALI to clear its cache
+    if (ok)
+    {
+        Owned<IUserDescriptor> userdesc;
+        userdesc.setown(createUserDescriptor());
+        userdesc->set(context.queryUserId(), context.queryPassword());
+        ok = querySessionManager().clearPermissionsCache(userdesc);
+    }
+
+    resp.setRetcode(ok ? 0 : -1);
+    return true;
+}
 bool Cws_accessEx::permissionsReset(CLdapSecManager* ldapsecmgr, const char* basedn, const char* rtype0, const char* prefix,
         const char* resourceName, ACT_TYPE accountType, const char* accountName,
         bool allow_access, bool allow_read, bool allow_write, bool allow_full,

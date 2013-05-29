@@ -1255,6 +1255,16 @@ int CLdapSecManager::queryDefaultPermission(ISecUser& user)
     return m_ldap_client->queryDefaultPermission(user);
 }
 
+bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
+{
+    if(m_permissionsCache.isCacheEnabled())
+    {
+        if (!authenticate(&user))
+            return false;
+        m_permissionsCache.flush();
+    }
+    return true;
+}
 
 extern "C"
 {
