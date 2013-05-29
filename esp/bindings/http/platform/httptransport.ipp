@@ -418,6 +418,13 @@ inline bool canRedirect(CHttpRequest &req)
     return true;
 }
 
+inline bool checkRedirect(IEspContext &ctx)
+{
+    if (ctx.getResponseFormat()!=ESPSerializationANY)
+        return false;
+    return true;
+}
+
 inline bool skipXslt(IEspContext &context)
 {
     return (context.getResponseFormat()!=ESPSerializationANY);  //for now

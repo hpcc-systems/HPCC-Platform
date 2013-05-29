@@ -982,7 +982,7 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
             params->setProp("State",4);
 
         IArrayOf<IConstWUActionResult> results;
-        if (doAction(context, req.getWuids(), *action, params, &results) && *action!=ActionDelete)
+        if (doAction(context, req.getWuids(), *action, params, &results) && *action!=ActionDelete && checkRedirect(context))
         {
             StringBuffer redirect;
             if(req.getPageFrom() && strieq(req.getPageFrom(), "wuid"))

@@ -1637,7 +1637,7 @@ bool CFileSprayEx::onDFUWorkunitsAction(IEspContext &context, IEspDFUWorkunitsAc
         else
             throw MakeStringException(ECLWATCH_INVALID_ACTION, "Unknown action type %s", action);
 
-        if (bAllSuccess && strcmp(action, "Delete"))
+        if (bAllSuccess && checkRedirect(context) && strcmp(action, "Delete"))
         {
             if (!strcmp(action, "Restore"))
                 resp.setRedirectUrl("/FileSpray/GetDFUWorkunits?Type=archived workunits");

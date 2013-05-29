@@ -1405,6 +1405,8 @@ void CHttpRequest::parseEspPathInfo()
 
         if (queryParameters()->hasProp("rawxml_"))
             m_context->setResponseFormat(ESPSerializationXML);
+        else if (isSoapMessage())
+            m_context->setResponseFormat(ESPSerializationXML);
 
         size32_t pathlen=m_httpPath.length();
         if (!pathlen)
