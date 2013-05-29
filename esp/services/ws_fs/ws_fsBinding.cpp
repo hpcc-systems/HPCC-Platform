@@ -464,15 +464,58 @@ void CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* r
     return;
 }
 
-int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,   const char *service, const char *method)
+int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,   const char *service, const char *method, StringArray& fileNames, IMultiException *me)
 {
-    StringBuffer newUrl, netAddress, path;
+    if (!me || (me->ordinality()==0))
+    {
+        if (ctx.getResponseFormat()==ESPSerializationANY)
+        {
+            StringBuffer newUrl, netAddress, path;
+            request->getParameter("NetAddress", netAddress);
+            request->getParameter("Path", path);
+            newUrl.appendf("/FileSpray/DropZoneFiles?NetAddress=%s&Path=%s", netAddress.str(), path.str());
+            response->redirect(*request, newUrl.str());
+        }
+        else
+        {
+            IArrayOf<IEspDFUActionResult> results;
+            Owned<CUploadFilesResponse> esp_response = new CUploadFilesResponse("FileSpray");
+            ForEachItemIn(i, fileNames)
+            {
+                const char* fileName = fileNames.item(i);
+                Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
+                res->setID(fileName);
+                res->setAction("Upload File");
+                res->setResult("Success");
+                results.append(*res.getLink());
+            }
+            if (!results.length())
+            {
+                Owned<IEspDFUActionResult> res = createDFUActionResult("", "");
+                res->setID("<N/A>");
+                res->setAction("Upload File");
+                res->setResult("No file uploaded");
+                results.append(*res.getLink());
+            }
+            esp_response->setUploadFileResults(results);
 
-    request->getParameter("NetAddress", netAddress);
-    request->getParameter("Path", path);
-
-    newUrl.appendf("/FileSpray/DropZoneFiles?NetAddress=%s&Path=%s", netAddress.str(), path.str());
-    response->redirect(*request, newUrl.str());
+            MemoryBuffer content;
+	        StringBuffer mimetype;
+	        esp_response->appendContent(&ctx,content, mimetype);
+	        response->setContent(content.length(), content.toByteArray());
+	        response->setContentType(mimetype.str());
+            response->send();
+        }
+    }
+    else
+    {
+        StringBuffer msg;
+        WARNLOG("Exception(s) in EspHttpBinding::onStartUpload - %s", me->errorMessage(msg).append('\n').str());
+        if ((ctx.getResponseFormat() == ESPSerializationXML) || (ctx.getResponseFormat() == ESPSerializationJSON))
+            response->handleExceptions(NULL, me, "FileSpray", "UploadFile", NULL);
+        else
+            return EspHttpBinding::onFinishUpload(ctx, request, response, service, method, fileNames, me);
+    }
 
     return 0;
 }
