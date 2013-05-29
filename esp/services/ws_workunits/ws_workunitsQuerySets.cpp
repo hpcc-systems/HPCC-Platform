@@ -523,7 +523,8 @@ bool CWsWorkunitsEx::onWUPublishWorkunit(IEspContext &context, IEspWUPublishWork
     if (!isValidCluster(target.str()))
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid cluster name: %s", target.str());
 
-    copyQueryFilesToCluster(context, cw, req.getRemoteDali(), target.str(), queryName.str(), false);
+    if (!req.getDontCopyFiles())
+        copyQueryFilesToCluster(context, cw, req.getRemoteDali(), target.str(), queryName.str(), false);
 
     WorkunitUpdate wu(&cw->lock());
     if (req.getUpdateWorkUnitName() && notEmpty(req.getJobName()))
