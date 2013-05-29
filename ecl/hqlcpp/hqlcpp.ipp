@@ -1793,19 +1793,18 @@ protected:
     void doReportWarning(IHqlExpression * location, unsigned id, const char * msg);
 
     void optimizePersists(HqlExprArray & exprs);
-    void optimizePersists(WorkflowArray & workflow);
     void allocateSequenceNumbers(HqlExprArray & exprs);
-    void convertLogicalToActivities(WorkflowArray & array);
+    void convertLogicalToActivities(WorkflowItem & curWorkflow);
     void flattenDatasets(WorkflowArray & array);
 
-    void spotGlobalCSE(WorkflowArray & array);
+    void spotGlobalCSE(WorkflowItem & curWorkflow);
     IHqlExpression * spotGlobalCSE(IHqlExpression * _expr);
     void spotGlobalCSE(HqlExprArray & exprs);
     IHqlExpression * extractGlobalCSE(IHqlExpression * expr);
     void processCppBodyDirectives(IHqlExpression * expr);
 
 
-    void markThorBoundaries(WorkflowArray & array);
+    void markThorBoundaries(WorkflowItem & curWorkflow);
     bool transformGraphForGeneration(HqlQueryContext & query, WorkflowArray & exprs);
     void processEmbeddedLibraries(HqlExprArray & exprs, HqlExprArray & internalLibraries, bool isLibrary);
     void pickBestEngine(WorkflowArray & array);
@@ -1856,10 +1855,12 @@ public:
 public:
     void traceExpression(const char * title, IHqlExpression * expr, unsigned level=500);
     void traceExpressions(const char * title, HqlExprArray & exprs, unsigned level=500);
+    void traceExpressions(const char * title, WorkflowItem & workflow, unsigned level=500) { traceExpressions(title, workflow.queryExprs(), level); };
     void traceExpressions(const char * title, WorkflowArray & exprs);
 
     void checkNormalized(IHqlExpression * expr);
     void checkNormalized(WorkflowArray & array);
+    void checkNormalized(WorkflowItem & workflow) { checkNormalized(workflow.queryExprs()); }
     void checkNormalized(HqlExprArray & exprs);
     void checkNormalized(BuildCtx & ctx, IHqlExpression * expr);
 

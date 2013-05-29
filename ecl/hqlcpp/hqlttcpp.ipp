@@ -1085,7 +1085,6 @@ protected:
 };
 
 void normalizeAnnotations(HqlCppTranslator & translator, HqlExprArray & exprs);
-void normalizeAnnotations(HqlCppTranslator & translator, WorkflowArray & workflow);
 
 //---------------------------------------------------------------------------
 
@@ -1216,13 +1215,12 @@ void hoistNestedCompound(HqlCppTranslator & _translator, HqlExprArray & exprs);
 void hoistNestedCompound(HqlCppTranslator & _translator, WorkflowArray & workflow);
 
 //---------------------------------------------------------------------------
-void expandGlobalDatasets(WorkflowArray & array, IWorkUnit * wu, HqlCppTranslator & translator);
-void mergeThorGraphs(WorkflowArray & array, bool resourceConditionalActions, bool resourceSequential);
-void migrateExprToNaturalLevel(WorkflowArray & array, IWorkUnit * wu, HqlCppTranslator & translator);
-void removeTrivialGraphs(WorkflowArray & workflow);
+void expandGlobalDatasets(WorkflowItem & curWorkflow, IWorkUnit * wu, HqlCppTranslator & translator);
+void mergeThorGraphs(WorkflowItem & curWorkflow, bool resourceConditionalActions, bool resourceSequential);
+void migrateExprToNaturalLevel(WorkflowItem & curWorkflow, IWorkUnit * wu, HqlCppTranslator & translator);
+void removeTrivialGraphs(WorkflowItem & curWorkflow);
 void extractWorkflow(HqlCppTranslator & translator, HqlExprArray & exprs, WorkflowArray & out);
 void optimizeActivities(HqlExprArray & exprs, bool optimizeCountCompare, bool optimizeNonEmpty);
-void optimizeActivities(WorkflowArray & array, bool optimizeCountCompare, bool optimizeNonEmpty);
 IHqlExpression * optimizeActivities(IHqlExpression * expr, bool optimizeCountCompare, bool optimizeNonEmpty);
 IHqlExpression * insertImplicitProjects(HqlCppTranslator & translator, IHqlExpression * expr, bool optimizeSpills);
 void insertImplicitProjects(HqlCppTranslator & translator, HqlExprArray & exprs);
