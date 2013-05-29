@@ -178,6 +178,7 @@ void CResPermissionsCache::removeStaleEntries(time_t tstamp)
         }
         m_resAccessMap.erase(cachekey);
     }
+
     m_timestampMap.erase(iBegin, itL);
     m_tLastCleanup = tstamp;
 }
@@ -213,6 +214,8 @@ CPermissionsCache::~CPermissionsCache()
     MapUserCache::const_iterator uiEnd = m_userCache.end(); 
     for (ui = m_userCache.begin(); ui != uiEnd; ui++)
         delete (*ui).second;
+
+    removeAllManagedFileScopes();
 }
 
 int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resources, 
@@ -378,3 +381,200 @@ void CPermissionsCache::removeFromUserCache(ISecUser& sec_user)
     }
 }
 
+bool CPermissionsCache::addManagedFileScopes(IArrayOf<ISecResource>& scopes)
+{
+    synchronized block(m_managedFileScopesCacheMonitor);
+    ForEachItemIn(x, scopes)
+    {
+        ISecResource* scope = &scopes.item(x);
+        if(!scope)
+            continue;
+        const char* cachekey = scope->getName();
+        if(cachekey == NULL)
+            continue;
+        map<string, ISecResource*>::iterator it = m_managedFileScopesMap.find(cachekey);
+        if (it != m_managedFileScopesMap.end())
+        {
+            ISecResource *res = (*it).second;
+            res->Release();
+            m_managedFileScopesMap.erase(it);
+        }
+#ifdef _DEBUG
+        DBGLOG("Caching Managed File Scope %s",cachekey);
+#endif
+        m_managedFileScopesMap.insert( pair<string, ISecResource*>(cachekey, LINK(scope)));
+    }
+    return true;
+}
+
+inline void CPermissionsCache::removeManagedFileScopes(IArrayOf<ISecResource>& scopes)
+{
+    synchronized block(m_managedFileScopesCacheMonitor);
+    ForEachItemIn(x, scopes)
+    {
+        ISecResource* scope = &scopes.item(x);
+        if(!scope)
+            continue;
+        const char* cachekey = scope->getName();
+        if(cachekey == NULL)
+            continue;
+        map<string, ISecResource*>::iterator it = m_managedFileScopesMap.find(cachekey);
+        if (it != m_managedFileScopesMap.end())
+        {
+            ISecResource *res = (*it).second;
+            res->Release();
+            m_managedFileScopesMap.erase(it);
+        }
+    }
+}
+
+inline void CPermissionsCache::removeAllManagedFileScopes()
+{
+    synchronized block(m_managedFileScopesCacheMonitor);
+    map<string, ISecResource*>::const_iterator cit;
+    map<string, ISecResource*>::const_iterator iEnd = m_managedFileScopesMap.end();
+
+    for (cit = m_managedFileScopesMap.begin(); cit != iEnd; cit++)
+    {
+        ISecResource *res = (*cit).second;
+        res->Release();
+    }
+    m_managedFileScopesMap.clear();
+}
+
+/*
+    if perms set on 'scopeA::scopeB' only and lookup of 'scopeA::scopeB::scopeC::scopeD'
+    need to lookup:
+        'scopeA'
+    no match=>continue
+    match=>continue if read permissions (if no read, implies can't "see" child scopes)
+        'scopeA::scopeB'
+    no match=>continue
+    match=>continue if read permissions (if no read, implies can't "see" child scopes)
+
+    etc. Until full scope path checked, or no read permissions hit on ancestor scope.
+*/
+bool CPermissionsCache::queryPermsManagedFileScope(ISecUser& sec_user, const char * fullScope, StringBuffer& managedScope, int * accessFlags)
+{
+    if (!fullScope || !*fullScope)
+    {
+        *accessFlags = queryDefaultPermission(sec_user);
+        return true;
+    }
+
+    time_t now;
+    time(&now);
+    if (m_secMgr && (0 == m_lastManagedFileScopesRefresh || m_lastManagedFileScopesRefresh < (now - m_cacheTimeout)))
+    {
+        removeAllManagedFileScopes();
+        IArrayOf<ISecResource> scopes;
+        aindex_t count = m_secMgr->getManagedFileScopes(scopes);
+        if (count)
+            addManagedFileScopes(scopes);
+        m_defaultPermission = SecAccess_Unknown;//trigger refresh
+        m_lastManagedFileScopesRefresh = now;
+    }
+
+    if (m_managedFileScopesMap.empty())
+    {
+        *accessFlags = queryDefaultPermission(sec_user);
+        return true;
+    }
+
+    StringArray scopes;
+    {
+        StringBuffer scope;
+        const char * p = fullScope;
+        while (*p)
+        {
+            if (*p == ':')
+            {
+                if (*(p+1) != ':')
+                    return false;//Malformed scope string, let LDAP figure it out
+                scopes.append(scope.str());
+                scope.append(*(p++));
+            }
+            scope.append(*(p++));
+        }
+        scopes.append(scope.str());
+    }
+    synchronized block(m_managedFileScopesCacheMonitor);
+    ISecResource *matchedRes = NULL;
+    ISecResource *res = NULL;
+    bool isManaged = false;
+
+    for(unsigned i = 0; i < scopes.length(); i++)
+    {
+        const char* scope = scopes.item(i);
+        map<string, ISecResource*>::const_iterator it = m_managedFileScopesMap.find(scope);
+        if (it != m_managedFileScopesMap.end())
+        {
+            isManaged = true;
+            res = (*it).second;
+            res->setResourceType(RT_FILE_SCOPE);
+            LINK(res);
+            IArrayOf<ISecResource> secResArr;
+            secResArr.append(*res);
+            bool found;
+            int nFound = lookup(sec_user, secResArr, &found);
+            if (nFound && found)
+            {
+                if (0 == (res->getAccessFlags() & SecAccess_Read))
+                {
+                    *accessFlags = res->getAccessFlags();
+                    managedScope.append(const_cast<char *>(res->getName()));
+#ifdef _DEBUG
+                    DBGLOG("FileScope %s for %s(%s) access denied %d",fullScope, sec_user.getName(), res->getName(), *accessFlags);
+#endif
+                    return true;
+                }
+                else
+                    matchedRes = res;//allowed at this scope, but must also look at child scopes
+            }
+        }
+    }
+    bool rc;
+    if (isManaged)
+    {
+        if (matchedRes)
+        {
+            *accessFlags = matchedRes->getAccessFlags();
+            managedScope.append(const_cast<char *>(matchedRes->getName()));
+#ifdef _DEBUG
+            DBGLOG("FileScope %s for %s(%s) access granted %d", fullScope, sec_user.getName(), matchedRes->getName(), *accessFlags);
+#endif
+            rc = true;
+        }
+        else
+        {
+            managedScope.append(const_cast<char *>(res->getName()));
+
+#ifdef _DEBUG
+            DBGLOG("FileScope %s for %s(%s) managed but not cached", fullScope, sec_user.getName(), res->getName());
+#endif
+            rc = false;//need to go to LDAP to check
+        }
+    }
+    else
+    {
+        *accessFlags = queryDefaultPermission(sec_user);
+#ifdef _DEBUG
+        DBGLOG("FileScope %s for %s not managed, using default %d", fullScope, sec_user.getName(),*accessFlags);
+#endif
+        rc = true;
+    }
+    return rc;
+}
+
+int CPermissionsCache::queryDefaultPermission(ISecUser& user)
+{
+    if (m_defaultPermission == SecAccess_Unknown)
+    {
+        if (m_secMgr)
+            m_defaultPermission = m_secMgr->queryDefaultPermission(user);
+        else
+            m_defaultPermission = SecAccess_None;
+    }
+    return m_defaultPermission;
+
+}
