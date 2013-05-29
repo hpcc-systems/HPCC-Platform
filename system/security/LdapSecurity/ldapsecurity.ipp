@@ -247,7 +247,6 @@ public:
     IMPLEMENT_IINTERFACE
 
     CLdapSecResource(const char *name);
-
     void addAccess(int flags);
     void setAccessFlags(int flags);
     virtual void setRequiredAccessFlags(int flags);
@@ -439,6 +438,8 @@ public:
         return m_passwordExpirationWarningDays;
     }
     virtual bool createUserScopes();
+    virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes);
+    virtual int queryDefaultPermission(ISecUser& user);
 };
 
 #endif

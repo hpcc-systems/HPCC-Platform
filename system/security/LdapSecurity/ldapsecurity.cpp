@@ -530,6 +530,7 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
     int cachetimeout = cfg->getPropInt("@cacheTimeout", 5);
     m_permissionsCache.setCacheTimeout( 60 * cachetimeout);
     m_permissionsCache.setTransactionalEnabled(true);
+    m_permissionsCache.setSecManager(this);
     m_passwordExpirationWarningDays = cfg->getPropInt(".//@passwordExpirationWarningDays", 10); //Default to 10 days
 };
 
@@ -822,9 +823,22 @@ int CLdapSecManager::authorizeFileScope(ISecUser & user, const char * filescope)
     if(filescope == 0 || filescope[0] == '\0')
         return SecAccess_Full;
 
+    StringBuffer managedFilescope;
+    if(m_permissionsCache.isCacheEnabled() && !m_usercache_off)
+    {
+        int accessFlags;
+        //See if file scope in question is managed by LDAP permissions. 
+        //  If not, return default file permission (dont call out to LDAP)
+        //  If is, look in cache for permission of longest matching managed scope strings. If found return that permission (no call to LDAP),
+        //  otherwise a call to LDAP "authorizeFileScope" is necessary, specifying the longest matching managed scope string
+        bool gotPerms = m_permissionsCache.queryPermsManagedFileScope(user, filescope, managedFilescope, &accessFlags);
+        if (gotPerms)
+            return accessFlags;
+    }
+
     Owned<ISecResourceList> rlist;
     rlist.setown(createResourceList("FileScope"));
-    rlist->addResource(filescope);
+    rlist->addResource(managedFilescope.length() ? managedFilescope.str() : filescope );
     
     bool ok = authorizeFileScope(user, rlist.get());
     if(ok)
@@ -1229,6 +1243,18 @@ bool CLdapSecManager::createUserScopes()
     }
     return true;
 }
+
+
+aindex_t CLdapSecManager::getManagedFileScopes(IArrayOf<ISecResource>& scopes)
+{
+    return m_ldap_client->getManagedFileScopes(scopes);
+}
+
+int CLdapSecManager::queryDefaultPermission(ISecUser& user)
+{
+    return m_ldap_client->queryDefaultPermission(user);
+}
+
 
 extern "C"
 {
