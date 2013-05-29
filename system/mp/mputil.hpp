@@ -122,6 +122,11 @@ public:
             runname.append(' ').appendhex(*(b++),true);
         pool->start(&mb,runname.str());
     }
+    void setThreadPoolTracing(unsigned secs)
+    {
+        if (pool)
+            pool->setStartDelayTracing(secs);
+    }
 };
 
 
