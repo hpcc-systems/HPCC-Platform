@@ -130,7 +130,7 @@ while true ; do
 done
 for arg do arg=$arg; done
 
-if [ -z "$arg" ] || [ $# -ne 1]; then
+if [ -z "$arg" ] || [ $# -ne 1 ]; then
     print_usage
 fi
 
