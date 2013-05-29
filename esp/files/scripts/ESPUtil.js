@@ -158,6 +158,9 @@ define([
                         callback(object, removedFrom, insertedInto);
                     }, true);
                 });
+                this.on("dgrid-children-complete", function (event) {
+                    callback();
+                });
             },
 
             setSelection: function (arrayOfIDs) {

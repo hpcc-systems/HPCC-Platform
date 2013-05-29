@@ -116,6 +116,7 @@ interface IRoxieQueryPackageManagerSet : extends IInterface
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const = 0;
     virtual IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
+    virtual int getActivePackageCount() const = 0;
 };
 
 extern IRoxieDebugSessionManager &queryRoxieDebugSessionManager();

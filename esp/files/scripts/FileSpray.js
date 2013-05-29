@@ -89,9 +89,11 @@ define([
             return retVal;
         },
         preProcessRow: function (row) {
+            var partialPath = this.parent.partialPath + row.name + (row.isDir ? "/" : "");
             var fullPath = this.parent.fullPath + row.name + (row.isDir ? "/" : "");
             lang.mixin(row, {
                 calculatedID: this.parent.DropZone.NetAddress + fullPath,
+                partialPath: partialPath,
                 fullPath: fullPath,
                 DropZone: this.parent.DropZone,
                 displayName: row.name,
@@ -124,9 +126,13 @@ define([
         },
         preProcessRow: function (row) {
             lang.mixin(row, {
+                OS: row.Linux === "true" ? 2 : 0
+            });
+            lang.mixin(row, {
                 calculatedID: row.NetAddress,
                 displayName: row.Name,
                 type: "dropzone",
+                partialPath: "",
                 fullPath: row.Path + "/",
                 DropZone: row
             });
@@ -147,7 +153,7 @@ define([
                 Netaddr: parent.DropZone.NetAddress,
                 Path: parent.fullPath,
                 Mask: "",
-                OS: parent.DropZone.Linux === "true" ? 1 : 0
+                OS: parent.DropZone.OS
             });
         }
     });
@@ -173,6 +179,13 @@ define([
                     return true;
             }
             return false;
+        },
+
+        OS_TYPE:
+        {
+            OS_WINDOWS: 0, 
+            OS_SOLARIS: 1, 
+            OS_LINUX: 2
         },
 
         CommandMessages: {
@@ -266,6 +279,12 @@ define([
                 }
             });
         },
+        SprayFixed: function (params) {
+            return ESPRequest.send("FileSpray", "SprayFixed", params);
+        },
+        SprayVariable: function (params) {
+            return ESPRequest.send("FileSpray", "SprayVariable", params);
+        },
         Despray: function (params) {
             return ESPRequest.send("FileSpray", "Despray", params);
         },
@@ -292,6 +311,28 @@ define([
         },
         DropZoneFiles: function (params) {
             return ESPRequest.send("FileSpray", "DropZoneFiles", params);
+        },
+        DeleteDropZoneFile: function (params) { 
+            // Single File Only
+            return ESPRequest.send("FileSpray", "DeleteDropZoneFiles", params).then(function (response) {
+                if (lang.exists("DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult", response)) {
+                    var resultID = response.DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult[0].ID;
+                    var resultMessage = response.DFUWorkunitsActionResponse.DFUActionResults.DFUActionResult[0].Result;
+                    if (resultMessage.indexOf("Success") === 0) {
+                        dojo.publish("hpcc/brToaster", {
+                            message: "<h4>Delete " + resultID + "</h4>" + "<p>" + resultMessage + "</p>",
+                            type: "message"
+                        });
+                    } else {
+                        dojo.publish("hpcc/brToaster", {
+                            message: "<h4>Delete " + resultID + "</h4>" + "<p>" + resultMessage + "</p>",
+                            type: "error",
+                            duration: -1
+                        });
+                    }
+                }
+                return response; 
+            });
         }
     };
 });

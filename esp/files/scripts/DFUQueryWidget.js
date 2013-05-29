@@ -18,6 +18,8 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/dom",
+    "dojo/dom-attr",
+    "dojo/dom-construct",
     "dojo/dom-class",
     "dojo/dom-form",
     "dojo/date",
@@ -31,6 +33,7 @@ define([
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
+    "dijit/form/Textarea",
 
     "dgrid/Grid",
     "dgrid/Keyboard",
@@ -44,8 +47,10 @@ define([
     "hpcc/WsDfu",
     "hpcc/ESPUtil",
     "hpcc/ESPLogicalFile",
+    "hpcc/ESPDFUWorkunit",
     "hpcc/LFDetailsWidget",
     "hpcc/SFDetailsWidget",
+    "hpcc/DFUWUDetailsWidget",
     "hpcc/TargetSelectWidget",
 
     "dojo/text!../templates/DFUQueryWidget.html",
@@ -53,7 +58,6 @@ define([
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
-    "dijit/form/Textarea",
     "dijit/form/DateTextBox",
     "dijit/form/TimeTextBox",
     "dijit/form/Button",
@@ -64,10 +68,10 @@ define([
 
     "dojox/layout/TableContainer"
 
-], function (declare, lang, arrayUtil, dom, domClass, domForm, date, on,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+], function (declare, lang, arrayUtil, dom, domAttr, domConstruct, domClass, domForm, date, on,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Textarea,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
-                _TabContainerWidget, WsDfu, ESPUtil, ESPLogicalFile, LFDetailsWidget, SFDetailsWidget, TargetSelectWidget,
+                _TabContainerWidget, WsDfu, ESPUtil, ESPLogicalFile, ESPDFUWorkunit, LFDetailsWidget, SFDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget,
                 template) {
     return declare("DFUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ESPUtil.FormHelper], {
         templateString: template,
@@ -82,6 +86,7 @@ define([
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
+            this.desprayTargetSelect = registry.byId(this.id + "DesprayTargetSelect");
         },
 
         startup: function (args) {
@@ -100,7 +105,7 @@ define([
             var selections = this.workunitsGrid.getSelected();
             var firstTab = null;
             for (var i = selections.length - 1; i >= 0; --i) {
-                var tab = this.ensurePane(this.id + "_" + selections[i].Name, selections[i]);
+                var tab = this.ensureLFPane(this.id + "_" + selections[i].Name, selections[i]);
                 if (i == 0) {
                     firstTab = tab;
                 }
@@ -139,6 +144,39 @@ define([
             registry.byId(this.id + "AddtoDropDown").closeDropDown();
         },
 
+        _handleResponse: function (wuidQualifier, response) {
+            if (lang.exists(wuidQualifier, response)) {
+                var wu = ESPDFUWorkunit.Get(lang.getObject(wuidQualifier, false, response));
+                wu.startMonitor(true);
+                var tab = this.ensureDFUWUPane(this.id + "_" + wu.ID, {
+                    Wuid: wu.ID
+                });
+                if (tab) {
+                    this.selectChild(tab);
+                }
+            }
+        },
+
+        _onDesprayOk: function (event) {
+            var context = this;
+            arrayUtil.forEach(this.workunitsGrid.getSelected(), function (item, idx) {
+                item.refresh().then(function (response) {
+                    var request = domForm.toObject(context.id + "DesprayDialog");
+                    request.destPath += item.Filename;
+                    item.despray({
+                        request: request
+                    }).then(function (response) {
+                        context._handleResponse("DesprayResponse.wuid", response);
+                    });
+                });
+            });
+            registry.byId(this.id + "DesprayDropDown").closeDropDown();
+        },
+
+        _onDesprayCancel: function (event) {
+            registry.byId(this.id + "DesprayDropDown").closeDropDown();
+        },
+
         _onFilterApply: function (event) {
             registry.byId(this.id + "FilterDropDown").closeDropDown();
             if (this.hasFilter()) {
@@ -154,7 +192,7 @@ define([
         },
 
         _onRowDblClick: function (item) {
-            var wuTab = this.ensurePane(this.id + "_" + item.Name, item);
+            var wuTab = this.ensureLFPane(this.id + "_" + item.Name, item);
             this.selectChild(wuTab);
         },
 
@@ -222,6 +260,14 @@ define([
             this.clusterTargetSelect.init({
                 Groups: true,
                 includeBlank: true
+            });
+            var context = this;
+            this.desprayTargetSelect.init({
+                DropZones: true,
+                callback: function (value, item) {
+                    registry.byId(context.id + "DesprayTargetIPAddress").set("value", item.machine.Netaddress);
+                    registry.byId(context.id + "DesprayTargetPath").set("value", item.machine.Directory + "/");
+                }
             });
             this.selectChild(this.workunitsTab, true);
         },
@@ -408,6 +454,18 @@ define([
             registry.byId(this.id + "Open").set("disabled", !hasSelection);
             registry.byId(this.id + "Delete").set("disabled", !hasSelection);
             registry.byId(this.id + "AddtoDropDown").set("disabled", !hasSelection);
+            registry.byId(this.id + "DesprayDropDown").set("disabled", !hasSelection);
+
+            if (hasSelection) {
+                var sourceDiv = dom.byId(this.id + "DesprayDialogSource");
+                domConstruct.empty(sourceDiv);
+                var context = this;
+                arrayUtil.forEach(selection, function (item, idx) {
+                    domConstruct.create("div", {
+                        innerHTML: item.Name
+                    }, sourceDiv);
+                });
+            }
 
             this.refreshFilterState();
         },
@@ -417,7 +475,22 @@ define([
             dom.byId(this.id + "IconFilter").src = hasFilter ? "img/filter.png" : "img/noFilter.png";
         },
 
-        ensurePane: function (id, params) {
+        ensureDFUWUPane: function (id, params) {
+            var retVal = registry.byId(id);
+            if (!retVal) {
+                var context = this;
+                retVal = new DFUWUDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: params.Wuid,
+                    closable: true,
+                    _hpccParams: params
+                });
+                this.addChild(retVal, 1);
+            }
+            return retVal;
+        },
+
+        ensureLFPane: function (id, params) {
             var obj = id.split("::");
             id = obj.join("");
             obj = id.split(".");

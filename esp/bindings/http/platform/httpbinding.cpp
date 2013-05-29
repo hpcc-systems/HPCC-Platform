@@ -1448,7 +1448,8 @@ int EspHttpBinding::onGetRespSampleXml(IEspContext &ctx, CHttpRequest* request, 
 
 int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
-    StringBuffer errMsg;
+    StringArray fileNames;
+    Owned<IMultiException> me = MakeMultiException("FileSpray::UploadFile()");
     try
     {
         if (!ctx.validateFeatureAccess(FILE_UPLOAD, SecAccess_Full, false))
@@ -1461,41 +1462,21 @@ int EspHttpBinding::onStartUpload(IEspContext &ctx, CHttpRequest* request, CHttp
         if ((netAddress.length() < 1) || (path.length() < 1))
             throw MakeStringException(-1, "Upload destination not specified.");
 
-        StringArray fileNames;
         request->readContentToFiles(netAddress, path, fileNames);
-        return onFinishUpload(ctx, request, response, serv, method);
+        return onFinishUpload(ctx, request, response, serv, method, fileNames, NULL);
     }
     catch (IException* e)
     {
-        StringBuffer msg;
-        e->errorMessage(msg);
-        errMsg.appendf("Exception in File Upload - %s\n", msg.str());
+        me->append(*e);
     }
     catch (...)
     {
-        errMsg.append("Exception in File Upload - Unknown Exception\n");
+        me->append(*MakeStringExceptionDirect(-1, "Unknown Exception"));
     }
-
-    WARNLOG("%s", errMsg.str());
-    StringBuffer content(
-        "<html xmlns=\"http://www.w3.org/1999/xhtml\">"
-            "<head>"
-                "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>"
-                "<title>Enterprise Services Platform</title>"
-            "</head>"
-            "<body>"
-                "<div id=\"DropzoneFileData\"><br/><b>");
-    content.append(errMsg.str());
-    content.append("</b></div>"
-            "</body>"
-        "</html>");
-
-    response->setContent(content.str());
-    response->send();
-    return 0;
+    return onFinishUpload(ctx, request, response, serv, method, fileNames, me);
 }
 
-int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method)
+int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method, StringArray& fileNames, IMultiException *me)
 {
     response->setContentType("text/html; charset=UTF-8");
     StringBuffer content(
@@ -1505,16 +1486,21 @@ int EspHttpBinding::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHtt
                 "<title>Enterprise Services Platform</title>"
             "</head>"
             "<body>"
-                "<div id=\"DropzoneFileData\">"
-                    "<br/><b>File has been uploaded.</b>"
-                "</div>"
+                "<div id=\"DropzoneFileData\">");
+    if (!me || (me->ordinality()==0))
+        content.append("<br/><b>File has been uploaded.</b>");
+    else
+    {
+        StringBuffer msg;
+        WARNLOG("Exception(s) in EspHttpBinding::onFinishUpload - %s", me->errorMessage(msg).append('\n').str());
+        content.appendf("<br/><b>%s</b>", msg.str());
+    }
+    content.append("</div>"
             "</body>"
         "</html>");
 
     response->setContent(content.str());
     response->send();
-
-    DBGLOG(">> Upload finished.");
 
     return 0;
 }

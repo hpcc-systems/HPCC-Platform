@@ -2308,20 +2308,123 @@ CHThorGroupDedupActivity::CHThorGroupDedupActivity(IAgentContext &_agent, unsign
 void CHThorGroupDedupActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
-    keepLeft = helper.keepLeft();
     numToKeep = helper.numToKeep();
-    assertex(keepLeft || numToKeep==1);
     numKept = 0;
-    firstDone = false;
 }
 
-void CHThorGroupDedupActivity::done()
+//=====================================================================================================
+
+CHThorGroupDedupKeepLeftActivity::CHThorGroupDedupKeepLeftActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind)
 {
-    kept.clear();
+}
+
+void CHThorGroupDedupKeepLeftActivity::ready()
+{
+    CHThorGroupDedupActivity::ready();
+    prev.clear();
+}
+
+void CHThorGroupDedupKeepLeftActivity::done()
+{
+    prev.clear();
     CHThorSimpleActivityBase::done();
 }
 
-const void *CHThorGroupDedupActivity::nextInGroup()
+const void *CHThorGroupDedupKeepLeftActivity::nextInGroup()
+{
+    OwnedConstRoxieRow next;
+    loop
+    {
+        next.setown(input->nextInGroup());
+        if (!prev || !next || !helper.matches(prev,next))
+        {
+            numKept = 0;
+            break;
+        }
+
+        if (numKept < numToKeep-1)
+        {
+            numKept++;
+            break;
+        }
+    }
+
+    const void * ret = next.getClear();
+    prev.set(ret);
+    if(ret)
+        processed++;
+    return ret;
+}
+
+const void * CHThorGroupDedupKeepLeftActivity::nextGE(const void * seek, unsigned numFields)
+{
+    OwnedConstRoxieRow next;
+    loop
+    {
+        next.setown(input->nextGE(seek, numFields));
+        if (!prev || !next || !helper.matches(prev,next))
+        {
+            numKept = 0;
+            break;
+        }
+
+        if (numKept < numToKeep-1)
+        {
+            numKept++;
+            break;
+        }
+    }
+
+    const void * ret = next.getClear();
+    prev.set(ret);
+    if(ret)
+        processed++;
+    return ret;
+}
+
+void CHThorGroupDedupKeepLeftActivity::setInput(unsigned index, IHThorInput *_input)
+{
+    CHThorGroupDedupActivity::setInput(index, _input);
+    if (input)
+        inputStepping = input->querySteppingMeta();
+}
+
+IInputSteppingMeta * CHThorGroupDedupKeepLeftActivity::querySteppingMeta()
+{
+    return inputStepping;
+}
+
+bool CHThorGroupDedupKeepLeftActivity::gatherConjunctions(ISteppedConjunctionCollector & collector)
+{
+    return input->gatherConjunctions(collector);
+}
+
+void CHThorGroupDedupKeepLeftActivity::resetEOF()
+{
+    input->resetEOF();
+}
+
+
+//=====================================================================================================
+
+CHThorGroupDedupKeepRightActivity::CHThorGroupDedupKeepRightActivity(IAgentContext &_agent, unsigned _activityId, unsigned _subgraphId, IHThorDedupArg &_arg, ThorActivityKind _kind) : CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, _arg, _kind)
+{
+}
+
+void CHThorGroupDedupKeepRightActivity::ready()
+{
+    CHThorGroupDedupActivity::ready();
+    assertex(numToKeep==1);
+    firstDone = false;
+}
+
+void CHThorGroupDedupKeepRightActivity::done()
+{
+    kept.clear();
+    CHThorGroupDedupActivity::done();
+}
+
+const void *CHThorGroupDedupKeepRightActivity::nextInGroup()
 {
     if (!firstDone)
     {
@@ -2345,19 +2448,12 @@ const void *CHThorGroupDedupActivity::nextInGroup()
             break;
         }
 
-        if (keepLeft)
-        {
-            next.clear();
-        }
-        else
-        {
-            kept.setown(next.getClear());
-        }
+        kept.setown(next.getClear());
     }
 
     const void * ret = kept.getClear();
     kept.setown(next.getClear());
-    if(ret) 
+    if(ret)
         processed++;
     return ret;
 }
@@ -9782,8 +9878,10 @@ extern HTHOR_API IHThorActivity * createGroupDedupActivity(IAgentContext & _agen
 {
     if(arg.compareAll())
         return new CHThorGroupDedupAllActivity(_agent, _activityId, _subgraphId, arg, kind);
+    else if (arg.keepLeft())
+        return new CHThorGroupDedupKeepLeftActivity(_agent, _activityId, _subgraphId, arg, kind);
     else
-        return new CHThorGroupDedupActivity(_agent, _activityId, _subgraphId, arg, kind);
+        return new CHThorGroupDedupKeepRightActivity(_agent, _activityId, _subgraphId, arg, kind);
 }
 
 MAKEFACTORY(HashDedup);

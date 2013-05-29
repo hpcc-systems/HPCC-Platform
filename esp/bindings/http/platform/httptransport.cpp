@@ -1926,8 +1926,11 @@ IFile* CHttpRequest::createUploadFile(StringBuffer netAddress, const char* fileP
 
 int CHttpRequest::readContentToFiles(StringBuffer netAddress, StringBuffer path, StringArray& fileNames)
 {
-    Owned<CMimeMultiPart> multipart = new CMimeMultiPart("1.0", m_content_type.get(), "", "", "");
-    multipart->parseContentType(m_content_type.get());
+    const char* contentType = m_content_type.get();
+    if (!contentType || !*contentType)
+        throw MakeStringException(-1, "Content Type not found.");
+    Owned<CMimeMultiPart> multipart = new CMimeMultiPart("1.0", contentType, "", "", "");
+    multipart->parseContentType(contentType);
 
     MemoryBuffer fileContent, moreContent;
     __int64 bytesNotRead = m_content_length64;
