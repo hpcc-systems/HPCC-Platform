@@ -982,7 +982,7 @@ bool CWsWorkunitsEx::onWUAction(IEspContext &context, IEspWUActionRequest &req, 
             params->setProp("State",4);
 
         IArrayOf<IConstWUActionResult> results;
-        if (doAction(context, req.getWuids(), *action, params, &results) && *action!=ActionDelete)
+        if (doAction(context, req.getWuids(), *action, params, &results) && *action!=ActionDelete && checkRedirect(context))
         {
             StringBuffer redirect;
             if(req.getPageFrom() && strieq(req.getPageFrom(), "wuid"))
@@ -2534,7 +2534,13 @@ void openSaveFile(IEspContext &context, int opt, const char* filename, const cha
     {
         StringBuffer headerStr("attachment;");
         if (filename && *filename)
-            headerStr.appendf("filename=%s", filename);
+        {
+            const char* pFileName = strrchr(filename, PATHSEPCHAR);
+            if (pFileName)
+                headerStr.appendf("filename=%s", pFileName+1);
+            else
+                headerStr.appendf("filename=%s", filename);
+        }
 
         MemoryBuffer buf0;
         unsigned i = 0;

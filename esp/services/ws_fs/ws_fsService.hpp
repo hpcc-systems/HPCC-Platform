@@ -88,7 +88,7 @@ protected:
     StringBuffer m_RootFolder;
     Schedule m_sched;
     Owned<IPropertyTree> directories;
-    
+
     void addToQueryString(StringBuffer &queryString, const char *name, const char *value);
     int doFileCheck(const char* mask, const char* netaddr, const char* osStr, const char* path);
     virtual bool doCopyForRoxie(IEspContext &context,   const char * srcName, const char * srcDali, const char * srcUser, 

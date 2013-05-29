@@ -156,6 +156,7 @@ public:
     void getHelpers(IEspECLWorkunit &info, unsigned flags);
     void getGraphInfo(IEspECLWorkunit &info, unsigned flags);
     void getGraphTimingData(IArrayOf<IConstECLTimingData> &timingData, unsigned flags);
+    bool getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize);
 
     void getRoxieCluster(IEspECLWorkunit &info, unsigned flags);
     void getWorkflow(IEspECLWorkunit &info, unsigned flags);
