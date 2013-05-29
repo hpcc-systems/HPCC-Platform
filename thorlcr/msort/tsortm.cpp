@@ -832,7 +832,7 @@ public:
                     {
                         CSortNode &slave = slaves.item(i);
                         if (slave.numrecs!=0)
-                            slave.GetMultiMidPointStart(mbmn.length(),mbmn.bufferBase(),mbmx.length(),mbmx.bufferBase());               
+                            slave.GetMultiMidPointStart(mbmn.length(),mbmn.bufferBase(),mbmx.length(),mbmx.bufferBase());
                     }
                 } afor(slaves,mbmn,mbmx);
                 afor.For(numnodes, 20, true);
@@ -867,16 +867,26 @@ public:
                         void *p = NULL;
                         size32_t retlen=0;
                         if (slave.numrecs!=0) 
-                            slave.GetMultiMidPointStop(retlen,p);               
+                            slave.GetMultiMidPointStop(retlen,p);
                         if (i)
                             nextsem[i-1].wait();
-                        unsigned base = totmid.ordinality();
-                        if (p) {
-                            totmid.deserializeExpand(retlen, p);
-                            free(p);
+                        try
+                        {
+                            unsigned base = totmid.ordinality();
+                            if (p)
+                            {
+                                totmid.deserializeExpand(retlen, p);
+                                free(p);
+                            }
+                            while (totmid.ordinality()-base<numsplits)
+                                totmid.append(NULL);
                         }
-                        while (totmid.ordinality()-base<numsplits)
-                            totmid.append(NULL);
+                        catch (IException *)
+                        {
+                            // must ensure signal to avoid other threads in this asyncfor deadlocking
+                            nextsem[i].signal();
+                            throw;
+                        }
                         nextsem[i].signal();
                     }
                 } afor2(slaves, totmid, numsplits, nextsem);
