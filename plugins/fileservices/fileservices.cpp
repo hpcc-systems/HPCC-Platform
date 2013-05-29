@@ -1022,10 +1022,7 @@ static bool lookupSuperFile(ICodeContext *ctx, const char *lsuperfn, Owned<IDist
         if (dlfn.isForeign())
             throw MakeStringException(0, "Foreign superfile not allowed: %s", lsfn.str());
     }
-    if (cacheFiles)
-        file.setown(transaction->lookupSuperFileCached(lsfn.str()));
-    else
-        file.setown(transaction->lookupSuperFile(lsfn.str()));
+    file.setown(transaction->lookupSuperFile(lsfn.str()));
     if (file.get())
         return true;
     if (throwerr)
