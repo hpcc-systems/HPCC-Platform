@@ -1733,7 +1733,10 @@ readAnother:
                         else
                         {
                             pool->reportBadQuery(queryName.get(), logctx);
-                            throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryName.get());
+                            if (globalPackageSetManager->getActivePackageCount())
+                                throw MakeStringException(ROXIE_UNKNOWN_QUERY, "Unknown query %s", queryName.get());
+                            else
+                                throw MakeStringException(ROXIE_NO_PACKAGES_ACTIVE, "Unknown query %s (no packages active)", queryName.get());
                         }
                     }
                 }

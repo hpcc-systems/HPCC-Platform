@@ -1083,6 +1083,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     string Priority;
     string RemoteDali;
     string Comment;
+    bool DontCopyFiles(false);
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse

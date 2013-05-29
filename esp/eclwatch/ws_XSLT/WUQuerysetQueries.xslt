@@ -188,6 +188,13 @@
                   }
               };
 
+              var formatWUIDColumn = function(elCell, oRecord, oColumn, sData) {
+                  if (sData != "") {
+                      var wuInfoLink = '/WsWorkunits/WUInfo?Wuid=' + sData;
+                      elCell.innerHTML = "<a href=\"javascript:go('" + wuInfoLink +"')\">"+sData+'</a>';
+                  }
+              };
+
               function reloadPage()
               {
                   var clusterSelect = document.getElementById('Clusters');
@@ -211,7 +218,7 @@
                   var queryColumnDefs = [
                     {key:"Id", sortable:true, resizeable:true},
                     {key:"Name", sortable:true, resizeable:true},
-                    {key:"Wuid", sortable:true, resizeable:true},
+                    {key:"Wuid", formatter: formatWUIDColumn, sortable:true, resizeable:true},
                     {key:"Dll", sortable:true, resizeable:true},
                     {key:"Suspended", formatter: formatCheckColumn, sortable:true, resizeable:true}
                   ];
@@ -219,7 +226,7 @@
                     queryColumnDefs = [
                         {key:"Id", sortable:true, resizeable:true},
                         {key:"Name", sortable:true, resizeable:true},
-                        {key:"Wuid", sortable:true, resizeable:true},
+                        {key:"Wuid", formatter: formatWUIDColumn, sortable:true, resizeable:true},
                         {key:"Dll", sortable:true, resizeable:true},
                         {key:"Suspended", formatter: formatCheckColumn, sortable:true, resizeable:true},
                         {key:"Status", sortable:true, resizeable:true}

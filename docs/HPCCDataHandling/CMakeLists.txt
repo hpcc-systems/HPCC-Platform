@@ -14,5 +14,5 @@
 #    limitations under the License.
 ################################################################################
 
-DOCBOOK_TO_PDF( ${FO_XSL} DataHandling.xml "HPCCDataHandling")
+DOCBOOK_TO_PDF( ${FO_XSL} DataHandling.xml "HPCCDataHandling" "DH-Mods")
 

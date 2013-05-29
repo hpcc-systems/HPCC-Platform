@@ -136,12 +136,12 @@ define([
             });
         },
         refresh: function (full) {
-            this.getInfo();
+            return this.getInfo();
         },
         getInfo: function (args) {
             //WsDfu/DFUInfo?Name=progguide::exampledata::keys::people.state.city.zip.lastname.firstname.payload&Cluster=hthor__myeclagent HTTP/1.1
             var context = this;
-            WsDfu.DFUInfo({
+            return WsDfu.DFUInfo({
                 request:{
                     Name: this.Name,
                     Cluster: this.Cluster

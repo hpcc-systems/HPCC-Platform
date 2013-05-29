@@ -128,6 +128,7 @@ define([
                                             context.cachedResponse[idx] = response;
                                             if (context.cachedResponse.length === 1)
                                                 context.displayHex();
+                                            context.wu.doDelete();
                                         });
                                     });
                                 });

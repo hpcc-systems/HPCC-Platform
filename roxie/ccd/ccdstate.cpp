@@ -1254,6 +1254,19 @@ public:
         return NULL;
     }
 
+    int getActivePackageCount() const
+    {
+        int count = 0;
+        ForEachItemIn(idx, allQueryPackages)
+        {
+            Owned<IRoxieQuerySetManager> sm = allQueryPackages.item(idx).getRoxieServerManager();
+            if (sm->isActive())
+                count++;
+        }
+        return count;
+    }
+
+
     inline hash64_t queryHash() const
     {
         return stateHash;
@@ -1310,7 +1323,8 @@ private:
 
     void createQueryPackageManagers(unsigned numChannels, const char *querySet)
     {
-        bool packageLoaded = false;
+        int loadedPackages = 0;
+        int activePackages = 0;
         Owned<IPropertyTree> packageTree = daliHelper->getPackageSets();
         Owned<IPropertyTreeIterator> packageSets = packageTree->getElements("PackageSet");
         ForEach(*packageSets)
@@ -1341,7 +1355,9 @@ private:
                             Owned<IPropertyTree> xml = daliHelper->getPackageMap(packageMapId);
                             packageMap->load(xml);
                             createQueryPackageManager(numChannels, packageMap.getLink(), querySet);
-                            packageLoaded = true;
+                            loadedPackages++;
+                            if (isActive)
+                                activePackages++;
                             notifiers.append(*daliHelper->getPackageMapSubscription(packageMapId, this));
                         }
                         catch (IException *E)
@@ -1355,14 +1371,14 @@ private:
                 }
             }
         }
-        if (!packageLoaded)
+        if (!loadedPackages)
         {
             if (traceLevel)
                 DBGLOG("Loading empty package for QuerySet %s", querySet);
             createQueryPackageManager(numChannels, LINK(&queryEmptyRoxiePackageMap()), querySet);
         }
-        if (traceLevel)
-            DBGLOG("Loaded packages");
+        else if (traceLevel)
+            DBGLOG("Loaded %d packages (%d active)", loadedPackages, activePackages);
     }
 
     void unsubscribe()
@@ -1438,6 +1454,12 @@ public:
     {
         ReadLockBlock b(packageCrit);
         return allQueryPackages->getQuery(id, logctx);
+    }
+
+    virtual int getActivePackageCount() const
+    {
+        ReadLockBlock b(packageCrit);
+        return allQueryPackages->getActivePackageCount();
     }
 
     virtual void notify(SubscriptionId id, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)

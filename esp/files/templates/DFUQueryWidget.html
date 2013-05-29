@@ -20,6 +20,28 @@
                             </div>
                         </div>
                     </div>
+                    <div id="${id}DesprayDropDown" data-dojo-type="dijit.form.DropDownButton">
+                        <span>Despray</span>
+                        <div data-dojo-type="dijit.TooltipDialog">
+                            <div id="${id}DesprayDialog" style="width: 460px;" data-dojo-type="dijit.form.Form">
+                                <h2>Target</h2>
+                                <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+                                    <input id="${id}DesprayTargetSelect" title="Drop&nbsp;Zone:" name="destGroup" colspan="2" style="width: 100%;" data-dojo-type="TargetSelectWidget" />
+                                    <input id="${id}DesprayTargetIPAddress" title="IP&nbsp;Address:" name="destIP" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}DesprayTargetPath" title="Path:" name="destPath" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.Textarea" />
+                                    <input id="${id}DesprayTargetSplitPrefix" title="Split&nbsp;Prefix:" name="splitprefix" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+                                    <input id="${id}DesprayTargetUseSingleConnection" title="Use&nbsp;Single&nbsp;Connection:" name="SingleConnection" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                    <input id="${id}DesprayTargetOverwrite" title="Overwrite:" name="overwrite" colspan="2" data-dojo-type="dijit.form.CheckBox" />
+                                </div>
+                                <h2>Source</h2>
+                                <div id="${id}DesprayDialogSource" data-dojo-props="cols:1" data-dojo-type="dojox.layout.TableContainer">
+                                </div>
+                                <br />
+                                <button data-dojo-attach-event="onClick:_onDesprayOk" data-dojo-type="dijit.form.Button">Despray</button>
+                                <button data-dojo-attach-event="onClick:_onDesprayCancel" data-dojo-type="dijit.form.Button">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <img id="${id}IconFilter" src="img/noFilter.png" class="iconNoFilter"/>
                     <div id="${id}FilterDropDown" data-dojo-type="dijit.form.DropDownButton">

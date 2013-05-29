@@ -587,6 +587,11 @@ ESPresponse [exceptions_inline, nil_remove] DeleteDropZoneFilesResponse
     ESParray<ESPstruct DFUActionResult> DFUActionResults;
 };
 
+ESPresponse [exceptions_inline] UploadFilesResponse
+{
+    ESParray<ESPstruct DFUActionResult> UploadFileResults;
+};
+
 ESPservice [
     version("1.07"), default_client_version("1.07"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray

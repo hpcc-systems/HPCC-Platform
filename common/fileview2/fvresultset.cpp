@@ -610,9 +610,13 @@ void CResultSetMetaData::getXmlSchema(ISchemaBuilder & builder, bool useXPath) c
             builder.endIfBlock();
             break;
         case FVFFbeginrecord:
+            if (useXPath)
+                fvSplitXPath(meta->queryXPath(idx), xname, name);
             builder.beginRecord(name);
             break;
         case FVFFendrecord:
+            if (useXPath)
+                fvSplitXPath(meta->queryXPath(idx), xname, name);
             builder.endRecord(name);
             break;
         case FVFFdataset:
