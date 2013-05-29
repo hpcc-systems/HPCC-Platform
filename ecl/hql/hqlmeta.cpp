@@ -1471,7 +1471,7 @@ bool matchDedupDistribution(IHqlExpression * distn, const HqlExprArray & equalit
  b) All references to fields from the dataset must match the join element
 */
 
-static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpression * distribute2, HqlExprArray & sort1, HqlExprArray & sort2)
+static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpression * distribute2, const HqlExprArray & sort1, const HqlExprArray & sort2)
 {
     unsigned match1 = sort1.find(*distribute1->queryBody());
     unsigned match2 = sort2.find(*distribute2->queryBody());
@@ -1508,6 +1508,68 @@ static bool checkDistributedCoLocally(IHqlExpression * distribute1, IHqlExpressi
 }
 
 
+//Convert a function of fields referenced in oldSort, to fields referenced in newSort.
+IHqlExpression * createMatchingDistribution(IHqlExpression * expr, const HqlExprArray & oldSort, const HqlExprArray & newSort)
+{
+    unsigned match = oldSort.find(*expr->queryBody());
+    if (match != NotFound)
+        return LINK(&newSort.item(match));
+
+    node_operator op = expr->getOperator();
+    switch (op)
+    {
+    case no_hash:
+    case no_hash32:
+    case no_hash64:
+    case no_hashmd5:
+    case no_add:
+    case no_xor:
+    case no_bxor:
+    case no_sortlist:
+    case no_cast:
+    case no_implicitcast:
+    case no_negate:
+    case no_trim:
+        break;
+    case no_field:
+    case no_select:
+    case no_sortpartition:
+        return NULL;
+    case no_constant:
+        break;
+    case no_attr:
+    case no_attr_expr:
+        if (expr->queryName() == internalAtom)
+        {
+            //HASH,internal - only valid if the types of the old and new sorts match exactly
+            ForEachItemIn(i, oldSort)
+            {
+                if (oldSort.item(i).queryType() != newSort.item(i).queryType())
+                    return NULL;
+            }
+        }
+        break;
+    default:
+        return NULL;
+    }
+
+    unsigned max = expr->numChildren();
+    if (max == 0)
+        return LINK(expr);
+
+    HqlExprArray args;
+    args.ensure(max);
+    ForEachChild(i, expr)
+    {
+        IHqlExpression * mapped = createMatchingDistribution(expr->queryChild(i), oldSort, newSort);
+        if (!mapped)
+            return NULL;
+        args.append(*mapped);
+    }
+    return expr->clone(args);
+}
+
+
 static IHqlExpression * queryColocalDataset(IHqlExpression * expr)
 {
     loop
@@ -1524,7 +1586,7 @@ static IHqlExpression * queryColocalDataset(IHqlExpression * expr)
 }
 
 //Check if the distribution functions are essentially identical, except for the places 
-bool isDistributedCoLocally(IHqlExpression * dataset1, IHqlExpression * dataset2, HqlExprArray & sort1, HqlExprArray & sort2)
+bool isDistributedCoLocally(IHqlExpression * dataset1, IHqlExpression * dataset2, const HqlExprArray & sort1, const HqlExprArray & sort2)
 {
     IHqlExpression * distribute1 = queryDistribution(dataset1);
     IHqlExpression * distribute2 = queryDistribution(dataset2);

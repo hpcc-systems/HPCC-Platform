@@ -637,8 +637,6 @@ struct HqlCppOptions
     bool                globalAutoHoist;
     bool                expandRepeatAnyAsDfa;
     bool                unlimitedResources;
-    bool                hasResourceUseMpForDistribute;
-    bool                resourceUseMpForDistribute;
     bool                allowThroughSpill;
     bool                minimiseSpills;
     bool                spillMultiCondition;
@@ -717,6 +715,8 @@ struct HqlCppOptions
     bool                canLinkConstantRows;
     bool                checkAmbiguousRollupCondition;
     bool                paranoidCheckSelects;
+    bool                matchExistingDistributionForJoin;
+    bool                expandHashJoin;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class

@@ -59,7 +59,6 @@ public:
     bool     preventKeyedSplit;
     bool     preventSteppedSplit;
     bool     minimizeSkewBeforeSpill;
-    bool     useMpForDistribute;
     bool     expandSingleConstRow;
     bool     createSpillAsDataset;
     bool     optimizeSharedInputs;
