@@ -3426,6 +3426,9 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
     case type_sortlist:
         newType.setown(makeSortListType(LINK(newChild)));
         break;
+    case type_rule:
+        newType.setown(makeRuleType(LINK(newChild)));
+        break;
     default:
         throwUnexpected();
     }
