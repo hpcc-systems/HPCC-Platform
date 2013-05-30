@@ -2723,7 +2723,8 @@ void FileSprayer::spray()
     addEmptyFilesToPartition();
     
     derivePartitionExtra();
-    displayPartition();
+    if (partition.ordinality() < 1000)
+        displayPartition();
     if (isRecovering)
         displayProgress(progress);
 
