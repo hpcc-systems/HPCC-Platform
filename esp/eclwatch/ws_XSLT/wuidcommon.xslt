@@ -1286,7 +1286,7 @@
       </xsl:if>
       <xsl:if test="Type = 'EclAgentLog'">
         <td>
-          <a href="/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Name={Name}&amp;Type=EclAgentLog">
+          <a href="/WsWorkunits/WUFile/EclAgentLog?Wuid={$wuid}&amp;Name={Name}&amp;Process={PID}&amp;Type=EclAgentLog">
               eclagent.log: <xsl:value-of select="Name"/>
           </a>
         </td>

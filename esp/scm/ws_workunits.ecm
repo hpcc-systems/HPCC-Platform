@@ -115,6 +115,7 @@ ESPStruct [nil_remove] ECLHelpFile
     [min_ver("1.32")] string IPAddress;
     [min_ver("1.32")] string Description;
     [min_ver("1.43")] int64 FileSize;
+    [min_ver("1.44")] string PID;
 };
 
 //  ===========================================================================
@@ -1340,7 +1341,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.43"), default_client_version("1.43"),
+    version("1.44"), default_client_version("1.44"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);

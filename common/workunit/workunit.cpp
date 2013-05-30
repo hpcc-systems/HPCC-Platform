@@ -640,6 +640,7 @@ public:
     virtual unsigned __int64 getHash() const;
     virtual IStringIterator *getLogs(const char *type, const char *component) const;
     virtual IStringIterator *getProcesses(const char *type) const;
+    virtual IPropertyTreeIterator& getProcesses(const char *type, const char *component) const;
 
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
@@ -682,7 +683,7 @@ public:
     IWUException *createException();
     void setTimeStamp(const char *name, const char *instance, const char *event);
     void addTimeStamp(const char * name, const char * instance, const char *event);
-    void addProcess(const char *type, const char *instance, const char *log);
+    void addProcess(const char *type, const char *instance, unsigned pid, const char *log);
     void setAction(WUAction action);
     void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite);
     void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite);
@@ -1103,6 +1104,8 @@ public:
             { return c->getLogs(type, instance); }
     virtual IStringIterator *getProcesses(const char *type) const
             { return c->getProcesses(type); }
+    virtual IPropertyTreeIterator& getProcesses(const char *type, const char *instance) const
+            { return c->getProcesses(type, instance); }
 
     virtual void clearExceptions()
             { c->clearExceptions(); }
@@ -1114,8 +1117,8 @@ public:
             { c->setTimeStamp(name, instance, event); }
     virtual void addTimeStamp(const char * name, const char * instance, const char *event)
             { c->addTimeStamp(name, instance, event); }
-    virtual void addProcess(const char *type, const char *instance, const char *log)
-            { c->addProcess(type, instance, log); }
+    virtual void addProcess(const char *type, const char *instance, unsigned pid, const char *log)
+            { c->addProcess(type, instance, pid, log); }
     virtual void protect(bool protectMode)
             { c->protect(protectMode); }
     virtual void setBilled(bool billed)
@@ -4868,6 +4871,17 @@ IStringIterator *CLocalWorkUnit::getLogs(const char *type, const char *instance)
         return new CStringPTreeAttrIterator(p->getElements(xpath.str()), "@log");
 }
 
+IPropertyTreeIterator& CLocalWorkUnit::getProcesses(const char *type, const char *instance) const
+{
+    VStringBuffer xpath("Process/%s/", type);
+    if (instance)
+        xpath.append(instance);
+    else
+        xpath.append("*");
+    CriticalBlock block(crit);
+    return * p->getElements(xpath.str());
+}
+
 IStringIterator *CLocalWorkUnit::getProcesses(const char *type) const
 {
     VStringBuffer xpath("Process/%s/*", type);
@@ -4875,7 +4889,7 @@ IStringIterator *CLocalWorkUnit::getProcesses(const char *type) const
     return new CStringPTreeTagIterator(p->getElements(xpath.str()));
 }
 
-void CLocalWorkUnit::addProcess(const char *type, const char *instance, const char *log)
+void CLocalWorkUnit::addProcess(const char *type, const char *instance, unsigned pid, const char *log)
 {
     VStringBuffer processType("Process/%s", type);
     VStringBuffer xpath("%s/%s", processType.str(), instance);
@@ -4887,6 +4901,7 @@ void CLocalWorkUnit::addProcess(const char *type, const char *instance, const ch
         IPropertyTree *node = ensurePTree(p, processType.str());
         node = node->addPropTree(instance, createPTree());
         node->setProp("@log", log);
+        node->setPropInt("@pid", pid);
     }
 }
 

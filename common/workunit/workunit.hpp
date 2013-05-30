@@ -923,6 +923,7 @@ interface IConstWorkUnit : extends IInterface
     virtual unsigned __int64 getHash() const = 0;
     virtual IStringIterator *getLogs(const char *type, const char *instance=NULL) const = 0;
     virtual IStringIterator *getProcesses(const char *type) const = 0;
+    virtual IPropertyTreeIterator& getProcesses(const char *type, const char *instance) const = 0;
 };
 
 
@@ -935,7 +936,7 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual IWUException * createException() = 0;
     virtual void setTimeStamp(const char * name, const char * instance, const char * event) = 0;
     virtual void addTimeStamp(const char * name, const char * instance, const char * event) = 0;
-    virtual void addProcess(const char *type, const char *instance, const char *log=NULL) = 0;
+    virtual void addProcess(const char *type, const char *instance, unsigned pid, const char *log=NULL) = 0;
     virtual void setAction(WUAction action) = 0;
     virtual void setApplicationValue(const char * application, const char * propname, const char * value, bool overwrite) = 0;
     virtual void setApplicationValueInt(const char * application, const char * propname, int value, bool overwrite) = 0;

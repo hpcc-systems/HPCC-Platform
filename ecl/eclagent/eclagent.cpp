@@ -1828,7 +1828,7 @@ void EclAgent::doProcess()
                 traceLevel = w->getDebugValueInt("traceLevel", 10);
             w->setTracingValue("EclAgentBuild", BUILD_TAG);
             if (agentTopology->hasProp("@name"))
-                w->addProcess("EclAgent", agentTopology->queryProp("@name"), logname.str());
+                w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), logname.str());
 
             eclccCodeVersion = w->getCodeVersion();
             if (checkVersion && ((eclccCodeVersion > ACTIVITY_INTERFACE_VERSION) || (eclccCodeVersion < MIN_ACTIVITY_INTERFACE_VERSION)))
