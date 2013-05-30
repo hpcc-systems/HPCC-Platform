@@ -295,6 +295,8 @@ void VirtualFieldsInfo::gatherVirtualFields(IHqlExpression * _record, bool ignor
         if (virtualAttr)
         {
             selects.append(*LINK(cur));
+            if (isUnknownSize(cur->queryType()))
+                simpleVirtualsAtEnd = false;
             if (virtuals.find(*virtualAttr) == NotFound)
                 virtuals.append(*LINK(virtualAttr));
         }
@@ -303,7 +305,7 @@ void VirtualFieldsInfo::gatherVirtualFields(IHqlExpression * _record, bool ignor
             //Also adds attributes...
             physicalFields.append(*LINK(cur));
             if (virtuals.ordinality())
-                virtualsAtEnd = false;
+                simpleVirtualsAtEnd = false;
         }
     }
 }
@@ -894,7 +896,7 @@ void SourceBuilder::analyse(IHqlExpression * expr)
     case no_newkeyindex:
         if (fieldInfo.hasVirtuals())
         {
-            assertex(fieldInfo.virtualsAtEnd);
+            assertex(fieldInfo.simpleVirtualsAtEnd);
             needToCallTransform = true;
             needDefaultTransform = false;
         }
@@ -1269,23 +1271,37 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
         if (fieldInfo.hasVirtuals())
         {
             IHqlExpression * record = expr->queryRecord();
-            assertex(fieldInfo.virtualsAtEnd);
+            assertex(fieldInfo.simpleVirtualsAtEnd);
             assertex(!recordRequiresSerialization(record, diskAtom));
             CHqlBoundExpr bound;
             StringBuffer s;
             translator.getRecordSize(ctx, expr, bound);
 
+            size32_t virtualSize = 0;
+            ForEachChild(idx, record)
+            {
+                IHqlExpression * field = record->queryChild(idx);
+                IHqlExpression * virtualAttr = field->queryProperty(virtualAtom);
+                if (virtualAttr)
+                {
+                    size32_t fieldSize = field->queryType()->getSize();
+                    assertex(fieldSize != UNKNOWN_LENGTH);
+                    virtualSize += fieldSize;
+                }
+            }
+
+            OwnedHqlExpr ensureSize = adjustValue(bound.expr, virtualSize);
             s.clear().append("crSelf.ensureCapacity(");
-            translator.generateExprCpp(s, bound.expr).append(", NULL);");
+            translator.generateExprCpp(s, ensureSize).append(", NULL);");
             ctx.addQuoted(s);
 
             s.clear().append("memcpy(crSelf.row(), left, ");
             translator.generateExprCpp(s, bound.expr).append(");");
             ctx.addQuoted(s);
 
-            ForEachChild(idx, record)
+            ForEachChild(idx2, record)
             {
-                IHqlExpression * field = record->queryChild(idx);
+                IHqlExpression * field = record->queryChild(idx2);
                 IHqlExpression * virtualAttr = field->queryProperty(virtualAtom);
                 if (virtualAttr)
                 {
@@ -2849,7 +2865,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
     info.gatherVirtualFields(tableExpr->hasProperty(_noVirtual_Atom) || isPiped, needToSerializeRecord(modeOp));
 
     unsigned optFlags = (options.foldOptimized ? HOOfold : 0);
-    if (!info.fieldInfo.virtualsAtEnd || info.fieldInfo.requiresDeserialize || 
+    if (!info.fieldInfo.simpleVirtualsAtEnd || info.fieldInfo.requiresDeserialize ||
         (info.recordHasVirtuals() && (modeOp == no_csv || !isSimpleSource(expr))))
     {
         OwnedHqlExpr transformed = buildTableWithoutVirtuals(info.fieldInfo, expr);
