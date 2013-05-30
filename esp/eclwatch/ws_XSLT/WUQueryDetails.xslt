@@ -146,6 +146,11 @@
                 </script>
             </head>
             <body class="yui-skin-sam">
+                <xsl:variable name="suspendedOnClusters">
+                    <xsl:for-each select="Clusters/ClusterQueryState[State='Suspended']">
+                        <xsl:if test="position() > 1"><xsl:text>, </xsl:text></xsl:if><xsl:value-of select="Cluster"/>
+                    </xsl:for-each>
+                </xsl:variable>
                 <h3>Query Details for <xsl:value-of select="QueryId"/></h3>
                 <form>
                     <table style="text-align:left;" cellspacing="10">
@@ -179,7 +184,7 @@
                             </tr>
                         </xsl:if>
                         <tr>
-                            <th>Suspended:
+                            <th>Suspended By User:
                         </th>
                             <td>
                                 <input type="checkbox" onclick="toggleQuery();">
@@ -193,6 +198,14 @@
                             <tr>
                                 <th>Suspended By:</th>
                                 <td><xsl:value-of select="SuspendedBy"/></td>
+                            </tr>
+                        </xsl:if>
+                        <xsl:if test="string-length($suspendedOnClusters)">
+                            <tr>
+                                <th>Suspended On Cluster(s):</th>
+                                <td>
+                                    <xsl:value-of select="$suspendedOnClusters"/>
+                                </td>
                             </tr>
                         </xsl:if>
                         <tr>

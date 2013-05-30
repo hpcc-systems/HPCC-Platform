@@ -82,7 +82,7 @@
                     record = aliasDataTable.getRecord(selectedRows[0]);
                 else
                     record = queryDataTable.getRecord(selectedRows[0]);
-                document.location.href = "/WsWorkunits/WUQueryDetails?QueryId=" + record.getData('Id') + "&QuerySet=" + querySet;
+                document.location.href = "/WsWorkunits/WUQueryDetails?IncludeStateOnClusters=1&QueryId=" + record.getData('Id') + "&QuerySet=" + querySet;
               }
 
               function deleteQueries() {
@@ -220,7 +220,7 @@
                     {key:"Name", sortable:true, resizeable:true},
                     {key:"Wuid", formatter: formatWUIDColumn, sortable:true, resizeable:true},
                     {key:"Dll", sortable:true, resizeable:true},
-                    {key:"Suspended", formatter: formatCheckColumn, sortable:true, resizeable:true}
+                    {key:"Suspended", sortable:true, resizeable:true}
                   ];
                   if (clusterName != '')
                     queryColumnDefs = [
@@ -228,7 +228,7 @@
                         {key:"Name", sortable:true, resizeable:true},
                         {key:"Wuid", formatter: formatWUIDColumn, sortable:true, resizeable:true},
                         {key:"Dll", sortable:true, resizeable:true},
-                        {key:"Suspended", formatter: formatCheckColumn, sortable:true, resizeable:true},
+                        {key:"Suspended", sortable:true, resizeable:true},
                         {key:"Status", sortable:true, resizeable:true}
                       ];
 
@@ -437,12 +437,29 @@
   </xsl:template>
 
   <xsl:template match="QuerySetQuery">
+      <xsl:variable name="suspendedStatus">
+          <xsl:choose>
+              <xsl:when test="Suspended != 0">By User</xsl:when>
+              <xsl:otherwise>
+                  <xsl:for-each select="Clusters/ClusterQueryState[State='Suspended']">
+                      <xsl:choose>
+                          <xsl:when test="position() = 1">
+                              <xsl:text>On Cluster(s): </xsl:text><xsl:value-of select="Cluster"/>
+                          </xsl:when>
+                          <xsl:otherwise>
+                              <xsl:text>, </xsl:text><xsl:value-of select="Cluster"/>
+                          </xsl:otherwise>
+                      </xsl:choose>
+                  </xsl:for-each>
+              </xsl:otherwise>
+          </xsl:choose>
+      </xsl:variable>
       <xsl:choose>
           <xsl:when test="$clusterselected = ''">
-              {Id:'<xsl:value-of select="Id"/>', Name:'<xsl:value-of select="Name"/>', Wuid:'<xsl:value-of select="Wuid"/>', Dll:'<xsl:value-of select="Dll"/>', Suspended:'<xsl:value-of select="Suspended"/>'}<xsl:if test="position()!=last()">,</xsl:if>
+              {Id:'<xsl:value-of select="Id"/>', Name:'<xsl:value-of select="Name"/>', Wuid:'<xsl:value-of select="Wuid"/>', Dll:'<xsl:value-of select="Dll"/>', Suspended:'<xsl:value-of select="$suspendedStatus"/>'}<xsl:if test="position()!=last()">,</xsl:if>
           </xsl:when>
           <xsl:otherwise>
-              {Id:'<xsl:value-of select="Id"/>', Name:'<xsl:value-of select="Name"/>', Wuid:'<xsl:value-of select="Wuid"/>', Dll:'<xsl:value-of select="Dll"/>', Suspended:'<xsl:value-of select="Suspended"/>', Status:'<xsl:value-of select="Clusters/ClusterQueryState[1]/State"/>'}<xsl:if test="position()!=last()">,</xsl:if>
+              {Id:'<xsl:value-of select="Id"/>', Name:'<xsl:value-of select="Name"/>', Wuid:'<xsl:value-of select="Wuid"/>', Dll:'<xsl:value-of select="Dll"/>', Suspended:'<xsl:value-of select="$suspendedStatus"/>', Status:'<xsl:value-of select="Clusters/ClusterQueryState[1]/State"/>'}<xsl:if test="position()!=last()">,</xsl:if>
           </xsl:otherwise>
       </xsl:choose>
   </xsl:template>
