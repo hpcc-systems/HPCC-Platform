@@ -825,7 +825,8 @@
                   </xsl:if>
                 </input>
                 <input type="submit" name="ActionType" value="Delete" class="sbutton" title="Delete workunit" onclick="return confirm('Delete workunit?')">
-                  <xsl:if test="number(AccessFlag) &lt; 7 or number(Protected)">
+                  <xsl:if test="number(AccessFlag) &lt; 7 or number(Protected) or State='aborting' or State='running' or State='compiling'
+                          or State='debug_running' or State='debugging' or ($ScheduledAborting!=0)">
                     <xsl:attribute name="disabled">disabled</xsl:attribute>
                   </xsl:if>
                 </input>
@@ -882,7 +883,8 @@
                   </xsl:if>
                 </input>
                 <input type="submit" name="ActionType" value="Delete" class="sbutton" title="Delete workunit" onclick="return confirm('Delete workunit?')">
-                  <xsl:if test="number(AccessFlag) &lt; 7 or number(Protected)">
+                  <xsl:if test="number(AccessFlag) &lt; 7 or number(Protected) or State='aborting' or State='running' or State='compiling'
+                          or State='debug_running' or State='debugging' or ($ScheduledAborting!=0)">
                     <xsl:attribute name="disabled">disabled</xsl:attribute>
                   </xsl:if>
                 </input>
