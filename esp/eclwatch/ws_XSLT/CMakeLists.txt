@@ -138,6 +138,7 @@ FOREACH ( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/access_accountpermissions.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_adduser.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_basedns.xslt
+    ${CMAKE_CURRENT_SOURCE_DIR}/access_clearpermissionscache.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_filepermission.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_groupadd.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/access_groupdelete.xslt

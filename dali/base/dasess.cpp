@@ -77,6 +77,7 @@ interface ISessionManagerServer: implements IConnectionMonitor
     virtual SessionId lookupProcessSession(INode *node) = 0;
     virtual INode *getProcessSessionNode(SessionId id) =0;
     virtual int getPermissionsLDAP(const char *key,const char *obj,IUserDescriptor *udesc,unsigned flags, int *err)=0;
+    virtual bool clearPermissionsCache(IUserDescriptor *udesc) = 0;
     virtual void stopSession(SessionId sessid,bool failed) = 0;
     virtual void setClientAuth(IDaliClientAuthConnection *authconn) = 0;
     virtual void setLDAPconnection(IDaliLdapConnection *_ldapconn) = 0;
@@ -364,6 +365,7 @@ enum MSessionRequestKind {
     MSR_STOP_SESSION,
     MSR_IMPORT_CAPABILITIES,
     MSR_LOOKUP_LDAP_PERMISSIONS,
+    MSR_CLEAR_PERMISSIONS_CACHE,
     MSR_EXIT // TBD
 };
 
@@ -524,6 +526,14 @@ public:
                 mb.clear().append(ret);
                 if (err)
                     mb.append(err);
+                coven.reply(mb);
+            }
+            break;
+        case MSR_CLEAR_PERMISSIONS_CACHE: {
+                Owned<IUserDescriptor> udesc=createUserDescriptor();
+                udesc->deserialize(mb);
+                bool ok = manager.clearPermissionsCache(udesc);
+                mb.append(ok);
                 coven.reply(mb);
             }
             break;
@@ -800,6 +810,19 @@ public:
         return ret;
     }
 
+    bool clearPermissionsCache(IUserDescriptor *udesc)
+    {
+        if (securitydisabled)
+            return true;
+        if (queryDaliServerVersion().compare("1.8") < 0) {
+            securitydisabled = true;
+            return true;
+        }
+        CMessageBuffer mb;
+        mb.append((int)MSR_CLEAR_PERMISSIONS_CACHE);
+        udesc->serialize(mb);
+        return queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
+    }
     bool checkScopeScansLDAP()
     {
         assertex(!"checkScopeScansLDAP called on client");
@@ -1265,6 +1288,17 @@ public:
 #endif
     }
 
+    virtual bool clearPermissionsCache(IUserDescriptor *udesc)
+    {
+#ifdef _NO_LDAP
+        bool ok = true;
+#else
+        bool ok = true;
+        if (ldapconn->getLDAPflags() & DLF_ENABLED)
+            ok = ldapconn->clearPermissionsCache(udesc);
+#endif
+        return ok;
+    }
     virtual bool checkScopeScansLDAP()
     {
 #ifdef _NO_LDAP

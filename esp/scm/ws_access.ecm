@@ -553,6 +553,14 @@ ESPresponse PermissionsResetResponse
     string retmsg;
 };
 
+ESPrequest ClearPermissionsCacheRequest
+{
+};
+
+ESPresponse ClearPermissionsCacheResponse
+{
+    int retcode;
+};
 ESPrequest PermissionActionRequest
 {
     string basedn;
@@ -681,6 +689,7 @@ ESPservice [version("1.07"), default_client_version("1.07"), exceptions_inline("
     ESPmethod [client_xslt("/esp/xslt/access_filepermission.xslt")] FilePermission(FilePermissionRequest, FilePermissionResponse);
     ESPmethod [client_xslt("/esp/xslt/access_permissionresetinput.xslt")] PermissionsResetInput(PermissionsResetInputRequest, PermissionsResetInputResponse);
     ESPmethod [client_xslt("/esp/xslt/access_permissionsreset.xslt")] PermissionsReset(PermissionsResetRequest, PermissionsResetResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_clearpermissionscache.xslt")] ClearPermissionsCache(ClearPermissionsCacheRequest, ClearPermissionsCacheResponse);
     //ESPmethod [client_xslt("/esp/xslt/access_useraccountexport.xslt")] UserAccountExport(UserAccountExportRequest, UserAccountExportResponse);
     ESPmethod UserAccountExport(UserAccountExportRequest, UserAccountExportResponse);
 

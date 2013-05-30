@@ -1325,21 +1325,7 @@ public:
 
         if(rtype == RT_FILE_SCOPE)
         {
-            int defaultFileScopePermission = -2;
-            //if(m_defaultFileScopePermission == -2)
-            {
-                const char* basebasedn = strchr(basedn, ',') + 1;
-                StringBuffer baseresource;
-                baseresource.append(basebasedn-basedn-4, basedn+3);
-                IArrayOf<ISecResource> base_resources;
-                base_resources.append(*(new CLdapSecResource(baseresource.str())));
-                bool baseok = authorizeScope(user, base_resources, basebasedn);
-                if(baseok)
-                {
-                    //m_defaultFileScopePermission = base_resources.item(0).getAccessFlags();
-                    defaultFileScopePermission = base_resources.item(0).getAccessFlags();
-                }
-            }
+            int defaultFileScopePermission = queryDefaultPermission(user);
             IArrayOf<ISecResource> non_emptylist;
             ForEachItemIn(x, resources)
             {

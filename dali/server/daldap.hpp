@@ -30,7 +30,7 @@ interface IDaliLdapConnection: extends IInterface
     virtual bool checkScopeScans() = 0;
     virtual unsigned getLDAPflags() = 0;
     virtual void setLDAPflags(unsigned flags) = 0;
-
+    virtual bool clearPermissionsCache(IUserDescriptor *udesc) = 0;
 };
 
 extern IDaliLdapConnection *createDaliLdapConnection(IPropertyTree *proptree);

@@ -202,20 +202,7 @@ void CResPermissionsCache::remove(SecResourceType rtype, const char* resourcenam
 
 CPermissionsCache::~CPermissionsCache()
 {
-    //delete all user-specific caches
-    //
-    MapResPermissionsCache::const_iterator i;
-    MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end(); 
-
-    for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
-        delete (*i).second;
-
-    MapUserCache::const_iterator ui;
-    MapUserCache::const_iterator uiEnd = m_userCache.end(); 
-    for (ui = m_userCache.begin(); ui != uiEnd; ui++)
-        delete (*ui).second;
-
-    removeAllManagedFileScopes();
+    flush();
 }
 
 int CPermissionsCache::lookup( ISecUser& sec_user, IArrayOf<ISecResource>& resources, 
@@ -577,4 +564,25 @@ int CPermissionsCache::queryDefaultPermission(ISecUser& user)
     }
     return m_defaultPermission;
 
+}
+void CPermissionsCache::flush()
+{
+    {
+        synchronized block(m_cachemonitor);
+        MapResPermissionsCache::const_iterator i;
+        MapResPermissionsCache::const_iterator iEnd = m_resPermissionsMap.end();
+        for (i = m_resPermissionsMap.begin(); i != iEnd; i++)
+            delete (*i).second;
+        m_resPermissionsMap.clear();
+    }
+    {
+        synchronized block(m_userCacheMonitor);
+        MapUserCache::const_iterator ui;
+        MapUserCache::const_iterator uiEnd = m_userCache.end();
+        for (ui = m_userCache.begin(); ui != uiEnd; ui++)
+            delete (*ui).second;
+        m_userCache.clear();
+    }
+    m_lastManagedFileScopesRefresh = 0;
+    m_defaultPermission = SecAccess_Unknown;//trigger refresh
 }
