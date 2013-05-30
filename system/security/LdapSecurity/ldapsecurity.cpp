@@ -1260,7 +1260,15 @@ bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
     if(m_permissionsCache.isCacheEnabled())
     {
         if (!authenticate(&user))
+        {
+            PROGLOG("User %s not authorized to clear permissions cache", user.getName());
             return false;
+        }
+        if (!isSuperUser(&user))
+        {
+            PROGLOG("User %s denied, only a superuser can clear permissions cache", user.getName());
+            return false;
+        }
         m_permissionsCache.flush();
     }
     return true;
