@@ -686,7 +686,7 @@ public:
             {
                 // we don't want a single bad query in the set to stop us loading all the others
                 StringBuffer msg;
-                msg.appendf("Failed to load query %s from %s", id ? id : "(null)", dllName ? dllname : "(null)");
+                msg.appendf("Failed to load query %s from %s", id ? id : "(null)", dllName ? dllName : "(null)");
                 EXCLOG(E, msg.str());
                 if (id)
                 {
