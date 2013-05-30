@@ -1,0 +1,60 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" style="width: 100%; height: 100%;" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}Titlebar" class="hpccTitlebar" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
+            <div class="left">
+                <div id="${id}StackController" data-dojo-props="containerId:'${id}TabContainer'" data-dojo-type="dijit.layout.StackController"></div>
+            </div>
+            <div id="userTools">
+                <form id="search-form">
+                    <div class="search">
+                        <input type="text" name="search" class="roundForm" />
+                        <input type="image" class="corner" value="" src="img/search_icon.png" />
+                    </div>
+                </form>
+                <div id="userAccount">
+                    <span class="navBarLoggedin">logged in as: </span><a href="#">Gordon Smith</a>
+                </div>
+                <div id="userIcons">
+                    <div class="seperator grey"></div>
+                    <a id="hoverIcon" href="#">
+                        <div class="holder">
+                            <div data-dojo-type="dijit.form.DropDownButton">
+                                <span>
+                                    <img src="img/help_icon.png" alt="User" />
+                                </span>
+                                <div data-dojo-type="dijit/Menu">
+                                    <div id="${id}TODO1" data-dojo-type="dijit.MenuItem">...TODO...</div>
+                                    <div id="${id}TODO2" data-dojo-type="dijit.MenuItem">...TODO...</div>
+                                    <div id="${id}TODO3" data-dojo-type="dijit.MenuItem">...TODO...</div>
+                                    <span data-dojo-type="dijit.MenuSeparator"></span>
+                                    <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">About</div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                    <div class="seperator black"></div>
+                </div>
+            </div>
+        </div>
+        <div id="${id}TabContainer" style="width: 100%; height: 100%"  data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.StackContainer">
+            <div id="${id}_Activity" data-dojo-props="iconClass: 'iconHpcc'" data-dojo-type="dijit.layout.ContentPane">
+                <h4>Main Dahsboard</h4>
+                <p>TODO:  Should display current activity and status.</p>
+            </div>
+            <div id="${id}_ECL" data-dojo-type="WUQueryWidget">
+            </div>
+            <div id="${id}_DFU" data-dojo-type="GetDFUWorkunitsWidget">
+            </div>
+            <div id="${id}_LF" data-dojo-type="DFUQueryWidget">
+            </div>
+            <div id="${id}_LZ" data-dojo-type="LZBrowseWidget">
+            </div>
+            <div id="${id}_Queries" data-dojo-type="dijit.layout.ContentPane">
+            </div>
+            <div id="${id}_OPS" data-dojo-type="dijit.layout.ContentPane">
+                <h4>Operations</h4>
+                <p>TODO:  Should display ops topology etc.</p>
+            </div>
+        </div>
+    </div>
+</div>

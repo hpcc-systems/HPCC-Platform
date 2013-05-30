@@ -132,7 +132,7 @@ hr.dashedLine {
     padding:20px;
 }
 
-#hpccTitlebar {
+#stubTitlebar {
     background: rgb(46, 112, 150);
     height: 51px;
     margin: 0px;
@@ -144,56 +144,68 @@ hr.dashedLine {
     background-color:rgb(118, 157, 192);
 }
 
-#homeStackController .dijitToggleButton .dijitButtonNode {
+#stubStackController .dijitToggleButton .dijitButtonNode {
     background-color: #353535;
     background:none;
     box-shadow: none;
 }
 
-#homeStackController span:nth-child(1) {
+#stubStackController span:nth-child(1) {
     background-image: url("../img/hpcc_systems_logo.png");
     width: 180px;
     height: 45px;
 }
 
-#homeStackController :hover{
+#stubStackController :hover{
     background-color:rgb(118, 157, 192);
 }
 
-#homeStackController span:nth-child(2) {
+#stubStackController span:nth-child(2) {
     background-image: url("../img/ecl_icon.png");
     width: 45px;
     height: 45px;
 }
 
-#homeStackController span:nth-child(3) {
-    background-image: url("../img/files_icon.png");
-    width: 45px;
-    height: 45px;
-}
-
-#homeStackController span:nth-child(4) {
+#stubStackController span:nth-child(3) {
     background-image: url("../img/dfu_icon.png");
     width: 45px;
     height: 45px;
 }
 
-#homeStackController span:nth-child(5) {
+#stubStackController span:nth-child(4) {
+    background-image: url("../img/files_icon.png");
+    width: 45px;
+    height: 45px;
+}
+
+#stubStackController span:nth-child(5) {
+    background-image: url("../img/landingzone_icon.png");
+    width: 45px;
+    height: 45px;
+}
+
+#stubStackController span:nth-child(6) {
+    background-image: url("../img/queries_icon.png");
+    width: 45px;
+    height: 45px;
+}
+
+#stubStackController span:nth-child(7) {
     background-image: url("../img/ops_icon.png");
     width: 45px;
     height: 45px;
 }
 
-#homeStackController .dijitButtonContents{
+#stubStackController .dijitButtonContents{
     display:none;
     border:none;
 }
 
-#homeStackController .dijitButtonNode{
+#stubStackController .dijitButtonNode{
     border:none;
 }
 
-#homeStackController .dijitReset{
+#stubStackController .dijitReset{
     cursor: pointer;
 }
 
