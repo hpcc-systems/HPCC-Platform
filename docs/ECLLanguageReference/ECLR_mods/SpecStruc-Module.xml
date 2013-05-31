@@ -19,7 +19,7 @@
   role="bold">) ]</emphasis><emphasis role="bold">
   </emphasis><emphasis></emphasis></para>
 
-  <para><emphasis>attributes;</emphasis></para>
+  <para><emphasis>members;</emphasis></para>
 
   <para><emphasis></emphasis><emphasis role="bold">END;</emphasis></para>
 
@@ -33,14 +33,14 @@
         <row>
           <entry><emphasis>modulename</emphasis></entry>
 
-          <entry>The ECL attribute name of the module.</entry>
+          <entry>The ECL definition name of the module.</entry>
         </row>
 
         <row>
           <entry><emphasis>parameters</emphasis></entry>
 
           <entry>Optional. The parameters to make available to all the
-          <emphasis>attributes</emphasis>.</entry>
+          <emphasis>definitions</emphasis>.</entry>
         </row>
 
         <row>
@@ -48,19 +48,19 @@
 
           <entry>A comma-delimited list of INTERFACE or abstract MODULE
           structures on which to base this instance. The current instance
-          inherits all the <emphasis>attributes</emphasis> from the base
+          inherits all the <emphasis>members</emphasis> from the base
           structures. This may not be a passed parameter.</entry>
         </row>
 
         <row>
-          <entry><emphasis>attributes</emphasis></entry>
+          <entry><emphasis>members</emphasis></entry>
 
-          <entry>The attribute definitions that comprise the module. These
-          attributes may receive parameters, may include actions (such as
-          OUTPUT), and may use the EXPORT or SHARED scope types. These may not
-          include INTERFACE or abstract MODULEs (see below). If the LIBRARY
-          option is specified, the <emphasis>attributes</emphasis> must
-          exactly implement the EXPORTed members of the
+          <entry>The definitions that comprise the module. These definitions
+          may receive parameters, may include actions (such as OUTPUT), and
+          may use the EXPORT or SHARED scope types. These may not include
+          INTERFACE or abstract MODULEs (see below). If the LIBRARY option is
+          specified, the <emphasis>definitions</emphasis> must exactly
+          implement the EXPORTed members of the
           <emphasis>interface</emphasis>.</entry>
         </row>
 
@@ -68,7 +68,7 @@
           <entry><emphasis role="bold">VIRTUAL</emphasis></entry>
 
           <entry>Optional. Specifies the MODULE defines an abstract interface
-          whose <emphasis>attributes</emphasis> do not require values to be
+          whose <emphasis>definitions</emphasis> do not require values to be
           defined for them.</entry>
         </row>
 
@@ -95,37 +95,45 @@
   </informaltable>
 
   <para>The <emphasis role="bold">MODULE </emphasis>structure is a container
-  that allows you to group related attributes. The
+  that allows you to group related definitions. The
   <emphasis>parameters</emphasis> passed to the MODULE are shared by all the
-  related <emphasis>attribute </emphasis>definitions. This is similar to the
+  related <emphasis>members </emphasis>definitions. This is similar to the
   FUNCTION structure except that there is no RETURN.</para>
 
   <sect2 id="Attribute_Visibility_Rules">
-    <title>Attribute Visibility<indexterm>
-        <primary>Attribute Visibility</primary>
+    <title>Definition Visibility<indexterm>
+        <primary>Definition Visibility</primary>
       </indexterm> Rules</title>
 
-    <para>The scoping rules for the <emphasis>attributes</emphasis> are the
-    same as those previously described in the <emphasis role="bold">Attribute
+    <para>The scoping rules for the <emphasis>members</emphasis> are the same
+    as those previously described in the <emphasis role="bold">Definition
     Visibility</emphasis> discussion:</para>
 
-    <para>Local attributes are visible only through the next EXPORT or SHARED
-    attribute.</para>
+    <itemizedlist>
+      <listitem>
+        <para>Local definitions are visible only through the next EXPORT or
+        SHARED definition.</para>
+      </listitem>
 
-    <para>SHARED attributes are visible only within the MODULE
-    structure.</para>
+      <listitem>
+        <para>SHARED definitions are visible only within the MODULE
+        structure.</para>
+      </listitem>
 
-    <para>EXPORT attributes are visible within the MODULE structure and
-    outside of it.</para>
+      <listitem>
+        <para>EXPORT definitions are visible within the MODULE structure and
+        outside of it.</para>
+      </listitem>
+    </itemizedlist>
 
-    <para>Any EXPORT <emphasis>attributes</emphasis> may be referenced using
-    an additional level of standard object.property syntax. For example,
-    assuming the EXPORT MyModuleStructure MODULE structure is contained in an
-    ECL Repository module named MyModule and that it contains an EXPORT
-    <emphasis>attribute</emphasis> named MyAttribute, you would reference that
-    <emphasis>attribute</emphasis> as:</para>
+    <para>Any EXPORT <emphasis>members</emphasis> may be referenced using an
+    additional level of standard object.property syntax. For example, assuming
+    the EXPORT MyModuleStructure MODULE structure is contained in an ECL
+    Repository module named MyModule and that it contains an EXPORT
+    <emphasis>member</emphasis> named MyDefinition, you would reference that
+    <emphasis>definition</emphasis> as:</para>
 
-    <para>MyModule.MyModuleStructure.MyAttribute</para>
+    <para><programlisting>MyModule.MyModuleStructure.MyDefinition</programlisting></para>
   </sect2>
 
   <sect2 id="Side-Effect_Actions">
@@ -133,43 +141,67 @@
 
     <para>Actions contained in the MODULE have the following semantics:</para>
 
-    <para>1) Any action immediately preceding an
-    <emphasis>attribute</emphasis> is added as a side-effect of that
-    <emphasis>attribute</emphasis>.</para>
+    <itemizedlist>
+      <listitem>
+        <para>Any action immediately preceding a
+        <emphasis>definition</emphasis> is added as a side-effect of that
+        <emphasis>definition</emphasis>.</para>
+      </listitem>
 
-    <para>2) Actions cannot precede the following structured attribute types:
-    TRANSFORM, RECORD, MODULE, TYPE, and MACRO.</para>
+      <listitem>
+        <para>Actions cannot precede the following structured definition
+        types: TRANSFORM, RECORD, MODULE, TYPE, and MACRO.</para>
+      </listitem>
 
-    <para>3) Generally the action will be executed once if the attribute is
-    used. Where attributes are used in a conditional context (for example,
-    inside PERSISTed attributes or conditional actions) they may be executed
-    more than once.</para>
+      <listitem>
+        <para>Generally the action will be executed once if the definition is
+        used. Where definitions are used in a conditional context (for
+        example, inside PERSISTed definitions or conditional actions) they may
+        be executed more than once.</para>
+      </listitem>
+    </itemizedlist>
   </sect2>
 
   <sect2 id="Concrete_vs_Abstract_Modules">
-    <title>Concrete vs. Abstract Modules</title>
+    <title>Concrete vs. Abstract (VIRTUAL) Modules</title>
 
-    <para>An abstract MODULE is one that contains at least one pure member
-    <emphasis>attribute</emphasis> (an attribute with no value definition). In
-    order to contain pure member <emphasis>attributes</emphasis>, a MODULE
-    must either be defined as VIRTUAL, or <emphasis>inherit</emphasis> an
-    INTERFACE or another MODULE that is abstract. A concrete MODULE has a
-    value defined for each of its member <emphasis>attributes,
-    </emphasis>whether that value definition is contained in the current
-    instance or is <emphasis>inherited</emphasis>.</para>
+    <para>A MODULE may contain a mixture of VIRTUAL and non-VIRTUAL
+    <emphasis>members</emphasis>. The rules are:</para>
 
-    <para>All EXPORTed and SHARED member <emphasis>attributes</emphasis> of an
+    <itemizedlist>
+      <listitem>
+        <para>ALL <emphasis>members</emphasis> are VIRTUAL if the MODULE has
+        the VIRTUAL option or is an INTERFACE</para>
+      </listitem>
+
+      <listitem>
+        <para>A <emphasis>member</emphasis> is VIRTUAL if it is declared using
+        the EXPORT VIRTUAL or SHARED VIRTUAL keywords</para>
+      </listitem>
+
+      <listitem>
+        <para>A <emphasis>member</emphasis> is VIRTUAL if the definition of
+        the same name in the <emphasis>inherited</emphasis> module is
+        VIRTUAL.</para>
+      </listitem>
+
+      <listitem>
+        <para>Some <emphasis>members</emphasis> can never be virtual – RECORD
+        structures.</para>
+      </listitem>
+    </itemizedlist>
+
+    <para>All EXPORTed and SHARED <emphasis>members</emphasis> of an
     <emphasis>inherited</emphasis> abstract module can be overridden by
     re-defining them in the current instance, whether that current instance is
-    abstract or concrete. Overridden attributes must exactly match the type
-    and parameters of the <emphasis>inherited</emphasis> member
-    <emphasis>attributes</emphasis>. Multiple <emphasis>inherited
-    </emphasis>interfaces may contain attributes with the same name if they
+    abstract or concrete. Overridden definitions must exactly match the type
+    and parameters of the <emphasis>inherited</emphasis>
+    <emphasis>members</emphasis>. Multiple <emphasis>inherited
+    </emphasis>interfaces may contain definitions with the same name if they
     are the same type and receive the same parameters, but if those
-    <emphasis>inherited</emphasis> member <emphasis>attributes</emphasis> have
-    different values defined for them, the conflict must be resolved by
-    overriding that <emphasis>attribute </emphasis>in the current
-    instance.</para>
+    <emphasis>inherited</emphasis> <emphasis>members</emphasis> have different
+    values defined for them, the conflict must be resolved by overriding that
+    <emphasis>member </emphasis>in the current instance.</para>
   </sect2>
 
   <sect2 id="LIBRARY_Modules">
@@ -180,35 +212,60 @@
     action discussions). There are several restrictions on what may be
     included in a query library. They are:</para>
 
-    <para>It may not contain side-effect actions (like OUTPUT or BUILD)</para>
+    <itemizedlist>
+      <listitem>
+        <para>It may not contain side-effect actions (like OUTPUT or
+        BUILD)</para>
+      </listitem>
 
-    <para>It may not contain attributes with workflow services attached to
-    them(such as PERSIST, STORED, SUCCESS, etc.)</para>
+      <listitem>
+        <para>It may not contain definitions with workflow services attached
+        to them (such as PERSIST, STORED, SUCCESS, etc.)</para>
+      </listitem>
+    </itemizedlist>
 
     <para>It may only EXPORT:</para>
 
-    <para>dataset/recordset attributes</para>
+    <itemizedlist>
+      <listitem>
+        <para>Dataset/recordset definitions</para>
+      </listitem>
 
-    <para>datarow attributes (such as the ROW function<indexterm>
-        <primary>ROW function</primary>
-      </indexterm>)</para>
+      <listitem>
+        <para>Datarow definitions (such as the ROW function<indexterm>
+            <primary>ROW function</primary>
+          </indexterm>)</para>
+      </listitem>
 
-    <para>single-valued and Boolean attributes</para>
+      <listitem>
+        <para>Single-valued and Boolean definitions</para>
+      </listitem>
+    </itemizedlist>
 
     <para>And may NOT export:</para>
 
-    <para>actions (like OUTPUT or BUILD)</para>
+    <itemizedlist>
+      <listitem>
+        <para>Actions (like OUTPUT or BUILD)</para>
+      </listitem>
 
-    <para>TRANSFORM functions</para>
+      <listitem>
+        <para>TRANSFORM functions</para>
+      </listitem>
 
-    <para>other MODULE structures</para>
+      <listitem>
+        <para>Other MODULE structures</para>
+      </listitem>
 
-    <para>MACRO attributes</para>
+      <listitem>
+        <para>MACRO definitions</para>
+      </listitem>
+    </itemizedlist>
 
     <para>Example:</para>
 
     <programlisting>EXPORT filterDataset(STRING search, BOOLEAN onlyOldies) := MODULE
-  f := namesTable; //local to the “g” attribute
+  f := namesTable; //local to the “g” definition
   SHARED g := IF (onlyOldies, f(age &gt;= 65), f);
           //SHARED = visible only within the structure
   EXPORT included := g(surname != search);
@@ -244,21 +301,26 @@ BOOLEAN doIt := TRUE : STORED('doIt');
 IF (doIt, OUTPUT(customerNames.File));
           
 //VIRTUAL examples
-Mod1 := MODULE,VIRTUAL //an abstract module
+Mod1 := MODULE,VIRTUAL //a fully abstract module
   EXPORT val := 1;
   EXPORT func(INTEGER sc) := val * sc;
 END;
          
-Mod2 := MODULE(Mod1) //a concete instance
-  EXPORT val := 3; //override inherited default value
-END
+Mod2 := MODULE(Mod1) //instance
+  EXPORT val := 3; //a concete member, overriding default value
+                   //while func remains abstract
+END;
      
-Mod3 := MODULE(Mod1) //a concete instance
-  EXPORT func(INTEGER sc) := val + sc; //override inherited func
-END
+Mod3 := MODULE(Mod1) //a fully concete instance
+  EXPORT func(INTEGER sc) := val + sc; //overrides inherited func
+END;
 OUTPUT(Mod2.func(5)); //result is 15
 OUTPUT(Mod3.func(5)); //result is 6</programlisting>
 
-    <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION Structure</link>, <link linkend="Attribute_Visibility">Attribute Visibility</link>, <link linkend="INTERFACE_Structure">INTERFACE Structure</link>, <link linkend="LIBRARY">LIBRARY</link>, <link linkend="BUILD">BUILD</link></para>
+    <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
+    Structure</link>, <link linkend="Attribute_Visibility">Definition
+    Visibility</link>, <link linkend="INTERFACE_Structure">INTERFACE
+    Structure</link>, <link linkend="LIBRARY">LIBRARY</link>, <link
+    linkend="BUILD">BUILD</link></para>
   </sect2>
 </sect1>

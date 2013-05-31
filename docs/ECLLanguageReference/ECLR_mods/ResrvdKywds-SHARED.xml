@@ -6,25 +6,73 @@
 
   <para><emphasis role="bold">SHARED<indexterm>
       <primary>SHARED</primary>
-    </indexterm> </emphasis><emphasis>definition</emphasis></para>
+    </indexterm> </emphasis> <emphasis role="bold">[ VIRTUAL ]</emphasis>
+  <emphasis>definition</emphasis></para>
 
-  <para><emphasis>definition</emphasis> An Attribute definition.</para>
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.35pt" />
 
-  <para>The <emphasis role="bold">SHARED </emphasis>keyword<indexterm>
-      <primary>SHARED keyword</primary>
-    </indexterm> indicates an Attribute that is available for use throughout
-  the module (i.e. module scope). Without either the SHARED or EXPORT
-  keywords, an Attribute's scope is limited to the next SHARED or EXPORTed
-  Attribute</para>
+        <colspec colwidth="309.45pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">VIRTUAL</emphasis><indexterm>
+                <primary>VIRTUAL SHARED</primary>
+              </indexterm></entry>
+
+            <entry>Optional. Specifies the <emphasis>definition</emphasis> is
+            VIRTUAL. Valid only inside a MODULE Structure.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>definition</emphasis></entry>
+
+            <entry>A valid definition.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">SHARED </emphasis>keyword explicitly allows
+  other definitions within the same folder to import the specified
+  <emphasis>definition</emphasis> for use throughout the
+  module/folder/directory (i.e. module scope), but not outside that scope.
+  </para>
+
+  <para>ECL code is stored in .ecl text files which may only contain a single
+  EXPORT or SHARED definition. This definition may be a structure that allows
+  EXPORT or SHARED definitions within their boundaries (such as MODULE,
+  INTERFACE, TYPE, etc.). The name of the .ecl file containing the code must
+  exactly match the name of the single EXPORT (or SHARED) definition that it
+  contains.</para>
+
+  <para>Definitions without the EXPORT or SHARED keywords are local to the
+  file within which they reside (see <link
+  linkend="Attribute_Visibility">Definition Visibility</link>). A local
+  <emphasis>definition's</emphasis> scope is limited to the next SHARED or
+  EXPORT definition, therefore they must precede that file's EXPORT or SHARED
+  definition.</para>
 
   <para>Example:</para>
 
-  <programlisting>BadPeople := Person(EXISTS(trades(EXISTS(phr(phr_rate &gt; '4'))));
-        //local only to the GoodHouses Attribute
+  <programlisting>//this code is contained in the GoodHouses.ecl file
+BadPeople := Person(EXISTS(trades(EXISTS(phr(phr_rate &gt; '4'))));
+        //local only to the GoodHouses definition
 SHARED GoodHouses := Household(~EXISTS(BadPeople));
-        //available all thru the module</programlisting>
+        //available all thru the module
 
-  <para>See Also: <link linkend="EXPORT">EXPORT</link>, <link
-  linkend="Attribute_Visibility">Attribute Visibility</link>, <link
-  linkend="MODULE_Structure">MODULE</link></para>
+//and in AnotherDef.ecl we have this code:
+EXPORT AnotherDef := MODULE(x)
+  EXPORT INTEGER a := c * 3;
+  EXPORT INTEGER b := 2;
+  SHARED VIRTUAL INTEGER c := 3; //this def is VIRTUAL
+  EXPORT VIRTUAL INTEGER d := c + 3; //this def is VIRTUAL
+  EXPORT VIRTUAL INTEGER e := c + 3; //this def is VIRTUAL
+END;</programlisting>
+
+  <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="EXPORT">EXPORT</link>, <link
+  linkend="Attribute_Visibility">Definition Visibility</link>, <link
+  linkend="MODULE_Structure">MODULE Structure</link></para>
 </sect1>
