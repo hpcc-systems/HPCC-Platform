@@ -188,6 +188,11 @@
               </form>
             </td>
           </xsl:if>
+            <td>
+                <form action="/ws_access/ClearPermissionsCache">
+                  <input id="clearPermissionsCacheBtn" class="sbutton" type="submit" name="action" value="Clear Permissions Cache" onclick="return confirm('Are you sure you want to clear the DALI and ESP permissions caches? Running workunit performance might degrade significantly until the caches have been refreshed.')"/>
+                </form>
+            </td>
                 </tr>
             </table>
       <form action="/ws_access/ResourceAddInput" id="addform">
