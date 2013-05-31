@@ -500,7 +500,6 @@ int main( int argc, char *argv[]  )
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(globals, "thor");
             lf->setName("thormaster");//override default filename
             lf->setCreateAliasFile(false);
-            lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
             logHandler = lf->beginLogging();
             createUNCFilename(lf->queryLogFileSpec(), logUrl, false);
         }

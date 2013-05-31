@@ -561,13 +561,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             getConfigurationDirectory(directoryTree,"query","roxie", roxieName, queryDirectory);
 
         //Logging stuff
+        if (globals->getPropBool("--stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
+            queryStderrLogMsgHandler()->setMessageFields(MSGFIELD_time | MSGFIELD_milliTime | MSGFIELD_thread | MSGFIELD_prefix);
+        else
+            removeLog();
         if (globals->hasProp("--logfile"))
         {
             Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(topology, "roxie");
-            if (globals->getPropBool("--stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
-                lf->setMsgFields(MSGFIELD_time | MSGFIELD_thread | MSGFIELD_prefix);
-            else
-                removeLog();
             lf->setMaxDetail(TopDetail);
             lf->beginLogging();
             logDirectory.set(lf->queryLogDir());

@@ -223,7 +223,6 @@ void startSlaveLog()
     lf->setPostfix(slaveNumStr.append(mySlaveNum).str());
     lf->setCreateAliasFile(false);
     lf->setName(fileName.str());//override default filename
-    lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
     lf->beginLogging();
 
     StringBuffer url;
