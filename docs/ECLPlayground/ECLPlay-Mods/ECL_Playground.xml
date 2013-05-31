@@ -30,7 +30,7 @@
       Playground then shows you the results and the graph in your browser. The
       view is very similar to what the ECL IDE displays.</para>
 
-      <sect2>
+      <sect2 id="Accessing">
         <title>Accessing ECL Playground</title>
 
         <para>ECL Playground is installed with the HPCC platform. You can
@@ -79,7 +79,7 @@
                   <mediaobject>
                     <imageobject>
                       <imagedata fileref="../../images/ECLP_001.jpg"
-                                 vendor="eclswatchSS" />
+                                 vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>
@@ -89,7 +89,7 @@
           </orderedlist></para>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="Introducing_the" role="brk">
         <title>Introducing the ECL Playground</title>
 
         <para>The ECL Playground page is a work area where you can see and run
@@ -104,7 +104,8 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLP_002d.jpg" />
+                <imagedata fileref="../../images/ECLP_002d.jpg"
+                           vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -123,7 +124,8 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLP_003b.jpg" />
+                <imagedata fileref="../../images/ECLP_003b.jpg"
+                           vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
           </figure>The selected code displays in the <emphasis>Editor
@@ -131,12 +133,12 @@
         The results display at the bottom portion of the page.</para>
       </sect2>
 
-      <sect2>
+      <sect2 id="Running_ECL">
         <title>Running ECL Code</title>
 
         <para>To run the selected sample code, choose a target cluster from
         the drop list, then press the <emphasis role="bold">Submit</emphasis>
-        button.</para>
+        button right below the <emphasis>Editor</emphasis> area.</para>
 
         <para>A successful run displays the word <emphasis
         role="bold">completed</emphasis> as the status and the results display
@@ -148,7 +150,8 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLP_005.jpg" />
+                <imagedata fileref="../../images/ECLP_005.jpg"
+                           vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
           </figure></para>
@@ -169,7 +172,8 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLP_004a.jpg" />
+                <imagedata fileref="../../images/ECLP_004a.jpg"
+                           vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
           </figure>The status area displays the job status. If a job fails,
@@ -190,14 +194,15 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="../../images/ECLP_006a.jpg" />
+                  <imagedata fileref="../../images/ECLP_006a.jpg"
+                             vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
             </figure></para>
         </sect3>
       </sect2>
 
-      <sect2 role="brk">
+      <sect2 id="Plygd_from_WU" role="brk">
         <title>ECL Playground from a Workunit</title>
 
         <para>You can access ECL Playground from a Workunit Details page in
@@ -250,7 +255,8 @@
 
                   <mediaobject>
                     <imageobject>
-                      <imagedata fileref="../../images/ECLP_009.jpg" />
+                      <imagedata fileref="../../images/ECLP_009.jpg"
+                                 vendor="eclwatchSS" />
                     </imageobject>
                   </mediaobject>
                 </figure></para>

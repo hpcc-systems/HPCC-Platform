@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
 "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
-<sect1>
+<sect1 id="User_Security_Maint">
   <title>User Security Maintenance</title>
 
   <para>Configuring an HPCC System to use LDAP security will give you greater
   control over users and the security of your HPCC system.</para>
 
-  <sect2>
+  <sect2 id="User_Security_Intro">
     <title>Introduction</title>
 
     <para>HPCC systems maintain security in a number of ways. HPCC Systems can
@@ -82,7 +82,7 @@
     available using the <emphasis role="bold">Users/Permissions</emphasis>
     area in ECL Watch.</para>
 
-    <sect3 role="brk">
+    <sect3 id="My_Account_Info" role="brk">
       <title>Information about your account</title>
 
       <para>To find out more information about your account, in ECL Watch
@@ -117,7 +117,7 @@
     </sect3>
   </sect2>
 
-  <sect2>
+  <sect2 id="Sec_Adm_w_ECLWatch">
     <title>Security Administration using ECL Watch</title>
 
     <para>Administrator rights are needed to manage permissions. Once you have
