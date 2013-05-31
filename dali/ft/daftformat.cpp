@@ -227,16 +227,32 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
     offset_t nextInputOffset = cursor.nextInputOffset;
     const byte *buffer = bufferBase();
 
-    bool processFullBuffer = true;
+    offset_t logStepOffset;
+    if( (splitOffset-inputOffset) < 1000000000 )
+    {
+        logStepOffset = splitOffset / 4;  // 25% step to display progress for files < ~1G split
+    }
+    else
+    {
+        logStepOffset = splitOffset / 100;  // 1% step to display progress for files > ~1G split
+    }
+    offset_t oldInputOffset = nextInputOffset;
+
     while (nextInputOffset < splitOffset)
     {
+        if( nextInputOffset > oldInputOffset + logStepOffset)
+        {
+            // Display progress
+            oldInputOffset = nextInputOffset;
+            LOG(MCdebugProgressDetail, unknownJob, "findSplitPoint(splitOffset:%"I64F"d) progress: %3.0f%% done.", splitOffset, (double)100.0*(double)nextInputOffset/(double)splitOffset);
+        }
 
         inputOffset = nextInputOffset;
 
         ensureBuffered(headerSize);
         assertex((headerSize ==0) || (numInBuffer != bufferOffset));
 
-        processFullBuffer =  (nextInputOffset + blockSize) < splitOffset;
+        bool processFullBuffer =  (nextInputOffset + blockSize) < splitOffset;
 
         unsigned size = getSplitRecordSize(buffer+bufferOffset, numInBuffer-bufferOffset, processFullBuffer);
 
@@ -270,6 +286,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 
     cursor.inputOffset = inputOffset;
     cursor.nextInputOffset = nextInputOffset;
+    LOG(MCdebugProgressDetail, unknownJob, "findSplitPoint(splitOffset:%"I64F"d) progress: %3.0f%% done.", splitOffset, 100.0);
 }
 
 
