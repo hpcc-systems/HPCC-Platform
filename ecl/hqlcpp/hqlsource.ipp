@@ -252,7 +252,7 @@ struct VirtualFieldsInfo
 public:
     VirtualFieldsInfo()
     { 
-        virtualsAtEnd = true;
+        simpleVirtualsAtEnd = true;
         requiresDeserialize = false;
     }
 
@@ -267,7 +267,7 @@ public:
     HqlExprArray    physicalFields;
     HqlExprArray    selects;
     HqlExprArray    virtuals;
-    bool            virtualsAtEnd;
+    bool            simpleVirtualsAtEnd;
     bool            requiresDeserialize;
 };
 
