@@ -530,11 +530,10 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
                         h->setFileSize(fileSize);
                     if (version >= 1.44)
                     {
-                        eclAgents.query().getProp("@pid",agentPID);
-                        if (!agentPID.length())
-                            agentPID.append(cw->getAgentPID());
-                        if (agentPID.length())
-                            h->setPID(agentPID.str());
+                        if (eclAgents.query().hasProp("@pid"))
+                            h->setPID(eclAgents.query().getPropInt("@pid"));
+                        else
+                            h->setPID(cw->getAgentPID());
                     }
                 }
                 helpers.append(*h.getLink());

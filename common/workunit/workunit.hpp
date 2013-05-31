@@ -957,7 +957,6 @@ interface IWorkUnit : extends IConstWorkUnit
     virtual void setState(WUState state) = 0;
     virtual void setStateEx(const char * text) = 0;
     virtual void setAgentSession(__int64 sessionId) = 0;
-    virtual void setAgentPID(unsigned pid) = 0;
     virtual void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned __int64 max) = 0;
     virtual void setTracingValue(const char * propname, const char * value) = 0;
     virtual void setTracingValueInt(const char * propname, int value) = 0;

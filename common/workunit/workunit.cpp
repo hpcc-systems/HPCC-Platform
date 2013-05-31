@@ -640,7 +640,7 @@ public:
     virtual unsigned __int64 getHash() const;
     virtual IStringIterator *getLogs(const char *type, const char *component) const;
     virtual IStringIterator *getProcesses(const char *type) const;
-    virtual IPropertyTreeIterator& getProcesses(const char *type, const char *component) const;
+    virtual IPropertyTreeIterator& getProcesses(const char *type, const char *instance) const;
 
     virtual bool getWuDate(unsigned & year, unsigned & month, unsigned& day);
     virtual IStringVal & getSnapshot(IStringVal & str) const;
@@ -706,7 +706,6 @@ public:
     void setState(WUState state);
     void setStateEx(const char * text);
     void setAgentSession(__int64 sessionId);
-    void setAgentPID(unsigned pid);
     void setSecurityToken(const char *value);
     void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned __int64 max);
     void setTracingValue(const char * propname, const char * value);
@@ -1169,8 +1168,6 @@ public:
             { c->setStateEx(text); }
     virtual void setAgentSession(__int64 sessionId)
             { c->setAgentSession(sessionId); }
-    virtual void setAgentPID(unsigned pid)
-            { c->setAgentPID(pid); }
     virtual void setTimerInfo(const char * name, const char * instance, unsigned ms, unsigned count, unsigned __int64 max)
             { c->setTimerInfo(name, instance, ms, count, max); }
     virtual void setTracingValue(const char * propname, const char * value)
@@ -3664,12 +3661,6 @@ void CLocalWorkUnit::setAgentSession(__int64 sessionId)
 {
     CriticalBlock block(crit);
     p->setPropInt64("@agentSession", sessionId);
-}
-
-void CLocalWorkUnit::setAgentPID(unsigned pid)
-{
-    CriticalBlock block(crit);
-    p->setPropInt("@agentPID", pid);
 }
 
 bool CLocalWorkUnit::aborting() const 

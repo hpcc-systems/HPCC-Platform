@@ -1837,7 +1837,6 @@ void EclAgent::doProcess()
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
             w->addTimeStamp("EclAgent", GetCachedHostName(), "Started");
-            w->setAgentPID(GetCurrentProcessId());
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());
