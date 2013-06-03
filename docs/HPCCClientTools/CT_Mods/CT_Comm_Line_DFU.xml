@@ -25,7 +25,7 @@
       <title>Command Line Interface</title>
 
       <sect2 id="DFUPlusexe">
-        <title><emphasis>DFUPlus.exe</emphasis></title>
+        <title><emphasis>dfuplus.exe</emphasis></title>
 
         <para><emphasis role="bold">dfuplus </emphasis><emphasis>
         </emphasis><emphasis role="bold">action=</emphasis><emphasis>operation
@@ -54,7 +54,7 @@
                 <entry>Optional. The name of a file containing necessary
                 <emphasis>options</emphasis>. If omitted and no command line
                 <emphasis>options</emphasis> are specified, the appropriate
-                <emphasis>options</emphasis> must be in the DFUPLUS.INI
+                <emphasis>options</emphasis> must be in the dfuplus.ini
                 file.</entry>
               </row>
 
@@ -66,20 +66,20 @@
                 <emphasis>operation</emphasis> being executed. If omitted and
                 no <emphasis>@filename</emphasis> is specified, the
                 appropriate <emphasis>options</emphasis> must be in the
-                DFUPLUS.INI file.</entry>
+                dfuplus.ini file.</entry>
               </row>
             </tbody>
           </tgroup>
         </informaltable>
 
-        <para>The <emphasis role="bold">DFUPlus.exe</emphasis> application
+        <para>The <emphasis role="bold">dfuplus.exe</emphasis> application
         accepts command line parameters to send to the Distributed File
         Utility (DFU) engine via the ESP server. These
         <emphasis>options</emphasis> can be specified on the command line, in
-        the <emphasis>@filename</emphasis>, in the DFUPLUS.INI file, or any
+        the <emphasis>@filename</emphasis>, in the dfuplus.ini file, or any
         combination. Command line <emphasis>options</emphasis> override any in
         the nominated <emphasis>@filename</emphasis>, which in turn override
-        any in the DFUPLUS.INI file.</para>
+        any in the dfuplus.ini file.</para>
 
         <sect3>
           <title>General Options:</title>
@@ -235,11 +235,12 @@
         <?hard-pagebreak ?>
 
         <sect3>
-          <title>DFUPLUS.INI</title>
+          <title>dfuplus.ini</title>
 
           <para>Any <emphasis>options</emphasis> can be specified in a file
-          called DFUPLUS.INI. Options that rarely change should be put in the
-          DFUPLUS.INI file. For example:</para>
+          called dfuplus.ini. If your operating system is case-sensitive, make
+          sure the filename is in lowercase. Options that rarely change can be
+          put in the dfuplus.ini file. For example:</para>
 
           <programlisting>server=http://10.150.50.12:8010
 username=rlor
@@ -247,7 +248,7 @@ password=password
 overwrite=1
 replicate=1</programlisting>
 
-          <para>In all the examples below, we'll assume DFUPLUS.INI has the
+          <para>In all the examples below, we'll assume dfuplus.ini has the
           above content.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="0">
@@ -262,8 +263,8 @@ replicate=1</programlisting>
                     scale="noin" /></entry>
 
                     <entry>We do not recommend storing your password in the
-                    INI file (which is clear text). The password is included
-                    in the INI file for these examples to simplify the example
+                    ini file (which is clear text). The password is included
+                    in the ini file for these examples to simplify the example
                     code.</entry>
                   </row>
                 </tbody>
@@ -456,16 +457,16 @@ replicate=1</programlisting>
           <para>Examples:</para>
 
           <programlisting>//fixed spray example:
-C:\&gt;dfuplus action=spray srcip=10.150.50.14
+dfuplus action=spray srcip=10.150.50.14
           srcfile=c:\import\timezones.txt dstname=RTTEMP::timezones.txt
           dstcluster=thor format=fixed recordsize=155
 
 //fixed spray example using a srcxml file:
-C:\&gt;dfuplus action=spray srcxml=c:\import\flattimezones.xml
+dfuplus action=spray srcxml=c:\import\flattimezones.xml
           dstname=RTTEMP::timezones.txt dstcluster=thor recordsize=155
 
 //csv spray example:
-C:\&gt;dfuplus action=spray srcip=10.150.50.14
+dfuplus action=spray srcip=10.150.50.14
           srcfile=c:\import\timezones.csv dstname=RTTEMP::timezones.csv
           dstcluster=thor format=csv
 
@@ -496,18 +497,18 @@ C:\&gt;dfuplus action=spray srcip=10.150.50.14
 // multiple source files into a single logical file
 // in this case, zip._1_of_3, zip._2_of_3, and zip._3_of_3
           into zip1:
-C:\&gt;dfuplus action=spray srcxml=spray.xml
+dfuplus action=spray srcxml=spray.xml
           dstcluster=thordstname=RTTEMP::myzip1 recordsize=5
 
 //xml spray example:
-C:\&gt;dfuplus action=spray srcip=10.150.50.14
+dfuplus action=spray srcip=10.150.50.14
           srcfile=c:\import\timezones.xml dstname=RTTEMP::timezones.xml
           dstcluster=thor format=xml rowtag=area
 
 //Multiple spray all .JPG and .BMP files under
 // c:\import on 10.150.51.26 to single logical file
           LE::imagedb:
-C:\&gt;dfuplus action=spray srcip=10.150.51.26
+dfuplus action=spray srcip=10.150.51.26
           srcfile=c:\import\*.jpg,c:\import\*.bmp
 
 dstcluster=le_thor dstname=LE::imagedb overwrite=1
@@ -609,7 +610,7 @@ END;</programlisting>
 
           <para>Examples:</para>
 
-          <programlisting>C:\&gt;dfuplus action=despray dstip=10.150.50.14
+          <programlisting>dfuplus action=despray dstip=10.150.50.14
    dstfile=c:\import\despray\timezones.txt srcname=RTTEMP::timezones.txt
 //the spray.xml file contains:
 &lt;File directory="c:\import\"
@@ -635,7 +636,7 @@ size="165"/&gt;
 //despray example using the above spray.xml file to split a single
 // logical file into multiple destination files
 // in this case, zip._1_of_3, zip._2_of_3, and zip._3_of_3 from zip1:
-C:\&gt;dfuplus action=despray dstxml=spray.xml dstcluster=thor
+dfuplus action=despray dstxml=spray.xml dstcluster=thor
           srcname=RTTEMP::myzip1
 
 
@@ -646,7 +647,7 @@ DATA image; //first 4 bytes contain the length of the image data
           END;
 
 //you can despray into its component files like this:
-C:\&gt;dfuplus action=dspray srcname=le::imagedb
+dfuplus action=dspray srcname=le::imagedb
           dstip=10.150.51.26 dstfile=c:\export\
           splitprefix=FILENAME,FILESIZE
 </programlisting>
@@ -660,7 +661,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
           from all the nodes of the cluster), typically from one cluster to
           another. It appropriately handles re-distributing the file parts if
           the source and destination clusters do not have the same number of
-          nodes. It may also be used to copy files from other LexisNexis HPCC
+          nodes. It may also be used to copy files from other HPCC
           environments (using the <emphasis>srcdali</emphasis> option).</para>
 
           <para>These <emphasis>options </emphasis>are used by the <emphasis
@@ -723,7 +724,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=copy srcname=RTTEMP::timezones.txt
+          <programlisting>dfuplus action=copy srcname=RTTEMP::timezones.txt
           dstname=srcname=RTTEMP::COPY::timezones.txt dstcluster=thor</programlisting>
         </sect3>
 
@@ -763,7 +764,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
               </tgroup>
             </informaltable> Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=remove name=RTTEMP::timezones.txt</programlisting>
+          <programlisting>dfuplus action=remove name=RTTEMP::timezones.txt</programlisting>
 
           <para></para>
         </sect3>
@@ -801,7 +802,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=rename srcname=RTTEMP::timezones.txt dstname=RTTEMP::NewTimezones.txt</programlisting>
+          <programlisting>dfuplus action=rename srcname=RTTEMP::timezones.txt dstname=RTTEMP::NewTimezones.txt</programlisting>
         </sect3>
 
         <sect3>
@@ -832,7 +833,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=list name=*</programlisting>
+          <programlisting>dfuplus action=list name=*</programlisting>
         </sect3>
 
         <sect3>
@@ -920,7 +921,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=add srcxml=flattimezones.xml dstname=flattimezones.txt</programlisting>
+          <programlisting>dfuplus action=add srcxml=flattimezones.xml dstname=flattimezones.txt</programlisting>
 
           <para></para>
         </sect3>
@@ -972,7 +973,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=addsuper superfile=mysuper subfiles=file1,file2</programlisting>
+          <programlisting>dfuplus action=addsuper superfile=mysuper subfiles=file1,file2</programlisting>
         </sect3>
 
         <sect3>
@@ -1024,7 +1025,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=removesuper superfile=mysuper subfiles=file1,file2</programlisting>
+          <programlisting>dfuplus action=removesuper superfile=mysuper subfiles=file1,file2</programlisting>
         </sect3>
 
         <sect3>
@@ -1058,7 +1059,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=listsuper superfile=mysuper</programlisting>
+          <programlisting>dfuplus action=listsuper superfile=mysuper</programlisting>
         </sect3>
 
         <sect3>
@@ -1087,7 +1088,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
               </tgroup>
             </informaltable>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=status wuid=W20050309-093020</programlisting>
+          <programlisting>dfuplus action=status wuid=W20050309-093020</programlisting>
 
           <para></para>
         </sect3>
@@ -1120,7 +1121,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=abort wuid=W20050309-093020</programlisting>
+          <programlisting>dfuplus action=abort wuid=W20050309-093020</programlisting>
 
           <para></para>
         </sect3>
@@ -1154,7 +1155,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=resubmit wuid=W20050309-093020</programlisting>
+          <programlisting>dfuplus action=resubmit wuid=W20050309-093020</programlisting>
 
           <para></para>
         </sect3>
@@ -1200,7 +1201,7 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=savexml srcname=RTTEMP::timezones.txt
+          <programlisting>dfuplus action=savexml srcname=RTTEMP::timezones.txt
           dstxml=flattimezones.xml
     // this results in the following XML file:
     &lt;File directory="c:\thordata\rttemp"
@@ -1336,11 +1337,11 @@ C:\&gt;dfuplus action=dspray srcname=le::imagedb
 
           <para>Example:</para>
 
-          <programlisting>C:\&gt;dfuplus action=monitor event=MyEvent ip=edata10 file=/dz/arr.txt
-C:\&gt;dfuplus action=monitor event=MyEvent ip=10.150.10.75
+          <programlisting>dfuplus action=monitor event=MyEvent ip=edata10 file=/dz/arr.txt
+dfuplus action=monitor event=MyEvent ip=10.150.10.75
             file=c:\dz\* shotlimit=-1 sub=1
-C:\&gt;dfuplus action=monitor event=MyEvent file=//10.15.13.21/dz/*.txt
-C:\&gt;dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
+dfuplus action=monitor event=MyEvent file=//10.15.13.21/dz/*.txt
+dfuplus action=monitor event=MyEvent lfn=RTTEMP::OUT::MyFile</programlisting>
         </sect3>
       </sect2>
     </sect1>
