@@ -1789,9 +1789,10 @@ protected:
     StringAttr physicalName;
     Owned<IDistributedFile> dFile; // NULL on copies serialized to slaves. Note that this implies we keep a lock on dali file for the lifetime of this object.
     CDateTime fileTimeStamp;
-    RoxieFileType fileType;
     offset_t fileSize;
     unsigned fileCheckSum;
+    RoxieFileType fileType;
+    bool isSuper;
 
     StringArray subNames;
     PointerIArrayOf<IFileDescriptor> subFiles; // note - on slaves, the file descriptors may have incomplete info. On originating server is always complete
@@ -1841,6 +1842,7 @@ public:
         cached = NULL;
         fileSize = 0;
         fileCheckSum = 0;
+        isSuper = false;
         if (dFile)
         {
             if (traceLevel > 5)
@@ -1848,6 +1850,7 @@ public:
             IDistributedSuperFile *superFile = dFile->querySuperFile();
             if (superFile)
             {
+                isSuper = true;
                 Owned<IDistributedFileIterator> subs = superFile->getSubFileIterator(true);
                 ForEach(*subs)
                 {
@@ -1910,6 +1913,10 @@ public:
             contents.append(subNames.item(idx));
         }
         return subNames.length();
+    }
+    virtual bool isSuperFile() const
+    {
+        return isSuper;
     }
     inline bool isKey() const
     {
