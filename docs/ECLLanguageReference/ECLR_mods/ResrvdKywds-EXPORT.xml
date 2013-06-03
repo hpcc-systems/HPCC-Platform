@@ -6,27 +6,68 @@
 
   <para><emphasis role="bold">EXPORT<indexterm>
       <primary>EXPORT</primary>
-    </indexterm> </emphasis><emphasis>definition</emphasis></para>
+    </indexterm> </emphasis> <emphasis role="bold">[ VIRTUAL ]</emphasis>
+  <emphasis>definition</emphasis></para>
 
-  <para><emphasis>definition</emphasis> A definition.</para>
+  <para><informaltable colsep="1" frame="all" rowsep="1">
+      <tgroup cols="2">
+        <colspec colwidth="79.35pt" />
 
-  <para>The <emphasis role="bold">EXPORT </emphasis>keyword<indexterm>
-      <primary>EXPORT keyword</primary>
-    </indexterm> explicitly allows other definitions to import the specified
-  <emphasis>definition</emphasis>. Definitions not explicitly flagged for
-  export are local to the folder within which they reside. Without either the
-  SHARED or EXPORT keywords, a <emphasis>definitions's</emphasis> scope is
-  limited to the next SHARED or EXPORT.</para>
+        <colspec colwidth="309.45pt" />
+
+        <tbody>
+          <row>
+            <entry><emphasis role="bold">VIRTUAL</emphasis><indexterm>
+                <primary>VIRTUAL EXPORT</primary>
+              </indexterm></entry>
+
+            <entry>Optional. Specifies the <emphasis>definition</emphasis> is
+            VIRTUAL. Valid only inside a MODULE Structure.</entry>
+          </row>
+
+          <row>
+            <entry><emphasis>definition</emphasis></entry>
+
+            <entry>A valid definition.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </informaltable></para>
+
+  <para>The <emphasis role="bold">EXPORT </emphasis>keyword explicitly allows
+  other definitions to import the specified <emphasis>definition</emphasis>
+  for use. It may be IMPORTed from code in any folder, therefore its
+  visibility scope is global.</para>
+
+  <para>ECL code is stored in .ecl text files which may only contain a single
+  EXPORT or SHARED definition. This definition may be a structure that allows
+  EXPORT or SHARED definitions within their boundaries (such as MODULE,
+  INTERFACE, TYPE, etc.). The name of the .ecl file containing the code must
+  exactly match the name of the single EXPORT (or SHARED) definition that it
+  contains. </para>
+
+  <para>Definitions without the EXPORT or SHARED keywords are local to the
+  file within which they reside (see <link
+  linkend="Attribute_Visibility">Definition Visibility</link>). A local
+  <emphasis>definition's</emphasis> scope is limited to the next SHARED or
+  EXPORT definition, therefore they must precede that file's EXPORT or SHARED
+  definition.</para>
 
   <para>Example:</para>
 
-  <programlisting>EXPORT MyAttribute := 5;
+  <programlisting>EXPORT MyDefinition := 5;
+// allows other definitions to use MyModule.MyDefinition if they import MyModule
+// the filename must be MyDefinition.ecl
 
-// allows other definitions to use MyModule.MyAttribute if they import
-// MyModule</programlisting>
+//and in AnotherDef.ecl we have this code:
+EXPORT AnotherDef := MODULE(x)
+  EXPORT INTEGER a := c * 3;
+  EXPORT INTEGER b := 2;
+  EXPORT VIRTUAL INTEGER c := 3; //this def is VIRTUAL
+END;</programlisting>
 
   <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
   linkend="SHARED">SHARED</link>, <link
-  linkend="Attribute_Visibility">Attribute Visibility</link>, <link
-  linkend="MODULE_Structure">MODULE</link></para>
+  linkend="Attribute_Visibility">Definition Visibility</link>, <link
+  linkend="MODULE_Structure">MODULE Structure</link></para>
 </sect1>
