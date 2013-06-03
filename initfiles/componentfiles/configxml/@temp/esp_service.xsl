@@ -263,6 +263,29 @@ xmlns:seisint="http://seisint.com"  xmlns:set="http://exslt.org/sets" exclude-re
         <xsl:copy-of select="@adlLogDirectory[.!='']"/>
         <xsl:copy-of select="@FeatureFlags[.!='']"/>
         <xsl:choose>
+           <xsl:when test="$serviceType='DynamicESDL'">
+                <xsl:element name="ESDL">
+                    <xsl:attribute name="service">
+                        <xsl:value-of select="@esdlservice" />
+                    </xsl:attribute>
+
+                    <xsl:element name="XMLFile">
+                        <xsl:value-of select="@XMLFile" />
+                    </xsl:element>
+
+                    <xsl:element name="Methods">
+                        <xsl:for-each select="./MethodConfiguration">
+                            <Method name="{@name}" queryname="{@queryname}" querytype="{@querytype}" url="{@url}"  username="{@username}" password="{@password}" />
+                        </xsl:for-each>
+                    </xsl:element>
+                </xsl:element>
+                <Gateways>
+                    <xsl:for-each select="Gateways">
+						<Gateway name="{@name}" url="{@url}"  username="{@username}" password="{@password}" />
+                    </xsl:for-each>
+                </Gateways>
+            </xsl:when>
+
             <xsl:when test="$serviceType='WsAutoUpdate'">
                 <xsl:for-each select="@path|@downloadUrl|@successUrl|@errorUrl|@daysValid">
                     <xsl:if test="string(.) != ''">

@@ -74,7 +74,7 @@ static const char* getTypeKindName(type_kind kind)
     }
 };
 
-const char *type_name[] = 
+const char *type_name[] =
 {
     "??",
     "char",
@@ -98,7 +98,7 @@ const char *type_name[] =
     "??" // ESPENUM
 };
 
-const int type_size[] = 
+const int type_size[] =
 {
     1,
     1,
@@ -121,7 +121,7 @@ const int type_size[] =
     1  // ESP_ENUM
 };
 
-static const char *xlattable[] = 
+static const char *xlattable[] =
 {
     "abs","_abs",
     "add","_add",
@@ -280,7 +280,7 @@ void voutf(const char* fmt,va_list args)
     // Better to use StringBuffer.valist_appendf, but unfortunately, project dependencies
     // disallow us to use StringBuffer (defined in jlib).
     if (_vsnprintf(buf, BUF_LEN, fmt, args)<0)
-        fprintf(stderr,"Warning: outf() gets too many long buffer (>%d)", BUF_LEN);     
+        fprintf(stderr,"Warning: outf() gets too many long buffer (>%d)", BUF_LEN);
     va_end(args);
 
     outs(buf);
@@ -296,14 +296,14 @@ void outf(const char *fmt, ...)
 void outf(int indents, const char *fmt, ...)
 {
     indent(indents);
-    
+
     va_list args;
     va_start(args, fmt);
-    voutf(fmt,args);    
+    voutf(fmt,args);
 }
 
 // ------------------------------------
-// "auto" indenting 
+// "auto" indenting
 
 int gIndent = 0;
 
@@ -331,7 +331,7 @@ void indentOuts1(int inc, const char* s)
 void indentOutf(const char* fmt, ...)
 {
     indent(gIndent);
-    
+
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
@@ -341,7 +341,7 @@ void indentOutf(int inc, const char* fmt, ...)
 {
     gIndent += inc;
     indent(gIndent);
-    
+
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
@@ -350,7 +350,7 @@ void indentOutf(int inc, const char* fmt, ...)
 void indentOutf1(int inc, const char* fmt, ...)
 {
     indent(gIndent+inc);
-    
+
     va_list args;
     va_start(args, fmt);
     voutf(fmt,args);
@@ -379,7 +379,7 @@ ParamInfo::ParamInfo()
     templ=NULL;
     typname=NULL;
     size = NULL;
-    flags = 0;      
+    flags = 0;
     next = NULL;
     kind = TK_null;
     sizebytes = NULL;
@@ -401,7 +401,7 @@ ParamInfo::~ParamInfo()
         free(xsdtype);
     if (m_arrayImplType)
         delete m_arrayImplType;
-    while (layouts) 
+    while (layouts)
     {
         LayoutInfo *l=layouts;
         layouts = l->next;
@@ -409,7 +409,7 @@ ParamInfo::~ParamInfo()
     }
 }
 
-char * ParamInfo::bytesize(int deref) 
+char * ParamInfo::bytesize(int deref)
 {
     if (!size)
         return NULL;
@@ -418,7 +418,7 @@ char * ParamInfo::bytesize(int deref)
     char str[1024];
     if (type_size[kind]==1)
     {
-        if (deref) 
+        if (deref)
         {
             strcpy(str,"*");
             strcat(str,size);
@@ -471,7 +471,7 @@ void ParamInfo::cat_type(char *s,int deref,int var)
     else {
         if (kind!=TK_null)
             strcat(s,type_name[kind]);
-        else 
+        else
             strcat(s,"string"); // TODO: why this happens?
     }
     if (!deref) {
@@ -483,7 +483,7 @@ void ParamInfo::cat_type(char *s,int deref,int var)
 }
 
 clarion_special_type_enum ParamInfo::clarion_special_type()
-{   
+{
     if ((type_size[kind]==1)&&((flags&(PF_PTR|PF_REF))==PF_PTR)) {
         if ((flags&PF_CONST)==0)
             return cte_cstr;
@@ -564,10 +564,10 @@ void ParamInfo::write_body_struct_elem(int ref)
 {
     outs("\t");
     out_type(ref,1);
-    if (ref&&(flags&(PF_REF|PF_PTR))) 
+    if (ref&&(flags&(PF_REF|PF_PTR)))
     {
         outs(" *");
-        if ((flags&(PF_REF|PF_PTR))==(PF_REF|PF_PTR)) 
+        if ((flags&(PF_REF|PF_PTR))==(PF_REF|PF_PTR))
         {
             outs(" *");
         }
@@ -591,14 +591,14 @@ static esp_xlate_info esp_xlate_table[]=
 {
     //meta type                 xsd type                implementation      array impl      access type             type_kind           flags               method
     //------------------        ---------------         --------------      --------------  --------------          -----------         ------------        ----------
-    
+
 //  {"string",                  "string",               "StringBuffer",     "StringArray",  "const char *",         TK_CHAR,            (PF_PTR|PF_CONST),  EAM_jsbuf},
     {"string",                  "string",               "StringBuffer",     "StringArray",  "const char *",         TK_CHAR,            (PF_PTR|PF_CONST),  EAM_jsbuf},
     {"StringBuffer",            "string",               "StringBuffer",     "StringArray",  "const char *",         TK_CHAR,            (PF_PTR|PF_CONST),  EAM_jsbuf},
 //  {"hexBinary",               "base64Binary",         "MemoryBuffer",     "???",          "unsigned char *",      TK_UNSIGNEDCHAR,    (PF_PTR),           EAM_jmbuf},
     {"binary",                  "base64Binary",         "MemoryBuffer",     "???",          "const MemoryBuffer &", TK_STRUCT,          (PF_REF),           EAM_jmbin},
-    {"bool",                    "boolean",              "bool",             "BoolArray",    "bool",                 TK_BOOL,            0,                  EAM_basic}, 
-    {"boolean",                 "boolean",              "bool",             "BoolArray",    "bool",                 TK_BOOL,            0,                  EAM_basic}, 
+    {"bool",                    "boolean",              "bool",             "BoolArray",    "bool",                 TK_BOOL,            0,                  EAM_basic},
+    {"boolean",                 "boolean",              "bool",             "BoolArray",    "bool",                 TK_BOOL,            0,                  EAM_basic},
     {"decimal",                 "decimal",              "float",            "???",          "float",                TK_FLOAT,           0,                  EAM_basic},
     {"float",                   "float",                "float",            "FloatArray",   "float",                TK_FLOAT,           0,                  EAM_basic},
     {"double",                  "double",               "double",           "DoubleArray",  "double",               TK_DOUBLE,          0,                  EAM_basic},
@@ -619,7 +619,7 @@ static esp_xlate_info esp_xlate_table[]=
     {"normalizedString",        "normalizedString",     "StringBuffer",     "StringArray",  "const char *",         TK_CHAR,            (PF_PTR|PF_CONST),  EAM_jsbuf},
     {"xsdString",               "string",               "StringBuffer",     "StringArray",  "const char *",         TK_CHAR,            (PF_PTR|PF_CONST),  EAM_jsbuf},
     {"xsdBinary",               "binary",               "MemoryBuffer",     "???",          "const MemoryBuffer &", TK_STRUCT,          (PF_REF),           EAM_jmbin},
-    {"xsdBoolean",              "boolean",              "bool",             "???",          "bool",                 TK_BOOL,            0,                  EAM_basic}, 
+    {"xsdBoolean",              "boolean",              "bool",             "???",          "bool",                 TK_BOOL,            0,                  EAM_basic},
     {"xsdDecimal",              "decimal",              "float",            "???",          "float",                TK_FLOAT,           0,                  EAM_basic},
     {"xsdInteger",              "integer",              "int",              "???",          "int",                  TK_INT,             0,                  EAM_basic},
     {"xsdByte",                 "byte",                 "unsigned char",    "???",          "unsigned char",        TK_UNSIGNEDCHAR,    0,                  EAM_basic},
@@ -667,7 +667,7 @@ esp_xlate_info *esp_xlat(const char *from, bool defaultToString)
 {
     if (from)
     {
-        for (unsigned i=0; esp_xlate_table[i].meta_type!=NULL; i++) 
+        for (unsigned i=0; esp_xlate_table[i].meta_type!=NULL; i++)
         {
             if (stricmp(from,esp_xlate_table[i].meta_type)==0)
                 return &esp_xlate_table[i];
@@ -683,12 +683,12 @@ static char* getToBeDefinedType(const char* type)
 {
     const char* colon = strchr(type, ':');
     const char* bareType = colon ? colon+1 : type;
-    
+
     if (strnicmp(type, "xsd",colon-type)==0)
         return NULL;
 
     /*
-    for (unsigned i=0; esp_xlate_table[i].meta_type!=NULL; i++) 
+    for (unsigned i=0; esp_xlate_table[i].meta_type!=NULL; i++)
     {
         if (stricmp(bareType,esp_xlate_table[i].xsd_type)==0)
             return NULL;
@@ -720,15 +720,15 @@ static const char *MetaTypeToXsdType(const char *val)
 bool hasMetaVerInfo(MetaTagInfo *list, const char* tag)
 {
     double ver = getMetaDouble(list,tag,-1);
-    if (ver>0) 
+    if (ver>0)
         return true;
 
     const char* vs = getMetaString(list,tag, NULL);
-    if (vs!=NULL) 
+    if (vs!=NULL)
         return true;
 
     const char* id = getMetaConstId(list,tag,NULL);
-    if (id) 
+    if (id)
         return true;
 
     return false;
@@ -764,9 +764,9 @@ static esp_xlate_info *esp_xlat(ParamInfo *pi)
 {
     char metatype[256];
     *metatype=0;
-    
+
     pi->cat_type(metatype);
-    
+
     return esp_xlat(metatype);
 }
 
@@ -774,11 +774,11 @@ void ParamInfo::setXsdType(const char *value)
 {
     if (xsdtype)
         free(xsdtype);
-    
+
     const char *newValue=value;
     if (strncmp(value, "xsd", 3)==0)
         newValue=MetaTypeToXsdType(value);
-    
+
     xsdtype = (newValue!=NULL) ? strdup(newValue) : NULL;
 }
 
@@ -790,10 +790,10 @@ const char *ParamInfo::getXsdType()
         char metatype[256];
         *metatype=0;
         cat_type(metatype);
-        
+
         setXsdType(MetaTypeToXsdType(metatype));
     }
-    
+
     return xsdtype;
 }
 
@@ -805,8 +805,8 @@ const char* ParamInfo::getArrayImplType()
     if (isPrimitiveArray())
     {
         char metatype[256];
-        metatype[0] = 0;        
-        cat_type(metatype);     
+        metatype[0] = 0;
+        cat_type(metatype);
         esp_xlate_info *xlation=esp_xlat(metatype, false);
         m_arrayImplType = new StrBuffer(xlation->array_type);
     }
@@ -817,7 +817,7 @@ const char* ParamInfo::getArrayImplType()
         else
             m_arrayImplType = new VStrBuffer("IArrayOf<IConst%s>", typname);
     }
-    
+
     return m_arrayImplType->str();
 }
 
@@ -842,11 +842,11 @@ const char* ParamInfo::getArrayItemXsdType()
 
     case TK_null: return "string";
 
-    case TK_STRUCT: 
-    case TK_VOID: 
-    case TK_ESPSTRUCT: 
-    case TK_ESPENUM: 
-    default: throw "Unimplemented"; 
+    case TK_STRUCT:
+    case TK_VOID:
+    case TK_ESPSTRUCT:
+    case TK_ESPENUM:
+    default: throw "Unimplemented";
     }
 }
 
@@ -877,7 +877,7 @@ ProcInfo::~ProcInfo()
     free(conntimeout);
     free(calltimeout);
     delete rettype;
-    while (params) 
+    while (params)
     {
         ParamInfo *p=params;
         params = p->next;
@@ -928,7 +928,7 @@ ModuleInfo::ModuleInfo(const char *n)
 ModuleInfo::~ModuleInfo()
 {
     free(name);
-    while (procs) 
+    while (procs)
     {
         ProcInfo *p=procs;
         procs = p->next;
@@ -1003,8 +1003,6 @@ EspMessageInfo *EspMethodInfo::getRequestInfo()
     return NULL;
 }
 
-
-
 static EspMethodInfo* sortMethods(EspMethodInfo* ms)
 {
     if (ms==NULL)
@@ -1055,8 +1053,8 @@ void EspServInfo::sortMethods()
 
 char* getTargetBase(const char* outDir, const char* src)
 {
-    if (outDir && *outDir) 
-    { 
+    if (outDir && *outDir)
+    {
         int dirlen = strlen(outDir);
         int srclen = strlen(src);
         char* buf = (char*)malloc(dirlen+srclen+5);
@@ -1070,12 +1068,12 @@ char* getTargetBase(const char* outDir, const char* src)
         strcpy(buf,outDir);
 
         int len = strlen(buf);
-        if (buf[len-1]=='/' || buf[len-1]=='\\') 
+        if (buf[len-1]=='/' || buf[len-1]=='\\')
         {
             buf[len-1]=0;
             len--;
         }
-        
+
         // now buf has the directory name for output: make the directory if not exist
         es_createDirectory(buf);
 
@@ -1100,7 +1098,7 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
     includes=NULL;
     methods=NULL;
     versions = NULL;
-    
+
     splitFilename(sourceFile, NULL, NULL, &name, NULL);
 
 
@@ -1113,7 +1111,7 @@ ESDLcompiler::ESDLcompiler(const char * sourceFile,const char *outDir)
         exit(1);
     }
     packagename = es_gettail(sourceFile);
-    
+
     char* targetBase = getTargetBase(outDir, sourceFile);
 
     esxdlo = es_createFile(targetBase,"xml");
@@ -1152,38 +1150,38 @@ void ESDLcompiler::write_esxdl()
     outf("<esxdl name=\"%s\">\n", name.str());
 
     VersionInfo * vi;
-    for (vi=versions;vi;vi=vi->next) 
+    for (vi=versions;vi;vi=vi->next)
     {
         vi->write_esxdl();
     }
 
     IncludeInfo * ii;
-    for (ii=includes;ii;ii=ii->next) 
+    for (ii=includes;ii;ii=ii->next)
     {
         ii->write_esxdl();
     }
 
     EspMessageInfo * mi;
-    for (mi=msgs;mi;mi=mi->next) 
+    for (mi=msgs;mi;mi=mi->next)
     {
         mi->write_esxdl();
     }
-    
+
     EspServInfo *si;
-    for (si=servs;si;si=si->next) 
+    for (si=servs;si;si=si->next)
     {
         si->write_esxdl();
     }
-    
+
     if (methods)
     {
         EspMethodInfo *sm;
-        for (sm=methods;sm;sm=sm->next) 
+        for (sm=methods;sm;sm=sm->next)
         {
             sm->write_esxdl();
         }
     }
-    
+
     outs("</esxdl>");
 
 

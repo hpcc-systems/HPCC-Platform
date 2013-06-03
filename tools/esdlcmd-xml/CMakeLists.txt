@@ -14,43 +14,51 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: esdl 
+# Component: esdlcmd-xml
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for esdl
+#    Cmake Input File for esdlcmd-xml
 #####################################################
 
-
-project( esdl ) 
+project( esdl-xml )
 
 add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/esdlgram.cpp ${CMAKE_CURRENT_BINARY_DIR}/esdlgram.h
     COMMAND ${bisoncmdprefix} ${bisoncmd} --defines=${CMAKE_CURRENT_BINARY_DIR}/esdlgram.h --output=${CMAKE_CURRENT_BINARY_DIR}/esdlgram.cpp ${CMAKE_CURRENT_SOURCE_DIR}/esdlgram.y
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/esdlgram.y
 )
 
-add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp 
+add_custom_command ( OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp
     COMMAND ${flexcmdprefix} ${flexcmd} --outfile=${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp ${CMAKE_CURRENT_SOURCE_DIR}/esdllex.l
     DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/esdllex.l
 )
 
-set ( SRCS 
-        ${CMAKE_CURRENT_BINARY_DIR}/esdlgram.cpp 
-        ${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp 
-        ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp 
+set ( SRCS
+        ${CMAKE_CURRENT_BINARY_DIR}/esdlgram.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/esdllex.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/esdlcomp.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/esdl_utils.cpp 
+        ${CMAKE_CURRENT_SOURCE_DIR}/esdl_utils.cpp
     )
 
-include_directories ( 
+include_directories (
          ${CMAKE_CURRENT_BINARY_DIR}   # for generated .h file
-         ${HPCC_SOURCE_DIR}/system/include 
+         ${HPCC_SOURCE_DIR}/system/include
          ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
 ADD_DEFINITIONS( -D_CONSOLE -O0 )
 
-HPCC_ADD_EXECUTABLE ( esdl ${SRCS} )
-#install ( TARGETS esdl RUNTIME DESTINATION ${EXEC_DIR} )
+HPCC_ADD_EXECUTABLE ( esdl-xml ${SRCS} )
 
+# The tool esdl-xml is built in HPCCPlatform as a build-time
+# pre-req. But it is not distributed in CE packages.
+if ("${BUILD_LEVEL}" STREQUAL "ENTERPRISE")
+    MESSAGE("----INSTALLING ESDL-XML")
+    install ( TARGETS esdl-xml RUNTIME DESTINATION ${EXEC_DIR} )
+    if ( UNIX )
+        install ( PROGRAMS esdl-xml.install DESTINATION etc/init.d/install COMPONENT Runtime )
+        install ( PROGRAMS esdl-xml.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
+    endif ( UNIX )
+endif()
