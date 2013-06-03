@@ -8645,7 +8645,7 @@ IHqlScope * CHqlVirtualScope::clone(HqlExprArray & children, HqlExprArray & symb
 extern HQL_API bool isVirtualSymbol(IHqlExpression * expr)
 {
     IHqlNamedAnnotation * symbol = static_cast<IHqlNamedAnnotation *>(expr->queryAnnotation());
-    if (symbol && symbol->getAnnotationKind() == annotate_symbol);
+    if (symbol && symbol->getAnnotationKind() == annotate_symbol)
         return symbol->isVirtual();
     return false;
 }
