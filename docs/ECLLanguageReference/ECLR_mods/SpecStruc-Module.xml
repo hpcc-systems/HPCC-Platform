@@ -112,17 +112,21 @@
     <itemizedlist>
       <listitem>
         <para>Local definitions are visible only through the next EXPORT or
-        SHARED definition.</para>
+        SHARED definition (including <emphasis>members</emphasis> of the
+        nested MODULE structure, if the next EXPORT or SHARED definition is a
+        MODULE).</para>
       </listitem>
 
       <listitem>
-        <para>SHARED definitions are visible only within the MODULE
-        structure.</para>
+        <para>SHARED definitions are visible to all subsequent definitions in
+        the structure (including <emphasis>members</emphasis> of any nested
+        MODULE structures) but not outside of it.</para>
       </listitem>
 
       <listitem>
-        <para>EXPORT definitions are visible within the MODULE structure and
-        outside of it.</para>
+        <para>EXPORT definitions are visible within the MODULE structure
+        (including <emphasis>members</emphasis> of any subsequent nested
+        MODULE structures) and outside of it .</para>
       </listitem>
     </itemizedlist>
 
@@ -133,33 +137,40 @@
     <emphasis>member</emphasis> named MyDefinition, you would reference that
     <emphasis>definition</emphasis> as:</para>
 
-    <para><programlisting>MyModule.MyModuleStructure.MyDefinition</programlisting></para>
+    <para><programlisting>MyModule.MyModuleStructure.MyDefinition
+
+MyMod := MODULE
+  SHARED x := 88;
+  y := 42;
+  EXPORT InMod := MODULE //nested MODULE
+    EXPORT Val1 := x + 10;
+    EXPORT Val2 := y + 10;
+  END;
+END;
+
+MyMod.InMod.Val1;
+MyMod.InMod.Val2;</programlisting></para>
   </sect2>
 
   <sect2 id="Side-Effect_Actions">
     <title>MODULE Side-Effect Actions</title>
 
-    <para>Actions contained in the MODULE have the following semantics:</para>
+    <para>Side-effect Actions are allowed in the MODULE only by using the WHEN
+    function, as in this example:</para>
 
-    <itemizedlist>
-      <listitem>
-        <para>Any action immediately preceding a
-        <emphasis>definition</emphasis> is added as a side-effect of that
-        <emphasis>definition</emphasis>.</para>
-      </listitem>
-
-      <listitem>
-        <para>Actions cannot precede the following structured definition
-        types: TRANSFORM, RECORD, MODULE, TYPE, and MACRO.</para>
-      </listitem>
-
-      <listitem>
-        <para>Generally the action will be executed once if the definition is
-        used. Where definitions are used in a conditional context (for
-        example, inside PERSISTed definitions or conditional actions) they may
-        be executed more than once.</para>
-      </listitem>
-    </itemizedlist>
+    <programlisting>//An Example with a side-effect action 
+EXPORT customerNames := MODULE 
+  EXPORT Layout := RECORD 
+    STRING20 surname;  
+    STRING10 forename; 
+    INTEGER2 age := 25; 
+  END; 
+  Act := OUTPUT('customer file used by user &lt;x&gt;'); 
+  EXPORT File := WHEN(DATASET([{'x','y',22}],Layout),Act); 
+END; 
+BOOLEAN doIt := TRUE : STORED('doIt'); 
+IF (doIt, OUTPUT(customerNames.File));
+//This code produces two results: the dataset, and the string</programlisting>
   </sect2>
 
   <sect2 id="Concrete_vs_Abstract_Modules">
@@ -287,18 +298,6 @@ filtered := filterDataset(TRUE);
 OUTPUT(filtered.included('Halliday'),,NAMED('Included'));
 OUTPUT(filterDataset(true).excluded('Halliday'),,NAMED('Excluded'));
           
-//An Example with a side-effect action
-  EXPORT customerNames := MODULE
-    EXPORT Layout := RECORD
-      STRING20 surname;
-      STRING10 forename;
-      INTEGER2 age := 25;
-    END;
-    OUTPUT('customer file used by user &lt;x&gt;');
-    EXPORT File := DATASET([{'x','y',22}],Layout);
-END;
-BOOLEAN doIt := TRUE : STORED('doIt');
-IF (doIt, OUTPUT(customerNames.File));
           
 //VIRTUAL examples
 Mod1 := MODULE,VIRTUAL //a fully abstract module
