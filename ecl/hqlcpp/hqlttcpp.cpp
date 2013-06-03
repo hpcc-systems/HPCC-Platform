@@ -2695,6 +2695,9 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             //Be careful about the persist scaling factors though.
             //SORT partitions should be supported once they are persisted by the system
             IHqlExpression * leftDistribution = queryDistribution(leftDs);
+            if (matchesAnyDistribution(leftDistribution))
+                return appendOwnedOperand(expr, createLocalAttribute());
+
             if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, leftSorts, true))
             {
                 //MORE: May need a flag to stop this - to prevent issues with skew.
