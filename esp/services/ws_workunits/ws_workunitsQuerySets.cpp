@@ -971,7 +971,7 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
         if (!result)
             return false;
 
-        Owned<IPropertyTreeIterator> files = result->getElements("Endpoint/Queries/Query/File");
+        Owned<IPropertyTreeIterator> files = result->getElements("Endpoint/Queries/Query//File");
         ForEach (*files)
         {
             IPropertyTree &file = files->query();
@@ -980,6 +980,14 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
                 logicalFiles.append(fileName);
         }
 
+        Owned<IPropertyTreeIterator> superFiles = result->getElements("Endpoint/Queries/Query/SuperFile");
+        ForEach (*superFiles)
+        {
+            IPropertyTree &file = superFiles->query();
+            const char* fileName = file.queryProp("@name");
+            if (fileName && *fileName)
+                logicalFiles.append(fileName);
+        }
         return true;
     }
     catch(IMultiException *me)
