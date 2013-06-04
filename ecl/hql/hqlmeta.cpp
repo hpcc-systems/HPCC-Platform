@@ -1462,6 +1462,10 @@ bool matchDedupDistribution(IHqlExpression * distn, const HqlExprArray & equalit
     return !includesFieldsOutsideGrouping(distn, cloned);
 }
 
+bool matchesAnyDistribution(IHqlExpression * distn)
+{
+    return distn == queryAnyDistributionAttribute();
+}
 
 //---------------------------------------------------------------------------
 
@@ -1539,16 +1543,21 @@ IHqlExpression * createMatchingDistribution(IHqlExpression * expr, const HqlExpr
         break;
     case no_attr:
     case no_attr_expr:
-        if (expr->queryName() == internalAtom)
         {
-            //HASH,internal - only valid if the types of the old and new sorts match exactly
-            ForEachItemIn(i, oldSort)
+            _ATOM name = expr->queryName();
+            if (name == internalAtom)
             {
-                if (oldSort.item(i).queryType() != newSort.item(i).queryType())
-                    return NULL;
+                //HASH,internal - only valid if the types of the old and new sorts match exactly
+                ForEachItemIn(i, oldSort)
+                {
+                    if (oldSort.item(i).queryType() != newSort.item(i).queryType())
+                        return NULL;
+                }
             }
+            else if (expr == cacheAnyAttribute)
+                return NULL;
+            break;
         }
-        break;
     default:
         return NULL;
     }

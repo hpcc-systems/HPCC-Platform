@@ -69,6 +69,7 @@ extern HQL_API bool isSortedForGroup(IHqlExpression * table, IHqlExpression *sor
 extern HQL_API IHqlExpression * ensureSortedForGroup(IHqlExpression * table, IHqlExpression *sortList, bool isLocal, bool alwaysLocal, bool allowSubSort);
 
 extern HQL_API bool matchDedupDistribution(IHqlExpression * distn, const HqlExprArray & equalities);
+extern HQL_API bool matchesAnyDistribution(IHqlExpression * distn);
 
 extern HQL_API bool appearsToBeSorted(ITypeInfo * type, bool isLocal, bool ignoreGrouping);
 extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
