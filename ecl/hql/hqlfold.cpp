@@ -609,7 +609,12 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
             throw MakeStringException(ERR_SVC_NOLIBRARY,"Missing library for function folding");
         return NULL;
     }
-    ensureFileExtension(lib, SharedObjectExtension);
+
+    if (!pathExtension(lib))
+    {
+        lib.insert(0, SharedObjectPrefix);
+        ensureFileExtension(lib, SharedObjectExtension);
+    }
 
     const char * entrypoint = entry.toCharArray();
     const char * library = lib.toCharArray();
