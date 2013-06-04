@@ -71,7 +71,6 @@ void CEclAgentExecutionServer::start(StringBuffer & codeDir)
         //Build logfile from component properties settings
         Owned<IComponentLogFileCreator> lf = createComponentLogFileCreator(properties, "eclagent");
         lf->setCreateAliasFile(false);
-        lf->setMsgFields(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code);
         lf->beginLogging();
         PROGLOG("Logging to %s",lf->queryLogFileSpec());
     }

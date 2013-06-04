@@ -20,8 +20,6 @@
 #ifndef JLOG_HPP
 #define JLOG_HPP
 
-// Control whether a clock is provided
-#define JLOG_PROVIDES_CLOCK
 // Control whether XML reports have newlines between category/system/job/text sections
 #ifdef _DEBUG
 #define LOG_MSG_NEWLINE
@@ -206,7 +204,7 @@ typedef enum
     MSGFIELD_code        = 0x001000,
     MSGFIELD_milliTime   = 0x002000,
     MSGFIELD_microTime   = 0x004000,
-    MSGFIELD_nanoTime    = 0x008000,
+    MSGFIELD_nanoTime    = 0x008000,  // Not supported
     MSGFIELD_component   = 0x010000,
     MSGFIELD_quote       = 0x020000,
     MSGFIELD_prefix      = 0x040000,
@@ -214,7 +212,11 @@ typedef enum
     MSGFIELD_all         = 0xFFFFFF
 } LogMsgField;
 
+#ifdef _WIN32
 #define MSGFIELD_STANDARD LogMsgField(MSGFIELD_timeDate | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix)
+#else
+#define MSGFIELD_STANDARD LogMsgField(MSGFIELD_timeDate | MSGFIELD_milliTime | MSGFIELD_msgID | MSGFIELD_process | MSGFIELD_thread | MSGFIELD_code | MSGFIELD_quote | MSGFIELD_prefix)
+#endif
 
 inline const char * LogMsgFieldToString(LogMsgField field)
 {
@@ -299,6 +301,8 @@ inline unsigned LogMsgFieldFromAbbrev(char const * abbrev)
         return MSGFIELD_component;
     if(strnicmp(abbrev, "QUO", 3)==0)
         return MSGFIELD_quote;
+    if(strnicmp(abbrev, "PFX", 3)==0)
+        return MSGFIELD_prefix;
     if(strnicmp(abbrev, "ALL", 3)==0)
         return MSGFIELD_all;
     if(strnicmp(abbrev, "STD", 3)==0)
@@ -379,26 +383,30 @@ class jlib_decl LogMsgSysInfo
 public:
     LogMsgSysInfo(LogMsgId _id = (LogMsgId)-1, unsigned port = 0, LogMsgSessionId session = UnknownSession);
     inline LogMsgId           queryMsgID() const { return id; }
+#ifdef _WIN32
     inline time_t             queryTime() const { return timeStarted; }
+    inline unsigned           queryUSecs() const { return 0; }
+#else
+    inline time_t             queryTime() const { return timeStarted.tv_sec; }
+    inline unsigned           queryUSecs() const { return timeStarted.tv_usec; }
+#endif
     inline unsigned           queryProcessID() const { return processID; }
     inline unsigned           queryThreadID() const { return threadID; }
     inline LogMsgSessionId    querySessionID() const { return sessionID; }
     inline const SocketEndpoint * queryNode() const { return &node; }
-#ifdef JLOG_PROVIDES_CLOCK
-    inline __int64            queryClock() const { return nanoTime; }
-#endif
     void                      serialize(MemoryBuffer & out) const;
     void                      deserialize(MemoryBuffer & in);
 private:
     LogMsgId                  id;
-    time_t                    timeStarted;
+#ifdef _WIN32
+    time_t                     timeStarted;
+#else
+    struct timeval            timeStarted;
+#endif
     unsigned                  processID;
     unsigned                  threadID;
     LogMsgSessionId           sessionID;
-    SocketEndpoint              node;
-#ifdef JLOG_PROVIDES_CLOCK
-    __int64                   nanoTime;
-#endif
+    SocketEndpoint            node;
 };
 
 // Info about job generating log message, provided by user (this info is dynamic, determined at run-time)
