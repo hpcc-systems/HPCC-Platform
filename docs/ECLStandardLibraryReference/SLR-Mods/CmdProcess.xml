@@ -55,6 +55,6 @@
 
   <programlisting format="linespecific">IMPORT STD;
    
-OUTPUT(STD.System.Util.CmdProcess('echo','George Jetson'));
+OUTPUT(STD.System.Util.CmdProcess('cat','George Jetson'));
 </programlisting>
 </sect1>

@@ -12,16 +12,16 @@
       <primary>SprayFixed</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
   role="bold">, </emphasis> <emphasis>sourcepath, recordsize,
-  destinationgroup,</emphasis> <emphasis> destinationlogicalname </emphasis>
-  <emphasis role="bold">[</emphasis> <emphasis>,timeout</emphasis> <emphasis
-  role="bold">] [</emphasis> <emphasis>, espserverIPport </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis> </emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>, maxConnections </emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>, allowoverwrite </emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>, replicate </emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis> <emphasis>,
-  compress </emphasis> <emphasis role="bold">])</emphasis>
-  <emphasis></emphasis></para>
+  destinationgroup,</emphasis> <emphasis> destinationlogicalname </emphasis> ,
+  <emphasis role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
+  role="bold">] </emphasis> ,<emphasis role="bold"> [</emphasis> <emphasis>
+  espserverIPport </emphasis> <emphasis role="bold">]</emphasis> ,<emphasis
+  role="bold"> [</emphasis> <emphasis> maxConnections </emphasis> <emphasis
+  role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis> <emphasis>
+  allowoverwrite </emphasis> <emphasis role="bold">]</emphasis> ,<emphasis
+  role="bold"> [</emphasis> <emphasis> replicate </emphasis> <emphasis
+  role="bold">]</emphasis> ,<emphasis role="bold"> [</emphasis> <emphasis>
+  compress </emphasis> <emphasis role="bold">])</emphasis></para>
 
   <para><emphasis>dfuwuid</emphasis> <emphasis role="bold"> :=
   STD.File.fSprayFixed<indexterm>
@@ -32,15 +32,15 @@
       <primary>fSprayFixed</primary>
     </indexterm>(</emphasis> <emphasis> sourceIP </emphasis> <emphasis
   role="bold">, </emphasis> <emphasis>sourcepath, recordsize,</emphasis>
-  <emphasis> destinationgroup, destinationlogicalname </emphasis> <emphasis
-  role="bold">[</emphasis> <emphasis>,timeout</emphasis> <emphasis
-  role="bold">]</emphasis> <emphasis role="bold"> [</emphasis> <emphasis>,
+  <emphasis> destinationgroup, destinationlogicalname </emphasis> , <emphasis
+  role="bold">[</emphasis> <emphasis>timeout</emphasis> <emphasis
+  role="bold">]</emphasis> , <emphasis role="bold"> [</emphasis> <emphasis>
   espserverIPport </emphasis> <emphasis role="bold">]</emphasis> <emphasis>
-  </emphasis> <emphasis role="bold">[</emphasis> <emphasis>, maxConnections
-  </emphasis> <emphasis role="bold">]</emphasis> <emphasis role="bold">
-  [</emphasis> <emphasis>, allowoverwrite </emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>, replicate </emphasis> <emphasis role="bold">]
-  [</emphasis> <emphasis>, compress </emphasis> <emphasis
+  </emphasis> , <emphasis role="bold">[</emphasis> <emphasis> maxConnections
+  </emphasis> <emphasis role="bold">]</emphasis> , <emphasis role="bold">
+  [</emphasis> <emphasis> allowoverwrite </emphasis> <emphasis role="bold">] ,
+  [</emphasis> <emphasis> replicate </emphasis> <emphasis role="bold">] ,
+  [</emphasis> <emphasis> compress </emphasis> <emphasis
   role="bold">]);</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
