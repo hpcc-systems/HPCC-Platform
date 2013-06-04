@@ -17,6 +17,8 @@
 
 
 #include "platform.h"
+#include "build-config.h"
+
 #include <algorithm>
 #include "stdio.h"
 #include "jlog.hpp"
@@ -25,6 +27,7 @@
 #include "jarray.hpp"
 #include "jsocket.hpp"
 #include "jmisc.hpp"
+#include "jprop.hpp"
 
 #define MSGCOMP_NUMBER 1000
 #define FILE_LOG_ENABLES_QUEUEUING
@@ -50,26 +53,34 @@ static FILE *getNullHandle()
 LogMsgSysInfo::LogMsgSysInfo(LogMsgId _id, unsigned port, LogMsgSessionId session)
 {
     id = _id;
+#ifdef _WIN32
+    // Hack for the fact that Windows doesn't handle gettimeofday
+    // Subsecond timing granularities in log files will not be available
     time(&timeStarted);
+#else
+    gettimeofday(&timeStarted, NULL);
+#endif
     processID = GetCurrentProcessId();
     threadID = threadLogID();
     sessionID = session;
     node.setLocalHost(port);
-#ifdef JLOG_PROVIDES_CLOCK
-    nanoTime = cycle_to_nanosec(get_cycles_now()) % CLOCK_LOOP_NANOSECONDS;
-#endif
 }
 
 void LogMsgSysInfo::serialize(MemoryBuffer & out) const
 {
-    out.append(id).append((unsigned)timeStarted).append(processID).append(threadID).append(sessionID); node.serialize(out);
+    out.append(id).append((unsigned) queryTime()).append(processID).append(threadID).append(sessionID); node.serialize(out);
 }
 
 void LogMsgSysInfo::deserialize(MemoryBuffer & in)
 {
     unsigned t;
     in.read(id).read(t).read(processID).read(threadID).read(sessionID); node.deserialize(in);
+#ifdef _WIN32
     timeStarted = t;
+#else
+    timeStarted.tv_sec = t;
+    timeStarted.tv_usec = 0;  // For back-compatibility reasons, the subsecond timings are not serialized
+#endif
 }
 
 // LogMsg
@@ -96,7 +107,15 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
             strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
             out.append(timeString);
         }
-        if(fields & MSGFIELD_time)
+        if(fields & MSGFIELD_microTime)
+        {
+            out.appendf("%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
+        }
+        else if(fields & MSGFIELD_milliTime)
+        {
+            out.appendf("%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
+        }
+        else if(fields & MSGFIELD_time)
         {
             strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
             out.append(timeString);
@@ -117,14 +136,6 @@ StringBuffer & LogMsg::toStringPlain(StringBuffer & out, unsigned fields) const
         sysInfo.queryNode()->getUrlStr(out);
         out.append(" ");
     }
-#ifdef JLOG_PROVIDES_CLOCK
-    if(fields & MSGFIELD_nanoTime)
-        out.appendf("%"I64F"dns ", sysInfo.queryClock());
-    else if(fields & MSGFIELD_microTime)
-        out.appendf("%"I64F"dus ", sysInfo.queryClock()/1000);
-    else if(fields & MSGFIELD_milliTime)
-        out.appendf("%"I64F"dms  ", sysInfo.queryClock()/1000000);
-#endif
     if(fields & MSGFIELD_job)
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("job=unknown ");
@@ -176,7 +187,15 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
             strftime(timeString, 20, "date=\"%Y-%m-%d\" ", &timeStruct);
             out.append(timeString);
         }
-        if(fields & MSGFIELD_time)
+        if(fields & MSGFIELD_microTime)
+        {
+            out.appendf("time=\"%02d:%02d:%02d.%06d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
+        }
+        else if(fields & MSGFIELD_milliTime)
+        {
+            out.appendf("time=\"%02d:%02d:%02d.%03d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
+        }
+        else if(fields & MSGFIELD_time)
         {
             strftime(timeString, 20, "time=\"%H:%M:%S\" ", &timeStruct);
             out.append(timeString);
@@ -197,14 +216,6 @@ StringBuffer & LogMsg::toStringXML(StringBuffer & out, unsigned fields) const
         sysInfo.queryNode()->getUrlStr(out);
         out.append("\" ");
     }
-#ifdef JLOG_PROVIDES_CLOCK
-    if(fields & MSGFIELD_nanoTime)
-        out.append("Clock=\"").append(sysInfo.queryClock()).append("ns\" ");
-    else if(fields & MSGFIELD_microTime)
-        out.append("Clock=\"").append(sysInfo.queryClock()/1000).append("us\" ");
-    else if(fields & MSGFIELD_milliTime)
-        out.append("Clock=\"").append(sysInfo.queryClock()/1000000).append("ms\" ");
-#endif
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allSysInfo) out.append("\n     ");
 #endif
@@ -250,7 +261,15 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
             strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
             out.append(timeString);
         }
-        if(fields & MSGFIELD_time)
+        if(fields & MSGFIELD_microTime)
+        {
+            out.appendf("%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
+        }
+        else if(fields & MSGFIELD_milliTime)
+        {
+            out.appendf("%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
+        }
+        else if(fields & MSGFIELD_time)
         {
             strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
             out.append(timeString);
@@ -271,14 +290,6 @@ StringBuffer & LogMsg::toStringTable(StringBuffer & out, unsigned fields) const
         sysInfo.queryNode()->getUrlStr(out);
         out.appendN(20 + len - out.length(), ' ');
     }
-#ifdef JLOG_PROVIDES_CLOCK
-    if(fields & MSGFIELD_nanoTime)
-        out.appendf("%13"I64F"d ", sysInfo.queryClock());
-    else if(fields & MSGFIELD_microTime)
-        out.appendf("%10"I64F"d ", sysInfo.queryClock()/1000);
-    else if(fields & MSGFIELD_milliTime)
-        out.appendf("%7"I64F"d  ", sysInfo.queryClock()/1000000);
-#endif
     if(fields & MSGFIELD_job)
         if(jobInfo.queryJobID() == UnknownJob)
             out.append("unknown ");
@@ -317,7 +328,7 @@ StringBuffer & LogMsg::toStringTableHead(StringBuffer & out, unsigned fields)
         out.append("   MsgID ");
     if(fields & MSGFIELD_date)
         out.append("      Date ");
-    if(fields & MSGFIELD_time)
+    if(fields & (MSGFIELD_microTime | MSGFIELD_milliTime | MSGFIELD_time))
         out.append("    Time ");
     if(fields & MSGFIELD_process)
         out.append("  PID ");
@@ -327,14 +338,6 @@ StringBuffer & LogMsg::toStringTableHead(StringBuffer & out, unsigned fields)
         out.append("      SessionID      ");
     if(fields & MSGFIELD_node)
         out.append("               Node ");
-#ifdef JLOG_PROVIDES_CLOCK
-    if(fields & MSGFIELD_nanoTime)
-        out.append("     Clock/ns ");
-    else if(fields & MSGFIELD_microTime)
-        out.append("  Clock/us ");
-    else if(fields & MSGFIELD_milliTime)
-        out.append("Clock/ms ");
-#endif
     if(fields & MSGFIELD_job)
         out.append("  JobID ");
     if(fields & MSGFIELD_user)
@@ -366,7 +369,15 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
             strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
             fputs(timeString, handle);
         }
-        if(fields & MSGFIELD_time)
+        if(fields & MSGFIELD_microTime)
+        {
+            fprintf(handle, "%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
+        }
+        else if(fields & MSGFIELD_milliTime)
+        {
+            fprintf(handle, "%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
+        }
+        else if(fields & MSGFIELD_time)
         {
             strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
             fputs(timeString, handle);
@@ -387,14 +398,6 @@ void LogMsg::fprintPlain(FILE * handle, unsigned fields) const
         sysInfo.queryNode()->getUrlStr(buff);
         fprintf(handle, "%s ", buff.str());
     }
-#ifdef JLOG_PROVIDES_CLOCK
-    if(fields & MSGFIELD_nanoTime)
-        fprintf(handle, "%"I64F"dns ", sysInfo.queryClock());
-    else if(fields & MSGFIELD_microTime)
-        fprintf(handle, "%"I64F"dus ", sysInfo.queryClock()/1000);
-    else if(fields & MSGFIELD_milliTime)
-        fprintf(handle, "%"I64F"dms ", sysInfo.queryClock()/1000000);
-#endif
     if(fields & MSGFIELD_job)
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "job=unknown ");
@@ -441,7 +444,15 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
             strftime(timeString, 20, "date=\"%Y-%m-%d\" ", &timeStruct);
             fputs(timeString, handle);
         }
-        if(fields & MSGFIELD_time)
+        if(fields & MSGFIELD_microTime)
+        {
+            fprintf(handle, "time=\"%02d:%02d:%02d.%06d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
+        }
+        else if(fields & MSGFIELD_milliTime)
+        {
+            fprintf(handle, "time=\"%02d:%02d:%02d.%03d\" ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
+        }
+        else if(fields & MSGFIELD_time)
         {
             strftime(timeString, 20, "time=\"%H:%M:%S\" ", &timeStruct);
             fputs(timeString, handle);
@@ -462,14 +473,6 @@ void LogMsg::fprintXML(FILE * handle, unsigned fields) const
         sysInfo.queryNode()->getUrlStr(buff);
         fprintf(handle, "Node=\"%s\" ", buff.str());
     }
-#ifdef JLOG_PROVIDES_CLOCK
-    if(fields & MSGFIELD_nanoTime)
-        fprintf(handle, "Clock=\"%"I64F"d ns\" ", sysInfo.queryClock());
-    else if(fields & MSGFIELD_nanoTime)
-        fprintf(handle, "Clock=\"%"I64F"d us\" ", sysInfo.queryClock()/1000);
-    else if(fields & MSGFIELD_nanoTime)
-        fprintf(handle, "Clock=\"%"I64F"d ms\" ", sysInfo.queryClock()/1000000);
-#endif
 #ifdef LOG_MSG_NEWLINE
     if(fields & MSGFIELD_allSysInfo) fprintf(handle, "\n     ");
 #endif
@@ -514,7 +517,15 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
             strftime(timeString, 12, "%Y-%m-%d ", &timeStruct);
             fputs(timeString, handle);
         }
-        if(fields & MSGFIELD_time)
+        if(fields & MSGFIELD_microTime)
+        {
+            fprintf(handle, "%02d:%02d:%02d.%06d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs());
+        }
+        else if(fields & MSGFIELD_milliTime)
+        {
+            fprintf(handle, "%02d:%02d:%02d.%03d ", timeStruct.tm_hour, timeStruct.tm_min, timeStruct.tm_sec, sysInfo.queryUSecs()/1000);
+        }
+        else if(fields & MSGFIELD_time)
         {
             strftime(timeString, 12, "%H:%M:%S ", &timeStruct);
             fputs(timeString, handle);
@@ -536,14 +547,6 @@ void LogMsg::fprintTable(FILE * handle, unsigned fields) const
         sysInfo.queryNode()->getUrlStr(buff);
         fprintf(handle, "%s%s", buff.str(), (buff.length()<=20) ? twenty_spaces+buff.length() : "");
     }
-#ifdef JLOG_PROVIDES_CLOCK
-    if(fields & MSGFIELD_nanoTime)
-        fprintf(handle, "%13"I64F"d ", sysInfo.queryClock());
-    else if(fields & MSGFIELD_microTime)
-        fprintf(handle, "%10"I64F"d ", sysInfo.queryClock()/1000);
-    else if(fields & MSGFIELD_milliTime)
-        fprintf(handle, "%7"I64F"d  ", sysInfo.queryClock()/1000000);
-#endif
     if(fields & MSGFIELD_job)
         if(jobInfo.queryJobID() == UnknownJob)
             fprintf(handle, "unknown ");
@@ -586,14 +589,6 @@ void LogMsg::fprintTableHead(FILE * handle, unsigned fields)
         fprintf(handle, "      SessionID      ");
     if(fields & MSGFIELD_node)
         fprintf(handle, "               Node ");
-#ifdef JLOG_PROVIDES_CLOCK
-    if(fields & MSGFIELD_nanoTime)
-        fprintf(handle, "     Clock/ns ");
-    else if(fields & MSGFIELD_microTime)
-        fprintf(handle, "  Clock/us ");
-    else if(fields & MSGFIELD_milliTime)
-        fprintf(handle, "Clock/ms ");
-#endif
     if(fields & MSGFIELD_job)
         fprintf(handle, "  JobID ");
     if(fields & MSGFIELD_user)
@@ -1001,14 +996,14 @@ void RollingFileLogMsgHandler::doRollover(bool daily, const char *forceName) con
 BinLogMsgHandler::BinLogMsgHandler(const char * _filename, bool _append) : filename(_filename), append(_append)
 {
     file.setown(createIFile(filename.get()));
-    if(!file) assertex(!"BinLogMsgHandler::BinLogMsgHanlder : Could not create IFile");
+    if(!file) assertex(!"BinLogMsgHandler::BinLogMsgHandler : Could not create IFile");
     if(append)
         fio.setown(file->open(IFOwrite));
     else
         fio.setown(file->open(IFOcreate));
-    if(!fio) assertex(!"BinLogMsgHandler::BinLogMsgHanlder : Could not create IFileIO");
+    if(!fio) assertex(!"BinLogMsgHandler::BinLogMsgHandler : Could not create IFileIO");
     fstr.setown(createIOStream(fio));
-    if(!fstr) assertex(!"BinLogMsgHandler::BinLogMsgHanlder : Could not create IFileIOStream");
+    if(!fstr) assertex(!"BinLogMsgHandler::BinLogMsgHandler : Could not create IFileIOStream");
     if(append)
         fstr->seek(0, IFSend);
 }
@@ -2634,7 +2629,13 @@ private:
         rolling = true;
         append = true;
         flushes = true;
-        msgFields = MSGFIELD_STANDARD;
+        Owned<IProperties> conf = createProperties(CONFIG_DIR PATHSEPSTR "environment.conf", true);
+        StringBuffer logFields;
+        conf->getProp("logfields", logFields);
+        if (logFields.length())
+            msgFields = LogMsgFieldsFromAbbrevs(logFields);
+        else
+            msgFields = MSGFIELD_STANDARD;
         msgAudiences = MSGAUD_all;
         msgClasses = MSGCLS_all;
         maxDetail = DefaultDetail;
