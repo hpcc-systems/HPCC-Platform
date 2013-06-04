@@ -57,10 +57,10 @@
           <entry>Definitions, which may be EXPORTed or SHARED. These may be
           similar to fields defined in a RECORD structure where only the type
           and name are defined—the expression that defines the value may be
-          left off (except in some cases where the expression defines the type
-          of attribute, like TRANSFORM structures). If no default value is
-          defined for a <emphasis>member</emphasis>, any MODULE derived from
-          the INTERFACE must define a value for that
+          left off (except in some cases where the expression itself defines
+          the type of definition, like TRANSFORM structures). If no default
+          value is defined for a <emphasis>member</emphasis>, any MODULE
+          derived from the INTERFACE must define a value for that
           <emphasis>member</emphasis> before that MODULE can be used. These
           may not include other INTERFACE or abstract MODULE
           structures.</entry>
@@ -74,7 +74,7 @@
   as a single parameter to complex queries, instead of passing each attribute
   individually. It is similar to a MODULE structure with the VIRTUAL option,
   except errors are given for private (not SHARED or EXPORTed)
-  <emphasis>member</emphasis> attributes.</para>
+  <emphasis>member</emphasis> definitions.</para>
 
   <para>An INTERFACE is an abstract structure—a concrete instance must be
   defined before it can be used in a query. A MODULE structure that inherits

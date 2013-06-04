@@ -7172,7 +7172,8 @@ CFileContents::CFileContents(IFile * _file, ISourcePath * _sourcePath) : file(_f
 
 bool CFileContents::preloadFromFile()
 {
-    if (stdIoHandle(file->queryFilename())<0)
+    const char * filename = file->queryFilename();
+    if (stdIoHandle(filename)<0)
     {
         delayedRead = true;
         return true;
@@ -7180,6 +7181,9 @@ bool CFileContents::preloadFromFile()
 
     //Read std input now to prevent blocking or other weird effects.
     Owned<IFileIO> io = file->openShared(IFOread, IFSHread);
+    if (!io)
+        throw MakeStringException(0, "Failed to open input '%s'", filename);
+
     MemoryBuffer mb;
     size32_t rd;
     size32_t sizeRead = 0;
@@ -8641,7 +8645,7 @@ IHqlScope * CHqlVirtualScope::clone(HqlExprArray & children, HqlExprArray & symb
 extern HQL_API bool isVirtualSymbol(IHqlExpression * expr)
 {
     IHqlNamedAnnotation * symbol = static_cast<IHqlNamedAnnotation *>(expr->queryAnnotation());
-    if (symbol && symbol->getAnnotationKind() == annotate_symbol);
+    if (symbol && symbol->getAnnotationKind() == annotate_symbol)
         return symbol->isVirtual();
     return false;
 }

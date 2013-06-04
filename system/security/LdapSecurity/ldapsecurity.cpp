@@ -1255,6 +1255,24 @@ int CLdapSecManager::queryDefaultPermission(ISecUser& user)
     return m_ldap_client->queryDefaultPermission(user);
 }
 
+bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
+{
+    if(m_permissionsCache.isCacheEnabled())
+    {
+        if (!authenticate(&user))
+        {
+            PROGLOG("User %s not authorized to clear permissions cache", user.getName());
+            return false;
+        }
+        if (!isSuperUser(&user))
+        {
+            PROGLOG("User %s denied, only a superuser can clear permissions cache", user.getName());
+            return false;
+        }
+        m_permissionsCache.flush();
+    }
+    return true;
+}
 
 extern "C"
 {

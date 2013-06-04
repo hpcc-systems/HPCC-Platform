@@ -175,6 +175,18 @@ public:
         return 255;
     }
 
+    bool clearPermissionsCache(IUserDescriptor *udesc)
+    {
+        if (!ldapsecurity || ((getLDAPflags() & DLF_ENABLED) == 0))
+            return true;
+        StringBuffer username;
+        StringBuffer password;
+        udesc->getUserName(username);
+        udesc->getPassword(password);
+        Owned<ISecUser> user = ldapsecurity->createUser(username);
+        user->credentials().setPassword(password);
+        return ldapsecurity->clearPermissionsCache(*user);
+    }
     bool checkScopeScans()
     {
         return (ldapflags&DLF_SCOPESCANS)!=0;

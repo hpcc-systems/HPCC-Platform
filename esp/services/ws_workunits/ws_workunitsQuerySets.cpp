@@ -30,7 +30,8 @@
 
 #define DALI_FILE_LOOKUP_TIMEOUT (1000*15*1)  // 15 seconds
 
-const unsigned roxieQueryRoxieTimeOut = 60000;
+const unsigned ROXIECONNECTIONTIMEOUT = 1000;   //1 second
+const unsigned ROXIECONTROLQUERYTIMEOUT = 3000; //3 second
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
@@ -431,7 +432,7 @@ static inline void updateQueryPriority(IPropertyTree *queryTree, const char *val
     }
 }
 
-void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *target, const char *queryid, bool overwrite)
+void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const char *remoteIP, const char *target, const char *queryname, bool overwrite)
 {
     if (!target || !*target)
         return;
@@ -445,7 +446,10 @@ void copyQueryFilesToCluster(IEspContext &context, IConstWorkUnit *cw, const cha
             return;
         Owned<IReferencedFileList> wufiles = createReferencedFileList(context.queryUserId(), context.queryPassword());
         Owned<IHpccPackageSet> ps = createPackageSet(process.str());
-        wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryid);
+        StringBuffer queryid;
+        if (queryname && *queryname)
+            queryname = queryid.append(queryname).append(".0").str(); //prepublish dummy version number to support fuzzy match like queries="myquery.*" in package
+        wufiles->addFilesFromQuery(cw, (ps) ? ps->queryActiveMap(target) : NULL, queryname);
         wufiles->resolveFiles(process.str(), remoteIP, !overwrite, true);
         Owned<IDFUhelper> helper = createIDFUhelper();
         wufiles->cloneAllInfo(helper, overwrite, true);
@@ -588,6 +592,29 @@ bool CWsWorkunitsEx::onWUQuerysets(IEspContext &context, IEspWUQuerysetsRequest 
     return true;
 }
 
+void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, const char *id, IArrayOf<IEspClusterQueryState>& clusterStates)
+{
+    Owned<IEspClusterQueryState> clusterState = createClusterQueryState();
+    clusterState->setCluster(target);
+
+    VStringBuffer xpath("Endpoint/Queries/Query[@id='%s']", id);
+    IPropertyTree *aQuery = queriesOnCluster->getBranch(xpath.str());
+    if (!aQuery)
+    {
+        clusterState->setState("Not Found");
+    }
+    else if (aQuery->getPropBool("@suspended", false))
+    {
+        clusterState->setState("Suspended");
+    }
+    else
+    {
+        clusterState->setState("Available");
+    }
+
+    clusterStates.append(*clusterState.getClear());
+}
+
 void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryInfo, const char *cluster, IPropertyTree *queriesOnCluster)
 {
     queryInfo->setId(query->queryProp("@id"));
@@ -612,25 +639,7 @@ void gatherQuerySetQueryDetails(IPropertyTree *query, IEspQuerySetQuery *queryIn
     if (queriesOnCluster)
     {
         IArrayOf<IEspClusterQueryState> clusters;
-        Owned<IEspClusterQueryState> clusterState = createClusterQueryState();
-        clusterState->setCluster(cluster);
-
-        VStringBuffer xpath("Endpoint/Queries/Query[@id='%s']", query->queryProp("@id"));
-        IPropertyTree *aQuery = queriesOnCluster->getBranch(xpath.str());
-        if (!aQuery)
-        {
-            clusterState->setState("Not Found");
-        }
-        else if (aQuery->getPropBool("@suspended", false))
-        {
-            clusterState->setState("Suspended");
-        }
-        else
-        {
-            clusterState->setState("Available");
-        }
-
-        clusters.append(*clusterState.getClear());
+        addClusterQueryStates(queriesOnCluster, cluster, query->queryProp("@id"), clusters);
         queryInfo->setClusters(clusters);
     }
 }
@@ -774,24 +783,38 @@ void retrieveQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, const char
     retrieveQuerysetDetails(details, registry, type, value, cluster, queriesOnCluster);
 }
 
-void retrieveQuerysetDetailsByCluster(IArrayOf<IEspWUQuerySetDetail> &details, const char *target, const char *queryset, const char *type, const char *value)
+IPropertyTree* getQueriesOnCluster(const char *target, const char *queryset)
 {
+    if (isEmpty(target))
+        target = queryset;
     Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
     if (!info)
         throw MakeStringException(ECLWATCH_CANNOT_RESOLVE_CLUSTER_NAME, "Cluster %s not found", target);
     if (queryset && *queryset && !strieq(target, queryset))
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_ON_CLUSTER, "Target %s and QuerySet %s should match", target, queryset);
+    if (info->getPlatform()!=RoxieCluster)
+        return NULL;
+    const SocketEndpointArray &eps = info->getRoxieServers();
+    if (!eps.length())
+        return NULL;
 
-    Owned<IPropertyTree> queriesOnCluster;
-    if (info->getPlatform()==RoxieCluster)
+    try
     {
-        const SocketEndpointArray &eps = info->getRoxieServers();
-        if (eps.length())
-        {
-            Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), 10000);
-            queriesOnCluster.setown(sendRoxieControlQuery(sock, "<control:queries/>", 5));
-        }
+        Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
+        return sendRoxieControlQuery(sock, "<control:queries/>", ROXIECONTROLQUERYTIMEOUT);
     }
+    catch(IException* e)
+    {
+        StringBuffer err;
+        DBGLOG("Get exception in control:queries: %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+        e->Release();
+        return NULL;
+    }
+}
+
+void retrieveQuerysetDetailsByCluster(IArrayOf<IEspWUQuerySetDetail> &details, const char *target, const char *queryset, const char *type, const char *value)
+{
+    Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(target, queryset);
     retrieveQuerysetDetails(details, target, type, value, target, queriesOnCluster);
 }
 
@@ -829,7 +852,11 @@ bool CWsWorkunitsEx::onWUQuerysetDetails(IEspContext &context, IEspWUQuerySetDet
 
     if (isEmpty(req.getClusterName()) || isEmpty(req.getFilterTypeAsString()) || !strieq(req.getFilterTypeAsString(), "Status") || isEmpty(req.getFilter()))
     {
-        retrieveQuerysetDetails(registry, req.getFilterTypeAsString(), req.getFilter(), respQueries, respAliases);
+        const char* cluster = req.getClusterName();
+        if (isEmpty(cluster))
+            cluster = req.getQuerySetName();
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, req.getQuerySetName());
+        retrieveQuerysetDetails(registry, req.getFilterTypeAsString(), req.getFilter(), respQueries, respAliases, cluster, queriesOnCluster);
 
         resp.setQuerysetQueries(respQueries);
         resp.setQuerysetAliases(respAliases);
@@ -869,6 +896,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
 {
     const char* querySet = req.getQuerySet();
     const char* queryId = req.getQueryId();
+    bool  includeStateOnClusters = req.getIncludeStateOnClusters();
     if (!querySet || !*querySet)
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet not specified");
     if (!queryId || !*queryId)
@@ -911,7 +939,16 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         else
             resp.setActivated(true);
     }
-
+    if (includeStateOnClusters && (version >= 1.43))
+    {
+        Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(querySet, querySet);
+        if (queriesOnCluster)
+        {
+            IArrayOf<IEspClusterQueryState> clusterStates;
+            addClusterQueryStates(queriesOnCluster, querySet, queryId, clusterStates);
+            resp.setClusters(clusterStates);
+        }
+    }
     return true;
 }
 
@@ -934,7 +971,7 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
         if (!result)
             return false;
 
-        Owned<IPropertyTreeIterator> files = result->getElements("Endpoint/Queries/Query/File");
+        Owned<IPropertyTreeIterator> files = result->getElements("Endpoint/Queries/Query//File");
         ForEach (*files)
         {
             IPropertyTree &file = files->query();
@@ -943,6 +980,14 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
                 logicalFiles.append(fileName);
         }
 
+        Owned<IPropertyTreeIterator> superFiles = result->getElements("Endpoint/Queries/Query/SuperFile");
+        ForEach (*superFiles)
+        {
+            IPropertyTree &file = superFiles->query();
+            const char* fileName = file.queryProp("@name");
+            if (fileName && *fileName)
+                logicalFiles.append(fileName);
+        }
         return true;
     }
     catch(IMultiException *me)
@@ -983,7 +1028,13 @@ void expandQueryActionTargetList(IProperties *queryIds, IPropertyTree *queryset,
     {
         const char *itemId = items.item(i).getQueryId();
         if (!isWildString(itemId))
-            queryIds->setProp(itemId, (int) items.item(i).getClientState().getSuspended());
+        {
+            bool suspendedByUser = false;
+            const char *itemSuspendState = items.item(i).getClientState().getSuspended();
+            if (itemSuspendState && (strieq(itemSuspendState, "By User") || strieq(itemSuspendState, "1")))
+                suspendedByUser = true;
+            queryIds->setProp(itemId, suspendedByUser);
+        }
         else
         {
             verifyQueryActionAllowsWild(allowWildChecked, action);

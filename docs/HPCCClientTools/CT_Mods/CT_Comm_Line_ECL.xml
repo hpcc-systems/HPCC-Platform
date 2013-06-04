@@ -25,7 +25,7 @@
       <title>Command Line Interface</title>
 
       <sect2 id="ECLPlus_exe">
-        <title><emphasis>ECLPlus.exe</emphasis></title>
+        <title><emphasis>eclplus.exe</emphasis></title>
 
         <para><emphasis role="bold">eclplus </emphasis><emphasis> action=
         owner= user= password= cluster= server= queue= timeout=
@@ -75,7 +75,7 @@
                 <row>
                   <entry><emphasis>server=</emphasis></entry>
 
-                  <entry>The URL or IP address of the ECL Watch
+                  <entry>The IP address or DNS name of the ECL Watch
                   server.</entry>
                 </row>
 
@@ -155,23 +155,26 @@
                   /variablename=[(int)|(bool)] valueThe default value type is
                   string unless int or bool is specified (in parentheses
                   preceding the value). The <emphasis>variablename</emphasis>
-                  is the STORED name of an EXL file in your ECL code. </entry>
+                  is the STORED name of an EXL file in your ECL code.</entry>
                 </row>
               </tbody>
             </tgroup>
           </informaltable></para>
 
-        <para>The <emphasis role="bold">ECLPlus</emphasis> executable accepts
+        <para>The <emphasis role="bold">eclplus</emphasis> executable accepts
         command line parameters to send directly to an ECL execution engine.
         These options can be typed directly on the command line, sent using a
-        script or batch file, through an INI file, or any combination.</para>
+        script or batch file, through an <emphasis role="bold">ini</emphasis>
+        file, or any combination.</para>
 
         <sect3 role="brk">
-          <title>ECLPLUS.INI</title>
+          <title>eclplus.ini</title>
 
           <para>All the options can be put directly on the command line, or
-          placed in a file called ECLPLUS.INI. Options that do not change very
-          often should be put in the ini file. For example:</para>
+          placed in a file called eclplus.ini. If your operating system is
+          case-sensitive, make sure the filename is in lowercase. Options that
+          do not change very often can be put in the ini file. For
+          example:</para>
 
           <programlisting>server=10.150.50.12
 cluster=training
@@ -194,8 +197,8 @@ password=password</programlisting>
                     xml:base="../../" /></entry>
 
                     <entry>We do not recommend storing your password in the
-                    INI file (which is clear text). The password is included
-                    in the INI file for these examples to simplify the example
+                    ini file (which is clear text). The password is included
+                    in the ini file for these examples to simplify the example
                     code.</entry>
                   </row>
                 </tbody>
@@ -211,7 +214,7 @@ password=password</programlisting>
           first form you simply put your ECL code on the command line
           itself:</para>
 
-          <programlisting>C:\&gt;Eclplus ecl=1+1
+          <programlisting>eclplus ecl=1+1
             // Result = 2</programlisting>
 
           <para>In the second form, your ECL code is in an input file. For
@@ -228,7 +231,7 @@ output(ds, ,'testdata::namesdb');</programlisting>
 
           <para>Then if you run:</para>
 
-          <programlisting>C:\&gt;Eclplus @dataset.txt</programlisting>
+          <programlisting>eclplus @dataset.txt</programlisting>
 
           <para>A dataset will be created and the result will be written to
           the thor file testdata::namesdb.</para>
@@ -245,7 +248,7 @@ output(ds1);</programlisting>
 
           <para>then run:</para>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt</programlisting>
+          <programlisting>eclplus @datasetquery.txt</programlisting>
 
           <para>You'll get:</para>
 
@@ -259,7 +262,7 @@ Richard Chapman</programlisting>
           <title>Workunit manipulation</title>
 
           <para>A workunit is a data structure that is passed among eclplus,
-          daliserver, and eclserver. It contains realtime information about
+          daliserver, and eclccserver. It contains real-time information about
           the query, so you can control the process of a query by manipulating
           the workunit.</para>
         </sect3>
@@ -269,7 +272,7 @@ Richard Chapman</programlisting>
 
           <para>To list all work units:</para>
 
-          <programlisting>C:\&gt;Eclplus action=list</programlisting>
+          <programlisting>eclplus action=list</programlisting>
 
           <para></para>
 
@@ -288,7 +291,7 @@ W20090226-100958-85552898 yma datasetquery.txt completed</programlisting>
           contains the query, but you can specify the jobname by your self,
           like this:</para>
 
-          <programlisting>C:\&gt;Eclplus jobname=myquery1 @datasetquery.txt</programlisting>
+          <programlisting>eclplus jobname=myquery1 @datasetquery.txt</programlisting>
         </sect3>
 
         <sect3>
@@ -296,7 +299,7 @@ W20090226-100958-85552898 yma datasetquery.txt completed</programlisting>
 
           <para>You can look at specific workunit results, like this:</para>
 
-          <programlisting>C:\&gt;Eclplus action=view wuid=
+          <programlisting>eclplus action=view wuid=
           W20090226-100958-85552898</programlisting>
 
           <para>The output will look like:</para>
@@ -313,7 +316,7 @@ Richard Chapman</programlisting>
           <para>If you want to get all the details describing a workunit, use
           the dump option for the action parameter:</para>
 
-          <programlisting>C:\&gt;Eclplus action=dump wuid= W20090226-100958-85552898</programlisting>
+          <programlisting>eclplus action=dump wuid= W20090226-100958-85552898</programlisting>
 
           <para>See the Workunit Dump section below for the result.</para>
         </sect3>
@@ -323,7 +326,7 @@ Richard Chapman</programlisting>
 
           <para>The thor graph</para>
 
-          <programlisting>C:\&gt;Eclplus action=graph wuid=W20090226-100958-85552898</programlisting>
+          <programlisting>eclplus action=graph wuid=W20090226-100958-85552898</programlisting>
         </sect3>
 
         <sect3>
@@ -332,7 +335,7 @@ Richard Chapman</programlisting>
           <para>If a query is taking an usually long time and you doubt
           something is wrong, you can abort it by:</para>
 
-          <programlisting>C:\&gt;Eclplus action=abort wuid= W20090226-100958-85552898</programlisting>
+          <programlisting>eclplus action=abort wuid= W20090226-100958-85552898</programlisting>
 
           <para>You can use list to find out the wuid the workunit and use
           abort to abort it.</para>
@@ -348,13 +351,13 @@ Richard Chapman</programlisting>
 
           <para>For example:</para>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt timeout=0</programlisting>
+          <programlisting>eclplus @datasetquery.txt timeout=0</programlisting>
 
-          <para>Eclplus will return immediately.</para>
+          <para>eclplus will return immediately.</para>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt timeout=2</programlisting>
+          <programlisting>eclplus @datasetquery.txt timeout=2</programlisting>
 
-          <para>Eclplus will return in 2 seconds.</para>
+          <para>eclplus will return in 2 seconds.</para>
 
           <para>You can list/view the workunit associated with the query to
           monitor its status.</para>
@@ -366,8 +369,8 @@ Richard Chapman</programlisting>
           <para>By default, the result displays on the screen. You can direct
           it to a file, by using the output option:</para>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt output=o1.txt
-C:\&gt;type o1.txt
+          <programlisting>eclplus @datasetquery.txt output=o1.txt
+cat o1.txt
 firstname lastname
 Yanrui Ma
 Richard Taylor
@@ -379,7 +382,7 @@ Richard Chapman</programlisting>
         <sect3>
           <title>csv</title>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=csv
+          <programlisting>eclplus @datasetquery.txt format=csv
 [QUERY 0]
 "Yanrui ","Ma "
 "Richard ","Taylor "
@@ -389,7 +392,7 @@ Richard Chapman</programlisting>
         <sect3>
           <title>csvh</title>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=csvh
+          <programlisting>eclplus @datasetquery.txt format=csvh
 [QUERY 0]
 "firstname","lastname"
 "Yanrui ","Ma "
@@ -400,7 +403,7 @@ Richard Chapman</programlisting>
         <sect3>
           <title>raw</title>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=raw
+          <programlisting>eclplus @datasetquery.txt format=raw
 Yanrui     Ma
 Richard    Taylor
 Richard    Chapman</programlisting>
@@ -409,7 +412,7 @@ Richard    Chapman</programlisting>
         <sect3>
           <title>runecl</title>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=runecl
+          <programlisting>eclplus @datasetquery.txt format=runecl
 [QUERY 0]
 [0]
 firstname -&gt; Yanrui
@@ -425,18 +428,18 @@ lastname -&gt; Chapman</programlisting>
         <sect3>
           <title>bin(ary)</title>
 
-          <programlisting>C:\&gt;Eclplus @datasetquery.txt format=bin
+          <programlisting>eclplus @datasetquery.txt format=bin
 Yanrui Ma Richard Taylor Richard Chapman</programlisting>
         </sect3>
 
         <sect3>
           <title>Running queries in Interactive mode</title>
 
-          <para>Assuming you have the ECLPLUS.INI file as listed above, when
+          <para>Assuming you have the eclplus.ini file as listed above, when
           you run eclplus without any options you will enter interactive
           mode:</para>
 
-          <programlisting>C:\&gt;Eclplus
+          <programlisting>eclplus
 Connected to:
 SDS=172.16.20.13 Queue=eclserver_linux_7way Cluster=linux_7way
 ECL&gt;</programlisting>
@@ -512,13 +515,13 @@ ECL&gt;</programlisting>
                 <row>
                   <entry>exit</entry>
 
-                  <entry>exit ECLPlus</entry>
+                  <entry>exit eclplus</entry>
                 </row>
 
                 <row>
                   <entry>quit</entry>
 
-                  <entry>exit ECLPlus</entry>
+                  <entry>exit eclplus</entry>
                 </row>
 
                 <row>

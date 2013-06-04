@@ -6,14 +6,20 @@
       <primary>Definition Visibility</primary>
     </indexterm></title>
 
-  <para>ECL definitions are organized into modules (directories or folders on
-  disk). Within a module, you may define as many Definitions as needed. An
-  IMPORT statement (see the <emphasis role="bold">IMPORT </emphasis>keyword)
-  identifies any other modules whose visible Definitions will be available for
-  use in the current definition.</para>
+  <para>ECL code, definitions, are stored in .ECL files <indexterm>
+      <primary>.ECL files</primary>
+    </indexterm>in your code repository, which are organized into modules
+  (directories or folders on disk). Each .ECL file may only contain a single
+  EXPORT or SHARED definition (see below) along with any supporting local
+  definitions required to fully define the definition's result. The name of
+  the file and the name of its EXPORT or SHARED definition must exactly
+  match.</para>
 
-  <programlisting>IMPORT AnotherModule; //imports definitions from AnotherModule
-Definition1 := 5;     //as many definitions as needed</programlisting>
+  <para>Within a module (directory or folder on disk), you may have as many
+  EXPORT and/or SHARED definitions as needed. An IMPORT statement (see the
+  <emphasis role="bold">IMPORT </emphasis>keyword) identifies any other
+  modules whose visible definitions will be available for use in the current
+  definition.</para>
 
   <para>The following fundamental definition visibility scopes are available
   in ECL: <emphasis role="bold">"Global," Module</emphasis>, and <emphasis
@@ -27,52 +33,76 @@ Definition1 := 5;     //as many definitions as needed</programlisting>
         <primary>EXPORT</primary>
       </indexterm> (see the <emphasis role="bold">EXPORT</emphasis> keyword)
     are available throughout the module in which they are defined, and
-    throughout any other module that IMPORTs the module (see the <emphasis
+    throughout any other module that IMPORTs that module (see the <emphasis
     role="bold">IMPORT</emphasis> keyword).</para>
 
-    <programlisting>EXPORT Definition1 := 5;
-//make Definition1 available to other modules and
-//also available throughout its own module</programlisting>
+    <programlisting>//inside the Definition1.ecl file (in AnotherModule folder) you have:
+EXPORT Definition1 := 5;  
+   //EXPORT makes Definition1 available to other modules and
+   //also available throughout its own module</programlisting>
   </sect2>
 
   <sect2 id="Module">
     <title>Module</title>
 
-    <para>The scope of the Definitions defined as <emphasis
+    <para>The scope of the definitions defined as <emphasis
     role="bold">SHARED<indexterm>
         <primary>SHARED</primary>
       </indexterm></emphasis> (see the <emphasis role="bold">SHARED</emphasis>
     keyword) is limited to that one module, and are available throughout the
-    module (unlike local Definitions). This allows you to keep private any
-    definitions that are only needed to implement internal
-    functionality.</para>
+    module (unlike local definitions). This allows you to keep private any
+    definitions that are only needed to implement internal functionality.
+    SHARED definitions are used to support EXPORT definitions.</para>
 
-    <programlisting>SHARED Definition1 := 5;
-//Definition1 available throughout its own module, only
-EXPORT Definition2 := Definition1 + 5;
-//make Definition2 available to other modules and
-//also available throughout its own module</programlisting>
+    <programlisting>//inside the Definition2.ecl file you have:
+IMPORT AnotherModule;
+   //makes definitions from AnotherModule available to this code, as needed
+
+SHARED Definition2 := AnotherModule.Definition1 + 5;  
+   //Definition2 available throughout its own module, only
+
+//*****************************************************************************
+//then inside the Definition3.ecl file (in the sam efolder as Definition2) you have:
+IMPORT $;  
+   //makes definitions from the current module available to this code, as needed
+
+EXPORT Definition3 := $.Definition2 + 5;
+  //make Definition3 available to other modules and
+  //also available throughout its own module</programlisting>
   </sect2>
 
   <sect2 id="Local">
     <title>Local</title>
 
-    <para>A Definition defined without either EXPORT or SHARED (see the
-    <emphasis role="bold">EXPORT </emphasis>and <emphasis
-    role="bold">SHARED</emphasis> keywords) is available only to the
-    subsequent Definitions until the next Definition definition with EXPORT or
-    SHARED. This makes them private Definitions used only within the scope of
-    that EXPORT or SHARED Definition. This allows you to keep private any
-    definitions that are only needed to implement internal functionality.
-    Local Definitions are referenced by the Definition name alone; no
-    qualification is needed.</para>
+    <para>A definition without either the EXPORT or SHARED keywords is
+    available only to subsequent definitions, until the end of the next EXPORT
+    or SHARED definition. This makes them private definitions used only within
+    the scope of that one EXPORT or SHARED definition, which allows you to
+    keep private any definitions that are only needed to implement internal
+    functionality. Local definitions definitions are used to support the
+    EXPORT or SHARED definition in whose file they reside. Local definitions
+    are referenced by their definition name alone; no qualification is
+    needed.</para>
 
-    <programlisting>MODULE abc;
-LocalAttr := 5;
-//local -- available through the end of Definition1's definition, only
-SHARED Definition1 := LocalAttr;
-//SHARED terminates scope for LocalAttr
-Definition2 := Definition1 + LocalAttr;
-//INVALID SYNTAX -- LocalAttr is out of scope here</programlisting>
+    <programlisting>//then inside the Definition4.ecl file (in the sam efolder as Definition2) you have:
+IMPORT $;  
+   //makes definitions from the current module available to this code, as needed
+
+LocalDef := 5;
+  //local -- available through the end of Definition4's definition, only
+
+EXPORT Definition4 := LocalDef + 5;
+//EXPORT terminates scope for LocalDef
+
+LocalDef2 := Definition4 + LocalDef;
+  //INVALID SYNTAX -- LocalDef is out of scope here
+  //and any local definitions following the EXPORT
+  //or SHARED definition in the file are meaningless 
+  //since they can never be used by anything
+</programlisting>
   </sect2>
+
+  <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
+  linkend="EXPORT">EXPORT</link>, <link linkend="SHARED">SHARED</link>, <link
+  linkend="MODULE_Structure">MODULE</link></para>
 </sect1>
