@@ -6,6 +6,8 @@ path=${INSTALL_DIR}
 classpath=${INSTALL_DIR}/classes
 runtime=${RUNTIME_PATH}
 lock=${LOCK_PATH}
+# Supported logging fields: AUD,CLS,DET,MID,TIM,DAT,PID,TID,NOD,JOB,USE,SES,COD,MLT,MCT,NNT,COM,QUO,PFX,ALL,STD
+logfields=TIM+DAT+MLT+MID+PID+TID+COD+QUO+PFX
 pid=${PID_PATH}
 log=${LOG_PATH}
 user=${RUNTIME_USER}
