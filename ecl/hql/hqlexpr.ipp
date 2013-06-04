@@ -97,6 +97,8 @@ public:
     void addActiveTable(IHqlExpression * expr);
     void cleanupProduction();
     inline void removeActive(IHqlExpression * expr) { inScopeTables.zap(*expr); }
+    void removeParent(IHqlExpression * expr);
+    void removeActiveRecords();
     void removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right);
     void set(CUsedTables & tables) { tables.set(inScopeTables, newScopeTables); }
 
@@ -783,6 +785,7 @@ class CHqlExternalDatasetCall: public CHqlExternalCall, implements IHqlDataset
 
     virtual IHqlExpression *clone(HqlExprArray &newkids);
     virtual IHqlDataset *queryDataset() { return this; }
+    virtual IHqlExpression * queryExpression() { return this; }
 
 //interface IHqlDataset
     virtual IHqlDataset* queryTable()               { return this; }
@@ -917,6 +920,7 @@ class CHqlDelayedDatasetCall: public CHqlDelayedCall, implements IHqlDataset
     IMPLEMENT_IINTERFACE_USING(CHqlDelayedCall)
 
     virtual IHqlDataset *queryDataset() { return this; }
+    virtual IHqlExpression * queryExpression() { return this; }
 
 //interface IHqlDataset
     virtual IHqlDataset* queryTable()               { return this; }
@@ -1304,6 +1308,7 @@ public:
 //IHqlExpression
     virtual bool assignableFrom(ITypeInfo * source) { type_t tc = source->getTypeCode(); return tc==type_table; }
     virtual IHqlDataset *queryDataset() { return this; }
+    virtual IHqlExpression * queryExpression() { return this; }
 
 //CHqlParameter
 
@@ -1331,6 +1336,7 @@ public:
 //IHqlExpression
     virtual bool assignableFrom(ITypeInfo * source) { type_t tc = source->getTypeCode(); return tc==type_dictionary; }
     virtual IHqlDataset *queryDataset() { return this; }
+    virtual IHqlExpression * queryExpression() { return this; }
 
 //CHqlParameter
 
@@ -1627,6 +1633,7 @@ public:
     static CHqlDataset *makeDataset(node_operator op, ITypeInfo *type, HqlExprArray &operands);
 
     virtual IHqlDataset *queryDataset() { return this; };
+    virtual IHqlExpression * queryExpression() { return this; }
     virtual IHqlSimpleScope *querySimpleScope();
     virtual IHqlDataset* queryTable();
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex);
