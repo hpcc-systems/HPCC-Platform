@@ -142,6 +142,26 @@ StringBuffer &swapPathDrive(StringBuffer &filename,unsigned fromdrvnum,unsigned 
 }
 
 
+const char *pathTail(const char *path)
+{
+    if (!path)
+        return NULL;
+    const char *tail=path;
+    const char *s = path;
+    while (*s)
+        if (isPathSepChar(*(s++)))
+            tail = s;
+    return tail;
+}
+
+const char * pathExtension(const char * path)
+{
+    const char * tail = pathTail(path);
+    if (tail)
+        return strrchr(tail, '.');
+    return NULL;
+}
+
 bool checkFileExists(const char * filename)
 {
 #ifdef _WIN32
