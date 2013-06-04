@@ -1004,7 +1004,6 @@
                pluginsPath="${PLUGINS_PATH}"
                replicateAsync="false"
                replicateOutputs="false"
-               slaves="1"
                watchdogEnabled="true"
                watchdogProgressEnabled="true">
    <Debug/>
