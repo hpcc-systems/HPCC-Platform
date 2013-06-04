@@ -116,12 +116,26 @@ IFvDataSource * createFileDataSource(IDistributedFile * df, const char * logical
         return NULL;
     }
     const char * recordEcl = properties.queryProp("ECL");
-    if (!recordEcl)
-        throwError1(FVERR_NoRecordDescription, logicalName);
+    OwnedHqlExpr diskRecord;
+    if (recordEcl)
+    {
+        diskRecord.setown(parseQuery(recordEcl));
 
-    OwnedHqlExpr diskRecord = parseQuery(recordEcl);
-    if (!diskRecord)
-        throwError1(FVERR_BadRecordDesc, logicalName);
+        if (!diskRecord)
+            throwError1(FVERR_BadRecordDesc, logicalName);
+    }
+    else
+    {
+        size32_t len = (size32_t)properties.getPropInt("@recordSize", 0);
+        if (len)
+        {
+            VStringBuffer recordText("{ string%u contents };", len);
+            diskRecord.setown(parseQuery(recordText));
+        }
+
+        if (!diskRecord)
+            throwError1(FVERR_NoRecordDescription, logicalName);
+    }
 
     Owned<ADataSource> ds;
     try

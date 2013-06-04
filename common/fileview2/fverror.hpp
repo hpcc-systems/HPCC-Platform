@@ -55,7 +55,7 @@
 #define FVERR_RowTooLarge                       2029
 
 #define FVERR_CouldNotResolveX_Text             "Could not resolve file '%s' in DFS"
-#define FVERR_NoRecordDescription_Text          "DFS did not contain record description for '%s'"
+#define FVERR_NoRecordDescription_Text          "DFS did not contain a record description for '%s'"
 #define FVERR_BadRecordDesc_Text                "Could not process record description for '%s'"
 #define FVERR_NeedClusterToBrowseX_Text         "Need queue/cluster to browse file '%s'"
 #define FVERR_TimeoutRemoteFileView_Text        "Connection to file view server timed out"
