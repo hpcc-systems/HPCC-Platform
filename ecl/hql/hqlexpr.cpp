@@ -4796,6 +4796,32 @@ void CUsedTablesBuilder::cleanupProduction()
     }
 }
 
+void CUsedTablesBuilder::removeParent(IHqlExpression * expr)
+{
+    IHqlExpression * sel = expr->queryNormalizedSelector();
+    removeActive(sel);
+
+    loop
+    {
+        IHqlExpression * root = queryRoot(expr);
+        if (!root || root->getOperator() != no_select)
+            break;
+        if (!root->hasProperty(newAtom))
+            break;
+        expr = root->queryChild(0);
+        removeActive(expr->queryNormalizedSelector());
+    }
+}
+
+void CUsedTablesBuilder::removeActiveRecords()
+{
+    ForEachItemInRev(i, inScopeTables)
+    {
+        if (inScopeTables.item(i).isRecord())
+            inScopeTables.remove(i);
+    }
+}
+
 void CUsedTablesBuilder::removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right)
 {
     node_operator rowsSide = queryHasRows(expr);
@@ -4906,7 +4932,7 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
         {
             IHqlExpression * ds = queryChild(0);
             cacheChildrenTablesUsed(used, 1, max);
-            used.removeActive(ds->queryNormalizedSelector());
+            used.removeParent(ds);
             cacheChildrenTablesUsed(used, 0, 1);
         }
         break;
@@ -4917,7 +4943,7 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
-            used.removeActive(ds->queryNormalizedSelector());
+            used.removeParent(ds);
             used.removeRows(this, left, NULL);
             cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
@@ -4964,7 +4990,7 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             OwnedHqlExpr left = createSelector(no_left, ds, selSeq);
             OwnedHqlExpr right = createSelector(no_right, ds, selSeq);
             cacheChildrenTablesUsed(used, 1, max);
-            used.removeActive(ds->queryNormalizedSelector());
+            used.removeParent(ds);
             used.removeActive(left);
             used.removeActive(right);
             used.removeRows(this, left, right);
@@ -5092,7 +5118,7 @@ void CHqlExpressionWithTables::cacheTablesUsed()
                     {
     #ifdef GATHER_HIDDEN_SELECTORS
                         cachePotentialTablesUsed(used);
-                        used.removeActive(queryChild(0)->queryNormalizedSelector());
+                        used.removeParent(queryChild(0));
     #else
                         HqlExprCopyArray childInScopeTables;
                         ForEachChild(idx, this)
@@ -5104,9 +5130,13 @@ void CHqlExpressionWithTables::cacheTablesUsed()
     #endif
                     }
                     break;
+                case no_sizeof:
+                    cachePotentialTablesUsed(used);
+                    used.removeActive(queryActiveTableSelector());
+                    used.removeActiveRecords();
+                    break;
                 case no_externalcall:
                 case no_rowvalue:
-                case no_sizeof:
                 case no_offsetof:
                 case no_eq:
                 case no_ne:
@@ -5124,7 +5154,9 @@ void CHqlExpressionWithTables::cacheTablesUsed()
                 case no_keyindex:
                 case no_newkeyindex:
                     cacheChildrenTablesUsed(used, 1, numChildren());
-                    used.removeActive(queryChild(0)->queryNormalizedSelector());
+                    used.removeParent(queryChild(0));
+                    //Distributed attribute might contain references to the no_activetable
+                    used.removeActive(queryActiveTableSelector());
                     break;
                 case no_evaluate:
                     cacheTableUseage(used, queryChild(0));
@@ -5135,7 +5167,7 @@ void CHqlExpressionWithTables::cacheTablesUsed()
                         cacheChildrenTablesUsed(used, 0, numChildren());
                         IHqlExpression * parent = queryChild(3);
                         if (parent)
-                            used.removeActive(parent->queryNormalizedSelector());
+                            used.removeParent(parent);
                         break;
                     }
                 case no_pat_production:
@@ -5313,13 +5345,13 @@ IHqlExpression * CHqlSelectBaseExpression::makeSelectExpression(HqlExprArray & o
 
 bool CHqlSelectBaseExpression::isIndependentOfScope()
 {
-    IHqlExpression * ds = queryChild(0);
     if (isSelectRootAndActive())
     {
         return false;
     }
     else
     {
+        IHqlExpression * ds = queryChild(0);
         return ds->isIndependentOfScope();
     }
 }
@@ -5994,7 +6026,7 @@ void CHqlDataset::cacheParent()
                     IHqlDataset * parent = pDataset->queryTable();
                     if (parent)
                     {
-                        container = queryExpression(parent->queryRootTable());
+                        container = ::queryExpression(parent->queryRootTable());
                         container->Link();
                     }
                 }
@@ -6051,7 +6083,7 @@ void CHqlDataset::cacheParent()
     if (op != no_select)
     {
         IHqlDataset * table = queryTable();
-        IHqlExpression * tableExpr = queryExpression(table);//->queryNormalizedSelector();
+        IHqlExpression * tableExpr = ::queryExpression(table);
         if (tableExpr != this)
         {
             normalized.set(tableExpr->queryNormalizedSelector());
@@ -15775,7 +15807,7 @@ IHqlExpression * queryExpression(ITypeInfo * type)
 IHqlExpression * queryExpression(IHqlDataset * ds)
 {
     if (!ds) return NULL;
-    return QUERYINTERFACE(ds, IHqlExpression);
+    return ds->queryExpression();
 }
 
 IHqlScope * queryScope(ITypeInfo * type)

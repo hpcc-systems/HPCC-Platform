@@ -1049,6 +1049,7 @@ interface IHqlRemoteScope : public IInterface
 
 interface IHqlDataset : public IInterface
 {
+    virtual IHqlExpression * queryExpression() = 0;
     virtual IHqlDataset* queryTable() = 0;
     virtual IHqlDataset * queryRootTable() = 0;         // get DATASET definition.
     virtual IHqlExpression * queryContainer() = 0;          // this shouldn't really be used - won't extent to more arbitrary relation trees.

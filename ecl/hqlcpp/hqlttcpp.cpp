@@ -7143,23 +7143,6 @@ void ExplicitGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
     node_operator op = expr->getOperator();
     switch (op)
     {
-    case no_output:
-        if (!isIndependentOfScope(expr))
-        {
-            IHqlExpression * filename = queryRealChild(expr, 2);
-            if (!filename)
-                filename = expr->queryProperty(namedAtom);
-
-            StringBuffer s;
-            if (filename)
-                getExprECL(filename, s);
-            translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
-
-#if 0
-            checkIndependentOfScope(expr);
-#endif
-        }
-        break;
     case no_nothor:
         if (expr->isAction())
             break;
@@ -7253,6 +7236,69 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
     }
     return transformed.getClear();
 }
+
+//------------------------------------------------------------------------
+
+static HqlTransformerInfo scopeIndependentActionCheckerInfo("ScopeIndependentActionChecker");
+class ScopeIndependentActionChecker : public NewHqlTransformer
+{
+public:
+    ScopeIndependentActionChecker(HqlCppTranslator & _translator) : NewHqlTransformer(scopeIndependentActionCheckerInfo), translator(_translator)
+    {
+    }
+
+protected:
+    void analyseExpr(IHqlExpression * expr)
+    {
+        switch (expr->getOperator())
+        {
+        case no_parallel:
+        case no_if:
+        case no_sequential:
+        case no_compound:
+        case no_actionlist:
+            NewHqlTransformer::analyseExpr(expr);
+            break;
+        case no_output:
+            if (!isIndependentOfScope(expr))
+            {
+                IHqlExpression * filename = queryRealChild(expr, 2);
+                if (!filename)
+                    filename = expr->queryProperty(namedAtom);
+
+                StringBuffer s;
+                if (filename)
+                    getExprECL(filename, s);
+                translator.WARNINGAT1(queryActiveLocation(expr), HQLWRN_OutputDependendOnScope, s.str());
+
+    #if 0
+                checkIndependentOfScope(expr);
+    #endif
+            }
+            break;
+        default:
+            if (!isIndependentOfScope(expr))
+            {
+                translator.WARNINGAT(queryActiveLocation(expr), HQLWRN_GlobalActionDependendOnScope);
+
+    #if 0
+                checkIndependentOfScope(expr);
+    #endif
+            }
+            break;
+        }
+    }
+
+private:
+    HqlCppTranslator & translator;
+};
+
+void checkGlobalActionsIndependentOfScope(HqlCppTranslator & translator, const HqlExprArray & exprs)
+{
+    ScopeIndependentActionChecker checker(translator);
+    checker.analyseArray(exprs, 0);
+}
+
 
 //------------------------------------------------------------------------
 
@@ -7458,6 +7504,8 @@ void migrateExprToNaturalLevel(WorkflowItem & cur, IWorkUnit * wu, HqlCppTransla
     }
 
     translator.traceExpressions("m0", exprs);
+
+    checkGlobalActionsIndependentOfScope(translator, exprs);
 
     if (options.workunitTemporaries)
     {
@@ -10522,7 +10570,7 @@ IHqlExpression * HqlTreeNormalizer::queryTransformPatternDefine(IHqlExpression *
             HqlExprArray args;
             args.append(*createValue(no_define, base->getType(), base, makeRecursiveName(module, name)));
             unwindChildren(args, expr, 1);
-            return expr->clone(args);
+            return createValue(expr->getOperator(), transformType(expr->queryType()), args);
         }
     }
     return NULL;
@@ -10845,7 +10893,8 @@ IHqlExpression * HqlTreeNormalizer::transformPatNamedUse(IHqlExpression * expr)
             args.append(*LINK(cur));
     }
     args.append(*define.getClear());
-    return expr->clone(args);
+    ITypeInfo * type = expr->queryType();
+    return createValue(no_pat_use, transformType(type), args);
 }
 
 IHqlExpression * HqlTreeNormalizer::transformPatCheckIn(IHqlExpression * expr)
@@ -11235,7 +11284,10 @@ IHqlExpression * HqlTreeNormalizer::transformChildrenNoAnnotations(IHqlExpressio
 {
     HqlExprArray args;
     ForEachChild(i, expr)
-        args.append(*transform(expr->queryChild(i)->queryBody()));
+    {
+        OwnedHqlExpr newChild = transform(expr->queryChild(i)->queryBody());
+        args.append(*LINK(newChild->queryBody()));
+    }
     return completeTransform(expr, args);
 }
 
@@ -11522,14 +11574,15 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
     case no_top:
     case no_self:
         {
-            HqlExprArray children;
             IHqlExpression * record = expr->queryChild(0);
+            //If no record argument then make sure the type is transformed
+            if (!record)
+                break;
+
+            HqlExprArray children;
             //Ensure that the first parameter to one of these nodes is the body of the record, not a named symbol
-            if (record)
-            {
-                OwnedHqlExpr transformedRecord = transform(record);
-                children.append(*LINK(transformedRecord->queryBody()));
-            }
+            OwnedHqlExpr transformedRecord = transform(record);
+            children.append(*LINK(transformedRecord->queryBody()));
             return completeTransform(expr, children);
         }
     case no_field:
@@ -11917,14 +11970,14 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             HqlExprArray children;
             transformChildren(expr, children);
             OwnedITypeInfo setType = makeSetType(children.item(0).getType());
-            return createValue(expr->getOperator(), setType.getClear(), children);
+            return createValue(op, setType.getClear(), children);
         }
     case no_rowsetrange:
         {
             HqlExprArray children;
             transformChildren(expr, children);
             OwnedITypeInfo setType = children.item(0).getType();
-            return createValue(expr->getOperator(), setType.getClear(), children);
+            return createValue(op, setType.getClear(), children);
         }
     case no_buildindex:
         {
@@ -12098,6 +12151,13 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             }
             break;
         }
+    case no_typedef:
+        {
+            HqlExprArray children;
+            transformChildren(expr, children);
+            OwnedITypeInfo newType = transformType(expr->queryType());
+            return createValue(op, newType.getClear(), children);
+        }
     case no_assertkeyed:
         {
             //Ensure assertkeyed is tagged with the selectors of each of the fields that are keyed, otherwise
@@ -12141,7 +12201,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 IHqlExpression * filter = queryRealChild(transformed, 2);
                 IHqlExpression * rowsid = transformed->queryProperty(_rowsid_Atom);
                 IHqlExpression * selSeq = querySelSeq(transformed);
-                IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+                IHqlExpression * counter = queryPropertyChild(transformed, _countProject_Atom, 0);
                 OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
                 OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(left), LINK(rowsid));
                 OwnedHqlExpr initialLoopDataset = LINK(dataset);
@@ -12165,8 +12225,21 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         break;
     }
 
+    ITypeInfo * type = expr->queryType();
+    bool checkType = false;
+    if (type)
+    {
+        switch (type->getTypeCode())
+        {
+        case type_pattern:
+        case type_rule:
+            checkType = true;
+            break;
+        }
+    }
+
     unsigned max = expr->numChildren();
-    if (max == 0)
+    if ((max == 0) && !checkType)
         return LINK(expr);
 
     bool same = true;
@@ -12180,7 +12253,14 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         if (child != tchild)
             same = false;
     }
-//MORE: Test for pattern type here!
+
+    if (checkType)
+    {
+        OwnedITypeInfo newType = transformType(type);
+        if (type != newType)
+            return createWrapper(op, newType, children);
+    }
+
     if (!same)
         return expr->clone(children);
     return LINK(expr);

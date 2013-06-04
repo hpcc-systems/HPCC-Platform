@@ -251,6 +251,7 @@
 #define HQLWRN_GroupedGlobalFew                 4540
 #define HQLWRN_AmbiguousRollupCondition         4541
 #define HQLWRN_AmbiguousRollupNoGroup           4542
+#define HQLWRN_GlobalActionDependendOnScope     4543
 
 //Temporary errors
 #define HQLERR_OrderOnVarlengthStrings          4601
@@ -523,6 +524,7 @@
 #define HQLWRN_GroupedGlobalFew_Text            "Global few expression is grouped"
 #define HQLWRN_AmbiguousRollupCondition_Text    "ROLLUP condition on '%s' is also modified in the transform"
 #define HQLWRN_AmbiguousRollupNoGroup_Text      "ROLLUP condition - no fields are preserved in the transform - not converted to GROUPed ROLLUP"
+#define HQLWRN_GlobalActionDependendOnScope_Text "Global action appears to be context dependent - this may cause a dataset not active error"
 
 #define HQLERR_OrderOnVarlengthStrings_Text     "Rank/Ranked not supported on variable length strings"
 #define HQLERR_DistributionNoSequence_Text      "DISTRIBUTION() only supported at the outer level"
