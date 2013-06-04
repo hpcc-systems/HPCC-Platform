@@ -304,8 +304,6 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 buckets.append(NULL);
             totalSz = 0;
             senderFull = false;
-            activeWriters = new CWriteHandler *[owner.numnodes];
-            memset(activeWriters, 0, owner.numnodes * sizeof(CWriteHandler *));
             senderFinished.allocateN(owner.numnodes, true);
             numFinished = 0;
             dedupSamples = dedupSuccesses = 0;
@@ -316,6 +314,8 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                 pendingBuckets.append(new CSendBucketQueue);
             numActiveWriters = 0;
             aborted = false;
+            activeWriters = new CWriteHandler *[owner.numnodes];
+            memset(activeWriters, 0, owner.numnodes * sizeof(CWriteHandler *));
             initialized = true;
         }
         void reset()
@@ -460,18 +460,21 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
         }
         ~CSender()
         {
-            delete [] activeWriters;
-            for (unsigned n=0; n<owner.numnodes; n++)
+            if (initialized)
             {
-                CSendBucketQueue *queue = pendingBuckets.item(n);
-                loop
+                delete [] activeWriters;
+                for (unsigned n=0; n<owner.numnodes; n++)
                 {
-                    CSendBucket *bucket = queue->dequeueNow();
-                    if (!bucket)
-                        break;
-                    ::Release(bucket);
+                    CSendBucketQueue *queue = pendingBuckets.item(n);
+                    loop
+                    {
+                        CSendBucket *bucket = queue->dequeueNow();
+                        if (!bucket)
+                            break;
+                        ::Release(bucket);
+                    }
+                    delete queue;
                 }
-                delete queue;
             }
         }
         CSendBucket *getAnotherBucket(unsigned &next)
