@@ -159,20 +159,36 @@ extern const IQueryDll *createWuQueryDll(IConstWorkUnit *wu)
 
 // Add information to the xref information to be returned for a control:getQueryXrefInfo request
 
-void addXrefInfo(IPropertyTree &reply, const char *section, const char *name)
+IPropertyTree * addXrefInfo(IPropertyTree &reply, const char *section, const char *name)
 {
     VStringBuffer xpath("%s[@name='%s']", section, name);
     if (!reply.hasProp(xpath))
     {
         IPropertyTree *info = createPTree(section, 0);
         info->setProp("@name", name);
-        reply.addPropTree(section, info);
+        return reply.addPropTree(section, info);
     }
+    return NULL;
 }
 
 extern void addXrefFileInfo(IPropertyTree &reply, const IResolvedFile *dataFile)
 {
-    addXrefInfo(reply, "File", dataFile->queryFileName());
+    if (dataFile->isSuperFile())
+    {
+        IPropertyTree *info = addXrefInfo(reply, "SuperFile", dataFile->queryFileName());
+        if (info)
+        {
+            int numSubs = dataFile->numSubFiles();
+            for (int i = 0; i < numSubs; i++)
+            {
+                StringBuffer subName;
+                dataFile->getSubFileName(i, subName);
+                addXrefInfo(*info, "File", subName.str());
+            }
+        }
+    }
+    else
+        addXrefInfo(reply, "File", dataFile->queryFileName());
 }
 
 extern void addXrefLibraryInfo(IPropertyTree &reply, const char *libraryName)

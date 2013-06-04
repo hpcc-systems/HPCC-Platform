@@ -440,6 +440,7 @@ public:
     virtual bool createUserScopes();
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes);
     virtual int queryDefaultPermission(ISecUser& user);
+    virtual bool clearPermissionsCache(ISecUser &user);
 };
 
 #endif

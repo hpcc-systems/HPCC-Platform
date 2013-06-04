@@ -529,17 +529,8 @@ inline StringBuffer & addDirectoryPrefix(StringBuffer & target, const char * sou
     return target;
 }
 
-inline const char *pathTail(const char *path)
-{
-    if (!path)
-        return NULL;
-    const char *tail=path;
-    const char *s = path;
-    while (*s) 
-        if (isPathSepChar(*(s++)))
-            tail = s;
-    return tail;
-}
+extern jlib_decl const char *pathTail(const char *path);
+extern jlib_decl const char *pathExtension(const char * path);
 
 inline const char *splitDirTail(const char *path,StringBuffer &dir)
 {
@@ -555,8 +546,6 @@ inline bool isAbsolutePath(const char *path)
         return false;
     return isPathSepChar(path[0])||((path[1]==':')&&(isPathSepChar(path[2])));
 }
-
-
 
 extern jlib_decl StringBuffer &makeAbsolutePath(const char *relpath,StringBuffer &out,bool mustExist=false);
 extern jlib_decl StringBuffer &makeAbsolutePath(StringBuffer &relpath,bool mustExist=false);

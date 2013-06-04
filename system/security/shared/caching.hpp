@@ -169,7 +169,7 @@ public:
     bool  isCacheEnabled() { return m_cacheTimeout > 0; }
     void setTransactionalEnabled(bool enable) { m_transactionalEnabled = enable; }
     bool isTransactionalEnabled() { return m_transactionalEnabled;}
-
+    void flush();
     bool addManagedFileScopes(IArrayOf<ISecResource>& scopes);
     void removeManagedFileScopes(IArrayOf<ISecResource>& scopes);
     void removeAllManagedFileScopes();

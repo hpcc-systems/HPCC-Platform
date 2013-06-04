@@ -115,6 +115,7 @@ interface IResolvedFile : extends ISimpleSuperFileEnquiry
 
     virtual void remove() = 0;
     virtual bool exists() const = 0;
+    virtual bool isSuperFile() const = 0;
 };
 
 interface IResolvedFileCreator : extends IResolvedFile

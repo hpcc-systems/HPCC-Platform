@@ -3,6 +3,8 @@
         <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.layout.ContentPane">
             <label class="Prompt" for="${id}Width">Width:</label>
             <input id="${id}Width" data-dojo-attach-event="onChange:_onWidthChange" data-dojo-props="smallDelta:1, constraints:{min:1, max:32000, places:0}, intermediateChanges:true, value:16" data-dojo-type="dijit.form.NumberSpinner" />
+            <label class="Prompt" for="${id}EBCDIC">EBCDIC:</label>
+            <input id="${id}EBCDIC" data-dojo-attach-event="onChange:_onEbcdicChange" data-dojo-props="value:false" data-dojo-type="dijit.form.CheckBox" />
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
         </div>
         <div id="${id}HexView" data-dojo-props="region: 'center', WUXml: true" data-dojo-type="ECLSourceWidget">
