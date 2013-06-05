@@ -465,14 +465,7 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 <row>
                   <entry>--no-reload</entry>
 
-                  <entry>Does not reload the queryset</entry>
-                </row>
-
-                <row>
-                  <entry>--no-reload</entry>
-
-                  <entry>Specifies to not request a reload of the Roxie
-                  cluster</entry>
+                  <entry>Specifies to not reload the target cluster</entry>
                 </row>
 
                 <row>
