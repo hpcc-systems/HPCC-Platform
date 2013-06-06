@@ -21,9 +21,10 @@
 
 import argparse
 import logging
+import os
 
 from hpcc.regression.regress import Regression
-
+from hpcc.util.ecl.file import ECLFile
 
 if __name__ == "__main__":
     prog = "regress"
@@ -45,6 +46,11 @@ if __name__ == "__main__":
     parser_run = subparsers.add_parser('run', help='run help')
     parser_run.add_argument('cluster', help="Run the cluster suite.",
                             nargs='?', default='setup')
+    parser_query = subparsers.add_parser('query', help='query help')
+    parser_query.add_argument('query', help="Run a single query.",
+                              nargs='?')
+    parser_query.add_argument('cluster', help="Cluster for single query run.",
+                            nargs='?', default='setup')
     args = parser.parse_args()
 
     suiteDir = ""
@@ -59,7 +65,15 @@ if __name__ == "__main__":
             print "Avaliable Clusters: "
             for i in Clusters:
                 print i
-        if 'cluster' in args:
+        if 'query' in args:
+            ecl = os.path.join(regress.dir_ec, args.query)
+            eclfile = ECLFile(ecl, regress.dir_a, regress.dir_ex,
+                              regress.dir_r)
+            if not eclfile.testSkip(args.cluster)['skip']:
+                report = regress.buildLogging(args.query)
+                regress.runQuery(args.cluster, eclfile, report)
+                Regression.displayReport(report)
+        elif 'cluster' in args:
             regress.bootstrap()
             if 'setup' in args.cluster:
                 regress.runSuite('setup', regress.setup)
