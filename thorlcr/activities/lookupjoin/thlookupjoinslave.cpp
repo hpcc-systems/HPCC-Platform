@@ -450,7 +450,7 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     IHThorHashJoinArg *hashJoinHelper;
     IHThorAllJoinArg *allJoinHelper;
     const void **rhsTable;
-    rowidx_t rhsTableLen, htCount, htDedupCount;
+    rowidx_t rhsTableLen, htCount, htDedupCount, rhsTableHashMax;
     rowidx_t rhsRows;
     IHash *leftHash, *rightHash;
     ICompare *compareRight, *compareLeftRight;
@@ -468,7 +468,23 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     OwnedConstThorRow leftRow;
     Owned<IException> leftexception;
     Semaphore leftstartsem;
-    CThorExpandingRowArray rhs, ht;
+    CThorExpandingRowArray rhs;
+    void const **ht;
+
+    class CCellarFirstLast : public CSimpleInterface
+    {
+        unsigned n;
+    public:
+        void const **first;
+        void const **last;
+        Owned<CCellarFirstLast> next;
+        CCellarFirstLast *lastLinked;
+        CCellarFirstLast(unsigned _n, void const **_first, void const **_last)
+            : n(_n), first(_first), last(_last), lastLinked(NULL) { }
+        const void *queryFindParam() const { return &n; }
+    };
+    OwningSimpleHashTableOf<CCellarFirstLast, unsigned> filled;
+
     bool eos, needGlobal;
     unsigned flags;
     bool exclude;
@@ -488,6 +504,11 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     unsigned joined;
     OwnedConstThorRow defaultLeft;
     Owned<IBitSet> rightMatchSet;
+
+    // returnMany only
+    CCellarFirstLast *cellarCurrent;
+    void const **cellarCurrentNext;
+    void const **rhsCellarBottom;
 
     unsigned lastRightOuter;
     bool doRightOuter;
@@ -512,13 +533,37 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
         }
         return str.append("---> Unknown Join Type <---");
     }
-    rowidx_t getHTSize(rowcount_t rows)
+    void configureTableSize(rowcount_t rows)
     {
-        if (rows < 10) return 16;
-        rowcount_t res = rows/3*4; // make HT 1/3 bigger than # rows
-        if ((res < rows) || (res > RIMAX)) // check for overflow, or result bigger than rowidx_t size
-            throw MakeActivityException(this, 0, "Too many rows on RHS for hash table: %"RCPF"d", rows);
-        return (rowidx_t)res;
+        rowcount_t res;
+        if (rows < 10)
+            res=16;
+        else
+        {
+            res = rows/3*4; // make HT 1/3 bigger than # rows
+            if ((res < rows) || (res > RIMAX)) // check for overflow, or result bigger than rowidx_t size
+                throw MakeActivityException(this, 0, "Too many rows on RHS for hash table: %"RCPF"d", rows);
+        }
+        rhsTableLen = (rowidx_t)res;
+
+        memsize_t capacity = ((memsize_t)(rhsTableLen)) * sizeof(void *);
+        ht = (void const **)queryJob().queryRowManager()->allocate(capacity, queryContainer().queryId());
+        if (!ht)
+            throw MakeActivityException(this, 0, "Out of memory, allocating lookup hash table, trying to allocate %"RIPF"d elements", rhsTableLen);
+        capacity = RoxieRowCapacity(ht);
+        memset(ht, 0, capacity);
+        rhsTableLen = (rowidx_t)(capacity / sizeof(void *));
+
+        if (returnMany)
+        {
+            rhsTableHashMax = (rowidx_t)(((unsigned __int64)rhsTableLen)*86/100);
+            rhsCellarBottom = &ht[rhsTableLen-1];
+        }
+        else
+        {
+            rhsTableHashMax = rhsTableLen;
+            rhsCellarBottom = 0; // unused
+        }
     }
     /* Utility class, that is called from the broadcaster to queue up received blocks
      * It will block if it has > MAX_QUEUE_BLOCKS to process (on the queue)
@@ -596,9 +641,20 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
         }
     } rowProcessor;
 
+    void killHt()
+    {
+        if (ht)
+        {
+            unsigned h=0;
+            for (; h<rhsTableLen; h++)
+                ReleaseThorRow(ht[h]);
+            ReleaseThorRow(ht);
+        }
+        ht = NULL;
+    }
     void clearRHS()
     {
-        ht.kill();
+        killHt();
         rhs.kill();
         ForEachItemIn(a, rhsNodeRows)
         {
@@ -614,8 +670,7 @@ public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CLookupJoinActivity(CGraphElementBase *_container, joinkind_t _joinKind) 
-        : CSlaveActivity(_container), CThorDataLink(this), joinKind(_joinKind), broadcaster(*this), rhs(*this, NULL), ht(*this, NULL, true),
-          rowProcessor(*this)
+        : CSlaveActivity(_container), CThorDataLink(this), joinKind(_joinKind), broadcaster(*this), rhs(*this, NULL), rowProcessor(*this)
     {
         gotRHS = false;
         joinType = JT_Undefined;
@@ -624,10 +679,12 @@ public:
         returnMany = false;
         candidateMatches = 0;
         atMost = 0;
+        ht = NULL;
         needGlobal = !container.queryLocal() && (container.queryJob().querySlaves() > 1);
     }
     ~CLookupJoinActivity()
     {
+        killHt();
         ForEachItemIn(a, rhsNodeRows)
         {
             CThorExpandingRowArray *rows = rhsNodeRows.item(a);
@@ -758,6 +815,9 @@ public:
         gotRHS = false;
         nextRhsRow = 0;
         rhsNext = NULL;
+        cellarCurrent = NULL;
+        cellarCurrentNext = NULL;
+        filled.kill();
         candidateMatches = 0;
         rhsTotalCount = RCUNSET;
         htCount = htDedupCount = 0;
@@ -903,12 +963,58 @@ public:
         h = leftHash->hash(r)%rhsTableLen;
         return find(r, h);
     }
-    const void *findNext(const void *r, unsigned &h) 
+    const void *findNext(const void *r, unsigned &h)
     {
         h++;
         if (h>=rhsTableLen)
             h = 0;
         return find(r, h);
+    }
+    inline const void *findMany(const void *r, CCellarFirstLast *&cellar, void const **&current)
+    {
+        loop
+        {
+            if (current != cellar->last)
+                --current;
+            else if (cellar->next)
+            {
+                cellar = cellar->next;
+                current = cellar->first;
+            }
+            else
+                break;
+            if (0 == compareLeftRight->docompare(r, *current))
+                return *current;
+        }
+        return NULL;
+    }
+    inline const void *findCellar(const void *r, unsigned h, CCellarFirstLast *&cellar, void const **&current)
+    {
+        cellar = filled.find(h);
+        if (!cellar)
+            return NULL;
+        current = cellar->first;
+        if (0 == compareLeftRight->docompare(r, *current))
+            return *current;
+        else
+            return findMany(r, cellar, current);
+    }
+    const void *findManyNext(const void *r, unsigned h, CCellarFirstLast *&cellar, void const **&current)
+    {
+        if (cellar)
+            return findMany(r, cellar, current);
+        else
+            return findCellar(r, h, cellar, current);
+    }
+    const void *findManyFirst(const void *r, unsigned &h, CCellarFirstLast *&cellar, void const **&current)
+    {
+        h = leftHash->hash(r)%rhsTableHashMax;
+        const void *e = rhsTable[h];
+        if (!e)
+            return NULL;
+        if (0 == compareLeftRight->docompare(r, e))
+            return e;
+        return findCellar(r, h, cellar, current);
     }
     void prepareRightOnly()
     {
@@ -962,7 +1068,12 @@ public:
         if ((unsigned)-1 != atMost)
             rhsNext = candidateIndex < candidates.ordinality() ? candidates.item(candidateIndex++) : NULL;
         else if (isLookup())
-            rhsNext = findNext(leftRow, nextRhsRow);
+        {
+            if (returnMany)
+                rhsNext = findManyNext(leftRow, nextRhsRow, cellarCurrent, cellarCurrentNext);
+            else
+                rhsNext = findNext(leftRow, nextRhsRow);
+        }
         else if (++nextRhsRow<rhsRows)
             rhsNext = rhsTable[nextRhsRow];
         else
@@ -990,6 +1101,8 @@ public:
                 if (NULL == rhsNext)
                 {
                     nextRhsRow = 0;
+                    cellarCurrent = NULL;
+                    cellarCurrentNext = NULL;
                     joined = 0;
                     candidateMatches = 0;
                     leftMatch = false;
@@ -1008,7 +1121,10 @@ public:
                                 rhsNext = rhsTable[nextRhsRow];
                             else
                             {
-                                rhsNext = findFirst(leftRow, nextRhsRow);
+                                if (returnMany)
+                                    rhsNext = findManyFirst(leftRow, nextRhsRow, cellarCurrent, cellarCurrentNext);
+                                else
+                                    rhsNext = findFirst(leftRow, nextRhsRow);
                                 if ((unsigned)-1 != atMost) // have to build candidates to know
                                 {
                                     while (rhsNext)
@@ -1057,7 +1173,10 @@ public:
                                             break;
                                         }
                                         candidates.append(rhsNext);
-                                        rhsNext = findNext(leftRow, nextRhsRow);
+                                        if (returnMany)
+                                            rhsNext = findManyNext(leftRow, nextRhsRow, cellarCurrent, cellarCurrentNext);
+                                        else
+                                            rhsNext = findNext(leftRow, nextRhsRow);
                                     }                               
                                     if (0 == candidateMatches)
                                         rhsNext = NULL;
@@ -1216,24 +1335,69 @@ public:
     void addRowHt(const void *p)
     {
         OwnedConstThorRow _p = p;
-        unsigned h = rightHash->hash(p)%rhsTableLen;
+        unsigned h = rightHash->hash(p)%rhsTableHashMax;
         loop
         {
-            const void *e = ht.query(h);
-            if (!e)
+            void const **e = &ht[h];
+            if (!*e)
             {
-                ht.setRow(h, _p.getClear());
+                *e = _p.getClear();
                 htCount++;
                 break;
             }
-            if (dedup && 0 == compareRight->docompare(e,p))
+            if (dedup && 0 == compareRight->docompare(*e,p))
             {
                 htDedupCount++;
                 break; // implicit dedup
             }
-            h++;
-            if (h>=rhsTableLen)
-                h = 0;
+            if (returnMany) // where expect a lot of clashes
+            {
+                /* This is a variation on the Coalesced Hashing approach
+                 * Non-colliding elements are stored at the head of the HT
+                 * Collisions are stored in reverse sequential order at a reserved section at the tail
+                 * When a collision is added, it is tracked by CCellarFirstLast items.
+                 * These are used at lookup, to scan through all matching HV's
+                 */
+
+                // find free slot, unless cellar area full, first will be available
+                dbgassertex(rhsCellarBottom >= ht); // should always be true
+                loop
+                {
+                    if (NULL == *rhsCellarBottom)
+                        break;
+                    --rhsCellarBottom;
+                    if (rhsCellarBottom == ht)
+                        throw MakeActivityException(this, 0, "Lookup table full unexpectedly");
+                }
+                *rhsCellarBottom = _p.getClear();
+                htCount++;
+                CCellarFirstLast *cellar = filled.find(h);
+                if (cellar)
+                {
+                    CCellarFirstLast *active = cellar->lastLinked ? cellar->lastLinked : cellar;
+                    if (rhsCellarBottom == (active->last-1)) // contiguous
+                        active->last = rhsCellarBottom;
+                    else
+                    {
+                        CCellarFirstLast *linkedCellar = new CCellarFirstLast(h, rhsCellarBottom, rhsCellarBottom);
+                        active->next.setown(linkedCellar);
+                        cellar->lastLinked = linkedCellar;
+                    }
+                }
+                else
+                {
+                    cellar = new CCellarFirstLast(h, rhsCellarBottom, rhsCellarBottom);
+                    filled.replace(*cellar);
+                }
+                --rhsCellarBottom;
+                break;
+            }
+            else
+            {
+                h++;
+                if (h>=rhsTableLen)
+                    h = 0;
+            }
         }
     }
     // Add to HT if one has been created, otherwise to row array and HT will be created later
@@ -1296,6 +1460,7 @@ public:
     {
         if (gotRHS)
             return;
+        ActPrintLog("Collecting RHS");
         gotRHS = true;
         // if input counts known, get global aggregate and pre-allocate HT
         ThorDataLinkMetaInfo rightMeta;
@@ -1311,62 +1476,44 @@ public:
                 return;
             msg.read(rhsTotalCount);
         }
+        rhsTableHashMax = 0;
+        rhsCellarBottom = 0;
         if (RCUNSET==rhsTotalCount)
             rhsTableLen = 0; // set later after gather
         else
         {
             if (isLookup())
-            {
-                rhsTableLen = getHTSize(rhsTotalCount);
-                ht.ensure(rhsTableLen);
-                ht.clearUnused();
-                // NB: 'rhs' row array will not be used
-            }
+                configureTableSize(rhsTotalCount); // NB: 'rhs' row array will not be used
             else
             {
                 rhsTableLen = 0;
                 rhs.ensure((rowidx_t)rhsTotalCount);
             }
         }
-        Owned<IException> exception;
-        try
+        if (needGlobal)
         {
-            if (needGlobal)
-            {
-                rowProcessor.start();
-                broadcaster.start(this, mpTag, stopping);
-                sendRHS();
-                broadcaster.end();
-                rowProcessor.wait();
-            }
-            else if (!stopping)
-            {
-                while (!abortSoon)
-                {
-                    OwnedConstThorRow row = right->ungroupedNextRow();
-                    if (!row)
-                        break;
-                    addRow(row.getClear());
-                }
-            }
-            if (!stopping)
-                prepareRHS();
+            rowProcessor.start();
+            broadcaster.start(this, mpTag, stopping);
+            sendRHS();
+            broadcaster.end();
+            rowProcessor.wait();
         }
-        catch (IOutOfMemException *e) { exception.setown(e); }
-        if (exception.get())
+        else if (!stopping)
         {
-            StringBuffer errStr(joinStr);
-            errStr.append("(").append(container.queryId()).appendf(") right-hand side is too large (%"I64F"u bytes in %"RIPF"d rows) for %s : (",(unsigned __int64) rhs.serializedSize(),rhs.ordinality(),joinStr.get());
-            errStr.append(exception->errorCode()).append(", ");
-            exception->errorMessage(errStr);
-            errStr.append(")");
-            IException *e2 = MakeActivityException(this, TE_TooMuchData, "%s", errStr.str());
-            ActPrintLog(e2);
-            throw e2;
+            while (!abortSoon)
+            {
+                OwnedConstThorRow row = right->ungroupedNextRow();
+                if (!row)
+                    break;
+                addRow(row.getClear());
+            }
         }
+        if (!stopping)
+            prepareRHS();
     }
     void prepareRHS()
     {
+        ActPrintLog("Preparing RHS");
         if (needGlobal)
         {
             rowidx_t maxRows = 0;
@@ -1397,9 +1544,7 @@ public:
             }
             else
             {
-                rhsTableLen = getHTSize(rhsRows);
-                ht.ensure(rhsTableLen); // Pessimistic if LOOKUP,KEEP(1)
-                ht.clearUnused();
+                configureTableSize(rhsRows);
                 if (!needGlobal)
                 {
                     rowidx_t r=0;
@@ -1422,9 +1567,9 @@ public:
                 rows.kill(); // free up ptr table asap
             }
         }
-        ActPrintLog("rhs table: %d elements", rhsRows);
+        ActPrintLog("Prepared RHS table: %d elements", rhsRows);
         if (isLookup())
-            rhsTable = ht.getRowArray();
+            rhsTable = ht;
         else
         {
             assertex(isAll());
