@@ -1500,7 +1500,7 @@ ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, IPartDesc
 
     makePhysicalPartName(logicalname, partNo, numParts, localFileName, false, DFD_OSdefault, baseDataDirectory);  // MORE - if we get the dataDirectory we can pass it in and possibly reuse an existing file
 
-    appendRemoteLocations(pdesc, remoteLocations, true);
+    appendRemoteLocations(pdesc, localLocations, true);
     if (remotePDesc)
         appendRemoteLocations(remotePDesc, remoteLocations, false);
 
