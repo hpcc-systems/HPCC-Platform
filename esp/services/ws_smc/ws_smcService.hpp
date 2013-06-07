@@ -84,6 +84,10 @@ private:
     void addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWUClusterInfoArray& clusters,
                    IArrayOf<IEspActiveWorkunit>& aws, BoolHash& uniqueWUIDs,
                    StringArray& runningQueueNames, int* runningJobsInQueue);
+    void readBannerAndChatRequest(IEspContext& context, IEspActivityRequest &req, IEspActivityResponse& resp);
+    void setBannerAndChatData(double version, IEspActivityResponse& resp);
+    void getServersAndWUs(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp, double version,
+        IPropertyTree* envRoot, CConstWUClusterInfoArray& clusters);
 };
 
 

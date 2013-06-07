@@ -434,6 +434,377 @@ void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWU
     return;
 }
 
+void CWsSMCEx::readBannerAndChatRequest(IEspContext& context, IEspActivityRequest &req, IEspActivityResponse& resp)
+{
+    StringBuffer chatURLStr, bannerStr;
+    const char* chatURL = req.getChatURL();
+    const char* banner = req.getBannerContent();
+    //Filter out invalid chars
+    if (chatURL)
+    {
+        const char* pStr = chatURL;
+        for (unsigned i = 0; i < strlen(chatURL); i++)
+        {
+            if ((pStr[0] > 31) && (pStr[0] < 127))
+                chatURLStr.append(pStr[0]);
+            pStr++;
+        }
+    }
+    if (banner)
+    {
+        const char* pStr = banner;
+        for (unsigned i = 0; i < strlen(banner); i++)
+        {
+            if ((pStr[0] > 31) && (pStr[0] < 127))
+                bannerStr.append(pStr[0]);
+            pStr++;
+        }
+    }
+    chatURLStr.trim();
+    bannerStr.trim();
+
+    if (!req.getBannerAction_isNull() && req.getBannerAction() && (bannerStr.length() < 1))
+        throw MakeStringException(ECLWATCH_MISSING_BANNER_CONTENT, "If a Banner is enabled, the Banner content must be specified.");
+
+    if (!req.getEnableChatURL_isNull() && req.getEnableChatURL() && (chatURLStr.length() < 1))
+        throw MakeStringException(ECLWATCH_MISSING_CHAT_URL, "If a Chat is enabled, the Chat URL must be specified.");
+
+    //Now, store the strings since they are valid.
+    m_ChatURL = chatURLStr;
+    m_Banner = bannerStr;
+
+    const char* bannerSize = req.getBannerSize();
+    if (bannerSize && *bannerSize)
+        m_BannerSize.set(bannerSize);
+
+    const char* bannerColor = req.getBannerColor();
+    if (bannerColor && *bannerColor)
+        m_BannerColor.set(bannerColor);
+
+    const char* bannerScroll = req.getBannerScroll();
+    if (bannerScroll && *bannerScroll)
+        m_BannerScroll.set(bannerScroll);
+
+    m_BannerAction = req.getBannerAction();
+    if(!req.getEnableChatURL_isNull())
+        m_EnableChatURL = req.getEnableChatURL();
+}
+
+void CWsSMCEx::setBannerAndChatData(double version, IEspActivityResponse& resp)
+{
+    resp.setShowBanner(m_BannerAction);
+    resp.setShowChatURL(m_EnableChatURL);
+    resp.setBannerContent(m_Banner.str());
+    resp.setBannerSize(m_BannerSize.str());
+    resp.setBannerColor(m_BannerColor.str());
+    resp.setChatURL(m_ChatURL.str());
+    if (version >= 1.08)
+        resp.setBannerScroll(m_BannerScroll.str());
+}
+
+void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, IEspActivityResponse& resp, double version,
+        IPropertyTree* envRoot, CConstWUClusterInfoArray& clusters)
+{
+    BoolHash uniqueWUIDs;
+
+    Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
+
+    StringArray runningQueueNames;
+    int runningJobsInQueue[256];
+    for (int i = 0; i < 256; i++)
+        runningJobsInQueue[i] = 0;
+
+    IArrayOf<IEspActiveWorkunit> aws;
+    if (conn.get())
+    {
+        Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server[@name!=\"ECLagent\"]"));
+        ForEach(*it)
+            addRunningWUs(context, it->query(), clusters, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
+
+        Owned<IPropertyTreeIterator> it1(conn->queryRoot()->getElements("Server[@name=\"ECLagent\"]"));
+        ForEach(*it1)
+            addRunningWUs(context, it1->query(), clusters, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
+    }
+
+    SecAccessFlags access;
+    bool fullAccess=(context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full);
+
+    IArrayOf<IEspThorCluster> ThorClusters;
+    IArrayOf<IEspHThorCluster> HThorClusters;
+    IArrayOf<IEspRoxieCluster> RoxieClusters;
+
+    ForEachItemIn(c, clusters)
+    {
+        IConstWUClusterInfo &cluster = clusters.item(c);
+        SCMStringBuffer str;
+        if (cluster.getThorProcesses().ordinality())
+        {
+            IEspThorCluster* returnCluster = new CThorCluster("","");
+            returnCluster->setThorLCR(ThorLCRCluster == cluster.getPlatform() ? "withLCR" : "noLCR");
+            str.clear();
+            returnCluster->setClusterName(cluster.getName(str).str());
+            str.clear();
+            const char *queueName = cluster.getThorQueue(str).str();
+            returnCluster->setQueueName(queueName);
+
+            StringBuffer queueState;
+            CJobQueueContents contents;
+            Owned<IJobQueue> queue = createJobQueue(queueName);
+            queue->copyItemsAndState(contents, queueState);
+            addQueuedWorkUnits(queueName, contents, aws, context, "ThorMaster", NULL);
+
+            BulletType bulletType = bulletGreen;
+            int serverID = runningQueueNames.find(queueName);
+            int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
+            getQueueState(numRunningJobsInQueue, queueState, bulletType);
+
+            StringBuffer agentQueueState;
+            CJobQueueContents agentContents;
+            SCMStringBuffer str1;
+            const char *agentQueueName = cluster.getAgentQueue(str1).str();
+            Owned<IJobQueue> agentQueue = createJobQueue(agentQueueName);
+            agentQueue->copyItemsAndState(agentContents, agentQueueState);
+            //Use the same 'queueName' because the job belongs to the same cluster
+            addQueuedWorkUnits(queueName, agentContents, aws, context, "ThorMaster", NULL);
+            if (bulletType == bulletGreen)
+            {//If ThorQueue is normal, check the AgentQueue
+                serverID = runningQueueNames.find(agentQueueName);
+                numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
+                getQueueState(numRunningJobsInQueue, queueState, bulletType);
+            }
+
+            returnCluster->setQueueStatus(queueState.str());
+            if (version > 1.06)
+                returnCluster->setQueueStatus2(bulletType);
+            if (version > 1.10)
+                returnCluster->setClusterSize(cluster.getSize());
+
+            addToThorClusterList(ThorClusters, returnCluster, req.getSortBy(), req.getDescending());
+        }
+        if (version > 1.06)
+        {
+            str.clear();
+            if (cluster.getRoxieProcess(str).length())
+            {
+                IEspRoxieCluster* returnCluster = new CRoxieCluster("","");
+                str.clear();
+                returnCluster->setClusterName(cluster.getName(str).str());
+                str.clear();
+                returnCluster->setQueueName(cluster.getAgentQueue(str).str());
+                str.clear();
+                const char *queueName = cluster.getAgentQueue(str).str();
+                StringBuffer queueState;
+                CJobQueueContents contents;
+                Owned<IJobQueue> queue = createJobQueue(queueName);
+                queue->copyItemsAndState(contents, queueState);
+                addQueuedWorkUnits(queueName, contents, aws, context, "RoxieServer", NULL);
+
+                BulletType bulletType = bulletGreen;
+                int serverID = runningQueueNames.find(queueName);
+                int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
+                getQueueState(numRunningJobsInQueue, queueState, bulletType);
+                returnCluster->setQueueStatus(queueState.str());
+                returnCluster->setQueueStatus2(bulletType);
+                if (version > 1.10)
+                    returnCluster->setClusterSize(cluster.getSize());
+
+                addToRoxieClusterList(RoxieClusters, returnCluster, req.getSortBy(), req.getDescending());
+            }
+        }
+        if (version > 1.11 && (cluster.getPlatform() == HThorCluster))
+        {
+            IEspHThorCluster* returnCluster = new CHThorCluster("","");
+            str.clear();
+            returnCluster->setClusterName(cluster.getName(str).str());
+            str.clear();
+            returnCluster->setQueueName(cluster.getAgentQueue(str).str());
+            str.clear();
+            const char *queueName = cluster.getAgentQueue(str).str();
+            StringBuffer queueState;
+            CJobQueueContents contents;
+            Owned<IJobQueue> queue = createJobQueue(queueName);
+            queue->copyItemsAndState(contents, queueState);
+            addQueuedWorkUnits(queueName, contents, aws, context, "HThorServer", NULL);
+
+            BulletType bulletType = bulletGreen;
+            int serverID = runningQueueNames.find(queueName);
+            int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
+            getQueueState(numRunningJobsInQueue, queueState, bulletType);
+            returnCluster->setQueueStatus(queueState.str());
+            returnCluster->setQueueStatus2(bulletType);
+            HThorClusters.append(*returnCluster);
+        }
+    }
+    resp.setThorClusters(ThorClusters);
+    if (version > 1.06)
+        resp.setRoxieClusters(RoxieClusters);
+    if (version > 1.10)
+    {
+        resp.setSortBy(req.getSortBy());
+        resp.setDescending(req.getDescending());
+    }
+    if (version > 1.11)
+    {
+        resp.setHThorClusters(HThorClusters);
+        if (fullAccess)
+            resp.setAccessRight("Access_Full");
+    }
+
+    IArrayOf<IEspServerJobQueue> serverJobQueues;
+    IArrayOf<IConstTpEclServer> eclccservers;
+    CTpWrapper dummy;
+    dummy.getTpEclCCServers(envRoot->queryBranch("Software"), eclccservers);
+    ForEachItemIn(x1, eclccservers)
+    {
+        IConstTpEclServer& eclccserver = eclccservers.item(x1);
+        const char* serverName = eclccserver.getName();
+        if (!serverName || !*serverName)
+            continue;
+
+        Owned <IStringIterator> targetClusters = getTargetClusters(eqEclCCServer, serverName);
+        if (!targetClusters->first())
+            continue;
+
+        ForEach (*targetClusters)
+        {
+            SCMStringBuffer targetCluster;
+            targetClusters->str(targetCluster);
+
+            StringBuffer queueName;
+            StringBuffer queueState;
+            CJobQueueContents contents;
+            getClusterEclCCServerQueueName(queueName, targetCluster.str());
+            Owned<IJobQueue> queue = createJobQueue(queueName);
+            queue->copyItemsAndState(contents, queueState);
+            unsigned count=0;
+            Owned<IJobQueueIterator> iter = contents.getIterator();
+            ForEach(*iter)
+            {
+                if (isInWuList(aws, iter->query().queryWUID()))
+                    continue;
+
+                Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(context, iter->query().queryWUID(),++count));
+                wu->setServer("ECLCCserver");
+                wu->setInstance(serverName);
+                wu->setQueueName(queueName);
+
+                aws.append(*wu.getLink());
+            }
+
+            addServerJobQueue(serverJobQueues, queueName, queueState.str(), serverName, "ECLCCserver");
+        }
+    }
+
+    StringBuffer dirxpath;
+    dirxpath.appendf("Software/%s", eqDfu);
+    Owned<IPropertyTreeIterator> services = envRoot->getElements(dirxpath);
+
+    if (services->first())
+    {
+        do
+        {
+            IPropertyTree &serviceTree = services->query();
+            const char *queuename = serviceTree.queryProp("@queue");
+            const char *serverName = serviceTree.queryProp("@name");
+            if (queuename && *queuename)
+            {
+                StringArray queues;
+                loop
+                {
+                    StringAttr subq;
+                    const char *comma = strchr(queuename,',');
+                    if (comma)
+                        subq.set(queuename,comma-queuename);
+                    else
+                        subq.set(queuename);
+                    bool added;
+                    const char *s = strdup(subq.get());
+                    queues.bAdd(s, stringcmp, added);
+                    if (!added)
+                        free((void *)s);
+                    if (!comma)
+                        break;
+                    queuename = comma+1;
+                    if (!*queuename)
+                        break;
+                }
+                ForEachItemIn(q, queues)
+                {
+                    const char *queueName = queues.item(q);
+
+                    StringAttrArray wulist;
+                    unsigned running = queuedJobs(queueName, wulist);
+                    ForEachItemIn(i, wulist)
+                    {
+                        const char *wuid = wulist.item(i).text.get();
+                        try
+                        {
+                            StringBuffer jname, uname, state;
+                            Owned<IConstDFUWorkUnit> wu = getDFUWorkUnitFactory()->openWorkUnit(wuid, false);
+                            if (wu)
+                            {
+                                wu->getUser(uname);
+                                wu->getJobName(jname);
+                                if (i<running)
+                                    state.append("running");
+                                else
+                                    state.append("queued");
+
+                                Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, uname.str(), jname.str(), state.str(), "normal"));
+                                wu1->setServer("DFUserver");
+                                wu1->setInstance(serverName);
+                                wu1->setQueueName(queueName);
+                                aws.append(*wu1.getLink());
+                            }
+                        }
+                        catch (IException *e)
+                        {
+                            StringBuffer msg;
+                            Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
+                            wu1->setServer("DFUserver");
+                            wu1->setInstance(serverName);
+                            wu1->setQueueName(queueName);
+                            aws.append(*wu1.getLink());
+                        }
+                    }
+                    addServerJobQueue(serverJobQueues, queueName, serverName, "DFUserver");
+                }
+            }
+        } while (services->next());
+    }
+    resp.setRunning(aws);
+    if (version > 1.03)
+        resp.setServerJobQueues(serverJobQueues);
+
+    IArrayOf<IEspDFUJob> jobs;
+    conn.setown(querySDS().connect("DFU/RECOVERY",myProcessSession(),0, INFINITE));
+    if (conn)
+    {
+        Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("job"));
+        ForEach(*it)
+        {
+            IPropertyTree &e=it->query();
+            if (e.getPropBool("Running",false))
+            {
+                unsigned done;
+                unsigned total;
+                countProgress(&e,done,total);
+                Owned<IEspDFUJob> job = new CDFUJob("","");
+
+                job->setTimeStarted(e.queryProp("@time_started"));
+                job->setDone(done);
+                job->setTotal(total);
+
+                StringBuffer cmd;
+                cmd.append(e.queryProp("@command")).append(" ").append(e.queryProp("@command_parameters"));
+                job->setCommand(cmd.str());
+                jobs.append(*job.getLink());
+            }
+        }
+    }
+
+    resp.setDFUJobs(jobs);
+}
 // This method reads job information from both /Status/Servers and IJobQueue.
 //
 // Each server component (a thor cluster, a dfuserver, or an eclagent) is one 'Server' branch under
@@ -471,80 +842,11 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
             isSuperUser =  false;
 #endif
         if(isSuperUser && req.getFromSubmitBtn())
-        {
-            StringBuffer chatURLStr, bannerStr;
-            const char* chatURL = req.getChatURL();
-            const char* banner = req.getBannerContent();
-            //Only display valid strings
-            if (chatURL)
-            {
-                const char* pStr = chatURL;
-                for (unsigned i = 0; i < strlen(chatURL); i++)
-                {
-                    if ((pStr[0] > 31) && (pStr[0] < 127))
-                        chatURLStr.append(pStr[0]);
-                    pStr++;
-                }
-            }
-            if (banner)
-            {
-                const char* pStr = banner;
-                for (unsigned i = 0; i < strlen(banner); i++)
-                {
-                    if ((pStr[0] > 31) && (pStr[0] < 127))
-                        bannerStr.append(pStr[0]);
-                    pStr++;
-                }
-            }
-            chatURLStr.trim();
-            bannerStr.trim();
-
-            if (!req.getBannerAction_isNull() && req.getBannerAction() && (bannerStr.length() < 1))
-            {
-                throw MakeStringException(ECLWATCH_MISSING_BANNER_CONTENT, "If a Banner is enabled, the Banner content must be specified.");
-            }
-
-            if (!req.getEnableChatURL_isNull() && req.getEnableChatURL() && (chatURLStr.length() < 1))
-            {
-                throw MakeStringException(ECLWATCH_MISSING_CHAT_URL, "If a Chat is enabled, the Chat URL must be specified.");
-            }
-
-            m_ChatURL = chatURLStr;
-            m_Banner = bannerStr;
-
-            const char* bannerSize = req.getBannerSize();
-            if (bannerSize && *bannerSize)
-                m_BannerSize.clear().append(bannerSize);
-
-            const char* bannerColor = req.getBannerColor();
-            if (bannerColor && *bannerColor)
-                m_BannerColor.clear().append(bannerColor);
-
-            const char* bannerScroll = req.getBannerScroll();
-            if (bannerScroll && *bannerScroll)
-                m_BannerScroll.clear().append(bannerScroll);
-
-            m_BannerAction = req.getBannerAction();
-            if(!req.getEnableChatURL_isNull())
-                m_EnableChatURL = req.getEnableChatURL();
-        }
-
-        if (version > 1.05)
-        {
-            if (version > 1.11)
-                resp.setSuperUser(isSuperUser);
-            resp.setShowBanner(m_BannerAction);
-            resp.setShowChatURL(m_EnableChatURL);
-            resp.setBannerContent(m_Banner.str());
-            resp.setBannerSize(m_BannerSize.str());
-            resp.setBannerColor(m_BannerColor.str());
-            resp.setChatURL(m_ChatURL.str());
-
-            if (version > 1.07)
-            {
-                resp.setBannerScroll(m_BannerScroll.str());
-            }
-        }
+            readBannerAndChatRequest(context, req, resp);
+        if (version >= 1.12)
+            resp.setSuperUser(isSuperUser);
+        if (version >= 1.06)
+            setBannerAndChatData(version, resp);
 
         Owned<IRemoteConnection> connEnv = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
         IPropertyTree* envRoot = connEnv->queryRoot();
@@ -553,305 +855,7 @@ bool CWsSMCEx::onActivity(IEspContext &context, IEspActivityRequest &req, IEspAc
 
         CConstWUClusterInfoArray clusters;
         getEnvironmentClusterInfo(envRoot, clusters);
-        BoolHash uniqueWUIDs;
-
-        Owned<IRemoteConnection> conn = querySDS().connect("/Status/Servers",myProcessSession(),RTM_LOCK_READ,30000);
-
-        StringArray runningQueueNames;
-        int runningJobsInQueue[256];
-        for (int i = 0; i < 256; i++)
-            runningJobsInQueue[i] = 0;
-
-        IArrayOf<IEspActiveWorkunit> aws;
-        if (conn.get()) 
-        {
-            Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("Server[@name!=\"ECLagent\"]"));
-            ForEach(*it)
-                addRunningWUs(context, it->query(), clusters, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
-
-            Owned<IPropertyTreeIterator> it1(conn->queryRoot()->getElements("Server[@name=\"ECLagent\"]"));
-            ForEach(*it1)
-                addRunningWUs(context, it1->query(), clusters, aws, uniqueWUIDs, runningQueueNames, runningJobsInQueue);
-        }
-
-        SecAccessFlags access;
-        bool fullAccess=(context.authorizeFeature(THORQUEUE_FEATURE, access) && access>=SecAccess_Full);
-
-        IArrayOf<IEspThorCluster> ThorClusters;
-        IArrayOf<IEspHThorCluster> HThorClusters;
-        IArrayOf<IEspRoxieCluster> RoxieClusters;
-
-        ForEachItemIn(c, clusters)
-        {
-            IConstWUClusterInfo &cluster = clusters.item(c);
-            SCMStringBuffer str;
-            if (cluster.getThorProcesses().ordinality())
-            {
-                IEspThorCluster* returnCluster = new CThorCluster("","");
-                returnCluster->setThorLCR(ThorLCRCluster == cluster.getPlatform() ? "withLCR" : "noLCR");
-                str.clear();
-                returnCluster->setClusterName(cluster.getName(str).str());
-                str.clear();
-                const char *queueName = cluster.getThorQueue(str).str();
-                returnCluster->setQueueName(queueName);
-
-                StringBuffer queueState;
-                CJobQueueContents contents;
-                Owned<IJobQueue> queue = createJobQueue(queueName);
-                queue->copyItemsAndState(contents, queueState);
-                addQueuedWorkUnits(queueName, contents, aws, context, "ThorMaster", NULL);
-
-                BulletType bulletType = bulletGreen;
-                int serverID = runningQueueNames.find(queueName);
-                int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                getQueueState(numRunningJobsInQueue, queueState, bulletType);
-
-                StringBuffer agentQueueState;
-                CJobQueueContents agentContents;
-                SCMStringBuffer str1;
-                const char *agentQueueName = cluster.getAgentQueue(str1).str();
-                Owned<IJobQueue> agentQueue = createJobQueue(agentQueueName);
-                agentQueue->copyItemsAndState(agentContents, agentQueueState);
-                //Use the same 'queueName' because the job belongs to the same cluster
-                addQueuedWorkUnits(queueName, agentContents, aws, context, "ThorMaster", NULL);
-                if (bulletType == bulletGreen)
-                {//If ThorQueue is normal, check the AgentQueue
-                    serverID = runningQueueNames.find(agentQueueName);
-                    numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                    getQueueState(numRunningJobsInQueue, queueState, bulletType);
-                }
-
-                returnCluster->setQueueStatus(queueState.str());
-                if (version > 1.06)
-                    returnCluster->setQueueStatus2(bulletType);
-                if (version > 1.10)
-                    returnCluster->setClusterSize(cluster.getSize());
-
-                addToThorClusterList(ThorClusters, returnCluster, req.getSortBy(), req.getDescending());
-            }
-            if (version > 1.06)
-            {
-                str.clear();
-                if (cluster.getRoxieProcess(str).length())
-                {
-                    IEspRoxieCluster* returnCluster = new CRoxieCluster("","");
-                    str.clear();
-                    returnCluster->setClusterName(cluster.getName(str).str());
-                    str.clear();
-                    returnCluster->setQueueName(cluster.getAgentQueue(str).str());
-                    str.clear();
-                    const char *queueName = cluster.getAgentQueue(str).str();
-                    StringBuffer queueState;
-                    CJobQueueContents contents;
-                    Owned<IJobQueue> queue = createJobQueue(queueName);
-                    queue->copyItemsAndState(contents, queueState);
-                    addQueuedWorkUnits(queueName, contents, aws, context, "RoxieServer", NULL);
-
-                    BulletType bulletType = bulletGreen;
-                    int serverID = runningQueueNames.find(queueName);
-                    int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                    getQueueState(numRunningJobsInQueue, queueState, bulletType);
-                    returnCluster->setQueueStatus(queueState.str());
-                    returnCluster->setQueueStatus2(bulletType);
-                    if (version > 1.10)
-                        returnCluster->setClusterSize(cluster.getSize());
-
-                    addToRoxieClusterList(RoxieClusters, returnCluster, req.getSortBy(), req.getDescending());
-                }
-            }
-            if (version > 1.11 && (cluster.getPlatform() == HThorCluster))
-            {
-                IEspHThorCluster* returnCluster = new CHThorCluster("","");
-                str.clear();
-                returnCluster->setClusterName(cluster.getName(str).str());
-                str.clear();
-                returnCluster->setQueueName(cluster.getAgentQueue(str).str());
-                str.clear();
-                const char *queueName = cluster.getAgentQueue(str).str();
-                StringBuffer queueState;
-                CJobQueueContents contents;
-                Owned<IJobQueue> queue = createJobQueue(queueName);
-                queue->copyItemsAndState(contents, queueState);
-                addQueuedWorkUnits(queueName, contents, aws, context, "HThorServer", NULL);
-
-                BulletType bulletType = bulletGreen;
-                int serverID = runningQueueNames.find(queueName);
-                int numRunningJobsInQueue = (NotFound != serverID) ? runningJobsInQueue[serverID] : -1;
-                getQueueState(numRunningJobsInQueue, queueState, bulletType);
-                returnCluster->setQueueStatus(queueState.str());
-                returnCluster->setQueueStatus2(bulletType);
-                HThorClusters.append(*returnCluster);
-            }
-        }
-        resp.setThorClusters(ThorClusters);
-        if (version > 1.06)
-            resp.setRoxieClusters(RoxieClusters);
-        if (version > 1.10)
-        {
-            resp.setSortBy(req.getSortBy());
-            resp.setDescending(req.getDescending());
-        }
-        if (version > 1.11)
-        {
-            resp.setHThorClusters(HThorClusters);
-            if (fullAccess)
-                resp.setAccessRight("Access_Full");
-        }
-
-        IArrayOf<IEspServerJobQueue> serverJobQueues;
-        IArrayOf<IConstTpEclServer> eclccservers;
-        CTpWrapper dummy;
-        dummy.getTpEclCCServers(envRoot->queryBranch("Software"), eclccservers);
-        ForEachItemIn(x1, eclccservers)
-        {
-            IConstTpEclServer& eclccserver = eclccservers.item(x1);
-            const char* serverName = eclccserver.getName();
-            if (!serverName || !*serverName)
-                continue;
-
-            Owned <IStringIterator> targetClusters = getTargetClusters(eqEclCCServer, serverName);
-            if (!targetClusters->first())
-                continue;
-
-            ForEach (*targetClusters)
-            {
-                SCMStringBuffer targetCluster;
-                targetClusters->str(targetCluster);
-
-                StringBuffer queueName;
-                StringBuffer queueState;
-                CJobQueueContents contents;
-                getClusterEclCCServerQueueName(queueName, targetCluster.str());
-                Owned<IJobQueue> queue = createJobQueue(queueName);
-                queue->copyItemsAndState(contents, queueState);
-                unsigned count=0;
-                Owned<IJobQueueIterator> iter = contents.getIterator();
-                ForEach(*iter) 
-                {
-                    if (isInWuList(aws, iter->query().queryWUID()))
-                        continue;
-
-                    Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(context, iter->query().queryWUID(),++count));
-                    wu->setServer("ECLCCserver");
-                    wu->setInstance(serverName);
-                    wu->setQueueName(queueName);
-
-                    aws.append(*wu.getLink());
-                }
-
-                addServerJobQueue(serverJobQueues, queueName, queueState.str(), serverName, "ECLCCserver");
-            }
-        }
-
-        StringBuffer dirxpath;
-        dirxpath.appendf("Software/%s", eqDfu);
-        Owned<IPropertyTreeIterator> services = envRoot->getElements(dirxpath);
-
-        if (services->first())
-        {
-            do
-            {
-                IPropertyTree &serviceTree = services->query();
-                const char *queuename = serviceTree.queryProp("@queue");
-                const char *serverName = serviceTree.queryProp("@name");
-                if (queuename && *queuename)
-                {
-                    StringArray queues;
-                    loop
-                    {
-                        StringAttr subq;
-                        const char *comma = strchr(queuename,',');
-                        if (comma)
-                            subq.set(queuename,comma-queuename);
-                        else
-                            subq.set(queuename);
-                        bool added;
-                        const char *s = strdup(subq.get());
-                        queues.bAdd(s, stringcmp, added);
-                        if (!added)
-                            free((void *)s);
-                        if (!comma)
-                            break;
-                        queuename = comma+1;
-                        if (!*queuename)
-                            break;
-                    }
-                    ForEachItemIn(q, queues)
-                    {
-                        const char *queueName = queues.item(q);
-
-                        StringAttrArray wulist;
-                        unsigned running = queuedJobs(queueName, wulist);
-                        ForEachItemIn(i, wulist)
-                        {
-                            const char *wuid = wulist.item(i).text.get();
-                            try
-                            {
-                                StringBuffer jname, uname, state;
-                                Owned<IConstDFUWorkUnit> wu = getDFUWorkUnitFactory()->openWorkUnit(wuid, false);
-                                if (wu)
-                                {
-                                    wu->getUser(uname);
-                                    wu->getJobName(jname);
-                                    if (i<running)
-                                        state.append("running");
-                                    else
-                                        state.append("queued");
-
-                                    Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, uname.str(), jname.str(), state.str(), "normal"));
-                                    wu1->setServer("DFUserver");
-                                    wu1->setInstance(serverName);
-                                    wu1->setQueueName(queueName);
-                                    aws.append(*wu1.getLink());
-                                }
-                            }
-                            catch (IException *e)
-                            {
-                                StringBuffer msg;
-                                Owned<IEspActiveWorkunit> wu1(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
-                                wu1->setServer("DFUserver");
-                                wu1->setInstance(serverName);
-                                wu1->setQueueName(queueName);
-                                aws.append(*wu1.getLink());
-                            }
-                        }
-                        addServerJobQueue(serverJobQueues, queueName, serverName, "DFUserver");
-                    }
-                }
-            } while (services->next());
-        }
-        resp.setRunning(aws);
-        if (version > 1.03)
-            resp.setServerJobQueues(serverJobQueues);
-
-        IArrayOf<IEspDFUJob> jobs;
-        conn.setown(querySDS().connect("DFU/RECOVERY",myProcessSession(),0, INFINITE));
-        if (conn) 
-        {
-            Owned<IPropertyTreeIterator> it(conn->queryRoot()->getElements("job"));
-            ForEach(*it) 
-            {
-                IPropertyTree &e=it->query();
-                if (e.getPropBool("Running",false)) 
-                {
-                    unsigned done;
-                    unsigned total;
-                    countProgress(&e,done,total);
-                    Owned<IEspDFUJob> job = new CDFUJob("","");
-
-                    job->setTimeStarted(e.queryProp("@time_started"));
-                    job->setDone(done);
-                    job->setTotal(total);
-
-                    StringBuffer cmd;
-                    cmd.append(e.queryProp("@command")).append(" ").append(e.queryProp("@command_parameters"));
-                    job->setCommand(cmd.str());
-                    jobs.append(*job.getLink());
-                }
-            }
-        }
-
-        resp.setDFUJobs(jobs);
+        getServersAndWUs(context, req, resp, version, envRoot, clusters);
     }
     catch(IException* e)
     {   
