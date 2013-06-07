@@ -1080,7 +1080,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
     cleanupPlugins();
     closeMulticastSockets();
     releaseSlaveDynamicFileCache();
-    releaseDiffFileInfoCache();
     releaseRoxieStateCache();
     setDaliServixSocketCaching(false);  // make sure it cleans up or you get bogus memleak reports
     setNodeCaching(false); // ditto

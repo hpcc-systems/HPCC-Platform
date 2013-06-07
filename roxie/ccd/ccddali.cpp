@@ -344,8 +344,9 @@ public:
         return ret.getClear();
     }
 
-    IFileDescriptor *checkClonedFromRemote(const char *_lfn, IFileDescriptor *fdesc, bool cacheIt, bool writeAccess)
+    IFileDescriptor *checkClonedFromRemote(const char *_lfn, IFileDescriptor *fdesc, bool cacheIt)
     {
+        // MORE - may want to cache to avoid a lookup per channel
         if (_lfn && !strnicmp(_lfn, "foreign", 7)) //if need to support dali hopping should add each remote location
             return NULL;
         if (!fdesc || !fdesc->queryProperties().hasProp("@cloneFrom"))
@@ -359,7 +360,7 @@ public:
         lfn.setForeign(cloneFrom, false);
         if (!connected())
             return resolveCachedLFN(lfn.get());
-        Owned<IDistributedFile> cloneFile = resolveLFN(lfn.get(), cacheIt, writeAccess);
+        Owned<IDistributedFile> cloneFile = resolveLFN(lfn.get(), cacheIt, false);
         if (cloneFile)
         {
             Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
