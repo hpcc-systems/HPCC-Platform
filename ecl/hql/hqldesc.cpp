@@ -54,7 +54,7 @@ void setFullNameProp(IPropertyTree * tree, const char * prop, IHqlExpression * e
     if (scope)
         tree->setProp(prop, scope->queryFullName());
     else
-        setFullNameProp(tree, prop, expr->queryFullModuleName()->str(), expr->queryName()->str());
+        setFullNameProp(tree, prop, expr->queryFullModuleName()->lower()->str(), expr->queryName()->str());
 }
 
 static int compareSymbolsByPosition(IInterface * * pleft, IInterface * * pright)

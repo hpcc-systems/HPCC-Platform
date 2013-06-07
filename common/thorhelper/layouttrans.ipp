@@ -38,10 +38,10 @@ class FieldSearcher
 {
 public:
     FieldSearcher(IDefRecordElement const * elem);
-    bool search(_ATOM search, unsigned & pos) const;
+    bool search(IAtom * search, unsigned & pos) const;
 
 private:
-    MapBetween<_ATOM, _ATOM, unsigned, unsigned> tab;
+    MapBetween<IAtom *, IAtom *, unsigned, unsigned> tab;
 };
 
 class FieldMapping : public CInterface

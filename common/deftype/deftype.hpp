@@ -139,7 +139,7 @@ interface ICollationInfo;
 interface ICharsetInfo : public serializable
 {
 public:
-    virtual _ATOM queryName() = 0;
+    virtual IAtom * queryName() = 0;
     virtual ICollationInfo * queryDefaultCollation() = 0;
     virtual unsigned char queryFillChar() = 0;
     virtual char const * queryCodepageName() = 0;
@@ -148,7 +148,7 @@ public:
 interface ICollationInfo : public serializable
 {
 public:
-    virtual _ATOM queryName() = 0;
+    virtual IAtom * queryName() = 0;
     virtual ICharsetInfo * getCharset() = 0;
     virtual int compare(const char * left, const char * right, unsigned len) = 0;
     virtual const char * getCompareName(bool varLength) = 0;
@@ -157,7 +157,7 @@ public:
 interface ITranslationInfo : public IInterface
 {
 public:
-    virtual _ATOM queryName() = 0;
+    virtual IAtom * queryName() = 0;
     virtual const char * queryRtlFunction() = 0;
     virtual const char * queryVarRtlFunction() = 0;
     virtual ICharsetInfo * querySourceCharset() = 0;
@@ -193,7 +193,7 @@ public:
     virtual ITypeInfo * queryChildType() = 0;
     virtual ICharsetInfo * queryCharset() = 0;
     virtual ICollationInfo * queryCollation() = 0;
-    virtual _ATOM queryLocale() = 0;
+    virtual IAtom * queryLocale() = 0;
     virtual IInterface * queryDistributeInfo() = 0;
     virtual IInterface * queryGroupInfo() = 0;
     virtual IInterface * queryGlobalSortInfo() = 0;
@@ -227,9 +227,9 @@ public:
 extern DEFTYPE_API ITypeInfo *makeStringType(unsigned size, ICharsetInfo * _charset = NULL, ICollationInfo * _collation = NULL);
 extern DEFTYPE_API ITypeInfo *makeVarStringType(unsigned size, ICharsetInfo * _charset = NULL, ICollationInfo * _collation = NULL);    //NB: size is numchars+1
 extern DEFTYPE_API ITypeInfo *makeQStringType(int len);
-extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, _ATOM locale); // takes length in UChars, i.e. bytes/2 if known; locale is like fr_BE_EURO, or 0 for default
-extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, _ATOM locale); // takes length in UChars + 1, i.e. bytes/2 + 1 if known; locale is like fr_BE_EURO, or 0 for default
-extern DEFTYPE_API ITypeInfo *makeUtf8Type(unsigned len, _ATOM locale);       // takes length in UChars, i.e. bytes/4 if known; locale is like fr_BE_EURO, or 0 for default
+extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, IAtom * locale); // takes length in UChars, i.e. bytes/2 if known; locale is like fr_BE_EURO, or 0 for default
+extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, IAtom * locale); // takes length in UChars + 1, i.e. bytes/2 + 1 if known; locale is like fr_BE_EURO, or 0 for default
+extern DEFTYPE_API ITypeInfo *makeUtf8Type(unsigned len, IAtom * locale);       // takes length in UChars, i.e. bytes/4 if known; locale is like fr_BE_EURO, or 0 for default
 extern DEFTYPE_API ITypeInfo *makeCharType(bool caseSensitive = false);
 extern DEFTYPE_API ITypeInfo *makeIntType(int size, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makeSwapIntType(int size, bool isSigned);
@@ -277,8 +277,8 @@ extern DEFTYPE_API MemoryBuffer & appendBufferFromMem(MemoryBuffer & mem, ITypeI
 
 extern DEFTYPE_API void ClearTypeCache();
 
-extern DEFTYPE_API ICharsetInfo * getCharset(_ATOM charset);
-extern DEFTYPE_API ICollationInfo * getCollation(_ATOM collation);
+extern DEFTYPE_API ICharsetInfo * getCharset(IAtom * charset);
+extern DEFTYPE_API ICollationInfo * getCollation(IAtom * collation);
 extern DEFTYPE_API ITranslationInfo * getDefaultTranslation(ICharsetInfo * tgt, ICharsetInfo * src);
 extern DEFTYPE_API ITranslationInfo * queryDefaultTranslation(ICharsetInfo * tgt, ICharsetInfo * src);
 extern DEFTYPE_API bool isAscii(ITypeInfo * type);
@@ -300,7 +300,7 @@ extern DEFTYPE_API ITypeInfo * getAsciiType(ITypeInfo * type);
 extern DEFTYPE_API ITypeInfo * getBandType(ITypeInfo * type1, ITypeInfo * type2);
 extern DEFTYPE_API ITypeInfo * getBorType(ITypeInfo * type1, ITypeInfo * type2);
 extern DEFTYPE_API bool haveCommonLocale(ITypeInfo * type1, ITypeInfo * type2);
-extern DEFTYPE_API _ATOM getCommonLocale(ITypeInfo * type1, ITypeInfo * type2);
+extern DEFTYPE_API IAtom * getCommonLocale(ITypeInfo * type1, ITypeInfo * type2);
 extern DEFTYPE_API ITypeInfo * getPromotedCompareType(ITypeInfo * left, ITypeInfo * right);
 
 extern DEFTYPE_API bool isNumericType(ITypeInfo * type);

@@ -41,8 +41,8 @@ extern HQL_API bool isValidFieldReference(IHqlExpression * expr);
 extern HQL_API bool isFieldSelectedFromRecord(IHqlExpression * expr);
 
 extern HQL_API void gatherHints(HqlExprCopyArray & target, IHqlExpression * expr);
-extern HQL_API IHqlExpression * queryHint(IHqlExpression * expr, _ATOM name);
-extern HQL_API IHqlExpression * queryHintChild(IHqlExpression * expr, _ATOM name, unsigned idx);
+extern HQL_API IHqlExpression * queryHint(IHqlExpression * expr, IAtom * name);
+extern HQL_API IHqlExpression * queryHintChild(IHqlExpression * expr, IAtom * name, unsigned idx);
 extern HQL_API void unwindHintAttrs(HqlExprArray & args, IHqlExpression * expr);
 
 extern HQL_API IHqlExpression * replaceChildDataset(IHqlExpression * expr, IHqlExpression * newChild, unsigned whichChild);
@@ -70,7 +70,7 @@ extern HQL_API void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpressi
 extern HQL_API bool recordContainsBlobs(IHqlExpression * record);
 inline bool recordIsEmpty(IHqlExpression * record) { return queryLastField(record) == NULL; }
 extern HQL_API IHqlExpression * queryVirtualFileposField(IHqlExpression * record);
-extern HQL_API IHqlExpression * removePropertyFromFields(IHqlExpression * expr, _ATOM name);
+extern HQL_API IHqlExpression * removePropertyFromFields(IHqlExpression * expr, IAtom * name);
 
 extern HQL_API IHqlExpression * flattenListOwn(IHqlExpression * list);
 extern HQL_API void flattenListOwn(HqlExprArray & out, IHqlExpression * list);
@@ -92,7 +92,7 @@ extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
 extern HQL_API bool isTrivialSelectN(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int64 topNlimit);
 
-extern HQL_API IHqlExpression * queryPropertyChild(IHqlExpression * expr, _ATOM name, unsigned idx);
+extern HQL_API IHqlExpression * queryPropertyChild(IHqlExpression * expr, IAtom * name, unsigned idx);
 extern HQL_API IHqlExpression * querySequence(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryResultName(IHqlExpression * expr);
 extern HQL_API int getResultSequenceValue(IHqlExpression * expr);
@@ -147,20 +147,20 @@ extern HQL_API IHqlExpression * createMappingTransform(IHqlExpression * selfSele
 extern HQL_API IHqlExpression * getFailCode(IHqlExpression * failExpr);
 extern HQL_API IHqlExpression * getFailMessage(IHqlExpression * failExpr, bool nullIfOmitted);
 
-extern HQL_API _ATOM queryCsvTableEncoding(IHqlExpression * tableExpr);
-extern HQL_API _ATOM queryCsvEncoding(IHqlExpression * csvAttr);
+extern HQL_API IAtom * queryCsvTableEncoding(IHqlExpression * tableExpr);
+extern HQL_API IAtom * queryCsvEncoding(IHqlExpression * csvAttr);
 extern HQL_API IHqlExpression * combineIfsToMap(IHqlExpression * expr);
 extern HQL_API IHqlExpression * appendLocalAttribute(IHqlExpression * expr);
 extern HQL_API IHqlExpression * removeLocalAttribute(IHqlExpression * expr);
-extern HQL_API IHqlExpression * removeProperty(IHqlExpression * expr, _ATOM attr);
+extern HQL_API IHqlExpression * removeProperty(IHqlExpression * expr, IAtom * attr);
 extern HQL_API IHqlExpression * removeOperand(IHqlExpression * expr, IHqlExpression * operand);
 extern HQL_API IHqlExpression * removeChildOp(IHqlExpression * expr, node_operator op);
-extern HQL_API IHqlExpression * appendAttribute(IHqlExpression * expr, _ATOM attr);
+extern HQL_API IHqlExpression * appendAttribute(IHqlExpression * expr, IAtom * attr);
 extern HQL_API IHqlExpression * appendOwnedOperand(IHqlExpression * expr, IHqlExpression * ownedOperand);
 extern HQL_API IHqlExpression * replaceOwnedProperty(IHqlExpression * expr, IHqlExpression * ownedProeprty);
 extern HQL_API IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...);
-extern HQL_API IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name);
-extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, _ATOM name);
+extern HQL_API IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, IAtom * name);
+extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, IAtom * name);
 extern HQL_API bool hasOperand(IHqlExpression * expr, IHqlExpression * child);
 
 extern HQL_API unsigned numRealChildren(IHqlExpression * expr);
@@ -481,14 +481,14 @@ public:
     LibraryInputMapper(IHqlExpression * _libraryInterface);
 
     void expandParameters();
-    unsigned findParameter(_ATOM search);
+    unsigned findParameter(IIdAtom * search);
 
     void mapLogicalToReal(HqlExprArray & mapped, HqlExprArray & params);
     void mapRealToLogical(HqlExprArray & inputExprs, HqlExprArray & logicalParams, IHqlExpression * libraryId, bool canStream, bool distributed);
     inline unsigned numParameters() const { return realParameters.ordinality(); }
     inline unsigned numStreamedInputs() const { return streamingAllowed ? numDatasets : 0; }
 
-    IHqlExpression * resolveParameter(_ATOM search);
+    IHqlExpression * resolveParameter(IIdAtom * search);
     inline const HqlExprArray & queryRealParameters() const { return realParameters; }
 
 protected:
@@ -504,7 +504,7 @@ protected:
     bool streamingAllowed;
 };
 
-extern HQL_API _ATOM getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first);
+extern HQL_API IAtom * getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first);
 class HQL_API WarningProcessor
 {
 public:
@@ -538,7 +538,7 @@ public:
 public:
     WarningProcessor();
 
-    void addGlobalOnWarning(unsigned code, _ATOM action);
+    void addGlobalOnWarning(unsigned code, IAtom * action);
     void addGlobalOnWarning(IHqlExpression * setMetaExpr);
     void addWarning(IECLError * warning);
     inline void checkForGlobalOnWarning(IHqlExpression * expr)

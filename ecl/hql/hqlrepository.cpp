@@ -76,7 +76,7 @@ extern HQL_API void importRootModulesToScope(IHqlScope * scope, HqlLookupContext
     ForEachItemIn(i, rootScopes)
     {
         IHqlScope & cur = rootScopes.item(i);
-        _ATOM curName = cur.queryName();
+        IIdAtom * curName = cur.queryId();
         OwnedHqlExpr resolved = eclRepository->queryRootScope()->lookupSymbol(curName, LSFpublic, ctx);
         if (resolved)
             scope->defineSymbol(curName, NULL, resolved.getClear(), false, true, ob_import);
@@ -91,7 +91,7 @@ void lookupAllRootDefinitions(IHqlScope * scope, HqlLookupContext & ctx)
     scope->getSymbols(rootSymbols);
     ForEachItemIn(i, rootSymbols)
     {
-        ::Release(scope->lookupSymbol(rootSymbols.item(i).queryName(), LSFsharedOK, ctx));
+        ::Release(scope->lookupSymbol(rootSymbols.item(i).queryId(), LSFsharedOK, ctx));
     }
 }
 
@@ -113,7 +113,7 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
     do
     {
         dot = strchr(item, '.');
-        _ATOM moduleName;
+        IIdAtom * moduleName;
         if (dot)
         {
             moduleName = createIdentifierAtom(item, dot-item);
@@ -215,7 +215,7 @@ extern HQL_API IEclRepository * createCompoundRepository(EclRepositoryArray & re
 class HQL_API NestedEclRepository : public CInterface, implements IEclRepository
 {
 public:
-    NestedEclRepository(_ATOM name, IEclRepository * _repository) : repository(_repository)
+    NestedEclRepository(IIdAtom * name, IEclRepository * _repository) : repository(_repository)
     {
         rootScope.setown(createScope());
         IHqlExpression * scope = repository->queryRootScope()->queryExpression();
@@ -234,7 +234,7 @@ protected:
 
 //-------------------------------------------------------------------------------------------------------------------
 
-extern HQL_API IEclRepository * createNestedRepository(_ATOM name, IEclRepository * repository)
+extern HQL_API IEclRepository * createNestedRepository(IIdAtom * name, IEclRepository * repository)
 {
     if (!repository)
         return NULL;
@@ -243,14 +243,14 @@ extern HQL_API IEclRepository * createNestedRepository(_ATOM name, IEclRepositor
 
 //-------------------------------------------------------------------------------------------------------------------
 
-static _ATOM queryModuleFromFullName(const char * name)
+static IIdAtom * queryModuleIdFromFullName(const char * name)
 {
     if (!name)
         return NULL;
     const char * dot = strrchr(name, '.');
     if (dot)
-        return createAtom(dot+1);
-    return createAtom(name);
+        return createIdAtom(dot+1);
+    return createIdAtom(name);
 }
 
 class HQL_API CNewEclRepository : public CInterface, implements IEclRepositoryCallback
@@ -258,13 +258,13 @@ class HQL_API CNewEclRepository : public CInterface, implements IEclRepositoryCa
 public:
     CNewEclRepository(IEclSourceCollection * _collection, const char * rootScopeFullName) : collection(_collection)
     {
-        rootScope.setown(createRemoteScope(queryModuleFromFullName(rootScopeFullName), rootScopeFullName, this, NULL, NULL, true, NULL));
+        rootScope.setown(createRemoteScope(queryModuleIdFromFullName(rootScopeFullName), rootScopeFullName, this, NULL, NULL, true, NULL));
     }
     IMPLEMENT_IINTERFACE
 
     virtual IHqlScope * queryRootScope() { return rootScope->queryScope(); }
     virtual bool loadModule(IHqlRemoteScope *scope, IErrorReceiver *errs, bool forceAll);
-    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IAtom * searchName);
+    virtual IHqlExpression * loadSymbol(IHqlRemoteScope *scope, IIdAtom * searchName);
 
 protected:
     IHqlExpression * createSymbol(IHqlRemoteScope * rScope, IEclSource * source);
@@ -294,7 +294,7 @@ bool CNewEclRepository::loadModule(IHqlRemoteScope * rScope, IErrorReceiver *err
     return true;
 }
 
-IHqlExpression * CNewEclRepository::loadSymbol(IHqlRemoteScope * rScope, IAtom * searchName)
+IHqlExpression * CNewEclRepository::loadSymbol(IHqlRemoteScope * rScope, IIdAtom * searchName)
 {
     IEclSource * parent = rScope->queryEclSource();
     Owned<IEclSource> source = collection->getSource(parent, searchName);
@@ -302,18 +302,18 @@ IHqlExpression * CNewEclRepository::loadSymbol(IHqlRemoteScope * rScope, IAtom *
 }
 
 
-static void getFullName(StringBuffer & fullName, IHqlScope * scope, _ATOM attrName)
+static void getFullName(StringBuffer & fullName, IHqlScope * scope, IIdAtom * attrName)
 {
     fullName.append(scope->queryFullName());
     if (fullName.length())
         fullName.append(".");
-    fullName.append(attrName);
+    fullName.append(attrName->str());
 }
 
 
 IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclSource * source)
 {
-    _ATOM eclName = source->queryEclName();
+    IIdAtom * eclName = source->queryEclName();
     IHqlScope * scope = rScope->queryScope();
     StringBuffer fullName;
     getFullName(fullName, scope, eclName);
@@ -362,7 +362,7 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
     default:
         throwUnexpected();
     }
-    return ::createSymbol(eclName, scope->queryName(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0, 0, 0);
+    return ::createSymbol(eclName, scope->queryId(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0, 0, 0);
 }
 
 

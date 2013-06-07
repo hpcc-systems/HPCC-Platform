@@ -786,7 +786,7 @@ void HqlCppWriter::generateParamCpp(IHqlExpression * param)
     ITypeInfo *paramType = param->queryType();
     
     //Case is significant if these parameters are use for BEGINC++ sections
-    _ATOM paramName = param->queryName();
+    IAtom * paramName = param->queryName();
     StringBuffer paramNameText;
     paramNameText.append(paramName).toLowerCase();
 
@@ -2094,7 +2094,7 @@ void HqlCppWriter::setOutput(IFile * _targetFile, IIOStream * _target)
     out.ensureCapacity(FILE_CHUNK_SIZE + 2 * REASONABLE_LINE_LIMIT);
 }
 
-void HqlCppSectionWriter::generateSection(unsigned delta, _ATOM section, unsigned pass)
+void HqlCppSectionWriter::generateSection(unsigned delta, IAtom * section, unsigned pass)
 {
     HqlStmts * match = instance.querySection(section);
     if (match)

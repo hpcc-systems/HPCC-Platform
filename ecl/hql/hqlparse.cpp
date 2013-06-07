@@ -141,7 +141,7 @@ protected:
 public:
     CHqlParserPseduoScope(HqlGram * _parser) : CHqlScope(no_privatescope) { parser = _parser; }
 
-    virtual IHqlExpression *lookupSymbol(_ATOM name, unsigned lookupFlags, HqlLookupContext & ctx)
+    virtual IHqlExpression *lookupSymbol(IIdAtom * name, unsigned lookupFlags, HqlLookupContext & ctx)
     {
         attribute errpos;
         errpos.clearPosition();
@@ -262,7 +262,7 @@ StringBuffer &HqlLex::getTokenText(StringBuffer &ret)
     return ret.append(yyPosition - yyStartPos, yyBuffer+yyStartPos);
 }
 
-IHqlExpression *HqlLex::lookupSymbol(_ATOM name, const attribute& errpos) 
+IHqlExpression *HqlLex::lookupSymbol(IIdAtom * name, const attribute& errpos)
 {
     return yyParser->lookupSymbol(name, errpos);
 }
@@ -329,14 +329,15 @@ void HqlLex::pushText(const char *s)
 #endif
 }
 
-void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, _ATOM argumentName, unsigned& parmno,IProperties *macroParms)
+void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentId, unsigned& parmno,IProperties *macroParms)
 {
     IHqlExpression * formals = queryFunctionParameters(funcdef);
     IHqlExpression * defaults = queryFunctionDefaults(funcdef);
     unsigned numFormals = formals->numChildren();
     unsigned thisParam = (unsigned)-1;
-    if (argumentName)
+    if (argumentId)
     {
+        IAtom * argumentName = argumentId->lower();
         unsigned argNum = 0;
         for (unsigned i=0; i < numFormals; i++)
         {
@@ -348,7 +349,7 @@ void HqlLex::setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, Stri
         }
 
         if (argNum == 0)
-            reportError(errpos, ERR_NAMED_PARAM_NOT_FOUND, "Named parameter '%s' not found in macro", argumentName->str());
+            reportError(errpos, ERR_NAMED_PARAM_NOT_FOUND, "Named parameter '%s' not found in macro", argumentId->str());
         else
             thisParam = argNum;
     }
@@ -413,8 +414,8 @@ void HqlLex::pushMacro(IHqlExpression *expr)
     IHqlExpression * defaults = expr->queryChild(2);
     unsigned formalParmCt = formals->numChildren();
     unsigned parmno = 0;
-    _ATOM possibleName = NULL;
-    _ATOM argumentName = NULL;
+    IIdAtom * possibleName = NULL;
+    IIdAtom * argumentName = NULL;
     while (parenDepth)
     {
         tok = yyLex(nextToken, false, 0);
@@ -746,7 +747,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
     StringBuffer forwhat;
     forwhat.appendf("#DECLARE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -833,7 +834,7 @@ void HqlLex::doSet(YYSTYPE & returnToken, bool append)
     StringBuffer forwhat;
     forwhat.appendf("%s(%d,%d)",append?"#APPEND":"#SET",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -879,7 +880,7 @@ void HqlLex::doLine(YYSTYPE & returnToken)
     int line = returnToken.pos.lineno, col = returnToken.pos.column;
     forwhat.appendf("LINE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -928,7 +929,7 @@ void HqlLex::doError(YYSTYPE & returnToken, bool isError)
     StringBuffer forwhat;
     forwhat.appendf("%s(%d,%d)",isError?"#ERROR":"#WARNING",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -964,7 +965,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
     StringBuffer forwhat;
     forwhat.appendf("#EXPORT(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM exportname = NULL;
+    IIdAtom * exportname = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -1034,7 +1035,7 @@ void HqlLex::doTrace(YYSTYPE & returnToken)
     StringBuffer forwhat;
     forwhat.appendf("#TRACE(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -1074,7 +1075,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
     StringBuffer forwhat;
     forwhat.appendf("#FOR(%d,%d)",returnToken.pos.lineno,returnToken.pos.column);
 
-    _ATOM name = NULL;
+    IIdAtom * name = NULL;
     if (yyLex(returnToken, false,0) != '(')
     {
         reportError(returnToken, ERR_EXPECTED_LEFTCURLY, "( expected"); 
@@ -1335,7 +1336,7 @@ void HqlLex::doUniqueName(YYSTYPE & returnToken)
     } 
     else 
     {
-        _ATOM name = returnToken.getName();
+        IIdAtom * name = returnToken.getName();
         StringAttr pattern("__#__$__");
 
         tok = yyLex(returnToken, false,0);
@@ -1679,7 +1680,7 @@ IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int sta
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
 #endif
     //  Use an ECL reserved word as the scope name to avoid name conflicts with these defined localscope.
-    Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedAtom,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL); 
+    Owned<IHqlScope> scope = new CHqlMultiParentScope(sharedId,yyParser->queryPrimaryScope(false),yyParser->queryPrimaryScope(true),yyParser->parseScope.get(),NULL);
 
     HqlGramCtx parentContext(yyParser->lookupCtx);
     yyParser->saveContext(parentContext, false);

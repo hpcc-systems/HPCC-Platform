@@ -54,7 +54,7 @@ inline bool isInternalAttribute(IHqlExpression * e)
 {
     if (e->isAttribute())
     {
-        _ATOM name= e->queryName();
+        IAtom * name= e->queryName();
         if ((name == sequenceAtom) || isInternalAttributeName(name))
             return true;
         if ((name == updateAtom) && e->hasProperty(alwaysAtom))
@@ -131,7 +131,7 @@ private:
     IHqlExpression * queryMapped(IHqlExpression * expr);
     IHqlExpression * queryChild(IHqlExpression * e, unsigned i);
 
-    StringBuffer & appendAtom(StringBuffer & s, _ATOM name);
+    StringBuffer & appendId(StringBuffer & s, IIdAtom * name);
     StringBuffer & queryNewline(StringBuffer &s);
     
     bool          m_recurse;
@@ -187,30 +187,25 @@ HqltHql::~HqltHql()
     unlockTransformMutex();
 }
 
-StringBuffer & HqltHql::appendAtom(StringBuffer & s, _ATOM name)
+StringBuffer & HqltHql::appendId(StringBuffer & s, IIdAtom * id)
 {
-    if (lowerCaseIds)
-    {
-        StringBuffer lower;
-        lower.append(name).toLowerCase();
-        return s.append(lower);
-    }
-    return s.append(name);
+    //MORE: We may want to lose the case conversion and use return s.append(id->str());
+    return s.append(id->lower()->str());
 }
 
 
 StringBuffer &HqltHql::makeUniqueName(IHqlExpression * expr, StringBuffer &s)
 {
-    _ATOM moduleName = expr->queryFullModuleName();
+    IIdAtom * moduleName = expr->queryFullModuleName();
     if (moduleName && !ignoreModuleNames)
     {
         if (isPublicSymbol(expr))
         {
             if (xgmmlGraphText)
-                appendAtom(s, moduleName).append(".");
+                appendId(s, moduleName).append(".");
             else
             {
-                const char * moduleNameText = moduleName->str();
+                const char * moduleNameText = moduleName->lower()->str();
                 loop
                 {
                     const char * dot = strchr(moduleNameText, '.');
@@ -227,7 +222,7 @@ StringBuffer &HqltHql::makeUniqueName(IHqlExpression * expr, StringBuffer &s)
         }
     }
 
-    appendAtom(s, expr->queryName());
+    appendId(s, expr->queryId());
 #ifdef SHOWADDRSYM
     if (expandProcessed)
         s.appendf("[%p:%p]",expr, expr->queryBody());
@@ -266,6 +261,8 @@ IHqlExpression * HqltHql::queryMapped(IHqlExpression * expr)
     {
         IHqlExpression * extra = (IHqlExpression *)expr->queryTransformExtra();
         if (!extra || extra->isAttribute() || extra == expr)
+            return expr;
+        if (expr->queryName() == unnamedId->lower())
             return expr;
         expr = extra;
     }
@@ -369,7 +366,7 @@ StringBuffer &HqltHql::lookupSymbolName(IHqlExpression * expr, StringBuffer &s)
         if ((extra != expr) && !extra->isAttribute())
             return lookupSymbolName(extra, s);
 
-        return appendAtom(s, extra->queryName());
+        return appendId(s, extra->queryId());
     }
 
     makeUniqueName(expr, s);
@@ -856,9 +853,9 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             callEclFunction(s, expr, inType);
         }
     }
-    else if (!expandNamed && !expr->isAttribute() && expr->queryName() && expr->queryName() != unnamedAtom )
+    else if (!expandNamed && !expr->isAttribute() && expr->queryId() && expr->queryId()->lower() != unnamedId->lower() )
     {
-        appendAtom(s, expr->queryName());
+        appendId(s, expr->queryId());
     }
     else
     {
@@ -1441,7 +1438,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             {
                 if (isInternalAttribute(expr) && !expandProcessed)
                     break;
-                _ATOM name = expr->queryName();
+                IAtom * name = expr->queryName();
                 s.append(expr->queryName());
                 if (name == _workflowPersist_Atom || name == _original_Atom)
                 {
@@ -1662,7 +1659,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                             IHqlExpression *attr = expr->queryChild(kids);
                             if (attr->isAttribute())
                             {
-                                _ATOM name = attr->queryName();
+                                IAtom * name = attr->queryName();
                                 if (name != countAtom && name != sizeofAtom && 
                                     !(isInternalAttribute(attr) && !expandProcessed))
                                 {
@@ -2306,7 +2303,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             }
         case no_setmeta:
             {
-                _ATOM kind = expr->queryChild(0)->queryName();
+                IAtom * kind = expr->queryChild(0)->queryName();
                 if (kind == debugAtom)
                     s.append("#OPTION");
                 else if (kind == constAtom)
@@ -2694,7 +2691,7 @@ StringBuffer &HqltHql::getFieldTypeString(IHqlExpression * e, StringBuffer &s)
                 IHqlExpression * cur = e->queryChild(i);
                 if (cur->isAttribute())
                 {
-                    _ATOM name = cur->queryName();
+                    IAtom * name = cur->queryName();
                     if (name == countAtom || name == sizeofAtom)
                     {
                         toECL(cur, s.append(", "), false, false);
@@ -2736,7 +2733,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
         }
 
         StringBuffer tmp;
-        if(expr->queryName()==unnamedAtom)
+        if(expr->queryName()==unnamedId->lower())
         {
             HqlExprArray * visited = findVisitedArray();
             for (unsigned idx = 0; idx < visited->ordinality(); idx++)
@@ -2747,7 +2744,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
                 {
                     if(expr->queryType() == e->queryChild(1)->queryType())
                     {
-                        appendAtom(tmp, e->queryName());    
+                        appendId(tmp, e->queryId());
                         break;
                     }
                 }
@@ -2769,7 +2766,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
                 clashCounter++;
                 name.append("___").append(clashCounter);
             }
-            OwnedHqlExpr extra = createAttribute(createIdentifierAtom(name.str()));
+            OwnedHqlExpr extra = createId(createIdentifierAtom(name.str()));
             expr->setTransformExtra(extra); // LINKs !
             addVisited(expr);
 
@@ -2782,8 +2779,9 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
         }
         else
         {
-            _ATOM nameAtom = ((IHqlExpression *)expr->queryTransformExtra())->queryName();
-            appendAtom(name.clear(), nameAtom);
+            IHqlExpression * prev = (IHqlExpression *)expr->queryTransformExtra();
+            IIdAtom * prevId = prev->queryId();
+            appendId(name.clear(), prevId);
         }
 
         if(tmp.length())
@@ -2962,7 +2960,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
             makeUniqueName(expr, temp);
             clashCounter++;
             temp.append("___").append(clashCounter);
-            OwnedHqlExpr extra = createAttribute(createIdentifierAtom(temp.str()));
+            OwnedHqlExpr extra = createId(createIdentifierAtom(temp.str()));
             expr->setTransformExtra(extra); // LINKs !
         }
 
@@ -2984,7 +2982,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
             {
                 if(!expr->queryTransformExtra())
                 {
-                    IHqlExpression * extra = createAttribute(createIdentifierAtom(name.str()));
+                    IHqlExpression * extra = createId(createIdentifierAtom(name.str()));
                     expr->setTransformExtra(extra); // LINKs !
                     extra->Release();
                     addVisited(expr);
@@ -3000,7 +2998,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
         }
         else if(!inType)
         {
-            OwnedHqlExpr extra = createAttribute(createIdentifierAtom(name.str()));
+            OwnedHqlExpr extra = createId(createIdentifierAtom(name.str()));
             expr->setTransformExtra(extra); // LINKs !
             addVisited(expr);
         
@@ -3114,7 +3112,7 @@ void HqltHql::defineCallTarget(IHqlExpression * call, StringBuffer & name)
         StringBuffer newdef;
         m_service_names.append(*new StringBufferItem(name));
 
-        OwnedHqlExpr extra = createAttribute(createIdentifierAtom(name.str()));
+        OwnedHqlExpr extra = createId(createIdentifierAtom(name.str()));
         call->setTransformExtra(extra);
         addVisited(call);
 
@@ -3166,7 +3164,7 @@ void HqltHql::defineCallTarget(IHqlExpression * call, StringBuffer & name)
     else
     {
         if (prevName)
-            appendAtom(name, prevName->queryName());
+            appendId(name, prevName->queryId());
         else
             lookupSymbolName(call, name);
     }

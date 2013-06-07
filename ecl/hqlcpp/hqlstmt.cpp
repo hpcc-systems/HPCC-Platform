@@ -58,7 +58,7 @@ void HqlExprAssociation::getBound(CHqlBoundExpr & result)
     
 //---------------------------------------------------------------------------
 
-BuildCtx::BuildCtx(HqlCppInstance & _state, _ATOM section) : state(_state)
+BuildCtx::BuildCtx(HqlCppInstance & _state, IAtom * section) : state(_state)
 {
     init(state.ensureSection(section));
 }
@@ -87,7 +87,7 @@ BuildCtx::~BuildCtx()
 {
 }
 
-void BuildCtx::set(_ATOM section)
+void BuildCtx::set(IAtom * section)
 {
     init(state.ensureSection(section));
 }
@@ -1306,7 +1306,7 @@ public:
     bool queryCombine(const SpecialFunction & next, bool memsetOnly, size32_t combineStringLimit);
 
 private:
-    _ATOM name;
+    IIdAtom * name;
     HqlExprAttr src;
     HqlExprAttr tgt;
     HqlExprAttr srcLen;
@@ -1336,12 +1336,12 @@ bool isAwkwardIntSize(IHqlExpression * size)
 
 bool SpecialFunction::canOptimize() const
 {
-    if ((name == memcpyAtom) && (queryMemsetChar(src) >= 0))
+    if ((name == memcpyId) && (queryMemsetChar(src) >= 0))
     {
         if ((getIntValue(srcLen, 0) > 1) || !wasAssign)
             return true;
     }
-    if ((name == memcpyAtom) && isAwkwardIntSize(srcLen))
+    if ((name == memcpyId) && isAwkwardIntSize(srcLen))
         return true;
 
     return false;
@@ -1351,15 +1351,15 @@ HqlStmt * SpecialFunction::createStmt(HqlStmts & curStmts, HqlCppTranslator & tr
 {
     HqlExprArray args;
 
-    _ATOM func = name;
-    if (name == memsetAtom)
+    IIdAtom * func = name;
+    if (name == memsetId)
     {
-        func = memsetAtom;
+        func = memsetId;
         args.append(*LINK(tgt));
         args.append(*LINK(src));
         args.append(*LINK(srcLen));
     }
-    else if (name == memcpyAtom)
+    else if (name == memcpyId)
     {
         int clearByte = queryMemsetChar(src);
         size32_t size = (size32_t)getIntValue(srcLen, 0);
@@ -1387,7 +1387,7 @@ HqlStmt * SpecialFunction::createStmt(HqlStmts & curStmts, HqlCppTranslator & tr
         //MORE: assignment of 1,2,4 bytes possibly better as an assign?
         if (clearByte >= 0)
         {
-            func = memsetAtom;
+            func = memsetId;
             args.append(*LINK(tgt));
             args.append(*createConstant(createIntValue(clearByte, sizeof(int), true)));
             args.append(*LINK(srcLen));
@@ -1399,20 +1399,20 @@ HqlStmt * SpecialFunction::createStmt(HqlStmts & curStmts, HqlCppTranslator & tr
             args.append(*LINK(srcLen));
         }
     }
-    else if (name == deserializerReadNAtom || name == serializerPutAtom)
+    else if (name == deserializerReadNId || name == serializerPutId)
     {
         args.append(*LINK(src));
         args.append(*LINK(tgtLen));
         args.append(*LINK(tgt));
     }
-    else if ((name == ebcdic2asciiAtom) || (name == ascii2ebcdicAtom))
+    else if ((name == ebcdic2asciiId) || (name == ascii2ebcdicId))
     {
         args.append(*LINK(tgtLen));
         args.append(*LINK(tgt));
         args.append(*LINK(srcLen));
         args.append(*LINK(src));
     }
-    else if (name == deserializerSkipNAtom)
+    else if (name == deserializerSkipNId)
     {
         args.append(*LINK(src));
         args.append(*LINK(srcLen));
@@ -1451,7 +1451,7 @@ IHqlExpression * stripTranslatedCasts(IHqlExpression * e)
 void SpecialFunction::expandValue(void * target) const
 {
     size32_t size = (size32_t)getIntValue(srcLen);
-    if (name == memsetAtom)
+    if (name == memsetId)
         memset(target, (int)getIntValue(src), size);
     else
         memcpy(target, src->queryValue()->queryValue(), size);
@@ -1465,8 +1465,8 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
         IHqlExpression * expr = stmt.queryExpr(0);
         if (expr->getOperator() != no_externalcall)
             return false;
-        name = expr->queryName();
-        if (name == memcpyAtom)
+        name = expr->queryId();
+        if (name == memcpyId)
         {
             src.set(stripTranslatedCasts(expr->queryChild(1)));
             if (memsetOnly && (queryMemsetChar(src) == -1))
@@ -1476,7 +1476,7 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
             tgtLen.set(srcLen);
             return true;
         }
-        if (name == deserializerReadNAtom || name == serializerPutAtom)
+        if (name == deserializerReadNId || name == serializerPutId)
         {
             if (memsetOnly)
                 return false;
@@ -1485,7 +1485,7 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
             tgtLen.set(expr->queryChild(1));
             return true;
         }
-        if ((name == ebcdic2asciiAtom) || (name == ascii2ebcdicAtom))
+        if ((name == ebcdic2asciiId) || (name == ascii2ebcdicId))
         {
             if (memsetOnly)
                 return false;
@@ -1495,7 +1495,7 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
             tgtLen.set(expr->queryChild(0));
             return srcLen == tgtLen;
         }
-        if (name == memsetAtom)
+        if (name == memsetId)
         {
             IHqlExpression * value = expr->queryChild(1);
             IHqlExpression * len = expr->queryChild(2);
@@ -1508,27 +1508,27 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
             }
             return true;
         }
-        if (name == deserializerSkipNAtom)
+        if (name == deserializerSkipNId)
         {
             src.set(expr->queryChild(0));
             srcLen.set(expr->queryChild(1));
             return true;
         }
         unsigned size = 0;
-        if (name == writeIntAtom[3])
+        if (name == writeIntId[3])
             size = 3;
-        else if (name == writeIntAtom[5])
+        else if (name == writeIntId[5])
             size = 5;
-        else if (name == writeIntAtom[6])
+        else if (name == writeIntId[6])
             size = 6;
-        else if (name == writeIntAtom[7])
+        else if (name == writeIntId[7])
             size = 7;
         if (size)
         {
             IHqlExpression * value = expr->queryChild(1);
             if (isZero(value))
             {
-                name = memcpyAtom;
+                name = memcpyId;
                 src.setown(createDataForIntegerZero(size));
                 tgt.set(stripTranslatedCasts(expr->queryChild(0)));
                 srcLen.setown(getSizetConstant(size));
@@ -1542,10 +1542,10 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
                 value = value->queryChild(0);
             if (value->getOperator() == no_externalcall)
             {
-                if ((value->queryName() == readIntAtom[size][true]) ||
-                    (value->queryName() == readIntAtom[size][false]))
+                if ((value->queryId() == readIntId[size][true]) ||
+                    (value->queryId() == readIntId[size][false]))
                 {
-                    name = memcpyAtom;
+                    name = memcpyId;
                     src.set(stripTranslatedCasts(value->queryChild(0)));
                     tgt.set(stripTranslatedCasts(expr->queryChild(0)));
                     srcLen.setown(getSizetConstant(size));
@@ -1647,7 +1647,7 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
         tgtLen.set(srcLen);
         tgt.set(stripTranslatedCasts(tgt->queryChild(0)));
         src.set(stripTranslatedCasts(src));
-        name = memcpyAtom;
+        name = memcpyId;
         return true;
     }
     return false;
@@ -1655,16 +1655,16 @@ bool SpecialFunction::extractIsSpecial(IHqlStmt & stmt, bool memsetOnly, unsigne
 
 bool SpecialFunction::isBigClear() const
 {
-    if ((name == memsetAtom) || (name == memcpyAtom))
+    if ((name == memsetId) || (name == memcpyId))
         return getIntValue(srcLen, 0) > CLEAR_COPY_THRESHOLD;
     return false;
 }
 
 int SpecialFunction::queryClearValue() const
 {
-    if (name == memcpyAtom) 
+    if (name == memcpyId)
         return queryMemsetChar(src);
-    if (name == memsetAtom)
+    if (name == memsetId)
         return (int)getIntValue(src, -1);
     return -1;
 }
@@ -1673,11 +1673,11 @@ bool SpecialFunction::queryCombine(const SpecialFunction & next, bool memsetOnly
 {
     if (name != next.name)
     {
-        if (!((name == memsetAtom) && (next.name == memcpyAtom)) && 
-            !((name == memcpyAtom) && (next.name == memsetAtom)))
+        if (!((name == memsetId) && (next.name == memcpyId)) &&
+            !((name == memcpyId) && (next.name == memsetId)))
             return false;
     }
-    if (name == deserializerSkipNAtom)
+    if (name == deserializerSkipNId)
     {
         if (src != next.src)
             return false;
@@ -1686,9 +1686,9 @@ bool SpecialFunction::queryCombine(const SpecialFunction & next, bool memsetOnly
     }
     if (rightFollowsLeft(tgt, tgtLen, next.tgt))
     {
-        if ((name != memsetAtom) && (next.name != memsetAtom))
+        if ((name != memsetId) && (next.name != memsetId))
         {
-            if (name == deserializerReadNAtom || name == serializerPutAtom)
+            if (name == deserializerReadNId || name == serializerPutId)
             {
                 tgtLen.setown(peepholeAddExpr(tgtLen, next.tgtLen));
                 return true;
@@ -1735,8 +1735,8 @@ bool SpecialFunction::queryCombine(const SpecialFunction & next, bool memsetOnly
             free(temp);
             srcLen.setown(getSizetConstant(curSize + nextSize));
             tgtLen.set(srcLen);
-            if (name == memsetAtom)
-                name = memcpyAtom;
+            if (name == memsetId)
+                name = memcpyId;
             return true;
         }
     }

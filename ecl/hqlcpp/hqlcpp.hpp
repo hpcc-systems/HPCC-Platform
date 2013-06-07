@@ -113,9 +113,9 @@ class HqlStmts;
 interface HQLCPP_API IHqlCppInstance : public IInterface
 {
 public:
-    virtual HqlStmts * ensureSection(_ATOM section) = 0;
+    virtual HqlStmts * ensureSection(IAtom * section) = 0;
     virtual const char * queryLibrary(unsigned idx) = 0;
-    virtual HqlStmts * querySection(_ATOM section) = 0;
+    virtual HqlStmts * querySection(IAtom * section) = 0;
     virtual void addResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id=(unsigned)-1) = 0;
     virtual void addCompressResource(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id=(unsigned)-1) = 0;
     virtual void addManifest(const char *filename) = 0;

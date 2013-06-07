@@ -54,8 +54,8 @@ IHqlExpression* HqlGram::processAbstractDataset(IHqlExpression* _expr, IHqlExpre
         if ((kid->getOperator() == no_ifblock) || kid->isAttribute())
             continue;
 
-        _ATOM name = kid->queryName();
-        _ATOM mapto = fieldMapTo(mapping, name);
+        IIdAtom * name = kid->queryId();
+        IIdAtom * mapto = fieldMapTo(mapping, name);
 
         OwnedHqlExpr match = actualScope->lookupSymbol(mapto);
         if (match)
@@ -132,35 +132,37 @@ bool HqlGram::checkTemplateFunctionParameters(IHqlExpression* func, HqlExprArray
 }
 
 /* mapping is a no_sortlist of comma pairs */
-_ATOM HqlGram::fieldMapTo(IHqlExpression* mapping, _ATOM name)
+IIdAtom * HqlGram::fieldMapTo(IHqlExpression* mapping, IIdAtom * id)
 {
     if (!mapping)
-        return name;
+        return id;
 
+    IAtom * name = id->lower();
     ForEachChild(i, mapping)
     {
         IHqlExpression * map = mapping->queryChild(i);
         if (map->queryChild(0)->queryName() == name)
-            return map->queryChild(1)->queryName();
+            return map->queryChild(1)->queryId();
     }
 
-    return name;
+    return id;
 }
 
 /* mapping is a no_sortlist of comma pairs */
-_ATOM HqlGram::fieldMapFrom(IHqlExpression* mapping, _ATOM name)
+IIdAtom * HqlGram::fieldMapFrom(IHqlExpression* mapping, IIdAtom * id)
 {
     if (!mapping)
-        return name;
+        return id;
 
+    IAtom * name = id->lower();
     ForEachChild(i, mapping)
     {
         IHqlExpression * map = mapping->queryChild(i);
         if (map->queryChild(1)->queryName() == name)
-            return map->queryChild(0)->queryName();
+            return map->queryChild(0)->queryId();
     }
 
-    return name;
+    return id;
 }
 
 // either a abstract dataset 
@@ -254,13 +256,13 @@ IHqlExpression* HqlGram::bindFieldMap(IHqlExpression* expr, IHqlExpression* map)
                 IHqlExpression * old = oldmap->queryChild(i);
                 IHqlExpression * from = old->queryChild(0);
                 IHqlExpression * to = old->queryChild(1);
-                _ATOM name = from->queryName();
-                _ATOM mappedName = fieldMapFrom(map, name);
+                IIdAtom * name = from->queryId();
+                IIdAtom * mappedName = fieldMapFrom(map, name);
 
                 if (name == mappedName)
                     newmaps.append(*LINK(old));
                 else
-                    newmaps.append(*createComma(createAttribute(mappedName), LINK(to)));
+                    newmaps.append(*createComma(createId(mappedName), LINK(to)));
             }
             map->Release();
             IHqlExpression * newmap = createSortList(newmaps);
@@ -301,8 +303,8 @@ IHqlExpression* HqlGram::bindTemplateFunctionParameters(IHqlExpression* funcdef,
             actual = defaults->queryChild(idx);
             //MORE: rebind the parameter
         }
-        _ATOM parentModuleName = NULL;
-        newScope->defineSymbol(formal->queryName(),parentModuleName,actual,true,false,0);
+        IIdAtom * parentModuleName = NULL;
+        newScope->defineSymbol(formal->queryId(),parentModuleName,actual,true,false,0);
     }
 
     IHqlExpression* expr = reparseTemplateFunction(funcdef, newScope, lookupCtx, fieldMapUsed);

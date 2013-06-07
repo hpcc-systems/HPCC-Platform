@@ -728,7 +728,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
     CHqlBoundTarget target;
     target.expr.set(tempRow->queryBound());
     HqlExprArray args;
-    _ATOM lookupFunction = NULL;
+    IIdAtom * lookupFunction = NULL;
     IHqlExpression *dictionary = mapExpr->queryChild(0);
     IHqlExpression *searchExpr = mapExpr->queryChild(1);
 
@@ -769,7 +769,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
         args.add(*LINK(dictionary), 0);
         args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
         args.append(*::createRow(no_null, LINK(record))); // the default record
-        lookupFunction = createAtom(optimizedLookupFunc);
+        lookupFunction = createIdentifierAtom(optimizedLookupFunc);
     }
     else
     {
@@ -779,7 +779,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
         args.append(*LINK(dictionary));
         args.append(*LINK(searchExpr));
         args.append(*::createRow(no_null, LINK(record))); // the default record
-        lookupFunction = dictionaryLookupAtom;
+        lookupFunction = dictionaryLookupId;
     }
     Owned<ITypeInfo> resultType = makeReferenceModifier(makeAttributeModifier(makeRowType(record->getType()), getLinkCountedAttr()));
     OwnedHqlExpr call = translator.bindFunctionCall(lookupFunction, args, resultType);
@@ -798,7 +798,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     OwnedHqlExpr searchRecord = getDictionarySearchRecord(record);
     OwnedHqlExpr keyRecord = getDictionaryKeyRecord(record);
     unsigned numKeyFields = getFlatFieldCount(keyRecord);
-    _ATOM lookupFunction = NULL;
+    IIdAtom * lookupFunction = NULL;
     StringBuffer optimizedLookupFunc;
     if (numKeyFields == 1)
     {
@@ -832,7 +832,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     {
         args.add(*LINK(dictionary), 0);
         args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
-        lookupFunction = createAtom(optimizedLookupFunc);
+        lookupFunction = createIdentifierAtom(optimizedLookupFunc);
     }
     else
     {
@@ -841,7 +841,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
         args.append(*createQuoted(lookupHelperName, makeBoolType()));
         args.append(*LINK(dictionary));
         args.append(*LINK(searchExpr));
-        lookupFunction = dictionaryLookupExistsAtom;
+        lookupFunction = dictionaryLookupExistsId;
     }
     OwnedHqlExpr call = translator.bindFunctionCall(lookupFunction, args, makeBoolType());
     translator.buildExpr(ctx, call, tgt);
@@ -851,7 +851,7 @@ void InlineLinkedDictionaryCursor::buildCountDict(BuildCtx & ctx, CHqlBoundExpr 
 {
     HqlExprArray args;
     args.append(*LINK(ds));
-    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryCountAtom, args, makeIntType(8, false));
+    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryCountId, args, makeIntType(8, false));
     translator.buildExpr(ctx, call, tgt);
 }
 
@@ -859,7 +859,7 @@ void InlineLinkedDictionaryCursor::buildExistsDict(BuildCtx & ctx, CHqlBoundExpr
 {
     HqlExprArray args;
     args.append(*LINK(ds));
-    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryExistsAtom, args, makeBoolType());
+    OwnedHqlExpr call = translator.bindFunctionCall(dictionaryExistsId, args, makeBoolType());
     translator.buildExpr(ctx, call, tgt);
 }
 
@@ -1195,7 +1195,7 @@ GeneralSetCursor::GeneralSetCursor(HqlCppTranslator & _translator, IHqlExpressio
     ITypeInfo * elementType = LINK(expr->queryType()->queryChildType());
     if (!elementType)
         elementType = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
-    element.setown(createField(valueAtom, elementType, NULL));
+    element.setown(createField(valueId, elementType, NULL));
 
     HqlExprArray fields;
     fields.append(*LINK(element));
@@ -1517,7 +1517,7 @@ BoundRow * DatasetBuilderBase::buildCreateRow(BuildCtx & ctx)
     return translator.bindSelf(ctx, dataset, builderName);
 }
 
-BoundRow * DatasetBuilderBase::buildDeserializeRow(BuildCtx & ctx, IHqlExpression * serializedInput, _ATOM serializeForm)
+BoundRow * DatasetBuilderBase::buildDeserializeRow(BuildCtx & ctx, IHqlExpression * serializedInput, IAtom * serializeForm)
 {
     StringBuffer serializerInstanceName;
     translator.ensureRowSerializer(serializerInstanceName, ctx, record, serializeForm, deserializerAtom);
@@ -1913,7 +1913,7 @@ void LinkedDictionaryBuilder::buildDeclare(BuildCtx & ctx)
 SetBuilder::SetBuilder(HqlCppTranslator & _translator, ITypeInfo * fieldType, IHqlExpression * _allVar) : translator(_translator)
 {
     HqlExprArray fields;
-    fields.append(*createField(valueAtom, LINK(fieldType), NULL));
+    fields.append(*createField(valueId, LINK(fieldType), NULL));
     record.setown(createRecord(fields));
     allVar.set(_allVar);
     activeRow = NULL;
@@ -2128,7 +2128,7 @@ void HqlCppTranslator::doBuildAssignAddSets(BuildCtx & ctx, const CHqlBoundTarge
     HqlExprArray args;
     args.append(*LINK(left));
     args.append(*LINK(right));
-    OwnedHqlExpr call = bindFunctionCall(appendSetXAtom, args, left->queryType());
+    OwnedHqlExpr call = bindFunctionCall(appendSetXId, args, left->queryType());
     buildExprAssign(ctx, target, call);
 }
 

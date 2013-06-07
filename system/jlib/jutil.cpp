@@ -1996,14 +1996,14 @@ IAuthenticatedUser *createAuthenticatedUser() { UNIMPLEMENTED; }
 #endif
 
 
-extern jlib_decl void serializeAtom(MemoryBuffer & target, _ATOM name)
+extern jlib_decl void serializeAtom(MemoryBuffer & target, IAtom * name)
 {
     StringBuffer lower(name->str());
     lower.toLowerCase();
     serialize(target, lower.toCharArray());
 }
 
-extern jlib_decl _ATOM deserializeAtom(MemoryBuffer & source)
+extern jlib_decl IAtom * deserializeAtom(MemoryBuffer & source)
 {
     StringAttr text;
     deserialize(source, text);

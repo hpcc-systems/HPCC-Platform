@@ -74,20 +74,21 @@ class jlib_decl Mapping : extends MappingBase
 class jlib_decl AtomBase : public CInterfaceOf<IAtom>
 {
 public:
-    AtomBase(const void * k)  
+    AtomBase(const void * k) : hash(0)
     { 
         key = strdup((const char *)k); 
     }
     ~AtomBase()               { free(key); }
 
 //interface:IMapping
+    virtual const char *        getNamePtr() const { return key; }
     virtual const void *        getKey() const;
     virtual unsigned            getHash() const;
     virtual void                setHash(unsigned);
 
   protected:
     unsigned hash;
-    char *              key;
+    char * key;
 };
 
 class jlib_decl Atom : public AtomBase
@@ -115,6 +116,25 @@ class jlib_decl LowerCaseAtom : public Atom
         for (byte * cur = (byte *)key; *cur; cur++)
             *cur = tolower(*cur);
     }
+};
+
+class jlib_decl CaseAtom : public CInterfaceOf<IIdAtom>
+{
+public:
+    CaseAtom(const void * k);
+    ~CaseAtom() { free(text); }
+
+//interface:IMapping
+    virtual const char *        getNamePtr() const { return text; }
+    virtual const void *        getKey() const { return text; }
+    virtual unsigned            getHash() const { return hash; }
+    virtual void                setHash(unsigned _hash) { hash = _hash; }
+    virtual IAtom *             queryLower() const { return lower; }
+
+  protected:
+    unsigned hash;
+    char * text;
+    IAtom * lower;
 };
 
 template <class KEY, class KEYPARM>
@@ -176,9 +196,9 @@ class jlib_decl KeptAtomTable : public KeptHashTableOf<Atom, 0U>
   public:
     KeptAtomTable() : KeptHashTableOf<Atom, 0U>(false) {};
     KeptAtomTable(bool _ignorecase) : KeptHashTableOf<Atom, 0U>(_ignorecase) {};
-    inline _ATOM addAtom(const char *name) 
+    inline IAtom * addAtom(const char *name)
     { 
-        return (_ATOM) create(name);
+        return (IAtom *) create(name);
     };
 };
 
@@ -186,9 +206,19 @@ class jlib_decl KeptLowerCaseAtomTable : public KeptHashTableOf<LowerCaseAtom, 0
 {
   public:
     KeptLowerCaseAtomTable() : KeptHashTableOf<LowerCaseAtom, 0U>(true) {};
-    inline _ATOM addAtom(const char *name) 
+    inline IAtom * addAtom(const char *name)
     { 
-        return (_ATOM) create(name);
+        return (IAtom *) create(name);
+    };
+};
+
+class jlib_decl KeptCaseAtomTable : public KeptHashTableOf<CaseAtom, 0U>
+{
+  public:
+    KeptCaseAtomTable() : KeptHashTableOf<CaseAtom, 0U>(false) {};
+    inline IIdAtom * addAtom(const char *name)
+    {
+        return create(name);
     };
 };
 

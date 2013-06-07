@@ -45,7 +45,7 @@ private:
     ITypeInfo* type;
     IPropertyTree * doc;
 public:
-    _ATOM      id;
+    IIdAtom *      id;
     int        scope;
     DefineIdSt() { type = NULL; id = NULL; scope = 0; doc = NULL; }
     ~DefineIdSt() { ::Release(type); ::Release(doc); }  
@@ -63,13 +63,14 @@ private:
     {
         IHqlExpression *expr;
         ITypeInfo      *type;
-        _ATOM           name;
+        IIdAtom *           name;
+        IIdAtom *     cname;
         char           *str_val;
         __int64         int_val;
         DefineIdSt     *defineid;
         IFileContents  *contents;
     };
-    enum { t_none,t_expr,t_scope,t_atom,t_string,t_int,t_type,t_defineid,t_contents } atr_type;
+    enum { t_none,t_expr,t_scope,t_atom,t_catom,t_string,t_int,t_type,t_defineid,t_contents } atr_type;
 public:
     ECLlocation pos;
 
@@ -117,17 +118,17 @@ public:
     }
     
     /* getters */
-    inline IFileContents * getContents() 
+    inline IFileContents * getContents()
     {
         assertex(atr_type==t_contents);         
         atr_type = t_none;
         return contents; 
     }
-    inline _ATOM getName() 
+    inline IIdAtom * getName()
     {
-        assertex(atr_type==t_atom);         
+        assertex(atr_type==t_catom);
         atr_type = t_none;
-        return name; 
+        return cname;
     }
     inline char *getString()
     {
@@ -202,10 +203,10 @@ public:
         atr_type = t_contents;
         contents = _contents; 
     }
-    inline void setName(_ATOM v) 
-    { 
-        atr_type=t_atom; 
-        name = v; 
+    inline void setName(IIdAtom * v)
+    {
+        atr_type=t_catom;
+        cname = v;
     }
     inline void setString(char *v) 
     { 
@@ -260,6 +261,7 @@ public:
         case t_int:
             break;
         case t_atom:
+        case t_catom:
             break;
         case t_contents:
             ::Release(contents);
@@ -302,7 +304,7 @@ public:
     void resetParameters()  { isParametered = false; activeParameters.kill(); activeDefaults.kill(); }
     IHqlExpression * createDefaults();
     IHqlExpression * createFormals(bool oldSetFormat);
-    IHqlExpression * queryParameter(_ATOM name);
+    IHqlExpression * queryParameter(IIdAtom * name);
 
 public:
     Owned<IHqlScope> localScope;
@@ -403,14 +405,14 @@ public:
     bool canFollowCurrentState(int tok, const short * yyps);
     void syntaxError(const char *s, int token, int *expected);
     int mapToken(int lexToken) const;
-    IHqlExpression *lookupSymbol(_ATOM name, const attribute& errpos);
-    IHqlExpression *lookupSymbol(IHqlScope * scope, _ATOM name);
+    IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
+    IHqlExpression *lookupSymbol(IHqlScope * scope, IIdAtom * name);
     void enableAttributes(int activityToken);
 
-    IHqlExpression * recordLookupInTemplateContext(_ATOM name, IHqlExpression * expr, IHqlScope * templateScope);
+    IHqlExpression * recordLookupInTemplateContext(IIdAtom * name, IHqlExpression * expr, IHqlScope * templateScope);
     void processImportAll(attribute & modulesAttr);
-    void processImport(attribute & modulesAttr, _ATOM as);
-    void processImport(attribute & membersAttr, attribute & modulesAttr, _ATOM as);
+    void processImport(attribute & modulesAttr, IIdAtom * as);
+    void processImport(attribute & membersAttr, attribute & modulesAttr, IIdAtom * as);
     void applyDefaultPromotions(attribute &a1, bool extendPrecision);
     unsigned checkCompatible(ITypeInfo * a1, ITypeInfo * t2, const attribute &ea, bool complain=true);
     void checkMaxCompatible(IHqlExpression * sortOrder, IHqlExpression * values, attribute & errpos);
@@ -420,7 +422,7 @@ public:
     void checkDatarow(attribute &atr);
     void checkDataset(attribute &atr);
     void checkDictionary(attribute &atr);
-    void checkFieldnameValid(const attribute &errpos, _ATOM name);
+    void checkFieldnameValid(const attribute &errpos, IIdAtom * name);
     void checkList(attribute &atr);
     void checkScalar(attribute &atr);
     void checkUseLocation(const attribute & errpos);
@@ -432,7 +434,7 @@ public:
     void checkType(attribute &a1, ITypeInfo *t2);
     ITypeInfo *checkType(attribute &e1, attribute &e2);
     bool checkAlienTypeDef(IHqlScope* scope, const attribute& errpos);
-    IHqlExpression* checkServiceDef(IHqlScope* serviceScope,_ATOM name, IHqlExpression* attrs, const attribute& errpos);
+    IHqlExpression* checkServiceDef(IHqlScope* serviceScope,IIdAtom * name, IHqlExpression* attrs, const attribute& errpos);
     void checkConstant(attribute & attr);
     IHqlExpression * checkConstant(const attribute & errpos, IHqlExpression * expr);
     void checkConstantEvent(attribute & attr);
@@ -486,7 +488,7 @@ public:
     void ensureTransformTypeMatch(attribute & tattr, IHqlExpression * ds);
     bool checkTransformTypeMatch(const attribute & errpos, IHqlExpression * ds, IHqlExpression * transform);
     void ensureDatasetTypeMatch(attribute & tattr, IHqlExpression * ds);
-    _ATOM ensureCommonLocale(attribute &a, attribute &b);
+    IAtom * ensureCommonLocale(attribute &a, attribute &b);
     void ensureUnicodeLocale(attribute & a, char const * locale);
     void ensureType(attribute &atr, ITypeInfo * type);
     void inheritRecordMaxLength(IHqlExpression * dataset, SharedHqlExpr & record);
@@ -525,8 +527,8 @@ public:
     void beginFunctionCall(attribute & function);
     IHqlExpression * endFunctionCall();
     void addActual(const attribute & errpos, IHqlExpression * ownedExpr);
-    void addNamedActual(const attribute & errpos, _ATOM name, IHqlExpression * ownedExpr);
-    bool processParameter(FunctionCallInfo & call, _ATOM name, IHqlExpression * actualValue, const attribute& errpos);
+    void addNamedActual(const attribute & errpos, IIdAtom * name, IHqlExpression * ownedExpr);
+    bool processParameter(FunctionCallInfo & call, IIdAtom * name, IHqlExpression * actualValue, const attribute& errpos);
     void checkActualTopScope(FunctionCallInfo & call, IHqlExpression * formal, IHqlExpression * actual);
     void leaveActualTopScope(FunctionCallInfo & call);
 
@@ -538,7 +540,7 @@ public:
 
     //Various grammar rule productions.
     void beginAlienType(const attribute & errpos);
-    void beginDefineId(_ATOM name, ITypeInfo * type);
+    void beginDefineId(IIdAtom * name, ITypeInfo * type);
 
     IHqlExpression * processAlienType(const attribute & errpos);
     IHqlExpression * processIndexBuild(attribute & indexAttr, attribute * recordAttr, attribute * payloadAttr, attribute & filenameAttr, attribute & flagsAttr);
@@ -549,7 +551,7 @@ public:
     void processLoadXML(attribute & a1, attribute * a2);
     IHqlExpression * processModuleDefinition(const attribute & errpos);
     IHqlExpression * processRowset(attribute & selectorAttr);
-    void processServiceFunction(const attribute & errpos, _ATOM name, IHqlExpression * thisAttrs, ITypeInfo * type);
+    void processServiceFunction(const attribute & errpos, IIdAtom * name, IHqlExpression * thisAttrs, ITypeInfo * type);
     void processStartTransform(const attribute & errpos);
     IHqlExpression * processUserAggregate(const attribute & mainPos, attribute & dsAttr, attribute & recordAttr, attribute & transformAttr, attribute * mergeAttr,
                                       attribute *itemsAttr, attribute &rowsAttr, attribute &seqAttr);
@@ -566,7 +568,7 @@ public:
     void reportError(int errNo, const attribute& a, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportError(int errNo, const ECLlocation & pos, const char* format, ...) __attribute__((format(printf, 4, 5)));
     void reportMacroExpansionPosition(int errNo, HqlLex * lexer, bool isError);
-    void reportErrorUnexpectedX(const attribute & errpos, _ATOM unexpected);
+    void reportErrorUnexpectedX(const attribute & errpos, IAtom * unexpected);
 
     // Don't use overloading: va_list is the same as char*!!
     void reportErrorVa(int errNo, const ECLlocation & a, const char* format, va_list args);
@@ -632,9 +634,9 @@ public:
     IHqlExpression * attachPendingWarnings(IHqlExpression * ownedExpr);
     IHqlExpression * attachMetaAttributes(IHqlExpression * ownedExpr, HqlExprArray & meta);
 
-    void addDatasetField(const attribute &errpos, _ATOM name, ITypeInfo * type, IHqlExpression *value, IHqlExpression * attrs);
-    void addDictionaryField(const attribute &errpos, _ATOM name, ITypeInfo * type, IHqlExpression *value, IHqlExpression * attrs);
-    void addField(const attribute &errpos, _ATOM name, ITypeInfo *type, IHqlExpression *value, IHqlExpression *attrs);
+    void addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo * type, IHqlExpression *value, IHqlExpression * attrs);
+    void addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeInfo * type, IHqlExpression *value, IHqlExpression * attrs);
+    void addField(const attribute &errpos, IIdAtom * name, ITypeInfo *type, IHqlExpression *value, IHqlExpression *attrs);
     void addFields(const attribute &errpos, IHqlExpression *record, IHqlExpression * dataset, bool clone);
     void addIfBlockToActive(const attribute &errpos, IHqlExpression * ifblock);
     void addToActiveRecord(IHqlExpression * newField);
@@ -665,8 +667,8 @@ public:
     void checkValidCsvRecord(const attribute & errpos, IHqlExpression * record);
     void checkValidPipeRecord(const attribute & errpos, IHqlExpression * record, IHqlExpression * attrs, IHqlExpression * expr);
 
-    void createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind);
-    void createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, _ATOM kind);
+    void createAppendDictionaries(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
+    void createAppendFiles(attribute & targetAttr, attribute & leftAttr, attribute & rightAttr, IAtom * kind);
     IHqlExpression * processIfProduction(attribute & condAttr, attribute & trueAttr, attribute * falseAttr);
 
     IHqlExpression * createSymbolFromValue(IHqlExpression * primaryExpr, IHqlExpression * value);
@@ -674,7 +676,7 @@ public:
     void setMaxErrorsAllowed(unsigned n) { m_maxErrorsAllowed = n; } 
     void setAssociateWarnings(bool value) { associateWarnings = value; }
     IHqlExpression* clearFieldMap(IHqlExpression* expr);
-    void setExpectedAttribute(_ATOM _expectedAttribute)             { expectedAttribute = _expectedAttribute; current_id = _expectedAttribute; }
+    void setExpectedAttribute(IIdAtom * _expectedAttribute)             { expectedAttribute = _expectedAttribute; current_id = _expectedAttribute; }
     void setCurrentToExpected()             { current_id = expectedAttribute; }
     IHqlScope * queryPrimaryScope(bool isPrivate);
     unsigned nextParameterIndex()               { return 0; } // not commoned up at moment{ return activeParameters.length()+savedParameters.length(); }
@@ -690,21 +692,21 @@ public:
     int yyLex(attribute * yylval, const short * activeState);
 
 protected:
-    _ATOM createUnnamedFieldName();
-    _ATOM createUnnamedFieldName(const char * prefix);
-    _ATOM getNameFromExpr(attribute& attr);
-    _ATOM createFieldNameFromExpr(IHqlExpression * expr);
+    IIdAtom * createUnnamedFieldName();
+    IIdAtom * createUnnamedFieldName(const char * prefix);
+    IIdAtom * getNameFromExpr(attribute& attr);
+    IIdAtom * createFieldNameFromExpr(IHqlExpression * expr);
     IHqlExpression * createAssert(attribute & cond, attribute * msg, attribute & flags);
 
-    void defineImport(const attribute & errpos, IHqlExpression * imported, _ATOM newName);
+    void defineImport(const attribute & errpos, IHqlExpression * imported, IIdAtom * newName);
     IHqlExpression * resolveImportModule(const attribute & errpos, IHqlExpression * expr);
 
     void setActiveAttrs(int activityToken, const TokenMap * attrs);
 
     IHqlExpression *doParse();
     IHqlExpression * checkBuildIndexRecord(IHqlExpression *record, attribute & errpos);
-    void checkNotAlreadyDefined(_ATOM name, IHqlScope * scope, const attribute & idattr);
-    void checkNotAlreadyDefined(_ATOM name, const attribute & idattr);
+    void checkNotAlreadyDefined(IIdAtom * name, IHqlScope * scope, const attribute & idattr);
+    void checkNotAlreadyDefined(IIdAtom * name, const attribute & idattr);
     void checkBuildIndexFilenameFlags(IHqlExpression * dataset, attribute & flags);
     IHqlExpression * createBuildFileFromTable(IHqlExpression * table, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos);
     IHqlExpression * createBuildIndexFromIndex(attribute & indexAttr, attribute & flagsAttr, IHqlExpression * filename, attribute & errpos);
@@ -735,12 +737,12 @@ protected:
     void abortParsing();
     bool isExceptionalCase(attribute& defineid, attribute& object, attribute& failure);
     void checkSvcAttrNoValue(IHqlExpression* attr, const attribute& errpos);
-    void checkFormals(_ATOM name, HqlExprArray & parms, HqlExprArray & defaults, attribute& object);
+    void checkFormals(IIdAtom * name, HqlExprArray & parms, HqlExprArray & defaults, attribute& object);
     IHqlExpression * checkParameter(const attribute * errpos, IHqlExpression * actual, IHqlExpression * formal, bool isDefault, IHqlExpression * funcdef);
     void checkDedup(IHqlExpression *ds, IHqlExpression *flags, attribute &errpos);
-    void addParameter(const attribute & errpos, _ATOM name, ITypeInfo* type, IHqlExpression* defValue);
-    void addFunctionParameter(const attribute & errpos, _ATOM name, ITypeInfo* type, IHqlExpression* defValue);
-    void addFunctionProtoParameter(const attribute & errpos, _ATOM name, IHqlExpression * like, IHqlExpression* defValue);
+    void addParameter(const attribute & errpos, IIdAtom * name, ITypeInfo* type, IHqlExpression* defValue);
+    void addFunctionParameter(const attribute & errpos, IIdAtom * name, ITypeInfo* type, IHqlExpression* defValue);
+    void addFunctionProtoParameter(const attribute & errpos, IIdAtom * name, IHqlExpression * like, IHqlExpression* defValue);
     bool checkParameters(IHqlExpression* func, HqlExprArray& actuals, const attribute& errpos);
     bool checkTemplateFunctionParameters(IHqlExpression* func, HqlExprArray& actuals, const attribute& errpos);
     void checkSizeof(IHqlExpression* expr, attribute& errpos);
@@ -756,8 +758,8 @@ protected:
     void disableError() { errorDisabled = true; }
     void enableError() { errorDisabled = false; }
     bool isAborting() { return errorDisabled; }
-    _ATOM fieldMapTo(IHqlExpression* expr, _ATOM name);
-    _ATOM fieldMapFrom(IHqlExpression* expr, _ATOM name);
+    IIdAtom * fieldMapTo(IHqlExpression* expr, IIdAtom * name);
+    IIdAtom * fieldMapFrom(IHqlExpression* expr, IIdAtom * name);
     bool requireLateBind(IHqlExpression* funcdef, Array& actuals);
     IHqlExpression* createDefJoinTransform(IHqlExpression* left,IHqlExpression* right,attribute& errpos, IHqlExpression * seq, IHqlExpression * flags);
     IHqlExpression * createRowAssignTransform(const attribute & srcAttr, const attribute & tgtAttr, const attribute & seqAttr);
@@ -766,7 +768,7 @@ protected:
     IHqlExpression * createDefaultProjectDataset(IHqlExpression * record, IHqlExpression * src, const attribute & errpos);
     IHqlExpression * createDatasetFromList(attribute & listAttr, attribute & recordAttr);
 
-    void checkConditionalAggregates(_ATOM name, IHqlExpression * value, const attribute & errpos);
+    void checkConditionalAggregates(IIdAtom * name, IHqlExpression * value, const attribute & errpos);
     void checkProjectedFields(IHqlExpression * e, attribute & errpos);
     IHqlExpression * createRecordFromDataset(IHqlExpression * ds);
     IHqlExpression * cleanIndexRecord(IHqlExpression * record);
@@ -778,7 +780,7 @@ protected:
     IHqlExpression * createProjectRow(attribute & rowAttr, attribute & transformAttr, attribute & seqAttr);
     void doDefineSymbol(DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered);
     void defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHqlExpression * expr, IHqlExpression * failure, const attribute & idattr, int assignPos, int semiColonPos, bool isParametered, HqlExprArray & parameters, IHqlExpression * defaults);
-    void checkDerivedCompatible(_ATOM name, IHqlExpression * scope, IHqlExpression * expr, bool isParametered, HqlExprArray & parameters, attribute const & errpos);
+    void checkDerivedCompatible(IIdAtom * name, IHqlExpression * scope, IHqlExpression * expr, bool isParametered, HqlExprArray & parameters, attribute const & errpos);
     void defineSymbolProduction(attribute & nameattr, attribute & paramattr, attribute & assignattr, attribute * valueattr, attribute * failattr, attribute & semiattr);
     void definePatternSymbolProduction(attribute & nameattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr);
     void cloneInheritedAttributes(IHqlScope * scope, const attribute & errpos);
@@ -835,9 +837,9 @@ protected:
 
     IECLErrorArray pendingWarnings;
     Linked<ISourcePath> sourcePath;
-    _ATOM moduleName;
-    _ATOM current_id;
-    _ATOM expectedAttribute;
+    IIdAtom * moduleName;
+    IIdAtom * current_id;
+    IIdAtom * expectedAttribute;
     int current_flags;
     IHqlScope *transformScope;
     PointerArray savedIds;
@@ -954,8 +956,8 @@ protected:
     void checkRegrouping(attribute & atr, HqlExprArray & args);
     void checkRecordsMatch(attribute & atr, HqlExprArray & args);
 
-    IHqlExpression * transformRecord(IHqlExpression *dataset, _ATOM targetCharset, const attribute & errpos);
-    IHqlExpression * transformRecord(IHqlExpression *record, _ATOM targetCharset, IHqlExpression * scope, bool & changed, const attribute & errpos);
+    IHqlExpression * transformRecord(IHqlExpression *dataset, IAtom * targetCharset, const attribute & errpos);
+    IHqlExpression * transformRecord(IHqlExpression *record, IAtom * targetCharset, IHqlExpression * scope, bool & changed, const attribute & errpos);
     IHqlExpression * translateFieldsToNewScope(IHqlExpression * expr, IHqlSimpleScope * record, const attribute & err);
 
     ITypeInfo *queryCurrentRecordType();
@@ -1090,7 +1092,7 @@ class HqlLex
         IXmlScope *queryTopXmlScope();
         IXmlScope *ensureTopXmlScope(const YYSTYPE & errpos);
 
-        IHqlExpression *lookupSymbol(_ATOM name, const attribute& errpos);
+        IHqlExpression *lookupSymbol(IIdAtom * name, const attribute& errpos);
         void reportError(const YYSTYPE & returnToken, int errNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
         void reportWarning(const YYSTYPE & returnToken, int warnNo, const char *format, ...) __attribute__((format(printf, 4, 5)));
 
@@ -1117,7 +1119,7 @@ class HqlLex
         bool getParameter(StringBuffer &curParam, const char* for_what, int* startLine=NULL, int* startCol=NULL);
         IValue *parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int line, int col);
         IHqlExpression * parseECL(const char * curParam, IXmlScope *xmlScope, int startLine, int startCol);
-        void setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, _ATOM argumentName, unsigned& parmno,IProperties *macroParms);
+        void setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentName, unsigned& parmno,IProperties *macroParms);
         unsigned getTypeSize(unsigned lengthTypeName);
         static IHqlExpression * createIntegerConstant(__int64 value, bool isSigned);
 

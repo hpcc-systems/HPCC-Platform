@@ -36,8 +36,8 @@
 
 BoolValue *BoolValue::trueconst;
 BoolValue *BoolValue::falseconst;
-static _ATOM asciiAtom;
-static _ATOM ebcdicAtom;
+static IAtom * asciiAtom;
+static IAtom * ebcdicAtom;
 
 MODULE_INIT(INIT_PRIORITY_DEFVALUE)
 {

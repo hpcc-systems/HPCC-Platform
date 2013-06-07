@@ -1160,7 +1160,7 @@ void EclCC::processFile(EclCompileInstance & instance)
                 //Associate the contents of the directory with an internal module called _local_directory_
                 //(If it was root it might override existing root symbols).  $ is the only public way to get at the symbol
                 const char * moduleName = "_local_directory_";
-                _ATOM moduleNameAtom = createAtom(moduleName);
+                IIdAtom * moduleNameId = createIdAtom(moduleName);
 
                 StringBuffer thisDirectory;
                 StringBuffer thisTail;
@@ -1172,7 +1172,7 @@ void EclCC::processFile(EclCompileInstance & instance)
 
                 Owned<IEclSourceCollection> directory = createFileSystemEclCollection(instance.errs, thisDirectory, 0, 0);
                 Owned<IEclRepository> directoryRepository = createRepository(directory, moduleName);
-                Owned<IEclRepository> nested = createNestedRepository(moduleNameAtom, directoryRepository);
+                Owned<IEclRepository> nested = createNestedRepository(moduleNameId, directoryRepository);
                 repositories.append(*LINK(nested));
             }
         }

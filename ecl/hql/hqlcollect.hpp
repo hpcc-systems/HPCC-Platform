@@ -48,7 +48,7 @@ interface IEclSource : public IInterface
 {
     virtual IFileContents * queryFileContents() = 0;
     virtual IProperties * getProperties() = 0;
-    virtual _ATOM queryEclName() const = 0;
+    virtual IIdAtom * queryEclName() const = 0;
     virtual EclSourceType queryType() const = 0;
 
     inline bool isImplicitModule() const
@@ -63,7 +63,7 @@ interface IEclSource : public IInterface
 typedef IIteratorOf<IEclSource> IEclSourceIterator;
 interface IEclSourceCollection : public IInterface
 {
-    virtual IEclSource * getSource(IEclSource * optParent, _ATOM eclName) = 0;
+    virtual IEclSource * getSource(IEclSource * optParent, IIdAtom * eclName) = 0;
     virtual IEclSourceIterator * getContained(IEclSource * optParent) = 0;
     virtual void checkCacheValid() = 0;
 };

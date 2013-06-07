@@ -655,8 +655,8 @@ bool ResourceGraphInfo::addCondition(IHqlExpression * condition)
         conditions.append(*LINK(condition));
 
 #ifdef SPOT_UNCONDITIONAL_CONDITIONS
-        _ATOM name = condition->queryName();
-        _ATOM invName = NULL;
+        IAtom * name = condition->queryName();
+        IAtom * invName = NULL;
         if (name == trueAtom)
             invName = falseAtom;
         else if (name == falseAtom)
@@ -965,7 +965,7 @@ void ResourceGraphInfo::removeResources(const CResources & value)
 
 //---------------------------------------------------------------------------
 
-static void appendCloneProperty(HqlExprArray & args, IHqlExpression * expr, _ATOM name)
+static void appendCloneProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
 {
     IHqlExpression * prop = expr->queryProperty(name);
     if (prop)
@@ -2024,7 +2024,7 @@ public:
                 if (selected->getOperator() == no_select)
                     field.set(selected->queryChild(1));
                 else
-                    field.setown(createField(valueAtom, selected->getType(), NULL));
+                    field.setown(createField(valueId, selected->getType(), NULL));
                 OwnedHqlExpr record = createRecord(field);
                 OwnedHqlExpr self = getSelf(record);
                 OwnedHqlExpr assign = createAssign(createSelectExpr(LINK(self), LINK(field)), LINK(selected));
@@ -2034,7 +2034,7 @@ public:
 
             if (!hoisted)
             {
-                OwnedHqlExpr field = createField(valueAtom, value->getType(), NULL);
+                OwnedHqlExpr field = createField(valueId, value->getType(), NULL);
                 OwnedHqlExpr record = createRecord(field);
                 OwnedHqlExpr self = getSelf(record);
                 OwnedHqlExpr assign = createAssign(createSelectExpr(LINK(self), LINK(field)), LINK(value));
@@ -3452,7 +3452,7 @@ void EclResourcer::addDependencyUse(IHqlExpression * search, ResourceGraphInfo *
             //Don't give a warning if get/set is within the same activity (e.g., within a local())
             if (&dependencySource.exprs.item(index) != expr)
             //errors->reportWarning(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, *codeGeneratorAtom, 0, 0, 0);
-                errors->reportError(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, *codeGeneratorAtom, 0, 0, 0);
+                errors->reportError(HQLWRN_RecursiveDependendencies, HQLWRN_RecursiveDependendencies_Text, codeGeneratorId->str(), 0, 0, 0);
         }
         else
         {

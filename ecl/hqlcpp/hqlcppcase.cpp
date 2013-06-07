@@ -41,11 +41,11 @@
 
 //===========================================================================
 
-static _ATOM searchDataTableAtom;
-static _ATOM searchEStringTableAtom;
-static _ATOM searchQStringTableAtom;
-static _ATOM searchStringTableAtom;
-static _ATOM searchVStringTableAtom;
+static IIdAtom * searchDataTableAtom;
+static IIdAtom * searchEStringTableAtom;
+static IIdAtom * searchQStringTableAtom;
+static IIdAtom * searchStringTableAtom;
+static IIdAtom * searchVStringTableAtom;
 
 //===========================================================================
 
@@ -457,7 +457,7 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
         ITypeInfo * tableType = makePointerType(tableEntryType);
         HqlExprArray args;
 
-        _ATOM func;
+        IIdAtom * func;
         switch (ctc)
         {
         case type_data: 
@@ -478,13 +478,13 @@ void HqlCppCaseInfo::buildLoopChopMap(BuildCtx & ctx, const CHqlBoundTarget & ta
                 UNIMPLEMENTED;
             break;
         case type_unicode:
-            func = searchUnicodeTableAtom;
+            func = searchUnicodeTableId;
             break;
         case type_utf8:
-            func = searchUtf8TableAtom;
+            func = searchUtf8TableId;
             break;
         case type_varunicode:
-            func = searchVUnicodeTableAtom;
+            func = searchVUnicodeTableId;
             break;
         default:
             throwUnexpectedType(compareType);
@@ -586,20 +586,20 @@ void HqlCppCaseInfo::buildIntegerSearchMap(BuildCtx & ctx, const CHqlBoundTarget
     args.append(*createCompareList());
     args.append(*LINK(test));
 
-    _ATOM func;
+    IIdAtom * func;
     if (compareType->isSigned())
     {
         if (compareType->getSize() > 4)
-            func = searchTableInteger8Atom;
+            func = searchTableInteger8Id;
         else
-            func = searchTableInteger4Atom;
+            func = searchTableInteger4Id;
     }
     else
     {
         if (compareType->getSize() > 4)
-            func = searchTableUInteger8Atom;
+            func = searchTableUInteger8Id;
         else
-            func = searchTableUInteger4Atom;
+            func = searchTableUInteger4Id;
     }
 
     OwnedHqlExpr search = translator.bindFunctionCall(func, args);

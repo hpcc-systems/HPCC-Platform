@@ -62,7 +62,7 @@ interface jlib_decl IPropertiesOf : extends serializable
 #endif
 
 interface IPropertyIterator : public IPropertyIteratorOf<char_ptr> { };
-interface IAtomPropertyIterator : public IPropertyIteratorOf<_ATOM> { };
+interface IAtomPropertyIterator : public IPropertyIteratorOf<IAtom *> { };
 interface IProperties : public IPropertiesOf<char_ptr, IPropertyIterator> { };
 
 #ifdef _MSC_VER

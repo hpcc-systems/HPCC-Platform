@@ -63,7 +63,7 @@ static IHqlExpression * cachedLocalSequenceNumber;
 static IHqlExpression * cachedStoredSequenceNumber;
 static IHqlExpression * cachedOmittedValueExpr;
 
-static void initBoolAttr(_ATOM name, IHqlExpression * x[2])
+static void initBoolAttr(IAtom * name, IHqlExpression * x[2])
 {
     x[0] = createExprAttribute(name, createConstant(false));
     x[1] = createExprAttribute(name, createConstant(true));
@@ -144,7 +144,7 @@ IHqlExpression * createUIntConstant(unsigned __int64 val)
     return createConstant(createMinIntValue(val));
 }
 
-inline _ATOM createMangledName(IHqlExpression * module, IHqlExpression * child)
+inline IIdAtom * createMangledName(IHqlExpression * module, IHqlExpression * child)
 {
     StringBuffer mangledName;
     mangledName.append(module->queryName()).append(".").append(child->queryName());
@@ -1045,7 +1045,7 @@ DedupInfoExtractor::DedupInfoExtractor(IHqlExpression * expr)
         case no_attr_expr:
         case no_attr_link:
             {
-                _ATOM name = cur->queryName();
+                IAtom * name = cur->queryName();
                 if (name == hashAtom)
                     compareAllRows = true;
                 else if (name == localAtom)
@@ -1252,7 +1252,7 @@ IHqlExpression * getExpandSelectExpr(IHqlExpression * expr)
         case no_record:
             {
                 IHqlSimpleScope * scope = mappingExpr->querySimpleScope();
-                OwnedHqlExpr matched = scope->lookupSymbol(field->queryName());
+                OwnedHqlExpr matched = scope->lookupSymbol(field->queryId());
                 assertex(matched == field);
                 ret = LINK(queryRealChild(field, 0));
                 break;
@@ -1327,14 +1327,14 @@ interface IHintVisitor
 class SearchHintVisitor : implements IHintVisitor
 {
 public:
-    SearchHintVisitor(_ATOM _name) : name(_name) {}
+    SearchHintVisitor(IAtom * _name) : name(_name) {}
 
     virtual IHqlExpression * visit(IHqlExpression * hint) 
     {
         return hint->queryProperty(name);
     }
 
-    _ATOM name;
+    IAtom * name;
 };
 
 
@@ -1391,7 +1391,7 @@ static IHqlExpression * walkHints(IHqlExpression * expr, IHintVisitor & visitor)
     return NULL;
 }
 
-IHqlExpression * queryHint(IHqlExpression * expr, _ATOM name)
+IHqlExpression * queryHint(IHqlExpression * expr, IAtom * name)
 {
     SearchHintVisitor visitor(name);
     return walkHints(expr, visitor);
@@ -1403,7 +1403,7 @@ void gatherHints(HqlExprCopyArray & target, IHqlExpression * expr)
     walkHints(expr, visitor);
 }
 
-IHqlExpression * queryHintChild(IHqlExpression * expr, _ATOM name, unsigned idx)
+IHqlExpression * queryHintChild(IHqlExpression * expr, IAtom * name, unsigned idx)
 {
     IHqlExpression * match = queryHint(expr, name);
     if (match)
@@ -1924,7 +1924,7 @@ bool isTrivialSelectN(IHqlExpression * expr)
     return false;
 }
 
-IHqlExpression * queryPropertyChild(IHqlExpression * expr, _ATOM name, unsigned idx)
+IHqlExpression * queryPropertyChild(IHqlExpression * expr, IAtom * name, unsigned idx)
 {
     IHqlExpression * match = expr->queryProperty(name);
     if (match)
@@ -2370,7 +2370,7 @@ protected:
         IHqlExpression * record = ds->queryRecord();
         assertex(record);
         IHqlSimpleScope * scope = record->querySimpleScope();
-        OwnedHqlExpr match = scope->lookupSymbol(field->queryName());
+        OwnedHqlExpr match = scope->lookupSymbol(field->queryId());
         if (match != field)
         {
             EclIR::dbglogIR(2, field, match.get());
@@ -3021,7 +3021,7 @@ IHqlExpression * convertScalarToRow(IHqlExpression * value, ITypeInfo * fieldTyp
 {
     if (!fieldType)
         fieldType = value->queryType();
-    OwnedHqlExpr field = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
+    OwnedHqlExpr field = createField(unnamedId, LINK(fieldType), NULL, NULL);
     OwnedHqlExpr record = createRecord(field);
 
     OwnedHqlExpr dataset;
@@ -3344,7 +3344,7 @@ IHqlExpression * convertScalarToGraphResult(IHqlExpression * value, ITypeInfo * 
 
 IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo * fieldType, IHqlExpression * represents, unsigned seq)
 {
-    OwnedHqlExpr counterField = createField(unnamedAtom, LINK(fieldType), NULL, NULL);
+    OwnedHqlExpr counterField = createField(unnamedId, LINK(fieldType), NULL, NULL);
     OwnedHqlExpr counterRecord = createRecord(counterField);
     HqlExprArray args;
     args.append(*LINK(counterRecord));
@@ -3356,7 +3356,7 @@ IHqlExpression * createScalarFromGraphResult(ITypeInfo * scalarType, ITypeInfo *
     return ensureExprType(select, scalarType);
 }
 
-_ATOM queryCsvEncoding(IHqlExpression * mode)
+IAtom * queryCsvEncoding(IHqlExpression * mode)
 {
     if (mode)
     {
@@ -3370,7 +3370,7 @@ _ATOM queryCsvEncoding(IHqlExpression * mode)
     return NULL;
 }
 
-_ATOM queryCsvTableEncoding(IHqlExpression * tableExpr)
+IAtom * queryCsvTableEncoding(IHqlExpression * tableExpr)
 {
     if (!tableExpr)
         return NULL;
@@ -3944,7 +3944,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
     ForEachItemIn(i, symbols)
     {
         IHqlExpression & cur = symbols.item(i);
-        _ATOM name = cur.queryName();
+        IIdAtom * name = cur.queryId();
         OwnedHqlExpr resolved = scope->lookupSymbol(name, LSFpublic, ctx);
         LinkedHqlExpr value = resolved;
         if (value && value->isFunction())
@@ -3980,7 +3980,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
         }
         if (value && isExported(resolved))
         {
-            lowername.clear().append(prefix).append(name).toLowerCase();
+            lowername.clear().append(prefix).append(name->lower()).toLowerCase();
 
             node_operator op = no_none;
             if (outputOp == no_output)
@@ -4048,8 +4048,7 @@ extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr)
     newScopeExpr->addOperand(LINK(scopeExpr));
 
     HqlExprArray noParameters;
-    StringBuffer lowername;
-    _ATOM moduleName = NULL;
+    IIdAtom * moduleName = NULL;
     ForEachItemIn(i, symbols)
     {
         IHqlExpression & cur = symbols.item(i);
@@ -4061,9 +4060,8 @@ extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr)
                 if (value->getOperator() == no_purevirtual)
                     value.setown(createNullExpr(value));
 
-                _ATOM name = symbols.item(i).queryName();
-                lowername.clear().append(name).toLowerCase();
-                OwnedHqlExpr failure = createValue(no_stored, makeVoidType(), createConstant(lowername));
+                IIdAtom * name = symbols.item(i).queryId();
+                OwnedHqlExpr failure = createValue(no_stored, makeVoidType(), createConstant(name->lower()->str()));
 
                 HqlExprArray meta;
                 value.setown(attachWorkflowOwn(meta, value.getClear(), failure, NULL));
@@ -4102,7 +4100,7 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
     if ((newop == no_mingroup || newop == no_maxgroup) && (arg->getOperator() == no_select))
         field.set(arg->queryChild(1));                  // inherit maxlength etc...
     else
-        field.setown(createField(valueAtom, expr->getType(), NULL));
+        field.setown(createField(valueId, expr->getType(), NULL));
 
     IHqlExpression * aggregateRecord = createRecord(field);
     IHqlExpression * keyedAttr = expr->queryProperty(keyedAtom);
@@ -4260,19 +4258,19 @@ IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...)
 }
 
 
-extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, _ATOM name)
+extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, IAtom * name)
 {
     IHqlExpression * match = donor->queryProperty(name);
     if (match)
         attrs.append(*LINK(match));
 }
 
-IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, _ATOM name)
+IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, IAtom * name)
 {
     return appendOwnedOperand(expr, LINK(donor->queryProperty(name)));
 }
 
-IHqlExpression * appendAttribute(IHqlExpression * expr, _ATOM attr)
+IHqlExpression * appendAttribute(IHqlExpression * expr, IAtom * attr)
 {
     return appendOwnedOperand(expr, createAttribute(attr));
 }
@@ -4305,7 +4303,7 @@ IHqlExpression * removeChildOp(IHqlExpression * expr, node_operator op)
     return expr->clone(args);
 }
 
-IHqlExpression * removeProperty(IHqlExpression * expr, _ATOM attr)
+IHqlExpression * removeProperty(IHqlExpression * expr, IAtom * attr)
 {
     HqlExprArray args;
     unwindChildren(args, expr);
@@ -4553,7 +4551,7 @@ bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlE
         break;
     case 2:
         {
-            OwnedHqlExpr field = createField(unnamedAtom, value->getType(), NULL);
+            OwnedHqlExpr field = createField(unnamedId, value->getType(), NULL);
             OwnedHqlExpr transform = createTransformForField(field, value);
             OwnedHqlExpr combine = createDatasetF(no_combine, LINK(&newDatasets.item(0)), LINK(&newDatasets.item(1)), LINK(transform), LINK(selSeq), NULL);
             OwnedHqlExpr first = createRowF(no_selectnth, LINK(combine), getSizetConstant(1), createAttribute(noBoundCheckAtom), NULL);
@@ -4805,7 +4803,7 @@ static HqlTransformerInfo fieldPropertyRemoverInfo("FieldPropertyRemover");
 class FieldPropertyRemover : public NewHqlTransformer
 {
 public:
-    FieldPropertyRemover(_ATOM _name) : NewHqlTransformer(fieldPropertyRemoverInfo), name(_name) {}
+    FieldPropertyRemover(IAtom * _name) : NewHqlTransformer(fieldPropertyRemoverInfo), name(_name) {}
 
     virtual IHqlExpression * createTransformed(IHqlExpression * expr)
     {
@@ -4831,10 +4829,10 @@ public:
     }
 
 private:
-    _ATOM name;
+    IAtom * name;
 };
 
-IHqlExpression * removePropertyFromFields(IHqlExpression * expr, _ATOM name)
+IHqlExpression * removePropertyFromFields(IHqlExpression * expr, IAtom * name)
 {
     FieldPropertyRemover remover(name);
     return remover.transformRoot(expr);
@@ -5514,13 +5512,13 @@ IHqlExpression *recursiveStretchFields(IHqlExpression *record)
             case type_row:
             {
                 OwnedHqlExpr childType = recursiveStretchFields(child->queryRecord());
-                newrec->addOperand(createField(child->queryName(), makeRowType(childType->getType()), NULL, NULL));
+                newrec->addOperand(createField(child->queryId(), makeRowType(childType->getType()), NULL, NULL));
                 break;
             }
             default:
             {
                 Owned<ITypeInfo> stretched = getMaxLengthType(fieldType);
-                newrec->addOperand(createField(child->queryName(), stretched.getClear(), NULL, NULL));
+                newrec->addOperand(createField(child->queryId(), stretched.getClear(), NULL, NULL));
                 break;
             }
             }
@@ -5912,7 +5910,7 @@ void LibraryInputMapper::expandParameter(IHqlExpression * expr, unsigned & nextP
         ForEachItemIn(i, symbols)
         {
             IHqlExpression & cur = symbols.item(i);
-            _ATOM nestedName = createMangledName(expr, &cur);
+            IIdAtom * nestedName = createMangledName(expr, &cur);
 
             //default values are handled elsewhere - lost from the mapped values here.
             HqlExprArray attrs;
@@ -5925,15 +5923,18 @@ void LibraryInputMapper::expandParameter(IHqlExpression * expr, unsigned & nextP
 }
 
 
-unsigned LibraryInputMapper::findParameter(_ATOM search)
+unsigned LibraryInputMapper::findParameter(IIdAtom * searchId)
 {
+    IAtom * searchName = searchId->lower();
     ForEachItemIn(i, realParameters)
-        if (realParameters.item(i).queryName() == search)
+    {
+        if (realParameters.item(i).queryName() == searchName)
             return i;
+    }
     return NotFound;
 }
 
-IHqlExpression * LibraryInputMapper::resolveParameter(_ATOM search)
+IHqlExpression * LibraryInputMapper::resolveParameter(IIdAtom * search)
 {
     unsigned match = findParameter(search);
     assertex(match != NotFound);
@@ -5982,7 +5983,7 @@ void LibraryInputMapper::mapRealToLogical(HqlExprArray & inputExprs, HqlExprArra
                 result = createValue(no_libraryinput, cur->getType(), seq);
         }
         
-        inputExprs.append(*createSymbol(cur->queryName(), result, ob_private));
+        inputExprs.append(*createSymbol(cur->queryId(), result, ob_private));
     }
 
     IHqlExpression * formals = libraryInterface->queryChild(1);
@@ -6005,7 +6006,7 @@ IHqlExpression * LibraryInputMapper::mapRealToLogical(const HqlExprArray & input
             IHqlExpression * param = resolveParameter(createMangledName(expr, &cur));
             OwnedHqlExpr mapped = mapRealToLogical(inputExprs, param, libraryId);
 
-            OwnedHqlExpr named = createSymbol(cur.queryName(), LINK(mapped), ob_private);
+            OwnedHqlExpr named = createSymbol(cur.queryId(), LINK(mapped), ob_private);
             newScope->defineSymbol(named.getClear());
         }
         return queryExpression(closeScope(newScope.getClear()));
@@ -6045,7 +6046,7 @@ void LibraryInputMapper::mapLogicalToReal(HqlExprArray & mapped, IHqlExpression 
             IHqlExpression & cur = symbols.item(i);
             IHqlExpression * param = resolveParameter(createMangledName(expr, &cur));
             
-            OwnedHqlExpr childValue = valueScope->lookupSymbol(cur.queryName(), LSFpublic, lookupCtx);
+            OwnedHqlExpr childValue = valueScope->lookupSymbol(cur.queryId(), LSFpublic, lookupCtx);
             mapLogicalToReal(mapped, param, childValue);
         }
     }
@@ -6150,7 +6151,7 @@ void gatherGraphReferences(HqlExprCopyArray & graphs, IHqlExpression * value, bo
 
 //---------------------------------------------------------------------------
 
-_ATOM getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first)
+IAtom * getWarningAction(unsigned errorCode, const HqlExprArray & overrides, unsigned first)
 {
     //warnings are assumed to be infrequent, so don't worry about efficiency here.
     const unsigned max = overrides.ordinality();
@@ -6173,7 +6174,7 @@ WarningProcessor::WarningProcessor()
 void WarningProcessor::addWarning(IECLError * warning)
 {
     //warnings are assumed to be infrequent, so don't worry about efficiency here.
-    _ATOM action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
+    IAtom * action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
 
     if (action == defaultAtom)
         appendUnique(possibleWarnings, warning);
@@ -6189,7 +6190,7 @@ void WarningProcessor::addWarning(IECLError * warning)
     }
 }
 
-void WarningProcessor::addGlobalOnWarning(unsigned code, _ATOM action)
+void WarningProcessor::addGlobalOnWarning(unsigned code, IAtom * action)
 {
     globalOnWarnings.append(*createAttribute(onWarningAtom, getSizetConstant(code), createAttribute(action)));
 }
@@ -6251,7 +6252,7 @@ void WarningProcessor::report(IErrorReceiver & errors)
 
 void WarningProcessor::report(IErrorReceiver * errors, IErrorReceiver * warnings, IECLError * warning)
 {
-    _ATOM action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
+    IAtom * action = getWarningAction(warning->errorCode(), localOnWarnings, firstLocalOnWarning);
 
     if (action == defaultAtom)
         action = getWarningAction(warning->errorCode(), globalOnWarnings, 0);
@@ -6301,7 +6302,7 @@ void WarningProcessor::applyGlobalOnWarning()
     ForEachItemIn(i, possibleWarnings)
     {
         IECLError & cur = possibleWarnings.item(i);
-        _ATOM action = getWarningAction(cur.errorCode(), globalOnWarnings, 0);
+        IAtom * action = getWarningAction(cur.errorCode(), globalOnWarnings, 0);
         if (action == defaultAtom || action == warningAtom)
         {
             if (cur.isError())
@@ -7842,7 +7843,7 @@ static void createMappingAssigns(HqlExprArray & assigns, IHqlExpression * selfSe
             break;
         case no_field:
             {
-                OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryName());
+                OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryId());
                 assertex(oldField);
                 OwnedHqlExpr selfSelected = createSelectExpr(LINK(selfSelector), LINK(cur));
                 OwnedHqlExpr oldSelected = createSelectExpr(LINK(oldSelector), LINK(oldField));
@@ -7957,7 +7958,7 @@ static IHqlExpression * transformAttributeToQuery(IHqlExpression * expr, HqlLook
     if (expr->isScope())
     {
         IHqlScope * scope = expr->queryScope();
-        OwnedHqlExpr main = scope->lookupSymbol(createAtom("main"), LSFpublic, ctx);
+        OwnedHqlExpr main = scope->lookupSymbol(createIdAtom("main"), LSFpublic, ctx);
         if (main)
             return main.getClear();
 
@@ -8169,7 +8170,7 @@ bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side)
     if (!child)
         return true;
 
-    _ATOM name = child->queryName();
+    IAtom * name = child->queryName();
     if (side == no_left)
         return name == leftAtom;
     if (side == no_right)

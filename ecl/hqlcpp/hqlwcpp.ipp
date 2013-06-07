@@ -49,7 +49,7 @@ private:
     struct CppTemplateSection : public CInterface
     {
         TplSectionType  type;
-        _ATOM                       id;
+        IAtom *                       id;
         const char *        position;
         unsigned                len;
         unsigned                indent;
@@ -134,7 +134,7 @@ public:
     }
     IMPLEMENT_IINTERFACE
 
-    virtual void generateSection(unsigned indent, _ATOM section, unsigned pass);
+    virtual void generateSection(unsigned indent, IAtom * section, unsigned pass);
     virtual void noteLines(size32_t count) { writer.noteLines(count); }
     virtual void setOutput(IFile * out, IIOStream * outStream) { writer.setOutput(out, outStream); }
 
