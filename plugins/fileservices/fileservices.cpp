@@ -1038,7 +1038,7 @@ static ISimpleSuperFileEnquiry *getSimpleSuperFileEnquiry(ICodeContext *ctx, con
         return NULL;
     StringBuffer lsfn;
     constructLogicalName(ctx, lsuperfn, lsfn);
-    return queryDistributedFileDirectory().getSimpleSuperFileEnquiry(lsfn.str(),"Fileservices");
+    return queryDistributedFileDirectory().getSimpleSuperFileEnquiry(lsfn.str(),"Fileservices",ctx->queryUserDescriptor());
 }
 
 static void CheckNotInTransaction(ICodeContext *ctx, const char *fn)

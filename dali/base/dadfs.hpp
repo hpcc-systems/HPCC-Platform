@@ -488,7 +488,7 @@ interface IDistributedFileDirectory: extends IInterface
     // Local 'lightweight' routines
     virtual void promoteSuperFiles(unsigned numsf,const char **sfnames,const char *addsubnames,bool delsub,bool createonlyonesuperfile,IUserDescriptor *user,unsigned timeout, StringArray &outunlinked)=0;
     virtual bool getFileSuperOwners(const char *logicalname, StringArray &owners)=0; // local only
-    virtual ISimpleSuperFileEnquiry * getSimpleSuperFileEnquiry(const char *logicalname,const char *dbgtitle,unsigned timeout=INFINITE)=0; // NB must be local!
+    virtual ISimpleSuperFileEnquiry * getSimpleSuperFileEnquiry(const char *logicalname,const char *dbgtitle,IUserDescriptor *udesc,unsigned timeout=INFINITE)=0; // NB must be local!
 
     virtual IDFSredirection & queryRedirection()=0;
 
@@ -657,7 +657,7 @@ extern da_decl StringBuffer &getClusterSpareGroupName(IPropertyTree &cluster, St
 
 extern da_decl IDistributedFileTransaction *createDistributedFileTransaction(IUserDescriptor *user);
 
-extern da_decl const char *normalizeLFN(const char *s, StringBuffer &normalized);
+extern da_decl const char *normalizeLFN(const char *s, StringBuffer &normalized, IUserDescriptor *user);
 
 extern da_decl IDFAttributesIterator *createSubFileFilter(IDFAttributesIterator *_iter,IUserDescriptor* _user, bool includesub, unsigned timems=INFINITE); // takes ownership of iter
 
