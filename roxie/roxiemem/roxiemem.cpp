@@ -1326,8 +1326,6 @@ public:
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const
     {
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
-        unsigned base = 0;
-        unsigned limit = atomic_read(&freeBase);
         unsigned numAllocs = queryCount()-1;
         if (numAllocs)
         {
@@ -1574,6 +1572,8 @@ public:
                     flags.append("U");
                 if (cur.heapFlags & RHFvariable)
                     flags.append("V");
+
+                //Should never be called with numPages == 0, but protect against divide by zero in case of race condition etc.
                 unsigned percentUsed = cur.numPages ? (unsigned)((cur.memUsed * 100) / (cur.numPages * HEAP_ALIGNMENT_SIZE)) : 100;
                 unsigned __int64 memReserved = cur.numPages * HEAP_ALIGNMENT_SIZE;
                 logctx.CTXLOG("size: %"I64F"u [%s] reserved: %"I64F"u %u%% (%"I64F"u/%"I64F"u) used",
@@ -2390,7 +2390,7 @@ public:
         return (total != 0);
     }
 
-    virtual void getPeakActivityUsage()
+    void getPeakActivityUsage()
     {
         Owned<IActivityMemoryUsageMap> map = getActivityUsage();
         SpinBlock c1(crit);

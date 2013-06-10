@@ -808,6 +808,8 @@ protected:
     bool timeActivities;
     unsigned maxActivityCores, globalMemorySize;
     unsigned forceLogGraphIdMin, forceLogGraphIdMax;
+    Owned<IContextLogger> logctx;
+
     class CThorPluginCtx : public SimplePluginCtx
     {
     public:
@@ -846,6 +848,7 @@ public:
     const char *queryGraphName() const { return graphName; }
     bool queryForceLogging(graph_id graphId, bool def) const;
     ITimeReporter &queryTimeReporter() { return *timeReporter; }
+    const IContextLogger &queryContextLogger() const { return *logctx; }
     virtual IGraphTempHandler *createTempHandler(bool errorOnMissing) = 0;
     virtual CGraphBase *createGraph() = 0;
     void joinGraph(CGraphBase &graph);
