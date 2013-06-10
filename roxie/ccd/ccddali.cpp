@@ -274,6 +274,56 @@ private:
         return localTree.getClear();
     }
 
+    IFileDescriptor *recreateCloneSource(IFileDescriptor *srcfdesc, const char *destfilename)
+    {
+        const char * kind = srcfdesc->queryProperties().queryProp("@kind");
+        bool iskey = kind&&(strcmp(kind,"key")==0);
+
+        Owned<IFileDescriptor> dstfdesc = createFileDescriptor(srcfdesc->getProperties());
+        // calculate dest dir
+
+        CDfsLogicalFileName dstlfn;
+        if (!dstlfn.setValidate(destfilename,true))
+            throw MakeStringException(-1,"Logical name %s invalid",destfilename);
+
+        StringBuffer dstpartmask;
+        getPartMask(dstpartmask,destfilename,srcfdesc->numParts());
+        dstfdesc->setPartMask(dstpartmask.str());
+        unsigned np = srcfdesc->numParts();
+        dstfdesc->setNumParts(srcfdesc->numParts());
+        DFD_OS os = (getPathSepChar(srcfdesc->queryDefaultDir())=='\\')?DFD_OSwindows:DFD_OSunix;
+        StringBuffer dir;
+        StringBuffer dstdir;
+        makePhysicalPartName(dstlfn.get(),0,0,dstdir,false,os,NULL);
+        dstfdesc->setDefaultDir(dstdir.str());
+
+        for (unsigned pn=0;pn<srcfdesc->numParts();pn++) {
+            offset_t sz = srcfdesc->queryPart(pn)->queryProperties().getPropInt64("@size",-1);
+            if (sz!=(offset_t)-1)
+                dstfdesc->queryPart(pn)->queryProperties().setPropInt64("@size",sz);
+            StringBuffer dates;
+            if (srcfdesc->queryPart(pn)->queryProperties().getProp("@modified",dates))
+                dstfdesc->queryPart(pn)->queryProperties().setProp("@modified",dates.str());
+        }
+
+        const char *cloneFrom = srcfdesc->queryProperties().queryProp("@cloneFrom");
+        Owned<IPropertyTreeIterator> groups = srcfdesc->queryProperties().getElements("cloneFromGroup");
+        ForEach(*groups)
+        {
+            IPropertyTree &elem = groups->query();
+            const char *groupName = elem.queryProp("@groupName");
+            StringBuffer foreignGroup("foreign::");
+            foreignGroup.append(cloneFrom).append("::").append(groupName);
+            Owned<IGroup> group = queryNamedGroupStore().lookup(foreignGroup);  // NOTE - this is cached by the named group store
+            ClusterPartDiskMapSpec dmSpec;
+            dmSpec.fromProp(&elem);
+            dstfdesc->addCluster(groupName, group, dmSpec);
+        }
+
+        return dstfdesc.getClear();
+    }
+
+
 public:
 
     IMPLEMENT_IINTERFACE;
@@ -351,24 +401,31 @@ public:
             return NULL;
         if (!fdesc || !fdesc->queryProperties().hasProp("@cloneFrom"))
             return NULL;
-        SocketEndpoint cloneFrom;
-        cloneFrom.set(fdesc->queryProperties().queryProp("@cloneFrom"));
-        if (cloneFrom.isNull())
-            return NULL;
-        CDfsLogicalFileName lfn;
-        lfn.set(_lfn);
-        lfn.setForeign(cloneFrom, false);
-        if (!connected())
-            return resolveCachedLFN(lfn.get());
-        Owned<IDistributedFile> cloneFile = resolveLFN(lfn.get(), cacheIt, false);
-        if (cloneFile)
+        if (fdesc->queryProperties().hasProp("cloneFromGroup"))
         {
-            Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
-            if (cloneFDesc->numParts()==fdesc->numParts())
-                return cloneFDesc.getClear();
+            return recreateCloneSource(fdesc, _lfn);
+        }
+        else // Legacy mode - recently cloned files should have the extra info
+        {
+            SocketEndpoint cloneFrom;
+            cloneFrom.set(fdesc->queryProperties().queryProp("@cloneFrom"));
+            if (cloneFrom.isNull())
+                return NULL;
+            CDfsLogicalFileName lfn;
+            lfn.set(_lfn);
+            lfn.setForeign(cloneFrom, false);
+            if (!connected())
+                return resolveCachedLFN(lfn.get());
+            Owned<IDistributedFile> cloneFile = resolveLFN(lfn.get(), cacheIt, false);
+            if (cloneFile)
+            {
+                Owned<IFileDescriptor> cloneFDesc = cloneFile->getFileDescriptor();
+                if (cloneFDesc->numParts()==fdesc->numParts())
+                    return cloneFDesc.getClear();
 
-            StringBuffer s;
-            DBGLOG(ROXIE_MISMATCH, "File %s cloneFrom(%s) mismatch", _lfn, cloneFrom.getIpText(s).str());
+                StringBuffer s;
+                DBGLOG(ROXIE_MISMATCH, "File %s cloneFrom(%s) mismatch", _lfn, cloneFrom.getIpText(s).str());
+            }
         }
         return NULL;
     }

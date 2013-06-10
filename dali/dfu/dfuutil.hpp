@@ -75,7 +75,6 @@ interface IDFUhelper: extends IInterface
         IPropertyTree *relationships,   // if not NULL, tree will have all relationships filled in
         IUserDescriptor *user
     ) = 0;
-
 };
 
 IDFUhelper *createIDFUhelper();

@@ -6096,20 +6096,6 @@ public:
             return NULL;
         gname.toLowerCase();
         logicalgroupname = gname.str();
-        if ((gname.length()>9)&&(memcmp(logicalgroupname,"foreign::",9)==0)) {
-            StringBuffer eps;
-            const char *s = logicalgroupname+9;
-            while (*s&&((*s!=':')||(s[1]!=':')))
-                eps.append(*(s++));
-            if (*s) {
-                s+=2;
-                if (*s) {
-                    Owned<INode> dali = createINode(eps.str());
-                    if (dali) 
-                        return getRemoteGroup(dali,s,FOREIGN_DALI_TIMEOUT,dirret);
-                }
-            }
-        }
         bool isiprange = (*logicalgroupname!=0);
         for (const char *s1=logicalgroupname;*s1;s1++)
             if (isalpha(*s1)) {
@@ -6173,7 +6159,21 @@ public:
                 }
             }
         }
-        if (epa.ordinality()==0) {
+        if ((gname.length()>9)&&(memcmp(logicalgroupname,"foreign::",9)==0)) {
+            StringBuffer eps;
+            const char *s = logicalgroupname+9;
+            while (*s&&((*s!=':')||(s[1]!=':')))
+                eps.append(*(s++));
+            if (*s) {
+                s+=2;
+                if (*s) {
+                    Owned<INode> dali = createINode(eps.str());
+                    if (!dali || !getRemoteGroup(epa, dali, s, FOREIGN_DALI_TIMEOUT, groupdir))
+                        return NULL;
+                }
+            }
+        }
+        else if (epa.ordinality()==0) {
             struct sLock
             {
                 sLock()  { lock = NULL; };
@@ -6413,7 +6413,15 @@ public:
         cachedgroupdir.clear();
     }
 
-    IGroup *getRemoteGroup(const INode *foreigndali, const char *gname, unsigned foreigndalitimeout, StringBuffer *dirret)
+    unsigned setDefaultTimeout(unsigned timems)
+    {
+        unsigned ret = defaultTimeout;
+        defaultTimeout = timems;
+        return ret;
+    }
+
+private:
+    bool getRemoteGroup(SocketEndpointArray &epa, const INode *foreigndali, const char *gname, unsigned foreigndalitimeout, StringAttr &groupdir)
     {
         StringBuffer lcname(gname);
         gname = lcname.trim().toLowerCase().str();
@@ -6423,7 +6431,7 @@ public:
         foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
         checkDfsReplyException(mb);
         if (mb.length()==0)
-            return NULL;
+            return false;
         byte ok;
         mb.read(ok);
         if (ok!=1) {
@@ -6432,38 +6440,20 @@ public:
                 mb.skip(mbsz-1);
                 mb.read(ok);
                 if (ok!=1) 
-                    return NULL;
+                    return false;
             }
             else
-                return NULL;
+                return false;
         }
         Owned<IPropertyTree> pt = createPTree(mb);
         Owned<IPropertyTreeIterator> pe = pt->getElements("Node");
-        SocketEndpointArray epa;
+        groupdir.set(pt->queryProp("@dir"));
         ForEach(*pe) {
             SocketEndpoint ep(pe->query().queryProp("@ip"));
             epa.append(ep);
         }
-        IGroup *ret = createIGroup(epa);
-        {
-            CriticalBlock block(cachesect);
-            cachedgroup.set(ret);
-            cachedname.set(gname);
-            cachedgroupdir.set(pt->queryProp("@dir"));
-            if (dirret)
-                dirret->append(cachedgroupdir);
-            cachedtime = msTick();
-        }
-        return ret;
+        return epa.ordinality() > 0;
     }
-
-    unsigned setDefaultTimeout(unsigned timems)
-    {
-        unsigned ret = defaultTimeout;
-        defaultTimeout = timems;
-        return ret;
-    }
-
 
 };
 
