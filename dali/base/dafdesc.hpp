@@ -34,6 +34,8 @@ interface IReplicatedFile;
 
 #define SUPPORTS_MULTI_CLUSTERS  // always now set
 
+#define MAX_REPLICATION_LEVELS 4
+
 enum DFD_OS
 {
     DFD_OSdefault,
@@ -290,13 +292,13 @@ void getClusterInfo(IPropertyTree &pt, IGroupResolver *resolver, unsigned flags,
 
 
 
-// default logical to physcal filename routined
+// default logical to physical filename routines
 extern da_decl StringBuffer &makePhysicalPartName(
                                 const char *lname,                  // logical name
                                 unsigned partno,                    // part number (1..)
                                 unsigned partmax,                   // number of parts (1..)
                                 StringBuffer &result,               // result filename (or directory name if part 0)
-                                bool replicate = false,             // uses replication directory
+                                unsigned replicateLevel = 0,       // uses replication directory
                                 DFD_OS os=DFD_OSdefault,            // os must be specified if no dir specified
                                 const char *diroverride=NULL);      // override default directory
 extern da_decl StringBuffer &makeSinglePhysicalPartName(const char *lname, // single part file
@@ -307,12 +309,12 @@ extern da_decl StringBuffer &makeSinglePhysicalPartName(const char *lname, // si
                                                         );    
 
 // set/get defaults
-extern da_decl const char *queryBaseDirectory(bool replicatedir=false,DFD_OS os=DFD_OSdefault);
-extern da_decl void setBaseDirectory(const char * dir,bool replicatedir=false,DFD_OS os=DFD_OSdefault);
+extern da_decl const char *queryBaseDirectory(unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);
+extern da_decl void setBaseDirectory(const char * dir, unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);
 extern da_decl const char *queryPartMask();
 extern da_decl StringBuffer &getPartMask(StringBuffer &ret,const char *lname=NULL,unsigned partmax=0);
 extern da_decl void setPartMask(const char * mask);
-extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isrep=true,const char *baseDir=NULL,const char *repDir=NULL); // changes direcctory of name passed to backup directory
+extern da_decl bool setReplicateDir(const char *name,StringBuffer &out, bool isrep=true,const char *baseDir=NULL,const char *repDir=NULL); // changes directory of name passed to backup directory
 
 extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken

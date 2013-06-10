@@ -619,6 +619,8 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
                     {
                         const char *remoteName = remoteLocationInfo.item(idx);
                         Owned<IFile> remote = createIFile(remoteName);
+                        if (traceLevel > 5)
+                            DBGLOG("checking remote location %s", remoteName);
                         if (fileUpToDate(remote, size, modified, crc, isCompressed)==FileIsValid)
                         {
                             if (miscDebugTraceLevel > 10)
@@ -1042,7 +1044,7 @@ public:
     }
 
     virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType,
-                                     IPartDescriptor *pdesc, unsigned numParts,
+                                     IPartDescriptor *pdesc, unsigned numParts, unsigned replicationLevel,
                                      const StringArray &deployedLocationInfo, bool startFileCopy)
     {
         IPropertyTree &partProps = pdesc->queryProperties();
@@ -1067,7 +1069,7 @@ public:
             dlfn.clearForeign();
         const char *logicalname = dlfn.get();
 
-        makePhysicalPartName(logicalname, partNo, numParts, localLocation, false, DFD_OSdefault, baseDataDirectory);  // MORE - if we get the dataDirectory we can pass it in and possibly reuse an existing file
+        makePhysicalPartName(logicalname, partNo, numParts, localLocation, replicationLevel, DFD_OSdefault);
 
         Owned<ILazyFileIO> ret;
         try
@@ -1278,13 +1280,13 @@ public:
     }
 };
 
-ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy)
+ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDescriptor *remotePDesc, RoxieFileType fileType, int numParts, bool startCopy, unsigned channel)
 {
     StringArray remoteLocations;
     if (remotePDesc)
         appendRemoteLocations(remotePDesc, remoteLocations, false);
 
-    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, remoteLocations, startCopy);
+    return queryFileCache().lookupFile(id, fileType, pdesc, numParts, replicationLevel[channel], remoteLocations, startCopy);
 }
 
 //====================================================================================================
@@ -1611,7 +1613,8 @@ protected:
     mutable CriticalSection lock;
     mutable Owned<IFilePartMap> fileMap;
     mutable PerChannelCacheOf<IInMemoryIndexManager> indexMap;
-//  MORE - cache the others, using per-channel cache support. 
+    mutable PerChannelCacheOf<IFileIOArray> ioArrayMap;
+    mutable PerChannelCacheOf<IKeyArray> keyArrayMap;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1775,7 +1778,18 @@ public:
         else
             mb.append(false);
     }
-    virtual IFileIOArray *getIFileIOArray(bool isOpt, unsigned channel) const 
+    virtual IFileIOArray *getIFileIOArray(bool isOpt, unsigned channel) const
+    {
+        CriticalBlock b(lock);
+        IFileIOArray *ret = ioArrayMap.get(channel);
+        if (!ret)
+        {
+            ret = createIFileIOArray(isOpt, channel);
+            ioArrayMap.set(ret, channel);
+        }
+        return LINK(ret);
+    }
+    IFileIOArray *createIFileIOArray(bool isOpt, unsigned channel) const
     {
         Owned<CFileIOArray> f = new CFileIOArray();
         f->addFile(NULL, 0);
@@ -1795,7 +1809,7 @@ public:
                             IPartDescriptor *pdesc = fdesc->queryPart(i-1);
                             assertex(pdesc);
                             IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, i-1);
-                            Owned<ILazyFileIO> file = createDynamicFile(subNames.item(0), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL);
+                            Owned<ILazyFileIO> file = createPhysicalFile(subNames.item(0), pdesc, remotePDesc, ROXIE_FILE, numParts, cached != NULL, channel);
                             IPropertyTree &partProps = pdesc->queryProperties();
                             f->addFile(file.getClear(), partProps.getPropInt64("@offset"));
                         }
@@ -1820,7 +1834,6 @@ public:
     }
     virtual IKeyArray *getKeyArray(IDefRecordMeta *activityMeta, TranslatorArray *translators, bool isOpt, unsigned channel, bool allowFieldTranslation) const
     {
-        Owned<IKeyArray> ret = ::createKeyArray();
         unsigned maxParts = 0;
         ForEachItemIn(subFile, subFiles)
         {
@@ -1851,7 +1864,18 @@ public:
             else
                 translators->append(NULL);
         }
-
+        CriticalBlock b(lock);
+        IKeyArray *ret = keyArrayMap.get(channel);
+        if (!ret)
+        {
+            ret = createKeyArray(isOpt, channel, maxParts);
+            keyArrayMap.set(ret, channel);
+        }
+        return LINK(ret);
+    }
+    IKeyArray *createKeyArray(bool isOpt, unsigned channel, unsigned maxParts) const
+    {
+        Owned<IKeyArray> ret = ::createKeyArray();
         if (channel)
         {
             ret->addKey(NULL);
@@ -1873,7 +1897,7 @@ public:
                             if (pdesc)
                             {
                                 IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, partNo-1);
-                                part.setown(createDynamicFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_KEY, fdesc->numParts(), cached != NULL));
+                                part.setown(createPhysicalFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_KEY, fdesc->numParts(), cached != NULL, channel));
                                 pdesc->getCrc(crc);
                             }
                         }
@@ -1912,7 +1936,7 @@ public:
                     assertex(numParts > 0);
                     IPartDescriptor *pdesc = fdesc->queryPart(numParts - 1);
                     IPartDescriptor *remotePDesc = queryMatchingRemotePart(pdesc, remoteFDesc, numParts - 1);
-                    Owned<ILazyFileIO> keyFile = createDynamicFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_KEY, numParts, cached != NULL);
+                    Owned<ILazyFileIO> keyFile = createPhysicalFile(subNames.item(idx), pdesc, remotePDesc, ROXIE_KEY, numParts, cached != NULL, channel);
                     unsigned crc = 0;
                     pdesc->getCrc(crc);
                     StringBuffer pname;
@@ -1941,17 +1965,16 @@ public:
 
     virtual IInMemoryIndexManager *getIndexManager(bool isOpt, unsigned channel, IFileIOArray *files, IRecordSize *recs, bool preload, int numKeys) const 
     {
-        // MORE - if we want to share this then we need to pass in channel too and cache per channel. Should combine the get() and the load().
-        // MORE - I don't know that it makes sense to pass isOpt in to these calls rather than just when creating the IResolvedFile... think about it.
+        // MORE - I don't know that it makes sense to pass isOpt in to these calls
+        // Failures to resolve will not be cached, only successes.
         // MORE - preload and numkeys are all messed up - can't be specified per query have to be per file
-//      return createInMemoryIndexManager(isOpt, lfn);
 
         CriticalBlock b(lock);
         IInMemoryIndexManager *ret = indexMap.get(channel);
         if (!ret)
         {
             ret = createInMemoryIndexManager(isOpt, lfn);
-            ret->load(files, recs, preload, numKeys);
+            ret->load(files, recs, preload, numKeys);   // note - files (passed in) are channel specific
             indexMap.set(ret, channel);
         }
         return LINK(ret);

@@ -288,11 +288,7 @@ private:
         dstfdesc->setPartMask(dstpartmask.str());
         unsigned np = srcfdesc->numParts();
         dstfdesc->setNumParts(srcfdesc->numParts());
-        DFD_OS os = (getPathSepChar(srcfdesc->queryDefaultDir())=='\\')?DFD_OSwindows:DFD_OSunix;
-        StringBuffer dir;
-        StringBuffer dstdir;
-        makePhysicalPartName(dstlfn.get(),0,0,dstdir,false,os,NULL);
-        dstfdesc->setDefaultDir(dstdir.str());
+        dstfdesc->setDefaultDir(srcfdesc->queryProperties().queryProp("@cloneFromDir"));
 
         for (unsigned pn=0;pn<srcfdesc->numParts();pn++) {
             offset_t sz = srcfdesc->queryPart(pn)->queryProperties().getPropInt64("@size",-1);
@@ -309,17 +305,38 @@ private:
         {
             IPropertyTree &elem = groups->query();
             const char *groupName = elem.queryProp("@groupName");
+            StringBuffer dir;
             StringBuffer foreignGroup("foreign::");
             foreignGroup.append(cloneFrom).append("::").append(groupName);
-            Owned<IGroup> group = queryNamedGroupStore().lookup(foreignGroup);  // NOTE - this is cached by the named group store
+            GroupType groupType;
+            Owned<IGroup> group = queryNamedGroupStore().lookup(foreignGroup, dir, groupType);
             ClusterPartDiskMapSpec dmSpec;
             dmSpec.fromProp(&elem);
+            if (!dmSpec.defaultBaseDir.length())
+            {
+                if (dir.length())
+                {
+                    dmSpec.setDefaultBaseDir(dir);
+                }
+                else
+                {
+                    // Due to the really weird code in dadfs, this MUST be set to match the leading portion of cloneFromDir
+                    // in order to properly handle remote systems with different default directory locations
+                    StringBuffer tail;
+                    DFD_OS os = (getPathSepChar(srcfdesc->queryDefaultDir())=='\\')?DFD_OSwindows:DFD_OSunix;
+                    makePhysicalPartName(dstlfn.get(),0,0,tail,0,os,PATHSEPSTR);  // if lfn is a::b::c, tail will be /a/b/
+                    assertex(tail.length() > 1);
+                    tail.setLength(tail.length()-1);   // strip off the trailing /
+                    StringBuffer head(srcfdesc->queryProperties().queryProp("@cloneFromDir")); // Will end with /a/b
+                    assertex(streq(head.str() + head.length() - tail.length(), tail.str()));
+                    head.setLength(head.length() - tail.length()); // So strip off the end...
+                    dmSpec.setDefaultBaseDir(head.str());
+                }
+            }
             dstfdesc->addCluster(groupName, group, dmSpec);
         }
-
         return dstfdesc.getClear();
     }
-
 
 public:
 

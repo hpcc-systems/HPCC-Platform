@@ -573,6 +573,8 @@ extern da_decl IDistributedFileDirectory &queryDistributedFileDirectory();
 
 // ==GROUP STORE=================================================================================================
 
+enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_roxiefarm, grp_hthor, grp_unknown };
+
 interface INamedGroupIterator: extends IInterface
 {
     virtual bool first() = 0;
@@ -585,16 +587,15 @@ interface INamedGroupIterator: extends IInterface
 
 interface INamedGroupStore: implements IGroupResolver
 {
-    
     virtual IGroup *lookup(const char *logicalgroupname) = 0;
     virtual INamedGroupIterator *getIterator() = 0;
-    virtual INamedGroupIterator *getIterator(IGroup *match,bool exact=false) = 0;
-    virtual void add(const char *logicalgroupname,IGroup *group,bool cluster=false, const char *dir=NULL) = 0;
+    virtual INamedGroupIterator *getIterator(IGroup *match, bool exact=false) = 0;
+    virtual void add(const char *logicalgroupname,IGroup *group, bool cluster=false, const char *dir=NULL, GroupType groupType = grp_unknown) = 0;
     virtual void remove(const char *logicalgroupname) = 0;
     virtual bool find(IGroup *grp, StringBuffer &lname, bool add=false) = 0;
     virtual void addUnique(IGroup *group,StringBuffer &lname,const char *dir=NULL) = 0;
     virtual void swapNode(const IpAddress &from, const IpAddress &to) = 0;
-    virtual IGroup *lookup(const char *logicalgroupname, StringBuffer &dir) = 0;
+    virtual IGroup *lookup(const char *logicalgroupname, StringBuffer &dir, GroupType &groupType) = 0;
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                    // sets default timeout for SDS connections and locking                                                                                         // returns previous value
 
 };

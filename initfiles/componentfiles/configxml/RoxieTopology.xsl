@@ -151,47 +151,24 @@
                 <xsl:element name="RoxieServerProcess">
                     <xsl:attribute name="netAddress"><xsl:value-of select="/Environment/Hardware/Computer[@name=$computer]/@netAddress"/></xsl:attribute>
                     <xsl:copy-of select="@port"/>
-                <xsl:if test="string(@dataDirectory)=''">
-                    <xsl:message terminate="yes">Data directory is not specified for Roxie server '<xsl:value-of select="@computer"/>'.</xsl:message>
-                </xsl:if>
-                <xsl:variable name="dataDir">
-                            <xsl:call-template name="makeAbsolutePath">
-                                <xsl:with-param name="path" select="@dataDirectory"/>
-                            </xsl:call-template>                        
-                </xsl:variable>
-                    <xsl:attribute name="baseDataDirectory">
-                        <xsl:value-of select="$dataDir"/>
-                    </xsl:attribute>
-                    <xsl:attribute name="dataDirectory">
-                        <xsl:value-of select="concat($dataDir, $pathSep, $roxieClusterNode/@name)"/>
-                    </xsl:attribute>
-                    <xsl:copy-of select="@*[name()!='netAddress' and name()!='dataDirectory' and name()!='computer' and name()!='name' and name()!='port']"/>
+                    <xsl:copy-of select="@*[name()!='netAddress' and name()!='computer' and name()!='name' and name()!='port']"/>
                 </xsl:element>
             </xsl:for-each>
             <xsl:for-each select="RoxieSlaveProcess">
-                <xsl:sort select="@dataDirectory"/>
+                <xsl:sort select="@level"/>
                 <xsl:sort select="@channel" data-type="number"/>
                 <xsl:element name="RoxieSlaveProcess">
                     <xsl:variable name="computer" select="@computer"/>
                     <xsl:attribute name="netAddress"><xsl:value-of select="/Environment/Hardware/Computer[@name=$computer]/@netAddress"/></xsl:attribute>
                     <xsl:attribute name="channel"><xsl:value-of select="@channel"/></xsl:attribute>
-                <xsl:if test="string(@dataDirectory)=''">
-                    <xsl:message terminate="yes">
-                        <xsl:text>Data directory is not specified for Roxie slave '</xsl:text>
-                        <xsl:value-of select="@computer"/>
-                        <xsl:text>' for channel </xsl:text>
-                        <xsl:value-of select="@channel"/>.</xsl:message>
-                </xsl:if>                           
-
-                                        <xsl:variable name="dataDir">
-                            <xsl:call-template name="makeAbsolutePath">
-                            <xsl:with-param name="path" select="@dataDirectory"/>
-                        </xsl:call-template>                        
-                                        </xsl:variable>
-                    <xsl:attribute name="dataDirectory">
-                        <xsl:value-of select="concat($dataDir, $pathSep, $roxieClusterNode/@name)"/>
-                    </xsl:attribute>
-                                  
+                    <xsl:if test="string(@level)=''">
+                        <xsl:message terminate="yes">
+                            <xsl:text>Replication level is not specified for Roxie slave '</xsl:text>
+                            <xsl:value-of select="@computer"/>
+                            <xsl:text>' for channel </xsl:text>
+                            <xsl:value-of select="@channel"/>.</xsl:message>
+                    </xsl:if>
+                    <xsl:copy-of select="@*[name()!='netAddress' and name()!='computer' and name()!='name' and name()!='channel']"/>
                 </xsl:element>
             </xsl:for-each>
             <xsl:for-each select="RoxieMonitorProcess">
