@@ -943,18 +943,19 @@
           </mediaobject>
         </figure></para>
 
-      <para>Click on the arrow next to your drop zone typically named
-      "mydropzone" to expand. You can view the files on your drop zone here.
-      You can choose to upload, download or delete any files on the drop zone
-      using the Action buttons. You can also spray files to your cluster from
-      this page.</para>
+      <para>Click on the arrow next to your drop zone, typically named
+      <emphasis>mydropzone</emphasis> to expand. You can view the files that
+      are on your drop zone here. You can choose to upload, download, or
+      delete any files on the drop zone using the landing zone action buttons.
+      You can also spray files to your cluster from this page.</para>
 
       <sect2 id="Upload_Files">
         <title>Upload files</title>
 
-        <para>Click on the Upload button to upload a file to your landing
-        zone. An open file window will open up. Navigate to, and choose the
-        file you wish to upload. <figure>
+        <para>Click on the <emphasis role="bold">Upload</emphasis> action
+        button to upload a file to your landing zone. An <emphasis>Open
+        File</emphasis> window will open up. Navigate to, and choose the file
+        you wish to upload. <figure>
             <title>Upload Dialog</title>
 
             <mediaobject>
@@ -963,14 +964,14 @@
                            vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
-          </figure> </para>
+          </figure></para>
 
         <para>A dialog box will pop up, verify the file and dropzone are
         correct, then click on <emphasis role="bold">Start</emphasis> to begin
-        the upload. </para>
+        the upload.</para>
 
         <para>The file uploads as the progress indicator shows, and returns
-        you to the Landing Zone page. </para>
+        you to the Landing Zone page.</para>
       </sect2>
 
       <sect2 id="Download_Files">
@@ -987,11 +988,11 @@
       <sect2 id="Delete_Files">
         <title>Delete files</title>
 
-        <para>You can delete any files from your landing zone if you choose.
-        From the Landing Zone page, select a file (or files) to delete by
+        <para>You can delete any files from your landing zone if you choose
+        to. From the Landing Zone page, select a file (or files) to delete by
         checking the box next to it. Click on the <emphasis
         role="bold">Delete</emphasis> action button to delete the file from
-        your landing zone. </para>
+        your landing zone.</para>
       </sect2>
 
       <sect2>
@@ -1008,14 +1009,14 @@
                 <imagedata fileref="../../images/ECLWA440h.jpg" />
               </imageobject>
             </mediaobject>
-          </figure> </para>
+          </figure></para>
 
         <para>You can adjust the width of the view on the hex preview page
         using the arrow controls on the <emphasis role="bold">Width</emphasis>
         box.</para>
 
         <para>Check the box next to <emphasis role="bold">EBCIDIC:</emphasis>
-        to view the file in EBCIDIC. </para>
+        to view the file in EBCIDIC.</para>
       </sect2>
 
       <sect2 id="LZ_Spray">
@@ -1037,8 +1038,8 @@
 
         <para>Fill in the values as appropriate for the spray. For a delimited
         file, choose the format, fill in the values such as Record Length,
-        Separators, and other options as appropriate. Then press the <emphasis
-        role="bold">Spray </emphasis>button to spray the file. </para>
+        Separators, and other options as appropriate. Press the <emphasis
+        role="bold">Spray </emphasis>button to spray the file.</para>
       </sect2>
     </sect1>
   </chapter>
