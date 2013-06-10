@@ -404,7 +404,7 @@ class CFileCloner
 
     void cloneSubFile(IPropertyTree *ftree,const char *destfilename, INode *srcdali)   // name already has prefix added
     {
-        Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree,&queryNamedGroupStore(),0);
+        Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
         const char * kind = srcfdesc->queryProperties().queryProp("@kind");
         bool iskey = kind&&(strcmp(kind,"key")==0);
 

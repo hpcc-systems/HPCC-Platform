@@ -1046,7 +1046,7 @@ public:
                                      const StringArray &deployedLocationInfo, bool startFileCopy)
     {
         IPropertyTree &partProps = pdesc->queryProperties();
-        offset_t dfsSize = partProps.getPropInt64("@size");
+        offset_t dfsSize = partProps.getPropInt64("@size", -1);
         unsigned crc;
         if (!pdesc->getCrc(crc))
             crc = 0;
@@ -1076,7 +1076,7 @@ public:
             Linked<ILazyFileIO> f = files.getValue(localLocation);
             if (f && f->isAlive())
             {
-                if ((dfsSize != -1 && dfsSize != f->getSize()) ||
+                if ((dfsSize != (offset_t) -1 && dfsSize != f->getSize()) ||
                     (!dfsDate.isNull() && !dfsDate.equals(*f->queryDateTime(), false)))
                 {
                     StringBuffer modifiedDt;

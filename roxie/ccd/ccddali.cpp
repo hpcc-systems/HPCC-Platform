@@ -276,9 +276,6 @@ private:
 
     IFileDescriptor *recreateCloneSource(IFileDescriptor *srcfdesc, const char *destfilename)
     {
-        const char * kind = srcfdesc->queryProperties().queryProp("@kind");
-        bool iskey = kind&&(strcmp(kind,"key")==0);
-
         Owned<IFileDescriptor> dstfdesc = createFileDescriptor(srcfdesc->getProperties());
         // calculate dest dir
 
@@ -396,7 +393,7 @@ public:
 
     IFileDescriptor *checkClonedFromRemote(const char *_lfn, IFileDescriptor *fdesc, bool cacheIt)
     {
-        // MORE - may want to cache to avoid a lookup per channel
+        // NOTE - we rely on the fact that  queryNamedGroupStore().lookup caches results,to avoid excessive load on remote dali
         if (_lfn && !strnicmp(_lfn, "foreign", 7)) //if need to support dali hopping should add each remote location
             return NULL;
         if (!fdesc || !fdesc->queryProperties().hasProp("@cloneFrom"))
