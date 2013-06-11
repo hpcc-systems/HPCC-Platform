@@ -264,7 +264,7 @@ protected:
                 if (fd)
                 {
                     Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
-                    Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt, writeAccess);
+                    Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt);
                     result->addSubFile(fd.getClear(), remoteFDesc.getClear());
                     return result.getClear();
                 }
@@ -1963,10 +1963,6 @@ private:
                     Owned<const IPropertyTree> stats = getAllQueryStats(includeAllQueries, from, to);
                     toXML(stats, reply);
                 }
-            }
-            else if (stricmp(queryName, "control:queryDiffFileInfoCache")==0)
-            {
-                queryDiffFileInfoCache()->queryDiffFileNames(reply);
             }
             else if (stricmp(queryName, "control:queryPackageInfo")==0)
             {

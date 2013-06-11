@@ -402,11 +402,9 @@ class CFileCloner
             throw afor2.exc.getClear();
     }
 
-
-
     void cloneSubFile(IPropertyTree *ftree,const char *destfilename, INode *srcdali)   // name already has prefix added
     {
-        Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree,&queryNamedGroupStore(),0);
+        Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
         const char * kind = srcfdesc->queryProperties().queryProp("@kind");
         bool iskey = kind&&(strcmp(kind,"key")==0);
 
@@ -437,11 +435,6 @@ class CFileCloner
         dstfdesc->addCluster(cluster1,grp1,spec);
         if (iskey&&!cluster2.isEmpty())
             dstfdesc->addCluster(cluster2,grp2,spec2);
-#ifdef _TESTING
-//      LOGFDESC("createFileClone",dstfdesc);
-#endif
-
-
 
         for (unsigned pn=0;pn<srcfdesc->numParts();pn++) {
             offset_t sz = srcfdesc->queryPart(pn)->queryProperties().getPropInt64("@size",-1);
@@ -461,6 +454,17 @@ class CFileCloner
         {
             StringBuffer s;
             dstfdesc->queryProperties().setProp("@cloneFrom", srcdali->endpoint().getUrlStr(s).str());
+            unsigned numClusters = srcfdesc->numClusters();
+            for (unsigned clusterNum = 0; clusterNum < numClusters; clusterNum++)
+            {
+                StringBuffer sourceGroup;
+                srcfdesc->getClusterGroupName(clusterNum, sourceGroup, NULL);
+                Owned<IPropertyTree> groupInfo = createPTree("cloneFromGroup");
+                groupInfo->setProp("@groupName", sourceGroup);
+                ClusterPartDiskMapSpec &spec = srcfdesc->queryPartDiskMapping(clusterNum);
+                spec.toProp(groupInfo);
+                dstfdesc->queryProperties().addPropTree("cloneFromGroup", groupInfo.getClear());
+            }
         }
 
         Owned<IDistributedFile> dstfile = fdir->createNew(dstfdesc);
@@ -551,7 +555,6 @@ public:
                 spec2.setDefaultBaseDir(defdir2.str());
         }
     }
-
 
     void cloneSuperFile(const char *filename, CDfsLogicalFileName &dlfn)
     {
