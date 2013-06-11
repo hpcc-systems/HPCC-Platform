@@ -472,23 +472,24 @@ void CWsSMCEx::readBannerAndChatRequest(IEspContext& context, IEspActivityReques
     const char* chatURL = req.getChatURL();
     const char* banner = req.getBannerContent();
     //Filter out invalid chars
-    if (chatURL)
+    if (chatURL && *chatURL)
     {
         const char* pStr = chatURL;
-        for (unsigned i = 0; i < strlen(chatURL); i++)
+        unsigned len = strlen(chatURL);
+        for (unsigned i = 0; i < len; i++)
         {
-            if ((pStr[0] > 31) && (pStr[0] < 127))
-                chatURLStr.append(pStr[0]);
+            if (isprint(*pStr))
+                chatURLStr.append(*pStr);
             pStr++;
         }
     }
-    if (banner)
+    if (banner && *banner)
     {
         const char* pStr = banner;
-        for (unsigned i = 0; i < strlen(banner); i++)
+        unsigned len = strlen(banner);
+        for (unsigned i = 0; i < len; i++)
         {
-            if ((pStr[0] > 31) && (pStr[0] < 127))
-                bannerStr.append(pStr[0]);
+            bannerStr.append(isprint(*pStr) ? *pStr : '.');
             pStr++;
         }
     }
@@ -846,7 +847,9 @@ void CWsSMCEx::createActiveWorkUnit(Owned<IEspActiveWorkunit>& ownedWU, IEspCont
         ownedWU.setown(new CActiveWorkunitWrapper(context, wuid, location, index));
     }
     catch (IException *e)
-    {//Exception may be thrown when the openWorkUnit() is called inside the last CActiveWorkunitWrapper()
+    {   //if the wu cannot be opened for some reason, the openWorkUnit() inside the CActiveWorkunitWrapper() may throw an exception.
+        //We do not want the exception stops this process of retrieving/showing all active WUs. And that WU should still be displayed
+        //with the exception.
         StringBuffer msg;
         ownedWU.setown(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
         ownedWU->setStateID(WUStateUnknown);

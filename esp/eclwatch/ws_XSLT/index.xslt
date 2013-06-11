@@ -964,7 +964,7 @@
         <xsl:variable name="popupid"><xsl:value-of select="$cluster"/>_<xsl:value-of select="Wuid"/></xsl:variable>
         <xsl:variable name="popup">
             <xsl:choose>
-                <xsl:when test="State='running' or starts-with(State,'running')">
+                <xsl:when test="starts-with(State,'running')">
                     <xsl:choose>
                         <xsl:when test="$thorlcr='0' or $thorlcr='noLCR'">
                             return activeWUPopup('noLCR', '<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>',
