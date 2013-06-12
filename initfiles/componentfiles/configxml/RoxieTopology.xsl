@@ -162,11 +162,7 @@
                     <xsl:attribute name="netAddress"><xsl:value-of select="/Environment/Hardware/Computer[@name=$computer]/@netAddress"/></xsl:attribute>
                     <xsl:attribute name="channel"><xsl:value-of select="@channel"/></xsl:attribute>
                     <xsl:if test="string(@level)=''">
-                        <xsl:message terminate="yes">
-                            <xsl:text>Replication level is not specified for Roxie slave '</xsl:text>
-                            <xsl:value-of select="@computer"/>
-                            <xsl:text>' for channel </xsl:text>
-                            <xsl:value-of select="@channel"/>.</xsl:message>
+                        <xsl:attribute name="level">0</xsl:attribute>
                     </xsl:if>
                     <xsl:copy-of select="@*[name()!='netAddress' and name()!='computer' and name()!='name' and name()!='channel']"/>
                 </xsl:element>
