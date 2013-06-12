@@ -200,7 +200,6 @@
 #define XML_ATTR_SCHEMA                "@schema"
 #define XML_ATTR_SERVERCURDIR          "@serverCurDir"
 #define XML_ATTR_SERVICE               "@service"
-#define XML_ATTR_SLAVES                "@slaves"
 #define XML_ATTR_SLAVESNAME            "@slavesName"
 #define XML_ATTR_SPARESNAME            "@sparesName"
 #define XML_ATTR_SRCPATH               "@srcPath"
