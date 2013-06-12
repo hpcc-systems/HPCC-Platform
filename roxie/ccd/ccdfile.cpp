@@ -1049,6 +1049,7 @@ public:
     {
         IPropertyTree &partProps = pdesc->queryProperties();
         offset_t dfsSize = partProps.getPropInt64("@size", -1);
+        bool local = partProps.getPropBool("@local");
         unsigned crc;
         if (!pdesc->getCrc(crc))
             crc = 0;
@@ -1062,15 +1063,20 @@ public:
         unsigned partNo = pdesc->queryPartIndex() + 1;
         StringBuffer localLocation;
 
-        // MORE - not at all sure about this. Foreign files should stay foreign ?
-        CDfsLogicalFileName dlfn;
-        dlfn.set(lfn);
-        if (dlfn.isForeign())
-            dlfn.clearForeign();
-        const char *logicalname = dlfn.get();
-
-        makePhysicalPartName(logicalname, partNo, numParts, localLocation, replicationLevel, DFD_OSdefault);
-
+        if (local)
+        {
+            assertex(partNo==1 && numParts==1);
+            localLocation.append(lfn);  // any resolution done earlier
+        }
+        else
+        {
+            // MORE - not at all sure about this. Foreign files should stay foreign ?
+            CDfsLogicalFileName dlfn;
+            dlfn.set(lfn);
+            if (dlfn.isForeign())
+                dlfn.clearForeign();
+            makePhysicalPartName(dlfn.get(), partNo, numParts, localLocation, replicationLevel, DFD_OSdefault);
+        }
         Owned<ILazyFileIO> ret;
         try
         {
@@ -2020,6 +2026,7 @@ public:
         Owned<IFileDescriptor> fdesc = createFileDescriptor();
         Owned<IPropertyTree> pp = createPTree("Part");
         pp->setPropInt64("@size",size);
+        pp->setPropBool("@local", true);
         fdesc->setPart(0, queryMyNode(), localFileName, pp);
         addSubFile(fdesc.getClear(), NULL);
     }

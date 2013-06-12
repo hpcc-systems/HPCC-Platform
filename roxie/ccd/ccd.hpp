@@ -427,7 +427,6 @@ extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;
 extern StringBuffer pluginsList;
 extern StringBuffer queryDirectory;
-extern StringBuffer baseDataDirectory;
 extern StringBuffer codeDirectory;
 extern StringBuffer tempDirectory;
 

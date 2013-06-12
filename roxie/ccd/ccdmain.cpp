@@ -147,7 +147,6 @@ StringBuffer logDirectory;
 StringBuffer pluginDirectory;
 StringBuffer queryDirectory;
 StringBuffer codeDirectory;
-StringBuffer baseDataDirectory;
 StringBuffer tempDirectory;
 
 ClientCertificate clientCert;
@@ -517,7 +516,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             topology=createPTreeFromXMLString(
                 "<RoxieTopology numChannels='1' localSlave='1'>"
                  "<RoxieServerProcess netAddress='.'/>"
-                 "<RoxieSlaveProcess netAddress='.' channel='1'/>"
+                 "<RoxieSlaveProcess netAddress='.' channel='1' level='0'/>"
                 "</RoxieTopology>"
                 );
             int port = globals->getPropInt("--port", 9876);
@@ -553,7 +552,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
 
-        IPropertyTree *directoryTree = topology->queryPropTree("Directories");
+        Linked<IPropertyTree> directoryTree = topology->queryPropTree("Directories");
+        if (!directoryTree)
+        {
+            Owned<IPropertyTree> envFile = getHPCCEnvironment();
+            if (envFile)
+                directoryTree.set(envFile->queryPropTree("Software/Directories"));
+        }
         if (directoryTree)
         {
             getConfigurationDirectory(directoryTree, "query", "roxie", roxieName, queryDirectory);
@@ -567,8 +572,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     setBaseDirectory(dataDir, replicationLevel, DFD_OSdefault);
             }
         }
-        else
-            setBaseDirectory(".", 0, DFD_OSdefault);
+        directoryTree.clear();
 
         //Logging stuff
         if (globals->getPropBool("--stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
@@ -829,14 +833,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 queryDirectory.append(codeDirectory).append("queries");
         }
         addNonEmptyPathSepChar(queryDirectory);
-
-        // if no Dali, files are local
-        if (fileNameServiceDali.length() == 0)
-            baseDataDirectory.append("./"); // Path separator will be replaced, if necessary
-        else
-            baseDataDirectory.append(topology->queryProp("@baseDataDir"));
         queryFileCache().start();
-
         getTempFilePath(tempDirectory, "roxie", topology);
 
 #ifdef _WIN32
@@ -862,8 +859,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 unsigned roxieServerHost = roxieServer.getPropInt("@multihost", 0);
                 if (ipMatch(ep) && ((roxieServerHost == myHostNumber) || (myHostNumber==-1)))
                 {
-                    if (baseDataDirectory.length() == 0)  // if not set by other topology settings default to this ...
-                        baseDataDirectory.append(roxieServer.queryProp("@baseDataDirectory"));
                     unsigned numThreads = roxieServer.getPropInt("@numThreads", numServerThreads);
                     const char *aclName = roxieServer.queryProp("@aclName");
                     addServerChannel(port, numThreads, aclName, topology);

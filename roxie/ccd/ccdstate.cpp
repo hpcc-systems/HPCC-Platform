@@ -281,8 +281,7 @@ protected:
             if (strstr(fileName,"::"))
             {
                 bool wasDFS;
-                // MORE - really we don't want the 1 of 1 bit of this...
-                makeSinglePhysicalPartName(fileName, useName, true, wasDFS, baseDataDirectory.str());
+                makeSinglePhysicalPartName(fileName, useName, true, wasDFS);
             }
             else
                 useName.append(fileName);
@@ -376,8 +375,8 @@ public:
 
     CRoxiePackageNode(IPropertyTree *p) : CPackageNode(p)
     {
-        daliHelper.setown(connectToDali()); // MORE - should make this conditional
-        if (!daliHelper.get() || !daliHelper->connected())
+        daliHelper.setown(connectToDali()); // MORE - should make this conditional?
+        if (!fileNameServiceDali.length())
             node->setPropBool("@localFiles", true);
     }
 
