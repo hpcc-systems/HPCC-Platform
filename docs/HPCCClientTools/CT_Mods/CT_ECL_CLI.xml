@@ -2325,7 +2325,7 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>ecl roxie check</entry>
 
-                  <entry>Checks the roxie process state</entry>
+                  <entry>Checks the state of the roxie process </entry>
                 </row>
 
                 <row>
@@ -2349,6 +2349,12 @@ ecl packagemap validate roxie --active</programlisting>
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
+
+                  <entry>Max time to wait in milliseconds</entry>
                 </row>
 
                 <row>
