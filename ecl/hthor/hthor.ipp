@@ -1781,6 +1781,7 @@ public:
 
     virtual void ready();
     virtual bool needsAllocator() const { return true; }    
+    virtual bool isGrouped() { return false; }
 
     //interface IHThorInput
     virtual const void *nextInGroup();
