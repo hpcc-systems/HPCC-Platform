@@ -576,7 +576,7 @@ EclAgent::~EclAgent()
     // MORE - could delete local DLL at this point but I may prefer not to
 }
 
-void EclAgent::setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkunit, bool _resolveFilesLocally, bool _writeResultsToStdout, outputFmts _outputFmt)
+void EclAgent::setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkunit, bool _resolveFilesLocally, bool _writeResultsToStdout, outputFmts _outputFmt, IUserDescriptor * _standAloneUDesc)
 {
     isStandAloneExe = _isStandAloneExe;
     isRemoteWorkunit = _isRemoteWorkunit;
@@ -589,6 +589,7 @@ void EclAgent::setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkuni
         outputSerializer.setown(createOrderedOutputSerializer(stdout));
     if (isRemoteWorkunit)
         wuRead->subscribe(SubscribeOptionAbort);
+    standAloneUDesc.set(_standAloneUDesc);
 }
 
 void EclAgent::processXmlParams(const IPropertyTree *params)
@@ -1499,7 +1500,9 @@ void EclAgent::addWuAssertFailure(unsigned code, const char * text, const char *
 
 IUserDescriptor *EclAgent::queryUserDescriptor()
 {
-    if (isRemoteWorkunit)
+    if (isStandAloneExe && standAloneUDesc)
+        return standAloneUDesc;
+    else if (isRemoteWorkunit)
         return wuRead->queryUserDescriptor();
     else
         return NULL;
@@ -3158,7 +3161,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
 
     SCMStringBuffer wuid;
     StringBuffer daliServers;
-    if (!globals->getProp("DALISERVERS", daliServers))
+    if (!globals->getProp("DALISERVERS", daliServers) && !globals->getProp("-DALISERVERS", daliServers))
         daliServers.append(agentTopology->queryProp("@daliServers"));
 
 #ifdef LEAK_FILE
@@ -3182,6 +3185,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
             wuXML->kill();  // free up text as soon as possible.
         }
 
+        Owned<IUserDescriptor> standAloneUDesc;
         if (daliServers.length())
         {
             {
@@ -3221,6 +3225,39 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                 extendedWu->copyWorkUnit(standAloneWorkUnit, true);
                 daliWu->getWuid(wuid);
                 globals->setProp("WUID", wuid.str());
+
+                standAloneUDesc.setown(createUserDescriptor());
+                if (const char * userpwd = globals->queryProp("-USER"))
+                {
+                    StringBuffer usr(userpwd);
+                    usr.replace(':',(char)NULL);
+                    daliWu->setUser(usr.str());
+
+                    const char * pwd = strchr(userpwd, (int)':');
+                    if (pwd)
+                        ++pwd;
+                    standAloneUDesc->set(usr.str(), pwd);
+                }
+                else
+                {
+                    daliWu->setUser("StandAloneHThor");
+                    standAloneUDesc->set("StandAloneHThor", NULL);
+                }
+
+                const char * appName = argv[0];
+                for (int finger=0; argv[0][finger] != (const char)NULL; finger++)
+                {
+                    if (argv[0][finger] == PATHSEPCHAR)
+                        appName = (const char *)(argv[0] + finger + 1);
+                }
+
+                StringBuffer sb;
+                sb.append("//").append(daliServers.str()).append(':').append(appName);
+                daliWu->setJobName(sb.str());
+
+                sb.clear().append("//").append(daliServers.str()).append(":StandAloneHThor");
+                daliWu->setClusterName(sb.str());
+
                 standAloneWorkUnit.clear();
             }
         }
@@ -3280,7 +3317,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
                     return false;
                 }
 
-                agent.setStandAloneOptions(standAloneExe, isRemoteWorkunit, resolveFilesLocally, writeResultsToStdout, outputFmt);
+                agent.setStandAloneOptions(standAloneExe, isRemoteWorkunit, resolveFilesLocally, writeResultsToStdout, outputFmt, standAloneUDesc);
                 agent.doProcess();
             }
             else
@@ -3339,6 +3376,8 @@ void usage(const char * exeName)
            "    -xml                Display output as XML\n"
            "    -raw                Display output as binary\n"
            "    -limit=x            Limit number of output rows\n"
+           "    -DALISERVERS=daliEp Connect to the specified Dali(s)\n"
+           "    -USER=user:password Dali credentials\n"
            "    --help              Display this message\n",
           exeName
     );
