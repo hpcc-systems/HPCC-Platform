@@ -1547,6 +1547,17 @@ public:
         }
         return clientCrit.getClear();
     }
+    unsigned getHashFromElement(const void *e) const
+    {
+        const CEndpointCS &elem=*(const CEndpointCS *)e;
+        return getHashFromFindParam(elem.queryFindParam());
+    }
+
+    unsigned getHashFromFindParam(const void *fp) const
+    {
+        return ((const SocketEndpoint *)fp)->hash(0);
+    }
+
     void removeExact(CEndpointCS *clientCrit)
     {
         CriticalBlock b(crit);
