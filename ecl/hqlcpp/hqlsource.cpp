@@ -1290,10 +1290,13 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
                 }
             }
 
-            OwnedHqlExpr ensureSize = adjustValue(bound.expr, virtualSize);
-            s.clear().append("crSelf.ensureCapacity(");
-            translator.generateExprCpp(s, ensureSize).append(", NULL);");
-            ctx.addQuoted(s);
+            if (!isFixedSizeRecord(record))
+            {
+                OwnedHqlExpr ensureSize = adjustValue(bound.expr, virtualSize);
+                s.clear().append("crSelf.ensureCapacity(");
+                translator.generateExprCpp(s, ensureSize).append(", NULL);");
+                ctx.addQuoted(s);
+            }
 
             s.clear().append("memcpy(crSelf.row(), left, ");
             translator.generateExprCpp(s, bound.expr).append(");");
