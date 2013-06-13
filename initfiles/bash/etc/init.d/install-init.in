@@ -133,6 +133,9 @@ SECTION=${SECTION:-DEFAULT}
 confToUse="${INSTALL_DIR}${CONFIG_DIR}/${ENV_CONF_FILE}"
 
 if [ -d ${CONFIG_DIR} ]; then
+    if [ -f ${CONFIG_DIR}/installed ] ; then
+        exit 0
+    fi
     if [ -e ${CONFIG_DIR}/${ENV_CONF_FILE} ]; then
         confToUse="${CONFIG_DIR}/${ENV_CONF_FILE}"
     fi
@@ -271,3 +274,7 @@ fi
 chown root:$group ${configs}
 chown -R $user:$group ${configs}/*
 chmod 775 ${configs}
+
+if [ -d ${CONFIG_DIR} ]; then
+    date > ${CONFIG_DIR}/installed
+fi
