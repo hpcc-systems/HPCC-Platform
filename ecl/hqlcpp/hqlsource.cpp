@@ -290,7 +290,7 @@ void VirtualFieldsInfo::gatherVirtualFields(IHqlExpression * _record, bool ignor
         IHqlExpression * cur = record->queryChild(idx);
         IHqlExpression * virtualAttr = NULL;
         if (!ignoreVirtuals)
-            virtualAttr = cur->queryProperty(virtualAtom);
+            virtualAttr = cur->queryAttribute(virtualAtom);
 
         if (virtualAttr)
         {
@@ -326,7 +326,7 @@ public:
 
     virtual IHqlExpression * getMissingAssignValue(IHqlExpression * expr)
     {
-        IHqlExpression * virtualAttr = expr->queryProperty(virtualAtom);
+        IHqlExpression * virtualAttr = expr->queryAttribute(virtualAtom);
         assertex(virtualAttr);
         return getVirtualReplacement(expr, virtualAttr->queryChild(0), dataset);
     }
@@ -405,7 +405,7 @@ void createPhysicalLogicalAssigns(HqlExprArray & assigns, IHqlExpression * self,
                 {
                     IHqlExpression * curPhysical = nextDiskField(diskRecord, diskIndex);
                     OwnedHqlExpr physicalSelect = createSelectExpr(LINK(diskDataset), LINK(curPhysical));
-                    if (cur->isDatarow() && !cur->hasProperty(blobAtom) && !isInPayload())
+                    if (cur->isDatarow() && !cur->hasAttribute(blobAtom) && !isInPayload())
                     {
                         createPhysicalLogicalAssigns(assigns, target, curPhysical->queryRecord(), cur->queryRecord(), physicalSelect, allowTranslate, NotFound);
                     }
@@ -472,7 +472,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             physicalFields.append(*mapIfBlock(mapper, cur));
         else if (cur->getOperator() == no_record)
             physicalFields.append(*createPhysicalIndexRecord(mapper, tableExpr, cur, false, allowTranslate));
-        else if (cur->hasProperty(blobAtom))
+        else if (cur->hasAttribute(blobAtom))
         {
             newField = createField(cur->queryId(), makeIntType(8, false), NULL, NULL);
         }
@@ -494,7 +494,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             {
                 //This should support other non serialized formats.  E.g., link counted strings. 
                 //Simplest would be to move getSerializedForm code + call that first.
-                if (cur->hasProperty(_linkCounted_Atom))
+                if (cur->hasAttribute(_linkCounted_Atom))
                 {
                     newField = getSerializedForm(cur, diskAtom);
                     assertex(newField != cur);
@@ -533,7 +533,7 @@ IHqlExpression * HqlCppTranslator::convertToPhysicalIndex(IHqlExpression * table
     if (match)
         return LINK(*match);
 
-    if (tableExpr->hasProperty(_original_Atom))
+    if (tableExpr->hasAttribute(_original_Atom))
         return LINK(tableExpr);
 
     assertex(tableExpr->getOperator() == no_newkeyindex);
@@ -674,7 +674,7 @@ public:
         isPreloaded = false;
         isCompoundCount = false;
         transformCanFilter = false;
-        IHqlExpression * preload = tableExpr ? tableExpr->queryProperty(preloadAtom) : NULL;
+        IHqlExpression * preload = tableExpr ? tableExpr->queryAttribute(preloadAtom) : NULL;
         if (preload)
         {
             isPreloaded = true;
@@ -687,7 +687,7 @@ public:
         returnIfFilterFails = true;
         useFilterMappings = true;
         generateUnfilteredTransform = false;
-        allowDynamicFormatChange = tableExpr && !tableExpr->hasProperty(fixedAtom);
+        allowDynamicFormatChange = tableExpr && !tableExpr->hasAttribute(fixedAtom);
         onlyExistsAggreate = false;
         monitorsForGrouping = false;
         useImplementationClass = false;
@@ -1281,7 +1281,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             ForEachChild(idx, record)
             {
                 IHqlExpression * field = record->queryChild(idx);
-                IHqlExpression * virtualAttr = field->queryProperty(virtualAtom);
+                IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
                 if (virtualAttr)
                 {
                     size32_t fieldSize = field->queryType()->getSize();
@@ -1305,7 +1305,7 @@ void SourceBuilder::buildTransformElements(BuildCtx & ctx, IHqlExpression * expr
             ForEachChild(idx2, record)
             {
                 IHqlExpression * field = record->queryChild(idx2);
-                IHqlExpression * virtualAttr = field->queryProperty(virtualAtom);
+                IHqlExpression * virtualAttr = field->queryAttribute(virtualAtom);
                 if (virtualAttr)
                 {
                     IHqlExpression * self = rootSelfRow->querySelector();
@@ -1779,7 +1779,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     activityKind = _activityKind;
     translator.gatherActiveCursors(ctx, parentCursors);
 
-    bool isSpill = tableExpr && tableExpr->hasProperty(_spill_Atom);
+    bool isSpill = tableExpr && tableExpr->hasAttribute(_spill_Atom);
     useImplementationClass = translator.queryOptions().minimizeActivityClasses && translator.targetRoxie() && isSpill;
 
     Owned<ActivityInstance> localInstance = new ActivityInstance(translator, ctx, activityKind, expr, kind);
@@ -1816,7 +1816,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
                 case no_newusertable:
                 case no_transformascii:
                 case no_transformebcdic:
-                    if (!cur->hasProperty(_internal_Atom))
+                    if (!cur->hasAttribute(_internal_Atom))
                         isProjected = true;
                     break;
                 case no_table:
@@ -1976,7 +1976,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
     else
         instance->addAttributeBool("_isSpill", isSpill);
 
-    IHqlExpression * spillReason = tableExpr ? queryPropertyChild(tableExpr, _spillReason_Atom, 0) : NULL;
+    IHqlExpression * spillReason = tableExpr ? queryAttributeChild(tableExpr, _spillReason_Atom, 0) : NULL;
 
     if (spillReason)
     {
@@ -2014,7 +2014,7 @@ void SourceBuilder::buildKeyedLimitHelper(IHqlExpression * self)
         func2ctx.addQuotedCompound("virtual void onKeyedLimitExceeded()");
         translator.buildStmt(func2ctx, fail);
 
-        IHqlExpression * transform = queryPropertyChild(keyedLimitExpr, onFailAtom, 0);
+        IHqlExpression * transform = queryAttributeChild(keyedLimitExpr, onFailAtom, 0);
         if (transform)
         {
             BuildCtx transformctx(instance->startctx);
@@ -2030,21 +2030,21 @@ void SourceBuilder::buildSteppedHelpers()
 {
     StringBuffer steppedFlags;
 
-    IHqlExpression * priority = steppedExpr->queryProperty(priorityAtom);
+    IHqlExpression * priority = steppedExpr->queryAttribute(priorityAtom);
     if (priority)
     {
         steppedFlags.append("|SSFhaspriority");
         translator.doBuildFunction(instance->startctx, doubleType, "getPriority", priority->queryChild(0));
     }
 
-    IHqlExpression * prefetch = steppedExpr->queryProperty(prefetchAtom);
+    IHqlExpression * prefetch = steppedExpr->queryAttribute(prefetchAtom);
     if (prefetch)
     {
         steppedFlags.append("|SSFhasprefetch");
         translator.doBuildUnsignedFunction(instance->startctx, "getPrefetchSize", prefetch->queryChild(0));
     }
 
-    IHqlExpression * filtered = steppedExpr->queryProperty(filteredAtom);
+    IHqlExpression * filtered = steppedExpr->queryAttribute(filteredAtom);
     if (filtered)
         steppedFlags.append("|SSFalwaysfilter");
 
@@ -2620,12 +2620,12 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     bool matched = translator.registerGlobalUsage(tableExpr->queryChild(0));
     if (translator.getTargetClusterType() == RoxieCluster)
     {
-        instance->addAttributeBool("_isOpt", tableExpr->hasProperty(optAtom));
-        instance->addAttributeBool("_isSpillGlobal", tableExpr->hasProperty(jobTempAtom));
-        if (tableExpr->hasProperty(jobTempAtom) && !matched)
+        instance->addAttributeBool("_isOpt", tableExpr->hasAttribute(optAtom));
+        instance->addAttributeBool("_isSpillGlobal", tableExpr->hasAttribute(jobTempAtom));
+        if (tableExpr->hasAttribute(jobTempAtom) && !matched)
             throwUnexpected();
     }
-    if (!matched && expr->hasProperty(_spill_Atom))
+    if (!matched && expr->hasAttribute(_spill_Atom))
     {
         StringBuffer spillName;
         getExprECL(tableExpr->queryChild(0), spillName);
@@ -2639,7 +2639,7 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
     if (guard)
         translator.doBuildBoolFunction(instance->startctx, "canMatchAny", guard);
 
-    translator.buildEncryptHelper(instance->startctx, tableExpr->queryProperty(encryptAtom));
+    translator.buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom));
 
     //---- virtual size32_t getPreloadSize() { return <value>; } ----
     if (preloadSize)
@@ -2664,29 +2664,29 @@ void DiskReadBuilderBase::buildMembers(IHqlExpression * expr)
 void DiskReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
 {
     StringBuffer flags;
-    if (tableExpr->hasProperty(_spill_Atom)) flags.append("|TDXtemporary");
-    if (tableExpr->hasProperty(jobTempAtom)) flags.append("|TDXjobtemp");
-    if (tableExpr->hasProperty(groupedAtom)) flags.append("|TDXgrouped");
-    if (tableExpr->hasProperty(__compressed__Atom)) flags.append("|TDXcompress");
-    if (tableExpr->hasProperty(unsortedAtom)) flags.append("|TDRunsorted");
-    if (tableExpr->hasProperty(optAtom)) flags.append("|TDRoptional");
-    if (tableExpr->hasProperty(_workflowPersist_Atom)) flags.append("|TDXupdateaccessed");
+    if (tableExpr->hasAttribute(_spill_Atom)) flags.append("|TDXtemporary");
+    if (tableExpr->hasAttribute(jobTempAtom)) flags.append("|TDXjobtemp");
+    if (tableExpr->hasAttribute(groupedAtom)) flags.append("|TDXgrouped");
+    if (tableExpr->hasAttribute(__compressed__Atom)) flags.append("|TDXcompress");
+    if (tableExpr->hasAttribute(unsortedAtom)) flags.append("|TDRunsorted");
+    if (tableExpr->hasAttribute(optAtom)) flags.append("|TDRoptional");
+    if (tableExpr->hasAttribute(_workflowPersist_Atom)) flags.append("|TDXupdateaccessed");
     if (isPreloaded) flags.append("|TDRpreload");
     if (monitors.isFiltered()) flags.append("|TDRkeyed");
     if (limitExpr)
     {
-        if (limitExpr->hasProperty(onFailAtom))
+        if (limitExpr->hasAttribute(onFailAtom))
             flags.append("|TDRlimitcreates");
-        else if (limitExpr->hasProperty(skipAtom))
+        else if (limitExpr->hasAttribute(skipAtom))
             flags.append("|TDRlimitskips");
     }
     if (keyedLimitExpr)
     {
-        if (keyedLimitExpr->hasProperty(onFailAtom))
+        if (keyedLimitExpr->hasAttribute(onFailAtom))
             flags.append("|TDRkeyedlimitcreates|TDRcountkeyedlimit");           // is count correct?
-        else if (keyedLimitExpr->hasProperty(skipAtom))
+        else if (keyedLimitExpr->hasAttribute(skipAtom))
             flags.append("|TDRkeyedlimitskips|TDRcountkeyedlimit");
-        else if (keyedLimitExpr->hasProperty(countAtom))
+        else if (keyedLimitExpr->hasAttribute(countAtom))
             flags.append("|TDRcountkeyedlimit");
     }
     if (onlyExistsAggreate) flags.append("|TDRaggregateexists");
@@ -2771,8 +2771,8 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
         pipeCtx.addQuotedCompound("virtual const char * getPipeProgram()");
         translator.buildReturn(pipeCtx, mode->queryChild(0), unknownVarStringType);
 
-        IHqlExpression * csvFromPipe = tableExpr->queryProperty(csvAtom);
-        IHqlExpression * xmlFromPipe = tableExpr->queryProperty(xmlAtom);
+        IHqlExpression * csvFromPipe = tableExpr->queryAttribute(csvAtom);
+        IHqlExpression * xmlFromPipe = tableExpr->queryAttribute(xmlAtom);
         bool usesContents = false;
         if (csvFromPipe)
         {
@@ -2793,13 +2793,13 @@ void DiskReadBuilder::buildMembers(IHqlExpression * expr)
         else if (xmlFromPipe)
         {
             translator.doBuildXmlReadMember(*instance, expr, "queryXmlTransformer", usesContents);
-            translator.doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryPropertyChild(xmlFromPipe, rowAtom, 0));
+            translator.doBuildVarStringFunction(instance->classctx, "getXmlIteratorPath", queryAttributeChild(xmlFromPipe, rowAtom, 0));
         }
         
         StringBuffer flags;
-        if (tableExpr->hasProperty(groupAtom))      // not supported in parser?
+        if (tableExpr->hasAttribute(groupAtom))      // not supported in parser?
             flags.append("|TPFgroupeachrow");
-        if (tableExpr->hasProperty(optAtom))        // not supported in parser?
+        if (tableExpr->hasAttribute(optAtom))        // not supported in parser?
             flags.append("|TPFnofail");
 
         if (csvFromPipe)
@@ -2865,7 +2865,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskRead(BuildCtx & ctx, IHqlE
     bool isPiped = modeOp==no_pipe;
 
     DiskReadBuilder info(*this, tableExpr, tableExpr->queryChild(0));
-    info.gatherVirtualFields(tableExpr->hasProperty(_noVirtual_Atom) || isPiped, needToSerializeRecord(modeOp));
+    info.gatherVirtualFields(tableExpr->hasAttribute(_noVirtual_Atom) || isPiped, needToSerializeRecord(modeOp));
 
     unsigned optFlags = (options.foldOptimized ? HOOfold : 0);
     if (!info.fieldInfo.simpleVirtualsAtEnd || info.fieldInfo.requiresDeserialize ||
@@ -2956,7 +2956,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskNormalize(BuildCtx & ctx, 
     assertex(mode->getOperator()!=no_pipe);
 
     DiskNormalizeBuilder info(*this, tableExpr, tableExpr->queryChild(0));
-    info.gatherVirtualFields(tableExpr->hasProperty(_noVirtual_Atom), needToSerializeRecord(mode));
+    info.gatherVirtualFields(tableExpr->hasAttribute(_noVirtual_Atom), needToSerializeRecord(mode));
 
     LinkedHqlExpr transformed = expr;
     if (info.recordHasVirtualsOrDeserialize())
@@ -3113,7 +3113,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskAggregate(BuildCtx & ctx, 
     assertex(mode->getOperator()!=no_pipe);
 
     DiskAggregateBuilder info(*this, tableExpr, tableExpr->queryChild(0));
-    info.gatherVirtualFields(tableExpr->hasProperty(_noVirtual_Atom), needToSerializeRecord(mode));
+    info.gatherVirtualFields(tableExpr->hasAttribute(_noVirtual_Atom), needToSerializeRecord(mode));
 
     LinkedHqlExpr transformed = expr;
     if (info.recordHasVirtualsOrDeserialize())
@@ -3127,7 +3127,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskAggregate(BuildCtx & ctx, 
     if (aggOp == no_countgroup || aggOp == no_existsgroup)
     {
         DiskCountBuilder info(*this, tableExpr, tableExpr->queryChild(0), aggOp);
-        info.gatherVirtualFields(tableExpr->hasProperty(_noVirtual_Atom), needToSerializeRecord(mode));
+        info.gatherVirtualFields(tableExpr->hasAttribute(_noVirtual_Atom), needToSerializeRecord(mode));
 
         return info.buildActivity(ctx, expr, TAKdiskcount, "DiskCount", NULL);
     }
@@ -3190,7 +3190,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDiskGroupAggregate(BuildCtx & 
     assertex(mode->getOperator()!=no_pipe);
 
     DiskGroupAggregateBuilder info(*this, tableExpr, tableExpr->queryChild(0));
-    info.gatherVirtualFields(tableExpr->hasProperty(_noVirtual_Atom), needToSerializeRecord(mode));
+    info.gatherVirtualFields(tableExpr->hasAttribute(_noVirtual_Atom), needToSerializeRecord(mode));
 
     LinkedHqlExpr transformed = expr;
     if (info.recordHasVirtualsOrDeserialize())
@@ -3453,7 +3453,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCompoundSelectNew(BuildCtx & c
 
 
     IHqlExpression * select = queryRoot(optimized);
-    if (!(select && select->getOperator() == no_select && select->hasProperty(newAtom)))
+    if (!(select && select->getOperator() == no_select && select->hasAttribute(newAtom)))
     {
         if (optimized->getOperator() == no_compound_selectnew)
             return buildCachedActivity(ctx, optimized->queryChild(0));
@@ -3608,7 +3608,7 @@ MonitorExtractor::MonitorExtractor(IHqlExpression * _tableExpr, HqlCppTranslator
     expandKeyableFields();
     cleanlyKeyedExplicitly = false;
     keyedExplicitly = false;
-    allowDynamicFormatChange = tableExpr && !tableExpr->hasProperty(fixedAtom);
+    allowDynamicFormatChange = tableExpr && !tableExpr->hasAttribute(fixedAtom);
 }
 
 void MonitorExtractor::callAddAll(BuildCtx & ctx, IHqlExpression * targetVar)
@@ -3659,7 +3659,7 @@ static ITypeInfo * getExpandedFieldType(ITypeInfo * type, IHqlExpression * expr)
         if (type->getSize() == UNKNOWN_LENGTH)
         {
             unsigned maxLength = UNKNOWN_LENGTH;
-            IHqlExpression * maxSizeExpr = expr ? queryPropertyChild(expr, maxSizeAtom, 0) : NULL;
+            IHqlExpression * maxSizeExpr = expr ? queryAttributeChild(expr, maxSizeAtom, 0) : NULL;
             if (maxSizeExpr)
             {
                 unsigned maxSize = (unsigned)maxSizeExpr->queryValue()->getIntValue();
@@ -3688,7 +3688,7 @@ static ITypeInfo * getExpandedFieldType(ITypeInfo * type, IHqlExpression * expr)
             }
             else
             {
-                IHqlExpression * maxLengthExpr = expr ? queryPropertyChild(expr, maxLengthAtom, 0) : NULL;
+                IHqlExpression * maxLengthExpr = expr ? queryAttributeChild(expr, maxLengthAtom, 0) : NULL;
                 if (maxLengthExpr)
                     maxLength = (unsigned)maxLengthExpr->queryValue()->getIntValue();
             }
@@ -4787,7 +4787,7 @@ void MonitorExtractor::buildSegments(BuildCtx & ctx, const char * listName, bool
 
         //MORE: Should also allow nested record structures, and allow keying on first elements.
         //      and field->queryType()->getSize() doesn't work for alien datatypes etc.
-        if(!field->hasProperty(virtualAtom))
+        if(!field->hasAttribute(virtualAtom))
         {
             if (mergedSizes.isItem(idx))
                 curSize = mergedSizes.item(idx);
@@ -5888,14 +5888,14 @@ bool MonitorExtractor::extractFilters(KeyConditionInfo & matches, IHqlExpression
             KeyFailureInfo reason;
             reason.merge(failReason);
             failReason.clear();
-            bool extend = expr->hasProperty(extendAtom);
+            bool extend = expr->hasAttribute(extendAtom);
             if (!extractFilters(matches, l, extend ? KeyedExtend : KeyedYes))
             {
                 if (!extend)
                     failReason.reportError(translator, expr);
             }
 
-            IHqlExpression * original = expr->queryProperty(_selectors_Atom);
+            IHqlExpression * original = expr->queryAttribute(_selectors_Atom);
             if (original)
             {
                 ForEachChild(i, original)
@@ -5908,7 +5908,7 @@ bool MonitorExtractor::extractFilters(KeyConditionInfo & matches, IHqlExpression
         {
             if (l->getOperator() == no_all)
             {
-                IHqlExpression * original = expr->queryProperty(_selectors_Atom);
+                IHqlExpression * original = expr->queryAttribute(_selectors_Atom);
                 assertex(original);
                 ForEachChild(i, original)
                     extractFoldedWildFields(original->queryChild(i));
@@ -6199,7 +6199,7 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
 
     instance->addAttributeBool("preload", isPreloaded);
     if (translator.getTargetClusterType() == RoxieCluster)
-        instance->addAttributeBool("_isIndexOpt", tableExpr->hasProperty(optAtom));
+        instance->addAttributeBool("_isIndexOpt", tableExpr->hasAttribute(optAtom));
 
     if (monitors.queryGlobalGuard())
         translator.doBuildBoolFunction(instance->startctx, "canMatchAny", monitors.queryGlobalGuard());
@@ -6207,7 +6207,7 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
     buildKeyedLimitHelper(expr);
 
     translator.buildFormatCrcFunction(instance->classctx, "getFormatCrc", tableExpr, tableExpr, 1);
-    IHqlExpression * originalKey = queryPropertyChild(tableExpr, _original_Atom, 0);
+    IHqlExpression * originalKey = queryAttributeChild(tableExpr, _original_Atom, 0);
     translator.buildSerializedLayoutMember(instance->classctx, originalKey->queryRecord(), "getIndexLayout", numKeyedFields(originalKey));
 
     //Note the helper base class contains code like the following
@@ -6218,29 +6218,29 @@ void IndexReadBuilderBase::buildMembers(IHqlExpression * expr)
 void IndexReadBuilderBase::buildFlagsMember(IHqlExpression * expr)
 {
     StringBuffer flags;
-    if (tableExpr->hasProperty(sortedAtom))
+    if (tableExpr->hasAttribute(sortedAtom))
         flags.append("|TIRsorted");
-    else if (tableExpr->hasProperty(unorderedAtom))
+    else if (tableExpr->hasAttribute(unorderedAtom))
         flags.append("|TIRunordered");
     if (!monitors.isFiltered())
         flags.append("|TIRnofilter");
     if (isPreloaded)
         flags.append("|TIRpreload");
-    if (tableExpr->hasProperty(optAtom))
+    if (tableExpr->hasAttribute(optAtom))
         flags.append("|TIRoptional");
-    if (limitExpr && limitExpr->hasProperty(skipAtom))
+    if (limitExpr && limitExpr->hasAttribute(skipAtom))
         flags.append("|TIRlimitskips");
-    if (limitExpr && limitExpr->hasProperty(onFailAtom))
+    if (limitExpr && limitExpr->hasAttribute(onFailAtom))
         flags.append("|TIRlimitcreates");
     if (generateUnfilteredTransform)
         flags.append("|TIRunfilteredtransform");
     if (keyedLimitExpr)
     {
-        if (keyedLimitExpr->hasProperty(onFailAtom))
+        if (keyedLimitExpr->hasAttribute(onFailAtom))
             flags.append("|TIRkeyedlimitcreates|TIRcountkeyedlimit");
-        else if (keyedLimitExpr->hasProperty(skipAtom))
+        else if (keyedLimitExpr->hasAttribute(skipAtom))
             flags.append("|TIRkeyedlimitskips|TIRcountkeyedlimit");
-        else if (keyedLimitExpr->hasProperty(countAtom))
+        else if (keyedLimitExpr->hasAttribute(countAtom))
             flags.append("|TIRcountkeyedlimit");
     }
     IHqlExpression * firstStepped = steppingInfo.firstStepped();
@@ -6985,7 +6985,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
 
     //---- virtual const char * getFileName() { return "x.d00"; } ----
     buildFilenameFunction(*instance, instance->startctx, "getFileName", filename, hasDynamicFilename(tableExpr));
-    buildEncryptHelper(instance->startctx, tableExpr->queryProperty(encryptAtom));
+    buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom));
 
     bool usesContents = false;
     doBuildXmlReadMember(*instance, tableExpr, "queryTransformer", usesContents);
@@ -6996,11 +6996,11 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlRead(BuildCtx & ctx, IHqlEx
 
     //virtual unsigned getFlags() = 0;
     StringBuffer flags;
-    if (expr->hasProperty(_spill_Atom)) flags.append("|TDXtemporary");
-    if (expr->hasProperty(unsortedAtom)) flags.append("|TDRunsorted");
-    if (expr->hasProperty(optAtom)) flags.append("|TDRoptional");
+    if (expr->hasAttribute(_spill_Atom)) flags.append("|TDXtemporary");
+    if (expr->hasAttribute(unsortedAtom)) flags.append("|TDRunsorted");
+    if (expr->hasAttribute(optAtom)) flags.append("|TDRoptional");
     if (usesContents) flags.append("|TDRusexmlcontents");
-    if (mode->hasProperty(noRootAtom)) flags.append("|TDRxmlnoroot");
+    if (mode->hasAttribute(noRootAtom)) flags.append("|TDRxmlnoroot");
     if (!filename->isConstant()) flags.append("|TDXvarfilename");
     if (hasDynamicFilename(expr)) flags.append("|TDXdynamicfilename");
 
@@ -7079,11 +7079,11 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     translator.bindTableCursor(getposctx, fetch->queryChild(1), "right", no_right, selSeq);
     translator.buildReturn(getposctx, fetch->queryChild(2));
     
-    translator.buildEncryptHelper(instance->startctx, tableExpr->queryProperty(encryptAtom), "getFileEncryptKey");
+    translator.buildEncryptHelper(instance->startctx, tableExpr->queryAttribute(encryptAtom), "getFileEncryptKey");
 
     //Fetch flags
     StringBuffer flags;
-    if (tableExpr->hasProperty(optAtom))
+    if (tableExpr->hasAttribute(optAtom))
         flags.append("|FFdatafileoptional");
     if (!nameExpr->isConstant())
         flags.append("|FFvarfilename");
@@ -7093,7 +7093,7 @@ void FetchBuilder::buildMembers(IHqlExpression * expr)
     if (flags.length())
         translator.doBuildUnsignedFunction(instance->classctx, "getFetchFlags", flags.str()+1);
 
-    if (tableExpr->hasProperty(optAtom) && translator.targetRoxie())
+    if (tableExpr->hasAttribute(optAtom) && translator.targetRoxie())
         instance->addAttributeBool("_isOpt", true);
 
     buildLimits(instance->startctx, expr, instance->activityId);

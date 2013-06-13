@@ -591,7 +591,7 @@ void HqlRegexExpr::calcDfaScore()
             else
                 dfaScore = argScore;
         }
-        else if (!expr->hasProperty(minimalAtom))
+        else if (!expr->hasAttribute(minimalAtom))
         {
             unsigned max = getRepeatMax();
             unsigned namedDfaScore = queryNamed()->getDfaScore();
@@ -861,7 +861,7 @@ bool HqlRegexExpr::canConsume(unsigned nextChar)
     case no_pat_set:
         {
             assertex(options.type != type_utf8);
-            bool invert = expr->hasProperty(notAtom);
+            bool invert = expr->hasAttribute(notAtom);
             ForEachChild(idx, expr)
             {
                 IHqlExpression * child = expr->queryChild(idx);
@@ -963,7 +963,7 @@ void HqlRegexExpr::gatherConsumeSymbols(SymbolArray & symbols)
         if (options.type == type_unicode)
         {
             //MORE: Need some kind of implementation for unicode - although invert and ranges may not be possible.
-            if (expr->hasProperty(notAtom))
+            if (expr->hasAttribute(notAtom))
                 throwError(HQLERR_DfaTooComplex);
 
             ForEachChild(idx, expr)
@@ -1381,7 +1381,7 @@ void HqlRegexExpr::generateRegex(GenerateRegexCtx & ctx)
     case no_pat_endcheckin:
         {
             bool stripSeparator = ctx.info.addedSeparators && (expr->queryType()->getTypeCode() != type_pattern);
-            created.setown(new RegexCheckInPattern(expr->hasProperty(notAtom), stripSeparator));
+            created.setown(new RegexCheckInPattern(expr->hasAttribute(notAtom), stripSeparator));
             break;
         }
     case no_pat_endchecklength:
@@ -1390,7 +1390,7 @@ void HqlRegexExpr::generateRegex(GenerateRegexCtx & ctx)
             unsigned maxLength = PATTERN_UNLIMITED_LENGTH;
             getCheckRange(expr->queryChild(1), minLength, maxLength, ctx.info.charSize);
             bool stripSeparator = ctx.info.addedSeparators && (expr->queryType()->getTypeCode() != type_pattern);
-            created.setown(new RegexCheckLengthPattern(expr->hasProperty(notAtom), stripSeparator, minLength, maxLength));
+            created.setown(new RegexCheckLengthPattern(expr->hasAttribute(notAtom), stripSeparator, minLength, maxLength));
             break;
         }
     case no_pat_endvalidate:
@@ -1430,14 +1430,14 @@ void HqlRegexExpr::generateRegex(GenerateRegexCtx & ctx)
         break;
     case no_pat_x_before_y:
     case no_pat_before_y:
-        created.setown(new RegexAssertNextPattern(expr->hasProperty(notAtom)));
+        created.setown(new RegexAssertNextPattern(expr->hasAttribute(notAtom)));
         break;
     case no_pat_x_after_y:
     case no_pat_after_y:
         {
             unsigned minSize = limitedMult(querySubPattern()->limit.minLength, ctx.info.charSize);
             unsigned maxSize = limitedMult(querySubPattern()->limit.maxLength, ctx.info.charSize);
-            created.setown(new RegexAssertPrevPattern(expr->hasProperty(notAtom), minSize, maxSize));
+            created.setown(new RegexAssertPrevPattern(expr->hasAttribute(notAtom), minSize, maxSize));
             break;
         }
     case no_pat_first:
@@ -1467,7 +1467,7 @@ void HqlRegexExpr::generateRegex(GenerateRegexCtx & ctx)
             else
                 pattern = new RegexAsciiISetPattern;
             created.setown(pattern);
-            if (expr->hasProperty(notAtom))
+            if (expr->hasAttribute(notAtom))
                 pattern->setInvert(true);
             ForEachChild(idx, expr)
             {
@@ -1556,11 +1556,11 @@ void HqlRegexExpr::generateRegex(GenerateRegexCtx & ctx)
         {
             if (expr->queryChild(0)->getOperator() == no_pat_anychar)
             {
-                created.setown(new RegexRepeatAnyPattern(getRepeatMin(), getRepeatMax(), expr->hasProperty(minimalAtom)));
+                created.setown(new RegexRepeatAnyPattern(getRepeatMin(), getRepeatMax(), expr->hasAttribute(minimalAtom)));
                 queryNamed()->noGenerate = true;
             }
             else
-                created.setown(new RegexRepeatPattern(getRepeatMin(), getRepeatMax(), !expr->hasProperty(minimalAtom)));
+                created.setown(new RegexRepeatPattern(getRepeatMin(), getRepeatMax(), !expr->hasAttribute(minimalAtom)));
         }
         break;
     case no_pat_endpattern:

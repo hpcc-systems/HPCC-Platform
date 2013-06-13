@@ -472,7 +472,7 @@ bool recordContainsBlobs(IHqlExpression * record)
         {
         case no_field:
             {
-                if (cur->hasProperty(blobAtom))
+                if (cur->hasAttribute(blobAtom))
                     return true;
                 IHqlExpression * childRecord = cur->queryRecord();
                 if (childRecord && recordContainsBlobs(childRecord))
@@ -504,7 +504,7 @@ IHqlExpression * queryVirtualFileposField(IHqlExpression * record)
     ForEachChild(idx, record)
     {
         IHqlExpression * cur = record->queryChild(idx);
-        IHqlExpression * attr = cur->queryProperty(virtualAtom);
+        IHqlExpression * attr = cur->queryAttribute(virtualAtom);
         if (attr)
             return cur;
     }
@@ -653,7 +653,7 @@ IHqlExpression * JoinOrderSpotter::doTraverseStripSelect(IHqlExpression * expr, 
         IHqlExpression * table = expr->queryChild(0);
 
         node_operator curKind = table->getOperator();
-        if (curKind == no_select || expr->hasProperty(newAtom))
+        if (curKind == no_select || expr->hasAttribute(newAtom))
         {
             //I'm not sure this is a good idea for elements with newAtom - can end up with weird join conditions
             HqlExprArray args;
@@ -965,12 +965,12 @@ IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 
 bool canBeSlidingJoin(IHqlExpression * expr)
 {
-    if (expr->hasProperty(hashAtom) || expr->hasProperty(lookupAtom) || expr->hasProperty(allAtom))
+    if (expr->hasAttribute(hashAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(allAtom))
         return false;
-    if (expr->hasProperty(rightouterAtom) || expr->hasProperty(fullouterAtom) ||
-        expr->hasProperty(leftonlyAtom) || expr->hasProperty(rightonlyAtom) || expr->hasProperty(fullonlyAtom))
+    if (expr->hasAttribute(rightouterAtom) || expr->hasAttribute(fullouterAtom) ||
+        expr->hasAttribute(leftonlyAtom) || expr->hasAttribute(rightonlyAtom) || expr->hasAttribute(fullonlyAtom))
         return false;
-    if (expr->hasProperty(atmostAtom))
+    if (expr->hasAttribute(atmostAtom))
         return false;
     return true;
 }
@@ -1331,7 +1331,7 @@ public:
 
     virtual IHqlExpression * visit(IHqlExpression * hint) 
     {
-        return hint->queryProperty(name);
+        return hint->queryAttribute(name);
     }
 
     IAtom * name;
@@ -1565,7 +1565,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
             //no_libraryscopeinstance I guess.
             IHqlExpression * libraryFuncDef = expr->queryDefinition();
             IHqlExpression * library = libraryFuncDef->queryChild(0);
-            if (library->hasProperty(_noStreaming_Atom))
+            if (library->hasAttribute(_noStreaming_Atom))
                 return 0;
             IHqlExpression * libraryFormals = libraryFuncDef->queryChild(1);
             unsigned numStreaming = 0;
@@ -1624,7 +1624,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
     case no_denormalizegroup:
     case no_join:
     case no_joincount:
-        if (isKeyedJoin(expr) && !expr->hasProperty(_complexKeyed_Atom))
+        if (isKeyedJoin(expr) && !expr->hasAttribute(_complexKeyed_Atom))
             return 1;
         return 2;
     case no_combine:
@@ -1672,7 +1672,7 @@ bool isDistributedSourceActivity(IHqlExpression * expr)
     case no_compound_indexgroupaggregate:
         return true;
     case no_getgraphresult:
-        return expr->hasProperty(_distributed_Atom);
+        return expr->hasAttribute(_distributed_Atom);
     case no_workunit_dataset:
     case no_getgraphloopresult:
     case no_temptable:
@@ -1924,9 +1924,9 @@ bool isTrivialSelectN(IHqlExpression * expr)
     return false;
 }
 
-IHqlExpression * queryPropertyChild(IHqlExpression * expr, IAtom * name, unsigned idx)
+IHqlExpression * queryAttributeChild(IHqlExpression * expr, IAtom * name, unsigned idx)
 {
-    IHqlExpression * match = expr->queryProperty(name);
+    IHqlExpression * match = expr->queryAttribute(name);
     if (match)
         return match->queryChild(idx);
     return NULL;
@@ -1940,7 +1940,7 @@ int getResultSequenceValue(IHqlExpression * set)
     case no_ensureresult:
     case no_extractresult:
     case no_output:
-        return (int)getIntValue(queryPropertyChild(set, sequenceAtom, 0), 0);
+        return (int)getIntValue(queryAttributeChild(set, sequenceAtom, 0), 0);
     }
     return 0;
 }
@@ -1948,7 +1948,7 @@ int getResultSequenceValue(IHqlExpression * set)
 
 IHqlExpression * querySequence(IHqlExpression * expr)
 {
-    IHqlExpression * seq = expr->queryProperty(sequenceAtom);
+    IHqlExpression * seq = expr->queryAttribute(sequenceAtom);
     if (seq)
         return seq->queryChild(0);
     if (expr->queryValue())
@@ -1958,7 +1958,7 @@ IHqlExpression * querySequence(IHqlExpression * expr)
 
 IHqlExpression * queryResultName(IHqlExpression * expr)
 {
-    IHqlExpression * name = expr->queryProperty(namedAtom);
+    IHqlExpression * name = expr->queryAttribute(namedAtom);
     if (name)
         return name->queryChild(0);
     return NULL;
@@ -1977,7 +1977,7 @@ IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int6
         return NULL;
     
     //grouped sort->choosen.  Don't convert unless choosen preserves grouping
-    if (isGrouped(child) && !expr->hasProperty(groupedAtom))
+    if (isGrouped(child) && !expr->hasAttribute(groupedAtom))
         return NULL;
 
     OwnedHqlExpr count = foldHqlExpression(expr->queryChild(1));
@@ -1998,19 +1998,19 @@ IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int6
     }
     else 
     {
-        if (!expr->hasProperty(fewAtom) || first)
+        if (!expr->hasAttribute(fewAtom) || first)
             return NULL;
     }
 
     //choosen(sort(x,a,local),n) -> do the topn local, but need to reapply the global choosen
-    if (expr->hasProperty(localAtom))
+    if (expr->hasAttribute(localAtom))
     {
-        if (!child->hasProperty(localAtom))
+        if (!child->hasAttribute(localAtom))
             return NULL;
     }
     else
     {
-        if (child->hasProperty(localAtom))
+        if (child->hasAttribute(localAtom))
             clone = true;
     }
     HqlExprArray args;
@@ -2220,8 +2220,8 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
     case no_workunit_dataset:
         if (flags & GatherResultRead)
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, nameAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, nameAtom, 0);
             addResultRead(sequence, name, false);
         }
         break;
@@ -2236,8 +2236,8 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
     case no_getresult:
         if (flags & GatherResultRead)
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
             addResultRead(sequence, name, false);
         }
         break;
@@ -2246,21 +2246,21 @@ void DependenciesUsed::extractDependencies(IHqlExpression * expr, unsigned flags
     case no_extractresult:
         if (flags & GatherResultWrite)
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
             addResultWrite(sequence, name, false);
         }
         break;
     case no_definesideeffect:
         if (flags & GatherResultWrite)
         {
-            addResultWrite(expr->queryProperty(_uid_Atom), NULL, false);
+            addResultWrite(expr->queryAttribute(_uid_Atom), NULL, false);
         }
         break;
     case no_callsideeffect:
         if (flags & GatherResultRead)
         {
-            addResultRead(expr->queryProperty(_uid_Atom), NULL, false);
+            addResultRead(expr->queryAttribute(_uid_Atom), NULL, false);
         }
         break;
     }
@@ -2416,7 +2416,7 @@ void DependencyGatherer::doGatherDependencies(IHqlExpression * expr)
         first = 3;
         break;
     case no_executewhen:
-        if (expr->hasProperty(beforeAtom))
+        if (expr->hasAttribute(beforeAtom))
         {
             for (unsigned i=max; i-- != 0; )
                 doGatherDependencies(expr->queryChild(i));
@@ -2600,7 +2600,7 @@ unsigned countTotalFields(IHqlExpression * record, bool includeVirtual)
                 count += countTotalFields(expr->queryRecord(), includeVirtual);
                 break;
             default:
-                if (includeVirtual || !expr->hasProperty(virtualAtom))
+                if (includeVirtual || !expr->hasAttribute(virtualAtom))
                     count++;
                 break;
             }
@@ -3298,8 +3298,8 @@ unsigned numAttributes(const IHqlExpression * expr)
 
 IHqlExpression * createGetResultFromSetResult(IHqlExpression * setResult, ITypeInfo * type)
 {
-    IHqlExpression * seqAttr = setResult->queryProperty(sequenceAtom);
-    IHqlExpression * aliasAttr = setResult->queryProperty(namedAtom);
+    IHqlExpression * seqAttr = setResult->queryAttribute(sequenceAtom);
+    IHqlExpression * aliasAttr = setResult->queryAttribute(namedAtom);
     Linked<ITypeInfo> valueType = type;
     if (!valueType)
     {
@@ -3360,11 +3360,11 @@ IAtom * queryCsvEncoding(IHqlExpression * mode)
 {
     if (mode)
     {
-        if (mode->queryProperty(asciiAtom))
+        if (mode->queryAttribute(asciiAtom))
             return asciiAtom;
-        if (mode->queryProperty(ebcdicAtom))
+        if (mode->queryAttribute(ebcdicAtom))
             return ebcdicAtom;
-        if (mode->queryProperty(unicodeAtom))
+        if (mode->queryAttribute(unicodeAtom))
             return unicodeAtom;
     }
     return NULL;
@@ -3661,7 +3661,7 @@ IDefRecordElement * RecordMetaCreator::createField(IHqlExpression * cur, IHqlExp
     }
     size32_t maxSize = 0;
     Owned<IDefRecordElement> elem = createDEfield(cur->queryName(), defType, childDefRecord, maxSize);
-    if (cur->hasProperty(blobAtom))
+    if (cur->hasAttribute(blobAtom))
     {
         Owned<ITypeInfo> blobType = makeBlobType();
         return createDEfield(cur->queryName(), blobType, elem, 0);
@@ -4103,8 +4103,8 @@ extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression *
         field.setown(createField(valueId, expr->getType(), NULL));
 
     IHqlExpression * aggregateRecord = createRecord(field);
-    IHqlExpression * keyedAttr = expr->queryProperty(keyedAtom);
-    IHqlExpression * prefetchAttr = expr->queryProperty(prefetchAtom);
+    IHqlExpression * keyedAttr = expr->queryAttribute(keyedAtom);
+    IHqlExpression * prefetchAttr = expr->queryAttribute(prefetchAtom);
 
     HqlExprArray valueArgs;
     unwindChildren(valueArgs, expr, 1);
@@ -4260,14 +4260,14 @@ IHqlExpression * appendOwnedOperandsF(IHqlExpression * expr, ...)
 
 extern HQL_API void inheritAttribute(HqlExprArray & attrs, IHqlExpression * donor, IAtom * name)
 {
-    IHqlExpression * match = donor->queryProperty(name);
+    IHqlExpression * match = donor->queryAttribute(name);
     if (match)
         attrs.append(*LINK(match));
 }
 
 IHqlExpression * inheritAttribute(IHqlExpression * expr, IHqlExpression * donor, IAtom * name)
 {
-    return appendOwnedOperand(expr, LINK(donor->queryProperty(name)));
+    return appendOwnedOperand(expr, LINK(donor->queryAttribute(name)));
 }
 
 IHqlExpression * appendAttribute(IHqlExpression * expr, IAtom * attr)
@@ -4422,7 +4422,7 @@ void SplitDatasetAttributeTransformer::analyseExpr(IHqlExpression * expr)
 void SplitDatasetAttributeTransformer::doAnalyseSelect(IHqlExpression * expr)
 {
     IHqlExpression * ds = expr->queryChild(0);
-    if (expr->hasProperty(newAtom))
+    if (expr->hasAttribute(newAtom))
     {
         if (!datasets.contains(*ds))
         {
@@ -4445,7 +4445,7 @@ IHqlExpression * SplitDatasetAttributeTransformer::createTransformed(IHqlExpress
     switch (expr->getOperator())
     {
     case no_select:
-        if (expr->hasProperty(newAtom))
+        if (expr->hasAttribute(newAtom))
             return doTransformSelect(expr);
         break;
     case no_colon:
@@ -4488,7 +4488,7 @@ bool SplitDatasetAttributeTransformer::split(SharedHqlExpr & dataset, SharedHqlE
             switch (cur->getOperator())
             {
             case no_getgraphresult:
-                remove = !expr->hasProperty(_distributed_Atom);
+                remove = !expr->hasAttribute(_distributed_Atom);
                 break;
             case no_workunit_dataset:
             case no_getgraphloopresult:
@@ -4639,14 +4639,14 @@ static bool splitDatasetAttribute(SharedHqlExpr & dataset, SharedHqlExpr & attri
 #endif
 
     node_operator leftOp = left->getOperator();
-    if ((leftOp !=no_select) || expr->hasProperty(newAtom))
+    if ((leftOp !=no_select) || expr->hasAttribute(newAtom))
     {
         //Ensure selections from dictionaries do not have a separate activity for the row lookup.
         if (leftOp == no_selectmap)
             return false;
 
         //If this is a selection from an inscope dataset then this must not be assumed to be an input dataset.
-        if (expr->isDataset() && !expr->hasProperty(newAtom))
+        if (expr->isDataset() && !expr->hasAttribute(newAtom))
             return false;
 
         IHqlExpression * lhs = LINK(left);
@@ -4749,7 +4749,7 @@ bool containsVirtualFields(IHqlExpression * record)
         switch (cur->getOperator())
         {
         case no_field:
-            if (cur->hasProperty(virtualAtom))
+            if (cur->hasAttribute(virtualAtom))
                 return true;
             //does not walk into nested records
             break;
@@ -4776,7 +4776,7 @@ IHqlExpression * removeVirtualFields(IHqlExpression * record)
         switch (cur->getOperator())
         {
         case no_field:
-            if (!cur->hasProperty(virtualAtom))
+            if (!cur->hasAttribute(virtualAtom))
                 args.append(*LINK(cur));
             //does not walk into nested records
             break;
@@ -4818,7 +4818,7 @@ public:
         case no_field:
             {
                 OwnedHqlExpr transformed = transformField(expr);
-                while (transformed->hasProperty(name))
+                while (transformed->hasAttribute(name))
                     transformed.setown(removeProperty(transformed, name));
                 return transformed.getClear();
             }
@@ -4856,8 +4856,8 @@ void VirtualReplacer::createProjectAssignments(HqlExprArray & assigns, IHqlExpre
         {
             OwnedHqlExpr target = createSelectExpr(LINK(tgtSelector), LINK(expr));
             IHqlExpression * newValue;
-            if (expr->hasProperty(virtualAtom))
-                newValue = getVirtualReplacement(expr, expr->queryProperty(virtualAtom)->queryChild(0), dataset);
+            if (expr->hasAttribute(virtualAtom))
+                newValue = getVirtualReplacement(expr, expr->queryAttribute(virtualAtom)->queryChild(0), dataset);
             else
                 newValue = createSelectExpr(LINK(srcSelector), LINK(expr));
             assigns.append(*createAssign(target.getClear(), newValue));
@@ -5224,8 +5224,8 @@ IHqlExpression * TempTableTransformer::createTempTableTransform(IHqlExpression *
     OwnedHqlExpr self = getSelf(record);
     HqlMapTransformer mapping;
     unsigned col = 0;
-    IHqlExpression * rowPayloadAttr = curRow->queryProperty(_payload_Atom);
-    IHqlExpression * recordPayloadAttr = record->queryProperty(_payload_Atom);
+    IHqlExpression * rowPayloadAttr = curRow->queryAttribute(_payload_Atom);
+    IHqlExpression * recordPayloadAttr = record->queryAttribute(_payload_Atom);
     if (rowPayloadAttr)
     {
         unsigned rowPayload =  (unsigned) getIntValue(rowPayloadAttr->queryChild(0));
@@ -5234,20 +5234,20 @@ IHqlExpression * TempTableTransformer::createTempTableTransform(IHqlExpression *
         {
             unsigned recordPayload =  (unsigned) getIntValue(recordPayloadAttr->queryChild(0));
             if (rowPayload != recordPayload)
-                ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+                ERRORAT(curRow->queryAttribute(_location_Atom), HQLERR_PayloadMismatch);
         }
         else
-            ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+            ERRORAT(curRow->queryAttribute(_location_Atom), HQLERR_PayloadMismatch);
     }
     else if (recordPayloadAttr)
-        ERRORAT(curRow->queryProperty(_location_Atom), HQLERR_PayloadMismatch);
+        ERRORAT(curRow->queryAttribute(_location_Atom), HQLERR_PayloadMismatch);
 
     OwnedHqlExpr ret = createTempTableTransform(self, curRow, record, col, self, mapping, true);
     if (queryRealChild(curRow, col))
     {
         StringBuffer s;
         getExprECL(curRow->queryChild(col), s);
-        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_TooManyInitializers, s.str());
+        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_TooManyInitializers, s.str());
     }
     return ret.getClear();
 }
@@ -5278,7 +5278,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                             src.set(expr->queryChild(0));
                             if (!src || src->isAttribute())
                             {
-                                ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
                                 return;
                             }
                         }
@@ -5308,7 +5308,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         {
                             if (!recordTypesMatch(src, target))
                             {
-                                ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                                 return;
                             }
                             if (isGrouped(src))
@@ -5319,7 +5319,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         }
                         else
                         {
-                            ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                             return;
                         }
                     }
@@ -5329,7 +5329,7 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         {
                             if (!recordTypesMatch(src, target))
                             {
-                                ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                                ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                                 return;
                             }
                             castValue.set(src);
@@ -5382,25 +5382,25 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
 
                     if (!src || src->isAttribute())
                     {
-                        if (expr->hasProperty(virtualAtom))
-                            ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_VirtualFieldInTempTable, expr->queryName()->str());
+                        if (expr->hasAttribute(virtualAtom))
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_VirtualFieldInTempTable, expr->queryName()->str());
                         else
-                            ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
+                            ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
                         return;
                     }
                     if (src->getOperator() == no_recordlist)
                     {
-                        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatiableInitailiser, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatiableInitailiser, expr->queryName()->str());
                         return;
                     }
                     else if (type->isScalar() != src->queryType()->isScalar())
                     {
-                        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                         return;
                     }
                     else if (strictTypeChecking && !type->assignableFrom(src->queryType()))
                     {
-                        ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
+                        ERRORAT1(curRow->queryAttribute(_location_Atom), HQLERR_IncompatibleTypesForField, expr->queryName()->str());
                     }
                     castValue.setown(ensureExprType(src, type));
                 }
@@ -5485,7 +5485,7 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
 
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
 {
-    IHqlExpression * payload = record->queryProperty(_payload_Atom);
+    IHqlExpression * payload = record->queryAttribute(_payload_Atom);
     unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
     unsigned max = record->numChildren() - payloadSize;
     IHqlExpression *newrec = createRecord();
@@ -5809,12 +5809,12 @@ void gatherIndexBuildSortOrder(HqlExprArray & sorts, IHqlExpression * expr, bool
     //Option to not sort by fields that aren't part of the sorted key.
     unsigned indexFirstPayload = firstPayloadField(buildRecord, payloadCount);
     unsigned max;
-    bool sortPayload = sortIndexPayload ? !expr->hasProperty(sort_KeyedAtom) : expr->hasProperty(sort_AllAtom);
+    bool sortPayload = sortIndexPayload ? !expr->hasAttribute(sort_KeyedAtom) : expr->hasAttribute(sort_AllAtom);
     if (sortPayload)
     {
         max = buildRecord->numChildren();
         //If the last field is an implicit fpos, then they will all have the same value, so no point sorting.
-        if (queryLastField(buildRecord)->hasProperty(_implicitFpos_Atom))
+        if (queryLastField(buildRecord)->hasAttribute(_implicitFpos_Atom))
             max--;
     }
     else
@@ -5878,7 +5878,7 @@ LibraryInputMapper::LibraryInputMapper(IHqlExpression * _libraryInterface)
 {
     assertex(libraryInterface->getOperator() == no_funcdef);
     scopeExpr.set(libraryInterface->queryChild(0));
-    streamingAllowed = !scopeExpr->hasProperty(_noStreaming_Atom);  // ?? is this in the correct place, probably, just nasty
+    streamingAllowed = !scopeExpr->hasAttribute(_noStreaming_Atom);  // ?? is this in the correct place, probably, just nasty
 
     expandParameters();
 }
@@ -6128,7 +6128,7 @@ void GraphIdCollector::analyseExpr(IHqlExpression * expr)
     case no_getgraphresult:
         if (externalIds)
         {
-            IHqlExpression * id = queryPropertyChild(expr, externalAtom, 0);
+            IHqlExpression * id = queryAttributeChild(expr, externalAtom, 0);
             if (id)
                 graphs.append(*id);
         }
@@ -6378,7 +6378,7 @@ extern HQL_API bool isKeyedDataset(IHqlExpression * expr)
     case no_newusertable:
     case no_aggregate:
     case no_newaggregate:
-        return expr->hasProperty(keyedAtom);
+        return expr->hasAttribute(keyedAtom);
     }
     return false;
 }
@@ -6433,7 +6433,7 @@ extern HQL_API bool isValidFieldReference(IHqlExpression * expr)
     case no_indirect:
         return true;
     case no_param:
-        return expr->hasProperty(fieldAtom);
+        return expr->hasAttribute(fieldAtom);
     }
     return false;
 }
@@ -6572,13 +6572,13 @@ public:
         ITypeInfo * retType = funcdef->queryType()->queryChildType();
 
         enum { ServiceApi, RtlApi, BcdApi, CApi, LocalApi } api = ServiceApi;
-        if (body->hasProperty(eclrtlAtom))
+        if (body->hasAttribute(eclrtlAtom))
             api = RtlApi;
-        else if (body->hasProperty(bcdAtom))
+        else if (body->hasAttribute(bcdAtom))
             api = BcdApi;
-        else if (body->hasProperty(cAtom))
+        else if (body->hasAttribute(cAtom))
             api = CApi;
-        else if (body->hasProperty(localAtom))
+        else if (body->hasAttribute(localAtom))
             api = LocalApi;
 
         StringBuffer entrypoint;
@@ -6592,7 +6592,7 @@ public:
             return true;
         }
 
-        if (body->hasProperty(oldSetFormatAtom))
+        if (body->hasAttribute(oldSetFormatAtom))
             return false;
 
         mangled.append("_Z").append(entrypoint.length()).append(entrypoint);
@@ -6601,11 +6601,11 @@ public:
         StringBuffer mangledReturnParameters;
         mangleFunctionReturnType(mangledReturn, mangledReturnParameters, retType);
 
-        if (body->hasProperty(contextAtom))
+        if (body->hasAttribute(contextAtom))
             mangled.append("P12ICodeContext");
-        else if (body->hasProperty(globalContextAtom) )
+        else if (body->hasAttribute(globalContextAtom) )
             mangled.append("P18IGlobalCodeContext");
-        else if (body->hasProperty(userMatchFunctionAtom))
+        else if (body->hasAttribute(userMatchFunctionAtom))
             mangled.append("P12IMatchWalker");
 
         mangled.append(mangledReturnParameters);
@@ -6615,8 +6615,8 @@ public:
             IHqlExpression * param = formals->queryChild(i);
             ITypeInfo *paramType = param->queryType();
 
-            bool isOut = param->hasProperty(outAtom);
-            bool isConst = param->hasProperty(constAtom);
+            bool isOut = param->hasAttribute(outAtom);
+            bool isConst = param->hasAttribute(constAtom);
 
             if (isOut)
                 mangled.append("R");
@@ -6802,13 +6802,13 @@ public:
         IHqlExpression *formals = funcdef->queryChild(1);
 
         enum { ServiceApi, RtlApi, BcdApi, CApi, LocalApi } api = ServiceApi;
-        if (body->hasProperty(eclrtlAtom))
+        if (body->hasAttribute(eclrtlAtom))
             api = RtlApi;
-        else if (body->hasProperty(bcdAtom))
+        else if (body->hasAttribute(bcdAtom))
             api = BcdApi;
-        else if (body->hasProperty(cAtom))
+        else if (body->hasAttribute(cAtom))
             api = CApi;
-        else if (body->hasProperty(localAtom))
+        else if (body->hasAttribute(localAtom))
             api = LocalApi;
 
         StringBuffer entrypoint;
@@ -6822,7 +6822,7 @@ public:
             return true;
         }
 
-        if (body->hasProperty(oldSetFormatAtom))
+        if (body->hasAttribute(oldSetFormatAtom))
             return false;
 
         mangled.append("?").append(entrypoint).append("@@").append("Y");
@@ -6847,11 +6847,11 @@ public:
 
         mangled.append(mangledReturn);
 
-        if (body->hasProperty(contextAtom))
+        if (body->hasAttribute(contextAtom))
             mangled.append("PVICodeContext@@");
-        else if (body->hasProperty(globalContextAtom) )
+        else if (body->hasAttribute(globalContextAtom) )
             mangled.append("PVIGlobalCodeContext@@");
-        else if (body->hasProperty(userMatchFunctionAtom))
+        else if (body->hasAttribute(userMatchFunctionAtom))
             mangled.append("PVIMatchWalker@@");
 
         if (mangledReturnParameters.length())
@@ -6862,8 +6862,8 @@ public:
             IHqlExpression * param = formals->queryChild(i);
             ITypeInfo *paramType = param->queryType();
 
-            bool isOut = param->hasProperty(outAtom);
-            bool isConst = param->hasProperty(constAtom);
+            bool isOut = param->hasAttribute(outAtom);
+            bool isConst = param->hasAttribute(constAtom);
 
             if (isOut)
                 appendRef(mangled, false);
@@ -7084,7 +7084,7 @@ static void trimSlash(StringBuffer & name)
 
 void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer * valueName, IHqlExpression * field, const char * defaultItemName, bool reading)
 {
-    IHqlExpression * xpathAttr = field->queryProperty(xpathAtom);
+    IHqlExpression * xpathAttr = field->queryAttribute(xpathAtom);
     if (xpathAttr)
     {
         StringBuffer tagName;
@@ -7144,7 +7144,7 @@ void extractXmlName(StringBuffer & name, StringBuffer * itemName, StringBuffer *
     }
     else
     {
-        IHqlExpression * namedAttr = field->queryProperty(namedAtom);
+        IHqlExpression * namedAttr = field->queryAttribute(namedAtom);
         if (namedAttr)
             namedAttr->queryChild(0)->queryValue()->getStringValue(name);
     }
@@ -7207,7 +7207,7 @@ static ITypeInfo * containsSingleSimpleFieldBlankXPath(IHqlExpression * record)
     if (field->getOperator() != no_field)
         return NULL;
 
-    IHqlExpression * xpath = field->queryProperty(xpathAtom);
+    IHqlExpression * xpath = field->queryAttribute(xpathAtom);
     if (!xpath)
         return NULL;
 
@@ -7606,11 +7606,11 @@ bool ConstantRowCreator::processFieldValue(IHqlExpression * optLhs, ITypeInfo * 
         {
             assertex(optLhs);
             IHqlExpression * field = optLhs->queryChild(1);
-            if (!field->hasProperty(countAtom) && !field->hasProperty(sizeofAtom))
+            if (!field->hasAttribute(countAtom) && !field->hasAttribute(sizeofAtom))
             {
                 if (rhsOp == no_null)
                 {
-                    if (field->hasProperty(_linkCounted_Atom))
+                    if (field->hasAttribute(_linkCounted_Atom))
                     {
                         rtlWriteSize32t(out.reserve(sizeof(size32_t)), 0);
                         memset(out.reserve(sizeof(byte * *)), 0, sizeof(byte * *));
@@ -8079,7 +8079,7 @@ IHqlExpression * queryTableOrSplitter(IHqlExpression * expr)
 //Convert no_dataset_alias(expr, uid) to expr'
 IHqlExpression * normalizeDatasetAlias(IHqlExpression * expr)
 {
-    IHqlExpression * uid = expr->queryProperty(_uid_Atom);
+    IHqlExpression * uid = expr->queryAttribute(_uid_Atom);
     assertex(uid);
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * table = queryTableOrSplitter(dataset);
@@ -8156,7 +8156,7 @@ IHqlExpression * normalizeAnyDatasetAliases(IHqlExpression * expr)
         transformed.setown(expr->clone(args));
     }
 
-    if ((op == no_dataset_alias) && !transformed->hasProperty(_normalized_Atom))
+    if ((op == no_dataset_alias) && !transformed->hasAttribute(_normalized_Atom))
         return normalizeDatasetAlias(transformed);
     return transformed.getClear();
 }

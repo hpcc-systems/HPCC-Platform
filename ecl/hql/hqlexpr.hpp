@@ -1131,8 +1131,8 @@ interface IHqlExpression : public IInterface
     virtual IHqlExpression *queryExternalDefinition() const = 0;
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false) = 0;
 
-    virtual IHqlExpression *queryProperty(IAtom * propName) const = 0;
-    virtual IHqlExpression *queryAttribute(ExprPropKind kind) = 0;
+    virtual IHqlExpression *queryAttribute(IAtom * propName) const = 0;
+    virtual IHqlExpression *queryProperty(ExprPropKind kind) = 0;
 
     virtual ITypeInfo *queryRecordType() = 0;
     virtual IHqlExpression *queryRecord() = 0;
@@ -1175,7 +1175,7 @@ interface IHqlExpression : public IInterface
     inline bool isAnnotation() const { return getAnnotationKind() != annotate_none; }
     inline bool isNamedSymbol() const { return getAnnotationKind() == annotate_symbol; }
     inline bool isFunctionDefinition() const { return getOperator() == no_funcdef; }
-    inline bool hasProperty(IAtom * propName) const { return queryProperty(propName) != NULL; }
+    inline bool hasAttribute(IAtom * propName) const { return queryAttribute(propName) != NULL; }
     inline bool hasText() const 
     { 
         IFileContents * contents = queryDefinitionText();
@@ -1460,15 +1460,15 @@ extern HQL_API IHqlExpression *doInstantEclTransformations(IHqlExpression *qquer
 //extern HQL_API void loadImplicitScopes(IEclRepository &dataServer, HqlScopeArray &defualtScopes, int suppress, IIdAtom * suppressName);
 
 extern HQL_API unsigned getExpressionCRC(IHqlExpression * expr);
-extern HQL_API IHqlExpression * queryPropertyInList(IAtom * search, IHqlExpression * cur);
-extern HQL_API IHqlExpression * queryProperty(IAtom * search, const HqlExprArray & exprs);
+extern HQL_API IHqlExpression * queryAttributeInList(IAtom * search, IHqlExpression * cur);
+extern HQL_API IHqlExpression * queryAttribute(IAtom * search, const HqlExprArray & exprs);
 extern HQL_API IHqlExpression * queryAnnotation(IHqlExpression * expr, annotate_kind search);       // return first match
 extern HQL_API IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr);
 
 inline bool hasAnnotation(IHqlExpression * expr, annotate_kind search){ return queryAnnotation(expr, search) != NULL; }
 inline IHqlExpression * queryNamedSymbol(IHqlExpression * expr) { return queryAnnotation(expr, annotate_symbol); }
 inline bool hasNamedSymbol(IHqlExpression * expr) { return hasAnnotation(expr, annotate_symbol); }
-inline bool hasProperty(IAtom * search, HqlExprArray & exprs) { return queryProperty(search, exprs) != NULL; }
+inline bool hasAttribute(IAtom * search, HqlExprArray & exprs) { return queryAttribute(search, exprs) != NULL; }
 
 extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpression * annotation);
 extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression * expr);
@@ -1662,7 +1662,7 @@ extern HQL_API IHqlExpression * queryFunctionDefaults(IHqlExpression * expr);
 
 inline IHqlExpression * querySelSeq(IHqlExpression * expr)
 {
-    return expr->queryProperty(_selectorSequence_Atom);
+    return expr->queryAttribute(_selectorSequence_Atom);
 }
 extern HQL_API IHqlExpression * createGroupedAttribute(ITypeInfo * type);
 extern HQL_API bool isSameUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
@@ -1685,7 +1685,7 @@ inline bool containsNonGlobalAlias(IHqlExpression * expr)
 inline bool containsAssertKeyed(IHqlExpression * expr)  { return (expr->getInfoFlags() & HEFassertkeyed) != 0; }
 inline bool containsAssertStepped(IHqlExpression * expr){ return (expr->getInfoFlags2() & HEF2assertstepped) != 0; }
 inline bool containsCounter(IHqlExpression * expr)      { return (expr->getInfoFlags() & HEFcontainsCounter) != 0; }
-inline bool isCountProject(IHqlExpression * expr)       { return expr->hasProperty(_countProject_Atom); }
+inline bool isCountProject(IHqlExpression * expr)       { return expr->hasAttribute(_countProject_Atom); }
 inline bool containsSkip(IHqlExpression * expr)         { return (expr->getInfoFlags() & (HEFcontainsSkip)) != 0; }
 inline bool containsSelf(IHqlExpression * expr)         { return (expr->getInfoFlags2() & (HEF2containsSelf)) != 0; }
 inline bool isContextDependentExceptGraph(IHqlExpression * expr)    
@@ -1705,11 +1705,11 @@ inline bool containsCall(IHqlExpression * expr, bool includeOutOfLine)
     return (expr->getInfoFlags2() & mask) != 0;
 }
 
-inline bool hasDynamic(IHqlExpression * expr)           { return expr->hasProperty(dynamicAtom); }
+inline bool hasDynamic(IHqlExpression * expr)           { return expr->hasAttribute(dynamicAtom); }
 inline bool isAbstractDataset(IHqlExpression * expr)    
 { 
     IHqlExpression * record = expr->queryRecord();
-    return record && record->hasProperty(abstractAtom);
+    return record && record->hasAttribute(abstractAtom);
 }
 inline IHqlExpression * queryRecord(IHqlExpression * expr)
 {

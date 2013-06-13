@@ -825,15 +825,15 @@ static unsigned getActivityCost(IHqlExpression * expr, ClusterType targetCluster
             {
             case no_sort:
                 //MORE: What about checking for grouped!
-                if (!expr->hasProperty(localAtom))
+                if (!expr->hasAttribute(localAtom))
                     return CostNetworkCopy;
                 return CostManyCopy;
             case no_subsort:
-                if (!expr->hasProperty(localAtom) && !isGrouped(expr))
+                if (!expr->hasAttribute(localAtom) && !isGrouped(expr))
                     return CostNetworkCopy;
                 break;
             case no_group:
-                if (!expr->hasProperty(localAtom))
+                if (!expr->hasAttribute(localAtom))
                     return CostNetworkGroup;
                 break;
             case no_keyeddistribute:
@@ -841,22 +841,22 @@ static unsigned getActivityCost(IHqlExpression * expr, ClusterType targetCluster
             case no_cosort:
                 return CostNetworkCopy;
             case no_topn:
-                if (!expr->hasProperty(localAtom))
+                if (!expr->hasAttribute(localAtom))
                     return CostGlobalTopN;
                 break;
             case no_selfjoin:
-                if (!expr->hasProperty(localAtom))
+                if (!expr->hasAttribute(localAtom))
                     return CostNetworkCopy;
                 break;
             case no_denormalize:
             case no_denormalizegroup:
             case no_join:
             case no_joincount:
-                if (!expr->hasProperty(localAtom))
+                if (!expr->hasAttribute(localAtom))
                 {
                     if (isKeyedJoin(expr))
                         break;
-                    if (expr->hasProperty(lookupAtom))
+                    if (expr->hasAttribute(lookupAtom))
                         return CostNetworkCopy/2;       //insert on rhs.
                     return CostNetworkCopy;
                 }
@@ -892,9 +892,9 @@ bool isSensibleRecord(IHqlExpression * record)
             case type_groupedtable:
                 {
                     //disqualify datasets with no_selfref counts/lengths
-                    IHqlExpression * limit = cur->queryProperty(countAtom);
+                    IHqlExpression * limit = cur->queryAttribute(countAtom);
                     if (!limit)
-                        limit = cur->queryProperty(sizeAtom);
+                        limit = cur->queryAttribute(sizeAtom);
                     if (limit && !limit->isConstant())
                         return false;
                     break;
@@ -911,7 +911,7 @@ IHqlExpression * queryRootSelector(IHqlExpression * select)
 {
     loop
     {
-        if (select->hasProperty(newAtom))
+        if (select->hasAttribute(newAtom))
             return select;
         IHqlExpression * ds = select->queryChild(0);
         if (ds->getOperator() != no_select)
@@ -1018,7 +1018,7 @@ void ImplicitProjectInfo::removeRowsFields(IHqlExpression * expr, IHqlExpression
     if (rowsSide == no_none)
         return;
 
-    IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);
+    IHqlExpression * rowsid = expr->queryAttribute(_rowsid_Atom);
     switch (rowsSide)
     {
     case no_left:
@@ -1346,7 +1346,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             {
                 Parent::analyseExpr(expr);
                 assertex(extra->activityKind() == ScalarSelectActivity);
-                if (expr->hasProperty(newAtom))
+                if (expr->hasAttribute(newAtom))
                     connect(expr->queryChild(0), expr);
                 activities.append(*LINK(expr));
             }
@@ -1680,7 +1680,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
                 loop
                 {
                     IHqlExpression * ds = cur->queryChild(0);
-                    if (cur->hasProperty(newAtom))
+                    if (cur->hasAttribute(newAtom))
                     {
                         inheritActiveFields(extra, ds);
                         break;
@@ -2020,12 +2020,12 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         {
         case no_thor:
         case no_flat:
-            if (expr->hasProperty(_spill_Atom) && options.isRoxie)
+            if (expr->hasAttribute(_spill_Atom) && options.isRoxie)
                 return SourceActivity;
             if (options.optimizeProjectsPreservePersists)
             {
                 //Don't project persists because it can mess up the redistibution code.
-                if (expr->hasProperty(_workflowPersist_Atom))
+                if (expr->hasAttribute(_workflowPersist_Atom))
                     return SourceActivity;
             }
             return CompoundableActivity;
@@ -2048,7 +2048,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
             {
                 //Don't project persists because it can mess up the redistibution code.
                 IHqlExpression * root = queryRoot(expr);
-                if (root && root->hasProperty(_workflowPersist_Atom))
+                if (root && root->hasAttribute(_workflowPersist_Atom))
                     return SourceActivity;
             }
             return CompoundActivity;
@@ -2106,7 +2106,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_normalizegroup:
         return FixedInputActivity;
     case no_aggregate:
-        if (expr->hasProperty(mergeTransformAtom))
+        if (expr->hasAttribute(mergeTransformAtom))
             return FixedInputActivity;
         return FixedInputActivity;  //MORE:???? Should be able to optimize this
     case no_fromxml:                // A bit bit like a source activity, no transform..., but has an input
@@ -2421,7 +2421,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
         if (extra->okToOptimize())
         {
             node_operator op = expr->getOperator();
-            if ((op == no_if) && expr->hasProperty(_resourced_Atom))
+            if ((op == no_if) && expr->hasAttribute(_resourced_Atom))
             {
                 extra->preventOptimization();
                 extra->addAllOutputs();
@@ -2429,7 +2429,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
             else if (op == no_merge)
             {
                 //Ensure all the fields used by the sort order are preserved in the input streams
-                IHqlExpression * order = expr->queryProperty(sortedAtom);
+                IHqlExpression * order = expr->queryAttribute(sortedAtom);
                 assertex(order);
                 ForEachChild(i, order)
                 {
@@ -2780,7 +2780,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 args.replace(*newTransform, transformPos);
                 if (transform->getOperator() == no_newtransform)
                     args.replace(*LINK(complexExtra->queryOutputRecord()), transformPos-1);
-                IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                 if (onFail)
                 {
                     IHqlExpression * newTransform = complexExtra->outputFields.createFilteredTransform(onFail->queryChild(0), NULL);
@@ -2791,7 +2791,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 //We may have converted a count project into a project..... (see bug18839.xhql)
                 if (expr->getOperator() == no_hqlproject)
                 {
-                    IHqlExpression * countProjectAttr = queryProperty(_countProject_Atom, args);
+                    IHqlExpression * countProjectAttr = queryAttribute(_countProject_Atom, args);
                     if (countProjectAttr && !transformContainsCounter(newTransform, countProjectAttr->queryChild(0)))
                         args.zap(*countProjectAttr);
                 }
@@ -2922,7 +2922,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
     case SimpleActivity:
         {
             transformed.setown(createParentTransformed(expr));
-            IHqlExpression * onFail = transformed->queryProperty(onFailAtom);
+            IHqlExpression * onFail = transformed->queryAttribute(onFailAtom);
             if (onFail)
             {
                 IHqlExpression * newTransform = complexExtra->outputFields.createFilteredTransform(onFail->queryChild(0), NULL);

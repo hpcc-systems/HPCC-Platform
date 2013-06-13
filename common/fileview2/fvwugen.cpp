@@ -178,7 +178,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
             ForEachChild(idx, inRecord)
             {
                 IHqlExpression * child = inRecord->queryChild(idx);
-                if (child->hasProperty(insertedAtom))
+                if (child->hasAttribute(insertedAtom))
                 {
                     IHqlExpression * newTarget = createField(child->queryId(), child->getType(), LINK(child), insertedAttr.getLink());
                     fields.append(*newTarget);
@@ -209,7 +209,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
             ForEachChild(idx, record)
             {
                 IHqlExpression * child = record->queryChild(idx);
-                if (child->hasProperty(insertedAtom))
+                if (child->hasAttribute(insertedAtom))
                     fields.append(*createField(child->queryId(), child->getType(), LINK(child), insertedAttr.getLink()));
             }
 
@@ -238,7 +238,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
                     ForEachChild(idx, record)
                     {
                         IHqlExpression * child = record->queryChild(idx);
-                        if (!child->hasProperty(insertedAtom))
+                        if (!child->hasAttribute(insertedAtom))
                             fields.append(*createField(child->queryId(), child->getType(), LINK(child)));
                     }
                 }
@@ -247,7 +247,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
                     ForEachChild(idx, record)
                     {
                         IHqlExpression * child = record->queryChild(idx);
-                        if (!child->hasProperty(insertedAtom))
+                        if (!child->hasAttribute(insertedAtom))
                             fields.append(*LINK(child));
                     }
                 }

@@ -92,7 +92,7 @@ extern HQL_API unsigned isEmptyRecord(IHqlExpression * record);
 extern HQL_API bool isTrivialSelectN(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryConvertChoosenNSort(IHqlExpression * expr, unsigned __int64 topNlimit);
 
-extern HQL_API IHqlExpression * queryPropertyChild(IHqlExpression * expr, IAtom * name, unsigned idx);
+extern HQL_API IHqlExpression * queryAttributeChild(IHqlExpression * expr, IAtom * name, unsigned idx);
 extern HQL_API IHqlExpression * querySequence(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryResultName(IHqlExpression * expr);
 extern HQL_API int getResultSequenceValue(IHqlExpression * expr);

@@ -166,7 +166,7 @@ HqlCppLibraryInstance::HqlCppLibraryInstance(HqlCppTranslator & translator, IHql
     assertex(libraryFuncdef->getOperator() == no_funcdef);
     IHqlExpression * libraryScope = libraryFuncdef->queryChild(0);
     assertex(libraryScope->getOperator() == no_libraryscope);
-    IHqlExpression * libraryInterface = queryPropertyChild(libraryScope, implementsAtom, 0);
+    IHqlExpression * libraryInterface = queryAttributeChild(libraryScope, implementsAtom, 0);
     assertex(libraryInterface);
 
     library.setown(new HqlCppLibrary(translator, libraryInterface, clusterType));
@@ -198,7 +198,7 @@ public:
 
         IIdAtom * id = expr->queryChild(3)->queryId();
         HqlDummyLookupContext dummyctx(NULL);
-        OwnedHqlExpr value = newModule->queryScope()->lookupSymbol(id, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+        OwnedHqlExpr value = newModule->queryScope()->lookupSymbol(id, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
         assertex(value != NULL);
         IHqlExpression * oldAttr = expr->queryChild(2);
         if (oldAttr->isDataset() || oldAttr->isDatarow())
@@ -226,7 +226,7 @@ protected:
     {
         IHqlScope * oldScope = libraryExpr->queryScope();
         IHqlScope * lookupScope = oldScope;
-        IHqlExpression * interfaceExpr = queryPropertyChild(libraryExpr, implementsAtom, 0);
+        IHqlExpression * interfaceExpr = queryAttributeChild(libraryExpr, implementsAtom, 0);
         if (interfaceExpr)
             lookupScope = interfaceExpr->queryScope();
 
@@ -300,10 +300,10 @@ public:
                 assertex(scopeFunc->getOperator() == no_funcdef);
                 IHqlExpression * moduleExpr = scopeFunc->queryChild(0);
                 assertex(moduleExpr->getOperator() == no_libraryscope);
-                IHqlExpression * internalExpr = moduleExpr->queryProperty(internalAtom);
+                IHqlExpression * internalExpr = moduleExpr->queryAttribute(internalAtom);
                 if (internalExpr)
                 {
-                    IHqlExpression * nameExpr = moduleExpr->queryProperty(nameAtom);
+                    IHqlExpression * nameExpr = moduleExpr->queryAttribute(nameAtom);
                     if (!matchedInternalLibraries.contains(*nameExpr))
                     {
                         internalLibraries.append(*transformEmbeddedLibrary(scopeFunc));
@@ -514,10 +514,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     IHqlExpression * moduleFunction = expr->queryDefinition();      // no_funcdef
     IHqlExpression * module = moduleFunction->queryChild(0);
     assertex(module->getOperator() == no_libraryscope);
-    IHqlExpression * nameAttr = module->queryProperty(nameAtom);
+    IHqlExpression * nameAttr = module->queryAttribute(nameAtom);
     OwnedHqlExpr name = foldHqlExpression(nameAttr->queryChild(0));
     IValue * nameValue = name->queryValue();
-    IHqlExpression * originalName = queryPropertyChild(module, _original_Atom, 0);
+    IHqlExpression * originalName = queryAttributeChild(module, _original_Atom, 0);
 
     StringBuffer libraryName;
     if (nameValue)
@@ -554,7 +554,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityLibraryInstance(BuildCtx & ctx
     }
 
     instance->addAttributeInt("_interfaceHash", library->getInterfaceHash());
-    instance->addAttributeBool("embedded", module->hasProperty(internalAtom));
+    instance->addAttributeBool("embedded", module->hasAttribute(internalAtom));
     instance->addAttributeInt("_maxOutputs", library->outputs.ordinality());
     if (!targetHThor())
         instance->addAttributeInt("_graphid", nextActivityId());            // reserve an id...

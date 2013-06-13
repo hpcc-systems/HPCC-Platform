@@ -348,11 +348,11 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional)
         }
     case no_field:
         {
-            if (expr->hasProperty(__ifblockAtom))
+            if (expr->hasAttribute(__ifblockAtom))
                 break;
             Linked<ITypeInfo> type = expr->queryType();
             IAtom * name = expr->queryName();
-            IHqlExpression * nameAttr = expr->queryProperty(namedAtom);
+            IHqlExpression * nameAttr = expr->queryAttribute(namedAtom);
             StringBuffer outname;
             if (nameAttr && nameAttr->queryChild(0)->queryValue())
                 nameAttr->queryChild(0)->queryValue()->getStringValue(outname);
@@ -361,11 +361,11 @@ void DataSourceMetaData::gatherFields(IHqlExpression * expr, bool isConditional)
 
             StringBuffer xpathtext;
             const char * xpath = NULL;
-            IHqlExpression * xpathAttr = expr->queryProperty(xpathAtom);
+            IHqlExpression * xpathAttr = expr->queryAttribute(xpathAtom);
             if (xpathAttr && xpathAttr->queryChild(0)->queryValue())
                 xpath = xpathAttr->queryChild(0)->queryValue()->getStringValue(xpathtext);
 
-            if (isKey() && expr->hasProperty(blobAtom))
+            if (isKey() && expr->hasAttribute(blobAtom))
                 type.setown(makeIntType(8, false));
             type_t tc = type->getTypeCode();
             if (tc == type_row)

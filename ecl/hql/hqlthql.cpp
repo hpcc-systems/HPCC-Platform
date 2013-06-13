@@ -57,7 +57,7 @@ inline bool isInternalAttribute(IHqlExpression * e)
         IAtom * name= e->queryName();
         if ((name == sequenceAtom) || isInternalAttributeName(name))
             return true;
-        if ((name == updateAtom) && e->hasProperty(alwaysAtom))
+        if ((name == updateAtom) && e->hasAttribute(alwaysAtom))
             return true;
     }
     return false;
@@ -1160,7 +1160,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         }
         case no_assignall:
         {
-            IHqlExpression * original = expr->queryProperty(_original_Atom);
+            IHqlExpression * original = expr->queryAttribute(_original_Atom);
             if (original)
             {
                 toECL(original->queryChild(0), s, false, inType);
@@ -1255,9 +1255,9 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             const char * opText = getEclOpString(no);
             if ((no == no_div) && expr->queryType()->isInteger())
                 opText = "DIV";
-            if ((no == no_addfiles) && expr->hasProperty(_ordered_Atom))
+            if ((no == no_addfiles) && expr->hasAttribute(_ordered_Atom))
                 opText = "&";
-            if ((no == no_addfiles) && expr->hasProperty(_orderedPull_Atom))
+            if ((no == no_addfiles) && expr->hasAttribute(_orderedPull_Atom))
                 opText = "&&";
             unsigned num = expr->numChildren();
             for (unsigned i=1; i < num; i++)
@@ -1323,9 +1323,9 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
 
                 {
                     lparen = needParen(expr, child0);
-                    if (expandProcessed && !expr->hasProperty(newAtom) && child0->queryName())
+                    if (expandProcessed && !expr->hasAttribute(newAtom) && child0->queryName())
                         s.append("<").append(child0->queryName()).append(">");
-                    if (xgmmlGraphText && expr->hasProperty(newAtom))
+                    if (xgmmlGraphText && expr->hasAttribute(newAtom))
                         s.append("<...>");
                     else
                         toECL(child0, s, lparen, inType);
@@ -1607,7 +1607,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                         else
                             s.append(high);
                     }
-                    if (expr->hasProperty(minimalAtom))
+                    if (expr->hasAttribute(minimalAtom))
                         s.append(",MINIMAL");
                     s.append(")");
                 }
@@ -2427,8 +2427,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             break;
         case no_getresult:
             {
-                IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
-                switch (getIntValue(queryPropertyChild(expr, sequenceAtom, 0)))
+                IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
+                switch (getIntValue(queryAttributeChild(expr, sequenceAtom, 0)))
                 {
                 case ResultSequencePersist: 
                     s.append("PERSIST(");
@@ -2442,7 +2442,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 default:
                     s.append("RESULT(");
                     if (!name)
-                        s.append(getIntValue(queryPropertyChild(expr, sequenceAtom, 0)+1));
+                        s.append(getIntValue(queryAttributeChild(expr, sequenceAtom, 0)+1));
                     break;
                 }
                 if (name)
@@ -2451,7 +2451,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 break;
             }
         case no_metaactivity:
-            if (expr->hasProperty(pullAtom))
+            if (expr->hasAttribute(pullAtom))
                 s.append("PULL");
             else
                 s.append("no_metaactivity:unknown");
@@ -2564,7 +2564,7 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             {
                 IHqlExpression * module = expr->queryDefinition()->queryChild(0);
                 s.append("LIBRARY(");
-                toECL(module->queryProperty(nameAtom)->queryChild(0), s, false, inType);
+                toECL(module->queryAttribute(nameAtom)->queryChild(0), s, false, inType);
                 s.append(')');
             }
             else

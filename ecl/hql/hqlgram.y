@@ -2260,12 +2260,12 @@ actionStmt
                             IHqlExpression * filename = options.ordinality() ? &options.item(0) : NULL;
                             if (!filename || filename->isAttribute())
                             {
-                                if (queryProperty(extendAtom, options) && !queryProperty(namedAtom, options))
+                                if (queryAttribute(extendAtom, options) && !queryAttribute(namedAtom, options))
                                     parser->reportError(ERR_EXTEND_NOT_VALID, $7, "EXTEND is only valid on NAMED outputs");
                             }
                             else
                             {
-                                if (queryProperty(extendAtom, options))
+                                if (queryAttribute(extendAtom, options))
                                     parser->reportError(ERR_NOLONGER_SUPPORTED,$7,"EXTEND is no longer supported on OUTPUT to file");
 
                                 if (filename->isPure())
@@ -2310,13 +2310,13 @@ actionStmt
                             }
                             pipe->unwindList(args, no_comma);
                             $9.unwindCommaList(args);
-                            IHqlExpression * output = queryProperty(outputAtom, args);
+                            IHqlExpression * output = queryAttribute(outputAtom, args);
                             if (output)
                             {
                                 unwindChildren(args, output);
                                 args.zap(*output);
                             }
-                            if (queryProperty(csvAtom, args))
+                            if (queryAttribute(csvAtom, args))
                                 parser->checkValidCsvRecord($3, args.item(0).queryRecord());
 
                             parser->warnIfRecordPacked(&args.item(0), $1);
@@ -2329,7 +2329,7 @@ actionStmt
                             OwnedHqlExpr select = createDatasetF(no_selectfields, dataset, record, NULL); //createUniqueId(), NULL);
                             OwnedHqlExpr flags = $4.getExpr();
 
-                            if (queryPropertyInList(extendAtom, flags) && !queryPropertyInList(namedAtom, flags))
+                            if (queryAttributeInList(extendAtom, flags) && !queryAttributeInList(namedAtom, flags))
                                 parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on NAMED outputs");
 
                             HqlExprArray args;
@@ -2343,7 +2343,7 @@ actionStmt
                         {
                             parser->normalizeExpression($3);
                             OwnedHqlExpr flags = $4.getExpr();
-                            if (queryPropertyInList(extendAtom, flags))
+                            if (queryAttributeInList(extendAtom, flags))
                                 parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on a dataset");
                             HqlExprArray args;
                             args.append(*$3.getExpr());
@@ -2355,7 +2355,7 @@ actionStmt
                         {
                             parser->normalizeExpression($3);
                             OwnedHqlExpr flags = $4.getExpr();
-                            if (queryPropertyInList(extendAtom, flags))
+                            if (queryAttributeInList(extendAtom, flags))
                                 parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on a dataset");
                             HqlExprArray args;
                             args.append(*createDataset(no_datasetfromdictionary, $3.getExpr()));
@@ -2367,7 +2367,7 @@ actionStmt
     | OUTPUT '(' dataRow optOutputWuFlags ')'
                         {
                             OwnedHqlExpr flags = $4.getExpr();
-                            if (queryPropertyInList(extendAtom, flags))
+                            if (queryAttributeInList(extendAtom, flags))
                                 parser->reportError(ERR_EXTEND_NOT_VALID, $4, "EXTEND is only valid on a dataset");
                             HqlExprArray args;
                             args.append(*$3.getExpr());
@@ -7577,16 +7577,16 @@ simpleDataSet
                             OwnedHqlExpr dedup = createDataset(no_dedup, ds, createComma(flags, $7.getExpr()));
 
                             parser->checkDistribution($3, dedup, false);
-                            bool hasHash = dedup->hasProperty(hashAtom);
-                            if (hasHash || dedup->hasProperty(allAtom))
+                            bool hasHash = dedup->hasAttribute(hashAtom);
+                            if (hasHash || dedup->hasAttribute(allAtom))
                             {
-                                IHqlExpression * keep = dedup->queryProperty(keepAtom);
+                                IHqlExpression * keep = dedup->queryAttribute(keepAtom);
                                 if (keep && !matchesConstantValue(keep->queryChild(0), 1))
                                     parser->reportError(ERR_DEDUP_ALL_KEEP, $4, "KEEP is not supported for DEDUP(ALL)");
                             }
                             if (hasHash)
                             {
-                                if (dedup->hasProperty(rightAtom))
+                                if (dedup->hasAttribute(rightAtom))
                                     parser->reportError(ERR_DEDUP_ALL_KEEP, $4, "RIGHT is not supported for DEDUP(HASH)");
                             }
 
@@ -7644,7 +7644,7 @@ simpleDataSet
                             bool isLimitedSubstringJoin;
                             OwnedHqlExpr match = findJoinSortOrders(cond, NULL, NULL, NULL, leftSorts, rightSorts, isLimitedSubstringJoin, NULL);
                             unsigned numUnsortedFields = numPayloadFields(right);
-                            if (match || (!ds->hasProperty(firstAtom) && (leftSorts.ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
+                            if (match || (!ds->hasAttribute(firstAtom) && (leftSorts.ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"Condition on DISTRIBUTE must match the key exactly");
                             if (isLimitedSubstringJoin)
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"field[1..*] is not supported for a keyed distribute");
@@ -7723,13 +7723,13 @@ simpleDataSet
 
                             IHqlExpression *join = createDataset(no_join, left, createComma(right, cond, createComma(transform.getClear(), flags.getClear(), $10.getExpr())));
 
-                            bool isLocal = join->hasProperty(localAtom);
+                            bool isLocal = join->hasAttribute(localAtom);
                             parser->checkDistribution($3, left, isLocal, true);
                             parser->checkDistribution($5, right, isLocal, true);
                             parser->checkJoinFlags($1, join);
                             parser->checkOnFailRecord(join, $1);
 
-                            if (!join->hasProperty(allAtom))
+                            if (!join->hasAttribute(allAtom))
                                 parser->warnIfFoldsToConstant(cond, $7);
 
                             $$.setExpr(join, $1);
@@ -7754,7 +7754,7 @@ simpleDataSet
                             IHqlExpression * ds = $3.getExpr();
                             IHqlExpression * cond = $6.getExpr();
                             IHqlExpression * tform = $8.getExpr();
-                            if (!queryPropertyInList(sortedAtom, $10.queryExpr()))
+                            if (!queryAttributeInList(sortedAtom, $10.queryExpr()))
                                 parser->reportError(ERR_EXPECTED, $10, "SORTED() is required for STEPPED join");
 
                             OwnedHqlExpr flags;
@@ -7770,7 +7770,7 @@ simpleDataSet
                         {
                             HqlExprArray sortItems;
                             parser->endList(sortItems);
-                            if (!queryProperty(sortedAtom, sortItems))
+                            if (!queryAttribute(sortedAtom, sortItems))
                                 parser->reportWarning(WRN_MERGE_RECOMMEND_SORTED, $1.pos, "MERGE without an explicit SORTED() attribute is deprecated");
 
                             IHqlExpression * ds = $3.getExpr();
@@ -7967,8 +7967,8 @@ simpleDataSet
                             args.append(*LINK(ds));
                             args.append(*$5.getExpr());
                             $6.unwindCommaList(args);
-                            node_operator op = queryProperty(keyedAtom, args) || queryProperty(countAtom, args) ? no_keyedlimit : no_limit;
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            node_operator op = queryAttribute(keyedAtom, args) || queryAttribute(countAtom, args) ? no_keyedlimit : no_limit;
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail && !parser->checkTransformTypeMatch($6, ds, onFail->queryChild(0)))
                                 args.zap(*onFail);
                             $$.setExpr(createDataset(op, args));
@@ -7981,7 +7981,7 @@ simpleDataSet
                             args.append(*LINK(ds));
                             args.append(*$5.getExpr());
                             $6.unwindCommaList(args);
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail && !parser->checkTransformTypeMatch($4, ds, onFail->queryChild(0)))
                                 args.zap(*onFail);
                             $$.setExpr(createDataset(no_catchds, args));
@@ -7997,7 +7997,7 @@ simpleDataSet
                             args.append(*$5.getExpr());
                             args.append(*$7.getExpr());
                             $8.unwindCommaList(args);
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail && !parser->checkTransformTypeMatch($4, ds, onFail->queryChild(0)))
                                 args.zap(*onFail);
                             $$.setExpr(createDataset(no_catchds, args));
@@ -8006,7 +8006,7 @@ simpleDataSet
 */
     | MERGE '(' startTopFilter ',' mergeDataSetList ')' endTopFilter
                         {
-                            bool isLocal = queryPropertyInList(localAtom, $5.queryExpr()) != NULL;
+                            bool isLocal = queryAttributeInList(localAtom, $5.queryExpr()) != NULL;
                             parser->checkMergeInputSorted($3, isLocal);
                             OwnedHqlExpr ds = $3.getExpr();
 
@@ -8016,7 +8016,7 @@ simpleDataSet
                             if (rest)
                                 rest->unwindList(args, no_comma);
 
-                            IHqlExpression * sorted = queryProperty(sortedAtom, args);
+                            IHqlExpression * sorted = queryAttribute(sortedAtom, args);
                             OwnedHqlExpr newSorted;
                             if (!sorted)
                             {
@@ -8058,7 +8058,7 @@ simpleDataSet
                             args.append(*LINK(ds));
                             if (rest)
                                 rest->unwindList(args, no_comma);
-                            IHqlExpression * group = queryProperty(groupAtom, args);
+                            IHqlExpression * group = queryAttribute(groupAtom, args);
                             if (!group)
                             {
                                 parser->reportError(ERR_COGROUP_NO_GROUP, $1, "COGROUP requires a GROUP() parameter");
@@ -8197,8 +8197,8 @@ simpleDataSet
                             
                             //Non-all Group only make sense if the rows are together.  This can occur if
                             //the dataset is sorted, or if previous operation was a grouped aggregate
-                            bool isLocal = queryPropertyInList(localAtom, attrs) != NULL;
-                            if (groupOrder && !queryPropertyInList(allAtom, attrs) && !appearsToBeSorted(input->queryType(), isLocal, true))
+                            bool isLocal = queryAttributeInList(localAtom, attrs) != NULL;
+                            if (groupOrder && !queryAttributeInList(allAtom, attrs) && !appearsToBeSorted(input->queryType(), isLocal, true))
                             {
                                 bool ok = (input->getOperator() == no_usertable) &&
                                           (datasetHasGroupBy(input));// || isGrouped(input->queryChild(0)));
@@ -8273,7 +8273,7 @@ simpleDataSet
                             OwnedHqlExpr attrs;
                             OwnedHqlExpr grouping = parser->processSortList($7, no_usertable, dataset, sortItems, NULL, &attrs);
 
-                            if (grouping && !queryPropertyInList(groupedAtom, attrs))
+                            if (grouping && !queryAttributeInList(groupedAtom, attrs))
                             {
                                 parser->checkGrouping($7, dataset,record,grouping);
                                 if (dataset->getOperator() == no_group && dataset->queryType()->queryGroupInfo())
@@ -8589,7 +8589,7 @@ simpleDataSet
 
                             OwnedHqlExpr attrs = $6.getExpr();
                             parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), attrs, NULL);
-                            parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryPropertyInList(outputAtom, attrs));
+                            parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryAttributeInList(outputAtom, attrs));
 
                             $$.setExpr(createDataset(no_pipe, $3.getExpr(), createComma($5.getExpr(), LINK(attrs))));
                             $$.setPosition($1);
@@ -8599,7 +8599,7 @@ simpleDataSet
                             parser->normalizeExpression($5, type_string, false);
 
                             OwnedHqlExpr attrs = $8.getExpr();
-                            parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryPropertyInList(outputAtom, attrs));
+                            parser->checkValidPipeRecord($3, $3.queryExpr()->queryRecord(), NULL, queryAttributeInList(outputAtom, attrs));
                             parser->checkValidPipeRecord($7, $7.queryExpr()->queryRecord(), attrs, NULL);
 
                             $$.setExpr(createDataset(no_pipe, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), LINK(attrs))));
@@ -8636,10 +8636,10 @@ simpleDataSet
                             }
                             else
                             {
-                                IHqlExpression * best = queryPropertyInList(bestAtom, attrs);
+                                IHqlExpression * best = queryAttributeInList(bestAtom, attrs);
                                 if (best)
                                     parser->checkMaxCompatible(sortOrder, best, $9);
-                                bool isLocal = (queryPropertyInList(localAtom, attrs)!=NULL);
+                                bool isLocal = (queryAttributeInList(localAtom, attrs)!=NULL);
                                 parser->checkDistribution($3, input, isLocal, false);
                                 attrs.setown(createComma(sortOrder, $5.getExpr(), LINK(attrs)));
                                 $$.setExpr(createDataset(no_topn, input, attrs.getClear()));
@@ -8819,7 +8819,7 @@ simpleDataSet
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             parser->checkOutputRecord($9, false);
                             IHqlExpression * ds = createDataset(no_parse, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), $9.getExpr(), createComma($12.getExpr(), $14.getExpr())));
-                            if (ds->hasProperty(tomitaAtom) && (ds->queryChild(2)->queryType()->getTypeCode() == type_pattern))
+                            if (ds->hasAttribute(tomitaAtom) && (ds->queryChild(2)->queryType()->getTypeCode() == type_pattern))
                                 parser->reportError(ERR_EXPECTED_RULE, $7, "Expected a rule as parameter to PARSE");
                             $$.setExpr(ds);
                             $$.setPosition($1);
@@ -8829,7 +8829,7 @@ simpleDataSet
                             parser->normalizeExpression($5, type_stringorunicode, false);
                             IHqlExpression * record = $9.queryExpr()->queryRecord();
                             IHqlExpression * ds = createDataset(no_newparse, $3.getExpr(), createComma($5.getExpr(), $7.getExpr(), LINK(record), createComma($9.getExpr(), $12.getExpr(), $14.getExpr())));
-                            if (ds->hasProperty(tomitaAtom) && (ds->queryChild(2)->queryType()->getTypeCode() == type_pattern))
+                            if (ds->hasAttribute(tomitaAtom) && (ds->queryChild(2)->queryType()->getTypeCode() == type_pattern))
                                 parser->reportError(ERR_EXPECTED_RULE, $7, "Expected a rule as parameter to PARSE");
                             $$.setExpr(ds);
                             $$.setPosition($1);
@@ -8973,7 +8973,7 @@ simpleDataSet
                             HqlExprArray args;
                             args.append(*LINK(ds));
                             $6.unwindCommaList(args);
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail && !parser->checkTransformTypeMatch($4, ds, onFail->queryChild(0)))
                                 args.zap(*onFail);
                             $$.setExpr(createDataset(no_allnodes, args));
@@ -9555,7 +9555,7 @@ mode
                             $3.unwindCommaList(args);
 
                             //Create expression in a form that is backward compatible
-                            IHqlExpression * name = queryProperty(rowAtom, args);
+                            IHqlExpression * name = queryAttribute(rowAtom, args);
                             if (name)
                             {
                                 args.add(*LINK(name->queryChild(0)), 0);
@@ -10083,7 +10083,7 @@ JoinFlag
                             args.append(*$3.getExpr());
                             $4.unwindCommaList(args);
 
-                            IHqlExpression * onFail = queryProperty(onFailAtom, args);
+                            IHqlExpression * onFail = queryAttribute(onFailAtom, args);
                             if (onFail)
                             {
                                 onFail->Link();
@@ -11688,7 +11688,7 @@ pattern0
     | pattern0 '?'      {
                             parser->checkPattern($1, true);
                             IHqlExpression * pattern = $1.getExpr();
-                            if ((pattern->getOperator() == no_pat_repeat) && (!pattern->hasProperty(minimalAtom)))
+                            if ((pattern->getOperator() == no_pat_repeat) && (!pattern->hasAttribute(minimalAtom)))
                             {
                                 HqlExprArray args;
                                 unwindChildren(args, pattern);
