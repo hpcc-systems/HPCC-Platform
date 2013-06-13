@@ -11501,7 +11501,7 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         IHqlExpression * param = formals->queryChild(i);
         ITypeInfo *paramType = param->queryType();
         IIdAtom * paramId = param->queryId();
-        const char * paramNameText = paramId->lower()->str();
+        const char * paramNameText = paramId->str();
         args.append(*createConstant(paramNameText));
         IIdAtom * bindFunc;
         switch (paramType->getTypeCode())
