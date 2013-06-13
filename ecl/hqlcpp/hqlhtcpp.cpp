@@ -13590,7 +13590,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
             {
                 StringBuffer name;
                 name.append("_expression_").append(idx);
-                field = createField(createIdentifierAtom(name.str()), cur.getType(), NULL);
+                field = createField(createIdAtom(name.str()), cur.getType(), NULL);
             }
             fields.append(*field);
             selects.append(*createSelectExpr(getActiveTableSelector(), LINK(field)));

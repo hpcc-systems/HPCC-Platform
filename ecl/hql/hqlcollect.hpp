@@ -48,7 +48,7 @@ interface IEclSource : public IInterface
 {
     virtual IFileContents * queryFileContents() = 0;
     virtual IProperties * getProperties() = 0;
-    virtual IIdAtom * queryEclName() const = 0;
+    virtual IIdAtom * queryEclId() const = 0;
     virtual EclSourceType queryType() const = 0;
 
     inline bool isImplicitModule() const

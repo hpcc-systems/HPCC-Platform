@@ -769,7 +769,7 @@ BoundRow * InlineLinkedDictionaryCursor::buildSelectMap(BuildCtx & ctx, IHqlExpr
         args.add(*LINK(dictionary), 0);
         args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
         args.append(*::createRow(no_null, LINK(record))); // the default record
-        lookupFunction = createIdentifierAtom(optimizedLookupFunc);
+        lookupFunction = createIdAtom(optimizedLookupFunc);
     }
     else
     {
@@ -832,7 +832,7 @@ void InlineLinkedDictionaryCursor::buildInDataset(BuildCtx & ctx, IHqlExpression
     {
         args.add(*LINK(dictionary), 0);
         args.append(*getExtractSelect(searchExpr->queryChild(0), queryFirstField(searchRecord)));
-        lookupFunction = createIdentifierAtom(optimizedLookupFunc);
+        lookupFunction = createIdAtom(optimizedLookupFunc);
     }
     else
     {
@@ -1383,7 +1383,7 @@ IHqlExpression * CreateSetCursor::createDatasetSelect(IHqlExpression * indexExpr
     }
     else
     {
-        OwnedHqlExpr field = createField(createIdentifierAtom("__f1__"), value->getType(), NULL);
+        OwnedHqlExpr field = createField(createIdAtom("__f1__"), value->getType(), NULL);
         IHqlExpression * aggregateRecord = createRecord(field);
 
         IHqlExpression * assign = createAssign(createSelectExpr(getSelf(aggregateRecord), LINK(field)), LINK(value));

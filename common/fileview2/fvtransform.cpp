@@ -431,7 +431,7 @@ ViewFieldTransformer * find(const ViewFieldTransformerArray & transformers, cons
 {
     if (!name)
         return NULL;
-    IIdAtom * search = createIdentifierAtom(name);
+    IIdAtom * search = createIdAtom(name);
     ForEachItemIn(i, transformers)
     {
         ViewFieldTransformer & cur = transformers.item(i);

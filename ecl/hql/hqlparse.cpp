@@ -474,7 +474,7 @@ void HqlLex::pushMacro(IHqlExpression *expr)
             // no attempt to recover at the end of the file, but cleanup is needed.
             return;
         case UNKNOWN_ID:
-            possibleName = nextToken.getName();
+            possibleName = nextToken.getId();
             //fall through
         default:
             curParam.append(' ');
@@ -774,7 +774,7 @@ void HqlLex::doDeclare(YYSTYPE & returnToken)
             continue;
         }
     
-        name = returnToken.getName();
+        name = returnToken.getId();
         declareXmlSymbol(returnToken, name->getAtomNamePtr());
         
         tok = yyLex(returnToken, false,0);
@@ -847,7 +847,7 @@ void HqlLex::doSet(YYSTYPE & returnToken, bool append)
         returnToken.release();
         return;
     }
-    name = returnToken.getName();
+    name = returnToken.getId();
     if (yyLex(returnToken, false,0) != ',')
     {
         reportError(returnToken, ERR_EXPECTED_COMMA, ", expected"); 
@@ -978,7 +978,7 @@ void HqlLex::doExport(YYSTYPE & returnToken, bool toXml)
         returnToken.release();
         return;
     }
-    exportname = returnToken.getName();
+    exportname = returnToken.getId();
     if (yyLex(returnToken, false,0) != ',')
     {
         reportError(returnToken, ERR_EXPECTED_COMMA, ", expected"); 
@@ -1088,7 +1088,7 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
         returnToken.release();
         return;
     }
-    name = returnToken.getName();
+    name = returnToken.getId();
     forFilter.clear();
     // Note - we gather the for filter and body in skip mode (deferring evaluation of #if etc) since the context will be different each time...
     skipping = 1;
@@ -1304,11 +1304,11 @@ static bool isInModule(HqlLookupContext & ctx, const char* moduleName, const cha
         const char* pAttr = attrName;
         while(*pAttr==' ') pAttr++;
 
-        OwnedHqlExpr match = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdentifierAtom(pModule), LSFpublic, ctx);
+        OwnedHqlExpr match = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdAtom(pModule), LSFpublic, ctx);
         IHqlScope * scope = match ? match->queryScope() : NULL;
         if (scope)
         {
-            OwnedHqlExpr expr = scope->lookupSymbol(createIdentifierAtom(pAttr), LSFpublic, ctx); 
+            OwnedHqlExpr expr = scope->lookupSymbol(createIdAtom(pAttr), LSFpublic, ctx); 
             if (expr)
                 return true;
         }
@@ -1336,7 +1336,7 @@ void HqlLex::doUniqueName(YYSTYPE & returnToken)
     } 
     else 
     {
-        IIdAtom * name = returnToken.getName();
+        IIdAtom * name = returnToken.getId();
         StringAttr pattern("__#__$__");
 
         tok = yyLex(returnToken, false,0);
@@ -1589,7 +1589,7 @@ bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, 
                 {
                 case StateStart:
                     {
-                        expr.setown(lookupSymbol(returnToken.getName(), returnToken));
+                        expr.setown(lookupSymbol(returnToken.getId(), returnToken));
                         state = expr ? StateDot : StateFailed;
                         break;
                     }
@@ -1606,7 +1606,7 @@ bool HqlLex::getDefinedParameter(StringBuffer &curParam, YYSTYPE & returnToken, 
                         IHqlScope * scope = expr->queryScope();
                         if (scope)
                         {
-                            expr.setown(yyParser->lookupSymbol(scope, returnToken.getName()));
+                            expr.setown(yyParser->lookupSymbol(scope, returnToken.getId()));
                             if (expr)
                                 state = StateDot;
                         }

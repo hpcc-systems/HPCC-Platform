@@ -149,7 +149,7 @@ inline IIdAtom * createMangledName(IHqlExpression * module, IHqlExpression * chi
     StringBuffer mangledName;
     mangledName.append(module->queryName()).append(".").append(child->queryName());
 
-    return createIdentifierAtom(mangledName.str());
+    return createIdAtom(mangledName.str());
 }
 
 IHqlExpression * queryDefaultMaxRecordLengthExpr()

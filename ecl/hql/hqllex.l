@@ -90,7 +90,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     if ( !lookup  || lexer->macroGathering || lexer->skipping|| !(expr=lexer->lookupSymbol(cname,returnToken)))
     {
         TraceReturnToken(UNKNOWN_ID);
-        returnToken.setName(cname);
+        returnToken.setId(cname);
         return UNKNOWN_ID;
     }
 
@@ -226,7 +226,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     if (!lexer->parserExpecting(token, activeState) && lexer->parserExpecting(UNKNOWN_ID, activeState))
     {
         returnToken.release();
-        returnToken.setName(cname);
+        returnToken.setId(cname);
         token = UNKNOWN_ID;
     }
 

@@ -196,7 +196,7 @@ StringBuffer & HqltHql::appendId(StringBuffer & s, IIdAtom * id)
 
 StringBuffer &HqltHql::makeUniqueName(IHqlExpression * expr, StringBuffer &s)
 {
-    IIdAtom * moduleName = expr->queryFullModuleName();
+    IIdAtom * moduleName = expr->queryFullModuleId();
     if (moduleName && !ignoreModuleNames)
     {
         if (isPublicSymbol(expr))
@@ -2766,7 +2766,7 @@ StringBuffer &HqltHql::getTypeString(ITypeInfo * i, StringBuffer &s)
                 clashCounter++;
                 name.append("___").append(clashCounter);
             }
-            OwnedHqlExpr extra = createId(createIdentifierAtom(name.str()));
+            OwnedHqlExpr extra = createId(createIdAtom(name.str()));
             expr->setTransformExtra(extra); // LINKs !
             addVisited(expr);
 
@@ -2960,13 +2960,13 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
             makeUniqueName(expr, temp);
             clashCounter++;
             temp.append("___").append(clashCounter);
-            OwnedHqlExpr extra = createId(createIdentifierAtom(temp.str()));
+            OwnedHqlExpr extra = createId(createIdAtom(temp.str()));
             expr->setTransformExtra(extra); // LINKs !
         }
 
 #ifdef SHOW_SYMBOL_LOCATION
         if (expandProcessed)
-            newdef.append(expr->queryFullModuleName()).append("(").append(expr->getStartLine()).append(",").append(expr->getStartColumn()).append("):");
+            newdef.append(expr->queryFullModuleId()).append("(").append(expr->getStartLine()).append(",").append(expr->getStartColumn()).append("):");
 #endif
         newdef.append(exports);
         lookupSymbolName(expr, name);
@@ -2982,7 +2982,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
             {
                 if(!expr->queryTransformExtra())
                 {
-                    IHqlExpression * extra = createId(createIdentifierAtom(name.str()));
+                    IHqlExpression * extra = createId(createIdAtom(name.str()));
                     expr->setTransformExtra(extra); // LINKs !
                     extra->Release();
                     addVisited(expr);
@@ -2998,7 +2998,7 @@ StringBuffer &HqltHql::doAlias(IHqlExpression * expr, StringBuffer &name, bool i
         }
         else if(!inType)
         {
-            OwnedHqlExpr extra = createId(createIdentifierAtom(name.str()));
+            OwnedHqlExpr extra = createId(createIdAtom(name.str()));
             expr->setTransformExtra(extra); // LINKs !
             addVisited(expr);
         
@@ -3112,7 +3112,7 @@ void HqltHql::defineCallTarget(IHqlExpression * call, StringBuffer & name)
         StringBuffer newdef;
         m_service_names.append(*new StringBufferItem(name));
 
-        OwnedHqlExpr extra = createId(createIdentifierAtom(name.str()));
+        OwnedHqlExpr extra = createId(createIdAtom(name.str()));
         call->setTransformExtra(extra);
         addVisited(call);
 

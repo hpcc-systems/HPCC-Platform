@@ -415,7 +415,7 @@ IAtom * xmlAtom;
 IAtom * xmlDefaultAtom;
 IAtom * xpathAtom;
 
-#define MAKEID(x)   x##Id = createIdentifierAtom(#x)
+#define MAKEID(x)   x##Id = createIdAtom(#x)
 #define MAKEATOM(x) x##Atom = createLowerCaseAtom(#x)
 
 SysAtom::SysAtom(const void * k) : Atom(k) 
@@ -450,7 +450,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEID(bindUnsignedParam);
     MAKEID(bindUtf8Param);
     MAKEID(compileEmbeddedScript);
-    defaultFieldNameId = createIdentifierAtom("__f1__");
+    defaultFieldNameId = createIdAtom("__f1__");
     MAKEID(fail);
     MAKEID(getEmbedContext);
     MAKEID(getBooleanResult);

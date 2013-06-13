@@ -1583,7 +1583,7 @@ IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpre
             {
                 StringBuffer temp;
                 temp.append("_agg_").append(assigns.ordinality());
-                targetField = createField(createIdentifierAtom(temp.str()), expr->getType(), NULL);
+                targetField = createField(createIdAtom(temp.str()), expr->getType(), NULL);
                 extraSelectNeeded = true;
             }
             fields.append(*targetField);
@@ -3152,7 +3152,7 @@ static IHqlExpression * extractPrefetchFields(HqlExprArray & fields, HqlExprArra
         match = fields.ordinality();
         StringBuffer name;
         name.append("_f").append(match).append("_");
-        IHqlExpression * field = createField(createIdentifierAtom(name.str()), expr->getType(), NULL);
+        IHqlExpression * field = createField(createIdAtom(name.str()), expr->getType(), NULL);
         fields.append(*field);
         values.append(*LINK(expr));
     }
@@ -3403,7 +3403,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
             {
                 StringBuffer temp;
                 temp.append("_agg_").append(aggregateAssigns.ordinality());
-                IHqlExpression * targetField = createField(createIdentifierAtom(temp.str()), curGroup->getType(), NULL);
+                IHqlExpression * targetField = createField(createIdAtom(temp.str()), curGroup->getType(), NULL);
                 aggregateFields.append(*targetField);
                 aggregateAssigns.append(*createAssign(createSelectExpr(getActiveTableSelector(), LINK(targetField)), LINK(curGroup)));
                 extraSelectNeeded = true;
@@ -10217,7 +10217,7 @@ static IIdAtom * simplifySymbolName(IIdAtom * name, bool commonUniqueNameAttribu
     {
         StringAttr truncName;
         truncName.set(nameText, len);
-        return createIdentifierAtom(truncName);
+        return createIdAtom(truncName);
     }
     return NULL;
 }
@@ -10225,7 +10225,7 @@ static IIdAtom * simplifySymbolName(IIdAtom * name, bool commonUniqueNameAttribu
 static IIdAtom * lowerCaseSymbolName(IIdAtom * name)
 {
     if (containsUpperCase(name->str()))
-        return createIdentifierAtom(name->lower()->str());
+        return createIdAtom(name->lower()->str());
     return name;
 }
 

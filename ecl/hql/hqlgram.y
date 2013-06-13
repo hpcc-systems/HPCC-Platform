@@ -645,12 +645,12 @@ importItem
                         }
     | importSelectorList AS UNKNOWN_ID
                         {
-                            parser->processImport($1, $3.getName());
+                            parser->processImport($1, $3.getId());
                             $$.clear();
                         }
     | importSelectorList FROM importSelector AS UNKNOWN_ID
                         {
-                            parser->processImport($1, $3, $5.getName());
+                            parser->processImport($1, $3, $5.getId());
                             $$.clear();
                         }
     | '*' FROM importSelector
@@ -697,14 +697,14 @@ importSelector
 
 importId
     : UNKNOWN_ID        {
-                            $$.setExpr(createId($1.getName()), $1);
+                            $$.setExpr(createId($1.getId()), $1);
                         }
     | '$'               {
                             $$.setExpr(createAttribute(selfAtom), $1);
                         }
     | importId '.' UNKNOWN_ID
                         {
-                            $$.setExpr(createAttribute(_dot_Atom, $1.getExpr(), createId($3.getName())), $1);
+                            $$.setExpr(createAttribute(_dot_Atom, $1.getExpr(), createId($3.getId())), $1);
                         }
     ;
 
@@ -1190,7 +1190,7 @@ startTYPE
 
 defineid
     : UNKNOWN_ID        {
-                            parser->beginDefineId($1.getName(), NULL);
+                            parser->beginDefineId($1.getId(), NULL);
                             $$.setType(NULL);
                             $$.setPosition($1);
                         }
@@ -1219,21 +1219,21 @@ defineid
                             Owned<ITypeInfo> type = $1.getType();
                             if (type->getTypeCode() == type_alien)
                                 type.set(type->queryPromotedType());
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type.getClear());
                             $$.setPosition($1);
                         }
     | globalScopedDatasetId knownOrUnknownId
                         {
                             OwnedHqlExpr ds = $1.getExpr();
-                            parser->beginDefineId($2.getName(), ds->queryType());
+                            parser->beginDefineId($2.getId(), ds->queryType());
                             $$.setType(ds->getType());
                             $$.setPosition($1);
                         }
     | UNKNOWN_ID UNKNOWN_ID
                         {
-                            parser->reportError(ERR_UNKNOWN_TYPE, $1, "Unknown type '%s'", $1.getName()->str());
-                            parser->beginDefineId($2.getName(), NULL);
+                            parser->reportError(ERR_UNKNOWN_TYPE, $1, "Unknown type '%s'", $1.getId()->str());
+                            parser->beginDefineId($2.getId(), NULL);
                             $$.setType(NULL);
                             $$.setPosition($1);
                         }
@@ -1242,8 +1242,8 @@ defineid
 
 knownOrUnknownId
     : UNKNOWN_ID
-    | knownId           { $$.setName(parser->getNameFromExpr($1)); $$.setPosition($1); }
-    | knownFunction1    { $$.setName(parser->getNameFromExpr($1)); $$.setPosition($1); }
+    | knownId           { $$.setId(parser->getNameFromExpr($1)); $$.setPosition($1); }
+    | knownFunction1    { $$.setId(parser->getNameFromExpr($1)); $$.setPosition($1); }
     ;
 
 knownId
@@ -1317,14 +1317,14 @@ definePatternId
     : TOK_PATTERN knownOrUnknownId  
                         {
                             ITypeInfo *type = makePatternType();
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
     | RULE knownOrUnknownId 
                         {
                             ITypeInfo *type = makeRuleType(NULL);
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
@@ -1332,21 +1332,21 @@ definePatternId
                         {
                             OwnedHqlExpr record = $3.getExpr();
                             ITypeInfo *type = makeRuleType(record->getType());
-                            parser->beginDefineId($5.getName(), type);
+                            parser->beginDefineId($5.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
     | TOKEN knownOrUnknownId    
                         {
                             ITypeInfo *type = makeTokenType();
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
     | userTypedefPattern knownOrUnknownId
                         {
                             ITypeInfo *type = $1.getType();
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }
@@ -2893,21 +2893,21 @@ hintList
 hintItem
     : hintName
                         {
-                            $$.setExpr(createExprAttribute($1.getName()->lower()));
+                            $$.setExpr(createExprAttribute($1.getId()->lower()));
                             $$.setPosition($1);
                         }
     | hintName '(' beginList hintExprList ')'
                         {
                             HqlExprArray args;
                             parser->endList(args);
-                            $$.setExpr(createExprAttribute($1.getName()->lower(), args));
+                            $$.setExpr(createExprAttribute($1.getId()->lower(), args));
                             $$.setPosition($1);
                         }
     ;
 
 hintName
     : UNKNOWN_ID
-    | OUTPUT            {   $$.setName(outputId); }
+    | OUTPUT            {   $$.setId(outputId); }
     ;
 
 hintExprList
@@ -2946,7 +2946,7 @@ hintExpr
                         }
     | UNKNOWN_ID
                         {
-                            $$.setExpr(createAttribute($1.getName()->lower()), $1);
+                            $$.setExpr(createAttribute($1.getId()->lower()), $1);
                         }
     ;
 
@@ -3639,18 +3639,18 @@ paramDefinition
     : setType knownOrUnknownId defvalue 
                         {   
                             $$.clear(); 
-                            parser->addParameter($1, $2.getName(), $1.getType(), $3.getExpr());
+                            parser->addParameter($1, $2.getId(), $1.getType(), $3.getExpr());
                         }
     | paramType knownOrUnknownId defvalue   
                         {   
                             $$.clear();
-                            parser->addParameter($1, $2.getName(), $1.getType(), $3.getExpr());
+                            parser->addParameter($1, $2.getId(), $1.getType(), $3.getExpr());
                         }
     | UNKNOWN_ID defvalue
                         {
                            $$.clear();
                            parser->addListElement(createAttribute(noTypeAtom));
-                           parser->addParameter($1, $1.getName(), LINK(parser->defaultIntegralType), $2.getExpr());
+                           parser->addParameter($1, $1.getId(), LINK(parser->defaultIntegralType), $2.getExpr());
                         }
     | anyFunction defvalue
                         {
@@ -3663,29 +3663,29 @@ paramDefinition
     | ANY DATASET knownOrUnknownId
                         {
                             $$.clear();
-                            parser->addParameter($1, $3.getName(), makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL), NULL);
+                            parser->addParameter($1, $3.getId(), makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL), NULL);
                         }
     | ANY knownOrUnknownId defvalue
                         {
                             $$.clear();
                             parser->setTemplateAttribute();
-                            parser->addParameter($1, $2.getName(), makeAnyType(), $3.getExpr());
+                            parser->addParameter($1, $2.getId(), makeAnyType(), $3.getExpr());
                         }
     | paramType knownOrUnknownId nestedParmdef defFuncValue
                         {
                             $$.clear();
-                            parser->addFunctionParameter($1, $2.getName(), $1.getType(), $4.getExpr());
+                            parser->addFunctionParameter($1, $2.getId(), $1.getType(), $4.getExpr());
                         }
     | setType knownOrUnknownId nestedParmdef defFuncValue
                         {
                             $$.clear();
-                            parser->addFunctionParameter($1, $2.getName(), $1.getType(), $4.getExpr());
+                            parser->addFunctionParameter($1, $2.getId(), $1.getType(), $4.getExpr());
                         }
  // Use a function as a prototype for the argument type - kind of a substitute for a typedef
     | anyFunction UNKNOWN_ID defFuncValue
                         {
                             $$.clear();
-                            parser->addFunctionProtoParameter($1, $2.getName(), $1.getExpr(), $3.getExpr());
+                            parser->addFunctionProtoParameter($1, $2.getId(), $1.getExpr(), $3.getExpr());
                         }
     ;
 
@@ -3750,7 +3750,7 @@ funcDef
     : funcRetType knownOrUnknownId realparmdef attribs ';'
                         {
                             $$.clear($1);
-                            IIdAtom * name = $2.getName();
+                            IIdAtom * name = $2.getId();
                             OwnedITypeInfo type = $1.getType();
                             OwnedHqlExpr attrs = $4.getExpr();
                             parser->processServiceFunction($2, name, attrs, type);
@@ -3758,7 +3758,7 @@ funcDef
     | knownOrUnknownId realparmdef attribs ';'
                         {
                             $$.clear($1);
-                            IIdAtom * name = $1.getName();
+                            IIdAtom * name = $1.getId();
                             OwnedITypeInfo type = makeVoidType();
                             OwnedHqlExpr attrs = $3.getExpr();
                             parser->processServiceFunction($1, name, attrs, type);
@@ -3780,21 +3780,21 @@ attrib
     : knownOrUnknownId EQ UNKNOWN_ID        
                         {
                             parser->reportWarning(WRN_OBSOLETED_SYNTAX,$1.pos,"Syntax obsoleted; use alternative: id = '<string constant>'");
-                            $$.setExpr(createAttribute($1.getName()->lower(), createConstant(*$3.getName())));
+                            $$.setExpr(createAttribute($1.getId()->lower(), createConstant(*$3.getId())));
                         }
     | knownOrUnknownId EQ const
                         {
-                            $$.setExpr(createAttribute($1.getName()->lower(), $3.getExpr()), $1);
+                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr()), $1);
                         }
     | knownOrUnknownId                  
-                        {   $$.setExpr(createAttribute($1.getName()->lower()));  }
+                        {   $$.setExpr(createAttribute($1.getId()->lower()));  }
     | knownOrUnknownId '(' const ')'
                         {
-                            $$.setExpr(createAttribute($1.getName()->lower(), $3.getExpr()), $1);
+                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr()), $1);
                         }
     | knownOrUnknownId '(' const ',' const ')'
                         {
-                            $$.setExpr(createAttribute($1.getName()->lower(), $3.getExpr(), $5.getExpr()), $1);
+                            $$.setExpr(createAttribute($1.getId()->lower(), $3.getExpr(), $5.getExpr()), $1);
                         }
     ;
 
@@ -3928,7 +3928,7 @@ recordDef
     | recordDef '-' UNKNOWN_ID
                         {
                             OwnedHqlExpr left = $1.getExpr();
-                            OwnedHqlExpr right = createId($3.getName());
+                            OwnedHqlExpr right = createId($3.getId());
                             $$.setExpr(parser->createRecordExcept(left, right, $1));
                             $$.setPosition($1);
                             parser->checkRecordIsValid($1, $$.queryExpr());
@@ -3952,7 +3952,7 @@ recordDef
     | recordDef AND NOT UNKNOWN_ID
                         {
                             OwnedHqlExpr left = $1.getExpr();
-                            OwnedHqlExpr right = createId($4.getName());
+                            OwnedHqlExpr right = createId($4.getId());
                             $$.setExpr(parser->createRecordExcept(left, right, $1));
                             $$.setPosition($1);
                             parser->checkRecordIsValid($1, $$.queryExpr());
@@ -4018,12 +4018,12 @@ dsEnd
 
 UnknownIdList
     : UNKNOWN_ID        {
-                            $$.setExpr(createId($1.getName()));
+                            $$.setExpr(createId($1.getId()));
                             $$.setPosition($1);
                         }
     | UnknownIdList ',' UNKNOWN_ID
                         {
-                            $$.setExpr(createComma($1.getExpr(), createId($3.getName())));
+                            $$.setExpr(createComma($1.getExpr(), createId($3.getId())));
                             $$.setPosition($1);
                         }
     ;
@@ -4199,7 +4199,7 @@ fieldDef
                             IHqlExpression *attrs = $2.getExpr();
                             if (!attrs)
                                 attrs = extractAttrsFromExpr(value);
-                            parser->addField($1, $1.getName(), value->getType(), value, attrs);
+                            parser->addField($1, $1.getId(), value->getType(), value, attrs);
                             $$.clear();
                         }
     | UNKNOWN_ID optFieldAttrs ASSIGN dataRow
@@ -4208,7 +4208,7 @@ fieldDef
                             IHqlExpression *attrs = $2.getExpr();
                             if (!attrs)
                                 attrs = extractAttrsFromExpr(value);
-                            parser->addField($1, $1.getName(), makeRowType(LINK(value->queryRecordType())), value, attrs);
+                            parser->addField($1, $1.getId(), makeRowType(LINK(value->queryRecordType())), value, attrs);
                             $$.clear();
                         }
     | typeDef knownOrUnknownId optFieldAttrs defaultValue
@@ -4220,7 +4220,7 @@ fieldDef
                             OwnedITypeInfo type = $1.getType();
                             if (type->getTypeCode() == type_record)
                                 type.setown(makeRowType(type.getClear()));
-                            parser->addField($2, $2.getName(), type.getClear(), value, $3.getExpr());
+                            parser->addField($2, $2.getId(), type.getClear(), value, $3.getExpr());
                         }
     | ANY knownOrUnknownId optFieldAttrs defaultValue
                         {
@@ -4229,7 +4229,7 @@ fieldDef
 
                             //Syntactic oddity.  A record means a row of that record type.
                             OwnedITypeInfo type = makeAnyType();
-                            parser->addField($2, $2.getName(), type.getClear(), value, $3.getExpr());
+                            parser->addField($2, $2.getId(), type.getClear(), value, $3.getExpr());
                         }
     | typeDef knownOrUnknownId '[' expression ']' optFieldAttrs defaultValue
                         {
@@ -4249,7 +4249,7 @@ fieldDef
 
                             IHqlExpression *value = $7.getExpr();
                             Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL);
-                            parser->addDatasetField($2, $2.getName(), datasetType, value, attrs.getClear());
+                            parser->addDatasetField($2, $2.getId(), datasetType, value, attrs.getClear());
                         }
     | setType knownOrUnknownId optFieldAttrs defaultValue
                         {
@@ -4257,36 +4257,36 @@ fieldDef
                             IHqlExpression *value = $4.getExpr();
 
                             ITypeInfo *type = $1.getType();
-                            parser->addField($2, $2.getName(), type, value, $3.getExpr());
+                            parser->addField($2, $2.getId(), type, value, $3.getExpr());
                         }
     | explicitDatasetType knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
                             Owned<ITypeInfo> type = $1.getType();
-                            parser->addDatasetField($2, $2.getName(), type, $4.getExpr(), $3.getExpr());
+                            parser->addDatasetField($2, $2.getId(), type, $4.getExpr(), $3.getExpr());
                         }
     | UNKNOWN_ID optFieldAttrs ASSIGN dataSet
                         {
                             IHqlExpression * value = $4.getExpr();
-                            parser->addDatasetField($1, $1.getName(), NULL, value, $2.getExpr());
+                            parser->addDatasetField($1, $1.getId(), NULL, value, $2.getExpr());
                             $$.clear();
                         }
     | explicitDictionaryType knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
                             Owned<ITypeInfo> type = $1.getType();
-                            parser->addDictionaryField($2, $2.getName(), type, $4.getExpr(), $3.getExpr());
+                            parser->addDictionaryField($2, $2.getId(), type, $4.getExpr(), $3.getExpr());
                         }
     | UNKNOWN_ID optFieldAttrs ASSIGN dictionary
                         {
                             IHqlExpression * value = $4.getExpr();
-                            parser->addDictionaryField($1, $1.getName(), value->queryType(), value, $2.getExpr());
+                            parser->addDictionaryField($1, $1.getId(), value->queryType(), value, $2.getExpr());
                             $$.clear();
                         }
     | alienTypeInstance knownOrUnknownId optFieldAttrs defaultValue
                         {
                             $$.clear($1);
-                            parser->addField($2, $2.getName(), $1.getType(), $4.getExpr(), $3.getExpr());
+                            parser->addField($2, $2.getId(), $1.getType(), $4.getExpr(), $3.getExpr());
                         }
     | recordDef         {
                             //This distinguish between an inline record definition, and an out-of-line definition
@@ -6794,7 +6794,7 @@ scopeProjectOpt
     : OPT               {   $$.setExpr(createAttribute(optAtom)); $$.setPosition($1); }
     | UNKNOWN_ID            // Will include known ids as well since they won't be returned as known ids.
                         {
-                            $$.setExpr(createId($1.getName()));
+                            $$.setExpr(createId($1.getId()));
                             $$.setPosition($1);
                         }
     ;
@@ -10694,13 +10694,13 @@ optActualValue
 namedActual
     : UNKNOWN_ID ASSIGN actualValue
                         {
-                            parser->addNamedActual($1, $1.getName(), $3.getExpr());
+                            parser->addNamedActual($1, $1.getId(), $3.getExpr());
                             $$.clear();
                             $$.setPosition($1);
                         }
     | NAMED UNKNOWN_ID ASSIGN actualValue
                         {
-                            parser->addNamedActual($1, $2.getName(), $4.getExpr());
+                            parser->addNamedActual($1, $2.getId(), $4.getExpr());
                             $$.clear();
                             $$.setPosition($1);
                         }
@@ -10965,8 +10965,8 @@ fieldMaps1
 fieldMap
     :  UNKNOWN_ID ASSIGN UNKNOWN_ID
                         {
-                            IHqlExpression* attr1 = createId($1.getName());
-                            IHqlExpression* attr2 = createId($3.getName());
+                            IHqlExpression* attr1 = createId($1.getId());
+                            IHqlExpression* attr2 = createId($3.getId());
                             parser->addListElement(createComma(attr1, attr2));
                             $$.clear();
                         }
@@ -11780,14 +11780,14 @@ pattern0
                             parser->checkUseLocation($1);
                             IAtom * moduleName = parser->globalScope->queryName();
                             IHqlExpression * module = moduleName ? createAttribute(moduleAtom, createAttribute(moduleName)) : NULL;
-                            IHqlExpression * id = createAttribute(nameAtom, createId($3.getName()));
+                            IHqlExpression * id = createAttribute(nameAtom, createId($3.getId()));
                             $$.setExpr(createValue(no_pat_use, makeRuleType(NULL), id, module));
                         }
     | USE '(' UNKNOWN_ID '.' UNKNOWN_ID ')'
                         {
                             parser->checkUseLocation($1);
-                            IHqlExpression * module = createAttribute(moduleAtom, createId($3.getName()));
-                            IHqlExpression * id = createAttribute(nameAtom, createId($5.getName()));
+                            IHqlExpression * module = createAttribute(moduleAtom, createId($3.getId()));
+                            IHqlExpression * id = createAttribute(nameAtom, createId($5.getId()));
                             $$.setExpr(createValue(no_pat_use, makeRuleType(NULL), module, id));
                         }
     | USE '(' recordDef ',' stringConstExpr ')'
@@ -11801,15 +11801,15 @@ pattern0
                             parser->checkUseLocation($1);
                             IAtom * moduleName = parser->globalScope->queryName();
                             IHqlExpression * module = moduleName ? createAttribute(moduleAtom, createAttribute(moduleName)) : NULL;
-                            IHqlExpression * id = createAttribute(nameAtom, createId($5.getName()));
+                            IHqlExpression * id = createAttribute(nameAtom, createId($5.getId()));
                             OwnedHqlExpr record = $3.getExpr();
                             $$.setExpr(createValue(no_pat_use, makeRuleType(record->getType()), id, module));
                         }
     | USE '(' recordDef ',' UNKNOWN_ID '.' UNKNOWN_ID ')'
                         {
                             parser->checkUseLocation($1);
-                            IHqlExpression * module = createAttribute(moduleAtom, createId($5.getName()));
-                            IHqlExpression * id = createAttribute(nameAtom, createId($7.getName()));
+                            IHqlExpression * module = createAttribute(moduleAtom, createId($5.getId()));
+                            IHqlExpression * id = createAttribute(nameAtom, createId($7.getId()));
                             OwnedHqlExpr record = $3.getExpr();
                             $$.setExpr(createValue(no_pat_use, makeRuleType(record->getType()), module, id));
                         }
@@ -11911,12 +11911,12 @@ optPatternActualValue
 namedPatternActual
     : UNKNOWN_ID ASSIGN patternParamval
                         {
-                            parser->addNamedActual($1, $1.getName(), $3.getExpr());
+                            parser->addNamedActual($1, $1.getId(), $3.getExpr());
                             $$.clear($1);
                         }
     | NAMED UNKNOWN_ID ASSIGN patternParamval
                         {
-                            parser->addNamedActual($1, $2.getName(), $4.getExpr());
+                            parser->addNamedActual($1, $2.getId(), $4.getExpr());
                             $$.clear($1);
                         }
     ;
@@ -12020,7 +12020,7 @@ defineFeatureId
     : FEATURE knownOrUnknownId  
                         {
                             ITypeInfo *type = makeFeatureType();
-                            parser->beginDefineId($2.getName(), type);
+                            parser->beginDefineId($2.getId(), type);
                             $$.setType(type);
                             $$.setPosition($1);
                         }

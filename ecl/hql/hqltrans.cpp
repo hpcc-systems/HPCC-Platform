@@ -4631,7 +4631,7 @@ IHqlExpression * GlobalToParameterTransformer::createTransformedBody(IHqlExpress
     paramName.append("_implicit_hidden_").append(parameters.ordinality());
     HqlExprArray attrs;
     attrs.append(*createAttribute(_hidden_Atom));
-    IHqlExpression * param = createParameter(createIdentifierAtom(paramName.str()), parameters.ordinality(), expr->getType(), attrs);
+    IHqlExpression * param = createParameter(createIdAtom(paramName.str()), parameters.ordinality(), expr->getType(), attrs);
     parameters.append(*param);
     defaults.append(*LINK(expr));
     return LINK(param);

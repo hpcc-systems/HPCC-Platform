@@ -240,7 +240,7 @@ public:
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body) { return LINK(body); }
     virtual void unwindList(HqlExprArray &dst, node_operator);
 
-    virtual IIdAtom *           queryFullModuleName() const { return NULL; }
+    virtual IIdAtom *           queryFullModuleId() const { return NULL; }
     virtual ISourcePath *   querySourcePath() const { return NULL; }
 
     virtual IInterface *    queryTransformExtra();
@@ -508,7 +508,7 @@ public:
     virtual IHqlExpression * clone(HqlExprArray &);
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body) = 0;
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body);
-    virtual IIdAtom *               queryFullModuleName() const;
+    virtual IIdAtom * queryFullModuleId() const;
     virtual bool isFullyBound() const;
     virtual IHqlExpression *addOperand(IHqlExpression *);
     virtual StringBuffer& getTextBuf(StringBuffer& buf);
@@ -531,7 +531,7 @@ public:
 
     virtual IAtom * queryName() const { return id->lower(); }
     virtual IIdAtom * queryId() const { return id; }
-    virtual IIdAtom * queryFullModuleName() const { return module; }
+    virtual IIdAtom * queryFullModuleId() const { return moduleId; }
     virtual IHqlExpression *queryFunctionDefinition() const;
     virtual unsigned getSymbolFlags() const;
 
@@ -550,14 +550,14 @@ public:
     virtual void setRepositoryFlags(unsigned _flags) { symbolFlags |= (_flags & ob_registryflags); }
 
 protected:
-    CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
+    CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _moduleId, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
     ~CHqlSymbolAnnotation();
 
     virtual void sethash();
 
 protected:
     IIdAtom * id;
-    IIdAtom * module;
+    IIdAtom * moduleId;
     IHqlExpression *funcdef;
     unsigned symbolFlags;
 };
@@ -565,7 +565,7 @@ protected:
 class HQL_API CHqlSimpleSymbol : public CHqlSymbolAnnotation
 {
 public:
-    static IHqlExpression * makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
+    static IHqlExpression * makeSymbol(IIdAtom * _id, IIdAtom * _moduleId, IHqlExpression *_expr, IHqlExpression *_funcdef, unsigned _obFlags);
 
 //interface IHqlNamedAnnotation
     virtual IFileContents * getBodyContents() { return NULL; }
@@ -721,7 +721,7 @@ protected:
 class CHqlField: public CHqlExpressionWithType
 {
 private:
-    IIdAtom *               id;
+    IIdAtom * id;
 
     virtual void sethash();
     virtual bool equals(const IHqlExpression & other) const;

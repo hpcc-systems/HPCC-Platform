@@ -116,12 +116,12 @@ IHqlExpression * getResolveAttributeFullPath(const char * attrname, unsigned loo
         IIdAtom * moduleName;
         if (dot)
         {
-            moduleName = createIdentifierAtom(item, dot-item);
+            moduleName = createIdAtom(item, dot-item);
             item = dot + 1;
         }
         else
         {
-            moduleName = createIdentifierAtom(item);
+            moduleName = createIdAtom(item);
         }
 
         OwnedHqlExpr resolved;
@@ -313,10 +313,10 @@ static void getFullName(StringBuffer & fullName, IHqlScope * scope, IIdAtom * at
 
 IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclSource * source)
 {
-    IIdAtom * eclName = source->queryEclName();
+    IIdAtom * eclId = source->queryEclId();
     IHqlScope * scope = rScope->queryScope();
     StringBuffer fullName;
-    getFullName(fullName, scope, eclName);
+    getFullName(fullName, scope, eclId);
 
     EclSourceType sourceType = source->queryType();
     IFileContents * contents = source->queryFileContents();
@@ -348,21 +348,21 @@ IHqlExpression * CNewEclRepository::createSymbol(IHqlRemoteScope * rScope, IEclS
             //Slightly ugly create a "delayed" nested scope instead.  But with a NULL owner - so will never be called back
             //Probably should be a difference class instance
             Owned<IProperties> props = source->getProperties();
-            Owned<IHqlRemoteScope> childScope = createRemoteScope(eclName, fullName.str(), NULL, props, contents, true, source);
+            Owned<IHqlRemoteScope> childScope = createRemoteScope(eclId, fullName.str(), NULL, props, contents, true, source);
             body.set(queryExpression(childScope->queryScope()));
             break;
         }
     case ESTcontainer:
         {
             Owned<IProperties> props = source->getProperties();
-            Owned<IHqlRemoteScope> childScope = createRemoteScope(eclName, fullName.str(), this, props, NULL, true, source);
+            Owned<IHqlRemoteScope> childScope = createRemoteScope(eclId, fullName.str(), this, props, NULL, true, source);
             body.set(queryExpression(childScope->queryScope()));
             break;
         }
     default:
         throwUnexpected();
     }
-    return ::createSymbol(eclName, scope->queryId(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0, 0, 0);
+    return ::createSymbol(eclId, scope->queryId(), body.getClear(), NULL, true, true, symbolFlags, contents, 0, 0, 0, 0, 0);
 }
 
 

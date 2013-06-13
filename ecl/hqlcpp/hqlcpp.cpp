@@ -1392,7 +1392,7 @@ HqlCppTranslator::HqlCppTranslator(IErrorReceiver * _errors, const char * _soNam
     litno = 0;
     soName.set(_soName);
     HqlDummyLookupContext dummyctx(NULL);
-    OwnedHqlExpr internalScopeLookup = cppSystemScope->lookupSymbol(createIdentifierAtom("InternalCppService"), LSFsharedOK, dummyctx);
+    OwnedHqlExpr internalScopeLookup = cppSystemScope->lookupSymbol(createIdAtom("InternalCppService"), LSFsharedOK, dummyctx);
     internalScope = internalScopeLookup->queryScope();
     _clear(options);                    // init options is called later, but depends on the workunit.
     startCursorSet = 0;
@@ -1704,6 +1704,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.matchExistingDistributionForJoin,"matchExistingDistributionForJoin",true),
         DebugOption(options.expandHashJoin,"expandHashJoin",false),
         DebugOption(options.traceIR,"traceIR",false),
+        DebugOption(options.preserveCaseExternalParameter,"preserveCaseExternalParameter",true),
     };
 
     //get options values from workunit
@@ -10097,7 +10098,7 @@ void HqlCppTranslator::doStringTranslation(BuildCtx & ctx, ICharsetInfo * tgtset
     ITranslationInfo * translator = queryDefaultTranslation(tgtset, srcset);
     if (translator)
     {
-        IIdAtom * func = createIdentifierAtom(translator->queryRtlFunction());
+        IIdAtom * func = createIdAtom(translator->queryRtlFunction());
         args.append(*getSizetConstant(tgtlen));
         args.append(*getElementPointer(target));
         args.append(*LINK(srclen));
@@ -10761,7 +10762,7 @@ void HqlCppTranslator::assignCastUnknownLength(BuildCtx & ctx, const CHqlBoundTa
 
                             ITranslationInfo * translator = queryDefaultTranslation(tgtset, srcset);
                             if (translator)
-                                funcName = createIdentifierAtom(translator->queryVarRtlFunction());
+                                funcName = createIdAtom(translator->queryVarRtlFunction());
                             else
                                 funcName = str2StrXId;
                         }
@@ -11502,6 +11503,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
         ITypeInfo *paramType = param->queryType();
         IIdAtom * paramId = param->queryId();
         const char * paramNameText = paramId->str();
+        if (!options.preserveCaseExternalParameter)
+            paramNameText = paramId->lower()->str();
         args.append(*createConstant(paramNameText));
         IIdAtom * bindFunc;
         switch (paramType->getTypeCode())

@@ -794,7 +794,7 @@ IHqlExpression * KeyedJoinInfo::optimizeTransfer(HqlExprArray & fields, HqlExprA
                         //Check same field isn't used in two different nested records.
                         StringBuffer name;
                         name.append("__unnamed__").append(fields.ordinality());
-                        field.setown(createField(createIdentifierAtom(name), field->getType(), NULL, NULL));
+                        field.setown(createField(createIdAtom(name), field->getType(), NULL, NULL));
                     }
 
                     fields.append(*LINK(field));

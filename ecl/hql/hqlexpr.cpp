@@ -5533,7 +5533,7 @@ void CHqlField::onCreateField()
         throwUnexpected();
 #endif
 #ifdef DEBUG_ON_CREATE
-    if (queryName() == createIdentifierAtom("imgLength"))
+    if (queryName() == createIdAtom("imgLength"))
         PrintLog("Create field %s=%p", expr->queryName()->str(), expr);
 #endif
 
@@ -6479,9 +6479,9 @@ bool CHqlAnnotation::isFullyBound() const
     return body->isFullyBound();
 }
 
-IIdAtom * CHqlAnnotation::queryFullModuleName() const
+IIdAtom * CHqlAnnotation::queryFullModuleId() const
 {
-    return body->queryFullModuleName();
+    return body->queryFullModuleId();
 }
 
 IHqlExpression * CHqlAnnotation::queryAttribute(IAtom * name)
@@ -6717,12 +6717,12 @@ static void associateBindByName(HqlExprArray & selects, IHqlExpression * formal,
 
 //---------------------------------------------------------------------------------------------------------------------
 
-CHqlSymbolAnnotation::CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
+CHqlSymbolAnnotation::CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _moduleId, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
 : CHqlAnnotation(_expr)
 {
     id = _id;
     symbolFlags = _symbolFlags;
-    module = _module;
+    moduleId = _moduleId;
     funcdef = _funcdef;
     if (funcdef && containsInternalSelect(funcdef))
         infoFlags |= HEFinternalSelect;
@@ -6733,7 +6733,7 @@ void CHqlSymbolAnnotation::sethash()
     hashcode = 0;
     HASHFIELD(id);
     HASHFIELD(body);
-    HASHFIELD(module);
+    HASHFIELD(moduleId);
 }
 
 CHqlSymbolAnnotation::~CHqlSymbolAnnotation()
@@ -6753,7 +6753,7 @@ bool CHqlSymbolAnnotation::equals(const IHqlExpression & other) const
     if ((symbolFlags != other.getSymbolFlags()) || (funcdef != other.queryFunctionDefinition()))
         return false;
 
-    if (module != other.queryFullModuleName())
+    if (moduleId != other.queryFullModuleId())
         return false;
 
     if (op == no_nobody)
@@ -6819,7 +6819,7 @@ IHqlExpression * CHqlSimpleSymbol::cloneSymbol(IIdAtom * optid, IHqlExpression *
     if (newid == id && newbody==body && newfuncdef==funcdef)
         return LINK(this);
 
-    return makeSymbol(newid, module, LINK(newbody), LINK(newfuncdef), symbolFlags);
+    return makeSymbol(newid, moduleId, LINK(newbody), LINK(newfuncdef), symbolFlags);
 }
 
 
@@ -6873,7 +6873,7 @@ IHqlExpression * CHqlNamedSymbol::cloneSymbol(IIdAtom * optid, IHqlExpression * 
             return LINK(this);
     }
 
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(newid, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, startLine, startColumn, startpos, bodypos, endpos);
+    CHqlNamedSymbol * e = new CHqlNamedSymbol(newid, moduleId, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, startLine, startColumn, startpos, bodypos, endpos);
     //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
     e->operands.ensure(newoperands->ordinality());
     ForEachItemIn(idx, *newoperands)
@@ -14802,7 +14802,7 @@ static void simplifyFileViewRecordTypes(HqlExprArray & fields, IHqlExpression * 
             HqlExprArray subfields;
             StringBuffer name;
             name.append("unnamed").append(++count);
-            subfields.append(*createField(createIdentifierAtom(name), makeBoolType(), NULL, createAttribute(__ifblockAtom)));
+            subfields.append(*createField(createIdAtom(name), makeBoolType(), NULL, createAttribute(__ifblockAtom)));
             simplifyFileViewRecordTypes(subfields, cur->queryChild(1), true, needsTransform, isKey, count);
 //          fields.append(*createValue(no_ifblock, makeVoidType(), createValue(no_not, makeBoolType(), createConstant(false)), createRecord(subfields)));
             fields.append(*createValue(no_ifblock, makeNullType(), createConstant(true), createRecord(subfields)));
@@ -16353,11 +16353,11 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * ite
         const char * dot = strrchr(item, '.');
         if (dot)
         {
-            moduleName = createIdentifierAtom(item, dot-item);
-            attrName = createIdentifierAtom(dot+1);
+            moduleName = createIdAtom(item, dot-item);
+            attrName = createIdAtom(dot+1);
         }
         else
-            moduleName = createIdentifierAtom(item);
+            moduleName = createIdAtom(item);
 
         OwnedHqlExpr resolved = ctx.queryRepository()->queryRootScope()->lookupSymbol(moduleName, LSFpublic, ctx);
         if (resolved)

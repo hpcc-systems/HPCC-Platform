@@ -29,7 +29,7 @@ void getFullName(StringBuffer & name, IHqlExpression * expr)
     }
     else
     {
-        const char * module = expr->queryFullModuleName()->str();
+        const char * module = expr->queryFullModuleId()->str();
         if (module && *module)
             name.append(module).append(".");
         name.append(expr->queryName());
@@ -54,7 +54,7 @@ void setFullNameProp(IPropertyTree * tree, const char * prop, IHqlExpression * e
     if (scope)
         tree->setProp(prop, scope->queryFullName());
     else
-        setFullNameProp(tree, prop, expr->queryFullModuleName()->lower()->str(), expr->queryName()->str());
+        setFullNameProp(tree, prop, expr->queryFullModuleId()->lower()->str(), expr->queryName()->str());
 }
 
 static int compareSymbolsByPosition(IInterface * * pleft, IInterface * * pright)

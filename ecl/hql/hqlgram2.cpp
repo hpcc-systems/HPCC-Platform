@@ -1002,7 +1002,7 @@ void HqlGram::processEnum(attribute & idAttr, IHqlExpression * value)
         lastEnumValue.setown(nextEnumValue());
 
     DefineIdSt * id = new DefineIdSt;
-    id->id = idAttr.getName();
+    id->id = idAttr.getId();
     id->scope = EXPORT_FLAG;
     doDefineSymbol(id, LINK(lastEnumValue), NULL, idAttr, idAttr.pos.position, idAttr.pos.position, false);
 }
@@ -2262,16 +2262,16 @@ void HqlGram::addToActiveRecord(IHqlExpression * newField)
         currentRecord->insertSymbols(newField);
 }
 
-IIdAtom * HqlGram::createUnnamedFieldName(const char * prefix)
+IIdAtom * HqlGram::createUnnamedFieldId(const char * prefix)
 {
     StringBuffer s;
     s.append(prefix).append(activeRecords.tos().numChildren()+1);
-    return createIdentifierAtom(s.str());
+    return createIdAtom(s.str());
 }
 
-IIdAtom * HqlGram::createUnnamedFieldName()
+IIdAtom * HqlGram::createUnnamedFieldId()
 {
-    return createUnnamedFieldName("_unnamed_");
+    return createUnnamedFieldId("_unnamed_");
 }
 
 
@@ -2352,7 +2352,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
         reportError(ERR_BAD_FIELD_ATTR, errpos, "Virtual can only be specified on a scalar field");
 
     if (!name)
-        name = createUnnamedFieldName();
+        name = createUnnamedFieldId();
 
     checkFieldnameValid(errpos, name);
     if(isUnicodeType(fieldType) && (*fieldType->queryLocale()->str() == 0))
@@ -2386,7 +2386,7 @@ void HqlGram::addField(const attribute &errpos, IIdAtom * name, ITypeInfo *_type
 void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo * fieldType, IHqlExpression *value, IHqlExpression * attrs)
 {
     if (!name)
-        name = createUnnamedFieldName();
+        name = createUnnamedFieldId();
     checkFieldnameValid(errpos, name);
 
     if (fieldType)
@@ -2430,7 +2430,7 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
 void HqlGram::addDictionaryField(const attribute &errpos, IIdAtom * name, ITypeInfo  * type, IHqlExpression *value, IHqlExpression * attrs)
 {
     if (!name)
-        name = createUnnamedFieldName();
+        name = createUnnamedFieldId();
     checkFieldnameValid(errpos, name);
 
     Owned<ITypeInfo> dictType = LINK(type);
@@ -2772,7 +2772,7 @@ void HqlGram::processForwardModuleDefinition(const attribute & errpos)
             break;
         case UNKNOWN_ID:
             {
-                IIdAtom * id = nextToken.getName();
+                IIdAtom * id = nextToken.getId();
                 IAtom * name = id->lower();
                 if ((braNesting == 0) && (endNesting == 0))             // last identifier seen, but don't include parameters, or record members
                     prevId = id;
@@ -7918,7 +7918,7 @@ void HqlGram::modifyIndexPayloadRecord(SharedHqlExpr & record, SharedHqlExpr & p
             if (suffix > 1)
                 name.append(suffix);
             name.append("__");
-            implicitFieldName = createIdentifierAtom(name);
+            implicitFieldName = createIdAtom(name);
             OwnedHqlExpr resolved = scope->lookupSymbol(implicitFieldName);
             if (!resolved && payloadScope)
                 resolved.setown(payloadScope->lookupSymbol(implicitFieldName));
@@ -8374,7 +8374,7 @@ IHqlExpression * HqlGram::createScopedSequenceExpr()
     OwnedHqlExpr value = createSequenceExpr();
     HqlExprArray attrs;
     attrs.append(*createAttribute(_hidden_Atom));
-    IHqlExpression * param = createParameter(createIdentifierAtom(paramName.str()), parameters.ordinality(), value->getType(), attrs);
+    IHqlExpression * param = createParameter(createIdAtom(paramName.str()), parameters.ordinality(), value->getType(), attrs);
     parameters.append(*param);
     targetScope.activeDefaults.append(*LINK(value));
     return LINK(param);
@@ -8916,7 +8916,7 @@ void HqlGram::defineSymbolInScope(IHqlScope * scope, DefineIdSt * defineid, IHql
     IHqlExpression * scopeExpr = queryExpression(scope);
     IIdAtom * moduleName = NULL;
     if (!inType)
-        moduleName = createIdentifierAtom(scope->queryFullName());
+        moduleName = createIdAtom(scope->queryFullName());
 
     unsigned symbolFlags = 0;
     if (scopeExpr && scopeExpr->getOperator() == no_virtualscope)
@@ -9793,10 +9793,10 @@ IIdAtom * HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
         case no_indirect:
             return createFieldNameFromExpr(expr->queryChild(0));
         case no_countgroup:
-            name = createUnnamedFieldName("_unnamed_cnt_");
+            name = createUnnamedFieldId("_unnamed_cnt_");
             break;
         case no_existsgroup:
-            name = createUnnamedFieldName("_unnamed_exists_");
+            name = createUnnamedFieldId("_unnamed_exists_");
             break;
         case no_vargroup:
         case no_avegroup:
@@ -9808,7 +9808,7 @@ IIdAtom * HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
                 temp.append("_unnamed_").append(getOpString(expr->getOperator())).append("_");
                 temp.toLowerCase();
                 temp.append(createFieldNameFromExpr(expr->queryChild(0))->lower());
-                name = createUnnamedFieldName(temp.str());
+                name = createUnnamedFieldId(temp.str());
             }
             break;
         case no_covargroup:
@@ -9820,7 +9820,7 @@ IIdAtom * HqlGram::createFieldNameFromExpr(IHqlExpression * expr)
                 temp.append(createFieldNameFromExpr(expr->queryChild(0))->lower());
                 temp.append("_");
                 temp.append(createFieldNameFromExpr(expr->queryChild(1))->lower());
-                name = createUnnamedFieldName(temp.str());
+                name = createUnnamedFieldId(temp.str());
             }
             break;
         }
@@ -11588,7 +11588,7 @@ IHqlExpression *HqlGram::doParse()
     if (!expectedAttribute)
         return actions.getClear();
 
-    IIdAtom * moduleName = createIdentifierAtom(globalScope->queryFullName());
+    IIdAtom * moduleName = createIdAtom(globalScope->queryFullName());
     Owned<IFileContents> contents = LINK(lexObject->query_FileContents());
     unsigned lengthText = 0;
     containerScope->defineSymbol(expectedAttribute, moduleName, actions.getClear(), true, false, 0, contents, 1, 1, 0, 0, lengthText);

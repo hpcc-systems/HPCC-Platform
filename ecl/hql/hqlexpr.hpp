@@ -1091,7 +1091,7 @@ interface IHqlExpression : public IInterface
     virtual unsigned getInfoFlags2() const = 0;
 
     virtual ISourcePath * querySourcePath() const = 0;
-    virtual IIdAtom * queryFullModuleName() const = 0;              // only defined for a named symbol
+    virtual IIdAtom * queryFullModuleId() const = 0;              // only defined for a named symbol
     virtual int  getStartLine() const = 0;
     virtual int  getStartColumn() const = 0;
     virtual IPropertyTree * getDocumentation() const = 0;

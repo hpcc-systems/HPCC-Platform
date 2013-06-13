@@ -51,11 +51,11 @@ static IIdAtom * searchVStringTableAtom;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    searchDataTableAtom = createIdentifierAtom("searchDataTable");
-    searchEStringTableAtom = createIdentifierAtom("searchEStringTable");
-    searchQStringTableAtom = createIdentifierAtom("searchQStringTable");
-    searchStringTableAtom = createIdentifierAtom("searchStringTable");
-    searchVStringTableAtom = createIdentifierAtom("searchVStringTable");
+    searchDataTableAtom = createIdAtom("searchDataTable");
+    searchEStringTableAtom = createIdAtom("searchEStringTable");
+    searchQStringTableAtom = createIdAtom("searchQStringTable");
+    searchStringTableAtom = createIdAtom("searchStringTable");
+    searchVStringTableAtom = createIdAtom("searchVStringTable");
     return true;
 }
 MODULE_EXIT()

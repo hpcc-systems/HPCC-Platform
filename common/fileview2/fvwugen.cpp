@@ -45,8 +45,8 @@ IAtom * insertedAtom;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    fileposId = createIdentifierAtom("__filepos__");
-    recordlenName = createIdentifierAtom("__recordlen__");
+    fileposId = createIdAtom("__filepos__");
+    recordlenName = createIdAtom("__recordlen__");
     insertedAtom = createLowerCaseAtom("inserted");
     return true;
 }
@@ -55,14 +55,14 @@ IHqlExpression * addFilter(IHqlExpression * dataset, IHqlExpression * limitField
 {
     IHqlExpression * lower = createConstant(limitField->queryType()->castFrom(true, (__int64)0));
     lower = createValue(no_colon, lower, createValue(no_stored, createConstant(LOWER_LIMIT_ID)));
-    lower = createSymbol(createIdentifierAtom(LOWER_LIMIT_ID), lower, ob_private);
+    lower = createSymbol(createIdAtom(LOWER_LIMIT_ID), lower, ob_private);
     dataset = createDataset(no_filter, LINK(dataset), createBoolExpr(no_ge, LINK(limitField), lower));
 
     IHqlExpression * upper = createConstant((int)DISKREAD_PAGE_SIZE);
     upper = createValue(no_colon, upper, createValue(no_stored, createConstant(RECORD_LIMIT_ID)));
-    upper = createSymbol(createIdentifierAtom(RECORD_LIMIT_ID), upper, ob_private);
+    upper = createSymbol(createIdAtom(RECORD_LIMIT_ID), upper, ob_private);
     dataset = createDataset(no_choosen, dataset, upper);
-    dataset = createSymbol(createIdentifierAtom("_Filtered_"), dataset, ob_private);
+    dataset = createSymbol(createIdAtom("_Filtered_"), dataset, ob_private);
     return dataset;
 }
 
@@ -79,7 +79,7 @@ IHqlExpression * addSimplifyProject(IHqlExpression * dataset)
     if (!projectRecord)
         return LINK(dataset);
 
-    projectRecord = createSymbol(createIdentifierAtom("_TargetRecord_"), projectRecord, ob_private);
+    projectRecord = createSymbol(createIdAtom("_TargetRecord_"), projectRecord, ob_private);
     return createDataset(no_newusertable, LINK(dataset), createComma(projectRecord, getSimplifiedTransform(projectRecord, record, dataset)));
 }
 
@@ -88,7 +88,7 @@ IHqlExpression * addSimplifyProject(IHqlExpression * dataset)
 
 IHqlExpression * buildWorkUnitViewerEcl(IHqlExpression * record, const char * wuid, unsigned sequence, const char * name)
 {
-    OwnedHqlExpr newRecord = createSymbol(createIdentifierAtom("_SourceRecord_"), LINK(record), ob_private);
+    OwnedHqlExpr newRecord = createSymbol(createIdAtom("_SourceRecord_"), LINK(record), ob_private);
     IHqlExpression * arg = name ? createConstant(name) : createConstant((int)sequence);
     OwnedHqlExpr dataset = createDataset(no_workunit_dataset, newRecord.getLink(), createComma(createConstant(wuid), arg));
     OwnedHqlExpr projected = addSimplifyProject(dataset);
@@ -110,7 +110,7 @@ IHqlExpression * buildDiskFileViewerEcl(const char * logicalName, IHqlExpression
     fields.append(*reclen.getLink());
 
     OwnedHqlExpr newRecord = createRecord(fields);
-    newRecord.setown(createSymbol(createIdentifierAtom("_SourceRecord_"), newRecord.getLink(), ob_private));
+    newRecord.setown(createSymbol(createIdAtom("_SourceRecord_"), newRecord.getLink(), ob_private));
 
     OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), newRecord.getLink(), createValue(no_thor), NULL, NULL, NULL);
     OwnedHqlExpr filtered = addFilter(dataset, filepos);

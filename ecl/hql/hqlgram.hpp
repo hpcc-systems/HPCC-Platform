@@ -124,7 +124,7 @@ public:
         atr_type = t_none;
         return contents; 
     }
-    inline IIdAtom * getName()
+    inline IIdAtom * getId()
     {
         assertex(atr_type==t_catom);
         atr_type = t_none;
@@ -203,7 +203,7 @@ public:
         atr_type = t_contents;
         contents = _contents; 
     }
-    inline void setName(IIdAtom * v)
+    inline void setId(IIdAtom * v)
     {
         atr_type=t_catom;
         cname = v;
@@ -692,8 +692,8 @@ public:
     int yyLex(attribute * yylval, const short * activeState);
 
 protected:
-    IIdAtom * createUnnamedFieldName();
-    IIdAtom * createUnnamedFieldName(const char * prefix);
+    IIdAtom * createUnnamedFieldId();
+    IIdAtom * createUnnamedFieldId(const char * prefix);
     IIdAtom * getNameFromExpr(attribute& attr);
     IIdAtom * createFieldNameFromExpr(IHqlExpression * expr);
     IHqlExpression * createAssert(attribute & cond, attribute * msg, attribute & flags);

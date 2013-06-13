@@ -460,8 +460,6 @@ inline byte getAttributeId(IAtom * x) { return static_cast<SysAtom *>(x)->attrId
  */
 
 inline bool identifiersAreCaseSensitive() { return false; }
-inline IIdAtom * createIdentifierAtom(const char * name) { return createIdAtom(name); }
-inline IIdAtom * createIdentifierAtom(const char * name, unsigned len) { return createIdAtom(name, len); }
 
 #endif
 

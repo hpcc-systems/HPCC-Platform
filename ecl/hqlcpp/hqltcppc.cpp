@@ -3459,7 +3459,7 @@ IHqlExpression * SerializationRow::createField(IIdAtom * id, ITypeInfo * type)
     {
         StringBuffer fieldName;
         fieldName.append("__f").append(numFields()).append("__");
-        id = createIdentifierAtom(fieldName);
+        id = createIdAtom(fieldName);
     }
     IHqlExpression * attr = hasLinkCountedModifier(type) ? getLinkCountedAttr() : NULL;
     OwnedHqlExpr newField = ::createField(id, LINK(type), attr, NULL);

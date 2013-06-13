@@ -53,11 +53,11 @@ public:
 class CEclSource : public CInterfaceOf<IEclSource>
 {
 public:
-    CEclSource(IIdAtom * _eclName, EclSourceType _type) : eclName(_eclName), type(_type) { }
+    CEclSource(IIdAtom * _eclId, EclSourceType _type) : eclId(_eclId), type(_type) { }
 
 //interface IEclSource
     virtual IProperties * getProperties() { return NULL; }
-    virtual IIdAtom * queryEclName() const { return eclName; }
+    virtual IIdAtom * queryEclId() const { return eclId; }
     virtual EclSourceType queryType() const { return type; }
 
 // new virtuals implemented by the child classes
@@ -66,7 +66,7 @@ public:
 
 protected:
     EclSourceType type;
-    IIdAtom * eclName;
+    IIdAtom * eclId;
 };
 
 
@@ -114,7 +114,7 @@ CEclSource * CEclCollection::find(IIdAtom * name)
     ForEachItemIn(i, contents)
     {
         IEclSource & cur = contents.item(i);
-        if (cur.queryEclName() == name)
+        if (cur.queryEclId()->lower() == name->lower())
             return &static_cast<CEclSource &>(cur);
     }
     return NULL;
@@ -262,7 +262,7 @@ FileSystemFile::FileSystemFile(EclSourceType _type, IFile & _file)
 
 bool FileSystemFile::checkValid()
 {
-    if (!eclName)
+    if (!eclId)
         return false;
 
     if (type == ESTplugin)
@@ -285,7 +285,7 @@ bool FileSystemFile::checkValid()
                     if (p(&pb) && (pb.magicVersion == PLUGIN_VERSION) && pb.ECL)
                     {
                         //Name in the plugin overrides the name of the plugin, and the filename where errors are reported.
-                        eclName = createIdentifierAtom(pb.moduleName);
+                        eclId = createIdAtom(pb.moduleName);
                         version.set(pb.version);
 
                         Owned<ISourcePath> pluginPath = createSourcePath(pb.moduleName);
@@ -380,9 +380,9 @@ void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
             newSource.setown(new FileSystemDirectory(deriveEclName(tail), &file));
         }
 
-        if (newSource && newSource->queryEclName())
+        if (newSource && newSource->queryEclId())
         {
-            if (!find(newSource->queryEclName()))
+            if (!find(newSource->queryEclId()))
                 contents.append(*newSource.getClear());
             else
             {
@@ -654,7 +654,7 @@ void CXmlEclElement::getFullName(StringBuffer & target)
         if (target.length() != prev)
             target.append('.');
     }
-    target.append(eclName->str());
+    target.append(eclId->str());
 }
 
 IFileContents * CXmlEclElement::queryFileContents()

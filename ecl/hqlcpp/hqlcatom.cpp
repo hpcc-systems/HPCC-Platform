@@ -730,7 +730,7 @@ IIdAtom * xmlEncodeUStrId;
 
 //MORE: Need to change many MAKEATOM to MAKEID in this file, and most of the explicit calls should be removed/changed
 
-#define MAKEID(x)   x##Id = createIdentifierAtom(#x)
+#define MAKEID(x)   x##Id = createIdAtom(#x)
 #define MAKEATOM(x) x##Atom = createLowerCaseAtom(#x)
 #define MAKESYSATOM(x)  _##x##_Atom = createSystemAtom("$_" #x "_")
 
@@ -739,7 +739,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(clibExp);
     MAKEID(_fail);
 
-    acosId = createIdentifierAtom("_acos");
+    acosId = createIdAtom("_acos");
     MAKEID(addAggregateRow);
     MAKEID(addAll);
     MAKEID(addRange);
@@ -754,23 +754,23 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(appendRowsToRowset);
     MAKEID(appendSetX);
     MAKEID(ascii2ebcdic);
-    asinId = createIdentifierAtom("_asin");
-    atan2Id = createIdentifierAtom("_atan2");
-    atanId = createIdentifierAtom("_atan");
+    asinId = createIdAtom("_asin");
+    atan2Id = createIdAtom("_atan2");
+    atanId = createIdAtom("_atan");
     MAKEID(bool2Data);
     MAKEID(bool2Str);
     MAKEID(bool2StrX);
     MAKEID(bool2VStr);
     MAKEID(bool2VStrX);
     _clear(castIntId);
-    castIntId[3][true] = createIdentifierAtom("castInt3");
-    castIntId[5][true] = createIdentifierAtom("castInt5");
-    castIntId[6][true] = createIdentifierAtom("castInt6");
-    castIntId[7][true] = createIdentifierAtom("castInt7");
-    castIntId[3][false] = createIdentifierAtom("castUInt3");
-    castIntId[5][false] = createIdentifierAtom("castUInt5");
-    castIntId[6][false] = createIdentifierAtom("castUInt6");
-    castIntId[7][false] = createIdentifierAtom("castUInt7");
+    castIntId[3][true] = createIdAtom("castInt3");
+    castIntId[5][true] = createIdAtom("castInt5");
+    castIntId[6][true] = createIdAtom("castInt6");
+    castIntId[7][true] = createIdAtom("castInt7");
+    castIntId[3][false] = createIdAtom("castUInt3");
+    castIntId[5][false] = createIdAtom("castUInt5");
+    castIntId[6][false] = createIdAtom("castUInt6");
+    castIntId[7][false] = createIdAtom("castUInt7");
     MAKEID(checkFieldOverflow);
     MAKEID(checkPersistMatches);
     MAKEID(checkRowOverflow);
@@ -833,8 +833,8 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(concatVUnicode);
     MAKEID(concatVUnicodeF);
     MAKEID(concatVUnicodeToUnicode);
-    cosId = createIdentifierAtom("_cos");
-    coshId = createIdentifierAtom("_cosh");
+    cosId = createIdAtom("_cos");
+    coshId = createIdAtom("_cosh");
     MAKEID(countProvider);
     MAKEID(countRows);
     MAKEID(countToSize);
@@ -956,15 +956,15 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(ensureCapacity);
     MAKEID(ensureRowAvailable);
     MAKEID(__eog);
-    estr2EStrId = createIdentifierAtom("eStr2EStr");
-    estr2VStrId = createIdentifierAtom("eStr2VStr");
-    estr2VStrXId = createIdentifierAtom("EStr2VStrX");
+    estr2EStrId = createIdAtom("eStr2EStr");
+    estr2VStrId = createIdAtom("eStr2VStr");
+    estr2VStrXId = createIdAtom("EStr2VStrX");
     MAKEID(evaluateChildQueryInstance);
     MAKEID(ex2f);
     MAKEID(executeGraph);
     MAKEID(executeChildQueryInstance);
     MAKEID(f2an);
-    f2axId = createIdentifierAtom("_f2ax");
+    f2axId = createIdAtom("_f2ax");
     MAKEID(f2vn);
     MAKEID(f2vx);
     MAKEID(failDivideByZero);
@@ -1056,7 +1056,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(hashVUnicode);
     MAKEID(IIndirectMemberVisitor_visitRow);
     MAKEID(IIndirectMemberVisitor_visitRowset);
-    intFormatId = createIdentifierAtom("_intformat");
+    intFormatId = createIdAtom("_intformat");
     MAKEID(isResult);
     MAKEID(keyUnicodeX);
     MAKEID(keyUnicodeStrengthX);
@@ -1072,10 +1072,10 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(linkdataset2linkdataset);
     MAKEID(linkRow);
     MAKEID(linkRowset);
-    lnId = createIdentifierAtom("_ln");
+    lnId = createIdAtom("_ln");
     MAKEID(loadResource);
     MAKEID(lookupBlob);
-    log10Id = createIdentifierAtom("_log10");
+    log10Id = createIdAtom("_log10");
     MAKEID(ls42an);
     MAKEID(ls42ax);
     MAKEID(ls42vn);
@@ -1114,7 +1114,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(outputXmlUInt);
     MAKEID(outputXmlUnicode);
     MAKEID(outputXmlUtf8);
-    powerId = createIdentifierAtom("_power");
+    powerId = createIdAtom("_power");
     MAKEID(prefixDiffStr);
     MAKEID(prefixDiffUnicode);
     MAKEID(processFieldBool);
@@ -1150,23 +1150,23 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(queryLogicalFilename);
     MAKEID(rankedFromOrder);
     MAKEID(rankFromOrder);
-    readIntId[3][true] = createIdentifierAtom("readInt3");
-    readIntId[5][true] = createIdentifierAtom("readInt5");
-    readIntId[6][true] = createIdentifierAtom("readInt6");
-    readIntId[7][true] = createIdentifierAtom("readInt7");
-    readIntId[3][false] = createIdentifierAtom("readUInt3");
-    readIntId[5][false] = createIdentifierAtom("readUInt5");
-    readIntId[6][false] = createIdentifierAtom("readUInt6");
-    readIntId[7][false] = createIdentifierAtom("readUInt7");
-    readSwapIntId[3][true] = createIdentifierAtom("readSwapInt3");
-    readSwapIntId[5][true] = createIdentifierAtom("readSwapInt5");
-    readSwapIntId[6][true] = createIdentifierAtom("readSwapInt6");
-    readSwapIntId[7][true] = createIdentifierAtom("readSwapInt7");
-    readSwapIntId[3][false] = createIdentifierAtom("readSwapUInt3");
-    readSwapIntId[5][false] = createIdentifierAtom("readSwapUInt5");
-    readSwapIntId[6][false] = createIdentifierAtom("readSwapUInt6");
-    readSwapIntId[7][false] = createIdentifierAtom("readSwapUInt7");
-    realFormatId = createIdentifierAtom("_realformat");
+    readIntId[3][true] = createIdAtom("readInt3");
+    readIntId[5][true] = createIdAtom("readInt5");
+    readIntId[6][true] = createIdAtom("readInt6");
+    readIntId[7][true] = createIdAtom("readInt7");
+    readIntId[3][false] = createIdAtom("readUInt3");
+    readIntId[5][false] = createIdAtom("readUInt5");
+    readIntId[6][false] = createIdAtom("readUInt6");
+    readIntId[7][false] = createIdAtom("readUInt7");
+    readSwapIntId[3][true] = createIdAtom("readSwapInt3");
+    readSwapIntId[5][true] = createIdAtom("readSwapInt5");
+    readSwapIntId[6][true] = createIdAtom("readSwapInt6");
+    readSwapIntId[7][true] = createIdAtom("readSwapInt7");
+    readSwapIntId[3][false] = createIdAtom("readSwapUInt3");
+    readSwapIntId[5][false] = createIdAtom("readSwapUInt5");
+    readSwapIntId[6][false] = createIdAtom("readSwapUInt6");
+    readSwapIntId[7][false] = createIdAtom("readSwapUInt7");
+    realFormatId = createIdAtom("_realformat");
     MAKEID(regexFindX);
     MAKEID(regexGetFindStr);
     MAKEID(regexNewSetStrPattern);
@@ -1188,24 +1188,24 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(restoreCluster);
     MAKEID(returnPersistVersion);
 
-    reverseIntId[2][false] = createIdentifierAtom("revUInt2");
-    reverseIntId[3][false] = createIdentifierAtom("revUInt3");
-    reverseIntId[4][false] = createIdentifierAtom("revUInt4");
-    reverseIntId[5][false] = createIdentifierAtom("revUInt5");
-    reverseIntId[6][false] = createIdentifierAtom("revUInt6");
-    reverseIntId[7][false] = createIdentifierAtom("revUInt7");
-    reverseIntId[8][false] = createIdentifierAtom("revUInt8");
-    reverseIntId[2][true] = createIdentifierAtom("revInt2");
-    reverseIntId[3][true] = createIdentifierAtom("revInt3");
-    reverseIntId[4][true] = createIdentifierAtom("revInt4");
-    reverseIntId[5][true] = createIdentifierAtom("revInt5");
-    reverseIntId[6][true] = createIdentifierAtom("revInt6");
-    reverseIntId[7][true] = createIdentifierAtom("revInt7");
-    reverseIntId[8][true] = createIdentifierAtom("revInt8");
+    reverseIntId[2][false] = createIdAtom("revUInt2");
+    reverseIntId[3][false] = createIdAtom("revUInt3");
+    reverseIntId[4][false] = createIdAtom("revUInt4");
+    reverseIntId[5][false] = createIdAtom("revUInt5");
+    reverseIntId[6][false] = createIdAtom("revUInt6");
+    reverseIntId[7][false] = createIdAtom("revUInt7");
+    reverseIntId[8][false] = createIdAtom("revUInt8");
+    reverseIntId[2][true] = createIdAtom("revInt2");
+    reverseIntId[3][true] = createIdAtom("revInt3");
+    reverseIntId[4][true] = createIdAtom("revInt4");
+    reverseIntId[5][true] = createIdAtom("revInt5");
+    reverseIntId[6][true] = createIdAtom("revInt6");
+    reverseIntId[7][true] = createIdAtom("revInt7");
+    reverseIntId[8][true] = createIdAtom("revInt8");
 
-    roundId = createIdentifierAtom("_round");
+    roundId = createIdAtom("_round");
     MAKEID(roundTo);
-    roundupId = createIdentifierAtom("_roundup");
+    roundupId = createIdAtom("_roundup");
     MAKEID(rowset2DatasetX);
     MAKEID(rtlDeserializeDictionary);
     MAKEID(rtlDeserializeDictionaryFromDataset);
@@ -1274,9 +1274,9 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(setResultVarUnicode);
     MAKEID(setWorkflowCondition);
     MAKEID(set2SetX);
-    sinId = createIdentifierAtom("_sin");
-    sinhId = createIdentifierAtom("_sinh");
-    sqrtId = createIdentifierAtom("_sqrt");
+    sinId = createIdAtom("_sin");
+    sinhId = createIdAtom("_sinh");
+    sqrtId = createIdAtom("_sqrt");
     MAKEID(startPersist);
     MAKEID(str2Data);
     MAKEID(str2DataX);
@@ -1298,8 +1298,8 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(subStrFT);
     MAKEID(subStrFTX);
     MAKEID(sysFail);
-    tanId = createIdentifierAtom("_tan");
-    tanhId = createIdentifierAtom("_tanh");
+    tanId = createIdAtom("_tan");
+    tanhId = createIdAtom("_tanh");
     MAKEID(trimAll);
     MAKEID(trimBoth);
     MAKEID(trimLeft);
@@ -1325,7 +1325,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(trimVUnicodeLeft);
     MAKEID(trimVUnicodeRight);
     MAKEID(trimVUnicodeStrLen);
-    truncateId = createIdentifierAtom("_truncate");
+    truncateId = createIdAtom("_truncate");
     MAKEID(UChar);
     MAKEID(unicode2Codepage);
     MAKEID(unicode2CodepageX);
@@ -1387,10 +1387,10 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
     MAKEID(wregexGetFindStr);
     MAKEID(wregexReplaceX);
     MAKEID(writeEbcdic);
-    writeIntId[3] = createIdentifierAtom("writeInt3");
-    writeIntId[5] = createIdentifierAtom("writeInt5");
-    writeIntId[6] = createIdentifierAtom("writeInt6");
-    writeIntId[7] = createIdentifierAtom("writeInt7");
+    writeIntId[3] = createIdAtom("writeInt3");
+    writeIntId[5] = createIdAtom("writeInt5");
+    writeIntId[6] = createIdAtom("writeInt6");
+    writeIntId[7] = createIdAtom("writeInt7");
     MAKEID(writeReal);
     MAKEID(writeSigned);
     MAKEID(writeString);

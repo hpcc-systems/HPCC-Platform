@@ -718,6 +718,7 @@ struct HqlCppOptions
     bool                matchExistingDistributionForJoin;
     bool                expandHashJoin;
     bool                traceIR;
+    bool                preserveCaseExternalParameter;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
