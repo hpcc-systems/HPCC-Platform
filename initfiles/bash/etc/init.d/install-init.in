@@ -24,23 +24,29 @@ installConfs ()
 {
     fileName=$1
     configPath=$2
+    mkdir -p ${configPath}
+    mkdir -p ${configPath}/rpmnew
 
     printf "Installing %-44s ..." "${fileName}"
+
     if [ ! -e ${configPath}/${fileName} ]; then
-        if [ -e ${configPath}/rpmnew/${fileName} ]; then
-            cp -f ${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
-            log_success_msg
+        # Always install new files without comment
+        cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
+        cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/rpmnew/${fileName}
+        log_success_msg
+    elif [ -e ${configPath}/rpmnew/${fileName} ] && ! `diff -q ${configPath}/rpmnew/${fileName} ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} >/dev/null` ; then
+        # There are changes in the default config since last installed
+        if ! `diff -q ${configPath}/rpmnew/${fileName} ${configPath}/${fileName} >/dev/null` ; then
+            # User has made their own changes too, so don't overwrite
+            log_failure_msg "Not overwriting modified configuration file ${fileName}"
         else
-            if [ -e ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ]; then
-                cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
-                cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/rpmnew/${fileName}
-                log_success_msg
-            else
-                log_failure_msg "Fail: File doesn't exist in rpmnew"
-            fi
+            # User has NOT made their own changes - ok to update
+            cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/${fileName}
+            cp -f ${INSTALL_DIR}/${configPath}/rpmnew/${fileName} ${configPath}/rpmnew/${fileName}
+            log_success_msg "Updated configuration file ${fileName}"
         fi
     else
-        log_success_msg
+        log_success_msg "No changes to configuration file ${fileName}"
     fi
 }
 
@@ -127,6 +133,9 @@ SECTION=${SECTION:-DEFAULT}
 confToUse="${INSTALL_DIR}${CONFIG_DIR}/${ENV_CONF_FILE}"
 
 if [ -d ${CONFIG_DIR} ]; then
+    if [ -f ${CONFIG_DIR}/installed ] ; then
+        exit 0
+    fi
     if [ -e ${CONFIG_DIR}/${ENV_CONF_FILE} ]; then
         confToUse="${CONFIG_DIR}/${ENV_CONF_FILE}"
     fi
@@ -265,3 +274,7 @@ fi
 chown root:$group ${configs}
 chown -R $user:$group ${configs}/*
 chmod 775 ${configs}
+
+if [ -d ${CONFIG_DIR} ]; then
+    date > ${CONFIG_DIR}/installed
+fi
