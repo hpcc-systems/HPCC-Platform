@@ -5776,7 +5776,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                     resultRowBuilder.setown(createRowBuilder(ctx, resultRow));
                     IHqlExpression * bound = resultRowBuilder->queryBound();
                     args.append(*getPointer(bound));
-                    localBound.expr.set(bound);
+                    localBound.expr.setown(getPointer(resultRow->queryBound()));
                 }
                 returnByReference = true;
             }
