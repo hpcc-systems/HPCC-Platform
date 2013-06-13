@@ -157,6 +157,9 @@ Out32 :=JOIN(DG_FlatFile, DG_FlatFileEvens, left.DG_firstname = right.DG_firstna
          AND left.DG_lastname=right.DG_lastname 
       , makePairFK(left, right, 'Full keyed: simple limit(3,skip), LEFT OUTER'), KEYED(DG_indexFileEvens), LIMIT(3,SKIP), LEFT OUTER);
 Out33 :=JOIN(DG_FlatFile, DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
+         AND left.DG_lastname=right.DG_lastname 
+      , makePairFK(left, right, 'Full keyed: simple limit(3,skip), LEFT OUTER'), KEYED(DG_indexFileEvens), LIMIT(3), ONFAIL(makePairFK(left, right, '**onfail** Full keyed: simple limit(3,skip), LEFT OUTER')), LEFT OUTER);
+Out34 :=JOIN(DG_FlatFile, DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname AND right.DG_parentID=99
       , makePairFK(left, right, 'Full keyed: postfilter after fetch'), KEYED(DG_indexFileEvens), LEFT OUTER);
 
@@ -204,6 +207,10 @@ Out51 :=JOIN(group(DG_FlatFile, DG_firstname), DG_indexFileEvens, left.DG_firstn
 Out52 :=JOIN(group(DG_FlatFile, DG_firstname), DG_indexFileEvens, left.DG_firstname = right.DG_firstname 
          AND left.DG_lastname=right.DG_lastname 
       , makePair(left, right, 'Half keyed: grouped limit(3,skip), LEFT OUTER)'), LIMIT(3,skip), LEFT OUTER);
+Out53 :=JOIN(group(DG_FlatFile, DG_firstname), DG_indexFileEvens, left.DG_firstname = right.DG_firstname 
+         AND left.DG_lastname=right.DG_lastname 
+      , makePair(left, right, 'Half keyed: grouped limit(3,skip), LEFT OUTER)'), LIMIT(3), ONFAIL(makePair(left, right, '**onfail** Half keyed: grouped limit(3,skip), LEFT OUTE')), LEFT OUTER);
+
 
 //fullkeyedjoins(fullkeyedgrouped, group(DG_FlatFile, DG_firstname), 'grouped');
 Out61 :=JOIN(group(DG_FlatFile, DG_firstname), DG_FlatFileEvens, left.DG_firstname = right.DG_firstname 
@@ -281,6 +288,7 @@ output(Out30);
 output(Out31);
 output(Out32);
 output(Out33);
+output(Out34);
 
 output(GROUP(Out41));
 output(GROUP(Out42));
@@ -294,6 +302,7 @@ output(COUNT(Out49));
 output(GROUP(Out50));
 output(GROUP(Out51));
 output(GROUP(Out52));
+output(GROUP(Out53));
 
 output(GROUP(Out61));
 output(GROUP(Out62));

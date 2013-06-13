@@ -691,6 +691,72 @@
  <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
 <Dataset name='Result 25'>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Full keyed: simple limit(3,skip), LEFT OUTER </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Full keyed: simple limit(3,skip), </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 26'>
  <Row><name>Full keyed: postfilter after fetch           </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: postfilter after fetch           </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: postfilter after fetch           </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -756,7 +822,7 @@
  <Row><name>Full keyed: postfilter after fetch           </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: postfilter after fetch           </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 26'>
+<Dataset name='Result 27'>
  <Row><name>Half keyed: grouped inner                    </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
  <Row><name>Half keyed: grouped inner                    </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
  <Row><name>Half keyed: grouped inner                    </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
@@ -790,7 +856,7 @@
  <Row><name>Half keyed: grouped inner                    </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     3                        </rightrec></Row>
  <Row><name>Half keyed: grouped inner                    </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     4                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 27'>
+<Dataset name='Result 28'>
  <Row><name>Half keyed: grouped left only                </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped left only                </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped left only                </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -824,7 +890,7 @@
  <Row><name>Half keyed: grouped left only                </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped left only                </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 28'>
+<Dataset name='Result 29'>
  <Row><name>Half keyed: grouped left outer               </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped left outer               </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped left outer               </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -890,7 +956,7 @@
  <Row><name>Half keyed: grouped left outer               </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     3                        </rightrec></Row>
  <Row><name>Half keyed: grouped left outer               </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     4                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 29'>
+<Dataset name='Result 30'>
  <Row><name>Half keyed: grouped skip                     </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip                     </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip                     </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
@@ -908,7 +974,7 @@
  <Row><name>Half keyed: grouped skip                     </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip                     </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 30'>
+<Dataset name='Result 31'>
  <Row><name>Half keyed: grouped skip, left only          </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip, left only          </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip, left only          </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -942,7 +1008,7 @@
  <Row><name>Half keyed: grouped skip, left only          </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip, left only          </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 31'>
+<Dataset name='Result 32'>
  <Row><name>Half keyed: grouped skip, left outer         </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip, left outer         </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip, left outer         </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -992,17 +1058,17 @@
  <Row><name>Half keyed: grouped skip, left outer         </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped skip, left outer         </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 32'>
- <Row><Result_32>64</Result_32></Row>
-</Dataset>
 <Dataset name='Result 33'>
+ <Row><Result_33>64</Result_33></Row>
 </Dataset>
 <Dataset name='Result 34'>
- <Row><Result_34>1</Result_34></Row>
 </Dataset>
 <Dataset name='Result 35'>
+ <Row><Result_35>1</Result_35></Row>
 </Dataset>
 <Dataset name='Result 36'>
+</Dataset>
+<Dataset name='Result 37'>
  <Row><name>Half keyed: grouped atmost(3), LEFT OUTER)   </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped atmost(3), LEFT OUTER)   </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped atmost(3), LEFT OUTER)   </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -1068,7 +1134,7 @@
  <Row><name>Half keyed: grouped atmost(3), LEFT OUTER)   </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped atmost(3), LEFT OUTER)   </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 37'>
+<Dataset name='Result 38'>
  <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -1102,7 +1168,73 @@
  <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 38'>
+<Dataset name='Result 39'>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>DAVID     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>Half keyed: grouped limit(3,skip), LEFT OUTER</name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  BAYLISS   4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  DOLSON    1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  DOLSON    2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  DOLSON    3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  DOLSON    4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  BILLINGTON1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  BILLINGTON2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  BILLINGTON3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  BILLINGTON4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  SMITH     1                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  SMITH     2                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
+ <Row><name>**onfail** Half keyed: grouped limit(3,skip),</name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
+</Dataset>
+<Dataset name='Result 40'>
  <Row><name>Full keyed: grouped inner                    </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
  <Row><name>Full keyed: grouped inner                    </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
  <Row><name>Full keyed: grouped inner                    </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
@@ -1136,7 +1268,7 @@
  <Row><name>Full keyed: grouped inner                    </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     3                        </rightrec></Row>
  <Row><name>Full keyed: grouped inner                    </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     4                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 39'>
+<Dataset name='Result 41'>
  <Row><name>Full keyed: grouped left only                </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped left only                </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped left only                </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -1170,7 +1302,7 @@
  <Row><name>Full keyed: grouped left only                </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped left only                </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 40'>
+<Dataset name='Result 42'>
  <Row><name>Full keyed: grouped left outer               </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped left outer               </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped left outer               </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -1236,7 +1368,7 @@
  <Row><name>Full keyed: grouped left outer               </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>KIMBERLY  SMITH     3                        </rightrec></Row>
  <Row><name>Full keyed: grouped left outer               </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>KIMBERLY  SMITH     4                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 41'>
+<Dataset name='Result 43'>
  <Row><name>Full keyed: grouped skip                     </name><leftrec>CLAIRE    BAYLISS   1                        </leftrec><rightrec>CLAIRE    BAYLISS   1                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip                     </name><leftrec>CLAIRE    BAYLISS   2                        </leftrec><rightrec>CLAIRE    BAYLISS   2                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip                     </name><leftrec>CLAIRE    BAYLISS   3                        </leftrec><rightrec>CLAIRE    BAYLISS   3                        </rightrec></Row>
@@ -1254,7 +1386,7 @@
  <Row><name>Full keyed: grouped skip                     </name><leftrec>CLAIRE    SMITH     3                        </leftrec><rightrec>CLAIRE    SMITH     3                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip                     </name><leftrec>CLAIRE    SMITH     4                        </leftrec><rightrec>CLAIRE    SMITH     4                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 42'>
+<Dataset name='Result 44'>
  <Row><name>Full keyed: grouped skip, left only          </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip, left only          </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip, left only          </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -1288,7 +1420,7 @@
  <Row><name>Full keyed: grouped skip, left only          </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip, left only          </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 43'>
+<Dataset name='Result 45'>
  <Row><name>Full keyed: grouped skip, left outer         </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip, left outer         </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip, left outer         </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -1338,17 +1470,17 @@
  <Row><name>Full keyed: grouped skip, left outer         </name><leftrec>KELLY     SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped skip, left outer         </name><leftrec>KELLY     SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 44'>
- <Row><Result_44>64</Result_44></Row>
-</Dataset>
-<Dataset name='Result 45'>
-</Dataset>
 <Dataset name='Result 46'>
- <Row><Result_46>1</Result_46></Row>
+ <Row><Result_46>64</Result_46></Row>
 </Dataset>
 <Dataset name='Result 47'>
 </Dataset>
 <Dataset name='Result 48'>
+ <Row><Result_48>1</Result_48></Row>
+</Dataset>
+<Dataset name='Result 49'>
+</Dataset>
+<Dataset name='Result 50'>
  <Row><name>Full keyed: grouped atmost(3), LEFT OUTER    </name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped atmost(3), LEFT OUTER    </name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped atmost(3), LEFT OUTER    </name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
@@ -1414,7 +1546,7 @@
  <Row><name>Full keyed: grouped atmost(3), LEFT OUTER    </name><leftrec>KIMBERLY  SMITH     3                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped atmost(3), LEFT OUTER    </name><leftrec>KIMBERLY  SMITH     4                        </leftrec><rightrec>                    0                        </rightrec></Row>
 </Dataset>
-<Dataset name='Result 49'>
+<Dataset name='Result 51'>
  <Row><name>Full keyed: grouped limit(3,SKIP), LEFT OUTER</name><leftrec>DAVID     BAYLISS   1                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped limit(3,SKIP), LEFT OUTER</name><leftrec>DAVID     BAYLISS   2                        </leftrec><rightrec>                    0                        </rightrec></Row>
  <Row><name>Full keyed: grouped limit(3,SKIP), LEFT OUTER</name><leftrec>DAVID     BAYLISS   3                        </leftrec><rightrec>                    0                        </rightrec></Row>
