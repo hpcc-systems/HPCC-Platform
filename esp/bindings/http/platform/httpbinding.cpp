@@ -1055,7 +1055,7 @@ int EspHttpBinding::onGetItext(IEspContext &context, CHttpRequest* request, CHtt
     StringBuffer title;
     request->getParameter("text", title);
     StringBuffer content;
-    content.append("<html><head>");
+    content.append("<!DOCTYPE html><html><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />");
     if(title.length() > 0)
         content.appendf("<title>%s</title>", title.str());
     content.appendf("</head><body>"
@@ -1071,7 +1071,7 @@ int EspHttpBinding::onGetIframe(IEspContext &context, CHttpRequest* request, CHt
     StringBuffer title;
     request->getParameter("esp_iframe_title", title);
     StringBuffer content;
-    content.append("<html><head>");
+    content.append("<!DOCTYPE html><html><head><meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />");
     if(title.length() > 0)
         content.appendf("<title>%s</title>", title.str());
     content.append("</head>");
