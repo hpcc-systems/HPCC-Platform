@@ -268,7 +268,7 @@ if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
 
             set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm" )
             set ( CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
-                else()
+        else()
             message("WARNING: Unsupported package ${packageManagement}.")
         endif ()
 
