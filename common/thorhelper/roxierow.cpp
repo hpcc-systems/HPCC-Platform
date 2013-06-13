@@ -49,6 +49,8 @@ public:
     {
         byte * ptr = static_cast<byte *>(_ptr);
         memsize_t capacity = RoxieRowCapacity(ptr);
+        if (capacity < size + extraSize)
+            throw MakeStringException(0, "Data was written past the end of the row - allocated %d, written %d", capacity - extraSize, size);
         memset(ptr+size, 0, capacity - size - extraSize);
         unsigned short * check = reinterpret_cast<unsigned short *>(ptr + capacity - extraSize);
         *check = crc16(ptr, capacity-extraSize, 0);
@@ -78,6 +80,8 @@ public:
     {
         byte * ptr = static_cast<byte *>(_ptr);
         memsize_t capacity = RoxieRowCapacity(ptr);
+        if (capacity < size + extraSize)
+            throw MakeStringException(0, "Data was written past the end of the row - allocated %d, written %d", capacity - extraSize, size);
         memset(ptr+size, 0, capacity - size - extraSize);
         unsigned short * check = reinterpret_cast<unsigned short *>(ptr + capacity - extraSize);
         *check = chksum16(ptr, capacity-extraSize);
