@@ -5772,11 +5772,16 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 }
                 else
                 {
+                    if (isVariableSizeRecord(expr->queryRecord()))
+                    {
+                        const char * name = expr->queryName()->str();
+                        throwError1(HQLERR_VariableRowMustBeLinked, name ? name : "");
+                    }
                     resultRow.setown(declareTempRow(ctx, ctx, expr));
                     resultRowBuilder.setown(createRowBuilder(ctx, resultRow));
                     IHqlExpression * bound = resultRowBuilder->queryBound();
                     args.append(*getPointer(bound));
-                    localBound.expr.set(bound);
+                    localBound.expr.setown(getPointer(resultRow->queryBound()));
                 }
                 returnByReference = true;
             }

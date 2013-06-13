@@ -208,6 +208,7 @@
 #define HQLERR_EmbeddedTypeNotSupported_X       4187
 #define HQLERR_MaximumSizeLessThanMinimum_XY    4188
 #define HQLERR_UnexpectedOptionValue_XY         4189
+#define HQLERR_VariableRowMustBeLinked          4190
 
 //Warnings....
 #define HQLWRN_PersistDataNotLikely             4500
@@ -490,6 +491,7 @@
 #define HQLERR_EmbeddedTypeNotSupported_X_Text  "Type %s not supported for embedded/external scripts"
 #define HQLERR_MaximumSizeLessThanMinimum_XY_Text "Maximum size (%u) for this record is lower than the minimum (%u)"
 #define HQLERR_UnexpectedOptionValue_XY_Text    "Unexpected value for option %s: %s"
+#define HQLERR_VariableRowMustBeLinked_Text     "External function '%s' cannot return a non-linked variable length row"
 
 //Warnings.
 #define HQLWRN_CannotRecreateDistribution_Text  "Cannot recreate the distribution for a persistent dataset"
