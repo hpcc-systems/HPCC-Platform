@@ -6922,6 +6922,8 @@ CHThorTopNActivity::CHThorTopNActivity(IAgentContext & _agent, unsigned _activit
     grouped = outputMeta.isGrouped();
     curIndex = 0;
     sortedCount = 0;
+    limit = 0;
+    sorted = NULL;
 }
 
 CHThorTopNActivity::~CHThorTopNActivity()
@@ -6948,6 +6950,8 @@ void CHThorTopNActivity::done()
     CHThorSimpleActivityBase::done();
     while(curIndex < sortedCount)
         ReleaseRoxieRow(sorted[curIndex++]);
+    free(sorted);
+    sorted = NULL;
 }
 
 const void * CHThorTopNActivity::nextInGroup()
