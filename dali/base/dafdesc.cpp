@@ -394,7 +394,7 @@ public:
             group.setown(createIGroup(grptext));
         mspec.deserialize(mb);
         mb.read(name);
-        if ((name.length()==1)&&(*name.get()=='!')) { // flag for roxie lable
+        if ((name.length()==1)&&(*name.get()=='!')) { // flag for roxie label
             mb.read(roxielabel);
             name.clear();
         }
@@ -1206,6 +1206,19 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
         return NULL;
     }
 
+    IClusterInfo *queryCluster(const char *_clusterName)
+    {
+        StringAttr clusterName = _clusterName;
+        clusterName.toLowerCase();
+        StringBuffer name;
+        ForEachItemIn(c, clusters)
+        {
+            if (0 == strcmp(clusters.item(c).getClusterLabel(name.clear()).str(), clusterName))
+                return &clusters.item(c);
+        }
+        return NULL;
+    }
+
     void replaceClusterDir(unsigned partno,unsigned copy, StringBuffer &path)
     {
         // assumes default dir matches one of clusters
@@ -1447,6 +1460,8 @@ public:
         unsigned n = clusters.ordinality();
         pt.setPropInt("@numclusters",n);
         unsigned cn = 0;
+
+// JCSMORE - afaics, IFileDescriptor @group is no longer used
         StringBuffer grplist;
         ForEachItemIn(i1,clusters) {
             Owned<IPropertyTree> ct = createPTree("Cluster");
@@ -1467,6 +1482,8 @@ public:
             pt.setProp("@group",grplist.str());
         else
             pt.removeProp("@group");
+/// ^^
+
         n = numParts();
         pt.setPropInt("@numparts",n);
         if ((flags&IFDSF_EXCLUDE_PARTS)==0) {
@@ -1882,12 +1899,15 @@ public:
         closePending();
         unsigned done = 0;
         StringBuffer cname;
-        ForEachItemIn(i,names) {
+        ForEachItemIn(i,names)
+        {
             StringAttr name = names.item(i);
             name.toLowerCase();
-            for (unsigned j=done;j<clusters.ordinality();j++) {
+            for (unsigned j=done;j<clusters.ordinality();j++)
+            {
                 clusters.item(j).getClusterLabel(cname.clear());
-                if (strcmp(cname.str(),name)==0) {
+                if (strcmp(cname.str(),name)==0)
+                {
                     if (done!=j)
                         clusters.swap(done,j);
                     done++;
@@ -1895,11 +1915,31 @@ public:
                 }
             }
         }
-        if (exclusive) {
+        if (exclusive)
+        {
             if (!done)
                 done = 1;
+            bool resetDefaultDir=false;
+            StringBuffer baseDir1;
             while (clusters.ordinality()>done)
+            {
+                clusters.item(clusters.ordinality()-1).getBaseDir(baseDir1.clear(),SepCharBaseOs(getPathSepChar(directory)));
+
+                // if baseDir is leading component this file's default directory..
+                if (directory.length()>=baseDir1.length() && 0==strncmp(directory, baseDir1, baseDir1.length()) &&
+                    (directory.length()==baseDir1.length() || isPathSepChar(directory[baseDir1.length()])))
+                    resetDefaultDir = true;
                 clusters.remove(clusters.ordinality()-1);
+            }
+            if (resetDefaultDir && clusters.ordinality())
+            {
+                StringBuffer baseDir2;
+                clusters.item(0).getBaseDir(baseDir2.clear(), SepCharBaseOs(getPathSepChar(directory)));
+                StringBuffer newDir(baseDir2.str());
+                if (directory.length()>baseDir1.length())
+                    newDir.append(directory.get()+baseDir1.length());
+                directory.set(newDir.str());
+            }
         }
     }
 

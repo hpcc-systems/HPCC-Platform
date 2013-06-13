@@ -241,9 +241,6 @@ interface IDistributedFile: extends IInterface
 
     virtual unsigned numCopies(unsigned partno) = 0;                            // number of copies
 
-    virtual bool removePhysicalPartFiles(const char *cluster=NULL,IMultiException *exceptions=NULL) = 0;          // removes all physical part files
-                                                                                // returns true if no major errors
-
     virtual bool existsPhysicalPartFiles(unsigned short port) = 0;              // returns true if physical patrs all exist (on primary OR secondary)
 
     virtual bool renamePhysicalPartFiles(const char *newlfn,const char *cluster=NULL,IMultiException *exceptions=NULL,const char *newbasedir=NULL) = 0;           // renames all physical part files
@@ -272,7 +269,7 @@ interface IDistributedFile: extends IInterface
     virtual void setECL(const char *ecl) = 0;
 
     virtual void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec) = 0;
-    virtual void removeCluster(const char *clustername) = 0;    // doesn't delete parts
+    virtual bool removeCluster(const char *clustername) = 0;    // doesn't delete parts
     virtual bool checkClusterCompatible(IFileDescriptor &fdesc, StringBuffer &err) = 0;
     virtual void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec)=0;
 

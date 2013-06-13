@@ -211,8 +211,9 @@ if endCluster is not called it will assume only one cluster and not replicated
 
     virtual IGroup *getGroup() = 0;                                             // will be for first cluster
 
-    virtual unsigned numClusters()=0;
-    virtual ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum)=0;
+    virtual unsigned numClusters() = 0;
+    virtual IClusterInfo *queryCluster(const char *clusterName) = 0;
+    virtual ClusterPartDiskMapSpec &queryPartDiskMapping(unsigned clusternum) = 0;
     virtual IGroup *queryClusterGroup(unsigned clusternum) = 0;                     // returns group for cluster if known
     virtual void setClusterGroup(unsigned clusternum,IGroup *grp) = 0;              // sets group for cluster
     virtual StringBuffer &getClusterGroupName(unsigned clusternum,StringBuffer &ret,IGroupResolver *resolver=NULL) = 0;                 // returns group name of cluster (if set)

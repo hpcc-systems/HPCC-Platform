@@ -1150,144 +1150,73 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
     StringArray superFileNames, filesCannotBeDeleted;
     for(int j = 0; j < 2; j++) //j=0: delete superfiles first
     {
-        for(unsigned i = 0; i < req.getLogicalFiles().length();i++)
+        for(unsigned i = 0; i < req.getLogicalFiles().length(); i++)
         {
-            const char* file = req.getLogicalFiles().item(i);
-            if(!file || !*file)
+            const char* filename = req.getLogicalFiles().item(i);
+            if(!filename || !*filename)
                 continue;
 
-            unsigned len = strlen(file);
-            const char* cluster = NULL;
-            const char *pCh = strchr(file, '@');
-            if (pCh)
-            {
-                len = pCh - file;
-                if (len+1 < strlen(file))
-                    cluster = pCh + 1;
-            }
-
-            StringBuffer logicalFileName;
-            char* curfile = new char[len+1];
-            strncpy(curfile, file, len);
-            curfile[len] = 0;
-            logicalFileName.append(curfile);
-            delete [] curfile;
-
             if (j>0)
-            { //now, we want to skip superfiles and the files which cannot do the lookup.
-                bool superFile = false;
-                ForEachItemIn(ii, superFileNames)
-                {
-                    const char* file = superFileNames.item(ii);
-                    if (file && streq(file, logicalFileName.str()))
-                    {
-                        superFile = true;
-                        break;
-                    }
-                }
+            { // 2nd pass, now we want to skip superfiles and the files which cannot do the lookup.
 
-                if (superFile)
+                if (NotFound != superFileNames.find(filename))
                     continue;
 
-                bool fileCannotBeDeleted = false;
-                ForEachItemIn(i, filesCannotBeDeleted)
-                {
-                    const char* file = filesCannotBeDeleted.item(i);
-                    if (file && streq(file, logicalFileName.str()))
-                    {
-                        fileCannotBeDeleted = true;
-                        break;
-                    }
-                }
-
-                if (fileCannotBeDeleted)
+                if (NotFound != filesCannotBeDeleted.find(filename))
                     continue;
             }
 
+            Owned<IDistributedFile> df;
             try
             {
-                Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(logicalFileName.str(), userdesc, true) ;
+                df.setown(queryDistributedFileDirectory().lookup(filename, userdesc, true));
                 if(!df)
                 {
-                    returnStr.appendf("<Message><Value>Cannot delete %s: file not found</Value></Message>", logicalFileName.str());
-                    filesCannotBeDeleted.append(logicalFileName);
+                    returnStr.appendf("<Message><Value>Cannot delete %s: file not found</Value></Message>", filename);
+                    filesCannotBeDeleted.append(filename);
                     continue;
                 }
-
-                if (j<1) //j=0: delete superfiles first
-                {
-                    if(!df->querySuperFile())
-                        continue;
-
-                    superFileNames.append(logicalFileName);
-                }
-
-                DBGLOG("CWsDfuEx::DFUDeleteFiles User=%s Action=Delete File=%s",username.str(), logicalFileName.str());
-
-                CDfsLogicalFileName lfn;
-                StringBuffer cname(cluster);
-                lfn.set(logicalFileName.str());
-                if (!cname.length())
-                    lfn.getCluster(cname);  // see if cluster part of LogicalFileName
-
-                bool deleted;
-                if(!req.getNoDelete() && !df->querySuperFile())
-                {
-                    Owned<IMultiException> pExceptionHandler = MakeMultiException();
-                    deleted = queryDistributedFileSystem().remove(df,cname.length()?cname.str():NULL,pExceptionHandler, REMOVE_FILE_SDS_CONNECT_TIMEOUT);
-                    StringBuffer errorStr;
-                    pExceptionHandler->errorMessage(errorStr);
-                    if (errorStr.length() > 0)
-                    {
-                        returnStr.appendf("<Message><Value>%s</Value></Message>",errorStr.str());
-                        DBGLOG("%s", errorStr.str());
-                    }
-                    else if (!deleted)
-                    {
-                        returnStr.appendf("<Message><Value>Logical File %s not deleted. No error message.</Value></Message>",logicalFileName.str());
-                        DBGLOG("Logical File %s not deleted. No error message.\n",logicalFileName.str());
-                    }
-                    else
-                    {
-                        PrintLog("Deleted Logical File: %s\n",logicalFileName.str());
-                        returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>",logicalFileName.str());
-                    }
-                }
-                else
-                {
-                    df.clear(); 
-                    deleted = queryDistributedFileDirectory().removeEntry(logicalFileName.str(), userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT); // this can remove clusters also
-                    if (deleted)
-                    {
-                        PrintLog("Detached File: %s\n",logicalFileName.str());
-                        returnStr.appendf("<Message><Value>Detached File %s</Value></Message>", logicalFileName.str());
-                    }
-                    else
-                    {
-                        returnStr.appendf("<Message><Value>File %s not detached.</Value></Message>",logicalFileName.str());
-                        DBGLOG("File %s not detached.\n",logicalFileName.str());
-                    }
-                }
-
-                if (!deleted)
-                    return false;
             }
             catch(IException* e)
             {
-                filesCannotBeDeleted.append(logicalFileName);
+                filesCannotBeDeleted.append(filename);
 
                 StringBuffer emsg;
                 e->errorMessage(emsg);
                 if((e->errorCode() == DFSERR_CreateAccessDenied) && (req.getType() != NULL))
-                {
-                    emsg.replaceString("Create ", "Delete ");               
-                }
+                    emsg.replaceString("Create ", "Delete ");
 
-                returnStr.appendf("<Message><Value>Cannot delete %s: %s</Value></Message>", logicalFileName.str(), emsg.str());
+                returnStr.appendf("<Message><Value>Cannot delete %s: %s</Value></Message>", filename, emsg.str());
             }
             catch(...)
             {
-                returnStr.appendf("<Message><Value>Cannot delete %s: unknown exception.</Value></Message>", logicalFileName.str());
+                returnStr.appendf("<Message><Value>Cannot delete %s: unknown exception.</Value></Message>", filename);
+            }
+            if (df)
+            {
+                if (0==j) // skip non-super files on 1st pass
+                {
+                    if(!df->querySuperFile())
+                        continue;
+
+                    superFileNames.append(filename);
+                }
+
+                DBGLOG("CWsDfuEx::DFUDeleteFiles User=%s Action=Delete File=%s",username.str(), filename);
+                try
+                {
+                    df->detach(REMOVE_FILE_SDS_CONNECT_TIMEOUT);
+                    PROGLOG("Deleted Logical File: %s\n",filename);
+                    returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", filename);
+                }
+                catch (IException *e)
+                {
+                    StringBuffer errorMsg;
+                    e->errorMessage(errorMsg);
+                    PROGLOG("%s", errorMsg.str());
+                    e->Release();
+                    returnStr.appendf("<Message><Value>%s</Value></Message>", errorMsg.str());
+                }
             }
         }
     }
@@ -1376,7 +1305,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
             DBGLOG("CWsDfuEx::onDFUArrayAction User=%s Action=%s File=%s",username.str(),req.getType(), file);
             try
             {
-                onDFUAction(userdesc.get(), curfile, cluster, req.getType(), req.getNoDelete(), returnStr);
+                onDFUAction(userdesc.get(), curfile, cluster, req.getType(), returnStr);
             }
             catch(IException* e)
             {
@@ -1421,13 +1350,13 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
     return true;
 }
 
-bool CWsDfuEx::onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, const char* ClusterName,const char* ActionType,bool nodelete, StringBuffer& returnStr)
+bool CWsDfuEx::onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, const char* ClusterName, const char* ActionType, StringBuffer& returnStr)
 {
     //No 'try/catch' is needed for this method since it will be called internally.
     if (strcmp(Action_Delete ,ActionType) == 0)
     {
         LogicFileWrapper Logicfile;
-        if (!Logicfile.doDeleteFile(LogicalFileName,ClusterName,nodelete, returnStr, udesc))
+        if (!Logicfile.doDeleteFile(LogicalFileName,ClusterName, returnStr, udesc))
             return false;
     }
     else if (strcmp(Action_AddtoSuperfile ,ActionType) == 0)

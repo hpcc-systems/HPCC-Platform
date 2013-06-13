@@ -106,7 +106,7 @@ void CDistributedFileSystem::move(IDistributedFile * from, IDistributedFile * to
     sprayer->setTarget(to);
     sprayer->spray();
     //sprayer->removeSource();
-    remove(from);
+    from->detach();
 }
 
 void CDistributedFileSystem::replicate(IDistributedFile * from, IGroup *destgroup, IPropertyTree * recovery, IRemoteConnection * recoveryConnection, IDFPartFilter *filter, IPropertyTree * options, IDaftProgress * progress, IAbortRequestCallback * abort, const char *wuid)
@@ -210,17 +210,6 @@ offset_t CDistributedFileSystem::getSize(IDistributedFile * file, bool forceget,
     }
     //LOG(MCdebugInfo(1000), unknownJob, "DFS: getSize(%s)=%"I64F"d", file->queryLogicalName(), totalSize);
     return totalSize;
-}
-
-// FIXME: This should NOT call detach / removePhysical directly!
-bool CDistributedFileSystem::remove(IDistributedFile * file,const char *cluster,IMultiException *mexcept, unsigned timeoutms)
-{
-    // this is now equivalent to removePhysicalPartFiles as linux uses dafilesrv by default
-    if (!cluster||((file->findCluster(cluster)==0)&&(file->numClusters()==1))) {
-        cluster = NULL; // deleting the last cluster removes the file
-        file->detach(timeoutms);
-    }
-    return file->removePhysicalPartFiles(cluster,mexcept); // this is bit cavalier with errors - but better orphans than inconsistant DFS
 }
 
 bool CDistributedFileSystem::compress(IDistributedFile * file)

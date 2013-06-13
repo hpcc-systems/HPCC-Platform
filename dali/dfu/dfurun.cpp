@@ -793,7 +793,6 @@ public:
 //                      destination->setClusterPartDefaultBaseDir(tmp.str(),basedir);
                 }
             }
-            options->setNoDelete(ctx.superoptions->getNoDelete());
             options->setNoSplit(ctx.superoptions->getNoSplit());
             options->setOverwrite(ctx.superoptions->getOverwrite());
             options->setReplicate(ctx.superoptions->getReplicate());
@@ -868,9 +867,8 @@ public:
         if (dfile) {
             if (!ctx.superoptions->getOverwrite()) 
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
-            if (dfile->querySuperFile()) 
-                dfile->detach();
-            else {
+            if (!dfile->querySuperFile())
+            {
                 if (ctx.superoptions->getIfModified()&&
                     (ftree->hasProp("Attr/@fileCrc")&&ftree->getPropInt64("Attr/@size")&&
                     ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
@@ -878,9 +876,8 @@ public:
                     PROGLOG("File copy of %s not done as file unchanged",srclfn);
                     return;
                 }
-                dfile->detach();
-                dfile->removePhysicalPartFiles(NULL,NULL);
             }
+            dfile->detach();
             dfile.clear();
         }
         if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
@@ -1402,10 +1399,7 @@ public:
                     source->getLogicalName(tmp.clear());
                     if (tmp.length()) {
                         runningconn.setown(setRunning(runningpath.str()));;
-                        if (options->getNoDelete())
-                            fdir.removeEntry(tmp.str(),userdesc);
-                        else
-                            fdir.removeEntry(tmp.str(),userdesc);
+                        fdir.removeEntry(tmp.str(),userdesc);
                         Audit("REMOVE",userdesc,tmp.clear(),NULL);
                         runningconn.clear();
                     }

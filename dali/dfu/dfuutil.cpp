@@ -614,12 +614,7 @@ public:
         if (dfile) {
             if (!overwrite)
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
-            if (dfile->querySuperFile())
-                dfile->detach();
-            else {
-                dfile->detach();
-                dfile->removePhysicalPartFiles(NULL,NULL);
-            }
+            dfile->detach();
             dfile.clear();
         }
         if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
@@ -690,12 +685,7 @@ public:
         if (dfile) {
             if (!overwrite)
                 throw MakeStringException(-1,"Destination file %s already exists",dlfn.get());
-            if (dfile->querySuperFile())
-                dfile->detach();
-            else {
-                dfile->detach();
-                dfile->removePhysicalPartFiles(NULL,NULL);
-            }
+            dfile->detach();
             dfile.clear();
         }
         cloneSubFile(ftree,dlfn.get(),srcdali);
@@ -867,56 +857,63 @@ public:
         SocketEndpoint daliep = srcdali;
         CDfsLogicalFileName slfn;
         slfn.set(srclfn);
-        if (slfn.isForeign()) { // trying to confuse me
+        if (slfn.isForeign()) // trying to confuse me
+        {
             slfn.getEp(daliep);
             slfn.clearForeign();
         }
         if (daliep.port==0)
             daliep.port= DALI_SERVER_PORT;
         Owned<INode> srcnode = createINode(daliep);
-        if (queryCoven().inCoven(srcnode)) {
+        if (queryCoven().inCoven(srcnode))
+        {
             // if dali is local and filenames same
             CDfsLogicalFileName dlfn;
             dlfn.set(lfn);
-            if (strcmp(slfn.get(),dlfn.get())==0) {
+            if (strcmp(slfn.get(),dlfn.get())==0)
+            {
                 PROGLOG("File copy of %s not done as file local",srclfn);
                 return;
             }
         }
         Owned<IPropertyTree> ftree = queryDistributedFileDirectory().getFileTree(srclfn,srcuser,srcnode, FOREIGN_DALI_TIMEOUT, false);
-        if (!ftree.get()) {
+        if (!ftree.get())
+        {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",srclfn,daliep.getUrlStr(s).str());
         }
         // first see if target exists (and remove if does and overwrite specified)
         Owned<IDistributedFile> dfile = queryDistributedFileDirectory().lookup(lfn,user,true);
-        if (dfile) {
+        if (dfile)
+        {
             if (!overwrite)
                 throw MakeStringException(-1,"Destination file %s already exists",lfn);
-            if (dfile->querySuperFile())
-                dfile->detach();
-            else {
+            if (!dfile->querySuperFile())
+            {
                 if (ftree->hasProp("Attr/@fileCrc")&&ftree->getPropInt64("Attr/@size")&&
                     ((unsigned)ftree->getPropInt64("Attr/@fileCrc")==(unsigned)dfile->queryAttributes().getPropInt64("@fileCrc"))&&
-                    (ftree->getPropInt64("Attr/@size")==dfile->getFileSize(false,false))) {
+                    (ftree->getPropInt64("Attr/@size")==dfile->getFileSize(false,false)))
+                {
                     PROGLOG("File copy of %s not done as file unchanged",srclfn);
                     return;
                 }
-                dfile->detach();
-                dfile->removePhysicalPartFiles(NULL,NULL);
             }
+            dfile->detach();
             dfile.clear();
         }
-        if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
+        if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0)
+        {
             assertex(copier);
             if (!copier->copyFile(lfn,daliep,srclfn,srcuser,user))
                 throw MakeStringException(-1,"File %s could not be copied",lfn);
 
         }
-        else if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
+        else if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0)
+        {
             StringArray subfiles;
             Owned<IPropertyTreeIterator> piter = ftree->getElements("SubFile");
-            ForEach(*piter) {
+            ForEach(*piter)
+            {
                 const char *name = piter->query().queryProp("@name");
                 CDfsLogicalFileName dlfn;
                 dlfn.set(name);
@@ -930,12 +927,11 @@ public:
             Owned<IDistributedSuperFile> sfile = queryDistributedFileDirectory().createSuperFile(lfn,user,true,false);
             if (!sfile)
                 throw MakeStringException(-1,"SuperFile %s could not be created",lfn);
-            ForEachItemIn(i,subfiles) {
+            ForEachItemIn(i,subfiles)
                 sfile->addSubFile(subfiles.item(i));
-            }
-
         }
-        else {
+        else
+        {
             StringBuffer s;
             throw MakeStringException(-1,"Source file %s in Dali %s is not a file or superfile",srclfn,daliep.getUrlStr(s).str());
         }
