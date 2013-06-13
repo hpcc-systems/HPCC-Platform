@@ -533,7 +533,7 @@ void CMemberInfo::doBuildSkipInput(HqlCppTranslator & translator, BuildCtx & ctx
 
 IHqlExpression * CMemberInfo::createSelfPeekDeserializer(HqlCppTranslator & translator, IHqlExpression * helper)
 {
-    IHqlExpression * size = column->queryAttribute(_attrSize_Atom);
+    IHqlExpression * size = column->queryAttribute(EPsize);
     LinkedHqlExpr maxSize = size->queryChild(2);
     if (!maxSize || maxSize->isAttribute())
         maxSize.setown(getSizetConstant(MAX_RECORD_SIZE));

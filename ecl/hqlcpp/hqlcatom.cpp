@@ -732,7 +732,7 @@ IIdAtom * xmlEncodeUStrId;
 
 #define MAKEID(x)   x##Id = createIdAtom(#x)
 #define MAKEATOM(x) x##Atom = createLowerCaseAtom(#x)
-#define MAKESYSATOM(x)  _##x##_Atom = createSystemAtom("$_" #x "_")
+#define MAKESYSATOM(x)  _##x##_Atom = createLowerCaseAtom("$_" #x "_")
 
 MODULE_INIT(INIT_PRIORITY_HQLATOM-1)
 {

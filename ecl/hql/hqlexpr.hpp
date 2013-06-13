@@ -783,6 +783,21 @@ enum annotate_kind
     annotate_max
 };
 
+//An enumeration of all the possible derived properties implemented by functions in hqlattr.hpp
+enum ExprPropKind
+{
+    EPnone,
+    EPrecordCount,
+    EPdiskserializedForm,
+    EPinternalserializedForm,
+    EPsize,
+    EPaligned,
+    EPunadorned,
+    EPlocationIndependent,
+    EPmax
+};
+
+
 #ifdef ENABLE_ENUM_TYPE
     typedef enum _node_operator node_operator;
 #else
@@ -1117,7 +1132,7 @@ interface IHqlExpression : public IInterface
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false) = 0;
 
     virtual IHqlExpression *queryProperty(IAtom * propName) const = 0;
-    virtual IHqlExpression *queryAttribute(IAtom * propName) = 0;
+    virtual IHqlExpression *queryAttribute(ExprPropKind kind) = 0;
 
     virtual ITypeInfo *queryRecordType() = 0;
     virtual IHqlExpression *queryRecord() = 0;
