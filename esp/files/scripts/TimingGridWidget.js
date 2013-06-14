@@ -114,19 +114,21 @@ define([
                 if (params.query) {
                     this.defaultQuery = params.query;
                 }
-                this.wu = ESPWorkunit.Get(params.Wuid);
 
-                var monitorCount = 4;
-                var context = this;
-                this.wu.monitor(function () {
-                    if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
-                        context.wu.getInfo({
-                            onGetTimers: function (timers) {
-                                context.loadTimings(timers);
-                            }
-                        });
-                    }
-                });
+                if (params.Wuid) {
+                    this.wu = ESPWorkunit.Get(params.Wuid);
+                    var monitorCount = 4;
+                    var context = this;
+                    this.wu.monitor(function () {
+                        if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
+                            context.wu.getInfo({
+                                onGetTimers: function (timers) {
+                                    context.loadTimings(timers);
+                                }
+                            });
+                        }
+                    });
+                }
             },
 
             setQuery: function (graphName) {
