@@ -155,7 +155,7 @@ IHqlExpression * getHozedKeyValue(IHqlExpression * _value)
 
 IHqlExpression * convertIndexPhysical2LogicalValue(IHqlExpression * cur, IHqlExpression * physicalSelect, bool allowTranslate)
 {
-    if (cur->hasProperty(blobAtom))
+    if (cur->hasAttribute(blobAtom))
     {
         if (cur->isDataset())
             return createDataset(no_id2blob, LINK(physicalSelect), LINK(cur->queryRecord()));
@@ -240,8 +240,8 @@ public:
     IHqlExpression * queryFileFilename()                    { return file->queryChild(0); }
     IHqlExpression * queryRawKey()                          { return rawKey; }
     IHqlExpression * queryRawRhs()                          { return rawRhs; }
-    bool isKeyOpt()                                         { return key->hasProperty(optAtom); }
-    bool isFileOpt()                                        { return file && file->hasProperty(optAtom); }
+    bool isKeyOpt()                                         { return key->hasAttribute(optAtom); }
+    bool isFileOpt()                                        { return file && file->hasAttribute(optAtom); }
     bool needToExtractJoinFields() const                    { return extractJoinFieldsTransform != NULL; }
     bool hasPostFilter() const                              { return monitors->queryExtraFilter() || fileFilter; }
     bool requireActivityForKey() const                      { return hasComplexIndex; }
@@ -293,7 +293,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
     hasComplexIndex = false;
 
     IHqlExpression * right = expr->queryChild(1);
-    IHqlExpression * keyed = expr->queryProperty(keyedAtom);
+    IHqlExpression * keyed = expr->queryAttribute(keyedAtom);
     if (keyed && keyed->queryChild(0))
     {
         key.set(keyed->queryChild(0));
@@ -330,7 +330,7 @@ KeyedJoinInfo::KeyedJoinInfo(HqlCppTranslator & _translator, IHqlExpression * _e
     rawKey.set(queryPhysicalRootTable(expandedKey));
     canOptimizeTransfer = _canOptimizeTransfer; 
     monitors = NULL;
-    counter.set(queryPropertyChild(expr, _countProject_Atom, 0));
+    counter.set(queryAttributeChild(expr, _countProject_Atom, 0));
 
     if (isFullJoin())
         rawRhs.set(rawFile);
@@ -653,7 +653,7 @@ void KeyedJoinInfo::buildTransformBody(BuildCtx & ctx, IHqlExpression * transfor
 {
     IHqlExpression * rhs = expr->queryChild(1);
     IHqlExpression * rhsRecord = rhs->queryRecord();
-    IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);
+    IHqlExpression * rowsid = expr->queryAttribute(_rowsid_Atom);
 
     OwnedHqlExpr originalRight = createSelector(no_right, rhsRecord, joinSeq);
     OwnedHqlExpr serializedRhsRecord = getSerializedForm(rhsRecord, diskAtom);
@@ -984,7 +984,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
     {
         //Version1: Don't remove any fields
         doExtract = true;
-        OwnedHqlExpr rows = createDataset(no_rows, LINK(right), LINK(expr->queryProperty(_rowsid_Atom)));
+        OwnedHqlExpr rows = createDataset(no_rows, LINK(right), LINK(expr->queryAttribute(_rowsid_Atom)));
         if (isFullJoin())
         {
             //unwindFields(fieldsAccessed, file->queryRecord());
@@ -1101,7 +1101,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
 bool KeyedJoinInfo::processFilter()
 {
     OwnedHqlExpr atmostCond, atmostLimit;
-    IHqlExpression * atmost = expr->queryProperty(atmostAtom);
+    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
     extractAtmostArgs(atmost, atmostCond, atmostLimit);
 
     IHqlExpression * cond = expr->queryChild(2);
@@ -1264,7 +1264,7 @@ void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpr
 
     //virtual size32_t transform(ARowBuilder & crSelf, const void * _left, const void * _right) = 0;
     info->buildTransform(instance.startctx);
-    IHqlExpression * onFail = expr->queryProperty(onFailAtom);
+    IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
     if (onFail)
     {
         //virtual size32_t onFailTransform(ARowBuilder & crSelf, const void * _left, const void * _right, unsigned __int64 _filepos, IException * except)
@@ -1272,10 +1272,10 @@ void HqlCppTranslator::buildKeyedJoinExtra(ActivityInstance & instance, IHqlExpr
     }
 
     //limit helpers...
-    IHqlExpression * limit = expr->queryProperty(limitAtom);
+    IHqlExpression * limit = expr->queryAttribute(limitAtom);
     if (limit)
     {
-        if (limit->hasProperty(skipAtom))
+        if (limit->hasAttribute(skipAtom))
         {
             BuildCtx ctx1(instance.startctx);
             ctx1.addQuotedCompound("virtual unsigned __int64 getSkipLimit()");
@@ -1371,37 +1371,37 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         }
     }
     buildActivityFramework(instance);
-    IHqlExpression * rowlimit = expr->queryProperty(rowLimitAtom);
+    IHqlExpression * rowlimit = expr->queryAttribute(rowLimitAtom);
 
     StringBuffer s;
     buildInstancePrefix(instance);
 
     OwnedHqlExpr atmostCond, atmostLimit;
-    IHqlExpression * atmost = expr->queryProperty(atmostAtom);
+    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
     extractAtmostArgs(atmost, atmostCond, atmostLimit);
 
     //virtual unsigned getJoinFlags()
     StringBuffer flags;
-    bool isLeftOuter = (expr->hasProperty(leftonlyAtom) || expr->hasProperty(leftouterAtom));
-    if (expr->hasProperty(leftonlyAtom)) flags.append("|JFexclude");
+    bool isLeftOuter = (expr->hasAttribute(leftonlyAtom) || expr->hasAttribute(leftouterAtom));
+    if (expr->hasAttribute(leftonlyAtom)) flags.append("|JFexclude");
     if (isLeftOuter) flags.append("|JFleftouter");
-    if (expr->hasProperty(firstAtom)) flags.append("|JFfirst");
-    if (expr->hasProperty(firstLeftAtom)) flags.append("|JFfirstleft");
+    if (expr->hasAttribute(firstAtom)) flags.append("|JFfirst");
+    if (expr->hasAttribute(firstLeftAtom)) flags.append("|JFfirstleft");
     if (transformContainsSkip(expr->queryChild(3)))
         flags.append("|JFtransformMaySkip");
     if (info.isFetchFiltered())
         flags.append("|JFfetchMayFilter");
-    if (rowlimit && rowlimit->hasProperty(skipAtom))
+    if (rowlimit && rowlimit->hasAttribute(skipAtom))
         flags.append("|JFmatchAbortLimitSkips");
-    if (rowlimit && rowlimit->hasProperty(countAtom))
+    if (rowlimit && rowlimit->hasAttribute(countAtom))
         flags.append("|JFcountmatchabortlimit");
-    if (expr->hasProperty(onFailAtom))
+    if (expr->hasAttribute(onFailAtom))
         flags.append("|JFonfail");
     if (info.isKeyOpt())
         flags.append("|JFindexoptional");
     if (info.needToExtractJoinFields())
         flags.append("|JFextractjoinfields");
-    if (expr->hasProperty(unorderedAtom))
+    if (expr->hasAttribute(unorderedAtom))
         flags.append("|JFreorderable");
     if (transformReturnsSide(expr, no_left, 0))
         flags.append("|JFtransformmatchesleft");
@@ -1435,13 +1435,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
         doBuildUnsignedFunction(instance->startctx, "getJoinLimit", atmostLimit);
 
     //virtual unsigned getKeepLimit()
-    LinkedHqlExpr keepLimit = queryPropertyChild(expr, keepAtom, 0);
+    LinkedHqlExpr keepLimit = queryAttributeChild(expr, keepAtom, 0);
     if (keepLimit)
         doBuildUnsignedFunction(instance->startctx, "getKeepLimit", keepLimit);
 
     bool implicitLimit = !rowlimit && !atmost &&
                         (!keepLimit || info.hasPostFilter()) &&
-                        !expr->hasProperty(leftonlyAtom);
+                        !expr->hasAttribute(leftonlyAtom);
 
     //virtual unsigned getKeepLimit()
     doBuildJoinRowLimitHelper(*instance, rowlimit, info.queryKeyFilename(), implicitLimit);
@@ -1450,14 +1450,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
     if (info.isFullJoin())
     {
         buildFormatCrcFunction(instance->classctx, "getDiskFormatCrc", info.queryRawRhs(), NULL, 0);
-        buildEncryptHelper(instance->startctx, info.queryFile()->queryProperty(encryptAtom), "getFileEncryptKey");
+        buildEncryptHelper(instance->startctx, info.queryFile()->queryAttribute(encryptAtom), "getFileEncryptKey");
     }
 
     IHqlExpression * key = info.queryKey();
     buildSerializedLayoutMember(instance->classctx, key->queryRecord(), "getIndexLayout", numKeyedFields(key));
 
     //--function to clear right, used for left outer join
-    if (isLeftOuter || expr->hasProperty(onFailAtom))
+    if (isLeftOuter || expr->hasAttribute(onFailAtom))
         info.buildClearRightFunction(instance->createctx);
 
     buildKeyedJoinExtra(*instance, expr, &info);
@@ -1507,7 +1507,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedDistribute(BuildCtx & ctx
 
     unsigned numUnsortedFields = numPayloadFields(right);
     unsigned numKeyedFields = getFlatFieldCount(indexRecord)-numUnsortedFields;
-    if (match || (!expr->hasProperty(firstAtom) && (leftSorts.ordinality() != numKeyedFields)))
+    if (match || (!expr->hasAttribute(firstAtom) && (leftSorts.ordinality() != numKeyedFields)))
         throwError(HQLERR_MustMatchExactly);    //Should already be caught in parser
 
     KeyedJoinInfo info(*this, expr, false);
@@ -1595,9 +1595,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyDiff(BuildCtx & ctx, IHqlEx
 
     //virtual unsigned getFlags() = 0;
     StringBuffer flags;
-    if (expr->hasProperty(overwriteAtom))
+    if (expr->hasAttribute(overwriteAtom))
         flags.append("|KDPoverwrite");
-    else if (expr->hasProperty(noOverwriteAtom))
+    else if (expr->hasAttribute(noOverwriteAtom))
         flags.append("|KDPnooverwrite");
     if (!output->isConstant())
         flags.append("|KDPvaroutputname");
@@ -1619,7 +1619,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyDiff(BuildCtx & ctx, IHqlEx
     //virtual int getSequence() = 0;
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
 
-    buildExpiryHelper(instance->createctx, expr->queryProperty(expireAtom));
+    buildExpiryHelper(instance->createctx, expr->queryAttribute(expireAtom));
 
     buildInstanceSuffix(instance);
     return instance->getBoundActivity();
@@ -1640,9 +1640,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlE
 
     //virtual unsigned getFlags() = 0;
     StringBuffer flags;
-    if (expr->hasProperty(overwriteAtom))
+    if (expr->hasAttribute(overwriteAtom))
         flags.append("|KDPoverwrite");
-    else if (expr->hasProperty(noOverwriteAtom))
+    else if (expr->hasAttribute(noOverwriteAtom))
         flags.append("|KDPnooverwrite");
     if (!output->isConstant())
         flags.append("|KDPvaroutputname");
@@ -1662,7 +1662,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyPatch(BuildCtx & ctx, IHqlE
     //virtual int getSequence() = 0;
     doBuildSequenceFunc(instance->classctx, querySequence(expr), false);
 
-    buildExpiryHelper(instance->createctx, expr->queryProperty(expireAtom));
+    buildExpiryHelper(instance->createctx, expr->queryAttribute(expireAtom));
 
     buildInstanceSuffix(instance);
     return instance->getBoundActivity();

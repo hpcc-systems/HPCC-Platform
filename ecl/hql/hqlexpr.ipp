@@ -43,19 +43,19 @@ typedef byte transformdepth_t;
 
 class CHqlExprMeta;
 
-class HQL_API CHqlDynamicAttribute
+class HQL_API CHqlDynamicProperty
 {
     friend class CHqlExpression;
 public:
-    inline CHqlDynamicAttribute(ExprPropKind _kind, IHqlExpression *_value)
+    inline CHqlDynamicProperty(ExprPropKind _kind, IHqlExpression *_value)
         : kind(_kind), value(_value)
     {
         next = NULL;
     }
-    ~CHqlDynamicAttribute() { delete next; }
+    ~CHqlDynamicProperty() { delete next; }
 
 protected:
-    CHqlDynamicAttribute * next;
+    CHqlDynamicProperty * next;
     LinkedHqlExpr value;
     ExprPropKind kind;
 };
@@ -127,7 +127,7 @@ protected:
     unsigned short infoFlags2;
     transformdepth_t transformDepth[NUM_PARALLEL_TRANSFORMS];           // 1 byte
 
-    CHqlDynamicAttribute * attributes;
+    CHqlDynamicProperty * attributes;
     HqlExprArray operands;
 
 protected:
@@ -148,7 +148,7 @@ protected:
     //Used for determining how a no_select should be interpreted e.g., in table gathering. 
     inline bool isSelectRootAndActive() const
     {
-        if (hasProperty(newAtom))
+        if (hasAttribute(newAtom))
             return false;
         IHqlExpression * ds = queryChild(0);
         if ((ds->getOperator() == no_select) && ds->isDatarow())
@@ -166,7 +166,7 @@ protected:
         operands.append(child);
         onAppendOperand(child, which);
     }
-    IHqlExpression * queryExistingAttribute(ExprPropKind kind) const;
+    IHqlExpression * queryExistingProperty(ExprPropKind kind) const;
 
     void initFlagsBeforeOperands();
     void updateFlagsAfterOperands();
@@ -176,7 +176,7 @@ protected:
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
 
-    void addAttribute(ExprPropKind kind, IHqlExpression * value);
+    void addProperty(ExprPropKind kind, IHqlExpression * value);
 
 public:
     virtual void Link(void) const;
@@ -192,8 +192,8 @@ public:
     virtual IHqlDataset *queryDataset() { return NULL; };
     virtual IHqlScope *queryScope();
     virtual IHqlSimpleScope *querySimpleScope();
-    virtual IHqlExpression *queryProperty(IAtom * propName) const;
-    virtual IHqlExpression *queryAttribute(ExprPropKind kind);
+    virtual IHqlExpression *queryAttribute(IAtom * propName) const;
+    virtual IHqlExpression *queryProperty(ExprPropKind kind);
     virtual IHqlExpression *queryFunctionDefinition() const { return NULL; };
     virtual IHqlExpression *queryExternalDefinition() const { return NULL; };
     virtual unsigned getInfoFlags() const { return infoFlags; }
@@ -502,8 +502,8 @@ public:
     virtual IHqlExpression *queryFunctionDefinition() const;
     virtual IHqlExpression *queryExternalDefinition() const;
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false);
-    virtual IHqlExpression *queryProperty(IAtom * propName) const;
-    virtual IHqlExpression *queryAttribute(ExprPropKind kind);
+    virtual IHqlExpression *queryAttribute(IAtom * propName) const;
+    virtual IHqlExpression *queryProperty(ExprPropKind kind);
     virtual IHqlExpression * clone(HqlExprArray &);
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body) = 0;
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body);

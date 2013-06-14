@@ -355,7 +355,7 @@ IReferenceSelector * HqlCppTranslator::doBuildRowFromXML(BuildCtx & ctx, IHqlExp
     args.append(*createRowAllocator(ctx, record));
     args.append(*ensureExprType(expr->queryChild(1), utf8Type));
     args.append(*createQuoted(xmlInstanceName, makeBoolType()));
-    args.append(*createConstant(expr->hasProperty(trimAtom)));
+    args.append(*createConstant(expr->hasAttribute(trimAtom)));
     OwnedHqlExpr function = bindFunctionCall(createRowFromXmlId, args, overrideType);
 
     CHqlBoundExpr bound;
@@ -473,8 +473,8 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
     case no_getresult:
         {
             IAtom * serializeForm = diskAtom;  // What if we start using internal in the engines?
-            IHqlExpression * seqAttr = expr->queryProperty(sequenceAtom);
-            IHqlExpression * nameAttr = expr->queryProperty(namedAtom);
+            IHqlExpression * seqAttr = expr->queryAttribute(sequenceAtom);
+            IHqlExpression * nameAttr = expr->queryAttribute(namedAtom);
             IHqlExpression * record = expr->queryRecord();
             OwnedHqlExpr serializedRecord = getSerializedForm(record, serializeForm);
 
@@ -507,7 +507,7 @@ IReferenceSelector * HqlCppTranslator::buildNewRow(BuildCtx & ctx, IHqlExpressio
             }
 
             //We could associate the original expression to allow better cse for child datasets in transforms, but it doesn't actually improve any examples
-            //IHqlExpression * original = queryPropertyChild(expr, _original_Atom, 0);
+            //IHqlExpression * original = queryAttributeChild(expr, _original_Atom, 0);
             //if (original)
             //  bindRow(ctx, original, cursorExpr)->setResultAlias();
             break;//return createReferenceSelector(cursor);
@@ -975,7 +975,7 @@ bool HqlCppTranslator::canBuildOptimizedCount(BuildCtx & ctx, IHqlExpression * d
 
 void HqlCppTranslator::doBuildExprCount(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt)
 {
-    if (expr->hasProperty(keyedAtom))
+    if (expr->hasAttribute(keyedAtom))
         throwError(HQLERR_KeyedCountNonKeyable);
 
     IHqlExpression * dataset = expr->queryChild(0);
@@ -1688,7 +1688,7 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
         resourced.setown(resourceLoopGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults, insideChild));
     }
     else
-        resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults, childQuery->hasProperty(sequentialAtom)));
+        resourced.setown(resourceNewChildGraph(*this, activeRows, resourced, targetClusterType, graphIdExpr, &numResults, childQuery->hasAttribute(sequentialAtom)));
 
     DEBUG_TIMER("EclServer: resource graph", msTick()-time);
     checkNormalized(ctx, resourced);
@@ -1867,11 +1867,11 @@ IHqlExpression * HqlCppTranslator::forceInlineAssignDataset(BuildCtx & ctx, IHql
 
 IHqlExpression * createGetResultFromWorkunitDataset(IHqlExpression * expr)
 {
-    IHqlExpression * name = queryPropertyChild(expr, nameAtom, 0);
+    IHqlExpression * name = queryAttributeChild(expr, nameAtom, 0);
     if (name)
         name = createExprAttribute(namedAtom, LINK(name));
     assertex(expr->isDataset());
-    return createDataset(no_getresult, LINK(expr->queryRecord()), createComma(LINK(expr->queryProperty(sequenceAtom)), name));
+    return createDataset(no_getresult, LINK(expr->queryRecord()), createComma(LINK(expr->queryAttribute(sequenceAtom)), name));
 }
 
 void HqlCppTranslator::buildAssignSerializedDataset(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr, IAtom * serializeForm)
@@ -2044,7 +2044,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
     switch (op)
     {
     case no_dataset_alias:
-        if (!expr->hasProperty(_normalized_Atom))
+        if (!expr->hasAttribute(_normalized_Atom))
         {
             OwnedHqlExpr uniqueChild = normalizeDatasetAlias(expr);
             doBuildDataset(ctx, uniqueChild, tgt, format);
@@ -2127,7 +2127,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             return;
         }
     case no_limit:
-        if (expr->hasProperty(skipAtom) || expr->hasProperty(onFailAtom))
+        if (expr->hasAttribute(skipAtom) || expr->hasAttribute(onFailAtom))
             break;
         doBuildDatasetLimit(ctx, expr, tgt, format);
         return;
@@ -2570,7 +2570,7 @@ void HqlCppTranslator::buildDatasetAssign(BuildCtx & ctx, const CHqlBoundTarget 
     switch (op)
     {
     case no_limit:
-        assertex(!expr->hasProperty(skipAtom) && !expr->hasProperty(onFailAtom));
+        assertex(!expr->hasAttribute(skipAtom) && !expr->hasAttribute(onFailAtom));
         //Do the limit check as a post test.  
         //It means we may read more records than we need to, but the code is inline, and the code is generally much better.
         if (target.count)
@@ -3144,7 +3144,7 @@ void HqlCppTranslator::buildDatasetAssignDatasetFromTransform(BuildCtx & ctx, IH
         return;
 
     IHqlExpression * transform = expr->queryChild(1);
-    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+    IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
 
     // If it is at all possible that it could be negative, we must test before producing rows
     CHqlBoundExpr boundCount;
@@ -3191,7 +3191,7 @@ void HqlCppTranslator::buildDatasetAssignProject(BuildCtx & ctx, IHqlCppDatasetB
 {
     BuildCtx iterctx(ctx);
     IHqlExpression * ds = expr->queryChild(0);
-    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+    IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
 
     OwnedHqlExpr counterVar;
     if (counter)
@@ -3247,7 +3247,7 @@ void HqlCppTranslator::buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuil
     IHqlExpression * cond = expr->queryChild(2);
 
     IHqlExpression * selSeq = querySelSeq(expr);
-    bool leftOuter = expr->hasProperty(leftonlyAtom) || expr->hasProperty(leftouterAtom);
+    bool leftOuter = expr->hasAttribute(leftonlyAtom) || expr->hasAttribute(leftouterAtom);
 
     CHqlBoundExpr nullRhs;
     if (leftOuter)
@@ -3267,7 +3267,7 @@ void HqlCppTranslator::buildDatasetAssignJoin(BuildCtx & ctx, IHqlCppDatasetBuil
 
     OwnedHqlExpr cseCond = options.spotCSE ? spotScalarCSE(cond) : LINK(cond);
     buildFilter(rightIterCtx, cseCond);
-    if (!expr->hasProperty(leftonlyAtom))
+    if (!expr->hasAttribute(leftonlyAtom))
     {
         BoundRow * targetRow = target->buildCreateRow(rightIterCtx);
         Owned<IReferenceSelector> targetRef = buildActiveRow(rightIterCtx, targetRow->querySelector());
@@ -3686,7 +3686,7 @@ BoundRow * HqlCppTranslator::buildDatasetIterateProject(BuildCtx & ctx, IHqlExpr
 {
     IHqlExpression * dataset = expr->queryChild(0);
     OwnedHqlExpr counterVar;
-    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+    IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
     if (counter)
     {
         counterVar.setown(ctx.getTempDeclare(unsignedType, queryZero()));
@@ -3838,7 +3838,7 @@ BoundRow * HqlCppTranslator::buildDatasetIterate(BuildCtx & ctx, IHqlExpression 
     switch (expr->getOperator())
     {
     case no_dataset_alias:
-        if (!expr->hasProperty(_normalized_Atom))
+        if (!expr->hasAttribute(_normalized_Atom))
         {
             OwnedHqlExpr uniqueChild = normalizeDatasetAlias(expr);
             BoundRow * childCursor = buildDatasetIterate(ctx, uniqueChild, needToBreak);
@@ -4231,7 +4231,7 @@ void HqlCppTranslator::doBuildRowAssignAggregate(BuildCtx & ctx, IReferenceSelec
 void HqlCppTranslator::doBuildRowAssignProject(BuildCtx & ctx, IReferenceSelector * target, IHqlExpression * expr)
 {
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+    IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
     if (counter && !ctx.queryMatchExpr(counter))
         throwError(HQLERR_CounterNotFound);
 
@@ -4628,7 +4628,7 @@ IHqlExpression * HqlCppTranslator::ensureIteratedRowIsLive(BuildCtx & initctx, B
         case no_select:
             if (ds->isDataset())
             {
-                if (ds->hasProperty(newAtom))
+                if (ds->hasAttribute(newAtom))
                 {
                     ds = ds->queryChild(0);
                     //don't walk complexds[1].childDataset<new> since the [1] will be generated as a temporary
@@ -4698,7 +4698,7 @@ IReferenceSelector * HqlCppTranslator::buildDatasetIndexViaIterator(BuildCtx & c
     case no_hqlproject:
         //optimize selectnth(project(rows, t), n) to projectrow(selectnth(rows, n), t)
         IHqlExpression * transform = dataset->queryChild(1);
-        if (!containsSkip(transform) && !expr->hasProperty(_countProject_Atom))
+        if (!containsSkip(transform) && !expr->hasAttribute(_countProject_Atom))
             childDataset = dataset->queryChild(0);
         break;
     }
@@ -4911,9 +4911,9 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
     if (!hasLinkCountedModifier(exprType))
         exprType.setown(makeAttributeModifier(LINK(exprType), getLinkCountedAttr()));
 
-    if (expr->hasProperty(externalAtom))
+    if (expr->hasAttribute(externalAtom))
     {
-        IHqlExpression * resultInstance = queryPropertyChild(expr, externalAtom, 0);
+        IHqlExpression * resultInstance = queryAttributeChild(expr, externalAtom, 0);
         HqlExprAssociation * matchedResults = ctx.queryMatchExpr(resultInstance);
         if (!matchedResults)
         {
@@ -4957,10 +4957,10 @@ IHqlExpression * HqlCppTranslator::buildGetLocalResult(BuildCtx & ctx, IHqlExpre
 
 void HqlCppTranslator::doBuildAssignGetGraphResult(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * expr)
 {
-    if (expr->hasProperty(_streaming_Atom))
+    if (expr->hasAttribute(_streaming_Atom))
         throwError(HQLERR_LoopTooComplexForParallel);
 
-    if (expr->hasProperty(externalAtom))
+    if (expr->hasAttribute(externalAtom))
     {
         OwnedHqlExpr call = buildGetLocalResult(ctx, expr);
         buildExprAssign(ctx, target, call);
@@ -4984,7 +4984,7 @@ void HqlCppTranslator::doBuildAssignGetGraphResult(BuildCtx & ctx, const CHqlBou
 
 void HqlCppTranslator::doBuildExprGetGraphResult(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt, ExpressionFormat format)
 {
-    if (!expr->hasProperty(externalAtom))
+    if (!expr->hasAttribute(externalAtom))
     {
         doBuildAliasValue(ctx, expr, tgt);
         return;
@@ -5018,13 +5018,13 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGetGraphResult(BuildCtx & ctx,
 {
     IHqlExpression * graphId = expr->queryChild(1);
     IHqlExpression * resultNum = expr->queryChild(2);
-    ThorActivityKind activityKind = (expr->hasProperty(_streaming_Atom) ? TAKlocalstreamread : TAKlocalresultread);
+    ThorActivityKind activityKind = (expr->hasAttribute(_streaming_Atom) ? TAKlocalstreamread : TAKlocalresultread);
 
     bool useImplementationClass = options.minimizeActivityClasses && (resultNum->getOperator() == no_constant);
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, activityKind, expr, "LocalResultRead");
     if (useImplementationClass)
         instance->setImplementationClass(newLocalResultReadArgId);
-    if (expr->hasProperty(_loop_Atom))
+    if (expr->hasAttribute(_loop_Atom))
     {
         if (isCurrentActiveGraph(ctx, graphId))
             instance->graphLabel.set("Begin Loop");
@@ -5053,7 +5053,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphDictionaryResult(Build
     IHqlExpression * dataset = dictionary->queryChild(0);
     IHqlExpression * graphId = expr->queryChild(1);
     IHqlExpression * resultNum = expr->queryChild(2);
-    bool isSpill = expr->hasProperty(_spill_Atom);
+    bool isSpill = expr->hasAttribute(_spill_Atom);
 
     ABoundActivity * parentActivity = activeActivities.ordinality() ? &activeActivities.tos() : NULL;
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
@@ -5094,7 +5094,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx,
 
     IHqlExpression * graphId = expr->queryChild(1);
     IHqlExpression * resultNum = expr->queryChild(2);
-    bool isSpill = expr->hasProperty(_spill_Atom);
+    bool isSpill = expr->hasAttribute(_spill_Atom);
 
     ABoundActivity * parentActivity = activeActivities.ordinality() ? &activeActivities.tos() : NULL;
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
@@ -5113,7 +5113,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx,
     if (useImplementationClass)
         instance->setImplementationClass(newLocalResultSpillArgId);
 
-    if (expr->hasProperty(_loop_Atom))
+    if (expr->hasAttribute(_loop_Atom))
         instance->graphLabel.set("End Loop");
     buildActivityFramework(instance, isRoot && !isSpill);
 
@@ -5133,7 +5133,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphResult(BuildCtx & ctx,
     if (parentActivity && !insideRemoteGraph(ctx) && !isSpill)
     {
         const char * relationship;
-        if (expr->hasProperty(_loop_Atom))
+        if (expr->hasAttribute(_loop_Atom))
             relationship = "Body";
         else if (insideRemoteGraph(ctx))
             relationship = "Remote";
@@ -5231,7 +5231,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySetGraphLoopResult(BuildCtx & 
 {
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * graphId = expr->queryChild(1);
-    bool isSpill = expr->hasProperty(_spill_Atom);
+    bool isSpill = expr->hasAttribute(_spill_Atom);
 
     ABoundActivity * parentActivity = activeActivities.ordinality() ? &activeActivities.tos() : NULL;
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
@@ -5312,8 +5312,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityForceLocal(BuildCtx & ctx, IHq
 void HqlCppTranslator::doBuildStmtApply(BuildCtx & ctx, IHqlExpression * expr)
 {
     IHqlExpression * dataset = expr->queryChild(0);
-    IHqlExpression * start = expr->queryProperty(beforeAtom);
-    IHqlExpression * end = expr->queryProperty(afterAtom);
+    IHqlExpression * start = expr->queryAttribute(beforeAtom);
+    IHqlExpression * end = expr->queryAttribute(afterAtom);
 
     if (start)
         buildStmt(ctx, start->queryChild(0));

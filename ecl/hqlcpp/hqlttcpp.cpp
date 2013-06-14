@@ -362,7 +362,7 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
     }
     else if (op == no_colon)
     {
-        if (queryPropertyInList(labeledAtom, expr->queryChild(1)))
+        if (queryAttributeInList(labeledAtom, expr->queryChild(1)))
             seenMeta = true;
     }
 
@@ -916,9 +916,9 @@ YesNoOption HqlThorBoundaryTransformer::calcNormalizeThor(IHqlExpression * expr)
         {
             IHqlExpression * func = expr->queryExternalDefinition();
             IHqlExpression * funcDef = func->queryChild(0);
-            if (funcDef->hasProperty(gctxmethodAtom) || funcDef->hasProperty(globalContextAtom))
+            if (funcDef->hasAttribute(gctxmethodAtom) || funcDef->hasAttribute(globalContextAtom))
                 return OptionNo;
-//          if (funcDef->hasProperty(graphAtom))
+//          if (funcDef->hasAttribute(graphAtom))
 //              return OptionYes;
             if (!resourceConditionalActions && expr->isAction())
                 return OptionNo;
@@ -1364,11 +1364,11 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
 
 static IAtom * queryOverwriteAction(IHqlExpression * expr)
 {
-    if (expr->hasProperty(extendAtom))
+    if (expr->hasAttribute(extendAtom))
         return extendAtom;
-    if (expr->hasProperty(overwriteAtom))
+    if (expr->hasAttribute(overwriteAtom))
         return overwriteAtom;
-    if (expr->hasProperty(noOverwriteAtom))
+    if (expr->hasAttribute(noOverwriteAtom))
         return noOverwriteAtom;
     return NULL;
 }
@@ -1725,7 +1725,7 @@ static IHqlExpression * simplifySortlistComplexity(IHqlExpression * sortlist)
         else
         {
 #if 0
-            if (cur->getOperator() == no_select && cur->isDatarow() && !cur->hasProperty(newAtom))
+            if (cur->getOperator() == no_select && cur->isDatarow() && !cur->hasAttribute(newAtom))
             {
                 expand = true;
                 expandRowComponents(cpts, invert, cur, cur->queryRecord());
@@ -1770,9 +1770,9 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
             LinkedHqlExpr ds = dataset;
             IHqlExpression * index = cur->queryChild(0);
 
-            if (!expr->hasProperty(sortedAtom))
+            if (!expr->hasAttribute(sortedAtom))
             {
-                if (!expr->hasProperty(localAtom))
+                if (!expr->hasAttribute(localAtom))
                 {
                     HqlExprArray joinCondition;
                     IHqlExpression * indexRecord = index->queryChild(1);
@@ -1805,10 +1805,10 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
                 ds.setown(cloneInheritedAnnotations(expr, ds));
             }
 
-            if (expr->hasProperty(mergeAtom))
+            if (expr->hasAttribute(mergeAtom))
             {
                 LinkedHqlExpr sortedIndex = index;
-                if (!index->hasProperty(sortedAtom))
+                if (!index->hasAttribute(sortedAtom))
                 {
                     HqlExprArray args;
                     unwindChildren(args, index);
@@ -1839,7 +1839,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
         }
     }
 
-    IHqlExpression * distributed = expr->queryProperty(distributedAtom);
+    IHqlExpression * distributed = expr->queryAttribute(distributedAtom);
     if (distributed && distributed->queryChild(0))
     {
         OwnedHqlExpr distribute = createDataset(no_distribute, LINK(dataset), LINK(distributed->queryChild(0)));
@@ -1852,7 +1852,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
     }
 
 
-    if (!expr->hasProperty(sortedAtom))
+    if (!expr->hasAttribute(sortedAtom))
     {
         if (dataset->queryType()->getTypeCode() == type_groupedtable)
         {
@@ -1865,7 +1865,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
             }
         }
 
-        OwnedHqlExpr sorted = ensureSorted(dataset, newsort, expr->hasProperty(localAtom), true, alwaysLocal, allowImplicitSubSort);
+        OwnedHqlExpr sorted = ensureSorted(dataset, newsort, expr->hasAttribute(localAtom), true, alwaysLocal, allowImplicitSubSort);
         if (sorted == dataset)
             return NULL;
 
@@ -1879,7 +1879,7 @@ static IHqlExpression * normalizeIndexBuild(IHqlExpression * expr, bool sortInde
         return expr->clone(args);
     }
 
-    if (expr->hasProperty(dedupAtom))
+    if (expr->hasAttribute(dedupAtom))
     {
         IHqlExpression * ds = expr->queryChild(0);
         OwnedHqlExpr seq = createSelectorSequence();
@@ -1999,7 +1999,7 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
 
 /*
     //Has a minor impact on unnecessary local attributes
-    if (!translator.targetThor() && transformed->hasProperty(localAtom) && localChangesActivityAction(transformed))
+    if (!translator.targetThor() && transformed->hasAttribute(localAtom) && localChangesActivityAction(transformed))
         return removeProperty(transformed, localAtom);
 */
     return transformed.getClear();
@@ -2008,7 +2008,7 @@ IHqlExpression * ThorHqlTransformer::createTransformed(IHqlExpression * expr)
 
 static IHqlExpression * convertDedupToGroupedDedup(IHqlExpression * expr, IHqlExpression * grouping, bool compareAll)
 {
-    IHqlExpression * localAttr = expr->queryProperty(localAtom);
+    IHqlExpression * localAttr = expr->queryAttribute(localAtom);
     HqlExprArray groupArgs;
     groupArgs.append(*LINK(expr->queryChild(0)));
     groupArgs.append(*LINK(grouping));
@@ -2048,10 +2048,10 @@ IHqlExpression * ThorHqlTransformer::normalizeDedup(IHqlExpression * expr)
     IHqlExpression * dataset = expr->queryChild(0);
     bool hasLocal = isLocalActivity(expr);
     bool isLocal = hasLocal || !translator.targetThor();
-    bool isHashDedup = expr->hasProperty(hashAtom);
+    bool isHashDedup = expr->hasAttribute(hashAtom);
     if (info.compareAllRows)
     {
-        IHqlExpression * manyProp = expr->queryProperty(manyAtom);
+        IHqlExpression * manyProp = expr->queryAttribute(manyAtom);
         if (!isLocal && manyProp)
         {
             //If lots of duplicates, then dedup all locally and then dedup all globally.
@@ -2151,7 +2151,7 @@ IHqlExpression * ThorHqlTransformer::normalizeRollup(IHqlExpression * expr)
 
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * cond = expr->queryChild(1);
-    if (isThorCluster(targetClusterType) && !expr->queryProperty(localAtom) && isIndependentOfScope(expr))
+    if (isThorCluster(targetClusterType) && !expr->queryAttribute(localAtom) && isIndependentOfScope(expr))
     {
         HqlExprArray equalities;
         OwnedHqlExpr extra;
@@ -2251,13 +2251,13 @@ IHqlExpression * ThorHqlTransformer::skipOverGroups(IHqlExpression * dataset, bo
     IHqlExpression * newDataset = dataset;
     while (newDataset->getOperator() == no_group)
     {
-        if (newDataset->hasProperty(allAtom))
+        if (newDataset->hasAttribute(allAtom))
             break;
 
         if (isLocal && queryRealChild(newDataset, 1))
         {
             //NOTE: local groups should not remove preceding non-local groups.
-            if (translator.targetThor() && !newDataset->hasProperty(localAtom))
+            if (translator.targetThor() && !newDataset->hasAttribute(localAtom))
                 break;
         }
         newDataset = newDataset->queryChild(0);
@@ -2301,10 +2301,10 @@ IHqlExpression * ThorHqlTransformer::normalizeGroup(IHqlExpression * expr)
     if (newsort)
         return replaceChild(expr, 1, newsort);
 
-    bool hasLocal = expr->hasProperty(localAtom);
+    bool hasLocal = expr->hasAttribute(localAtom);
     bool isLocal = hasLocal || !translator.targetThor();
-    bool wantSorted = expr->hasProperty(sortedAtom);
-    bool hasAll = expr->hasProperty(allAtom);
+    bool wantSorted = expr->hasAttribute(sortedAtom);
+    bool hasAll = expr->hasAttribute(allAtom);
 
     // First check if a global group can be done locally - applicable to all and non-all versions.
     if (!isLocal)
@@ -2350,7 +2350,7 @@ IHqlExpression * ThorHqlTransformer::normalizeGroup(IHqlExpression * expr)
             }
             else
             {
-                if (groupAllDistribute || expr->hasProperty(unsortedAtom))
+                if (groupAllDistribute || expr->hasAttribute(unsortedAtom))
                 {
                     OwnedHqlExpr distributed = createDataset(no_distribute, LINK(dataset), LINK(hashed));
                     distributed.setown(cloneInheritedAnnotations(expr, distributed));
@@ -2371,7 +2371,7 @@ IHqlExpression * ThorHqlTransformer::normalizeGroup(IHqlExpression * expr)
 
 IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
 {
-    IHqlExpression * grouping = queryPropertyChild(expr, groupAtom, 0);
+    IHqlExpression * grouping = queryAttributeChild(expr, groupAtom, 0);
     OwnedHqlExpr newsort = simplifySortlistComplexity(grouping);
     if (newsort)
     {
@@ -2396,7 +2396,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
         }
     }
 
-    bool hasLocal = expr->hasProperty(localAtom);
+    bool hasLocal = expr->hasAttribute(localAtom);
     bool alwaysLocal = !translator.targetThor();
     bool isLocal = hasLocal || alwaysLocal;
     OwnedHqlExpr localFlag = !alwaysLocal ? createLocalAttribute() : NULL;
@@ -2554,7 +2554,7 @@ bool ThorHqlTransformer::isLightweightJoinCandidate(IHqlExpression * expr, bool 
     if (!options.spotLocalMerge || isLimitedSubstringJoin || !isLocal)
         return false;
 
-    if (expr->hasProperty(_lightweight_Atom))
+    if (expr->hasAttribute(_lightweight_Atom))
         return false;
 
     switch (expr->getOperator())
@@ -2607,7 +2607,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     bool isLocal = hasLocal || alwaysLocal;
     //hash,local doesn't make sense (hash is only used for distribution) => remove hash
     //but also prevent it being converted to a lookup join??
-    if (isLocal && expr->hasProperty(hashAtom))
+    if (isLocal && expr->hasAttribute(hashAtom))
     {
         HqlExprArray args;
         unwindChildren(args, expr);
@@ -2616,12 +2616,12 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
     //Check to see if this join should be done as a keyed join...
-    if (!expr->hasProperty(lookupAtom) && !expr->hasProperty(allAtom))
+    if (!expr->hasAttribute(lookupAtom) && !expr->hasAttribute(allAtom))
     {
         if (rightDs->getOperator() == no_filter)
         {
             bool moveRhsFilter = false;
-            if (expr->hasProperty(keyedAtom) && queryPropertyChild(expr, keyedAtom, 0))
+            if (expr->hasAttribute(keyedAtom) && queryAttributeChild(expr, keyedAtom, 0))
             {
                 //Full keyed join - ensure the filter is moved from the rhs to the condition.
                 moveRhsFilter = true;
@@ -2668,7 +2668,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Tag a keyed join as ordered in the platforms that ensure it does remain ordered.  Extend if the others do.
     if (isKeyedJoin(expr))
     {
-        if (translator.targetRoxie() && !expr->hasProperty(_ordered_Atom))
+        if (translator.targetRoxie() && !expr->hasAttribute(_ordered_Atom))
             return appendOwnedOperand(expr, createAttribute(_ordered_Atom));
         return NULL;
     }
@@ -2719,10 +2719,10 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         }
     }
 
-    if (expr->hasProperty(allAtom))
+    if (expr->hasAttribute(allAtom))
         return NULL;
 
-    if (expr->hasProperty(lookupAtom))
+    if (expr->hasAttribute(lookupAtom))
         return NULL;
 
     //Try and convert local joins to a lightweight join that doesn't require any sorting of the inputs.
@@ -2778,14 +2778,14 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
     //Sort,Sort->join is O(NlnN) lookup join using a hash table is O(N) =>convert for hthor/roxie
-    if (!isThorCluster(targetClusterType) && !expr->hasProperty(_normalized_Atom))
+    if (!isThorCluster(targetClusterType) && !expr->hasAttribute(_normalized_Atom))
     {
         bool createLookup = false;
         if ((op == no_join) && options.convertJoinToLookup)
         {
             if ((targetClusterType == RoxieCluster) || hasFewRows(rightDs))
-                if (!isFullJoin(expr) && !isRightJoin(expr) && !expr->hasProperty(partitionRightAtom))
-                    createLookup = !expr->hasProperty(_lightweight_Atom);
+                if (!isFullJoin(expr) && !isRightJoin(expr) && !expr->hasAttribute(partitionRightAtom))
+                    createLookup = !expr->hasAttribute(_lightweight_Atom);
         }
 
         if (isLimitedSubstringJoin)
@@ -2837,7 +2837,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
     //Convert hash selfjoin to self-join(distribute)
-    if ((op == no_selfjoin) && expr->hasProperty(hashAtom))
+    if ((op == no_selfjoin) && expr->hasAttribute(hashAtom))
     {
         assertex(!isLocal);
         if (isLimitedSubstringJoin)
@@ -2868,7 +2868,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         }
     }
 
-    if (options.expandHashJoin && isThorCluster(targetClusterType) && expr->hasProperty(hashAtom) && !isLimitedSubstringJoin)
+    if (options.expandHashJoin && isThorCluster(targetClusterType) && expr->hasAttribute(hashAtom) && !isLimitedSubstringJoin)
     {
         HqlExprArray args;
         args.append(*createDistributedInput(leftDs, leftSorts, false));
@@ -2881,7 +2881,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
 
     if (isThorCluster(targetClusterType) && isLocal && options.implicitJoinSubSort)
     {
-        IHqlExpression * noSortAttr = expr->queryProperty(noSortAtom);
+        IHqlExpression * noSortAttr = expr->queryAttribute(noSortAtom);
         OwnedHqlExpr newLeft;
         OwnedHqlExpr newRight;
         if (!userPreventsSort(noSortAttr, no_left))
@@ -2982,7 +2982,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSort(IHqlExpression * expr)
     node_operator op = expr->getOperator();
     if (translator.targetThor())
     {
-        if ((op == no_sort) && !isGrouped(expr) && !expr->hasProperty(localAtom))
+        if ((op == no_sort) && !isGrouped(expr) && !expr->hasAttribute(localAtom))
         {
             //sort(ds, a,b,c) - check so see if there is a previous sort distribution of sort(ds,a,b,c) if so, this sort can be done locally
             if (queryDistribution(expr) == queryDistribution(dataset))
@@ -2997,7 +2997,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSort(IHqlExpression * expr)
             return normalized;
     }
 
-    bool isLocal = expr->hasProperty(localAtom);
+    bool isLocal = expr->hasAttribute(localAtom);
     bool alwaysLocal = !translator.targetThor();
     if ((op != no_assertsorted) && isAlreadySorted(dataset, sortlist, isLocal||alwaysLocal, false))
         return LINK(dataset);
@@ -3033,7 +3033,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSubSort(IHqlExpression * expr)
         return expr->clone(args);
     }
 
-    if (translator.targetThor() && !expr->hasProperty(localAtom))
+    if (translator.targetThor() && !expr->hasAttribute(localAtom))
         return convertSubSortToGroupedSort(expr);
 
     return NULL;
@@ -3052,7 +3052,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSortSteppedIndex(IHqlExpression * 
     if ((datasetOp == no_keyindex) || (datasetOp == no_newkeyindex))
     {
         IHqlExpression * indexRecord = dataset->queryRecord();
-        if (!dataset->hasProperty(attrName))
+        if (!dataset->hasAttribute(attrName))
         {
             HqlExprArray selects;
             IHqlExpression * sortList = expr->queryChild(1);
@@ -3163,7 +3163,7 @@ static IHqlExpression * extractPrefetchFields(HqlExprArray & fields, HqlExprArra
 IHqlExpression * ThorHqlTransformer::normalizePrefetchAggregate(IHqlExpression * expr)
 {
     //This optimization may be worth doing even if there is no prefetch attribute if the value being summed is very complicated!
-    IHqlExpression * prefetch = expr->queryProperty(prefetchAtom);
+    IHqlExpression * prefetch = expr->queryAttribute(prefetchAtom);
     if (!prefetch)
         return NULL;
 
@@ -3289,7 +3289,7 @@ IHqlExpression * ThorHqlTransformer::normalizeMergeAggregate(IHqlExpression * ex
 
     //If locally distributed then don't do anything
     OwnedHqlExpr noMerge = removeProperty(expr, mergeAtom);
-    if (!translator.targetThor() || expr->hasProperty(localAtom) || isPartitionedForGroup(dataset, groupBy, true))
+    if (!translator.targetThor() || expr->hasAttribute(localAtom) || isPartitionedForGroup(dataset, groupBy, true))
         return noMerge.getClear();
 
     //Convert the aggregation (so no covariance/ave and other computed fields)
@@ -3422,7 +3422,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
     unwindAttributes(aggregateAttrs, expr);
     removeProperty(aggregateAttrs, aggregateAtom);
     removeProperty(aggregateAttrs, fewAtom);
-    if (!expr->hasProperty(localAtom) && newGroupBy && !isGrouped(dataset) && isPartitionedForGroup(dataset, newGroupBy, true))
+    if (!expr->hasAttribute(localAtom) && newGroupBy && !isGrouped(dataset) && isPartitionedForGroup(dataset, newGroupBy, true))
         aggregateAttrs.append(*createLocalAttribute());
 
     OwnedHqlExpr ret = createDataset(no_newaggregate, LINK(dataset), createComma(aggregateRecord, aggregateTransform, newGroupBy, createComma(aggregateAttrs)));
@@ -3431,7 +3431,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
     else
         ret.setown(expr->cloneAllAnnotations(ret));
 
-    if (expr->hasProperty(mergeAtom))
+    if (expr->hasAttribute(mergeAtom))
         ret.setown(normalizeMergeAggregate(ret));
 
     if (extraSelectNeeded)
@@ -3453,10 +3453,10 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
 
     if (group)
     {
-        if (expr->hasProperty(mergeAtom))
+        if (expr->hasAttribute(mergeAtom))
             return normalizeMergeAggregate(expr);
 
-        bool useHashAggregate = expr->hasProperty(fewAtom);
+        bool useHashAggregate = expr->hasAttribute(fewAtom);
         if (expr->getOperator() == no_aggregate)
         {
             OwnedHqlExpr selector = createSelector(no_left, dataset->queryRecord(), querySelSeq(expr));
@@ -3469,7 +3469,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
         if (useHashAggregate && group->isConstant() && !translator.targetThor())
             return removeProperty(expr, fewAtom);
 
-        if (!expr->hasProperty(manyAtom) && !expr->hasProperty(sortedAtom))
+        if (!expr->hasAttribute(manyAtom) && !expr->hasAttribute(sortedAtom))
         {
             if (isSmallGrouping(group))
             {
@@ -3483,12 +3483,12 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
                     ds.setown(createDataset(no_group, ds.getClear(), NULL));
                     ds.setown(cloneInheritedAnnotations(expr, ds));
                 }
-                OwnedHqlExpr sorted = ensureSortedForGroup(ds, newsort, expr->hasProperty(localAtom), !translator.targetThor(), options.implicitGroupSubSort);
+                OwnedHqlExpr sorted = ensureSortedForGroup(ds, newsort, expr->hasAttribute(localAtom), !translator.targetThor(), options.implicitGroupSubSort);
 
                 //For thor a global grouped aggregate would transfer elements between nodes so it is still likely to
                 //be more efficient to do a hash aggregate.  Even better would be to check the distribution
                 if ((sorted != ds) ||
-                    (translator.targetThor() && !expr->hasProperty(localAtom) && !isPartitionedForGroup(ds, newsort, true)))
+                    (translator.targetThor() && !expr->hasAttribute(localAtom) && !isPartitionedForGroup(ds, newsort, true)))
                     useHashAggregate = true;
             }
             //Default to a hash aggregate for child queries/normalized sources
@@ -3497,7 +3497,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
                 useHashAggregate = true;
         }
 
-        if (!expr->hasProperty(aggregateAtom) && !useHashAggregate && !expr->hasProperty(groupedAtom))
+        if (!expr->hasAttribute(aggregateAtom) && !useHashAggregate && !expr->hasAttribute(groupedAtom))
             return convertAggregateGroupingToGroupedAggregate(expr, group);
     }
     return NULL;
@@ -3564,13 +3564,13 @@ bool CompoundSourceInfo::canMergeLimit(IHqlExpression * expr, ClusterType target
         //Don't merge skip and onfail limits into activities that can't implement them completely
         if (targetClusterType != RoxieCluster)
         {
-            if (expr->hasProperty(skipAtom) || expr->hasProperty(onFailAtom))
+            if (expr->hasAttribute(skipAtom) || expr->hasAttribute(onFailAtom))
                 return false;
         }
         else
         {
             //Can always limit a count/aggregate with a skip limit - just resets count to 0
-            if (expr->hasProperty(skipAtom))
+            if (expr->hasAttribute(skipAtom))
                 return true;
         }
         break;
@@ -3730,12 +3730,12 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
     case no_newusertable:
     case no_aggregate:
     case no_newaggregate:
-        if (expr->hasProperty(keyedAtom))
+        if (expr->hasAttribute(keyedAtom))
             insideCompound = true;
         NewHqlTransformer::analyseExpr(expr);
         break;
     case no_join:
-        if (isKeyedJoin(expr) && !expr->hasProperty(_complexKeyed_Atom))
+        if (isKeyedJoin(expr) && !expr->hasAttribute(_complexKeyed_Atom))
         {
             analyseExpr(expr->queryChild(0));
             doAnalyseChildren(expr, 2);
@@ -3752,7 +3752,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
     {
     case no_newkeyindex:
         extra->sourceOp = no_compound_indexread;
-        extra->uid.set(expr->queryProperty(_uid_Atom));
+        extra->uid.set(expr->queryAttribute(_uid_Atom));
         extra->mode = no_thor;
         break;
     case no_table:
@@ -3764,11 +3764,11 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             {
             case no_thor:
             case no_flat:
-                if ((flags & CSFcompoundSpill) || !expr->hasProperty(_spill_Atom))
+                if ((flags & CSFcompoundSpill) || !expr->hasAttribute(_spill_Atom))
                 {
                     extra->sourceOp = no_compound_diskread;
-                    extra->isPreloaded = expr->hasProperty(preloadAtom);
-                    extra->uid.set(expr->queryProperty(_uid_Atom));
+                    extra->isPreloaded = expr->hasAttribute(preloadAtom);
+                    extra->uid.set(expr->queryAttribute(_uid_Atom));
                     extra->mode = no_thor;
                 }
                 break;
@@ -3776,8 +3776,8 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                 if (translator.queryOptions().enableCompoundCsvRead)
                 {
                     extra->sourceOp = no_compound_diskread;
-                    extra->isPreloaded = expr->hasProperty(preloadAtom);
-                    extra->uid.set(expr->queryProperty(_uid_Atom));
+                    extra->isPreloaded = expr->hasAttribute(preloadAtom);
+                    extra->uid.set(expr->queryAttribute(_uid_Atom));
                     extra->mode = mode->getOperator();
                 }
                 break;
@@ -3786,19 +3786,19 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
         }
     case no_hqlproject:
         {
-            if (!expr->hasProperty(prefetchAtom))
+            if (!expr->hasAttribute(prefetchAtom))
             {
                 IHqlExpression * transform = expr->queryChild(1);
-                IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+                IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
                 if (!counter || !transformContainsCounter(transform, counter))
                 {
                     IHqlExpression * dataset = expr->queryChild(0);
                     CompoundSourceInfo * parentExtra = queryBodyExtra(dataset);
                     //Skips in datasets don't work very well at the moment - pure() is a bit strict really.
-                    if ((dataset->isPure() || expr->hasProperty(keyedAtom)) && !parentExtra->isAggregate())
+                    if ((dataset->isPure() || expr->hasAttribute(keyedAtom)) && !parentExtra->isAggregate())
                     {
                         extra->inherit(*parentExtra);
-                        if (expr->hasProperty(keyedAtom))
+                        if (expr->hasAttribute(keyedAtom))
                             extra->ensureCompound();
                         if (!isPureActivity(expr))
                         {
@@ -3856,13 +3856,13 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             IHqlExpression * dataset = expr->queryChild(0);
             CompoundSourceInfo * parentExtra = queryBodyExtra(dataset);
             extra->inherit(*parentExtra, op);
-            extra->uid.set(expr->queryProperty(_uid_Atom));
+            extra->uid.set(expr->queryAttribute(_uid_Atom));
             break;
         }
     case no_select:
         if (expr->isDataset())
         {
-            if (expr->hasProperty(newAtom))
+            if (expr->hasAttribute(newAtom))
             {
                 IHqlExpression * dataset = expr->queryChild(0);
                 CompoundSourceInfo * parentExtra = queryBodyExtra(dataset);
@@ -3940,10 +3940,10 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                     else
                     {
                         extra->isLimited = true;
-                        if (expr->hasProperty(skipAtom))
+                        if (expr->hasAttribute(skipAtom))
                             extra->hasSkipLimit = true;
                     }
-                    if (expr->hasProperty(onFailAtom))
+                    if (expr->hasAttribute(onFailAtom))
                         extra->isCreateRowLimited = true;
                     extra->isCloned = cloneRequired;
                 }
@@ -3964,7 +3964,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                     break;
 
                 IHqlExpression * root = queryRoot(dataset);
-                if (!root || isGrouped(root) || expr->hasProperty(localAtom))
+                if (!root || isGrouped(root) || expr->hasAttribute(localAtom))
                     break;
 
                 bool isSimpleCountExists = isSimpleCountExistsAggregate(expr, true, false);
@@ -4064,7 +4064,7 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                 if (!parentExtra->isAggregate())
                     extra->inherit(*queryBodyExtra(dataset));
             }
-            if (expr->hasProperty(keyedAtom))
+            if (expr->hasAttribute(keyedAtom))
                 extra->ensureCompound();
         }
         break;
@@ -4278,7 +4278,7 @@ bool CompoundSourceTransformer::needToCloneLimit(IHqlExpression * expr, node_ope
             return true;
         break;
     case no_limit:
-        if (expr->hasProperty(skipAtom) && (targetClusterType != RoxieCluster))
+        if (expr->hasAttribute(skipAtom) && (targetClusterType != RoxieCluster))
             return true;
         break;
     }
@@ -4340,10 +4340,10 @@ IHqlExpression * CompoundActivityTransformer::createTransformed(IHqlExpression *
         return getMergedFetch(transformed);
     case no_limit:
         {
-            if (transformed->hasProperty(onFailAtom))
+            if (transformed->hasAttribute(onFailAtom))
                 break;
             LinkedHqlExpr dataset = transformed->queryChild(0);
-            if (dataset->hasProperty(limitAtom) || transformed->hasProperty(skipAtom))
+            if (dataset->hasAttribute(limitAtom) || transformed->hasAttribute(skipAtom))
                 break;
             switch (dataset->getOperator())
             {
@@ -4433,7 +4433,7 @@ IHqlExpression * OptimizeActivityTransformer::insertChoosen(IHqlExpression * lhs
 
 static bool looksLikeSimpleCount(IHqlExpression * expr)
 {
-    if ((expr->getOperator() == no_select) && expr->hasProperty(newAtom))
+    if ((expr->getOperator() == no_select) && expr->hasAttribute(newAtom))
     {
         IHqlExpression * ds = expr->queryChild(0);
         return isSimpleCountAggregate(ds, false);
@@ -4815,9 +4815,9 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType pla
     few = spillToWorkunitNotFile(value, platform) || value->isDictionary();
     if (global)
     {
-        if (global->hasProperty(fewAtom))
+        if (global->hasAttribute(fewAtom))
             few = true;
-        else if (global->hasProperty(manyAtom) && (platform != RoxieCluster))
+        else if (global->hasAttribute(manyAtom) && (platform != RoxieCluster))
             few = false;
     }
     setOp = no_setresult;
@@ -4828,7 +4828,7 @@ void GlobalAttributeInfo::extractGlobal(IHqlExpression * global, ClusterType pla
 void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpression * originalValue, bool isRoxie)
 {
     node_operator op = expr->getOperator();
-    few = expr->hasProperty(fewAtom) || (isRoxie) || (value->isDictionary() && !expr->hasProperty(manyAtom));
+    few = expr->hasAttribute(fewAtom) || (isRoxie) || (value->isDictionary() && !expr->hasAttribute(manyAtom));
     switch (op)
     {
     case no_stored:
@@ -4849,8 +4849,8 @@ void GlobalAttributeInfo::extractStoredInfo(IHqlExpression * expr, IHqlExpressio
         sequence.setown(getGlobalSequenceNumber());
         extraSetAttr.setown(createAttribute(_workflowPersist_Atom, LINK(originalValue)));
         setCluster(queryRealChild(expr, 1));
-        few = expr->hasProperty(fewAtom);       // PERSISTs need a consistent format.
-        extraOutputAttr.setown(createComma(LINK(expr->queryProperty(expireAtom)), LINK(expr->queryProperty(clusterAtom))));
+        few = expr->hasAttribute(fewAtom);       // PERSISTs need a consistent format.
+        extraOutputAttr.setown(createComma(LINK(expr->queryAttribute(expireAtom)), LINK(expr->queryAttribute(clusterAtom))));
         break;
     case no_global:
         throwUnexpected();
@@ -4991,7 +4991,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
                 args.append(*createAttribute(__compressed__Atom));
             if (hasSingleRow(value))
                 args.append(*createAttribute(rowAtom));
-            if (output->hasProperty(jobTempAtom))
+            if (output->hasAttribute(jobTempAtom))
                 args.append(*createAttribute(jobTempAtom));
             if (persistOp != no_stored)
             {
@@ -5121,7 +5121,7 @@ static bool isStored(IHqlExpression * set)
     case no_setresult:
     case no_ensureresult:
     case no_output:
-        return matchesConstantValue(queryPropertyChild(set, sequenceAtom, 0), ResultSequenceStored);
+        return matchesConstantValue(queryAttributeChild(set, sequenceAtom, 0), ResultSequenceStored);
     }
     return false;
 }
@@ -5132,7 +5132,7 @@ static bool isTrivialStored(IHqlExpression * set)
     {
     case no_setresult:
     case no_ensureresult:
-        if (matchesConstantValue(queryPropertyChild(set, sequenceAtom, 0), ResultSequenceStored))
+        if (matchesConstantValue(queryAttributeChild(set, sequenceAtom, 0), ResultSequenceStored))
         {
             IHqlExpression * value = set->queryChild(0);
             loop
@@ -5438,7 +5438,7 @@ IHqlExpression * WorkflowTransformer::extractWorkflow(IHqlExpression * untransfo
     HqlExprArray actions;
     unwindChildren(actions, expr, 1);
 
-    IHqlExpression * original = queryProperty(_original_Atom, actions);
+    IHqlExpression * original = queryAttribute(_original_Atom, actions);
     if (original) original = original->queryChild(0);
 
     //First check for duplicate expressions, and cope with the weird case where they are identical except for the annotations.
@@ -5912,7 +5912,7 @@ IHqlExpression * WorkflowTransformer::createTransformed(IHqlExpression * expr)
     case no_output:
     case no_buildindex:
         {
-            IHqlExpression * updateAttr = transformed->queryProperty(updateAtom);
+            IHqlExpression * updateAttr = transformed->queryAttribute(updateAtom);
             if (updateAttr)
             {
                 DependenciesUsed dependencies(false);
@@ -5927,7 +5927,7 @@ IHqlExpression * WorkflowTransformer::createTransformed(IHqlExpression * expr)
                     OwnedHqlExpr attr = createExprAttribute(_files_Atom, dependencies.tablesRead);
                     if (!isIndependentOfScope(attr) || isContextDependent(attr))
                     {
-                        if (!updateAttr->hasProperty(alwaysAtom))
+                        if (!updateAttr->hasAttribute(alwaysAtom))
                             throwError(HQLERR_InputsAreTooComplexToUpdate);
                         canEvaluateFilenames = false;
                     }
@@ -7152,7 +7152,7 @@ void ExplicitGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
         seenGlobalScope = true;
         //If local attribute is present on a global, then an independent transform may cause an extra
         //transformation because it may become unconditional, when previously conditional
-        if (expr->hasProperty(localAtom))
+        if (expr->hasAttribute(localAtom))
             seenLocalGlobalScope = true;
         break;
     }
@@ -7178,12 +7178,12 @@ IHqlExpression * ExplicitGlobalTransformer::createTransformed(IHqlExpression * e
         //fall through
     case no_globalscope:
         {
-            if (!expr->hasProperty(localAtom) || isUsedUnconditionally(expr))
+            if (!expr->hasAttribute(localAtom) || isUsedUnconditionally(expr))
             {
                 IHqlExpression * value = transformed->queryChild(0);
                 if (!isIndependentOfScope(value))
                 {
-                    if (expr->hasProperty(optAtom))
+                    if (expr->hasAttribute(optAtom))
                         return LINK(transformed->queryChild(0));
 
                     IHqlExpression * symbol = queryActiveSymbol();
@@ -7264,7 +7264,7 @@ protected:
             {
                 IHqlExpression * filename = queryRealChild(expr, 2);
                 if (!filename)
-                    filename = expr->queryProperty(namedAtom);
+                    filename = expr->queryAttribute(namedAtom);
 
                 StringBuffer s;
                 if (filename)
@@ -7356,7 +7356,7 @@ void NewScopeMigrateTransformer::analyseExpr(IHqlExpression * expr)
             activityDepth++;
         break;
     case no_select:
-        if (expr->hasProperty(newAtom))
+        if (expr->hasAttribute(newAtom))
             activityDepth++;
         break;
     }
@@ -7370,8 +7370,8 @@ IHqlExpression * NewScopeMigrateTransformer::hoist(IHqlExpression * expr, IHqlEx
     if (minimizeWorkunitTemporaries)
         return createWrapper(no_globalscope, LINK(hoisted));
     IHqlExpression * setResult = createSetResult(hoisted);
-    IHqlExpression * seqAttr = setResult->queryProperty(sequenceAtom);
-    IHqlExpression * aliasAttr = setResult->queryProperty(namedAtom);
+    IHqlExpression * seqAttr = setResult->queryAttribute(sequenceAtom);
+    IHqlExpression * aliasAttr = setResult->queryAttribute(namedAtom);
     appendToTarget(*setResult);
 
     return createGetResultFromSetResult(setResult);
@@ -7422,7 +7422,7 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
         }
     case no_select:
         {
-            IHqlExpression * newAttr = transformed->queryProperty(newAtom);
+            IHqlExpression * newAttr = transformed->queryAttribute(newAtom);
             if (newAttr)
             {
                 if (isUsedUnconditionally(expr))
@@ -7992,10 +7992,10 @@ static IHqlExpression * optimizeJoinFilter(IHqlExpression * expr)
 {
     //NB: Not a member function because we use a different transform mutex, and don't want to accidentally interfere with caller's use
     IHqlExpression * index = expr->queryChild(1);
-    if (!index->hasProperty(filteredAtom) && !index->hasProperty(_filtered_Atom) && (index->getOperator() == no_newkeyindex))
+    if (!index->hasAttribute(filteredAtom) && !index->hasAttribute(_filtered_Atom) && (index->getOperator() == no_newkeyindex))
         return LINK(expr);
 
-    if (expr->hasProperty(keyedAtom))
+    if (expr->hasAttribute(keyedAtom))
         return LINK(expr);      //MORE!
 
     OwnedHqlExpr rhs = createSelector(no_right, index, querySelSeq(expr));
@@ -8013,8 +8013,8 @@ static IHqlExpression * optimizeJoinFilter(IHqlExpression * expr)
         index = index->queryChild(0);
     }
 
-    processor.addMappings(queryPropertyChild(index, filteredAtom, 0), queryActiveTableSelector());
-    processor.addMappings(queryPropertyChild(index, _filtered_Atom, 0), queryActiveTableSelector());
+    processor.addMappings(queryAttributeChild(index, filteredAtom, 0), queryActiveTableSelector());
+    processor.addMappings(queryAttributeChild(index, _filtered_Atom, 0), queryActiveTableSelector());
     if (!processor.hasMappings())
         return LINK(expr);
 
@@ -8106,7 +8106,7 @@ LocalUploadTransformer::LocalUploadTransformer(IWorkUnit * _wu) : NewHqlTransfor
 IHqlExpression * LocalUploadTransformer::createTransformed(IHqlExpression * expr)
 {
     OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
-    if (transformed->hasProperty(localUploadAtom))
+    if (transformed->hasAttribute(localUploadAtom))
     {
         assertex(transformed->getOperator() == no_table);
         IHqlExpression * filename = transformed->queryChild(0);
@@ -8251,7 +8251,7 @@ static IHqlExpression * splitSelector(IHqlExpression * expr, SharedHqlExpr & old
 {
     assertex(expr->getOperator() == no_select);
     IHqlExpression * ds = expr->queryChild(0);
-    if (expr->hasProperty(newAtom))
+    if (expr->hasAttribute(newAtom))
     {
         oldDataset.set(ds);
         OwnedHqlExpr left = createSelector(no_left, ds, querySelSeq(expr));
@@ -8542,7 +8542,7 @@ IHqlExpression * ForceLocalTransformer::createTransformed(IHqlExpression * expr)
     }
 
     OwnedHqlExpr ret = NewHqlTransformer::createTransformed(expr);
-    if (!insideForceLocal || !localChangesActivity(expr) || expr->hasProperty(noLocalAtom))
+    if (!insideForceLocal || !localChangesActivity(expr) || expr->hasAttribute(noLocalAtom))
         return ret.getClear();
 
     return appendLocalAttribute(ret);
@@ -8661,15 +8661,15 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             case type_dictionary:
             case type_table:
             case type_groupedtable:
-                if (expr->hasProperty(embeddedAtom))
+                if (expr->hasAttribute(embeddedAtom))
                 {
                     OwnedHqlExpr transformed = QuickHqlTransformer::createTransformedBody(expr);
                     return removeProperty(transformed, embeddedAtom);
                 }
-                if (implicitLinkedChildRows && !expr->hasProperty(_linkCounted_Atom))
+                if (implicitLinkedChildRows && !expr->hasAttribute(_linkCounted_Atom))
                 {
                     //Don't use link counted rows for weird HOLe style dataset attributes
-                    if (expr->hasProperty(countAtom) || expr->hasProperty(sizeofAtom))
+                    if (expr->hasAttribute(countAtom) || expr->hasAttribute(sizeofAtom))
                         break;
                     //add the attribute first so a no linked field doesn't contain a record that requires it
                     OwnedHqlExpr modified = appendOwnedOperand(expr, getLinkCountedAttr());
@@ -9230,8 +9230,8 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
         {
             HqlExprArray children;
             transformChildren(expr, children);
-            IHqlExpression * sorted = queryProperty(sortedAtom, children);
-            if (!sorted || queryProperty(_implicitSorted_Atom, children))
+            IHqlExpression * sorted = queryAttribute(sortedAtom, children);
+            if (!sorted || queryAttribute(_implicitSorted_Atom, children))
             {
                 IHqlExpression * dataset = &children.item(0);
                 removeProperty(children, _implicitSorted_Atom);
@@ -9240,7 +9240,7 @@ IHqlExpression * HqlScopeTagger::createTransformed(IHqlExpression * expr)
                     children.zap(*sorted);
 
                 HqlExprArray sorts;
-                OwnedHqlExpr order = getExistingSortOrder(dataset, expr->hasProperty(localAtom), true);
+                OwnedHqlExpr order = getExistingSortOrder(dataset, expr->hasAttribute(localAtom), true);
                 if (order)
                     unwindChildren(sorts, order);
                 ForEachItemInRev(i, sorts)
@@ -9965,7 +9965,7 @@ void ContainsCompoundTransformer::doAnalyseBody(IHqlExpression * expr)
             return;
         break;
     case no_select:
-//      if (expr->hasProperty(newAtom))
+//      if (expr->hasAttribute(newAtom))
             analyse(expr->queryChild(0));
         return;
     case no_assign:
@@ -10258,7 +10258,7 @@ static bool exprIsSelfConstant(IHqlExpression * expr)
 
 static IAtom * queryPatUseModule(IHqlExpression * expr)
 {
-    IHqlExpression * moduleAttr = expr->queryProperty(moduleAtom);
+    IHqlExpression * moduleAttr = expr->queryAttribute(moduleAtom);
     if (moduleAttr)
         return moduleAttr->queryChild(0)->queryBody()->queryName();
     return NULL;
@@ -10266,7 +10266,7 @@ static IAtom * queryPatUseModule(IHqlExpression * expr)
 
 static IAtom * queryPatUseName(IHqlExpression * expr)
 {
-    IHqlExpression * nameAttr = expr->queryProperty(nameAtom);
+    IHqlExpression * nameAttr = expr->queryAttribute(nameAtom);
     return nameAttr->queryChild(0)->queryBody()->queryName();
 }
 
@@ -10520,7 +10520,7 @@ void HqlTreeNormalizer::analyseExpr(IHqlExpression * expr)
     switch (op)
     {
     case no_pat_use:
-        if (body->hasProperty(nameAtom))
+        if (body->hasAttribute(nameAtom))
             forwardReferences.append(*LINK(body));
         break;
     case no_pat_instance:
@@ -10930,7 +10930,7 @@ IHqlExpression * HqlTreeNormalizer::transformPatCheckIn(IHqlExpression * expr)
 
     if (set->getOperator() == no_pat_set)
     {
-        IHqlExpression * notAttr = expr->queryProperty(notAtom);
+        IHqlExpression * notAttr = expr->queryAttribute(notAtom);
         if (!notAttr)
             return LINK(set);
         HqlExprArray args;
@@ -10974,7 +10974,7 @@ IHqlExpression * HqlTreeNormalizer::transformPatCheckIn(IHqlExpression * expr)
         }
     }
 
-    if (expr->hasProperty(notAtom))
+    if (expr->hasAttribute(notAtom))
         newValues.append(*createAttribute(notAtom));
     return createValue(no_pat_set, makePatternType(), newValues);
 }
@@ -11136,7 +11136,7 @@ IHqlExpression * HqlTreeNormalizer::transformIfAssert(node_operator newOp, IHqlE
     unsigned max = expr->numChildren();
     HqlExprArray children;
     bool same = transformChildren(expr, children);
-    if (expr->hasProperty(assertAtom) && !options.removeAsserts)
+    if (expr->hasAttribute(assertAtom) && !options.removeAsserts)
     {
         OwnedHqlExpr ret = createDataset(newOp, children);
         return expr->cloneAllAnnotations(ret);
@@ -11165,7 +11165,7 @@ IHqlExpression * HqlTreeNormalizer::transformExecuteWhen(IHqlExpression * expr)
 
     //Need to create a unique id to differentiate the different side effects.
     transformChildren(expr, children);
-    assertex(!expr->hasProperty(_uid_Atom));
+    assertex(!expr->hasAttribute(_uid_Atom));
     children.append(*createUniqueId());
     return expr->clone(children);
 }
@@ -11235,7 +11235,7 @@ IHqlExpression * HqlTreeNormalizer::validateKeyedJoin(IHqlExpression * expr)
     }
 
     //Now check that a join marked as keyed has a key as the rhs.
-    IHqlExpression * keyed = expr->queryProperty(keyedAtom);
+    IHqlExpression * keyed = expr->queryAttribute(keyedAtom);
     if (!keyed || keyed->queryChild(0) || isKey(rhs))
         return expr->clone(children);
 
@@ -11402,7 +11402,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
     //for ghoogle.hql.  It could conceivably cause problems later on.
     if (forwardReferences.ordinality())
     {
-        if (op == no_pat_use && expr->hasProperty(nameAtom))
+        if (op == no_pat_use && expr->hasAttribute(nameAtom))
             return transformPatNamedUse(expr);
         if (op == no_pat_instance)
         {
@@ -11412,7 +11412,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
         }
     }
 
-    IHqlExpression * sideEffects = expr->queryProperty(_sideEffect_Atom);
+    IHqlExpression * sideEffects = expr->queryAttribute(_sideEffect_Atom);
     if (sideEffects)
     {
         HqlExprArray args;
@@ -11572,7 +11572,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
     case no_record:
         {
             OwnedHqlExpr transformed = completeTransform(expr);
-            if (transformed->hasProperty(packedAtom))
+            if (transformed->hasAttribute(packedAtom))
                 transformed.setown(getPackedRecord(transformed));
 
             if (options.ensureRecordsHaveSymbols)
@@ -11657,7 +11657,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
 //      seenIndex = true;
         return transformNewKeyIndex(expr);
     case no_table:
-        if (expr->hasProperty(localUploadAtom))
+        if (expr->hasAttribute(localUploadAtom))
             seenLocalUpload = true;
         return transformTable(expr);
     case no_pat_checkin:
@@ -11674,10 +11674,10 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             OwnedHqlExpr transformed = validateKeyedJoin(expr);
             //Explicitly add a left outer flag to a denormalize if no other join type is specified.
             //Do here rather than in parser so crc for persists isn't changed.
-            if (!transformed->hasProperty(innerAtom) &&
-                !transformed->hasProperty(leftonlyAtom) && !transformed->hasProperty(leftouterAtom) &&
-                !transformed->hasProperty(rightonlyAtom) && !transformed->hasProperty(rightouterAtom) &&
-                !transformed->hasProperty(fullonlyAtom) && !transformed->hasProperty(fullouterAtom))
+            if (!transformed->hasAttribute(innerAtom) &&
+                !transformed->hasAttribute(leftonlyAtom) && !transformed->hasAttribute(leftouterAtom) &&
+                !transformed->hasAttribute(rightonlyAtom) && !transformed->hasAttribute(rightouterAtom) &&
+                !transformed->hasAttribute(fullonlyAtom) && !transformed->hasAttribute(fullouterAtom))
             {
                 return appendOwnedOperand(transformed, createAttribute(leftouterAtom));
             }
@@ -11809,7 +11809,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 LinkedHqlExpr cur = expr->queryChild(i);
                 if (cur->getOperator() == no_virtualscope)
                 {
-                    cur.setown(checkCreateConcreteModule(NULL, cur, cur->queryProperty(_location_Atom)));
+                    cur.setown(checkCreateConcreteModule(NULL, cur, cur->queryAttribute(_location_Atom)));
                     assertex(cur->getOperator() != no_virtualscope);
                     same = false;
                 }
@@ -11845,7 +11845,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 children.replace(*createAttribute(_selfJoinPlaceholder_Atom), 1);       // replace the 1st dataset with an attribute so parameters are still in the same place.
                 return createDataset(no_selfjoin, children);
             }
-            if (isKeyedJoin(transformed) && translator.targetRoxie() && !expr->hasProperty(_ordered_Atom))
+            if (isKeyedJoin(transformed) && translator.targetRoxie() && !expr->hasAttribute(_ordered_Atom))
                 return appendOwnedOperand(transformed, createAttribute(_ordered_Atom));
             return transformed.getClear();
         }
@@ -11879,7 +11879,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
         return transformIfAssert(no_assertgrouped, expr);
     case no_distributed:
         //remove distributed(x)
-        if (expr->hasProperty(unknownAtom))
+        if (expr->hasAttribute(unknownAtom))
             return transform(expr->queryChild(0));
         return transformIfAssert(no_assertdistributed, expr);
 #if defined(MAP_PROJECT_TO_USERTABLE)
@@ -11926,7 +11926,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             HqlExprArray children;
             bool same = transformChildren(expr, children);
             IHqlExpression * denom = queryRealChild(expr, 2);
-            if (!denom && !expr->queryProperty(localAtom))
+            if (!denom && !expr->queryAttribute(localAtom))
             {
                 children.add(*createValue(no_count, LINK(defaultIntegralType), LINK(&children.item(0))), 2);
                 same = false;
@@ -11958,7 +11958,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
     case no_pat_instance:
         {
             OwnedHqlExpr child = transform(expr->queryChild(0));
-            if (child->getOperator() == no_pat_instance && child->hasProperty(tempAtom))
+            if (child->getOperator() == no_pat_instance && child->hasAttribute(tempAtom))
                 return createValue(no_pat_instance, child->getType(), LINK(child->queryChild(0)));
             //default action
             break;
@@ -12045,7 +12045,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
 #if 0
     //This code adds a assertsorted activity after an nary-join, but I don't think it is actually correct, so removed.  I may revisit.
     case no_nwayjoin:
-        if (expr->hasProperty(assertAtom) && !removeAsserts)
+        if (expr->hasAttribute(assertAtom) && !removeAsserts)
         {
             OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);;
             IHqlExpression * ds = transformed->queryChild(0);
@@ -12222,9 +12222,9 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 //the first time will be efficiently optimized.
                 IHqlExpression * dataset = transformed->queryChild(0);
                 IHqlExpression * filter = queryRealChild(transformed, 2);
-                IHqlExpression * rowsid = transformed->queryProperty(_rowsid_Atom);
+                IHqlExpression * rowsid = transformed->queryAttribute(_rowsid_Atom);
                 IHqlExpression * selSeq = querySelSeq(transformed);
-                IHqlExpression * counter = queryPropertyChild(transformed, _countProject_Atom, 0);
+                IHqlExpression * counter = queryAttributeChild(transformed, _countProject_Atom, 0);
                 OwnedHqlExpr left = createSelector(no_left, dataset, selSeq);
                 OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(left), LINK(rowsid));
                 OwnedHqlExpr initialLoopDataset = LINK(dataset);

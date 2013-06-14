@@ -950,7 +950,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
                 HqlDummyLookupContext dummyctx(errors);
                 IHqlScope * newScope = newModule->queryScope();
                 if (newScope)
-                    return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasProperty(ignoreBaseAtom), false), dummyctx);
+                    return newScope->lookupSymbol(selectedName, makeLookupFlags(true, expr->hasAttribute(ignoreBaseAtom), false), dummyctx);
             }
             break;
         }
@@ -1307,7 +1307,7 @@ void NewHqlTransformer::analyseAssign(IHqlExpression * expr)
 
 void NewHqlTransformer::analyseSelector(IHqlExpression * expr)
 {
-    if ((expr->getOperator() == no_select) && !expr->hasProperty(newAtom))
+    if ((expr->getOperator() == no_select) && !expr->hasAttribute(newAtom))
         analyseSelector(expr->queryChild(0));
 }
 
@@ -1435,7 +1435,7 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
                 children.replace(*LINK(ds.queryChild(0)), 0);
                 removeProperty(children, newAtom);
             }
-            else if (!expr->hasProperty(newAtom))
+            else if (!expr->hasAttribute(newAtom))
             {
                 //unusual situation x.a<new>.b; x.a<new> is converted to d, but d.b is not right, it should now be d.b<new>
                 assertex(ds.isDatarow());
@@ -1741,7 +1741,7 @@ void NewHqlTransformer::setTransformedSelector(IHqlExpression * expr, IHqlExpres
 {
     assertex(expr == expr->queryNormalizedSelector());
     //in rare situations a selector could get converted to a non-selector e.g, when replace self-ref with a new dataset.
-    assertex(!transformed || transformed == transformed->queryNormalizedSelector() || transformed->hasProperty(newAtom));
+    assertex(!transformed || transformed == transformed->queryNormalizedSelector() || transformed->hasAttribute(newAtom));
     queryTransformExtra(expr)->setTransformedSelector(transformed);
 }
 
@@ -2199,7 +2199,7 @@ void ConditionalHqlTransformer::doAnalyseExpr(IHqlExpression * expr)
             return;
         break;
     case no_globalscope:
-        if (!expr->hasProperty(localAtom))
+        if (!expr->hasAttribute(localAtom))
         {
             unsigned savedDepth = conditionDepth;
             conditionDepth = 0;
@@ -3562,7 +3562,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
         }
     case no_select:
         {
-            if (expr->hasProperty(newAtom))
+            if (expr->hasAttribute(newAtom))
             {
                 IHqlExpression * dataset = expr->queryChild(0);
                 pushScope();
@@ -3577,7 +3577,7 @@ void ScopedTransformer::analyseChildren(IHqlExpression * expr)
             break;
         }
     case no_globalscope:
-        if (expr->hasProperty(optAtom))
+        if (expr->hasAttribute(optAtom))
         {
             NewHqlTransformer::analyseChildren(expr);
             break;
@@ -3957,7 +3957,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
     case no_select:
         {
             IHqlExpression * dataset = expr->queryChild(0);
-            if (expr->hasProperty(newAtom))
+            if (expr->hasAttribute(newAtom))
             {
                 pushScope();
                 IHqlExpression * transformedDs = transform(dataset);
@@ -3978,7 +3978,7 @@ IHqlExpression * ScopedTransformer::createTransformed(IHqlExpression * expr)
             break;
         }
     case no_globalscope:
-        if (expr->hasProperty(optAtom))
+        if (expr->hasAttribute(optAtom))
             return NewHqlTransformer::createTransformed(expr);
         //fall through
     case no_colon:
@@ -4272,7 +4272,7 @@ bool ScopedTransformer::checkInScope(IHqlExpression * selector, bool allowCreate
             break;
         return checkInScope(selector->queryChild(0), allowCreate);
     case no_globalscope:
-        if (selector->hasProperty(optAtom))
+        if (selector->hasAttribute(optAtom))
             break;
         //fall through
     case no_colon:
@@ -4586,7 +4586,7 @@ void SplitterVerifier::analyseExpr(IHqlExpression * expr)
         if (extra->useCount++)
         {
 #ifdef _DEBUG
-            IHqlExpression * id = expr->queryProperty(_uid_Atom);
+            IHqlExpression * id = expr->queryAttribute(_uid_Atom);
             unsigned idValue = (id ? (unsigned)getIntValue(id->queryChild(0)) : 0);
 #endif
             unsigned splitSize = (unsigned)getIntValue(expr->queryChild(1), 0);
@@ -4656,7 +4656,7 @@ public:
     {
         OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
 
-        if ((transformed->getOperator() == no_select) && transformed->hasProperty(newAtom))
+        if ((transformed->getOperator() == no_select) && transformed->hasAttribute(newAtom))
         {
             IHqlExpression * child = transformed->queryChild(0);
             node_operator childOp = child->getOperator();

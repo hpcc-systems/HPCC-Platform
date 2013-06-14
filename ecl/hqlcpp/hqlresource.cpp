@@ -74,11 +74,11 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
     case no_selfjoin:
     case no_denormalize:
     case no_denormalizegroup:
-        if (isKeyedJoin(expr) || expr->hasProperty(_lightweight_Atom))
+        if (isKeyedJoin(expr) || expr->hasAttribute(_lightweight_Atom))
             resources.setLightweight();
-        else if (expr->hasProperty(lookupAtom))
+        else if (expr->hasAttribute(lookupAtom))
         {
-            if (expr->hasProperty(fewAtom))
+            if (expr->hasAttribute(fewAtom))
             {
                 resources.setLightweight().set(RESslavememory, MEM_Const_Minimal+LOOKUPJOINL_SMART_BUFFER_SIZE);
                 resources.setManyToMasterSockets(1);
@@ -89,7 +89,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
                 resources.setManyToMasterSockets(1);
             }
         }
-        else if (expr->hasProperty(hashAtom))
+        else if (expr->hasAttribute(hashAtom))
         {
             resources.setHeavyweight();
             setHashResources(expr, resources, options);
@@ -106,7 +106,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         }
         break;
     case no_dedup:
-        if (isGrouped || (!expr->hasProperty(allAtom) && !expr->hasProperty(hashAtom)))
+        if (isGrouped || (!expr->hasAttribute(allAtom) && !expr->hasAttribute(hashAtom)))
         {
             resources.setLightweight();
             if (!isGrouped && !isLocal)
@@ -143,7 +143,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         setHashResources(expr, resources, options);
         break;
     case no_subsort:
-        if (expr->hasProperty(manyAtom))
+        if (expr->hasAttribute(manyAtom))
             resources.setHeavyweight();
         else
             resources.setLightweight();
@@ -151,12 +151,12 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
     case no_sort:
         if (isGrouped)
         {
-            if (expr->hasProperty(manyAtom))
+            if (expr->hasAttribute(manyAtom))
                 resources.setHeavyweight();
             else
                 resources.setLightweight();
         }
-        else if (expr->hasProperty(fewAtom) && isLocal)
+        else if (expr->hasAttribute(fewAtom) && isLocal)
             resources.setLightweight();
         else if (isLocal)
             resources.setHeavyweight();
@@ -185,7 +185,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
             else
             {
                 resources.setLightweight();
-                if (expr->hasProperty(_workflowPersist_Atom) && expr->hasProperty(distributedAtom))
+                if (expr->hasAttribute(_workflowPersist_Atom) && expr->hasAttribute(distributedAtom))
                     setHashResources(expr, resources, options);         // may require a hash distribute
             }
             break;
@@ -193,7 +193,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
     case no_output:
         {
             IHqlExpression * filename = expr->queryChild(1);
-            if (expr->hasProperty(_spill_Atom))
+            if (expr->hasAttribute(_spill_Atom))
             {
                 //resources.setLightweight();   // assume no resources(!)
             }
@@ -235,7 +235,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
     case no_hqlproject:
         resources.setLightweight();
         //Add a flag onto count project to indicate it is a different variety.
-        if (expr->hasProperty(_countProject_Atom) && !isLocal)
+        if (expr->hasAttribute(_countProject_Atom) && !isLocal)
             resources.set(RESslavememory, COUNTPROJECT_SMART_BUFFER_SIZE);
         break;
     case no_enth:
@@ -244,7 +244,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
             resources.set(RESslavememory, CHOOSESETS_SMART_BUFFER_SIZE);
         break;
     case no_metaactivity:
-        if (expr->hasProperty(pullAtom))
+        if (expr->hasAttribute(pullAtom))
             resources.setLightweight().set(RESslavememory, PULL_SMART_BUFFER_SIZE);
         break;
     case no_setresult:
@@ -254,7 +254,7 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         break;
     case no_choosesets:
         resources.setLightweight();
-        if (!isLocal || expr->hasProperty(enthAtom) || expr->hasProperty(lastAtom))
+        if (!isLocal || expr->hasAttribute(enthAtom) || expr->hasAttribute(lastAtom))
             resources.set(RESslavememory, CHOOSESETS_SMART_BUFFER_SIZE);
         break;
     case no_iterate:
@@ -463,7 +463,7 @@ bool lightweightAndReducesDatasetSize(IHqlExpression * expr)
     case no_newusertable:
         return reducesRowSize(expr);
     case no_dedup:
-        if (isGroupedActivity(expr) || (!expr->hasProperty(allAtom) && !expr->hasProperty(hashAtom)))
+        if (isGroupedActivity(expr) || (!expr->hasAttribute(allAtom) && !expr->hasAttribute(hashAtom)))
             return true;
         break;
     case no_aggregate:
@@ -967,7 +967,7 @@ void ResourceGraphInfo::removeResources(const CResources & value)
 
 static void appendCloneProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
 {
-    IHqlExpression * prop = expr->queryProperty(name);
+    IHqlExpression * prop = expr->queryAttribute(name);
     if (prop)
         args.append(*LINK(prop));
 }
@@ -1494,7 +1494,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
         case no_workunit_dataset:
             return !isProcessed && !isFiltered;
         case no_getgraphresult:
-            return !expr->hasProperty(_streaming_Atom);         // we must not duplicate streaming inputs!
+            return !expr->hasAttribute(_streaming_Atom);         // we must not duplicate streaming inputs!
         case no_keyindex:
         case no_newkeyindex:
             if (!isFiltered)
@@ -1526,7 +1526,7 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
             isProcessed = true;
             break;
         case no_hqlproject:
-            if (expr->hasProperty(_countProject_Atom) || expr->hasProperty(prefetchAtom))
+            if (expr->hasAttribute(_countProject_Atom) || expr->hasAttribute(prefetchAtom))
                 return false;
             expr = expr->queryChild(0);
             isProcessed = true;
@@ -2138,7 +2138,7 @@ protected:
         {
         case no_select:
             //Only interested in the leftmost no_select
-            if (expr->hasProperty(newAtom))
+            if (expr->hasAttribute(newAtom))
             {
                 IHqlExpression * ds = expr->queryChild(0);
                 if (isEvaluateable(ds))
@@ -2209,7 +2209,7 @@ protected:
         case no_thisnode:
             throwUnexpected();
         case no_getgraphresult:
-            if (expr->hasProperty(_streaming_Atom) || expr->hasProperty(_distributed_Atom))
+            if (expr->hasAttribute(_streaming_Atom) || expr->hasAttribute(_distributed_Atom))
             {
                 noteDataset(expr, expr, true);
                 return;
@@ -2230,7 +2230,7 @@ protected:
                 switch (ds->getOperator())
                 {
                 case no_getgraphresult:
-                    if (!expr->hasProperty(_streaming_Atom) && !expr->hasProperty(_distributed_Atom))
+                    if (!expr->hasAttribute(_streaming_Atom) && !expr->hasAttribute(_distributed_Atom))
                         break;
                     //fallthrough
                 case no_getgraphloopresult:
@@ -2709,7 +2709,7 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
         case no_newusertable:
         case no_aggregate:
         case no_newaggregate:
-            if (options.preventKeyedSplit && expr->hasProperty(keyedAtom))
+            if (options.preventKeyedSplit && expr->hasAttribute(keyedAtom))
                 insideNeverSplit = true;
             break;
         case no_stepped:
@@ -2936,10 +2936,10 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
                 //Needs the grouping to be saved in the same way.  Could cope with compressed matching, but not
                 //much point - since fairly unlikely.
                 IHqlExpression * filename = expr->queryChild(1);
-                if (filename && (filename->getOperator() == no_constant) && !expr->hasProperty(xmlAtom) && !expr->hasProperty(csvAtom))
+                if (filename && (filename->getOperator() == no_constant) && !expr->hasAttribute(xmlAtom) && !expr->hasAttribute(csvAtom))
                 {
                     IHqlExpression * dataset = expr->queryChild(0);
-                    if (expr->hasProperty(groupedAtom) == (dataset->queryType()->queryGroupInfo() != NULL))
+                    if (expr->hasAttribute(groupedAtom) == (dataset->queryType()->queryGroupInfo() != NULL))
                     {
                         StringBuffer filenameText;
                         filename->queryValue()->getStringValue(filenameText);
@@ -3533,16 +3533,16 @@ bool EclResourcer::addExprDependency(IHqlExpression * expr, ResourceGraphInfo * 
         return isNewSelector(expr);
     case no_workunit_dataset:
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, nameAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, nameAtom, 0);
             OwnedHqlExpr value = createAttribute(resultAtom, LINK(sequence), LINK(name));
             addDependencyUse(value, curGraph, activityExpr);
             return false;
         }
     case no_getresult:
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
             OwnedHqlExpr value = createAttribute(resultAtom, LINK(sequence), LINK(name));
             addDependencyUse(value, curGraph, activityExpr);
             return false;
@@ -3563,8 +3563,8 @@ bool EclResourcer::addExprDependency(IHqlExpression * expr, ResourceGraphInfo * 
     case no_setresult:
     case no_extractresult:
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
             OwnedHqlExpr value = createAttribute(resultAtom, LINK(sequence), LINK(name));
             addDependencySource(value, curGraph, activityExpr);
             return true;
@@ -3691,7 +3691,7 @@ void EclResourcer::spotUnbalancedSplitters(IHqlExpression * expr, unsigned which
             switch (expr->getOperator())
             {
             case no_addfiles:
-                if (expr->hasProperty(_ordered_Atom) || expr->hasProperty(_orderedPull_Atom) || isGrouped(expr))
+                if (expr->hasAttribute(_ordered_Atom) || expr->hasAttribute(_orderedPull_Atom) || isGrouped(expr))
                     modify = true;
                 break;
             default:
@@ -4344,7 +4344,7 @@ IHqlExpression * EclResourcer::doCreateResourced(IHqlExpression * expr, Resource
             {
                 args.append(*LINK(newDs));
                 unwindChildren(args, expr, 1);
-                if (!expr->hasProperty(newAtom) && isNewSelector(expr) && (newDs->getOperator() != no_select))
+                if (!expr->hasAttribute(newAtom) && isNewSelector(expr) && (newDs->getOperator() != no_select))
                     args.append(*LINK(queryNewSelectAttrExpr()));
                 same = false;
             }
@@ -4519,7 +4519,7 @@ IHqlExpression * EclResourcer::createResourced(IHqlExpression * expr, ResourceGr
             }
             else
             {
-                IHqlExpression * uid = info->transformed->queryProperty(_uid_Atom);
+                IHqlExpression * uid = info->transformed->queryAttribute(_uid_Atom);
                 source = createValue(no_callsideeffect, makeVoidType(), LINK(uid));
                 //source = LINK(info->transformed);
             }
@@ -4540,7 +4540,7 @@ IHqlExpression * EclResourcer::createResourced(IHqlExpression * expr, ResourceGr
     }
 
     OwnedHqlExpr resourced = doCreateResourced(expr, ownerGraph, expandInParent, defineSideEffect);
-    if (queryAddUniqueToActivity(resourced))// && !resourced->hasProperty(_internal_Atom))
+    if (queryAddUniqueToActivity(resourced))// && !resourced->hasAttribute(_internal_Atom))
         resourced.setown(appendUniqueAttr(resourced));
 
     if (!expandInParent)
@@ -4957,7 +4957,7 @@ void SpillActivityTransformer::analyseExpr(IHqlExpression * expr)
                     break;
                 input = cur;
             }
-            if (!body->hasProperty(balancedAtom))
+            if (!body->hasAttribute(balancedAtom))
                 setUnbalanced(input->queryBody());
         }
     }
@@ -4978,7 +4978,7 @@ IHqlExpression * SpillActivityTransformer::createTransformed(IHqlExpression * ex
             if (input->getOperator() == no_split)
                 return transform(input);
             OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
-            if (transformed->hasProperty(balancedAtom) && isUnbalanced(expr))
+            if (transformed->hasAttribute(balancedAtom) && isUnbalanced(expr))
                 return removeProperty(transformed, balancedAtom);
             return transformed.getClear();
         }

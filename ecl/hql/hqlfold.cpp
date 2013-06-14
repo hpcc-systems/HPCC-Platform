@@ -618,14 +618,14 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 
     const char * entrypoint = entry.toCharArray();
     const char * library = lib.toCharArray();
-    if(!body->hasProperty(pureAtom) && !body->hasProperty(templateAtom) && !(foldOptions & (HFOfoldimpure|HFOforcefold)))
+    if(!body->hasAttribute(pureAtom) && !body->hasAttribute(templateAtom) && !(foldOptions & (HFOfoldimpure|HFOforcefold)))
     {
         if (foldOptions & HFOthrowerror)
             throw MakeStringException(ERR_TMPLT_NONPUREFUNC, "%s/%s is not a pure function, can't constant fold it", library, entrypoint);
         return NULL;
     }
 
-    if(!body->hasProperty(cAtom)) 
+    if(!body->hasAttribute(cAtom))
     {
         if (!createMangledFunctionName(mangledEntry, funcdef))
         {
@@ -636,8 +636,8 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
         entrypoint = mangledEntry.str();
     }
 
-    if(body->hasProperty(contextAtom) || body->hasProperty(globalContextAtom) ||
-       body->hasProperty(gctxmethodAtom) || body->hasProperty(ctxmethodAtom) || body->hasProperty(omethodAtom)) 
+    if(body->hasAttribute(contextAtom) || body->hasAttribute(globalContextAtom) ||
+       body->hasAttribute(gctxmethodAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(omethodAtom))
     {
         if (foldOptions & HFOthrowerror)
             throw MakeStringException(ERR_TMPLT_NONEXTERNCFUNC, "%s/%s requires a runtime context to be executed, can't constant fold it", library, entrypoint);
@@ -648,7 +648,7 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     HINSTANCE hDLL=LoadSharedObject(library, false, false);
     if (!LoadSucceeded(hDLL))
     {
-        if (body->hasProperty(templateAtom))
+        if (body->hasAttribute(templateAtom))
             throw MakeStringException(ERR_SVC_LOADLIBFAILED, "Error happened when trying to load library %s for template helper function", library);
         if (foldOptions & HFOthrowerror)
             throw MakeStringException(ERR_SVC_LOADLIBFAILED, "Error happened when trying to load library %s", library);
@@ -667,11 +667,11 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
     // the called function
     FuncCallStack fstack;
     
-    if(body->hasProperty(templateAtom)) 
+    if(body->hasAttribute(templateAtom))
         fstack.pushPtr(templateContext);
 
     //if these were allowed to be optional - then the following code would be needed
-    if(body->hasProperty(contextAtom) || body->hasProperty(globalContextAtom)) 
+    if(body->hasAttribute(contextAtom) || body->hasAttribute(globalContextAtom))
         fstack.pushPtr(NULL);
 
     bool retCharStar = false;
@@ -1631,15 +1631,15 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
     {
     case no_assertkeyed:
         {
-            assertex(expr->hasProperty(_selectors_Atom));
+            assertex(expr->hasAttribute(_selectors_Atom));
             IHqlExpression * child = expr->queryChild(0);
             IValue * value = child->queryValue();
             if (value)
             {
                 if (!value->getBoolValue())
                     return LINK(child);
-                IHqlExpression * opt = expr->queryProperty(extendAtom);
-                IHqlExpression * selectors = expr->queryProperty(_selectors_Atom);
+                IHqlExpression * opt = expr->queryAttribute(extendAtom);
+                IHqlExpression * selectors = expr->queryAttribute(_selectors_Atom);
                 return createValue(no_assertwild, makeBoolType(), createValue(no_all), LINK(selectors), LINK(opt));
             }
             break;
@@ -1837,7 +1837,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     UChar * search = (UChar *)malloc((slen)*2);
                     t0->getUCharStringValue(plen+1, pattern); //plen+1 so get null-terminated
                     t1->getUCharStringValue(slen, search);
-                    ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr(pattern, !expr->hasProperty(noCaseAtom));
+                    ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr(pattern, !expr->hasAttribute(noCaseAtom));
                     IUStrRegExprFindInstance * match = compiled->find(search, 0, slen);
                     ITypeInfo * type = expr->queryType();
                     if(type->getTypeCode() == type_boolean)
@@ -1861,7 +1861,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     t0->getStringValue(pattern);
                     t1->getStringValue(search);
                     rtlCompiledStrRegex compiled;
-                    compiled.setPattern(pattern.str(), !expr->hasProperty(noCaseAtom));
+                    compiled.setPattern(pattern.str(), !expr->hasAttribute(noCaseAtom));
                     IStrRegExprFindInstance * match = compiled->find(search.str(), 0, search.length(), false);
                     ITypeInfo * type = expr->queryType();
                     if(type->getTypeCode() == type_boolean)
@@ -1902,7 +1902,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     t2->getUCharStringValue(rlen, replace);
                     size32_t outlen;
                     UChar * out;
-                    ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr(pattern, !expr->hasProperty(noCaseAtom));
+                    ICompiledUStrRegExpr * compiled = rtlCreateCompiledUStrRegExpr(pattern, !expr->hasAttribute(noCaseAtom));
                     compiled->replace(outlen, out, slen, search, rlen, replace);
                     result = createUnicodeValue(outlen, out, expr->getType());
                     rtlFree(out);
@@ -1920,7 +1920,7 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                     size32_t outlen;
                     char * out;
                     rtlCompiledStrRegex compiled;
-                    compiled.setPattern(pattern.str(), !expr->hasProperty(noCaseAtom));
+                    compiled.setPattern(pattern.str(), !expr->hasAttribute(noCaseAtom));
                     compiled->replace(outlen, out, search.length(), search.str(), replace.length(), replace.str());
                     result = createStringValue(out, outlen);
                     rtlFree(out);
@@ -2879,11 +2879,11 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
 
             // 'R' - trim right, 'L' - Left, 'B' - Left and Right, 'A' - All
             char typecode = 'R';
-            if(expr->hasProperty(allAtom))
+            if(expr->hasAttribute(allAtom))
                 typecode = 'A';
-            else if(expr->hasProperty(leftAtom) && expr->hasProperty(rightAtom))
+            else if(expr->hasAttribute(leftAtom) && expr->hasAttribute(rightAtom))
                 typecode = 'B';
-            else if(expr->hasProperty(leftAtom))
+            else if(expr->hasAttribute(leftAtom))
                 typecode = 'L';
 
             IValue * constValue = child->queryValue();
@@ -3284,12 +3284,12 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             {
                 //Need to be careful to use the serialized record - otherwise record size can be inconsistent
                 OwnedHqlExpr record = getSerializedForm(child, diskAtom);
-                if (expr->hasProperty(maxAtom))
+                if (expr->hasAttribute(maxAtom))
                 {
                     if (maxRecordSizeCanBeDerived(record))
                         return getSizetConstant(getMaxRecordSize(record, 0));
                 }
-                else if (expr->hasProperty(minAtom))
+                else if (expr->hasAttribute(minAtom))
                 {
                     return getSizetConstant(getMinRecordSize(record));
                 }
@@ -3379,7 +3379,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
         {
             if (isNull(child) || isFail(child))
                 return removeParentNode(expr);
-            if (expr->hasProperty(skewAtom))
+            if (expr->hasAttribute(skewAtom))
             	break;
             //Careful - distribute also destroys grouping, so don't remove if input is grouped.
             if ((expr->queryType()->queryDistributeInfo() == child->queryType()->queryDistributeInfo()) && !isGrouped(child))
@@ -3489,9 +3489,9 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 const char * potentialLeftProjectReason = NULL;
                 if (isSpecificJoin(expr, leftouterAtom))
                 {
-                    if (matchesConstantValue(queryPropertyChild(expr, keepAtom, 0), 1))
+                    if (matchesConstantValue(queryAttributeChild(expr, keepAtom, 0), 1))
                         potentialLeftProjectReason = "JOIN(,LEFT OUTER,KEEP(1))";
-                    else if (expr->hasProperty(lookupAtom) && !expr->hasProperty(manyAtom))
+                    else if (expr->hasAttribute(lookupAtom) && !expr->hasAttribute(manyAtom))
                         potentialLeftProjectReason = "JOIN(,LEFT OUTER,SINGLE LOOKUP)";
                     else if (hasNoMoreRowsThan(expr, 1))
                         potentialLeftProjectReason = "JOIN(<single-row>,LEFT OUTER)";
@@ -3526,7 +3526,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 OwnedHqlExpr newTransform = replaceSelector(expr->queryChild(3), right, null);
                 if (op == no_denormalizegroup)
                 {
-                    IHqlExpression * rowsid = expr->queryProperty(_rowsid_Atom);
+                    IHqlExpression * rowsid = expr->queryAttribute(_rowsid_Atom);
                     OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(right), LINK(rowsid));
                     OwnedHqlExpr nullExpr = createDataset(no_null, LINK(rhs->queryRecord()));
                     newTransform.setown(replaceExpression(newTransform, rowsExpr, nullExpr));
@@ -3600,7 +3600,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                     if (op == no_cogroup)
                     {
                         DBGLOG("Folder: Replace %s with group", getOpString(op));
-                        IHqlExpression * grouping = queryPropertyChild(expr, groupAtom, 0);
+                        IHqlExpression * grouping = queryAttributeChild(expr, groupAtom, 0);
                         IHqlExpression * mappedGrouping = replaceSelector(grouping, queryActiveTableSelector(), lastInput);
                         OwnedHqlExpr group = createDataset(no_group, LINK(lastInput), mappedGrouping);
                         return expr->cloneAllAnnotations(group);
@@ -3831,7 +3831,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
             return replaceWithNullRow(child);
         break;  
     case no_select:
-        if (isNull(child) && expr->hasProperty(newAtom))
+        if (isNull(child) && expr->hasAttribute(newAtom))
             return replaceWithNull(expr);
         break;
     case no_createset:
@@ -3850,7 +3850,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_output:
         {
             //Appending a null dataset to an output does nothing (sometimes occurs as a kind of nop)
-            if (!queryRealChild(expr, 1) && expr->hasProperty(extendAtom))
+            if (!queryRealChild(expr, 1) && expr->hasAttribute(extendAtom))
             {
                 if (isNull(child) && child->isDataset())
                     return replaceWithNull(expr);
@@ -4670,7 +4670,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
         {
             //Don't fold dataset references that are in scope, 
             //otherwise the dataset will fail to match...
-            if (expr->hasProperty(newAtom))
+            if (expr->hasAttribute(newAtom))
             {
                 IHqlExpression * left = expr->queryChild(0);
                 switch (left->getOperator())
@@ -4778,7 +4778,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
         if (expr != original)
         {
             //Could have removed whether or not somethin needs to be a count project
-            IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+            IHqlExpression * counter = queryAttributeChild(expr, _countProject_Atom, 0);
             if (counter && !transformContainsCounter(expr->queryChild(1), counter))
                 return removeProperty(expr, _countProject_Atom);
         }
@@ -5013,7 +5013,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
             IAtom * joinKind = queryJoinKind(expr);
             IHqlExpression * rhs = expr->queryChild(1);
             IHqlExpression * oldCond = updated->queryChild(2);
-            IHqlExpression * atmost = updated->queryProperty(atmostAtom);
+            IHqlExpression * atmost = updated->queryAttribute(atmostAtom);
             switch (op)
             {
             case no_denormalize:
@@ -5115,7 +5115,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
             HqlConstantPercolator * mapping = gatherConstants(expr);
             if (mapping)
             {
-                IHqlExpression * sorted = expr->queryProperty(sortedAtom);
+                IHqlExpression * sorted = expr->queryAttribute(sortedAtom);
                 assertex(sorted);
                 OwnedHqlExpr newSorted = percolateConstants(mapping, sorted, child, no_activetable);
                 updated.setown(replaceOwnedProperty(updated, newSorted.getClear()));
@@ -5133,7 +5133,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
             //unusual guard condition.
             //MORE: This needs more work to allow ds[1].x.y to be substituted, but that is very unusual
             //simplest would be to recurse, build up for a list of fields, and then pass to resolveFields()
-            if (expr->hasProperty(newAtom))
+            if (expr->hasAttribute(newAtom))
             {
                 IHqlExpression * field = expr->queryChild(1);
                 OwnedHqlExpr transformedDs = transform(expr->queryChild(0));
@@ -5597,7 +5597,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         }
     case no_aggregate:
         {
-            if (expr->hasProperty(mergeTransformAtom))
+            if (expr->hasAttribute(mergeTransformAtom))
                 break;
             IHqlExpression * transform = queryNewColumnProvider(expr);
             exprMapping.setown(HqlConstantPercolator::extractConstantMapping(transform));
@@ -5702,7 +5702,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
         {
             //Careful - this can create a null row if it is out of range.
             bool inherit = false;
-            if (expr->hasProperty(noBoundCheckAtom))
+            if (expr->hasAttribute(noBoundCheckAtom))
                 inherit = true;
             else if (matchesConstantValue(expr->queryChild(1), 1) && hasSingleRow(expr->queryChild(0)))
                 inherit = true;
@@ -5824,7 +5824,7 @@ HqlConstantPercolator * CExprFolderTransformer::gatherConstants(IHqlExpression *
     }
     if (exprMapping)
     {
-        IHqlExpression * onFail = expr->queryProperty(onFailAtom);
+        IHqlExpression * onFail = expr->queryAttribute(onFailAtom);
         if (onFail)
         {
             HqlConstantPercolator * onFailMapping = gatherConstants(onFail->queryChild(0));

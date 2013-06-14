@@ -374,16 +374,16 @@ ViewFieldTransformer * ViewTransformerRegistry::createTransformer(IHqlExpression
     if ((entry.length() == 0) || (lib.length() == 0))
         return NULL;
 
-    if(!body->hasProperty(pureAtom) && !body->hasProperty(templateAtom))
+    if(!body->hasAttribute(pureAtom) && !body->hasAttribute(templateAtom))
         return NULL;
 
-    if(!body->hasProperty(cAtom)) 
+    if(!body->hasAttribute(cAtom))
         return NULL;
 
-    if(body->hasProperty(gctxmethodAtom) || body->hasProperty(ctxmethodAtom) || body->hasProperty(omethodAtom)) 
+    if(body->hasAttribute(gctxmethodAtom) || body->hasAttribute(ctxmethodAtom) || body->hasAttribute(omethodAtom))
         return NULL;
 
-    if(body->hasProperty(contextAtom) || body->hasProperty(globalContextAtom)) 
+    if(body->hasAttribute(contextAtom) || body->hasAttribute(globalContextAtom))
         return NULL;
 
     //Special case string->string mapping (e.g., uppercase)

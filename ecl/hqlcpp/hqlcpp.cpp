@@ -1212,7 +1212,7 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
 
         ctx.addQuoted(init.append("(wuid);"));
     }
-    IHqlExpression *pluginAttr = funcDef->queryProperty(pluginAtom);
+    IHqlExpression *pluginAttr = funcDef->queryAttribute(pluginAtom);
     if (pluginAttr)
     {
         StringBuffer plugin, version;
@@ -1225,7 +1225,7 @@ bool HqlCppInstance::useFunction(IHqlExpression * func)
             getFullFileName(libname, true);
         }
     }
-    if (!funcDef->hasProperty(ctxmethodAtom) && !funcDef->hasProperty(gctxmethodAtom) && !funcDef->hasProperty(methodAtom))
+    if (!funcDef->hasAttribute(ctxmethodAtom) && !funcDef->hasAttribute(gctxmethodAtom) && !funcDef->hasAttribute(methodAtom))
     {
         if (libname.length())
             useLibrary(libname.str());
@@ -1858,7 +1858,7 @@ bool HqlCppTranslator::needToSerializeToSlave(IHqlExpression * expr) const
     {
     case no_getresult:
     case no_workunit_dataset:
-        return !matchesConstantValue(queryPropertyChild(expr, sequenceAtom, 0), ResultSequenceOnce);
+        return !matchesConstantValue(queryAttributeChild(expr, sequenceAtom, 0), ResultSequenceOnce);
     default:
         return true;
     }
@@ -3686,7 +3686,7 @@ void HqlCppTranslator::doExpandAliases(BuildCtx & ctx, IHqlExpression * expr, Al
             IHqlExpression * value = expr->queryChild(0);
             if ((commonPath == NULL) && !ctx.queryMatchExpr(value))
             {
-                if (containsAliasLocally(value) && !expr->hasProperty(globalAtom))
+                if (containsAliasLocally(value) && !expr->hasAttribute(globalAtom))
                     doExpandAliases(ctx, value, info);
                 doBuildExprAlias(ctx, expr, NULL);
             }
@@ -3980,7 +3980,7 @@ void HqlCppTranslator::buildSimpleExpr(BuildCtx & ctx, IHqlExpression * expr, CH
     case no_substring:
         {
             SubStringInfo info(expr);
-            if (info.canGenerateInline() || expr->hasProperty(quickAtom))
+            if (info.canGenerateInline() || expr->hasAttribute(quickAtom))
                 simple = true;
             break;
         }
@@ -4410,7 +4410,7 @@ void HqlCppTranslator::doBuildExprAlias(BuildCtx & ctx, IHqlExpression * expr, C
 
     //The second half of this test could cause aliases to be duplicated, but has the significant effect of reducing the amount of data that is serialised.
     //so far on my examples it does the latter, but doesn't seem to cause the former
-    if (expr->hasProperty(localAtom) || (insideOnCreate(ctx) && !expr->hasProperty(globalAtom)))
+    if (expr->hasAttribute(localAtom) || (insideOnCreate(ctx) && !expr->hasAttribute(globalAtom)))
     {
         expandAliases(ctx, value);
         if (tgt)
@@ -5554,9 +5554,9 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
 
     IHqlExpression * external = funcdef->queryChild(0);
     IHqlExpression * formals = funcdef->queryChild(1);
-    if (external->hasProperty(ctxmethodAtom))
+    if (external->hasAttribute(ctxmethodAtom))
         ensureContextAvailable(ctx);
-    if (external->hasProperty(gctxmethodAtom) || external->hasProperty(globalContextAtom))
+    if (external->hasAttribute(gctxmethodAtom) || external->hasAttribute(globalContextAtom))
     {
         if (!ctx.queryMatchExpr(globalContextMarkerExpr))
             throwError1(HQLERR_FuncNotInGlobalContext, external->queryName()->str());
@@ -5571,8 +5571,8 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
     unsigned param;
 
     unsigned firstParam = 0;
-    bool isMethod = external->hasProperty(methodAtom) || external->hasProperty(omethodAtom) ;
-    bool newFormatSet = !external->hasProperty(oldSetFormatAtom);
+    bool isMethod = external->hasAttribute(methodAtom) || external->hasAttribute(omethodAtom) ;
+    bool newFormatSet = !external->hasAttribute(oldSetFormatAtom);
     bool translateSetReturn = false;
     if (isMethod)
     {
@@ -5580,12 +5580,12 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
         buildExpr(ctx, expr->queryChild(firstParam++), bound);
         args.append(*bound.expr.getClear());
     }
-    if (external->hasProperty(userMatchFunctionAtom))
+    if (external->hasAttribute(userMatchFunctionAtom))
     {
         //MORE: Test valid in this location...
         args.append(*createVariable("walker", makeBoolType()));
     }
-    IHqlExpression * extendAttr = external->queryProperty(extendAtom);
+    IHqlExpression * extendAttr = external->queryAttribute(extendAtom);
 
     bool doneAssign = false;
     CHqlBoundExpr localBound;
@@ -5892,7 +5892,7 @@ void HqlCppTranslator::doBuildCall(BuildCtx & ctx, const CHqlBoundTarget * tgt, 
                 args.append(*getBoundLength(bound));
             /*
             Ensure parameter is passed as non-const if the argument does not have const.
-            if (!curArg->hasProperty(constAtom))//!argType->isConstantType())// && bound.queryType()->isConstantType())
+            if (!curArg->hasAttribute(constAtom))//!argType->isConstantType())// && bound.queryType()->isConstantType())
                 bound.expr.setown(createValue(no_cast, LINK(argType), LINK(bound.expr)));
                 */
             break;
@@ -6038,7 +6038,7 @@ void HqlCppTranslator::doBuildXmlEncode(BuildCtx & ctx, const CHqlBoundTarget * 
     {
         func = isUnicode ? xmlEncodeUStrId : xmlEncodeStrId;
         __int64 flags = 0;
-        if (expr->hasProperty(allAtom))
+        if (expr->hasAttribute(allAtom))
             flags = ENCODE_WHITESPACE;
         args.append(*createConstant(flags));
     }
@@ -7272,7 +7272,7 @@ void HqlCppTranslator::doBuildExprEmbedBody(BuildCtx & ctx, IHqlExpression * exp
         throwError(HQLERR_EmbeddedCppNotAllowed);
 
     processCppBodyDirectives(expr);
-    IHqlExpression *languageAttr = expr->queryProperty(languageAtom);
+    IHqlExpression *languageAttr = expr->queryAttribute(languageAtom);
     if (languageAttr)
     {
         UNIMPLEMENTED;  // It's not clear if this can ever happen - perhaps a parameterless function that used EMBED ?
@@ -8613,7 +8613,7 @@ void HqlCppTranslator::doBuildAssignHashCrc(BuildCtx & ctx, const CHqlBoundTarge
     else if (op == no_hash64)
         initialValue.setown(createConstant(createIntValue(HASH64_INIT, 8, false)));
 
-    HashCodeCreator creator(*this, target, op, expr->hasProperty(internalAtom));
+    HashCodeCreator creator(*this, target, op, expr->hasAttribute(internalAtom));
     creator.setInitialValue(initialValue);
     if (child->getOperator() != no_sortlist)
         doBuildAssignHashElement(ctx, creator, child);
@@ -8699,7 +8699,7 @@ void HqlCppTranslator::doBuildAssignHashElement(BuildCtx & ctx, HashCodeCreator 
     CHqlBoundExpr bound;
     OwnedHqlExpr length;
     OwnedHqlExpr ptr;
-    bool alreadyTrimmedRight = (elem->getOperator() == no_trim) && (elem->hasProperty(rightAtom) || !elem->hasProperty(leftAtom));
+    bool alreadyTrimmedRight = (elem->getOperator() == no_trim) && (elem->hasAttribute(rightAtom) || !elem->hasAttribute(leftAtom));
     //If this hash is generated internally (e.g., for a dedup) and fixed length, then can simplify the hash calculation
     bool canOptimizeHash = (creator.optimize() && isFixedSize(type));
     bool optimizeTrim = alreadyTrimmedRight || canOptimizeHash;
@@ -9161,8 +9161,8 @@ void checkRankRange(IHqlExpression * index, IHqlExpression * list)
     if (list->getOperator() == no_getresult)
     {
         StringBuffer s;
-        IHqlExpression * sequence = queryPropertyChild(list, sequenceAtom, 0);
-        IHqlExpression * name = queryPropertyChild(list, namedAtom, 0);
+        IHqlExpression * sequence = queryAttributeChild(list, sequenceAtom, 0);
+        IHqlExpression * name = queryAttributeChild(list, namedAtom, 0);
         getStoredDescription(s, sequence, name, true);
         throwError1(HQLERR_RankOnStored, s.str());
     }
@@ -9220,7 +9220,7 @@ void HqlCppTranslator::doBuildStmtFail(BuildCtx & ctx, IHqlExpression * expr)
     HqlExprArray args;
     args.append(*getFailCode(expr));
     args.append(*getFailMessage(expr, false));
-    IIdAtom * func = expr->hasProperty(defaultAtom) ? sysFailId : _failId;
+    IIdAtom * func = expr->hasAttribute(defaultAtom) ? sysFailId : _failId;
     OwnedHqlExpr call = bindFunctionCall(func, args);
     buildStmt(ctx, call);
 }
@@ -9616,7 +9616,7 @@ void HqlCppTranslator::doBuildExprSubString(BuildCtx & ctx, IHqlExpression * exp
         if (doBuildExprInfiniteSubString(ctx, info, tgt))
             return;
 
-    if (expr->hasProperty(quickAtom))
+    if (expr->hasAttribute(quickAtom))
     {
         doBuildExprAnySubString(ctx, info, tgt);
         return;
@@ -9631,9 +9631,9 @@ void HqlCppTranslator::doBuildAssignTrim(BuildCtx & ctx, const CHqlBoundTarget &
 {
     IHqlExpression * str = expr->queryChild(0);
     IIdAtom * func;
-    bool hasAll = expr->hasProperty(allAtom);
-    bool hasLeft = expr->hasProperty(leftAtom);
-    bool hasRight = expr->hasProperty(rightAtom);
+    bool hasAll = expr->hasAttribute(allAtom);
+    bool hasLeft = expr->hasAttribute(leftAtom);
+    bool hasRight = expr->hasAttribute(rightAtom);
 
     if (str->queryType()->getTypeCode() == type_varstring)
     {
@@ -9708,9 +9708,9 @@ void HqlCppTranslator::doBuildExprTrim(BuildCtx & ctx, IHqlExpression * expr, CH
     IIdAtom * func;
     OwnedHqlExpr str = getElementPointer(bound.expr);
     
-    bool hasAll = expr->hasProperty(allAtom);
-    bool hasLeft = expr->hasProperty(leftAtom);
-    bool hasRight = expr->hasProperty(rightAtom);
+    bool hasAll = expr->hasAttribute(allAtom);
+    bool hasLeft = expr->hasAttribute(leftAtom);
+    bool hasRight = expr->hasAttribute(rightAtom);
     
     type_t btc = bound.expr->queryType()->getTypeCode();
     if(hasAll || hasLeft) 
@@ -11287,7 +11287,7 @@ void HqlCppTranslator::expandFunctionPrototype(BuildCtx & ctx, IHqlExpression * 
     {
         s.append(";");
         IHqlExpression *body = funcdef->queryChild(0);
-        IHqlExpression *namespaceAttr = body->queryProperty(namespaceAtom);
+        IHqlExpression *namespaceAttr = body->queryAttribute(namespaceAtom);
         if (namespaceAttr)
         {
             StringBuffer ns;
@@ -11351,7 +11351,7 @@ static IHqlExpression *createActualFromFormal(IHqlExpression *param)
 static IHqlExpression * replaceInlineParameters(IHqlExpression * funcdef, IHqlExpression * expr)
 {
     IHqlExpression * body = funcdef->queryChild(0);
-    assertex(!body->hasProperty(oldSetFormatAtom));
+    assertex(!body->hasAttribute(oldSetFormatAtom));
     IHqlExpression * formals = funcdef->queryChild(1);
 
     HqlMapTransformer simpleTransformer;
@@ -11459,8 +11459,8 @@ void HqlCppTranslator::buildScriptFunctionDefinition(BuildCtx &funcctx, IHqlExpr
     IHqlExpression * outofline = funcdef->queryChild(0);
     assertex(outofline->getOperator() == no_outofline);
     IHqlExpression * bodyCode = outofline->queryChild(0);
-    IHqlExpression *language = queryPropertyChild(bodyCode, languageAtom, 0);
-    bool isImport = bodyCode->hasProperty(importAtom);
+    IHqlExpression *language = queryAttributeChild(bodyCode, languageAtom, 0);
+    bool isImport = bodyCode->hasAttribute(importAtom);
 
     funcctx.addQuotedCompound(proto);
 
@@ -11626,7 +11626,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         if (!allowEmbeddedCpp())
             throwError(HQLERR_EmbeddedCppNotAllowed);
 
-        IHqlExpression *languageAttr = bodyCode->queryProperty(languageAtom);
+        IHqlExpression *languageAttr = bodyCode->queryAttribute(languageAtom);
         if (languageAttr)
             buildScriptFunctionDefinition(funcctx, funcdef, proto);
         else
@@ -11637,7 +11637,7 @@ void HqlCppTranslator::buildFunctionDefinition(IHqlExpression * funcdef)
         funcctx.addQuotedCompound(proto);
         //MORE: Need to work out how to handle functions that require the context.
         //Need to create a class instead.
-        assertex(!outofline->hasProperty(contextAtom));
+        assertex(!outofline->hasAttribute(contextAtom));
 
         OwnedHqlExpr newCode = replaceInlineParameters(funcdef, bodyCode);
         newCode.setown(foldHqlExpression(newCode));
@@ -11989,7 +11989,7 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
             return true;
         }
     case no_select:
-        if (expr->hasProperty(newAtom))
+        if (expr->hasAttribute(newAtom))
         {
             IHqlExpression * ds= expr->queryChild(0);
             if (!ds->isPure() || !ds->isDatarow())
@@ -12019,7 +12019,7 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
     case no_substring:
         {
             SubStringInfo info(expr);
-            if (!info.canGenerateInline() && !expr->hasProperty(quickAtom))
+            if (!info.canGenerateInline() && !expr->hasAttribute(quickAtom))
                 return true;
             break;
         }

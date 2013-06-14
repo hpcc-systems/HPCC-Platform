@@ -134,7 +134,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
             return 0;
     case no_newusertable:
         {
-            if (expr->hasProperty(prefetchAtom))
+            if (expr->hasAttribute(prefetchAtom))
                 return 0;
             IHqlExpression * ds = expr->queryChild(0);
             unsigned childFlags = getInlineFlags(ctx, ds);
@@ -197,7 +197,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         }
     case no_limit:
         {
-            if (expr->hasProperty(skipAtom) || expr->hasProperty(onFailAtom))
+            if (expr->hasAttribute(skipAtom) || expr->hasAttribute(onFailAtom))
                 return 0;
             unsigned childFlags = getInlineFlags(ctx, expr->queryChild(0));
             if (childFlags == 0)
@@ -278,7 +278,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_forcegraph:
         return 0;
     case no_section:
-        if (expr->hasProperty(graphAtom))       // force it to appear in the graph
+        if (expr->hasAttribute(graphAtom))       // force it to appear in the graph
             return 0;
         return getInlineFlags(ctx, expr->queryChild(0));
     case no_call:               
@@ -286,7 +286,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     case no_getresult:
         return expr->isDatarow() ? RETevaluate : RETassign;
     case no_getgraphresult:
-        if (expr->hasProperty(_distributed_Atom))
+        if (expr->hasAttribute(_distributed_Atom))
             return 0;
         return expr->isDatarow() ? RETevaluate : RETassign;
     case no_temptable:
@@ -295,7 +295,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return RETiterate;
     case no_dataset_from_transform:
     {
-        if (expr->hasProperty(distributedAtom))
+        if (expr->hasAttribute(distributedAtom))
             return 0;
         if (transformContainsSkip(expr->queryChild(1)))
             return 0;
@@ -344,7 +344,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
         return RETassign;
     case no_join:
         {
-            if (!expr->hasProperty(allAtom) || isKeyedJoin(expr))
+            if (!expr->hasAttribute(allAtom) || isKeyedJoin(expr))
                 return 0;
             //conservatively check we support the attributes.
             unsigned max = expr->numChildren();
@@ -539,7 +539,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     {
     case no_compound_diskread:
         {
-            if (isLocalActivity(expr) || expr->hasProperty(_colocal_Atom))
+            if (isLocalActivity(expr) || expr->hasAttribute(_colocal_Atom))
                 return GraphCoLocal;
             //If a compound operation has been added, but with no other effect then don't allow that to change the localisation
             IHqlExpression * ds = expr->queryChild(0);
@@ -548,7 +548,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
             return GraphNonLocal;
         }
     case no_table:
-        if (expr->hasProperty(_noAccess_Atom))
+        if (expr->hasAttribute(_noAccess_Atom))
             return GraphNoAccess;
         //fallthrough
     case no_keyindex:
@@ -562,7 +562,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_compound_indexaggregate:
     case no_compound_indexcount:
     case no_compound_indexgroupaggregate:
-        if (!isLocalActivity(expr) && !expr->hasProperty(_colocal_Atom))
+        if (!isLocalActivity(expr) && !expr->hasAttribute(_colocal_Atom))
             return GraphNonLocal;
         break;
     case no_compound_fetch:
@@ -574,11 +574,11 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_join:
     case no_denormalize:
     case no_denormalizegroup:
-        if (isKeyedJoin(expr) && !expr->hasProperty(localAtom))
+        if (isKeyedJoin(expr) && !expr->hasAttribute(localAtom))
             return GraphNonLocal;
         break;
     case no_output:
-        if (expr->hasProperty(_spill_Atom))
+        if (expr->hasAttribute(_spill_Atom))
             return GraphNoAccess;
         break;
     case no_setgraphresult:
@@ -1114,10 +1114,10 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
             switch(represents->getOperator())
             {
             case no_null:
-                ok = !represents->hasProperty(clearAtom);           // Don't serialize rows used as default clear rows
+                ok = !represents->hasAttribute(clearAtom);           // Don't serialize rows used as default clear rows
                 break;
             case no_anon:
-                ok = !represents->hasProperty(selfAtom);
+                ok = !represents->hasAttribute(selfAtom);
                 break;
             default:
                 if (cur.isResultAlias())

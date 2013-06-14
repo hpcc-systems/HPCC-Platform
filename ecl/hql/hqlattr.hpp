@@ -22,8 +22,8 @@
 
 #define MAX_MAXLENGTH (INFINITE_LENGTH-1)
 
-extern HQL_API IHqlExpression * queryProperty(ITypeInfo * type, IAtom * search);
-extern HQL_API IHqlExpression * queryPropertyChild(ITypeInfo * type, IAtom * search, unsigned idx);
+extern HQL_API IHqlExpression * queryAttribute(ITypeInfo * type, IAtom * search);
+extern HQL_API IHqlExpression * queryAttributeChild(ITypeInfo * type, IAtom * search, unsigned idx);
 extern HQL_API void cloneFieldModifier(Owned<ITypeInfo> & type, ITypeInfo * donorType, IAtom * attr);
 extern HQL_API ITypeInfo * cloneEssentialFieldModifiers(ITypeInfo * donor, ITypeInfo * rawtype);
 extern HQL_API ITypeInfo * removeProperty(ITypeInfo * type, IAtom * search);
@@ -66,10 +66,10 @@ extern HQL_API bool isLinkedRowset(ITypeInfo * t);
 extern HQL_API bool isArrayRowset(ITypeInfo * t);
 extern HQL_API bool hasLinkedRow(ITypeInfo * t);
 
-inline bool hasLinkCountedModifier(ITypeInfo * t)    { return queryProperty(t, _linkCounted_Atom) != NULL; }
+inline bool hasLinkCountedModifier(ITypeInfo * t)    { return queryAttribute(t, _linkCounted_Atom) != NULL; }
 inline bool hasOutOfLineRows(ITypeInfo * type) { return (hasOutOfLineModifier(type) || hasLinkCountedModifier(type)); }
 inline bool hasLinkCountedModifier(IHqlExpression * expr)    { return hasLinkCountedModifier(expr->queryType()); }
-inline bool hasStreamedModifier(ITypeInfo * t)   { return queryProperty(t, streamedAtom) != NULL; }
+inline bool hasStreamedModifier(ITypeInfo * t)   { return queryAttribute(t, streamedAtom) != NULL; }
 
 extern HQL_API ITypeInfo * setLinkCountedAttr(ITypeInfo * _type, bool setValue);
 extern HQL_API ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue);

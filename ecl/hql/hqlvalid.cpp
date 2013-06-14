@@ -152,7 +152,7 @@ void reportAbstractModule(IErrorReceiver * errors, IHqlExpression * expr, const 
 
     if (fieldText.length())
         reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (%s undefined)", fieldText.str());
-    else if (expr->hasProperty(interfaceAtom))
+    else if (expr->hasAttribute(interfaceAtom))
         reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context (INTERFACE must be instantiated)");
     else
         reportError(errors, ERR_ABSTRACT_MODULE, errpos, "Cannot use an abstract MODULE in this context");

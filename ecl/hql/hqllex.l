@@ -211,7 +211,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         }
     }
 
-    if (((op == no_param) && expr->hasProperty(fieldAtom)) || (op == no_indirect))
+    if (((op == no_param) && expr->hasAttribute(fieldAtom)) || (op == no_indirect))
     {
         switch (token)
         {

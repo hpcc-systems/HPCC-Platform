@@ -647,9 +647,9 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
             if (filename)
             {
                 temp.append("Output");
-                if (expr->hasProperty(xmlAtom))
+                if (expr->hasAttribute(xmlAtom))
                     temp.append(" XML");
-                else if (expr->hasProperty(csvAtom))
+                else if (expr->hasAttribute(csvAtom))
                     temp.append(" CSV");
                 queryExpandFilename(temp, filename);
             }
@@ -688,8 +688,8 @@ const char * LogicalGraphCreator::getActivityText(IHqlExpression * expr, StringB
     case no_extractresult:
     case no_setresult:
         {
-            IHqlExpression * sequence = queryPropertyChild(expr, sequenceAtom, 0);
-            IHqlExpression * name = queryPropertyChild(expr, namedAtom, 0);
+            IHqlExpression * sequence = queryAttributeChild(expr, sequenceAtom, 0);
+            IHqlExpression * name = queryAttributeChild(expr, namedAtom, 0);
             temp.append("Store\n");
             getStoredDescription(temp, sequence, name, true);
             break;

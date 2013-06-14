@@ -177,7 +177,7 @@ void CChildSetColumnInfo::setColumn(HqlCppTranslator & translator, BuildCtx & ct
 IHqlExpression * CMemberInfo::addDatasetLimits(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * _value)
 {
     LinkedHqlExpr value = _value;
-    IHqlExpression * choosen = column->queryProperty(choosenAtom);
+    IHqlExpression * choosen = column->queryAttribute(choosenAtom);
     if (choosen)
     {
         LinkedHqlExpr choosenValue = choosen->queryChild(0);
@@ -197,7 +197,7 @@ IHqlExpression * CMemberInfo::addDatasetLimits(HqlCppTranslator & translator, Bu
             value.setown(createDataset(no_choosen, LINK(value), LINK(choosenValue)));
     }
 
-    IHqlExpression * maxCount = queryPropertyChild(column, maxCountAtom, 0);
+    IHqlExpression * maxCount = queryAttributeChild(column, maxCountAtom, 0);
     if (maxCount && !hasNoMoreRowsThan(value, getIntValue(maxCount)))
     {
         //Generate a limit test if there isn't a limit that ensures it is small enough
@@ -213,10 +213,10 @@ IHqlExpression * CMemberInfo::addDatasetLimits(HqlCppTranslator & translator, Bu
 
 bool CMemberInfo::hasDatasetLimits() const
 {
-    if (column->queryProperty(choosenAtom))
+    if (column->queryAttribute(choosenAtom))
         return true;
 
-    if (queryPropertyChild(column, maxCountAtom, 0))
+    if (queryAttributeChild(column, maxCountAtom, 0))
         return true;
 
     return false;
@@ -405,12 +405,12 @@ AColumnInfo * CChildDatasetColumnInfo::lookupColumn(IHqlExpression * search)
 
 CChildLimitedDatasetColumnInfo::CChildLimitedDatasetColumnInfo(CContainerInfo * _container, CMemberInfo * _prior, IHqlExpression * _column, RecordOffsetMap & map, unsigned defaultMaxRecordSize) : CColumnInfo(_container, _prior, _column)
 {
-    IHqlExpression * count = column->queryProperty(countAtom);
+    IHqlExpression * count = column->queryAttribute(countAtom);
     if (count)
-        countField.setown(foldHqlExpression(column->queryProperty(countAtom)->queryChild(0)));
+        countField.setown(foldHqlExpression(column->queryAttribute(countAtom)->queryChild(0)));
     else
     {
-        IHqlExpression * size = column->queryProperty(sizeofAtom);
+        IHqlExpression * size = column->queryAttribute(sizeofAtom);
         if (size)
             sizeField.setown(foldHqlExpression(size->queryChild(0)));
         else
