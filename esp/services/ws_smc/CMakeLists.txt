@@ -96,7 +96,6 @@ target_link_libraries ( ws_smc
          ws_fs 
          ws_topology 
          schedulectrl 
-         roxiemanager 
          ws_workunits 
     )
 IF (USE_OPENLDAP)
