@@ -4,14 +4,54 @@
 <sect1 id="Creating_Example_Data">
   <title><emphasis role="bold">Creating Example Data</emphasis></title>
 
+  <sect2 id="Getting_Code_Files">
+    <title>Getting Code Files</title>
+  <para>All the example code for the <emphasis>Programmer's Guide</emphasis>
+  is available for download from the HPCC Systems website from the same page
+  that the PDF is available (<ulink
+  url="http://hpccsystems.com/download/docs/learning-ecl">click here</ulink>).
+  To make this code available for use in the ECL IDE, you simply:</para>
+
+  <orderedlist>
+    <listitem>
+      <para>Download the ECL_Code_Files.ZIP file.</para>
+    </listitem>
+
+    <listitem>
+      <para>In the ECL IDE, highlight your "My Files" folder, right-click and
+      select "Insert Folder" from the popup menu.</para>
+    </listitem>
+
+    <listitem>
+      <para>Name your new folder "ProgrammersGuide" (please note -- spaces are
+      NOT allowed in your ECL repository folder names).</para>
+    </listitem>
+
+    <listitem>
+      <para>In the ECL IDE, highlight your "ProgrammersGuide" folder,
+      right-click and select "Locate File in Explorer" from the popup
+      menu.</para>
+    </listitem>
+
+    <listitem>
+      <para>Extract all the files from the ECL_Code_Files.ZIP file into your
+      new folder.</para>
+    </listitem>
+  </orderedlist>
+  </sect2>
+
+  <sect2 id="Generating_Files">
+    <title>Generating Files</title>
+
   <para>The code that generates the example data used by all the
   <emphasis>Programmer's Guide</emphasis> articles is contained in a file
-  named Gendata.ECL, which was installed by the ECL IDE installation program.
-  You simply need to open that file in the ECL IDE (select <emphasis
-  role="bold">File &gt; Open</emphasis> from the menu, select the Gendata.ECL
-  file, and it will open in a Builder window) then press the <emphasis
-  role="bold">Go</emphasis> button to generate the data files. The process
-  takes a couple of minutes to run. Here is the code, fully explained.</para>
+  named Gendata.ECL. You simply need to open that file in the ECL IDE (select
+  <emphasis role="bold">File &gt; Open</emphasis> from the menu, select the
+  Gendata.ECL file, and it will open in a Builder window) then press the
+  <emphasis role="bold">Submit</emphasis> button to generate the data files.
+  The process takes a couple of minutes to run. Here is the code, fully
+  explained.</para>
+  </sect2>
 
   <sect2 id="Some_Constants">
     <title>Some Constants</title>

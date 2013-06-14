@@ -1741,37 +1741,44 @@ public:
             input = NULL;
         }
     }
-    bool abortLimitAction(CJoinGroup *jg, OwnedConstThorRow &row)
+    void doAbortLimit(CJoinGroup *jg)
+    {
+        helper->onMatchAbortLimitExceeded();
+        CommonXmlWriter xmlwrite(0);
+        if (inputHelper && inputHelper->queryOutputMeta() && inputHelper->queryOutputMeta()->hasXML())
+        {
+            inputHelper->queryOutputMeta()->toXML((byte *) jg->queryLeft(), xmlwrite);
+        }
+        throw MakeActivityException(this, 0, "More than %d match candidates in keyed join for row %s", abortLimit, xmlwrite.str());
+    }
+    bool checkAbortLimit(CJoinGroup *jg)
     {
         if (jg->candidateCount() > abortLimit)
         {
             if (0 == (joinFlags & JFmatchAbortLimitSkips))
-            {
-                Owned<IException> e;
-                try
-                {
-                    helper->onMatchAbortLimitExceeded();
-                    CommonXmlWriter xmlwrite(0);
-                    if (inputHelper && inputHelper->queryOutputMeta() && inputHelper->queryOutputMeta()->hasXML())
-                    {
-                        inputHelper->queryOutputMeta()->toXML((byte *) jg->queryLeft(), xmlwrite);
-                    }
-                    throw MakeActivityException(this, 0, "More than %d match candidates in keyed join for row %s", abortLimit, xmlwrite.str());
-                }
-                catch (IException *_e)
-                {
-                    if (!onFailTransform)
-                        throw;
-                    e.setown(_e);
-                }
-                RtlDynamicRowBuilder trow(queryRowAllocator());
-                size32_t transformedSize = helper->onFailTransform(trow, jg->queryLeft(), defaultRight, 0, e.get());
-                if (0 != transformedSize)
-                    row.setown(trow.finalizeRowClear(transformedSize));
-            }
+                doAbortLimit(jg);
             return true;
         }
         return false;
+    }
+    bool abortLimitAction(CJoinGroup *jg, OwnedConstThorRow &row)
+    {
+        Owned<IException> e;
+        try
+        {
+            return checkAbortLimit(jg);
+        }
+        catch (IException *_e)
+        {
+            if (!onFailTransform)
+                throw;
+            e.setown(_e);
+        }
+        RtlDynamicRowBuilder trow(queryRowAllocator());
+        size32_t transformedSize = helper->onFailTransform(trow, jg->queryLeft(), defaultRight, 0, e.get());
+        if (0 != transformedSize)
+            row.setown(trow.finalizeRowClear(transformedSize));
+        return true;
     }
     virtual void onLimitExceeded() { return; }
     
@@ -2210,12 +2217,15 @@ public:
                             OwnedConstThorRow abortRow;
                             if (abortLimitAction(doneJG, abortRow)) // discard lhs row (yes, even if it is an outer join)
                             {
-                                doneJG.clear();
+                                // don't clear doneJG, in preserveGroups case, it will advance to next, next time around.
+                                if (!preserveGroups)
+                                    doneJG.clear();
                                 if (abortRow.get())
                                 {
                                     dataLinkIncrement();
                                     return abortRow.getClear();
                                 }
+                                continue; // throw away this match
                             }
                             djg.set(next);
                         }
@@ -2244,25 +2254,22 @@ public:
                         doneGroupsDeQueued++;
 #endif
                         OwnedConstThorRow abortRow;
-                        if (abortLimitAction(doneJG, abortRow))
+                        if (!abortLimitAction(doneJG, abortRow))
                         {
-                            doneJG.clear();
-                            if (abortRow.get())
-                            {
-                                dataLinkIncrement();
-                                return abortRow.getClear();
-                            }
-                            continue;
-                        }
-                        else
                             djg.set(doneJG);
+                            currentMatched = djg->rowsSeen();
+                        }
+                        currentAdded = 0;
+                        currentMatchIdx = 0;
                         if (preserveGroups)
                             currentJoinGroupSize = 0;
                         else
                             doneJG.clear();
-                        currentAdded = 0;
-                        currentMatchIdx = 0;
-                        currentMatched = djg->rowsSeen();
+                        if (abortRow.get())
+                        {
+                            dataLinkIncrement();
+                            return abortRow.getClear();
+                        }
                     }
                     else
                     {
@@ -2292,16 +2299,9 @@ public:
                         {
                             unsigned candidateCount = (unsigned) (fpos & KEYEDJOIN_CANDIDATECOUNTMASK);
                             jg->noteCandidates(candidateCount);
-                            OwnedConstThorRow abortRow;
-                            if (abortLimitAction(jg, abortRow)) // might as well abort now if appropriate.
-                            {
-                                if (abortRow.get())
-                                {
-                                    dataLinkIncrement();
-                                    return abortRow.getClear();
-                                }
-                            }
-                            jg->noteEndCandidate();
+                            jg->noteEndCandidate(); // any onFail transform will be done when dequeued
+                            if (!onFailTransform) // unless going to transform later, check and abort now if necessary.
+                                checkAbortLimit(jg);
                         }
                         else
                         {

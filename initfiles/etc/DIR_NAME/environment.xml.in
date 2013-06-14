@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-## Default environment file single-node hpcc installation
+## Default environment file single-node OpenHPCC installation
 -->
 
 <Environment>

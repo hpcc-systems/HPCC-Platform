@@ -6315,13 +6315,25 @@ public:
 
 #define GROUP_CACHE_INTERVAL (1000*60)
 
+class CNamedGroupCacheEntry: public CInterface
+{
+public:
+    Linked<IGroup> group;
+    StringAttr name;
+    StringAttr groupdir;
+    unsigned cachedtime;
+
+    CNamedGroupCacheEntry(IGroup *_group, const char *_name, const char *_dir)
+    : group(_group), name(_name), groupdir(_dir)
+    {
+        cachedtime = msTick();
+    }
+};
+
 class CNamedGroupStore: public CInterface, implements INamedGroupStore
 {
     CriticalSection cachesect;
-    Owned<IGroup> cachedgroup;
-    StringAttr cachedname;
-    StringAttr cachedgroupdir;
-    unsigned cachedtime;
+    CIArrayOf<CNamedGroupCacheEntry> cache;
     unsigned defaultTimeout;
 
 public:
@@ -6330,7 +6342,6 @@ public:
     CNamedGroupStore()
     {
         defaultTimeout = INFINITE;
-        cachedtime = 0;
     }
 
     IGroup *dolookup(const char *logicalgroupname,IRemoteConnection *conn, StringBuffer *dirret)
@@ -6342,20 +6353,6 @@ public:
             return NULL;
         gname.toLowerCase();
         logicalgroupname = gname.str();
-        if ((gname.length()>9)&&(memcmp(logicalgroupname,"foreign::",9)==0)) {
-            StringBuffer eps;
-            const char *s = logicalgroupname+9;
-            while (*s&&((*s!=':')||(s[1]!=':')))
-                eps.append(*(s++));
-            if (*s) {
-                s+=2;
-                if (*s) {
-                    Owned<INode> dali = createINode(eps.str());
-                    if (dali) 
-                        return getRemoteGroup(dali,s,FOREIGN_DALI_TIMEOUT,dirret);
-                }
-            }
-        }
         bool isiprange = (*logicalgroupname!=0);
         for (const char *s1=logicalgroupname;*s1;s1++)
             if (isalpha(*s1)) {
@@ -6398,28 +6395,48 @@ public:
             logicalgroupname = gname.str();
         }
         StringAttr groupdir;
+        bool cached = false;
+        unsigned timeNow = msTick();
         {
             CriticalBlock block(cachesect);
-            if (cachedgroup.get()) {
-                if (msTick()-cachedtime>GROUP_CACHE_INTERVAL) {
-                    cachedgroup.clear();
-                    cachedname.clear();
-                    cachedgroupdir.clear();
+            ForEachItemInRev(idx, cache)
+            {
+                CNamedGroupCacheEntry &entry = cache.item(idx);
+                if (timeNow-entry.cachedtime > GROUP_CACHE_INTERVAL)
+                {
+                    cache.remove(idx);
                 }
-                else if (strcmp(gname.str(),cachedname.get())==0) {
-                    cachedtime = msTick();
-                    if (range.length()==0) {
+                else if (strcmp(gname.str(),entry.name.get())==0)
+                {
+                    cached = true;
+                    if (range.length()==0)
+                    {
                         if (dirret)
-                            dirret->append(cachedgroupdir);
-                        return cachedgroup.getLink();
+                            dirret->append(entry.groupdir);
+                        return entry.group.getLink();
                     }
                     // there is a range so copy to epa
-                    cachedgroup->getSocketEndpoints(epa);
-                    groupdir.set(cachedgroupdir);
+                    entry.group->getSocketEndpoints(epa);
+                    groupdir.set(entry.groupdir);
+                    break;
                 }
             }
         }
-        if (epa.ordinality()==0) {
+        if ((gname.length()>9)&&(memcmp(logicalgroupname,"foreign::",9)==0)) {
+            StringBuffer eps;
+            const char *s = logicalgroupname+9;
+            while (*s&&((*s!=':')||(s[1]!=':')))
+                eps.append(*(s++));
+            if (*s) {
+                s+=2;
+                if (*s) {
+                    Owned<INode> dali = createINode(eps.str());
+                    if (!dali || !getRemoteGroup(dali, s, FOREIGN_DALI_TIMEOUT, groupdir, epa))
+                        return NULL;
+                }
+            }
+        }
+        else if (epa.ordinality()==0) {
             struct sLock
             {
                 sLock()  { lock = NULL; };
@@ -6442,30 +6459,33 @@ public:
                 epa.append(ep);
             }
         }
-        IGroup *ret = createIGroup(epa);
+        Owned<IGroup> ret = createIGroup(epa);
+        if (!cached)
         {
             CriticalBlock block(cachesect);
-            cachedgroup.set(ret);
-            cachedname.set(gname);
-            cachedgroupdir.set(groupdir);
-            cachedtime = msTick();
+            cache.append(*new CNamedGroupCacheEntry(ret, gname, groupdir));
         }
-        if (range.length()) {
+        if (range.length())
+        {
             SocketEndpointArray epar;
             const char *s = range.str();
-            while (*s) {
+            while (*s)
+            {
                 unsigned start = 0;
-                while (isdigit(*s)) {
+                while (isdigit(*s))
+                {
                     start = start*10+*s-'0';
                     s++;
                 }
                 if (!start)
                     break;
                 unsigned end;
-                if (*s=='-') {
+                if (*s=='-')
+                {
                     s++;
                     end = 0;
-                    while (isdigit(*s)) {
+                    while (isdigit(*s))
+                    {
                         end = end*10+*s-'0';
                         s++;
                     }
@@ -6474,7 +6494,8 @@ public:
                 }
                 else 
                     end = start;
-                if ((start>epa.ordinality())||(end>epa.ordinality())) {
+                if ((start>epa.ordinality())||(end>epa.ordinality()))
+                {
                     s = range.str();
                     break;
                 }
@@ -6490,12 +6511,11 @@ public:
             }
             if (*s) 
                 throw MakeStringException(-1,"Invalid group range %s",range.str());
-            ::Release(ret);
-            ret = createIGroup(epar);
+            ret.setown(createIGroup(epar));
         }
         if (dirret)
             dirret->append(groupdir);
-        return ret;
+        return ret.getClear();
     }
 
     IGroup *lookup(const char *logicalgroupname)
@@ -6583,11 +6603,10 @@ public:
         connlock.conn->queryRoot()->removeProp(prop.str()); 
         doadd(connlock,name.str(),group,cluster,dir);
         {                                                           
-            CriticalBlock block(cachesect);                     
-            cachedgroup.set(group); // may be NULL
-            cachedname.set(name.str());
-            cachedgroupdir.set(dir);
-            cachedtime = msTick();
+            CriticalBlock block(cachesect);
+            cache.kill();
+            if (group)
+                cache.append(*new CNamedGroupCacheEntry(group, name.str(), dir));
         }
     }
 
@@ -6654,53 +6673,7 @@ public:
             }
         }
         CriticalBlock block(cachesect);
-        cachedgroup.clear();
-        cachedname.clear();
-        cachedgroupdir.clear();
-    }
-
-    IGroup *getRemoteGroup(const INode *foreigndali, const char *gname, unsigned foreigndalitimeout, StringBuffer *dirret)
-    {
-        StringBuffer lcname(gname);
-        gname = lcname.trim().toLowerCase().str();
-        CMessageBuffer mb;
-        mb.append((int)MDFS_GET_GROUP_TREE).append(gname);
-        size32_t mbsz = mb.length();
-        foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
-        checkDfsReplyException(mb);
-        if (mb.length()==0)
-            return NULL;
-        byte ok;
-        mb.read(ok);
-        if (ok!=1) {
-            // kludge for prev bug
-            if ((ok==(byte)MDFS_GET_GROUP_TREE)&&mb.length()>mbsz) {
-                mb.skip(mbsz-1);
-                mb.read(ok);
-                if (ok!=1) 
-                    return NULL;
-            }
-            else
-                return NULL;
-        }
-        Owned<IPropertyTree> pt = createPTree(mb);
-        Owned<IPropertyTreeIterator> pe = pt->getElements("Node");
-        SocketEndpointArray epa;
-        ForEach(*pe) {
-            SocketEndpoint ep(pe->query().queryProp("@ip"));
-            epa.append(ep);
-        }
-        IGroup *ret = createIGroup(epa);
-        {
-            CriticalBlock block(cachesect);
-            cachedgroup.set(ret);
-            cachedname.set(gname);
-            cachedgroupdir.set(pt->queryProp("@dir"));
-            if (dirret)
-                dirret->append(cachedgroupdir);
-            cachedtime = msTick();
-        }
-        return ret;
+        cache.kill();
     }
 
     unsigned setDefaultTimeout(unsigned timems)
@@ -6710,6 +6683,40 @@ public:
         return ret;
     }
 
+private:
+    bool getRemoteGroup(const INode *foreigndali, const char *gname, unsigned foreigndalitimeout, StringAttr &groupdir, SocketEndpointArray &epa)
+    {
+        StringBuffer lcname(gname);
+        gname = lcname.trim().toLowerCase().str();
+        CMessageBuffer mb;
+        mb.append((int)MDFS_GET_GROUP_TREE).append(gname);
+        size32_t mbsz = mb.length();
+        foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
+        checkDfsReplyException(mb);
+        if (mb.length()==0)
+            return false;
+        byte ok;
+        mb.read(ok);
+        if (ok!=1) {
+            // kludge for prev bug
+            if ((ok==(byte)MDFS_GET_GROUP_TREE)&&mb.length()>mbsz) {
+                mb.skip(mbsz-1);
+                mb.read(ok);
+                if (ok!=1) 
+                    return false;
+            }
+            else
+                return false;
+        }
+        Owned<IPropertyTree> pt = createPTree(mb);
+        Owned<IPropertyTreeIterator> pe = pt->getElements("Node");
+        groupdir.set(pt->queryProp("@dir"));
+        ForEach(*pe) {
+            SocketEndpoint ep(pe->query().queryProp("@ip"));
+            epa.append(ep);
+        }
+        return epa.ordinality() > 0;
+    }
 
 };
 

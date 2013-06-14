@@ -43,15 +43,9 @@ interface ILazyFileIO : extends IFileIO
     virtual int getLinkCount() const = 0;
     virtual bool createHardFileLink() = 0;
 
-    virtual void setBaseIndexFileName(const char *val) =0;
-    virtual const char *queryBaseIndexFileName() = 0;
-    virtual void setPatchFile(ILazyFileIO *val) = 0;
-    virtual ILazyFileIO *queryPatchFile() = 0;
-
     virtual unsigned getLastAccessed() const = 0;
     virtual bool isOpen() const = 0;
     virtual void close() = 0;
-    virtual RoxieFileType getFileType() = 0;
     virtual void setCopying(bool copying) = 0;
     virtual bool isCopying() const = 0;
     virtual IMemoryMappedFile *queryMappedFile() = 0;
@@ -64,8 +58,8 @@ extern ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, Ro
 
 interface IRoxieFileCache : extends IInterface
 {
-    virtual ILazyFileIO *lookupFile(const char *id, unsigned partNo, RoxieFileType fileType, const char *localLocation, const char *baseIndexFileName, ILazyFileIO *patchFile, const StringArray &peerRoxieCopiedLocationInfo, const StringArray &deployedLocationInfo, offset_t size, const CDateTime &modified, bool memFile, bool isRemote, bool startFileCopy, bool doForegroundCopy, unsigned crc, bool isCompressed, const char *lookupDali) = 0;
-    virtual RoxieFileStatus fileUpToDate(IFile *f, RoxieFileType fileType, offset_t size, const CDateTime &modified, unsigned crc, const char* id, bool isCompressed) = 0;
+    virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType, IPartDescriptor *pdesc, unsigned numParts, const StringArray &deployedLocationInfo, bool startFileCopy) = 0;
+    virtual RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed) = 0;
     virtual int numFilesToCopy() = 0;
     virtual void closeExpired(bool remote) = 0;
     virtual StringAttrMapping *queryFileErrorList() = 0;  // returns list of files that could not be open
@@ -145,7 +139,5 @@ extern IRoxieWriteHandler *createRoxieWriteHandler(IRoxieDaliHelper *_daliHelper
 
 extern IRoxieFileCache &queryFileCache();
 extern IMemoryFile *createMemoryFile(const char *fileName);
-extern IDiffFileInfoCache *queryDiffFileInfoCache();
-extern void releaseDiffFileInfoCache();
 
 #endif
