@@ -1750,6 +1750,15 @@ public:
         allocatorMetaCache.setown(createRowAllocatorCache(this));
         rowManager.setown(roxiemem::createRowManager(memSize, NULL, queryDummyContextLogger(), allocatorMetaCache, false));
         rowManager->setMemoryLimit(memSize, 0==memorySpillAt ? 0 : memSize/100*memorySpillAt);
+        const bool paranoid = false;
+        if (paranoid)
+        {
+            //you probably want to test these options individually
+            rowManager->setMemoryCallbackThreshold((unsigned)-1);
+            rowManager->setCallbackOnThread(true);
+            rowManager->setMinimizeFootprint(true, true);
+            rowManager->setReleaseWhenModifyCallback(true, true);
+        }
     }
     ~CThorAllocator()
     {

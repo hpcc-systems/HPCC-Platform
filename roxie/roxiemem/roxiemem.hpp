@@ -411,14 +411,12 @@ interface IRowManager : extends IInterface
     virtual void resizeRow(void * original, memsize_t copysize, memsize_t newsize, unsigned activityId, IRowResizeCallback & callback) = 0;
     virtual void resizeRow(memsize_t & capacity, void * & original, memsize_t copysize, memsize_t newsize, unsigned activityId) = 0;
     virtual void *finalizeRow(void *final, memsize_t originalSize, memsize_t finalSize, unsigned activityId) = 0;
-    virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;
     virtual unsigned allocated() = 0;
     virtual unsigned numPagesAfterCleanup(bool forceFreeAll) = 0; // calls releaseEmptyPages() then returns
     virtual bool releaseEmptyPages(bool forceFreeAll) = 0; // ensures any empty pages are freed back to the heap
     virtual unsigned getMemoryUsage() = 0;
     virtual bool attachDataBuff(DataBuffer *dataBuff) = 0 ;
     virtual void noteDataBuffReleased(DataBuffer *dataBuff) = 0 ;
-    virtual void setActivityTracking(bool val) = 0;
     virtual void reportLeaks() = 0;
     virtual void checkHeap() = 0;
     virtual IFixedRowHeap * createFixedRowHeap(size32_t fixedSize, unsigned activityId, unsigned roxieHeapFlags) = 0;
@@ -427,6 +425,21 @@ interface IRowManager : extends IInterface
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
     virtual memsize_t getExpectedFootprint(memsize_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
+
+//Allow various options to be configured
+    virtual void setActivityTracking(bool val) = 0;
+    virtual void setMemoryLimit(memsize_t size, memsize_t spillSize = 0) = 0;  // First size is max memory, second is the limit which will trigger a background thread to reduce memory
+
+    //set the number of callbacks that successfully free some memory before deciding it is good enough.
+    //Default is 1, use -1 to free all possible memory whenever an out of memory occurs
+    virtual void setMemoryCallbackThreshold(unsigned value) = 0;
+
+    //If set release callbacks are called on separate threads - it maximises the likelihood of hitting a deadlock.
+    virtual void setCallbackOnThread(bool value) = 0;
+    //If enabled, callbacks will be called whenever a new block of memory needs to be allocated
+    virtual void setMinimizeFootprint(bool value, bool critical) = 0;
+    //If set, and changes to the callback list always triggers the callbacks to be called.
+    virtual void setReleaseWhenModifyCallback(bool value, bool critical) = 0;
 };
 
 extern roxiemem_decl void setDataAlignmentSize(unsigned size);
@@ -462,6 +475,8 @@ extern roxiemem_decl unsigned getHeapAllocated();
 extern roxiemem_decl unsigned getHeapPercentAllocated();
 extern roxiemem_decl unsigned getDataBufferPages();
 extern roxiemem_decl unsigned getDataBuffersActive();
+
+//Various options to stress the memory
 
 extern roxiemem_decl unsigned memTraceLevel;
 extern roxiemem_decl memsize_t memTraceSizeLimit;
