@@ -32,7 +32,6 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="remote/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxiecommlib/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxiehelper/sourcedoc.xml"/>
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxiemanager/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="thorhelper/sourcedoc.xml"/>
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="workunit/sourcedoc.xml"/>
 </section>

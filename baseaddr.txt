@@ -103,7 +103,6 @@ icudata         0x01300000 0x00810000
 snmputils       0x014A0000 0x00040000
 schedulectrl    0x014E0000 0x00040000
 
-roxiemanager    0x01560000 0x00080000
 roxiecommlib    0x01600000 0x00080000
 
 ; plugins.
