@@ -25,20 +25,27 @@ if [ $configmgr_status -gt 0 ]; then
     exit 1
 fi
 
-
 # Stop all services before cleaning up
 ######################################
 /etc/init.d/hpcc-init stop
 if [ -f "${PID_DIR}/mydafilesrv.pid" ]; then
     /etc/init.d/dafilesrv stop
 fi
-# Removing edits from /etc files
+
+# Remove edits from /etc files
+##############################
 ${INSTALL_DIR}/sbin/rm_conf_settings.sh
 
 
-# Removing symlinks.
+# Remove symlinks
+#################
 ${INSTALL_DIR}/etc/init.d/uninstall-init
 
+# Remove installed flag
+#######################
+if [ -f ${CONFIG_DIR}/installed ] ; then
+    rm ${CONFIG_DIR}/installed
+fi
 
 exit 0
  

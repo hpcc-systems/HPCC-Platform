@@ -25,7 +25,7 @@ FOREACH( iFILES
 ENDFOREACH ( iFILES)
 
 Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.xml DESTINATION .${CONFIG_DIR}/rpmnew COMPONENT Runtime ) 	#  Don't delete the "."
-Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.conf DESTINATION ${CONFIG_DIR}/rpmnew COMPONENT Runtime )
-Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf DESTINATION ${CONFIG_DIR}/rpmnew COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_BINARY_DIR}/environment.conf DESTINATION .${CONFIG_DIR}/rpmnew COMPONENT Runtime )
+Install ( FILES ${CMAKE_CURRENT_SOURCE_DIR}/genenvrules.conf DESTINATION .${CONFIG_DIR}/rpmnew COMPONENT Runtime )
 
 ADD_SUBDIRECTORY(configmgr)
