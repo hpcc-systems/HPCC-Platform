@@ -5439,6 +5439,8 @@ bool MonitorExtractor::matchSubstringFilter(KeyConditionInfo & matches, node_ope
     IHqlExpression * selector = left->queryChild(0);
     if (!isKeySelect(selector) || !okToKey(selector, keyedKind))
         return false;
+    if (!isIndexInvariant(right))
+        return false;
     ITypeInfo * fieldType = selector->queryType();
     unsigned fieldLength = fieldType->getStringLen();
     if (fieldLength == UNKNOWN_LENGTH)
