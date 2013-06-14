@@ -83,39 +83,51 @@ class Regression:
         return Suite('setup', self.setupDir, self.dir_a, self.dir_ex,
                      self.dir_r)
 
-    def runSuite(self, name, suite):
-        server = self.config.ip
+    def buildLogging(self, name):
         report = Report(name)
         curTime = time.strftime("%y-%m-%d-%H-%M")
         logName = name + "." + curTime + ".log"
+        log = os.path.join(self.logDir, logName)
+        self.log.addHandler(log, 'DEBUG')
+        return (report, log)
+
+    @staticmethod
+    def displayReport(report):
+        report[0].display(report[1])
+
+    def runSuite(self, name, suite):
+        report = self.buildLogging(name)
         if name == "setup":
             cluster = 'hthor'
         else:
             cluster = name
-        log = os.path.join(self.logDir, logName)
-        self.log.addHandler(log, 'DEBUG')
+
         logging.warn("Suite: %s" % name)
         logging.warn("Queries: %s" % repr(len(suite.getSuite())))
         cnt = 1
         for query in suite.getSuite():
-            logging.warn("%s. Test: %s" % (repr(cnt), query.ecl))
-            ECLCC().makeArchive(query)
-            res = ECLcmd().runCmd("run", cluster, query, report,
-                                  server=server, username=self.config.username,
-                                  password=self.config.password)
-            wuid = query.getWuid()
-            if wuid:
-                url = "http://" + self.config.server
-                url += "/WsWorkunits/WUInfo?Wuid="
-                url += wuid
-            if res:
-                logging.info("Pass %s" % wuid)
-                logging.info("URL %s" % url)
-            else:
-                if not wuid:
-                    logging.error("Fail No WUID")
-                else:
-                    logging.error("Fail %s" % wuid)
-                    logging.error("URL %s" % url)
+            self.runQuery(cluster, query, report, cnt)
             cnt += 1
-        report.display(log)
+        Regression.displayReport(report)
+
+    def runQuery(self, cluster, query, report, cnt=1):
+        logging.warn("%s. Test: %s" % (repr(cnt), query.ecl))
+        ECLCC().makeArchive(query)
+        res = ECLcmd().runCmd("run", cluster, query, report[0],
+                              server=self.config.ip,
+                              username=self.config.username,
+                              password=self.config.password)
+        wuid = query.getWuid()
+        if wuid:
+            url = "http://" + self.config.server
+            url += "/WsWorkunits/WUInfo?Wuid="
+            url += wuid
+        if res:
+            logging.info("Pass %s" % wuid)
+            logging.info("URL %s" % url)
+        else:
+            if not wuid:
+                logging.error("Fail No WUID")
+            else:
+                logging.error("Fail %s" % wuid)
+                logging.error("URL %s" % url)

@@ -17,7 +17,12 @@
 
 ###<REPLACE>###
 
-if [ -f "${INSTALL_DIR}/etc/init.d/install-init" ]; then
-        ${INSTALL_DIR}/etc/init.d/install-init
-fi
+# On some systems, when running an update (as opposed to a remove) the postinstall script does
+# not get run. To work around that issue, we run the post-install actions in the post-remove script
+# (which IS run)
+#
+# If the install dir is still present post-removal, must be an update
 
+if [ -f "${INSTALL_DIR}/etc/init.d/install-init" ]; then
+    ${INSTALL_DIR}/etc/init.d/install-init
+fi

@@ -46,8 +46,8 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
         return false;
     pb->magicVersion = PLUGIN_VERSION;
     pb->version = version;
-    pb->moduleName = "R";
-    pb->ECL = NULL;
+    pb->moduleName = "+R+"; // Hack - we don't want to export any ECL, but if we don't export something,
+    pb->ECL = "";           // Hack - the dll is unloaded at startup when compiling, and the R runtime closes stdin when unloaded
     pb->flags = PLUGIN_MULTIPLE_VERSIONS;
     pb->description = "R Embed Helper";
     return true;

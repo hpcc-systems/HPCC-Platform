@@ -369,20 +369,20 @@ public:
                 loopPending->flush();
 
                 IThorBoundLoopGraph *boundGraph = queryContainer().queryLoopGraph();
-                unsigned doLoopCounter = (flags & IHThorLoopArg::LFcounter) ? loopCounter:0;
-                unsigned doLoopAgain = (flags & IHThorLoopArg::LFnewloopagain) ? helper->loopAgainResult() : 0;
+                unsigned condLoopCounter = (flags & IHThorLoopArg::LFcounter) ? loopCounter:0;
+                unsigned loopAgain = (flags & IHThorLoopArg::LFnewloopagain) ? helper->loopAgainResult() : 0;
                 ownedResults.setown(queryGraph().createThorGraphResults(3));
                 // ensures remote results are available, via owning activity (i.e. this loop act)
                 // so that when aggregate result is fetched from the master, it will retrieve from the act, not the (already cleaned) graph localresults
                 ownedResults->setOwner(container.queryId());
 
                 boundGraph->prepareLoopResults(*this, ownedResults);
-                if (doLoopCounter) // cannot be 0
-                    boundGraph->prepareCounterResult(*this, ownedResults, loopCounter, 2);
-                if (doLoopAgain) // cannot be 0
-                    boundGraph->prepareLoopAgainResult(*this, ownedResults, helper->loopAgainResult());
+                if (condLoopCounter) // cannot be 0
+                    boundGraph->prepareCounterResult(*this, ownedResults, condLoopCounter, 2);
+                if (loopAgain) // cannot be 0
+                    boundGraph->prepareLoopAgainResult(*this, ownedResults, loopAgain);
 
-                boundGraph->execute(*this, doLoopCounter, ownedResults, loopPending.getClear(), loopPendingCount, extractBuilder.size(), extractBuilder.getbytes());
+                boundGraph->execute(*this, condLoopCounter, ownedResults, loopPending.getClear(), loopPendingCount, extractBuilder.size(), extractBuilder.getbytes());
 
                 Owned<IThorResult> result0 = ownedResults->getResult(0);
                 curInput.setown(result0->getRowStream());

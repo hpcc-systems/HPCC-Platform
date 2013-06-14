@@ -1,4 +1,4 @@
-## Default environment configuration file
+## Default environment configuration file for OpenHPCC
 
 [DEFAULT]
 configs=${CONFIG_DIR}

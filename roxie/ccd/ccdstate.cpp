@@ -264,7 +264,7 @@ protected:
                 if (fd)
                 {
                     Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
-                    Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt, writeAccess);
+                    Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt);
                     result->addSubFile(fd.getClear(), remoteFDesc.getClear());
                     return result.getClear();
                 }
@@ -980,6 +980,11 @@ public:
         return serverManager.getLink();
     }
 
+    void getInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
+    {
+        reply.appendf(" <PackageSet id=\"%s\" querySet=\"%s\"/>\n", queryPackageId(), querySet.get());
+    }
+
     void resetStats(const char *queryId, const IRoxieContextLogger &logctx)
     {
         CriticalBlock b(updateCrit);
@@ -1288,6 +1293,16 @@ public:
             CRoxieQueryPackageManager &qpm = allQueryPackages.item(idx);
             qpm.getActivityMetrics(reply);
         }
+    }
+
+    void getInfo(StringBuffer &reply, const IRoxieContextLogger &logctx) const
+    {
+        reply.append("<PackageSets>\n");
+        ForEachItemIn(idx, allQueryPackages)
+        {
+            allQueryPackages.item(idx).getInfo(reply, logctx);
+        }
+        reply.append("</PackageSets>\n");
     }
 
     void getStats(StringBuffer &reply, const char *id, const char *action, const char *graphName, const IRoxieContextLogger &logctx) const
@@ -1660,10 +1675,6 @@ private:
                 defaultWarnTimeLimit[2] = control->getPropInt("@limit", 0);
                 topology->setPropInt("@defaultSLAPriorityTimeWarning", defaultWarnTimeLimit[2]);
             }
-            else if (stricmp(queryName, "control:deleteKeyDiffFiles")==0)
-            {
-                UNIMPLEMENTED;
-            }
             else if (stricmp(queryName, "control:deleteUnneededPhysicalFiles")==0)
             {
                 UNIMPLEMENTED;
@@ -1964,13 +1975,10 @@ private:
                     toXML(stats, reply);
                 }
             }
-            else if (stricmp(queryName, "control:queryDiffFileInfoCache")==0)
-            {
-                queryDiffFileInfoCache()->queryDiffFileNames(reply);
-            }
             else if (stricmp(queryName, "control:queryPackageInfo")==0)
             {
-                UNIMPLEMENTED;
+                ReadLockBlock readBlock(packageCrit);
+                allQueryPackages->getInfo(reply, logctx);
             }
             else if (stricmp(queryName, "control:queryStats")==0)
             {
