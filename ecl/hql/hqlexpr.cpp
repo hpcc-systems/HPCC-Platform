@@ -6484,9 +6484,9 @@ IIdAtom * CHqlAnnotation::queryFullModuleId() const
     return body->queryFullModuleId();
 }
 
-IHqlExpression * CHqlAnnotation::queryAttribute(IAtom * name)
+IHqlExpression * CHqlAnnotation::queryAttribute(ExprPropKind kind)
 {
-    return body->queryAttribute(name);
+    return body->queryAttribute(kind);
 }
 
 IHqlExpression * CHqlAnnotation::queryNormalizedSelector(bool skipIndex)

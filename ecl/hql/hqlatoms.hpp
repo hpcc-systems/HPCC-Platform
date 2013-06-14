@@ -81,13 +81,6 @@ extern HQL_API IAtom * asciiAtom;
 extern HQL_API IAtom * assertAtom;
 extern HQL_API IAtom * assertConstAtom;
 extern HQL_API IAtom * atmostAtom;
-extern HQL_API IAtom * _attrAligned_Atom;
-extern HQL_API IAtom * _attrDiskSerializedForm_Atom;
-extern HQL_API IAtom * _attrInternalSerializedForm_Atom;
-extern HQL_API IAtom * _attrLocationIndependent_Atom;
-extern HQL_API IAtom * _attrRecordCount_Atom;
-extern HQL_API IAtom * _attrSize_Atom;
-extern HQL_API IAtom * _attrUnadorned_Atom;
 extern HQL_API IAtom * aveAtom;
 extern HQL_API IAtom * backupAtom;
 extern HQL_API IAtom * bcdAtom;
@@ -308,6 +301,10 @@ extern HQL_API IAtom * prefetchAtom;
 extern HQL_API IAtom * preloadAtom;
 extern HQL_API IAtom * priorityAtom;
 extern HQL_API IAtom * privateAtom;
+extern HQL_API IAtom * _propAligned_Atom;
+extern HQL_API IAtom * _propRecordCount_Atom;
+extern HQL_API IAtom * _propSize_Atom;
+extern HQL_API IAtom * _propUnadorned_Atom;
 extern HQL_API IAtom * pseudoentrypointAtom;
 extern HQL_API IAtom * pullAtom;
 extern HQL_API IAtom * pulledAtom;
@@ -420,36 +417,6 @@ extern HQL_API IAtom * xmlDefaultAtom;
 extern HQL_API IAtom * xpathAtom;
 
 inline bool isInternalAttributeName(IAtom * name) { return (name->str()[0] == '$'); }
-
-//Information which is associated with system attributes.
-enum
-{
-    EAnone,
-    EArecordCount,
-    EAdiskserializedForm,
-    EAinternalserializedForm,
-    EAsize,
-    EAaligned,
-    EAunadorned,
-    EAlocationIndependent,
-    EAmax
-};
-
-//Use a different class implementation for system attributes, so I can associate extra internal information with them
-//e.g., an efficient way of mapping from an internal id to an attribute enumeration, so the switch statements are efficient
-class HQL_API SysAtom : public Atom
-{
-public:
-    SysAtom(const void * k);
-
-    inline SysAtom & setAttrId(byte _attrId) { attrId = _attrId; return *this; }
-public:
-    byte attrId;
-};
-
-extern HQL_API IAtom * createSystemAtom(const char * s);
-
-inline byte getAttributeId(IAtom * x) { return static_cast<SysAtom *>(x)->attrId; }
 
 /*
  * This is part of an experiment to make identifiers in the language case sensitive - at least optionally, possibly only for syntax checking.

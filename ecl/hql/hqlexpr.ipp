@@ -43,22 +43,21 @@ typedef byte transformdepth_t;
 
 class CHqlExprMeta;
 
-//class HQL_API CHqlExpression : implements IHqlExpression, public CInterface
 class HQL_API CHqlDynamicAttribute
 {
     friend class CHqlExpression;
 public:
-    inline CHqlDynamicAttribute(IAtom * _name, IHqlExpression *_value)
-        : name(_name), value(_value)
+    inline CHqlDynamicAttribute(ExprPropKind _kind, IHqlExpression *_value)
+        : kind(_kind), value(_value)
     {
         next = NULL;
     }
     ~CHqlDynamicAttribute() { delete next; }
 
 protected:
-    IAtom * name;
     CHqlDynamicAttribute * next;
     LinkedHqlExpr value;
+    ExprPropKind kind;
 };
 
 class CUsedTablesBuilder;
@@ -167,7 +166,7 @@ protected:
         operands.append(child);
         onAppendOperand(child, which);
     }
-    IHqlExpression * queryExistingAttribute(IAtom * propName) const;
+    IHqlExpression * queryExistingAttribute(ExprPropKind kind) const;
 
     void initFlagsBeforeOperands();
     void updateFlagsAfterOperands();
@@ -177,7 +176,7 @@ protected:
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
 
-    void addAttribute(IAtom * name, IHqlExpression * value);
+    void addAttribute(ExprPropKind kind, IHqlExpression * value);
 
 public:
     virtual void Link(void) const;
@@ -194,7 +193,7 @@ public:
     virtual IHqlScope *queryScope();
     virtual IHqlSimpleScope *querySimpleScope();
     virtual IHqlExpression *queryProperty(IAtom * propName) const;
-    virtual IHqlExpression *queryAttribute(IAtom * propName);
+    virtual IHqlExpression *queryAttribute(ExprPropKind kind);
     virtual IHqlExpression *queryFunctionDefinition() const { return NULL; };
     virtual IHqlExpression *queryExternalDefinition() const { return NULL; };
     virtual unsigned getInfoFlags() const { return infoFlags; }
@@ -504,7 +503,7 @@ public:
     virtual IHqlExpression *queryExternalDefinition() const;
     virtual IHqlExpression *queryNormalizedSelector(bool skipIndex=false);
     virtual IHqlExpression *queryProperty(IAtom * propName) const;
-    virtual IHqlExpression *queryAttribute(IAtom * propName);
+    virtual IHqlExpression *queryAttribute(ExprPropKind kind);
     virtual IHqlExpression * clone(HqlExprArray &);
     virtual IHqlExpression * cloneAnnotation(IHqlExpression * body) = 0;
     virtual IHqlExpression * cloneAllAnnotations(IHqlExpression * body);
