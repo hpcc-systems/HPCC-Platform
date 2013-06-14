@@ -167,7 +167,7 @@ public:
     unsigned getMaxSequence() { return sequence; }
 
 protected:
-    void nextSequence(HqlExprArray & args, IHqlExpression * name, _ATOM overwriteAction, IHqlExpression * value, bool needAttr, bool * duplicate);
+    void nextSequence(HqlExprArray & args, IHqlExpression * name, IAtom * overwriteAction, IHqlExpression * value, bool needAttr, bool * duplicate);
     virtual IHqlExpression * doTransformRootExpr(IHqlExpression * expr);
     IHqlExpression * attachSequenceNumber(IHqlExpression * expr);
 
@@ -206,7 +206,7 @@ protected:
     IHqlExpression * normalizeSelect(IHqlExpression * expr);
     IHqlExpression * normalizeSubSort(IHqlExpression * expr);
     IHqlExpression * normalizeSort(IHqlExpression * expr);
-    IHqlExpression * normalizeSortSteppedIndex(IHqlExpression * expr, _ATOM attrName);
+    IHqlExpression * normalizeSortSteppedIndex(IHqlExpression * expr, IAtom * attrName);
     IHqlExpression * normalizeTempTable(IHqlExpression * expr);
 
     IHqlExpression * skipGroupsWithinGroup(IHqlExpression * expr, bool isLocal);
@@ -1172,7 +1172,7 @@ protected:
 
 protected:
     IHqlExpression * transformChildrenNoAnnotations(IHqlExpression * expr);
-    IHqlExpression * makeRecursiveName(_ATOM searchModule, _ATOM searchName);
+    IHqlExpression * makeRecursiveName(IAtom * searchModule, IAtom * searchName);
     HqlTreeNormalizerInfo * queryLocationIndependentExtra(IHqlExpression * expr);
     IHqlExpression * transformSimpleConst(IHqlExpression * expr)
     {

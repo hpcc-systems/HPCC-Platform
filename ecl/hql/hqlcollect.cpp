@@ -53,33 +53,33 @@ public:
 class CEclSource : public CInterfaceOf<IEclSource>
 {
 public:
-    CEclSource(_ATOM _eclName, EclSourceType _type) : eclName(_eclName), type(_type) { }
+    CEclSource(IIdAtom * _eclId, EclSourceType _type) : eclId(_eclId), type(_type) { }
 
 //interface IEclSource
     virtual IProperties * getProperties() { return NULL; }
-    virtual _ATOM queryEclName() const { return eclName; }
+    virtual IIdAtom * queryEclId() const { return eclId; }
     virtual EclSourceType queryType() const { return type; }
 
 // new virtuals implemented by the child classes
-    virtual IEclSource * getSource(_ATOM searchName) = 0;
+    virtual IEclSource * getSource(IIdAtom * searchName) = 0;
     virtual IEclSourceIterator * getContained() = 0;
 
 protected:
     EclSourceType type;
-    _ATOM eclName;
+    IIdAtom * eclId;
 };
 
 
 class CEclCollection : public CEclSource
 {
 public:
-    CEclCollection(_ATOM _eclName, EclSourceType _type) : CEclSource(_eclName, _type) { expandedChildren = false; fullyDefined = false; }
+    CEclCollection(IIdAtom * _eclName, EclSourceType _type) : CEclSource(_eclName, _type) { expandedChildren = false; fullyDefined = false; }
 
 //interface IEclSource
     virtual IFileContents * queryFileContents() { return NULL; }
 
 //CEclSource virtuals
-    virtual IEclSource * getSource(_ATOM searchName);
+    virtual IEclSource * getSource(IIdAtom * searchName);
     virtual IEclSourceIterator * getContained();
     virtual void populateChildren() {}
     virtual void populateDefinition() {}
@@ -87,7 +87,7 @@ public:
 protected:
     void ensureChildren();
     void ensureDefinition();
-    CEclSource * find(_ATOM searchName);
+    CEclSource * find(IIdAtom * searchName);
 
 protected:
     IArrayOf<IEclSource> contents;
@@ -97,7 +97,7 @@ protected:
 };
 
 
-IEclSource * CEclCollection::getSource(_ATOM searchName)
+IEclSource * CEclCollection::getSource(IIdAtom * searchName)
 {
     ensureChildren();
     return find(searchName);
@@ -109,12 +109,12 @@ IEclSourceIterator * CEclCollection::getContained()
     return new CArrayIteratorOf<IEclSource, IEclSourceIterator>(contents, 0, NULL);
 }
 
-CEclSource * CEclCollection::find(_ATOM name)
+CEclSource * CEclCollection::find(IIdAtom * name)
 {
     ForEachItemIn(i, contents)
     {
         IEclSource & cur = contents.item(i);
-        if (cur.queryEclName() == name)
+        if (cur.queryEclId()->lower() == name->lower())
             return &static_cast<CEclSource &>(cur);
     }
     return NULL;
@@ -151,7 +151,7 @@ public:
     virtual IFileContents * queryFileContents() { return fileContents; }
 
 //CEclSource virtuals
-    virtual IEclSource * getSource(_ATOM searchName) { return NULL; }
+    virtual IEclSource * getSource(IIdAtom * searchName) { return NULL; }
     virtual IEclSourceIterator * getContained() { return NULL; }
 
     bool checkValid();
@@ -168,7 +168,7 @@ public:
 class FileSystemDirectory : public CEclCollection
 {
 public:
-    FileSystemDirectory(_ATOM _eclName, IFile * _directory)
+    FileSystemDirectory(IIdAtom * _eclName, IFile * _directory)
         : CEclCollection(_eclName, ESTcontainer), directory(_directory)
     {
     }
@@ -194,7 +194,7 @@ public:
     }
 
 //interface IEclSourceCollection
-    virtual IEclSource * getSource(IEclSource * optParent, _ATOM searchName);
+    virtual IEclSource * getSource(IEclSource * optParent, IIdAtom * searchName);
     virtual IEclSourceIterator * getContained(IEclSource * optParent);
     virtual void checkCacheValid();
 
@@ -223,22 +223,22 @@ EclSourceType getEclSourceType(const char * tailname)
     return ESTnone;
 }
 
-static _ATOM deriveEclName(const char * filename)
+static IIdAtom * deriveEclName(const char * filename)
 {
     if (!filename)
         return NULL;
 
     const char * tailname = pathTail(filename);
     const char *ext = strrchr(tailname, '.');
-    _ATOM name;
+    IIdAtom * id;
     if (ext)
-        name = createAtom(tailname, ext-tailname);
+        id = createIdAtom(tailname, ext-tailname);
     else
-        name = createAtom(tailname);
+        id = createIdAtom(tailname);
 
-    if (!isCIdentifier(name->str()))
+    if (!isCIdentifier(id->str()))
         return NULL;
-    return name;
+    return id;
 }
 
 //---------------------------------------------------------------------------------------
@@ -262,7 +262,7 @@ FileSystemFile::FileSystemFile(EclSourceType _type, IFile & _file)
 
 bool FileSystemFile::checkValid()
 {
-    if (!eclName)
+    if (!eclId)
         return false;
 
     if (type == ESTplugin)
@@ -285,7 +285,7 @@ bool FileSystemFile::checkValid()
                     if (p(&pb) && (pb.magicVersion == PLUGIN_VERSION) && pb.ECL)
                     {
                         //Name in the plugin overrides the name of the plugin, and the filename where errors are reported.
-                        eclName = createAtom(pb.moduleName);
+                        eclId = createIdAtom(pb.moduleName);
                         version.set(pb.version);
 
                         Owned<ISourcePath> pluginPath = createSourcePath(pb.moduleName);
@@ -380,9 +380,9 @@ void FileSystemDirectory::addFile(IFile &file, bool allowPlugins)
             newSource.setown(new FileSystemDirectory(deriveEclName(tail), &file));
         }
 
-        if (newSource && newSource->queryEclName())
+        if (newSource && newSource->queryEclId())
         {
-            if (!find(newSource->queryEclName()))
+            if (!find(newSource->queryEclId()))
                 contents.append(*newSource.getClear());
             else
             {
@@ -415,7 +415,7 @@ void FileSystemDirectory::populateChildren()
 
 //---------------------------------------------------------------------------------------
 
-IEclSource * FileSystemEclCollection::getSource(IEclSource * optParent, _ATOM searchName)
+IEclSource * FileSystemEclCollection::getSource(IEclSource * optParent, IIdAtom * searchName)
 {
     if (!optParent)
         return root.getSource(searchName);
@@ -518,13 +518,13 @@ static const char * queryText(IPropertyTree * tree)
 class CXmlEclElement : public CEclCollection
 {
 public:
-    CXmlEclElement(_ATOM _name, EclSourceType _type, IPropertyTree * _elemTree, CXmlEclElement * _container);
+    CXmlEclElement(IIdAtom * _name, EclSourceType _type, IPropertyTree * _elemTree, CXmlEclElement * _container);
 
 //interface IEclSource
     virtual IProperties * getProperties();
     virtual IFileContents * queryFileContents();
 
-    virtual CXmlEclElement * createElement(_ATOM _name, EclSourceType _type, IPropertyTree * _elemTree)
+    virtual CXmlEclElement * createElement(IIdAtom * _name, EclSourceType _type, IPropertyTree * _elemTree)
     {
         return new CXmlEclElement(_name, _type, _elemTree, this);
     }
@@ -532,8 +532,8 @@ public:
     virtual void populateChildren();
     virtual void setTree(IPropertyTree * _elemTree) { elemTree.set(_elemTree); }
 
-    CXmlEclElement * find(_ATOM searchName) { return static_cast<CXmlEclElement *>(CEclCollection::find(searchName)); }
-    CXmlEclElement * select(_ATOM eclName, EclSourceType _type, IPropertyTree * _tree);
+    CXmlEclElement * find(IIdAtom * searchName) { return static_cast<CXmlEclElement *>(CEclCollection::find(searchName)); }
+    CXmlEclElement * select(IIdAtom * eclName, EclSourceType _type, IPropertyTree * _tree);
     void setFlags(unsigned _flags) { extraFlags = _flags; }
 
 protected:
@@ -551,7 +551,7 @@ public:
 
 
 
-CXmlEclElement::CXmlEclElement(_ATOM _name, EclSourceType _type, IPropertyTree * _elemTree, CXmlEclElement * _container)
+CXmlEclElement::CXmlEclElement(IIdAtom * _name, EclSourceType _type, IPropertyTree * _elemTree, CXmlEclElement * _container)
 : CEclCollection(_name, _type), elemTree(_elemTree), container(_container)
 {
     extraFlags = 0;
@@ -599,12 +599,12 @@ void CXmlEclElement::expandModule(const char * modname, IPropertyTree * tree)
         const char * dot = strchr(modname, '.');
         if (dot)
         {
-            _ATOM name = createAtom(modname, dot-modname);
+            IIdAtom * name = createIdAtom(modname, dot-modname);
             select(name, ESTcontainer, NULL)->expandModule(dot+1, tree);
             return;
         }
 
-        _ATOM thisName = createAtom(modname);
+        IIdAtom * thisName = createIdAtom(modname);
         EclSourceType thisType = ESTcontainer;
         const char * text = queryText(tree);
 
@@ -636,7 +636,7 @@ void CXmlEclElement::expandModule(const char * modname, IPropertyTree * tree)
 
 void CXmlEclElement::expandAttribute(const char * modname, IPropertyTree * tree)
 {
-    _ATOM thisName = createAtom(modname);
+    IIdAtom * thisName = createIdAtom(modname);
     CXmlEclElement * match = select(thisName, ESTdefinition, tree);
 
     unsigned iflags = tree->getPropInt("@flags", 0);
@@ -654,7 +654,7 @@ void CXmlEclElement::getFullName(StringBuffer & target)
         if (target.length() != prev)
             target.append('.');
     }
-    target.append(eclName);
+    target.append(eclId->str());
 }
 
 IFileContents * CXmlEclElement::queryFileContents()
@@ -712,7 +712,7 @@ IProperties * CXmlEclElement::getProperties()
 }
 
 
-CXmlEclElement * CXmlEclElement::select(_ATOM _name, EclSourceType _type, IPropertyTree * _tree)
+CXmlEclElement * CXmlEclElement::select(IIdAtom * _name, EclSourceType _type, IPropertyTree * _tree)
 {
     //Critial section??
     CXmlEclElement * match = find(_name);
@@ -748,7 +748,7 @@ public:
     }
 
 //interface IEclSourceCollection
-    virtual IEclSource * getSource(IEclSource * optParent, _ATOM searchName);
+    virtual IEclSource * getSource(IEclSource * optParent, IIdAtom * searchName);
     virtual IEclSourceIterator * getContained(IEclSource * optParent);
 
 public:
@@ -759,7 +759,7 @@ public:
 
 //---------------------------------------------------------------------------------------
 
-IEclSource * PropertyTreeEclCollection::getSource(IEclSource * optParent, _ATOM searchName)
+IEclSource * PropertyTreeEclCollection::getSource(IEclSource * optParent, IIdAtom * searchName)
 {
     if (!optParent)
         return root->getSource(searchName);
@@ -845,7 +845,7 @@ class RemoteXmlEclCollection;
 class CRemoteXmlEclElement : public CXmlEclElement
 {
 public:
-    CRemoteXmlEclElement(_ATOM _name, EclSourceType _type, IPropertyTree * _elemTree, CXmlEclElement * _container, RemoteXmlEclCollection * _collection)
+    CRemoteXmlEclElement(IIdAtom * _name, EclSourceType _type, IPropertyTree * _elemTree, CXmlEclElement * _container, RemoteXmlEclCollection * _collection)
         : CXmlEclElement(_name, _type, _elemTree, _container), collection(_collection)
     {
         updateKey();
@@ -854,7 +854,7 @@ public:
     }
 
 //interface IEclSource
-    virtual CXmlEclElement * createElement(_ATOM _name, EclSourceType _type, IPropertyTree * _elemTree)
+    virtual CXmlEclElement * createElement(IIdAtom * _name, EclSourceType _type, IPropertyTree * _elemTree)
     {
         return new CRemoteXmlEclElement(_name, _type, _elemTree, this, collection);
     }

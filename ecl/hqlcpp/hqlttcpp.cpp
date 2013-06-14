@@ -268,7 +268,7 @@ void NewThorStoredReplacer::doAnalyseBody(IHqlExpression * expr)
     {
         StringBuffer errorTemp;
         seenMeta = true;
-        _ATOM kind = expr->queryChild(0)->queryName();
+        IAtom * kind = expr->queryChild(0)->queryName();
         if (kind == debugAtom)
         {
             OwnedHqlExpr foldedName = foldHqlExpression(expr->queryChild(1));
@@ -1215,7 +1215,7 @@ SequenceNumberAllocator::SequenceNumberAllocator(HqlCppTranslator & _translator)
     sequence = 0;
 }
 
-void SequenceNumberAllocator::nextSequence(HqlExprArray & args, IHqlExpression * name, _ATOM overwriteAction, IHqlExpression * value, bool needAttr, bool * duplicate)
+void SequenceNumberAllocator::nextSequence(HqlExprArray & args, IHqlExpression * name, IAtom * overwriteAction, IHqlExpression * value, bool needAttr, bool * duplicate)
 {
     IHqlExpression * seq = NULL;
     if (duplicate)
@@ -1231,7 +1231,7 @@ void SequenceNumberAllocator::nextSequence(HqlExprArray & args, IHqlExpression *
             IHqlExpression * prev = matched->get();
             if (prev->isAttribute())
             {
-                _ATOM prevName = prev->queryName();
+                IAtom * prevName = prev->queryName();
                 if (!overwriteAction)
                 {
                     if (prevName == extendAtom)
@@ -1362,7 +1362,7 @@ IHqlExpression * SequenceNumberAllocator::createTransformed(IHqlExpression * exp
     return attachSequenceNumber(transformed.get());
 }
 
-static _ATOM queryOverwriteAction(IHqlExpression * expr)
+static IAtom * queryOverwriteAction(IHqlExpression * expr)
 {
     if (expr->hasProperty(extendAtom))
         return extendAtom;
@@ -1583,7 +1583,7 @@ IHqlExpression * evalNormalizeAggregateExpr(IHqlExpression * selector, IHqlExpre
             {
                 StringBuffer temp;
                 temp.append("_agg_").append(assigns.ordinality());
-                targetField = createField(createIdentifierAtom(temp.str()), expr->getType(), NULL);
+                targetField = createField(createIdAtom(temp.str()), expr->getType(), NULL);
                 extraSelectNeeded = true;
             }
             fields.append(*targetField);
@@ -3040,7 +3040,7 @@ IHqlExpression * ThorHqlTransformer::normalizeSubSort(IHqlExpression * expr)
 }
 
 
-IHqlExpression * ThorHqlTransformer::normalizeSortSteppedIndex(IHqlExpression * expr, _ATOM attrName)
+IHqlExpression * ThorHqlTransformer::normalizeSortSteppedIndex(IHqlExpression * expr, IAtom * attrName)
 {
     node_operator op = expr->getOperator();
     if (op == no_assertsorted)
@@ -3152,7 +3152,7 @@ static IHqlExpression * extractPrefetchFields(HqlExprArray & fields, HqlExprArra
         match = fields.ordinality();
         StringBuffer name;
         name.append("_f").append(match).append("_");
-        IHqlExpression * field = createField(createIdentifierAtom(name.str()), expr->getType(), NULL);
+        IHqlExpression * field = createField(createIdAtom(name.str()), expr->getType(), NULL);
         fields.append(*field);
         values.append(*LINK(expr));
     }
@@ -3403,7 +3403,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableToAggregate(IHqlExpression * 
             {
                 StringBuffer temp;
                 temp.append("_agg_").append(aggregateAssigns.ordinality());
-                IHqlExpression * targetField = createField(createIdentifierAtom(temp.str()), curGroup->getType(), NULL);
+                IHqlExpression * targetField = createField(createIdAtom(temp.str()), curGroup->getType(), NULL);
                 aggregateFields.append(*targetField);
                 aggregateAssigns.append(*createAssign(createSelectExpr(getActiveTableSelector(), LINK(targetField)), LINK(curGroup)));
                 extraSelectNeeded = true;
@@ -6988,7 +6988,7 @@ void ScalarGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
         return;
     case no_attr_expr:
         {
-            _ATOM name = expr->queryName();
+            IAtom * name = expr->queryName();
             if ((name == _selectors_Atom) || (name == keyedAtom))
                 return;
             analyseChildren(expr);
@@ -10123,8 +10123,6 @@ public:
         default:
             return false;
         }
-        if (expr->queryName() != createIdentifierAtom("ds_raw"))
-            return false;
         return true;
     }
     virtual void doAnalyse(IHqlExpression * expr)
@@ -10170,7 +10168,7 @@ void spotPotentialDuplicateCode(HqlExprArray & exprs)
 
 //---------------------------------------------------------------------------
 
-static bool isUniqueAttributeName(_ATOM name)
+static bool isUniqueAttributeName(IAtom * name)
 {
     const char * nameText = name->str();
     unsigned len = strlen(nameText);
@@ -10182,11 +10180,27 @@ static bool isUniqueAttributeName(_ATOM name)
     return false;
 }
 
-static _ATOM simplifyUniqueAttributeName(_ATOM name)
+static bool containsUpperCase(const char * s)
 {
+    loop
+    {
+        unsigned char next = *s++;
+        if (!next)
+            return false;
+        if (isupper(next))
+            return true;
+    }
+}
+
+static IIdAtom * simplifySymbolName(IIdAtom * name, bool commonUniqueNameAttributes)
+{
+    if (!commonUniqueNameAttributes)
+        return NULL;
+
     //Rename all attributes __x__1234__ to __x__
-    const char * nameText = name->str();
-    unsigned len = strlen(nameText);
+    const char * nameText = name->lower()->str();
+    size_t nameLen = strlen(nameText);
+    size_t len = nameLen;
     if (len > 3)
     {
         if ((nameText[len-2] == '_') && (nameText[len-1] == '_') && isdigit((unsigned char)nameText[len-3]))
@@ -10194,15 +10208,25 @@ static _ATOM simplifyUniqueAttributeName(_ATOM name)
             len -= 3;
             while (len && isdigit((unsigned char)nameText[len-1]))
                 len--;
-            if (len)
-            {
-                StringAttr truncName;
-                truncName.set(nameText, len);
-                return createIdentifierAtom(truncName);
-            }
+            //Shouldn't be possible...
+            if (len == 0)
+                len = nameLen;
         }
     }
+    if (nameLen != len)
+    {
+        StringAttr truncName;
+        truncName.set(nameText, len);
+        return createIdAtom(truncName);
+    }
     return NULL;
+}
+
+static IIdAtom * lowerCaseSymbolName(IIdAtom * name)
+{
+    if (containsUpperCase(name->str()))
+        return createIdAtom(name->lower()->str());
+    return name;
 }
 
 static bool exprIsSelfConstant(IHqlExpression * expr)
@@ -10232,7 +10256,7 @@ static bool exprIsSelfConstant(IHqlExpression * expr)
 }
 
 
-static _ATOM queryPatUseModule(IHqlExpression * expr)
+static IAtom * queryPatUseModule(IHqlExpression * expr)
 {
     IHqlExpression * moduleAttr = expr->queryProperty(moduleAtom);
     if (moduleAttr)
@@ -10240,7 +10264,7 @@ static _ATOM queryPatUseModule(IHqlExpression * expr)
     return NULL;
 }
 
-static _ATOM queryPatUseName(IHqlExpression * expr)
+static IAtom * queryPatUseName(IHqlExpression * expr)
 {
     IHqlExpression * nameAttr = expr->queryProperty(nameAtom);
     return nameAttr->queryChild(0)->queryBody()->queryName();
@@ -10535,7 +10559,7 @@ void HqlTreeNormalizer::analyseExpr(IHqlExpression * expr)
 }
 
 
-IHqlExpression * HqlTreeNormalizer::makeRecursiveName(_ATOM searchModule, _ATOM searchName)
+IHqlExpression * HqlTreeNormalizer::makeRecursiveName(IAtom * searchModule, IAtom * searchName)
 {
     //If this symbol is already has a user define, use that instead of creating our own,
     //because I don't cope very well with multiple defines on the same pattern instance.
@@ -10543,8 +10567,8 @@ IHqlExpression * HqlTreeNormalizer::makeRecursiveName(_ATOM searchModule, _ATOM 
     {
         IHqlExpression & cur = defines.item(i);
         IHqlExpression * moduleExpr = cur.queryChild(2);
-        _ATOM module = moduleExpr ? moduleExpr->queryBody()->queryName() : NULL;
-        _ATOM name = cur.queryChild(1)->queryBody()->queryName();
+        IAtom * module = moduleExpr ? moduleExpr->queryBody()->queryName() : NULL;
+        IAtom * name = cur.queryChild(1)->queryBody()->queryName();
         if (name == searchName && module == searchModule)
             return LINK(cur.queryChild(0)->queryChild(1));
     }
@@ -10559,8 +10583,8 @@ IHqlExpression * HqlTreeNormalizer::queryTransformPatternDefine(IHqlExpression *
         return NULL;
 
     IHqlExpression * moduleExpr = expr->queryChild(2);
-    _ATOM module = moduleExpr ? moduleExpr->queryBody()->queryName() : NULL;
-    _ATOM name = expr->queryChild(1)->queryBody()->queryName();
+    IAtom * module = moduleExpr ? moduleExpr->queryBody()->queryName() : NULL;
+    IAtom * name = expr->queryChild(1)->queryBody()->queryName();
     ForEachItemIn(i, forwardReferences)
     {
         IHqlExpression * cur = &forwardReferences.item(i);
@@ -10710,7 +10734,7 @@ IHqlExpression * HqlTreeNormalizer::transformEvaluate(IHqlExpression * expr)
                 else
                 {
                     //EVALUATE(t[n], e)          -> table(t,{f1 := e})[n].f1;
-                    OwnedHqlExpr field = createField(valueAtom, expr->getType(), NULL);
+                    OwnedHqlExpr field = createField(valueId, expr->getType(), NULL);
                     IHqlExpression * aggregateRecord = createRecord(field);
 
                     IHqlExpression * newAttr = replaceSelector(attr, activeTable, baseDs);
@@ -11337,7 +11361,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
                 bool changed = false;
                 for (unsigned i=0; (cur = expr->queryAnnotationParameter(i)) != 0; i++)
                 {
-                    _ATOM name = cur->queryName();
+                    IAtom * name = cur->queryName();
                     bool keep = true;
                     if (name == deprecatedAtom)
                         keep = false;
@@ -11362,13 +11386,10 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
                 if (hasNamedSymbol(transformedBody))
                     return transformedBody.getClear();
 
-                _ATOM name = expr->queryName();
-                if (options.commonUniqueNameAttributes)
-                {
-                    _ATOM simpleName = simplifyUniqueAttributeName(name);
-                    if (simpleName)
-                        return cloneSymbol(expr, simpleName, transformedBody, NULL, NULL);
-                }
+                IIdAtom * id = expr->queryId();
+                IIdAtom * simpleId = simplifySymbolName(id, options.commonUniqueNameAttributes);
+                if (simpleId)
+                    return cloneSymbol(expr, simpleId, transformedBody, NULL, NULL);
                 break;
             }
         } // switch(kind)
@@ -11560,11 +11581,11 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 IHqlExpression * recordSymbol = queryLocationIndependentExtra(expr)->symbol;
                 if (recordSymbol)
                 {
-                    _ATOM name = recordSymbol->queryName();
-                    _ATOM simpleName = simplifyUniqueAttributeName(name);
-                    if (simpleName)
-                        name = simpleName;
-                    return createSymbol(name, transformed.getClear(), ob_private);
+                    IIdAtom * id = recordSymbol->queryId();
+                    IIdAtom * simpleId = simplifySymbolName(id, options.commonUniqueNameAttributes);
+                    IIdAtom * newid = simpleId ? simpleId : id;
+                    IIdAtom * lowerId = lowerCaseSymbolName(newid);
+                    return createSymbol(lowerId, transformed.getClear(), ob_private);
                 }
             }
             return transformed.getClear();
@@ -11606,8 +11627,10 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
 
             ITypeInfo * type = expr->queryType();
             OwnedITypeInfo newType = transformType(type);
-            if (type != newType)
-                return createField(expr->queryName(), newType.getClear(), children);
+            IIdAtom * id = expr->queryId();
+            IIdAtom * newId = lowerCaseSymbolName(id);
+            if ((type != newType) || (newId != id))
+                return createField(newId, newType.getClear(), children);
 
             if (same)
                 return LINK(expr);
@@ -11762,7 +11785,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 //Attributes shouldn't need transforming, but simplest
                 HqlExprArray attrs;
                 transformChildren(expr, attrs);
-                return createParameter(expr->queryName(), (unsigned)expr->querySequenceExtra(), newType.getClear(), attrs);
+                return createParameter(expr->queryId(), (unsigned)expr->querySequenceExtra(), newType.getClear(), attrs);
             }
             break;
         }
@@ -11792,7 +11815,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
                 }
                 else if (cur->getOperator() == no_purevirtual)
                 {
-                    _ATOM name = cur->queryName();
+                    IAtom * name = cur->queryName();
                     throwError1(HQLERR_LibraryMemberArgNotDefined, name ? name->str() : "");
                 }
                 IHqlExpression * transformed = transform(cur);
@@ -12042,7 +12065,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
     case no_attr_link:
     case no_attr_expr:
         {
-            _ATOM name = expr->queryName();
+            IAtom * name = expr->queryName();
             if ((name == _uid_Atom) && (expr->numChildren() > 0))
             {
                 //Make sure we ignore any line number information on the parameters mangled with the uid - otherwise
@@ -12126,7 +12149,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             bool same = transformChildren(expr, args);
             if (same && (type == newType))
                 return LINK(expr);
-            return createExternalReference(expr->queryName(), newType.getClear(), args);
+            return createExternalReference(expr->queryId(), newType.getClear(), args);
         }
     case no_outputscalar:
         if (options.outputRowsAsDatasets && expr->queryChild(0)->isDatarow())
@@ -12181,7 +12204,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             HqlExprArray children;
             if (transformChildren(expr, children))
                 return LINK(expr);
-            return createFunctionDefinition(expr->queryName(), children);
+            return createFunctionDefinition(expr->queryId(), children);
         }
     case no_debug_option_value:
         {

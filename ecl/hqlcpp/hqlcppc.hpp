@@ -51,8 +51,8 @@ public:
     virtual bool modifyColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value, node_operator op) = 0;
     virtual void setColumn(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * value) = 0;
     virtual void setRow(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IReferenceSelector * value) = 0;
-    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm) = 0;
-    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm) = 0;
+    virtual void buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm) = 0;
+    virtual void buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm) = 0;
     virtual bool prepareReadAhead(HqlCppTranslator & translator, ReadAheadState & state) = 0;
     virtual bool buildReadAhead(HqlCppTranslator & translator, BuildCtx & ctx, ReadAheadState & state) = 0;
 };

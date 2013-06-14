@@ -616,10 +616,11 @@ unsigned getOperatorMetaFlags(node_operator op)
     case no_mix:
     case no_persist_check:
     case no_dataset_from_transform:
+    case no_id:
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
+    case no_unused24: case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
@@ -766,11 +767,11 @@ static unsigned guessSize(unsigned minLen, unsigned maxLen)
 }
 
 
-static IHqlExpression * querySerializedForm(IHqlExpression * expr, _ATOM variation)
+static IHqlExpression * querySerializedForm(IHqlExpression * expr, IAtom * variation)
 {
     if (expr)
     {
-        _ATOM attrName;
+        IAtom * attrName;
         if (variation == diskAtom)
             attrName = _attrDiskSerializedForm_Atom;
         else if (variation == internalAtom)
@@ -790,7 +791,7 @@ static HqlTransformerInfo serializedRecordCreatorInfo("SerializedRecordCreator")
 class SerializedRecordCreator : public QuickHqlTransformer
 {
 public:
-    SerializedRecordCreator(_ATOM _variety) : QuickHqlTransformer(serializedRecordCreatorInfo, NULL), variety(_variety) {}
+    SerializedRecordCreator(IAtom * _variety) : QuickHqlTransformer(serializedRecordCreatorInfo, NULL), variety(_variety) {}
 
     virtual IHqlExpression * createTransformedBody(IHqlExpression * expr)
     {
@@ -816,10 +817,10 @@ public:
     }
 
 protected:
-    _ATOM variety;
+    IAtom * variety;
 };
 
-static IHqlExpression * evaluateSerializedRecord(IHqlExpression * expr, _ATOM variation)
+static IHqlExpression * evaluateSerializedRecord(IHqlExpression * expr, IAtom * variation)
 {
     SerializedRecordCreator transformer(variation);
     return transformer.transform(expr);
@@ -830,13 +831,13 @@ static IHqlExpression * evaluateSerializedRecord(IHqlExpression * expr, _ATOM va
 class CHqlExprMeta
 {
 public:
-    static inline IHqlExpression * addAttribute(IHqlExpression * expr, _ATOM name, IHqlExpression * value)
+    static inline IHqlExpression * addAttribute(IHqlExpression * expr, IAtom * name, IHqlExpression * value)
     {
         CHqlExpression * cexpr = static_cast<CHqlExpression *>(expr);
         cexpr->addAttribute(name, value);
         return value;
     }
-    static inline IHqlExpression * queryExistingAttribute(IHqlExpression * expr, _ATOM name)
+    static inline IHqlExpression * queryExistingAttribute(IHqlExpression * expr, IAtom * name)
     {
         CHqlExpression * cexpr = static_cast<CHqlExpression *>(expr);
         return cexpr->queryExistingAttribute(name);
@@ -845,7 +846,7 @@ public:
 
 //-- Attribute: serialized form -------------------------------------------------------------------------------
 
-static IHqlExpression * evaluateAttrSerializedForm(IHqlExpression * expr, _ATOM attr, _ATOM variation)
+static IHqlExpression * evaluateAttrSerializedForm(IHqlExpression * expr, IAtom * attr, IAtom * variation)
 {
     if (expr->getOperator() == no_record || expr->getOperator() == no_field)
     {
@@ -915,7 +916,7 @@ static IHqlExpression * evaluateFieldAttrSize(IHqlExpression * expr)
                     IHqlExpression * attr = expr->queryChild(i);
                     if (attr->isAttribute())
                     {
-                        _ATOM name = attr->queryName();
+                        IAtom * name = attr->queryName();
                         if (name == countAtom)
                             count = attr->queryChild(0);
                         else if (name == sizeofAtom)
@@ -1241,12 +1242,12 @@ static IHqlExpression * evaluateAttrSize(IHqlExpression * expr)
 }
 
 
-IHqlExpression * getSerializedForm(IHqlExpression * expr, _ATOM variation)
+IHqlExpression * getSerializedForm(IHqlExpression * expr, IAtom * variation)
 {
     return LINK(querySerializedForm(expr, variation));
 }
 
-ITypeInfo * getSerializedForm(ITypeInfo * type, _ATOM variation)
+ITypeInfo * getSerializedForm(ITypeInfo * type, IAtom * variation)
 {
     if (!type)
         return NULL;
@@ -1294,15 +1295,15 @@ ITypeInfo * getSerializedForm(ITypeInfo * type, _ATOM variation)
 class HqlCachedAttributeTransformer : public QuickHqlTransformer
 {
 public:
-    HqlCachedAttributeTransformer(HqlTransformerInfo & _transformInfo, _ATOM _attrName);
+    HqlCachedAttributeTransformer(HqlTransformerInfo & _transformInfo, IAtom * _attrName);
 
     virtual IHqlExpression * transform(IHqlExpression * expr);
 
 protected:
-    _ATOM attrName;
+    IAtom * attrName;
 };
 
-HqlCachedAttributeTransformer::HqlCachedAttributeTransformer(HqlTransformerInfo & _transformInfo, _ATOM _attrName)
+HqlCachedAttributeTransformer::HqlCachedAttributeTransformer(HqlTransformerInfo & _transformInfo, IAtom * _attrName)
 : QuickHqlTransformer(_transformInfo, NULL), attrName(_attrName)
 {
 }
@@ -1377,8 +1378,12 @@ IHqlExpression * HqlUnadornedNormalizer::createTransformed(IHqlExpression * expr
 
             ITypeInfo * type = expr->queryType();
             OwnedITypeInfo newType = transformType(type);
-            if (type != newType)
-                return createField(expr->queryName(), newType.getClear(), children);
+            IIdAtom * id = expr->queryId();
+            //Fields names compare case-insignificantly therefore the field name is converted to lower case so that
+            //equivalent fields are mapped to the same normalized expression.
+            IIdAtom * newid = createIdAtom(id->lower()->str());
+            if ((type != newType) || (id != newid))
+                return createField(newid, newType.getClear(), children);
 
             if (same)
                 return LINK(expr);
@@ -1390,7 +1395,7 @@ IHqlExpression * HqlUnadornedNormalizer::createTransformed(IHqlExpression * expr
             OwnedITypeInfo newType = transformType(type);
             HqlExprArray children;
             transformChildren(expr, children);      // could just unwind
-            return createParameter(expr->queryName(), UnadornedParameterIndex, newType.getClear(), children);
+            return createParameter(expr->queryId(), UnadornedParameterIndex, newType.getClear(), children);
         }
     }
 
@@ -2308,7 +2313,7 @@ bool HqlRowCountInfo::extractHint(IHqlExpression * hint)
         return true;
     case no_attr:
         {
-            _ATOM name = arg->queryName();
+            IAtom * name = arg->queryName();
             RowCountMagnitude magnitude = RCMnone;
             if (name == tinyAtom)
                 magnitude = RCMtiny;
@@ -3018,7 +3023,7 @@ bool hasNoMoreRowsThan(IHqlExpression * expr, __int64 limit)
 
 // Functions for accessing attributes from types etc.
 
-IHqlExpression * queryProperty(ITypeInfo * type, _ATOM search)
+IHqlExpression * queryProperty(ITypeInfo * type, IAtom * search)
 {
     loop
     {
@@ -3047,7 +3052,7 @@ IHqlExpression * queryProperty(ITypeInfo * type, _ATOM search)
     }
 }
 
-IHqlExpression * queryPropertyChild(ITypeInfo * type, _ATOM search, unsigned idx)
+IHqlExpression * queryPropertyChild(ITypeInfo * type, IAtom * search, unsigned idx)
 {
     IHqlExpression * match = queryProperty(type, search);
     if (match)
@@ -3058,7 +3063,7 @@ IHqlExpression * queryPropertyChild(ITypeInfo * type, _ATOM search, unsigned idx
 
 // Functions for extracting and preserving attribute information on types and fields.
 
-void cloneFieldModifier(Shared<ITypeInfo> & type, ITypeInfo * donorType, _ATOM attr)
+void cloneFieldModifier(Shared<ITypeInfo> & type, ITypeInfo * donorType, IAtom * attr)
 {
     IHqlExpression * match = queryProperty(donorType, attr);
     if (!match)
@@ -3078,7 +3083,7 @@ ITypeInfo * cloneEssentialFieldModifiers(ITypeInfo * donor, ITypeInfo * rawtype)
     return type.getClear();
 }
 
-ITypeInfo * removeProperty(ITypeInfo * t, _ATOM search)
+ITypeInfo * removeProperty(ITypeInfo * t, IAtom * search)
 {
     typemod_t curModifier = t->queryModifier();
     if (curModifier == typemod_none)
@@ -3102,7 +3107,7 @@ bool isUninheritedFieldAttribute(IHqlExpression * expr)
 {
     if (expr->isAttribute())
     {
-        _ATOM name = expr->queryName();
+        IAtom * name = expr->queryName();
         //MORE: Attributes of datasets need a different representation - should probably be include in the type somehow...
         if ((name == virtualAtom) || (name == countAtom))
             return true;
@@ -3255,7 +3260,7 @@ bool maxRecordSizeCanBeDerived(IHqlExpression * record)
 //---------------------------------------------------------------------------------
 
 
-bool recordRequiresSerialization(IHqlExpression * expr, _ATOM serializeForm)
+bool recordRequiresSerialization(IHqlExpression * expr, IAtom * serializeForm)
 {
     if (!expr)
         return false;
@@ -3285,12 +3290,12 @@ bool recordRequiresLinkCount(IHqlExpression * expr)
     return recordRequiresDestructor(expr);
 }
 
-bool recordSerializationDiffers(IHqlExpression * expr, _ATOM serializeForm1, _ATOM serializeForm2)
+bool recordSerializationDiffers(IHqlExpression * expr, IAtom * serializeForm1, IAtom * serializeForm2)
 {
     return querySerializedForm(expr, serializeForm1) != querySerializedForm(expr, serializeForm2);
 }
 
-extern HQL_API bool typeRequiresDeserialization(ITypeInfo * type, _ATOM serializeForm)
+extern HQL_API bool typeRequiresDeserialization(ITypeInfo * type, IAtom * serializeForm)
 {
     Owned<ITypeInfo> serializedType = getSerializedForm(type, serializeForm);
 
@@ -3443,7 +3448,7 @@ IHqlExpression * HqlLocationIndependentNormalizer::doCreateTransformed(IHqlExpre
             ITypeInfo * type = expr->queryType();
             OwnedITypeInfo newType = transformType(type);
             if (type != newType)
-                return createField(expr->queryName(), newType.getClear(), children);
+                return createField(expr->queryId(), newType.getClear(), children);
 
             if (same)
                 return LINK(expr);
@@ -3498,7 +3503,7 @@ IHqlExpression * queryLocationIndependent(IHqlExpression * expr)
 }
 
 
-static void clonePropertyAsModifier(Owned<ITypeInfo> & type, IHqlExpression * donor, _ATOM attr)
+static void clonePropertyAsModifier(Owned<ITypeInfo> & type, IHqlExpression * donor, IAtom * attr)
 {
     if (queryProperty(type, attr))
         return;
@@ -3533,7 +3538,7 @@ ITypeInfo * preserveTypeQualifiers(ITypeInfo * ownedType, IHqlExpression * donor
     return type.getClear();
 }
 
-static bool cloneModifierAsProperty(HqlExprArray & args, ITypeInfo * donor, _ATOM attr)
+static bool cloneModifierAsProperty(HqlExprArray & args, ITypeInfo * donor, IAtom * attr)
 {
     IHqlExpression * match = queryProperty(donor, attr);
     if (!match)
@@ -3688,7 +3693,7 @@ ITypeInfo * setStreamedAttr(ITypeInfo * _type, bool setValue)
 
 //---------------------------------------------------------------------------------------------------------------------
 
-IHqlExpression * CHqlExpression::queryExistingAttribute(_ATOM propName) const
+IHqlExpression * CHqlExpression::queryExistingAttribute(IAtom * propName) const
 {
     CriticalBlock block(*attributeCS);
     CHqlDynamicAttribute * cur = attributes;
@@ -3706,7 +3711,7 @@ IHqlExpression * CHqlExpression::queryExistingAttribute(_ATOM propName) const
     return NULL;
 }
 
-void CHqlExpression::addAttribute(_ATOM name, IHqlExpression * value)
+void CHqlExpression::addAttribute(IAtom * name, IHqlExpression * value)
 {
     if (value == this)
         value = NULL;
@@ -3720,7 +3725,7 @@ void CHqlExpression::addAttribute(_ATOM name, IHqlExpression * value)
 }
 
 
-IHqlExpression * CHqlExpression::queryAttribute(_ATOM propName)
+IHqlExpression * CHqlExpression::queryAttribute(IAtom * propName)
 {
 #ifdef _DEBUG
     assertex(isInternalAttributeName(propName));

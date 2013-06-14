@@ -224,7 +224,7 @@ public:
 protected:
     unsigned prodId;   
     symbol_id ruleId;
-    _ATOM ruleName;
+    IAtom * ruleName;
     unsigned numSymbols;
     ProductionFeatureInfo feature;
     int penalty;
@@ -327,7 +327,7 @@ public:
     void addAccept(token_id id);
     void addShift(token_id id, state_id newState);
     void addGoto(symbol_id id, state_id newState);
-    void addProduction(unsigned id, unsigned ruleId, _ATOM ruleName, unsigned numToPop, int penalty, bool transformClonesFirstSymbol);
+    void addProduction(unsigned id, unsigned ruleId, IAtom * ruleName, unsigned numToPop, int penalty, bool transformClonesFirstSymbol);
     void addReduce(token_id id, unsigned prod);
     void addValidator(unsigned prodId, byte kind, unsigned low, unsigned high, AsciiDfa * dfa);
     void beginState(unsigned id);

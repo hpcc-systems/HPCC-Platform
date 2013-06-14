@@ -37,10 +37,10 @@ static ViewTransformerRegistry * theTransformerRegistry;
 static ITypeInfo * stringType;
 static ITypeInfo * utf8Type;
 static ITypeInfo * unicodeType;
-static _ATOM addAtom;
+static IAtom * addAtom;
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    addAtom = createIdentifierAtom("add");
+    addAtom = createLowerCaseAtom("add");
     stringType = makeStringType(UNKNOWN_LENGTH, NULL, NULL);
     utf8Type = makeUtf8Type(UNKNOWN_LENGTH, NULL);
     unicodeType = makeUnicodeType(UNKNOWN_LENGTH, NULL);
@@ -276,17 +276,17 @@ void ViewTransformerRegistry::addTransformer(ViewFieldTransformer * ownedTransfo
 
 void ViewTransformerRegistry::addFieldUtf8Transformer(const char * name, utf8FieldTransformerFunction func)
 {
-    transformers.append(* new ViewFieldUtf8Transformer(createIdentifierAtom(name), func));
+    transformers.append(* new ViewFieldUtf8Transformer(createLowerCaseAtom(name), func));
 }
 
 void ViewTransformerRegistry::addFieldStringTransformer(const char * name, stringFieldTransformerFunction func)
 {
-    transformers.append(* new ViewFieldStringTransformer(createIdentifierAtom(name), func));
+    transformers.append(* new ViewFieldStringTransformer(createLowerCaseAtom(name), func));
 }
 
 void ViewTransformerRegistry::addFieldUnicodeTransformer(const char * name, unicodeFieldTransformerFunction func)
 {
-    transformers.append(* new ViewFieldUnicodeTransformer(createIdentifierAtom(name), func));
+    transformers.append(* new ViewFieldUnicodeTransformer(createLowerCaseAtom(name), func));
 }
 
 void ViewTransformerRegistry::addPlugins(const char * name)
@@ -431,7 +431,7 @@ ViewFieldTransformer * find(const ViewFieldTransformerArray & transformers, cons
 {
     if (!name)
         return NULL;
-    _ATOM search = createIdentifierAtom(name);
+    IIdAtom * search = createIdAtom(name);
     ForEachItemIn(i, transformers)
     {
         ViewFieldTransformer & cur = transformers.item(i);
@@ -474,7 +474,7 @@ bool containsFail(const ViewFieldTransformerArray & transforms)
 {
     ForEachItemIn(i, transforms)
     {
-        if (transforms.item(i).matches(failAtom))
+        if (transforms.item(i).matches(failId))
             return true;
     }
     return false;

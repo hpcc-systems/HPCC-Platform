@@ -364,7 +364,7 @@ bool retrieveWebServicesInfo(IWorkUnit *workunit, HqlLookupContext & ctx)
     }
 
     //Names are currently stored case insensitively, we want the case sensitive variant.
-    OwnedHqlExpr s1 = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdentifierAtom(moduleName.str()), LSFpublic, ctx);
+    OwnedHqlExpr s1 = ctx.queryRepository()->queryRootScope()->lookupSymbol(createIdAtom(moduleName.str()), LSFpublic, ctx);
     if (s1 && s1->queryScope())
     {
         const char *caseSensitiveModuleName = s1->queryScope()->queryFullName();

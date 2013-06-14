@@ -84,12 +84,12 @@ protected:
 class TomStrGuard : public TomGuard
 {
 public:
-    TomStrGuard(TomFeature * _feature, _ATOM _value) : TomGuard(_feature)   { value = _value; }
+    TomStrGuard(TomFeature * _feature, IAtom * _value) : TomGuard(_feature)   { value = _value; }
 
     virtual StringBuffer & getDebugText(StringBuffer & out);
 
 protected:
-    _ATOM           value;
+    IAtom *           value;
 };
 
 class TomIntGuard : public TomGuard
@@ -295,7 +295,7 @@ class TomRule : public CInterface
     friend class TomitaContext;
     friend class HqlLRState;
 public:
-    TomRule(IHqlExpression * expr, _ATOM name, const TomFeatureArray & _features, bool implicit, bool _isMatched);
+    TomRule(IHqlExpression * expr, IAtom * name, const TomFeatureArray & _features, bool implicit, bool _isMatched);
 
     void addProductionOwn(TomProduction * production)       { productions.append(*production); }
     bool addFollowOwn(TomToken & token)                     { return follow.add(token); }
@@ -311,10 +311,10 @@ public:
     StringBuffer & getDebugText(StringBuffer & out);
     void getFeatures(TomFeatureArray & target);
     StringBuffer & getName(StringBuffer & out);
-    bool matches(IHqlExpression * expr, _ATOM name)                     { return expr == def && name == cachedName; }
+    bool matches(IHqlExpression * expr, IAtom * name)                     { return expr == def && name == cachedName; }
     bool matchesDefine(IHqlExpression * name);
     TomProduction * queryExpand();
-    _ATOM queryName()                                       { return cachedName; }
+    IAtom * queryName()                                       { return cachedName; }
     IHqlExpression * queryRecord();
     void optimizeRules();
 
@@ -332,7 +332,7 @@ protected:
     OwnedHqlExpr def;
     OwnedHqlExpr test;
     OwnedHqlExpr defineName;
-    _ATOM cachedName;
+    IAtom * cachedName;
     unsigned id;
     bool implicit;  // if implicit, need to inherit features from children...
     CIArrayOf<TomProduction> productions;
@@ -441,7 +441,7 @@ protected:
     TomRule * createImplicitRule(TomRule * self, IHqlExpression * expr, bool expandTokens);
     void createProduction(TomRule * self, TomRule * rule, IHqlExpression * expr, bool expandTokens);
     void createProductions(TomRule * rule, IHqlExpression * expr, bool expandTokens);
-    TomRule * createRule(IHqlExpression * expr, _ATOM name, bool expandTokens);
+    TomRule * createRule(IHqlExpression * expr, IAtom * name, bool expandTokens);
     void createStepAsImplicitRule(TomRule * self, TomProduction * production, IHqlExpression * expr, bool expandTokens);
     void createSteps(TomRule * self, TomProduction * production, IHqlExpression * expr, bool expandTokens);
     TomToken * createToken(IHqlExpression * expr);
@@ -454,7 +454,7 @@ protected:
 
     virtual TomRule * queryDefine(IHqlExpression * defineName);
     TomFeature * queryFeature(IHqlExpression * expr);
-    TomRule * queryRule(IHqlExpression * expr, _ATOM name);
+    TomRule * queryRule(IHqlExpression * expr, IAtom * name);
     
 protected:
     TomitaAlgorithm parser;

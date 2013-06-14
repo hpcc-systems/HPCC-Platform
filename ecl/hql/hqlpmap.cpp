@@ -1208,7 +1208,7 @@ void RecordTransformCreator::createAssignments(HqlExprArray & assigns, IHqlExpre
         {
             OwnedHqlExpr target = createSelectExpr(LINK(targetSelector), LINK(expr));
             OwnedHqlExpr source;
-            OwnedHqlExpr sourceField = sourceSelector->queryRecord()->querySimpleScope()->lookupSymbol(expr->queryName());
+            OwnedHqlExpr sourceField = sourceSelector->queryRecord()->querySimpleScope()->lookupSymbol(expr->queryId());
             if (sourceField)
                 source.setown(createSelectExpr(LINK(sourceSelector), LINK(sourceField)));
             else
@@ -1279,7 +1279,7 @@ IHqlExpression * createRecordMappingTransform(node_operator op, IHqlExpression *
 }
 
 
-IHqlExpression * replaceMemorySelectorWithSerializedSelector(IHqlExpression * expr, IHqlExpression * memoryRecord, node_operator side, IHqlExpression * selSeq, _ATOM serializeVariety)
+IHqlExpression * replaceMemorySelectorWithSerializedSelector(IHqlExpression * expr, IHqlExpression * memoryRecord, node_operator side, IHqlExpression * selSeq, IAtom * serializeVariety)
 {
     if (!expr) 
         return NULL;

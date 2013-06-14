@@ -160,7 +160,7 @@ protected:
 
 
 extern HQL_API IHqlExpression * createRecordMappingTransform(node_operator op, IHqlExpression * targetRecord, IHqlExpression * sourceSelector);
-extern HQL_API IHqlExpression * replaceMemorySelectorWithSerializedSelector(IHqlExpression * expr, IHqlExpression * memoryRecord, node_operator side, IHqlExpression * selSeq, _ATOM serializeVariety);
+extern HQL_API IHqlExpression * replaceMemorySelectorWithSerializedSelector(IHqlExpression * expr, IHqlExpression * memoryRecord, node_operator side, IHqlExpression * selSeq, IAtom * serializeVariety);
 
 extern HQL_API TableProjectMapper * createProjectMapper(IHqlExpression * expr);
 extern HQL_API TableProjectMapper * createProjectMapper(IHqlExpression * mapping, IHqlExpression * parent);

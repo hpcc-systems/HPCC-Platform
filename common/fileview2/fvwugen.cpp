@@ -39,15 +39,15 @@ output(simple);
 
   */
 
-_ATOM fileposName;
-_ATOM insertedAtom;
-_ATOM recordlenName;
+IIdAtom * fileposId;
+IIdAtom * recordlenName;
+IAtom * insertedAtom;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    fileposName = createIdentifierAtom("__filepos__");
+    fileposId = createIdAtom("__filepos__");
+    recordlenName = createIdAtom("__recordlen__");
     insertedAtom = createLowerCaseAtom("inserted");
-    recordlenName = createIdentifierAtom("__recordlen__");
     return true;
 }
 
@@ -55,14 +55,14 @@ IHqlExpression * addFilter(IHqlExpression * dataset, IHqlExpression * limitField
 {
     IHqlExpression * lower = createConstant(limitField->queryType()->castFrom(true, (__int64)0));
     lower = createValue(no_colon, lower, createValue(no_stored, createConstant(LOWER_LIMIT_ID)));
-    lower = createSymbol(createIdentifierAtom(LOWER_LIMIT_ID), lower, ob_private);
+    lower = createSymbol(createIdAtom(LOWER_LIMIT_ID), lower, ob_private);
     dataset = createDataset(no_filter, LINK(dataset), createBoolExpr(no_ge, LINK(limitField), lower));
 
     IHqlExpression * upper = createConstant((int)DISKREAD_PAGE_SIZE);
     upper = createValue(no_colon, upper, createValue(no_stored, createConstant(RECORD_LIMIT_ID)));
-    upper = createSymbol(createIdentifierAtom(RECORD_LIMIT_ID), upper, ob_private);
+    upper = createSymbol(createIdAtom(RECORD_LIMIT_ID), upper, ob_private);
     dataset = createDataset(no_choosen, dataset, upper);
-    dataset = createSymbol(createIdentifierAtom("_Filtered_"), dataset, ob_private);
+    dataset = createSymbol(createIdAtom("_Filtered_"), dataset, ob_private);
     return dataset;
 }
 
@@ -79,7 +79,7 @@ IHqlExpression * addSimplifyProject(IHqlExpression * dataset)
     if (!projectRecord)
         return LINK(dataset);
 
-    projectRecord = createSymbol(createIdentifierAtom("_TargetRecord_"), projectRecord, ob_private);
+    projectRecord = createSymbol(createIdAtom("_TargetRecord_"), projectRecord, ob_private);
     return createDataset(no_newusertable, LINK(dataset), createComma(projectRecord, getSimplifiedTransform(projectRecord, record, dataset)));
 }
 
@@ -88,7 +88,7 @@ IHqlExpression * addSimplifyProject(IHqlExpression * dataset)
 
 IHqlExpression * buildWorkUnitViewerEcl(IHqlExpression * record, const char * wuid, unsigned sequence, const char * name)
 {
-    OwnedHqlExpr newRecord = createSymbol(createIdentifierAtom("_SourceRecord_"), LINK(record), ob_private);
+    OwnedHqlExpr newRecord = createSymbol(createIdAtom("_SourceRecord_"), LINK(record), ob_private);
     IHqlExpression * arg = name ? createConstant(name) : createConstant((int)sequence);
     OwnedHqlExpr dataset = createDataset(no_workunit_dataset, newRecord.getLink(), createComma(createConstant(wuid), arg));
     OwnedHqlExpr projected = addSimplifyProject(dataset);
@@ -101,7 +101,7 @@ IHqlExpression * buildDiskFileViewerEcl(const char * logicalName, IHqlExpression
 {
     //Add filepos to the incomming record structure...
     IHqlExpression * filePosAttr = createAttribute(virtualAtom, createAttribute(filepositionAtom));
-    OwnedHqlExpr filepos = createField(fileposName, makeIntType(8, false), NULL, filePosAttr);
+    OwnedHqlExpr filepos = createField(fileposId, makeIntType(8, false), NULL, filePosAttr);
     IHqlExpression * sizeofAttr = createAttribute(virtualAtom, createAttribute(sizeofAtom));
     OwnedHqlExpr reclen = createField(recordlenName, makeIntType(2, false), NULL, sizeofAttr);
     HqlExprArray fields;
@@ -110,7 +110,7 @@ IHqlExpression * buildDiskFileViewerEcl(const char * logicalName, IHqlExpression
     fields.append(*reclen.getLink());
 
     OwnedHqlExpr newRecord = createRecord(fields);
-    newRecord.setown(createSymbol(createIdentifierAtom("_SourceRecord_"), newRecord.getLink(), ob_private));
+    newRecord.setown(createSymbol(createIdAtom("_SourceRecord_"), newRecord.getLink(), ob_private));
 
     OwnedHqlExpr dataset = createNewDataset(createConstant(logicalName), newRecord.getLink(), createValue(no_thor), NULL, NULL, NULL);
     OwnedHqlExpr filtered = addFilter(dataset, filepos);
@@ -133,7 +133,7 @@ IHqlExpression * buildDiskOutputEcl(const char * logicalName, IHqlExpression * r
 static HqlTransformerInfo positionTransformerInfo("PositionTransformer");
 PositionTransformer::PositionTransformer()  : NewHqlTransformer(positionTransformerInfo)
 { 
-    insertedAttr.setown(createAttribute(insertedAtom)); 
+    insertedAttr.setown(createAttribute(insertedAtom));
 }
 
 IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
@@ -153,7 +153,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
                 unwindChildren(fields, transformed->queryChild(1));
                 IHqlExpression * filePosAttr = createComma(createAttribute(virtualAtom, createAttribute(filepositionAtom)), insertedAttr.getLink());
                 IHqlExpression * sizeofAttr = createComma(createAttribute(virtualAtom, createAttribute(sizeofAtom)), insertedAttr.getLink());
-                fields.append(*createField(fileposName, makeIntType(8, false), NULL, filePosAttr));
+                fields.append(*createField(fileposId, makeIntType(8, false), NULL, filePosAttr));
                 fields.append(*createField(recordlenName, makeIntType(2, false), NULL, sizeofAttr));
 
                 unwindChildren(args, transformed);
@@ -180,7 +180,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
                 IHqlExpression * child = inRecord->queryChild(idx);
                 if (child->hasProperty(insertedAtom))
                 {
-                    IHqlExpression * newTarget = createField(child->queryName(), child->getType(), LINK(child), insertedAttr.getLink());
+                    IHqlExpression * newTarget = createField(child->queryId(), child->getType(), LINK(child), insertedAttr.getLink());
                     fields.append(*newTarget);
                     assigns.append(*createValue(no_assign, makeVoidType(), newTarget, createSelectExpr(createValue(no_left), LINK(newTarget))));
                 }
@@ -210,7 +210,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
             {
                 IHqlExpression * child = record->queryChild(idx);
                 if (child->hasProperty(insertedAtom))
-                    fields.append(*createField(child->queryName(), child->getType(), LINK(child), insertedAttr.getLink()));
+                    fields.append(*createField(child->queryId(), child->getType(), LINK(child), insertedAttr.getLink()));
             }
 
             HqlExprArray args;
@@ -239,7 +239,7 @@ IHqlExpression * PositionTransformer::createTransformed(IHqlExpression * _expr)
                     {
                         IHqlExpression * child = record->queryChild(idx);
                         if (!child->hasProperty(insertedAtom))
-                            fields.append(*createField(child->queryName(), child->getType(), LINK(child)));
+                            fields.append(*createField(child->queryId(), child->getType(), LINK(child)));
                     }
                 }
                 else
@@ -300,7 +300,7 @@ IHqlExpression * buildQueryViewerEcl(IHqlExpression * selectFields)
     if (!transformed)
         return NULL;
     IHqlSimpleScope * scope = transformed->queryRecord()->querySimpleScope();
-    OwnedHqlExpr filterField = scope->lookupSymbol(fileposName);
+    OwnedHqlExpr filterField = scope->lookupSymbol(fileposId);
     OwnedHqlExpr filtered = addFilter(transformed, filterField);
     OwnedHqlExpr output = addOutput(filtered);
     return output.getClear();

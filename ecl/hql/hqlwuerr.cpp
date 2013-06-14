@@ -17,11 +17,11 @@
 #include "jliball.hpp"
 #include "hqlwuerr.hpp"
 
-static void formatError(StringBuffer & out, int errNo, const char *msg, _ATOM modulename, _ATOM attributename, int lineno, int column)
+static void formatError(StringBuffer & out, int errNo, const char *msg, IIdAtom * modulename, IIdAtom * attributename, int lineno, int column)
 {
-    out.append(modulename);
+    out.append(modulename->str());
     if (attributename)
-        out.append('.').append(attributename);
+        out.append('.').append(attributename->str());
     
     if(lineno && column)
         out.append('(').append(lineno).append(',').append(column).append(')');

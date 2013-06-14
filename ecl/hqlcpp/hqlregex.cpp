@@ -162,23 +162,23 @@ inline unsigned limitedMult(unsigned a, unsigned b)
     return a*b;
 }
 
-IHqlExpression * RegexIdAllocator::createKey(IHqlExpression * expr, _ATOM name)
+IHqlExpression * RegexIdAllocator::createKey(IHqlExpression * expr, IAtom * name)
 {
     if (!expr)
         return NULL;
     IHqlExpression * body = expr->queryBody();
     if (name)
-        return createSymbol(name, LINK(body), ob_private);
+        return createSymbol(createIdAtom(name->str()), LINK(body), ob_private);
     return LINK(body);
 }
 
-void RegexIdAllocator::setID(IHqlExpression * expr, _ATOM name, unsigned value)
+void RegexIdAllocator::setID(IHqlExpression * expr, IAtom * name, unsigned value)
 {
     OwnedHqlExpr key = createKey(expr, name);
     map.setValue(key, value);
 }
 
-regexid_t RegexIdAllocator::queryID(IHqlExpression * expr, _ATOM name)
+regexid_t RegexIdAllocator::queryID(IHqlExpression * expr, IAtom * name)
 {
     OwnedHqlExpr key = createKey(expr, name);
     regexid_t * match = map.getValue(key);
@@ -260,7 +260,7 @@ protected:
 
 //---------------------------------------------------------------------------
 
-HqlNamedRegex::HqlNamedRegex(IHqlExpression * _expr, _ATOM _name, IHqlExpression * _searchExpr, node_operator _kind, bool _caseSensitive, bool _isMatched)
+HqlNamedRegex::HqlNamedRegex(IHqlExpression * _expr, IAtom * _name, IHqlExpression * _searchExpr, node_operator _kind, bool _caseSensitive, bool _isMatched)
 { 
     kind = _kind;
     expr.set(_expr); 
@@ -2337,7 +2337,7 @@ RegexContext::~RegexContext()
         named.item(idx).cleanup();
 }
 
-HqlNamedRegex * RegexContext::queryNamed(IHqlExpression * defn, _ATOM name, node_operator op, bool caseSensitive)
+HqlNamedRegex * RegexContext::queryNamed(IHqlExpression * defn, IAtom * name, node_operator op, bool caseSensitive)
 {
     ForEachItemIn(idx, named)
     {
@@ -2352,7 +2352,7 @@ HqlNamedRegex * RegexContext::queryNamed(IHqlExpression * defn, _ATOM name, node
 }
 
 
-HqlNamedRegex * RegexContext::createNamed(IHqlExpression * expr, _ATOM name, node_operator op, bool caseSensitive)
+HqlNamedRegex * RegexContext::createNamed(IHqlExpression * expr, IAtom * name, node_operator op, bool caseSensitive)
 {
     LinkedHqlExpr searchExpr = expr;
     if (op != no_pat_instance)
@@ -2531,7 +2531,7 @@ void RegexContext::buildStructure()
     unsigned startTime = msTick();
     IHqlExpression * grammar = expr->queryChild(2);
     assertex(grammar->getOperator() == no_pat_instance);
-    _ATOM name = grammar->queryChild(1)->queryName();
+    IAtom * name = grammar->queryChild(1)->queryName();
     OwnedHqlExpr structure = LINK(grammar);//createValue(no_pat_instance, makeRuleType(NULL), LINK(grammar), LINK(grammar->queryChild(1)));
 
     HqlRegexExpr * rootRegex = createStructure(structure, isCaseSensitive());

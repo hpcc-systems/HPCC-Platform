@@ -32,11 +32,11 @@ class RegexIdAllocator
 public:
     RegexIdAllocator() { nextId = 0; }
 
-    regexid_t queryID(IHqlExpression * expr, _ATOM name);
-    void setID(IHqlExpression * expr, _ATOM name, regexid_t id);
+    regexid_t queryID(IHqlExpression * expr, IAtom * name);
+    void setID(IHqlExpression * expr, IAtom * name, regexid_t id);
 
 protected:
-    IHqlExpression * createKey(IHqlExpression * expr, _ATOM name);
+    IHqlExpression * createKey(IHqlExpression * expr, IAtom * name);
 
 protected:
     unsigned nextId;
@@ -111,7 +111,7 @@ public:
     void buildProductions(HqlCppTranslator & translator, BuildCtx & classctx, BuildCtx & startctx);
     void buildValidators(HqlCppTranslator & translator, BuildCtx & classctx);
     void extractValidates(IHqlExpression * expr);
-    bool isMatched(IHqlExpression * expr, _ATOM name);
+    bool isMatched(IHqlExpression * expr, IAtom * name);
 
     virtual void compileSearchPattern() = 0;
     virtual void getDebugText(StringBuffer & s, unsigned detail) = 0;

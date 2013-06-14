@@ -45,7 +45,7 @@ public:
     virtual unsigned                    getNumParameters() = 0;
     virtual const char *            queryCppName() = 0;
     virtual IModuleInfo *       queryModule() = 0;
-    virtual _ATOM                       queryName() = 0;
+    virtual IAtom *                       queryName() = 0;
     virtual IFunctionParamInfo * queryParam(unsigned idx) = 0;
     virtual ITypeInfo *             queryReturnType() = 0;
 };
@@ -63,7 +63,7 @@ interface IFunctionDatabase : public IInterface
 {
 public:
     virtual IFunctionInfo *     queryFunction(unsigned idx) = 0;
-    virtual IFunctionInfo *     queryFunction(_ATOM name) = 0;
+    virtual IFunctionInfo *     queryFunction(IAtom * name) = 0;
     virtual IModuleInfo *       queryModule(unsigned idx) = 0;
 };
 

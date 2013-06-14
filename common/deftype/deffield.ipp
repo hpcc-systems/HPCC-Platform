@@ -24,7 +24,7 @@
 class CDefRecordElement : public CInterface, implements IDefRecordElement
 {
 public:
-    CDefRecordElement(DefElemKind _kind, _ATOM _name, ITypeInfo * _type, size32_t _maxSize = 0);
+    CDefRecordElement(DefElemKind _kind, IAtom * _name, ITypeInfo * _type, size32_t _maxSize = 0);
     IMPLEMENT_IINTERFACE
 
     virtual DefElemKind getKind() const
@@ -39,7 +39,7 @@ public:
     {
         return type;
     }
-    virtual _ATOM queryName() const
+    virtual IAtom * queryName() const
     {
         return name;
     }
@@ -65,7 +65,7 @@ public:
 
 protected:
     byte kind;
-    _ATOM name;
+    IAtom * name;
     Owned<ITypeInfo> type;
     CIArrayOf<CDefRecordElement> children;
     size32_t maxSize;

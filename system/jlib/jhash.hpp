@@ -48,12 +48,29 @@ interface jlib_decl IMapping : extends IObservable
 interface jlib_decl IAtom : extends IMapping
 {
  public:
+    virtual const char * getNamePtr() const = 0;
+
     const char *         getAtomNamePtr() const;     // ok if this=NULL
-    virtual const char * getNamePtr() const;
     inline const char * str() const { return getAtomNamePtr(); }
     inline operator const char *() const { return getAtomNamePtr(); }
 };
-typedef IAtom *_ATOM;
+
+//This interface represents an atom which preserves its case, but also stores a lower case representation
+//for efficient case insensitive comparison.
+//It is deliberately NOT derived from IAtom to avoid accidentally using the wrong interface
+interface jlib_decl IIdAtom : extends IMapping
+{
+ public:
+    virtual const char * getNamePtr() const = 0;
+
+    const char *         getAtomNamePtr() const { return this ? getNamePtr() : NULL; }
+    inline const char * str() const { return getAtomNamePtr(); }
+    inline operator const char *() const { return getAtomNamePtr(); }
+
+ public:
+    virtual IAtom * queryLower() const = 0;
+    IAtom * lower() const; // safe if this==NULL
+};
 
 #ifdef _MSC_VER
 #pragma warning (push)
@@ -398,10 +415,14 @@ public:
 */
 
 // Create an atom in the global atom table
-extern jlib_decl _ATOM createAtom(const char *value);
-extern jlib_decl _ATOM createAtom(const char *value, size32_t len);
-inline _ATOM createLowerCaseAtom(const char *value) { return createAtom(value); }
-inline _ATOM createLowerCaseAtom(const char *value, size32_t len) { return createAtom(value, len); }
+extern jlib_decl IAtom * createAtom(const char *value);
+extern jlib_decl IAtom * createAtom(const char *value, size32_t len);
+
+inline IAtom * createLowerCaseAtom(const char *value) { return createAtom(value); }
+inline IAtom * createLowerCaseAtom(const char *value, size32_t len) { return createAtom(value, len); }
+
+extern jlib_decl IIdAtom * createIdAtom(const char *value);
+extern jlib_decl IIdAtom * createIdAtom(const char *value, size32_t len);
 
 extern jlib_decl void releaseAtoms();
 extern jlib_decl unsigned hashc( const unsigned char *k, unsigned length, unsigned initval);

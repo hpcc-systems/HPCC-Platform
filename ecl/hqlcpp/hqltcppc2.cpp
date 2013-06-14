@@ -74,7 +74,7 @@ IHqlExpression * CChildSetColumnInfo::buildSizeOfUnbound(HqlCppTranslator & tran
     return createValue(no_translated, LINK(sizetType), adjustValue(boundSize, sizeof(bool)+sizeof(size32_t)));
 }
 
-void CChildSetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CChildSetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr address = getColumnAddress(translator, ctx, selector, boolType, 0);
     OwnedHqlExpr addressSize = getColumnAddress(translator, ctx, selector, sizetType, sizeof(bool));
@@ -245,21 +245,21 @@ void CChildDatasetColumnInfo::gatherSize(SizeStruct & target)
     addVariableSize(sizeof(size32_t), target);
 }
 
-void CColumnInfo::buildDeserializeChildLoop(HqlCppTranslator & translator, BuildCtx & loopctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CColumnInfo::buildDeserializeChildLoop(HqlCppTranslator & translator, BuildCtx & loopctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr endMarker = loopctx.getTempDeclare(sizetType, NULL);
     HqlExprArray args;
     args.append(*LINK(helper));
-    OwnedHqlExpr beginCall = translator.bindTranslatedFunctionCall(deserializerBeginNestedAtom, args);
+    OwnedHqlExpr beginCall = translator.bindTranslatedFunctionCall(deserializerBeginNestedId, args);
     loopctx.addAssign(endMarker, beginCall);
 
     args.append(*LINK(helper));
     args.append(*LINK(endMarker));
-    OwnedHqlExpr loopCall = createBoolExpr(no_not, translator.bindTranslatedFunctionCall(deserializerFinishedNestedAtom, args));
+    OwnedHqlExpr loopCall = createBoolExpr(no_not, translator.bindTranslatedFunctionCall(deserializerFinishedNestedId, args));
     loopctx.addLoop(loopCall, NULL, false);
 }
 
-void CColumnInfo::buildDeserializeToBuilder(HqlCppTranslator & translator, BuildCtx & ctx, IHqlCppDatasetBuilder * builder, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CColumnInfo::buildDeserializeToBuilder(HqlCppTranslator & translator, BuildCtx & ctx, IHqlCppDatasetBuilder * builder, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     BuildCtx loopctx(ctx);
     buildDeserializeChildLoop(translator, loopctx, selector, helper, serializeForm);
@@ -269,7 +269,7 @@ void CColumnInfo::buildDeserializeToBuilder(HqlCppTranslator & translator, Build
 }
 
 
-void CChildDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CChildDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     IHqlExpression * record = column->queryRecord();
     assertex(!recordRequiresLinkCount(record)); // Why would it?
@@ -307,7 +307,7 @@ void CChildDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, Bu
 }
 
 
-void CChildDatasetColumnInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CChildDatasetColumnInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     if (column->isDictionary())
     {
@@ -488,7 +488,7 @@ bool CChildLimitedDatasetColumnInfo::isFixedSize()
     return false;   //MORE:
 }
 
-void CChildLimitedDatasetColumnInfo::buildDeserializeChildLoop(HqlCppTranslator & translator, BuildCtx & loopctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CChildLimitedDatasetColumnInfo::buildDeserializeChildLoop(HqlCppTranslator & translator, BuildCtx & loopctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     OwnedHqlExpr mappedCount = replaceSelector(countField, querySelfReference(), selector->queryExpr()->queryChild(0));
     CHqlBoundExpr bound;
@@ -568,7 +568,7 @@ bool CChildLimitedDatasetColumnInfo::buildReadAhead(HqlCppTranslator & translato
 }
 
 
-void CChildLimitedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeForm)
+void CChildLimitedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeForm)
 {
     assertex(!column->isDictionary());
     if (sizeField || !countField)
@@ -672,7 +672,7 @@ IHqlExpression * CChildLinkedDatasetColumnInfo::buildSizeOfUnbound(HqlCppTransla
     return getSizetConstant(sizeof(size32_t) + sizeof(byte * *));
 }
 
-void CChildLinkedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeFormat)
+void CChildLinkedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeFormat)
 {
     if (isConditional())
         checkAssignOk(translator, ctx, selector, queryZero(), sizeof(size32_t) + sizeof(byte * *));
@@ -685,23 +685,23 @@ void CChildLinkedDatasetColumnInfo::buildDeserialize(HqlCppTranslator & translat
     boundTarget.count.setown(convertAddressToValue(addressSize, sizetType));
     boundTarget.expr.setown(convertAddressToValue(addressData, queryType()));
 
-    _ATOM func = NULL;
+    IIdAtom * func = NULL;
     HqlExprArray args;
     args.append(*translator.createSerializer(ctx, record, serializeFormat, deserializerAtom));
     if (column->isDictionary())
     {
         if (serializeFormat == diskAtom)
         {
-            func = deserializeChildDictionaryFromDatasetFromStreamAtom;
+            func = deserializeChildDictionaryFromDatasetFromStreamId;
             StringBuffer lookupHelperName;
             translator.buildDictionaryHashClass(record, lookupHelperName);
             args.append(*createQuoted(lookupHelperName.str(), makeBoolType()));
         }
         else
-            func = deserializeChildDictionaryFromStreamAtom;
+            func = deserializeChildDictionaryFromStreamId;
     }
     else
-        func = deserializeChildRowsetFromStreamAtom;
+        func = deserializeChildRowsetFromStreamId;
 
     args.append(*LINK(helper));
     OwnedHqlExpr call = translator.bindFunctionCall(func, args, queryType());
@@ -718,11 +718,11 @@ bool CChildLinkedDatasetColumnInfo::buildReadAhead(HqlCppTranslator & translator
 
 
 
-void CChildLinkedDatasetColumnInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, _ATOM serializeFormat)
+void CChildLinkedDatasetColumnInfo::buildSerialize(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, IHqlExpression * helper, IAtom * serializeFormat)
 {
     IHqlExpression * record = column->queryRecord();
 
-    _ATOM func = NULL;
+    IIdAtom * func = NULL;
     HqlExprArray args;
     args.append(*LINK(helper));
     args.append(*translator.createSerializer(ctx, record, serializeFormat, serializerAtom));
@@ -730,12 +730,12 @@ void CChildLinkedDatasetColumnInfo::buildSerialize(HqlCppTranslator & translator
     if (column->isDictionary())
     {
         if (serializeFormat == diskAtom)
-            func = serializeChildDictionaryToDatasetToStreamAtom;
+            func = serializeChildDictionaryToDatasetToStreamId;
         else
-            func = serializeChildDictionaryToStreamAtom;
+            func = serializeChildDictionaryToStreamId;
     }
     else
-        func = serializeChildRowsetToStreamAtom;
+        func = serializeChildRowsetToStreamId;
     OwnedHqlExpr call = translator.bindTranslatedFunctionCall(func, args);
     translator.buildStmt(ctx, call);
 }
@@ -760,7 +760,7 @@ bool CChildLinkedDatasetColumnInfo::modifyColumn(HqlCppTranslator & translator, 
 
     HqlExprArray args;
     args.append(*LINK(value));
-    OwnedHqlExpr call = translator.bindFunctionCall(appendRowsToRowsetAtom, args, resultType);
+    OwnedHqlExpr call = translator.bindFunctionCall(appendRowsToRowsetId, args, resultType);
     translator.buildDatasetAssign(ctx, boundTarget, call);
     return true;
 }

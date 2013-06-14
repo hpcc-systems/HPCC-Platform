@@ -261,13 +261,13 @@ public:
 class HQL_API DebugDifferenceAnalyser : public QuickHqlTransformer
 {
 public:
-    DebugDifferenceAnalyser(_ATOM _search);
+    DebugDifferenceAnalyser(IIdAtom * _search);
 
     virtual void doAnalyse(IHqlExpression * expr);
     
 protected:
     IHqlExpression * prev;
-    _ATOM search;
+    IIdAtom * search;
 };
 
 //---------------------------------------------------------------------------

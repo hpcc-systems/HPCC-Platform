@@ -79,7 +79,7 @@ class HQLCPP_API BuildCtx : public CInterface
 {
     friend class AssociationIterator;
 public:
-    BuildCtx(HqlCppInstance & _state, _ATOM section);
+    BuildCtx(HqlCppInstance & _state, IAtom * section);
     BuildCtx(HqlCppInstance & _state);
     BuildCtx(BuildCtx & _owner);
     ~BuildCtx();
@@ -127,7 +127,7 @@ public:
     bool                        getMatchExpr(IHqlExpression * expr, CHqlBoundExpr & bound);
     IHqlExpression *            getTempDeclare(ITypeInfo * type, IHqlExpression * value);
     void                        needFunction(IFunctionInfo & helper);
-    void                        needFunction(_ATOM name);
+    void                        needFunction(IAtom * name);
     void                        removeAssociation(HqlExprAssociation * search);
     IHqlStmt *                  replaceExpr(IHqlStmt * stmt, IHqlExpression * expr);            // use with extreme care!
     IHqlStmt *                  selectBestContext(IHqlExpression * expr);
@@ -139,7 +139,7 @@ public:
     void                        setNextPriority(unsigned newPrio);
     unsigned                    setPriority(unsigned newPrio);
 
-    void                        set(_ATOM section);
+    void                        set(IAtom * section);
     void                        set(BuildCtx & _owner);
     void                        walkAssociations(IAssociationVisitor & visitor);
 

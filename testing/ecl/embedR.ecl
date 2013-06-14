@@ -1,7 +1,7 @@
 IMPORT R;
 
-integer add1(integer val) := EMBED(R)
-val+1
+integer add1(integer VAL) := EMBED(R)
+VAL+1
 ENDEMBED;
 
 string cat(varstring what, string who) := EMBED(R)
