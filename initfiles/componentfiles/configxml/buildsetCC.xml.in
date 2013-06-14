@@ -169,10 +169,6 @@
                           path="WsEclAccess"
                           resource="WsEclAccess"
                           service="ws_ecl"/>
-     <AuthenticateFeature description="Access to Roxie queries and files"
-                          path="RoxieQueryAccess"
-                          resource="RoxieQueryAccess"
-                          service="ws_roxiequery"/>
      <AuthenticateFeature description="Access to cluster topology"
                           path="ClusterTopologyAccess"
                           resource="ClusterTopologyAccess"
