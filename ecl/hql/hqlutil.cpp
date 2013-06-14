@@ -77,13 +77,13 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     sizetCacheCs = new CriticalSection;
     constUnknownVarStringType = makeConstantModifier(makeVarStringType(UNKNOWN_LENGTH));
     defaultMaxRecordLengthExpr = createQuoted("<default-max-length>", makeIntType(sizeof(size32_t), false));
-    cacheAlignedAttr = createAttribute(_attrAligned_Atom);
+    cacheAlignedAttr = createAttribute(_propAligned_Atom);
     cacheEmbeddedAttr = createAttribute(embeddedAtom);
     cacheInlineAttr = createAttribute(inlineAtom);
     cacheLinkCountedAttr = createAttribute(_linkCounted_Atom);
     cacheReferenceAttr = createAttribute(referenceAtom);
     cacheStreamedAttr = createAttribute(streamedAtom);
-    cacheUnadornedAttr = createAttribute(_attrUnadorned_Atom);
+    cacheUnadornedAttr = createAttribute(_propUnadorned_Atom);
     matchxxxPseudoFile = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(matchxxxPseudoFileAtom));
     cachedQuotedNullExpr = createValue(no_nullptr, makeBoolType());
     cachedOmittedValueExpr = createValue(no_omitted, makeAnyType());
@@ -162,7 +162,7 @@ HQL_API IHqlExpression * getFixedSizeAttr(unsigned size)
     if (size >= FIXEDATTR_CACHE_SIZE)
     {
         OwnedHqlExpr sizeExpr = getSizetConstant(size);
-        return createExprAttribute(_attrSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
+        return createExprAttribute(_propSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
     }
 
     CriticalBlock block(*sizetCacheCs);     // reuse the critical section
@@ -170,7 +170,7 @@ HQL_API IHqlExpression * getFixedSizeAttr(unsigned size)
     if (!match)
     {
         OwnedHqlExpr sizeExpr = getSizetConstant(size);
-        match = fixedAttrSizeCache[size] = createExprAttribute(_attrSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
+        match = fixedAttrSizeCache[size] = createExprAttribute(_propSize_Atom, LINK(sizeExpr), LINK(sizeExpr), LINK(sizeExpr));
     }
     return LINK(match);
 }

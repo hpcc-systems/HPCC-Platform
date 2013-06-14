@@ -79,13 +79,6 @@ IAtom * asciiAtom;
 IAtom * assertAtom;
 IAtom * assertConstAtom;
 IAtom * atmostAtom;
-IAtom * _attrAligned_Atom;
-IAtom * _attrDiskSerializedForm_Atom;
-IAtom * _attrInternalSerializedForm_Atom;
-IAtom * _attrLocationIndependent_Atom;
-IAtom * _attrRecordCount_Atom;
-IAtom * _attrSize_Atom;
-IAtom * _attrUnadorned_Atom;
 IAtom * aveAtom;
 IAtom * backupAtom;
 IAtom * bcdAtom;
@@ -304,6 +297,10 @@ IAtom * prefetchAtom;
 IAtom * preloadAtom;
 IAtom * priorityAtom;
 IAtom * privateAtom;
+IAtom * _propAligned_Atom;
+IAtom * _propRecordCount_Atom;
+IAtom * _propSize_Atom;
+IAtom * _propUnadorned_Atom;
 IAtom * pseudoentrypointAtom;
 IAtom * pullAtom;
 IAtom * pulledAtom;
@@ -418,23 +415,7 @@ IAtom * xpathAtom;
 #define MAKEID(x)   x##Id = createIdAtom(#x)
 #define MAKEATOM(x) x##Atom = createLowerCaseAtom(#x)
 
-SysAtom::SysAtom(const void * k) : Atom(k) 
-{ 
-    attrId = EAnone; 
-}
-
-class SysAtomTable : public KeptHashTableOf<SysAtom, 0U>
-{
-  public:
-    SysAtomTable() : KeptHashTableOf<SysAtom, 0U>(false) {};
-    SysAtomTable(bool _nocase) : KeptHashTableOf<SysAtom, 0U>(_nocase) {};
-};
-SysAtomTable * sysAtomTable;
-
-IAtom * createSystemAtom(const char * s) { return sysAtomTable->create(s); }
-
-#define MAKESYSATOM(x)  _##x##_Atom = createSystemAtom("$_" #x "_")
-#define MAKESYSATOMX(x)  static_cast<SysAtom *>(_##x##_Atom = createSystemAtom("$_" #x "_"))
+#define MAKESYSATOM(x)  _##x##_Atom = createLowerCaseAtom("$_" #x "_")
 
 MODULE_INIT(INIT_PRIORITY_HQLATOM)
 {
@@ -480,7 +461,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     unnamedId = createIdAtom("<unnamed>");
     MAKEID(value);
 
-    sysAtomTable = new SysAtomTable;
     MAKEATOM(abstract);
     MAKEATOM(access);
     MAKEATOM(action);
@@ -501,13 +481,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(assert);
     MAKEATOM(assertConst);
     MAKEATOM(atmost);
-    MAKESYSATOMX(attrAligned)->setAttrId(EAaligned);
-    MAKESYSATOMX(attrLocationIndependent)->setAttrId(EAlocationIndependent);
-    MAKESYSATOMX(attrRecordCount)->setAttrId(EArecordCount);
-    MAKESYSATOMX(attrDiskSerializedForm)->setAttrId(EAdiskserializedForm);
-    MAKESYSATOMX(attrInternalSerializedForm)->setAttrId(EAinternalserializedForm);
-    MAKESYSATOMX(attrSize)->setAttrId(EAsize);
-    MAKESYSATOMX(attrUnadorned)->setAttrId(EAunadorned);
     MAKEATOM(ave);
     MAKEATOM(backup);
     MAKEATOM(bcd);
@@ -727,6 +700,10 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(preload);
     MAKEATOM(priority);
     MAKEATOM(private);
+    MAKESYSATOM(propAligned);
+    MAKESYSATOM(propRecordCount);
+    MAKESYSATOM(propSize);
+    MAKESYSATOM(propUnadorned);
     MAKEATOM(prototype);
     MAKEATOM(proxyAddress);
     MAKEATOM(pseudoentrypoint);
@@ -838,8 +815,4 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(xpath);
 
     return true;
-}
-MODULE_EXIT()
-{
-    delete sysAtomTable;
 }
