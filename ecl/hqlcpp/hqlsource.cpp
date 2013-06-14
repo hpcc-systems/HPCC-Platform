@@ -226,7 +226,7 @@ IHqlExpression * getFileLogicalName(IHqlExpression * dataset)
 
 IHqlExpression * getVirtualReplacement(IHqlExpression * field, IHqlExpression * virtualDef, IHqlExpression * dataset)
 {
-    _ATOM virtualKind = virtualDef->queryName();
+    IAtom * virtualKind = virtualDef->queryName();
 
     if (virtualKind == filepositionAtom)
         return getFilepos(dataset, false);
@@ -267,7 +267,7 @@ static IHqlExpression * getExplicitlyPromotedCompare(IHqlExpression * filter)
 }
 
 
-static IHqlExpression * createFileposCall(HqlCppTranslator & translator, _ATOM name, const char * provider, const char * rowname)
+static IHqlExpression * createFileposCall(HqlCppTranslator & translator, IIdAtom * name, const char * provider, const char * rowname)
 {
     HqlExprArray args;
     args.append(*createVariable(provider, makeBoolType()));
@@ -474,7 +474,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
             physicalFields.append(*createPhysicalIndexRecord(mapper, tableExpr, cur, false, allowTranslate));
         else if (cur->hasProperty(blobAtom))
         {
-            newField = createField(cur->queryName(), makeIntType(8, false), NULL, NULL);
+            newField = createField(cur->queryId(), makeIntType(8, false), NULL, NULL);
         }
         else
         {
@@ -488,7 +488,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
                 OwnedHqlExpr newRecord = createPhysicalIndexRecord(childMapper, select, cur->queryRecord(), false, allowTranslate);
                 HqlExprArray args;
                 unwindChildren(args, cur);
-                newField = createField(cur->queryName(), newRecord->getType(), args);
+                newField = createField(cur->queryId(), newRecord->getType(), args);
             }
             else
             {
@@ -505,7 +505,7 @@ static IHqlExpression * createPhysicalIndexRecord(HqlMapTransformer & mapper, IH
                     if (hozed->queryType() == select->queryType())
                         newField = LINK(cur);
                     else
-                        newField = createField(cur->queryName(), hozed->getType(), extractFieldAttrs(cur));
+                        newField = createField(cur->queryId(), hozed->getType(), extractFieldAttrs(cur));
                 }
             }
         }
@@ -1073,19 +1073,19 @@ void SourceBuilder::associateFilePositions(BuildCtx & ctx, const char * provider
 {
     if (fpos)
     {
-        Owned<IHqlExpression> fposExpr = createFileposCall(translator, getFilePositionAtom, provider, rowname);
+        Owned<IHqlExpression> fposExpr = createFileposCall(translator, getFilePositionId, provider, rowname);
         ctx.associateExpr(fpos, fposExpr);
     }
 
     if (lfpos)
     {
-        Owned<IHqlExpression> fposExpr = createFileposCall(translator, getLocalFilePositionAtom, provider, rowname);
+        Owned<IHqlExpression> fposExpr = createFileposCall(translator, getLocalFilePositionId, provider, rowname);
         ctx.associateExpr(lfpos, fposExpr);
     }
 
     if (logicalFilenameMarker)
     {
-        Owned<IHqlExpression> nameExpr = createFileposCall(translator, queryLogicalFilenameAtom, provider, rowname);
+        Owned<IHqlExpression> nameExpr = createFileposCall(translator, queryLogicalFilenameId, provider, rowname);
         ctx.associateOwn(*new HqlFilePositionDefinedValue(*this, logicalFilenameMarker, nameExpr));
     }
 }
@@ -1784,7 +1784,7 @@ ABoundActivity * SourceBuilder::buildActivity(BuildCtx & ctx, IHqlExpression * e
 
     Owned<ActivityInstance> localInstance = new ActivityInstance(translator, ctx, activityKind, expr, kind);
     if (useImplementationClass)
-        localInstance->setImplementationClass(newMemorySpillReadArgAtom);
+        localInstance->setImplementationClass(newMemorySpillReadArgId);
 
     if ((activityKind >= TAKdiskread) && (activityKind <= TAKdiskgroupaggregate))
     {
@@ -2465,7 +2465,7 @@ void SourceBuilder::buildGroupAggregateTransformBody(BuildCtx & transformCtx, IH
         OwnedHqlExpr castBound = createValue(no_typetransfer, LINK(rowType), LINK(rowAddr));
         args.append(*createTranslated(castBound));
     }
-    OwnedHqlExpr call = translator.bindFunctionCall(addAggregateRowAtom, args);
+    OwnedHqlExpr call = translator.bindFunctionCall(addAggregateRowId, args);
     translator.buildStmt(transformCtx, call);
 }
 
@@ -3615,7 +3615,7 @@ void MonitorExtractor::callAddAll(BuildCtx & ctx, IHqlExpression * targetVar)
 {
     HqlExprArray args;
     args.append(*LINK(targetVar));
-    translator.callProcedure(ctx, addAllAtom, args);
+    translator.callProcedure(ctx, addAllId, args);
 }
 
 static IHqlExpression * createExpandedRecord(IHqlExpression * expr);
@@ -3778,7 +3778,7 @@ static void createExpanded(HqlExprArray & fields, IHqlExpression * expr)
                     unwindChildren(attrs, expr);
                     //MORE: Any default will now have the wrong type => remove it for the moment (ideally it would be projected)
                     removeProperty(attrs, defaultAtom);
-                    fields.append(*createField(expr->queryName(), LINK(expandedType), attrs));
+                    fields.append(*createField(expr->queryId(), LINK(expandedType), attrs));
                 }
             }
             break;
@@ -3885,7 +3885,7 @@ void MonitorExtractor::expandSelects(IHqlExpression * expr, IHqlSimpleScope * ex
         break;
     case no_field:
         {
-            OwnedHqlExpr match = expandedScope->lookupSymbol(expr->queryName());
+            OwnedHqlExpr match = expandedScope->lookupSymbol(expr->queryId());
             if (match)
             {
                 OwnedHqlExpr keySelected = createSelectExpr(LINK(keySelector), LINK(expr));
@@ -3939,11 +3939,11 @@ void MonitorExtractor::buildKeySegmentInExpr(BuildMonitorState & buildState, Key
     IHqlExpression * lhs = thisKey.queryChild(0);
     OwnedHqlExpr values = normalizeListCasts(thisKey.queryChild(1));
 
-    _ATOM func = addRangeAtom;
+    IIdAtom * func = addRangeId;
     if (thisKey.getOperator() == no_notin)
     {
         callAddAll(ctx, targetVar);
-        func = killRangeAtom;
+        func = killRangeId;
     }
 
     if (values->getOperator() != no_list)
@@ -4102,7 +4102,7 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             translator.buildFilter(subctx, compare);
         args.append(*LINK(address));
         args.append(*LINK(address));
-        translator.callProcedure(subctx, addRangeAtom, args);
+        translator.callProcedure(subctx, addRangeId, args);
         break;
     case no_ne:
         subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
@@ -4110,12 +4110,12 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             translator.buildFilter(subctx, compare);
         args.append(*LINK(address));
         args.append(*LINK(address));
-        translator.callProcedure(subctx, killRangeAtom, args);
+        translator.callProcedure(subctx, killRangeId, args);
         break;
     case no_le:
         args.append(*createValue(no_nullptr, makeVoidType()));
         args.append(*LINK(address));
-        translator.callProcedure(subctx, addRangeAtom, args);
+        translator.callProcedure(subctx, addRangeId, args);
         break;
     case no_lt:
         // e) no_lt.  If isExact add < value else add <= value
@@ -4126,14 +4126,14 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             //common this up...
             args.append(*createValue(no_nullptr, makeVoidType()));
             args.append(*LINK(address));
-            translator.callProcedure(subctx, addRangeAtom, args);
+            translator.callProcedure(subctx, addRangeId, args);
             subctx.selectElse(cond);
             args.append(*LINK(targetVar));
         }
         subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
         args.append(*LINK(address));
         args.append(*createValue(no_nullptr, makeVoidType()));
-        translator.callProcedure(subctx, killRangeAtom, args);
+        translator.callProcedure(subctx, killRangeId, args);
         break;
     case no_ge:
         // d) no_ge.  If isExact add >= value else add > value
@@ -4145,19 +4145,19 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
             args.append(*createValue(no_nullptr, makeVoidType()));
             args.append(*LINK(address));
-            translator.callProcedure(subctx, killRangeAtom, args);
+            translator.callProcedure(subctx, killRangeId, args);
             subctx.selectElse(cond);
             args.append(*LINK(targetVar));
         }
         args.append(*LINK(address));
         args.append(*createValue(no_nullptr, makeVoidType()));
-        translator.callProcedure(subctx, addRangeAtom, args);
+        translator.callProcedure(subctx, addRangeId, args);
         break;
     case no_gt:
         subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
         args.append(*createValue(no_nullptr, makeVoidType()));
         args.append(*LINK(address));
-        translator.callProcedure(subctx, killRangeAtom, args);
+        translator.callProcedure(subctx, killRangeId, args);
         break;
     case no_between:
     case no_notbetween:
@@ -4170,18 +4170,18 @@ void MonitorExtractor::buildKeySegmentCompareExpr(BuildMonitorState & buildState
             OwnedHqlExpr adjustedUpper = invertTransforms(thisKey.queryChild(0), thisKey.queryChild(2));
             OwnedHqlExpr foldedUpper = foldHqlExpression(adjustedUpper);
             OwnedHqlExpr hozedValue = getHozedKeyValue(foldedUpper);
-            _ATOM name = hozedValue->queryName();
-            if ((name != createRangeHighAtom) && (name != createQStrRangeHighAtom))
+            IIdAtom * name = hozedValue->queryId();
+            if ((name != createRangeHighId) && (name != createQStrRangeHighId))
                 hozedValue.setown(ensureExprType(hozedValue, selectorInfo.expandedSelector->queryType()));
             translator.buildExpr(subctx, hozedValue, rhs2);
             translator.ensureHasAddress(subctx, rhs2);
             args.append(*getPointer(rhs2.expr));
             if (op == no_between)
-                translator.callProcedure(subctx, addRangeAtom, args);
+                translator.callProcedure(subctx, addRangeId, args);
             else
             {
                 subctx.addQuoted(StringBuffer().appendf("%s->addAll();", targetSet));
-                translator.callProcedure(subctx, killRangeAtom, args);
+                translator.callProcedure(subctx, killRangeId, args);
             }
             break;
         }
@@ -4381,7 +4381,7 @@ IHqlExpression * MonitorExtractor::getMonitorValueAddress(BuildCtx & ctx, IHqlEx
             args.append(*getPointer(tempTarget.expr));
             args.append(*getZero());
             args.append(*getSizetConstant(type->getSize()));
-            OwnedHqlExpr call = translator.bindTranslatedFunctionCall(memsetAtom, args);
+            OwnedHqlExpr call = translator.bindTranslatedFunctionCall(memsetId, args);
             ctx.addExpr(call);
             //then assign over the top
             translator.buildExprAssign(ctx, tempTarget, value);
@@ -4704,7 +4704,7 @@ void MonitorExtractor::buildArbitaryKeySegment(BuildMonitorState & buildState, B
     node_operator op = condition->getOperator();
 
     StringBuffer createMonitorText;
-    OwnedHqlExpr field = createField(unknownAtom, getExpandedFieldType(left->queryType(), NULL), NULL);
+    OwnedHqlExpr field = createField(unknownId, getExpandedFieldType(left->queryType(), NULL), NULL);
     OwnedHqlExpr pseudoSelector = createSelectExpr(getActiveTableSelector(), LINK(field));
 
     KeySelectorInfo selectorInfo(KeyedExtend, left, pseudoSelector, buildState.curOffset, curSize, false, true);
@@ -5193,25 +5193,25 @@ IHqlExpression * MonitorExtractor::getRangeLimit(ITypeInfo * fieldType, IHqlExpr
         return getCompareValue(fieldType, subStringLen, constValue, whichBoundary);
     }
 
-    _ATOM func;
+    IIdAtom * func;
     if (whichBoundary < 0)
     {
         switch (ftc)
         {
         case type_qstring:
-            func = createQStrRangeLowAtom;
+            func = createQStrRangeLowId;
             break;
         case type_string:
-            func = createStrRangeLowAtom;
+            func = createStrRangeLowId;
             break;
         case type_data:
-            func = createDataRangeLowAtom;
+            func = createDataRangeLowId;
             break;
         case type_unicode:
-            func = createUnicodeRangeLowAtom;
+            func = createUnicodeRangeLowId;
             break;
         default:
-            func = createRangeLowAtom;
+            func = createRangeLowId;
             break;
         }
     }
@@ -5220,19 +5220,19 @@ IHqlExpression * MonitorExtractor::getRangeLimit(ITypeInfo * fieldType, IHqlExpr
         switch (ftc)
         {
         case type_qstring:
-            func = createQStrRangeHighAtom;
+            func = createQStrRangeHighId;
             break;
         case type_string:
-            func = createStrRangeHighAtom;
+            func = createStrRangeHighId;
             break;
         case type_data:
-            func = createDataRangeHighAtom;
+            func = createDataRangeHighId;
             break;
         case type_unicode:
-            func = createUnicodeRangeHighAtom;
+            func = createUnicodeRangeHighId;
             break;
         default:
-            func = createRangeHighAtom;
+            func = createRangeHighId;
             break;
         }
     }
@@ -6025,7 +6025,7 @@ bool expandFilename(StringBuffer & s, IHqlExpression * expr)
 
 const char * MonitorExtractor::queryKeyName(StringBuffer & s)
 {
-    _ATOM name = tableExpr->queryName();
+    IAtom * name = tableExpr->queryName();
     if (name)
         s.append(" \'").append(name).append("'");
     else
@@ -6808,8 +6808,8 @@ void associateVirtualCallbacks(HqlCppTranslator & translator, BuildCtx & ctx, IH
 {
     OwnedHqlExpr fpos = getFilepos(dataset, false);
     OwnedHqlExpr lfpos = getFilepos(dataset, true);
-    Owned<IHqlExpression> fposExpr = createFileposCall(translator, getFilePositionAtom, "fpp", "crSelf.row()");
-    Owned<IHqlExpression> lfposExpr = createFileposCall(translator, getLocalFilePositionAtom, "fpp", "crSelf.row()");
+    Owned<IHqlExpression> fposExpr = createFileposCall(translator, getFilePositionId, "fpp", "crSelf.row()");
+    Owned<IHqlExpression> lfposExpr = createFileposCall(translator, getLocalFilePositionId, "fpp", "crSelf.row()");
     ctx.associateExpr(fpos, fposExpr);
     ctx.associateExpr(lfpos, lfposExpr);
 }

@@ -453,7 +453,7 @@ IHqlExpression * HqlTransformerBase::transformAlienType(IHqlExpression * expr)
             insertScopeSymbols(newScope, newSymbols);
             scope.setown(closeScope(newScope.getClear()));
         }
-        return createAlienType(expr->queryName(), scope.getClear(), children, LINK(expr->queryFunctionDefinition()));
+        return createAlienType(expr->queryId(), scope.getClear(), children, LINK(expr->queryFunctionDefinition()));
     }
     return LINK(expr);
 }
@@ -491,7 +491,7 @@ IHqlExpression * HqlTransformerBase::transformField(IHqlExpression * expr)
     if (type != newType)
     {
         transformChildren(expr, children);
-        return createField(expr->queryName(), LINK(newType), children);
+        return createField(expr->queryId(), LINK(newType), children);
     }
     return completeTransform(expr, children);
 }
@@ -921,7 +921,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
             if (type != newType)
             {
                 transformChildren(expr, children);
-                return createField(expr->queryName(), LINK(newType), children);
+                return createField(expr->queryId(), LINK(newType), children);
             }
             break;
         }
@@ -929,7 +929,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
         {
             if (transformChildren(expr, children))
                 return LINK(expr);
-            return createFunctionDefinition(expr->queryName(), children);
+            return createFunctionDefinition(expr->queryId(), children);
         }
     case no_param:
         {
@@ -937,7 +937,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
             Owned<ITypeInfo> newType = transformType(type);
             transformChildren(expr, children);
             if (type != newType)
-                return createParameter(expr->queryName(), (unsigned)expr->querySequenceExtra(), newType.getClear(), children);
+                return createParameter(expr->queryId(), (unsigned)expr->querySequenceExtra(), newType.getClear(), children);
             break;
         }
     case no_delayedselect:
@@ -946,7 +946,7 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
             OwnedHqlExpr newModule = transform(oldModule);
             if (oldModule != newModule)
             {
-                _ATOM selectedName = expr->queryChild(3)->queryName();
+                IIdAtom * selectedName = expr->queryChild(3)->queryId();
                 HqlDummyLookupContext dummyctx(errors);
                 IHqlScope * newScope = newModule->queryScope();
                 if (newScope)
@@ -1053,7 +1053,7 @@ extern void assertNoMatchingExpression(IHqlExpression * expr, IHqlExpression * s
 //-------------------------------------------------------------------------------------------------
 
 static HqlTransformerInfo debugDifferenceAnalyserInfo("DebugDifferenceAnalyser");
-DebugDifferenceAnalyser::DebugDifferenceAnalyser(_ATOM _search) : QuickHqlTransformer(debugDifferenceAnalyserInfo, NULL) 
+DebugDifferenceAnalyser::DebugDifferenceAnalyser(IIdAtom * _search) : QuickHqlTransformer(debugDifferenceAnalyserInfo, NULL)
 { 
     prev = NULL; 
     search = _search; 
@@ -1062,7 +1062,7 @@ DebugDifferenceAnalyser::DebugDifferenceAnalyser(_ATOM _search) : QuickHqlTransf
 
 void DebugDifferenceAnalyser::doAnalyse(IHqlExpression * expr)
 {
-    if (expr->queryName() == createIdentifierAtom("f_fuzzy") || expr->queryName() == createIdentifierAtom("f_exact"))
+    if (expr->queryName() == createAtom("f_fuzzy") || expr->queryName() == createAtom("f_exact"))
     {
         if (prev && prev->queryBody() != expr->queryBody())
         {
@@ -1512,7 +1512,7 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
         {
             if (transformChildren(expr, children))
                 return LINK(expr);
-            return createFunctionDefinition(expr->queryName(), children);
+            return createFunctionDefinition(expr->queryId(), children);
         }
     default:
         return completeTransform(expr, children);
@@ -3170,7 +3170,7 @@ void NewSelectorReplacingTransformer::setNestedMapping(IHqlExpression * oldSel, 
             break;
         case no_field:
             {
-                OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryName());
+                OwnedHqlExpr oldField = oldScope->lookupSymbol(cur->queryId());
                 assertex(oldField);
                 if (cur != oldField)
                 {
@@ -4631,7 +4631,7 @@ IHqlExpression * GlobalToParameterTransformer::createTransformedBody(IHqlExpress
     paramName.append("_implicit_hidden_").append(parameters.ordinality());
     HqlExprArray attrs;
     attrs.append(*createAttribute(_hidden_Atom));
-    IHqlExpression * param = createParameter(createIdentifierAtom(paramName.str()), parameters.ordinality(), expr->getType(), attrs);
+    IHqlExpression * param = createParameter(createIdAtom(paramName.str()), parameters.ordinality(), expr->getType(), attrs);
     parameters.append(*param);
     defaults.append(*LINK(expr));
     return LINK(param);

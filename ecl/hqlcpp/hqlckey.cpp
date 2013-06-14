@@ -794,7 +794,7 @@ IHqlExpression * KeyedJoinInfo::optimizeTransfer(HqlExprArray & fields, HqlExprA
                         //Check same field isn't used in two different nested records.
                         StringBuffer name;
                         name.append("__unnamed__").append(fields.ordinality());
-                        field.setown(createField(createIdentifierAtom(name), field->getType(), NULL, NULL));
+                        field.setown(createField(createIdAtom(name), field->getType(), NULL, NULL));
                     }
 
                     fields.append(*LINK(field));
@@ -1718,7 +1718,7 @@ IHqlExpression * HqlCppTranslator::getBlobRowSelector(BuildCtx & ctx, IHqlExpres
 
     //MORE: Need to clone the dataset attributes. Really they should be included in the type somehow: via modifiers?
     //or give an error if blob used on alien with ref/
-    OwnedHqlExpr field = createField(unnamedAtom, expr->getType(), NULL, NULL); 
+    OwnedHqlExpr field = createField(unnamedId, expr->getType(), NULL, NULL);
     HqlExprArray fields;
     fields.append(*LINK(field));
     OwnedHqlExpr record = createRecord(fields);
@@ -1733,7 +1733,7 @@ IHqlExpression * HqlCppTranslator::getBlobRowSelector(BuildCtx & ctx, IHqlExpres
         HqlExprArray args;
         args.append(*LINK(helper));
         args.append(*LINK(boundId.expr));
-        OwnedHqlExpr call = bindTranslatedFunctionCall(lookupBlobAtom, args);
+        OwnedHqlExpr call = bindTranslatedFunctionCall(lookupBlobId, args);
         ctx.addAssign(boundRow, call);
 
         bindRow(ctx, row, boundRow);
@@ -1790,5 +1790,5 @@ void HqlCppTranslator::doBuildExprBlobToId(BuildCtx & ctx, IHqlExpression * expr
     args.append(*LINK(helper));
     args.append(*LINK(boundSize.expr));
     args.append(*LINK(boundAddress.expr));
-    tgt.expr.setown(bindTranslatedFunctionCall(createBlobAtom, args));
+    tgt.expr.setown(bindTranslatedFunctionCall(createBlobId, args));
 }

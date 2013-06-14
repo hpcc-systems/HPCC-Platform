@@ -325,7 +325,7 @@ bool HqlExprArray::containsBody(IHqlExpression & expr)
     return false;
 }
 
-IHqlExpression * queryProperty(_ATOM prop, const HqlExprArray & exprs)
+IHqlExpression * queryProperty(IAtom * prop, const HqlExprArray & exprs)
 {
     ForEachItemIn(idx, exprs)
     {
@@ -337,7 +337,7 @@ IHqlExpression * queryProperty(_ATOM prop, const HqlExprArray & exprs)
 }
 
 
-IHqlExpression * queryPropertyInList(_ATOM search, IHqlExpression * cur)
+IHqlExpression * queryPropertyInList(IAtom * search, IHqlExpression * cur)
 {
     if (cur)
     {
@@ -459,7 +459,7 @@ extern HQL_API IHqlExpression * forceCloneSymbol(IHqlExpression * donor, IHqlExp
     return result.getClear();
 }
 
-extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, _ATOM newname, IHqlExpression * newbody, IHqlExpression * newfuncdef, HqlExprArray * operands)
+extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, IIdAtom * newname, IHqlExpression * newbody, IHqlExpression * newfuncdef, HqlExprArray * operands)
 {
     assertex(donor->getAnnotationKind() == annotate_symbol);
     IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(donor->queryAnnotation());
@@ -467,7 +467,7 @@ extern HQL_API IHqlExpression * cloneSymbol(IHqlExpression * donor, _ATOM newnam
 }
 
 
-extern HQL_API IHqlExpression * queryAnnotationProperty(_ATOM search, IHqlExpression * annotation)
+extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpression * annotation)
 {
     unsigned i=0;
     IHqlExpression * cur;
@@ -479,7 +479,7 @@ extern HQL_API IHqlExpression * queryAnnotationProperty(_ATOM search, IHqlExpres
     return NULL;
 }
 
-extern HQL_API IHqlExpression * queryMetaProperty(_ATOM search, IHqlExpression * expr)
+extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -496,7 +496,7 @@ extern HQL_API IHqlExpression * queryMetaProperty(_ATOM search, IHqlExpression *
     }
 }
 
-extern HQL_API void gatherMetaProperties(HqlExprArray & matches, _ATOM search, IHqlExpression * expr)
+extern HQL_API void gatherMetaProperties(HqlExprArray & matches, IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -520,7 +520,7 @@ extern HQL_API void gatherMetaProperties(HqlExprArray & matches, _ATOM search, I
     }
 }
 
-extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, _ATOM search, IHqlExpression * expr)
+extern HQL_API void gatherMetaProperties(HqlExprCopyArray & matches, IAtom * search, IHqlExpression * expr)
 {
     loop
     {
@@ -637,7 +637,7 @@ static void setDefinitionText(IPropertyTree * target, const char * prop, IFileCo
     target->setProp("@sourcePath", sourcePath->str());
 }
 
-void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
+void HqlParseContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
     if (queryArchive())
     {
@@ -839,7 +839,7 @@ extern HQL_API IPropertyTree * createArchiveAttribute(IPropertyTree * module, co
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, _ATOM name)
+void HqlLookupContext::noteBeginAttribute(IHqlScope * scope, IFileContents * contents, IIdAtom * name)
 {
     if (queryNestedDependTree())
         createDependencyEntry(scope, name);
@@ -893,19 +893,20 @@ void HqlLookupContext::noteExternalLookup(IHqlScope * parentScope, IHqlExpressio
 }
 
 
-void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, _ATOM name)
+void HqlLookupContext::createDependencyEntry(IHqlScope * parentScope, IIdAtom * id)
 {
     const char * moduleName = parentScope->queryFullName();
+    const char * nameText = id->lower()->str();
 
     StringBuffer xpath;
-    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(name).append("\"]");
+    xpath.append("Attr[@module=\"").append(moduleName).append("\"][@name=\"").append(nameText).append("\"]");
 
     IPropertyTree * attr = queryNestedDependTree()->queryPropTree(xpath.str());
     if (!attr)
     {
         attr = queryNestedDependTree()->addPropTree("Attr", createPTree());
         attr->setProp("@module", moduleName);
-        attr->setProp("@name", name->str());
+        attr->setProp("@name", nameText);
     }
     curAttrTree.set(attr);
 }
@@ -1439,10 +1440,11 @@ const char *getOpString(node_operator op)
     case no_delayedscope: return "no_delayedscope";
     case no_assertconcrete: return "no_assertconcrete";
     case no_unboundselect: return "no_unboundselect";
+    case no_id: return "no_id";
 
     case no_unused6:
     case no_unused13: case no_unused14: case no_unused15:
-    case no_unused23: case no_unused24: case no_unused25: case no_unused28: case no_unused29:
+    case no_unused24: case no_unused25: case no_unused28: case no_unused29:
     case no_unused30: case no_unused31: case no_unused32: case no_unused33: case no_unused34: case no_unused35: case no_unused36: case no_unused37: case no_unused38:
     case no_unused40: case no_unused41: case no_unused42: case no_unused43: case no_unused44: case no_unused45: case no_unused46: case no_unused47: case no_unused48: case no_unused49:
     case no_unused50: case no_unused52:
@@ -3073,6 +3075,12 @@ void CHqlExpression::appendOperands(IHqlExpression * arg0, ...)
     va_end(args);
 }
 
+IIdAtom * CHqlExpression::queryId() const
+{
+    assertex(!isAttribute());
+    return NULL;
+}
+
 void CHqlExpression::setOperands(HqlExprArray & _ownedOperands)
 {
     unsigned max = _ownedOperands.ordinality();
@@ -3410,9 +3418,13 @@ void CHqlExpression::updateFlagsAfterOperands()
         infoFlags &= ~HEFcontainsDataset;
         assertex(queryChild(0)->isDictionary() == queryChild(1)->isDictionary());
         break;
+    case no_internalselect:
+        assertex(!queryChild(3)->isAttribute());
+        break;
     case no_delayedselect:
     case no_libraryselect:
     case no_unboundselect:
+        assertex(!queryChild(3)->isAttribute());
         //kill any flag derived from selecting pure virtual members
         infoFlags &= ~HEFcontextDependentException;
         break;
@@ -3908,7 +3920,7 @@ unsigned CHqlExpression::getCachedEclCRC()
         break;
     case no_attr_expr:
         {
-            const _ATOM name = queryBody()->queryName();
+            const IAtom * name = queryBody()->queryName();
             //Horrible backward compatibility "fix" for record crcs - they need to remain the same otherwise files
             //will be incompatible.
             if (name == maxLengthAtom || name == xpathAtom || name == cardinalityAtom || name == caseAtom || name == maxCountAtom || name == choosenAtom || name == maxSizeAtom || name == namedAtom || name == rangeAtom || name == xmlDefaultAtom || name == virtualAtom)
@@ -3947,7 +3959,7 @@ unsigned CHqlExpression::getCachedEclCRC()
         break;
     case no_field:
         {
-            _ATOM name = queryName();
+            IAtom * name = queryName();
             if (name)
             {
                 const char * nameText = name->str();
@@ -3967,7 +3979,7 @@ unsigned CHqlExpression::getCachedEclCRC()
     case no_attr_expr:
     case no_attr_link:
         {
-            const _ATOM name = queryBody()->queryName();
+            const IAtom * name = queryBody()->queryName();
             if (name == _uid_Atom)
                 return 0;
             const char * nameText = name->str();
@@ -4065,7 +4077,7 @@ IHqlScope * closeScope(IHqlScope * scope)
     return expr->closeExpr()->queryScope();
 }
 
-bool getProperty(IHqlExpression * expr, _ATOM propname, StringBuffer &ret)
+bool getProperty(IHqlExpression * expr, IAtom * propname, StringBuffer &ret)
 {
     IHqlExpression* match = expr->queryProperty(propname);
     if (match)
@@ -4078,7 +4090,7 @@ bool getProperty(IHqlExpression * expr, _ATOM propname, StringBuffer &ret)
     return false;
 }
 
-IHqlExpression *CHqlExpression::queryProperty(_ATOM propname) const
+IHqlExpression *CHqlExpression::queryProperty(IAtom * propname) const
 {
     unsigned kids = numChildren();
     for (unsigned i = 0; i < kids; i++)
@@ -4568,12 +4580,12 @@ IHqlExpression *CHqlExpressionWithType::clone(HqlExprArray &newkids)
 
 //--------------------------------------------------------------------------------------------------------------
 
-CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, ...) : CHqlExpressionWithType(_op, _type)
+CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id, ...) : CHqlExpressionWithType(_op, _type)
 {
-    name = _name;
+    id = _id;
 
     va_list args;
-    va_start(args, _name);
+    va_start(args, _id);
     for (;;)
     {
         IHqlExpression *parm = va_arg(args, IHqlExpression *);
@@ -4587,17 +4599,17 @@ CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _A
     va_end(args);
 }
 
-CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, _ATOM _name, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(_op, _type, _ownedOperands)
+CHqlNamedExpression::CHqlNamedExpression(node_operator _op, ITypeInfo *_type, IIdAtom * _id, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(_op, _type, _ownedOperands)
 {
-    name = _name;
+    id = _id;
 }
 
 
 IHqlExpression *CHqlNamedExpression::clone(HqlExprArray &newkids)
 {
     if (op == no_funcdef)
-        return createFunctionDefinition(name, newkids);
-    return (new CHqlNamedExpression(op, getType(), name, newkids))->closeExpr();
+        return createFunctionDefinition(id, newkids);
+    return (new CHqlNamedExpression(op, getType(), id, newkids))->closeExpr();
 }
 
 bool CHqlNamedExpression::equals(const IHqlExpression & r) const
@@ -4614,14 +4626,19 @@ bool CHqlNamedExpression::equals(const IHqlExpression & r) const
 void CHqlNamedExpression::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = HASHFIELD(name);
+    hashcode = HASHFIELD(id);
 }
 
-IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, _ATOM name, HqlExprArray & args)
+IHqlExpression *createNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id, HqlExprArray & args)
 {
-    return (new CHqlNamedExpression(op, type, name, args))->closeExpr();
+    return (new CHqlNamedExpression(op, type, id, args))->closeExpr();
 }
 
+IHqlExpression *createId(IIdAtom * id)
+{
+    HqlExprArray args;
+    return createNamedValue(no_id, makeNullType(), id, args);
+}
 
 //--------------------------------------------------------------------------------------------------------------
 
@@ -5487,20 +5504,20 @@ ITypeInfo *CHqlConstant::getType()
 
 //==============================================================================================================
 
-CHqlField::CHqlField(_ATOM _name, ITypeInfo *_type, IHqlExpression *defvalue)
+CHqlField::CHqlField(IIdAtom * _id, ITypeInfo *_type, IHqlExpression *defvalue)
  : CHqlExpressionWithType(no_field, _type)
 {
     appendOperands(defvalue, NULL);
-    assertex(_name);
-    name = _name;
+    assertex(_id);
+    id = _id;
     onCreateField();
 }
 
-CHqlField::CHqlField(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands) 
+CHqlField::CHqlField(IIdAtom * _id, ITypeInfo *_type, HqlExprArray &_ownedOperands)
 : CHqlExpressionWithType(no_field, _type, _ownedOperands)
 {
-    assertex(_name);
-    name = _name;
+    assertex(_id);
+    id = _id;
     onCreateField();
 }
 
@@ -5516,7 +5533,7 @@ void CHqlField::onCreateField()
         throwUnexpected();
 #endif
 #ifdef DEBUG_ON_CREATE
-    if (queryName() == createIdentifierAtom("imgLength"))
+    if (queryName() == createIdAtom("imgLength"))
         PrintLog("Create field %s=%p", expr->queryName()->str(), expr);
 #endif
 
@@ -5557,7 +5574,7 @@ bool CHqlField::equals(const IHqlExpression & r) const
     if (CHqlExpression::equals(r))
     {
         const CHqlField *fr = QUERYINTERFACE(&r, const CHqlField);
-        if (fr && fr->name==name)
+        if (fr && fr->id==id)
             return true;
     }
     return false;
@@ -5565,20 +5582,20 @@ bool CHqlField::equals(const IHqlExpression & r) const
 
 IHqlExpression *CHqlField::clone(HqlExprArray &newkids)
 {
-    CHqlField* e = new CHqlField(name, LINK(type), newkids);
+    CHqlField* e = new CHqlField(id, LINK(type), newkids);
     return e->closeExpr();
 }
 
 StringBuffer &CHqlField::toString(StringBuffer &ret)
 {
-    ret.append(*name);
+    ret.append(id->str());
     return ret;
 }
 
 void CHqlField::sethash()
 {
     CHqlExpression::sethash();
-    hashcode = hashc((unsigned char *) &name, sizeof(name), hashcode);
+    HASHFIELD(id);
 }
 
 
@@ -5623,7 +5640,7 @@ IHqlExpression * CHqlRow::clone(HqlExprArray &newkids)
     return createRow(op, newkids);
 }
 
-_ATOM CHqlRow::queryName() const
+IAtom * CHqlRow::queryName() const
 {
     switch (op)
     {
@@ -6198,7 +6215,6 @@ void CHqlRecord::sethash()
 {
     // Can't use base class as that includes type (== this) which would make it different every time
     setInitialHash(0);
-//  HASHFIELD(name);
     assertex(fields.count() != 0 || isEmptyRecord(this));
 }
 
@@ -6219,7 +6235,7 @@ void CHqlRecord::insertSymbols(IHqlExpression * expr)
     {
     case no_field:
         {
-            _ATOM name = expr->queryName();
+            IAtom * name = expr->queryName();
             if (name)
                 fields.setValue(name, expr);
         }
@@ -6259,9 +6275,9 @@ CHqlRecord::~CHqlRecord()
 }
 
 /* return: linked */
-IHqlExpression *CHqlRecord::lookupSymbol(_ATOM fieldName)
+IHqlExpression *CHqlRecord::lookupSymbol(IIdAtom * fieldName)
 {
-    IHqlExpression *ret = fields.getValue(fieldName);
+    IHqlExpression *ret = fields.getValue(fieldName->lower());
     ::Link(ret);
     return ret;
 }
@@ -6416,7 +6432,7 @@ IHqlExpression *CHqlAnnotation::queryChild(unsigned idx) const
     return body->queryChild(idx);
 }
 
-IHqlExpression *CHqlAnnotation::queryProperty(_ATOM propname) const
+IHqlExpression *CHqlAnnotation::queryProperty(IAtom * propname) const
 {
     return body->queryProperty(propname);
 }
@@ -6463,12 +6479,12 @@ bool CHqlAnnotation::isFullyBound() const
     return body->isFullyBound();
 }
 
-IAtom * CHqlAnnotation::queryFullModuleName() const
+IIdAtom * CHqlAnnotation::queryFullModuleId() const
 {
-    return body->queryFullModuleName();
+    return body->queryFullModuleId();
 }
 
-IHqlExpression * CHqlAnnotation::queryAttribute(_ATOM name)
+IHqlExpression * CHqlAnnotation::queryAttribute(IAtom * name)
 {
     return body->queryAttribute(name);
 }
@@ -6568,6 +6584,11 @@ IAtom * CHqlAnnotation::queryName() const
     return body->queryName();
 }
 
+IIdAtom * CHqlAnnotation::queryId() const
+{
+    return body->queryId();
+}
+
 ITypeInfo * CHqlAnnotation::queryType() const
 {
     return body->queryType();
@@ -6647,8 +6668,8 @@ static void associateBindMap(HqlExprArray & selects, IHqlExpression * formal, IH
     unsigned numMaps = maps.ordinality();
     for (unsigned i=0; i < numMaps; i+= 2)
     {
-        _ATOM mapFrom = maps.item(i).queryName();
-        _ATOM mapTo = maps.item(i+1).queryName();
+        IIdAtom * mapFrom = maps.item(i).queryName();
+        IIdAtom * mapTo = maps.item(i+1).queryName();
 
         ForEachItemIn(j, selects)
         {
@@ -6677,7 +6698,7 @@ static void associateBindByName(HqlExprArray & selects, IHqlExpression * formal,
         IHqlExpression * curFormal = selectFrom->queryChild(1);
         if (!selectFrom->queryTransformExtra())
         {
-            _ATOM name = curFormal->queryName();
+            IIdAtom * name = curFormal->queryName();
             OwnedHqlExpr to = actualScope->lookupSymbol(name);
             if (!to)
             {
@@ -6696,12 +6717,12 @@ static void associateBindByName(HqlExprArray & selects, IHqlExpression * formal,
 
 //---------------------------------------------------------------------------------------------------------------------
 
-CHqlSymbolAnnotation::CHqlSymbolAnnotation(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
+CHqlSymbolAnnotation::CHqlSymbolAnnotation(IIdAtom * _id, IIdAtom * _moduleId, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
 : CHqlAnnotation(_expr)
 {
-    name = _name;
+    id = _id;
     symbolFlags = _symbolFlags;
-    module = _module;
+    moduleId = _moduleId;
     funcdef = _funcdef;
     if (funcdef && containsInternalSelect(funcdef))
         infoFlags |= HEFinternalSelect;
@@ -6710,9 +6731,9 @@ CHqlSymbolAnnotation::CHqlSymbolAnnotation(_ATOM _name, _ATOM _module, IHqlExpre
 void CHqlSymbolAnnotation::sethash()
 {
     hashcode = 0;
-    HASHFIELD(name);
+    HASHFIELD(id);
     HASHFIELD(body);
-    HASHFIELD(module);
+    HASHFIELD(moduleId);
 }
 
 CHqlSymbolAnnotation::~CHqlSymbolAnnotation()
@@ -6726,13 +6747,13 @@ bool CHqlSymbolAnnotation::equals(const IHqlExpression & other) const
         return false;
 
     //Must be a named symbol if got here
-    if (name != other.queryName())
+    if (id != other.queryId())
         return false;
 
     if ((symbolFlags != other.getSymbolFlags()) || (funcdef != other.queryFunctionDefinition()))
         return false;
 
-    if (module != other.queryFullModuleName())
+    if (moduleId != other.queryFullModuleId())
         return false;
 
     if (op == no_nobody)
@@ -6756,7 +6777,7 @@ IHqlExpression * CHqlSymbolAnnotation::cloneAnnotation(IHqlExpression * newbody)
 {
     if (body == newbody)
         return LINK(this);
-    return cloneSymbol(name, newbody, funcdef, NULL);
+    return cloneSymbol(id, newbody, funcdef, NULL);
 }
 
 IHqlExpression *CHqlSymbolAnnotation::queryFunctionDefinition() const
@@ -6777,36 +6798,36 @@ inline unsigned combineSymbolFlags(unsigned symbolFlags, bool exported, bool sha
     return symbolFlags | (exported ? ob_exported : 0) | (shared ? ob_shared : 0);
 }
 
-CHqlSimpleSymbol::CHqlSimpleSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
-: CHqlSymbolAnnotation(_name, _module, _expr, _funcdef, _symbolFlags)
+CHqlSimpleSymbol::CHqlSimpleSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _symbolFlags)
+: CHqlSymbolAnnotation(_id, _module, _expr, _funcdef, _symbolFlags)
 {
 }
 
-IHqlExpression *CHqlSimpleSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _flags)
+IHqlExpression *CHqlSimpleSymbol::makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression * _funcdef, unsigned _flags)
 {
-    CHqlSimpleSymbol *e = new CHqlSimpleSymbol(_name, _module, _expr, _funcdef, _flags);
+    CHqlSimpleSymbol *e = new CHqlSimpleSymbol(_id, _module, _expr, _funcdef, _flags);
     return e->closeExpr();
 }
 
-IHqlExpression * CHqlSimpleSymbol::cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
+IHqlExpression * CHqlSimpleSymbol::cloneSymbol(IIdAtom * optid, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
 {
     assertex(!optargs || optargs->ordinality() == 0);
-    _ATOM newname = optname ? optname : name;
+    IIdAtom * newid = optid ? optid : id;
     IHqlExpression * newbody = optnewbody ? optnewbody : body;
     IHqlExpression * newfuncdef = optnewfuncdef ? optnewfuncdef : funcdef;
 
-    if (newname == name && newbody==body && newfuncdef==funcdef)
+    if (newid == id && newbody==body && newfuncdef==funcdef)
         return LINK(this);
 
-    return makeSymbol(newname, module, LINK(newbody), LINK(newfuncdef), symbolFlags);
+    return makeSymbol(newid, moduleId, LINK(newbody), LINK(newfuncdef), symbolFlags);
 }
 
 
 //---------------------------------------------------------------------------------------------------------------------
 
 
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _symbolFlags)
-: CHqlSymbolAnnotation(_name, _module, _expr, NULL, combineSymbolFlags(_symbolFlags, _exported, _shared))
+CHqlNamedSymbol::CHqlNamedSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _symbolFlags)
+: CHqlSymbolAnnotation(_id, _module, _expr, NULL, combineSymbolFlags(_symbolFlags, _exported, _shared))
 {
     startpos = 0;
     bodypos = 0;
@@ -6815,8 +6836,8 @@ CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_ex
     startColumn = 0;
 }
 
-CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
-: CHqlSymbolAnnotation(_name, _module, _expr, _funcdef, combineSymbolFlags(_symbolFlags, _exported, _shared))
+CHqlNamedSymbol::CHqlNamedSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _symbolFlags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
+: CHqlSymbolAnnotation(_id, _module, _expr, _funcdef, combineSymbolFlags(_symbolFlags, _exported, _shared))
 {
     text.set(_text);
     startpos = _startpos;
@@ -6826,33 +6847,33 @@ CHqlNamedSymbol::CHqlNamedSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_ex
     startColumn = _startColumn;
 }
 
-CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags)
+CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, bool _exported, bool _shared, unsigned _flags)
 {
-    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _exported, _shared, _flags);
+    CHqlNamedSymbol *e = new CHqlNamedSymbol(_id, _module, _expr, _exported, _shared, _flags);
     return (CHqlNamedSymbol *) e->closeExpr();
 }
 
 
-CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(_ATOM _name, _ATOM _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
+CHqlNamedSymbol *CHqlNamedSymbol::makeSymbol(IIdAtom * _id, IIdAtom * _module, IHqlExpression *_expr, IHqlExpression *_funcdef, bool _exported, bool _shared, unsigned _flags, IFileContents *_text, int _startLine, int _startColumn, int _startpos, int _bodypos, int _endpos)
 {
-    CHqlNamedSymbol *e = new CHqlNamedSymbol(_name, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _startLine, _startColumn, _startpos, _bodypos, _endpos);
+    CHqlNamedSymbol *e = new CHqlNamedSymbol(_id, _module, _expr, _funcdef, _exported, _shared, _flags, _text, _startLine, _startColumn, _startpos, _bodypos, _endpos);
     return (CHqlNamedSymbol *) e->closeExpr();
 }
 
-IHqlExpression * CHqlNamedSymbol::cloneSymbol(_ATOM optname, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
+IHqlExpression * CHqlNamedSymbol::cloneSymbol(IIdAtom * optid, IHqlExpression * optnewbody, IHqlExpression * optnewfuncdef, HqlExprArray * optargs)
 {
-    _ATOM newname = optname ? optname : name;
+    IIdAtom * newid = optid ? optid : id;
     IHqlExpression * newbody = optnewbody ? optnewbody : body;
     IHqlExpression * newfuncdef = optnewfuncdef ? optnewfuncdef : funcdef;
     HqlExprArray * newoperands = optargs ? optargs : &operands;
 
-    if (newname == name && newbody==body && newfuncdef==funcdef)
+    if (newid == id && newbody==body && newfuncdef==funcdef)
     {
         if (newoperands == &operands || arraysSame(*newoperands, operands))
             return LINK(this);
     }
 
-    CHqlNamedSymbol * e = new CHqlNamedSymbol(newname, module, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, startLine, startColumn, startpos, bodypos, endpos);
+    CHqlNamedSymbol * e = new CHqlNamedSymbol(newid, moduleId, LINK(newbody), LINK(newfuncdef), isExported(), isShared(), symbolFlags, text, startLine, startColumn, startpos, bodypos, endpos);
     //NB: do not all doAppendOpeand() because the parameters to a named symbol do not change it's attributes - e.g., whether pure.
     e->operands.ensure(newoperands->ordinality());
     ForEachItemIn(idx, *newoperands)
@@ -7338,8 +7359,8 @@ extern HQL_API IFileContents * createFileContentsSubset(IFileContents * contents
 
 //==============================================================================================================
 
-CHqlScope::CHqlScope(node_operator _op, _ATOM _name, const char * _fullName)
-: CHqlExpressionWithType(_op, NULL), name(_name), fullName(_fullName)
+CHqlScope::CHqlScope(node_operator _op, IIdAtom * _id, const char * _fullName)
+: CHqlExpressionWithType(_op, NULL), id(_id), fullName(_fullName)
 {
     type = this;
 }
@@ -7347,7 +7368,7 @@ CHqlScope::CHqlScope(node_operator _op, _ATOM _name, const char * _fullName)
 CHqlScope::CHqlScope(IHqlScope* scope)
 : CHqlExpressionWithType(no_scope, NULL)
 {
-    name = scope->queryName();
+    id = scope->queryId();
     fullName.set(scope->queryFullName());
     CHqlScope* s = QUERYINTERFACE(scope, CHqlScope);
     if (s && s->text)
@@ -7358,7 +7379,7 @@ CHqlScope::CHqlScope(IHqlScope* scope)
 CHqlScope::CHqlScope(node_operator _op) 
 : CHqlExpressionWithType(_op, NULL)
 {
-    name = NULL;
+    id = NULL;
     type = this;
 }
 
@@ -7459,7 +7480,7 @@ IHqlExpression *CHqlScope::clone(HqlExprArray &newkids)
     return clone(newkids, syms)->queryExpression();
 }
 
-IHqlExpression * createFunctionDefinition(_ATOM name, IHqlExpression * value, IHqlExpression * parameters, IHqlExpression * defaults, IHqlExpression * attrs)
+IHqlExpression * createFunctionDefinition(IIdAtom * id, IHqlExpression * value, IHqlExpression * parameters, IHqlExpression * defaults, IHqlExpression * attrs)
 {
     HqlExprArray args;
     args.append(*value);
@@ -7468,10 +7489,10 @@ IHqlExpression * createFunctionDefinition(_ATOM name, IHqlExpression * value, IH
         args.append(*defaults);
     if (attrs)
         attrs->unwindList(args, no_comma);
-    return createFunctionDefinition(name, args);
+    return createFunctionDefinition(id, args);
 }
 
-IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args)
+IHqlExpression * createFunctionDefinition(IIdAtom * id, HqlExprArray & args)
 {
     IHqlExpression * body = &args.item(0);
     IHqlExpression * formals = &args.item(1);
@@ -7486,7 +7507,7 @@ IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args)
         IHqlExpression * formal = formals->queryChild(i);
         HqlExprArray attrs;
         unwindChildren(attrs, formal);
-        IHqlExpression * normal = createParameter(formal->queryName(), UnadornedParameterIndex, formal->getType(), attrs);
+        IHqlExpression * normal = createParameter(formal->queryId(), UnadornedParameterIndex, formal->getType(), attrs);
         normalized.append(*normal);
         defaultReplacer.setMapping(formal->queryBody(), normal);
     }
@@ -7499,28 +7520,28 @@ IHqlExpression * createFunctionDefinition(_ATOM name, HqlExprArray & args)
     ITypeInfo * type = makeFunctionType(body->getType(), LINK(formals), LINK(defaults));
 #endif
 
-    return createNamedValue(no_funcdef, type, name, args);
+    return createNamedValue(no_funcdef, type, id, args);
 }
 
 
 
-void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *value, 
+void CHqlScope::defineSymbol(IIdAtom * _id, IIdAtom * moduleName, IHqlExpression *value,
                              bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int lineno, int column,
                              int _startpos, int _bodypos, int _endpos)
 {
     if (!moduleName)
-        moduleName = name;
+        moduleName = id;
 
-    IHqlExpression * symbol = createSymbol(_name, moduleName, value, NULL, exported, shared, symbolFlags, fc, lineno, column, _startpos, _bodypos, _endpos);
+    IHqlExpression * symbol = createSymbol(_id, moduleName, value, NULL, exported, shared, symbolFlags, fc, lineno, column, _startpos, _bodypos, _endpos);
     defineSymbol(symbol);
 }
 
-void CHqlScope::defineSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags)
+void CHqlScope::defineSymbol(IIdAtom * _id, IIdAtom * moduleName, IHqlExpression *value, bool exported, bool shared, unsigned symbolFlags)
 {
-    if (!moduleName) moduleName = name;
-    if (!_name) _name = internalAtom;
-    defineSymbol(createSymbol(_name, moduleName, value, exported, shared, symbolFlags));
+    assertex(_id);
+    if (!moduleName) moduleName = id;
+    defineSymbol(createSymbol(_id, moduleName, value, exported, shared, symbolFlags));
 }
 
 void CHqlScope::defineSymbol(IHqlExpression * expr)
@@ -7534,17 +7555,16 @@ void CHqlScope::defineSymbol(IHqlExpression * expr)
     expr->Release();
 }
 
-void CHqlScope::removeSymbol(_ATOM name)
+void CHqlScope::removeSymbol(IIdAtom * _id)
 {
-    symbols.remove(name);
-//  symbols.setValue(name, NULL);
+    symbols.remove(_id->lower());
     //in general infoFlags needs recalculating - although currently I think this can only occur when a constant has been added
 }
 
 
-IHqlExpression *CHqlScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
-    OwnedHqlExpr ret = symbols.getLinkedValue(searchName);
+    OwnedHqlExpr ret = symbols.getLinkedValue(searchName->lower());
 
     if (!ret)
         return NULL; 
@@ -7556,12 +7576,12 @@ IHqlExpression *CHqlScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, 
 }
 
 
-int CHqlScope::getPropInt(_ATOM a, int def) const
+int CHqlScope::getPropInt(IAtom * a, int def) const
 {
     return def;
 }
 
-bool CHqlScope::getProp(_ATOM a, StringBuffer &ret) const
+bool CHqlScope::getProp(IAtom * a, StringBuffer &ret) const
 { 
     return false;
 }
@@ -7577,7 +7597,7 @@ void CHqlScope::getSymbols(HqlExprArray& exprs) const
         IHqlExpression *cur = localSymbols.mapToValue(&iter.query());
         if (!cur)
         {
-            _ATOM name = * static_cast<_ATOM const *>(iter.query().getKey());
+            IAtom * name = * static_cast<IAtom * const *>(iter.query().getKey());
             throw MakeStringException(ERR_INTERNAL_NOEXPR, "INTERNAL: getSymbol %s has no associated expression", name ? name->str() : "");
         }
 
@@ -7597,7 +7617,7 @@ IHqlScope * CHqlScope::cloneAndClose(HqlExprArray & children, HqlExprArray & sym
     return closeExpr()->queryScope();
 }
 
-void CHqlScope::throwRecursiveError(_ATOM searchName)
+void CHqlScope::throwRecursiveError(IIdAtom * searchName)
 {
     StringBuffer filename;
     if (fullName)
@@ -7642,7 +7662,7 @@ static bool scopesEqual(const IHqlScope * l, const IHqlScope * r)
 
 //==============================================================================================================
 
-CHqlRemoteScope::CHqlRemoteScope(_ATOM _name, const char * _fullName, IEclRepositoryCallback * _repository, IProperties* _props, IFileContents * _text, bool _lazy, IEclSource * _eclSource)
+CHqlRemoteScope::CHqlRemoteScope(IIdAtom * _name, const char * _fullName, IEclRepositoryCallback * _repository, IProperties* _props, IFileContents * _text, bool _lazy, IEclSource * _eclSource)
 : CHqlScope(no_remotescope, _name, _fullName), eclSource(_eclSource)
 {
     text.set(_text);
@@ -7749,7 +7769,7 @@ IHqlExpression *CHqlRemoteScope::clone(HqlExprArray &newkids)
 }
 
 
-IHqlExpression *CHqlRemoteScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlRemoteScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
 //  PrintLog("lookupSymbol %s#%d", searchName->getAtomNamePtr(),version);
     preloadSymbols(ctx, false);
@@ -7865,7 +7885,7 @@ IFileContents * CHqlRemoteScope::queryDefinitionText() const
     return text;
 }
 
-int CHqlRemoteScope::getPropInt(_ATOM a, int def) const
+int CHqlRemoteScope::getPropInt(IAtom * a, int def) const
 {
     if (props)
         return props->getPropInt(a->getAtomNamePtr(), def);
@@ -7873,21 +7893,21 @@ int CHqlRemoteScope::getPropInt(_ATOM a, int def) const
         return def;
 }
 
-bool CHqlRemoteScope::getProp(_ATOM a, StringBuffer &ret) const
+bool CHqlRemoteScope::getProp(IAtom * a, StringBuffer &ret) const
 { 
     return (props != NULL && props->getProp(a->getAtomNamePtr(), ret));
 }
 
 
 
-void CHqlRemoteScope::setProp(_ATOM a, int val)
+void CHqlRemoteScope::setProp(IAtom * a, int val)
 {
     if (!props)
         props = createProperties();
     props->setProp(a->getAtomNamePtr(), val);
 }
 
-void CHqlRemoteScope::setProp(_ATOM a, const char * val)
+void CHqlRemoteScope::setProp(IAtom * a, const char * val)
 {
     if (!props)
         props = createProperties();
@@ -7904,7 +7924,7 @@ void CHqlRemoteScope::repositoryLoadModule(HqlLookupContext & ctx, bool forceAll
     }
 }
 
-IHqlExpression * CHqlRemoteScope::repositoryLoadSymbol(_ATOM attrName)
+IHqlExpression * CHqlRemoteScope::repositoryLoadSymbol(IIdAtom * attrName)
 {
     if (loadedAllSymbols)
         return NULL;
@@ -7980,7 +8000,7 @@ CHqlLocalScope::CHqlLocalScope(IHqlScope* scope)
 {
 }
 
-CHqlLocalScope::CHqlLocalScope(node_operator _op, _ATOM _name, const char * _fullName) 
+CHqlLocalScope::CHqlLocalScope(node_operator _op, IIdAtom * _name, const char * _fullName)
 : CHqlScope(_op, _name, _fullName)
 {
 }
@@ -8010,7 +8030,7 @@ IHqlExpression *CHqlLocalScope::clone(HqlExprArray &newkids)
 
 IHqlScope * CHqlLocalScope::clone(HqlExprArray & children, HqlExprArray & symbols)
 {
-    CHqlScope * cloned = new CHqlLocalScope(op, name, fullName);
+    CHqlScope * cloned = new CHqlLocalScope(op, id, fullName);
     return cloned->cloneAndClose(children, symbols);
 }
 
@@ -8069,17 +8089,17 @@ inline bool canMergeDefinition(IHqlExpression * expr)
     return true;
 }
 
-IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlMergedScope::lookupSymbol(IIdAtom * searchId, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     CriticalBlock block(cs);
-    OwnedHqlExpr resolved = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
+    OwnedHqlExpr resolved = CHqlScope::lookupSymbol(searchId, lookupFlags, ctx);
     if (resolved)
     {
         node_operator resolvedOp = resolved->getOperator();
         if (resolvedOp == no_merge_pending)
         {
             if (lookupFlags & LSFrequired)
-                throwRecursiveError(searchName);
+                throwRecursiveError(searchId);
             return NULL;
         }
         if (resolvedOp == no_merge_nomatch)
@@ -8093,7 +8113,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
             return NULL;
     }
 
-    OwnedHqlExpr recursionGuard = createSymbol(searchName, LINK(mergePendingMarker), ob_exported);
+    OwnedHqlExpr recursionGuard = createSymbol(searchId, LINK(mergePendingMarker), ob_exported);
     defineSymbol(LINK(recursionGuard));
 
     OwnedHqlExpr previousMatch;
@@ -8102,7 +8122,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
     unsigned symbolFlags = 0;
     ForEachItemIn(i, mergedScopes)
     {
-        OwnedHqlExpr matched = mergedScopes.item(i).lookupSymbol(searchName, lookupFlags, ctx);
+        OwnedHqlExpr matched = mergedScopes.item(i).lookupSymbol(searchId, lookupFlags, ctx);
         if (matched)
         {
             if (!canMergeDefinition(matched))
@@ -8115,7 +8135,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
             if (previousMatch)
             {
                 IHqlScope * previousScope = previousMatch->queryScope();
-                mergeScope.setown(new CHqlMergedScope(searchName, previousScope->queryFullName()));
+                mergeScope.setown(new CHqlMergedScope(searchId, previousScope->queryFullName()));
                 mergeScope->addScope(previousScope);
             }
 
@@ -8139,7 +8159,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
     if (mergeScope)
     {
         OwnedHqlExpr newScope = mergeScope.getClear()->closeExpr();
-        IHqlExpression * symbol = createSymbol(searchName, name, LINK(newScope), true, false, symbolFlags);
+        IHqlExpression * symbol = createSymbol(searchId, id, LINK(newScope), true, false, symbolFlags);
         defineSymbol(symbol);
         return LINK(symbol);
     }
@@ -8149,7 +8169,7 @@ IHqlExpression * CHqlMergedScope::lookupSymbol(_ATOM searchName, unsigned lookup
         return previousMatch.getClear();
     }
     //Indicate that no match was found to save work next time.
-    defineSymbol(createSymbol(searchName, LINK(mergeNoMatchMarker), ob_exported));
+    defineSymbol(createSymbol(searchId, LINK(mergeNoMatchMarker), ob_exported));
     return NULL;
 }
 
@@ -8175,9 +8195,9 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
         ForEachItemIn(iSym, scopeSymbols)
         {
             IHqlExpression & cur = scopeSymbols.item(iSym);
-            _ATOM curName = cur.queryName();
+            IIdAtom * curName = cur.queryId();
 
-            OwnedHqlExpr prev = symbols.getLinkedValue(curName);
+            OwnedHqlExpr prev = symbols.getLinkedValue(curName->lower());
             if (prev)
             {
                 //Unusual - check that this hasn't already been resolved by a call to lookupSymbol()
@@ -8190,7 +8210,7 @@ void CHqlMergedScope::ensureSymbolsDefined(HqlLookupContext & ctx)
                         //a child scope hasn't resolved it yet.
                         if (prev->getOperator() != no_nobody)
                         {
-                            IHqlExpression * newSymbol = createSymbol(curName, name, NULL, true, false, 0);
+                            IHqlExpression * newSymbol = createSymbol(curName, id, NULL, true, false, 0);
                             defineSymbol(newSymbol);
                         }
                     }
@@ -8246,7 +8266,7 @@ IHqlScope * CHqlLibraryInstance::clone(HqlExprArray & children, HqlExprArray & s
 }
 
 
-IHqlExpression *CHqlLibraryInstance::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlLibraryInstance::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr ret = libraryScope->lookupSymbol(searchName, lookupFlags, ctx);
 
@@ -8302,7 +8322,7 @@ static IHqlExpression * cloneFunction(IHqlExpression * expr)
         unsigned seq = (unsigned)formal->querySequenceExtra();
         HqlExprArray attrs;
         unwindChildren(attrs, formal);
-        OwnedHqlExpr newFormal = createParameter(formal->queryName(), seq, formal->getType(), attrs);
+        OwnedHqlExpr newFormal = createParameter(formal->queryId(), seq, formal->getType(), attrs);
         assertex(formal != newFormal || seq == UnadornedParameterIndex);
         replacer.setMapping(formal, newFormal);
     }
@@ -8322,7 +8342,7 @@ IHqlExpression * createDelayedReference(node_operator op, IHqlExpression * modul
     args.append(*LINK(record));
     args.append(*LINK(moduleMarker));
     args.append(*LINK(attr));
-    args.append(*createOpenNamedValue(no_attrname, makeVoidType(), attr->queryName())->closeExpr());
+    args.append(*createOpenNamedValue(no_attrname, makeVoidType(), attr->queryId())->closeExpr());
     if (lookupFlags & LSFignoreBase)
         args.append(*createAttribute(ignoreBaseAtom));
     if (grouping)
@@ -8371,10 +8391,10 @@ public:
         {
             if (match == visited)
             {
-                _ATOM name = expr->queryName();
-                const char * nameText = name ? name->str() : "";
+                IIdAtom * id = expr->queryId();
+                const char * idText = id ? id->str() : "";
                 ECLlocation loc(searchModule->queryProperty(_location_Atom));
-                reportError(errors, HQLERR_CycleWithModuleDefinition, loc, HQLERR_CycleWithModuleDefinition_Text, nameText);
+                reportError(errors, HQLERR_CycleWithModuleDefinition, loc, HQLERR_CycleWithModuleDefinition_Text, idText);
             }
 
 #ifdef TRANSFORM_STATS
@@ -8410,8 +8430,8 @@ public:
         case no_internalselect:
             if (expr->queryChild(1) == searchModule)
             {
-                _ATOM name = expr->queryChild(3)->queryName();
-                return getVirtualReplacement(name);
+                IIdAtom * id = expr->queryChild(3)->queryId();
+                return getVirtualReplacement(id);
             }
             break;
         }
@@ -8420,7 +8440,7 @@ public:
     }
 
 protected:
-    virtual IHqlExpression * getVirtualReplacement(_ATOM name) = 0;
+    virtual IHqlExpression * getVirtualReplacement(IIdAtom * id) = 0;
 
 protected:
     OwnedHqlExpr visited;
@@ -8439,9 +8459,9 @@ public:
     {
     }
 
-    virtual IHqlExpression * getVirtualReplacement(_ATOM name)
+    virtual IHqlExpression * getVirtualReplacement(IIdAtom * name)
     {
-        OwnedHqlExpr value = symbols.getLinkedValue(name);
+        OwnedHqlExpr value = symbols.getLinkedValue(name->lower());
         return transform(value);
     }
 
@@ -8462,9 +8482,9 @@ public:
     {
     }
 
-    virtual IHqlExpression * getVirtualReplacement(_ATOM name)
+    virtual IHqlExpression * getVirtualReplacement(IIdAtom * id)
     {
-        return paramScope->lookupSymbol(name, lookupFlags, ctx);
+        return paramScope->lookupSymbol(id, lookupFlags, ctx);
     }
 
 protected:
@@ -8586,7 +8606,7 @@ bool canBeVirtual(IHqlExpression * expr)
     return true;
 }
 
-CHqlVirtualScope::CHqlVirtualScope(_ATOM _name, const char * _fullName) 
+CHqlVirtualScope::CHqlVirtualScope(IIdAtom * _name, const char * _fullName)
 : CHqlScope(no_virtualscope, _name, _fullName)
 {
     isAbstract = false;
@@ -8600,7 +8620,7 @@ IHqlExpression *CHqlVirtualScope::addOperand(IHqlExpression * arg)
 {
     if (arg->isAttribute())
     {
-        _ATOM name = arg->queryName();
+        IAtom * name = arg->queryName();
         if (name == _virtualSeq_Atom)
         {
             if (arg->querySequenceExtra() == 0)
@@ -8670,7 +8690,7 @@ IHqlExpression *CHqlVirtualScope::clone(HqlExprArray &newkids)
 
 IHqlScope * CHqlVirtualScope::clone(HqlExprArray & children, HqlExprArray & symbols)
 {
-    CHqlScope * cloned = new CHqlVirtualScope(name, fullName);
+    CHqlScope * cloned = new CHqlVirtualScope(id, fullName);
     return cloned->cloneAndClose(children, symbols);
 }
 
@@ -8707,7 +8727,7 @@ void CHqlVirtualScope::defineSymbol(IHqlExpression * expr)
     CHqlScope::defineSymbol(expr);
 }
 
-bool CHqlVirtualScope::queryForceSymbolVirtual(_ATOM searchName, HqlLookupContext & ctx)
+bool CHqlVirtualScope::queryForceSymbolVirtual(IIdAtom * searchName, HqlLookupContext & ctx)
 {
     if (allVirtual)
         return true;
@@ -8723,7 +8743,7 @@ bool CHqlVirtualScope::queryForceSymbolVirtual(_ATOM searchName, HqlLookupContex
     return false;
 }
 
-IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitionModule, _ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitionModule, IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     ForEachChild(i, this)
     {
@@ -8742,7 +8762,7 @@ IHqlExpression * CHqlVirtualScope::lookupBaseSymbol(IHqlExpression * & definitio
     return NULL;
 }
 
-IHqlExpression *CHqlVirtualScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlVirtualScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     //Are we just trying to find out what the definition in this scope is?
     if (lookupFlags & LSFignoreBase)
@@ -8877,7 +8897,7 @@ void CHqlVirtualScope::resolveUnboundSymbols()
         IHqlExpression *cur = symbols.mapToValue(&iter.query());
         if (cur->getOperator() == no_unboundselect)
         {
-            _ATOM searchName = cur->queryName();
+            IIdAtom * searchName = cur->queryId();
             OwnedHqlExpr match;
             ForEachChild(i, this)
             {
@@ -8933,7 +8953,7 @@ public:
     }
 
     virtual void defineSymbol(IHqlExpression * expr);
-    virtual IHqlExpression *lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx);
+    virtual IHqlExpression *lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx);
     virtual IHqlScope * queryResolvedScope(HqlLookupContext * context);
 
 protected:
@@ -8971,7 +8991,7 @@ void CHqlForwardScope::defineSymbol(IHqlExpression * expr)
         CHqlVirtualScope::defineSymbol(expr);
 }
 
-IHqlExpression *CHqlForwardScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlForwardScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr resolvedSym = resolved->lookupSymbol(searchName, lookupFlags, ctx);
     if (resolvedSym && resolvedSym->getOperator() == no_processing)
@@ -9028,7 +9048,7 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
         syms.sort(compareSymbolsByName);            // Make errors consistent
         ForEachItemIn(i, syms)
         {
-            _ATOM cur = syms.item(i).queryName();
+            IIdAtom * cur = syms.item(i).queryId();
             ::Release(lookupSymbol(cur, LSFsharedOK, *activeContext));
             //Could have been fully resolved while looking up a symbol!
             if (resolvedAll)
@@ -9044,7 +9064,7 @@ IHqlScope * CHqlForwardScope::queryResolvedScope(HqlLookupContext * context)
 }
 
 
-void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName, IFileContents * contents, unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn)
+void addForwardDefinition(IHqlScope * scope, IIdAtom * symbolName, IIdAtom * moduleName, IFileContents * contents, unsigned symbolFlags, bool isExported, unsigned startLine, unsigned startColumn)
 {
     IHqlExpression * cur = createSymbol(symbolName, moduleName, NULL, NULL,
                             isExported, !isExported, symbolFlags,
@@ -9057,7 +9077,7 @@ void addForwardDefinition(IHqlScope * scope, _ATOM symbolName, _ATOM moduleName,
 
 //==============================================================================================================
 
-CHqlMultiParentScope::CHqlMultiParentScope(_ATOM _name, ...)
+CHqlMultiParentScope::CHqlMultiParentScope(IIdAtom * _name, ...)
  : CHqlScope(no_privatescope, _name, _name->str())
 {
     va_list args;
@@ -9076,7 +9096,7 @@ CHqlMultiParentScope::CHqlMultiParentScope(_ATOM _name, ...)
     va_end(args);
 }
 
-IHqlExpression *CHqlMultiParentScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression *CHqlMultiParentScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     IHqlExpression *ret = CHqlScope::lookupSymbol(searchName, lookupFlags, ctx);
     if (ret)
@@ -9107,9 +9127,9 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
         
         if(value)
         {
-            _ATOM valueName = value->queryName();
+            IIdAtom * valueId = value->queryId();
             //debug.appendf(" %s",name->str());
-            defined.setValue(valueName,value); 
+            defined.setValue(valueId->lower(),value);
         }
     }
     //PrintLog(debug.str());
@@ -9118,10 +9138,10 @@ CHqlContextScope::CHqlContextScope(IHqlScope* _scope) : CHqlScope(no_privatescop
 //==============================================================================================================
 
 static UniqueSequenceCounter parameterSequence;
-CHqlParameter::CHqlParameter(_ATOM _name, unsigned _idx, ITypeInfo *_type)
+CHqlParameter::CHqlParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *_type)
  : CHqlExpressionWithType(no_param, _type)
 {
-    name = _name;
+    id = _id;
     idx = _idx;
     infoFlags |= HEFunbound;
     uid = (idx == UnadornedParameterIndex) ? 0 : parameterSequence.next();
@@ -9138,29 +9158,29 @@ bool CHqlParameter::equals(const IHqlExpression & _other) const
     const CHqlParameter & other = static_cast<const CHqlParameter &>(_other);
     if (uid != other.uid)
         return false;
-    if ((name != other.name) || (idx != other.idx))
+    if ((id != other.id) || (idx != other.idx))
         return false;
     return true;
 }
 
-IHqlExpression * CHqlParameter::makeParameter(_ATOM _name, unsigned _idx, ITypeInfo *_type, HqlExprArray & _attrs)
+IHqlExpression * CHqlParameter::makeParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *_type, HqlExprArray & _attrs)
 {
     IHqlExpression * e;
     type_t tc = _type->getTypeCode();
     switch (tc)
     {
     case type_dictionary:
-        e = new CHqlDictionaryParameter(_name, _idx, _type);
+        e = new CHqlDictionaryParameter(_id, _idx, _type);
         break;
     case type_table:
     case type_groupedtable:
-        e = new CHqlDatasetParameter(_name, _idx, _type);
+        e = new CHqlDatasetParameter(_id, _idx, _type);
         break;
     case type_scope:
-        e = new CHqlScopeParameter(_name, _idx, _type);
+        e = new CHqlScopeParameter(_id, _idx, _type);
         break;
     default:
-        e = new CHqlParameter(_name, _idx, _type); 
+        e = new CHqlParameter(_id, _idx, _type);
         break;
     }
     ForEachItemIn(i, _attrs)
@@ -9180,19 +9200,19 @@ void CHqlParameter::sethash()
 {
     CHqlExpression::sethash();
     HASHFIELD(uid);
-    HASHFIELD(name);
+    HASHFIELD(id);
     HASHFIELD(idx);
 }
 
 IHqlExpression *CHqlParameter::clone(HqlExprArray &newkids)
 {
-    return makeParameter(name, idx, LINK(type), newkids);
+    return makeParameter(id, idx, LINK(type), newkids);
 }
 
 StringBuffer &CHqlParameter::toString(StringBuffer &ret)
 {
     ret.append('%');
-    ret.append(*name);
+    ret.append(id->str());
     ret.append('-');
     ret.append(idx);
     return ret;
@@ -9200,8 +9220,8 @@ StringBuffer &CHqlParameter::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlScopeParameter::CHqlScopeParameter(_ATOM _name, unsigned _idx, ITypeInfo *_type)
- : CHqlScope(no_param, _name, _name->str())
+CHqlScopeParameter::CHqlScopeParameter(IIdAtom * _id, unsigned _idx, ITypeInfo *_type)
+ : CHqlScope(no_param, _id, _id->str())
 {
     type = _type;
     idx = _idx;
@@ -9224,7 +9244,7 @@ bool CHqlScopeParameter::equals(const IHqlExpression & _other) const
     const CHqlScopeParameter & other = static_cast<const CHqlScopeParameter &>(_other);
     if (uid != other.uid)
         return false;
-    if ((name != other.name) || (idx != other.idx))
+    if ((id != other.id) || (idx != other.idx))
         return false;
     return (this == &_other);
 }
@@ -9232,7 +9252,7 @@ bool CHqlScopeParameter::equals(const IHqlExpression & _other) const
 IHqlExpression *CHqlScopeParameter::clone(HqlExprArray &newkids)
 {
     throwUnexpected();
-    return createParameter(name, idx, LINK(type), newkids);
+    return createParameter(id, idx, LINK(type), newkids);
 }
 
 IHqlScope * CHqlScopeParameter::clone(HqlExprArray & children, HqlExprArray & symbols)
@@ -9244,20 +9264,20 @@ void CHqlScopeParameter::sethash()
 {
     CHqlScope::sethash();
     HASHFIELD(uid);
-    HASHFIELD(name);
+    HASHFIELD(id);
     HASHFIELD(idx);
 }
 
 StringBuffer &CHqlScopeParameter::toString(StringBuffer &ret)
 {
     ret.append('%');
-    ret.append(*name);
+    ret.append(id->str());
     ret.append('-');
     ret.append(idx);
     return ret;
 }
 
-IHqlExpression * CHqlScopeParameter::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlScopeParameter::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr match = typeScope->lookupSymbol(searchName, lookupFlags|LSFfromderived, ctx);
     if (!match)
@@ -9321,7 +9341,7 @@ IHqlScope * CHqlDelayedScope::clone(HqlExprArray & children, HqlExprArray & symb
     throwUnexpected();
 }
 
-IHqlExpression * CHqlDelayedScope::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlDelayedScope::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     IHqlScope * scope = queryChild(0)->queryScope();
     if (scope)
@@ -9441,12 +9461,12 @@ StringBuffer &CHqlVariable::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlAttribute::CHqlAttribute(node_operator _op, _ATOM _name) : CHqlExpressionWithTables(_op)
+CHqlAttribute::CHqlAttribute(node_operator _op, IAtom * _name) : CHqlExpressionWithTables(_op)
 {
     name = _name;
 }
 
-CHqlAttribute *CHqlAttribute::makeAttribute(node_operator op, _ATOM name) 
+CHqlAttribute *CHqlAttribute::makeAttribute(node_operator op, IAtom * name)
 {
     CHqlAttribute* e = new CHqlAttribute(op, name);
     return e;
@@ -9502,13 +9522,13 @@ ITypeInfo * CHqlAttribute::getType()
 
 //==============================================================================================================
 
-CHqlUnknown::CHqlUnknown(node_operator _op, ITypeInfo * _type, _ATOM _name, IInterface * _extra) : CHqlExpressionWithType(_op, _type)
+CHqlUnknown::CHqlUnknown(node_operator _op, ITypeInfo * _type, IAtom * _name, IInterface * _extra) : CHqlExpressionWithType(_op, _type)
 {
     name = _name;
     extra.setown(_extra);
 }
 
-CHqlUnknown *CHqlUnknown::makeUnknown(node_operator _op, ITypeInfo * _type, _ATOM _name, IInterface * _extra) 
+CHqlUnknown *CHqlUnknown::makeUnknown(node_operator _op, ITypeInfo * _type, IAtom * _name, IInterface * _extra)
 {
     if (!_type) _type = makeVoidType();
     return new CHqlUnknown(_op, _type, _name, _extra);
@@ -9551,14 +9571,14 @@ StringBuffer &CHqlUnknown::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlSequence::CHqlSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq) : CHqlExpressionWithType(_op, _type)
+CHqlSequence::CHqlSequence(node_operator _op, ITypeInfo * _type, IAtom * _name, unsigned __int64 _seq) : CHqlExpressionWithType(_op, _type)
 {
     infoFlags |= HEFhasunadorned;
     name = _name;
     seq = _seq;
 }
 
-CHqlSequence *CHqlSequence::makeSequence(node_operator _op, ITypeInfo * _type, _ATOM _name, unsigned __int64 _seq) 
+CHqlSequence *CHqlSequence::makeSequence(node_operator _op, ITypeInfo * _type, IAtom * _name, unsigned __int64 _seq)
 {
     if (!_type) _type = makeNullType();
     return new CHqlSequence(_op, _type, _name, _seq);
@@ -9595,9 +9615,9 @@ StringBuffer &CHqlSequence::toString(StringBuffer &ret)
 
 //==============================================================================================================
 
-CHqlExternal::CHqlExternal(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_external, _type, _ownedOperands)
+CHqlExternal::CHqlExternal(IIdAtom * _id, ITypeInfo *_type, HqlExprArray &_ownedOperands) : CHqlExpressionWithType(no_external, _type, _ownedOperands)
 {
-    name = _name;
+    id = _id;
 }
 
 bool CHqlExternal::equals(const IHqlExpression &r) const
@@ -9605,9 +9625,9 @@ bool CHqlExternal::equals(const IHqlExpression &r) const
     return (this == &r);
 }
 
-CHqlExternal *CHqlExternal::makeExternalReference(_ATOM _name, ITypeInfo *_type, HqlExprArray &_ownedOperands)
+CHqlExternal *CHqlExternal::makeExternalReference(IIdAtom * _id, ITypeInfo *_type, HqlExprArray &_ownedOperands)
 {
-    return new CHqlExternal(_name, _type, _ownedOperands);
+    return new CHqlExternal(_id, _type, _ownedOperands);
 }
 
 //==============================================================================================================
@@ -9748,7 +9768,7 @@ CHqlDelayedScopeCall::CHqlDelayedScopeCall(IHqlExpression * _param, ITypeInfo * 
         addOperand(createSequence(no_attr, makeNullType(), _virtualSeq_Atom, virtualSequence.next()));
 }
 
-IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(_ATOM searchName, unsigned lookupFlags, HqlLookupContext & ctx)
+IHqlExpression * CHqlDelayedScopeCall::lookupSymbol(IIdAtom * searchName, unsigned lookupFlags, HqlLookupContext & ctx)
 {
     OwnedHqlExpr match = typeScope->lookupSymbol(searchName, lookupFlags, ctx);
     if (!match)
@@ -9769,9 +9789,14 @@ IHqlScope * CHqlDelayedScopeCall::queryConcreteScope()
     return NULL;
 }
 
-_ATOM CHqlDelayedScopeCall::queryName() const
+IAtom * CHqlDelayedScopeCall::queryName() const
 {
     return typeScope->queryName();
+}
+
+IIdAtom * CHqlDelayedScopeCall::queryId() const
+{
+    return typeScope->queryId();
 }
 
 bool CHqlDelayedScopeCall::hasBaseClass(IHqlExpression * searchBase)
@@ -9786,9 +9811,9 @@ bool CHqlDelayedScopeCall::hasBaseClass(IHqlExpression * searchBase)
 #pragma warning( disable : 4355 )
 #endif
 /* In parm: scope is linked */
-CHqlAlienType::CHqlAlienType(_ATOM _name, IHqlScope *_scope, IHqlExpression * _funcdef) : CHqlExpressionWithTables(no_type)
+CHqlAlienType::CHqlAlienType(IIdAtom * _id, IHqlScope *_scope, IHqlExpression * _funcdef) : CHqlExpressionWithTables(no_type)
 {
-    name = _name;
+    id = _id;
     scope = _scope;
     funcdef = _funcdef;
 
@@ -9858,7 +9883,7 @@ unsigned CHqlAlienType::getCardinality()
 
 IHqlExpression *CHqlAlienType::clone(HqlExprArray &newkids)
 {
-    IHqlExpression * ret = new CHqlAlienType(name, LINK(scope), LINK(funcdef));
+    IHqlExpression * ret = new CHqlAlienType(id, LINK(scope), LINK(funcdef));
     ForEachItemIn(idx2, newkids)
         ret->addOperand(&OLINK(newkids.item(idx2)));
     return ret->closeExpr();
@@ -9877,9 +9902,9 @@ unsigned CHqlAlienType::getMaxSize()
     if (size != UNKNOWN_LENGTH)
         return size;
 
-    OwnedHqlExpr maxSize = lookupSymbol(maxSizeAtom);
+    OwnedHqlExpr maxSize = lookupSymbol(maxSizeId);
     if (!maxSize)
-        maxSize.setown(lookupSymbol(maxLengthAtom));
+        maxSize.setown(lookupSymbol(maxLengthId));
     if (maxSize)
     {
         OwnedHqlExpr folded = foldHqlExpression(maxSize);
@@ -9897,30 +9922,30 @@ IHqlExpression *CHqlAlienType::queryFunctionDefinition() const
 
 IHqlExpression * CHqlAlienType::queryLoadFunction()
 {
-    return queryMemberFunc(loadAtom);
+    return queryMemberFunc(loadId);
 }
 
 IHqlExpression * CHqlAlienType::queryLengthFunction()
 {
-    OwnedHqlExpr func = lookupSymbol(physicalLengthAtom);
+    OwnedHqlExpr func = lookupSymbol(physicalLengthId);
     assertex(func);
     return func;
 }
 
 IHqlExpression * CHqlAlienType::queryStoreFunction()
 {
-    return queryMemberFunc(storeAtom);
+    return queryMemberFunc(storeId);
 }
 
-IHqlExpression * CHqlAlienType::queryFunction(_ATOM name)
+IHqlExpression * CHqlAlienType::queryFunction(IIdAtom * id)
 {
-    OwnedHqlExpr func = lookupSymbol(name);
+    OwnedHqlExpr func = lookupSymbol(id);
     if (func)
         assertex(func->getOperator() == no_funcdef);
     return func;
 }
 
-IHqlExpression * CHqlAlienType::queryMemberFunc(_ATOM search)
+IHqlExpression * CHqlAlienType::queryMemberFunc(IIdAtom * search)
 {
     OwnedHqlExpr func = lookupSymbol(search);
     assertex(func);
@@ -9929,7 +9954,7 @@ IHqlExpression * CHqlAlienType::queryMemberFunc(_ATOM search)
 }
 
 
-IHqlExpression *CHqlAlienType::lookupSymbol(_ATOM searchName)
+IHqlExpression *CHqlAlienType::lookupSymbol(IIdAtom * searchName)
 {
     HqlDummyLookupContext ctx(NULL);
     return scope->lookupSymbol(searchName, LSFpublic, ctx);
@@ -9942,15 +9967,15 @@ size32_t CHqlAlienType::getSize()
 }
 
 /* in parm _scope: linked */
-extern IHqlExpression *createAlienType(_ATOM _name, IHqlScope *_scope)
+extern IHqlExpression *createAlienType(IIdAtom * _id, IHqlScope *_scope)
 {
-    return new CHqlAlienType(_name, _scope, NULL);
+    return new CHqlAlienType(_id, _scope, NULL);
 }
 
-extern IHqlExpression *createAlienType(_ATOM name, IHqlScope * scope, HqlExprArray &newkids, IHqlExpression * funcdef)
+extern IHqlExpression *createAlienType(IIdAtom * id, IHqlScope * scope, HqlExprArray &newkids, IHqlExpression * funcdef)
 {
 //  assertex(!funcdef);     // I'm not sure what value this has...
-    IHqlExpression * ret = new CHqlAlienType(name, scope, funcdef);
+    IHqlExpression * ret = new CHqlAlienType(id, scope, funcdef);
     ForEachItemIn(idx2, newkids)
         ret->addOperand(&OLINK(newkids.item(idx2)));
     return ret->closeExpr();
@@ -10019,9 +10044,9 @@ void CHqlTemplateFunctionContext::sethash()
 
 //==============================================================================================================
 
-extern IHqlExpression *createParameter(_ATOM name, unsigned idx, ITypeInfo *type, HqlExprArray & attrs)
+extern IHqlExpression *createParameter(IIdAtom * id, unsigned idx, ITypeInfo *type, HqlExprArray & attrs)
 {
-    return CHqlParameter::makeParameter(name, idx, type, attrs);
+    return CHqlParameter::makeParameter(id, idx, type, attrs);
 }
 
 extern IHqlExpression *createValue(node_operator op)
@@ -10057,7 +10082,7 @@ extern IHqlExpression *createOpenValue(node_operator op, ITypeInfo *type)
     return new CHqlExpressionWithType(op, type);
 }
 
-extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _ATOM name)
+extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, IIdAtom * id)
 {
 #if defined(_DEBUG)
     //reports calling the wrong function if enabled.... some examples can't be fixed yet...
@@ -10079,7 +10104,7 @@ extern IHqlExpression *createOpenNamedValue(node_operator op, ITypeInfo *type, _
         }
     }
 #endif
-    return new CHqlNamedExpression(op, type, name, NULL);
+    return new CHqlNamedExpression(op, type, id, NULL);
 }
 
 extern IHqlExpression *createValue(node_operator op, IHqlExpression *p1, IHqlExpression *p2)
@@ -10184,13 +10209,13 @@ extern IHqlExpression *createBoolExpr(node_operator op, IHqlExpression *p1, IHql
     return CHqlExpressionWithType::makeExpression(op, makeBoolType(), p1, p2, p3, NULL);
 }
 
-extern IHqlExpression *createField(IAtom *name, ITypeInfo *type, HqlExprArray & _ownedOperands)
+extern IHqlExpression *createField(IIdAtom *id, ITypeInfo *type, HqlExprArray & _ownedOperands)
 {
-    IHqlExpression * field = new CHqlField(name, type, _ownedOperands);
+    IHqlExpression * field = new CHqlField(id, type, _ownedOperands);
     return field->closeExpr();
 }
 
-extern IHqlExpression *createField(IAtom *name, ITypeInfo *type, IHqlExpression *defaultValue, IHqlExpression * attrs)
+extern IHqlExpression *createField(IIdAtom *id, ITypeInfo *type, IHqlExpression *defaultValue, IHqlExpression * attrs)
 {
     HqlExprArray args;
     if (defaultValue)
@@ -10200,13 +10225,13 @@ extern IHqlExpression *createField(IAtom *name, ITypeInfo *type, IHqlExpression 
         attrs->unwindList(args, no_comma);
         attrs->Release();
     }
-    IHqlExpression* expr = new CHqlField(name, type, args);
+    IHqlExpression* expr = new CHqlField(id, type, args);
     return expr->closeExpr();
 }
 
-extern HQL_API IHqlExpression *createQuoted(const char * name, ITypeInfo *type)
+extern HQL_API IHqlExpression *createQuoted(const char * text, ITypeInfo *type)
 {
-    return CHqlVariable::makeVariable(no_quoted, name, type);
+    return CHqlVariable::makeVariable(no_quoted, text, type);
 }
 
 extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type)
@@ -10214,7 +10239,7 @@ extern HQL_API IHqlExpression *createVariable(const char * name, ITypeInfo *type
     return CHqlVariable::makeVariable(no_variable, name, type);
 }
 
-IHqlExpression *createAttribute(node_operator op, _ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
+IHqlExpression *createAttribute(node_operator op, IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     assertex(name);
     IHqlExpression * ret = CHqlAttribute::makeAttribute(op, name);
@@ -10229,7 +10254,7 @@ IHqlExpression *createAttribute(node_operator op, _ATOM name, IHqlExpression * v
     return ret->closeExpr();
 }
 
-IHqlExpression *createAttribute(node_operator op, _ATOM name, HqlExprArray & args)
+IHqlExpression *createAttribute(node_operator op, IAtom * name, HqlExprArray & args)
 {
     IHqlExpression * ret = CHqlAttribute::makeAttribute(op, name);
     ForEachItemIn(idx, args)
@@ -10237,64 +10262,64 @@ IHqlExpression *createAttribute(node_operator op, _ATOM name, HqlExprArray & arg
     return ret->closeExpr();
 }
 
-extern HQL_API IHqlExpression *createAttribute(_ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
+extern HQL_API IHqlExpression *createAttribute(IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     return createAttribute(no_attr, name, value, value2, value3);
 }
 
-extern HQL_API IHqlExpression *createAttribute(_ATOM name, HqlExprArray & args)
+extern HQL_API IHqlExpression *createAttribute(IAtom * name, HqlExprArray & args)
 {
     return createAttribute(no_attr, name, args);
 }
 
-extern HQL_API IHqlExpression *createExprAttribute(_ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
+extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     return createAttribute(no_attr_expr, name, value, value2, value3);
 }
 
-extern HQL_API IHqlExpression *createExprAttribute(_ATOM name, HqlExprArray & args)
+extern HQL_API IHqlExpression *createExprAttribute(IAtom * name, HqlExprArray & args)
 {
     return createAttribute(no_attr_expr, name, args);
 }
 
-extern HQL_API IHqlExpression *createLinkAttribute(_ATOM name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
+extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, IHqlExpression * value, IHqlExpression *value2, IHqlExpression * value3)
 {
     return createAttribute(no_attr_link, name, value, value2, value3);
 }
 
-extern HQL_API IHqlExpression *createLinkAttribute(_ATOM name, HqlExprArray & args)
+extern HQL_API IHqlExpression *createLinkAttribute(IAtom * name, HqlExprArray & args)
 {
     return createAttribute(no_attr_link, name, args);
 }
 
-extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, _ATOM name, IInterface * extra)
+extern HQL_API IHqlExpression *createUnknown(node_operator op, ITypeInfo * type, IAtom * name, IInterface * extra)
 {
     IHqlExpression * ret = CHqlUnknown::makeUnknown(op, type, name, extra);
     return ret->closeExpr();
 }
 
-extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type, _ATOM name, unsigned __int64 seq)
+extern HQL_API IHqlExpression *createSequence(node_operator op, ITypeInfo * type, IAtom * name, unsigned __int64 seq)
 {
     IHqlExpression * ret = CHqlSequence::makeSequence(op, type, name, seq);
     return ret->closeExpr();
 }
 
-IHqlExpression *createSymbol(_ATOM name, IHqlExpression *expr, unsigned exportFlags)
+IHqlExpression *createSymbol(IIdAtom * id, IHqlExpression *expr, unsigned exportFlags)
 {
-    return CHqlSimpleSymbol::makeSymbol(name, NULL, expr, NULL, exportFlags);
+    return CHqlSimpleSymbol::makeSymbol(id, NULL, expr, NULL, exportFlags);
 }
 
-IHqlExpression * createSymbol(_ATOM name, _ATOM moduleName, IHqlExpression * expr, bool exported, bool shared, unsigned symbolFlags)
+IHqlExpression * createSymbol(IIdAtom * id, IIdAtom * moduleName, IHqlExpression * expr, bool exported, bool shared, unsigned symbolFlags)
 {
-    return CHqlSimpleSymbol::makeSymbol(name, moduleName, expr, NULL, combineSymbolFlags(symbolFlags, exported, shared));
+    return CHqlSimpleSymbol::makeSymbol(id, moduleName, expr, NULL, combineSymbolFlags(symbolFlags, exported, shared));
 }
 
-IHqlExpression * createSymbol(_ATOM _name, _ATOM moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
+IHqlExpression * createSymbol(IIdAtom * _id, IIdAtom * moduleName, IHqlExpression *expr, IHqlExpression * funcdef,
                              bool exported, bool shared, unsigned symbolFlags,
                              IFileContents *fc, int lineno, int column,
                              int _startpos, int _bodypos, int _endpos)
 {
-    return CHqlNamedSymbol::makeSymbol(_name, moduleName, expr, funcdef,
+    return CHqlNamedSymbol::makeSymbol(_id, moduleName, expr, funcdef,
                              exported, shared, symbolFlags,
                              fc, lineno, column, _startpos, _bodypos, _endpos);
 }
@@ -10751,7 +10776,7 @@ protected:
                 OwnedHqlExpr newModule = transform(oldModule);
                 if (oldModule != newModule)
                 {
-                    _ATOM selectedName = expr->queryChild(3)->queryName();
+                    IIdAtom * selectedName = expr->queryChild(3)->queryId();
                     newModule.setown(checkCreateConcreteModule(ctx.errors, newModule, newModule->queryProperty(_location_Atom)));
 
                     HqlDummyLookupContext dummyctx(ctx.errors);
@@ -12626,7 +12651,7 @@ extern IHqlExpression * createTranslatedExternalCall(IErrorReceiver * errors, IH
 }
 
 
-extern IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, IHqlExpression *props)
+extern IHqlExpression *createExternalReference(IIdAtom * id, ITypeInfo *_type, IHqlExpression *props)
 {
     HqlExprArray attributes;
     if (props)
@@ -12634,12 +12659,12 @@ extern IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, IHq
         props->unwindList(attributes, no_comma);
         props->Release();
     }
-    return CHqlExternal::makeExternalReference(name, _type, attributes)->closeExpr();
+    return CHqlExternal::makeExternalReference(id, _type, attributes)->closeExpr();
 }
 
-extern IHqlExpression *createExternalReference(_ATOM name, ITypeInfo *_type, HqlExprArray & attributes)
+extern IHqlExpression *createExternalReference(IIdAtom * id, ITypeInfo *_type, HqlExprArray & attributes)
 {
-    return CHqlExternal::makeExternalReference(name, _type, attributes)->closeExpr();
+    return CHqlExternal::makeExternalReference(id, _type, attributes)->closeExpr();
 }
 
 IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
@@ -12656,7 +12681,7 @@ IHqlExpression * createExternalFuncdefFromInternal(IHqlExpression * funcdef)
         attrs.append(*createAttribute(contextSensitiveAtom));
 
     ITypeInfo * returnType = funcdef->queryType()->queryChildType();
-    OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryName(), LINK(returnType), attrs);
+    OwnedHqlExpr externalExpr = createExternalReference(funcdef->queryId(), LINK(returnType), attrs);
     return replaceChild(funcdef, 0, externalExpr);
 }
 
@@ -12921,7 +12946,7 @@ IHqlExpression * ensureActiveRow(IHqlExpression * expr)
     return createRow(no_activerow, LINK(expr->queryNormalizedSelector()));
 }
 
-IHqlExpression * ensureSerialized(IHqlExpression * expr, _ATOM serialForm)
+IHqlExpression * ensureSerialized(IHqlExpression * expr, IAtom * serialForm)
 {
     ITypeInfo * type = expr->queryType();
     Owned<ITypeInfo> serialType = getSerializedForm(type, serialForm);
@@ -12934,7 +12959,7 @@ IHqlExpression * ensureSerialized(IHqlExpression * expr, _ATOM serialForm)
     return createWrapper(no_serialize, serialType, args);
 }
 
-IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, _ATOM serialForm)
+IHqlExpression * ensureDeserialized(IHqlExpression * expr, ITypeInfo * type, IAtom * serialForm)
 {
     assertex(type->getTypeCode() != type_record);
     Owned<ITypeInfo> serialType = getSerializedForm(type, serialForm);
@@ -13026,7 +13051,7 @@ extern IHqlScope *createPrivateScope()
 
 extern IHqlScope *createPrivateScope(IHqlScope * scope)
 {
-    return new CHqlLocalScope(no_privatescope, scope->queryName(), scope->queryFullName());
+    return new CHqlLocalScope(no_privatescope, scope->queryId(), scope->queryFullName());
 }
 
 extern IHqlScope* createScope(IHqlScope* scope)
@@ -13049,9 +13074,9 @@ extern IHqlScope* createConcreteScope()
     return new CHqlLocalScope(no_concretescope, NULL, NULL);
 }
 
-extern IHqlScope* createVirtualScope(_ATOM name, const char * fullName)
+extern IHqlScope* createVirtualScope(IIdAtom * id, const char * fullName)
 {
-    return new CHqlVirtualScope(name, fullName);
+    return new CHqlVirtualScope(id, fullName);
 }
 
 extern IHqlScope* createLibraryScope()
@@ -13059,10 +13084,10 @@ extern IHqlScope* createLibraryScope()
     return new CHqlLocalScope(no_libraryscope, NULL, NULL);
 }
 
-extern IHqlRemoteScope *createRemoteScope(_ATOM name, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * text, bool lazy, IEclSource * eclSource)
+extern IHqlRemoteScope *createRemoteScope(IIdAtom * id, const char * fullName, IEclRepositoryCallback *ds, IProperties* props, IFileContents * text, bool lazy, IEclSource * eclSource)
 {
-    assertex(fullName || !name);
-    return new CHqlRemoteScope(name, fullName, ds, props, text, lazy, eclSource);
+    assertex(fullName || !id);
+    return new CHqlRemoteScope(id, fullName, ds, props, text, lazy, eclSource);
 }
 
 IHqlExpression * populateScopeAndClose(IHqlScope * scope, const HqlExprArray & children, const HqlExprArray & symbols)
@@ -13572,7 +13597,7 @@ static IHqlExpression * processPseudoWorkflow(SharedHqlExpr & expr, HqlExprArray
         }
     case no_attr:
         {
-            _ATOM name = workflow->queryName();
+            IAtom * name = workflow->queryName();
             if (name == sectionAtom)
             {
                 processSectionPseudoWorkflow(expr, workflow, allActiveParameters);
@@ -14491,7 +14516,7 @@ static bool removeVirtualAttributes(HqlExprArray & fields, IHqlExpression * cur,
                 HqlExprArray args;
                 unwindChildren(args, cur);
                 removeProperty(args, virtualAtom);
-                newField.setown(createField(cur->queryName(), targetType.getLink(), args));
+                newField.setown(createField(cur->queryId(), targetType.getLink(), args));
             }
             fields.append(*LINK(newField));
             transformer.setMapping(cur, newField);
@@ -14621,7 +14646,7 @@ IHqlExpression * querySkipDatasetMeta(IHqlExpression * dataset)
 
 //==============================================================================================================
 
-static ITypeInfo * doGetSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, _ATOM serialForm)
+static ITypeInfo * doGetSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, IAtom * serialForm)
 {
     ITypeInfo * promoted = type->queryPromotedType();
     switch (type->getTypeCode())
@@ -14669,7 +14694,7 @@ static ITypeInfo * doGetSimplifiedType(ITypeInfo * type, bool isConditional, boo
     UNIMPLEMENTED;  //i.e. doesn't make any sense....
 }
 
-ITypeInfo * getSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, _ATOM serialForm)
+ITypeInfo * getSimplifiedType(ITypeInfo * type, bool isConditional, bool isSerialized, IAtom * serialForm)
 {
     Owned<ITypeInfo> newType = doGetSimplifiedType(type, isConditional, isSerialized, serialForm);
     if (isSameBasicType(newType, type))
@@ -14764,7 +14789,7 @@ static void simplifyFileViewRecordTypes(HqlExprArray & fields, IHqlExpression * 
                 inheritAttribute(attrs, cur, xpathAtom);
                 inheritAttribute(attrs, cur, xmlDefaultAtom);
                 inheritAttribute(attrs, cur, defaultAtom);
-                newField.setown(createField(cur->queryName(), targetType.getLink(), attrs));
+                newField.setown(createField(cur->queryId(), targetType.getLink(), attrs));
             }
             fields.append(*LINK(newField));
             break;
@@ -14777,7 +14802,7 @@ static void simplifyFileViewRecordTypes(HqlExprArray & fields, IHqlExpression * 
             HqlExprArray subfields;
             StringBuffer name;
             name.append("unnamed").append(++count);
-            subfields.append(*createField(createIdentifierAtom(name), makeBoolType(), NULL, createAttribute(__ifblockAtom)));
+            subfields.append(*createField(createIdAtom(name), makeBoolType(), NULL, createAttribute(__ifblockAtom)));
             simplifyFileViewRecordTypes(subfields, cur->queryChild(1), true, needsTransform, isKey, count);
 //          fields.append(*createValue(no_ifblock, makeVoidType(), createValue(no_not, makeBoolType(), createConstant(false)), createRecord(subfields)));
             fields.append(*createValue(no_ifblock, makeNullType(), createConstant(true), createRecord(subfields)));
@@ -15082,7 +15107,7 @@ void unwindRecordAsSelects(HqlExprArray & children, IHqlExpression * record, IHq
 }
 
 
-void unwindProperty(HqlExprArray & args, IHqlExpression * expr, _ATOM name)
+void unwindProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
 {
     IHqlExpression * attr = expr->queryProperty(name);
     if (attr)
@@ -15233,7 +15258,7 @@ bool isInnerJoin(IHqlExpression * expr)
 }
 
 
-_ATOM queryJoinKind(IHqlExpression * expr)
+IAtom * queryJoinKind(IHqlExpression * expr)
 {
     unsigned max = expr->numChildren();
     for (unsigned i=4; i < max; i++)
@@ -15245,7 +15270,7 @@ _ATOM queryJoinKind(IHqlExpression * expr)
         case no_attr_link:
         case no_attr_expr:
             {
-                _ATOM name = cur->queryName();
+                IAtom * name = cur->queryName();
                 //Only allow inner joins
                 if ((name == innerAtom) || (name == leftouterAtom) || (name == rightouterAtom) ||
                     (name == fullouterAtom) || (name == leftonlyAtom) ||
@@ -15561,7 +15586,7 @@ IHqlExpression * createNullDictionary()
     return createDictionary(no_null, LINK(queryNullRecord()));
 }
 
-bool removeProperty(HqlExprArray & args, _ATOM name)
+bool removeProperty(HqlExprArray & args, IAtom * name)
 {
     bool removed = false;
     ForEachItemInRev(idx, args)
@@ -15726,7 +15751,7 @@ IHqlExpression * queryNewSelectAttrExpr()
 }
 
 //Follow inheritance structure when getting property value.
-IHqlExpression * queryRecordProperty(IHqlExpression * record, _ATOM name)
+IHqlExpression * queryRecordProperty(IHqlExpression * record, IAtom * name)
 {
     IHqlExpression * match = record->queryProperty(name);
     if (match)
@@ -16088,7 +16113,7 @@ bool isKeyedCountAggregate(IHqlExpression * aggregate)
 }
 
 
-bool getBoolProperty(IHqlExpression * expr, _ATOM name, bool dft)
+bool getBoolProperty(IHqlExpression * expr, IAtom * name, bool dft)
 {
     if (!expr)
         return dft;
@@ -16288,7 +16313,7 @@ extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements)
 
 
 
-static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, _ATOM name)
+static void safeLookupSymbol(HqlLookupContext & ctx, IHqlScope * modScope, IIdAtom * name)
 {
     try
     {
@@ -16316,23 +16341,23 @@ static void gatherAttributeDependencies(HqlLookupContext & ctx, IHqlScope * modS
     symbols.sort(compareSymbolsByName);
 
     ForEachItemIn(i, symbols)
-        safeLookupSymbol(ctx, modScope, symbols.item(i).queryName());
+        safeLookupSymbol(ctx, modScope, symbols.item(i).queryId());
 }
 
 static void gatherAttributeDependencies(HqlLookupContext & ctx, const char * item)
 {
     try
     {
-        _ATOM moduleName = NULL;
-        _ATOM attrName = NULL;
+        IIdAtom * moduleName = NULL;
+        IIdAtom * attrName = NULL;
         const char * dot = strrchr(item, '.');
         if (dot)
         {
-            moduleName = createIdentifierAtom(item, dot-item);
-            attrName = createIdentifierAtom(dot+1);
+            moduleName = createIdAtom(item, dot-item);
+            attrName = createIdAtom(dot+1);
         }
         else
-            moduleName = createIdentifierAtom(item);
+            moduleName = createIdAtom(item);
 
         OwnedHqlExpr resolved = ctx.queryRepository()->queryRootScope()->lookupSymbol(moduleName, LSFpublic, ctx);
         if (resolved)
@@ -16391,12 +16416,13 @@ extern HQL_API IPropertyTree * gatherAttributeDependencies(IEclRepository * data
 }
 
 
-_ATOM queryPatternName(IHqlExpression * expr)
+IIdAtom * queryPatternName(IHqlExpression * expr)
 {
     if (expr->getOperator() == no_pat_instance)
-        return expr->queryChild(1)->queryName();
+        return expr->queryChild(1)->queryId();
     return NULL;
 }
+
 IHqlExpression * createGroupedAttribute(ITypeInfo * type)
 {
     return createAttribute(groupedAtom, LINK((IHqlExpression *)type->queryGroupInfo()));

@@ -353,7 +353,7 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
                 IHqlExpression * cur = expr->queryChild(i);
                 if (!cur->isAttribute())
                     return 0;
-                _ATOM name = cur->queryName();
+                IAtom * name = cur->queryName();
                 //possibly implement keep as well.  (Local on a child join does nothing.)
                 if ((name != leftouterAtom) && (name != leftonlyAtom) && (name != innerAtom) && (name != allAtom) && (name != localAtom) && !isInternalAttributeName(name))
                     return 0;
@@ -856,7 +856,7 @@ void ParentExtract::beginCreateExtract(BuildCtx & ctx, bool doDeclare)
     HqlExprArray args;
     args.append(*LINK(serialization->queryBound()));
     args.append(*serialization->getFinalFixedSizeExpr());
-    translator.callProcedure(*buildctx, ensureRowAvailableAtom, args);
+    translator.callProcedure(*buildctx, ensureRowAvailableId, args);
 
     //Collect a list of cursors together... NB these are in reverse order..
     gatherActiveRows(*buildctx);
@@ -923,7 +923,7 @@ void ParentExtract::beginChildActivity(BuildCtx & declareCtx, BuildCtx & startCt
                 {
                     HqlExprArray args;
                     args.append(*LINK(src));
-                    src.setown(translator.bindTranslatedFunctionCall(getBytesFromBuilderAtom, args));
+                    src.setown(translator.bindTranslatedFunctionCall(getBytesFromBuilderId, args));
                 }
             }
 
@@ -1148,7 +1148,7 @@ void ParentExtract::gatherActiveRows(BuildCtx & ctx)
     }
 
     //MORE: Should possibly create two sets of cursors one if children are colocal, other if children aren't
-    //so colocal cursors can be used whereever possible.  Would change following to localisation != GraphNonLocal
+    //so colocal cursors can be used wherever possible.  Would change following to localisation != GraphNonLocal
     //and remove else
     if (localisation == GraphCoLocal || localisation == GraphCoNonLocal)
     {
@@ -1511,7 +1511,7 @@ void ClassEvalContext::createMemberAlias(CtxCollection & ctxs, BuildCtx & ctx, I
     assertex(ctxs.evalctx != NULL);
     translator.expandAliases(*ctxs.evalctx, value);
 
-    const _ATOM serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
+    IAtom * serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
     CHqlBoundTarget tempTarget;
     if (translator.needToSerializeToSlave(value))
     {
@@ -1538,7 +1538,7 @@ void ClassEvalContext::doCallNestedHelpers(const char * member, const char * act
 }
 
 
-void ClassEvalContext::ensureSerialized(CtxCollection & ctxs, const CHqlBoundTarget & target, _ATOM serializeForm)
+void ClassEvalContext::ensureSerialized(CtxCollection & ctxs, const CHqlBoundTarget & target, IAtom * serializeForm)
 {
     if (ctxs.serializectx)
         translator.ensureSerialized(target, *ctxs.serializectx, *ctxs.deserializectx, "*in", "out", serializeForm);
@@ -1628,7 +1628,7 @@ AliasKind ClassEvalContext::evaluateExpression(BuildCtx & ctx, IHqlExpression * 
 
 void ClassEvalContext::tempCompatiablityEnsureSerialized(const CHqlBoundTarget & tgt)
 {
-    const _ATOM serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
+    IAtom * serializeForm = internalAtom; // The format of serialized expressions in memory must match the internal serialization format
     ensureSerialized(onCreate, tgt, serializeForm);
 }
 

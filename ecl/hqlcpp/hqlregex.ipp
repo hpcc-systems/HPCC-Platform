@@ -32,7 +32,7 @@ class HqlNamedRegex : public CInterface
 {
     friend class HqlRegexExpr;
 public:
-    HqlNamedRegex(IHqlExpression * _expr, _ATOM _name, IHqlExpression * _searchExpr, node_operator _kind, bool _caseSensitive, bool _isMatched);
+    HqlNamedRegex(IHqlExpression * _expr, IAtom * _name, IHqlExpression * _searchExpr, node_operator _kind, bool _caseSensitive, bool _isMatched);
     ~HqlNamedRegex();
 
     void addBeginEnd(const ParseInformation & options);
@@ -50,8 +50,8 @@ public:
     RegexPattern * queryRootPattern();
     void insertSeparators(IHqlExpression * separator, RegexContext * ctx);
     void markDFAs(unsigned complexity);
-    bool matches(IHqlExpression * _def, _ATOM _name, bool _caseSensitive)                   { return searchExpr == _def && name == _name && caseSensitive == _caseSensitive; }
-    bool matches(IHqlExpression * _def, _ATOM _name, node_operator _op, bool _caseSensitive)    { return searchExpr == _def && name == _name && kind == _op && caseSensitive == _caseSensitive; }
+    bool matches(IHqlExpression * _def, IAtom * _name, bool _caseSensitive)                   { return searchExpr == _def && name == _name && caseSensitive == _caseSensitive; }
+    bool matches(IHqlExpression * _def, IAtom * _name, node_operator _op, bool _caseSensitive)    { return searchExpr == _def && name == _name && kind == _op && caseSensitive == _caseSensitive; }
     bool matchesDefine(IHqlExpression * name, bool _caseSensitive);
     void mergeCreateSets();
     bool queryExpandInline();
@@ -69,9 +69,9 @@ public:
 
 protected:
     unsigned numUses;
-    _ATOM name;
+    IAtom * name;
     LengthLimit limit;
-    _ATOM cachedModule;
+    IAtom * cachedModule;
     node_operator kind;
     OwnedHqlExpr searchExpr;
     OwnedHqlExpr expr;
@@ -331,8 +331,8 @@ protected:
     void insertSeparators();
     void optimizePattern();
     void optimizeSpotDFA();
-    HqlNamedRegex * queryNamed(IHqlExpression * defn, _ATOM name, node_operator op, bool caseSensitive);
-    HqlNamedRegex * createNamed(IHqlExpression * expr, _ATOM name, node_operator op, bool caseSensitive);
+    HqlNamedRegex * queryNamed(IHqlExpression * defn, IAtom * name, node_operator op, bool caseSensitive);
+    HqlNamedRegex * createNamed(IHqlExpression * expr, IAtom * name, node_operator op, bool caseSensitive);
 
 protected:
     CIArrayOf<HqlNamedRegex> named;

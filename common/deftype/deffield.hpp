@@ -30,7 +30,7 @@ interface IDefRecordElement : public IInterface
     virtual size32_t getMaxSize() const = 0;
     virtual unsigned numChildren() const = 0;
     virtual ITypeInfo *queryType() const = 0;
-    virtual _ATOM queryName() const = 0;
+    virtual IAtom * queryName() const = 0;
     virtual IDefRecordElement * queryChild(unsigned i) const = 0;
     virtual IValue * queryCompareValue() const = 0;
     virtual bool operator==(IDefRecordElement const & other) const = 0;
@@ -59,7 +59,7 @@ interface IDefRecordBuilder : public IInterface
     virtual IDefRecordElement * close() = 0;
 };
 
-extern DEFTYPE_API IDefRecordElement * createDEfield(_ATOM name, ITypeInfo * type, IDefRecordElement * record, size32_t maxSize=0);
+extern DEFTYPE_API IDefRecordElement * createDEfield(IAtom * name, ITypeInfo * type, IDefRecordElement * record, size32_t maxSize=0);
 extern DEFTYPE_API IDefRecordBuilder * createDErecord(size32_t maxSize);
 extern DEFTYPE_API IDefRecordElement * createDEifblock(IDefRecordElement * field, IValue * value, IDefRecordElement * record);
 extern DEFTYPE_API IDefRecordMeta * createDefRecordMeta(IDefRecordElement * record, unsigned numKeyed);

@@ -64,7 +64,7 @@ public:
     virtual ITypeInfo * queryPromotedType()     { return this; }    // very common implementation
     virtual ICharsetInfo * queryCharset()       { return NULL; }
     virtual ICollationInfo * queryCollation()   { return NULL; }
-    virtual _ATOM queryLocale()                 { return NULL; }
+    virtual IAtom * queryLocale()                 { return NULL; }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual unsigned getCrc();
     virtual typemod_t queryModifier()           { return typemod_none; }
@@ -143,7 +143,7 @@ protected:
 class CUnicodeTypeInfo : public CTypeInfo
 {
 public:
-    CUnicodeTypeInfo(unsigned _length, _ATOM _locale) : CTypeInfo(_length), locale(_locale) {}
+    CUnicodeTypeInfo(unsigned _length, IAtom * _locale) : CTypeInfo(_length), locale(_locale) {}
 
     virtual type_t getTypeCode() const { return type_unicode; };
     virtual unsigned getDigits() { return getStringLen(); }
@@ -159,20 +159,20 @@ public:
     virtual bool assignableFrom(ITypeInfo *t2);
 
     virtual StringBuffer &getECLType(StringBuffer & out);
-    virtual _ATOM queryLocale()         { return locale; }
+    virtual IAtom * queryLocale()         { return locale; }
     virtual const char *queryTypeName()         { return "UChar"; }
     virtual bool isInteger()                    { return false; };
     virtual bool isScalar()                     { return true; }
 
     virtual void serialize(MemoryBuffer &tgt)   { CTypeInfo::serialize(tgt); tgt.append(getStringLen()).append(locale->str()); }
 protected:
-    _ATOM locale;
+    IAtom * locale;
 };
 
 class CVarUnicodeTypeInfo : public CUnicodeTypeInfo
 {
 public:
-    CVarUnicodeTypeInfo(unsigned len, _ATOM _locale);
+    CVarUnicodeTypeInfo(unsigned len, IAtom * _locale);
     virtual type_t getTypeCode() const                { return type_varunicode; };
     virtual unsigned getStringLen()             { return length != UNKNOWN_LENGTH ? length/2-1 : UNKNOWN_LENGTH; };
 
@@ -185,7 +185,7 @@ public:
 class CUtf8TypeInfo : public CUnicodeTypeInfo
 {
 public:
-    CUtf8TypeInfo(unsigned len, _ATOM _locale) : CUnicodeTypeInfo(len, _locale) {}
+    CUtf8TypeInfo(unsigned len, IAtom * _locale) : CUnicodeTypeInfo(len, _locale) {}
 
     virtual type_t getTypeCode() const          { return type_utf8; };
     virtual unsigned getSize()                  { return UNKNOWN_LENGTH; };
@@ -849,7 +849,7 @@ public:
     virtual ITypeInfo * queryChildType()                            { return baseType->queryChildType(); }
     virtual ICharsetInfo * queryCharset()                           { return baseType->queryCharset(); }
     virtual ICollationInfo * queryCollation()                       { return baseType->queryCollation(); }
-    virtual _ATOM queryLocale()                                     { return baseType->queryLocale(); }
+    virtual IAtom * queryLocale()                                     { return baseType->queryLocale(); }
     virtual IInterface * queryLocalUngroupedSortInfo()                      { return baseType->queryLocalUngroupedSortInfo(); }
     virtual IInterface * queryGlobalSortInfo()                      { return baseType->queryGlobalSortInfo(); }
     virtual IInterface * queryGroupInfo()                           { return baseType->queryGroupInfo(); }
@@ -894,7 +894,7 @@ protected:
 class CCharsetInfo : public CInterface, implements ICharsetInfo
 {
 public:
-    CCharsetInfo(_ATOM _name, unsigned char _fillChar, _ATOM _codepage)
+    CCharsetInfo(IAtom * _name, unsigned char _fillChar, IAtom * _codepage)
     {
         name = _name;
         defaultCollation = NULL;
@@ -904,7 +904,7 @@ public:
     ~CCharsetInfo();
     IMPLEMENT_IINTERFACE
 
-    virtual _ATOM queryName()                           { return name; }
+    virtual IAtom * queryName()                           { return name; }
     virtual ICollationInfo * queryDefaultCollation();
     virtual unsigned char queryFillChar()               { return fillChar; }
     virtual char const * queryCodepageName()            { return codepage->str(); }
@@ -915,8 +915,8 @@ public:
     }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 protected:
-    _ATOM   name;
-    _ATOM   codepage;
+    IAtom *   name;
+    IAtom *   codepage;
     ICollationInfo * defaultCollation;
     unsigned char fillChar;
 };
@@ -924,11 +924,11 @@ protected:
 class CCollationInfo : public CInterface, implements ICollationInfo
 {
 public:
-    CCollationInfo(_ATOM _name) { name = _name; }
+    CCollationInfo(IAtom * _name) { name = _name; }
     ~CCollationInfo();
     IMPLEMENT_IINTERFACE
 
-    virtual _ATOM queryName()                           { return name; }
+    virtual IAtom * queryName()                           { return name; }
     virtual ICharsetInfo * getCharset();
 
     virtual void serialize(MemoryBuffer &tgt) 
@@ -937,14 +937,14 @@ public:
     }
     virtual void deserialize(MemoryBuffer &) { UNIMPLEMENTED; }
 protected:
-    _ATOM   name;
+    IAtom *   name;
 };
 
 
 class CSimpleCollationInfo : public CCollationInfo
 {
 public:
-    CSimpleCollationInfo(_ATOM _name) : CCollationInfo(_name) 
+    CSimpleCollationInfo(IAtom * _name) : CCollationInfo(_name)
     { // loose format for debug
     }
 
@@ -956,7 +956,7 @@ public:
 class CNoCaseCollationInfo : public CCollationInfo
 {
 public:
-    CNoCaseCollationInfo(_ATOM _name) : CCollationInfo(_name) {}
+    CNoCaseCollationInfo(IAtom * _name) : CCollationInfo(_name) {}
 
     virtual int compare(const char * left, const char * right, unsigned len)        { return memicmp(left, right, len); }
     virtual const char * getCompareName(bool varLength)                             { return varLength ? "stricmp" : "memicmp"; }
@@ -965,15 +965,15 @@ public:
 class CTranslationInfo : public CInterface, implements ITranslationInfo
 {
 public:
-    CTranslationInfo(_ATOM _name, ICharsetInfo * src, ICharsetInfo * tgt);
+    CTranslationInfo(IAtom * _name, ICharsetInfo * src, ICharsetInfo * tgt);
     IMPLEMENT_IINTERFACE
 
-    virtual _ATOM queryName();
+    virtual IAtom * queryName();
     virtual ICharsetInfo * querySourceCharset();
     virtual ICharsetInfo * queryTargetCharset();
 
 protected:
-    _ATOM name;
+    IAtom * name;
     Owned<ICharsetInfo> src;
     Owned<ICharsetInfo> tgt;
 };

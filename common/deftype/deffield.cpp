@@ -26,7 +26,7 @@
 
 //------------------------------------------------------------------------------------------------
 
-CDefRecordElement::CDefRecordElement(DefElemKind _kind, _ATOM _name, ITypeInfo * _type, size32_t _maxSize)
+CDefRecordElement::CDefRecordElement(DefElemKind _kind, IAtom * _name, ITypeInfo * _type, size32_t _maxSize)
 {
     kind = _kind;
     name = _name;
@@ -101,7 +101,7 @@ CDefRecordMeta::CDefRecordMeta(IDefRecordElement * _record, unsigned _numKeyed) 
 
 //------------------------------------------------------------------------------------------------
 
-IDefRecordElement * createDEfield(_ATOM name, ITypeInfo * type, IDefRecordElement * record, size32_t maxSize)
+IDefRecordElement * createDEfield(IAtom * name, ITypeInfo * type, IDefRecordElement * record, size32_t maxSize)
 {
     CDefRecordElement * elem = new CDefRecordElement(DEKfield, name, type, maxSize);
     if (record)
@@ -156,7 +156,7 @@ static void serializeElement(MemoryBuffer & target, IDefRecordElement * elem)
         }
     case DEKfield:
         {
-            _ATOM name = elem->queryName();
+            IAtom * name = elem->queryName();
             ITypeInfo * type = elem->queryType();
             size32_t maxSize = elem->getMaxSize();
             serializeAtom(target, name);
@@ -215,7 +215,7 @@ static IDefRecordElement * deserializeElement(MemoryBuffer & source)
         }
     case DEKfield:
         {
-            _ATOM name = deserializeAtom(source);
+            IAtom * name = deserializeAtom(source);
             Owned<ITypeInfo> type = deserializeType(source);
             Owned<IDefRecordElement> record = deserializeElement(source);
             size32_t maxSize;

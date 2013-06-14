@@ -72,7 +72,8 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
         return '$';
         
     /* check $ */
-    _ATOM name = createIdentifierAtom(tokenText);
+    IIdAtom * cname = createIdAtom(tokenText);
+    IAtom * name = cname->queryLower();
     if (lexer->macroParms)
     {
         StringBuffer macroval;
@@ -86,10 +87,10 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     IHqlExpression *expr; 
     //fprintf(stderr, "\nLookupSymbol %s\n",name->str());
     //Lookup expr last otherwise it leaks.
-    if ( !lookup  || lexer->macroGathering || lexer->skipping|| !(expr=lexer->lookupSymbol(name,returnToken)))
+    if ( !lookup  || lexer->macroGathering || lexer->skipping|| !(expr=lexer->lookupSymbol(cname,returnToken)))
     {
         TraceReturnToken(UNKNOWN_ID);
-        returnToken.setName(name);
+        returnToken.setId(cname);
         return UNKNOWN_ID;
     }
 
@@ -225,7 +226,7 @@ int HqlLex::lookupIdentifierToken(YYSTYPE & returnToken, HqlLex * lexer, bool lo
     if (!lexer->parserExpecting(token, activeState) && lexer->parserExpecting(UNKNOWN_ID, activeState))
     {
         returnToken.release();
-        returnToken.setName(name);
+        returnToken.setId(cname);
         token = UNKNOWN_ID;
     }
 

@@ -136,7 +136,7 @@ class THORHELPER_API RegexMatchState : public CInterface, public MatchState
 {
 public:
     RegexMatchState() : MatchState() { }
-    RegexMatchState(_ATOM _name, regexid_t _id) : MatchState(_name, _id) { }
+    RegexMatchState(IAtom * _name, regexid_t _id) : MatchState(_name, _id) { }
     RegexMatchState(RegexNamed * owner) : MatchState(owner->queryName(), owner->queryID()) {}
     IMPLEMENT_IINTERFACE
 
@@ -148,7 +148,7 @@ class THORHELPER_API RegexMatchStateSave : public RegexMatchState
 {
 public:
     RegexMatchStateSave() : RegexMatchState() { }
-    RegexMatchStateSave(_ATOM _name, regexid_t _id) : RegexMatchState(_name, _id) { }
+    RegexMatchStateSave(IAtom * _name, regexid_t _id) : RegexMatchState(_name, _id) { }
     RegexMatchStateSave(RegexNamed * owner) : RegexMatchState(owner) {}
 
 public:
@@ -161,7 +161,7 @@ class RegexStateCache
 public:
     RegexMatchState * createState(RegexNamed * def);
     RegexMatchStateSave * createStateSave(RegexNamed * def);
-    RegexMatchStateSave * createStateSave(_ATOM _name, regexid_t _id);
+    RegexMatchStateSave * createStateSave(IAtom * _name, regexid_t _id);
     void destroyState(RegexMatchState * state);
     void destroyStateSave(RegexMatchStateSave * state);
 

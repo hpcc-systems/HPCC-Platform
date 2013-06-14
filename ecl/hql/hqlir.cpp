@@ -272,7 +272,7 @@ const char * getOperatorIRText(node_operator op)
     EXPAND_CASE(no,delayedscope);
     EXPAND_CASE(no,assertconcrete);
     EXPAND_CASE(no,unboundselect);
-    EXPAND_CASE(no,unused23);
+    EXPAND_CASE(no,id);
     EXPAND_CASE(no,unused24);
     EXPAND_CASE(no,dataset_from_transform);
     EXPAND_CASE(no,childquery);
@@ -815,13 +815,14 @@ public:
 class ExprBuilderInfo
 {
 public:
-    ExprBuilderInfo() : type(0), name(NULL), sequence(0) {}
+    ExprBuilderInfo() : type(0), name(NULL), id(NULL), sequence(0) {}
 
     inline void addOperand(exprid_t id) { args.append((unsigned)id); }
 
 public:
     typeid_t type;
-    _ATOM name;
+    IAtom * name;
+    IIdAtom * id;
     unsigned __int64 sequence;
     IdArray args;
     IdArray special;
@@ -831,7 +832,7 @@ public:
 class ExprAnnotationBuilderInfo
 {
 public:
-    ExprAnnotationBuilderInfo() : expr(0), name(NULL), value(0), col(0), warning(NULL), tree(NULL) {}
+    ExprAnnotationBuilderInfo() : expr(0), name(NULL), value(0), line(0), col(0), warning(NULL), tree(NULL) {}
 
 public:
     exprid_t expr;
@@ -839,6 +840,7 @@ public:
     IECLError * warning;
     IPropertyTree * tree;
     unsigned value;
+    unsigned line;
     unsigned col;
     IdArray args;
 };
@@ -953,7 +955,8 @@ protected:
     inline void read(X & x) const { in->read(sizeof(x), &x); }
     template <class X>
     void readPacked(X & value) const { read(value); }
-    _ATOM readName();
+    IIdAtom * readSymId();
+    IAtom * readName();
 
     exprid_t readId() const;
 
@@ -1073,6 +1076,7 @@ exprid_t BinaryIRPlayer::readExpr()
 
     ExprBuilderInfo info;
     info.type = readId();
+    info.id = readSymId();
     info.name = readName();
     loop
     {
@@ -1090,7 +1094,12 @@ void BinaryIRPlayer::processReturn()
     target->addReturn(id);
 }
 
-_ATOM BinaryIRPlayer::readName()
+IIdAtom * BinaryIRPlayer::readSymId()
+{
+    return NULL;
+}
+
+IAtom * BinaryIRPlayer::readName()
 {
     return NULL;
 }
@@ -1283,13 +1292,15 @@ public:
                 line.append(" shared");
             if (info.value & ob_virtual)
                 line.append(" virtual");
+            if (info.line)
+                line.append("@").append(info.line);
             break;
         case annotate_location:
             line.append("location '").append(info.name);
             line.append("'");
-            if (info.value)
+            if (info.line)
             {
-                line.append(",").append(info.value);
+                line.append(",").append(info.line);
                 if (info.col)
                     line.append(",").append(info.col);
             }
@@ -1427,8 +1438,10 @@ protected:
     void appendExprText(node_operator op, const ExprBuilderInfo & info)
     {
         line.append(getOperatorIRText(op));
-        if (info.name)
-            line.append("#").append(info.name);
+        if (info.id)
+            line.append("#").append(info.id->str());
+        else if (info.name)
+            line.append("#").append(info.name->str());
         if (info.sequence)
             line.append("[seq(").append(info.sequence).append(")]");
 
@@ -1851,7 +1864,7 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_data:
         case type_qstring:
             info.length = type->getStringLen();
-            return target->addUnknownType(tc);
+            break;
         case type_set:
         case type_row:
         case type_pattern:
@@ -1861,12 +1874,12 @@ id_t ExpressionIRPlayer::doProcessType(ITypeInfo * type)
         case type_table:    // more??
         case type_groupedtable:
         case type_dictionary:
+        case type_function:
             {
                 CompoundTypeBuilderInfo info;
                 info.baseType = processType(type->queryChildType());
                 return target->addCompoundType(tc, info);
             }
-        case type_function:
         case type_feature:
             return target->addUnknownType(tc);
         case type_none:
@@ -1985,6 +1998,15 @@ id_t ExpressionIRPlayer::doProcessExpr(IHqlExpression * expr)
                 info.special.append(processExpr(&scopeSymbols.item(i)));
             break;
         }
+    case no_type:
+        {
+            IHqlAlienTypeInfo * alienType = queryAlienType(expr->queryType());
+            //MORE: Need to output information about members of the scope, but no functions are avaiable to generate it...
+            info.special.append(processExpr(alienType->queryLoadFunction()));
+            info.special.append(processExpr(alienType->queryLengthFunction()));
+            info.special.append(processExpr(alienType->queryStoreFunction()));
+            break;
+        }
     }
 
     if (getRequiredTypeCode(op) == type_none)
@@ -2044,15 +2066,17 @@ id_t ExpressionIRPlayer::doProcessAnnotation(IHqlExpression * expr)
     case annotate_symbol:
         {
             IHqlNamedAnnotation * annotation = static_cast<IHqlNamedAnnotation *>(expr->queryAnnotation());
-            info.name = expr->queryName()->str();
+            info.name = expr->queryId()->str();
             info.value = annotation->isExported() ? ob_exported : annotation->isShared() ? ob_shared : 0;
             if (annotation->isVirtual())
                 info.value |= ob_virtual;
+            info.line = expr->getStartLine();
+            info.col = expr->getStartColumn();
             break;
         }
     case annotate_location:
         info.name = expr->querySourcePath()->str();
-        info.value = expr->getStartLine();
+        info.line = expr->getStartLine();
         info.col = expr->getStartColumn();
         break;
     case annotate_meta:

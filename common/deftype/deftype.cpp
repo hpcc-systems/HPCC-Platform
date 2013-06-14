@@ -45,15 +45,15 @@
 //#define DATA_STRING_COMPATIBLE
 #define HASHFIELD(p) hashcode = hashc((unsigned char *) &p, sizeof(p), hashcode)
 
-static _ATOM asciiAtom;
-static _ATOM dataAtom;
-static _ATOM ebcdicAtom;
-static _ATOM utf8Atom;
-static _ATOM asciiCodepageAtom;
-static _ATOM ebcdicCodepageAtom;
-static _ATOM ascii2ebcdicAtom;
-static _ATOM ebcdic2asciiAtom;
-static _ATOM emptyAtom;
+static IAtom * asciiAtom;
+static IAtom * dataAtom;
+static IAtom * ebcdicAtom;
+static IAtom * utf8Atom;
+static IAtom * asciiCodepageAtom;
+static IAtom * ebcdicCodepageAtom;
+static IAtom * ascii2ebcdicAtom;
+static IAtom * ebcdic2asciiAtom;
+static IAtom * emptyAtom;
 static CriticalSection * typeCS;
 static TypeCache * globalTypeCache;
 
@@ -955,7 +955,7 @@ bool CUnicodeTypeInfo::assignableFrom(ITypeInfo *t2)
 
 //---------------------------------------------------------------------------
 
-CVarUnicodeTypeInfo::CVarUnicodeTypeInfo(unsigned len, _ATOM _locale) : CUnicodeTypeInfo(len, _locale) 
+CVarUnicodeTypeInfo::CVarUnicodeTypeInfo(unsigned len, IAtom * _locale) : CUnicodeTypeInfo(len, _locale)
 {
 #if UNKNOWN_LENGTH != 0
     assertex(len != 0);
@@ -1682,7 +1682,7 @@ extern DEFTYPE_API ITypeInfo *makeQStringType(int len)
     return ret;
 }
 
-extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, _ATOM locale)
+extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, IAtom * locale)
 {
     if(!locale)
         locale = emptyAtom;
@@ -1706,7 +1706,7 @@ extern DEFTYPE_API ITypeInfo *makeUnicodeType(unsigned len, _ATOM locale)
     return ret;
 }
 
-extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, _ATOM locale)
+extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, IAtom * locale)
 {
     if(!locale)
         locale = emptyAtom;
@@ -1731,7 +1731,7 @@ extern DEFTYPE_API ITypeInfo *makeVarUnicodeType(unsigned len, _ATOM locale)
     return ret;
 }
 
-extern DEFTYPE_API ITypeInfo *makeUtf8Type(unsigned len, _ATOM locale)
+extern DEFTYPE_API ITypeInfo *makeUtf8Type(unsigned len, IAtom * locale)
 {
     if(!locale)
         locale = emptyAtom;
@@ -2987,12 +2987,12 @@ ICharsetInfo * CCollationInfo::getCharset()
 
 //---------------------------------------------------------------------------
 
-CTranslationInfo::CTranslationInfo(_ATOM _name, ICharsetInfo * _src, ICharsetInfo * _tgt) : src(_src), tgt(_tgt)
+CTranslationInfo::CTranslationInfo(IAtom * _name, ICharsetInfo * _src, ICharsetInfo * _tgt) : src(_src), tgt(_tgt)
 {
     name = _name;
 }
 
-_ATOM CTranslationInfo::queryName()
+IAtom * CTranslationInfo::queryName()
 {
     return name;
 }
@@ -3061,7 +3061,7 @@ StringBuffer & CEbcdic2AsciiTranslationInfo::translate(StringBuffer & tgt, unsig
 
 //---------------------------------------------------------------------------
 
-ICharsetInfo * getCharset(_ATOM atom)
+ICharsetInfo * getCharset(IAtom * atom)
 {
     if ((atom == NULL) || (atom == asciiAtom))
     {
@@ -3090,7 +3090,7 @@ ICharsetInfo * getCharset(_ATOM atom)
     return NULL;
 }
 
-ICollationInfo * getCollation(_ATOM atom)
+ICollationInfo * getCollation(IAtom * atom)
 {
 #if _DEBUG
     const char* name = atom->str();
@@ -3232,7 +3232,7 @@ bool haveCommonLocale(ITypeInfo * type1, ITypeInfo * type2)
     return ((type1->queryLocale() == type2->queryLocale()) || hasDefaultLocale(type1) || hasDefaultLocale(type2));
 }
 
-_ATOM getCommonLocale(ITypeInfo * type1, ITypeInfo * type2)
+IAtom * getCommonLocale(ITypeInfo * type1, ITypeInfo * type2)
 {
     //for the moment, disallow binary ops unless locales identical or one is default --- may later change, e.g. to use common parent where present
     if(!hasDefaultLocale(type1))

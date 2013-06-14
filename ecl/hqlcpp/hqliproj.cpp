@@ -174,7 +174,7 @@ unsigned UsedFieldSet::getOriginalPosition(IHqlExpression * field) const
         return match;
     assertex(field->isDatarow());
     assertex(finalRecord);
-    OwnedHqlExpr originalField = finalRecord->querySimpleScope()->lookupSymbol(field->queryName());
+    OwnedHqlExpr originalField = finalRecord->querySimpleScope()->lookupSymbol(field->queryId());
     assertex(originalField && originalField != field);
     unsigned matchOriginal = fields.find(*originalField);
     assertex(matchOriginal != NotFound);
@@ -199,7 +199,7 @@ bool UsedFieldSet::contains(IHqlExpression & field) const
 #endif
 }
 
-bool UsedFieldSet::contains(_ATOM name) const
+bool UsedFieldSet::contains(IAtom * name) const
 {
     if (all)
         return true;
@@ -299,7 +299,7 @@ IHqlExpression * UsedFieldSet::createFilteredAssign(IHqlExpression * field, IHql
 
             if (createSubset)
             {
-                newField.setown(finalRecord->querySimpleScope()->lookupSymbol(field->queryName()));
+                newField.setown(finalRecord->querySimpleScope()->lookupSymbol(field->queryId()));
                 assertex(newField);
                 assertex(exception || newField != field);
 
@@ -445,7 +445,7 @@ void UsedFieldSet::calcFinalRecord(bool canPack, bool ignoreIfEmpty)
                 unwindChildren(args, &cur);
                 //MORE: Any default will now have the wrong type => remove it for the moment (ideally it would be projected)
                 removeProperty(args, defaultAtom);
-                OwnedHqlExpr newField = createField(cur.queryName(), makeRowType(newRecord->getType()), args);
+                OwnedHqlExpr newField = createField(cur.queryId(), makeRowType(newRecord->getType()), args);
                 recordFields.append(*newField.getClear());
             }
         }
@@ -1713,7 +1713,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
 
     case no_attr_expr:
         {
-            _ATOM name = expr->queryName();
+            IAtom * name = expr->queryName();
             if (name != _selectors_Atom)
                 inheritActiveFields(expr, extra, 0, expr->numChildren());
         }
@@ -2652,7 +2652,7 @@ void ImplicitProjectTransformer::calculateFieldsUsed(IHqlExpression * expr)
 
 void ImplicitProjectTransformer::logChange(const char * message, IHqlExpression * expr, const UsedFieldSet & fields)
 {
-    _ATOM exprName = expr->queryName();
+    IAtom * exprName = expr->queryName();
     if (!exprName && isCompoundSource(expr))
         exprName = expr->queryChild(0)->queryName();
 

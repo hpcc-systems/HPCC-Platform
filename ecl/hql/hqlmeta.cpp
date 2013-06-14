@@ -51,8 +51,8 @@ static IHqlExpression * cacheAnyOrderSortlist;
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
-    _ATOM groupedOrderAtom = createAtom("{group-order}");
-    _ATOM anyOrderAtom = createAtom("{any}");
+    IAtom * groupedOrderAtom = createAtom("{group-order}");
+    IAtom * anyOrderAtom = createAtom("{any}");
     cacheGroupedElement = createAttribute(groupedOrderAtom);
     cacheUnknownAttribute = createAttribute(unknownAtom);
     cacheIndeterminateAttribute = createAttribute(indeterminateAtom);
@@ -1544,7 +1544,7 @@ IHqlExpression * createMatchingDistribution(IHqlExpression * expr, const HqlExpr
     case no_attr:
     case no_attr_expr:
         {
-            _ATOM name = expr->queryName();
+            IAtom * name = expr->queryName();
             if (name == internalAtom)
             {
                 //HASH,internal - only valid if the types of the old and new sorts match exactly

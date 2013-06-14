@@ -3968,7 +3968,7 @@ public:
         case no_attr_link:
         case no_attr_expr:
             {
-                _ATOM name = expr->queryName();
+                IAtom * name = expr->queryName();
                 if (name == atmostAtom)
                     return LINK(expr);
                 else if (name == _selectors_Atom)
@@ -4439,8 +4439,8 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
                             if (expandedFilter->isConstant())
                             {
                                 //Following would be sensible, but can't call transform at this point, so replace arg, and wait for it to re-iterate
-                                _ATOM nameF = expr->queryName();
-                                _ATOM nameP = child->queryName();
+                                IIdAtom * nameF = expr->queryId();
+                                IIdAtom * nameP = child->queryId();
                                 DBGLOG("Folder: Combining FILTER %s with %s %s produces constant filter", nameF ? nameF->str() : "", getOpString(child->getOperator()), nameP ? nameP->str() : "");
                                 expandedFilter.setown(transformExpanded(expandedFilter));
                                 IValue * value = expandedFilter->queryValue();
@@ -5010,7 +5010,7 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
         {
             //The constants can only be percolated into the transform if certain conditions are met,
             //However they can always be percolated into the join condition... (test separately)
-            _ATOM joinKind = queryJoinKind(expr);
+            IAtom * joinKind = queryJoinKind(expr);
             IHqlExpression * rhs = expr->queryChild(1);
             IHqlExpression * oldCond = updated->queryChild(2);
             IHqlExpression * atmost = updated->queryProperty(atmostAtom);

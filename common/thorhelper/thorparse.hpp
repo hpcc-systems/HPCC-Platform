@@ -34,7 +34,7 @@ enum { NLPAregexStack, NLPAtomita, NLPAregexHeap };
 interface IMatchWalker : public IInterface
 {
 public:
-    virtual _ATOM queryName() = 0;
+    virtual IAtom * queryName() = 0;
     virtual unsigned queryID() = 0;
     virtual size32_t queryMatchSize() = 0;
     virtual const void * queryMatchStart() = 0;
@@ -58,18 +58,18 @@ interface IMatchedElement : public IInterface
 };
 
 class RegexNamed;
-extern _ATOM separatorTagAtom;
+extern IAtom * separatorTagAtom;
 //MORE: Remove the vmt to make constructing more efficient... use id and name fields instead.
 class THORHELPER_API MatchState
 {
 public:
     MatchState() { next = NULL; firstChild = NULL; name = NULL; id = 0; }   // other fields get filled in later.
-    MatchState(_ATOM _name, regexid_t _id) { next = NULL; firstChild = NULL; name = _name; id = _id; }  // other fields get filled in later.
+    MatchState(IAtom * _name, regexid_t _id) { next = NULL; firstChild = NULL; name = _name; id = _id; }  // other fields get filled in later.
 
-    inline _ATOM queryName()                              { return name; }
+    inline IAtom * queryName()                              { return name; }
     inline regexid_t queryID()                            { return id; }
 
-    inline void reset(_ATOM _name, regexid_t _id) { next = NULL; firstChild = NULL; name = _name; id = _id; }
+    inline void reset(IAtom * _name, regexid_t _id) { next = NULL; firstChild = NULL; name = _name; id = _id; }
 
 public:
     const byte * start;
@@ -77,7 +77,7 @@ public:
     MatchState * next;
     MatchState * firstChild;
     MatchState * parent;
-    _ATOM name;
+    IAtom * name;
     regexid_t id;
 };
 
