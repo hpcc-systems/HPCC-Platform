@@ -1032,6 +1032,7 @@ public:
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
         memsize_t running = 0;
+        unsigned runningCount = 0;
         unsigned lastId = 0;
         while (base < limit)
         {
@@ -1046,17 +1047,21 @@ public:
                 if (activityId != lastId)
                 {
                     if (lastId)
-                        map->noteMemUsage(lastId, running);
+                        map->noteMemUsage(lastId, running, runningCount);
                     lastId = activityId;
                     running = chunkSize;
+                    runningCount = 1;
                 }
                 else
+                {
                     running += chunkSize;
+                    runningCount++;
+                }
             }
             base += chunkSize;
         }
         if (lastId)
-            map->noteMemUsage(lastId, running);
+            map->noteMemUsage(lastId, running, runningCount);
     }
 
 private:
@@ -1174,20 +1179,11 @@ public:
         //This function may not give 100% accurate results if called if there are concurrent allocations/releases
         unsigned base = 0;
         unsigned limit = atomic_read(&freeBase);
-        memsize_t running = 0;
-        while (base < limit)
-        {
-            const char *block = data() + base;
-            ChunkHeader * header = (ChunkHeader *)block;
-            unsigned rowCount = atomic_read(&header->count);
-            if (ROWCOUNT(rowCount) != 0)
-                running += chunkSize;
-            base += chunkSize;
-        }
-        if (running)
+        unsigned numAllocs = queryCount()-1;
+        if (numAllocs)
         {
             unsigned activityId = getActivityId(sharedAllocatorId);
-            map->noteMemUsage(activityId, running);
+            map->noteMemUsage(activityId, numAllocs * chunkSize, numAllocs);
         }
     }
 };
@@ -1200,7 +1196,7 @@ class HugeHeaplet : public BigHeapletBase
 protected:
     unsigned allocatorId;
 
-    inline unsigned _sizeInPages() 
+    inline unsigned _sizeInPages() const
     {
         return PAGES(chunkCapacity + dataOffset(), HEAP_ALIGNMENT_SIZE);
     }
@@ -1312,7 +1308,8 @@ public:
     virtual void getPeakActivityUsage(IActivityMemoryUsageMap *map) const 
     {
         unsigned activityId = getActivityId(allocatorId);
-        map->noteMemUsage(activityId, chunkCapacity);
+        map->noteMemUsage(activityId, chunkCapacity, 1);
+        map->noteHeapUsage(chunkCapacity, RHFpacked, _sizeInPages(), chunkCapacity);
     }
 
     virtual void checkHeap() const
@@ -1330,15 +1327,29 @@ struct ActivityEntry
     memsize_t usage;
 };
 
+struct HeapEntry : public CInterface
+{
+public:
+    HeapEntry(memsize_t _allocatorSize, RoxieHeapFlags _heapFlags, memsize_t _numPages, memsize_t _memUsed) :
+        allocatorSize(_allocatorSize), heapFlags(_heapFlags), numPages(_numPages), memUsed(_memUsed)
+    {
+    }
+
+    memsize_t allocatorSize;
+    RoxieHeapFlags heapFlags;
+    memsize_t numPages;
+    memsize_t memUsed;
+};
+
 typedef MapBetween<unsigned, unsigned, ActivityEntry, ActivityEntry> MapActivityToActivityEntry;
 
 class CActivityMemoryUsageMap : public CInterface, implements IActivityMemoryUsageMap
 {
     MapActivityToActivityEntry map;
+    CIArrayOf<HeapEntry> heaps;
     memsize_t maxUsed;
     memsize_t totalUsed;
     unsigned maxActivity;
-
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1349,7 +1360,7 @@ public:
         maxActivity = 0;
     }
 
-    virtual void noteMemUsage(unsigned activityId, unsigned memUsed)
+    virtual void noteMemUsage(unsigned activityId, memsize_t memUsed, unsigned numAllocs)
     {
         totalUsed += memUsed;
         ActivityEntry *ret = map.getValue(activityId);
@@ -1357,11 +1368,11 @@ public:
         {
             memUsed += ret->usage;
             ret->usage = memUsed;
-            ret->allocations++;
+            ret->allocations += numAllocs;
         }
         else
         {
-            ActivityEntry e = {activityId, 1, memUsed};
+            ActivityEntry e = {activityId, numAllocs, memUsed};
             map.setValue(activityId, e);
         }
         if (memUsed > maxUsed)
@@ -1369,6 +1380,11 @@ public:
             maxUsed = memUsed;
             maxActivity = activityId;
         }
+    }
+
+    void noteHeapUsage(memsize_t allocatorSize, RoxieHeapFlags heapFlags, memsize_t numPages, memsize_t memUsed)
+    {
+        heaps.append(*new HeapEntry(allocatorSize, heapFlags, numPages, memUsed));
     }
 
     static int sortUsage(const void *_l, const void *_r)
@@ -1398,6 +1414,23 @@ public:
                 j--;
                 logctx.CTXLOG("%"I64F"u bytes allocated by activity %u (%u allocations)", (unsigned __int64) results[j]->usage, getRealActivityId(results[j]->activityId, allocatorCache), results[j]->allocations);
             }
+            logctx.CTXLOG("Heaps:");
+            ForEachItemIn(iHeap, heaps)
+            {
+                HeapEntry & cur = heaps.item(iHeap);
+                StringBuffer flags;
+                if (cur.heapFlags & RHFpacked)
+                    flags.append("P");
+                if (cur.heapFlags & RHFunique)
+                    flags.append("U");
+                if (cur.heapFlags & RHFvariable)
+                    flags.append("V");
+                unsigned percentUsed = cur.numPages ? (unsigned)((cur.memUsed * 100) / (cur.numPages * HEAP_ALIGNMENT_SIZE)) : 100;
+                unsigned __int64 memReserved = cur.numPages * HEAP_ALIGNMENT_SIZE;
+                logctx.CTXLOG("size: %"I64F"u [%s] reserved: %"I64F"u %u%% (%"I64F"u/%"I64F"u) used",
+                        (unsigned __int64) cur.allocatorSize, flags.str(), (unsigned __int64) cur.numPages, percentUsed, (unsigned __int64) cur.memUsed, (unsigned __int64) memReserved);
+            }
+
             logctx.CTXLOG("------------------ End of snapshot");
             delete [] results;
         }
@@ -1609,16 +1642,23 @@ public:
         return total;
     }
 
-    void getPeakActivityUsage(IActivityMemoryUsageMap * usageMap)
+    void getPeakActivityUsage(IActivityMemoryUsageMap * usageMap) const
     {
         SpinBlock c1(crit);
         BigHeapletBase *finger = active;
+        unsigned numPages = 0;
+        memsize_t numAllocs = 0;
         while (finger)
         {
-            if (finger->queryCount()!=1)
+            unsigned thisCount = finger->queryCount()-1;
+            if (thisCount != 0)
                 finger->getPeakActivityUsage(usageMap);
+            numAllocs += thisCount;
+            numPages++;
             finger = getNext(finger);
         }
+        if (numPages)
+            reportHeapUsage(usageMap, numPages, numAllocs);
     }
 
     inline bool isEmpty() const { return !active; }
@@ -1629,6 +1669,8 @@ public:
     }
 
 protected:
+    virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const = 0;
+
     inline BigHeapletBase * getNext(const BigHeapletBase * ptr) const { return ptr->next; }
     inline void setNext(BigHeapletBase * ptr, BigHeapletBase * next) const { ptr->next = next; }
 
@@ -1654,6 +1696,11 @@ public:
 
 protected:
     HugeHeaplet * allocateHeaplet(memsize_t _size, unsigned allocatorId);
+
+    virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const
+    {
+        //Already processed in HugeHeaplet::getPeakActivityUsage(IActivityMemoryUsageMap *map) const
+    }
 };
 
 class CNormalChunkingHeap : public CChunkingHeap
@@ -1665,6 +1712,11 @@ public:
     }
 
     void * doAllocate(unsigned allocatorId);
+
+    virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const
+    {
+        usageMap->noteHeapUsage(chunkSize, (RoxieHeapFlags)flags, numPages, chunkSize * numAllocs);
+    }
 
 protected:
     inline void * inlineDoAllocate(unsigned allocatorId);
@@ -1971,7 +2023,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     friend class CFixedChunkingHeap;
 
     SpinLock crit;
-    SpinLock fixedCrit;  // Should possibly be a ReadWriteLock - better with high contention, worse with low
+    mutable SpinLock fixedCrit;  // Should possibly be a ReadWriteLock - better with high contention, worse with low
     CIArrayOf<CFixedChunkingHeap> normalHeaps;
     CHugeChunkingHeap hugeHeap;
     ITimeLimiter *timeLimit;
@@ -2014,7 +2066,7 @@ public:
             size32_t rounded = roundup(prevSize+1);
             dbgassertex(ROUNDEDHEAP(rounded) == normalHeaps.ordinality());
             size32_t thisSize = ROUNDEDSIZE(rounded);
-            normalHeaps.append(*new CFixedChunkingHeap(this, _logctx, _allocatorCache, thisSize, 0));
+            normalHeaps.append(*new CFixedChunkingHeap(this, _logctx, _allocatorCache, thisSize, RHFvariable));
             prevSize = thisSize;
         }
         pageLimit = (unsigned) PAGES(_memLimit, HEAP_ALIGNMENT_SIZE);
@@ -2174,18 +2226,7 @@ public:
 
     virtual void getPeakActivityUsage()
     {
-        Owned<IActivityMemoryUsageMap> map = new CActivityMemoryUsageMap;
-        ForEachItemIn(iNormal, normalHeaps)
-            normalHeaps.item(iNormal).getPeakActivityUsage(map);
-        hugeHeap.getPeakActivityUsage(map);
-
-        SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
-        ForEachItemIn(i, fixedHeaps)
-        {
-            CChunkingHeap & fixedHeap = fixedHeaps.item(i);
-            fixedHeap.getPeakActivityUsage(map);
-        }
-
+        Owned<IActivityMemoryUsageMap> map = getActivityUsage();
         SpinBlock c1(crit);
         usageMap.setown(map.getClear());
     }
@@ -2461,6 +2502,7 @@ public:
                     if (numHeapPages == atomic_read(&totalHeapPages))
                     {
                         logctx.CTXLOG("RoxieMemMgr: Memory limit exceeded - current %u, requested %u, limit %u", pageCount, numRequested, pageLimit);
+                        reportMemoryUsage(false);
                         throw MakeStringException(ROXIEMM_MEMORY_LIMIT_EXCEEDED, "memory limit exceeded");
                     }
                 }
@@ -2522,6 +2564,22 @@ protected:
             }
         }
         return NULL;
+    }
+
+    IActivityMemoryUsageMap * getActivityUsage() const
+    {
+        Owned<IActivityMemoryUsageMap> map = new CActivityMemoryUsageMap;
+        ForEachItemIn(iNormal, normalHeaps)
+            normalHeaps.item(iNormal).getPeakActivityUsage(map);
+        hugeHeap.getPeakActivityUsage(map);
+
+        SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
+        ForEachItemIn(i, fixedHeaps)
+        {
+            CChunkingHeap & fixedHeap = fixedHeaps.item(i);
+            fixedHeap.getPeakActivityUsage(map);
+        }
+        return map.getClear();
     }
 
     CFixedChunkingHeap * createFixedHeap(size32_t size, unsigned activityId, unsigned flags)
@@ -2606,6 +2664,22 @@ protected:
     virtual void removeRowBuffer(IBufferedRowCallback * callback)
     {
         callbacks.removeRowBuffer(callback);
+    }
+
+    virtual void reportMemoryUsage(bool peak) const
+    {
+        if (peak)
+        {
+            if (usageMap)
+                usageMap->report(logctx, allocatorCache);
+        }
+        else
+        {
+            logctx.CTXLOG("RoxieMemMgr: pageLimit=%u peakPages=%u dataBuffs=%u dataBuffPages=%u possibleGoers=%u rowMgr=%p",
+                          pageLimit, peakPages, dataBuffs, dataBuffPages, atomic_read(&possibleGoers), this);
+            Owned<IActivityMemoryUsageMap> map = getActivityUsage();
+            map->report(logctx, allocatorCache);
+        }
     }
 
     virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags)

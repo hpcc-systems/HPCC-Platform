@@ -409,6 +409,7 @@ enum RoxieHeapFlags
     RHFhasdestructor    = 0x0002,
     RHFunique           = 0x0004,  // create a separate fixed size allocator
     RHFoldfixed         = 0x0008,  // Don't create a special fixed size heap for this
+    RHFvariable         = 0x0010,  // only used for tracing
 };
 
 // Variable size aggregated link-counted Roxie (etc) row manager
@@ -431,6 +432,7 @@ interface IRowManager : extends IInterface
     virtual IVariableRowHeap * createVariableRowHeap(unsigned activityId, unsigned roxieHeapFlags) = 0;            // should this be passed the initial size?
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
+    virtual void reportMemoryUsage(bool peak) const = 0;
     virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
     virtual memsize_t getExpectedFootprint(memsize_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
 };
@@ -444,7 +446,8 @@ interface ITimeLimiter
 
 interface IActivityMemoryUsageMap : public IInterface
 {
-    virtual void noteMemUsage(unsigned activityId, unsigned memUsed) = 0;
+    virtual void noteMemUsage(unsigned activityId, memsize_t memUsed, unsigned numAllocs) = 0;
+    virtual void noteHeapUsage(memsize_t allocatorSize, RoxieHeapFlags heapFlags, memsize_t memReserved, memsize_t memUsed) = 0;
     virtual void report(const IContextLogger &logctx, const IRowAllocatorCache *allocatorCache) = 0;
 };
 
