@@ -316,8 +316,9 @@ void addSlaveChannel(unsigned channel, unsigned level, bool suspended)
     IPropertyTree *ci = createPTree("RoxieSlaveProcess");
     ci->setPropInt("@channel", channel);
     ci->setPropBool("@suspended", suspended);
-    ci->setPropInt("@subChannel", numSlaves[channel]);
+    ci->setPropInt("@subChannel", numSlaves[channel]);   // Alternatively could probably use replication level as subchannel ?
     suspendedChannels[channel] = suspended;
+    assertex(!replicationLevel[channel]);  // implies channel repeated, caught above
     replicationLevel[channel] = level;
     ccdChannels->addPropTree("RoxieSlaveProcess", ci);
 }
@@ -913,7 +914,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
         }
         Owned<IPropertyTreeIterator> slaves = topology->getElements("./RoxieSlaveProcess");
-        unsigned slaveCount = 0;
         IpAddress *primaries = new IpAddress[numChannels+1];    // check each channel has a different primary, if possible. Leaks on fatal errors, but who cares
         ForEach(*slaves)
         {
@@ -934,10 +934,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     if (isMe)
                         isCCD = true;
                     if (!replicationLevel)
-                    {
                         primaries[channel] = slaveIp;
-                        slaveCount++;
-                    }
                     addChannel(channel, replicationLevel, isMe, suspended, slaveIp);
                     if (isMe)
                         joinMulticastChannel(channel);
@@ -953,7 +950,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         for (unsigned n = 1; n < numActiveChannels; n++)
         {
-            if (primaries[n].isNull())
+            if (!numSlaves[n])
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - no slaves for channel %d", n);
             if (checkPrimaries)
             {
