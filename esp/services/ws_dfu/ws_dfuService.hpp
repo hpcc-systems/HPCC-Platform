@@ -111,7 +111,7 @@ private:
     bool checkDescription(const char *description, const char *descriptionFilter);
     void getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr);
     void xsltTransformer(const char* xsltPath,StringBuffer& source,StringBuffer& returnStr);
-    bool onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName,const char* ClusterName,const char* ActionType, bool nodelete, StringBuffer& returnStr);
+    bool onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, const char* ClusterName, const char* ActionType, StringBuffer& returnStr);
     bool checkFileContent(IEspContext &context, IUserDescriptor* udesc, const char * logicalName, const char * cluster);
     void getRoxieClusterConfig(char const * clusterType, char const * clusterName, char const * processName, StringBuffer& netAddress, int& port);
     //bool getRoxieQueriesForFile(const char* logicalName, const char* cluster, StringArray& roxieQueries);

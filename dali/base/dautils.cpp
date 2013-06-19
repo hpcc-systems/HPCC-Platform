@@ -722,9 +722,12 @@ const char *CDfsLogicalFileName::get(bool removeforeign) const
     return ret;
 }
 
-StringBuffer &CDfsLogicalFileName::get(StringBuffer &str,bool removeforeign) const
+StringBuffer &CDfsLogicalFileName::get(StringBuffer &str, bool removeforeign, bool withCluster) const
 {
-    return str.append(get(removeforeign));
+    str.append(get(removeforeign));
+    if (withCluster && cluster.length())
+        str.append("@").append(cluster);
+    return str;
 }
 
 

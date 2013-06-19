@@ -750,16 +750,6 @@ dfuplus action=dspray srcname=le::imagedb
 
                     <entry>The logical name of the file to remove.</entry>
                   </row>
-
-                  <row>
-                    <entry><emphasis><emphasis><emphasis>nodelete</emphasis>
-                    </emphasis></emphasis></entry>
-
-                    <entry>A boolean flag (0 | 1) indicating whether to
-                    physically delete the file in addition to removing its
-                    listing from the DFU. If omitted, the default is
-                    0—physically delete the file.</entry>
-                  </row>
                 </tbody>
               </tgroup>
             </informaltable> Example:</para>

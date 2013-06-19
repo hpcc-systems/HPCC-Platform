@@ -886,14 +886,6 @@ int CDfuPlusHelper::rundafs()
 
 int CDfuPlusHelper::remove()
 {
-    bool nodelete = false;
-    const char* ndstr = NULL;
-    if((ndstr = globals->queryProp("nodelete")) != NULL)
-    {
-        if(strcmp(ndstr, "1") == 0)
-        nodelete = true;
-    }
-
     StringArray files;
     const char* name = globals->queryProp("name");
     const char* names = globals->queryProp("names");
@@ -960,7 +952,6 @@ int CDfuPlusHelper::remove()
     
     Owned<IClientDFUArrayActionRequest> req = dfuclient->createDFUArrayActionRequest();
     req->setType("Delete");
-    req->setNoDelete(nodelete);
     req->setLogicalFiles(files);
 
     Owned<IClientDFUArrayActionResponse> resp = dfuclient->DFUArrayAction(req);

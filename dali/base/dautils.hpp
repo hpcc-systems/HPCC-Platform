@@ -105,7 +105,7 @@ public:
     StringBuffer &getCluster(StringBuffer &cname) const { return cname.append(cluster); }
 
     const char *get(bool removeforeign=false) const;
-    StringBuffer &get(StringBuffer &str,bool removeforeign=false) const;
+    StringBuffer &get(StringBuffer &str,bool removeforeign=false, bool withCluster=false) const;
     const char *queryTail() const;
     StringBuffer &getTail(StringBuffer &buf) const;
 

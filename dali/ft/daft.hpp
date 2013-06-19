@@ -72,7 +72,6 @@ interface IDistributedFileSystem : public IInterface
     virtual offset_t getSize(IDistributedFile * file,
                              bool forceget=false,                               // if true gets physical size (ignores cached attribute)
                              bool dontsetattr=true) = 0;                        // if true doesn't set attribute when physical size got
-    virtual bool remove(IDistributedFile * file,const char *clustername=NULL,IMultiException *mexcept=NULL, unsigned timeoutms=INFINITE) = 0;
     virtual bool compress(IDistributedFile * file) = 0;                                                  
     virtual offset_t getCompressedSize(IDistributedFile * part) = 0;
 

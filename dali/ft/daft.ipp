@@ -42,7 +42,6 @@ public:
 
 //operations on a single file.
     virtual offset_t getSize(IDistributedFile * file,bool forceget,bool dontsetattr);
-    virtual bool remove(IDistributedFile * file,const char *cluster=NULL,IMultiException *mexcept=NULL, unsigned timeoutms=INFINITE);
     virtual bool compress(IDistributedFile * file);                                                  
     virtual offset_t getCompressedSize(IDistributedFile * part);
 
