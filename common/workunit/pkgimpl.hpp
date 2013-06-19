@@ -426,7 +426,10 @@ public:
                 Owned<IReferencedFileIterator> refFiles = filelist->getFiles();
                 ForEach(*refFiles)
                 {
-                    VStringBuffer fullname("%s/%s", queryid, refFiles->query().getLogicalName());
+                    IReferencedFile &rf = refFiles->query();
+                    if (rf.getFlags() & RefFileInPackage)
+                        continue;
+                    VStringBuffer fullname("%s/%s", queryid, rf.getLogicalName());
                     unmatchedFiles.append(fullname);
                 }
 
