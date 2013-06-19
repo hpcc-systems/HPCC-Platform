@@ -49,7 +49,6 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="dataDirectory" type="absolutePath" use="required"/>
             <xs:attribute name="numThreads" type="xs:nonNegativeInteger" use="optional" default="30">
               <xs:annotation>
                 <xs:appinfo>
@@ -105,7 +104,13 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="dataDirectory" type="absolutePath" use="required"/>
+            <xs:attribute name="level" type="xs:nonNegativeInteger" use="optional" default="0">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Replication level of this slave</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
           </xs:complexType>
         </xs:element>
         <xs:element name="ACL" maxOccurs="unbounded">

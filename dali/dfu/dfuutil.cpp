@@ -454,6 +454,7 @@ class CFileCloner
         {
             StringBuffer s;
             dstfdesc->queryProperties().setProp("@cloneFrom", srcdali->endpoint().getUrlStr(s).str());
+            dstfdesc->queryProperties().setProp("@cloneFromDir", srcfdesc->queryDefaultDir());
             unsigned numClusters = srcfdesc->numClusters();
             for (unsigned clusterNum = 0; clusterNum < numClusters; clusterNum++)
             {
@@ -538,7 +539,8 @@ public:
             break;
         }
         StringBuffer defdir1;
-        grp1.setown(queryNamedGroupStore().lookup(_cluster1,defdir1));
+        GroupType groupType;
+        grp1.setown(queryNamedGroupStore().lookup(_cluster1, defdir1, groupType));
         if (!grp1)
             throw MakeStringException(-1,"Cannot find cluster %s",_cluster1);
         if (defdir1.length())
@@ -547,7 +549,7 @@ public:
             spec2 = spec1;
             cluster2.set(_cluster2);
             StringBuffer defdir2;
-            grp2.setown(queryNamedGroupStore().lookup(_cluster2,defdir2));
+            grp2.setown(queryNamedGroupStore().lookup(_cluster2, defdir2, groupType));
             if (!grp2)
                 throw MakeStringException(-1,"Cannot find cluster %s",_cluster2);
             spec2.setRepeatedCopies(CPDMSRP_lastRepeated,true); // only TLK on cluster2

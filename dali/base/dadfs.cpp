@@ -3628,7 +3628,7 @@ public:
         if (newbasedir)
             diroverride = newbasedir;
 
-        const char *myBase = queryBaseDirectory(false,os);
+        const char *myBase = queryBaseDirectory(0, os);
         StringBuffer baseDir, newPath;
         makePhysicalPartName(logicalName.get(), 0, 0, newPath, false, os, diroverride);
         if (!getBase(directory, newPath, baseDir))
@@ -6069,16 +6069,48 @@ public:
 
 #define GROUP_CACHE_INTERVAL (1000*60)
 
+static const char *translateGroupType(GroupType groupType)
+{
+    switch (groupType)
+    {
+        case grp_thor:
+            return "Thor";
+        case grp_roxie:
+            return "Roxie";
+        case grp_roxiefarm:
+            return "RoxieFarm";
+        case grp_hthor:
+            return "hthor";
+        default:
+            return NULL;
+    }
+}
+
+static GroupType translateGroupType(const char *groupType)
+{
+    if (strieq(groupType, "Thor"))
+        return grp_thor;
+    else if (strieq(groupType, "Roxie"))
+        return grp_roxie;
+    else if (strieq(groupType, "RoxieFarm"))
+        return grp_roxiefarm;
+    else if (strieq(groupType, "hthor"))
+        return grp_hthor;
+    else
+        return grp_unknown;
+}
+
 class CNamedGroupCacheEntry: public CInterface
 {
 public:
     Linked<IGroup> group;
     StringAttr name;
-    StringAttr groupdir;
+    StringAttr groupDir;
     unsigned cachedtime;
+    GroupType groupType;
 
-    CNamedGroupCacheEntry(IGroup *_group, const char *_name, const char *_dir)
-    : group(_group), name(_name), groupdir(_dir)
+    CNamedGroupCacheEntry(IGroup *_group, const char *_name, const char *_dir, GroupType _groupType)
+    : group(_group), name(_name), groupDir(_dir), groupType(_groupType)
     {
         cachedtime = msTick();
     }
@@ -6098,7 +6130,7 @@ public:
         defaultTimeout = INFINITE;
     }
 
-    IGroup *dolookup(const char *logicalgroupname,IRemoteConnection *conn, StringBuffer *dirret)
+    IGroup *dolookup(const char *logicalgroupname,IRemoteConnection *conn, StringBuffer *dirret, GroupType &groupType)
     {
         SocketEndpointArray epa;
         StringBuffer gname(logicalgroupname);
@@ -6149,6 +6181,7 @@ public:
             logicalgroupname = gname.str();
         }
         StringAttr groupdir;
+        GroupType type;
         bool cached = false;
         unsigned timeNow = msTick();
         {
@@ -6166,12 +6199,14 @@ public:
                     if (range.length()==0)
                     {
                         if (dirret)
-                            dirret->append(entry.groupdir);
+                            dirret->append(entry.groupDir);
+                        groupType = entry.groupType;
                         return entry.group.getLink();
                     }
                     // there is a range so copy to epa
                     entry.group->getSocketEndpoints(epa);
-                    groupdir.set(entry.groupdir);
+                    groupdir.set(entry.groupDir);
+                    type = entry.groupType;
                     break;
                 }
             }
@@ -6185,7 +6220,7 @@ public:
                 s+=2;
                 if (*s) {
                     Owned<INode> dali = createINode(eps.str());
-                    if (!dali || !getRemoteGroup(dali, s, FOREIGN_DALI_TIMEOUT, groupdir, epa))
+                    if (!dali || !getRemoteGroup(dali, s, FOREIGN_DALI_TIMEOUT, groupdir, type, epa))
                         return NULL;
                 }
             }
@@ -6207,6 +6242,7 @@ public:
             if (!pt)
                 return NULL;
             groupdir.set(pt->queryProp("@dir"));
+            type = translateGroupType(pt->queryProp("@kind"));
             Owned<IPropertyTreeIterator> pe2 = pt->getElements("Node");
             ForEach(*pe2) {
                 SocketEndpoint ep(pe2->query().queryProp("@ip"));
@@ -6217,7 +6253,7 @@ public:
         if (!cached)
         {
             CriticalBlock block(cachesect);
-            cache.append(*new CNamedGroupCacheEntry(ret, gname, groupdir));
+            cache.append(*new CNamedGroupCacheEntry(ret, gname, groupdir, type));
         }
         if (range.length())
         {
@@ -6269,17 +6305,19 @@ public:
         }
         if (dirret)
             dirret->append(groupdir);
+        groupType = type;
         return ret.getClear();
     }
 
     IGroup *lookup(const char *logicalgroupname)
     {
-        return dolookup(logicalgroupname,NULL,NULL);
+        GroupType dummy;
+        return dolookup(logicalgroupname, NULL, NULL, dummy);
     }
 
-    IGroup *lookup(const char *logicalgroupname, StringBuffer &dir)
+    IGroup *lookup(const char *logicalgroupname, StringBuffer &dir, GroupType &groupType)
     {
-        return dolookup(logicalgroupname,NULL,&dir);
+        return dolookup(logicalgroupname, NULL, &dir, groupType);
     }
 
     INamedGroupIterator *getIterator()
@@ -6346,7 +6384,7 @@ public:
         lname.append(name);
     }
     
-    void add(const char *logicalgroupname,IGroup *group,bool cluster,const char *dir)
+    void add(const char *logicalgroupname, IGroup *group, bool cluster, const char *dir, GroupType groupType)
     {
         StringBuffer name(logicalgroupname);
         name.toLowerCase();
@@ -6360,13 +6398,13 @@ public:
             CriticalBlock block(cachesect);
             cache.kill();
             if (group)
-                cache.append(*new CNamedGroupCacheEntry(group, name.str(), dir));
+                cache.append(*new CNamedGroupCacheEntry(group, name.str(), dir, groupType));
         }
     }
 
     void remove(const char *logicalgroupname)
     {
-        add(logicalgroupname,NULL,false,NULL);
+        add(logicalgroupname, NULL, false, NULL, grp_unknown);
     }
 
     bool find(IGroup *grp, StringBuffer &gname, bool add)
@@ -6438,7 +6476,8 @@ public:
     }
 
 private:
-    bool getRemoteGroup(const INode *foreigndali, const char *gname, unsigned foreigndalitimeout, StringAttr &groupdir, SocketEndpointArray &epa)
+    bool getRemoteGroup(const INode *foreigndali, const char *gname, unsigned foreigndalitimeout,
+                           StringAttr &groupdir, GroupType &type, SocketEndpointArray &epa)
     {
         StringBuffer lcname(gname);
         gname = lcname.trim().toLowerCase().str();
@@ -6465,6 +6504,7 @@ private:
         Owned<IPropertyTree> pt = createPTree(mb);
         Owned<IPropertyTreeIterator> pe = pt->getElements("Node");
         groupdir.set(pt->queryProp("@dir"));
+        type = translateGroupType(pt->queryProp("@kind"));
         ForEach(*pe) {
             SocketEndpoint ep(pe->query().queryProp("@ip"));
             epa.append(ep);
@@ -6486,7 +6526,8 @@ bool CNamedGroupIterator::match()
             const char *name = pe->query().queryProp("@name");
             if (!name||!*name)
                 return false;
-            Owned<IGroup> lgrp = groupStore->dolookup(name,conn,NULL);
+            GroupType dummy;
+            Owned<IGroup> lgrp = groupStore->dolookup(name, conn, NULL, dummy);
             if (lgrp) {
                 if (exactmatch)
                     return lgrp->equals(matchgroup);
@@ -7740,7 +7781,6 @@ class CInitGroups
         grp->setProp("@name", name);
     }
 
-    enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_roxiefarm, grp_hthor };
     IGroup *getGroupFromCluster(GroupType groupType, IPropertyTree &cluster)
     {
         SocketEndpointArray eps;
@@ -7787,24 +7827,20 @@ class CInitGroups
                 {
                     Owned<IPropertyTreeIterator> channels;
                     channels.setown(node.getElements("RoxieChannel"));
-                    unsigned j = 0;
-                    unsigned mindrive = (unsigned)-1;
+                    unsigned thisNodePrimaryChannel = 0;
                     ForEach(*channels) {
-                        unsigned k = channels->query().getPropInt("@number");
-                        const char * dir = channels->query().queryProp("@dataDirectory");
-                        unsigned d = dir?getPathDrive(dir):0;
-                        if (d<mindrive) {
-                            j = k;
-                            mindrive = d;
-                        }
+                        unsigned channel = channels->query().getPropInt("@number");
+                        unsigned level = channels->query().getPropInt("@level", 0);
+                        if (level == 0)  // level 0 means primary copy
+                            thisNodePrimaryChannel = channel;
                     }
-                    if (j==0) {
+                    if (thisNodePrimaryChannel==0) {
                         ERRLOG("Cannot construct roxie cluster %s, no channel for node",cluster.queryProp("@name"));
                         return NULL;
                     }
-                    while (eps.ordinality()<j)
+                    while (eps.ordinality()<thisNodePrimaryChannel)
                         eps.append(nullep);
-                    eps.item(j-1) = ep;
+                    eps.item(thisNodePrimaryChannel-1) = ep;
                     break;
                 }
                 case grp_thor:
@@ -7914,13 +7950,9 @@ class CInitGroups
                 realCluster = false;
                 break;
             case grp_roxie:
-                defDir = cluster.queryProp("@slaveDataDir");
-                if (!defDir||!*defDir)
-                    defDir = cluster.queryProp("@baseDataDir");
                 gname.append(cluster.queryProp("@name"));
                 break;
             case grp_roxiefarm:
-                defDir = cluster.queryProp("@dataDirectory");
                 break;
             default:
                 throwUnexpected();
