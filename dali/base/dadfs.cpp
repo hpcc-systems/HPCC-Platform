@@ -6055,6 +6055,8 @@ static const char *translateGroupType(GroupType groupType)
 
 static GroupType translateGroupType(const char *groupType)
 {
+    if (!groupType)
+        return grp_unknown;
     if (strieq(groupType, "Thor"))
         return grp_thor;
     else if (strieq(groupType, "Roxie"))
