@@ -672,6 +672,7 @@ int EspHttpBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         case sub_serv_index:
             return onGetIndex(context, request, response, serviceName.str());
         case sub_serv_files:
+            checkInitEclIdeResponse(request, response);
             return onGetFile(context, request, response, pathEx.str());
         case sub_serv_itext:
             return onGetItext(context, request, response, pathEx.str());
@@ -1050,11 +1051,13 @@ int EspHttpBinding::onGetFile(IEspContext &context, CHttpRequest* request, CHttp
 {
     return onGetNotFound(context, request,  response, NULL);
 }
+
 int EspHttpBinding::onGetItext(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *path)
 {
     StringBuffer title;
     request->getParameter("text", title);
     StringBuffer content;
+    checkInitEclIdeResponse(request, response, &content);
     content.append("<html><head>");
     if(title.length() > 0)
         content.appendf("<title>%s</title>", title.str());
@@ -1071,6 +1074,7 @@ int EspHttpBinding::onGetIframe(IEspContext &context, CHttpRequest* request, CHt
     StringBuffer title;
     request->getParameter("esp_iframe_title", title);
     StringBuffer content;
+    checkInitEclIdeResponse(request, response, &content);
     content.append("<html><head>");
     if(title.length() > 0)
         content.appendf("<title>%s</title>", title.str());

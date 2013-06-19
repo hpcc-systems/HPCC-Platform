@@ -300,4 +300,23 @@ protected:
     const char* queryAuthMethod() {return m_authmethod.str(); }
 };
 
+inline bool isEclIdeRequest(CHttpRequest *request)
+{
+    StringBuffer userAgent;
+    return strstr(request->getHeader("User-Agent", userAgent), "eclide/") != NULL;
+}
+
+inline void initEclIdeResponse(CHttpResponse* response, StringBuffer *content = NULL)
+{
+    response->addHeader("X-UA-Compatible", "IE=edge");
+    if (content)
+        content->append("<!DOCTYPE html>"); //may be safe for all browsers? but better to be safe for now?
+}
+
+inline void checkInitEclIdeResponse(CHttpRequest *request, CHttpResponse* response, StringBuffer *content = NULL)
+{
+    if (isEclIdeRequest(request))
+        initEclIdeResponse(response, content);
+}
+
 #endif //_SOAPBIND_HPP__
