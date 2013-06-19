@@ -153,9 +153,10 @@ static IPropertyTree *addNamedPropTree(IPropertyTree *parent,const char *sub,con
     return LINK(ret);
 }
 
-const char *normalizeLFN(const char *s,StringBuffer &tmp)
+const char *normalizeLFN(const char *s,StringBuffer &tmp, IUserDescriptor *user)
 { 
     CDfsLogicalFileName dlfn;
+    dlfn.setUserDescriptor(user);
     dlfn.set(s);
     return dlfn.get(tmp).str();
 }
@@ -943,7 +944,7 @@ public:
     bool isSuperFile( const char *logicalname, IUserDescriptor *user, INode *foreigndali, unsigned timeout);
 
     void promoteSuperFiles(unsigned numsf,const char **sfnames,const char *addsubnames,bool delsub,bool createonlyonesuperfile,IUserDescriptor *user, unsigned timeout, StringArray &outunlinked);
-    ISimpleSuperFileEnquiry * getSimpleSuperFileEnquiry(const char *logicalname,const char *title,unsigned timeout);
+    ISimpleSuperFileEnquiry * getSimpleSuperFileEnquiry(const char *logicalname,const char *title,IUserDescriptor *udesc,unsigned timeout);
     bool getFileSuperOwners(const char *logicalname, StringArray &owners);
 
     IDFSredirection & queryRedirection() { return *redirection; }
@@ -1346,7 +1347,7 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
         if (!trackedFile)
         {
             StringBuffer tmp;
-            name = normalizeLFN(name, tmp);
+            name = normalizeLFN(name, tmp, udesc);
             trackedFile.setown(new CTransactionFile(*this, tmp.str(), file));
             trackedFiles.replace(*trackedFile.getLink());
             trackedFilesByName.replace(*trackedFile.getLink());
@@ -1565,7 +1566,7 @@ public:
     IDistributedFile *findFile(const char *name)
     {
         StringBuffer tmp;
-        name = normalizeLFN(name, tmp);
+        name = normalizeLFN(name, tmp, udesc);
         CTransactionFile *trackedFile = trackedFilesByName.find(tmp.str());
         if (!trackedFile)
             return NULL;
@@ -4843,7 +4844,7 @@ public:
     unsigned findSubFile(const char *name)
     {
         StringBuffer lfn;
-        normalizeLFN(name,lfn);
+        normalizeLFN(name,lfn, udesc);
         ForEachItemIn(i,subfiles) 
             if (stricmp(subfiles.item(i).queryLogicalName(),lfn.str())==0)
                 return i;
@@ -9997,6 +9998,7 @@ class CLightWeightSuperFileConn: public CInterface, implements ISimpleSuperFileE
     bool readonly;
     IArrayOf<IRemoteConnection> children;
     unsigned defaultTimeout;
+    Owned<IUserDescriptor> udesc;
 
     static StringBuffer &getSubPath(StringBuffer &path,unsigned idx)
     {
@@ -10078,10 +10080,11 @@ public:
 
     IMPLEMENT_IINTERFACE;
     
-    CLightWeightSuperFileConn(unsigned _defaultTimeout)
+    CLightWeightSuperFileConn(unsigned _defaultTimeout, IUserDescriptor *_udesc)
     {
         defaultTimeout = _defaultTimeout;
         readonly = false;
+        udesc.setown(_udesc);
     }
 
     bool connect(CDistributedFileDirectory *parent,const char *title, const char *name, bool _readonly, bool *autocreate, unsigned timeout)
@@ -10159,7 +10162,7 @@ public:
         if (n!=NotFound)
             return n;
         StringBuffer lfn;
-        normalizeLFN(subname,lfn);
+        normalizeLFN(subname,lfn, udesc);
         Owned<IPropertyTreeIterator> iter = lock.queryRoot()->getElements("SubFile");
         ForEach(*iter) {
             if (stricmp(iter->query().queryProp("@name"),lfn.str())==0) {
@@ -10281,9 +10284,9 @@ void CDistributedFileDirectory::promoteSuperFiles(unsigned numsf,const char **sf
 }
 
 
-ISimpleSuperFileEnquiry * CDistributedFileDirectory::getSimpleSuperFileEnquiry(const char *logicalname,const char *title,unsigned timeout)
+ISimpleSuperFileEnquiry * CDistributedFileDirectory::getSimpleSuperFileEnquiry(const char *logicalname,const char *title,IUserDescriptor *udesc,unsigned timeout)
 {
-    Owned<CLightWeightSuperFileConn> ret = new CLightWeightSuperFileConn(defaultTimeout);
+    Owned<CLightWeightSuperFileConn> ret = new CLightWeightSuperFileConn(defaultTimeout,udesc);
     if (ret->connect(this,title,logicalname,true,NULL,timeout))
         return ret.getClear();
     return NULL;
