@@ -1089,7 +1089,7 @@ public:
                 f->getXrefInfo(*xref, logctx);
             }
         }
-        toXML(xref, reply);
+        toXML(xref, reply, 1);
     }
     virtual void resetQueryTimings()
     {

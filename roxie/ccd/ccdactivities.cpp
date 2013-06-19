@@ -5349,15 +5349,17 @@ public:
         try  // operations does not want any missing file errors to be fatal, or throw traps - just log it
         {
             bool isOpt = _graphNode.getPropBool("att[@name='_isOpt']/@value") || pretendAllOpt;
-            if (queryNodeIndexName(_graphNode))
+            const char *fileName = queryNodeFileName(_graphNode);
+            const char *indexName = queryNodeIndexName(_graphNode);
+            if (indexName && (!fileName || !streq(indexName, fileName)))
             {
-                indexfile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeIndexName(_graphNode), isOpt, true, _queryFactory.queryWorkUnit()));
+                indexfile.setown(_queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, _queryFactory.queryWorkUnit()));
                 if (indexfile)
                     keyArray.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, queryFactory.queryChannel(), queryFactory.getEnableFieldTranslation()));
             }
-            if (queryNodeFileName(_graphNode))
+            if (fileName)
             {
-                datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode), isOpt, true, _queryFactory.queryWorkUnit()));
+                datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, _queryFactory.queryWorkUnit()));
                 if (datafile)
                     fileArray.setown(datafile->getIFileIOArray(isOpt, queryFactory.queryChannel()));
             }
