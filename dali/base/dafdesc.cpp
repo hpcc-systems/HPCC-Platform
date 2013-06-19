@@ -1919,25 +1919,25 @@ public:
         {
             if (!done)
                 done = 1;
-            bool resetDefaultDir=false;
+            StringAttr oldDefaultDir;
             StringBuffer baseDir1;
             while (clusters.ordinality()>done)
             {
                 clusters.item(clusters.ordinality()-1).getBaseDir(baseDir1.clear(),SepCharBaseOs(getPathSepChar(directory)));
 
                 // if baseDir is leading component this file's default directory..
-                if (directory.length()>=baseDir1.length() && 0==strncmp(directory, baseDir1, baseDir1.length()) &&
+                if (!oldDefaultDir.length() && directory.length()>=baseDir1.length() && 0==strncmp(directory, baseDir1, baseDir1.length()) &&
                     (directory.length()==baseDir1.length() || isPathSepChar(directory[baseDir1.length()])))
-                    resetDefaultDir = true;
+                    oldDefaultDir.set(baseDir1.str());
                 clusters.remove(clusters.ordinality()-1);
             }
-            if (resetDefaultDir && clusters.ordinality())
+            if (oldDefaultDir.length() && clusters.ordinality())
             {
                 StringBuffer baseDir2;
                 clusters.item(0).getBaseDir(baseDir2.clear(), SepCharBaseOs(getPathSepChar(directory)));
                 StringBuffer newDir(baseDir2.str());
-                if (directory.length()>baseDir1.length())
-                    newDir.append(directory.get()+baseDir1.length());
+                if (directory.length()>oldDefaultDir.length())
+                    newDir.append(directory.get()+oldDefaultDir.length());
                 directory.set(newDir.str());
             }
         }

@@ -1159,10 +1159,10 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
             if (j>0)
             { // 2nd pass, now we want to skip superfiles and the files which cannot do the lookup.
 
-                if (NotFound != superFileNames.find(filename))
+                if (superFileNames.contains(filename))
                     continue;
 
-                if (NotFound != filesCannotBeDeleted.find(filename))
+                if (filesCannotBeDeleted.contains(filename))
                     continue;
             }
 

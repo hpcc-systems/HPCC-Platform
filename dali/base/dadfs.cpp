@@ -2162,7 +2162,8 @@ class CFileChangeWriteLock
     Owned<IPropertyTree> &root;
     unsigned timeoutMs, prevMode;
 public:
-    CFileChangeWriteLock(Owned<IRemoteConnection> &_conn, unsigned _timeoutMs, Owned<IPropertyTree> &_root) : conn(_conn), timeoutMs(_timeoutMs), root(_root)
+    CFileChangeWriteLock(Owned<IRemoteConnection> &_conn, unsigned _timeoutMs, Owned<IPropertyTree> &_root)
+        : conn(_conn), timeoutMs(_timeoutMs), root(_root)
     {
         prevMode = conn->queryMode();
         unsigned newMode = (prevMode & ~RTM_LOCKBASIC_MASK) | RTM_LOCK_WRITE;
@@ -2773,9 +2774,6 @@ protected:
                 Owned<IFileDescriptor> fdesc = getFileDescriptor(clusterName);
                 fdesc->serialize(mb);
                 fileDescCopy.setown(deserializeFileDescriptor(mb));
-
-                const char *dir = fileDescCopy->queryDefaultDir();
-
             }
 
             bool removeFile=true;
@@ -2875,7 +2873,7 @@ protected:
                 }
             }
         } afor(fileDesc, mexcept);
-        afor.islazy = 0 != fileDesc->queryProperties().getPropInt("@lazy");
+        afor.islazy = fileDesc->queryProperties().getPropBool("@lazy");
         afor.For(fileDesc->numParts(),10,false,true);
         return afor.ok;
     }
@@ -5583,14 +5581,14 @@ public:
 
     virtual bool removeCluster(const char *clustername)
     {
-        bool tf=false;
+        bool clusterRemoved=false;
         CriticalBlock block (sect);
         clusterscache.clear();
         ForEachItemIn(i,subfiles) {
             IDistributedFile &f=subfiles.item(i);
-            tf |= f.removeCluster(clustername);
+            clusterRemoved |= f.removeCluster(clustername);
         }       
-        return tf;
+        return clusterRemoved;
     }
 
     void setPreferredClusters(const char *clusters)
