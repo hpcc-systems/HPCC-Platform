@@ -817,7 +817,7 @@
               </listitem>
             </orderedlist></para>
 
-          <para></para>
+          <para> </para>
         </sect3>
 
         <sect3 role="brk">
@@ -1477,7 +1477,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
 
             <programlisting>sudo /etc/init.d/hpcc-init start</programlisting>
 
-            <para> </para>
+            <para></para>
 
             <informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
