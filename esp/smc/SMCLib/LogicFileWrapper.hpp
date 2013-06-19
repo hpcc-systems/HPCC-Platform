@@ -47,7 +47,7 @@ public:
     IMPLEMENT_IINTERFACE;
     LogicFileWrapper();
     virtual ~LogicFileWrapper();
-    bool doDeleteFile(const char* name, const char *cluster, bool nodelete, StringBuffer& returnStr, IUserDescriptor* udesc = NULL);
+    bool doDeleteFile(const char* name, const char *cluster, StringBuffer& returnStr, IUserDescriptor* udesc = NULL);
     bool doCompressFile(const char* name,StringBuffer& returnStr, IUserDescriptor* udesc = 0);
     void FindClusterName(const char* logicalName,StringBuffer& returnCluster, IUserDescriptor* udesc = 0);
 
