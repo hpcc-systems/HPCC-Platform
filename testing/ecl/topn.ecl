@@ -66,3 +66,18 @@ output(topn(i3, 1, -l, best('d'), local));      // expect {'d',4}
 b1 := topn(g3, 2, l, best('a'));
 output(sort(b1, l, d));     // expect {'a',1},{'a',9'},{'a',6},{'a',8},{'d',11}
 output(table(b1, { count(group) }));        // expect {2,2,1}
+
+
+
+r1 := { unsigned i; };
+r2 := { unsigned i, unsigned num, dataset(r1) children; };
+ds := dataset([
+    { 1, 1, [{1},{2},{3}] },
+    { 2, 3, [{100},{20},{3}] },
+    { 4, 2, [{50},{12},{76}] }], r2);
+r2 t(r2 l) := TRANSFORM
+    SELF.children := TOPN(l.children, l.num, i);
+    SELF := l;
+END;
+p := PROJECT(ds, t(LEFT));
+output(p);					// expect {1,1,{1}} {2,3,{3,20,100}} {4,2,{50}}
