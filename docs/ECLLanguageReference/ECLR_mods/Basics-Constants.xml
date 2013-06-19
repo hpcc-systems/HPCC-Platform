@@ -25,7 +25,7 @@
 STRING20 MyString3 := 'Fred\\Ginger\'s Place';
                     //evaluated as: "Fred\Ginger's Place"</programlisting>
 
-    <para>Other available escape characters are: </para>
+    <para>Other available escape characters are:</para>
 
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
@@ -35,31 +35,42 @@ STRING20 MyString3 := 'Fred\\Ginger\'s Place';
 
           <tbody>
             <row>
-              <entry><emphasis>\t</emphasis></entry>
+              <entry><emphasis role="code">\t</emphasis></entry>
 
               <entry>tab</entry>
             </row>
 
             <row>
-              <entry><emphasis>\n</emphasis></entry>
+              <entry><emphasis role="code">\n</emphasis></entry>
 
               <entry>new line</entry>
             </row>
 
             <row>
-              <entry><emphasis>\r</emphasis></entry>
+              <entry><emphasis role="code">\r</emphasis></entry>
 
               <entry>carriage return</entry>
             </row>
 
             <row>
-              <entry><emphasis>\nnn</emphasis></entry>
+              <entry><emphasis role="code">\nnn</emphasis></entry>
 
               <entry>3 octal digits (for any other character)</entry>
+            </row>
+
+            <row>
+              <entry><emphasis role="code">\uhhhh</emphasis></entry>
+
+              <entry>lowercase "u" followed by 4 hexadecimal digits (for any
+              other UNICODE-only character)</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
+
+    <programlisting>MyString1 := 'abcd'; 
+MyString2 := U'abcd\353';    // becomes 'abcdë'
+</programlisting>
 
     <para><emphasis role="bold">Hexadecimal<indexterm>
         <primary>Hexadecimal</primary>
@@ -86,8 +97,9 @@ STRING20 MyString3 := 'Fred\\Ginger\'s Place';
     character. Characters between the quotes are utf8-encoded and the type of
     the constant is UNICODE.</para>
 
-    <programlisting>MyUnicodeString := U'abcd'; // same as: (UNICODE)'abcd'
-MyUnicodeString := U'abcd\353'; // becomes 'abcdë'</programlisting>
+    <programlisting>MyUnicodeString1 := U'abcd';        // same as: (UNICODE)'abcd'
+MyUnicodeString2 := U'abcd\353';    // becomes 'abcdë'
+MyUnicodeString3 := U'abcd\u00EB'; // becomes 'abcdë'</programlisting>
 
     <para><emphasis role="bold">VARSTRING string constants<indexterm>
         <primary>VARSTRING string constants</primary>
