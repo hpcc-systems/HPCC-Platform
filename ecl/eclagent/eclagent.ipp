@@ -363,6 +363,7 @@ private:
     bool isRemoteWorkunit;
     bool resolveFilesLocally;
     bool writeResultsToStdout;
+    Owned<IUserDescriptor> standAloneUDesc;
     outputFmts outputFmt;
     unsigned __int64 stopAfter;
     CriticalSection wusect;
@@ -454,7 +455,7 @@ public:
     void setDebugPaused();
     void setDebugRunning();
     void setBlockedOnPersist(const char * logicalName);
-    void setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkunit, bool _resolveFilesLocally, bool _writeResultsToStdout, outputFmts _outputFmt);
+    void setStandAloneOptions(bool _isStandAloneExe, bool _isRemoteWorkunit, bool _resolveFilesLocally, bool _writeResultsToStdout, outputFmts _outputFmt, IUserDescriptor *_standAloneUDesc);
     inline bool needToLockWorkunit() { return !isStandAloneExe; }           //If standalone exe then either no dali, or a unique remote workunit.
 
     virtual void setResultInt(const char * stepname, unsigned sequence, __int64);
