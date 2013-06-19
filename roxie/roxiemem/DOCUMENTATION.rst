@@ -10,11 +10,18 @@ This memory manager started life as the memory manager which was only used for t
 original design goals:
 
 * Support link counted rows.
-* Provide efficient allocation of rows.
+* Be as fast as possible on allocate and deallocate of small rows.
 * Allow rows serialized from slaves to be used directly without being cloned first.
-* Restrict the amount of memory a given roxie query can allocate.
+* Allow the memory used by a single query, or by all queries combined, to be limited, with graceful recovery.
 * Isolate roxie queries from one another, so that one query can't bring
   down all the rest by allocating too much memory.
+* Allow all the memory used by a query to be guaranteed to get freed when the query finishes, thus reducing the
+  possibility of memory leaks.
+* Predictable behaviour with no pathogenic cases.
+
+(Note that efficient usage of memory does not appear on that list - the expectation when the memory
+manager was first designed was that Roxie queries would use minimal amounts of memory and speed was
+more important.  Some subsequent changes e.g., Packed heaps help mitigate that.)
 
 The basic design is to reserve (but not commit) a single large block of memory in the virtual address space.  This
 memory is subdivided into "pages".  (These are not the same as the os virtual memory pages.  The memory manager pages
@@ -88,16 +95,18 @@ one of these memory blocks needs to be expanded you need to be careful:
   which is used to atomically update the pointer so it always remains thead safe.
 
 
-Repacking rows
-==============
+Compacting heaps
+================
 Occasionally you have processes which read a large number of rows and then filter them so only a few are still
 held in memory.  Rows tend to be allocated in sequence through the heap pages, which can mean those few remaining
 rows are scattered over many pages.  If they could all be moved to a single page it would free up a significant
 amount of memory.
 
-The memory manager contains a function to pack a set of rows into a smaller number of pages.
+The memory manager contains a function to pack a set of rows into a smaller number of pages: IRowManager->compactRows().
 
-*MORE: Document how we fix this!*
+This works by iterating through each of the rows in a list.  If the row belongs to a heap that could be compacted,
+and isn't part of a full heaplet, then the row is moved.  Since subsequent rows tend to be allocated from the same
+heaplet this has the effect of compacting the rows.
 
 Rules
 =====
