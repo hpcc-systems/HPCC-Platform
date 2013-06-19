@@ -1111,7 +1111,7 @@ static bool includesFieldsOutsideGrouping(IHqlExpression * distribution, const H
     case no_constant:
         return false;
     case no_trim:
-        if (distribution->hasProperty(leftAtom) || distribution->hasProperty(allAtom))
+        if (distribution->hasAttribute(leftAtom) || distribution->hasAttribute(allAtom))
             return false;
         return includesFieldsOutsideGrouping(distribution->queryChild(0), groups);
     case no_attr:
@@ -1341,7 +1341,7 @@ IHqlExpression * convertSubSortToGroupedSort(IHqlExpression * expr)
     IHqlExpression * newOrder = expr->queryChild(1);
     IHqlExpression * grouping = expr->queryChild(2);
 
-    assertex(!isGrouped(dataset) || expr->hasProperty(globalAtom));
+    assertex(!isGrouped(dataset) || expr->hasAttribute(globalAtom));
     OwnedHqlExpr attr = isLocalActivity(expr) ? createLocalAttribute() : NULL;
     OwnedHqlExpr grouped = createDatasetF(no_group, LINK(dataset), LINK(grouping), LINK(attr), NULL);
 

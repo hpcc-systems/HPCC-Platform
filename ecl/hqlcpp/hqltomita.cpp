@@ -1207,7 +1207,7 @@ void TomitaContext::createSteps(TomRule * self, TomProduction * production, IHql
                 canExpand = isToken(def, expandTokens);
             if (!canExpand)
             {
-                if (expr->hasProperty(_function_Atom))
+                if (expr->hasAttribute(_function_Atom))
                     createSteps(self, production, def, expandTokens);
                 else
                 {
@@ -1420,7 +1420,7 @@ void TomitaContext::generateLexer()
         throwError1(HQLERR_TomitaPatternTooComplex, s.str());
     }
 
-    IHqlExpression * separator = expr->queryProperty(separatorAtom);
+    IHqlExpression * separator = expr->queryAttribute(separatorAtom);
     if (separator)
     {
         RegexContext regex2(expr, wu(), translatorOptions, timeReporter, NLPAregexStack);
@@ -1433,7 +1433,7 @@ void TomitaContext::generateLexer()
     else
         parser.skipDfa.setEmpty();
 
-    IHqlExpression * terminator = expr->queryProperty(terminatorAtom);
+    IHqlExpression * terminator = expr->queryAttribute(terminatorAtom);
     if (terminator)
         addLexerTerminator(terminator->queryChild(0));
 

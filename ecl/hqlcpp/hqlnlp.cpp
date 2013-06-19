@@ -168,10 +168,10 @@ NlpParseContext::NlpParseContext(IHqlExpression * _expr, IWorkUnit * _wu, const 
     }
 
     info.charSize = (info.type == type_unicode) ? sizeof(UChar) : sizeof(char);
-    IHqlExpression * sepAttr = expr->queryProperty(separatorAtom);
+    IHqlExpression * sepAttr = expr->queryAttribute(separatorAtom);
     if (sepAttr)
         info.separator.set(sepAttr->queryChild(0));
-    info.caseSensitive = !expr->hasProperty(noCaseAtom);        // default true.
+    info.caseSensitive = !expr->hasAttribute(noCaseAtom);        // default true.
     info.dfaRepeatMax = options.dfaRepeatMax;
     info.dfaRepeatMaxScore = options.dfaRepeatMaxScore;
     info.uidBase = getUniqueId();
@@ -449,13 +449,13 @@ static void getOptions(IHqlExpression * expr, INlpParseAlgorithm::MatchAction & 
 {
     matchAction = INlpParseAlgorithm::NlpMatchAll;
     scanAction = INlpParseAlgorithm::NlpScanNext;
-    if (expr->hasProperty(firstAtom))       matchAction = INlpParseAlgorithm::NlpMatchFirst;
-    if (expr->hasProperty(allAtom))         matchAction = INlpParseAlgorithm::NlpMatchAll;
+    if (expr->hasAttribute(firstAtom))       matchAction = INlpParseAlgorithm::NlpMatchFirst;
+    if (expr->hasAttribute(allAtom))         matchAction = INlpParseAlgorithm::NlpMatchAll;
 
-    if (expr->hasProperty(noScanAtom))      scanAction = INlpParseAlgorithm::NlpScanNone;
-    if (expr->hasProperty(scanAtom))        scanAction = INlpParseAlgorithm::NlpScanNext;
-    if (expr->hasProperty(scanAllAtom))     scanAction = INlpParseAlgorithm::NlpScanAll;
-    if (expr->hasProperty(wholeAtom))       scanAction = INlpParseAlgorithm::NlpScanWhole;
+    if (expr->hasAttribute(noScanAtom))      scanAction = INlpParseAlgorithm::NlpScanNone;
+    if (expr->hasAttribute(scanAtom))        scanAction = INlpParseAlgorithm::NlpScanNext;
+    if (expr->hasAttribute(scanAllAtom))     scanAction = INlpParseAlgorithm::NlpScanAll;
+    if (expr->hasAttribute(wholeAtom))       scanAction = INlpParseAlgorithm::NlpScanWhole;
 }
 
 void NlpParseContext::getDebugText(StringBuffer & s, unsigned detail)
@@ -491,16 +491,16 @@ void NlpParseContext::setParserOptions(INlpParseAlgorithm & parser)
     INlpParseAlgorithm::ScanAction scanAction;
     getOptions(expr, matchAction, scanAction);
 
-    IHqlExpression * keep = expr->queryProperty(keepAtom);
+    IHqlExpression * keep = expr->queryAttribute(keepAtom);
     unsigned keepLimit = keep ? (unsigned)keep->queryChild(0)->queryValue()->getIntValue() : 0;
-    IHqlExpression * atmost = expr->queryProperty(atmostAtom);
+    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
     unsigned atmostLimit = atmost ? (unsigned)atmost->queryChild(0)->queryValue()->getIntValue() : 0;
-    IHqlExpression * maxLength = expr->queryProperty(maxLengthAtom);
+    IHqlExpression * maxLength = expr->queryAttribute(maxLengthAtom);
     size32_t maxLengthValue = maxLength ? (unsigned)maxLength->queryChild(0)->queryValue()->getIntValue() : DEFAULT_PATTERN_MAX_LENGTH;
 
     parser.setOptions(matchAction, scanAction, info.inputFormat(), keepLimit, atmostLimit);
-    parser.setChoose(expr->hasProperty(minAtom), expr->hasProperty(maxAtom), expr->hasProperty(bestAtom), !expr->hasProperty(manyAtom));
-    parser.setJoin(expr->hasProperty(notMatchedAtom), expr->hasProperty(notMatchedOnlyAtom));
+    parser.setChoose(expr->hasAttribute(minAtom), expr->hasAttribute(maxAtom), expr->hasAttribute(bestAtom), !expr->hasAttribute(manyAtom));
+    parser.setJoin(expr->hasAttribute(notMatchedAtom), expr->hasAttribute(notMatchedOnlyAtom));
     parser.setLimit(maxLengthValue);
 }
 
@@ -616,8 +616,8 @@ void HqlCppTranslator::doBuildParseSearchText(BuildCtx & classctx, IHqlExpressio
 void HqlCppTranslator::doBuildParseExtra(BuildCtx & classctx, IHqlExpression * expr)
 {
     StringBuffer flags;
-    if (expr->hasProperty(groupAtom)) flags.append("|PFgroup");
-    if (expr->hasProperty(parallelAtom)) flags.append("|PFparallel");
+    if (expr->hasAttribute(groupAtom)) flags.append("|PFgroup");
+    if (expr->hasAttribute(parallelAtom)) flags.append("|PFparallel");
 
     if (flags.length())
         doBuildUnsignedFunction(classctx, "getFlags", flags.str()+1);
@@ -687,7 +687,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityParse(BuildCtx & ctx, IHqlExpr
     //This will become conditional on the flags....
     unsigned startPrepareTime = msTick();
     ITimeReporter * reporter = options.addTimingToWorkunit ? timeReporter : NULL;
-    if (expr->hasProperty(tomitaAtom))
+    if (expr->hasAttribute(tomitaAtom))
         nlpParse = createTomitaContext(expr, code->workunit, options, reporter);
     else
     {

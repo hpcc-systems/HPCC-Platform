@@ -52,7 +52,7 @@ static IHqlExpression * optimizedReplaceSelector(IHqlExpression * expr, IHqlExpr
             IHqlExpression * lhs = expr->queryChild(0);
             IHqlExpression * field = expr->queryChild(1);
             OwnedHqlExpr newLhs;
-            if (expr->hasProperty(newAtom))
+            if (expr->hasAttribute(newAtom))
             {
                 newLhs.setown(optimizedReplaceSelector(lhs, oldDataset, newDataset));
             }
@@ -1155,7 +1155,7 @@ static IHqlExpression * getTrivialSelect(IHqlExpression * expr, IHqlExpression *
 
 IHqlExpression * transformTrivialSelectProject(IHqlExpression * select)
 {
-    IHqlExpression * newAttr = select->queryProperty(newAtom);
+    IHqlExpression * newAttr = select->queryAttribute(newAtom);
     if (!newAttr)
         return NULL;
 

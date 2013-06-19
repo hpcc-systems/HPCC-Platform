@@ -435,7 +435,7 @@ IHqlExpression * mapInternalFunctionParameters(IHqlExpression * expr)
             case type_unicode:
             case type_utf8:
             case type_varunicode:
-                if (!expr->hasProperty(constAtom))
+                if (!expr->hasAttribute(constAtom))
                     return appendOwnedOperand(expr, createAttribute(constAtom));
                 break;
             }

@@ -1279,11 +1279,11 @@ void WsWuInfo::getEclSchemaFields(IArrayOf<IEspECLSchemaItem>& schemas, IHqlExpr
         }
     case no_field:
         {
-            if (expr->hasProperty(__ifblockAtom))
+            if (expr->hasAttribute(__ifblockAtom))
                 break;
             ITypeInfo * type = expr->queryType();
             IAtom * name = expr->queryName();
-            IHqlExpression * nameAttr = expr->queryProperty(namedAtom);
+            IHqlExpression * nameAttr = expr->queryAttribute(namedAtom);
             StringBuffer outname;
             if (nameAttr && nameAttr->queryChild(0) && nameAttr->queryChild(0)->queryValue())
                 nameAttr->queryChild(0)->queryValue()->getStringValue(outname);

@@ -334,7 +334,7 @@ void CContainerInfo::calcCachedSize(const SizeStruct & offset, SizeStruct & size
     if (cachedSize.isEmpty())
     {
         IHqlExpression * record = column->queryRecord();
-        if (record->hasProperty(_nonEmpty_Atom))
+        if (record->hasAttribute(_nonEmpty_Atom))
             cachedSize.addFixed(1);
     }
 
@@ -533,7 +533,7 @@ void CMemberInfo::doBuildSkipInput(HqlCppTranslator & translator, BuildCtx & ctx
 
 IHqlExpression * CMemberInfo::createSelfPeekDeserializer(HqlCppTranslator & translator, IHqlExpression * helper)
 {
-    IHqlExpression * size = column->queryAttribute(EPsize);
+    IHqlExpression * size = column->queryProperty(EPsize);
     LinkedHqlExpr maxSize = size->queryChild(2);
     if (!maxSize || maxSize->isAttribute())
         maxSize.setown(getSizetConstant(MAX_RECORD_SIZE));
@@ -777,12 +777,12 @@ void CMemberInfo::getXPath(StringBuffer & out)
 {
     if (container)
         container->getContainerXPath(out);
-    IHqlExpression * xpath = column->queryProperty(xpathAtom);
+    IHqlExpression * xpath = column->queryAttribute(xpathAtom);
     if (xpath)
         xpath->queryChild(0)->queryValue()->getStringValue(out);
     else
     {
-        IHqlExpression * named = column->queryProperty(namedAtom);
+        IHqlExpression * named = column->queryAttribute(namedAtom);
         if (named)
             named->queryChild(0)->queryValue()->getStringValue(out);
         else
@@ -883,7 +883,7 @@ void CContainerInfo::buildClear(HqlCppTranslator & translator, BuildCtx & ctx, I
 
     if (children.ordinality() == 0)
     {
-        if (column->queryRecord()->hasProperty(_nonEmpty_Atom))
+        if (column->queryRecord()->hasAttribute(_nonEmpty_Atom))
         {
             //Clear on an empty record that has the _nonEmpty_attrbute clears the implicit byte
             Owned<ITypeInfo> dummyType = makeIntType(1, false);
@@ -1033,12 +1033,12 @@ void CContainerInfo::getContainerXPath(StringBuffer & out)
     if (column->getOperator() == no_field)
     {
         StringBuffer temp;
-        IHqlExpression * xpath = column->queryProperty(xpathAtom);
+        IHqlExpression * xpath = column->queryAttribute(xpathAtom);
         if (xpath)
             xpath->queryChild(0)->queryValue()->getStringValue(temp);
         else
         {
-            IHqlExpression * named = column->queryProperty(namedAtom);
+            IHqlExpression * named = column->queryAttribute(namedAtom);
             if (named)
                 named->queryChild(0)->queryValue()->getStringValue(temp);
             else
@@ -2379,7 +2379,7 @@ bool CVirtualColumnInfo::isFixedSize()
 
 void CVirtualColumnInfo::buildColumnExpr(HqlCppTranslator & translator, BuildCtx & ctx, IReferenceSelector * selector, CHqlBoundExpr & bound)
 {
-    IHqlExpression * virtualAttr = column->queryProperty(virtualAtom);
+    IHqlExpression * virtualAttr = column->queryAttribute(virtualAtom);
     OwnedHqlExpr value = getVirtualReplacement(column, virtualAttr->queryChild(0), selector->queryRootRow()->querySelector());
     OwnedHqlExpr cast = ensureExprType(value, column->queryType()->queryPromotedType());
     translator.buildExpr(ctx, cast, bound);
@@ -2605,9 +2605,9 @@ void CXmlColumnInfo::buildColumnAssign(HqlCppTranslator & translator, BuildCtx &
     if (type->getSize() != UNKNOWN_LENGTH)
     {
         IIdAtom * func = NULL;
-        IHqlExpression * defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+        IHqlExpression * defaultValue = queryAttributeChild(column, xmlDefaultAtom, 0);
         if (!defaultValue)
-            defaultValue = queryPropertyChild(column, defaultAtom, 0);
+            defaultValue = queryAttributeChild(column, defaultAtom, 0);
 
         switch (type->getTypeCode())
         {
@@ -2748,9 +2748,9 @@ IHqlExpression * CXmlColumnInfo::getXmlSetExpr(HqlCppTranslator & translator, Bu
     Owned<IHqlCppSetBuilder> builder = translator.createTempSetBuilder(elementType, temp.isAll);
     builder->buildDeclare(ctx);
 
-    LinkedHqlExpr defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+    LinkedHqlExpr defaultValue = queryAttributeChild(column, xmlDefaultAtom, 0);
     if (!defaultValue)
-        defaultValue.set(queryPropertyChild(column, defaultAtom, 0));
+        defaultValue.set(queryAttributeChild(column, defaultAtom, 0));
     bool defaultIsAllValue = defaultValue && (defaultValue->getOperator() == no_all);
     if (checkForAll)
     {
@@ -2789,9 +2789,9 @@ IHqlExpression * CXmlColumnInfo::getCallExpr(HqlCppTranslator & translator, Buil
 {
     Linked<ITypeInfo> type = queryPhysicalType();
     IIdAtom * func = NULL;
-    IHqlExpression * defaultValue = queryPropertyChild(column, xmlDefaultAtom, 0);
+    IHqlExpression * defaultValue = queryAttributeChild(column, xmlDefaultAtom, 0);
     if (!defaultValue)
-        defaultValue = queryPropertyChild(column, defaultAtom, 0);
+        defaultValue = queryAttributeChild(column, defaultAtom, 0);
 
     switch (type->getTypeCode())
     {
@@ -2903,7 +2903,7 @@ CMemberInfo * ColumnToOffsetMap::addColumn(CContainerInfo * container, IHqlExpre
             if (column->queryType()->getTypeCode() != type_bitfield)
                 completeActiveBitfields();
 
-            if (translateVirtuals && column->hasProperty(virtualAtom) && (column->queryType()->getSize() != UNKNOWN_LENGTH))
+            if (translateVirtuals && column->hasAttribute(virtualAtom) && (column->queryType()->getSize() != UNKNOWN_LENGTH))
                 created = new CVirtualColumnInfo(container, prior, column);
             else
                 created = createColumn(container, column, map);
@@ -3007,7 +3007,7 @@ CMemberInfo * ColumnToOffsetMap::createColumn(CContainerInfo * container, IHqlEx
                 }
             }
 
-            if (column->hasProperty(_linkCounted_Atom))
+            if (column->hasAttribute(_linkCounted_Atom))
                 created = new CChildLinkedDatasetColumnInfo(container, prior, column, map, defaultMaxRecordSize);
             else if (count || size)
                 created = new CChildLimitedDatasetColumnInfo(container, prior, column, map, defaultMaxRecordSize);

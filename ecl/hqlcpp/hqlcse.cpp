@@ -769,7 +769,7 @@ void CseScopeTransformer::analyseExpr(IHqlExpression * expr)
     //Add here so the cse are in the correct order to cope with dependencies...
     if (op == no_alias)
     {
-        assertex(!expr->hasProperty(globalAtom));
+        assertex(!expr->hasAttribute(globalAtom));
         allCSEs.append(*LINK(splitter));
     }
 }
@@ -996,7 +996,7 @@ void CseScopeTransformer::analyseExpr(IHqlExpression * expr)
     node_operator op = expr->getOperator();
     if (op == no_alias)
     {
-        assertex(!expr->hasProperty(globalAtom));
+        assertex(!expr->hasAttribute(globalAtom));
 
         CseScopeInfo * splitter = queryExtra(expr);
 
@@ -1220,7 +1220,7 @@ static bool canHoistInvariant(IHqlExpression * expr)
 {
     if (!canCreateTemporary(expr))
     {
-        if ((expr->getOperator() != no_alias) || expr->hasProperty(globalAtom))
+        if ((expr->getOperator() != no_alias) || expr->hasAttribute(globalAtom))
             return false;
     }
     if (!expr->isPure())
@@ -1283,7 +1283,7 @@ bool TableInvariantTransformer::isInvariant(IHqlExpression * expr)
             if (!expr->isDataset())
             {
                 IHqlExpression * ds = expr->queryChild(0);
-                if (expr->hasProperty(newAtom) || ds->isDatarow())
+                if (expr->hasAttribute(newAtom) || ds->isDatarow())
                     invariant = isInvariant(ds);
             }
             break;
@@ -1357,7 +1357,7 @@ void TableInvariantTransformer::analyseExpr(IHqlExpression * expr)
         TableInvariantInfo * extra = queryBodyExtra(expr);
         if (op == no_alias)
         {
-            if (!expr->hasProperty(globalAtom))
+            if (!expr->hasAttribute(globalAtom))
                 extra->createAlias = true;
         }
         else
@@ -1408,7 +1408,7 @@ void TableInvariantTransformer::analyseExpr(IHqlExpression * expr)
                     switch (op)
                     {
                     case no_alias:
-                        if (!expr->hasProperty(globalAtom))
+                        if (!expr->hasAttribute(globalAtom))
                             extra->createAlias = true;
                         return;
                     default:
@@ -1548,7 +1548,7 @@ void GlobalAliasTransformer::analyseExpr(IHqlExpression * expr)
     extra->numUses++;
     if (expr->getOperator() == no_alias)
     {
-        if (expr->hasProperty(globalAtom))
+        if (expr->hasAttribute(globalAtom))
         {
 //          assertex(!containsActiveDataset(expr) || isInlineTrivialDataset(expr));
             if (!insideGlobal)
@@ -1595,16 +1595,16 @@ IHqlExpression * GlobalAliasTransformer::createTransformed(IHqlExpression * expr
     if ((expr->getOperator() == no_alias))
     {
         GlobalAliasInfo * extra = queryBodyExtra(expr);
-        if (expr->hasProperty(globalAtom))
+        if (expr->hasAttribute(globalAtom))
         {
             if (!extra->isOuter)
             {
                 if (extra->numUses == 1)
                     return LINK(transformed->queryChild(0));
-                if (!expr->hasProperty(localAtom))
+                if (!expr->hasAttribute(localAtom))
                     return appendLocalAttribute(transformed);
             }
-            else if (expr->hasProperty(localAtom))
+            else if (expr->hasAttribute(localAtom))
             {
                 //Should never occur - but just about conceivable that some kind of constant folding
                 //might cause a surrounding global alias to be removed.
@@ -1613,7 +1613,7 @@ IHqlExpression * GlobalAliasTransformer::createTransformed(IHqlExpression * expr
         }
         else
         {
-            if ((extra->numUses == 1) && !expr->hasProperty(internalAtom))
+            if ((extra->numUses == 1) && !expr->hasAttribute(internalAtom))
                 return LINK(transformed->queryChild(0));
         }
     }

@@ -50,7 +50,7 @@
 
 IHqlExpression * getOutOfRangeValue(IHqlExpression * indexExpr)
 {
-    IHqlExpression * dft = indexExpr->queryProperty(defaultAtom);
+    IHqlExpression * dft = indexExpr->queryAttribute(defaultAtom);
     if (dft)
         return LINK(dft->queryChild(0));
     else
@@ -158,7 +158,7 @@ BoundRow * BaseDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpression * in
     StringBuffer cursorName;
     buildIterateClass(ctx, cursorName, NULL);
 
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    bool conditional = !indexExpr->hasAttribute(noBoundCheckAtom);
 
     //create a unique dataset and associate it with a call to select
     //set value to be the field selection from the dataset
@@ -365,7 +365,7 @@ BoundRow * InlineBlockDatasetCursor::buildIterateLoop(BuildCtx & ctx, bool needT
 BoundRow * InlineBlockDatasetCursor::buildSelectFirst(BuildCtx & ctx, IHqlExpression * indexExpr, bool createDefaultRowIfNull)
 {
     StringBuffer s, rowName;
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    bool conditional = !indexExpr->hasAttribute(noBoundCheckAtom);
     OwnedHqlExpr row = createRow(ctx, "row", rowName, (conditional && createDefaultRowIfNull));
 
     BuildCtx subctx(ctx);
@@ -446,7 +446,7 @@ BoundRow * InlineBlockDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpressi
     if (matchesConstantValue(index, 1))
         return buildSelectFirst(ctx, indexExpr, CREATE_DEAULT_ROW_IF_NULL_VALUE);
 
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    bool conditional = !indexExpr->hasAttribute(noBoundCheckAtom);
     //row = NULL
     StringBuffer s, rowName;
     OwnedHqlExpr row = createRow(ctx, "row", rowName, (conditional && CREATE_DEAULT_ROW_IF_NULL_VALUE));
@@ -635,7 +635,7 @@ BoundRow * InlineLinkedDatasetCursor::buildSelectNth(BuildCtx & ctx, IHqlExpress
 {
     OwnedHqlExpr index = foldHqlExpression(indexExpr->queryChild(1));
 
-    bool conditional = !indexExpr->hasProperty(noBoundCheckAtom);
+    bool conditional = !indexExpr->hasAttribute(noBoundCheckAtom);
 
     //row = NULL
     StringBuffer s, rowName;
@@ -1075,13 +1075,13 @@ void ListSetCursor::gatherSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHq
         CHqlBoundExpr boundIndex;
         ITypeInfo * elementType = expr->queryType()->queryChildType();  // not indexExpr->getType() because may now be more specific
         OwnedHqlExpr base0Index = adjustIndexBaseToZero(index);
-        if (indexExpr->hasProperty(noBoundCheckAtom))
+        if (indexExpr->hasAttribute(noBoundCheckAtom))
             translator.buildExpr(ctx, base0Index, boundIndex);
         else
             translator.buildSimpleExpr(ctx, base0Index, boundIndex);
         value.expr.setown(createValue(no_index, LINK(elementType), LINK(boundList.expr), LINK(boundIndex.expr)));
 
-        if (!indexExpr->hasProperty(noBoundCheckAtom))
+        if (!indexExpr->hasAttribute(noBoundCheckAtom))
         {
             ITypeInfo * indexType = boundIndex.expr->queryType();
             //ok to subtract early and remove a check for > 0 on unsigned values because they will wrap and fail upper limit test
@@ -1258,9 +1258,9 @@ IHqlExpression * GeneralSetCursor::createDatasetSelect(IHqlExpression * indexExp
 
 void GeneralSetCursor::buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExpr, CHqlBoundExpr & tgt)
 {
-    if (indexExpr->hasProperty(noBoundCheckAtom))
+    if (indexExpr->hasAttribute(noBoundCheckAtom))
     {
-        if (indexExpr->hasProperty(forceAllCheckAtom))
+        if (indexExpr->hasAttribute(forceAllCheckAtom))
             checkNotAll(ctx);
 
         OwnedHqlExpr dsIndexExpr = createDatasetSelect(indexExpr);
@@ -1278,7 +1278,7 @@ void GeneralSetCursor::buildExprSelect(BuildCtx & ctx, IHqlExpression * indexExp
 
 void GeneralSetCursor::buildAssignSelect(BuildCtx & ctx, const CHqlBoundTarget & target, IHqlExpression * indexExpr)
 {
-    if (!indexExpr->hasProperty(noBoundCheckAtom) || indexExpr->hasProperty(forceAllCheckAtom))
+    if (!indexExpr->hasAttribute(noBoundCheckAtom) || indexExpr->hasAttribute(forceAllCheckAtom))
         checkNotAll(ctx);
 
     OwnedHqlExpr dsIndexExpr = createDatasetSelect(indexExpr);
