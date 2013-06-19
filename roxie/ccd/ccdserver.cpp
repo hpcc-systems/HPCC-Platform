@@ -23040,15 +23040,17 @@ public:
                 return;  // ignore 'spills'
             bool isLocal = _graphNode.getPropBool("att[@name='local']/@value") && queryFactory.queryChannel()!=0;
             bool isOpt = _graphNode.getPropBool("att[@name='_isOpt']/@value") || pretendAllOpt;
-            if (queryNodeIndexName(_graphNode))
+            const char *fileName = queryNodeFileName(_graphNode);
+            const char *indexName = queryNodeIndexName(_graphNode);
+            if (indexName && (!fileName || !streq(indexName, fileName)))
             {
-                indexfile.setown(queryFactory.queryPackage().lookupFileName(queryNodeIndexName(_graphNode), isOpt, true, queryFactory.queryWorkUnit()));
+                indexfile.setown(queryFactory.queryPackage().lookupFileName(indexName, isOpt, true, queryFactory.queryWorkUnit()));
                 if (indexfile)
                     keySet.setown(indexfile->getKeyArray(NULL, &layoutTranslators, isOpt, isLocal ? queryFactory.queryChannel() : 0, false));
             }
-            if (queryNodeFileName(_graphNode))
+            if (fileName)
             {
-                datafile.setown(_queryFactory.queryPackage().lookupFileName(queryNodeFileName(_graphNode), isOpt, true, queryFactory.queryWorkUnit()));
+                datafile.setown(_queryFactory.queryPackage().lookupFileName(fileName, isOpt, true, queryFactory.queryWorkUnit()));
                 if (datafile)
                 {
                     if (isLocal)
