@@ -121,6 +121,23 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
     return retVal;
 }
 
+void CConfigEnvHelper::addSlaveProcessConfig(IPropertyTree* pRoxie, IPropertyTree *pSlaveNode, int channel, int level, const char* netAddress)
+{
+  if (pRoxie == NULL || pSlaveNode == NULL || netAddress == NULL)
+    return;
+
+
+  IPropertyTree* pSlaveProcess = pRoxie->addPropTree(XML_TAG_ROXIE_SLAVE, createPTree());
+
+  if (pSlaveProcess == NULL)
+    return;
+
+  pSlaveProcess->addProp(XML_ATTR_COMPUTER, pSlaveNode->queryProp(XML_ATTR_COMPUTER));
+  pSlaveProcess->addPropInt(XML_ATTR_CHANNEL, channel);
+  pSlaveProcess->addPropInt(XML_ATTR_LEVEL, level);
+  pSlaveProcess->addProp(XML_ATTR_NETADDRESS, netAddress);
+}
+
 IPropertyTree* CConfigEnvHelper::getSoftwareNode(const char* compType, const char* compName)
 {
   StringBuffer xpath;
@@ -145,6 +162,10 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
   {
     xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
     pFarm = getSoftwareNode(xpath.str(), pszFarm);
+
+    if (pFarm == NULL)
+      return false;
+
     sFarmName = pFarm->queryProp(XML_ATTR_NAME);
     bNewFarm = false;
 
@@ -163,25 +184,7 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
     if (!pFarm->hasProp("@aclName"))
       pFarm->addProp("@aclName", "");
 
-    StringBuffer dataDir = pFarm->queryProp(XML_ATTR_DATADIRECTORY);
-    if (dataDir.length()==0)
-      dataDir.append(RUNTIME_DIR"/roxiedata");
-
-    if (!pFarm->queryPropTree(XML_TAG_ROXIE_SERVER"[1]")) //no servers in farm
-    {
-      //if (nComputers > 0)
-      //g_pDocument->makePlatformSpecificAbsolutePath(computers[0]->queryProp(XML_ATTR_NAME), dataDir);
-      Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
-      
-      ForEach (*iter)
-      {
-        IPropertyTree* pFolder = &iter->query();
-        makePlatformSpecificAbsolutePath(pFolder->queryProp(XML_ATTR_NAME), dataDir);
-        break;
-      }
-
-      pFarm->setProp(XML_ATTR_DATADIRECTORY, dataDir.str());
-    }
+    StringBuffer dataDir = pFarm->queryProp(XML_ATTR_LEVEL);
   }
   else
   {
@@ -189,31 +192,12 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
     createUniqueName("farm", xpath.str(), sFarmName);
     bNewFarm = true;
 
-    StringBuffer sDataDir;
-    sDataDir.append(RUNTIME_DIR"/roxiedata");
-
-    //get datadir from existing farm if any
-    xpath.clear().appendf("Software/RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM"[1]", pszRoxieCluster);
-    IPropertyTree* pFarm1 =  m_pRoot->queryPropTree(xpath.str());
-    if (pFarm1)
-      sDataDir.clear().append(pFarm1->queryProp(XML_ATTR_DATADIRECTORY));
-
-    //if (nComputers > 0)
-    //g_pDocument->makePlatformSpecificAbsolutePath(computers[0]->queryProp(XML_ATTR_NAME), sDataDir);
     Owned<IPropertyTreeIterator> iter = pSrcTree->getElements(XML_TAG_COMPONENT);
       
-    ForEach (*iter)
-    {
-      IPropertyTree* pFolder = &iter->query();
-      makePlatformSpecificAbsolutePath(pFolder->queryProp(XML_ATTR_NAME), sDataDir);
-      break;
-    }
-
     xpath.clear().appendf("RoxieCluster[@name='%s']/"XML_TAG_ROXIE_FARM, pszRoxieCluster);
     pFarm = pParent->addPropTree(xpath.str(), createPTree());
     pFarm->addProp    (XML_ATTR_NAME,       sFarmName.str());
     pFarm->addPropInt("@port", pSrcTree->getPropInt("@port", 9876));
-    pFarm->addProp    (XML_ATTR_DATADIRECTORY,  sDataDir.str());
     pFarm->addPropInt("@listenQueue", 200);
     pFarm->addPropInt("@numThreads",    30);
     pFarm->addPropInt("@requestArrayThreads", 5);
@@ -961,25 +945,8 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
         pRoxie->setProp("@baseDataDir", sDataDir.str());
         pRoxie->setProp("@localSlave", computers.size() > 1 ? "false" : "true");
 
-        //update Roxie data directories for all farms and all legacy servers
-        //change all farms
-        Owned<IPropertyTreeIterator> iterFarms = pRoxie->getElements(XML_TAG_ROXIE_FARM);
-        ForEach (*iterFarms)
-        {
-            IPropertyTree* pTmpComp = &iterFarms->query();
-            if (strcmp(pTmpComp->queryProp(XML_ATTR_DATADIRECTORY), sDataDir.str()))
-                pTmpComp->setProp(XML_ATTR_DATADIRECTORY, sDataDir.str());
-        }
-
         //change all legacy servers
         Owned<IPropertyTreeIterator> iterServers = pRoxie->getElements(XML_TAG_ROXIE_SERVER);
-
-        ForEach (*iterServers)
-        {
-            IPropertyTree* pTmpComp = &iterServers->query();
-            if (strcmp(pTmpComp->queryProp(XML_ATTR_DATADIRECTORY), sDataDir.str()))
-                pTmpComp->setProp(XML_ATTR_DATADIRECTORY, sDataDir.str());
-        }
     }
     catch (IException *e)
     {
@@ -992,26 +959,6 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
     }
 
     return true;
-}
-
-
-void CConfigEnvHelper::addReplicateConfig(IPropertyTree* pSlaveNode, int channel, const char* dir, 
-                                                                const char* netAddress, IPropertyTree* pRoxie)
-{
-    StringBuffer directory;
-    directory.appendf("%s", dir);
-    makePlatformSpecificAbsolutePath( pSlaveNode->queryProp(XML_ATTR_COMPUTER), directory);
-
-    IPropertyTree* pInstance = pSlaveNode->addPropTree(XML_TAG_ROXIE_CHANNEL, createPTree());
-    pInstance->setPropInt("@number", channel);
-    pInstance->addProp(XML_ATTR_DATADIRECTORY, directory.str());
-    
-    //maintain a copy as an old style slave procss
-    IPropertyTree* pSlaveProcess = pRoxie->addPropTree(XML_TAG_ROXIE_SLAVE, createPTree());
-    pSlaveProcess->addProp(XML_ATTR_COMPUTER, pSlaveNode->queryProp(XML_ATTR_COMPUTER));
-    pSlaveProcess->addPropInt("@channel", channel);
-    pSlaveProcess->addProp(XML_ATTR_DATADIRECTORY, directory.str());
-    pSlaveProcess->addProp(XML_ATTR_NETADDRESS, netAddress);
 }
 
 bool CConfigEnvHelper::GenerateCyclicRedConfig(IPropertyTree* pRoxie, IPropertyTreePtrArray& computers, 
@@ -1060,7 +1007,15 @@ bool CConfigEnvHelper::GenerateCyclicRedConfig(IPropertyTree* pRoxie, IPropertyT
             const char drive = 'c' + c;
             channel = 1 + ((baseChannel + c*(nComputers-offset)) % nComputers);
 
-            addReplicateConfig(pSlave, channel, c==0? dir1: (c==1?dir2:dir3), netAddress, pRoxie);
+            IPropertyTree* pInstance = pSlave->addPropTree(XML_TAG_ROXIE_CHANNEL, createPTree());
+            pInstance->setPropInt("@number", channel);
+
+            StringBuffer strTemp;
+            strTemp.append(c);
+
+            pInstance->addProp(XML_ATTR_LEVEL, strTemp.str());
+
+            addSlaveProcessConfig(pRoxie, pSlave, channel, c, netAddress);
         }
     }
     m_numChannels = nComputers;
@@ -1098,8 +1053,15 @@ bool CConfigEnvHelper::GenerateOverloadedConfig(IPropertyTree* pRoxie, IProperty
 
         for (int c=0; c<m_numDataCopies; c++)
         {
-            const char drive = 'c' + c;
-            addReplicateConfig(pSlave, channel + c*nComputers, c==0?dir1:(c==1?dir2:dir3), netAddress, pRoxie);
+            IPropertyTree* pInstance = pSlave->addPropTree(XML_TAG_ROXIE_CHANNEL, createPTree());
+            pInstance->setPropInt("@number", channel + c*nComputers);
+
+            StringBuffer strTemp;
+            strTemp.append(c);
+
+            pInstance->addProp(XML_ATTR_LEVEL, strTemp.str());
+
+            addSlaveProcessConfig(pRoxie, pSlave, channel + c*nComputers, c, netAddress);
         }
         channel++;
     }
@@ -1139,7 +1101,14 @@ bool CConfigEnvHelper::GenerateFullRedConfig(IPropertyTree* pRoxie, int copies, 
         pSlave->addProp(XML_ATTR_NAME, name.str());
         pSlave->addProp(XML_ATTR_COMPUTER, szComputer);
 
-        addReplicateConfig(pSlave, 1 + (channel++ % maxChannel), dir1, netAddress, pRoxie);
+        IPropertyTree* pInstance = pSlave->addPropTree(XML_TAG_ROXIE_CHANNEL, createPTree());
+        pInstance->setPropInt("@number", 1 + (channel % maxChannel));
+        pInstance->addProp(XML_ATTR_LEVEL, "0");
+
+        addSlaveProcessConfig(pRoxie, pSlave, 1 + (channel % maxChannel), 0, netAddress);
+
+        channel++;
+
     }
     m_numChannels = maxChannel;
     return true;
