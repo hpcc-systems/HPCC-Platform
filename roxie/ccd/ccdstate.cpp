@@ -281,8 +281,7 @@ protected:
             if (strstr(fileName,"::"))
             {
                 bool wasDFS;
-                // MORE - really we don't want the 1 of 1 bit of this...
-                makeSinglePhysicalPartName(fileName, useName, true, wasDFS, baseDataDirectory.str());
+                makeSinglePhysicalPartName(fileName, useName, true, wasDFS);
             }
             else
                 useName.append(fileName);
@@ -376,8 +375,8 @@ public:
 
     CRoxiePackageNode(IPropertyTree *p) : CPackageNode(p)
     {
-        daliHelper.setown(connectToDali()); // MORE - should make this conditional
-        if (!daliHelper.get() || !daliHelper->connected())
+        daliHelper.setown(connectToDali()); // MORE - should make this conditional?
+        if (!fileNameServiceDali.length())
             node->setPropBool("@localFiles", true);
     }
 
@@ -658,10 +657,10 @@ public:
         ForEach (*queryNames)
         {
             const IPropertyTree &query = queryNames->query();
+            const char *id = query.queryProp("@id");
+            const char *dllName = query.queryProp("@dll");
             try
             {
-                const char *id = query.queryProp("@id");
-                const char *dllName = query.queryProp("@dll");
                 if (!id || !*id || !dllName || !*dllName)
                     throw MakeStringException(ROXIE_QUERY_MODIFICATION, "dll and id must be specified");
                 Owned<const IQueryDll> queryDll = createQueryDll(dllName);
@@ -685,10 +684,17 @@ public:
             catch (IException *E)
             {
                 // we don't want a single bad query in the set to stop us loading all the others
-                StringBuffer msg, qxml;
-                toXML(&query, qxml);
-                msg.appendf("Failed to load query: %s", qxml.str());
+                StringBuffer msg;
+                msg.appendf("Failed to load query %s from %s", id ? id : "(null)", dllName ? dllName : "(null)");
                 EXCLOG(E, msg.str());
+                if (id)
+                {
+                    StringBuffer emsg;
+                    E->errorMessage(emsg);
+                    Owned<IQueryFactory> dummyQuery = loadQueryFromDll(id, NULL, queryRootRoxiePackage(), NULL);
+                    dummyQuery->suspend(true, emsg.str(), "roxie", true);
+                    addQuery(id, dummyQuery.getClear(), hash);
+                }
                 E->Release();
             }
         }

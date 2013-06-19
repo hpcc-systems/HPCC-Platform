@@ -6918,13 +6918,12 @@ const void * CHThorEnthActivity::nextInGroup()
 CHThorTopNActivity::CHThorTopNActivity(IAgentContext & _agent, unsigned _activityId, unsigned _subgraphId, IHThorTopNArg & _arg, ThorActivityKind _kind)
     : CHThorSimpleActivityBase(_agent, _activityId, _subgraphId, _arg, _kind), helper(_arg), compare(*helper.queryCompare())
 {
-    limit = helper.getLimit();
-    assertex(limit == (size_t)limit);
-    sorted = (const void * *)checked_calloc((size_t)(limit+1), sizeof(void *), "topn");
     hasBest = helper.hasBest();
     grouped = outputMeta.isGrouped();
     curIndex = 0;
     sortedCount = 0;
+    limit = 0;
+    sorted = NULL;
 }
 
 CHThorTopNActivity::~CHThorTopNActivity()
@@ -6937,6 +6936,9 @@ CHThorTopNActivity::~CHThorTopNActivity()
 void CHThorTopNActivity::ready()
 {
     CHThorSimpleActivityBase::ready();
+    limit = helper.getLimit();
+    assertex(limit == (size_t)limit);
+    sorted = (const void * *)checked_calloc((size_t)(limit+1), sizeof(void *), "topn");
     sortedCount = 0;
     curIndex = 0;
     eof = false;
@@ -6948,6 +6950,8 @@ void CHThorTopNActivity::done()
     CHThorSimpleActivityBase::done();
     while(curIndex < sortedCount)
         ReleaseRoxieRow(sorted[curIndex++]);
+    free(sorted);
+    sorted = NULL;
 }
 
 const void * CHThorTopNActivity::nextInGroup()

@@ -136,7 +136,6 @@ enum DFUclusterPartDiskMapping // legacy - should use ClusterPartDiskMapSpec ins
 
 interface IConstDFUoptions : extends IInterface
 {
-    virtual bool getNoDelete() const = 0;
     virtual bool getNoSplit() const = 0;
     virtual bool getReplicate() const = 0;
     virtual bool getRecover() const = 0;

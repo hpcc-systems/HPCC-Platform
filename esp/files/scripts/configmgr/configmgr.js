@@ -708,9 +708,9 @@ function initItemForRoxieSlaves(item) {
   item.netAddress = "";
   item.netAddress_extra = "";
   item.netAddress_ctrlType = 0;
-  item.dataDirectory = "";
-  item.dataDirectory_extra = "";
-  item.dataDirectory_ctrlType = 0;
+  item.level = "";
+  item.level_extra = "";
+  item.level_ctrlType = 0;
   item.itemType = "";
   item.itemType_extra = "";
   item.itemType_ctrlType = 0;
@@ -745,9 +745,9 @@ function initItemForRoxieServers(item) {
   item.port = "";
   item.port_extra = "";
   item.port_ctrlType = 0;
-  item.dataDirectory = "";
-  item.dataDirectory_extra = "";
-  item.dataDirectory_ctrlType = 0;
+  item.level = "";
+  item.level_extra = "";
+  item.level_ctrlType = 0;
   item.listenQueue = "";
   item.listenQueue_extra = "";
   item.listenQueue_ctrlType = 0;
@@ -877,13 +877,13 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
       }
     }
 
-    if (bldSet === "roxie" && attrName === "dataDirectory") {
+    if (bldSet === "roxie" && attrName === "level") {
       if (newValue === '') {
         alert('Roxie data directory cannot be empty');
         return;
       }
 
-      if (!confirm("The primary data directory for other farms and agents will be changed to the same value. Do you want to continue?")) {
+      if (!confirm("The level for other farms and agents will be changed to the same value. Do you want to continue?")) {
         for (i = 1; i < 7; i++)
           if (caller.editors[i].isActive)
           caller.editors[i].cancel();

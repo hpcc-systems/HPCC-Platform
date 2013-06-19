@@ -32,7 +32,6 @@ set ( ESPSCM_SRCS
       ws_dfuXref.ecm
       ws_fs.ecm
       ws_roxie.ecm
-      ws_roxiequery.ecm
       ws_smc.ecm
       ws_topology.ecm
       ws_workunits.ecm

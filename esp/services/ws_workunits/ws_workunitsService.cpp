@@ -34,7 +34,6 @@
 #include "dllserver.hpp"
 #include "schedulectrl.hpp"
 #include "scheduleread.hpp"
-#include "roxiemanager.hpp"
 #include "dadfs.hpp"
 #include "dfuwu.hpp"
 #include "thorplugin.hpp"

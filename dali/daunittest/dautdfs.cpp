@@ -305,7 +305,8 @@ protected:
         mapping.setRepeatedCopies(7,false);
         fdesc->addCluster(grp,mapping);
         StringBuffer dir2;
-        grp.setown(dfsgroup->lookup(DFSUTGROUP "7b", dir2));
+        GroupType groupType;
+        grp.setown(dfsgroup->lookup(DFSUTGROUP "7b", dir2, groupType));
         ClusterPartDiskMapSpec mapping2;
         mapping2.setDefaultBaseDir(dir2);
         mapping2.setRepeatedCopies(7,true);

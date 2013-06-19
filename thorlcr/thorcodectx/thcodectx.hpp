@@ -100,7 +100,7 @@ public:
     }
     virtual const IContextLogger &queryContextLogger() const
     {
-        return queryDummyContextLogger();
+        return job.queryContextLogger();
     }
 
     virtual void executeGraph(const char * graphName, bool realThor, size32_t parentExtractSize, const void * parentExtract) { UNIMPLEMENTED; }

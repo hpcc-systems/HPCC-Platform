@@ -1678,11 +1678,6 @@ class CDFUoptions: public CLinkedDFUWUchild, implements IDFUoptions
 public:
     IMPLEMENT_DFUWUCHILD;
 
-    bool getNoDelete() const
-    {
-        return queryRoot()->getPropInt("@nodelete")!=0;
-    }
-
     bool getNoSplit() const
     {
         return queryRoot()->getPropInt("@nosplit")!=0;

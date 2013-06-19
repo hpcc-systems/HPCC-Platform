@@ -49,7 +49,6 @@ include_directories (
          ./../../platform
          ./../../../dali/dfu
          ./../../../dali/sasha
-         ./../../../common/roxiemanager
          ./../../../common/remote
          ./../../../system/jlib
          ./../../../common/environment
@@ -101,7 +100,6 @@ target_link_libraries ( ws_workunits
          SMCLib
          schedulectrl
          roxiecommlib
-         roxiemanager
          hql
          jhtree
          fileview2

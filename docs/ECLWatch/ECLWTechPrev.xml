@@ -99,5 +99,10 @@
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
                 xpointer="LogicalFiles"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
+                
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+		xpointer="Landing_Zones"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+                
   </chapter>
 </book>

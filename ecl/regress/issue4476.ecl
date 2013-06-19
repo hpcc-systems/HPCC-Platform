@@ -15,28 +15,8 @@
     limitations under the License.
 ############################################################################## */
 
-#ifndef _ROXIEQUERYCOMPILER_HPP__
-#define _ROXIEQUERYCOMPILER_HPP__
+d := dataset([], {string10 a, unsigned b});
 
+i := INDEX(d, {a, b}, 'fred::smith');
 
-interface IConstWorkUnit;
-interface IWorkUnit;
-interface IEmbeddedXslTransformer;
-interface IAttributeMetaDataResolver;
-
-#include "jptree.hpp"
-#include "esp.hpp"
-
-#include "roxiemanager.hpp"
-
-
-interface IRoxieQueryCompiler : extends IInterface
-{
-    virtual IConstWorkUnit *createWorkunit(SCMStringBuffer &wuid, const char *userName, const char *queryAppName) = 0;
-    virtual IConstWorkUnit *compileEcl(SCMStringBuffer &wuid, const char *userName, const char *password, IRoxieQueryCompileInfo &compileInfo, IRoxieQueryProcessingInfo &processingInfo, SCMStringBuffer &status) = 0;
-};
-
-extern IRoxieQueryCompiler *createRoxieQueryCompiler();
-
-#endif
-
+i(a[1..length(a)] = a);

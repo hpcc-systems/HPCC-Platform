@@ -27,7 +27,6 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxie/sourcedoc.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxieclient/sourcedoc.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxieclient/sourcedoc.xml" />
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxiemem/sourcedoc.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="roxiepipe/sourcedoc.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="udplib/sourcedoc.xml" />
 </section>

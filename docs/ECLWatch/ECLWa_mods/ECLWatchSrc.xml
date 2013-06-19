@@ -216,7 +216,7 @@
 
           <listitem>
             <para><emphasis role="bold">Cluster</emphasis> - filter workunits
-            by cluster. Select the cluster from the drop list. </para>
+            by cluster. Select the cluster from the drop list.</para>
           </listitem>
 
           <listitem>
@@ -329,7 +329,7 @@
 
             <mediaobject>
               <imageobject>
-                <imagedata fileref="../../images/ECLW402.jpg"
+                <imagedata fileref="../../images/ECLWA402.jpg"
                            vendor="eclwatchSS" />
               </imageobject>
             </mediaobject>
@@ -513,12 +513,12 @@
 
           <listitem>
             <para><emphasis role="bold">Cluster</emphasis> - filter workunits
-            by cluster. Select the cluster from the drop list. </para>
+            by cluster. Select the cluster from the drop list.</para>
           </listitem>
 
           <listitem>
             <para><emphasis role="bold">State</emphasis> - filter workunits by
-            state. Select the state from the drop list. </para>
+            state. Select the state from the drop list.</para>
           </listitem>
 
           <listitem>
@@ -768,7 +768,7 @@
 
           <listitem>
             <para><emphasis role="bold">Cluster</emphasis> - filter files by
-            cluster. Select the cluster from the drop list. </para>
+            cluster. Select the cluster from the drop list.</para>
           </listitem>
 
           <listitem>
@@ -924,6 +924,198 @@
             the drop menu.</para>
           </listitem>
         </itemizedlist>
+      </sect2>
+    </sect1>
+
+    <sect1 id="Landing_Zones" vendor="eclwatchSS">
+      <title>Landing Zones</title>
+
+      <para>The Landing Zone link displays the Landing Zones page. The Landing
+      Zone Page shows you each landing zone you have configured for your
+      cluster and its contents. <figure>
+          <title>Landing Zone Page</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="../../images/ECLWA440.jpg"
+                         vendor="eclwatchSS" />
+            </imageobject>
+          </mediaobject>
+        </figure></para>
+
+      <para>Click on the arrow next to a drop zone container to expand. The
+      files on the drop zone display. You can choose to upload, download, or
+      delete any files on the drop zone using the landing zone action buttons.
+      You can also spray files to a cluster from this page.</para>
+
+      <sect2 id="Upload_Files">
+        <title>Upload files</title>
+
+        <para>You can upload files to your landing zone from the Landing Zone
+        page.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Press the <emphasis role="bold">Upload</emphasis> action
+            button.<informaltable colsep="1" frame="all" rowsep="1">
+                <?dbfo keep-together="always"?>
+
+                <tgroup cols="2">
+                  <colspec colwidth="49.50pt" />
+
+                  <colspec />
+
+                  <tbody>
+                    <row>
+                      <entry><inlinegraphic
+                      fileref="../../images/tip.jpg" /></entry>
+
+                      <entry>The upload utility in ECL Watch is limited by the
+                      browser's file size limitation. This is typically 4 GB.
+                      For production systems, we recommend a secure copy
+                      protocol (scp) utility.</entry>
+                    </row>
+                  </tbody>
+                </tgroup>
+              </informaltable></para>
+          </listitem>
+
+          <listitem>
+            <para>Choose the file from the window that displays.</para>
+          </listitem>
+
+          <listitem>
+            <para>Verify the file and dropzone are correct in the <emphasis
+            role="bold">Info Dialog</emphasis> that displays. <figure>
+                <title>Info Dialog</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="../../images/ECLWA440b.jpg"
+                               vendor="eclwatchSS" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">Start</emphasis> button to
+            begin the upload.</para>
+
+            <para>The file progress indicator shows as the file uploads. When
+            upload is complete, the window closes.</para>
+          </listitem>
+        </orderedlist>
+
+        <para></para>
+      </sect2>
+
+      <sect2 id="Download_Files">
+        <title>Download files</title>
+
+        <para>You can download files from your landing zone to your computer.
+        <orderedlist>
+            <listitem>
+              <para>From the Landing Zone page, select a file (or files) to
+              download by checking the box next to it.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Download</emphasis> button
+              to download the file.</para>
+            </listitem>
+          </orderedlist>The file will download to your browser's download
+        directory as specified in your browser settings.</para>
+      </sect2>
+
+      <sect2 id="Delete_Files">
+        <title>Delete files</title>
+
+        <para>You can delete files from your landing zone. <orderedlist>
+            <listitem>
+              <para>From the Landing Zone page, select a file (or files) to
+              delete by checking the box next to it.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Delete</emphasis> action
+              button to delete the file from your landing zone.</para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+
+      <sect2>
+        <title>Hex Preview</title>
+
+        <para>You can view a Hexadecimal representation of files on the
+        landing zone. <orderedlist>
+            <listitem>
+              <para>Select a file by checking the box next to it.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the<emphasis role="bold">Hex Preview</emphasis>
+              action button to display the selected file(s) in a hex
+              format.</para>
+            </listitem>
+          </orderedlist></para>
+
+        <para><figure>
+            <title>Hex Preview</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="../../images/ECLWA440h.jpg" />
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>You can adjust the width of the view on the hex preview page
+        using the spinbox controls on the <emphasis
+        role="bold">Width</emphasis> box.</para>
+
+        <para>If you have an EBCDIC file check the box next to <emphasis
+        role="bold">EBCDIC:</emphasis> for it to display properly.</para>
+      </sect2>
+
+      <sect2 id="LZ_Spray">
+        <title>Spray Files</title>
+
+        <para>You can spray files to your clusters from the Landing Zone page.
+        <orderedlist>
+            <listitem>
+              <para>Select the file from your drop zone by checking the box
+              next to it.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the appropriate drop menu option for the type of
+              spray you want.</para>
+
+              <para>For example, to spray a delimited file, select the
+              <emphasis role="bold">Delimited</emphasis> drop menu
+              option.</para>
+
+              <para><figure>
+                  <title>Landing Zone Spray</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="../../images/ECLWA441.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Fill in the values as appropriate for the spray.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Spray</emphasis> button to
+              spray the file.</para>
+            </listitem>
+          </orderedlist></para>
       </sect2>
     </sect1>
   </chapter>

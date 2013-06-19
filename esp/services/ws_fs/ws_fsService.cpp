@@ -440,7 +440,8 @@ static void DeepAssign(IEspContext &context, IConstDFUWorkUnit *src, IEspDFUWork
     }
 }
 
-bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* cluster, StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder)
+bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* cluster,
+                                    StringBuffer &folder, StringBuffer &title, StringBuffer &defaultFolder, StringBuffer &defaultReplicateFolder)
 {
     if(!pLogicalPath || !*pLogicalPath)
         return false;
@@ -454,7 +455,9 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* clust
 
     if(cluster != NULL && *cluster != '\0')
     {
-        Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
+        StringBuffer basedir;
+        GroupType groupType;
+        Owned<IGroup> group = queryNamedGroupStore().lookup(cluster, basedir, groupType);
         if (group) {
             switch (queryOS(group->queryNode(0).endpoint())) {
             case MachineOsW2K:
@@ -463,9 +466,23 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, const char* clust
             case MachineOsLinux:
                 os = DFD_OSunix; break;
             }
-            if (directories.get()) {
-                getConfigurationDirectory(directories, "data", "thor", cluster, defaultFolder);
-                getConfigurationDirectory(directories, "mirror", "thor", cluster, defaultReplicateFolder);
+            if (directories.get())
+            {
+                switch (groupType)
+                {
+                case grp_roxie:
+                    getConfigurationDirectory(directories, "data", "roxie", cluster, defaultFolder);
+                    getConfigurationDirectory(directories, "data2", "roxie", cluster, defaultReplicateFolder);
+                    // MORE - should extend to systems with higher redundancy
+                    break;
+                case grp_hthor:
+                    getConfigurationDirectory(directories, "data", "hthor", cluster, defaultFolder);
+                    break;
+                case grp_thor:
+                default:
+                    getConfigurationDirectory(directories, "data", "thor", cluster, defaultFolder);
+                    getConfigurationDirectory(directories, "mirror", "thor", cluster, defaultReplicateFolder);
+                }
             }
         }
         else 

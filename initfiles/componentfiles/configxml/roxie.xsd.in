@@ -49,7 +49,6 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="dataDirectory" type="absolutePath" use="required"/>
             <xs:attribute name="numThreads" type="xs:nonNegativeInteger" use="optional" default="30">
               <xs:annotation>
                 <xs:appinfo>
@@ -105,7 +104,13 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="dataDirectory" type="absolutePath" use="required"/>
+            <xs:attribute name="level" type="xs:nonNegativeInteger" use="optional" default="0">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Replication level of this slave</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
           </xs:complexType>
         </xs:element>
         <xs:element name="ACL" maxOccurs="unbounded">
@@ -449,14 +454,14 @@
     <xs:attribute name="checkFileDate" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Compare file dates of physical files with the information stored in state file when RoxieConfig was executed.</tooltip>
+          <tooltip>Compare file dates of physical files with the information in DFS.</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="copyResources" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Copies any missing data files/keys from the position they were in when RoxieConfig was executed.</tooltip>
+          <tooltip>Copies any missing data files/keys from the position they were in when query was deployed.</tooltip>
           <autogenforwizard>1</autogenforwizard>
           <autogendefaultvalue>false</autogendefaultvalue>
           <autogendefaultformultinode>true</autogendefaultformultinode>
@@ -480,49 +485,49 @@
     <xs:attribute name="defaultHighPriorityTimeLimit" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Maximum run time (in ms) for any single active high-priority query (if not overriden in roxieconfig)</tooltip>
+          <tooltip>Maximum run time (in ms) for any single active high-priority query (if not overriden)</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="defaultHighPriorityTimeWarning" type="xs:nonNegativeInteger" use="optional" default="5000">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Time (in ms) before generating SNMP warning for a high-priority query (if not overriden in roxieconfig)</tooltip>
+          <tooltip>Time (in ms) before generating SNMP warning for a high-priority query (if not overriden)</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="defaultLowPriorityTimeLimit" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Maximum run time (in ms) for any single active low-priority query (if not overriden in roxieconfig)</tooltip>
+          <tooltip>Maximum run time (in ms) for any single active low-priority query (if not overriden)</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="defaultLowPriorityTimeWarning" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Time (in ms) before generating SNMP warning for a low-priority query (if not overriden in roxieconfig)</tooltip>
+          <tooltip>Time (in ms) before generating SNMP warning for a low-priority query (if not overriden)</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="defaultMemoryLimit" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Maximum amount of memory available for row data in any single active query (if not overriden in roxieconfig)</tooltip>
+          <tooltip>Maximum amount of memory available for row data in any single active query (if not overriden)</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="defaultSLAPriorityTimeLimit" type="xs:nonNegativeInteger" use="optional" default="0">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Maximum run time (in ms) for any single active SLA-high-priority query (if not overriden in roxieconfig)</tooltip>
+          <tooltip>Maximum run time (in ms) for any single active SLA-high-priority query (if not overriden)</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="defaultSLAPriorityTimeWarning" type="xs:nonNegativeInteger" use="optional" default="5000">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Time (in ms) before generating SNMP warning for a SLA-high-priority query (if not overriden in roxieconfig)</tooltip>
+          <tooltip>Time (in ms) before generating SNMP warning for a SLA-high-priority query (if not overriden)</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
@@ -757,7 +762,7 @@
     <xs:attribute name="useRemoteResources" type="xs:boolean" use="optional" default="true">
       <xs:annotation>
         <xs:appinfo>
-          <tooltip>Loads any missing data files/keys from the position they were in when RoxieConfig was executed.</tooltip>
+          <tooltip>Reads any missing data files/keys from the position they were in when deployed.</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
