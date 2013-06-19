@@ -345,7 +345,8 @@ class CDFUengine: public CInterface, implements IDFUengine
         if (!cluster||!*cluster)
             return;
         StringBuffer dir;
-        Owned<IGroup> grp = queryNamedGroupStore().lookup(cluster,dir);
+        GroupType groupType;
+        Owned<IGroup> grp = queryNamedGroupStore().lookup(cluster, dir, groupType);
         if (!grp) {
             throw MakeStringException(-1,"setFileRepeatOptions cluster %s not found",cluster);
             return;

@@ -747,7 +747,8 @@ public:
         grpstr.toLowerCase();
         StringAttr grpname(grpstr.str());
         StringBuffer basedir;
-        grp.setown(queryNamedGroupStore().lookup(grpstr.str(),basedir));
+        GroupType groupType;
+        grp.setown(queryNamedGroupStore().lookup(grpstr.str(), basedir, groupType));
         if (!grp) {
             ERRLOG(LOGPFX "Cluster %s node group %s not found",clustname.get(),grpstr.str());
             return false;
@@ -804,9 +805,9 @@ public:
             if (getConfigurationDirectory(serverConfig->queryPropTree("Directories"),"mirror","thor",_clustname,repdir))
                 rdir = repdir.str();
             iswin = grp->ordinality()?(getDaliServixOs(grp->queryNode(0).endpoint())==DAFS_OSwindows):false;
-            setBaseDirectory(ddir,false,iswin?DFD_OSwindows:DFD_OSunix);
-            setBaseDirectory(rdir,true,iswin?DFD_OSwindows:DFD_OSunix);
-            rootdir.set(queryBaseDirectory(false,iswin?DFD_OSwindows:DFD_OSunix));
+            setBaseDirectory(ddir,0,iswin?DFD_OSwindows:DFD_OSunix);
+            setBaseDirectory(rdir,1,iswin?DFD_OSwindows:DFD_OSunix);
+            rootdir.set(queryBaseDirectory(0,iswin?DFD_OSwindows:DFD_OSunix));
         }
         else {
             rootdir.set(basedir);
