@@ -1467,93 +1467,6 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
           }
         }
 
-        //if dataDirectory for a roxie farm is being changed, also change baseDataDir for roxie
-        if(!strcmp(pszCompType, "Directories") && !strcmp(pszSubType, "Category"))
-        {
-          StringBuffer sbNewValue;
-          bool bdata = strstr(pszSubTypeKey, "[@name='data']") || strstr(pszSubTypeKey, "[@name=\"data\"]");\
-          bool bdata2 = strstr(pszSubTypeKey, "[@name='data2']") || strstr(pszSubTypeKey, "[@name=\"data2\"]");
-          bool bdata3 = strstr(pszSubTypeKey, "[@name='data3']") || strstr(pszSubTypeKey, "[@name=\"data3\"]");
-
-          if (bdata || bdata2 || bdata3)
-          {
-            Owned<IPropertyTreeIterator> iterRoxies = pEnvSoftware->getElements("RoxieCluster");
-            ForEach (*iterRoxies)
-            {
-              IPropertyTree* pRoxie = &iterRoxies->query();
-
-              if (bdata)
-              {
-                getCommonDir(pEnvRoot, "data", "roxie", pRoxie->queryProp(XML_ATTR_NAME), sbNewValue.clear());
-                pRoxie->setProp("@baseDataDir", sbNewValue.str());
-
-                //change all farms
-                Owned<IPropertyTreeIterator> iterFarms = pRoxie->getElements(XML_TAG_ROXIE_FARM);
-                ForEach (*iterFarms)
-                {
-                  IPropertyTree* pTmpComp = &iterFarms->query();
-                  if (strcmp(pTmpComp->queryProp(XML_ATTR_DATADIRECTORY), sbNewValue.str()))
-                    pTmpComp->setProp(XML_ATTR_DATADIRECTORY, sbNewValue.str());
-                }
-
-                //change all legacy Roxie servers
-                Owned<IPropertyTreeIterator> iterRoxieServers = pRoxie->getElements(XML_TAG_ROXIE_SERVER);
-
-                ForEach (*iterRoxieServers)
-                {
-                  IPropertyTree* pTmpComp = &iterRoxieServers->query();
-                  if (strcmp(pTmpComp->queryProp(XML_ATTR_DATADIRECTORY), sbNewValue.str()))
-                    pTmpComp->setProp(XML_ATTR_DATADIRECTORY, sbNewValue.str());
-                }
-
-                //also change roxie slave primary data directory for all RoxieSlave and RoxieSlaveProcess
-                Owned<IPropertyTreeIterator> iterSlvs = pRoxie->getElements(XML_TAG_ROXIE_ONLY_SLAVE);
-
-                ForEach (*iterSlvs)
-                {
-                  IPropertyTree* pTmpComp = &iterSlvs->query();
-                  const char* pRoxieComputer = pTmpComp->queryProp(XML_ATTR_COMPUTER);
-                  IPropertyTree* pChannel = pTmpComp->queryPropTree(XML_TAG_ROXIE_CHANNEL"[1]");
-                  if (pChannel)
-                  {
-                    pChannel->setProp(XML_ATTR_DATADIRECTORY, sbNewValue.str());
-                    const char* number = pChannel->queryProp("@number");
-                    xpath.clear().appendf(XML_TAG_ROXIE_SLAVE"[@channel='%s'][@computer='%s']", number, pRoxieComputer);
-                    
-                    IPropertyTree* pSlvProc = pRoxie->queryPropTree(xpath.str());
-                    if (pSlvProc)
-                      pSlvProc->setProp(XML_ATTR_DATADIRECTORY, sbNewValue.str());
-                  }
-                }
-              }
-              else if (bdata2 || bdata3)
-              {
-                getCommonDir(pEnvRoot, bdata2 ? "data2" : "data3" , "roxie", pRoxie->queryProp(XML_ATTR_NAME), sbNewValue.clear());
-                Owned<IPropertyTreeIterator> iterSlvs = pRoxie->getElements(XML_TAG_ROXIE_ONLY_SLAVE);
-                StringBuffer sb(XML_TAG_ROXIE_CHANNEL);
-                sb.appendf("%s", bdata2?"[2]":"[3]");
-
-                ForEach (*iterSlvs)
-                {
-                  IPropertyTree* pTmpComp = &iterSlvs->query();
-                  const char* pRoxieComputer = pTmpComp->queryProp(XML_ATTR_COMPUTER);
-                  IPropertyTree* pChannel = pTmpComp->queryPropTree(sb.str());
-                  if (pChannel)
-                  {
-                    pChannel->setProp(XML_ATTR_DATADIRECTORY, sbNewValue.str());
-                    const char* number = pChannel->queryProp("@number");
-                    xpath.clear().appendf(XML_TAG_ROXIE_SLAVE"[@channel='%s'][@computer='%s']", number, pRoxieComputer);
-                    
-                    IPropertyTree* pSlvProc = pRoxie->queryPropTree(xpath.str());
-                    if (pSlvProc)
-                      pSlvProc->setProp(XML_ATTR_DATADIRECTORY, sbNewValue.str());
-                  }
-                }
-              }
-            }
-          }
-        }
-
         //if we are changing the eclServer field of wsattributes, set the following 
         //extra params from that eclserver. dbPassword, dbUser, mySQL, repository
         if (!strcmp(pszCompType, "WsAttributes") && !strcmp(pszAttrName, "eclServer"))
@@ -3735,7 +3648,7 @@ bool CWsDeployFileInfo::getDeployableComps(IEspContext &context, IEspGetDeployab
                 if (*nodeName != 'R')// || //neither RoxieServerProcess nor RoxieSlaveProcess
                 {
                   IPropertyTree* pInstanceNode = pCompNode->addPropTree(XML_TAG_INSTANCES, createPTree());
-                  const char* directory = pNode->queryProp(*nodeName == 'R' ? XML_ATTR_DATADIRECTORY : XML_ATTR_DIRECTORY);
+                  const char* directory = pNode->queryProp(*nodeName == 'R' ? XML_ATTR_LEVEL : XML_ATTR_DIRECTORY);
                   if (directory && *directory)
                     pInstanceNode->addProp(XML_ATTR_BUILD, directory);
 
