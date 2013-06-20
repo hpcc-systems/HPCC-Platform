@@ -2282,82 +2282,45 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
     return true;
 }
 
-bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName, const char * srcDali, const char * srcUser, const char * srcPassword,
-                                  const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy,
-                                  DFUclusterPartDiskMapping val, StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp)
+bool CFileSprayEx::doCopyForRoxie(IEspContext &context, const char * srcName, const char * srcDali, const char * srcUser, const char * srcPassword,
+    const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy, DFUclusterPartDiskMapping val,
+    StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp)
 {
     StringBuffer user, passwd;
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
     Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
+    wu->setJobName(dstName);
+    wu->setQueue(m_QueueLabel.str());
+    wu->setUser(context.getUserID(user).str());
+    wu->setPassword(context.getPassword(passwd).str());
+    wu->setClusterName(destCluster);
     if (supercopy)
-    {
-        wu->setJobName(dstName);
-        wu->setQueue(m_QueueLabel.str());
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setClusterName(destCluster);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        wu->setCommand(DFUcmd_supercopy);                                   // **** super copy
-        source->setLogicalName(srcName);
-        if (srcDali)                                    // remote copy
-        {
-            SocketEndpoint ep(srcDali);
-            source->setForeignDali(ep);
-            source->setForeignUser(srcUser, srcPassword);
-        }
-
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        destination->setLogicalName(dstName);
-        destination->setFileMask(fileMask);
-
-        destination->setClusterPartDiskMapping(val, baseDir, destCluster);  // roxie
-
-        if(compressed)
-            destination->setCompressed(true);
-
-        destination->setWrap(true);                                         // roxie always wraps
-
-        IDFUoptions *options = wu->queryUpdateOptions();
-        options->setOverwrite(overwrite);
-        options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
-
-    }
+        wu->setCommand(DFUcmd_supercopy);
     else
-    {
-        wu->setJobName(dstName);
-        wu->setQueue(m_QueueLabel.str());
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setClusterName(destCluster);
         wu->setCommand(DFUcmd_copy);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        source->setLogicalName(srcName);
-        if (srcDali)                                    // remote copy
-        {
-            SocketEndpoint ep(srcDali);
-            source->setForeignDali(ep);
-            source->setForeignUser(srcUser, srcPassword);
-        }
-
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        destination->setLogicalName(dstName);
-        destination->setFileMask(fileMask);
-
-        destination->setClusterPartDiskMapping(val, baseDir, destCluster, true);  // **** repeat last part
-
-        if(compressed)
-            destination->setCompressed(true);
-
-        destination->setWrap(true);                                         // roxie always wraps
-
-        IDFUoptions *options = wu->queryUpdateOptions();
-        options->setOverwrite(overwrite);
-        options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
-
-        options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
+    IDFUfileSpec *source = wu->queryUpdateSource();
+    source->setLogicalName(srcName);
+    if (srcDali)                                            // remote copy
+    {
+        SocketEndpoint ep(srcDali);
+        source->setForeignDali(ep);
+        source->setForeignUser(srcUser, srcPassword);
     }
+    IDFUfileSpec *destination = wu->queryUpdateDestination();
+    destination->setLogicalName(dstName);
+    destination->setFileMask(fileMask);
+    if (supercopy)
+        destination->setClusterPartDiskMapping(val, baseDir, destCluster);
+    else
+        destination->setClusterPartDiskMapping(val, baseDir, destCluster, true);
+    if(compressed)
+        destination->setCompressed(true);
+    destination->setWrap(true);                             // roxie always wraps
+    IDFUoptions *options = wu->queryUpdateOptions();
+    options->setOverwrite(overwrite);
+    options->setReplicate(val==DFUcpdm_c_replicated_by_d);
+    if (!supercopy)
+        options->setSuppressNonKeyRepeats(true);            // **** only repeat last part when src kind = key
 
     resp.setResult(wu->queryId());
     resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
@@ -2450,13 +2413,6 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
 
         if (bRoxie)
         {
-            bool compressRoxieCopy = false;
-            bool overwriteRoxieCopy = false;
-            if(req.getCompress())
-                compressRoxieCopy = true;
-            if(req.getOverwrite())
-                overwriteRoxieCopy = true;
-
             return doCopyForRoxie(context, srcname, req.getSourceDali(), req.getSrcusername(), req.getSrcpassword(), 
                 dstname, destCluster, req.getCompress(), req.getOverwrite(), supercopy, val, baseDir, fileMask, resp);
         }
@@ -2497,34 +2453,17 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             }
         }
 
-        if (bRoxie)
-        {
-            destination->setClusterPartDiskMapping(val, baseDir.str(), destCluster.str());
-            if (val != DFUcpdm_c_replicated_by_d)
-            {
-                options->setReplicate(false);
-            }
-            else
-            {
-                options->setReplicate(true);
-                destination->setReplicateOffset(offset);
-            }
-        }
-
         if (srcDiffKeyName&&*srcDiffKeyName)
             source->setDiffKey(srcDiffKeyName);
         if (destDiffKeyName&&*destDiffKeyName)
             destination->setDiffKey(destDiffKeyName);
 
-        if (!bRoxie)
-        {
-            destination->setDirectory(destFolder.str());
-            ClusterPartDiskMapSpec mspec;
-            destination->getClusterPartDiskMapSpec(destCluster.str(), mspec);
-            mspec.setDefaultBaseDir(defaultFolder.str());
-            mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-            destination->setClusterPartDiskMapSpec(destCluster.str(), mspec);
-        }
+        destination->setDirectory(destFolder.str());
+        ClusterPartDiskMapSpec mspec;
+        destination->getClusterPartDiskMapSpec(destCluster.str(), mspec);
+        mspec.setDefaultBaseDir(defaultFolder.str());
+        mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+        destination->setClusterPartDiskMapSpec(destCluster.str(), mspec);
 
         destination->setFileMask(fileMask.str());
         destination->setGroupName(destCluster.str());
@@ -2533,15 +2472,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         if(req.getCompress()||(encryptkey&&*encryptkey))
             destination->setCompressed(true);
 
-        if (!bRoxie)
-        {
-            options->setReplicate(req.getReplicate());
-            destination->setWrap(req.getWrap());
-        }
-        else
-        {
-            destination->setWrap(true);
-        }
+        options->setReplicate(req.getReplicate());
+        destination->setWrap(req.getWrap());
 
         const char * decryptkey = req.getDecrypt();
         if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
