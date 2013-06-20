@@ -306,17 +306,14 @@ inline bool isEclIdeRequest(CHttpRequest *request)
     return strstr(request->getHeader("User-Agent", userAgent), "eclide/") != NULL;
 }
 
-inline void initEclIdeResponse(CHttpResponse* response, StringBuffer *content = NULL)
-{
-    response->addHeader("X-UA-Compatible", "IE=edge");
-    if (content)
-        content->append("<!DOCTYPE html>"); //may be safe for all browsers? but better to be safe for now?
-}
-
-inline void checkInitEclIdeResponse(CHttpRequest *request, CHttpResponse* response, StringBuffer *content = NULL)
+inline bool checkInitEclIdeResponse(CHttpRequest *request, CHttpResponse* response)
 {
     if (isEclIdeRequest(request))
-        initEclIdeResponse(response, content);
+    {
+        response->addHeader("X-UA-Compatible", "IE=edge");
+        return true;
+    }
+    return false;
 }
 
 #endif //_SOAPBIND_HPP__

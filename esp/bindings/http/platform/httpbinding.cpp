@@ -1057,7 +1057,8 @@ int EspHttpBinding::onGetItext(IEspContext &context, CHttpRequest* request, CHtt
     StringBuffer title;
     request->getParameter("text", title);
     StringBuffer content;
-    checkInitEclIdeResponse(request, response, &content);
+    if (checkInitEclIdeResponse(request, response))
+        content.append("<!DOCTYPE html>"); //may be safe for all browsers? but better to be safe for now?
     content.append("<html><head>");
     if(title.length() > 0)
         content.appendf("<title>%s</title>", title.str());
@@ -1074,7 +1075,8 @@ int EspHttpBinding::onGetIframe(IEspContext &context, CHttpRequest* request, CHt
     StringBuffer title;
     request->getParameter("esp_iframe_title", title);
     StringBuffer content;
-    checkInitEclIdeResponse(request, response, &content);
+    if (checkInitEclIdeResponse(request, response))
+        content.append("<!DOCTYPE html>"); //may be safe for all browsers? but better to be safe for now?
     content.append("<html><head>");
     if(title.length() > 0)
         content.appendf("<title>%s</title>", title.str());
