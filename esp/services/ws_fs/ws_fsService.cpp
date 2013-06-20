@@ -2284,7 +2284,7 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
 
 bool CFileSprayEx::doCopyForRoxie(IEspContext &context, const char * srcName, const char * srcDali, const char * srcUser, const char * srcPassword,
     const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy, DFUclusterPartDiskMapping val,
-    StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp)
+    StringBuffer baseDir, StringBuffer defaultFolder, StringBuffer defaultReplicateFolder, StringBuffer fileMask, IEspCopyResponse &resp)
 {
     StringBuffer user, passwd;
     Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
@@ -2316,6 +2316,12 @@ bool CFileSprayEx::doCopyForRoxie(IEspContext &context, const char * srcName, co
     if(compressed)
         destination->setCompressed(true);
     destination->setWrap(true);                             // roxie always wraps
+    ClusterPartDiskMapSpec mspec;
+    destination->getClusterPartDiskMapSpec(destCluster, mspec);
+    mspec.setDefaultBaseDir(defaultFolder.str());
+    mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+    destination->setClusterPartDiskMapSpec(destCluster, mspec);
+
     IDFUoptions *options = wu->queryUpdateOptions();
     options->setOverwrite(overwrite);
     options->setReplicate(val==DFUcpdm_c_replicated_by_d);
@@ -2413,8 +2419,8 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
 
         if (bRoxie)
         {
-            return doCopyForRoxie(context, srcname, req.getSourceDali(), req.getSrcusername(), req.getSrcpassword(), 
-                dstname, destCluster, req.getCompress(), req.getOverwrite(), supercopy, val, baseDir, fileMask, resp);
+            return doCopyForRoxie(context, srcname, req.getSourceDali(), req.getSrcusername(), req.getSrcpassword(), dstname, destCluster,
+                req.getCompress(), req.getOverwrite(), supercopy, val, baseDir, defaultFolder, defaultReplicateFolder, fileMask, resp);
         }
 
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
