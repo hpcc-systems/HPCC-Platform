@@ -1,5 +1,6 @@
 Overview of Regression Suite usage
 ==================================
+To use Regression Suite change directory to HPCC-Platform/testing/regress subdirectory.
 
 Parameters of Regression Suite:
 -------------------------------
@@ -38,6 +39,7 @@ Steps to run Regression Suite
 
 1. Change directory to HPCC-Platform/testing/regress subdirectory.
 ------------------------------------------------------------------
+
 2. To list all available clusters:
 ----------------------------------
 Command:
@@ -85,7 +87,7 @@ The result:
 |        [Pass] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-095051`
 |        [Action]
 |
-|        Results
+|            Results
 |            `-------------------------------------------------`
 |            Passing: 3
 |            Failure: 0
@@ -100,104 +102,37 @@ The result:
 --------------------------------------------------------------------------------------------------------------------------------------------
 Command:
 
-        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing run thor
+        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing/regress run thor
 
 
-The result is a long list of test cases (actually 482) and their result. 
-
-(Actually the whole regression suite runs approximately 3 hours and generates full log in /var/log/HPCCSystems/regression directory. )
+The result is a list of test cases (actually 0) and their result. 
 
 The first couple of lines look like this:
 
 |
 |        [Action] Suite: thor
-|        [Action] Queries: 482
-|        [Action] 1. Test: stepping7d.ecl
-|        [Failure] Fail W20130617-111135
-|        [Failure] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-111135`
-|        [Action] 2. Test: dbz2c.ecl
-|        [Failure] Fail W20130617-111136
-|        [Failure] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-111136`
-|        [Action] 3. Test: stepjoin2.ecl
-|        [Pass] Pass W20130617-111137
-|        [Pass] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-111137`
-|        [Action] 4. Test: groupglobal3b.ecl
-|        [Pass] Pass W20130617-111142
-|        [Pass] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-111142`
-|        [Action] 5. Test: realround.ecl
-|        [Pass] Pass W20130617-111145
-|        [Pass] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-111145`
-|        [Action] 6. Test: patmin.ecl
-|        [Pass] Pass W20130617-111146
-|        [Pass] URL `http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130617-111146`
-|        ...
-
-After all test cases finished a short summary logged:
-
+|        [Action] Queries: 0
+|        [Action] 
+|         Results
+|         `-------------------------------------------------`
+|         Passing: 0
+|         Failure: 0
+|         `-------------------------------------------------`
+|         Log: /var/log/HPCCSystems/regression/thor.13-06-20-13-40.log
+|         `-------------------------------------------------`
 |
-|       Results
-|       `-------------------------------------------------`
-|       Passing: 273
-|       Failure: 209
-|       `-------------------------------------------------`
-|
-
-It is followed by error list created by diff command between the test case generated xml output and the stored key xml files like this:
-
-|
-|        `---` stepping7d.xml
-|        `+++` stepping7d.xml
-|        @@ -1 +1,7 @@
-|        -<Exception><Source>eclagent</Source><Message>Error: 0: </Message></Exception>
-|        +<Dataset name='Result 1'>
-|        +<Row><src>1</src><doc>5952</doc><cnt>7</cnt></Row>
-|        +<Row><src>1</src><doc>5978</doc><cnt>16</cnt></Row>
-|        +<Row><src>1</src><doc>26929</doc><cnt>3</cnt></Row>
-|        +<Row><src>1</src><doc>27753</doc><cnt>9</cnt></Row>
-|        +<Row><src>1</src><doc>34964</doc><cnt>4</cnt></Row>
-|        +</Dataset>
-|   
-|        `---` dbz2c.xml
-|
-|        +++ dbz2c.xml
-|      
-|        @@ -1 +1 @@
-|     
-|        -<Exception><Source>eclagent</Source><Message>System error: -1: Division by  zero</Message></Exception>
-|        +<Error><source>eclagent</source><code>-1</code><message>System error: -1:  Division by zero</message></Error>
-|        
-|        ...
-
 
 
 5. To run Regression Suite with selected test case on a selected cluster (e.g. Thor): 
 -------------------------------------------------------------------------------------
 
-The --suiteDir should point to absolute path of HPCC-Platform/testing/ directory:
+The --suiteDir should point to absolute path of HPCC-Platform/testing/regress directory:
 
 Command:
 
-        ./regress --suiteDir $(HPCC_INST_DIR)/HPCC-Platform/testing query test_name cluster
-
-E.g.run assert.ecl on thor cluster:
-
-        ./regress --suiteDir $(HPCC_INST_DIR)/HPCC-Platform/testing query assert.ecl thor
+        ./regress --suiteDir $(HPCC_INS_DIR)/HPCC-Platform/testing/regress query test_name cluster
 
 
-The result is:
+Actually the result is an error message "[Errno 2] No such file or directory: 'path'" related we have no test case in the Regression Suite.
 
-| 
-|        [Action] 1. Test: assert.ecl
-|        [Pass] Pass W20130618-133409
-|        [Pass] URL http://127.0.0.1:8010/WsWorkunits/WUInfo?Wuid=W20130618-133409
-|        [Action] 
-|            Results
-|            `-------------------------------------------------`
-|            Passing: 1
-|            Failure: 0
-|            `-------------------------------------------------`
-|            Log: /var/log/HPCCSystems/regression/assert.ecl.13-06-18-13-34.log
-|            `-------------------------------------------------`
-|
-
-**Important! Actually regression suite always compares the test case result with xml files stored in testing/ecl/key independently from the cluster.**
+**Important! Actually regression suite always compares the test case result with xml files stored in testing/regression/ecl/key independently from the cluster.**
