@@ -2291,10 +2291,9 @@ protected:
     {
         IRemoteConnection *conn;
         unsigned timeoutMs, prevMode;
-        CDistributedFileBase<INTERFACE> &owner;
     public:
-        CFileChangeWriteLock(CDistributedFileBase<INTERFACE> &_owner, IRemoteConnection *_conn, unsigned _timeoutMs)
-            : owner(_owner), conn(_conn), timeoutMs(_timeoutMs)
+        CFileChangeWriteLock(IRemoteConnection *_conn, unsigned _timeoutMs)
+            : conn(_conn), timeoutMs(_timeoutMs)
         {
             prevMode = conn->queryMode();
             unsigned newMode = (prevMode & ~RTM_LOCKBASIC_MASK) | RTM_LOCK_WRITE;
@@ -2305,11 +2304,7 @@ protected:
             if (conn)
                 conn->changeMode(prevMode, timeoutMs);
         }
-        IPropertyTree *detach(bool removeFile)
-        {
-            conn = NULL;
-            return owner.closeConnection(removeFile);
-        }
+        void clear() { conn = NULL; }
     };
     IPropertyTree *closeConnection(bool removeFile)
     {
@@ -2766,7 +2761,7 @@ protected:
 #endif
         {
             CriticalBlock block(sect); // JCSMORE - not convinced this is still necessary
-            CFileChangeWriteLock writeLock(*this, conn, timeoutMs);
+            CFileChangeWriteLock writeLock(conn, timeoutMs);
 
             logicalName.getCluster(clusterName);
 
@@ -2793,7 +2788,8 @@ protected:
             }
 
             // detach this IDistributeFile
-            root.setown(writeLock.detach(removeFile));
+            writeLock.clear();
+            root.setown(closeConnection(removeFile));
             // NB: The file is now unlocked
             if (removeFile)
                 updateFS(logicalName, timeoutMs);
@@ -4916,9 +4912,10 @@ public:
         subfiles.kill();    
 
         // Remove from SDS
-        CFileChangeWriteLock writeLock(*this, conn, timeoutMs);
+        CFileChangeWriteLock writeLock(conn, timeoutMs);
         clearSuperOwners(timeoutMs);
-        root.setown(writeLock.detach(true));
+        writeLock.clear();
+        root.setown(closeConnection(true));
         updateFS(logicalName, timeoutMs);
         logicalName.clear();
     }
