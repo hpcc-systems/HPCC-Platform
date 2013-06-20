@@ -123,6 +123,8 @@ to fulfill the following requirements:
     to be strict about this requirement to keep the lawyers happy.
 2.  All new code in the commit should follow the coding standards used by our project,
     for layout conventions, variable naming conventions, programming paradigms etc.
+    If you are using the eclipse IDE, the file misc/hpcc-eclipse-style.xml can be
+    imported into the settings for the C++ code style formatter.
 3.  The code should fix a single issue. If you spot other issues in nearby code, you
     should create a separate branch and pull request to fix them (or create an issue and
     let someone else fix them).
