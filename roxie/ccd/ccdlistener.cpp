@@ -244,16 +244,11 @@ class CascadeManager : public CInterface
         }
     }
 
-    SocketEndpoint &queryEndpoint(unsigned idx)
-    {
-        return allRoxieServers.item(idx);
-    }
-
     void connectChild(unsigned idx)
     {
-        if (allRoxieServers.isItem(idx))
+        if (idx < getNumNodes())
         {
-            SocketEndpoint &ep = queryEndpoint(idx);
+            SocketEndpoint ep(roxiePort, getNodeAddress(idx));
             try
             {
                 if (traceLevel)
@@ -518,11 +513,11 @@ public:
         if (traceLevel > 5)
             DBGLOG("doLockGlobal got %d locks", locksGot);
         reply.append("<Lock>").append(locksGot).append("</Lock>");
-        reply.append("<NumServers>").append(allRoxieServers.ordinality()).append("</NumServers>");
+        reply.append("<NumServers>").append(getNumNodes()).append("</NumServers>");
         if (lockAll)
-            return locksGot == allRoxieServers.ordinality();
+            return locksGot == getNumNodes();
         else
-            return locksGot > allRoxieServers.ordinality()/2;
+            return locksGot > getNumNodes()/2;
     }
 
     void doControlQuery(SocketEndpoint &ep, const char *queryText, StringBuffer &reply)

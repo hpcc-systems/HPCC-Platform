@@ -532,8 +532,6 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
               isMaster = true;
               out.appendf("%s=%s;%s%c%s;%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"),"master");
             }
-            else if (!strcmp(instName.toCharArray(), "RoxieSlaveProcess"))
-              sbChildren.appendf("%s=%s;%s%c%s;%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"),"slave");
           }
 
           if (!isMaster)

@@ -64,10 +64,6 @@
 #define eqRoxieServerProcess    "RoxieServerProcess"
 #endif
 
-#ifndef eqRoxieSlaveProcess
-#define eqRoxieSlaveProcess    "RoxieSlaveProcess"
-#endif
-
 static const int THREAD_POOL_SIZE = 40;
 static const int THREAD_POOL_STACK_SIZE = 64000;
 static const char* FEATURE_URL = "MachineInfoAccess";
@@ -660,7 +656,6 @@ void Cws_machineEx::readTargetClusterProcesses(IPropertyTree &processNode, const
     {
         BoolHash uniqueRoxieProcesses;
         getProcesses(constEnv, pClusterProcess, process, eqRoxieServerProcess, dirStr.str(), machineInfoData, uniqueProcesses, &uniqueRoxieProcesses);
-        getProcesses(constEnv, pClusterProcess, process, eqRoxieSlaveProcess, dirStr.str(), machineInfoData, uniqueProcesses, &uniqueRoxieProcesses);
     }
 }
 
@@ -1991,7 +1986,7 @@ const char* Cws_machineEx::getProcessTypeFromMachineType(const char* machineType
     {
         processType = eqThorCluster;
     }
-    else    if (strieq(machineType, eqRoxieServerProcess) || strieq(machineType, eqRoxieSlaveProcess))
+    else    if (strieq(machineType, eqRoxieServerProcess))
     {
         processType = eqRoxieCluster;
     }
