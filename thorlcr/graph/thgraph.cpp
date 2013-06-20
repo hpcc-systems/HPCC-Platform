@@ -2341,6 +2341,62 @@ public:
 };
 
 ////
+// IContextLogger
+class CThorContextLogger : CSimpleInterface, implements IContextLogger
+{
+    CJobBase &job;
+    unsigned traceLevel;
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CThorContextLogger(CJobBase &_job) : job(_job)
+    {
+    }
+    virtual void CTXLOG(const char *format, ...) const
+    {
+        va_list args;
+        va_start(args, format);
+        CTXLOGva(format, args);
+        va_end(args);
+    }
+    virtual void CTXLOGva(const char *format, va_list args) const
+    {
+        StringBuffer ss;
+        ss.valist_appendf(format, args);
+        LOG(MCdebugProgress, thorJob, "%s", ss.str());
+    }
+    virtual void logOperatorException(IException *E, const char *file, unsigned line, const char *format, ...) const
+    {
+        va_list args;
+        va_start(args, format);
+        logOperatorExceptionVA(E, file, line, format, args);
+        va_end(args);
+    }
+    virtual void logOperatorExceptionVA(IException *E, const char *file, unsigned line, const char *format, va_list args) const
+    {
+        StringBuffer ss;
+        ss.append("ERROR");
+        if (E)
+            ss.append(": ").append(E->errorCode());
+        if (file)
+            ss.appendf(": %s(%d) ", file, line);
+        if (E)
+            E->errorMessage(ss.append(": "));
+        if (format)
+            ss.append(": ").valist_appendf(format, args);
+        LOG(MCoperatorProgress, thorJob, "%s", ss.str());
+    }
+    virtual void noteStatistic(unsigned statCode, unsigned __int64 value, unsigned count) const
+    {
+    }
+    virtual unsigned queryTraceLevel() const
+    {
+        return traceLevel;
+    }
+};
+
+////
+
 CJobBase::CJobBase(const char *_graphName) : graphName(_graphName)
 {
     maxDiskUsage = diskUsage = 0;
@@ -2374,6 +2430,8 @@ void CJobBase::init()
     forceLogGraphIdMin = (graph_id)getWorkUnitValueInt("forceLogGraphIdMin", 0);
     forceLogGraphIdMax = (graph_id)getWorkUnitValueInt("forceLogGraphIdMax", 0);
 
+    logctx.setown(new CThorContextLogger(*this));
+
     // global setting default on, can be overridden by #option
     timeActivities = 0 != getWorkUnitValueInt("timeActivities", globals->getPropBool("@timeActivities", true));
     maxActivityCores = (unsigned)getWorkUnitValueInt("maxActivityCores", globals->getPropInt("@maxActivityCores", 0)); // NB: 0 means system decides
@@ -2388,7 +2446,7 @@ void CJobBase::init()
     bool crcChecking = 0 != getWorkUnitValueInt("THOR_ROWCRC", globals->getPropBool("@THOR_ROWCRC", defaultCrcChecking));
     bool usePackedAllocator = 0 != getWorkUnitValueInt("THOR_PACKEDALLOCATOR", globals->getPropBool("@THOR_PACKEDALLOCATOR", false));
     unsigned memorySpillAt = (unsigned)getWorkUnitValueInt("memorySpillAt", globals->getPropInt("@memorySpillAt", 80));
-    thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, crcChecking, usePackedAllocator));
+    thorAllocator.setown(createThorAllocator(((memsize_t)globalMemorySize)*0x100000, memorySpillAt, *logctx, crcChecking, usePackedAllocator));
 
     unsigned defaultMemMB = globalMemorySize*3/4;
     unsigned largeMemSize = getOptUInt("@largeMemSize", defaultMemMB);

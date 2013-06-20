@@ -54,11 +54,10 @@ interface ILazyFileIO : extends IFileIO
     virtual void removeCache(const IRoxieFileCache *) = 0;
 };
 
-extern ILazyFileIO *createDynamicFile(const char *id, IPartDescriptor *pdesc, RoxieFileType fileType, int numParts, SocketEndpoint &cloneFrom);
-
 interface IRoxieFileCache : extends IInterface
 {
-    virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType, IPartDescriptor *pdesc, unsigned numParts, const StringArray &deployedLocationInfo, bool startFileCopy) = 0;
+    virtual ILazyFileIO *lookupFile(const char *lfn, RoxieFileType fileType, IPartDescriptor *pdesc, unsigned numParts,
+                                      unsigned replicationLevel, const StringArray &deployedLocationInfo, bool startFileCopy) = 0;
     virtual RoxieFileStatus fileUpToDate(IFile *f, offset_t size, const CDateTime &modified, unsigned crc, bool isCompressed) = 0;
     virtual int numFilesToCopy() = 0;
     virtual void closeExpired(bool remote) = 0;

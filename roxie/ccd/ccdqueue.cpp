@@ -40,6 +40,7 @@ unsigned channels[MAX_CLUSTER_SIZE];
 unsigned channelCount;
 unsigned subChannels[MAX_CLUSTER_SIZE];
 unsigned numSlaves[MAX_CLUSTER_SIZE];
+unsigned replicationLevel[MAX_CLUSTER_SIZE];
 unsigned IBYTIDelays[MAX_CLUSTER_SIZE]; // MORE: this will cover only 2 slaves per channel, change to cover all. 
 
 SpinLock suspendCrit;

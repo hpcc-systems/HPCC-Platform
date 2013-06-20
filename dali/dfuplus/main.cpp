@@ -106,7 +106,6 @@ void handleSyntax()
     out.append("        name=<logical-name>\n");
     out.append("        names=<multiple-logical-names-separated-by-comma>\n");
     out.append("        namelist=<logical-name-list-in-file>\n");
-    out.append("        nodelete=0|1    -- optional\n");
     out.append("    rename options:\n");
     out.append("        srcname=<source-logical-name>\n");
     out.append("        dstname=<destination-logical-name>\n");

@@ -214,7 +214,7 @@ interface IDistributedFile: extends IInterface
     virtual const char *queryPartMask() = 0;                                    // default part name mask
 
     virtual void attach(const char *logicalname,IUserDescriptor *user) = 0;     // attach to name in DFS
-    virtual void detach(unsigned timeoutms=INFINITE, bool removePhysicalParts=true) = 0;                       // no longer attached to name in DFS
+    virtual void detach(unsigned timeoutms=INFINITE) = 0;                       // no longer attached to name in DFS
 
     virtual IPropertyTree &queryAttributes() = 0;                               // DFile attributes
 
@@ -230,9 +230,6 @@ interface IDistributedFile: extends IInterface
     virtual void setAccessed() = 0;                                             // set date and time last accessed to now (local time)
 
     virtual unsigned numCopies(unsigned partno) = 0;                            // number of copies
-
-    virtual bool removePhysicalPartFiles(const char *cluster=NULL,IMultiException *exceptions=NULL) = 0;          // removes all physical part files
-                                                                                // returns true if no major errors
 
     virtual bool existsPhysicalPartFiles(unsigned short port) = 0;              // returns true if physical patrs all exist (on primary OR secondary)
 
@@ -262,7 +259,7 @@ interface IDistributedFile: extends IInterface
     virtual void setECL(const char *ecl) = 0;
 
     virtual void addCluster(const char *clustername,const ClusterPartDiskMapSpec &mspec) = 0;
-    virtual void removeCluster(const char *clustername) = 0;    // doesn't delete parts
+    virtual bool removeCluster(const char *clustername) = 0;    // doesn't delete parts
     virtual bool checkClusterCompatible(IFileDescriptor &fdesc, StringBuffer &err) = 0;
     virtual void updatePartDiskMapping(const char *clustername,const ClusterPartDiskMapSpec &spec)=0;
 
@@ -563,6 +560,8 @@ extern da_decl IDistributedFileDirectory &queryDistributedFileDirectory();
 
 // ==GROUP STORE=================================================================================================
 
+enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_roxiefarm, grp_hthor, grp_unknown };
+
 interface INamedGroupIterator: extends IInterface
 {
     virtual bool first() = 0;
@@ -575,16 +574,15 @@ interface INamedGroupIterator: extends IInterface
 
 interface INamedGroupStore: implements IGroupResolver
 {
-    
     virtual IGroup *lookup(const char *logicalgroupname) = 0;
     virtual INamedGroupIterator *getIterator() = 0;
-    virtual INamedGroupIterator *getIterator(IGroup *match,bool exact=false) = 0;
-    virtual void add(const char *logicalgroupname,IGroup *group,bool cluster=false, const char *dir=NULL) = 0;
+    virtual INamedGroupIterator *getIterator(IGroup *match, bool exact=false) = 0;
+    virtual void add(const char *logicalgroupname,IGroup *group, bool cluster=false, const char *dir=NULL, GroupType groupType = grp_unknown) = 0;
     virtual void remove(const char *logicalgroupname) = 0;
     virtual bool find(IGroup *grp, StringBuffer &lname, bool add=false) = 0;
     virtual void addUnique(IGroup *group,StringBuffer &lname,const char *dir=NULL) = 0;
     virtual void swapNode(const IpAddress &from, const IpAddress &to) = 0;
-    virtual IGroup *lookup(const char *logicalgroupname, StringBuffer &dir) = 0;
+    virtual IGroup *lookup(const char *logicalgroupname, StringBuffer &dir, GroupType &groupType) = 0;
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                    // sets default timeout for SDS connections and locking                                                                                         // returns previous value
 
 };

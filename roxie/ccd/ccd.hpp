@@ -64,6 +64,7 @@ extern unsigned channelCount;                   // number of channels this node 
 extern unsigned subChannels[MAX_CLUSTER_SIZE];  // maps channel numbers to subChannels for this node
 extern bool suspendedChannels[MAX_CLUSTER_SIZE];// indicates suspended channels for this node
 extern unsigned numSlaves[MAX_CLUSTER_SIZE];    // number of slaves listening on this channel
+extern unsigned replicationLevel[MAX_CLUSTER_SIZE];  // Which copy of the data this channel uses on this slave
 
 extern unsigned myNodeIndex;
 #define OUTOFBAND_SEQUENCE    0x8000        // indicates an out-of-band reply
@@ -427,7 +428,6 @@ extern StringBuffer logDirectory;
 extern StringBuffer pluginDirectory;
 extern StringBuffer pluginsList;
 extern StringBuffer queryDirectory;
-extern StringBuffer baseDataDirectory;
 extern StringBuffer codeDirectory;
 extern StringBuffer tempDirectory;
 

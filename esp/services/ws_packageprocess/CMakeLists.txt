@@ -40,7 +40,6 @@ include_directories (
          ${HPCC_SOURCE_DIR}/common/environment
          ${HPCC_SOURCE_DIR}/dali/dfu
          ${HPCC_SOURCE_DIR}/common/remote
-         ${HPCC_SOURCE_DIR}/common/roxiemanager
          ${HPCC_SOURCE_DIR}/common/workunit
          ${HPCC_SOURCE_DIR}/rtl/include
     )
@@ -57,6 +56,5 @@ target_link_libraries ( ws_packageprocess
          securesocket
          dalibase
          ws_fs
-         roxiemanager
     )
 

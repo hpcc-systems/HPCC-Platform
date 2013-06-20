@@ -148,7 +148,6 @@ StringBuffer logDirectory;
 StringBuffer pluginDirectory;
 StringBuffer queryDirectory;
 StringBuffer codeDirectory;
-StringBuffer baseDataDirectory;
 StringBuffer tempDirectory;
 
 ClientCertificate clientCert;
@@ -283,7 +282,7 @@ void getAccessList(const char *aclName, IPropertyTree *topology, IPropertyTree *
     serverInfo->removeProp(xpath);
 }
 
-void addServerChannel(const char *dataDirectory, unsigned port, unsigned threads, const char *access, IPropertyTree *topology)
+void addServerChannel(unsigned port, unsigned threads, const char *access, IPropertyTree *topology)
 {
     if (!ownEP.port)
         ownEP.set(port, queryHostIP());
@@ -291,13 +290,10 @@ void addServerChannel(const char *dataDirectory, unsigned port, unsigned threads
     ForEach(*servers)
     {
         IPropertyTree &f = servers->query();
-        if (strcmp(f.queryProp("@dataDirectory"), dataDirectory) != 0)
-            throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - Roxie server dataDirectory respecified");
         if (f.getPropInt("@port", 0) == port)
             throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - Roxie server port repeated");
     }
     IPropertyTree *ci = createPTree("RoxieServerProcess");
-    ci->setProp("@dataDirectory", dataDirectory);
     ci->setPropInt("@port", port);
     ci->setPropInt("@numThreads", threads);
     if (access && *access)
@@ -312,7 +308,7 @@ bool ipMatch(IpAddress &ip)
     return ip.isLocal();
 }
 
-void addSlaveChannel(unsigned channel, const char *dataDirectory, bool suspended)
+void addSlaveChannel(unsigned channel, unsigned level, bool suspended)
 {
     StringBuffer xpath;
     xpath.appendf("RoxieSlaveProcess[@channel=\"%d\"]", channel);
@@ -321,18 +317,19 @@ void addSlaveChannel(unsigned channel, const char *dataDirectory, bool suspended
     IPropertyTree *ci = createPTree("RoxieSlaveProcess");
     ci->setPropInt("@channel", channel);
     ci->setPropBool("@suspended", suspended);
-    ci->setPropInt("@subChannel", numSlaves[channel]);
+    ci->setPropInt("@subChannel", numSlaves[channel]);   // Alternatively could probably use replication level as subchannel ?
     suspendedChannels[channel] = suspended;
-    ci->setProp("@dataDirectory", dataDirectory);
+    assertex(!replicationLevel[channel]);  // implies channel repeated, caught above
+    replicationLevel[channel] = level;
     ccdChannels->addPropTree("RoxieSlaveProcess", ci);
 }
 
-void addChannel(unsigned channel, const char *dataDirectory, bool isMe, bool suspended, IpAddress& slaveIp)
+void addChannel(unsigned channel, unsigned level, bool isMe, bool suspended, IpAddress& slaveIp)
 {
     numSlaves[channel]++;
     if (isMe && channel > 0 && channel <= numChannels)
     {
-        addSlaveChannel(channel, dataDirectory, suspended);
+        addSlaveChannel(channel, level, suspended);
     }
     if (!localSlave)
     {
@@ -520,8 +517,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
             topology=createPTreeFromXMLString(
                 "<RoxieTopology numChannels='1' localSlave='1'>"
-                 "<RoxieServerProcess dataDirectory='.' netAddress='.'/>"
-                 "<RoxieSlaveProcess dataDirectory='.' netAddress='.' channel='1'/>"
+                 "<RoxieServerProcess netAddress='.'/>"
+                 "<RoxieSlaveProcess netAddress='.' channel='1' level='0'/>"
                 "</RoxieTopology>"
                 );
             int port = globals->getPropInt("--port", 9876);
@@ -557,9 +554,27 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         soapTraceLevel = topology->getPropInt("@soapTraceLevel", runOnce ? 0 : 1);
         miscDebugTraceLevel = topology->getPropInt("@miscDebugTraceLevel", 0);
 
-        IPropertyTree *directoryTree = topology->queryPropTree("Directories");
+        Linked<IPropertyTree> directoryTree = topology->queryPropTree("Directories");
+        if (!directoryTree)
+        {
+            Owned<IPropertyTree> envFile = getHPCCEnvironment();
+            if (envFile)
+                directoryTree.set(envFile->queryPropTree("Software/Directories"));
+        }
         if (directoryTree)
-            getConfigurationDirectory(directoryTree,"query","roxie", roxieName, queryDirectory);
+        {
+            getConfigurationDirectory(directoryTree, "query", "roxie", roxieName, queryDirectory);
+            for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
+            {
+                StringBuffer dataDir;
+                StringBuffer dirId("data");
+                if (replicationLevel)
+                    dirId.append(replicationLevel+1);
+                if (getConfigurationDirectory(directoryTree, dirId, "roxie", roxieName, dataDir))
+                    setBaseDirectory(dataDir, replicationLevel, DFD_OSdefault);
+            }
+        }
+        directoryTree.clear();
 
         //Logging stuff
         if (globals->getPropBool("--stdlog", traceLevel != 0) || topology->getPropBool("@forceStdLog", false))
@@ -821,14 +836,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 queryDirectory.append(codeDirectory).append("queries");
         }
         addNonEmptyPathSepChar(queryDirectory);
-
-        // if no Dali, files are local
-        if (fileNameServiceDali.length() == 0)
-            baseDataDirectory.append("./"); // Path separator will be replaced, if necessary
-        else
-            baseDataDirectory.append(topology->queryProp("@baseDataDir"));
         queryFileCache().start();
-
         getTempFilePath(tempDirectory, "roxie", topology);
 
 #ifdef _WIN32
@@ -854,11 +862,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 unsigned roxieServerHost = roxieServer.getPropInt("@multihost", 0);
                 if (ipMatch(ep) && ((roxieServerHost == myHostNumber) || (myHostNumber==-1)))
                 {
-                    if (baseDataDirectory.length() == 0)  // if not set by other topology settings default to this ...
-                        baseDataDirectory.append(roxieServer.queryProp("@baseDataDirectory"));
                     unsigned numThreads = roxieServer.getPropInt("@numThreads", numServerThreads);
                     const char *aclName = roxieServer.queryProp("@aclName");
-                    addServerChannel(roxieServers->query().queryProp("@dataDirectory"), port, numThreads, aclName, topology);
+                    addServerChannel(port, numThreads, aclName, topology);
                     if (!myIPadded || (myHostNumber==-1))
                     {
                         myNodeIndex = nodeIndex;
@@ -910,7 +916,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
         }
         Owned<IPropertyTreeIterator> slaves = topology->getElements("./RoxieSlaveProcess");
-        unsigned slaveCount = 0;
         IpAddress *primaries = new IpAddress[numChannels+1];    // check each channel has a different primary, if possible. Leaks on fatal errors, but who cares
         ForEach(*slaves)
         {
@@ -925,17 +930,14 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 unsigned channel = slave.getPropInt("@channel", 0);
                 if (!channel)
                     channel = slave.getPropInt("@channels", 0); // legacy support
-                const char *dataDirectory = slave.queryProp("@dataDirectory");
+                unsigned replicationLevel = slave.getPropInt("@level", 0);
                 if (channel && channel <= numChannels)
                 {
                     if (isMe)
                         isCCD = true;
-                    if (!numSlaves[channel])
-                    {
+                    if (!replicationLevel)
                         primaries[channel] = slaveIp;
-                        slaveCount++;
-                    }
-                    addChannel(channel, dataDirectory, isMe, suspended, slaveIp);
+                    addChannel(channel, replicationLevel, isMe, suspended, slaveIp);
                     if (isMe)
                         joinMulticastChannel(channel);
                 }
@@ -950,7 +952,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         for (unsigned n = 1; n < numActiveChannels; n++)
         {
-            if (primaries[n].isNull())
+            if (!numSlaves[n])
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - no slaves for channel %d", n);
             if (checkPrimaries)
             {

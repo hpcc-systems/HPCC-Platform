@@ -363,6 +363,7 @@
    <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data/[COMPONENT]" name="data"/>
    <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data2/[COMPONENT]" name="data2"/>
    <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data3/[COMPONENT]" name="data3"/>
+   <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-data4/[COMPONENT]" name="data4"/>
    <Category dir="${EXEC_PREFIX}/lib/[NAME]/hpcc-mirror/[COMPONENT]" name="mirror"/>
    <Category dir="${EXEC_PREFIX}/lib/[NAME]/queries/[INST]" name="query"/>
    <Category dir="${EXEC_PREFIX}/lock/[NAME]/[INST]" name="lock"/>
@@ -894,7 +895,7 @@
                 useRemoteResources="true"
                 useTreeCopy="false">
    <RoxieFarmProcess 
-                     dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                     level="0"
                      listenQueue="200"
                      name="farm1"
                      numThreads="30"
@@ -903,7 +904,7 @@
     <RoxieServerProcess computer="localhost" name="farm1_s1"/>
    </RoxieFarmProcess>
    <RoxieFarmProcess
-                      dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                      level="0"
                       listenQueue="200"
                       name="farm2"
                       numThreads="30"
@@ -913,7 +914,7 @@
     </RoxieFarmProcess>
     <RoxieServerProcess
                        computer="localhost"
-                       dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                       level="0"
                        listenQueue="200"
                        name="farm1_s1"
                        netAddress="."
@@ -922,7 +923,7 @@
                        requestArrayThreads="5"/>
    <RoxieServerProcess 
                        computer="localhost"
-                       dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                       level="0"
                        listenQueue="200"
                        name="farm2_s1"
                        netAddress="."
@@ -930,11 +931,11 @@
                        port="0"
                        requestArrayThreads="5"/>
    <RoxieSlave computer="localhost" name="s1">
-    <RoxieChannel dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie" number="1"/>
+    <RoxieChannel level="0" number="1"/>
    </RoxieSlave>
    <RoxieSlaveProcess channel="1"
                       computer="localhost"
-                      dataDirectory="${RUNTIME_PATH}/hpcc-data/roxie"
+                      level="0"
                       name="s1"
                       netAddress="."/>
   </RoxieCluster>

@@ -212,7 +212,7 @@ void ClusterPartDiskMapSpec::fromProp(IPropertyTree *tree)
     // if directory is specified then must match default base to be default replicated
     StringBuffer dir;
     if (tree&&tree->getProp("@directory",dir)) {
-        const char * base = queryBaseDirectory(false,SepCharBaseOs(getPathSepChar(dir.str())));
+        const char * base = queryBaseDirectory(0, SepCharBaseOs(getPathSepChar(dir.str())));
         size32_t l = strlen(base);
         if ((memcmp(base,dir.str(),l)!=0)||((l!=dir.length())&&!isPathSepChar(dir.charAt(l))))
             defrep = 0;
@@ -394,7 +394,7 @@ public:
             group.setown(createIGroup(grptext));
         mspec.deserialize(mb);
         mb.read(name);
-        if ((name.length()==1)&&(*name.get()=='!')) { // flag for roxie lable
+        if ((name.length()==1)&&(*name.get()=='!')) { // flag for roxie label
             mb.read(roxielabel);
             name.clear();
         }
@@ -525,7 +525,7 @@ public:
     void getBaseDir(StringBuffer &basedir,DFD_OS os)
     {
         if (mspec.defaultBaseDir.isEmpty())  // assume thor default
-            basedir.append(queryBaseDirectory(false,os));
+            basedir.append(queryBaseDirectory(0, os));
         else
             basedir.append(mspec.defaultBaseDir);
     }
@@ -533,7 +533,7 @@ public:
     void getReplicateDir(StringBuffer &basedir,DFD_OS os)
     {
         if (mspec.defaultReplicateDir.isEmpty())  // assume thor default
-            basedir.append(queryBaseDirectory(true,os));
+            basedir.append(queryBaseDirectory(1, os));
         else
             basedir.append(mspec.defaultReplicateDir);
     }
@@ -1206,6 +1206,19 @@ class CFileDescriptor:  public CFileDescriptorBase, implements ISuperFileDescrip
         return NULL;
     }
 
+    IClusterInfo *queryCluster(const char *_clusterName)
+    {
+        StringAttr clusterName = _clusterName;
+        clusterName.toLowerCase();
+        StringBuffer name;
+        ForEachItemIn(c, clusters)
+        {
+            if (0 == strcmp(clusters.item(c).getClusterLabel(name.clear()).str(), clusterName))
+                return &clusters.item(c);
+        }
+        return NULL;
+    }
+
     void replaceClusterDir(unsigned partno,unsigned copy, StringBuffer &path)
     {
         // assumes default dir matches one of clusters
@@ -1447,6 +1460,8 @@ public:
         unsigned n = clusters.ordinality();
         pt.setPropInt("@numclusters",n);
         unsigned cn = 0;
+
+// JCSMORE - afaics, IFileDescriptor @group is no longer used
         StringBuffer grplist;
         ForEachItemIn(i1,clusters) {
             Owned<IPropertyTree> ct = createPTree("Cluster");
@@ -1467,6 +1482,8 @@ public:
             pt.setProp("@group",grplist.str());
         else
             pt.removeProp("@group");
+/// ^^
+
         n = numParts();
         pt.setPropInt("@numparts",n);
         if ((flags&IFDSF_EXCLUDE_PARTS)==0) {
@@ -1523,7 +1540,7 @@ public:
             if (!sc)
                 sc = getPathSepChar(dirname);
             StringBuffer tmp;
-            tmp.append(queryBaseDirectory(false,SepCharBaseOs(sc))).append(sc).append(s);
+            tmp.append(queryBaseDirectory(0, SepCharBaseOs(sc))).append(sc).append(s);
             directory.set(tmp.str());
         }
         else
@@ -1882,12 +1899,15 @@ public:
         closePending();
         unsigned done = 0;
         StringBuffer cname;
-        ForEachItemIn(i,names) {
+        ForEachItemIn(i,names)
+        {
             StringAttr name = names.item(i);
             name.toLowerCase();
-            for (unsigned j=done;j<clusters.ordinality();j++) {
+            for (unsigned j=done;j<clusters.ordinality();j++)
+            {
                 clusters.item(j).getClusterLabel(cname.clear());
-                if (strcmp(cname.str(),name)==0) {
+                if (strcmp(cname.str(),name)==0)
+                {
                     if (done!=j)
                         clusters.swap(done,j);
                     done++;
@@ -1895,11 +1915,31 @@ public:
                 }
             }
         }
-        if (exclusive) {
+        if (exclusive)
+        {
             if (!done)
                 done = 1;
+            StringAttr oldDefaultDir;
+            StringBuffer baseDir1;
             while (clusters.ordinality()>done)
+            {
+                clusters.item(clusters.ordinality()-1).getBaseDir(baseDir1.clear(),SepCharBaseOs(getPathSepChar(directory)));
+
+                // if baseDir is leading component this file's default directory..
+                if (!oldDefaultDir.length() && directory.length()>=baseDir1.length() && 0==strncmp(directory, baseDir1, baseDir1.length()) &&
+                    (directory.length()==baseDir1.length() || isPathSepChar(directory[baseDir1.length()])))
+                    oldDefaultDir.set(baseDir1.str());
                 clusters.remove(clusters.ordinality()-1);
+            }
+            if (oldDefaultDir.length() && clusters.ordinality())
+            {
+                StringBuffer baseDir2;
+                clusters.item(0).getBaseDir(baseDir2.clear(), SepCharBaseOs(getPathSepChar(directory)));
+                StringBuffer newDir(baseDir2.str());
+                if (directory.length()>oldDefaultDir.length())
+                    newDir.append(directory.get()+oldDefaultDir.length());
+                directory.set(newDir.str());
+            }
         }
     }
 
@@ -2179,11 +2219,8 @@ inline bool validFNameChar(char c)
     return (c>=32 && c<127 && !strchr(invalids, c));
 }
 
-static StringAttr winbasedir;
-static StringAttr winreplicatedir;
-static StringAttr unixbasedir;
-static StringAttr unixreplicatedir;
-
+static StringAttr winbasedirs[MAX_REPLICATION_LEVELS];
+static StringAttr unixbasedirs[MAX_REPLICATION_LEVELS];
 
 static StringAttr defaultpartmask("$L$._$P$_of_$N$");
 
@@ -2197,38 +2234,37 @@ void loadDefaultBases()
     ldbDone = true;
     // assumed default first thor
     // first set 
-    if (winreplicatedir.isEmpty())
-        winreplicatedir.set("d:\\thordata");
-    if (winbasedir.isEmpty())
-        winbasedir.set("c:\\thordata");
+    if (winbasedirs[1].isEmpty())
+        winbasedirs[1].set("d:\\thordata");
+    if (winbasedirs[0].isEmpty())
+        winbasedirs[0].set("c:\\thordata");
     SessionId mysessid = myProcessSession();
-    if (mysessid&&(unixreplicatedir.isEmpty()||unixbasedir.isEmpty())) {
+    if (mysessid && (unixbasedirs[1].isEmpty() || unixbasedirs[0].isEmpty())) {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (conn) {
             IPropertyTree* dirs = conn->queryRoot();
             StringBuffer dirout;
-            if (unixreplicatedir.isEmpty())
+            if (unixbasedirs[1].isEmpty())
                 if (getConfigurationDirectory(dirs,"mirror", "thor",
                     "mythor",   // NB this is dummy value should really get 1st thor (but actually hopefully not used anyway)
                     dirout))
-                    unixreplicatedir.set(dirout.str());
-            if (unixbasedir.isEmpty())
+                    unixbasedirs[1].set(dirout.str());
+            if (unixbasedirs[0].isEmpty())
                 if (getConfigurationDirectory(dirs,"data", "thor",
                     "mythor",   // NB this is dummy value should really get 1st thor (but actually hopefully not used anyway)
                     dirout.clear()))
-                    unixbasedir.set(dirout.str());
+                    unixbasedirs[0].set(dirout.str());
 
         }
     }
-    if (unixreplicatedir.isEmpty())
-        unixreplicatedir.set("/d$/thordata");
-    if (unixbasedir.isEmpty())
-        unixbasedir.set("/c$/thordata");
-
+    if (unixbasedirs[0].isEmpty())
+        unixbasedirs[0].set("/var/lib/HPCCSystems/hpcc-data/thor");
+    if (unixbasedirs[1].isEmpty())
+        unixbasedirs[1].set("/var/lib/HPCCSystems/hpcc-mirror/thor");
 }
 
 
-const char *queryBaseDirectory(bool replicate,DFD_OS os)
+const char *queryBaseDirectory(unsigned replicateLevel, DFD_OS os)
 {
     if (os==DFD_OSdefault)
 #ifdef _WIN32
@@ -2236,17 +2272,19 @@ const char *queryBaseDirectory(bool replicate,DFD_OS os)
 #else
         os = DFD_OSunix;
 #endif
+    assertex(replicateLevel < MAX_REPLICATION_LEVELS);
     loadDefaultBases();
-    switch (os) {
+    switch (os)
+    {
     case DFD_OSwindows:
-        return replicate?winreplicatedir.get():winbasedir.get();
+        return winbasedirs[replicateLevel];
     case DFD_OSunix:
-        return replicate?unixreplicatedir.get():unixbasedir.get();
+        return unixbasedirs[replicateLevel];
     }
     return NULL;
 }
 
-void setBaseDirectory(const char * dir,bool replicate,DFD_OS os)
+void setBaseDirectory(const char * dir, unsigned replicateLevel, DFD_OS os)
 {
     // 2 possibilities
     // either its an absolute path
@@ -2257,35 +2295,19 @@ void setBaseDirectory(const char * dir,bool replicate,DFD_OS os)
 #else
         os = DFD_OSunix;
 #endif
+    assertex(replicateLevel < MAX_REPLICATION_LEVELS);
     StringBuffer out;
-    if (!dir||!*dir||!isAbsolutePath(dir)) {
-        if (os==DFD_OSwindows) {
-            if (replicate)
-                out.append("d:\\thordata");
-            else
-                out.append("c:\\thordata");
-        }
-        else if (replicate)
-            out.append("/d$/thordata");
-        else
-            out.append("/c$/thordata");
-        dir = out.str();
-    }
+    if (!dir||!*dir||!isAbsolutePath(dir))
+        throw MakeStringException(-1,"setBaseDirectory(%s) requires an absolute path",dir ? dir : "null");
     size32_t l = strlen(dir);
     if ((l>3)&&(isPathSepChar(dir[l-1])))
         l--;
     switch (os) {
     case DFD_OSwindows:
-        if (replicate)
-            winreplicatedir.set(dir,l);
-        else
-            winbasedir.set(dir,l);
+        winbasedirs[replicateLevel].set(dir,l);
         break;
     case DFD_OSunix:
-        if (replicate)
-            unixreplicatedir.set(dir,l);
-        else
-            unixbasedir.set(dir,l);
+        unixbasedirs[replicateLevel].set(dir,l);
         break;
     }
 }
@@ -2404,7 +2426,7 @@ inline const char *skipRoot(const char *lname)
 
 
 
-StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned partmax, StringBuffer &result, bool replicate, DFD_OS os,const char *diroverride)
+StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned partmax, StringBuffer &result, unsigned replicateLevel, DFD_OS os,const char *diroverride)
 {
     assertex(lname);
     if (strstr(lname,"::>")) { // probably query
@@ -2439,7 +2461,7 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
         result.append(diroverride);
     }
     else
-        result.append(queryBaseDirectory(replicate,os));
+        result.append(queryBaseDirectory(replicateLevel, os));
 
     size32_t l = result.length();
     if ((l>3)&&(result.charAt(l-1)!=OsSepChar(os))) {
@@ -2517,7 +2539,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
     if (!sep)
         return false;
     DFD_OS os = SepCharBaseOs(*sep);
-    const char *d = baseDir?baseDir:queryBaseDirectory(!isrep,os);
+    const char *d = baseDir?baseDir:queryBaseDirectory(isrep ? 0 : 1,os);
     if (!d)
         return false;
     unsigned match = 0;
@@ -2528,7 +2550,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
             match = i;
             count++;
         }
-    const char *r = repDir?repDir:queryBaseDirectory(isrep,os);
+    const char *r = repDir?repDir:queryBaseDirectory(isrep ? 1 : 0,os);
     if (d[i]==0) {
         if ((dir[i]==0)||isPathSepChar(dir[i])) {
             out.append(r).append(dir+i);

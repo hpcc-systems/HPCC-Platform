@@ -162,11 +162,7 @@ class CFileManager : public CSimpleInterface, implements IThorFileManager
                 throw MakeThorException(0, "Failed to remove external file: %s", lfn.str());
         }
         else
-        {
             file.detach();
-            if (!file.querySuperFile())
-                file.removePhysicalPartFiles(); 
-        }
     }
 
 public:
