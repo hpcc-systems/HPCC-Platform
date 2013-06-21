@@ -90,6 +90,8 @@ static unsigned calcInlineFlags(BuildCtx * ctx, IHqlExpression * expr)
     switch (op)
     {
     case no_workunit_dataset:
+        if (expr->hasAttribute(wuidAtom))
+            return 0;
         return RETassign;
     case no_alias:
         {

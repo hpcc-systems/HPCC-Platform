@@ -1938,6 +1938,7 @@ bool isInlineTrivialDataset(IHqlExpression * expr)
             break;
         case no_workunit_dataset:
         case no_getresult:
+            return !expr->hasAttribute(wuidAtom);
         case no_null:
             return true;
         case no_getgraphresult:
