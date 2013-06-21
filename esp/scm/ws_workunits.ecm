@@ -1198,7 +1198,14 @@ ESPrequest WUQueryDetailsRequest
 {
     string QueryId;
     string QuerySet;
-    bool   IncludeStateOnClusters(false);
+    bool IncludeStateOnClusters(false);
+    bool IncludeSuperFiles(false);
+};
+
+ESPStruct QuerySuperFile
+{
+    string Name;
+    ESParray<string, File> SubFiles;
 };
 
 ESPresponse [exceptions_inline] WUQueryDetailsResponse
@@ -1216,6 +1223,8 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
     string Comment;
 
     ESParray<string> LogicalFiles;
+    [min_ver("1.44")] ESParray<ESPstruct QuerySuperFile, SuperFile> SuperFiles;
+
 };
 
 ESPrequest WUMultiQuerySetDetailsRequest
@@ -1341,7 +1350,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.42"), default_client_version("1.42"),
+    version("1.44"), default_client_version("1.44"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
