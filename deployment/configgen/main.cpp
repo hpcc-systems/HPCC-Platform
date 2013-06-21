@@ -520,8 +520,6 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
       {
         if (!strcmp(pComponent->queryProp("@buildSet"), "roxie") || !strcmp(pComponent->queryProp("@buildSet"), "thor"))
         {
-          StringBuffer sbChildren;
-          bool isMaster = false;
           Owned<IPropertyTreeIterator> itInst = pComponent->getElements("*");
           ForEach(*itInst)
           {
@@ -529,13 +527,9 @@ int processRequest(const char* in_cfgname, const char* out_dirname, const char* 
             String instName(pInst->queryName());
             if (!strcmp(instName.toCharArray(), "ThorMasterProcess") || instName.startsWith("RoxieServerProcess"))
             {
-              isMaster = true;
               out.appendf("%s=%s;%s%c%s;%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"),"master");
             }
           }
-
-          if (!isMaster)
-            out.append(sbChildren);
         }
         else
           out.appendf("%s=%s;%s%c%s\n", pComponent->queryProp("@name"), pComponent->queryProp("@buildSet"), out_dirname, PATHSEPCHAR, pComponent->queryProp("@name"));

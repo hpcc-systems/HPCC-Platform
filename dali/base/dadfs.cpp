@@ -7766,9 +7766,8 @@ class CInitGroups
                 // MORE - it's not clear whether this is correct for full redundancy and overloaded clusters
                 {
                     unsigned k;
-                    for (k=0;k<eps.ordinality();k++)
-                        if (eps.item(k).equals(ep))
-                            break;
+                    if (eps.contains(ep))
+                        break;
                     if (k==eps.ordinality())
                         eps.append(ep); // just add (don't care about order and no duplicates)
                     break;
