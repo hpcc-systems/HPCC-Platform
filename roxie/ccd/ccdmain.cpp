@@ -833,12 +833,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         // Generate the slave channels
         unsigned numDataCopies = topology->getPropInt("@numDataCopies", 1);
-        unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 0);
         unsigned numNodes = getNumNodes();
-        if (cyclicOffset)
+        const char *slaveConfig = topology->queryProp("@slaveConfig");
+        if (strnicmp(slaveConfig, "cyclic", 6) == 0)
         {
             if (numChannels != numNodes)
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels does not match number of servers");
+            unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 0);
             for (int i=0; i<numNodes; i++)
             {
                 int channel = i+1;
@@ -851,7 +852,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 }
             }
         }
-        else if (numChannels > numNodes)   // overloaded mode
+        else if (strnicmp(slaveConfig, "overloaded", 10) == 0)
         {
             if (numChannels != numNodes * numDataCopies)
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels does not match expected value");
