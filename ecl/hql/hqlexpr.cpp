@@ -15232,6 +15232,9 @@ bool isSelfJoin(IHqlExpression * expr)
     if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom))
         return false;
 
+    if (expr->queryChild(2)->isConstant())
+        return false;
+
     if (!joinSortOrdersMatch(expr->queryChild(2)))
         return false;
 
