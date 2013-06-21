@@ -314,9 +314,10 @@
     <para><orderedlist>
         <listitem>
           <para>In your browser, go to the <emphasis role="bold">ECL
-          Watch</emphasis> URL displayed (circled in red) in <xref
-          linkend="welcometovm" />. For example, http://nnn.nnn.nnn.nnn:8010,
-          where nnn.nnn.nnn.nnn is your Virtual Machine's IP address. .</para>
+          Watch</emphasis> URL displayed (circled in red) in Figure 1,
+          <emphasis>VM Welcome Screen</emphasis>. For example,
+          http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your Virtual
+          Machine's IP address. </para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>
@@ -342,6 +343,8 @@
         </listitem>
 
         <listitem>
+          <?dbfo keep-together="always"?>
+
           <para>From ECL Watch page, click on the <emphasis
           role="bold">Resources </emphasis> link in the menu on the left
           side.</para>
@@ -351,30 +354,29 @@
 
               <mediaobject>
                 <imageobject>
-                  <imagedata fileref="images/vmimg07b.jpg" />
+                  <imagedata fileref="images/GS_1311.jpg" vendor="eclwatchSS" />
                 </imageobject>
               </mediaobject>
             </figure></para>
 
-          <para><emphasis role="bold">Note: The order of items on the page may
-          vary depending on the order in which optional packages are
-          installed.</emphasis></para>
+          <para>Follow the link to the HPCC System's portal.</para>
         </listitem>
 
         <listitem>
-          <para>Click on the ECL IDE Installer link. When prompted save this
-          file to your PC and then run it—do not run directly from your
-          browser. This is a Windows installer for a Windows
-          application.</para>
+          <para>Click on the <emphasis role="bold">ECL IDE
+          </emphasis>link.</para>
         </listitem>
 
         <listitem>
-          <para>You can close your browser, if desired.</para>
+          <para>Download the <emphasis role="bold">ECL IDE for
+          Windows</emphasis> from the <emphasis>Community ECL IDE</emphasis>
+          download page.</para>
         </listitem>
 
         <listitem>
-          <para>Install the ECL IDE, following the prompts in the installer.
-          Once the ECL IDE is installed successfully, you can proceed.</para>
+          <para>Install the ECL IDE, following the prompts in the installation
+          program. Once the ECL IDE is installed successfully, you can
+          proceed.</para>
         </listitem>
       </orderedlist></para>
 
