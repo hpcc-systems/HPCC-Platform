@@ -2404,7 +2404,13 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
                 wuFSpecDest->setClusterPartDiskMapping(val, baseDir.str(), destCluster.str());
             else
                 wuFSpecDest->setClusterPartDiskMapping(val, baseDir.str(), destCluster.str(), true);
-            wuOptions->setReplicate(val==DFUcpdm_c_replicated_by_d);
+            if (val != DFUcpdm_c_replicated_by_d)
+                wuOptions->setReplicate(false);
+            else
+            {
+                wuOptions->setReplicate(true);
+                wuFSpecDest->setReplicateOffset(offset);
+            }
             if (!supercopy)
                 wuOptions->setSuppressNonKeyRepeats(true);            // **** only repeat last part when src kind = key
         }
