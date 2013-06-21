@@ -2141,10 +2141,6 @@ class CHashTableRowTable : private CThorExpandingRowArray
     ICompare *iCompare;
     rowidx_t htElements, htMax;
 
-    inline rowidx_t getNewSize(rowidx_t current) const
-    {
-        return current+HASHDEDUP_HT_INC_SIZE;
-    }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
@@ -2170,9 +2166,16 @@ public:
         return true;
     }
     void init(rowidx_t sz);
-    bool rehash();
-    bool lookupRow(const void *row, unsigned htPos) const // return true == match
+    const void *allocateNewTable()
     {
+        rowidx_t newMaxRows = maxRows+HASHDEDUP_HT_INC_SIZE;
+        return allocateRowTable(newMaxRows);
+    }
+    rowidx_t rehash(const void **newRows, rowidx_t &newHigh) const;
+    void swap(rowidx_t newMaxRows, rowidx_t newNumRows, void **newRows);
+    bool lookupRow(unsigned htPos, const void *row) const // return true == match
+    {
+        rowidx_t s = htPos;
         loop
         {
             const void *htKey = rows[htPos];
@@ -2182,6 +2185,8 @@ public:
                 return true;
             if (++htPos==maxRows)
                 htPos = 0;
+            if (htPos == s)
+                ThrowStringException(0, "lookupRow() HT full - infinite loop!");
         }
         return false;
     }
@@ -2282,6 +2287,95 @@ public:
     }
 };
 
+// If I like these, move to jlib
+class CConditionalLock
+{
+    CriticalSection crit;
+    atomic_t value;
+public:
+    inline CConditionalLock()
+    {
+        atomic_set(&value, 0);
+    }
+    inline bool tryLock()
+    {
+        if (!atomic_cas(&value,1,0))
+            return false;
+        crit.enter();
+        return true;
+    }
+    inline void lock()
+    {
+        while (!atomic_cas(&value,1,0))
+            crit.enter();
+    }
+    inline void unlock()
+    {
+        if (!atomic_cas(&value,0,1))
+            throwUnexpected();
+        crit.leave();
+    }
+    inline bool tryUnlock() // IOW, leave if necessary
+    {
+        if (!atomic_cas(&value,0,1))
+            return false;
+        crit.leave();
+        return true;
+    }
+};
+
+class CLockBlock
+{
+    CConditionalLock &lock;
+public:
+    inline CLockBlock(CConditionalLock &_lock) : lock(_lock)
+    {
+        lock.lock();
+    }
+    inline ~CLockBlock()
+    {
+        lock.unlock();
+    }
+};
+
+class CUnlockBlock
+{
+    CConditionalLock &lock;
+public:
+    inline CUnlockBlock(CConditionalLock &_lock) : lock(_lock)
+    {
+        lock.unlock();
+    }
+    inline ~CUnlockBlock()
+    {
+        lock.lock();
+    }
+};
+
+class CCondLockBlock
+{
+    CConditionalLock *lock;
+public:
+    inline CCondLockBlock() { lock = NULL; }
+    inline ~CCondLockBlock()
+    {
+        if (lock)
+            lock->unlock();
+    }
+    inline bool tryEnter(CConditionalLock &_lock, bool block)
+    {
+        if (block)
+            lock->lock();
+        else
+        {
+            if (!lock->tryLock())
+                return false;
+        }
+        lock = &_lock;
+        return true;
+    }
+};
+
 class CBucket : public CSimpleInterface, implements IInterface
 {
     HashDedupSlaveActivityBase &owner;
@@ -2292,7 +2386,7 @@ class CBucket : public CSimpleInterface, implements IInterface
     IEngineRowAllocator *keyAllocator;
     CHashTableRowTable &htRows;
     bool extractKey, spilt;
-    SpinLock spin;
+    CConditionalLock lock;
     unsigned bucketN;
     CSpill rowSpill, keySpill;
 
@@ -2318,7 +2412,8 @@ public:
         else
             return htRows.clear();
     }
-    bool spillHashTable(); // returns true if freed mem
+    bool spillHashTable(bool block); // returns true if freed mem
+    bool checkDoRehash();
     void close()
     {
         rowSpill.close();
@@ -2430,7 +2525,7 @@ public:
         unsigned start=nextToSpill;
         do
         {
-            // NB: spin ensures exclusivity to write to bucket inside spillHashTable
+            // NB: lock ensures exclusivity to write to bucket inside spillHashTable
             // Another thread could create a bucket at this time, but
             // access to 'buckets' (which can be assigned to by other thread) should be atomic, on Intel at least.
             CBucket *bucket = buckets[nextToSpill++];
@@ -2441,7 +2536,7 @@ public:
                 // spill whole bucket unless last
                 // The one left, will be last bucket standing and grown to fill mem
                 // it is still useful to use as much as poss. of remaining bucket HT as filter
-                if (bucket->spillHashTable())
+                if (bucket->spillHashTable(critical))
                     return true;
                 else if (critical && bucket->clearHashTable(true))
                     return true;
@@ -2730,15 +2825,10 @@ void CHashTableRowTable::init(rowidx_t sz)
     htMax = maxRows * HTSIZE_LIMIT_PC / 100;
 }
 
-bool CHashTableRowTable::rehash()
+rowidx_t CHashTableRowTable::rehash(const void **newRows, rowidx_t &newHigh) const
 {
     dbgassertex(iKeyHash);
-    rowidx_t newMaxRows = getNewSize(maxRows);
-    OwnedConstThorRow _newRows = allocateRowTable(newMaxRows);
-    if (!_newRows || owner->isSpilt())
-        return false;
-    const void **newRows = (const void **)_newRows.get();
-    newMaxRows = RoxieRowCapacity(newRows) / sizeof(void *);
+    rowidx_t newMaxRows = RoxieRowCapacity(newRows) / sizeof(void *);
     memset(newRows, 0, newMaxRows * sizeof(void *));
     rowidx_t newNumRows=0;
     for (rowidx_t i=0; i<maxRows; i++)
@@ -2757,15 +2847,23 @@ bool CHashTableRowTable::rehash()
                 newNumRows = h+1;
         }
     }
+
     if (maxRows)
-        ActPrintLog(&activity, "Rehashed bucket %d - %d elements, old size = %d, new size = %d", owner->queryBucketNumber(), htElements, maxRows, newMaxRows);
+        ActPrintLog(&activity, "rehash(): bucket %d - old size = %d, new size = %d, elements = %d", owner->queryBucketNumber(), maxRows, newMaxRows, htElements);
+    newHigh = newNumRows;
+    return newMaxRows;
+}
+
+void CHashTableRowTable::swap(rowidx_t newMaxRows, rowidx_t newNumRows, void **newRows)
+{
+    OwnedConstThorRow _newRows = newRows;
+
     const void **oldRows = rows;
     rows = (const void **)_newRows.getClear();
     ReleaseThorRow(oldRows);
     maxRows = newMaxRows;
     numRows = newNumRows;
     htMax = maxRows * HTSIZE_LIMIT_PC / 100;
-    return true;
 }
 
 //
@@ -2793,19 +2891,27 @@ void CBucket::clear()
     clearHashTable(false);
 }
 
-bool CBucket::spillHashTable()
+bool CBucket::spillHashTable(bool block)
 {
-    SpinBlock b(spin);
-    rowidx_t removeN = htRows.queryHtElements();
-    if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
-        return false;
-    setSpilt();
-    rowidx_t maxRows = htRows.queryMaxRows();
-    for (rowidx_t i=0; i<maxRows; i++)
+    rowidx_t removeN;
     {
-        OwnedConstThorRow key = htRows.getRowClear(i);
-        if (key)
-            keySpill.putRow(key.getClear());
+        CCondLockBlock b;
+        if (b.tryEnter(lock, block))
+        {
+            removeN = htRows.queryHtElements();
+            if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
+                return false;
+            setSpilt();
+            // JCSMORE - could detach row table here and let 'lock' go whilst spilling to disk
+            // would have to careful to ensure that when buck is closed, it waits for pending write
+            rowidx_t maxRows = htRows.queryMaxRows();
+            for (rowidx_t i=0; i<maxRows; i++)
+            {
+                OwnedConstThorRow key = htRows.getRowClear(i);
+                if (key)
+                    keySpill.putRow(key.getClear());
+            }
+        }
     }
     ActPrintLog(&owner, "Spilt bucket %d - %d elements of hash table", bucketN, removeN);
     return true;
@@ -2814,15 +2920,10 @@ bool CBucket::spillHashTable()
 bool CBucket::addKey(const void *key, unsigned hashValue)
 {
     {
-        SpinBlock b(spin);
-        if (!spilt && htRows.checkNeedRehash())
+        CLockBlock b(lock);
+        if (checkDoRehash()) // if returns false, don't add row to HT as has spilt
         {
-            if (!htRows.rehash())
-                setSpilt(); // about to
-        }
-        if (htRows.queryMaxRows()) // might be 0 - if HT cleared if just spilt, or no room for initial ptr alloc
-        {
-            if (!spilt)
+            if (htRows.queryMaxRows()) // might be 0 - if no room for initial ptr alloc
             {
                 unsigned htPos = hashValue % htRows.queryMaxRows();
                 LinkThorRow(key);
@@ -2836,34 +2937,56 @@ bool CBucket::addKey(const void *key, unsigned hashValue)
     return false;
 }
 
+// NB: always called inside a CLockBlock b(lock)
+// NB2: returns true if okay to proceed to use HT (basically if !spilt)
+bool CBucket::checkDoRehash()
+{
+    if (isSpilt()) // don't rehash if already spilt
+        return false;
+    if (!htRows.checkNeedRehash())
+        return true;
+
+    // Have to be careful not to block 'lock' when allocating here.
+    // Because, spillHashTable() needs to block 'lock'
+    OwnedConstThorRow newHtRows;
+    rowidx_t e = htRows.queryHtElements();
+    {
+        CUnlockBlock b(lock); // allocate may cause spill
+        newHtRows.setown(htRows.allocateNewTable());
+    }
+    if (!newHtRows)
+    {
+        setSpilt(); // if hasn't already, it's about to now
+        return false;
+    }
+    else if (isSpilt()) // check we didn't spill whilst allocating new table
+        return false;
+
+    rowidx_t newHigh;
+    rowidx_t newMax = htRows.rehash((const void **)newHtRows.get(), newHigh);
+    if (isSpilt()) // check we didn't spill whilst rehashing
+        return false;
+
+    // ok.. swap in new rehashed table, release old
+    htRows.swap(newMax, newHigh, (void **)newHtRows.getClear());
+
+    return true;
+}
+
 bool CBucket::addRow(const void *row, unsigned hashValue)
 {
     {
-        SpinBlock b(spin);
-        bool doAdd = true;
-        if (htRows.checkNeedRehash())
-        {
-            if (spilt)
-                doAdd = false; // don't rehash if full and already spilt
-            else
-            {
-                if (!htRows.rehash())
-                {
-                    setSpilt(); // about to
-                    doAdd = false;
-                }
-            }
-        }
-        if (doAdd)
+        CLockBlock b(lock);
+        if (checkDoRehash()) // if returns false, don't add row to HT as has spilt
         {
             unsigned htPos = hashValue % htRows.queryMaxRows();
-            if (htRows.lookupRow(row, htPos))
+            if (htRows.lookupRow(htPos, row))
                 return false; // dedupped
 
             OwnedConstThorRow key;
             if (extractKey)
             {
-                SpinUnblock b(spin); // will allocate, might cause spill
+                CUnlockBlock b(lock); // will allocate, might cause spill
                 RtlDynamicRowBuilder krow(keyAllocator);
                 size32_t sz = owner.helper->recordToKey(krow, row);
                 assertex(sz);
@@ -2872,8 +2995,9 @@ bool CBucket::addRow(const void *row, unsigned hashValue)
             else
                 key.set(row);
             htRows.addRow(htPos, key.getClear());
-            if (!spilt)
+            if (!isSpilt()) // could have spilt whilst extracting key
                 return true;
+
             // if spilt, then still added/used to dedup, but have to commit row to disk
             // as no longer know it's 1st/unique
         }
