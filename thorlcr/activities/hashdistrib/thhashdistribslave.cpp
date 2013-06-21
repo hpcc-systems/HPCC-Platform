@@ -2173,7 +2173,7 @@ public:
     }
     rowidx_t rehash(const void **newRows, rowidx_t &newHigh) const;
     void swap(rowidx_t newMaxRows, rowidx_t newNumRows, void **newRows);
-    bool lookupRow(const void *row, unsigned htPos) const // return true == match
+    bool lookupRow(unsigned htPos, const void *row) const // return true == match
     {
         rowidx_t s = htPos;
         loop
@@ -2287,6 +2287,95 @@ public:
     }
 };
 
+// If I like these, move to jlib
+class CConditionalLock
+{
+    CriticalSection crit;
+    atomic_t value;
+public:
+    inline CConditionalLock()
+    {
+        atomic_set(&value, 0);
+    }
+    inline bool tryLock()
+    {
+        if (!atomic_cas(&value,1,0))
+            return false;
+        crit.enter();
+        return true;
+    }
+    inline void lock()
+    {
+        while (!atomic_cas(&value,1,0))
+            crit.enter();
+    }
+    inline void unlock()
+    {
+        if (!atomic_cas(&value,0,1))
+            throwUnexpected();
+        crit.leave();
+    }
+    inline bool tryUnlock() // IOW, leave if necessary
+    {
+        if (!atomic_cas(&value,0,1))
+            return false;
+        crit.leave();
+        return true;
+    }
+};
+
+class CLockBlock
+{
+    CConditionalLock &lock;
+public:
+    inline CLockBlock(CConditionalLock &_lock) : lock(_lock)
+    {
+        lock.lock();
+    }
+    inline ~CLockBlock()
+    {
+        lock.unlock();
+    }
+};
+
+class CUnlockBlock
+{
+    CConditionalLock &lock;
+public:
+    inline CUnlockBlock(CConditionalLock &_lock) : lock(_lock)
+    {
+        lock.unlock();
+    }
+    inline ~CUnlockBlock()
+    {
+        lock.lock();
+    }
+};
+
+class CCondLockBlock
+{
+    CConditionalLock *lock;
+public:
+    inline CCondLockBlock() { lock = NULL; }
+    inline ~CCondLockBlock()
+    {
+        if (lock)
+            lock->unlock();
+    }
+    inline bool tryEnter(CConditionalLock &_lock, bool block)
+    {
+        if (block)
+            lock->lock();
+        else
+        {
+            if (!lock->tryLock())
+                return false;
+        }
+        lock = &_lock;
+        return true;
+    }
+};
+
 class CBucket : public CSimpleInterface, implements IInterface
 {
     HashDedupSlaveActivityBase &owner;
@@ -2297,7 +2386,7 @@ class CBucket : public CSimpleInterface, implements IInterface
     IEngineRowAllocator *keyAllocator;
     CHashTableRowTable &htRows;
     bool extractKey, spilt;
-    SpinLock spin;
+    CConditionalLock lock;
     unsigned bucketN;
     CSpill rowSpill, keySpill;
 
@@ -2323,7 +2412,7 @@ public:
         else
             return htRows.clear();
     }
-    bool spillHashTable(); // returns true if freed mem
+    bool spillHashTable(bool block); // returns true if freed mem
     bool checkDoRehash();
     void close()
     {
@@ -2436,7 +2525,7 @@ public:
         unsigned start=nextToSpill;
         do
         {
-            // NB: spin ensures exclusivity to write to bucket inside spillHashTable
+            // NB: lock ensures exclusivity to write to bucket inside spillHashTable
             // Another thread could create a bucket at this time, but
             // access to 'buckets' (which can be assigned to by other thread) should be atomic, on Intel at least.
             CBucket *bucket = buckets[nextToSpill++];
@@ -2447,7 +2536,7 @@ public:
                 // spill whole bucket unless last
                 // The one left, will be last bucket standing and grown to fill mem
                 // it is still useful to use as much as poss. of remaining bucket HT as filter
-                if (bucket->spillHashTable())
+                if (bucket->spillHashTable(critical))
                     return true;
                 else if (critical && bucket->clearHashTable(true))
                     return true;
@@ -2802,23 +2891,26 @@ void CBucket::clear()
     clearHashTable(false);
 }
 
-bool CBucket::spillHashTable()
+bool CBucket::spillHashTable(bool block)
 {
     rowidx_t removeN;
     {
-        SpinBlock b(spin);
-        removeN = htRows.queryHtElements();
-        if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
-            return false;
-        setSpilt();
-        // JCSMORE - could detach row table here and let 'spin' go whilst spilling to disk
-        // would have to careful to ensure that when buck is closed, it waits for pending write
-        rowidx_t maxRows = htRows.queryMaxRows();
-        for (rowidx_t i=0; i<maxRows; i++)
+        CCondLockBlock b;
+        if (b.tryEnter(lock, block))
         {
-            OwnedConstThorRow key = htRows.getRowClear(i);
-            if (key)
-                keySpill.putRow(key.getClear());
+            removeN = htRows.queryHtElements();
+            if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
+                return false;
+            setSpilt();
+            // JCSMORE - could detach row table here and let 'lock' go whilst spilling to disk
+            // would have to careful to ensure that when buck is closed, it waits for pending write
+            rowidx_t maxRows = htRows.queryMaxRows();
+            for (rowidx_t i=0; i<maxRows; i++)
+            {
+                OwnedConstThorRow key = htRows.getRowClear(i);
+                if (key)
+                    keySpill.putRow(key.getClear());
+            }
         }
     }
     ActPrintLog(&owner, "Spilt bucket %d - %d elements of hash table", bucketN, removeN);
@@ -2828,7 +2920,7 @@ bool CBucket::spillHashTable()
 bool CBucket::addKey(const void *key, unsigned hashValue)
 {
     {
-        SpinBlock b(spin);
+        CLockBlock b(lock);
         if (checkDoRehash()) // if returns false, don't add row to HT as has spilt
         {
             if (htRows.queryMaxRows()) // might be 0 - if no room for initial ptr alloc
@@ -2845,7 +2937,7 @@ bool CBucket::addKey(const void *key, unsigned hashValue)
     return false;
 }
 
-// NB: always called inside a SpinBlock b(spin)
+// NB: always called inside a CLockBlock b(lock)
 // NB2: returns true if okay to proceed to use HT (basically if !spilt)
 bool CBucket::checkDoRehash()
 {
@@ -2854,12 +2946,12 @@ bool CBucket::checkDoRehash()
     if (!htRows.checkNeedRehash())
         return true;
 
-    // Have to be careful not to block 'spin' when allocating here.
-    // Because, spillHashTable() needs to block 'spin'
+    // Have to be careful not to block 'lock' when allocating here.
+    // Because, spillHashTable() needs to block 'lock'
     OwnedConstThorRow newHtRows;
     rowidx_t e = htRows.queryHtElements();
     {
-        SpinUnblock b(spin); // allocate may cause spill
+        CUnlockBlock b(lock); // allocate may cause spill
         newHtRows.setown(htRows.allocateNewTable());
     }
     if (!newHtRows)
@@ -2870,14 +2962,8 @@ bool CBucket::checkDoRehash()
     else if (isSpilt()) // check we didn't spill whilst allocating new table
         return false;
 
-    rowidx_t newHigh, newMax;
-    {
-        // No allocations here, but rehash() is relatively expensive
-        // so avoid holding 'spin' and therefore potentially blocking spill callback,
-        // so others won't get blocked if they want to spill
-        SpinUnblock b(spin);
-        newMax = htRows.rehash((const void **)newHtRows.get(), newHigh);
-    }
+    rowidx_t newHigh;
+    rowidx_t newMax = htRows.rehash((const void **)newHtRows.get(), newHigh);
     if (isSpilt()) // check we didn't spill whilst rehashing
         return false;
 
@@ -2890,17 +2976,17 @@ bool CBucket::checkDoRehash()
 bool CBucket::addRow(const void *row, unsigned hashValue)
 {
     {
-        SpinBlock b(spin);
+        CLockBlock b(lock);
         if (checkDoRehash()) // if returns false, don't add row to HT as has spilt
         {
             unsigned htPos = hashValue % htRows.queryMaxRows();
-            if (htRows.lookupRow(row, htPos))
+            if (htRows.lookupRow(htPos, row))
                 return false; // dedupped
 
             OwnedConstThorRow key;
             if (extractKey)
             {
-                SpinUnblock b(spin); // will allocate, might cause spill
+                CUnlockBlock b(lock); // will allocate, might cause spill
                 RtlDynamicRowBuilder krow(keyAllocator);
                 size32_t sz = owner.helper->recordToKey(krow, row);
                 assertex(sz);
