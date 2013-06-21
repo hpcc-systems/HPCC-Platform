@@ -943,28 +943,7 @@ public:
         return (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
     }
 
-    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const
-    {
-        //This function may not give correct results if called if there are concurrent allocations/releases
-        unsigned base = 0;
-        unsigned limit = atomic_read(&freeBase);
-        while (leaked > 0 && base < limit)
-        {
-            const char *block = data() + base;
-            const char *ptr = block + (chunkSize-chunkCapacity);  // assumes the overhead is all at the start
-            unsigned rowCount = atomic_read((atomic_t *) (ptr - sizeof(atomic_t)));
-            if (ROWCOUNT(rowCount) != 0)
-            {
-                reportLeak(block, logctx);
-                leaked--;
-            }
-            base += chunkSize;
-        }
-    }
-
 protected:
-    virtual void reportLeak(const void * block, const IContextLogger &logctx) const = 0;
-
     inline char * allocateChunk()
     {
         char *ret;
@@ -1134,15 +1113,23 @@ public:
         return header->allocatorId;
     }
 
-    virtual void reportLeak(const void * block, const IContextLogger &logctx) const
+    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const
     {
-        ChunkHeader * header = (ChunkHeader *)block;
-        unsigned allocatorId = header->allocatorId;
-        unsigned rowCount = atomic_read(&header->count);
-        bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
-
-        const char * ptr = (const char *)block + chunkHeaderSize;
-        logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, ptr, hasChildren ? "(with children) " : "", getActivityId(allocatorId), ROWCOUNT(rowCount));
+        //This function may not give correct results if called if there are concurrent allocations/releases
+        unsigned base = 0;
+        unsigned limit = atomic_read(&freeBase);
+        while (leaked > 0 && base < limit)
+        {
+            const char *block = data() + base;
+            const char *ptr = block + (chunkSize-chunkCapacity);  // assumes the overhead is all at the start
+            unsigned rowCount = atomic_read((atomic_t *) (ptr - sizeof(atomic_t)));
+            if (ROWCOUNT(rowCount) != 0)
+            {
+                reportLeak(block, logctx);
+                leaked--;
+            }
+            base += chunkSize;
+        }
     }
 
     virtual void checkHeap() const 
@@ -1227,6 +1214,17 @@ private:
             HEAPERROR("Invalid pointer");
         }
     }
+
+    void reportLeak(const void * block, const IContextLogger &logctx) const
+    {
+        ChunkHeader * header = (ChunkHeader *)block;
+        unsigned allocatorId = header->allocatorId;
+        unsigned rowCount = atomic_read(&header->count);
+        bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
+
+        const char * ptr = (const char *)block + chunkHeaderSize;
+        logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, ptr, hasChildren ? "(with children) " : "", getActivityId(allocatorId), ROWCOUNT(rowCount));
+    }
 };
 
 //================================================================================
@@ -1288,14 +1286,15 @@ public:
         return ret;
     }
 
-    virtual void reportLeak(const void * block, const IContextLogger &logctx) const
+    virtual void reportLeaks(unsigned &leaked, const IContextLogger &logctx) const
     {
-        ChunkHeader * header = (ChunkHeader *)block;
-        unsigned rowCount = atomic_read(&header->count);
-        bool hasChildren = (rowCount & ROWCOUNT_DESTRUCTOR_FLAG) != 0;
-
-        const char * ptr = (const char *)block + chunkHeaderSize;
-        logctx.CTXLOG("Block size %u at %p %swas allocated by activity %u and not freed (%d)", chunkSize, ptr, hasChildren ? "(with children) " : "", getActivityId(sharedAllocatorId), ROWCOUNT(rowCount));
+        unsigned numLeaked = queryCount()-1;
+        //Because there is only a 4 byte counter on each field which is reused for the field list
+        //it isn't possible to walk the rows in 0..freeBase and see if they are allocated or not
+        //so have to be content with a summary
+        if (numLeaked)
+            logctx.CTXLOG("Packed allocator for size %"I64F"u activity %u leaks %u rows", (unsigned __int64) chunkCapacity, getActivityId(sharedAllocatorId), numLeaked);
+        leaked -= numLeaked;
     }
 
     virtual unsigned _rawAllocatorId(const void *ptr) const
