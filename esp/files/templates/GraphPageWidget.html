@@ -2,18 +2,23 @@
     <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
         <div id="${id}MainGraphWidget" data-dojo-props="region: 'center'" data-dojo-type="GraphWidget">
             <div id="${id}FindField" style="width: 120px" data-dojo-props="placeHolder:'find'" data-dojo-type="dijit.form.TextBox">Find</div>
-            <div id="${id}Find" data-dojo-attach-event="onClick:_onFind" data-dojo-type="dijit.form.Button">F</div>
-            <div id="${id}Previous" data-dojo-attach-event="onClick:_onFindPrevious" data-dojo-type="dijit.form.Button">&lt;</div>
-            <div id="${id}Next" data-dojo-attach-event="onClick:_onFindNext" data-dojo-type="dijit.form.Button">&gt;</div>
+            <div id="${id}Find" data-dojo-attach-event="onClick:_onFind" data-dojo-props="iconClass:'iconFind', showLabel:false" data-dojo-type="dijit.form.Button">Find</div>
+            <div id="${id}Previous" data-dojo-attach-event="onClick:_onFindPrevious" data-dojo-props="iconClass:'iconFindPrevious', showLabel:false" data-dojo-type="dijit.form.Button">Find Previous</div>
+            <div id="${id}Next" data-dojo-attach-event="onClick:_onFindNext" data-dojo-props="iconClass:'iconFindNext', showLabel:false" data-dojo-type="dijit.form.Button">Find Next</div>
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
-            <div id="${id}Layout" data-dojo-attach-event="onClick:_onLayout" data-dojo-type="dijit.form.Button">Layout</div>
+            <label for="${id}MainDepth">Depth:</label>
+            <input id="${id}MainDepth" style="width: 60px" value="2" data-dojo-attach-event="onChange:_onMainDepthChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+            <div id="${id}MainRefresh" data-dojo-attach-event="onClick:_onMainRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
             <span data-dojo-type="dijit.ToolbarSeparator"></span>
             <div id="${id}AdvancedMenu" data-dojo-type="dijit.form.DropDownButton">
                 <span>Advanced</span>
                 <div data-dojo-type="dijit/Menu" >
                     <div id="${id}GetSVG" data-dojo-attach-event="onClick:_onGetSVG" data-dojo-type="dijit.MenuItem">Show SVG</div>
                     <div id="${id}RenderSVG" data-dojo-attach-event="onClick:_onRenderSVG" data-dojo-type="dijit.MenuItem">Render SVG</div>
-                    <div id="${id}GetXGMML" data-dojo-attach-event="onClick:_onGetXGMML" data-dojo-type="dijit.MenuItem">Show XGMML</div>
+                    <div id="${id}GetXGMML" data-dojo-attach-event="onClick:_onGetXGMML" data-dojo-type="dijit.MenuItem">Edit XGMML</div>
+                    <div id="${id}EditDOT" data-dojo-attach-event="onClick:_onEditDOT" data-dojo-type="dijit.MenuItem">Edit DOT</div>
+                    <span data-dojo-type="dijit.MenuSeparator"></span>
+                    <div id="${id}GetGraphAttributes" data-dojo-attach-event="onClick:_onGetGraphAttributes" data-dojo-type="dijit.MenuItem">Edit Graph Attributes</div>
                     <span data-dojo-type="dijit.MenuSeparator"></span>
                     <div id="${id}About" data-dojo-attach-event="onClick:_onAbout" data-dojo-type="dijit.MenuItem">About Graph Control</div>
                 </div>
@@ -23,7 +28,7 @@
             <div id="${id}OverviewTabContainer" data-dojo-props="region: 'center', tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
                 <div id="${id}MiniGraphWidget" title="Overview" data-dojo-type="GraphWidget">
                     <label for="${id}OverviewDepth">Depth:</label>
-                    <input id="${id}OverviewDepth" style="width: 60px" value="1" data-dojo-attach-event="onChange:_onOverviewDepthChange" data-dojo-props="placeHolder:'Depth', intermediateChanges:true, constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+                    <input id="${id}OverviewDepth" style="width: 60px" value="1" data-dojo-attach-event="onChange:_onOverviewDepthChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
                 </div>
                 <div id="${id}TimingsGrid" title="Timings" data-dojo-type="TimingGridWidget">
                 </div>
@@ -45,16 +50,17 @@
             <div id="${id}LocalTabContainer" style="height: 66%" data-dojo-props="region: 'bottom', splitter:true, minSize: 120, tabPosition: 'bottom'" data-dojo-type="dijit.layout.TabContainer">
                 <div id="${id}LocalGraphWidget" title="Local" data-dojo-type="GraphWidget">
                     <label for="${id}LocalDepth">Depth:</label>
-                    <input id="${id}LocalDepth" style="width: 60px" value="2" data-dojo-attach-event="onChange:_onLocalDepthChange" data-dojo-props="placeHolder:'Depth', intermediateChanges:true, constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+                    <input id="${id}LocalDepth" style="width: 60px" value="3" data-dojo-attach-event="onChange:_onLocalDepthChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
                     <label for="${id}LocalDistance">Distance:</label>
-                    <input id="${id}LocalDistance" style="width: 60px" value="3" data-dojo-attach-event="onChange:_onLocalDistanceChange" data-dojo-props="placeHolder:'Depth', intermediateChanges:true, constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
-                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}LocalSync" data-dojo-attach-event="onClick:_onLocalSync" data-dojo-type="dijit.form.Button">Recalculate</div>
+                    <input id="${id}LocalDistance" style="width: 60px" value="3" data-dojo-attach-event="onChange:_onLocalDistanceChange" data-dojo-props="placeHolder:'Depth', constraints:{min:0,max:1000}" data-dojo-type="dijit.form.NumberSpinner" />
+                    <div id="${id}LocalRefresh" data-dojo-attach-event="onClick:_onLocalRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
                 </div>
                 <div id="${id}Properties" title="Properties" data-dojo-type="dijit.layout.ContentPane">
                 </div>
             </div>
         </div>
+    </div>
+    <div id="${id}GlobalGraphWidget" data-dojo-type="GraphWidget">
     </div>
     <div id="${id}XGMMLDialog" title="XGMML" data-dojo-type="dijit.Dialog">
         <div class="dijitDialogPaneContentArea">
