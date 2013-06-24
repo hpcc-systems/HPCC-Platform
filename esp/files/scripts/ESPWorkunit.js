@@ -286,7 +286,7 @@ define([
             var context = this;
             WsWorkunits.WUQuery({
                 request: {
-                    Wuid: this.Wuid,
+                    Wuid: this.Wuid
                 },
                 load: function (response) {
                     if (lang.exists("WUQueryResponse.Workunits.ECLWorkunit", response)) {

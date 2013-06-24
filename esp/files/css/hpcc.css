@@ -271,6 +271,42 @@ margin-left:-20px;
     height: 16px;
 }
 
+.iconZoomOrig {
+    background-image: url("../img/zoomOrig.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconZoomAll {
+    background-image: url("../img/zoomAll.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconZoomWidth {
+    background-image: url("../img/zoomWidth.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconFind {
+    background-image: url("../img/find.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconFindNext {
+    background-image: url("../img/findNext.png");
+    width: 16px;
+    height: 16px;
+}
+
+.iconFindPrevious {
+    background-image: url("../img/findPrev.png");
+    width: 16px;
+    height: 16px;
+}
+
 .iconLogicalFile {
     background-image: url("../img/folder_table.png"); 
     width: 16px;
