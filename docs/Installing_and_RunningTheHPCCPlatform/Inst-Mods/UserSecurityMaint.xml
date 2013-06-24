@@ -1528,17 +1528,17 @@
         </mediaobject>
       </figure></para>
 
-    <para><emphasis role="bold">Files </emphasis>is the top level for file
-    scope security in the Dali Server. Below it there is an OU representing
-    the cluster, for example thor (or the name that was set up for your
-    cluster). Below that is an OU named <emphasis
-    role="bold">specialdata</emphasis> which contains two OUs, <emphasis
-    role="bold">public</emphasis> and <emphasis role="bold">secure.
-    </emphasis>Typically, the <emphasis role="bold">public </emphasis>folder
-    has rights granted to a large group of users and the <emphasis
-    role="bold">secure </emphasis>folder has limited access granted. This
-    allows you to prevent unauthorized users from any access to files in the
-    <emphasis role="bold">secure</emphasis> folder.</para>
+    <para>For example, below <emphasis role="bold">Files</emphasis> there is
+    an OU representing the cluster, such as <emphasis
+    role="bold">thor</emphasis> (or the name that you set up for your
+    cluster). Furthering the example, below that could be an OU named
+    <emphasis role="bold">specialdata</emphasis> which contains two OUs,
+    <emphasis role="bold">public</emphasis> and <emphasis role="bold">secure.
+    </emphasis>The <emphasis role="bold">public </emphasis>folder has rights
+    granted to a large group of users and the <emphasis role="bold">secure
+    </emphasis>folder has limited access granted. This allows you to prevent
+    unauthorized users from any access to files in the <emphasis
+    role="bold">secure</emphasis> folder.</para>
 
     <para>The structure in LDAP corresponds to this logical structure in
     DFU:</para>
@@ -1553,19 +1553,15 @@
 
     <para>All HPCC components and tools respect LDAP file access security. The
     following exceptions are assumed to be system level or for administrative
-    users :</para>
+    users:</para>
 
     <itemizedlist>
       <listitem>
-        <para>Remote Execution in ECL Watch</para>
+        <para>Network file access using UNCs, Terminal Services or SSH.</para>
       </listitem>
 
       <listitem>
-        <para>Network file access using UNCs or Terminal Services</para>
-      </listitem>
-
-      <listitem>
-        <para>Administrative utilities such as TreeView</para>
+        <para>Administrative utilities (such as TreeView)</para>
       </listitem>
     </itemizedlist>
 
@@ -1578,9 +1574,7 @@
 
     <programlisting>DFS Exception: 3 Lookup access denied for scope &lt;filepath&gt;</programlisting>
 
-    <para></para>
-
-    <para>(where &lt;filepath&gt; is the full logical file scope path)</para>
+    <para> (where &lt;filepath&gt; is the full logical file scope path)</para>
 
     <sect3>
       <title>File scope feature permissions</title>
@@ -1640,6 +1634,24 @@
           </tbody>
         </tgroup>
       </informaltable>
+    </sect3>
+
+    <sect3 id="permissions_cache">
+      <title>Permission Caching </title>
+
+      <para>When you change a permission in ECL Watch, the settings are cached
+      in the ESP server and stored in the Dali server. The information in the
+      cache is updated at a configurable interval. This value can be set in
+      the Configuration Manager under the LDAP Server settings Attributes tab.
+      The default cacheTimeout is 5 minutes. </para>
+
+      <para>When you want a permission change to take effect immediately, you
+      can clear the cache and force Dali to update the permission settings by
+      pressing the <emphasis role="bold">Clear Permissions Cache</emphasis>
+      button. This action transfers the settings when you press the button.
+      Use this feature judiciously as overall system performance is affected
+      temporarily while the LDAP settings in the Dali System Data Store
+      repopulate.</para>
     </sect3>
   </sect2>
 

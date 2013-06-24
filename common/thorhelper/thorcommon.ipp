@@ -810,4 +810,19 @@ protected:
 };
 
 
+//=====================================================================================================
+
+class ChildRowLinkerWalker : implements IIndirectMemberVisitor
+{
+public:
+    virtual void visitRowset(size32_t count, byte * * rows)
+    {
+        rtlLinkRowset(rows);
+    }
+    virtual void visitRow(const byte * row)
+    {
+        rtlLinkRow(row);
+    }
+};
+
 #endif // THORCOMMON_IPP

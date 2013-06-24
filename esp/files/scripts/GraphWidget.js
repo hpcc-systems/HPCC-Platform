@@ -46,6 +46,14 @@ require([
             dot: "",
             svg: "",
 
+            //  Known control properties  ---
+            DOT_META_ATTR: "DOT_META_ATTR",
+
+            _onClickZoomOrig: function (args) {
+                this.setScale(100);
+                this.centerOnItem(0);
+            },
+
             _onClickZoomAll: function (args) {
                 this.centerOnItem(0, true);
             },
@@ -178,8 +186,9 @@ require([
                 );
             },
 
-            displayProperties: function (item, place) {
+            displayProperties: function (globalID, place) {
                 if (this._plugin) {
+                    var item = this._plugin.getItem(globalID);
                     var props = this._plugin.getProperties(item);
                     if (props.id) {
                         var table = domConstruct.create("h3", {
@@ -354,9 +363,38 @@ require([
                 return [];
             },
 
+            findAsGlobalID: function (findText) {
+                if (this._plugin) {
+                    var items = this.find(findText);
+                    var globalIDs = [];
+                    for (var i = 0; i < items.length; ++i) {
+                        globalIDs.push(this._plugin.getGlobalID(items[i]));
+                    }
+                    return globalIDs;
+                }
+                return [];
+            },
+
+            setScale: function(percent) {
+                if (this._plugin) {
+                    return this._plugin.setScale(percent);
+                }
+                return 100;
+            },
+
             centerOnItem: function (item, scaleToFit, widthOnly) {
                 if (this._plugin) {
                     return this._plugin.centerOnItem(item, scaleToFit, widthOnly);
+                }
+                return null;
+            },
+
+            centerOnGlobalID: function (globalID, scaleToFit, widthOnly) {
+                if (this._plugin) {
+                    var item = this._plugin.getItem(globalID);
+                    if (item) {
+                        return this.centerOnItem(item, scaleToFit, widthOnly);
+                    }
                 }
                 return null;
             },
@@ -476,6 +514,32 @@ require([
                             return origFunc(node, addStyle, removeStyle);
                         }
                     });
+                }
+            },
+
+            getDotMetaAttributes: function () {
+                if (this._plugin && this._plugin.getControlProperty) {
+                    return this._plugin.getControlProperty(this.DOT_META_ATTR);
+                }
+                return "";
+            },
+
+            setDotMetaAttributes: function (dotMetaAttr) {
+                if (this._plugin && this._plugin.setControlProperty) {
+                    this._plugin.setControlProperty(this.DOT_META_ATTR, dotMetaAttr);
+                }
+            },
+
+            getProperty: function (item, key) {
+                if (this._plugin && this._plugin.getProperty) {
+                    return this._plugin.getProperty(item, key);
+                }
+                return "";
+            },
+
+            setProperty: function (item, key, value) {
+                if (this._plugin && this._plugin.setProperty) {
+                    this._plugin.setProperty(item, key, value);
                 }
             },
 

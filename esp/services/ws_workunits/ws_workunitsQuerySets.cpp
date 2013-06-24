@@ -925,9 +925,12 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     resp.setComment(query->queryProp("@comment"));
 
     StringArray logicalFiles;
-    getQueryFiles(queryId, querySet, logicalFiles);
+    IArrayOf<IEspQuerySuperFile> superFiles;
+    getQueryFiles(queryId, querySet, logicalFiles, req.getIncludeSuperFiles() ? &superFiles : NULL);
     if (logicalFiles.length())
         resp.setLogicalFiles(logicalFiles);
+    if (superFiles.length())
+        resp.setSuperFiles(superFiles);
 
     double version = context.getClientVersion();
     if (version >= 1.42)
@@ -952,7 +955,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
     return true;
 }
 
-bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, StringArray& logicalFiles)
+bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, StringArray& logicalFiles, IArrayOf<IEspQuerySuperFile> *respSuperFiles)
 {
     try
     {
@@ -971,7 +974,11 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
         if (!result)
             return false;
 
-        Owned<IPropertyTreeIterator> files = result->getElements("Endpoint/Queries/Query//File");
+        StringBuffer xpath("Endpoint/Queries/Query/");
+        if (!respSuperFiles)
+            xpath.append('/');
+        xpath.append("File");
+        Owned<IPropertyTreeIterator> files = result->getElements(xpath);
         ForEach (*files)
         {
             IPropertyTree &file = files->query();
@@ -980,13 +987,26 @@ bool CWsWorkunitsEx::getQueryFiles(const char* query, const char* target, String
                 logicalFiles.append(fileName);
         }
 
-        Owned<IPropertyTreeIterator> superFiles = result->getElements("Endpoint/Queries/Query/SuperFile");
-        ForEach (*superFiles)
+        if (respSuperFiles)
         {
-            IPropertyTree &file = superFiles->query();
-            const char* fileName = file.queryProp("@name");
-            if (fileName && *fileName)
-                logicalFiles.append(fileName);
+            Owned<IPropertyTreeIterator> superFiles = result->getElements("Endpoint/Queries/Query/SuperFile");
+            ForEach (*superFiles)
+            {
+                IPropertyTree &super = superFiles->query();
+                Owned<IEspQuerySuperFile> respSuperFile = createQuerySuperFile();
+                respSuperFile->setName(super.queryProp("@name"));
+                Owned<IPropertyTreeIterator> fileIter = super.getElements("File");
+                StringArray respSubFiles;
+                ForEach (*fileIter)
+                {
+                    IPropertyTree &fileItem = fileIter->query();
+                    const char* fileName = fileItem.queryProp("@name");
+                    if (fileName && *fileName)
+                        respSubFiles.append(fileName);
+                }
+                respSuperFile->setSubFiles(respSubFiles);
+                respSuperFiles->append(*respSuperFile.getClear());
+            }
         }
         return true;
     }

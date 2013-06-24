@@ -73,6 +73,7 @@ define([
         graphName: "",
         wu: null,
         editorControl: null,
+        global: null,
         main: null,
         overview: null,
         local: null,
@@ -101,6 +102,7 @@ define([
             this.borderContainer = registry.byId(this.id + "BorderContainer");
             this.rightBorderContainer = registry.byId(this.id + "RightBorderContainer");
             this.findField = registry.byId(this.id + "FindField");
+            this.mainDepth = registry.byId(this.id + "MainDepth");
             this.overviewDepth = registry.byId(this.id + "OverviewDepth");
             this.localDepth = registry.byId(this.id + "LocalDepth");
             this.localDistance = registry.byId(this.id + "LocalDistance");
@@ -142,6 +144,8 @@ define([
         //  Implementation  ---
         _initGraphControls: function () {
             var context = this;
+            this.global = registry.byId(this.id + "GlobalGraphWidget");
+
             this.main = registry.byId(this.id + "MainGraphWidget");
             this.main.onSelectionChanged = function (items) {
                 context.syncSelectionFrom(context.main);
@@ -205,9 +209,21 @@ define([
             this.xgmmlDialog = registry.byId(this.id + "XGMMLDialog");
             this.xgmmlTextArea = registry.byId(this.id + "XGMMLTextArea");
             on(dom.byId(this.id + "XGMMLDialogApply"), "click", function (event) {
-                var xgmml = context.xgmmlTextArea.get("value");
                 context.xgmmlDialog.hide();
-                context.loadGraphFromSource(xgmml);
+                if (context.xgmmlDialog.get("hpccMode") === "XGMML") {
+                    var xgmml = context.xgmmlTextArea.get("value");
+                    context.loadGraphFromXGMML(xgmml);
+                } else if (context.xgmmlDialog.get("hpccMode") === "DOT") {
+                    var dot = context.xgmmlTextArea.get("value");
+                    context.loadGraphFromDOT(dot);
+                } else if (context.xgmmlDialog.get("hpccMode") === "DOTATTRS") {
+                    var dotAttrs = context.xgmmlTextArea.get("value");
+                    context.global.setDotMetaAttributes(dotAttrs);
+                    context.main.setDotMetaAttributes(dotAttrs);
+                    context.overview.setDotMetaAttributes(dotAttrs);
+                    context.local.setDotMetaAttributes(dotAttrs);
+                    context._onMainRefresh();
+                }
             });
             on(dom.byId(this.id + "XGMMLDialogCancel"), "click", function (event) {
                 context.xgmmlDialog.hide();
@@ -267,21 +283,21 @@ define([
             this._initItemGrid(this.edgesGrid);
         },
 
-        _onLayout: function () {
+        _onMainRefresh: function () {
             this.main.setMessage("Performing Layout...");
             this.main.startLayout("dot");
         },
 
-        _onLocalSync: function () {
-            this.syncSelectionFrom(this.main);
+        _onLocalRefresh: function () {
+            this.refreshLocal(this.local.getSelectionAsGlobalID());
         },
 
         _doFind: function (prev) {
             if (this.findText != this.findField.value) {
                 this.findText = this.findField.value;
-                this.found = this.main.find(this.findText);
-                this.main.setSelected(this.found);
-                this.syncSelectionFrom(this.main);
+                this.found = this.global.findAsGlobalID(this.findText);
+                this.global.setSelectedAsGlobalID(this.found);
+                this.syncSelectionFrom(this.global);
                 this.foundIndex = -1;
             }
             this.foundIndex += prev ? -1 : +1;
@@ -291,7 +307,8 @@ define([
                 this.foundIndex = 0;
             }
             if (this.found.length) {
-                this.main.centerOnItem(this.found[this.foundIndex], true);
+                this.main.centerOnGlobalID(this.found[this.foundIndex], true);
+                this.local.centerOnGlobalID(this.found[this.foundIndex], true);
             }
         },
 
@@ -330,8 +347,28 @@ define([
         },
 
         _onGetXGMML: function () {
+            this.xgmmlDialog.set("title", "XGMML");
+            this.xgmmlDialog.set("hpccMode", "XGMML");
             this.xgmmlTextArea.set("value", this.main.getXGMML());
             this.xgmmlDialog.show();
+        },
+
+        _onEditDOT: function () {
+            this.xgmmlDialog.set("title", "DOT");
+            this.xgmmlDialog.set("hpccMode", "DOT");
+            this.xgmmlTextArea.set("value", this.main.getDOT());
+            this.xgmmlDialog.show();
+        },
+
+        _onGetGraphAttributes: function () {
+            this.xgmmlDialog.set("title", "DOT Attributes");
+            this.xgmmlDialog.set("hpccMode", "DOTATTRS");
+            this.xgmmlTextArea.set("value", this.global.getDotMetaAttributes());
+            this.xgmmlDialog.show();
+        },
+
+        _onMainDepthChange: function (value) {
+            this.refreshMain();
         },
 
         _onOverviewDepthChange: function (value) {
@@ -339,11 +376,11 @@ define([
         },
 
         _onLocalDepthChange: function (value) {
-            this.refreshLocal(this.main.getSelection());
+            this._onLocalRefresh();
         },
 
         _onLocalDistanceChange: function (value) {
-            this.refreshLocal(this.main.getSelection());
+            this._onLocalRefresh();
         },
 
         init: function (params) {
@@ -351,25 +388,27 @@ define([
                 return;
             }
             this.initalized = true;
-            this.graphName = params.GraphName;
-            this.wu = ESPWorkunit.Get(params.Wuid);
+            if (params.Wuid) {
+                this.graphName = params.GraphName;
+                this.wu = ESPWorkunit.Get(params.Wuid);
 
-            var firstLoad = true;
-            var context = this;
-            this.wu.monitor(function () {
-                context.wu.getInfo({
-                    onGetApplicationValues: function (applicationValues) {
-                    },
-                    onGetGraphs: function (graphs) {
-                        if (firstLoad == true) {
-                            firstLoad = false;
-                            context.loadGraph(context.wu, context.graphName);
-                        } else {
-                            context.refreshGraph(context.wu, context.graphName);
+                var firstLoad = true;
+                var context = this;
+                this.wu.monitor(function () {
+                    context.wu.getInfo({
+                        onGetApplicationValues: function (applicationValues) {
+                        },
+                        onGetGraphs: function (graphs) {
+                            if (firstLoad == true) {
+                                firstLoad = false;
+                                context.loadGraph(context.wu, context.graphName);
+                            } else {
+                                context.refreshGraph(context.wu, context.graphName);
+                            }
                         }
-                    }
+                    });
                 });
-            });
+            }
 
             this.timingGrid.init(lang.mixin({
                 query: this.graphName
@@ -381,29 +420,28 @@ define([
 
         },
 
-        loadGraphFromSource: function(xgmml, svg) {
-            this.main.setMessage("Loading Data...");
-            this.main.loadXGMML(xgmml);
+        loadGraphFromXGMML: function (xgmml) {
+            this.global.loadXGMML(xgmml, false);
+            this.refreshMain();
             this.refreshOverview();
             this.loadSubgraphs();
             this.loadVertices();
             this.loadEdges();
-            if (svg) {
-                this.main.setMessage("Loading Layout...");
-                if (this.main.mergeSVG(svg)) {
-                    this.main.centerOnItem(0, true);
-                    this.main.setMessage("");
-                    return;
-                }
-            }
-            this.main.setMessage("Performing Layout...");
-            this.main.startLayout("dot");
+        },
+
+        loadGraphFromDOT: function (dot) {
+            this.global.loadDOT(dot);
+            this.refreshMain();
+            this.refreshOverview();
+            this.loadSubgraphs();
+            this.loadVertices();
+            this.loadEdges();
         },
 
         loadGraph: function (wu, graphName) {
             var context = this;
             wu.fetchGraphXgmmlByName(graphName, function (xgmml, svg) {
-                context.loadGraphFromSource(xgmml, svg);
+                context.loadGraphFromXGMML(xgmml, svg);
             });
         },
 
@@ -539,20 +577,14 @@ define([
                 this.overview.setSelectedAsGlobalID(selectedGlobalIDs);
             }
 
-            var mainItems = [];
-            for (var i = 0; i < selectedGlobalIDs.length; ++i) {
-                mainItems.push(this.main.getItem(selectedGlobalIDs[i]));
-            }
-
             if (sourceControl != this.local) {
-                this.refreshLocal(mainItems);
-                this.local.setSelectedAsGlobalID(selectedGlobalIDs);
+                this.refreshLocal(selectedGlobalIDs);
             }
 
             var propertiesDom = dom.byId(this.id + "Properties");
             propertiesDom.innerHTML = "";
-            for (var i = 0; i < mainItems.length; ++i) {
-                this.main.displayProperties(mainItems[i], propertiesDom);
+            for (var i = 0; i < selectedGlobalIDs.length; ++i) {
+                this.global.displayProperties(selectedGlobalIDs[i], propertiesDom);
             }
         },
 
@@ -560,14 +592,24 @@ define([
             this.main.clear();
         },
 
-        refreshOverview: function() {
-            var xgmml = this.main.getLocalisedXGMML([0], this.overviewDepth.get("value"));
+        refreshMain: function () {
+            var xgmml = this.global.getLocalisedXGMML([0], this.mainDepth.get("value"));
+            this.main.loadXGMML(xgmml);
+        },
+
+        refreshOverview: function () {
+            var xgmml = this.global.getLocalisedXGMML([0], this.overviewDepth.get("value"));
             this.overview.loadXGMML(xgmml);
         },
 
-        refreshLocal: function (selection) {
-            var xgmml = this.main.getLocalisedXGMML(selection, this.localDepth.get("value"), this.localDistance.get("value"));
+        refreshLocal: function (selectedGlobalIDs) {
+            var globalItems = [];
+            for (var i = 0; i < selectedGlobalIDs.length; ++i) {
+                globalItems.push(this.global.getItem(selectedGlobalIDs[i]));
+            }
+            var xgmml = this.global.getLocalisedXGMML(globalItems, this.localDepth.get("value"), this.localDistance.get("value"));
             this.local.loadXGMML(xgmml);
+            this.local.setSelectedAsGlobalID(selectedGlobalIDs);
         },
 
         displayGraphs: function (graphs) {
