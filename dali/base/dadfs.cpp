@@ -2156,34 +2156,6 @@ inline void dfCheckRoot(const char *trc,Owned<IPropertyTree> &root,IRemoteConnec
     }
 }
 
-class CFileChangeWriteLock
-{
-    Owned<IRemoteConnection> &conn;
-    Owned<IPropertyTree> &root;
-    unsigned timeoutMs, prevMode;
-public:
-    CFileChangeWriteLock(Owned<IRemoteConnection> &_conn, unsigned _timeoutMs, Owned<IPropertyTree> &_root)
-        : conn(_conn), timeoutMs(_timeoutMs), root(_root)
-    {
-        prevMode = conn->queryMode();
-        unsigned newMode = (prevMode & ~RTM_LOCKBASIC_MASK) | RTM_LOCK_WRITE;
-        conn->changeMode(RTM_LOCK_WRITE, timeoutMs);
-    }
-    ~CFileChangeWriteLock()
-    {
-        if (conn.get())
-            conn->changeMode(prevMode, timeoutMs);
-    }
-    IPropertyTree *detach(bool close)
-    {
-        Owned<IPropertyTree> detachedRoot = createPTreeFromIPT(root);
-        root.clear();
-        conn->close(close);
-        conn.clear();
-        return detachedRoot.getClear();
-    }
-};
-
 static bool setFileProtectTree(IPropertyTree &p,const char *owner, bool protect)
 {
     bool ret = false;
@@ -2258,7 +2230,6 @@ static bool checkProtectAttr(const char *logicalname,IPropertyTree *froot,String
 template <class INTERFACE>
 class CDistributedFileBase : public CInterface, implements INTERFACE
 {
-
 protected:
     Owned<IPropertyTree> root;    
     Owned<IRemoteConnection> conn;                  // kept connected during lifetime for attributes
@@ -2316,6 +2287,33 @@ public:
     }
 
 protected:
+    class CFileChangeWriteLock
+    {
+        IRemoteConnection *conn;
+        unsigned timeoutMs, prevMode;
+    public:
+        CFileChangeWriteLock(IRemoteConnection *_conn, unsigned _timeoutMs)
+            : conn(_conn), timeoutMs(_timeoutMs)
+        {
+            prevMode = conn->queryMode();
+            unsigned newMode = (prevMode & ~RTM_LOCKBASIC_MASK) | RTM_LOCK_WRITE;
+            conn->changeMode(RTM_LOCK_WRITE, timeoutMs);
+        }
+        ~CFileChangeWriteLock()
+        {
+            if (conn)
+                conn->changeMode(prevMode, timeoutMs);
+        }
+        void clear() { conn = NULL; }
+    };
+    IPropertyTree *closeConnection(bool removeFile)
+    {
+        Owned<IPropertyTree> detachedRoot = createPTreeFromIPT(root);
+        root.clear();
+        conn->close(removeFile);
+        conn.clear();
+        return detachedRoot.getClear();
+    }
     IPropertyTree *resetFileAttr(IPropertyTree *prop=NULL)
     {
         if (prop)
@@ -2763,7 +2761,7 @@ protected:
 #endif
         {
             CriticalBlock block(sect); // JCSMORE - not convinced this is still necessary
-            CFileChangeWriteLock writeLock(conn, timeoutMs, root);
+            CFileChangeWriteLock writeLock(conn, timeoutMs);
 
             logicalName.getCluster(clusterName);
 
@@ -2790,7 +2788,8 @@ protected:
             }
 
             // detach this IDistributeFile
-            root.setown(writeLock.detach(removeFile));
+            writeLock.clear();
+            root.setown(closeConnection(removeFile));
             // NB: The file is now unlocked
             if (removeFile)
                 updateFS(logicalName, timeoutMs);
@@ -4612,8 +4611,6 @@ public:
         return NotFound;
     }
 
-    
-    
     IMPLEMENT_IINTERFACE;
 
     void init(CDistributedFileDirectory *_parent, IPropertyTree *_root, const CDfsLogicalFileName &_name, IUserDescriptor* user, IDistributedFileTransaction *transaction, unsigned timeout=INFINITE)
@@ -4915,9 +4912,10 @@ public:
         subfiles.kill();    
 
         // Remove from SDS
-        CFileChangeWriteLock writeLock(conn, timeoutMs, root);
+        CFileChangeWriteLock writeLock(conn, timeoutMs);
         clearSuperOwners(timeoutMs);
-        root.setown(writeLock.detach(true));
+        writeLock.clear();
+        root.setown(closeConnection(true));
         updateFS(logicalName, timeoutMs);
         logicalName.clear();
     }
