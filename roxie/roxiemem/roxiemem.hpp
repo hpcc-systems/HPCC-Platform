@@ -71,6 +71,7 @@ interface IRowAllocatorCache : extends IInterface
     virtual unsigned getActivityId(unsigned cacheId) const = 0;
     virtual StringBuffer &getActivityDescriptor(unsigned cacheId, StringBuffer &out) const = 0;
     virtual void onDestroy(unsigned cacheId, void *row) const = 0;
+    virtual void onClone(unsigned cacheId, void *row) const = 0;
     virtual void checkValid(unsigned cacheId, const void *row) const = 0;
 };
 
@@ -93,6 +94,7 @@ interface ILargeMemCallback: extends IInterface
 };
 
 
+class HeapCompactState;
 struct roxiemem_decl HeapletBase
 {
     friend class DataBufferBottom;
@@ -115,13 +117,15 @@ protected:
     virtual bool _hasDestructor(const void *ptr) const = 0;
     virtual unsigned _rawAllocatorId(const void *ptr) const = 0;
     virtual void noteLinked(const void *ptr) = 0;
+    virtual const void * _compactRow(const void * ptr, HeapCompactState & state) = 0;
+    virtual void _internalReleaseNoDestructor(const void *ptr) = 0;
 
+public:
     inline static HeapletBase *findBase(const void *ptr)
     {
         return (HeapletBase *) ((memsize_t) ptr & HEAP_ALIGNMENT_MASK);
     }
 
-public:
     inline bool isAlive() const
     {
         return atomic_read(&count) < DEAD_PSEUDO_COUNT;        //only safe if Link() is called first
@@ -132,9 +136,13 @@ public:
     static bool isShared(const void *ptr);
     static void link(const void *ptr);
     static memsize_t capacity(const void *ptr);
+    static bool isWorthCompacting(const void *ptr);
+    static const void * compactRow(const void * ptr, HeapCompactState & state);
 
     static void setDestructorFlag(const void *ptr);
     static bool hasDestructor(const void *ptr);
+
+    static void internalReleaseNoDestructor(const void *ptr);
 
     static inline void releaseClear(const void *&ptr)
     {
@@ -153,6 +161,10 @@ public:
         return atomic_read(&count);
     }
 
+    inline bool isEmpty() const
+    {
+        return atomic_read(&count) == 1;
+    }
 };
 
 extern roxiemem_decl unsigned DATA_ALIGNMENT_SIZE;  // Permissible values are 0x400 and 0x2000
@@ -211,6 +223,8 @@ private:
     virtual void _setDestructorFlag(const void *ptr);
     virtual bool _hasDestructor(const void *ptr) const { return false; }
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
+    virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
+    virtual void _internalReleaseNoDestructor(const void *ptr) { throwUnexpected(); }
 protected:
     DataBuffer()
     {
@@ -244,6 +258,8 @@ private:
     virtual bool _hasDestructor(const void *ptr) const { return false; }
     virtual unsigned _rawAllocatorId(const void *ptr) const { return 0; }
     virtual void noteLinked(const void *ptr);
+    virtual const void * _compactRow(const void * ptr, HeapCompactState & state) { return ptr; }
+    virtual void _internalReleaseNoDestructor(const void *ptr) { throwUnexpected(); }
 
 public:
     DataBufferBottom(CDataBufferManager *_owner, DataBufferBottom *ownerFreeChain);
@@ -427,6 +443,7 @@ interface IRowManager : extends IInterface
     virtual void addRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void removeRowBuffer(IBufferedRowCallback * callback) = 0;
     virtual void reportMemoryUsage(bool peak) const = 0;
+    virtual bool compactRows(memsize_t count, const void * * rows) = 0;
     virtual memsize_t getExpectedCapacity(memsize_t size, unsigned heapFlags) = 0; // what is the expected capacity for a given size allocation
     virtual memsize_t getExpectedFootprint(memsize_t size, unsigned heapFlags) = 0; // how much memory will a given size allocation actually use.
 };
