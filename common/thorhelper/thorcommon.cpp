@@ -583,19 +583,6 @@ static void ensureClassesAreNotAbstract()
 
 //=====================================================================================================
 
-class ChildRowLinkerWalker : implements IIndirectMemberVisitor
-{
-public:
-    virtual void visitRowset(size32_t count, byte * * rows)
-    {
-        rtlLinkRowset(rows);
-    }
-    virtual void visitRow(const byte * row)
-    {
-        rtlLinkRow(row);
-    }
-};
-
 //the visitor callback is used to ensure link counts for children are updated.
 size32_t cloneRow(ARowBuilder & rowBuilder, const void * row, IOutputMetaData * meta)
 {

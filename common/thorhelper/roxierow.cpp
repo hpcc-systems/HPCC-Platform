@@ -50,7 +50,7 @@ public:
         byte * ptr = static_cast<byte *>(_ptr);
         memsize_t capacity = RoxieRowCapacity(ptr);
         if (capacity < size + extraSize)
-            throw MakeStringException(0, "Data was written past the end of the row - allocated %d, written %d", capacity - extraSize, size);
+            throw MakeStringException(0, "Data was written past the end of the row - allocated %d, written %d", (size32_t)(capacity - extraSize), size);
         memset(ptr+size, 0, capacity - size - extraSize);
         unsigned short * check = reinterpret_cast<unsigned short *>(ptr + capacity - extraSize);
         *check = crc16(ptr, capacity-extraSize, 0);
@@ -81,7 +81,7 @@ public:
         byte * ptr = static_cast<byte *>(_ptr);
         memsize_t capacity = RoxieRowCapacity(ptr);
         if (capacity < size + extraSize)
-            throw MakeStringException(0, "Data was written past the end of the row - allocated %d, written %d", capacity - extraSize, size);
+            throw MakeStringException(0, "Data was written past the end of the row - allocated %d, written %d", (size32_t)(capacity - extraSize), size);
         memset(ptr+size, 0, capacity - size - extraSize);
         unsigned short * check = reinterpret_cast<unsigned short *>(ptr + capacity - extraSize);
         *check = chksum16(ptr, capacity-extraSize);
@@ -492,6 +492,28 @@ public:
         }
         allocator->queryOutputMeta()->destruct((byte *) row);
     }
+    virtual void onClone(unsigned cacheId, void *row) const
+    {
+        IEngineRowAllocator *allocator;
+        unsigned allocatorIndex = (cacheId & ALLOCATORID_MASK);
+        {
+            SpinBlock b(allAllocatorsLock); // just protect the access to the array - don't keep locked for the call of destruct or may deadlock
+            if (allAllocators.isItem(allocatorIndex))
+                allocator = &allAllocators.item(allocatorIndex);
+            else
+            {
+                assert(false);
+                return;
+            }
+        }
+        if (!RoxieRowCheckValid(cacheId, row))
+        {
+            //MORE: Give an error, but don't throw an exception!
+        }
+        //This should only be called if the destructor needs to be called - so don't bother checking
+        ChildRowLinkerWalker walker;
+        allocator->queryOutputMeta()->walkIndirectMembers((const byte *)row, walker);
+    }
     virtual void checkValid(unsigned cacheId, const void *row) const
     {
         if (!RoxieRowCheckValid(cacheId, row))
@@ -546,6 +568,9 @@ protected:
         {
             if (!RoxieRowCheckValid(cacheId, row))
                 ++numFailures;
+        }
+        virtual void onClone(unsigned cacheId, void *row) const
+        {
         }
         virtual void checkValid(unsigned cacheId, const void *row) const
         {
