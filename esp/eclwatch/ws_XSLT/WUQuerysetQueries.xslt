@@ -82,7 +82,7 @@
                     record = aliasDataTable.getRecord(selectedRows[0]);
                 else
                     record = queryDataTable.getRecord(selectedRows[0]);
-                document.location.href = "/WsWorkunits/WUQueryDetails?IncludeStateOnClusters=1&QueryId=" + record.getData('Id') + "&QuerySet=" + querySet;
+                document.location.href = "/WsWorkunits/WUQueryDetails?IncludeSuperFiles=1&IncludeStateOnClusters=1&QueryId=" + record.getData('Id') + "&QuerySet=" + querySet;
               }
 
               function deleteQueries() {
