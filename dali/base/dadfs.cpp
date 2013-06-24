@@ -10094,7 +10094,7 @@ public:
     {
         defaultTimeout = _defaultTimeout;
         readonly = false;
-        udesc.setown(_udesc);
+        udesc.set(_udesc);
     }
 
     bool connect(CDistributedFileDirectory *parent,const char *title, const char *name, bool _readonly, bool *autocreate, unsigned timeout)
