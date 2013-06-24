@@ -256,6 +256,42 @@
                                 </td>
                             </tr>
                         </xsl:if>
+                      <xsl:if test="count(SuperFiles/SuperFile)">
+                        <tr>
+                          <th valign="top">SuperFiles<br/>
+                            <img src="/esp/files/img/expand.gif" alt=" >> "/>SubFiles:
+                            </th>
+                          <td>
+                            <table id="SuperFileTable">
+                              <xsl:for-each select="SuperFiles/SuperFile">
+                                <tr>
+                                  <td>
+                                    <a href="javascript:void(0)" onclick="DFUFileDetails('{.}');">
+                                      <xsl:value-of select="Name"/>
+                                    </a>
+                                  </td>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    <table>
+                                      <xsl:for-each select="SubFiles/File">
+                                        <tr>
+                                          <td>
+                                            <img src="/esp/files/img/expand.gif" alt=" >> "/>
+                                            <a href="javascript:void(0)" onclick="DFUFileDetails('{.}');">
+                                              <xsl:value-of select="."/>
+                                            </a>
+                                          </td>
+                                        </tr>
+                                      </xsl:for-each>
+                                    </table>
+                                  </td>
+                                </tr>
+                              </xsl:for-each>
+                            </table>
+                          </td>
+                        </tr>
+                      </xsl:if>
                     </table>
                 </form>
                 <input id="deleteBtn" type="button" value="Delete" onclick="deleteQuery();"> </input>
