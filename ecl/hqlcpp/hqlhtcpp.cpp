@@ -16034,7 +16034,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityWorkunitRead(BuildCtx & ctx, I
         }
 
         if (wuid)
-            doBuildVarStringFunction(instance->classctx, "getWUID", wuid->queryChild(0));
+            doBuildVarStringFunction(instance->startctx, "getWUID", wuid->queryChild(0));
 
         bool usesContents = false;
         if (isStored || (targetRoxie() && (sequenceValue >= 0)))

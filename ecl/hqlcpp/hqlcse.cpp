@@ -1272,9 +1272,14 @@ bool TableInvariantTransformer::isInvariant(IHqlExpression * expr)
     case no_preservemeta:
         invariant = isInvariant(expr->queryChild(0));
         break;
-    case no_constant:
     case no_workunit_dataset:
     case no_getresult:
+        if (expr->hasAttribute(wuidAtom))
+            invariant = isInvariant(expr->queryAttribute(wuidAtom));
+        else
+            invariant = true;
+        break;
+    case no_constant:
     case no_getgraphresult:
         invariant = true;
         break;
