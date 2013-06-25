@@ -1216,7 +1216,7 @@ public:
         owner->notify(id, xpath, flags, valueLen, valueData);
     }
 
-    IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
+    IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         ForEachItemIn(idx, allQueryPackages)
         {
@@ -1457,10 +1457,10 @@ public:
         controlSem.signal();
     }
 
-    virtual IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
-        return allQueryPackages->lookupLibrary(package, libraryName, expectedInterfaceHash, logctx);
+        return allQueryPackages->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
