@@ -60,8 +60,6 @@ interface IRoxiePackage : public IHpccPackage
     virtual IRoxieWriteHandler *createFileName(const char *fileName, bool overwrite, bool extend, const StringArray &clusters, IConstWorkUnit *wu) const = 0;
     // Lookup information in package about what in-memory indexes should be built for file
     virtual IPropertyTreeIterator *getInMemoryIndexInfo(const IPropertyTree &graphNode) const = 0;
-    // Lookup information in package about what in-memory indexes should be built for file
-    virtual IPropertyTree *getQuerySets() const = 0;
     // Remove a resolved file from the cache 
     virtual void removeCache(const IResolvedFile *goer) const = 0; // note that this is const as cache is considered mutable
 };
@@ -115,7 +113,7 @@ interface IRoxieQueryPackageManagerSet : extends IInterface
     virtual void load() = 0;
     virtual void doControlMessage(IPropertyTree *xml, StringBuffer &reply, const IRoxieContextLogger &ctx) = 0;
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const = 0;
-    virtual IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
+    virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const = 0;
     virtual int getActivePackageCount() const = 0;
 };
 
