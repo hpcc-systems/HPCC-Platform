@@ -6034,23 +6034,6 @@ public:
 
 #define GROUP_CACHE_INTERVAL (1000*60)
 
-static const char *translateGroupType(GroupType groupType)
-{
-    switch (groupType)
-    {
-        case grp_thor:
-            return "Thor";
-        case grp_roxie:
-            return "Roxie";
-        case grp_roxiefarm:
-            return "RoxieFarm";
-        case grp_hthor:
-            return "hthor";
-        default:
-            return NULL;
-    }
-}
-
 static GroupType translateGroupType(const char *groupType)
 {
     if (!groupType)
@@ -6059,8 +6042,6 @@ static GroupType translateGroupType(const char *groupType)
         return grp_thor;
     else if (strieq(groupType, "Roxie"))
         return grp_roxie;
-    else if (strieq(groupType, "RoxieFarm"))
-        return grp_roxiefarm;
     else if (strieq(groupType, "hthor"))
         return grp_hthor;
     else
@@ -7760,9 +7741,6 @@ class CInitGroups
                 processName = "ThorSpareProcess";
                 break;
             case grp_roxie:
-                processName = "RoxieSlave";
-                break;
-            case grp_roxiefarm:
                 processName = "RoxieServerProcess";
                 break;
             default:
@@ -7780,34 +7758,16 @@ class CInitGroups
             }
             SocketEndpoint ep = (*m)->ep;
             switch (groupType) {
-                case grp_roxiefarm:
+                case grp_roxie:
+                // Redundant copies are located via the flags.
+                // Old environments may contain duplicated sever information for multiple ports
+                // MORE - it's not clear whether this is correct for full redundancy and overloaded clusters
                 {
                     unsigned k;
-                    for (k=0;k<eps.ordinality();k++)
-                        if (eps.item(k).equals(ep))
-                            break;
+                    if (eps.contains(ep))
+                        break;
                     if (k==eps.ordinality())
                         eps.append(ep); // just add (don't care about order and no duplicates)
-                    break;
-                }
-                case grp_roxie:
-                {
-                    Owned<IPropertyTreeIterator> channels;
-                    channels.setown(node.getElements("RoxieChannel"));
-                    unsigned thisNodePrimaryChannel = 0;
-                    ForEach(*channels) {
-                        unsigned channel = channels->query().getPropInt("@number");
-                        unsigned level = channels->query().getPropInt("@level", 0);
-                        if (level == 0)  // level 0 means primary copy
-                            thisNodePrimaryChannel = channel;
-                    }
-                    if (thisNodePrimaryChannel==0) {
-                        ERRLOG("Cannot construct roxie cluster %s, no channel for node",cluster.queryProp("@name"));
-                        return NULL;
-                    }
-                    while (eps.ordinality()<thisNodePrimaryChannel)
-                        eps.append(nullep);
-                    eps.item(thisNodePrimaryChannel-1) = ep;
                     break;
                 }
                 case grp_thor:
@@ -7824,7 +7784,8 @@ class CInitGroups
         unsigned slavesPerNode = 0;
         if (grp_thor == groupType)
             slavesPerNode = cluster.getPropInt("@slavesPerNode");
-        if (slavesPerNode) {
+        if (slavesPerNode)
+        {
             SocketEndpointArray msEps;
             for (unsigned s=0; s<slavesPerNode; s++) {
                 ForEachItemIn(e, eps)
@@ -7869,9 +7830,6 @@ class CInitGroups
                 break;
             case grp_roxie:
                 kind = "Roxie";
-                break;
-            case grp_roxiefarm:
-                kind = "RoxieFarm";
                 break;
             case grp_hthor:
                 kind = "hthor";
@@ -7918,8 +7876,6 @@ class CInitGroups
                 break;
             case grp_roxie:
                 gname.append(cluster.queryProp("@name"));
-                break;
-            case grp_roxiefarm:
                 break;
             default:
                 throwUnexpected();
@@ -7975,19 +7931,6 @@ class CInitGroups
                 }
             }
         }
-    }
-
-    bool constructFarmGroup(IPropertyTree &cluster, IPropertyTree *oldCluster, bool force, StringBuffer &messages)
-    {
-        Owned<IPropertyTreeIterator> farms = cluster.getElements("RoxieFarmProcess");  // probably only one but...
-        bool ret = true;
-        ForEach(*farms) {
-            IPropertyTree &farm = farms->query();
-            VStringBuffer gname("%s__%s", cluster.queryProp("@name"), farm.queryProp("@name"));
-            if (!constructGroup(farm, gname, oldCluster, grp_roxiefarm, force, messages))
-                ret = false;
-        }
-        return ret;
     }
 
     enum CgCmd { cg_null, cg_reset, cg_add, cg_remove };
@@ -8157,7 +8100,6 @@ public:
                     oldCluster = oldEnvironment->queryPropTree(xpath.str());
                 }
                 constructGroup(cluster,NULL,oldCluster,grp_roxie,force,messages);
-                constructFarmGroup(clusters->query(),oldCluster,force,messages);
             }
             clusters.setown(root->getElements("EclAgentProcess"));
             ForEach(*clusters) {

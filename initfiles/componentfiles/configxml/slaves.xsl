@@ -28,8 +28,8 @@
 </xsl:template>
 
 <xsl:template  match="RoxieCluster">
-   <xsl:for-each select="RoxieServerProcess|RoxieSlaveProcess">
-    <xsl:if test="string(@computer) != '' and not(@computer = preceding-sibling::RoxieServerProcess/@computer) and not(@computer = preceding-sibling::RoxieSlaveProcess/@computer)">
+   <xsl:for-each select="RoxieServerProcess">
+    <xsl:if test="string(@computer) != '' and not(@computer = preceding-sibling::RoxieServerProcess/@computer)">
         <xsl:value-of select="/Environment/Hardware/Computer[@name=current()/@computer]/@netAddress"/>
         <xsl:text>
 </xsl:text>

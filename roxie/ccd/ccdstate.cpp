@@ -2113,11 +2113,6 @@ private:
                 ReadLockBlock readBlock(packageCrit);
                 reply.appendf("<State hash='%"I64F"u'/>", (unsigned __int64) allQueryPackages->queryHash());
             }
-            else if (stricmp(queryName, "control:status")==0)
-            {
-                CriticalBlock b(ccdChannelsCrit);
-                toXML(ccdChannels, reply);
-            }
             else if (stricmp(queryName, "control:steppingEnabled")==0)
             {
                 steppingEnabled = control->getPropBool("@val", true);
