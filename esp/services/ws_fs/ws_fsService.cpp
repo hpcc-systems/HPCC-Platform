@@ -522,7 +522,7 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, StringBuffer &tit
     return true;
 }
 
-DFUclusterPartDiskMapping readClusterMappingSettings(const char *cluster, StringBuffer &dir, int& offset)
+DFUclusterPartDiskMapping readClusterMappingSettings(const char *cluster, StringBuffer &dir, int& offset, ClusterPartDiskMapSpec& mspec)
 {
     DFUclusterPartDiskMapping mapping = DFUcpdm_c_only;
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
@@ -546,6 +546,7 @@ DFUclusterPartDiskMapping readClusterMappingSettings(const char *cluster, String
             else if (!strnicmp(slaveConfig, "overloaded", 10))
             {
                 mapping = DFUcpdm_c_then_d;
+                mspec.setRoxie(0, processe.getCount("RoxieSlave[1]/RoxieChannel"));
             }
             else if (!strnicmp(slaveConfig, "full", 4))
             {
@@ -2397,11 +2398,13 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         wuFSpecDest->setFileMask(fileMask.str());
         wuOptions->setOverwrite(req.getOverwrite());
 
+        ClusterPartDiskMapSpec mspec;
+        wuFSpecDest->getClusterPartDiskMapSpec(destCluster.str(), mspec);
         if (bRoxie)
         {
             int offset;
             StringBuffer baseDir;
-            DFUclusterPartDiskMapping val = readClusterMappingSettings(destCluster.str(), baseDir, offset);
+            DFUclusterPartDiskMapping val = readClusterMappingSettings(destCluster.str(), baseDir, offset, mspec);
             wuFSpecDest->setWrap(true);                             // roxie always wraps
             if(req.getCompress())
                 wuFSpecDest->setCompressed(true);
@@ -2456,8 +2459,6 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
                 wuOptions->setIfNewer(true);
         }
 
-        ClusterPartDiskMapSpec mspec;
-        wuFSpecDest->getClusterPartDiskMapSpec(destCluster.str(), mspec);
         mspec.setDefaultBaseDir(defaultFolder.str());
         mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
         wuFSpecDest->setClusterPartDiskMapSpec(destCluster.str(), mspec);
