@@ -237,7 +237,7 @@ protected:
             IPropertyTree *fileInfo = node->queryPropTree(xpath.appendf("File[@id='%s']", fileName).str());
             if (fileInfo)
             {
-                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
+                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL, false);
                 result->addSubFile(createFileDescriptorFromRoxieXML(fileInfo), NULL);
                 return result.getClear();
             }
@@ -263,7 +263,7 @@ protected:
                 Owned<IFileDescriptor> fd = daliHelper->resolveCachedLFN(fileName);
                 if (fd)
                 {
-                    Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
+                    Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL, false);
                     Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt);
                     result->addSubFile(fd.getClear(), remoteFDesc.getClear());
                     return result.getClear();
@@ -288,7 +288,7 @@ protected:
             bool exists = checkFileExists(useName);
             if (exists || alwaysCreate)
             {
-                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, useName);
+                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, useName, false);
                 if (exists)
                     result->addSubFile(useName);
                 return result.getClear();
@@ -313,33 +313,24 @@ protected:
         if (subFileInfo)
         {
             unsigned numSubFiles = subFileInfo->numSubFiles();
-            if (numSubFiles==1)
+            // Note: do not try to optimize the common case of a single subfile
+            // as we still want to report the superfile info from the resolvedFile
+            Owned<IResolvedFileCreator> super;
+            for (unsigned idx = 0; idx < numSubFiles; idx++)
             {
-                // Optimize the common case of a single subfile
                 StringBuffer subFileName;
-                subFileInfo->getSubFileName(0, subFileName);
-                return lookupFile(subFileName, cache, writeAccess, alwaysCreate);
-            }
-            else
-            {
-                // Have to do some merging...
-                Owned<IResolvedFileCreator> super;
-                for (unsigned idx = 0; idx < numSubFiles; idx++)
+                subFileInfo->getSubFileName(idx, subFileName);
+                Owned<const IResolvedFile> subFileInfo = lookupFile(subFileName, cache, writeAccess, alwaysCreate);
+                if (subFileInfo)
                 {
-                    StringBuffer subFileName;
-                    subFileInfo->getSubFileName(idx, subFileName);
-                    Owned<const IResolvedFile> subFileInfo = lookupFile(subFileName, cache, writeAccess, alwaysCreate);
-                    if (subFileInfo)
-                    {
-                        if (!super) 
-                            super.setown(createResolvedFile(fileName, NULL));
-                        super->addSubFile(subFileInfo);
-                    }
+                    if (!super)
+                        super.setown(createResolvedFile(fileName, NULL, true));
+                    super->addSubFile(subFileInfo);
                 }
-                if (super && cache)
-                    addCache(fileName, super);
-                return super.getClear();
             }
+            if (super && cache)
+                addCache(fileName, super);
+            return super.getClear();
         }
         result = resolveLFNusingPackage(fileName);
         if (!result)

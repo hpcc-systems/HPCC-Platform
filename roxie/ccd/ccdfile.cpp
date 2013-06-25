@@ -1624,13 +1624,12 @@ protected:
 
 public:
     IMPLEMENT_IINTERFACE;
-    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* daliHelper, bool cacheIt, bool writeAccess)
-    : lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType)
+    CResolvedFile(const char *_lfn, const char *_physicalName, IDistributedFile *_dFile, RoxieFileType _fileType, IRoxieDaliHelper* daliHelper, bool cacheIt, bool writeAccess, bool _isSuperFile)
+    : lfn(_lfn), physicalName(_physicalName), dFile(_dFile), fileType(_fileType), isSuper(_isSuperFile)
     {
         cached = NULL;
         fileSize = 0;
         fileCheckSum = 0;
-        isSuper = false;
         if (dFile)
         {
             if (traceLevel > 5)
@@ -1652,6 +1651,7 @@ public:
             }
             else // normal file, not superkey
             {
+                isSuper = false;
                 Owned<IFileDescriptor> fDesc = dFile->getFileDescriptor();
                 Owned<IFileDescriptor> remoteFDesc;
                 if (daliHelper)
@@ -2102,8 +2102,8 @@ public:
     unsigned serverIdx;
 
 public:
-    CSlaveDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal) 
-        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, false, false), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
+    CSlaveDynamicFile(const IRoxieContextLogger &logctx, const char *_lfn, RoxiePacketHeader *header, bool _isOpt, bool _isLocal)
+        : CResolvedFile(_lfn, NULL, NULL, ROXIE_FILE, NULL, false, false, false), channel(header->channel), serverIdx(header->serverIdx), isOpt(_isOpt), isLocal(_isLocal)
     {
         // call back to the server to get the info
         IPendingCallback *callback = ROQ->notePendingCallback(*header, lfn); // note that we register before the send to avoid a race.
@@ -2201,15 +2201,15 @@ private:
     }
 };
 
-extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical)
+extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical, bool isSuperFile)
 {
-    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, false, false);
+    return new CResolvedFile(lfn, physical, NULL, ROXIE_FILE, NULL, false, false, isSuperFile);
 }
 
 extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool cacheIt, bool writeAccess)
 {
     const char *kind = dFile ? dFile->queryAttributes().queryProp("@kind") : NULL;
-    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, cacheIt, writeAccess);
+    return new CResolvedFile(lfn, physical, dFile, kind && stricmp(kind, "key")==0 ? ROXIE_KEY : ROXIE_FILE, daliHelper, cacheIt, writeAccess, false);
 }
 
 class CSlaveDynamicFileCache : public CInterface, implements ISlaveDynamicFileCache
