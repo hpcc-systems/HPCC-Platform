@@ -171,7 +171,7 @@ void CJobManager::updateWorkUnitLog(IWorkUnit &workunit)
     StringBuffer log, logUrl;
     logHandler->getLogName(log);
     createUNCFilename(log, logUrl, false);
-    workunit.addProcess("Thor", globals->queryProp("@name"), logUrl.str());
+    workunit.addProcess("Thor", globals->queryProp("@name"), 0, logUrl.str());
 }
 
 

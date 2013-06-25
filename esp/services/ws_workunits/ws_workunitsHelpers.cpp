@@ -512,12 +512,12 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 
         if (cw->getWuidVersion() > 0)
         {
-            Owned<IStringIterator> eclAgentLogs = cw->getLogs("EclAgent");
-            ForEach (*eclAgentLogs)
+            IPropertyTreeIterator& eclAgents = cw->getProcesses("EclAgent", NULL);
+            ForEach (eclAgents)
             {
-                SCMStringBuffer logName;
-                eclAgentLogs->str(logName);
-                if (logName.length() < 1)
+                StringBuffer logName, agentPID;
+                eclAgents.query().getProp("@log",logName);
+                if (!logName.length())
                     continue;
 
                 Owned<IEspECLHelpFile> h= createECLHelpFile("","");
@@ -528,6 +528,13 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
                     offset_t fileSize;
                     if (getFileSize(logName.str(), NULL, fileSize))
                         h->setFileSize(fileSize);
+                    if (version >= 1.44)
+                    {
+                        if (eclAgents.query().hasProp("@pid"))
+                            h->setPID(eclAgents.query().getPropInt("@pid"));
+                        else
+                            h->setPID(cw->getAgentPID());
+                    }
                 }
                 helpers.append(*h.getLink());
             }
@@ -1671,7 +1678,7 @@ void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownloa
     }
 }
 
-void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, MemoryBuffer& buf)
+void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid, MemoryBuffer& buf)
 {
     if(!fileName || !*fileName)
         throw MakeStringException(ECLWATCH_ECLAGENT_LOG_NOT_FOUND,"Log file not specified");
@@ -1687,8 +1694,11 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, MemoryBuffer& buf)
     bool eof = false;
     bool wuidFound = false;
 
-    unsigned pid = cw->getAgentPID();
-    VStringBuffer pidstr(" %5d ", pid);
+    StringBuffer pidstr;
+    if (agentPid && *agentPid)
+        pidstr.appendf(" %s ", agentPid);
+    else
+        pidstr.appendf(" %5d ", cw->getAgentPID());
     char const * pidchars = pidstr.str();
     while(!eof)
     {

@@ -168,7 +168,7 @@ public:
     bool getResultEclSchemas(IConstWUResult &r, IArrayOf<IEspECLSchemaItem>& schemas);
     void getResult(IConstWUResult &r, IArrayOf<IEspECLResult>& results, unsigned flags);
 
-    void getWorkunitEclAgentLog(const char* eclAgentInstance, MemoryBuffer& buf);
+    void getWorkunitEclAgentLog(const char* eclAgentInstance, const char* agentPid, MemoryBuffer& buf);
     void getWorkunitThorLog(const char *processName, MemoryBuffer& buf);
     void getWorkunitThorSlaveLog(const char *groupName, const char *ipAddress, const char* logDate, const char* logDir, int slaveNum, MemoryBuffer& buf, bool forDownload);
     void getWorkunitResTxt(MemoryBuffer& buf);
