@@ -441,14 +441,6 @@ public:
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
 
-    virtual IPropertyTree *getQuerySets() const
-    {
-        if (node)
-            return node->getPropTree("QuerySets");
-        else
-            return NULL;
-    }
-
     //map ambiguous IHpccPackage
     virtual ISimpleSuperFileEnquiry *resolveSuperFile(const char *superFileName) const
     {
@@ -1232,7 +1224,7 @@ public:
             if (sm->isActive())
             {
                 Owned<IQueryFactory> library = sm->getQuery(libraryName, logctx);
-                if (library && (&library->queryPackage() == &package))  // MORE - is this check too restrictive?
+                if (library)
                 {
                     if (library->isQueryLibrary())
                     {
@@ -1247,7 +1239,7 @@ public:
                 }
             }
         }
-        throw MakeStringException(ROXIE_LIBRARY_ERROR, "No compatible library available for %s", libraryName);
+        throw MakeStringException(ROXIE_LIBRARY_ERROR, "No library available for %s", libraryName);
     }
 
     IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
