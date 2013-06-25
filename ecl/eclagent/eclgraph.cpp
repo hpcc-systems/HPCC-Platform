@@ -1690,7 +1690,7 @@ void EclAgent::updateWULogfile()
             rlf.getRemotePath(logname.clear());
 
             Owned <IWorkUnit> w = updateWorkUnit();
-            w->addProcess("EclAgent", config->queryProp("@name"), logname.str());
+            w->addProcess("EclAgent", config->queryProp("@name"), GetCurrentProcessId(), logname.str());
         }
         else
         {
