@@ -31,6 +31,7 @@ define([
     "dijit/MenuItem",
     "dijit/MenuSeparator",
     "dijit/PopupMenuItem",
+    "dijit/Tooltip",
 
     "dgrid/Grid",
     "dgrid/Keyboard",
@@ -72,7 +73,7 @@ define([
     "hpcc/WUQueryWidget"
 
 ], function (declare, lang, arrayUtil, dom, domClass, domForm, date, on,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem, Tooltip,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, ESPRequest, WUDetailsWidget, TargetSelectWidget,
                 template) {
@@ -98,8 +99,43 @@ define([
                 return;
             this.initalized = true;
             this.initTab();
+
+            new Tooltip({
+                connectId: ["stubStackController_stub_ECL"],
+                label: "Workunits",
+                position: ["below"]
+             });
+
+            new Tooltip({
+                connectId: ["stubStackController_stub_DFU"],
+                label: "DFU Workunits",
+                position: ["below"]
+            });
+
+            new Tooltip({
+                connectId: ["stubStackController_stub_LF"],
+                label: "Logical Files",
+                position: ["below"]
+            });
+            new Tooltip({
+                connectId: ["stubStackController_stub_Queries"],
+                label: "Targets",
+                position: ["below"]
+            });
+            new Tooltip({
+                connectId: ["stubStackController_stub_LZ"],
+                label: "Landing Zones",
+                position: ["below"]
+            });
+
+            new Tooltip({
+                connectId: ["stubStackController_stub_OPS"],
+                label: "Operations",
+                position: ["below"]
+            });
         },
 
+   
         initTab: function () {
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {

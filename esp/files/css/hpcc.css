@@ -20,7 +20,7 @@ html, body {
     background: white;
     width: 100%;
     height: 100%;
-    margin: 0px;
+    margin: 0;
     color: rgb(51, 51, 51);
     font-family: Lucida Sans,Lucida Grande,Arial !important;
     font-size: 13px !important;
@@ -75,7 +75,6 @@ form label{
     padding-top: 4px;
     font-weight:bold;
     height:20px;
-    color:rgb(71, 71, 71);
 }
 
 form textarea{
@@ -103,27 +102,11 @@ form li{
 form div{
     margin:4px 0 0 0;
 }
-form h1{
-    font-size: 1.5em;
-    margin-left:15px;
-}
+
 form h2{
     padding:5px 0;
-    color:rgb(22, 22, 22);
 }
 
-/* Double-color dashed line */
-        
-hr.dashedLine {
-    border: 0;
-    border-bottom: 1px dashed #ccc;
-    background-color: rgb(0, 170, 213);
-    background: none;
-}
-
- h2 img:first-of-type{
-    margin-left:15px;
-}
 /*IDs************************/
 #files{
     border:solid 1px #DBDBDB;
@@ -132,82 +115,116 @@ hr.dashedLine {
     padding:20px;
 }
 
-#stubTitlebar {
+#stubTitlebar{
     background: rgb(46, 112, 150);
     height: 51px;
-    margin: 0px;
-    padding: 2px;
+    margin: 0 !important;
+    padding: 0 !important;
     overflow: hidden;
+    width:100% !important;
+    top:0 !important;
+    left:0 !important;
 }
 
 #hoverIcon :hover{
     background-color:rgb(118, 157, 192);
+     cursor: pointer;
 }
 
-#stubStackController .dijitToggleButton .dijitButtonNode {
-    background-color: #353535;
-    background:none;
+ .claro #stubTitlebar .dijitToggleButton .dijitButtonNode{
+    background: none;
+    border:none;
     box-shadow: none;
+    margin:0;
+    cursor: pointer;
 }
 
-#stubStackController span:nth-child(1) {
+.claro #stubTitlebar .dijitToggleButton, .dijitButton, .dijitDropDownButton, .dijitComboButton{
+    margin:0;
+    cursor: pointer;
+}
+
+/*.dijitToggleButtonChecked {
+    cursor: pointer;
+}
+
+ .dijitReset{
+    cursor: pointer;
+}
+
+.dijitChecked{
+    cursor: pointer;
+}*/
+
+.claro .dijitPopup .dijitMenuPopup{
+    top:56px !important;
+}
+
+
+#stubTitlebar :focus {
+    outline: none;
+}
+
+#stubStackController_stub_Activity{
+    width:172px;
+    margin-right:20px;
+}
+
+
+#stubTitlebar .dijitStackController .dijitToggleButtonChecked *{
+    cursor: pointer;
+}
+
+.iconLogo{
     background-image: url("../img/hpcc_systems_logo.png");
     width: 180px;
     height: 45px;
-}
-
-#stubStackController :hover{
-    background-color:rgb(118, 157, 192);
-}
-
-#stubStackController span:nth-child(2) {
-    background-image: url("../img/ecl_icon.png");
-    width: 45px;
-    height: 45px;
-}
-
-#stubStackController span:nth-child(3) {
-    background-image: url("../img/dfu_icon.png");
-    width: 45px;
-    height: 45px;
-}
-
-#stubStackController span:nth-child(4) {
-    background-image: url("../img/files_icon.png");
-    width: 45px;
-    height: 45px;
-}
-
-#stubStackController span:nth-child(5) {
-    background-image: url("../img/landingzone_icon.png");
-    width: 45px;
-    height: 45px;
-}
-
-#stubStackController span:nth-child(6) {
-    background-image: url("../img/queries_icon.png");
-    width: 45px;
-    height: 45px;
-}
-
-#stubStackController span:nth-child(7) {
-    background-image: url("../img/ops_icon.png");
-    width: 45px;
-    height: 45px;
-}
-
-#stubStackController .dijitButtonContents{
-    display:none;
-    border:none;
-}
-
-#stubStackController .dijitButtonNode{
-    border:none;
-}
-
-#stubStackController .dijitReset{
     cursor: pointer;
 }
+
+.iconWu {
+    background-image: url("../img/Cog.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconDFU {
+    background-image: url("../img/Folder.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconGetDFU {
+    background-image: url("../img/FolderSmart.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconOperations{
+    background-image: url("../img/Operations.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+
+.iconLandingZone{
+    background-image: url("../img/LandingZone.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.iconTargets{
+    background-image: url("../img/Targets.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
 
 #userTools{
     float:right;
@@ -222,7 +239,7 @@ hr.dashedLine {
 }
 
 #userAccount a{
-    color:rgb(0, 160, 224);
+    color:rgb(164, 220, 245);
 }
 
 #userIcons{
@@ -232,6 +249,7 @@ hr.dashedLine {
 
 #userIcons img{
     border:none;
+    margin-top:8px;
 }
 
 #userIcons .dijitDropDownButton .dijitButtonNode{
@@ -266,10 +284,6 @@ hr.dashedLine {
 
 #userIcons .dijitButtonText{
     padding:0px;
-}
-
-#userIcons .dijitArrowButtonInner{
-    display:none;
 }
 
 #userIcons .dijitFocused{
@@ -309,8 +323,8 @@ hr.dashedLine {
 }
 
 #loadingOverlay .loadingMessage {
-        padding: 25px 40px;
-        color: rgb(153, 153, 153);
+    padding: 25px 40px;
+    color: rgb(153, 153, 153);
     }
 
 #timings, #properties {
@@ -331,6 +345,10 @@ hr.dashedLine {
 }
 
 /*CLASSES******************/
+.claro #userIcons .dijitArrowButtonInner{
+    margin:5px auto 0 5px;
+}
+
 .holder :focus{
     outline: none;
 }
@@ -343,15 +361,16 @@ hr.dashedLine {
 
 .corner {
     border: 0px;
-    margin:0 0 3px -25px;
-    vertical-align:bottom;
+    margin:0 0 3px -30px;
+    vertical-align:middle;
     background-color: transparent; /*important*/
 }
 
 .holder{
-    width:40px;
-    height:60px;
-    float:left;
+    width:55px;
+    height:55px;
+    padding:0 10px;
+    float:right;
 }
 
 .seperator{
@@ -442,15 +461,19 @@ hr.dashedLine {
 }
 
 .grey{
-background-color: rgb(80, 80, 80);
+    background-color: rgb(80, 80, 80);
 }
 
 .white{
     background-color:rgb(255,255,255);
 }
-.left{float:left;}
+.left{
+    float:left;
+}
 
-.right{float:right;}
+.right{
+    float:right;
+}
 
 .hidden{
     color:rgb(214, 214, 214);
@@ -485,7 +508,7 @@ background-color: rgb(80, 80, 80);
 }
 
 .toolTip{
-width:inherit;
+width:500px;
 }
 
 .toolTip img{
@@ -493,6 +516,17 @@ vertical-align: middle;
 margin-left:-20px;
 }
 
+.rounded{
+    border-radius: 5px;
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    -khtml-border-radius:10px;
+    box-shadow: inset 0 2px 0 #fff;
+    background:rgb(244,244,244);
+    padding:10px;
+    margin:10px 0;
+    border:solid 1px rgb(214,214,214); 
+}
 
 .pageOverlay{
     left: 0;
@@ -648,13 +682,4 @@ margin-left:-20px;
 .resultGridCell {
     vertical-align:text-top;
     font-family: monospace;
-}
-
-.dgrid {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: auto;
 }
