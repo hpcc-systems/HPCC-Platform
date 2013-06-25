@@ -29,6 +29,7 @@ from ..common.report import Report, Tee
 from ..regression.suite import Suite
 from ..util.ecl.cc import ECLCC
 from ..util.ecl.command import ECLcmd
+from ..util.expandcheck import ExpandCheck
 
 
 class Regression:
@@ -42,11 +43,13 @@ class Regression:
                 raise Error("2002")
         else:
             self.suiteDir = suiteDir
-        self.regressionDir = self.config.regressionDir
-        self.logDir = self.config.logDir
-        self.setupDir = os.path.join(self.suiteDir, self.config.setupDir)
-        self.dir_ec = os.path.join(self.suiteDir, self.config.eclDir)
-        self.dir_ex = os.path.join(self.suiteDir, self.config.keyDir)
+
+        self.suiteDir = ExpandCheck.dir_exists(suiteDir, True)
+        self.regressionDir = ExpandCheck.dir_exists(self.config.regressionDir, True)
+        self.logDir = ExpandCheck.dir_exists(self.config.logDir, True)
+        self.setupDir = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.setupDir), True)
+        self.dir_ec = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.eclDir), True)
+        self.dir_ex = ExpandCheck.dir_exists(os.path.join(self.suiteDir, self.config.keyDir), True)
         self.dir_a = os.path.join(self.regressionDir, self.config.archiveDir)
         self.dir_r = os.path.join(self.regressionDir, self.config.resultDir)
         logging.debug("Suite Dir      : %s", suiteDir)
