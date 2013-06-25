@@ -852,7 +852,7 @@ public:
 
     virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
-        return globalPackageSetManager->lookupLibrary(package, libraryName, expectedInterfaceHash, logctx);
+        return globalPackageSetManager->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
     virtual void beforeDispose()

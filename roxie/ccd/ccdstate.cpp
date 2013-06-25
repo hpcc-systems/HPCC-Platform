@@ -441,14 +441,6 @@ public:
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
     }
 
-    virtual IPropertyTree *getQuerySets() const
-    {
-        if (node)
-            return node->getPropTree("QuerySets");
-        else
-            return NULL;
-    }
-
     //map ambiguous IHpccPackage
     virtual ISimpleSuperFileEnquiry *resolveSuperFile(const char *superFileName) const
     {
@@ -1224,7 +1216,7 @@ public:
         owner->notify(id, xpath, flags, valueLen, valueData);
     }
 
-    IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
+    IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         ForEachItemIn(idx, allQueryPackages)
         {
@@ -1232,7 +1224,7 @@ public:
             if (sm->isActive())
             {
                 Owned<IQueryFactory> library = sm->getQuery(libraryName, logctx);
-                if (library && (&library->queryPackage() == &package))  // MORE - is this check too restrictive?
+                if (library)
                 {
                     if (library->isQueryLibrary())
                     {
@@ -1247,7 +1239,7 @@ public:
                 }
             }
         }
-        throw MakeStringException(ROXIE_LIBRARY_ERROR, "No compatible library available for %s", libraryName);
+        throw MakeStringException(ROXIE_LIBRARY_ERROR, "No library available for %s", libraryName);
     }
 
     IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
@@ -1465,10 +1457,10 @@ public:
         controlSem.signal();
     }
 
-    virtual IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
-        return allQueryPackages->lookupLibrary(package, libraryName, expectedInterfaceHash, logctx);
+        return allQueryPackages->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const

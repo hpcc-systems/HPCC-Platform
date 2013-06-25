@@ -144,12 +144,6 @@ public:
         return node;
     }
 
-    virtual IPropertyTree *getQuerySets() const
-    {
-        if (!node)
-            return NULL;
-        return node->getPropTree("QuerySets");
-    }
     virtual bool validate(StringArray &warn, StringArray &err) const;
 };
 
