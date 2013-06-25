@@ -300,4 +300,20 @@ protected:
     const char* queryAuthMethod() {return m_authmethod.str(); }
 };
 
+inline bool isEclIdeRequest(CHttpRequest *request)
+{
+    StringBuffer userAgent;
+    return strstr(request->getHeader("User-Agent", userAgent), "eclide/") != NULL;
+}
+
+inline bool checkInitEclIdeResponse(CHttpRequest *request, CHttpResponse* response)
+{
+    if (isEclIdeRequest(request))
+    {
+        response->addHeader("X-UA-Compatible", "IE=edge");
+        return true;
+    }
+    return false;
+}
+
 #endif //_SOAPBIND_HPP__
