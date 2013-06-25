@@ -1,0 +1,28 @@
+<Exception><Source>user</Source><Message>Assert (1 = 2) failed [val1 = 2]</Message></Exception>
+<Exception><Source>user</Source><Message>Abc2</Message></Exception>
+<Exception><Source>user</Source><Message>Assert (1 = 2) failed [1 = val4]</Message></Exception>
+<Exception><Source>user</Source><Message>Abc3</Message></Exception>
+<Exception><Source>user</Source><Message>Assert (1 = 2) failed [val1 = 2]</Message></Exception>
+<Exception><Source>user</Source><Message>Abc5</Message></Exception>
+<Exception><Source>user</Source><Message>Assert (1 = 2) failed [val1 = val4]</Message></Exception>
+<Exception><Source>user</Source><Message>Abc6</Message></Exception>
+<Exception><Source>user</Source><Message>Assert (2 = 1) failed [val1 = 1]</Message></Exception>
+<Exception><Source>user</Source><Message>Abc4</Message></Exception>
+<Exception><Source>user</Source><Message>Assert (1 = 2) failed [val1 = 2]</Message></Exception>
+<Exception><Source>user</Source><Message>Abc8</Message></Exception>
+<Exception><Source>user</Source><Message>Assert (1 = 2) failed [val1 = val4]</Message></Exception>
+<Exception><Source>user</Source><Message>Abc9</Message></Exception>
+<Exception><Source>user</Source><Message>Assert (2 = 1) failed [val1 = 1]</Message></Exception>
+<Exception><Source>user</Source><Message>Abc7</Message></Exception>
+<Dataset name='Result 1'>
+ <Row><val1>1</val1></Row>
+ <Row><val1>2</val1></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><val1>1</val1></Row>
+ <Row><val1>2</val1></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><val1>1</val1><text>One  </text></Row>
+ <Row><val1>2</val1><text>Two  </text></Row>
+</Dataset>
