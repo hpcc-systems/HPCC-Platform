@@ -526,7 +526,7 @@ DFUclusterPartDiskMapping readClusterMappingSettings(const char *cluster, String
 {
     DFUclusterPartDiskMapping mapping = DFUcpdm_c_only;
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-   envFactory->validateCache();
+    envFactory->validateCache();
 
     StringBuffer dirxpath;
     dirxpath.appendf("Software/RoxieCluster[@name=\"%s\"]",cluster);
@@ -535,28 +535,33 @@ DFUclusterPartDiskMapping readClusterMappingSettings(const char *cluster, String
     Owned<IPropertyTreeIterator> processes = pEnvRoot->getElements(dirxpath);
     if (processes->first()) 
     {
-        IPropertyTree &processe = processes->query();
-        const char *slaveConfig = processe.queryProp("@slaveConfig");
+        IPropertyTree &process = processes->query();
+        const char *slaveConfig = process.queryProp("@slaveConfig");
         if (slaveConfig && *slaveConfig)
         {
-            if (!stricmp(slaveConfig, "simple"))
+            if (!strnicmp(slaveConfig, "simple", 6))
             {
                 mapping = DFUcpdm_c_only;
             }
-            else if (!stricmp(slaveConfig, "overloaded"))
+            else if (!strnicmp(slaveConfig, "overloaded", 10))
             {
                 mapping = DFUcpdm_c_then_d;
             }
-            else if (!stricmp(slaveConfig, "full_redundancy"))
+            else if (!strnicmp(slaveConfig, "full", 4))
             {
-                ;
+                mapping = DFUcpdm_c_only;
             }
-            else //circular redundancy
+            else if (!strnicmp(slaveConfig, "cyclic", 6))
             {
                 mapping = DFUcpdm_c_replicated_by_d;
-                offset = processe.getPropInt("@cyclicOffset");
+                offset = process.getPropInt("@cyclicOffset");
             }
-            dir = processe.queryProp("@slaveDataDir");
+            else
+            {
+                DBGLOG("Failed to get RoxieCluster settings");
+                throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "Failed to get RoxieCluster settings. The workunit will not be created.");
+            }
+            dir = process.queryProp("@slaveDataDir");
         }
         else
         {
