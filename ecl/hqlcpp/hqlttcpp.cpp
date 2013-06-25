@@ -7049,10 +7049,11 @@ bool ScalarGlobalTransformer::isComplex(IHqlExpression * expr, bool checkGlobal)
 
     switch (expr->getOperator())
     {
-    case no_constant:
-    case no_getresult:
-    case no_globalscope:
     case no_workunit_dataset:
+    case no_getresult:
+        return expr->hasAttribute(wuidAtom);
+    case no_constant:
+    case no_globalscope:
     case no_libraryinput:
         return false;
     case no_cast:
