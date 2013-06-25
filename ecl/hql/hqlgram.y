@@ -327,6 +327,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   ONWARNING
   OPT
   OR
+  ORDERED
   OUTER
   OUTPUT
   TOK_OUT
@@ -2505,6 +2506,12 @@ actionStmt
                             HqlExprArray actions;
                             parser->endList(actions);
                             $$.setExpr(createValue(no_parallel, makeVoidType(), actions), $1);
+                        }
+    | ORDERED '(' beginList sequentialActionlist optSemiComma ')'
+                        {
+                            HqlExprArray actions;
+                            parser->endList(actions);
+                            $$.setExpr(createValue(no_orderedactionlist, makeVoidType(), actions), $1);
                         }
     | SOAPCALL '(' expression ',' expression ',' recordDef ')'
                         {

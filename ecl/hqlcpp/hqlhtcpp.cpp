@@ -1712,6 +1712,8 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     meta.setMeta(translator, record, ::isGrouped(outputDataset));
 
     activityId = translator.nextActivityId();
+    if (activityId == 1238)
+        dataset->numChildren();
 
     StringBuffer s;
     className.set(s.clear().append("cAc").append(activityId).str());
@@ -5734,6 +5736,7 @@ double HqlCppTranslator::getComplexity(IHqlExpression * expr, ClusterType cluste
     case no_compound:
     case no_parallel:
     case no_actionlist:
+    case no_orderedactionlist:
         break;
     case no_thor:
         {
@@ -6511,6 +6514,7 @@ ABoundActivity * HqlCppTranslator::buildActivity(BuildCtx & ctx, IHqlExpression 
             case no_parallel:
             case no_sequential:
             case no_actionlist:
+            case no_orderedactionlist:
                 result = doBuildActivitySequentialParallel(ctx, expr, isRoot);
                 break;
             case no_activerow:
@@ -6632,17 +6636,17 @@ void HqlCppTranslator::buildRootActivity(BuildCtx & ctx, IHqlExpression * expr)
 {
     switch (expr->getOperator())
     {
-    case no_compound:
-    case no_parallel:
-    case no_actionlist:
+//    case no_compound:
+//    case no_parallel:
+//    case no_actionlist:
         {
             ForEachChild(idx, expr)
                 buildRootActivity(ctx, expr->queryChild(idx));
             break;
         }
-    case no_null:
-        if (expr->isAction())
-            return;
+//    case no_null:
+//        if (expr->isAction())
+//            return;
         //fall through
     default:
         {
@@ -6923,10 +6927,16 @@ BoundRow * HqlCppTranslator::resolveSelectorDataset(BuildCtx & ctx, IHqlExpressi
 
 //---------------------------------------------------------------------------
 
-void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, ABoundActivity * dependent, IAtom * kind, const char * label, int whenId)
+void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * sourceActivity, IPropertyTree * sinkGraphTree, ABoundActivity * sinkActivity, IAtom * kind, const char * label, int whenId)
 {
-    ABoundActivity * sourceActivity = element;
-    ABoundActivity * sinkActivity = dependent;
+    IPropertyTree * graphTree = NULL;
+    if (sinkActivity->queryGraphId() == sourceActivity->queryGraphId())
+    {
+        if (targetHThor())
+            throwError1(HQLERR_DependencyWithinGraph, sinkActivity->queryGraphId());
+        graphTree = sinkGraphTree;
+    }
+
     unsigned outputIndex = 0;
     if (kind != childAtom)
         outputIndex = sourceActivity->nextOutputCount();
@@ -6946,13 +6956,6 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, A
 
     IPropertyTree *edge = createPTree();
     edge->setProp("@id", idText.str());
-    edge->setPropInt64("@target", sinkActivity->queryGraphId());
-    edge->setPropInt64("@source", sourceActivity->queryGraphId());
-    if (targetHThor())
-    {
-        if (sinkActivity->queryGraphId() == sourceActivity->queryGraphId())
-            throwError1(HQLERR_DependencyWithinGraph, sinkActivity->queryGraphId());
-    }
     if (label)
         edge->setProp("@label", label);
     if (targetRoxie())
@@ -6971,7 +6974,7 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, A
     }
     else if (sourceActivity->queryContainerId() != sinkActivity->queryContainerId())
     {
-        //mark as a dependendency if the source and target aren't at the same depth
+        //mark as a dependency if the source and target aren't at the same depth
         addGraphAttributeBool(edge, "_dependsOn", true);
     }
 
@@ -6979,9 +6982,30 @@ void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, A
         addGraphAttributeInt(edge, "_when", whenId);
 
 
-    addGraphAttributeInt(edge, "_sourceActivity", sourceActivity->queryActivityId());
-    addGraphAttributeInt(edge, "_targetActivity", sinkActivity->queryActivityId());
-    activeGraph->xgmml->addPropTree("edge", edge);
+    if (graphTree)
+    {
+        edge->setPropInt64("@target", sinkActivity->queryActivityId());
+        edge->setPropInt64("@source", sourceActivity->queryActivityId());
+        graphTree->addPropTree("edge", edge);
+    }
+    else
+    {
+        edge->setPropInt64("@target", sinkActivity->queryGraphId());
+        edge->setPropInt64("@source", sourceActivity->queryGraphId());
+        addGraphAttributeInt(edge, "_sourceActivity", sourceActivity->queryActivityId());
+        addGraphAttributeInt(edge, "_targetActivity", sinkActivity->queryActivityId());
+        activeGraph->xgmml->addPropTree("edge", edge);
+    }
+}
+
+void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, ABoundActivity * dependent, IAtom * kind, const char * label, int whenId)
+{
+    addDependency(ctx, element, NULL, dependent, kind, label, whenId);
+}
+
+void HqlCppTranslator::addDependency(BuildCtx & ctx, ABoundActivity * element, ActivityInstance * instance, IAtom * kind, const char * label, int whenId)
+{
+    addDependency(ctx, element, instance->querySubgraphNode(), instance->queryBoundActivity(), kind, label, whenId);
 }
 
 void HqlCppTranslator::buildClearRecord(BuildCtx & ctx, IHqlExpression * dataset, IHqlExpression * record, int direction)
@@ -7495,6 +7519,7 @@ static bool isFilePersist(IHqlExpression * expr)
         case no_output:
             return (queryRealChild(expr, 1) != NULL);
         case no_actionlist:
+        case no_orderedactionlist:
             expr = expr->queryChild(expr->numChildren()-1);
             break;
         default:
@@ -8646,7 +8671,7 @@ public:
     {
         if (builder)
         {
-            OwnedHqlExpr childquery = builder->getGraph(sequentialAtom);
+            OwnedHqlExpr childquery = builder->getGraph(no_orderedactionlist);
             translator.buildStmt(ctx, childquery);
             builder.clear();
         }
@@ -8662,6 +8687,7 @@ public:
         case no_parallel:
         case no_sequential:
         case no_actionlist:
+        case no_orderedactionlist:
         case no_compound:
             {
                 ForEachChild(idx, expr)
@@ -8695,6 +8721,7 @@ public:
         case no_parallel:
         case no_sequential:
         case no_actionlist:
+        case no_orderedactionlist:
         case no_compound:
             {
                 ForEachChild(idx, expr)
@@ -9081,12 +9108,8 @@ IHqlExpression * HqlCppTranslator::getResourcedGraph(IHqlExpression * expr, IHql
     if (outputLibraryId)
     {
         unsigned numResults = outputLibrary->numResultsUsed();
-        resourced.setown(resourceLibraryGraph(*this, resourced, targetClusterType, numNodes, outputLibraryId, &numResults));
-        HqlExprArray children;
-        unwindCommaCompound(children, resourced);
-        children.append(*createAttribute(numResultsAtom, getSizetConstant(numResults)));
-        children.append(*createAttribute(multiInstanceAtom));       // since can be called from multiple places.
-        resourced.setown(createValue(no_subgraph, makeVoidType(), children));
+        resourced.setown(resourceLibraryGraph(*this, resourced, targetClusterType, numNodes, outputLibraryId, numResults));
+        resourced.setown(appendAttribute(resourced, multiInstanceAtom));  // since can be called from multiple places.
     }
     else
         resourced.setown(resourceThorGraph(*this, resourced, targetClusterType, numNodes, graphIdExpr));
@@ -14764,10 +14787,10 @@ ABoundActivity * HqlCppTranslator::doBuildActivityExecuteWhen(BuildCtx & ctx, IH
     buildInstanceSuffix(instance);
 
     if (expr->isAction())
-        addDependency(ctx, boundDataset, instance->queryBoundActivity(), dependencyAtom, NULL, 1);
+        addDependency(ctx, boundDataset, instance, dependencyAtom, NULL, 1);
     else
         buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
-    addDependency(ctx, associatedActivity, instance->queryBoundActivity(), dependencyAtom, label, when);
+    addDependency(ctx, associatedActivity, instance, dependencyAtom, label, when);
 
     return instance->getBoundActivity();
 }
@@ -15687,9 +15710,9 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpress
         if (expr->isAction())
         {
             if (boundTrue)
-                addDependency(ctx, boundTrue, instance->queryBoundActivity(), dependencyAtom, firstLabel, 1);
+                addDependency(ctx, boundTrue, instance, dependencyAtom, firstLabel, 1);
             if (boundFalse)
-                addDependency(ctx, boundFalse, instance->queryBoundActivity(), dependencyAtom, "False", 2);
+                addDependency(ctx, boundFalse, instance, dependencyAtom, "False", 2);
         }
         else
         {
@@ -15734,7 +15757,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivitySequentialParallel(BuildCtx & 
         ABoundActivity & cur = (ABoundActivity&)boundActivities.item(j);
         StringBuffer temp;
         temp.append("Action #").append(j+1);
-        addDependency(ctx, &cur, instance->queryBoundActivity(), dependencyAtom, temp.str(), j+1);
+        addDependency(ctx, &cur, instance, dependencyAtom, temp.str(), j+1);
     }
 
     buildInstanceSuffix(instance);
@@ -15768,7 +15791,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityChoose(BuildCtx & ctx, IHqlExp
         ABoundActivity * boundBranch = &inputs.item(branchIdx);
         label.clear().append("Branch ").append(branchIdx+1);
         if (expr->isAction())
-            addDependency(ctx, boundBranch, instance->queryBoundActivity(), dependencyAtom, label.str(), branchIdx+1);
+            addDependency(ctx, boundBranch, instance, dependencyAtom, label.str(), branchIdx+1);
         else
             buildConnectInputOutput(ctx, instance, boundBranch, 0, branchIdx, label.str());
     }
@@ -15843,7 +15866,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityCase(BuildCtx & ctx, IHqlExpre
             label.clear().append("Branch ").append(branchIdx+1);
 
         if (expr->isAction())
-            addDependency(ctx, boundBranch, instance->queryBoundActivity(), dependencyAtom, label.str(), branchIdx+1);
+            addDependency(ctx, boundBranch, instance, dependencyAtom, label.str(), branchIdx+1);
         else
             buildConnectInputOutput(ctx, instance, boundBranch, 0, idx-first, label.str());
     }
@@ -18222,6 +18245,7 @@ static bool needsRealThor(IHqlExpression *expr, unsigned flags)
     case no_nofold:
     case no_nohoist:
     case no_actionlist:
+    case no_orderedactionlist:
     case no_externalcall:
     case no_call:
     case no_compound_fetch:

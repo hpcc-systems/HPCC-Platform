@@ -10351,6 +10351,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case OPT: msg.append("OPT"); break;
     case OR : msg.append("OR "); break;
     case ORDER: msg.append("ORDER"); break;
+    case ORDERED: msg.append("ORDERED"); break;
     case OUTER: msg.append("OUTER"); break;
     case OUTPUT: msg.append("OUTPUT"); break;
     case TOK_OUT: msg.append("OUT"); break;

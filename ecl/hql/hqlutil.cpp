@@ -1855,6 +1855,7 @@ unsigned getNumActivityArguments(IHqlExpression * expr)
         return 1;
     case no_sequential:
     case no_parallel:
+    case no_orderedactionlist:
     case no_actionlist:
     case no_comma:
     case no_compound:
@@ -1975,6 +1976,7 @@ bool isSinkActivity(IHqlExpression * expr)
     case no_parallel:
     case no_actionlist:
     case no_sequential:
+    case no_orderedactionlist:
     case no_apply:
     case no_output:
     case no_buildindex:
