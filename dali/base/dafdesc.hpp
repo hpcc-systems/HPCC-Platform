@@ -96,6 +96,7 @@ public:
 #define CPDMSF_repeatedPart     (0x08)      // if repeated parts included 
 #define CPDMSF_defaultBaseDir   (0x10)      // set if defaultBaseDir present
 #define CPDMSF_defaultReplicateDir  (0x20)      // set if defaultBaseDir present
+#define CPDMSF_overloadedConfig  (0x40)      // set if overloaded mode
 
 
 // ==PART DESCRIPTOR ==============================================================================================

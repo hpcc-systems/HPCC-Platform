@@ -103,6 +103,8 @@ void ClusterPartDiskMapSpec::setRoxie (unsigned redundancy, unsigned channelsPer
     if ((channelsPerNode>1)&&(redundancy==0)) {
         flags |= CPDMSF_wrapToNextDrv;
         maxDrvs = channelsPerNode;
+        if (_replicateOffset == 1)
+            flags |= CPDMSF_overloadedConfig;
     }
     else
         maxDrvs = (redundancy>1)?(redundancy+1):2;
