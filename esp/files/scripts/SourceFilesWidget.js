@@ -58,7 +58,7 @@ define([
                     }
                 });
             }
-            this.refreshActionState();
+            this._refreshActionState();
         },
 
         createGrid: function (domID) {
