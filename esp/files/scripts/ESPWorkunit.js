@@ -308,64 +308,63 @@ define([
                     IncludeWorkflows: false,
                     IncludeXmlSchemas: false,
                     SuppressResultSchemas: true
-                },
-                load: function (response) {
-                    if (lang.exists("WUInfoResponse.Workunit", response)) {
-                        if (!args.onGetText && lang.exists("WUInfoResponse.Workunit.Query", response)) {
-                            //  A truncated version of ECL just causes issues  ---
-                            delete response.WUInfoResponse.Workunit.Query;
-                        }
-                        context.updateData(response.WUInfoResponse.Workunit);
+                }
+            }).then(function(response) {
+                if (lang.exists("WUInfoResponse.Workunit", response)) {
+                    if (!args.onGetText && lang.exists("WUInfoResponse.Workunit.Query", response)) {
+                        //  A truncated version of ECL just causes issues  ---
+                        delete response.WUInfoResponse.Workunit.Query;
+                    }
+                    context.updateData(response.WUInfoResponse.Workunit);
 
-                        if (args.onGetText && lang.exists("Query.Text", context)) {
-                            args.onGetText(context.Query.Text);
-                        }
-                        if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context)) {
-                            args.onGetWUExceptions(context.Exceptions.ECLException);
-                        }
-                        if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context)) {
-                            args.onGetApplicationValues(context.ApplicationValues.ApplicationValue)
-                        }
-                        if (args.onGetVariables && lang.exists("variables", context)) {
-                            args.onGetVariables(context.variables);
-                        }
-                        if (args.onGetResults && lang.exists("results", context)) {
-                            args.onGetResults(context.results);
-                        }
-                        if (args.onGetSequenceResults && lang.exists("sequenceResults", context)) {
-                            args.onGetSequenceResults(context.sequenceResults);
-                        }
-                        if (args.onGetSourceFiles && lang.exists("sourceFiles", context)) {
-                            args.onGetSourceFiles(context.sourceFiles);
-                        }
-                        if (args.onGetTimers && lang.exists("timers", context)) {
-                            args.onGetTimers(context.timers);
-                        }
-                        if (args.onGetGraphs && lang.exists("graphs", context)) {
-                            if (context.timers || lang.exists("ApplicationValues.ApplicationValue", context)) {
-                                for (var i = 0; i < context.graphs.length; ++i) {
-                                    if (context.timers) {
-                                        context.graphs[i].Time = 0;
-                                        for (var j = 0; j < context.timers.length; ++j) {
-                                            if (context.timers[j].GraphName == context.graphs[i].Name) {
-                                                context.graphs[i].Time += context.timers[j].Seconds;
-                                            }
-                                            context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
+                    if (args.onGetText && lang.exists("Query.Text", context)) {
+                        args.onGetText(context.Query.Text);
+                    }
+                    if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context)) {
+                        args.onGetWUExceptions(context.Exceptions.ECLException);
+                    }
+                    if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context)) {
+                        args.onGetApplicationValues(context.ApplicationValues.ApplicationValue)
+                    }
+                    if (args.onGetVariables && lang.exists("variables", context)) {
+                        args.onGetVariables(context.variables);
+                    }
+                    if (args.onGetResults && lang.exists("results", context)) {
+                        args.onGetResults(context.results);
+                    }
+                    if (args.onGetSequenceResults && lang.exists("sequenceResults", context)) {
+                        args.onGetSequenceResults(context.sequenceResults);
+                    }
+                    if (args.onGetSourceFiles && lang.exists("sourceFiles", context)) {
+                        args.onGetSourceFiles(context.sourceFiles);
+                    }
+                    if (args.onGetTimers && lang.exists("timers", context)) {
+                        args.onGetTimers(context.timers);
+                    }
+                    if (args.onGetGraphs && lang.exists("graphs", context)) {
+                        if (context.timers || lang.exists("ApplicationValues.ApplicationValue", context)) {
+                            for (var i = 0; i < context.graphs.length; ++i) {
+                                if (context.timers) {
+                                    context.graphs[i].Time = 0;
+                                    for (var j = 0; j < context.timers.length; ++j) {
+                                        if (context.timers[j].GraphName == context.graphs[i].Name) {
+                                            context.graphs[i].Time += context.timers[j].Seconds;
                                         }
+                                        context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                     }
-                                    if (lang.exists("ApplicationValues.ApplicationValue", context)) {
-                                        var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
-                                        if (idx >= 0) {
-                                            context.graphs[i].svg = context.ApplicationValues.ApplicationValue[idx].Value;
-                                        }
+                                }
+                                if (lang.exists("ApplicationValues.ApplicationValue", context)) {
+                                    var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
+                                    if (idx >= 0) {
+                                        context.graphs[i].svg = context.ApplicationValues.ApplicationValue[idx].Value;
                                     }
                                 }
                             }
-                            args.onGetGraphs(context.graphs)
                         }
-                        if (args.onAfterSend) {
-                            args.onAfterSend(context);
-                        }
+                        args.onGetGraphs(context.graphs)
+                    }
+                    if (args.onAfterSend) {
+                        args.onAfterSend(context);
                     }
                 }
             });
