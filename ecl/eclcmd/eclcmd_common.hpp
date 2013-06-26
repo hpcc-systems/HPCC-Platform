@@ -91,6 +91,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_PRIORITY "--priority"
 #define ECLOPT_COMMENT "--comment"
 
+#define ECLOPT_CHECK_PACKAGEMAPS "--check-packagemaps"
+
 #define ECLOPT_RESULT_LIMIT "--limit"
 #define ECLOPT_RESULT_LIMIT_INI "resultLimit"
 #define ECLOPT_RESULT_LIMIT_ENV "ECL_RESULT_LIMIT"
