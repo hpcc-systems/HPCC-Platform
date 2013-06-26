@@ -351,7 +351,9 @@ define([
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,
-                rowsPerPage: 25,
+                rowsPerPage: 50,
+                pagingLinks: 1,
+                pagingTextBox: true,
                 firstLastArrows: true,
                 pageSizeOptions: [25, 50, 100],
                 columns: {
@@ -388,7 +390,7 @@ define([
                     },
                     Name: { label: "Logical Name",
                         formatter: function (name, idx) {
-                            return "<a href=# rowIndex=" + idx + " class='LogicalNameClick'>" + name + "</a>";
+                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
                         }
                     },
                     Owner: { label: "Owner", width: 72 },
@@ -403,7 +405,7 @@ define([
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Logical Files(check filter).</span>";
 
             var context = this;
-            on(document, ".LogicalNameClick:click", function (evt) {
+            on(document, "." + context.id + "LogicalNameClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item);

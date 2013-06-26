@@ -40,7 +40,7 @@ define([
         responseTotalQualifier: "NumFiles",
         idProperty: "Name",
         startProperty: "PageStartFrom",
-        countProperty: "Count",
+        countProperty: "PageSize",
 
         _watched: [],
         create: function (id) {

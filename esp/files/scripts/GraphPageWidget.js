@@ -141,6 +141,12 @@ define([
             this.inherited(arguments);
         },
 
+        destroy: function (args) {
+            this.xgmmlDialog.destroyRecursive();
+            this.infoDialog.destroyRecursive();
+            this.inherited(arguments);
+        },
+
         //  Implementation  ---
         _initGraphControls: function () {
             var context = this;
@@ -388,6 +394,14 @@ define([
                 return;
             }
             this.initalized = true;
+            if (params.SafeMode) {
+                this.overviewDepth.set("value", 0)
+                this.mainDepth.set("value", 1)
+                this.localDepth.set("value", 2)
+                var dotAttrs = this.global.getDotMetaAttributes();
+                dotAttrs += "\r\ngraph[splines=\"line\"];";
+                this.global.setDotMetaAttributes(dotAttrs);
+            }
             if (params.Wuid) {
                 this.graphName = params.GraphName;
                 this.wu = ESPWorkunit.Get(params.Wuid);
@@ -439,8 +453,14 @@ define([
         },
 
         loadGraph: function (wu, graphName) {
+            this.overview.setMessage("Fetching Data...");
+            this.main.setMessage("Fetching Data...");
+            this.local.setMessage("Fetching Data...");
             var context = this;
             wu.fetchGraphXgmmlByName(graphName, function (xgmml, svg) {
+                context.overview.setMessage("");
+                context.main.setMessage("");
+                context.local.setMessage("");
                 context.loadGraphFromXGMML(xgmml, svg);
             });
         },

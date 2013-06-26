@@ -80,20 +80,18 @@ define([
             }
         },
         _VariablesSetter: function (Variables) {
-            var variables = [];
-            for (var i = 0; i < Variables.ECLResult.length; ++i) {
-                variables.push(lang.mixin({
-                    ColumnType: Variables.ECLResult[i].ECLSchemas && Variables.ECLResult[i].ECLSchemas.ECLSchemaItem.length ? Variables.ECLResult[i].ECLSchemas.ECLSchemaItem[0].ColumnType : "unknown"
-                }, variables[i]));
-            }
-            this.set("variables", variables);
+            this.set("variables", Variables.ECLResult);
         },
         _ResultsSetter: function (Results) {
             var results = [];
+            var sequenceResults = [];
             for (var i = 0; i < Results.ECLResult.length; ++i) {
-                results.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i])));
+                var espResult = ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i]));
+                results.push(espResult);
+                sequenceResults[Results.ECLResult[i].Sequence] = espResult;
             }
             this.set("results", results);
+            this.set("sequenceResults", sequenceResults);
         },
         _SourceFilesSetter: function (SourceFiles) {
             var sourceFiles = [];
@@ -258,17 +256,11 @@ define([
             });
         },
         refresh: function (full) {
-            if (full) {
+            if (full || this.changedCount === 0) {
                 this.getInfo({
                     onGetText: function () {
                     },
                     onGetWUExceptions: function () {
-                    },
-                    onGetGraphs: function () {
-                    },
-                    onGetSourceFiles: function () {
-                    },
-                    onGetResults: function () {
                     },
                     onGetVariables: function () {
                     },
@@ -307,15 +299,15 @@ define([
                     IncludeExceptions: args.onGetWUExceptions ? true : false,
                     IncludeGraphs: args.onGetGraphs ? true : false,
                     IncludeSourceFiles: args.onGetSourceFiles ? true : false,
-                    IncludeResults: args.onGetResults ? true : false,
+                    IncludeResults: (args.onGetResults || args.onGetSequenceResults) ? true : false,
                     IncludeResultsViewNames: false,
                     IncludeVariables: args.onGetVariables ? true : false,
                     IncludeTimers: args.onGetTimers ? true : false,
                     IncludeDebugValues: false,
                     IncludeApplicationValues: args.onGetApplicationValues ? true : false,
                     IncludeWorkflows: false,
-                    IncludeXmlSchemas: args.onGetResults ? true : false,
-                    SuppressResultSchemas: args.onGetResults ? false : true
+                    IncludeXmlSchemas: false,
+                    SuppressResultSchemas: true
                 },
                 load: function (response) {
                     if (lang.exists("WUInfoResponse.Workunit", response)) {
@@ -339,6 +331,9 @@ define([
                         }
                         if (args.onGetResults && lang.exists("results", context)) {
                             args.onGetResults(context.results);
+                        }
+                        if (args.onGetSequenceResults && lang.exists("sequenceResults", context)) {
+                            args.onGetSequenceResults(context.sequenceResults);
                         }
                         if (args.onGetSourceFiles && lang.exists("sourceFiles", context)) {
                             args.onGetSourceFiles(context.sourceFiles);
@@ -510,6 +505,16 @@ define([
                 onGetResults: onFetchResults
             });
         },
+        fetchSequenceResults: function (onFetchSequenceResults) {
+            if (this.sequenceResults && this.sequenceResults.length) {
+                onFetchSequenceResults(this.sequenceResults);
+                return;
+            }
+
+            this.getInfo({
+                onGetSequenceResults: onFetchSequenceResults
+            });
+        },
         fetchSourceFiles: function (onFetchSourceFiles) {
             if (this.sourceFiles && this.sourceFiles.length) {
                 onFetchSourceFiles(this.sourceFiles);
@@ -547,6 +552,11 @@ define([
             }
         },
         fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
+            if (this.graphs && this.graphs[idx] && this.graphs[idx].xgmml) {
+                onFetchGraphXgmml(this.graphs[idx].xgmml, this.graphs[idx].svg);
+                return;
+            }
+
             this._assertHasWuid();
             var context = this;
             WsWorkunits.WUGetGraph({

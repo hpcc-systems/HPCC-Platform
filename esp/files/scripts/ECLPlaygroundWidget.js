@@ -32,7 +32,7 @@ define([
     "hpcc/TargetSelectWidget",
     "hpcc/SampleSelectWidget",
     "hpcc/GraphWidget",
-    "hpcc/ResultsWidget",
+    "hpcc/ECLPlaygroundResultsWidget",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/ECLPlaygroundWidget.html"
