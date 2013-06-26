@@ -40,6 +40,7 @@ define([
     "hpcc/SampleSelectWidget",
     "hpcc/GraphsWidget",
     "hpcc/ResultsWidget",
+    "hpcc/SourceFilesWidget",
     "hpcc/InfoGridWidget",
     "hpcc/LogsWidget",
     "hpcc/TimingPageWidget",
@@ -58,7 +59,7 @@ define([
 ], function (declare, dom, domAttr, domClass, query, Memory, Observable,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
+                _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -88,6 +89,7 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.summaryWidget = registry.byId(this.id + "_Summary");
+            this.variablesWidget = registry.byId(this.id + "_Variables");
             this.resultsWidget = registry.byId(this.id + "_Results");
             this.filesWidget = registry.byId(this.id + "_Files");
             this.timersWidget = registry.byId(this.id + "_Timers");
@@ -111,9 +113,8 @@ define([
             this.variablesGrid = new declare([OnDemandGrid, Keyboard, ColumnResizer, DijitRegistry])({
                 allowSelectAll: true,
                 columns: {
-                    Name: { label: "Name", width: 160 },
-                    ColumnType: { label: "Type", width: 100 },
-                    Value: { label: "Default Value" }
+                    Name: { label: "Name", width: 360 },
+                    Value: { label: "Value" }
                 },
                 store: this.variablesStore
             }, this.id + "VariablesGrid");
@@ -277,21 +278,27 @@ define([
                 dom.byId(this.id + "ProtectedImage").src = this.wu.getProtectedImage();
             } else if (name === "Jobname") {
                 this.updateInput("Jobname2", oldValue, newValue);
-            } else if (name === "variable") {
-                registry.byId(context.id + "Variables").set("title", "Variables " + "(" + newValue.length + ")");
+            } else if (name === "VariableCount" && newValue) {
+                this.variablesWidget.set("title", "Variables " + "(" + newValue + ")");
+            } else if (name === "variables") {
+                this.variablesWidget.set("title", "Variables " + "(" + newValue.length + ")");
                 this.variablesStore.setData(newValue);
                 this.variablesGrid.refresh();
+            } else if (name === "ResultCount" && newValue) {
+                this.resultsWidget.set("title", "Outputs " + "(" + newValue + ")");
             } else if (name === "results") {
                 this.resultsWidget.set("title", "Outputs " + "(" + newValue.length + ")");
                 var tooltip = "";
-                for (var i = 0; i < newValue.length; ++i) {
+                for (var key in newValue) {
                     if (tooltip != "")
                         tooltip += "\n";
-                    tooltip += newValue[i].Name;
-                    if (newValue[i].Value)
-                        tooltip += " " + newValue[i].Value;
+                    tooltip += newValue[key].Name;
+                    if (newValue[key].Value)
+                        tooltip += " " + newValue[key].Value;
                 }
                 this.resultsWidget.set("tooltip", tooltip);
+            } else if (name === "SourceFileCount" && newValue) {
+                this.filesWidget.set("title", "Inputs " + "(" + newValue + ")");
             } else if (name === "sourceFiles") {
                 this.filesWidget.set("title", "Inputs " + "(" + newValue.length + ")");
                 var tooltip = "";
@@ -301,6 +308,8 @@ define([
                     tooltip += newValue[i].Name;
                 }
                 this.filesWidget.set("tooltip", tooltip);
+            } else if (name === "TimerCount" && newValue) {
+                this.timersWidget.set("title", "Timers " + "(" + newValue + ")");
             } else if (name === "timers") {
                 this.timersWidget.set("title", "Timers " + "(" + newValue.length + ")");
                 var tooltip = "";
@@ -316,6 +325,8 @@ define([
                         tooltip += " " + newValue[i].Value;
                 }
                 this.timersWidget.set("tooltip", tooltip);
+            } else if (name === "GraphCount" && newValue) {
+                this.graphsWidget.set("title", "Graphs " + "(" + newValue + ")");
             } else if (name === "graphs") {
                 this.graphsWidget.set("title", "Graphs " + "(" + newValue.length + ")");
                 var tooltip = "";
@@ -357,18 +368,6 @@ define([
             if (this.wu.isComplete()) {
                 this.wu.getInfo({
                     onGetVariables: function (response) {
-                    },
-
-                    onGetResults: function (response) {
-                    },
-
-                    onGetSourceFiles: function (response) {
-                    },
-
-                    onGetTimers: function (response) {
-                    },
-
-                    onGetGraphs: function (response) {
                     },
 
                     onAfterSend: function (response) {

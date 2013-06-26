@@ -326,7 +326,9 @@ define([
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,
-                rowsPerPage: 25,
+                rowsPerPage: 50,
+                pagingLinks: 1,
+                pagingTextBox: true,
                 firstLastArrows: true,
                 pageSizeOptions: [25, 50, 100],
                 columns: {
@@ -352,7 +354,7 @@ define([
                         width: 162,
                         formatter: function (ID, idx) {
                             var wu = ESPDFUWorkunit.Get(ID);
-                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='IDClick'>" + ID + "</a>";
+                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='" + context.id + "IDClick'>" + ID + "</a>";
                         }
                     },
                     Command: {
@@ -375,7 +377,7 @@ define([
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
 
             var context = this;
-            on(document, ".IDClick:click", function (evt) {
+            on(document, "." + context.id + "IDClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item.ID);

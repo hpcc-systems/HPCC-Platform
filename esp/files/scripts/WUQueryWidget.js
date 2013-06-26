@@ -360,7 +360,9 @@ define([
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,
-                rowsPerPage: 25,
+                rowsPerPage: 50,
+                pagingLinks: 1,
+                pagingTextBox: true,
                 firstLastArrows: true,
                 pageSizeOptions: [25, 50, 100],
                 columns: {
@@ -385,7 +387,7 @@ define([
                         label: "Wuid", width: 162,
                         formatter: function (Wuid, idx) {
                             var wu = ESPWorkunit.Get(Wuid);
-                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='WuidClick' Wuid=>" + Wuid + "</a>";
+                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
                         }
                     },
                     Owner: { label: "Owner", width: 90 },
@@ -399,7 +401,7 @@ define([
             this.workunitsGrid.noDataMessage = "<span class='dojoxGridNoData'>Zero Workunits (check filter).</span>";
 
             var context = this;
-            on(document, ".WuidClick:click", function (evt) {
+            on(document, "." + context.id + "WuidClick:click", function (evt) {
                 if (context._onRowDblClick) {
                     var item = context.workunitsGrid.row(evt).data;
                     context._onRowDblClick(item.Wuid);

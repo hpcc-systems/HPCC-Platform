@@ -132,10 +132,10 @@ define([
             //TODO:  Encapsulate this IF into ESPResult.js
             if (params.result && params.result.canShowResults()) {
                 this.initResult(params.result);
-            } else if (params.Wuid && params.Sequence) {
+            } else if (params.Wuid && lang.exists("Sequence", params)) {
                 var wu = ESPWorkunit.Get(params.Wuid);
                 var context = this;
-                wu.fetchResults(function (results) {
+                wu.fetchSequenceResults(function (results) {
                     context.initResult(results[params.Sequence]);
                 });
             } else if (params.LogicalName) {
