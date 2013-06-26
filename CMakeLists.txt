@@ -48,7 +48,7 @@
 #########################################################
 
 project (hpccsystems-platform)
-cmake_minimum_required (VERSION 2.6)
+cmake_minimum_required (VERSION 2.8.3)
 
 include(CTest)
 ENABLE_TESTING()
@@ -235,52 +235,36 @@ configure_file(${HPCC_SOURCE_DIR}/build-config.h.cmake "build-config.h" )
 #set( CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON )
 #set( CPACK_DEB_PACKAGE_COMPONENT ON )
 
+if ( UNIX )
+    if ( "${packageManagement}" STREQUAL "DEB" )
+        set ( CPACK_GENERATOR "${packageManagement}" )
+        message("-- Will build DEB package")
+        ###
+        ## CPack instruction required for Debian
+        ###
+        message ("-- Packing BASH installation files")
+        set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
+    elseif ( "${packageManagement}" STREQUAL "RPM" )
+        set ( CPACK_GENERATOR "${packageManagement}" )
+        ###
+        ## CPack instruction required for RPM
+        ###
+        message("-- Will build RPM package")
+        message ("-- Packing BASH installation files")
+        set ( CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst" )
 
-###
-## CPack commands in this section require cpack 2.8.1 to function.
-## When using cpack 2.8.1, the command "make package" will create
-## an RPM.
-###
-
-if (NOT "${CMAKE_VERSION}" VERSION_LESS "2.8.1")
-    if ( UNIX )
-        if ( "${packageManagement}" STREQUAL "DEB" )
-            if ("${CMAKE_VERSION}" VERSION_EQUAL "2.8.2")
-                message("WARNING: CMAKE 2.8.2  would not build DEB package")
-            else ()
-                set ( CPACK_GENERATOR "${packageManagement}" )
-                message("-- Will build DEB package")
-                ###
-                ## CPack instruction required for Debian
-                ###
-                message ("-- Packing BASH installation files")
-                set ( CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst;${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm;${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
-            endif ()
-
-        elseif ( "${packageManagement}" STREQUAL "RPM" )
-            set ( CPACK_GENERATOR "${packageManagement}" )
-            ###
-            ## CPack instruction required for RPM
-            ###
-            message("-- Will build RPM package")
-            message ("-- Packing BASH installation files")
-            set ( CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postinst" )
-
-            set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm" )
-            set ( CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
-        else()
-            message("WARNING: Unsupported package ${packageManagement}.")
-        endif ()
-
-    endif ( UNIX )
-    if ( EXISTS ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
-        include( ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
+        set ( CPACK_RPM_PRE_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/sbin/prerm" )
+        set ( CPACK_RPM_POST_UNINSTALL_SCRIPT_FILE "${CMAKE_CURRENT_BINARY_DIR}/initfiles/bash/sbin/deb/postrm" )
     else()
-        message("-- WARNING: DEPENDENCY FILE FOR ${packageRevision} NOT FOUND, Using deps template.")
-        include( ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/template.cmake )
-    endif()
+        message("WARNING: Unsupported package ${packageManagement}.")
+    endif ()
+
+endif ( UNIX )
+if ( EXISTS ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
+    include( ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/${packageRevision}.cmake )
 else()
-    message("WARNING: CMAKE 2.8.1 or later required to create RPMs from this project")
+    message("-- WARNING: DEPENDENCY FILE FOR ${packageRevision} NOT FOUND, Using deps template.")
+    include( ${HPCC_SOURCE_DIR}/cmake_modules/dependencies/template.cmake )
 endif()
 
 if ( UNIX )
