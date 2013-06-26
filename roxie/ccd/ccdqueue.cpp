@@ -202,8 +202,6 @@ StringBuffer &RoxiePacketHeader::toString(StringBuffer &ret) const
     return ret;
 }
 
-unsigned myNodeIndex = (unsigned) -1; // fill in later!
-
 class CRoxieQueryPacket : public CInterface, implements IRoxieQueryPacket
 {
 protected:
