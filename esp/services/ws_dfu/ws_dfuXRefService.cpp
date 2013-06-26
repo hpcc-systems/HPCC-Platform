@@ -23,6 +23,9 @@
 #include "wshelpers.hpp"
 #include "LogicFileWrapper.hpp"
 #include "exception_util.hpp"
+#include "package.h"
+#include "roxiecontrol.hpp"
+
 
 static const char* FEATURE_URL = "DfuXrefAccess";
 
@@ -508,3 +511,78 @@ bool CWsDfuXRefEx::onDFUXRefList(IEspContext &context, IEspDFUXRefListRequest &r
     return true;
 }
 
+inline const char *skipTilda(const char *lfn) //just in case
+{
+    if (lfn)
+        while (*lfn && *lfn == '~' || *lfn == ' ')
+            lfn++;
+    return lfn;
+}
+
+inline void addLfnToUsedFileMap(MapStringTo<bool> &usedFileMap, const char *lfn)
+{
+    lfn = skipTilda(lfn);
+    if (lfn)
+        usedFileMap.setValue(lfn, true);
+}
+
+void addUsedFilesFromActivePackageMaps(MapStringTo<bool> &usedFileMap, const char *process)
+{
+    Owned<IPropertyTree> packageSet = resolvePackageSetRegistry(process, true);
+    if (!packageSet)
+        throw MakeStringException(ECLWATCH_PACKAGEMAP_NOTRESOLVED, "Unable to retrieve package information from dali /PackageMaps");
+    Owned<IPropertyTreeIterator> activeMaps = packageSet->getElements("PackageMap[@active='1']");
+    //Add files referenced in all active maps, for all targets configured for this process cluster
+    ForEach(*activeMaps)
+    {
+        Owned<IPropertyTree> packageMap = getPackageMapById(activeMaps->query().queryProp("@id"), true);
+        if (packageMap)
+        {
+            Owned<IPropertyTreeIterator> subFiles = packageMap->getElements("//SubFile");
+            ForEach(*subFiles)
+                addLfnToUsedFileMap(usedFileMap, subFiles->query().queryProp("@value"));
+        }
+    }
+}
+
+void findUnusedFilesInDFS(StringArray &unusedFiles, const char *process, const MapStringTo<bool> &usedFileMap)
+{
+    Owned<IRemoteConnection> globalLock = querySDS().connect("/Files/", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    Owned<IPropertyTree> root = globalLock->getRoot();
+
+    VStringBuffer xpath("//File[Cluster/@name='%s']/OrigName", process);
+    Owned<IPropertyTreeIterator> files = root->getElements(xpath);
+    ForEach(*files)
+    {
+        const char *lfn = skipTilda(files->query().queryProp(NULL));
+        if (lfn && !usedFileMap.getValue(lfn))
+            unusedFiles.append(lfn);
+    }
+}
+bool CWsDfuXRefEx::onDFUXRefUnusedFiles(IEspContext &context, IEspDFUXRefUnusedFilesRequest &req, IEspDFUXRefUnusedFilesResponse &resp)
+{
+    const char *process = req.getProcessCluster();
+    if (!process || !*process)
+        throw MakeStringExceptionDirect(ECLWATCH_INVALID_INPUT, "process cluster, not specified.");
+
+    SocketEndpointArray servers;
+    getRoxieProcessServers(process, servers);
+    if (!servers.length())
+        throw MakeStringExceptionDirect(ECLWATCH_INVALID_CLUSTER_INFO, "process cluster, not found.");
+
+    Owned<ISocket> sock = ISocket::connect_timeout(servers.item(0), 5000);
+    Owned<IPropertyTree> controlXrefInfo = sendRoxieControlQuery(sock, "<control:getQueryXrefInfo/>", 5000);
+    if (!controlXrefInfo)
+        throw MakeStringExceptionDirect(ECLWATCH_INTERNAL_ERROR, "roxie cluster, not responding.");
+    MapStringTo<bool> usedFileMap;
+    Owned<IPropertyTreeIterator> roxieFiles = controlXrefInfo->getElements("//File");
+    ForEach(*roxieFiles)
+        addLfnToUsedFileMap(usedFileMap, roxieFiles->query().queryProp("@name"));
+    if (req.getCheckPackageMaps())
+        addUsedFilesFromActivePackageMaps(usedFileMap, process);
+    StringArray unusedFiles;
+    findUnusedFilesInDFS(unusedFiles, process, usedFileMap);
+    resp.setUnusedFileCount(unusedFiles.length());
+    resp.setUnusedFiles(unusedFiles);
+    return true;
+}
