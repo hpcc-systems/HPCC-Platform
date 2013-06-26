@@ -118,7 +118,7 @@ interface IResolvedFileCreator : extends IResolvedFile
     virtual void addSubFile(IFileDescriptor *sub, IFileDescriptor *remoteSub) = 0;
 };
 
-extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical);
+extern IResolvedFileCreator *createResolvedFile(const char *lfn, const char *physical, bool isSuperFile);
 extern IResolvedFile *createResolvedFile(const char *lfn, const char *physical, IDistributedFile *dFile, IRoxieDaliHelper *daliHelper, bool cacheIt, bool writeAccess);
 
 interface IRoxiePublishCallback

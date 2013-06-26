@@ -345,7 +345,10 @@ int CEspHttpServer::processRequest()
                 if (methodName.charAt(methodName.length()-1)=='_')
                     methodName.setCharAt(methodName.length()-1, 0);
                 if (!stricmp(methodName.str(), "files"))
+                {
+                    checkInitEclIdeResponse(m_request, m_response);
                     return onGetFile(m_request.get(), m_response.get(), pathEx.str());
+                }
                 else if (!stricmp(methodName.str(), "xslt"))
                     return onGetXslt(m_request.get(), m_response.get(), pathEx.str());
                 else if (!stricmp(methodName.str(), "body"))

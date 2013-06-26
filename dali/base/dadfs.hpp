@@ -560,7 +560,7 @@ extern da_decl IDistributedFileDirectory &queryDistributedFileDirectory();
 
 // ==GROUP STORE=================================================================================================
 
-enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_roxiefarm, grp_hthor, grp_unknown };
+enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_hthor, grp_unknown };
 
 interface INamedGroupIterator: extends IInterface
 {

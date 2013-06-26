@@ -49,11 +49,21 @@ define([
                 request['Wuid'] = this.wuid;
                 request['Sequence'] = this.sequence;
             }
+            if (request.includeXmlSchema) {
+                request['SuppressXmlSchema'] = false;
+            } else {
+                request['SuppressXmlSchema'] = true;
+            }
         },
         preProcessResponse: function (response, request) {
             var xml = "<Result>" + response.Result + "</Result>";
             var domXml = parser.parse(xml);
-            rows = this.getValues(domXml, "Row");
+            if (request.includeXmlSchema) {
+                this.XmlSchema = this.getValues(domXml, "XmlSchema");
+            } else {
+                this.XmlSchema = [];
+            }
+            var rows = this.getValues(domXml, "Row");
             arrayUtil.forEach(rows, function (item, index) {
                 item.rowNum = request.Start + index + 1;
             });
@@ -67,7 +77,7 @@ define([
 
         constructor: function (args) {
             declare.safeMixin(this, args);
-            if (this.Sequence != null) {
+            if (lang.exists("Sequence", this)) {
                 this.store = new Store({
                     wuid: this.Wuid,
                     sequence: this.Sequence,
@@ -257,11 +267,11 @@ define([
                 var context = this;
 
                 var request = {};
-                if (this.Name) {
-                    request['LogicalName'] = this.Name;
-                } else {
+                if (this.Wuid && lang.exists("Sequence", this)) {
                     request['Wuid'] = this.Wuid;
                     request['Sequence'] = this.Sequence;
+                } else if (this.Name) {
+                    request['LogicalName'] = this.Name;
                 }
                 request['Start'] = 0;
                 request['Count'] = 1;

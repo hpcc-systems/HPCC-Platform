@@ -768,7 +768,6 @@
              program="${EXEC_PATH}/ftslave"/>
   </FTSlaveProcess>
   <RoxieCluster allFilesDynamic="true"
-                baseDataDir="${RUNTIME_PATH}/hpcc-data/roxie"
                 blindLogging="false"
                 blobCacheMem="0"
                 build="${projname}_${version}-${stagever}"
@@ -894,50 +893,20 @@
                 useMemoryMappedIndexes="false"
                 useRemoteResources="true"
                 useTreeCopy="false">
-   <RoxieFarmProcess 
-                     level="0"
-                     listenQueue="200"
+   <RoxieFarmProcess listenQueue="200"
                      name="farm1"
                      numThreads="30"
                      port="9876"
-                     requestArrayThreads="5">
-    <RoxieServerProcess computer="localhost" name="farm1_s1"/>
-   </RoxieFarmProcess>
-   <RoxieFarmProcess
-                      level="0"
-                      listenQueue="200"
+                     requestArrayThreads="5"/>
+   <RoxieFarmProcess  listenQueue="200"
                       name="farm2"
                       numThreads="30"
                       port="0"
-                      requestArrayThreads="5">
-      <RoxieServerProcess computer="localhost" name="farm2_s1"/>
-    </RoxieFarmProcess>
-    <RoxieServerProcess
-                       computer="localhost"
-                       level="0"
-                       listenQueue="200"
-                       name="farm1_s1"
-                       netAddress="."
-                       numThreads="30"
-                       port="9876"
-                       requestArrayThreads="5"/>
+                      requestArrayThreads="5"/>
    <RoxieServerProcess 
                        computer="localhost"
-                       level="0"
-                       listenQueue="200"
                        name="farm2_s1"
-                       netAddress="."
-                       numThreads="30"
-                       port="0"
-                       requestArrayThreads="5"/>
-   <RoxieSlave computer="localhost" name="s1">
-    <RoxieChannel level="0" number="1"/>
-   </RoxieSlave>
-   <RoxieSlaveProcess channel="1"
-                      computer="localhost"
-                      level="0"
-                      name="s1"
-                      netAddress="."/>
+                       netAddress="."/>
   </RoxieCluster>
   <SashaServerProcess autoRestartInterval="0"
                       build="${projname}_${version}-${stagever}"

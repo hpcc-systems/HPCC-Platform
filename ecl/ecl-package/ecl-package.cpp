@@ -576,6 +576,15 @@ public:
         if (resp->getExceptions().ordinality())
             outputMultiExceptions(resp->getExceptions());
 
+        StringArray &notFound = resp->getFilesNotFound();
+        if (notFound.length())
+        {
+            fputs("\nFiles defined in package but not found in DFS:\n", stderr);
+            ForEachItemIn(i, notFound)
+                fprintf(stderr, "  %s\n", notFound.item(i));
+            fputs("\n", stderr);
+        }
+
         return 0;
     }
 

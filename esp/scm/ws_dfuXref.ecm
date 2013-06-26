@@ -206,6 +206,20 @@ ESPresponse [exceptions_inline] DFUXRefCleanDirectoriesResponse
 {
 };
 
+ESPrequest DFUXRefUnusedFilesRequest
+{
+    string ProcessCluster;
+    bool CheckPackageMaps;
+};
+
+ESPresponse [exceptions_inline] DFUXRefUnusedFilesResponse
+{
+    unsigned UnusedFileCount;
+    ESParray<string, File> UnusedFiles;
+};
+
+
+
 
 //  ===========================================================================
 ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] WsDFUXRef
@@ -221,7 +235,8 @@ ESPservice [exceptions_inline("./smc_xslt/exceptions.xslt")] WsDFUXRef
     ESPmethod [resp_xsl_default("/esp/xslt/action.xslt")] DFUXRefArrayAction(DFUXRefArrayActionRequest, DFUXRefArrayActionResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/action.xslt")] DFUXRefBuildCancel(DFUXRefBuildCancelRequest, DFUXRefBuildCancelResponse);
     ESPmethod DFUXRefCleanDirectories(DFUXRefCleanDirectoriesRequest, DFUXRefCleanDirectoriesResponse);
+    ESPmethod DFUXRefUnusedFiles(DFUXRefUnusedFilesRequest, DFUXRefUnusedFilesResponse);
 };
 
 SCMexportdef(WSDFUXREF);
-SCMapi(WSDFUXREF) IClientWsDFUXRef *createWsDfuXRefClient();
+SCMapi(WSDFUXREF) IClientWsDFUXRef *createWsDFUXRefClient();

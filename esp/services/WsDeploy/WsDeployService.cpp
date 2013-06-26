@@ -3645,7 +3645,7 @@ bool CWsDeployFileInfo::getDeployableComps(IEspContext &context, IEspGetDeployab
             for (UINT i=0; i<sizeof(instanceNodeNames) / sizeof(instanceNodeNames[0]); i++)
               if (!strcmp(nodeName, instanceNodeNames[i]))
               {
-                if (*nodeName != 'R')// || //neither RoxieServerProcess nor RoxieSlaveProcess
+                if (*nodeName != 'R')// || // neither RoxieServerProcess nor RoxieSlaveProcess
                 {
                   IPropertyTree* pInstanceNode = pCompNode->addPropTree(XML_TAG_INSTANCES, createPTree());
                   const char* directory = pNode->queryProp(*nodeName == 'R' ? XML_ATTR_LEVEL : XML_ATTR_DIRECTORY);

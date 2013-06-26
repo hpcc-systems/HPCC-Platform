@@ -3557,7 +3557,7 @@ public:
                 // Need to add first, then send
                 unsigned i;
                 bool allCached = true;
-                for (i = 1; i <= numActiveChannels; i++)
+                for (i = 1; i <= numChannels; i++)
                 {
                     IRoxieQueryPacket *q = p->clonePacket(i);
                     bool thisChannelCached;

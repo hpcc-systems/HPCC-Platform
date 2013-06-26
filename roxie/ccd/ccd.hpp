@@ -311,10 +311,8 @@ interface IRoxieQueryPacket : extends IInterface
 interface IQueryDll;
 
 // Global configuration info
-extern bool isMonitor;
 extern bool shuttingDown;
 extern unsigned numChannels;
-extern unsigned numActiveChannels;
 extern unsigned callbackRetries;
 extern unsigned callbackTimeout;
 extern unsigned lowTimeout;
@@ -350,7 +348,6 @@ extern unsigned indexReadChunkSize;
 extern SocketEndpoint ownEP;
 extern unsigned maxBlockSize;
 extern unsigned maxLockAttempts;
-extern SocketEndpointArray allRoxieServers;
 extern bool enableHeartBeat;
 extern bool checkVersion;
 extern unsigned memoryStatsInterval;
@@ -397,6 +394,8 @@ extern PTreeReaderOptions defaultXmlReadFlags;
 extern bool mergeSlaveStatistics;
 extern bool roxieMulticastEnabled;   // enable use of multicast for sending requests to slaves
 extern bool preloadOnceData;
+
+extern unsigned roxiePort;     // If listening on multiple, this is the first. Used for lock cascading
 
 extern unsigned udpMulticastBufferSize;
 extern size32_t diskReadBufferSize;

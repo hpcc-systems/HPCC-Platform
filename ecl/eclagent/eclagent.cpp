@@ -1831,7 +1831,7 @@ void EclAgent::doProcess()
                 traceLevel = w->getDebugValueInt("traceLevel", 10);
             w->setTracingValue("EclAgentBuild", BUILD_TAG);
             if (agentTopology->hasProp("@name"))
-                w->addProcess("EclAgent", agentTopology->queryProp("@name"), logname.str());
+                w->addProcess("EclAgent", agentTopology->queryProp("@name"), GetCurrentProcessId(), logname.str());
 
             eclccCodeVersion = w->getCodeVersion();
             if (checkVersion && ((eclccCodeVersion > ACTIVITY_INTERFACE_VERSION) || (eclccCodeVersion < MIN_ACTIVITY_INTERFACE_VERSION)))
@@ -1840,7 +1840,6 @@ void EclAgent::doProcess()
                 throw MakeStringException(0, "Ecl agent started in 'no retry' mode for failed workunit, so failing");
             w->setState(WUStateRunning);
             w->addTimeStamp("EclAgent", GetCachedHostName(), "Started");
-            w->setAgentPID(GetCurrentProcessId());
             if (isRemoteWorkunit)
             {
                 w->setAgentSession(myProcessSession());

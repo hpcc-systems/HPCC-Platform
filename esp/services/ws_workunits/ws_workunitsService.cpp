@@ -2681,7 +2681,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
-                winfo.getWorkunitEclAgentLog(req.getName(), mb);
+                winfo.getWorkunitEclAgentLog(req.getName(), req.getProcess(), mb);
                 openSaveFile(context, opt, "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))
