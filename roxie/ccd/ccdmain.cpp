@@ -155,6 +155,7 @@ unsigned maxFileAge[2] = {0xffffffff, 60*60*1000}; // local files don't expire, 
 unsigned minFilesOpen[2] = {2000, 500};
 unsigned maxFilesOpen[2] = {4000, 1000};
 
+unsigned myNodeIndex = (unsigned) -1;
 SocketEndpoint ownEP;
 HardwareInfo hdwInfo;
 unsigned parallelAggregate;
@@ -827,9 +828,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             IPropertyTree &roxieServer = roxieServers->query();
             const char *iptext = roxieServer.queryProp("@netAddress");
             unsigned nodeIndex = addRoxieNode(iptext);
+            if (getNodeAddress(nodeIndex).isLocal())
+                myNodeIndex = nodeIndex;
             if (traceLevel > 3)
                 DBGLOG("Roxie server %u is at %s", nodeIndex, iptext);
         }
+        if (myNodeIndex == -1)
+            throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - current node is not in server list");
 
         // Generate the slave channels
         unsigned numDataCopies = topology->getPropInt("@numDataCopies", 1);
@@ -949,7 +954,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 unsigned port = roxieFarm.getPropInt("@port", ROXIE_SERVER_PORT);
                 unsigned requestArrayThreads = roxieFarm.getPropInt("@requestArrayThreads", 5);
                 if (!roxiePort)
+                {
                     roxiePort = port;
+                    ownEP.set(roxiePort, getNodeAddress(myNodeIndex));
+                }
                 bool suspended = roxieFarm.getPropBool("@suspended", false);
                 Owned <IRoxieListener> roxieServer;
                 if (port)
