@@ -146,6 +146,26 @@ ESPresponse [exceptions_inline] ValidatePackageResponse
     ESPstruct ValidatePackageFiles files;
 };
 
+ESPrequest GetQueryFileMappingRequest
+{
+    string Target;
+    string PMID;
+    string QueryName;
+};
+
+ESPstruct SuperFile
+{
+    string Name;
+    ESParray<string, File> SubFiles;
+};
+
+ESPresponse [exceptions_inline] GetQueryFileMappingResponse
+{
+    ESParray<string, File> UnmappedFiles;
+    ESParray<ESPstruct SuperFile> SuperFiles;
+};
+
+
 ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
@@ -156,6 +176,7 @@ ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("
     ESPmethod ListPackage(ListPackageRequest, ListPackageResponse);
     ESPmethod GetPackage(GetPackageRequest, GetPackageResponse);
     ESPmethod ValidatePackage(ValidatePackageRequest, ValidatePackageResponse);
+    ESPmethod GetQueryFileMapping(GetQueryFileMappingRequest, GetQueryFileMappingResponse);
 };
 
 SCMexportdef(WsPackageProcess);
