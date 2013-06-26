@@ -522,7 +522,7 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, StringBuffer &tit
     return true;
 }
 
-void setClusterPartDiskMapping(const char *clusterName, const char *defaultFolder, const char *defaultReplicateFolder,
+void setRoxieClusterPartDiskMapping(const char *clusterName, const char *defaultFolder, const char *defaultReplicateFolder,
                                bool supercopy, IDFUfileSpec *wuFSpecDest, IDFUoptions *wuOptions)
 {
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
@@ -539,42 +539,44 @@ void setClusterPartDiskMapping(const char *clusterName, const char *defaultFolde
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "Failed to get RoxieCluster settings. The workunit will not be created.");
     }
 
-    IPropertyTree &processe = processes->query();
-    const char *slaveConfig = processe.queryProp("@slaveConfig");
+    IPropertyTree &process = processes->query();
+    const char *slaveConfig = process.queryProp("@slaveConfig");
     if (!slaveConfig || !*slaveConfig)
     {
         DBGLOG("Failed to get RoxieCluster settings");
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "Failed to get RoxieCluster settings. The workunit will not be created.");
     }
 
+    bool replicate =  false;
+    unsigned redundancy = 0;
+    int replicateOffset = 1;
+    unsigned channelsPerNode = 1;
     ClusterPartDiskMapSpec spec;
     spec.setDefaultBaseDir(defaultFolder);
-    if (strieq(slaveConfig, "simple"))
+    if (strieq(slaveConfig, "overloaded"))
     {
-        spec.setRoxie(0,1);
-        wuOptions->setReplicate(false);
+        channelsPerNode = process.getCount("RoxieSlave[1]/RoxieChannel");
+        spec.setDefaultReplicateDir(defaultReplicateFolder);
     }
     else if (strieq(slaveConfig, "full redundancy"))
     {
-        spec.setRoxie(1,1,0);
-        wuOptions->setReplicate(true);
+        redundancy = 1;
+        replicateOffset = 0;
+        replicate = true;
     }
-    else if (strieq(slaveConfig, "overloaded"))
+    else if (strieq(slaveConfig, "cyclic redundancy"))
     {
-        spec.setRoxie(0, processe.getCount("RoxieSlave[1]/RoxieChannel"));
+        redundancy = 1;
+        channelsPerNode = process.getCount("RoxieSlave[1]/RoxieChannel");
+        replicateOffset = process.getPropInt("@cyclicOffset", 1);
         spec.setDefaultReplicateDir(defaultReplicateFolder);
-        wuOptions->setReplicate(false);
+        replicate = true;
     }
-    else //circular redundancy
-    {
-        spec.setRoxie(1, processe.getCount("RoxieSlave[1]/RoxieChannel"), processe.getPropInt("@cyclicOffset", 1));
-        spec.setDefaultReplicateDir(defaultReplicateFolder);
-        wuOptions->setReplicate(true);
-    }
-
+    spec.setRoxie (redundancy, channelsPerNode, replicateOffset);
     if (!supercopy)
         spec.setRepeatedCopies(CPDMSRP_lastRepeated,false);
     wuFSpecDest->setClusterPartDiskMapSpec(clusterName,spec);
+    wuOptions->setReplicate(replicate);
 }
 
 void getClusterFromLFN(const char* lfn, StringBuffer& cluster, const char* username, const char* passwd)
@@ -2398,7 +2400,7 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
 
         if (bRoxie)
         {
-            setClusterPartDiskMapping(destCluster.str(), defaultFolder.str(), defaultReplicateFolder.str(), supercopy, wuFSpecDest, wuOptions);
+            setRoxieClusterPartDiskMapping(destCluster.str(), defaultFolder.str(), defaultReplicateFolder.str(), supercopy, wuFSpecDest, wuOptions);
             wuFSpecDest->setWrap(true);                             // roxie always wraps
             if(req.getCompress())
                 wuFSpecDest->setCompressed(true);

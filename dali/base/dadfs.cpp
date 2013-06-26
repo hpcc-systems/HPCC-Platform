@@ -3316,7 +3316,7 @@ public:
             unsigned d;
             ClusterPartDiskMapSpec& mspec = clusters.item(cluster).queryPartDiskMapping();
             mspec.calcPartLocation(partno,numParts(),rep,clusters.queryGroup(cluster)?clusters.queryGroup(cluster)->ordinality():numParts(),n,d);
-            if ((d>0) && (mspec.flags&CPDMSF_overloadedConfig) && mspec.defaultReplicateDir.length())
+            if ((d==1) && (mspec.flags&CPDMSF_overloadedConfig) && mspec.defaultReplicateDir.length())
                 path.set(mspec.defaultReplicateDir.get());
             else
                 setReplicateFilename(path,d);
