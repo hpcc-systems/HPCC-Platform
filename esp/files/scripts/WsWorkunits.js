@@ -37,7 +37,8 @@ define([
             11: "uploading_files",
             12: "debugging",
             13: "debug_running",
-            14: "paused"
+            14: "paused",
+            999: "deleted"
         },
 
         WUCreate: function (params) {
@@ -85,7 +86,24 @@ define([
         },
 
         WUInfo: function (params) {
-            return ESPRequest.send("WsWorkunits", "WUInfo", params);
+            return ESPRequest.send("WsWorkunits", "WUInfo", params).then(function (response) {
+                if (lang.exists("Exceptions.Exception", response)) {
+                    arrayUtil.forEach(response.Exceptions.Exception, function (item, idx) {
+                        if (item.Code === 20080) {
+                            lang.mixin(response, {
+                                WUInfoResponse: {
+                                    Workunit: {
+                                        Wuid: params.request.Wuid,
+                                        StateID: 999,
+                                        State: "deleted"
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+                return response;
+            });
         },
 
         WUGetGraph: function (params) {
@@ -154,6 +172,7 @@ define([
                 case 4:	//WUStateFailed:
                 case 5:	//WUStateArchived:
                 case 7:	//WUStateAborted:
+                case 999: //WUStateDeleted:
                     return true;
             }
             return false;

@@ -80,20 +80,18 @@ define([
             }
         },
         _VariablesSetter: function (Variables) {
-            var variables = [];
-            for (var i = 0; i < Variables.ECLResult.length; ++i) {
-                variables.push(lang.mixin({
-                    ColumnType: Variables.ECLResult[i].ECLSchemas && Variables.ECLResult[i].ECLSchemas.ECLSchemaItem.length ? Variables.ECLResult[i].ECLSchemas.ECLSchemaItem[0].ColumnType : "unknown"
-                }, variables[i]));
-            }
-            this.set("variables", variables);
+            this.set("variables", Variables.ECLResult);
         },
         _ResultsSetter: function (Results) {
             var results = [];
+            var sequenceResults = [];
             for (var i = 0; i < Results.ECLResult.length; ++i) {
-                results.push(ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i])));
+                var espResult = ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i]));
+                results.push(espResult);
+                sequenceResults[Results.ECLResult[i].Sequence] = espResult;
             }
             this.set("results", results);
+            this.set("sequenceResults", sequenceResults);
         },
         _SourceFilesSetter: function (SourceFiles) {
             var sourceFiles = [];
@@ -258,17 +256,11 @@ define([
             });
         },
         refresh: function (full) {
-            if (full) {
+            if (full || this.changedCount === 0) {
                 this.getInfo({
                     onGetText: function () {
                     },
                     onGetWUExceptions: function () {
-                    },
-                    onGetGraphs: function () {
-                    },
-                    onGetSourceFiles: function () {
-                    },
-                    onGetResults: function () {
                     },
                     onGetVariables: function () {
                     },
@@ -307,70 +299,72 @@ define([
                     IncludeExceptions: args.onGetWUExceptions ? true : false,
                     IncludeGraphs: args.onGetGraphs ? true : false,
                     IncludeSourceFiles: args.onGetSourceFiles ? true : false,
-                    IncludeResults: args.onGetResults ? true : false,
+                    IncludeResults: (args.onGetResults || args.onGetSequenceResults) ? true : false,
                     IncludeResultsViewNames: false,
                     IncludeVariables: args.onGetVariables ? true : false,
                     IncludeTimers: args.onGetTimers ? true : false,
                     IncludeDebugValues: false,
                     IncludeApplicationValues: args.onGetApplicationValues ? true : false,
                     IncludeWorkflows: false,
-                    IncludeXmlSchemas: args.onGetResults ? true : false,
-                    SuppressResultSchemas: args.onGetResults ? false : true
-                },
-                load: function (response) {
-                    if (lang.exists("WUInfoResponse.Workunit", response)) {
-                        if (!args.onGetText && lang.exists("WUInfoResponse.Workunit.Query", response)) {
-                            //  A truncated version of ECL just causes issues  ---
-                            delete response.WUInfoResponse.Workunit.Query;
-                        }
-                        context.updateData(response.WUInfoResponse.Workunit);
+                    IncludeXmlSchemas: false,
+                    SuppressResultSchemas: true
+                }
+            }).then(function(response) {
+                if (lang.exists("WUInfoResponse.Workunit", response)) {
+                    if (!args.onGetText && lang.exists("WUInfoResponse.Workunit.Query", response)) {
+                        //  A truncated version of ECL just causes issues  ---
+                        delete response.WUInfoResponse.Workunit.Query;
+                    }
+                    context.updateData(response.WUInfoResponse.Workunit);
 
-                        if (args.onGetText && lang.exists("Query.Text", context)) {
-                            args.onGetText(context.Query.Text);
-                        }
-                        if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context)) {
-                            args.onGetWUExceptions(context.Exceptions.ECLException);
-                        }
-                        if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context)) {
-                            args.onGetApplicationValues(context.ApplicationValues.ApplicationValue)
-                        }
-                        if (args.onGetVariables && lang.exists("variables", context)) {
-                            args.onGetVariables(context.variables);
-                        }
-                        if (args.onGetResults && lang.exists("results", context)) {
-                            args.onGetResults(context.results);
-                        }
-                        if (args.onGetSourceFiles && lang.exists("sourceFiles", context)) {
-                            args.onGetSourceFiles(context.sourceFiles);
-                        }
-                        if (args.onGetTimers && lang.exists("timers", context)) {
-                            args.onGetTimers(context.timers);
-                        }
-                        if (args.onGetGraphs && lang.exists("graphs", context)) {
-                            if (context.timers || lang.exists("ApplicationValues.ApplicationValue", context)) {
-                                for (var i = 0; i < context.graphs.length; ++i) {
-                                    if (context.timers) {
-                                        context.graphs[i].Time = 0;
-                                        for (var j = 0; j < context.timers.length; ++j) {
-                                            if (context.timers[j].GraphName == context.graphs[i].Name) {
-                                                context.graphs[i].Time += context.timers[j].Seconds;
-                                            }
-                                            context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
+                    if (args.onGetText && lang.exists("Query.Text", context)) {
+                        args.onGetText(context.Query.Text);
+                    }
+                    if (args.onGetWUExceptions && lang.exists("Exceptions.ECLException", context)) {
+                        args.onGetWUExceptions(context.Exceptions.ECLException);
+                    }
+                    if (args.onGetApplicationValues && lang.exists("ApplicationValues.ApplicationValue", context)) {
+                        args.onGetApplicationValues(context.ApplicationValues.ApplicationValue)
+                    }
+                    if (args.onGetVariables && lang.exists("variables", context)) {
+                        args.onGetVariables(context.variables);
+                    }
+                    if (args.onGetResults && lang.exists("results", context)) {
+                        args.onGetResults(context.results);
+                    }
+                    if (args.onGetSequenceResults && lang.exists("sequenceResults", context)) {
+                        args.onGetSequenceResults(context.sequenceResults);
+                    }
+                    if (args.onGetSourceFiles && lang.exists("sourceFiles", context)) {
+                        args.onGetSourceFiles(context.sourceFiles);
+                    }
+                    if (args.onGetTimers && lang.exists("timers", context)) {
+                        args.onGetTimers(context.timers);
+                    }
+                    if (args.onGetGraphs && lang.exists("graphs", context)) {
+                        if (context.timers || lang.exists("ApplicationValues.ApplicationValue", context)) {
+                            for (var i = 0; i < context.graphs.length; ++i) {
+                                if (context.timers) {
+                                    context.graphs[i].Time = 0;
+                                    for (var j = 0; j < context.timers.length; ++j) {
+                                        if (context.timers[j].GraphName == context.graphs[i].Name) {
+                                            context.graphs[i].Time += context.timers[j].Seconds;
                                         }
+                                        context.graphs[i].Time = Math.round(context.graphs[i].Time * 1000) / 1000;
                                     }
-                                    if (lang.exists("ApplicationValues.ApplicationValue", context)) {
-                                        var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
-                                        if (idx >= 0) {
-                                            context.graphs[i].svg = context.ApplicationValues.ApplicationValue[idx].Value;
-                                        }
+                                }
+                                if (lang.exists("ApplicationValues.ApplicationValue", context)) {
+                                    var idx = context.getApplicationValueIndex("ESPWorkunit.js", context.graphs[i].Name + "_SVG");
+                                    if (idx >= 0) {
+                                        context.graphs[i].svg = context.ApplicationValues.ApplicationValue[idx].Value;
                                     }
                                 }
                             }
-                            args.onGetGraphs(context.graphs)
                         }
-                        if (args.onAfterSend) {
-                            args.onAfterSend(context);
-                        }
+                        args.onGetGraphs(context.graphs)
+                    }
+                    if (args.onAfterSend) {
+                        args.onAfterSend(context);
                     }
                 }
             });
@@ -510,6 +504,16 @@ define([
                 onGetResults: onFetchResults
             });
         },
+        fetchSequenceResults: function (onFetchSequenceResults) {
+            if (this.sequenceResults && this.sequenceResults.length) {
+                onFetchSequenceResults(this.sequenceResults);
+                return;
+            }
+
+            this.getInfo({
+                onGetSequenceResults: onFetchSequenceResults
+            });
+        },
         fetchSourceFiles: function (onFetchSourceFiles) {
             if (this.sourceFiles && this.sourceFiles.length) {
                 onFetchSourceFiles(this.sourceFiles);
@@ -547,6 +551,11 @@ define([
             }
         },
         fetchGraphXgmml: function (idx, onFetchGraphXgmml) {
+            if (this.graphs && this.graphs[idx] && this.graphs[idx].xgmml) {
+                onFetchGraphXgmml(this.graphs[idx].xgmml, this.graphs[idx].svg);
+                return;
+            }
+
             this._assertHasWuid();
             var context = this;
             WsWorkunits.WUGetGraph({

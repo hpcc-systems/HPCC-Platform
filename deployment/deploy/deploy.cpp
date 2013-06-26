@@ -1136,7 +1136,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
 {
   Owned<IPropertyTree> pSelComps(createPTree("SelectedComponents"));
   Owned<IPropertyTreeIterator> iter = pEnvRoot->getElements("Software/*");
-  const char* instanceNodeNames[] = { "Instance", "RoxieServerProcess", "RoxieSlaveProcess" };
+  const char* instanceNodeNames[] = { "Instance", "RoxieServerProcess" };
   const char* logDirNames[] = { "@logDir", "@LogDir", "@dfuLogDir", "@eclLogDir" };
 
   ForEach(*iter)
@@ -1228,7 +1228,7 @@ IPropertyTree* getInstances(const IPropertyTree* pEnvRoot, const char* compName,
             for (UINT i=0; i<sizeof(instanceNodeNames) / sizeof(instanceNodeNames[0]); i++)
               if (!strcmp(sb.str(), instanceNodeNames[i]))
               {
-                //allow multiple instances but do not allow either roxie servers or slaves more than once per computer
+                //allow multiple instances but do not allow roxie servers more than once per computer
                 if (listall || sb.str()[0] != 'R' || !pSelComp->queryPropTree(StringBuffer().appendf("*[@computer=\"%s\"]", computer)))
                 {
                   IPropertyTree* pInstance = pSelComp->addPropTree(sb.str(), createPTree());

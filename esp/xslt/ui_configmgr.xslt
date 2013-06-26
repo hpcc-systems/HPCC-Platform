@@ -620,7 +620,6 @@
                       rowsServers[rowsServers.length] = i;
                     </xsl:for-each>
                   </xsl:when>
-                    <xsl:when test="(name() = 'RoxieSlaveProcess')"/>
                     <xsl:when test="(name() = 'RoxieServerProcess')"/>
                     <xsl:when test="(name() = 'RoxieSlave')">
                       id = rowsSlaves.length;

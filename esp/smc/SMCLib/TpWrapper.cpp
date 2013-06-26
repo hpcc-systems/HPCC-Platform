@@ -122,7 +122,6 @@ void CTpWrapper::getClusterMachineList(double clientVersion,
         else if (strcmp(eqROXIEMACHINES,ClusterType) == 0)
         {
             getMachineList("RoxieServerProcess",path.str(),"", ClusterDirectory, MachineList, &machineNames);
-            getMachineList("RoxieSlaveProcess",path.str(),"", ClusterDirectory, MachineList, &machineNames);
         }
         else if (strcmp(eqMACHINES,ClusterType) == 0)
         {

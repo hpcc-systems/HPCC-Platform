@@ -522,55 +522,61 @@ bool CFileSprayEx::ParseLogicalPath(const char * pLogicalPath, StringBuffer &tit
     return true;
 }
 
-DFUclusterPartDiskMapping readClusterMappingSettings(const char *cluster, StringBuffer &dir, int& offset)
+void setRoxieClusterPartDiskMapping(const char *clusterName, const char *defaultFolder, const char *defaultReplicateFolder,
+                               bool supercopy, IDFUfileSpec *wuFSpecDest, IDFUoptions *wuOptions)
 {
-    DFUclusterPartDiskMapping mapping = DFUcpdm_c_only;
     Owned<IEnvironmentFactory> envFactory = getEnvironmentFactory();
-   envFactory->validateCache();
+    envFactory->validateCache();
 
     StringBuffer dirxpath;
-    dirxpath.appendf("Software/RoxieCluster[@name=\"%s\"]",cluster);
+    dirxpath.appendf("Software/RoxieCluster[@name=\"%s\"]",clusterName);
     Owned<IConstEnvironment> constEnv = envFactory->openEnvironmentByFile();
     Owned<IPropertyTree> pEnvRoot = &constEnv->getPTree();
     Owned<IPropertyTreeIterator> processes = pEnvRoot->getElements(dirxpath);
-    if (processes->first()) 
-    {
-        IPropertyTree &processe = processes->query();
-        const char *slaveConfig = processe.queryProp("@slaveConfig");
-        if (slaveConfig && *slaveConfig)
-        {
-            if (!stricmp(slaveConfig, "simple"))
-            {
-                mapping = DFUcpdm_c_only;
-            }
-            else if (!stricmp(slaveConfig, "overloaded"))
-            {
-                mapping = DFUcpdm_c_then_d;
-            }
-            else if (!stricmp(slaveConfig, "full_redundancy"))
-            {
-                ;
-            }
-            else //circular redundancy
-            {
-                mapping = DFUcpdm_c_replicated_by_d;
-                offset = processe.getPropInt("@cyclicOffset");
-            }
-            dir = processe.queryProp("@slaveDataDir");
-        }
-        else
-        {
-            DBGLOG("Failed to get RoxieCluster settings");
-            throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "Failed to get RoxieCluster settings. The workunit will not be created.");
-        }
-    }
-    else
+    if (!processes->first())
     {
         DBGLOG("Failed to get RoxieCluster settings");
         throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "Failed to get RoxieCluster settings. The workunit will not be created.");
     }
 
-    return mapping;
+    IPropertyTree &process = processes->query();
+    const char *slaveConfig = process.queryProp("@slaveConfig");
+    if (!slaveConfig || !*slaveConfig)
+    {
+        DBGLOG("Failed to get RoxieCluster settings");
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_INFO, "Failed to get RoxieCluster settings. The workunit will not be created.");
+    }
+
+    bool replicate =  false;
+    unsigned redundancy = 0;
+    int replicateOffset = 1;
+    unsigned channelsPerNode = 1;
+    ClusterPartDiskMapSpec spec;
+    spec.setDefaultBaseDir(defaultFolder);
+    if (strieq(slaveConfig, "overloaded"))
+    {
+        channelsPerNode = process.getCount("RoxieSlave[1]/RoxieChannel");
+        spec.setDefaultReplicateDir(defaultReplicateFolder);
+    }
+    else if (strieq(slaveConfig, "full redundancy"))
+    {
+        redundancy = 1;
+        replicateOffset = 0;
+        replicate = true;
+    }
+    else if (strieq(slaveConfig, "cyclic redundancy"))
+    {
+        redundancy = 1;
+        channelsPerNode = process.getCount("RoxieSlave[1]/RoxieChannel");
+        replicateOffset = process.getPropInt("@cyclicOffset", 1);
+        spec.setDefaultReplicateDir(defaultReplicateFolder);
+        replicate = true;
+    }
+    spec.setRoxie (redundancy, channelsPerNode, replicateOffset);
+    if (!supercopy)
+        spec.setRepeatedCopies(CPDMSRP_lastRepeated,false);
+    wuFSpecDest->setClusterPartDiskMapSpec(clusterName,spec);
+    wuOptions->setReplicate(replicate);
 }
 
 void getClusterFromLFN(const char* lfn, StringBuffer& cluster, const char* username, const char* passwd)
@@ -2282,89 +2288,6 @@ bool CFileSprayEx::onDespray(IEspContext &context, IEspDespray &req, IEspDespray
     return true;
 }
 
-bool CFileSprayEx::doCopyForRoxie(IEspContext &context,     const char * srcName, const char * srcDali, const char * srcUser, const char * srcPassword,
-                                  const char * dstName, const char * destCluster, bool compressed, bool overwrite, bool supercopy,
-                                  DFUclusterPartDiskMapping val, StringBuffer baseDir, StringBuffer fileMask, IEspCopyResponse &resp)
-{
-    StringBuffer user, passwd;
-    Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
-    Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
-    if (supercopy)
-    {
-        wu->setJobName(dstName);
-        wu->setQueue(m_QueueLabel.str());
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setClusterName(destCluster);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        wu->setCommand(DFUcmd_supercopy);                                   // **** super copy
-        source->setLogicalName(srcName);
-        if (srcDali)                                    // remote copy
-        {
-            SocketEndpoint ep(srcDali);
-            source->setForeignDali(ep);
-            source->setForeignUser(srcUser, srcPassword);
-        }
-
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        destination->setLogicalName(dstName);
-        destination->setFileMask(fileMask);
-
-        destination->setClusterPartDiskMapping(val, baseDir, destCluster);  // roxie
-
-        if(compressed)
-            destination->setCompressed(true);
-
-        destination->setWrap(true);                                         // roxie always wraps
-
-        IDFUoptions *options = wu->queryUpdateOptions();
-        options->setOverwrite(overwrite);
-        options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
-
-    }
-    else
-    {
-        wu->setJobName(dstName);
-        wu->setQueue(m_QueueLabel.str());
-        wu->setUser(context.getUserID(user).str());
-        wu->setPassword(context.getPassword(passwd).str());
-        wu->setClusterName(destCluster);
-        wu->setCommand(DFUcmd_copy);
-
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        source->setLogicalName(srcName);
-        if (srcDali)                                    // remote copy
-        {
-            SocketEndpoint ep(srcDali);
-            source->setForeignDali(ep);
-            source->setForeignUser(srcUser, srcPassword);
-        }
-
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        destination->setLogicalName(dstName);
-        destination->setFileMask(fileMask);
-
-        destination->setClusterPartDiskMapping(val, baseDir, destCluster, true);  // **** repeat last part
-
-        if(compressed)
-            destination->setCompressed(true);
-
-        destination->setWrap(true);                                         // roxie always wraps
-
-        IDFUoptions *options = wu->queryUpdateOptions();
-        options->setOverwrite(overwrite);
-        options->setReplicate(val==DFUcpdm_c_replicated_by_d);              // roxie
-
-        options->setSuppressNonKeyRepeats(true);                            // **** only repeat last part when src kind = key
-    }
-
-    resp.setResult(wu->queryId());
-    resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());
-    submitDFUWorkUnit(wu.getClear());
-    return true;
-}
-
 bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse &resp)
 {
     try
@@ -2401,19 +2324,12 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             }
         }
 
-        int offset;
-        StringBuffer sbf, baseDir;
-        DFUclusterPartDiskMapping val;
-        CDfsLogicalFileName lfn;
         if (!bRoxie)
         {
+            CDfsLogicalFileName lfn;
             if (!lfn.setValidate(dstname))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename");
             dstname = lfn.get();
-        }
-        else
-        {
-            val = readClusterMappingSettings(destCluster.str(), baseDir, offset);
         }
 
         ParseLogicalPath(dstname, destCluster.str(), destFolder, destTitle, defaultFolder, defaultReplicateFolder);
@@ -2448,19 +2364,6 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
                 supercopy = false;
         }
 
-        if (bRoxie)
-        {
-            bool compressRoxieCopy = false;
-            bool overwriteRoxieCopy = false;
-            if(req.getCompress())
-                compressRoxieCopy = true;
-            if(req.getOverwrite())
-                overwriteRoxieCopy = true;
-
-            return doCopyForRoxie(context, srcname, req.getSourceDali(), req.getSrcusername(), req.getSrcpassword(), 
-                dstname, destCluster, req.getCompress(), req.getOverwrite(), supercopy, val, baseDir, fileMask, resp);
-        }
-
         Owned<IDFUWorkUnitFactory> factory = getDFUWorkUnitFactory();
         Owned<IDFUWorkUnit> wu = factory->createWorkUnit();
         wu->setJobName(dstname);
@@ -2469,101 +2372,83 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
         wu->setUser(context.getUserID(user).str());
         wu->setPassword(context.getPassword(passwd).str());
         if(destCluster.length() > 0)
-        {
             wu->setClusterName(destCluster.str());
-        }
-        const char* srcDiffKeyName = req.getSourceDiffKeyName();
-        const char* destDiffKeyName = req.getDestDiffKeyName();
-        IDFUfileSpec *source = wu->queryUpdateSource();
-        IDFUfileSpec *destination = wu->queryUpdateDestination();
-        IDFUoptions *options = wu->queryUpdateOptions();
-
         if (supercopy)
             wu->setCommand(DFUcmd_supercopy);
         else
             wu->setCommand(DFUcmd_copy);
 
-        source->setLogicalName(srcname);
+        IDFUfileSpec *wuFSpecSource = wu->queryUpdateSource();
+        IDFUfileSpec *wuFSpecDest = wu->queryUpdateDestination();
+        IDFUoptions *wuOptions = wu->queryUpdateOptions();
+        wuFSpecSource->setLogicalName(srcname);
         if(srcDali && *srcDali)
         {
             SocketEndpoint ep(srcDali);
-            source->setForeignDali(ep);
+            wuFSpecSource->setForeignDali(ep);
 
             const char* srcusername = req.getSrcusername();
             if(srcusername && *srcusername)
             {
                 const char* srcpasswd = req.getSrcpassword();
-                source->setForeignUser(srcusername, srcpasswd);
+                wuFSpecSource->setForeignUser(srcusername, srcpasswd);
             }
         }
+        wuFSpecDest->setLogicalName(dstname);
+        wuFSpecDest->setFileMask(fileMask.str());
+        wuOptions->setOverwrite(req.getOverwrite());
 
         if (bRoxie)
         {
-            destination->setClusterPartDiskMapping(val, baseDir.str(), destCluster.str());
-            if (val != DFUcpdm_c_replicated_by_d)
-            {
-                options->setReplicate(false);
-            }
-            else
-            {
-                options->setReplicate(true);
-                destination->setReplicateOffset(offset);
-            }
-        }
-
-        if (srcDiffKeyName&&*srcDiffKeyName)
-            source->setDiffKey(srcDiffKeyName);
-        if (destDiffKeyName&&*destDiffKeyName)
-            destination->setDiffKey(destDiffKeyName);
-
-        if (!bRoxie)
-        {
-            destination->setDirectory(destFolder.str());
-            ClusterPartDiskMapSpec mspec;
-            destination->getClusterPartDiskMapSpec(destCluster.str(), mspec);
-            mspec.setDefaultBaseDir(defaultFolder.str());
-            mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
-            destination->setClusterPartDiskMapSpec(destCluster.str(), mspec);
-        }
-
-        destination->setFileMask(fileMask.str());
-        destination->setGroupName(destCluster.str());
-        destination->setLogicalName(dstname);
-        const char * encryptkey = req.getEncrypt();
-        if(req.getCompress()||(encryptkey&&*encryptkey))
-            destination->setCompressed(true);
-
-        if (!bRoxie)
-        {
-            options->setReplicate(req.getReplicate());
-            destination->setWrap(req.getWrap());
+            setRoxieClusterPartDiskMapping(destCluster.str(), defaultFolder.str(), defaultReplicateFolder.str(), supercopy, wuFSpecDest, wuOptions);
+            wuFSpecDest->setWrap(true);                             // roxie always wraps
+            if(req.getCompress())
+                wuFSpecDest->setCompressed(true);
+            if (!supercopy)
+                wuOptions->setSuppressNonKeyRepeats(true);            // **** only repeat last part when src kind = key
         }
         else
         {
-            destination->setWrap(true);
+            const char* srcDiffKeyName = req.getSourceDiffKeyName();
+            const char* destDiffKeyName = req.getDestDiffKeyName();
+            if (srcDiffKeyName&&*srcDiffKeyName)
+                wuFSpecSource->setDiffKey(srcDiffKeyName);
+            if (destDiffKeyName&&*destDiffKeyName)
+                wuFSpecDest->setDiffKey(destDiffKeyName);
+            wuFSpecDest->setDirectory(destFolder.str());
+            wuFSpecDest->setGroupName(destCluster.str());
+            wuFSpecDest->setWrap(req.getWrap());
+            const char * encryptkey = req.getEncrypt();
+            if(req.getCompress()||(encryptkey&&*encryptkey))
+                wuFSpecDest->setCompressed(true);
+
+            wuOptions->setReplicate(req.getReplicate());
+            const char * decryptkey = req.getDecrypt();
+            if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
+                wuOptions->setEncDec(encryptkey,decryptkey);
+            if(req.getNorecover())
+                wuOptions->setNoRecover(true);
+            if(!req.getNosplit_isNull())
+                wuOptions->setNoSplit(req.getNosplit());
+            if(req.getMaxConnections() > 0)
+                wuOptions->setmaxConnections(req.getMaxConnections());
+            if(req.getThrottle() > 0)
+                wuOptions->setThrottle(req.getThrottle());
+            if(req.getTransferBufferSize() > 0)
+                wuOptions->setTransferBufferSize(req.getTransferBufferSize());
+            if (req.getPull())
+                wuOptions->setPull(true);
+            if (req.getPush())
+                wuOptions->setPush(true);
+            if (req.getIfnewer())
+                wuOptions->setIfNewer(true);
+
+            ClusterPartDiskMapSpec mspec;
+            wuFSpecDest->getClusterPartDiskMapSpec(destCluster.str(), mspec);
+            mspec.setDefaultBaseDir(defaultFolder.str());
+            mspec.setDefaultReplicateDir(defaultReplicateFolder.str());
+            wuFSpecDest->setClusterPartDiskMapSpec(destCluster.str(), mspec);
         }
-
-        const char * decryptkey = req.getDecrypt();
-        if ((encryptkey&&*encryptkey)||(decryptkey&&*decryptkey))
-            options->setEncDec(encryptkey,decryptkey);
-
-        options->setOverwrite(req.getOverwrite());
-        if(req.getNorecover())
-            options->setNoRecover(true);
-        if(!req.getNosplit_isNull())
-            options->setNoSplit(req.getNosplit());
-        if(req.getMaxConnections() > 0)
-            options->setmaxConnections(req.getMaxConnections());
-        if(req.getThrottle() > 0)
-            options->setThrottle(req.getThrottle());
-        if(req.getTransferBufferSize() > 0)
-            options->setTransferBufferSize(req.getTransferBufferSize());
-        if (req.getPull())
-            options->setPull(true);
-        if (req.getPush())
-            options->setPush(true);
-        if (req.getIfnewer())
-            options->setIfNewer(true);
 
         resp.setResult(wu->queryId());
         resp.setRedirectUrl(StringBuffer("/FileSpray/GetDFUWorkunit?wuid=").append(wu->queryId()).str());

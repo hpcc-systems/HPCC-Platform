@@ -16,66 +16,36 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/dom",
+    "dojo/on",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
-    "dijit/registry",
+    "dgrid/OnDemandGrid",
+    "dgrid/Keyboard",
+    "dgrid/Selection",
+    "dgrid/selector",
+    "dgrid/extensions/ColumnResizer",
+    "dgrid/extensions/DijitRegistry",
 
-    "hpcc/_TabContainerWidget",
+    "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
     "hpcc/ResultWidget",
     "hpcc/LFDetailsWidget",
+    "hpcc/SFDetailsWidget",
+    "hpcc/ESPUtil"
 
-    "dojo/text!../templates/ResultsWidget.html",
+], function (declare, lang, on,
+                OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+                GridDetailsWidget, ESPWorkunit, ResultWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
+    return declare("ResultsWidget", [GridDetailsWidget], {
+        gridTitle: "Outputs",
+        idProperty: "Sequence",
 
-    "dijit/layout/TabContainer"
-], function (declare, lang, dom, 
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
-                _TabContainerWidget, ESPWorkunit, ResultWidget, LFDetailsWidget,
-                template) {
-    return declare("ResultsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
-        templateString: template,
-        baseClass: "ResultsWidget",
+        wu: null,
 
-        selectedTab: null,
-        TabPosition: "bottom",
-
-        onErrorClick: function (line, col) {
-        },
-
-        initTab: function () {
-            var currSel = this.getSelectedChild();
-            if (currSel && !currSel.initalized) {
-                currSel.init(currSel.params);
-            }
-        },
-
-        ensurePane: function (id, params) {
-            var retVal = registry.byId(id);
-            if (!retVal) {
-                if (lang.exists("Name", params) && lang.exists("Cluster", params)) {
-                    retVal = new LFDetailsWidget.fixCircularDependency({
-                        id: id,
-                        title: params.Name,
-                        params: params
-                    });
-                } else if (lang.exists("Wuid", params) && lang.exists("exceptions", params)) {
-                    retVal = new InfoGridWidget({
-                        id: id,
-                        title: "Errors/Warnings",
-                        params: params
-                    });
-                } else if (lang.exists("result", params)) {
-                    retVal = new ResultWidget({
-                        id: id,
-                        title: params.result.Name,
-                        params: params
-                    });
-                }
-                this.addChild(retVal);
-            }
-            return retVal;
+        _onRowDblClickFile: function (row) {
+            var tab = this.ensurePane(row, {
+                logicalFile: true
+            });
+            this.selectChild(tab);
         },
 
         init: function (params) {
@@ -85,72 +55,102 @@ define([
 
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
-
                 var monitorCount = 4;
                 var context = this;
                 this.wu.monitor(function () {
                     if (context.wu.isComplete() || ++monitorCount % 5 == 0) {
-                        context.wu.getInfo({
-                            onGetWUExceptions: function (exceptions) {
-                                if (params.ShowErrors && exceptions.length) {
-                                    context.ensurePane(context.id + "_exceptions", {
-                                        Wuid: params.Wuid,
-                                        onErrorClick: context.onErrorClick,
-                                        exceptions: exceptions
-                                    });
-                                    context.initTab();
-                                }
-                            },
-                            onGetSourceFiles: function (sourceFiles) {
-                                if (params.SourceFiles) {
-                                    for (var i = 0; i < sourceFiles.length; ++i) {
-                                        var tab = context.ensurePane(context.id + "_logicalFile" + i, {
-                                            Name: sourceFiles[i].Name,
-                                            Cluster: sourceFiles[i].FileCluster
-                                        });
-                                        if (i == 0) {
-                                            context.initTab();
-                                        }
-                                    }
-                                }
-                            },
-                            onGetResults: function (results) {
-                                if (!params.SourceFiles) {
-                                    for (var i = 0; i < results.length; ++i) {
-                                        var tab = context.ensurePane(context.id + "_result" + i, {
-                                            result: results[i]
-                                        });
-                                        if (i == 0) {
-                                            context.initTab();
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                        var currSel = context.getSelectedChild();
-                        if (currSel && currSel.refresh) {
-                            currSel.refresh();
+                        context.refreshGrid();
+                    }
+                });
+            }
+            this._refreshActionState();
+        },
+
+        createGrid: function (domID) {
+            var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
+                allowSelectAll: true,
+                deselectOnRefresh: false,
+                store: this.store,
+                columns: {
+                    col1: selector({
+                        width: 27,
+                        selectorType: 'checkbox'
+                    }),
+                    Name: {
+                        label: "Name", width: 180, sortable: true,
+                        formatter: function (Name, idx) {
+                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "ResultClick'>" + Name + "</a>";
                         }
+                    },
+                    FileName: {
+                        label: "FileName", sortable: true,
+                        formatter: function (FileName, idx) {
+                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "FileClick'>" + FileName + "</a>";
+                        }
+                    },
+                    Value: { label: "Value", width: 360, sortable: true }
+                }
+            }, domID);
+
+            var context = this;
+            on(document, "." + this.id + "ResultClick:click", function (evt) {
+                if (context._onRowDblClick) {
+                    var row = context.grid.row(evt).data;
+                    context._onRowDblClick(row);
+                }
+            });
+            on(document, "." + this.id + "FileClick:click", function (evt) {
+                if (context._onRowDblClick) {
+                    var row = context.grid.row(evt).data;
+                    context._onRowDblClickFile(row);
+                }
+            });
+            return retVal;
+        },
+
+        getDetailID: function (row, params) {
+            if (row.FileName && params && params.logicalFile) {
+                return this.id + "_" + "File" + row[this.idProperty];
+            }
+            return this.inherited(arguments);
+        },
+
+        createDetail: function (id, row, params) {
+            if (row.FileName && params && params.logicalFile) {
+                return new LFDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: "[F] " + row.Name,
+                    closable: true,
+                    hpcc: {
+                        type: "LFDetailsWidget",
+                        params: {
+                            Name: row.FileName
+                        }
+                    }
+                });
+            } else {
+                return new ResultWidget({
+                    id: id,
+                    title: row.Name,
+                    closable: true,
+                    style: "padding: 0px; overflow: hidden",
+                    hpcc: {
+                        type: "ResultWidget",
+                        params: row
                     }
                 });
             }
         },
 
-        clear: function () {
-            this.removeAllChildren();
-            this.selectedTab = null;
-            this.initalized = false;
-        },
-
-        refresh: function (wu) {
-            if (this.workunit != wu) {
-                this.clear();
-                this.workunit = wu;
-                this.init({
-                    Wuid: wu.Wuid,
-                    ShowErrors: true
-                });
-            }
+        refreshGrid: function (args) {
+            var context = this;
+            this.wu.getInfo({
+                onGetResults: function (results) {
+                    context.store.setData(results);
+                    context.grid.refresh();
+                }
+            });
         }
+
     });
 });

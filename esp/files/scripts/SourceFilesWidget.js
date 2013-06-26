@@ -15,9 +15,9 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/on",
-
-    "dijit/form/Button",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -28,17 +28,18 @@ define([
 
     "hpcc/GridDetailsWidget",
     "hpcc/ESPWorkunit",
-    "hpcc/GraphPageWidget",
+    "hpcc/ResultWidget",
+    "hpcc/LFDetailsWidget",
+    "hpcc/SFDetailsWidget",
     "hpcc/ESPUtil"
 
-], function (declare, on,
-                Button,
+], function (declare, lang, arrayUtil, on,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, GraphPageWidget, ESPUtil) {
-    return declare("GraphsWidget", [GridDetailsWidget], {
+                GridDetailsWidget, ESPWorkunit, ResultWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
+    return declare("SourceFilesWidget", [GridDetailsWidget], {
 
-        gridTitle: "Graphs",
-        idProperty: "Name",
+        gridTitle: "Inputs",
+        idProperty: "sequence",
 
         wu: null,
 
@@ -61,16 +62,6 @@ define([
         },
 
         createGrid: function (domID) {
-            var context = this;
-            this.openSafeMode = new Button({
-                label: "Open (safe mode)",
-                onClick: function (event) {
-                    context._onOpen(event, {
-                        safeMode: true
-                    });
-                }
-            }, this.id + "ContainerNode");
-
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({
                 allowSelectAll: true,
                 deselectOnRefresh: false,
@@ -81,62 +72,65 @@ define([
                         selectorType: 'checkbox'
                     }),
                     Name: {
-                        label: "Name", width: 72, sortable: true,
-                        formatter: function (Name, idx) {
-                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "GraphClick'>" + Name + "</a>";
+                        label: "Name", sortable: true,
+                        formatter: function (Name, row) {
+                            return "<img src='../files/img/" + (row.IsSuperFile ? "folder_table.png" : "file.png") + "'>&nbsp<a href=# rowIndex=" + row + " class='" + context.id + "SourceFileClick'>" + Name + "</a>";
                         }
                     },
-                    Label: { label: "Label", sortable: true },
-                    Complete: { label: "Completed", width: 72, sortable: true },
-                    Time: { label: "Time", width: 72, sortable: true },
-                    Type: { label: "Type", width: 72, sortable: true }
+                    Count: { label: "Usage", width: 72, sortable: true }
                 }
             }, domID);
 
             var context = this;
-            on(document, "." + this.id + "GraphClick:click", function (evt) {
+            on(document, "." + this.id + "SourceFileClick:click", function (evt) {
                 if (context._onRowDblClick) {
-                    var row = retVal.row(evt).data;
+                    var row = context.grid.row(evt).data;
                     context._onRowDblClick(row);
                 }
             });
             return retVal;
         },
 
-        createDetail: function (id, row, params) {
-            var safeMode = false;
-            if (params && params.safeMode) {
-                var safeMode = true;
-            }
-            return new GraphPageWidget({
-                id: id,
-                title: row.Name,
-                closable: true,
-                hpcc: {
-                    type: "graph",
-                    params: {
-                        Wuid: this.wu.Wuid,
-                        GraphName: row.Name,
-                        SafeMode: safeMode
+        getDetailTitle: function (row, params) {
+            return row.Name;
+        },
+
+        createDetail: function (id, row) {
+            if (lang.exists("IsSuperFile", row) && row.IsSuperFile) {
+                return new SFDetailsWidget.fixCircularDependency({
+                    id : id,
+                    title: row.Name,
+                    closable: true,
+                    hpcc: {
+                        type: "SFDetailsWidget",
+                        params: row
                     }
-                }
-            });
+                });
+            } else {
+                return new LFDetailsWidget.fixCircularDependency({
+                    id: id,
+                    title: row.Name,
+                    closable: true,
+                    hpcc: {
+                        type: "LFDetailsWidget",
+                        params: row
+                    }
+                });
+            }
         },
 
         refreshGrid: function (args) {
             var context = this;
             this.wu.getInfo({
-                onGetGraphs: function (graphs) {
-                    context.store.setData(graphs);
+                onGetSourceFiles: function (sourceFiles) {
+                    arrayUtil.forEach(sourceFiles, function (row, idx) {
+                        row.sequence = idx;
+                    });
+                    context.store.setData(sourceFiles);
                     context.grid.refresh();
                 }
             });
-        },
-
-        refreshActionState: function (selection) {
-            this.inherited(arguments);
-
-            this.openSafeMode.set("disabled", !selection.length);
         }
+
     });
 });

@@ -319,47 +319,6 @@ bool CConfigEnvHelper::checkComputerUse(/*IPropertyTree* pComputerNode*/ const c
 }
 
 
-bool CConfigEnvHelper::makePlatformSpecificAbsolutePath(const char* computer, StringBuffer& path)
-{
-  bool rc = false;
-  if (computer && *computer && path.length())
-  {
-    IPropertyTree* pComputer = lookupComputerByName(computer);
-    const char* computerType = pComputer ? pComputer->queryProp(XML_ATTR_COMPUTERTYPE) : NULL;
-    if (computerType && *computerType)
-    {
-      StringBuffer xpath;
-      xpath.appendf("Hardware/ComputerType[@name='%s']", computerType);
-
-      Owned<IPropertyTreeIterator> iter = m_pRoot->getElements(xpath.str());
-      if (iter->first() && iter->isValid())
-      {
-        const char* os = iter->query().queryProp("@opSys");
-        if (os && *os)
-        {
-          const bool bLinux = 0 != stricmp(os, "W2K");
-          if (bLinux)
-          {
-            path.replace('\\', '/');
-            path.replace(':', '$');
-            if (*path.str() != '/')
-              path.insert(0, '/');
-          }
-          else
-          {
-            path.replace('/', '\\');
-            path.replace('$', ':');
-            if (*path.str() == '\\')
-              path.remove(0, 1);
-          }
-          rc = true;
-        }
-      }
-    }
-  }
-  return rc;
-}
-
 IPropertyTree* CConfigEnvHelper::addLegacyServer(const char* name, IPropertyTree* pServer, 
                                                  IPropertyTree* pFarm, const char* roxieClusterName)
 {
@@ -850,10 +809,6 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
         const char* pszRoxie = pSrcTree->queryProp("@roxieName");
         const char* val1 = pSrcTree->queryProp("@val1");
         const char* sOffset = pSrcTree->queryProp("@val2");
-        StringBuffer dir1, dir2, dir3;
-    getCommonDir(m_pRoot.get(), "data", "roxie", pszRoxie, dir1);
-        getCommonDir(m_pRoot.get(), "data2", "roxie", pszRoxie, dir2);
-        getCommonDir(m_pRoot.get(), "data3", "roxie", pszRoxie, dir3);
 
         StringBuffer xpath;
         xpath.clear().appendf("Software/RoxieCluster[@name='%s']", pszRoxie);
@@ -882,7 +837,7 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
 
         if (!strcmp(type, "Circular"))
         {
-            if (!GenerateCyclicRedConfig(pRoxie, computers, val1, sOffset, dir1.str(), dir2.str(), dir3.str()))
+            if (!GenerateCyclicRedConfig(pRoxie, computers, val1, sOffset))
                 return false;
 
             confType = "cyclic redundancy";
@@ -894,7 +849,7 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
         {
             if (!strcmp(type, "Overloaded"))
             {
-                if (!GenerateOverloadedConfig(pRoxie, computers, val1, dir1.str(), dir2.str(), dir3.str()))
+                if (!GenerateOverloadedConfig(pRoxie, computers, val1))
                     return false;
 
                 confType = "overloaded";
@@ -913,16 +868,13 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
                     confType = "simple";
                 }
 
-                if (!GenerateFullRedConfig(pRoxie, m_numDataCopies, computers, dir1.str()))
+                if (!GenerateFullRedConfig(pRoxie, m_numDataCopies, computers))
                     return false;
             }
 
             if (pRoxie->hasProp("@cyclicOffset"))
                 pRoxie->removeProp("@cyclicOffset");
         }
-        StringBuffer sDataDir;
-        sDataDir.appendf("%s", dir1.str());
-
         //give legacy slaves unique names
         UINT i = 1;
         Owned<IPropertyTreeIterator> it = pRoxie->getElements(XML_TAG_ROXIE_SLAVE);
@@ -933,16 +885,12 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
 
             IPropertyTree* pLegacySlave = &it->query();
             pLegacySlave->setProp(XML_ATTR_NAME, name.str() );
-
-            if (i++==1)
-                makePlatformSpecificAbsolutePath( pLegacySlave->queryProp(XML_ATTR_COMPUTER), sDataDir);
         }
 
         pRoxie->setProp("@slaveConfig", confType);
         pRoxie->setPropInt("@clusterWidth", computers.size());
         pRoxie->setPropInt("@numChannels",   m_numChannels);
         pRoxie->setPropInt("@numDataCopies", m_numDataCopies);
-        pRoxie->setProp("@baseDataDir", sDataDir.str());
         pRoxie->setProp("@localSlave", computers.size() > 1 ? "false" : "true");
 
         //change all legacy servers
@@ -962,8 +910,7 @@ bool CConfigEnvHelper::handleRoxieSlaveConfig(const char* xmlArg)
 }
 
 bool CConfigEnvHelper::GenerateCyclicRedConfig(IPropertyTree* pRoxie, IPropertyTreePtrArray& computers, 
-                                                                                             const char* copies, const char* pszOffset,
-                                                                                             const char* dir1, const char* dir2, const char* dir3)
+                                                                                             const char* copies, const char* pszOffset)
 {
     const int nComputers = computers.size();
     if (!nComputers)
@@ -1004,7 +951,6 @@ bool CConfigEnvHelper::GenerateCyclicRedConfig(IPropertyTree* pRoxie, IPropertyT
         int channel;
         for (int c=0; c<m_numDataCopies; c++)
         {
-            const char drive = 'c' + c;
             channel = 1 + ((baseChannel + c*(nComputers-offset)) % nComputers);
 
             IPropertyTree* pInstance = pSlave->addPropTree(XML_TAG_ROXIE_CHANNEL, createPTree());
@@ -1022,8 +968,7 @@ bool CConfigEnvHelper::GenerateCyclicRedConfig(IPropertyTree* pRoxie, IPropertyT
     return true;
 }
 
-bool CConfigEnvHelper::GenerateOverloadedConfig(IPropertyTree* pRoxie, IPropertyTreePtrArray& computers, const char* copies,
-                                                                                                const char* dir1, const char* dir2, const char* dir3)
+bool CConfigEnvHelper::GenerateOverloadedConfig(IPropertyTree* pRoxie, IPropertyTreePtrArray& computers, const char* copies)
 {
     const UINT nComputers = computers.size();
     if (!nComputers)
@@ -1069,7 +1014,7 @@ bool CConfigEnvHelper::GenerateOverloadedConfig(IPropertyTree* pRoxie, IProperty
     return true;
 }
 
-bool CConfigEnvHelper::GenerateFullRedConfig(IPropertyTree* pRoxie, int copies, IPropertyTreePtrArray& computers, const char* dir1)
+bool CConfigEnvHelper::GenerateFullRedConfig(IPropertyTree* pRoxie, int copies, IPropertyTreePtrArray& computers)
 {
     int nComputers = computers.size();
     if (!nComputers)

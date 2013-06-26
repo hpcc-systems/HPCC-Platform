@@ -340,7 +340,6 @@
                     <xsl:when test="Type='ThorSlaveProcess'">Thor Slave</xsl:when>
                     <xsl:when test="Type='ThorSpareProcess'">Thor Spare</xsl:when>
                     <xsl:when test="Type='RoxieServerProcess'">Roxie Server</xsl:when>
-                    <xsl:when test="Type='RoxieSlaveProcess'">Roxie Slave</xsl:when>
                     <xsl:when test="Type='DropZone'">Drop Zone</xsl:when>
                     <xsl:otherwise>
                         <xsl:value-of select="Type"/>

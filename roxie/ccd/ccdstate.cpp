@@ -237,7 +237,7 @@ protected:
             IPropertyTree *fileInfo = node->queryPropTree(xpath.appendf("File[@id='%s']", fileName).str());
             if (fileInfo)
             {
-                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
+                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL, false);
                 result->addSubFile(createFileDescriptorFromRoxieXML(fileInfo), NULL);
                 return result.getClear();
             }
@@ -263,7 +263,7 @@ protected:
                 Owned<IFileDescriptor> fd = daliHelper->resolveCachedLFN(fileName);
                 if (fd)
                 {
-                    Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL);
+                    Owned <IResolvedFileCreator> result = createResolvedFile(fileName, NULL, false);
                     Owned<IFileDescriptor> remoteFDesc = daliHelper->checkClonedFromRemote(fileName, fd, cacheIt);
                     result->addSubFile(fd.getClear(), remoteFDesc.getClear());
                     return result.getClear();
@@ -288,7 +288,7 @@ protected:
             bool exists = checkFileExists(useName);
             if (exists || alwaysCreate)
             {
-                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, useName);
+                Owned <IResolvedFileCreator> result = createResolvedFile(fileName, useName, false);
                 if (exists)
                     result->addSubFile(useName);
                 return result.getClear();
@@ -313,33 +313,24 @@ protected:
         if (subFileInfo)
         {
             unsigned numSubFiles = subFileInfo->numSubFiles();
-            if (numSubFiles==1)
+            // Note: do not try to optimize the common case of a single subfile
+            // as we still want to report the superfile info from the resolvedFile
+            Owned<IResolvedFileCreator> super;
+            for (unsigned idx = 0; idx < numSubFiles; idx++)
             {
-                // Optimize the common case of a single subfile
                 StringBuffer subFileName;
-                subFileInfo->getSubFileName(0, subFileName);
-                return lookupFile(subFileName, cache, writeAccess, alwaysCreate);
-            }
-            else
-            {
-                // Have to do some merging...
-                Owned<IResolvedFileCreator> super;
-                for (unsigned idx = 0; idx < numSubFiles; idx++)
+                subFileInfo->getSubFileName(idx, subFileName);
+                Owned<const IResolvedFile> subFileInfo = lookupFile(subFileName, cache, writeAccess, alwaysCreate);
+                if (subFileInfo)
                 {
-                    StringBuffer subFileName;
-                    subFileInfo->getSubFileName(idx, subFileName);
-                    Owned<const IResolvedFile> subFileInfo = lookupFile(subFileName, cache, writeAccess, alwaysCreate);
-                    if (subFileInfo)
-                    {
-                        if (!super) 
-                            super.setown(createResolvedFile(fileName, NULL));
-                        super->addSubFile(subFileInfo);
-                    }
+                    if (!super)
+                        super.setown(createResolvedFile(fileName, NULL, true));
+                    super->addSubFile(subFileInfo);
                 }
-                if (super && cache)
-                    addCache(fileName, super);
-                return super.getClear();
             }
+            if (super && cache)
+                addCache(fileName, super);
+            return super.getClear();
         }
         result = resolveLFNusingPackage(fileName);
         if (!result)
@@ -439,14 +430,6 @@ public:
             throw MakeStringException(ROXIE_FILE_ERROR, "Cannot write %s", fileName.str());
 
         return createRoxieWriteHandler(daliHelper, ldFile.getClear(), clusters);
-    }
-
-    virtual IPropertyTree *getQuerySets() const
-    {
-        if (node)
-            return node->getPropTree("QuerySets");
-        else
-            return NULL;
     }
 
     //map ambiguous IHpccPackage
@@ -1224,7 +1207,7 @@ public:
         owner->notify(id, xpath, flags, valueLen, valueData);
     }
 
-    IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
+    IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         ForEachItemIn(idx, allQueryPackages)
         {
@@ -1232,7 +1215,7 @@ public:
             if (sm->isActive())
             {
                 Owned<IQueryFactory> library = sm->getQuery(libraryName, logctx);
-                if (library && (&library->queryPackage() == &package))  // MORE - is this check too restrictive?
+                if (library)
                 {
                     if (library->isQueryLibrary())
                     {
@@ -1247,7 +1230,7 @@ public:
                 }
             }
         }
-        throw MakeStringException(ROXIE_LIBRARY_ERROR, "No compatible library available for %s", libraryName);
+        throw MakeStringException(ROXIE_LIBRARY_ERROR, "No library available for %s", libraryName);
     }
 
     IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
@@ -1465,10 +1448,10 @@ public:
         controlSem.signal();
     }
 
-    virtual IQueryFactory *lookupLibrary(const IRoxiePackage &package, const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
+    virtual IQueryFactory *lookupLibrary(const char *libraryName, unsigned expectedInterfaceHash, const IRoxieContextLogger &logctx) const
     {
         ReadLockBlock b(packageCrit);
-        return allQueryPackages->lookupLibrary(package, libraryName, expectedInterfaceHash, logctx);
+        return allQueryPackages->lookupLibrary(libraryName, expectedInterfaceHash, logctx);
     }
 
     virtual IQueryFactory *getQuery(const char *id, const IRoxieContextLogger &logctx) const
@@ -2120,11 +2103,6 @@ private:
                     reply.appendf("<Dali connected='0'/>");
                 ReadLockBlock readBlock(packageCrit);
                 reply.appendf("<State hash='%"I64F"u'/>", (unsigned __int64) allQueryPackages->queryHash());
-            }
-            else if (stricmp(queryName, "control:status")==0)
-            {
-                CriticalBlock b(ccdChannelsCrit);
-                toXML(ccdChannels, reply);
             }
             else if (stricmp(queryName, "control:steppingEnabled")==0)
             {

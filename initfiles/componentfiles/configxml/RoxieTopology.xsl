@@ -146,31 +146,16 @@
                     <xsl:copy-of select="@regex"/>
                 </xsl:copy>
             </xsl:for-each>
+            <xsl:for-each select="RoxieFarmProcess">
+                <xsl:element name="RoxieFarmProcess">
+                    <xsl:copy-of select="@*[name()!='name' and name()!='level']"/>
+                </xsl:element>
+            </xsl:for-each>
             <xsl:for-each select="RoxieServerProcess">
                 <xsl:variable name="computer" select="@computer"/>
                 <xsl:element name="RoxieServerProcess">
                     <xsl:attribute name="netAddress"><xsl:value-of select="/Environment/Hardware/Computer[@name=$computer]/@netAddress"/></xsl:attribute>
-                    <xsl:copy-of select="@port"/>
-                    <xsl:copy-of select="@*[name()!='netAddress' and name()!='computer' and name()!='name' and name()!='port']"/>
-                </xsl:element>
-            </xsl:for-each>
-            <xsl:for-each select="RoxieSlaveProcess">
-                <xsl:sort select="@level"/>
-                <xsl:sort select="@channel" data-type="number"/>
-                <xsl:element name="RoxieSlaveProcess">
-                    <xsl:variable name="computer" select="@computer"/>
-                    <xsl:attribute name="netAddress"><xsl:value-of select="/Environment/Hardware/Computer[@name=$computer]/@netAddress"/></xsl:attribute>
-                    <xsl:attribute name="channel"><xsl:value-of select="@channel"/></xsl:attribute>
-                    <xsl:if test="string(@level)=''">
-                        <xsl:attribute name="level">0</xsl:attribute>
-                    </xsl:if>
-                    <xsl:copy-of select="@*[name()!='netAddress' and name()!='computer' and name()!='name' and name()!='channel']"/>
-                </xsl:element>
-            </xsl:for-each>
-            <xsl:for-each select="RoxieMonitorProcess">
-                <xsl:variable name="computer" select="@computer"/>
-                <xsl:element name="RoxieMonitorProcess">
-                    <xsl:attribute name="netAddress"><xsl:value-of select="/Environment/Hardware/Computer[@name=$computer]/@netAddress"/></xsl:attribute>
+                    <xsl:copy-of select="@*[name()!='netAddress' and name()!='computer' and name()!='name' and name()!='port' and name()!='level' and name()!='listenQueue' and name()!='numThreads' and name()!='requestArrayThreads']"/>
                 </xsl:element>
             </xsl:for-each>
         </xsl:element>
@@ -179,55 +164,8 @@
     
     <xsl:template name="validateChannels">
         <xsl:variable name="numChannels" select="@numChannels"/>
-        <xsl:variable name="numSets" select="count(RoxieSlaveProcess[@channel='1'])"/>
-        
         <xsl:if test="$numChannels &lt; 1">
             <xsl:message terminate="yes">Number of channels must be at least 1.</xsl:message>
-        </xsl:if>
-        
-        <xsl:if test="RoxieSlaveProcess[@channel &lt; '1' or @channel &gt; $numChannels]">
-            <xsl:message terminate="yes">Roxie slaves must not have channel numbers outside the range 1 to <xsl:value-of select="$numChannels"/>.</xsl:message>
-        </xsl:if>
-        
-        <!--make sure that there are exactly $numChannels sets for each channel-->
-        <!--we don't have incremental looping in xslt so start the 'domino effect' with channel 1-->
-        <xsl:if test="not(RoxieSlaveProcess[@channel='1'])">
-            <xsl:message terminate="yes">No Roxie slaves defined for channel 1.</xsl:message>
-        </xsl:if>
-        <xsl:apply-templates select="RoxieSlaveProcess[@channel='1' and count(preceding-sibling::RoxieSlaveProcess[@channel=1])=0]" mode="validateChannels">
-            <xsl:with-param name="channel" select="1"/>
-            <xsl:with-param name="numChannels" select="$numChannels"/>
-            <xsl:with-param name="numSets" select="$numSets"/>
-        </xsl:apply-templates>
-        
-    </xsl:template>
-
-
-    <xsl:template match="RoxieSlaveProcess" mode="validateChannels">
-    <xsl:param name="channel"/>
-    <xsl:param name="numChannels"/>
-    <xsl:param name="numSets"/>
-        <!--only process the first slave for each unique channel number to avoid duplicate validation-->
-        <xsl:if test="not(preceding-sibling::RoxieSlaveProcess[@channel=$channel])">
-            <xsl:variable name="setsize" select="count(../RoxieSlaveProcess[@channel=$channel])"/>
-            <!--note that setsize cannot be 0 since the current node has that channel already-->
-            <xsl:if test="$setsize != $numSets">
-                <xsl:call-template name="message">
-                    <xsl:with-param name="text">Number of Roxie slaves for channel <xsl:value-of select="$channel"/> are different than those for channel 1.</xsl:with-param>
-                </xsl:call-template>                
-            </xsl:if>
-            <xsl:if test="$channel &lt; $numChannels">
-                <xsl:variable name="nextChannel" select="$channel+1"/>
-                <xsl:variable name="nextChannelSlaveSet" select="../RoxieSlaveProcess[@channel=$nextChannel]"/>
-                <xsl:if test="not($nextChannelSlaveSet)">
-                    <xsl:message terminate="yes">No Roxie slaves defined for channel <xsl:value-of select="$nextChannel"/>.</xsl:message>
-                </xsl:if>
-                <xsl:apply-templates select="$nextChannelSlaveSet" mode="validateChannels">
-                    <xsl:with-param name="channel" select="$nextChannel"/>
-                    <xsl:with-param name="numChannels" select="$numChannels"/>
-                    <xsl:with-param name="numSets" select="$numSets"/>
-                </xsl:apply-templates>
-            </xsl:if>
         </xsl:if>
     </xsl:template>
 

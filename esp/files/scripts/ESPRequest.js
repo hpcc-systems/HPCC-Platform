@@ -106,19 +106,25 @@ define([
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
                 if (handleAs == "json") {
+                    var exceptionCode20080 = false; //  Deleted WU
                     if (lang.exists("Exceptions.Source", response)) {
                         var message = "<h3>" + response.Exceptions.Source + "</h3>";
                         if (lang.exists("Exceptions.Exception", response)) {
                             exceptions = response.Exceptions.Exception;
                             for (var i = 0; i < response.Exceptions.Exception.length; ++i) {
+                                if (service === "WsWorkunits" && action === "WUInfo" && response.Exceptions.Exception[i].Code === 20080) {
+                                    exceptionCode20080 = true;
+                                }
                                 message += "<p>" + response.Exceptions.Exception[i].Message + "</p>";
                             }
                         }
-                        dojo.publish("hpcc/brToaster", {
-                            message: message,
-                            type: "error",
-                            duration: -1
-                        });
+                        if (!exceptionCode20080) {
+                            dojo.publish("hpcc/brToaster", {
+                                message: message,
+                                type: "error",
+                                duration: -1
+                            });
+                        }
                     }
                 }
                 dojo.publish("hpcc/standbyBackgroundHide");
