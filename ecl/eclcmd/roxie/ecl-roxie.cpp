@@ -27,6 +27,8 @@
 #include "eclcmd_common.hpp"
 #include "eclcmd_core.hpp"
 
+#include "ws_dfuXref.hpp"
+
 #define INIFILE "ecl.ini"
 #define SYSTEMCONFDIR CONFIG_DIR
 #define DEFAULTINIFILE "ecl.ini"
@@ -357,6 +359,95 @@ private:
     bool reload;
 };
 
+class EclCmdRoxieUnusedFiles : public EclCmdCommon
+{
+public:
+    EclCmdRoxieUnusedFiles() : optCheckPackageMaps(false)
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optProcess.isEmpty())
+                    optProcess.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (iter.matchFlag(optCheckPackageMaps, ECLOPT_CHECK_PACKAGEMAPS))
+                continue;
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+            return false;
+        if (optProcess.isEmpty())
+        {
+            fputs("process cluster must be specified.\n\n", stderr);
+            return false;
+        }
+        return true;
+    }
+
+    virtual int processCMD()
+    {
+        Owned<IClientWsDFUXRef> client = createCmdClient(WsDFUXRef, *this);
+        Owned<IClientDFUXRefUnusedFilesRequest> req = client->createDFUXRefUnusedFilesRequest();
+        req->setProcessCluster(optProcess);
+        req->setCheckPackageMaps(optCheckPackageMaps);
+
+        Owned<IClientDFUXRefUnusedFilesResponse> resp = client->DFUXRefUnusedFiles(req);
+        if (resp->getExceptions().ordinality())
+            outputMultiExceptions(resp->getExceptions());
+
+        StringArray &unusedFiles = resp->getUnusedFiles();
+        if (!unusedFiles.length())
+            fputs("\nNo unused files found in DFS\n", stderr);
+        else
+        {
+            fprintf(stderr, "\n%d Files found in DFS, not used on roxie:\n", unusedFiles.length());
+            ForEachItemIn(i, unusedFiles)
+                fprintf(stderr, "  %s\n", unusedFiles.item(i));
+            fputs("\n", stderr);
+        }
+
+        return 0;
+    }
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+            "\n"
+            "The 'roxie unused-files' command finds files in DFS for the given roxie, that\n"
+            "are not currently in use by queries on that roxie, optionaly excluding files\n"
+            "defined in active packagemaps as well.\n"
+            "\n"
+            "ecl roxie unused-files <process_cluster>\n"
+            " Options:\n"
+            "   <process_cluster>      the roxie process cluster to reload\n",
+            stdout);
+
+        fputs("\n"
+            "   --check-packagemaps    Exclude files referenced in active packagemaps\n"
+            " Common Options:\n",
+            stdout);
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optProcess;
+    bool optCheckPackageMaps;
+};
+
 IEclCommand *createEclRoxieCommand(const char *cmdname)
 {
     if (!cmdname || !*cmdname)
@@ -369,6 +460,8 @@ IEclCommand *createEclRoxieCommand(const char *cmdname)
         return new EclCmdRoxieCheckOrReload(false);
     if (strieq(cmdname, "reload"))
         return new EclCmdRoxieCheckOrReload(true);
+    if (strieq(cmdname, "unused-files"))
+        return new EclCmdRoxieUnusedFiles();
     return NULL;
 }
 
@@ -391,6 +484,7 @@ public:
             "      detach         detach a roxie cluster from dali\n"
             "      check          verify that roxie nodes have matching state\n"
             "      reload         reload queries on roxie process cluster\n"
+            "      unused-files   list files found on cluster in DFS but not in use\n"
         );
     }
 };
