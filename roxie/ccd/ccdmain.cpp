@@ -850,10 +850,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 int channel = i+1;
                 for (int copy=0; copy<numDataCopies; copy++)
                 {
-                    channel = channel + cyclicOffset;
                     if (channel > numNodes)
                         channel = channel - numNodes;
                     addChannel(i, channel, copy);
+                    channel = channel + cyclicOffset;
                 }
             }
         }
