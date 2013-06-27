@@ -378,8 +378,12 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
         if(terminator && *terminator)
             req->setSourceCsvTerminate(terminator);
         const char* quote = globals->queryProp("quote");
-        if(quote && *quote)
+        if(quote)
+        {
+            // Pass quote definition string from command line if defined
+            // even it is empty to override default value
             req->setSourceCsvQuote(quote);
+        }
     }
     else 
         encoding = format; // may need extra later
