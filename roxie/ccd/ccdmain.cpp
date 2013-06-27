@@ -896,10 +896,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     multicastLast.ipset(topology->queryProp("@multicastLast"));
                 else
                     throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastLast not set");
-                joinMulticastChannel(0); // all slaves also listen on channel 0
             }
+            openMulticastSocket();
         }
-
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());

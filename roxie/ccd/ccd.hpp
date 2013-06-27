@@ -57,6 +57,7 @@ extern IException *MakeRoxieException(int code, const char *format, ...) __attri
 extern Owned<ISocket> multicastSocket;
 extern size32_t channelWrite(unsigned channel, void const* buf, size32_t size);
 void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port);
+void openMulticastSocket();
 void joinMulticastChannel(unsigned channel);
 
 extern unsigned channels[MAX_CLUSTER_SIZE];     // list of all channel numbers for this node
