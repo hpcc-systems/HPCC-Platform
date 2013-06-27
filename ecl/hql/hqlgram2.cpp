@@ -4948,7 +4948,7 @@ ITypeInfo *HqlGram::promoteToSameType(HqlExprArray & exprs, const attribute &ea,
 
 ITypeInfo *HqlGram::promoteMapToSameType(HqlExprArray & exprs, attribute &eElse)
 {
-    bool differentLengthStringsVariableLengthRatherThanLongest = false;
+    bool differentLengthStringsVariableLengthRatherThanLongest = true;
     ITypeInfo * promoted = getPromotedECLType(exprs, eElse.queryExprType(), differentLengthStringsVariableLengthRatherThanLongest);
 
     ForEachItemIn(idx, exprs)
@@ -5094,8 +5094,8 @@ ITypeInfo *HqlGram::promoteCaseToSameType(attribute &eTest, HqlExprArray & exprs
     ForEachItemIn(idx, exprs)
     {
         IHqlExpression & cur = exprs.item(idx);
-        promotedTest.setown(::getPromotedECLType(promotedTest, cur.queryChild(0)->queryType()));
-        promotedResult.setown(::getPromotedECLType(promotedResult, cur.queryChild(1)->queryType()));
+        promotedTest.setown(::getPromotedECLCompareType(promotedTest, cur.queryChild(0)->queryType()));
+        promotedResult.setown(::getPromotedECLCompareType(promotedResult, cur.queryChild(1)->queryType()));
     }
 
     ForEachItemIn(idx2, exprs)
