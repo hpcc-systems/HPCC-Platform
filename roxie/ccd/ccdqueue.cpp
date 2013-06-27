@@ -152,6 +152,7 @@ size32_t channelWrite(unsigned channel, void const* buf, size32_t size)
 {
     size32_t minwrote = 0;
     SocketEndpointArray &eps = slaveEndpoints[channel]; // if multicast is enabled, this will have a single multicast endpoint in it.
+    assertex(eps.ordinality());
     ForEachItemIn(idx, eps)
     {
         size32_t wrote = multicastSocket->udp_write_to(eps.item(idx), buf, size);
