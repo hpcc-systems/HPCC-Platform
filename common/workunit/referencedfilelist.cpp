@@ -126,6 +126,7 @@ public:
     virtual void addFiles(StringArray &files);
     virtual void addFilesFromWorkUnit(IConstWorkUnit *cw);
     virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid);
+    virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg);
 
     virtual IReferencedFileIterator *getFiles();
     virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo);
@@ -389,12 +390,8 @@ void ReferencedFileList::addFiles(StringArray &files)
         addFile(files.item(i));
 }
 
-void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)
+void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)
 {
-    const IHpccPackage *pkg = NULL;
-    if (pm && queryid && *queryid)
-        pkg = pm->matchPackage(queryid);
-
     Owned<IConstWUGraphIterator> graphs = &cw->getGraphs(GraphTypeActivities);
     ForEach(*graphs)
     {
@@ -434,6 +431,14 @@ void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackag
             ensureFile(logicalName, flags);
         }
     }
+}
+
+void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid)
+{
+    const IHpccPackage *pkg = NULL;
+    if (pm && queryid && *queryid)
+        pkg = pm->matchPackage(queryid);
+    addFilesFromQuery(cw, pkg);
 }
 
 void ReferencedFileList::addFilesFromWorkUnit(IConstWorkUnit *cw)
