@@ -784,6 +784,131 @@ private:
     bool optValidateActive;
 };
 
+class EclCmdPackageQueryFiles : public EclCmdCommon
+{
+public:
+    EclCmdPackageQueryFiles()
+    {
+    }
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        if (iter.done())
+        {
+            usage();
+            return false;
+        }
+
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg!='-')
+            {
+                if (optTarget.isEmpty())
+                    optTarget.set(arg);
+                else if (optQueryId.isEmpty())
+                    optQueryId.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (iter.matchOption(optPMID, ECLOPT_PMID) || iter.matchOption(optPMID, ECLOPT_PMID_S))
+                continue;
+            if (EclCmdCommon::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (!EclCmdCommon::finalizeOptions(globals))
+        {
+            usage();
+            return false;
+        }
+        StringBuffer err;
+        if (optTarget.isEmpty())
+            err.append("\n ... A target cluster must be specified\n\n");
+        if (optQueryId.isEmpty())
+            err.append("\n ... A query must be specified\n\n");
+
+        if (err.length())
+        {
+            fprintf(stdout, "%s", err.str());
+            usage();
+            return false;
+        }
+        return true;
+    }
+    virtual int processCMD()
+    {
+        Owned<IClientWsPackageProcess> packageProcessClient = getWsPackageSoapService(optServer, optPort, optUsername, optPassword);
+        Owned<IClientGetQueryFileMappingRequest> request = packageProcessClient->createGetQueryFileMappingRequest();
+
+        request->setTarget(optTarget);
+        request->setQueryName(optQueryId);
+        request->setPMID(optPMID);
+
+        Owned<IClientGetQueryFileMappingResponse> resp = packageProcessClient->GetQueryFileMapping(request);
+        if (resp->getExceptions().ordinality()>0)
+            outputMultiExceptions(resp->getExceptions());
+
+        StringArray &unmappedFiles = resp->getUnmappedFiles();
+        if (!unmappedFiles.ordinality())
+            fputs("No undefined files found.\n", stderr);
+        else
+        {
+            fputs("Files not defined in PackageMap:\n", stderr);
+            ForEachItemIn(i, unmappedFiles)
+                fprintf(stderr, "  %s\n", unmappedFiles.item(i));
+        }
+        IArrayOf<IConstSuperFile> &superFiles = resp->getSuperFiles();
+        if (!superFiles.ordinality())
+            fputs("\nNo matching SuperFiles found in PackageMap.\n", stderr);
+        else
+        {
+            fputs("\nSuperFiles defined in PackageMap:\n", stderr);
+            ForEachItemIn(i, superFiles)
+            {
+                IConstSuperFile &super = superFiles.item(i);
+                fprintf(stderr, "  %s\n", super.getName());
+                StringArray &subfiles = super.getSubFiles();
+                if (subfiles.ordinality()>0)
+                {
+                    ForEachItemIn(sbi, subfiles)
+                        fprintf(stderr, "   > %s\n", subfiles.item(sbi));
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    virtual void usage()
+    {
+        fputs("\nUsage:\n"
+                    "\n"
+                    "The 'query-files' command will list the files referenced by a query, showing if/how they\n"
+                    "are mapped as SuperFiles in the active packagemap.  --pmid option allows an inactive\n"
+                    "packagemap to be used instead.\n"
+                    "\n"
+                    "ecl packagemap query-files <target> <queryid>\n"
+                    " Options:\n"
+                    "   <target>                    name of target to use when validating package map information\n"
+                    "   <queryid>                   name of query to get file mappings for\n"
+                    "   -pm, --pmid                 optional id of packagemap to validate, defaults to active\n",
+                    stdout);
+
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optTarget;
+    StringAttr optQueryId;
+    StringAttr optPMID;
+};
+
 IEclCommand *createPackageSubCommand(const char *cmdname)
 {
     if (!cmdname || !*cmdname)
@@ -802,6 +927,8 @@ IEclCommand *createPackageSubCommand(const char *cmdname)
         return new EclCmdPackageList();
     if (strieq(cmdname, "validate"))
         return new EclCmdPackageValidate();
+    if (strieq(cmdname, "query-files"))
+        return new EclCmdPackageQueryFiles();
 return NULL;
 }
 
@@ -827,6 +954,7 @@ public:
             "      list         list loaded package map names\n"
             "      info         return active package map information\n"
             "      validate     validate information in the package map file \n"
+            "      query-files  show files used by a query and if/how they are mapped\n"
         );
     }
 };

@@ -27,6 +27,7 @@
 #define PACKAGE_MISSING_ID            PACKAGE_ERROR_START+1
 #define PACKAGE_NO_SUBFILES           PACKAGE_ERROR_START+2
 #define PACKAGE_NOT_FOUND             PACKAGE_ERROR_START+3
+#define PACKAGE_QUERY_NOT_FOUND           PACKAGE_ERROR_START+4
 
 
 interface IHpccPackage : extends IInterface
@@ -46,6 +47,7 @@ interface IHpccPackageMap : extends IInterface
     virtual const char *queryPackageId() const = 0;
     virtual bool isActive() const = 0;
     virtual bool validate(const char *queryid, StringArray &warn, StringArray &err, StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const = 0;
+    virtual void gatherFileMappingForQuery(const char *queryname, IPropertyTree *fileInfo) const = 0;
 };
 
 interface IHpccPackageSet : extends IInterface

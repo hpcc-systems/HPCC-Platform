@@ -367,6 +367,42 @@ public:
         load(getPackageMapById(id, true));
     }
 
+    virtual void gatherFileMappingForQuery(const char *queryname, IPropertyTree *fileInfo) const
+    {
+        Owned<IPropertyTree> query = resolveQueryAlias(querySet, queryname, true);
+        if (!query)
+            throw MakeStringException(PACKAGE_QUERY_NOT_FOUND, "Query %s not found", queryname);
+        Owned<IReferencedFileList> filelist = createReferencedFileList(NULL, NULL);
+        Owned<IWorkUnitFactory> wufactory = getWorkUnitFactory(NULL, NULL);
+        Owned<IConstWorkUnit> cw = wufactory->openWorkUnit(query->queryProp("@wuid"), false);
+
+        const IHpccPackage *pkg = matchPackage(query->queryProp("@id"));
+        filelist->addFilesFromQuery(cw, pkg);
+        Owned<IReferencedFileIterator> refFiles = filelist->getFiles();
+        ForEach(*refFiles)
+        {
+            IReferencedFile &rf = refFiles->query();
+            if (!(rf.getFlags() & RefFileInPackage))
+                fileInfo->addProp("File", rf.getLogicalName());
+            else
+            {
+                Owned<ISimpleSuperFileEnquiry> ssfe = pkg->resolveSuperFile(rf.getLogicalName());
+                if (ssfe && ssfe->numSubFiles()>0)
+                {
+                    IPropertyTree *superInfo = fileInfo->addPropTree("SuperFile", createPTree());
+                    superInfo->setProp("@name", rf.getLogicalName());
+                    unsigned count = ssfe->numSubFiles();
+                    while (count--)
+                    {
+                        StringBuffer subfile;
+                        ssfe->getSubFileName(count, subfile);
+                        superInfo->addProp("SubFile", subfile.str());
+                    }
+                }
+            }
+        }
+    }
+
     virtual bool validate(const char *queryToCheck, StringArray &warn, StringArray &err, 
         StringArray &unmatchedQueries, StringArray &unusedPackages, StringArray &unmatchedFiles) const
     {

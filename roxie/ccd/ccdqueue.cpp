@@ -98,6 +98,31 @@ void joinMulticastChannel(unsigned channel)
     }
 }
 
+void openMulticastSocket()
+{
+    if (!multicastSocket)
+    {
+        multicastSocket.setown(ISocket::udp_create(CCD_MULTICAST_PORT));
+        multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
+        size32_t actualSize = multicastSocket->get_receive_buffer_size();
+        if (actualSize < udpMulticastBufferSize)
+        {
+            DBGLOG("Roxie: multicast socket buffer size could not be set (requested=%d actual %d", udpMulticastBufferSize, actualSize);
+            throwUnexpected();
+        }
+        if (traceLevel)
+            DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", CCD_MULTICAST_PORT, udpMulticastBufferSize, actualSize);
+        Owned<IPropertyTreeIterator> it = ccdChannels->getElements("RoxieSlaveProcess");
+        ForEach(*it)
+        {
+            unsigned channel = it->query().getPropInt("@channel", 0);
+            assertex(channel);
+            joinMulticastChannel(channel);
+        }
+        joinMulticastChannel(0); // all slaves also listen on channel 0
+    }
+}
+
 void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port)
 {
     if (!slaveEndpoints)
@@ -111,19 +136,6 @@ void addEndpoint(unsigned channel, const IpAddress &slaveIp, unsigned port)
     {
         SocketEndpoint &ep = *new SocketEndpoint(CCD_MULTICAST_PORT, multicastIp);
         slaveEndpoints[channel].append(ep);
-        if (!multicastSocket)
-        {
-            multicastSocket.setown(ISocket::udp_create(CCD_MULTICAST_PORT));
-            multicastSocket->set_receive_buffer_size(udpMulticastBufferSize);
-            size32_t actualSize = multicastSocket->get_receive_buffer_size();
-            if (actualSize < udpMulticastBufferSize)
-            {
-                DBGLOG("Roxie: multicast socket buffer size could not be set (requested=%d actual %d", udpMulticastBufferSize, actualSize);
-                throwUnexpected();
-            }
-            if (traceLevel)
-                DBGLOG("Roxie: multicast socket created port=%d sockbuffsize=%d actual %d", CCD_MULTICAST_PORT, udpMulticastBufferSize, actualSize);
-        }
     }
     if (channel)
         addEndpoint(0, slaveIp, port);
@@ -1680,7 +1692,6 @@ public:
 
 class RoxieSocketQueueManager : public RoxieReceiverBase
 {
-    Owned<ISocket> sock;
     unsigned maxPacketSize;
     bool running;
     Linked<ISendManager> sendManager;
@@ -1715,8 +1726,7 @@ public:
 #else
         bool udpResendEnabled = false;  // As long as it is known to be broken, we don't want it accidentally enabled in any release version
 #endif
-        openReceiveSocket();
-        maxPacketSize = sock->get_max_send_size();
+        maxPacketSize = multicastSocket->get_max_send_size();
         if ((maxPacketSize==0)||(maxPacketSize>65535))
             maxPacketSize = 65535;
         if (topology->getPropInt("@sendMaxRate", 0))
@@ -1734,11 +1744,6 @@ public:
         receiveManager.setown(createReceiveManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, CCD_SNIFFER_PORT, snifferIp, udpQueueSize, udpMaxSlotsPerClient, myNodeIndex));
         sendManager.setown(createSendManager(CCD_SERVER_FLOW_PORT, CCD_DATA_PORT, CCD_CLIENT_FLOW_PORT, CCD_SNIFFER_PORT, snifferIp, udpSendQueueSize, fastLaneQueue ? 3 : 2, udpResendEnabled ? udpMaxSlotsPerClient : 0, bucket, myNodeIndex));
         running = false;
-    }
-
-    void openReceiveSocket()
-    {
-        sock.set(multicastSocket);
     }
 
     CriticalSection crit;
@@ -1892,7 +1897,7 @@ public:
         {
             IpAddress peer;
             StringBuffer s, s1;
-            sock->getPeerAddress(peer).getIpText(s);
+            multicastSocket->getPeerAddress(peer).getIpText(s);
             header.toString(s1);
             DBGLOG("doIBYTI %s from %s", s1.str(), s.str());
             DBGLOG("header.retries=%x header.getSubChannelMask(header.channel)=%x", header.retries, header.getSubChannelMask(header.channel));
@@ -2071,7 +2076,7 @@ public:
                 // NOTE - this thread needs to do as little as possible - just read packets and queue them up - otherwise we can get packet loss due to buffer overflow
                 // DO NOT put tracing on this thread except at very high tracelevels!
                 unsigned l;
-                sock->read(mb.reserve(maxPacketSize), sizeof(RoxiePacketHeader), maxPacketSize, l, 5);
+                multicastSocket->read(mb.reserve(maxPacketSize), sizeof(RoxiePacketHeader), maxPacketSize, l, 5);
                 mb.setLength(l);
                 atomic_inc(&packetsReceived);
                 RoxiePacketHeader &header = *(RoxiePacketHeader *) mb.toByteArray();
@@ -2113,9 +2118,12 @@ public:
                         E->Release();
                         // MORE: Protect with try logic, in case udp_create throws exception ?
                         //       What to do if create fails (ie exception is caught) ?
-                        sock->close();
-                        sock.clear();
-                        openReceiveSocket();
+                        if (multicastSocket)
+                        {
+                            multicastSocket->close();
+                            multicastSocket.clear();
+                            openMulticastSocket();
+                        }
                     }
                 
                 }
@@ -2141,7 +2149,7 @@ public:
         if (running)
         {
             running = false;
-            sock->close();
+            multicastSocket->close();
         }
         RoxieReceiverBase::stop();
     }
