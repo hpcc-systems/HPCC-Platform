@@ -502,7 +502,10 @@ public:
     {
         return BASE::validate(queryid, wrn, err, unmatchedQueries, unusedPackages, unmatchedFiles);
     }
-
+    virtual void gatherFileMappingForQuery(const char *queryname, IPropertyTree *fileInfo) const
+    {
+        BASE::gatherFileMappingForQuery(queryname, fileInfo);
+    }
     virtual const IRoxiePackage *queryRoxiePackage(const char *name) const
     {
         return queryResolvedPackage(name);
