@@ -1203,7 +1203,7 @@ public:
     virtual IMessagePacker *createMessagePacker(ruid_t ruid, unsigned sequence, const void *messageHeader, unsigned headerSize, unsigned destNodeIndex, int queue)
     {
         if (destNodeIndex >= numNodes)
-            throw MakeStringException(ROXIE_UDP_ERROR, "createMesagePacker: invalid destination node index %i", destNodeIndex);
+            throw MakeStringException(ROXIE_UDP_ERROR, "createMessagePacker: invalid destination node index %i", destNodeIndex);
         return new CMessagePacker(ruid, sequence, messageHeader, headerSize, *this, destNodeIndex, myNodeIndex, getNextMessageSequence(), queue);
     }
 

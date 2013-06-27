@@ -861,12 +861,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         else if (strnicmp(slaveConfig, "overloaded", 10) == 0)
         {
-            if (numChannels != numNodes * numDataCopies)
+            unsigned copiesPerNode = numChannels / numNodes;
+            if (numChannels != numNodes * copiesPerNode)
                 throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels does not match expected value");
             for (int i=0; i<numNodes; i++)
             {
                 int channel = i+1;
-                for (int copy=0; copy<numDataCopies; copy++)
+                for (int copy=0; copy<copiesPerNode; copy++)
                 {
                     channel = channel + copy*numNodes;
                     addChannel(i, channel, copy);
@@ -898,10 +899,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     multicastLast.ipset(topology->queryProp("@multicastLast"));
                 else
                     throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastLast not set");
-                joinMulticastChannel(0); // all slaves also listen on channel 0
             }
+            openMulticastSocket();
         }
-
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
@@ -968,7 +968,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
 
                 const char *aclName = roxieFarm.queryProp("@aclName");
-                if (aclName)
+                if (aclName && *aclName)
                 {
                     Owned<IPropertyTree> aclInfo = createPTree("AccessInfo");
                     getAccessList(aclName, topology, aclInfo);

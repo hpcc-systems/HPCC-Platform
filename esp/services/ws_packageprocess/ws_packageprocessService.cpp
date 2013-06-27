@@ -566,3 +566,69 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
     resp.updateFiles().setUnmatched(unmatchedFiles);
     return true;
 }
+
+bool CWsPackageProcessEx::onGetQueryFileMapping(IEspContext &context, IEspGetQueryFileMappingRequest &req, IEspGetQueryFileMappingResponse &resp)
+{
+    const char *queryname = req.getQueryName();
+    if (!queryname || !*queryname)
+        throw MakeStringException(PKG_INVALID_QUERY_NAME, "Query name required");
+    const char *target = req.getTarget();
+    if (!target || !*target)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Target cluster required");
+
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Unable to find target cluster");
+    if (clusterInfo->getPlatform()!=RoxieCluster)
+        throw MakeStringException(PKG_INVALID_CLUSTER_TYPE, "Roxie target required");
+
+    Owned<IHpccPackageSet> set;
+    Owned<IHpccPackageMap> ownedmap;
+    const IHpccPackageMap *map = NULL;
+
+    const char *pmid = req.getPMID();
+    if (pmid && *pmid)
+    {
+        ownedmap.setown(createPackageMapFromPtree(getPackageMapById(pmid, true), target, pmid));
+        if (!ownedmap)
+            throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", req.getPMID());
+        map = ownedmap;
+    }
+    else
+    {
+        SCMStringBuffer process;
+        clusterInfo->getRoxieProcess(process);
+        set.setown(createPackageSet(process.str()));
+        if (!set)
+            throw MakeStringException(PKG_CREATE_PACKAGESET_FAILED, "Unable to create PackageSet");
+        map = set->queryActiveMap(target);
+        if (!map)
+            throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Active package map not found");
+    }
+    Owned<IPropertyTree> fileInfo = createPTree();
+    map->gatherFileMappingForQuery(queryname, fileInfo);
+
+    StringArray unmappedFiles;
+    Owned<IPropertyTreeIterator> it = fileInfo->getElements("File");
+    ForEach(*it)
+        unmappedFiles.append(it->query().queryProp(NULL));
+    resp.setUnmappedFiles(unmappedFiles);
+
+    IArrayOf<IEspSuperFile> superArray;
+    it.setown(fileInfo->getElements("SuperFile"));
+    ForEach(*it)
+    {
+        IPropertyTree &superTree = it->query();
+        Owned<IEspSuperFile> superItem = createSuperFile();
+        superItem->setName(superTree.queryProp("@name"));
+        StringArray subArray;
+        Owned<IPropertyTreeIterator> subfiles = superTree.getElements("SubFile");
+        ForEach(*subfiles)
+            subArray.append(subfiles->query().queryProp(NULL));
+        superItem->setSubFiles(subArray);
+        superArray.append(*superItem.getClear());
+    }
+
+    resp.setSuperFiles(superArray);
+    return true;
+}
