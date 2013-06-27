@@ -506,7 +506,7 @@ public:
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_SERVER, TAG_PROCESS, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_NAME, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_PROCESS, "", 0, 1, "", 0);
-        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_LEVEL, "", 0, 1, "", 0);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_DATADIRECTORY, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_LISTENQUEUE, "", 0, 1, "", 1);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_NUMTHREADS, "", 0, 1, "", 1);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_PORT, "", 0, 1, "", 1);
@@ -520,7 +520,7 @@ public:
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_NAME, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_ITEMTYPE, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_COMPUTER, "", 0, 1, "", 0);
-        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_LEVEL, "", 0, 1, "", 0);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_DATADIRECTORY, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_NUMBER, "", 0, 1, "", 0);
       }
 
@@ -536,7 +536,7 @@ public:
           m_colIndex.appendf("colIndex['process%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['netAddress%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['port%s']=%d;", serverStr, index++);
-          m_colIndex.appendf("colIndex['level%s']=%d;", serverStr, index++);
+          m_colIndex.appendf("colIndex['dataDirectory%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['listenQueue%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['numThreads%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['requestArrayThreads%s']=%d;", serverStr, index++);
@@ -547,7 +547,7 @@ public:
           m_colIndex.appendf("colIndex['name%s']=%d;", agentStr, index++); 
           m_colIndex.appendf("colIndex['itemType%s']=%d;", agentStr, index++);
           m_colIndex.appendf("colIndex['netAddress%s']=%d;", agentStr, index++);
-          m_colIndex.appendf("colIndex['level%s']=%d;", agentStr, index++);
+          m_colIndex.appendf("colIndex['dataDirectory%s']=%d;", agentStr, index++);
           m_colIndex.appendf("colIndex['number%s']=%d;", agentStr, index++);
         }
         else if (!strcmp(m_compName.str(), XML_TAG_THORCLUSTER))
