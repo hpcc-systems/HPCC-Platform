@@ -966,7 +966,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     roxieServer.setown(createRoxieWorkUnitListener(numThreads, suspended));
 
                 const char *aclName = roxieFarm.queryProp("@aclName");
-                if (aclName)
+                if (aclName && *aclName)
                 {
                     Owned<IPropertyTree> aclInfo = createPTree("AccessInfo");
                     getAccessList(aclName, topology, aclInfo);
