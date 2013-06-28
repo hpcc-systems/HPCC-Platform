@@ -9434,15 +9434,14 @@ void addQueryToQuerySet(IWorkUnit *workunit, const char *querySetName, const cha
 
     if (activateOption == ACTIVATE_SUSPEND_PREVIOUS|| activateOption == ACTIVATE_DELETE_PREVIOUS)
     {
-        Owned<IPropertyTree> aliasTree = resolveQueryAlias(queryRegistry, cleanQueryName);
+        Owned<IPropertyTree> prevQuery = resolveQueryAlias(queryRegistry, cleanQueryName);
         setQueryAlias(queryRegistry, cleanQueryName, newQueryId);
-
-        if (aliasTree)
+        if (prevQuery)
         {
             if (activateOption == ACTIVATE_SUSPEND_PREVIOUS)
-                setQuerySuspendedState(queryRegistry, cleanQueryName, true, userid);
+                setQuerySuspendedState(queryRegistry, prevQuery->queryProp("@id"), true, userid);
             else 
-                removeNamedQuery(queryRegistry, aliasTree->queryProp("@id"));
+                removeNamedQuery(queryRegistry, prevQuery->queryProp("@id"));
         }
     }
     else if (activateOption == MAKE_ACTIVATE || activateOption == MAKE_ACTIVATE_LOAD_DATA_ONLY)
