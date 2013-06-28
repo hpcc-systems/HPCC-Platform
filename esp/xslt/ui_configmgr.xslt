@@ -799,7 +799,7 @@
                 createTablesForComp('<xsl:value-of select="$Component"/>', rows);
                 if ('<xsl:value-of select="$Component"/>'==='RoxieCluster') {
                   createMultiColTreeCtrlForComp(rowsServers, "Servers", 0);
-                  createMultiColTreeCtrlForComp(rowsSlaves, "Agents", 0);
+                  createMultiColTreeCtrlForComp(rowsSlaves, "Farms", 0);
                 }
                 else if ('<xsl:value-of select="$Component"/>'==='ThorCluster')
                   createMultiColTreeCtrlForComp(rowsTopology, "Topology", 0);
