@@ -204,17 +204,20 @@ public:
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
     virtual bool finalizeOptions(IProperties *globals);
 
-    virtual void usage()
+    virtual void usage(bool includeESP = true)
     {
         fprintf(stdout,
             "   --help                 display usage information for the given command\n"
             "   -v, --verbose          output additional tracing information\n"
-            "   -s, --server=<ip>      ip of server running ecl services (eclwatch)\n"
-            "   -ssl, --ssl            use SSL to secure the connection to the server\n"
-            "   --port=<port>          ecl services port\n"
-            "   -u, --username=<name>  username for accessing ecl services\n"
-            "   -pw, --password=<pw>   password for accessing ecl services\n"
-        );
+          );
+        if (includeESP)
+            fprintf(stdout,
+                "   -s, --server=<ip>      ip of server running ecl services (eclwatch)\n"
+                "   -ssl, --ssl            use SSL to secure the connection to the server\n"
+                "   --port=<port>          ecl services port\n"
+                "   -u, --username=<name>  username for accessing ecl services\n"
+                "   -pw, --password=<pw>   password for accessing ecl services\n"
+              );
     }
 public:
     StringAttr optServer;

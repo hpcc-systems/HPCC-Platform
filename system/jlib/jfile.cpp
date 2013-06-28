@@ -3066,7 +3066,7 @@ bool ensureFileExtension(StringBuffer& filename, const char* desiredExtension)
     return true;
 }
 
-/* Get full file name. If noExtension is true, the extesion (if any) will be trimmed */ 
+/* Get full file name. If noExtension is true, the extension (if any) will be trimmed */
 StringBuffer& getFullFileName(StringBuffer& filename, bool noExtension)
 {
     char drive[_MAX_DRIVE];

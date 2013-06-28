@@ -36,4 +36,5 @@ extern "C" {
   extern ARCHIVEFILE_API void installFileHook();
   extern ARCHIVEFILE_API void removeFileHook();
 };
+
 #endif
