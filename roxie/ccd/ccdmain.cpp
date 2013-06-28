@@ -854,6 +854,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         unsigned numDataCopies = topology->getPropInt("@numDataCopies", 1);
         unsigned numNodes = getNumNodes();
         const char *slaveConfig = topology->queryProp("@slaveConfig");
+        if (!slaveConfig)
+            slaveConfig = "simple";
         if (strnicmp(slaveConfig, "cyclic", 6) == 0)
         {
             if (numChannels != numNodes)
