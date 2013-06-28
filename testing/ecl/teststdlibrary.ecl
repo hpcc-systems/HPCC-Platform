@@ -16,6 +16,8 @@
 ############################################################################## */
 
 import teststd;
+import std;
 
+evaluate(std, __SelfTest);
 evaluate(teststd);
 output('Test std completed');
