@@ -9615,11 +9615,11 @@ IHqlExpression * HqlGram::createLibraryInstance(const attribute & errpos, IHqlEx
 
 //==========================================================================================================
 
-IHqlExpression * HqlGram::createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp)
+IHqlExpression * HqlGram::createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp, _ATOM name)
 {
     if (!ifaceExpr->queryType()->assignableFrom(scopeExpr->queryType()))
         reportError(ERR_NOT_BASE_MODULE, errpos, "Module doesn't implement the interface supplied");
-    return ::createEvaluateOutputModule(lookupCtx, scopeExpr, ifaceExpr, lookupCtx.queryExpandCallsWhenBound(), outputOp);
+    return ::createEvaluateOutputModule(lookupCtx, scopeExpr, ifaceExpr, lookupCtx.queryExpandCallsWhenBound(), outputOp, name);
 }
 
 IHqlExpression * HqlGram::createStoredModule(const attribute & errpos, IHqlExpression * scopeExpr)

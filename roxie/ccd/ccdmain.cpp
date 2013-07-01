@@ -836,10 +836,26 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         if (myNodeIndex == -1)
             throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - current node is not in server list");
 
+        // Set multicast base addresses - must be done before generating slave channels
+
+        if (roxieMulticastEnabled && !localSlave)
+        {
+            if (topology->queryProp("@multicastBase"))
+                multicastBase.ipset(topology->queryProp("@multicastBase"));
+            else
+                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastBase not set");
+            if (topology->queryProp("@multicastLast"))
+                multicastLast.ipset(topology->queryProp("@multicastLast"));
+            else
+                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastLast not set");
+        }
+
         // Generate the slave channels
         unsigned numDataCopies = topology->getPropInt("@numDataCopies", 1);
         unsigned numNodes = getNumNodes();
         const char *slaveConfig = topology->queryProp("@slaveConfig");
+        if (!slaveConfig)
+            slaveConfig = "simple";
         if (strnicmp(slaveConfig, "cyclic", 6) == 0)
         {
             if (numChannels != numNodes)
@@ -850,10 +866,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 int channel = i+1;
                 for (int copy=0; copy<numDataCopies; copy++)
                 {
-                    channel = channel + cyclicOffset;
                     if (channel > numNodes)
                         channel = channel - numNodes;
                     addChannel(i, channel, copy);
+                    channel = channel + cyclicOffset;
                 }
             }
         }
@@ -885,21 +901,10 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     channel = 1;
             }
         }
+        // Now we know all the channels, we can open and subscribe the multicast channels
         if (!localSlave)
-        {
-            if (roxieMulticastEnabled)
-            {
-                if (topology->queryProp("@multicastBase"))
-                    multicastBase.ipset(topology->queryProp("@multicastBase"));
-                else
-                    throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastBase not set");
-                if (topology->queryProp("@multicastLast"))
-                    multicastLast.ipset(topology->queryProp("@multicastLast"));
-                else
-                    throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - multicastLast not set");
-            }
             openMulticastSocket();
-        }
+
         setDaliServixSocketCaching(true);  // enable daliservix caching
         loadPlugins();
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
