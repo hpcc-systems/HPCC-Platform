@@ -783,7 +783,7 @@ protected:
     void definePatternSymbolProduction(attribute & nameattr, const attribute & assignAttr, attribute & valueAttr, attribute & workflowAttr, const attribute & semiattr);
     void cloneInheritedAttributes(IHqlScope * scope, const attribute & errpos);
 
-    IHqlExpression * createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp);
+    IHqlExpression * createEvaluateOutputModule(const attribute & errpos, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, node_operator outputOp, _ATOM name);
     IHqlExpression * createStoredModule(const attribute & errpos, IHqlExpression * scopeExpr);
     void processForwardModuleDefinition(const attribute & errpos);
     void checkNonGlobalModule(const attribute & errpos, IHqlExpression * scopeExpr);

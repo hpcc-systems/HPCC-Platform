@@ -165,7 +165,7 @@ extern HQL_API bool hasOperand(IHqlExpression * expr, IHqlExpression * child);
 
 extern HQL_API unsigned numRealChildren(IHqlExpression * expr);
 
-extern HQL_API IHqlExpression * createEvaluateOutputModule(HqlLookupContext & ctx, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, bool expandCallsWhenBound, node_operator outputOp);
+extern HQL_API IHqlExpression * createEvaluateOutputModule(HqlLookupContext & ctx, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, bool expandCallsWhenBound, node_operator outputOp, _ATOM name);
 extern HQL_API IHqlExpression * createStoredModule(IHqlExpression * scopeExpr);
 extern HQL_API IHqlExpression * convertScalarAggregateToDataset(IHqlExpression * expr);
 
