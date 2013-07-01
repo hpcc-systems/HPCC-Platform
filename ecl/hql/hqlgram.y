@@ -2585,7 +2585,13 @@ actionStmt
                         {
                             OwnedHqlExpr abstract = $3.getExpr();
                             OwnedHqlExpr concrete = parser->checkConcreteModule($3, abstract);
-                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, concrete, no_evaluate_stmt), $1);
+                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, concrete, no_evaluate_stmt, NULL), $1);
+                        }
+    | EVALUATE '(' abstractModule ',' knownOrUnknownId ')'
+                        {
+                            OwnedHqlExpr abstract = $3.getExpr();
+                            OwnedHqlExpr concrete = parser->checkConcreteModule($3, abstract);
+                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, concrete, no_evaluate_stmt, $5.getId()), $1);
                         }
     | DISTRIBUTION '(' startTopFilter beginList optDistributionFlags ignoreDummyList ')' endTopFilter
                         {
@@ -2621,7 +2627,7 @@ actionStmt
                         {
                             OwnedHqlExpr abstract = $3.getExpr();
                             OwnedHqlExpr concrete = parser->checkConcreteModule($3, abstract);
-                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, concrete, no_output));
+                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, concrete, no_output, NULL));
                             $$.setPosition($1);
                         }
     | OUTPUT '(' abstractModule ',' abstractModule ')'
@@ -2629,7 +2635,7 @@ actionStmt
                             OwnedHqlExpr abstract = $3.getExpr();
                             OwnedHqlExpr concrete = parser->checkConcreteModule($3, abstract);
                             OwnedHqlExpr iface = $5.getExpr();
-                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, iface, no_output));
+                            $$.setExpr(parser->createEvaluateOutputModule($3, concrete, iface, no_output, NULL));
                             $$.setPosition($1);
                         }
     | ALLNODES '(' beginList actionlist ')'

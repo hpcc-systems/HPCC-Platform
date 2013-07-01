@@ -2300,18 +2300,11 @@ class CBucket : public CSimpleInterface, implements IInterface
     unsigned bucketN;
     CSpill rowSpill, keySpill;
 
+    void doSpillHashTable();
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
     CBucket(HashDedupSlaveActivityBase &_owner, IRowInterfaces *_rowIf, IRowInterfaces *_keyIf, IHash *_iRowHash, IHash *_iKeyHash, ICompare *_iCompare, bool _extractKey, unsigned _bucketN, CHashTableRowTable *_htRows);
-    void setSpilt()
-    {
-        if (spilt)
-            return;
-        rowSpill.init();
-        keySpill.init();
-        spilt = true;
-    }
     bool addKey(const void *key, unsigned hashValue);
     bool addRow(const void *row, unsigned hashValue);
     void clear();
@@ -2802,25 +2795,29 @@ void CBucket::clear()
     }
 }
 
+void CBucket::doSpillHashTable()
+{
+    if (isSpilt())
+        return;
+    spilt = true;
+    rowSpill.init();
+    keySpill.init();
+    rowidx_t maxRows = htRows->queryMaxRows();
+    for (rowidx_t i=0; i<maxRows; i++)
+    {
+        OwnedConstThorRow key = htRows->getRowClear(i);
+        if (key)
+            keySpill.putRow(key.getClear());
+    }
+}
+
 bool CBucket::spillHashTable()
 {
-    rowidx_t removeN;
-    {
-        CriticalBlock b(lock);
-        removeN = htRows->queryHtElements();
-        if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
-            return false;
-        setSpilt();
-        // JCSMORE - could detach row table here and let 'lock' go whilst spilling to disk
-        // would have to careful to ensure that when buck is closed, it waits for pending write
-        rowidx_t maxRows = htRows->queryMaxRows();
-        for (rowidx_t i=0; i<maxRows; i++)
-        {
-            OwnedConstThorRow key = htRows->getRowClear(i);
-            if (key)
-                keySpill.putRow(key.getClear());
-        }
-    }
+    CriticalBlock b(lock);
+    rowidx_t removeN = htRows->queryHtElements();
+    if (0 == removeN || spilt) // NB: if split, will be handled by CBucket on different priority
+        return false; // signal nothing to spill
+    doSpillHashTable();
     ActPrintLog(&owner, "Spilt bucket %d - %d elements of hash table", bucketN, removeN);
     return true;
 }
@@ -2836,7 +2833,11 @@ bool CBucket::addKey(const void *key, unsigned hashValue)
             {
                 // attempt rehash
                 if (!rehash())
+                {
+                    // no room to rehash, ensure spilt
+                    doSpillHashTable(); // NB: may have spilt already when allocating for rehash
                     doAdd = false;
+                }
             }
             if (doAdd)
             {
@@ -2895,6 +2896,11 @@ bool CBucket::addRow(const void *row, unsigned hashValue)
                 {
                     if (rehash()) // even if rehash fails, there may be room to continue (following a flush)
                         htPos = hashValue % htRows->queryMaxRows();
+                    else
+                    {
+                        // no room to rehash, ensure spilt
+                        doSpillHashTable(); // NB: may have spilt already when allocating for rehash
+                    }
                 }
                 if (htRows->hasRoom())
                 {
