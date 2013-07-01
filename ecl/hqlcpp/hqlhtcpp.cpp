@@ -15516,11 +15516,23 @@ ABoundActivity * HqlCppTranslator::getConditionalActivity(BuildCtx & ctx, IHqlEx
 
 ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpression * expr, bool isRoot)
 {
-    IHqlExpression * cond = expr->queryChild(0);
+    LinkedHqlExpr cond = expr->queryChild(0);
     IHqlExpression * trueBranch = expr->queryChild(1);
     IHqlExpression * falseBranch = queryRealChild(expr, 2);
-    if (falseBranch && (falseBranch->getOperator() == no_null))
-        falseBranch = NULL;
+    const char * firstLabel = "True";
+    if (!expr->isDatarow())
+    {
+        if (falseBranch && (falseBranch->getOperator() == no_null))
+            falseBranch = NULL;
+        else if (trueBranch->getOperator() == no_null)
+        {
+            trueBranch = falseBranch;
+            falseBranch = NULL;
+            cond.setown(getInverse(cond));
+            firstLabel = "False";
+        }
+    }
+
 
     OwnedHqlExpr cseCond = options.spotCSE ? spotScalarCSE(cond) : LINK(cond);
     bool isChild = (insideChildOrLoopGraph(ctx) || insideRemoteGraph(ctx) || insideLibrary());
@@ -15543,7 +15555,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpress
         if (isGraphIndependent(cseCond, activeGraph) && !instance->hasChildActivity)
             instance->addAttributeBool("_graphIndependent", true);
 
-        buildConnectInputOutput(ctx, instance, boundTrue, 0, 0, "True");
+        buildConnectInputOutput(ctx, instance, boundTrue, 0, 0, firstLabel);
         if (boundFalse)
             buildConnectInputOutput(ctx, instance, boundFalse, 0, 1, "False");
 
@@ -15571,14 +15583,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityIf(BuildCtx & ctx, IHqlExpress
         if (expr->isAction())
         {
             if (boundTrue)
-                addDependency(ctx, boundTrue, instance->queryBoundActivity(), dependencyAtom, "True", 1);
+                addDependency(ctx, boundTrue, instance->queryBoundActivity(), dependencyAtom, firstLabel, 1);
             if (boundFalse)
                 addDependency(ctx, boundFalse, instance->queryBoundActivity(), dependencyAtom, "False", 2);
         }
         else
         {
             if (boundTrue)
-                buildConnectInputOutput(ctx, instance, boundTrue, 0, 0, "True");
+                buildConnectInputOutput(ctx, instance, boundTrue, 0, 0, firstLabel);
             if (boundFalse)
                 buildConnectInputOutput(ctx, instance, boundFalse, 0, 1, "False");
         }
