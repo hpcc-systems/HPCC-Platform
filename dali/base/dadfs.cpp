@@ -7754,13 +7754,27 @@ class CInitGroups
         Owned<IPropertyTreeIterator> nodes = cluster.getElements(processName);
         ForEach(*nodes) {
             IPropertyTree &node = nodes->query();
+            SocketEndpoint ep;
             const char *computer = node.queryProp("@computer");
-            CMachineEntryPtr *m = machinemap.getValue(computer);
-            if (!m) {
-                ERRLOG("Cannot construct %s, computer name %s not found\n",cluster.queryProp("@name"),computer);
+            const char *netAddress = node.queryProp("@netAddress");
+            if (computer && *computer)
+            {
+                CMachineEntryPtr *m = machinemap.getValue(computer);
+                if (!m) {
+                    ERRLOG("Cannot construct %s, computer name %s not found\n", cluster.queryProp("@name"), computer);
+                    return NULL;
+                }
+                ep.set((*m)->ep);
+            }
+            else if (netAddress && *netAddress)
+            {
+                ep.set(netAddress, 0);
+            }
+            else
+            {
+                ERRLOG("Cannot construct %s, missing computer spec on node\n", cluster.queryProp("@name"));
                 return NULL;
             }
-            SocketEndpoint ep = (*m)->ep;
             switch (groupType) {
                 case grp_roxie:
                 // Redundant copies are located via the flags.
