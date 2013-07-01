@@ -1944,18 +1944,20 @@ public:
 
     void getPeakActivityUsage(IActivityMemoryUsageMap * usageMap) const
     {
-        SpinBlock c1(crit);
-        BigHeapletBase *finger = active;
         unsigned numPages = 0;
         memsize_t numAllocs = 0;
-        while (finger)
         {
-            unsigned thisCount = finger->queryCount()-1;
-            if (thisCount != 0)
-                finger->getPeakActivityUsage(usageMap);
-            numAllocs += thisCount;
-            numPages++;
-            finger = getNext(finger);
+            SpinBlock c1(crit);
+            BigHeapletBase *finger = active;
+            while (finger)
+            {
+                unsigned thisCount = finger->queryCount()-1;
+                if (thisCount != 0)
+                    finger->getPeakActivityUsage(usageMap);
+                numAllocs += thisCount;
+                numPages++;
+                finger = getNext(finger);
+            }
         }
         if (numPages)
             reportHeapUsage(usageMap, numPages, numAllocs);
@@ -2401,8 +2403,10 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     friend class CNormalChunkingHeap;
     friend class CFixedChunkingHeap;
 
-    SpinLock crit;
-    mutable SpinLock fixedCrit;  // Should possibly be a ReadWriteLock - better with high contention, worse with low
+    CriticalSection activeBufferCS; // Potentially slow
+    mutable SpinLock peakSpinLock; // Very small window, low contention so fine to be a spin lock
+    mutable SpinLock fixedSpinLock; // Main potential for contention releasingEmptyHeaps and gathering peak usage.  Shouldn't be likely.
+                                    // Should possibly be a ReadWriteLock - better with high contention, worse with low
     CIArrayOf<CFixedChunkingHeap> normalHeaps;
     CHugeChunkingHeap hugeHeap;
     ITimeLimiter *timeLimit;
@@ -2416,7 +2420,7 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     atomic_t possibleGoers;
     atomic_t totalHeapPages;
     BufferedRowCallbackManager callbacks;
-    Owned<IActivityMemoryUsageMap> usageMap;
+    Owned<IActivityMemoryUsageMap> peakUsageMap;
     CIArrayOf<CChunkingHeap> fixedHeaps;
     CopyCIArrayOf<CRoxieFixedRowHeapBase> fixedRowHeaps;  // These are observed, NOT linked
     const IRowAllocatorCache *allocatorCache;
@@ -2491,7 +2495,7 @@ public:
         //Ensure that the rowHeaps release any references to the fixed heaps, and no longer call back when they
         //are destroyed
         {
-            SpinBlock block(fixedCrit);
+            SpinBlock block(fixedSpinLock);
             ForEachItemIn(i, fixedRowHeaps)
                 fixedRowHeaps.item(i).clearRowManager();
         }
@@ -2522,7 +2526,7 @@ public:
         ForEachItemIn(iNormal, normalHeaps)
             normalHeaps.item(iNormal).checkHeap();
 
-        SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
+        SpinBlock block(fixedSpinLock); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
             CChunkingHeap & fixedHeap = fixedHeaps.item(i);
@@ -2542,7 +2546,7 @@ public:
             total += normalHeaps.item(iNormal).allocated();
         total += hugeHeap.allocated();
 
-        SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
+        SpinBlock block(fixedSpinLock); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
             CChunkingHeap & fixedHeap = fixedHeaps.item(i);
@@ -2560,7 +2564,7 @@ public:
 
     void removeUnusedHeaps()
     {
-        SpinBlock block(fixedCrit);
+        SpinBlock block(fixedSpinLock);
         unsigned numHeaps = fixedHeaps.ordinality();
         unsigned i = 0;
         while (i < numHeaps)
@@ -2584,7 +2588,7 @@ public:
 
         bool hadUnusedHeap = false;
         {
-            SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
+            SpinBlock block(fixedSpinLock); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
             ForEachItemIn(i, fixedHeaps)
             {
                 CChunkingHeap & fixedHeap = fixedHeaps.item(i);
@@ -2606,8 +2610,9 @@ public:
     void getPeakActivityUsage()
     {
         Owned<IActivityMemoryUsageMap> map = getActivityUsage();
-        SpinBlock c1(crit);
-        usageMap.setown(map.getClear());
+
+        SpinBlock block(peakSpinLock);
+        peakUsageMap.setown(map.getClear());
     }
 
     //MORE: inline??
@@ -2807,8 +2812,13 @@ public:
 
     virtual unsigned getMemoryUsage()
     {
-        if (usageMap)
-            usageMap->report(logctx, allocatorCache);
+        Owned<IActivityMemoryUsageMap> map;
+        {
+            SpinBlock block(peakSpinLock);
+            map.set(peakUsageMap);
+        }
+        if (map)
+            map->report(logctx, allocatorCache);
         return peakPages;
     }
 
@@ -2822,7 +2832,7 @@ public:
         DataBufferBase *last = NULL;
         bool needCheck;
         {
-            SpinBlock b(crit);
+            CriticalBlock b(activeBufferCS);
             DataBufferBase *finger = activeBuffs;
             while (finger && atomic_read(&possibleGoers))
             {
@@ -2872,7 +2882,7 @@ public:
     {
         CRoxieFixedRowHeapBase * rowHeap = doCreateFixedRowHeap(fixedSize, activityId, roxieHeapFlags);
 
-        SpinBlock block(fixedCrit);
+        SpinBlock block(fixedSpinLock);
         //The Row heaps are not linked by the row manager so it can determine when they are released.
         fixedRowHeaps.append(*rowHeap);
         return rowHeap;
@@ -2880,7 +2890,7 @@ public:
 
     void noteReleasedHeap(CRoxieFixedRowHeapBase * rowHeap)
     {
-        SpinBlock block(fixedCrit);
+        SpinBlock block(fixedSpinLock);
         fixedRowHeaps.zap(*rowHeap);
     }
 
@@ -3008,7 +3018,7 @@ protected:
             normalHeaps.item(iNormal).getPeakActivityUsage(map);
         hugeHeap.getPeakActivityUsage(map);
 
-        SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
+        SpinBlock block(fixedSpinLock); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
             CChunkingHeap & fixedHeap = fixedHeaps.item(i);
@@ -3033,7 +3043,7 @@ protected:
 
         size32_t chunkSize = ROUNDEDSIZE(rounded);
         //Not time critical, so don't worry about the scope of the spinblock around the new
-        SpinBlock block(fixedCrit);
+        SpinBlock block(fixedSpinLock);
         if (!(flags & RHFunique))
         {
             CChunkingHeap * match = getExistingHeap(chunkSize, activityId, flags);
@@ -3054,7 +3064,7 @@ protected:
         size32_t chunkSize = align_pow2(size + PackedFixedSizeHeaplet::chunkHeaderSize, PACKED_ALIGNMENT);
 
         //Not time critical, so don't worry about the scope of the spinblock around the new
-        SpinBlock block(fixedCrit);
+        SpinBlock block(fixedSpinLock);
         if (!(flags & RHFunique))
         {
             CChunkingHeap * match = getExistingHeap(chunkSize, activityId, flags);
@@ -3081,7 +3091,7 @@ protected:
         ForEachItemIn(iNormal, normalHeaps)
             normalHeaps.item(iNormal).reportLeaks(leaked);
         hugeHeap.reportLeaks(leaked);
-        SpinBlock block(fixedCrit); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
+        SpinBlock block(fixedSpinLock); //Spinblock needed if we can add/remove fixed heaps while allocations are occuring
         ForEachItemIn(i, fixedHeaps)
         {
             if (leaked == 0)
@@ -3121,8 +3131,13 @@ protected:
     {
         if (peak)
         {
-            if (usageMap)
-                usageMap->report(logctx, allocatorCache);
+            Owned<IActivityMemoryUsageMap> map;
+            {
+                SpinBlock block(peakSpinLock);
+                map.set(peakUsageMap);
+            }
+            if (map)
+                map->report(logctx, allocatorCache);
         }
         else
         {
