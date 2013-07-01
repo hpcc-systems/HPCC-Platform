@@ -3916,7 +3916,7 @@ public:
     ModuleExpander(HqlLookupContext & _ctx, bool _expandCallsWhenBound, node_operator _outputOp) 
         : ctx(_ctx), expandCallsWhenBound(_expandCallsWhenBound), outputOp(_outputOp) {}
 
-    IHqlExpression * createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix);
+    IHqlExpression * createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix, _ATOM matchName);
 
 protected:
     HqlLookupContext ctx;
@@ -3924,7 +3924,7 @@ protected:
     node_operator outputOp;
 };
 
-IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix)
+IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, const char * prefix, _ATOM matchName)
 {
     IHqlScope * scope = scopeExpr->queryScope();
 
@@ -4004,16 +4004,21 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
                 break;
             }
 
-            if (op != no_none)
-                outputs.append(*createValue(op, makeVoidType(), LINK(value), createAttribute(namedAtom, createConstant(lowername))));
-            else if (value->isAction())
-                outputs.append(*LINK(value));
-            else if (value->isScope())
+            if (value->isScope())
             {
                 lowername.append(".");
-                OwnedHqlExpr child = createExpanded(value, value, lowername.str());
+                OwnedHqlExpr child = createExpanded(value, value, lowername.str(), matchName);
                 if (child->getOperator() != no_null)
                     outputs.append(*child.getClear());
+            }
+            else if (!matchName || name==matchName)
+            {
+                if (op != no_none)
+                {
+                    outputs.append(*createValue(op, makeVoidType(), LINK(value), createAttribute(namedAtom, createConstant(lowername))));
+                }
+                else if (value->isAction())
+                    outputs.append(*LINK(value));
             }
         }
     }
@@ -4022,10 +4027,10 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
 }
 
 
-IHqlExpression * createEvaluateOutputModule(HqlLookupContext & ctx, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, bool expandCallsWhenBound, node_operator outputOp)
+IHqlExpression * createEvaluateOutputModule(HqlLookupContext & ctx, IHqlExpression * scopeExpr, IHqlExpression * ifaceExpr, bool expandCallsWhenBound, node_operator outputOp, _ATOM name)
 {
     ModuleExpander expander(ctx, expandCallsWhenBound, outputOp);
-    return expander.createExpanded(scopeExpr, ifaceExpr, NULL);
+    return expander.createExpanded(scopeExpr, ifaceExpr, NULL, name);
 }
 
 
