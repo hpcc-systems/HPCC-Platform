@@ -1294,6 +1294,7 @@ extern HQL_API IHqlExpression *createDatasetFromRow(IHqlExpression * ownedRow);
 extern HQL_API IHqlExpression * createTypedValue(node_operator op, ITypeInfo * type, HqlExprArray & args);
 extern HQL_API IHqlExpression * createTypeTransfer(IHqlExpression * expr, ITypeInfo * newType);     //arguments must be linked
 
+extern HQL_API IHqlExpression * cloneFieldMangleName(IHqlExpression * expr);
 extern HQL_API IHqlExpression * expandOutOfLineFunctionCall(IHqlExpression * expr);
 extern HQL_API void expandDelayedFunctionCalls(IErrorReceiver * errors, HqlExprArray & exprs);
 

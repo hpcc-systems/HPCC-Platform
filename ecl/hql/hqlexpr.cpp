@@ -16312,6 +16312,15 @@ extern HQL_API IHqlExpression * createSortList(HqlExprArray & elements)
      return createValue(no_sortlist, makeSortListType(NULL), elements);
 }
 
+IHqlExpression * cloneFieldMangleName(IHqlExpression * field)
+{
+    StringBuffer newName;
+    newName.append(field->queryId()->str()).append("_").append(getUniqueId());
+    HqlExprArray children;
+    unwindChildren(children, field);
+    return createField(createIdAtom(newName), field->getType(), children);
+}
+
 //==============================================================================================================
 
 
