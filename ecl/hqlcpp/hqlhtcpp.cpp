@@ -14318,7 +14318,42 @@ ABoundActivity * HqlCppTranslator::doBuildActivityNormalizeLinkedChild(BuildCtx 
 
 ABoundActivity * HqlCppTranslator::doBuildActivitySelectNew(BuildCtx & ctx, IHqlExpression * expr)
 {
-    return doBuildActivityNormalizeLinkedChild(ctx, expr);
+    if (!expr->isDatarow())
+        return doBuildActivityNormalizeLinkedChild(ctx, expr);
+
+    bool isNew = false;
+    IHqlExpression * dataset = querySelectorDataset(expr, isNew);
+    assertex(isNew);
+
+    Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, dataset);
+    Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, TAKproject, expr, "Project");
+
+    buildActivityFramework(instance);
+
+    buildInstancePrefix(instance);
+
+    {
+        //Need to create a dataset to replace the parent selector - since it might be a row
+        OwnedHqlExpr anon = createDataset(no_anon, LINK(dataset->queryRecord()));
+
+        BuildCtx funcctx(instance->startctx);
+        funcctx.addQuotedCompound("virtual size32_t transform(ARowBuilder & crSelf, const void * _left)");
+        funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
+        ensureRowAllocated(funcctx, "crSelf");
+        BoundRow * selfCursor = bindSelf(funcctx, expr, "crSelf");
+        bindTableCursor(funcctx, anon->queryNormalizedSelector(), "left");
+
+        OwnedHqlExpr activeAnon = ensureActiveRow(anon);
+        OwnedHqlExpr value = replaceSelectorDataset(expr, activeAnon);
+        buildAssign(funcctx, selfCursor->querySelector(), value);
+
+        buildReturnRecordSize(funcctx, selfCursor);
+    }
+
+    buildInstanceSuffix(instance);
+    buildConnectInputOutput(ctx, instance, boundDataset, 0, 0);
+
+    return instance->getBoundActivity();
 }
 
 
