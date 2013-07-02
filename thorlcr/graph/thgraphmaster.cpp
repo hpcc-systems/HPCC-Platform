@@ -1165,14 +1165,7 @@ void loadPlugin(SafePluginMap *pluginMap, const char *_path, const char *name, c
     StringBuffer path(_path);
     path.append(name);
 
-    OwnedIFile iFile = createIFile(path.str());
-    if (!iFile->exists())
-        throw MakeThorException(0, "Plugin %s not found at %s", name, path.str());
-
-    pluginMap->addPlugin(path.str(), name); // throws if unavailable/fails to load
-    Owned<ILoadedDllEntry> so = pluginMap->getPluginDll(name, version, true);
-    if (NULL == so.get()) // JCSMORE - could perhaps do with a more direct way of asking.
-        throw MakeThorException(0, "Incompatible plugin (%s). Version %s unavailable", name, version);
+    pluginMap->addPlugin(path.str(), name);
 }
 
 CJobMaster::CJobMaster(IConstWorkUnit &_workunit, const char *graphName, const char *_querySo, bool _sendSo, const SocketEndpoint &_agentEp)

@@ -32,8 +32,8 @@ define([
     var Store = declare([ESPRequest.Store], {
         service: "FileSpray",
         action: "GetDFUWorkunits",
-        responseQualifier: "results.DFUWorkunit",
-        responseTotalQualifier: "NumWUs",
+        responseQualifier: "GetDFUWorkunitsResponse.results.DFUWorkunit",
+        responseTotalQualifier: "GetDFUWorkunitsResponse.NumWUs",
         idProperty: "ID",
         startProperty: "PageStartFrom",
         countProperty: "PageSize",

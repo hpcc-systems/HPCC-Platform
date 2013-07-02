@@ -34,8 +34,8 @@ define([
     var Store = declare([ESPRequest.Store], {
         service: "WsWorkunits",
         action: "WUQuery",
-        responseQualifier: "Workunits.ECLWorkunit",
-        responseTotalQualifier: "NumWUs",
+        responseQualifier: "WUQueryResponse.Workunits.ECLWorkunit",
+        responseTotalQualifier: "WUQueryResponse.NumWUs",
         idProperty: "Wuid",
         startProperty: "PageStartFrom",
         countProperty: "Count",

@@ -74,6 +74,14 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_ACTIVATE_S "-A"
 #define ECLOPT_ACTIVATE_INI "activateDefault"
 #define ECLOPT_ACTIVATE_ENV NULL
+#define ECLOPT_SUSPEND_PREVIOUS "--suspend-prev"
+#define ECLOPT_SUSPEND_PREVIOUS_S "-sp"
+#define ECLOPT_SUSPEND_PREVIOUS_INI "suspendPrevDefault"
+#define ECLOPT_SUSPEND_PREVIOUS_ENV "ACTIVATE_SUSPEND_PREVIOUS"
+#define ECLOPT_DELETE_PREVIOUS "--delete-prev"
+#define ECLOPT_DELETE_PREVIOUS_S "-dp"
+#define ECLOPT_DELETE_PREVIOUS_INI "deletePrevDefault"
+#define ECLOPT_DELETE_PREVIOUS_ENV "ACTIVATE_DELETE_PREVIOUS"
 
 #define ECLOPT_MAIN "--main"
 #define ECLOPT_MAIN_S "-main"  //eclcc compatible format

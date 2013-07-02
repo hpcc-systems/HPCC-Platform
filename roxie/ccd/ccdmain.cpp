@@ -619,8 +619,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
             }
         }
 
-        bool isCCD = false;
-
         headRegionSize = topology->getPropInt("@headRegionSize", 50);
         ccdMulticastPort = topology->getPropInt("@multicastPort", CCD_MULTICAST_PORT);
         numChannels = topology->getPropInt("@numChannels", 0);
@@ -912,7 +910,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         globalPackageSetManager = createRoxiePackageSetManager(standAloneDll.getClear());
         globalPackageSetManager->load();
         unsigned snifferChannel = numChannels+2; // MORE - why +2 not +1 ??
-        ROQ = createOutputQueueManager(snifferChannel, isCCD ? numSlaveThreads : 1);
+        ROQ = createOutputQueueManager(snifferChannel, numSlaveThreads);
         ROQ->setHeadRegionSize(headRegionSize);
         ROQ->start();
         Owned<IPacketDiscarder> packetDiscarder = createPacketDiscarder();

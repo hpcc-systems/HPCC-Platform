@@ -67,19 +67,6 @@ define([
                 this.inherited(arguments);
             },
 
-            test: function (value, rowIdx, cell) {
-                switch (value) {
-                    case "Error":
-                        cell.customClasses.push("ErrorCell");
-                        break;
-
-                    case "Warning":
-                        cell.customClasses.push("WarningCell");
-                        break;
-                }
-                return value;
-            },
-
             postCreate: function (args) {
                 this.inherited(arguments);
                 this.borderContainer = registry.byId(this.id + "BorderContainer");

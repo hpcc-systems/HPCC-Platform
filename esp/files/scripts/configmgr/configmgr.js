@@ -29,7 +29,7 @@ function createTablesForComp(compName, rows) {
 
   for (var i = 0; i < compTabs[compName].length; i++) {
     if (compTabs[compName][i] !== 'Servers' &&
-        compTabs[compName][i] !== 'Agents' &&
+        compTabs[compName][i] !== 'Farms' &&
         compTabs[compName][i] !== 'Topology')
       createTable(rows[compTabs[compName][i]], compTabs[compName][i], i, compName);
   }
@@ -1282,13 +1282,13 @@ function createMultiColTreeCtrlForComp(rows, compName, subRecordIndex) {
           if (i === 'icon')
             myColumnDefs[0] = { key: "icon", label: "" };
           else if (i === 'name')
-            myColumnDefs[colIndex[i + compName]] = { key: "name", resizeable: true, width: 250, maxAutoWidth: 250, formatter: function(el, oRecord, oColumn, oData) {
+            myColumnDefs[colIndex1++] = { key: "name", resizeable: true, width: 250, maxAutoWidth: 250, formatter: function(el, oRecord, oColumn, oData) {
               el.innerHTML = "<div id='depth" + oRecord.getData('depth') + "'>" + oData + "</div>";
               Dom.addClass(el, 'yui-dt-liner depth' + oRecord.getData('depth'));
             }, scrollable: true
             };
           else
-            myColumnDefs[colIndex[i + compName]] = { key: i, resizeable: true, formatter: formatterDispatcher, editor: new YAHOO.widget.BaseCellEditor() };
+            myColumnDefs[colIndex1++] = { key: i, resizeable: true, formatter: formatterDispatcher, editor: new YAHOO.widget.BaseCellEditor() };
         }
         columnFields[colIndex2++] = i;
       }
@@ -2711,7 +2711,7 @@ function onContextMenuBeforeShow(p_sType, p_aArgs) {
     var parentName = record.getData('compType');
 
     if (parentName.length <= 0) {
-      if (dt.configs.element === "AgentsTab")
+      if (dt.configs.element === "FarmsTab")
         parentName = "RoxieSlave";
       else if (dt.configs.element === "ServersTab")
         parentName = "Roxie Cluster";

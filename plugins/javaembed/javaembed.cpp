@@ -65,7 +65,7 @@ namespace javaembed {
 //    likes to set its own (in particular, it seems to intercept and ignore some SIGSEGV during the
 //    garbage collection).
 // Unfortunately, it seems that the design of the JNI interface is such that JNI_CreateJavaVM has to be called on the 'main thread'.
-// So we can't achieve 1, and 2 requires that we create via the INIT_MODLE mechanism (rather than just a static object), and that
+// So we can't achieve 1, and 2 requires that we create via the INIT_MODULE mechanism (rather than just a static object), and that
 // any engines that call InitModuleObjects() or load plugins dynamically do so AFTER setting any signal handlers or calling
 // EnableSEHtoExceptionMapping
 //
@@ -115,15 +115,56 @@ public:
     JavaVM *javaVM;       /* denotes a Java VM */
 } *globalState;
 
+#ifdef _WIN32
+    EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+#endif
+
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
     globalState = new JavaGlobalState;
+    // Make sure we are never unloaded (as JVM does not support it)
+    // we do this by doing a dynamic load of the javaembed library
+#ifdef _WIN32
+    char path[_MAX_PATH];
+    ::GetModuleFileName((HINSTANCE)&__ImageBase, path, _MAX_PATH);
+    if (strstr(path, "javaembed"))
+    {
+        HINSTANCE h = LoadSharedObject(path, false, false);
+        DBGLOG("LoadSharedObject returned %p", h);
+    }
+#else
+    FILE *diskfp = fopen("/proc/self/maps", "r");
+    if (diskfp)
+    {
+        char ln[_MAX_PATH];
+        while (fgets(ln, sizeof(ln), diskfp))
+        {
+            if (strstr(ln, "libjavaembed"))
+            {
+                const char *fullName = strchr(ln, '/');
+                if (fullName)
+                {
+                    char *tail = (char *) strstr(fullName, SharedObjectExtension);
+                    if (tail)
+                    {
+                        tail[strlen(SharedObjectExtension)] = 0;
+                        HINSTANCE h = LoadSharedObject(fullName, false, false);
+                        DBGLOG("LoadSharedObject %s returned %p", fullName, h);
+                        break;
+                    }
+                }
+            }
+        }
+        fclose(diskfp);
+    }
+#endif
     return true;
 }
 MODULE_EXIT()
 {
-    delete globalState;
-    globalState = NULL;
+    // We don't attempt to destroy the Java VM, as it's buggy...
+//    delete globalState;
+//    globalState = NULL;
 }
 
 static void checkType(type_t javatype, size32_t javasize, type_t ecltype, size32_t eclsize)

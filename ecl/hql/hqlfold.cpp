@@ -921,23 +921,20 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 #else 
         // 32-bit -------------------------------------------------
         int dummy1, dummy2,dummy3;
-        __asm__ (
+        __asm__ __volatile__(
+            "push   %%ebx \n\t"
+            "movl   %%ecx, %%ebx \n\t"
             "subl   %%ecx, %%esp \n\t"
             "movl   %%esp, %%edi \n\t"
             "cld \n\t"
             "rep \n\t"
             "movsb \n\t"
             "call   *%%edx \n\t"
+            "addl    %%ebx, %%esp \n\t"
+            "pop    %%ebx \n\t"
             : "=a"(intresult),"=d"(intresulthigh),"=c"(dummy1),"=S"(dummy2),"=D"(dummy3)
             : "c"(len),"S"(strbuf),"d"(fh)
             );
-        
-        // Restore stack pointer
-        __asm__  __volatile__(
-            "addl    %%ecx, %%esp \n\t"
-            : 
-            : "c"(len)
-        );
 
         // Get real (float/double) return values;
         if(isRealvalue)
