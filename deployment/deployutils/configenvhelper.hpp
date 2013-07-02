@@ -63,7 +63,6 @@ private:
     bool EnsureInRange(const char* psz, UINT low, UINT high, const char* caption);
     bool handleRoxieSlaveConfig(const char* params);
     bool handleReplaceRoxieServer(const char* xmlArg);
-    void addSlaveProcessConfig(IPropertyTree *pRoxie, IPropertyTree *pSlaveNode, int channel, int level, const char* netAddress);
     bool GenerateCyclicRedConfig(IPropertyTree* pRoxie, IPropertyTreePtrArray& computers, const char* copies, const char* pszOffset);
     bool GenerateOverloadedConfig(IPropertyTree* pRoxie, IPropertyTreePtrArray& computers, const char* copies);
     bool GenerateFullRedConfig(IPropertyTree* pRoxie, int copies, IPropertyTreePtrArray& computers);

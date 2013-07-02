@@ -893,12 +893,14 @@
                 useMemoryMappedIndexes="false"
                 useRemoteResources="true"
                 useTreeCopy="false">
-   <RoxieFarmProcess listenQueue="200"
+   <RoxieFarmProcess aclName=""
+                     listenQueue="200"
                      name="farm1"
                      numThreads="30"
                      port="9876"
                      requestArrayThreads="5"/>
-   <RoxieFarmProcess  listenQueue="200"
+   <RoxieFarmProcess  aclName=""
+                      listenQueue="200"
                       name="farm2"
                       numThreads="30"
                       port="0"

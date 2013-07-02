@@ -121,23 +121,6 @@ bool CConfigEnvHelper::handleThorTopologyOp(const char* cmd, const char* xmlArg,
     return retVal;
 }
 
-void CConfigEnvHelper::addSlaveProcessConfig(IPropertyTree* pRoxie, IPropertyTree *pSlaveNode, int channel, int level, const char* netAddress)
-{
-  if (pRoxie == NULL || pSlaveNode == NULL || netAddress == NULL)
-    return;
-
-
-  IPropertyTree* pSlaveProcess = pRoxie->addPropTree(XML_TAG_ROXIE_SLAVE, createPTree());
-
-  if (pSlaveProcess == NULL)
-    return;
-
-  pSlaveProcess->addProp(XML_ATTR_COMPUTER, pSlaveNode->queryProp(XML_ATTR_COMPUTER));
-  pSlaveProcess->addPropInt(XML_ATTR_CHANNEL, channel);
-  pSlaveProcess->addPropInt(XML_ATTR_LEVEL, level);
-  pSlaveProcess->addProp(XML_ATTR_NETADDRESS, netAddress);
-}
-
 IPropertyTree* CConfigEnvHelper::getSoftwareNode(const char* compType, const char* compName)
 {
   StringBuffer xpath;
@@ -224,7 +207,6 @@ bool CConfigEnvHelper::addRoxieServers(const char* xmlArg)
       IPropertyTree* pServer = createPTree(XML_TAG_ROXIE_SERVER);
       pServer->setProp(XML_ATTR_NAME, sbUniqueName.str());
       pServer->addProp(XML_ATTR_COMPUTER, pszName);
-      addNode(pServer, pFarm);
 
       IPropertyTree* pLegacyServer = addLegacyServer(sbUniqueName, pServer, pFarm, pszRoxieCluster);
     }
@@ -337,17 +319,6 @@ IPropertyTree* CConfigEnvHelper::addLegacyServer(const char* name, IPropertyTree
     pLegacyServer->setProp( XML_ATTR_NAME, name);
     pLegacyServer->setProp( XML_ATTR_COMPUTER, szComputer );
     pLegacyServer->setProp( XML_ATTR_NETADDRESS, netAddress);
-    Owned<IAttributeIterator> iAttr = pFarm->getAttributes();
-    ForEach(*iAttr)
-    {
-      const char* attrName = iAttr->queryName();
-      if (0 != strcmp(attrName, XML_ATTR_COMPUTER)  && //skip
-        0 != strcmp(attrName, XML_ATTR_NETADDRESS) &&
-        0 != strcmp(attrName, XML_ATTR_NAME))
-      {
-        pLegacyServer->addProp(attrName, iAttr->queryValue());
-      }
-    }
   }
   else
     pLegacyServer = NULL;
@@ -960,8 +931,6 @@ bool CConfigEnvHelper::GenerateCyclicRedConfig(IPropertyTree* pRoxie, IPropertyT
             strTemp.append(c);
 
             pInstance->addProp(XML_ATTR_LEVEL, strTemp.str());
-
-            addSlaveProcessConfig(pRoxie, pSlave, channel, c, netAddress);
         }
     }
     m_numChannels = nComputers;
@@ -1005,8 +974,6 @@ bool CConfigEnvHelper::GenerateOverloadedConfig(IPropertyTree* pRoxie, IProperty
             strTemp.append(c);
 
             pInstance->addProp(XML_ATTR_LEVEL, strTemp.str());
-
-            addSlaveProcessConfig(pRoxie, pSlave, channel + c*nComputers, c, netAddress);
         }
         channel++;
     }
@@ -1049,8 +1016,6 @@ bool CConfigEnvHelper::GenerateFullRedConfig(IPropertyTree* pRoxie, int copies, 
         IPropertyTree* pInstance = pSlave->addPropTree(XML_TAG_ROXIE_CHANNEL, createPTree());
         pInstance->setPropInt("@number", 1 + (channel % maxChannel));
         pInstance->addProp(XML_ATTR_LEVEL, "0");
-
-        addSlaveProcessConfig(pRoxie, pSlave, 1 + (channel % maxChannel), 0, netAddress);
 
         channel++;
 
