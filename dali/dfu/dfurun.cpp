@@ -1209,6 +1209,10 @@ public:
                             if (fdesc) 
                                 destination->setNumPartsOverride(fdesc->numParts());
                         }
+
+                        if (options->getFailIfNoSourceFile())
+                            opttree->addPropBool("@failIfNoSourceFile", true);
+
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
                         if (fdesc) {
                             if (options->getSubfileCopy()) {// need to set destination compressed or not
