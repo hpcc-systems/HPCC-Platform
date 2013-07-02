@@ -22,8 +22,8 @@
     <xsl:variable name="sortby" select="ActivityResponse/SortBy"/>
     <xsl:variable name="descending" select="ActivityResponse/Descending"/>
     <xsl:variable name="accessRight" select="ActivityResponse/AccessRight"/>
-    <xsl:variable name="countThorClusters" select="count(ActivityResponse/ThorClusters/ThorCluster)"/>
-    <xsl:variable name="countRoxieClusters" select="count(ActivityResponse/RoxieClusters/RoxieCluster)"/>
+    <xsl:variable name="countThorClusters" select="count(ActivityResponse/ThorClusterList/TargetCluster)"/>
+    <xsl:variable name="countRoxieClusters" select="count(ActivityResponse/RoxieClusterList/TargetCluster)"/>
     <xsl:template match="ActivityResponse">
         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
             <head>
@@ -205,8 +205,7 @@
                             {
                                 commandQueue("SetJobPriority?Priority=Normal",cluster,clusterType,queue,wuid);
                             }
-
-                            var xypos = YAHOO.util.Dom.getXY(clusterType + '_' + wuid);
+                            var xypos = YAHOO.util.Dom.getXY(cluster + '_' + wuid);
                             if (oMenu) {
                                 oMenu.destroy();
                             }
@@ -236,7 +235,7 @@
                             return false;
                         }
 
-                        function queuedWUPopup(cluster,clusterType,queue,wuid,prev,next,highpriority)
+                        function queuedWUPopup(cluster,clusterType,queue,eclAgentQueue, wuid,prev,next,highpriority)
                         {
                             function moveupWuid()
                             {
@@ -269,22 +268,27 @@
                                 commandQueue("SetJobPriority?Priority=Normal",cluster,clusterType,queue,wuid);
                             }
 
-                            var xypos = YAHOO.util.Dom.getXY(clusterType + '_' + wuid);
+                            var xypos = YAHOO.util.Dom.getXY(cluster + '_' + wuid);
                             if (oMenu) {
                                 oMenu.destroy();
                             }
                             oMenu = new YAHOO.widget.Menu("activitypagemenu", {position: "dynamic", xy: xypos} );
                             oMenu.clearContent();
 
-                            oMenu.addItems([
-                                { text: "Move Up", onclick: { fn: moveupWuid }, disabled: prev ? false : true },
-                                { text: "Move Down", onclick: { fn: movedownWuid }, disabled: next ? false : true },
-                                { text: "Move Top", onclick: { fn: movefrontWuid }, disabled: prev ? false : true },
-                                { text: "Move Bottom", onclick: { fn: movebackWuid }, disabled: next ? false : true },
-                                { text: "Remove", onclick: { fn: removeWuid } },
-                                { text: "High Priority", onclick: { fn: highpriority ? setNormalPriority : setHighPriority }, checked: highpriority ? true : false }
-                            ]);
-
+                            if (eclAgentQueue == '') {
+                                oMenu.addItems([
+                                    { text: "Move Up", onclick: { fn: moveupWuid }, disabled: prev ? false : true },
+                                    { text: "Move Down", onclick: { fn: movedownWuid }, disabled: next ? false : true },
+                                    { text: "Move Top", onclick: { fn: movefrontWuid }, disabled: prev ? false : true },
+                                    { text: "Move Bottom", onclick: { fn: movebackWuid }, disabled: next ? false : true },
+                                    { text: "Remove", onclick: { fn: removeWuid } },
+                                    { text: "High Priority", onclick: { fn: highpriority ? setNormalPriority : setHighPriority }, checked: highpriority ? true : false }
+                                ]);
+                            } else {
+                                oMenu.addItems([
+                                    { text: "Remove", onclick: { fn: removeWuid } }
+                                ]);
+                            }
                             oMenu.render("rendertarget");
                             oMenu.show();
                             return false;
@@ -562,37 +566,43 @@
                     <input type="hidden" name="Cluster" id="Cluster" value=""/>
                     <input type="hidden" name="QueueName" id="QueueName" value=""/>
                     <input type="hidden" name="Wuid" id="Wuid" value=""/>
-                    <xsl:for-each select="ThorClusters/ThorCluster">
+                    <xsl:for-each select="ThorClusterList/TargetCluster">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='ThorMaster' and QueueName=current()/QueueName) or (ClusterType='Thor' and ClusterQueueName=current()/QueueName)]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='ThorMaster' and TargetClusterName=current()/ClusterName) or (ClusterType='Thor' and ClusterQueueName=current()/QueueName)]"/>
                             <xsl:with-param name="cluster" select="ClusterName"/>
                             <xsl:with-param name="clusterType" select="'THOR'"/>
+                            <xsl:with-param name="clusterStatus" select="ClusterStatus"/>
                             <xsl:with-param name="queue" select="QueueName"/>
-                            <xsl:with-param name="status" select="QueueStatus"/>
-                            <xsl:with-param name="status2" select="QueueStatus2"/>
+                            <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                            <xsl:with-param name="statusDetails" select="StatusDetails"/>
+                            <xsl:with-param name="warning" select="Warning"/>
                             <xsl:with-param name="thorlcr" select="ThorLCR"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
-                    <xsl:for-each select="RoxieClusters/RoxieCluster">
+                    <xsl:for-each select="RoxieClusterList/TargetCluster">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='RoxieServer' and QueueName=current()/QueueName) or (ClusterType='Roxie' and ClusterQueueName=current()/QueueName)]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='RoxieServer' and TargetClusterName=current()/ClusterName) or (ClusterType='Roxie' and ClusterQueueName=current()/QueueName)]"/>
                             <xsl:with-param name="cluster" select="ClusterName"/>
                             <xsl:with-param name="clusterType" select="'ROXIE'"/>
                             <xsl:with-param name="queue" select="QueueName"/>
-                            <xsl:with-param name="status" select="QueueStatus"/>
-                            <xsl:with-param name="status2" select="QueueStatus2"/>
+                            <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                            <xsl:with-param name="clusterStatus" select="ClusterStatus"/>
+                            <xsl:with-param name="statusDetails" select="StatusDetails"/>
+                            <xsl:with-param name="warning" select="Warning"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
-                    <xsl:for-each select="HThorClusters/HThorCluster">
+                    <xsl:for-each select="HThorClusterList/TargetCluster">
                         <xsl:call-template name="show-queue">
-                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='HThorServer' and QueueName=current()/QueueName) or (ClusterType='HThor' and ClusterQueueName=current()/QueueName)]"/>
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[(Server='HThorServer' and TargetClusterName=current()/ClusterName) or (ClusterType='HThor' and ClusterQueueName=current()/QueueName)]"/>
                             <xsl:with-param name="cluster" select="ClusterName"/>
                             <xsl:with-param name="clusterType" select="'HTHOR'"/>
                             <xsl:with-param name="queue" select="QueueName"/>
-                            <xsl:with-param name="status" select="QueueStatus"/>
-                            <xsl:with-param name="status2" select="QueueStatus2"/>
+                            <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                            <xsl:with-param name="clusterStatus" select="ClusterStatus"/>
+                            <xsl:with-param name="statusDetails" select="StatusDetails"/>
+                            <xsl:with-param name="warning" select="Warning"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -602,7 +612,27 @@
                             <xsl:with-param name="cluster" select="ServerName"/>
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
-                            <xsl:with-param name="status" select="QueueStatus"/>
+                            <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                        </xsl:call-template>
+                    </xsl:for-each>
+
+                    <xsl:for-each select="ServerJobQueues/ServerJobQueue[ServerType='ECLserver']">
+                        <xsl:call-template name="show-queue">
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLserver' and QueueName=current()/QueueName]"/>
+                            <xsl:with-param name="cluster" select="ServerName"/>
+                            <xsl:with-param name="clusterType" select="ServerType"/>
+                            <xsl:with-param name="queue" select="QueueName"/>
+                            <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                        </xsl:call-template>
+                    </xsl:for-each>
+
+                    <xsl:for-each select="ServerJobQueues/ServerJobQueue[ServerType='ECLAgent']">
+                        <xsl:call-template name="show-queue">
+                            <xsl:with-param name="workunits" select="//Running/ActiveWorkunit[Server='ECLAgent' and QueueName=current()/QueueName]"/>
+                            <xsl:with-param name="cluster" select="ServerName"/>
+                            <xsl:with-param name="clusterType" select="ServerType"/>
+                            <xsl:with-param name="queue" select="QueueName"/>
+                            <xsl:with-param name="queueStatus" select="QueueStatus"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -612,7 +642,7 @@
                             <xsl:with-param name="cluster" select="ServerName"/>
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
-                            <xsl:with-param name="status" select="QueueStatus"/>
+                            <xsl:with-param name="queueStatus" select="QueueStatus"/>
                         </xsl:call-template>
                     </xsl:for-each>
                     <xsl:apply-templates select="DFUJobs"/>
@@ -666,32 +696,15 @@
         </html>
     </xsl:template>
 
-    <xsl:template name="show-server">
-        <xsl:param name="workunits"/>
-        <xsl:if test="count($workunits)>0">
-            <xsl:variable name="queue" select="$workunits[1]/QueueName"/>
-            <xsl:variable name="cluster" select="$workunits[1]/Instance"/>
-            <xsl:call-template name="show-queue">
-                <xsl:with-param name="workunits" select="$workunits[Instance=$cluster]"/>
-                <xsl:with-param name="cluster" select="$cluster"/>
-                <xsl:with-param name="queue" select="$queue"/>
-            </xsl:call-template>
-
-            <xsl:if test="count($workunits[Instance!=$cluster])">
-                <xsl:call-template name="show-server">
-                    <xsl:with-param name="workunits" select="$workunits[Instance!=$cluster]"/>
-                </xsl:call-template>
-            </xsl:if>
-        </xsl:if>
-    </xsl:template>
-
     <xsl:template name="show-queue">
         <xsl:param name="workunits"/>
         <xsl:param name="cluster"/>
         <xsl:param name="clusterType" select="''"/>
         <xsl:param name="queue"/>
-        <xsl:param name="status" select="''"/>
-        <xsl:param name="status2" select="6"/>
+        <xsl:param name="clusterStatus" select="''"/>
+        <xsl:param name="queueStatus" select="''"/>
+        <xsl:param name="statusDetails" select="''"/>
+        <xsl:param name="warning" select="''"/>
         <xsl:param name="thorlcr" select="'0'"/>
         <xsl:variable name="showTitle">
             <xsl:choose>
@@ -703,16 +716,16 @@
         </xsl:variable>
         <xsl:variable name="showWarning">
             <xsl:choose>
+                <xsl:when test="$warning !=''">
+                    <xsl:value-of select="$warning"/>
+                </xsl:when>
                 <xsl:when test="$clusterType = 'DFUserver' or $clusterType = 'ECLCCserver' or $clusterType = 'ECLagent'">
                     <xsl:choose>
-                        <xsl:when test="$status='paused'"> Queue paused </xsl:when>
-                        <xsl:when test="$status='stopped'"> Queue stopped </xsl:when>
+                        <xsl:when test="$queueStatus='paused'"> Queue paused </xsl:when>
+                        <xsl:when test="$queueStatus='stopped'"> Queue stopped </xsl:when>
                         <xsl:otherwise></xsl:otherwise>
                     </xsl:choose>
                 </xsl:when>
-                <xsl:when test="($status2='1') or ($status2='2')"> Queue paused </xsl:when>
-                <xsl:when test="$status2='3'"> Queue paused - Cluster not attached </xsl:when>
-                <xsl:when test="$status2='5'"> Cluster not attached </xsl:when>
                 <xsl:otherwise></xsl:otherwise>
             </xsl:choose>
         </xsl:variable>
@@ -744,8 +757,8 @@
                 <td valign="top">
                     <xsl:if test="$accessRight = 'Access_Full'">
                         <xsl:variable name="popup">return queuePopup('<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>',
-                            '<xsl:value-of select="$queue"/>',<xsl:value-of select="$status='paused'"/>,
-                            <xsl:value-of select="$status='stopped'"/>, '<xsl:value-of select="$q_rowid"/>');
+                            '<xsl:value-of select="$queue"/>',<xsl:value-of select="$queueStatus='paused'"/>,
+                            <xsl:value-of select="$queueStatus='stopped'"/>, '<xsl:value-of select="$q_rowid"/>');
                         </xsl:variable>
                         <a id="{$q_rowid}" class="configurecontextmenu" title="Option" onclick="{$popup}">&#160;</a>
                     </xsl:if>
@@ -753,11 +766,11 @@
                         <xsl:choose>
                             <xsl:when test="$clusterType = 'DFUserver' or $clusterType = 'ECLCCserver' or $clusterType = 'ECLagent'">
                                 <xsl:choose>
-                                    <xsl:when test="$status='paused'">
+                                    <xsl:when test="$queueStatus='paused'">
                                         <xsl:attribute name="class">thorrunningpausedqueuejobs</xsl:attribute>
                                         <xsl:attribute name="title">Queue paused</xsl:attribute>
                                     </xsl:when>
-                                    <xsl:when test="$status='stopped'">
+                                    <xsl:when test="$queueStatus='stopped'">
                                         <xsl:attribute name="class">thorrunningpausedqueuejobs</xsl:attribute>
                                         <xsl:attribute name="title">Queue stopped</xsl:attribute>
                                     </xsl:when>
@@ -767,28 +780,30 @@
                                     </xsl:otherwise>
                                 </xsl:choose>
                             </xsl:when>
-                            <xsl:when test="$status2='1'">
-                                <xsl:attribute name="class">thorrunningpausedqueuejobs</xsl:attribute>
-                                <xsl:attribute name="title">Queue paused - Cluster running</xsl:attribute>
-                            </xsl:when>
-                            <xsl:when test="$status2='2'">
-                                <xsl:attribute name="class">thorrunningpausedqueuenojobs</xsl:attribute>
-                                <xsl:attribute name="title">Queue paused - Cluster running (all jobs blocked?)</xsl:attribute>
-                            </xsl:when>
-                            <xsl:when test="$status2='3'">
-                                <xsl:attribute name="class">thorstoppedpausedqueuenojobs</xsl:attribute>
-                                <xsl:attribute name="title">Queue paused - Cluster not attached (NOC has stopped all ThorMasters on cluster)</xsl:attribute>
-                            </xsl:when>
-                            <xsl:when test="$status2='5'">
-                                <xsl:attribute name="class">thorstoppedrunningqueue</xsl:attribute>
-                                <xsl:attribute name="title">Queue running - Cluster not attached</xsl:attribute>
-                            </xsl:when>
                             <xsl:otherwise>
-                                <xsl:attribute name="class">thorrunning</xsl:attribute>
-                                <xsl:attribute name="title">Queue running - Cluster running</xsl:attribute>
+                                <xsl:choose>
+                                    <xsl:when test="$clusterStatus='1'">
+                                        <xsl:attribute name="class">thorrunningpausedqueuejobs</xsl:attribute>
+                                    </xsl:when>
+                                    <xsl:when test="$clusterStatus='2'">
+                                        <xsl:attribute name="class">thorrunningpausedqueuenojobs</xsl:attribute>
+                                    </xsl:when>
+                                    <xsl:when test="$clusterStatus='3'">
+                                        <xsl:attribute name="class">thorstoppedpausedqueuenojobs</xsl:attribute>
+                                    </xsl:when>
+                                    <xsl:when test="$clusterStatus='4'">
+                                        <xsl:attribute name="class">thorstoppedrunningqueue</xsl:attribute>
+                                    </xsl:when>
+                                    <xsl:otherwise>
+                                        <xsl:attribute name="class">thorrunning</xsl:attribute>
+                                    </xsl:otherwise>
+                                </xsl:choose>
+                                <xsl:attribute name="title">
+                                    <xsl:value-of select="$statusDetails"/>
+                                </xsl:attribute>
                             </xsl:otherwise>
                         </xsl:choose>
-                        <xsl:if test="string-length($status) and ($clusterType = 'THOR')">
+                        <xsl:if test="$clusterType = 'THOR'">
                             <xsl:attribute name="href">javascript:go('/WsTopology/TpClusterInfo?Name=<xsl:value-of select="$cluster"/>')</xsl:attribute>
                         </xsl:if>
                         <xsl:choose>
@@ -946,24 +961,31 @@
         <xsl:param name="queue" select="''"/>
         <xsl:param name="thorlcr" select="'0'"/>
 
-        <xsl:variable name="popupid"><xsl:value-of select="$clusterType"/>_<xsl:value-of select="Wuid"/></xsl:variable>
+        <xsl:variable name="popupid"><xsl:value-of select="$cluster"/>_<xsl:value-of select="Wuid"/></xsl:variable>
         <xsl:variable name="popup">
             <xsl:choose>
-                <xsl:when test="State='running'">
+                <xsl:when test="starts-with(State,'running')">
                     <xsl:choose>
                         <xsl:when test="$thorlcr='0' or $thorlcr='noLCR'">
-                            return activeWUPopup('noLCR', '<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>);
+                            return activeWUPopup('noLCR', '<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>',
+                                '<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>);
                         </xsl:when>
                         <xsl:otherwise>
-                            return activeWUPopup('LCR', '<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>);
+                            return activeWUPopup('LCR', '<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>',
+                                '<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>);
                         </xsl:otherwise>
                     </xsl:choose>
                 </xsl:when>
                 <xsl:when test="State='paused'">
-                    return activeWUPopup('paused', '<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>);
+                    return activeWUPopup('paused', '<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>',
+                        '<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="Priority='high'"/>);
                 </xsl:when>
                 <xsl:when test="starts-with(State,'queued')">
-                    return queuedWUPopup('<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>','<xsl:value-of select="$queue"/>','<xsl:value-of select="Wuid"/>',<xsl:value-of select="starts-with(preceding-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="starts-with(following-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,<xsl:value-of select="Priority='high'"/>);
+                    return queuedWUPopup('<xsl:value-of select="$cluster"/>','<xsl:value-of select="$clusterType"/>',
+                        '<xsl:value-of select="$queue"/>','<xsl:value-of select="AgentQueueName"/>','<xsl:value-of select="Wuid"/>',
+                        <xsl:value-of select="starts-with(preceding-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,
+                        <xsl:value-of select="starts-with(following-sibling::*[Instance=current()/Instance][position()=1]/State,'queued')"/>,
+                        <xsl:value-of select="Priority='high'"/>);
                 </xsl:when>
             </xsl:choose>
         </xsl:variable>
@@ -979,7 +1001,7 @@
         </xsl:variable>
 
         <td class="{$active}">
-            <xsl:if test="$accessRight='Access_Full'">
+            <xsl:if test="$accessRight='Access_Full' and $popup != ''">
                 <a id="{$popupid}" class="configurecontextmenu" onclick="{$popup}">
                     &#160;
                 </a>
@@ -1042,9 +1064,6 @@
                     </xsl:if>
                 </xsl:otherwise>
             </xsl:choose>
-            <xsl:if test="$queue != QueueName">
-                <b> (on <xsl:value-of select="QueueName"/>)</b>
-            </xsl:if>
         </td>
         <td class="{$active}">
             <xsl:value-of select="Owner"/>&#160;
