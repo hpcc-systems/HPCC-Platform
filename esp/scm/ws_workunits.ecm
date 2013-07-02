@@ -1069,6 +1069,14 @@ ESPresponse [exceptions_inline] WUCopyLogicalFilesResponse
 };
 
 
+ESPenum WUQueryActivationMode : int
+{
+    NoActivate(0, "Do not activate query"),
+    Activate(1, "Activate query"),
+    ActivateSuspendPrevious(2, "Activate query, suspend previous"),
+    ActivateDeletePrevious(3, "Activate query, delete previous")
+};
+
 ESPrequest [nil_remove] WUPublishWorkunitRequest
 {
     string Wuid;
