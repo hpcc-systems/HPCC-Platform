@@ -140,7 +140,14 @@
                 <a class="espnavlink">
                     <xsl:if test="@path">
                         <xsl:attribute name="href"><xsl:value-of select="@path"/></xsl:attribute>
-                        <xsl:attribute name="onclick">return gomain('<xsl:value-of select="@path"/>')</xsl:attribute>
+                        <xsl:choose>
+                            <xsl:when test="@target">
+                                <xsl:attribute name="target"><xsl:value-of select="@target"/></xsl:attribute>
+                            </xsl:when>
+                            <xsl:otherwise>
+                                <xsl:attribute name="onclick">return gomain('<xsl:value-of select="@path"/>')</xsl:attribute>
+                            </xsl:otherwise>
+                        </xsl:choose>
                     </xsl:if>
                     <xsl:if test="@tooltip">
                         <xsl:attribute name="alt"><xsl:value-of select="@tooltip"/></xsl:attribute>

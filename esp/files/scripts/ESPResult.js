@@ -37,8 +37,8 @@ define([
     var Store = declare([ESPRequest.Store, ESPBase], {
         service: "WsWorkunits",
         action: "WUResult",
-        responseQualifier: "Result",
-        responseTotalQualifier: "Total",
+        responseQualifier: "WUResultResponse.Result",
+        responseTotalQualifier: "WUResultResponse.Total",
         idProperty: "rowNum",
         startProperty: "Start",
         countProperty: "Count",
@@ -174,27 +174,40 @@ define([
             return table;
         },
 
-        getRowStructureFromSchema: function (parentNode) {
-            var retVal = [];
+        getRowStructureFromSchema: function (parentNode, prefix) {
             var sequence = this.getFirstSequenceNode(parentNode, "sequence");
             if (!sequence)
-                return retVal;
+                return null;
 
+            var retVal = [];
             for (var i = 0; i < sequence.childNodes.length; ++i) {
                 var node = sequence.childNodes[i];
                 if (typeof (node.getAttribute) != "undefined") {
                     var name = node.getAttribute("name");
                     var type = node.getAttribute("type");
+                    var children = this.getRowStructureFromSchema(node, name + "_");
                     if (name && type) {
                         retVal.push({
                             label: name,
-                            field: name,
+                            field: prefix + name,
                             width: this.extractWidth(type, name) * 9,
                             className: "resultGridCell",
                             sortable: false
                         });
-                    }
-                    if (node.hasChildNodes()) {
+                    } else if (children) {
+                        var childWidth = 0;
+                        arrayUtil.forEach(children, function(item, idx) {
+                            childWidth += item.width;
+                        });
+                        /*
+                        retVal.push({
+                            label: name,
+                            children: children,
+                            width: childWidth,
+                            className: "resultGridCell",
+                            sortable: false
+                        });
+                        */
                         var context = this;
                         retVal.push({
                             label: name,
@@ -204,14 +217,14 @@ define([
                                 div.appendChild(context.rowToTable(cell));
                                 return div.innerHTML;
                             },
-                            width: this.getRowWidth(node) * 9,
+                            width: childWidth,
                             className: "resultGridCell",
                             sortable: false
                         });
                     }
                 }
             }
-            return retVal;
+            return retVal.length ? retVal : null;
         },
 
         getRowStructureFromData: function (rows) {
@@ -253,7 +266,7 @@ define([
 
             var dom = parser.parse(this.XmlSchema);
             var dataset = this.getFirstSchemaNode(dom, "Dataset");
-            var innerStruct = this.getRowStructureFromSchema(dataset);
+            var innerStruct = this.getRowStructureFromSchema(dataset, "");
             for (var i = 0; i < innerStruct.length; ++i) {
                 structure[0].cells[structure[0].cells.length - 1].push(innerStruct[i]);
             }

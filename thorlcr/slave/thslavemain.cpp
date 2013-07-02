@@ -308,7 +308,6 @@ int main( int argc, char *argv[]  )
         markNodeCentral(masterEp);
         if (RegisterSelf(masterEp))
         {
-            MilliSleep(20000);
             if (globals->getPropBool("Debug/@slaveDaliClient"))
                 enableThorSlaveAsDaliClient();
 

@@ -305,7 +305,8 @@ private:
 class EclCmdPublish : public EclCmdWithEclTarget
 {
 public:
-    EclCmdPublish() : optNoActivate(false), activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000)
+    EclCmdPublish() : optNoActivate(false), optSuspendPrevious(false), optDeletePrevious(false),
+        activateSet(false), optNoReload(false), optDontCopyFiles(false), optMsToWait(10000)
     {
         optObj.accept = eclObjWuid | eclObjArchive | eclObjSharedObject;
         optTimeLimit = (unsigned) -1;
@@ -355,6 +356,10 @@ public:
                 optNoActivate=!activate;
                 continue;
             }
+            if (iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS)||iter.matchFlag(optSuspendPrevious, ECLOPT_SUSPEND_PREVIOUS_S))
+                continue;
+            if (iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS)||iter.matchFlag(optDeletePrevious, ECLOPT_DELETE_PREVIOUS_S))
+                continue;
             if (EclCmdWithEclTarget::matchCommandLineOption(iter, true)!=EclCmdOptionMatch)
                 return false;
         }
@@ -369,6 +374,22 @@ public:
             bool activate;
             if (extractEclCmdOption(activate, globals, ECLOPT_ACTIVATE_ENV, ECLOPT_ACTIVATE_INI, true))
                 optNoActivate=!activate;
+        }
+        if (optNoActivate && (optSuspendPrevious || optDeletePrevious))
+        {
+            fputs("invalid --suspend-prev and --delete-prev require activation.\n\n", stderr);
+            return false;
+        }
+        if (!optSuspendPrevious && !optDeletePrevious)
+        {
+            extractEclCmdOption(optDeletePrevious, globals, ECLOPT_DELETE_PREVIOUS_ENV, ECLOPT_DELETE_PREVIOUS_INI, false);
+            if (!optDeletePrevious)
+                extractEclCmdOption(optSuspendPrevious, globals, ECLOPT_SUSPEND_PREVIOUS_ENV, ECLOPT_SUSPEND_PREVIOUS_INI, false);
+        }
+        if (optSuspendPrevious && optDeletePrevious)
+        {
+            fputs("invalid --suspend-prev and --delete-prev are mutually exclusive options.\n\n", stderr);
+            return false;
         }
         if (optMemoryLimit.length() && !isValidMemoryValue(optMemoryLimit))
         {
@@ -397,7 +418,13 @@ public:
 
         Owned<IClientWUPublishWorkunitRequest> req = client->createWUPublishWorkunitRequest();
         req->setWuid(wuid.str());
-        req->setActivate(!optNoActivate);
+        if (optDeletePrevious)
+            req->setActivate(CWUQueryActivationMode_ActivateDeletePrevious);
+        else if (optSuspendPrevious)
+            req->setActivate(CWUQueryActivationMode_ActivateSuspendPrevious);
+        else
+            req->setActivate(optNoActivate ? CWUQueryActivationMode_NoActivate : CWUQueryActivationMode_Activate);
+
         if (optName.length())
             req->setJobName(optName.get());
         if (optTargetCluster.length())
@@ -457,6 +484,8 @@ public:
             "                          (defaults to cluster defined inside workunit)\n"
             "   -n, --name=<val>       query name to use for published workunit\n"
             "   -A, --activate         Activate query when published (default)\n"
+            "   -sp, --suspend-prev    Suspend previously active query\n"
+            "   -dp, --delete-prev     Delete previously active query\n"
             "   -A-, --no-activate     Do not activate query when published\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --no-files             Do not copy files referenced by query\n"
@@ -485,6 +514,8 @@ private:
     bool activateSet;
     bool optNoReload;
     bool optDontCopyFiles;
+    bool optSuspendPrevious;
+    bool optDeletePrevious;
 };
 
 class EclCmdRun : public EclCmdWithEclTarget

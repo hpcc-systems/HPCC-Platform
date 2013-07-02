@@ -1269,19 +1269,16 @@ class CWSCAsyncFor : implements IWSCAsyncFor, public CInterface, public CAsyncFo
     {
         const char * buffer;
         size32_t currLen;
-        size32_t maxLen;
         size32_t curPosn;
         ISocket * socket;
         unsigned timeoutMS;
     public:
-        CSocketDataProvider(const char * _buffer, size32_t _curPosn, size32_t _currLen, size32_t _maxLen, ISocket * _sock, unsigned _timeout ) 
-            : buffer(_buffer), currLen(_currLen), maxLen(_maxLen), curPosn(_curPosn), socket(_sock), timeoutMS(_timeout)
+        CSocketDataProvider(const char * _buffer, size32_t _curPosn, size32_t _currLen, ISocket * _sock, unsigned _timeout )
+            : buffer(_buffer), currLen(_currLen), curPosn(_curPosn), socket(_sock), timeoutMS(_timeout)
         {
         }
         size32_t getBytes(char * buf, size32_t len)
         {
-            if ((maxLen - curPosn) < len)
-                throw MakeStringException(-1, "Request %d too large for remaining buffer fragment (%d)",len,maxLen - curPosn);
             size32_t count;
             if ( len <= (currLen-curPosn))
             {   //its already in the buffer
@@ -1465,7 +1462,7 @@ private:
                         }
 */
                         checkTimeLimitExceeded(&remainingMS);
-                        dataProvider.setown(new CSocketDataProvider(buffer, payloadofs, read, WSCBUFFERSIZE, socket, MIN(master->timeoutMS,remainingMS)));
+                        dataProvider.setown(new CSocketDataProvider(buffer, payloadofs, read, socket, MIN(master->timeoutMS,remainingMS)));
                         dataProvider->getBytes(&ch, 1);
                         while (isalpha(ch) || isdigit(ch))
                         {   //get chunk-size
@@ -1479,6 +1476,9 @@ private:
                             dataProvider->getBytes(&ch, 1);
                         while (chunkSize)
                         {
+                            if (chunkSize > WSCBUFFERSIZE)
+                                DBGLOG("SOAPCALL chunk size %ld", chunkSize);
+
                             //read chunk data directly into response
                             size32_t count = dataProvider->getBytes(response.reserve(dataLen + chunkSize), chunkSize);
                             assertex(count == chunkSize);

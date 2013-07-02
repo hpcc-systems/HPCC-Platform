@@ -167,6 +167,12 @@ define([
                 this.clearSelection();
                 var context = this;
                 arrayUtil.forEach(arrayOfIDs, function (item, idx) {
+                    if (idx === 0) {
+                        var row = context.row(item);
+                        if (row.element) {
+                            row.element.scrollIntoView();
+                        }
+                    }
                     context.select(item);
                 });
             },
@@ -175,6 +181,12 @@ define([
                 this.clearSelection();
                 var context = this;
                 arrayUtil.forEach(items, function (item, idx) {
+                    if (idx === 0) {
+                        var row = context.row(item);
+                        if (row.element) {
+                            row.element.scrollIntoView();
+                        }
+                    }
                     context.select(context.store.getIdentity(item));
                 });
             },
