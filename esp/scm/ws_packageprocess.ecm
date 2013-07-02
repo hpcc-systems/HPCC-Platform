@@ -118,6 +118,7 @@ ESPrequest ValidatePackageRequest
     bool Active;
     string PMID;
     string QueryIdToVerify;
+    bool CheckDFS;
 };
 
 ESPstruct ValidatePackageInfo
@@ -133,6 +134,7 @@ ESPstruct ValidatePackageQueries
 ESPstruct ValidatePackageFiles
 {
     ESParray<string> Unmatched;
+    ESParray<string, File> NotInDFS;
 };
 
 ESPresponse [exceptions_inline] ValidatePackageResponse
