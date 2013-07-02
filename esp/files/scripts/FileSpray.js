@@ -34,7 +34,7 @@ define([
     var FileListStore = declare([ESPRequest.Store], {
         service: "FileSpray",
         action: "FileList",
-        responseQualifier: "files.PhysicalFileStruct",
+        responseQualifier: "FileListResponse.files.PhysicalFileStruct",
         idProperty: "calculatedID",
         create: function (id) {
             var retVal = {
@@ -119,7 +119,7 @@ define([
     var LandingZonesStore = declare([ESPRequest.Store], {
         service: "FileSpray",
         action: "DropZoneFiles",
-        responseQualifier: "DropZones.DropZone",
+        responseQualifier: "DropZoneFilesResponse.DropZones.DropZone",
         idProperty: "calculatedID",
         constructor: function (options) {
             declare.safeMixin(this, options);
