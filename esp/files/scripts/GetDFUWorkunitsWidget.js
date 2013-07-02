@@ -351,7 +351,7 @@ define([
                     },
                     ID: {
                         label: "ID",
-                        width: 162,
+                        width: 180,
                         formatter: function (ID, idx) {
                             var wu = ESPDFUWorkunit.Get(ID);
                             return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='" + context.id + "IDClick'>" + ID + "</a>";

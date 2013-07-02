@@ -92,7 +92,6 @@ define([
         startup: function (args) {
             this.inherited(arguments);
             this.initContextMenu();
-            this.initWorkunitsGrid();
             this.initFilter();
         },
 
@@ -269,6 +268,7 @@ define([
                     registry.byId(context.id + "DesprayTargetPath").set("value", item.machine.Directory + "/");
                 }
             });
+            this.initWorkunitsGrid();
             this.selectChild(this.workunitsTab, true);
         },
 

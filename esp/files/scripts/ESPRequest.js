@@ -43,7 +43,7 @@ define([
         },
 
         getBaseURL: function (service) {
-            if (!service) {
+            if (service === undefined) {
                 service = "WsWorkunits";
             }
             if (this.serverIP)
@@ -105,7 +105,7 @@ define([
             dojo.publish("hpcc/standbyBackgroundShow");
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
-                if (handleAs == "json") {
+                if (!params.suppressExceptionToaster && handleAs == "json") {
                     var exceptionCode20080 = false; //  Deleted WU
                     if (lang.exists("Exceptions.Source", response)) {
                         var message = "<h3>" + response.Exceptions.Source + "</h3>";
@@ -270,19 +270,24 @@ define([
             },
 
             exists: function (id) {
-                return lang.exists(this.service + "." + this.action + "." + id, _StoreSingletons);
-            },
-
-            get: function (id) {
-                if (!this.exists(id)) {
-                    var retVal = lang.getObject(this.service + "." + this.action + "." + id, true, _StoreSingletons);
-                    lang.mixin(retVal, this.create(id))
-                    return retVal;
+                var item = lang.getObject(this.service + "." + this.action, false, _StoreSingletons);
+                if (item) {
+                    return item[id] !== undefined;
                 }
-                return lang.getObject(this.service + "." + this.action + "." + id, false, _StoreSingletons);
+                return false;
             },
 
-            create: function (id) {
+            get: function (id, item) {
+                if (!this.exists(id)) {
+                    var newItem = lang.getObject(this.service + "." + this.action, true, _StoreSingletons);
+                    newItem[id] = this.create(id, item);
+                    return newItem[id];
+                }
+                var item = lang.getObject(this.service + "." + this.action, false, _StoreSingletons);
+                return item[id];
+            },
+
+            create: function (id, item) {
                 var retVal = {
                 };
                 retVal[this.idProperty] = id;
@@ -294,11 +299,11 @@ define([
             },
 
             _hasResponseContent: function(response) {
-                return lang.exists(this.action + "Response." + this.responseQualifier, response);
+                return lang.exists(this.responseQualifier, response);
             },
 
             _getResponseContent: function(response) {
-                return lang.getObject(this.action + "Response." + this.responseQualifier, false, response);
+                return lang.getObject(this.responseQualifier, false, response);
             },
 
             query: function (query, options) {
@@ -329,7 +334,7 @@ define([
                 var context = this;
                 deferredResults.total = results.then(function (response) {
                     if (context.responseTotalQualifier) {
-                        return lang.getObject(context.action + "Response." + context.responseTotalQualifier, false, response);
+                        return lang.getObject(context.responseTotalQualifier, false, response);
                     } else if (context._hasResponseContent(response)) {
                         return context._getResponseContent(response).length;
                     }
@@ -339,13 +344,14 @@ define([
                     var items = [];
                     if (context._hasResponseContent(response)) {
                         if (context.preProcessResponse) {
-                            context.preProcessResponse(lang.getObject(context.action + "Response", false, response), request);
+                            var responseQualiferArray = context.responseQualifier.split(".");
+                            context.preProcessResponse(lang.getObject(responseQualiferArray[0], false, response), request);
                         }
                         arrayUtil.forEach(context._getResponseContent(response), function (item, index) {
                             if (context.preProcessRow) {
                                 context.preProcessRow(item);
                             }
-                            var storeItem = context.get(context.getIdentity(item));
+                            var storeItem = context.get(context.getIdentity(item), item);
                             context.update(context.getIdentity(item), item);
                             items.push(storeItem);
                         });
