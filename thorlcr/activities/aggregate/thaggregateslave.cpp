@@ -157,7 +157,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         doStart();
         eof = false;
-        dataLinkStart("AGGREGATE", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
@@ -270,7 +270,7 @@ public:
         aggrowif.setown(createRowInterfaces(helper->queryAggregateRecordSize(),queryActivityId(),queryCodeContext()));
         partResult.setAllocator(aggrowif->queryRowAllocator()).ensureRow();
         helper->clearAggregate(partResult);
-        dataLinkStart("THROUGHAGGREGATE", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

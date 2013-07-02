@@ -46,7 +46,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart("PROJECT", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {
@@ -262,7 +262,7 @@ public:
         eof = !helper->canMatchAny();
         if (parallel)
             prefetcher.start();
-        dataLinkStart("PREFETCHPROJECT", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {

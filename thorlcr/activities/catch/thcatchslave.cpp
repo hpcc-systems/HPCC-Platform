@@ -27,7 +27,6 @@ class CCatchSlaveActivityBase : public CSlaveActivity, public CThorDataLink
 protected:
     Owned<IThorDataLink> input;
     IHThorCatchArg *helper;
-    StringBuffer kindStr;
     bool eos;
 
 public:
@@ -39,8 +38,6 @@ public:
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         helper = static_cast <IHThorCatchArg *> (queryHelper());
-        kindStr.append(activityKindStr(container.getKind()));
-        kindStr.toUpperCase();
         eos = false;
         appendOutputLinked(this);
     }
@@ -49,7 +46,7 @@ public:
         input.set(inputs.item(0));
         startInput(input);
         eos = false;
-        dataLinkStart(kindStr.str(), container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

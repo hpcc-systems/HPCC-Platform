@@ -92,8 +92,7 @@ public:
             ActPrintLog(e,"ITERATE");
             throw;
         }
-        dataLinkStart("ITERATOR", container.queryId());
-
+        dataLinkStart();
     }
     void stop()
     {
@@ -303,7 +302,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         eof = !container.queryLocalOrGrouped() && !firstNode();
         count = 0;
-        dataLinkStart("CHILDITERATOR", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {
@@ -359,7 +358,7 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        dataLinkStart("LINKEDRAWITERATOR", container.queryId());
+        dataLinkStart();
         dohere = container.queryLocalOrGrouped() || firstNode();
     }
     void stop()
@@ -423,7 +422,7 @@ public:
         eof = isLocal ? false : !firstNode();
         if (!eof)
             rows.setown(helper->createInput());
-        dataLinkStart("STREAMEDITERATOR", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {

@@ -82,7 +82,7 @@ public:
         input = inputs.item(0);
         stream.set(input);
         startInput(input);
-        dataLinkStart("GROUP", container.queryId());        
+        dataLinkStart();
 
         next.setown(getNext());
 

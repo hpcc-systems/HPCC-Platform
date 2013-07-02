@@ -69,7 +69,6 @@ class JoinSlaveActivity : public CSlaveActivity, public CThorDataLink, implement
     bool islocal;
     Owned<IBarrier> barrier;
     SocketEndpoint server;
-    StringBuffer activityName;
 
 #ifdef _TESTING
     bool started;
@@ -230,7 +229,7 @@ public:
 
     void doDataLinkStart(bool denorm)
     {
-        dataLinkStart(activityName, container.queryId());
+        dataLinkStart();
         CriticalBlock b(joinHelperCrit);
         if (denorm)
             joinhelper.setown(createDenormalizeHelper(*this, helperdn, queryRowAllocator()));
@@ -434,7 +433,7 @@ public:
             stopInput1();
         }
         if (isemptylhs&&((helper->getJoinFlags()&JFrightouter)==0)) {
-            ActPrintLog("%s: ignoring RHS as LHS empty", activityName.str());
+            ActPrintLog("ignoring RHS as LHS empty");
             strm2.setown(createNullRowStream());
             stopInput2();
         }
