@@ -42,6 +42,19 @@ ESPStruct ActiveWorkunit
     [min_ver("1.15")] ClusterName;
     [min_ver("1.15")] string ClusterType;
     [min_ver("1.15")] string ClusterQueueName;
+    [min_ver("1.16")] string TargetClusterName;
+};
+
+ESPStruct TargetCluster
+{
+    string ClusterName;
+    string QueueName;
+    string QueueStatus;
+    string StatusDetails;
+    string Warning;
+    int ClusterType;
+    int ClusterSize;
+    int ClusterStatus;
 };
 
 ESPStruct ThorCluster
@@ -112,9 +125,12 @@ ESPrequest [nil_remove] ActivityRequest
 ESPresponse [exceptions_inline] ActivityResponse
 {
     string Build;
-    ESParray<ESPstruct ThorCluster> ThorClusters;
-    [min_ver("1.07")] ESParray<ESPstruct RoxieCluster> RoxieClusters;
-    [min_ver("1.12")] ESParray<ESPstruct HThorCluster> HThorClusters;
+    [depr_ver("1.16")] ESParray<ESPstruct ThorCluster> ThorClusters;
+    [min_ver("1.07"), depr_ver("1.16")] ESParray<ESPstruct RoxieCluster> RoxieClusters;
+    [min_ver("1.12"), depr_ver("1.16")] ESParray<ESPstruct HThorCluster> HThorClusters;
+    [min_ver("1.16")] ESParray<ESPstruct TargetCluster> ThorClusterList;
+    [min_ver("1.16")] ESParray<ESPstruct TargetCluster> RoxieClusterList;
+    [min_ver("1.16")] ESParray<ESPstruct TargetCluster> HThorClusterList;
     ESParray<ESPstruct DFUJob> DFUJobs;
     ESParray<ESPstruct ActiveWorkunit> Running;
     [min_ver("1.06")] string BannerContent;
@@ -303,7 +319,7 @@ RoxieControlCmdResponse
     ESParray<ESPstruct RoxieControlEndpointInfo, Endpoint> Endpoints;
 };
 
-ESPservice [noforms, version("1.15"), default_client_version("1.15"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
+ESPservice [noforms, version("1.16"), default_client_version("1.16"), exceptions_inline("./smc_xslt/exceptions.xslt"), use_method_name] WsSMC
 {
     ESPmethod Index(SMCIndexRequest, SMCIndexResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/index.xslt")] Activity(ActivityRequest, ActivityResponse);
