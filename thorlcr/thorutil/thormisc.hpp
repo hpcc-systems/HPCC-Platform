@@ -219,7 +219,7 @@ public:
 // simple class which takes ownership of the underlying file and deletes it on destruction
 class graph_decl CFileOwner : public CSimpleInterface, implements IInterface
 {
-    IFile *iFile;
+    OwnedIFile iFile;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
     CFileOwner(IFile *_iFile) : iFile(_iFile)

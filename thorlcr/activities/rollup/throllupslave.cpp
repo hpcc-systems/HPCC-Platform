@@ -198,6 +198,7 @@ public:
     }
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
+        ::initMetaInfo(info);
         if (global) {
             info.canBufferInput = true;
             info.isSequential = true;
@@ -599,7 +600,7 @@ public:
         if (!eoi)
         {
             CThorExpandingRowArray rows(*this, queryRowInterfaces(input));
-            groupLoader->loadGroup(input, abortSoon, &rows);
+            Owned<IRowStream> rowStream = groupLoader->loadGroup(input, abortSoon, &rows);
             unsigned count = rows.ordinality();
             if (count)
             {

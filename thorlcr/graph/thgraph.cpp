@@ -1564,7 +1564,13 @@ bool CGraphBase::wait(unsigned timeout)
     public:
         CWaitException(CGraphBase *_graph) : graph(_graph) { }
         IException *get() { return exception; }
-        void set(IException *e) { if (!exception) exception.setown(e); }
+        void set(IException *e)
+        {
+            if (!exception)
+                exception.setown(e);
+            else
+                e->Release();
+        }
         void throwException()
         {
             if (exception)
@@ -1586,7 +1592,7 @@ bool CGraphBase::wait(unsigned timeout)
         }
         catch (IException *e)
         {
-            waitException.set(e);
+            waitException.set(e); // will discard if already set
             if (timeout == INFINITE)
             {
                 unsigned e = tm.elapsed();

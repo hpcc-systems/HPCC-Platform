@@ -278,7 +278,7 @@ public:
                 return NULL;
             }
             CThorExpandingRowArray rows(*this, this);
-            groupLoader->loadGroup(input, abortSoon, &rows);
+            Owned<IRowStream> rowStream = groupLoader->loadGroup(input, abortSoon, &rows);
             if (rows.ordinality())
             {
                 // JCSMORE - if isValid would take a stream, group wouldn't need to be in mem.
@@ -312,7 +312,7 @@ public:
             {
                 OwnedConstThorRow row = groupStream->nextRow();
                 if (!row)
-                break;
+                    break;
                 if (stepCompare->docompare(row, seek, numFields) >= 0)
                 {
                     dataLinkIncrement();

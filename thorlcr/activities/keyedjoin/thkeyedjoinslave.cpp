@@ -1591,8 +1591,8 @@ public:
     }
     ~CKeyedJoinSlave()
     {
-        delete fPosToNodeMap;
-        delete fPosToLocalPartMap;
+        delete [] fPosToNodeMap;
+        delete [] fPosToLocalPartMap;
         while (doneGroups.ordinality())
         {
             CJoinGroup *jg = doneGroups.dequeue();
@@ -1877,7 +1877,7 @@ public:
             do
             {
                 IPartDescriptor &filePart = indexParts.item(ip++);
-                unsigned crc;
+                unsigned crc=0;
                 filePart.getCrc(crc);
                 RemoteFilename rfn;
                 filePart.getFilename(0, rfn);
