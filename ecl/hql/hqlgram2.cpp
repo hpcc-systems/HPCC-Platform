@@ -1142,10 +1142,28 @@ void HqlGram::processStartTransform(const attribute & errpos)
     openTransform(transformType);
 }
 
-void HqlGram::enterEnum(ITypeInfo * type)
+void HqlGram::enterEnum(const attribute & errpos, ITypeInfo * type)
 {
+    if (!isIntegralType(type))
+    {
+        StringBuffer s;
+        reportError(ERR_TYPEMISMATCH_INT, errpos, "Integer type expected (%s was given)", getFriendlyTypeStr(type, s).str());
+    }
+
     enterScope(true);
     enterCompoundObject();
+    curEnumType.set(type);
+    lastEnumValue.setown(createConstant(curEnumType->castFrom(true, 0)));
+}
+
+void HqlGram::setEnumType(const attribute & errpos, ITypeInfo * type)
+{
+    if (!isIntegralType(type))
+    {
+        StringBuffer s;
+        reportError(ERR_TYPEMISMATCH_INT, errpos, "Integer type expected (%s was given)", getFriendlyTypeStr(type, s).str());
+    }
+
     curEnumType.set(type);
     lastEnumValue.setown(createConstant(curEnumType->castFrom(true, 0)));
 }
