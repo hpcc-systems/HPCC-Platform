@@ -387,7 +387,7 @@ define([
                         label: "Wuid", width: 180,
                         formatter: function (Wuid, idx) {
                             var wu = ESPWorkunit.Get(Wuid);
-                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp;<a href='#' rowIndex=" + idx + " class='" + context.id + "WuidClick'>" + Wuid + "</a>";
                         }
                     },
                     Owner: { label: "Owner", width: 90 },

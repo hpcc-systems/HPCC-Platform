@@ -76,7 +76,7 @@ define([
                     Summary: {
                         label: "Who", sortable: true,
                         formatter: function (summary, idx) {
-                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "SearchResultClick'>" + summary + "</a>";
+                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "SearchResultClick'>" + summary + "</a>";
                         }
                     }
                 }
