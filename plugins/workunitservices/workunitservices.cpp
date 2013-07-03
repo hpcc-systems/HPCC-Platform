@@ -407,6 +407,7 @@ static IPropertyTree *getWorkUnitBranch(ICodeContext *ctx,const char *wuid,const
     if (!wuid||!*wuid)
         return NULL;
     StringBuffer _wuid(wuid);
+    _wuid.trimRight();
     wuid = _wuid.toUpperCase().str();
     StringBuffer query;
     query.append("WorkUnits/").append(wuid);
