@@ -2351,6 +2351,7 @@ public:
 
     CThorContextLogger(CJobBase &_job) : job(_job)
     {
+        traceLevel = 1;
     }
     virtual void CTXLOG(const char *format, ...) const
     {
@@ -2466,6 +2467,7 @@ void CJobBase::init()
 CJobBase::~CJobBase()
 {
     clean();
+    thorAllocator->queryRowManager()->reportMemoryUsage(false);
     PROGLOG("CJobBase resetting memory manager");
     thorAllocator.clear();
 
