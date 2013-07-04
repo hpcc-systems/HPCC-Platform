@@ -206,7 +206,9 @@ public:
     Owned<ParentExtract> parentExtract;
     Owned<EvalContext> parentEvalContext;
     IHqlStmt *  onCreateStmt;
+    IHqlStmt * classGroup;
     unsigned    onCreateMarker;
+    unsigned    initialGroupMarker;
     HqlExprArray constructorArgs;
     HqlExprCopyArray names;
     LocationArray locations;
