@@ -106,7 +106,7 @@ public:
     unsigned clusterSize;
 };
 
-enum LinkKind { UnconditionalLink, ConditionalLink, SequenceLink };
+enum LinkKind { UnconditionalLink, SequenceLink };
 
 class ResourceGraphInfo;
 class ResourceGraphLink : public CInterface
@@ -160,7 +160,7 @@ public:
     bool isDependentOn(ResourceGraphInfo & other, bool allowDirect);
     bool isVeryCheap();
     bool mergeInSibling(ResourceGraphInfo & other, const CResources & limit);
-    bool mergeInSource(ResourceGraphInfo & other, const CResources & limit, bool isConditionalLink);
+    bool mergeInSource(ResourceGraphInfo & other, const CResources & limit);
     void removeResources(const CResources & value);
 
     bool isSharedInput(IHqlExpression * expr);
@@ -169,7 +169,7 @@ public:
 
 protected:
     void display();
-    void mergeGraph(ResourceGraphInfo & other, bool isConditionalLink, bool mergeConditions);
+    void mergeGraph(ResourceGraphInfo & other, bool mergeConditions);
     bool evalDependentOn(ResourceGraphInfo & other, bool ignoreSources);
 
 public:
