@@ -544,11 +544,14 @@ extern ARCHIVEFILE_API void installFileHook()
 
 extern ARCHIVEFILE_API void removeFileHook()
 {
-    SpinBlock b(*lock); // Probably overkill!
-    if (archiveFileHook)
+    if (lock)
     {
-        removeContainedFileHook(archiveFileHook);
-        archiveFileHook = NULL;
+        SpinBlock b(*lock); // Probably overkill!
+        if (archiveFileHook)
+        {
+            removeContainedFileHook(archiveFileHook);
+            archiveFileHook = NULL;
+        }
     }
 }
 
@@ -569,5 +572,6 @@ MODULE_EXIT()
     }
     delete signature;
     delete lock;
+    lock = NULL;
     ::Release(archiveFileHook);
 }
