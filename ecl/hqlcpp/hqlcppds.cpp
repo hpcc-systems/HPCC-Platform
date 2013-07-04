@@ -1697,6 +1697,16 @@ IHqlExpression * HqlCppTranslator::getResourcedChildGraph(BuildCtx & ctx, IHqlEx
     //Convert queries on preloaded into compound activities - before resourcing so keyed gets done correctly
     // Second attempt to spot compound disk reads - this time of spill files.  Since resourcing has removed
     // any sharing we don't need to bother about sharing.
+    if (options.optimizeResourcedProjects)
+    {
+        cycle_t time = msTick();
+        OwnedHqlExpr optimized = insertImplicitProjects(*this, resourced.get(), options.optimizeSpillProject);
+        DEBUG_TIMER("EclServer: child.implicitprojects", msTick()-time);
+        traceExpression("AfterResourcedImplicit", optimized);
+        checkNormalized(ctx, optimized);
+        resourced.set(optimized);
+    }
+
     {
         unsigned time = msTick();
 
