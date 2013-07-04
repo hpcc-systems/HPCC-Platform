@@ -3419,10 +3419,8 @@ void HqlCppTranslator::buildReturn(BuildCtx & ctx, IHqlExpression * expr, ITypeI
     else
     {
         CHqlBoundExpr ret;
-        // A very temporary work around for potential gpf using variable length strings
         OwnedHqlExpr castExpr = ensureExprType(expr, retType);
-        buildSimpleExpr(ctx, castExpr, ret);
-        ctx.setNextDestructor();
+        buildExpr(ctx, castExpr, ret);
         ctx.addReturn(ret.expr);
     }
 }
