@@ -762,7 +762,9 @@ const char * cppSystemText[]  = {
     "   setownMethod(boolean _allocator) : omethod,entrypoint='setown';",
 
     "   boolean newWhenActionArg(boolean _meta) : include, pseudoentrypoint='new CLibraryWhenActionArg';",
+    "   boolean newCountAggregateArg(boolean _meta) : include, pseudoentrypoint='new CLibraryCountAggregateArg';",
     "   boolean newDegroupArg(boolean _meta) : include, pseudoentrypoint='new CLibraryDegroupArg';",
+    "   boolean newExistsAggregateArg(boolean _meta) : include, pseudoentrypoint='new CLibraryExistsAggregateArg';",
     "   boolean newFunnelArg(boolean _ordered, boolean _sequential, boolean _meta) : include, pseudoentrypoint='new CLibraryFunnelArg';",
     "   boolean newGraphLoopResultWriteArg(boolean _meta) : include, pseudoentrypoint='new CLibraryGraphLoopResultWriteArg';",
     "   boolean newLocalResultReadArg(unsigned4 _sequence, boolean meta) : include, pseudoentrypoint='new CLibraryLocalResultReadArg';",
