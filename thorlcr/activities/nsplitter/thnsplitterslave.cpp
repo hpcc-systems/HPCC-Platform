@@ -146,8 +146,7 @@ class NSplitterSlaveActivity : public CSlaveActivity
         virtual void start() { throwUnexpected(); }
         virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
         {
-            info.totalRowsMin=0;
-            info.totalRowsMax=0;
+            ::initMetaInfo(info);
         }
     };
     class CInputWrapper : public CSplitterOutputBase

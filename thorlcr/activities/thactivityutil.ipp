@@ -87,6 +87,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
     } \
     const void *nextRowNoCatch()
 
+void initMetaInfo(ThorDataLinkMetaInfo &info);
 class CThorDataLink : implements IThorDataLink
 {
     CActivityBase *owner;
@@ -101,7 +102,6 @@ protected:
     {
         dataLinkStart(NULL, 0);
     }
-
     inline void dataLinkStart(ThorActivityKind kind, activity_id activityId, unsigned outputId = 0)
     {
         dataLinkStart(activityKindStr(kind), activityId, outputId);
