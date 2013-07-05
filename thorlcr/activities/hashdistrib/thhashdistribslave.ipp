@@ -23,17 +23,14 @@
 #include "slave.ipp"
 #include "thactivityutil.ipp"
 
-interface IRowStreamWithMetaData: extends IRowStream
-{   // currently fixed size data only
-    virtual bool nextRow(const void *&row,void *meta)=0;
-};
 
-interface IHashDistributor: extends IInterface
+interface IHashDistributor : extends IInterface
 {
     virtual IRowStream *connect(IRowInterfaces *rowIf, IRowStream *in, IHash *ihash, ICompare *icompare)=0;
     virtual void disconnect(bool stop)=0;
     virtual void join()=0;
     virtual void setBufferSizes(unsigned sendBufferSize, unsigned outputBufferSize, unsigned pullBufferSize) = 0;
+    virtual void abort()=0;
 };
 
 interface IStopInput;
@@ -41,7 +38,6 @@ IHashDistributor *createHashDistributor(
     CActivityBase *activity,
     ICommunicator &comm, 
     mptag_t tag, 
-    const bool &abort,
     bool dedup,
     IStopInput *istop);
 
