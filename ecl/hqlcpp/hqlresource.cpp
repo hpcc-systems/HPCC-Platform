@@ -600,7 +600,7 @@ void ResourceGraphLink::trace(const char * name)
 {
 #ifdef TRACE_RESOURCING
     PrintLog("%s: %lx source(%lx,%lx) sink(%lx,%lx) %s", name, this, sourceGraph.get(), sourceNode->queryBody(), sinkGraph.get(), sinkNode ? sinkNode->queryBody() : NULL, 
-             linkKind == ConditionalLink ? "conditional" : linkKind == SequenceLink ? "sequence" : "");
+             linkKind == SequenceLink ? "sequence" : "");
 #endif
 }
 
@@ -845,7 +845,7 @@ bool ResourceGraphInfo::isVeryCheap()
 }
 
 
-bool ResourceGraphInfo::mergeInSource(ResourceGraphInfo & other, const CResources & limit, bool isConditionalLink)
+bool ResourceGraphInfo::mergeInSource(ResourceGraphInfo & other, const CResources & limit)
 {
     bool mergeConditions = false;
     if (!isUnconditional)
@@ -888,11 +888,11 @@ bool ResourceGraphInfo::mergeInSource(ResourceGraphInfo & other, const CResource
     if (hasSequentialSource && other.hasSequentialSource)
         return false;
 
-    mergeGraph(other, isConditionalLink, mergeConditions);
+    mergeGraph(other, mergeConditions);
     return true;
 }
 
-void ResourceGraphInfo::mergeGraph(ResourceGraphInfo & other, bool isConditionalLink, bool mergeConditions)
+void ResourceGraphInfo::mergeGraph(ResourceGraphInfo & other, bool mergeConditions)
 {
 #ifdef TRACE_RESOURCING
     DBGLOG("Merging%s source into%s sink", other.isUnconditional ? "" : " conditional", isUnconditional ? "" : " conditional");
@@ -921,7 +921,7 @@ void ResourceGraphInfo::mergeGraph(ResourceGraphInfo & other, bool isConditional
 
     //We need to stop spills being an arm of a conditional branch - otherwise they won't get executed.
     //so see if we have merged any conditional branches in
-    if (isConditionalLink || other.mergedConditionSource)
+    if (other.mergedConditionSource)
         mergedConditionSource = true;
 
     if (mergeConditions)
@@ -951,7 +951,7 @@ bool ResourceGraphInfo::mergeInSibling(ResourceGraphInfo & other, const CResourc
     if (options->checkResources() && !allocateResources(other.resources, limit))
         return false;
 
-    mergeGraph(other, false, false);
+    mergeGraph(other, false);
     return true;
 }
 
@@ -1046,7 +1046,7 @@ void ResourcerInfo::addSpillFlags(HqlExprArray & args, bool isRead)
             ForEachItemIn(i1, graph->sinks)
             {
                 ResourceGraphLink & cur = graph->sinks.item(i1);
-                if ((cur.sourceNode == original) && (cur.linkKind == ConditionalLink || !cur.sinkGraph->isUnconditional))
+                if ((cur.sourceNode == original) && !cur.sinkGraph->isUnconditional)
                     numUses--;
             }
             numUses += calcNumConditionalUses();
@@ -3964,7 +3964,7 @@ mergeAgain:
                             //MORE: Merging identical conditionals?
                             if (ok && queryMergeGraphLink(curLink) &&
                                 !sourceResourceInfo->expandRatherThanSplit() &&
-                                cur.mergeInSource(*source, *resourceLimit, (curLink.linkKind == ConditionalLink)))
+                                cur.mergeInSource(*source, *resourceLimit))
                             {
                                 //NB: Following cannot remove sources below the current index.
                                 replaceGraphReferences(source, &cur);
@@ -4730,9 +4730,7 @@ void EclResourcer::display(StringBuffer & out)
             out.padTo(len+30);
             out.appendf("  Sink: %d %s", sortedGraphs.find(*link.sinkGraph), getOpString(link.sinkNode->getOperator()));
         }
-        if (link.linkKind == ConditionalLink)
-            out.append(" <conditional>");
-        else if (link.linkKind == SequenceLink)
+        if (link.linkKind == SequenceLink)
             out.append(" <sequence>");
         out.newline();
     }
