@@ -203,6 +203,31 @@ public:
 };
 
 
+class CChildDependent : public CInterface
+{
+public:
+    CChildDependent(IHqlExpression * _original, IHqlExpression * _hoisted, bool _alwaysHoist, bool _isSingleNode)
+    : original(_original), hoisted(_hoisted), alwaysHoist(_alwaysHoist), isSingleNode(_isSingleNode)
+    {
+        projectedHoisted.set(hoisted);
+        projected = NULL;
+    }
+
+public:
+    IHqlExpression * original;
+    LinkedHqlExpr hoisted;
+    LinkedHqlExpr projectedHoisted;
+    bool alwaysHoist;
+    bool isSingleNode;
+    IHqlExpression * projected;
+};
+
+class ChildDependentArray : public CIArrayOf<CChildDependent>
+{
+public:
+    unsigned findOriginal(IHqlExpression * expr);
+};
+
 class ResourcerInfo : public CInterface, public IInterface
 {
 public:
@@ -215,8 +240,10 @@ public:
     IHqlExpression * createTransformedExpr(IHqlExpression * expr);
 
     bool addCondition(IHqlExpression * condition);
+    void addProjected(IHqlExpression * projected);
     bool alwaysExpand();
     unsigned calcNumConditionalUses();
+    void clearProjected();
     bool expandRatherThanSpill(bool noteOtherSpills);
     bool expandRatherThanSplit();
     bool isExternalSpill();
@@ -248,6 +275,12 @@ public:
         }
         return false;
     }
+    inline bool isResourcedActivity() const
+    {
+        return isActivity || containsActivity;
+    }
+
+
 
 protected:
     bool spillSharesSplitter();
@@ -273,11 +306,11 @@ public:
     HqlExprAttr pathToSplitter;
     HqlExprArray aggregates;
     HqlExprArray conditions;
-    HqlExprArray childDependents;
-    HqlExprCopyArray originalChildDependents;
-    BoolArray childSingleNode;
+    ChildDependentArray childDependents;
     HqlExprAttr spilledDataset;
     HqlExprAttr splitterOutput;
+    HqlExprArray projected;
+    HqlExprAttr projectedExpr;
 
     unsigned numUses;
     unsigned numExternalUses;
@@ -293,6 +326,8 @@ public:
     bool neverSplit;
     byte pathToExpr;
     bool isConditionalFilter;
+    bool projectResult;
+    bool visited;
 };
 
 struct DependencySourceInfo
@@ -334,11 +369,15 @@ protected:
     void replaceGraphReferences(ResourceGraphInfo * oldGraph, ResourceGraphInfo * newGraph);
 
 //Pass 1
-    void gatherChildSplitPoints(IHqlExpression * expr, BoolArray & alwaysHoistChild, ResourcerInfo * info, unsigned first, unsigned last);
-    bool findSplitPoints(IHqlExpression * expr);
+    void gatherChildSplitPoints(IHqlExpression * expr, ResourcerInfo * info, unsigned first, unsigned last);
+    bool findSplitPoints(IHqlExpression * expr, bool isProjected);
     void findSplitPoints(HqlExprArray & exprs);
     void noteConditionalChildren(BoolArray & alwaysHoistChild);
+    void deriveUsageCounts(IHqlExpression * expr);
+    void deriveUsageCounts(const HqlExprArray & exprs);
     void extendSplitPoints();
+    void projectChildDependents();
+    IHqlExpression * projectChildDependent(IHqlExpression * expr);
 
 //Pass 2
     void createInitialGraph(IHqlExpression * expr, IHqlExpression * owner, ResourceGraphInfo * ownerGraph, LinkKind linkKind, bool forceNewGraph);
@@ -429,7 +468,7 @@ protected:
     CResourceOptions options;
     HqlExprArray rootConditions;
     HqlExprCopyArray activeSelectors;
-    HqlExprCopyArray conditionalChildren;
+    ChildDependentArray allChildDependents;
 };
 
 #endif
