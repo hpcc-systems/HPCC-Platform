@@ -3980,7 +3980,13 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
             node_operator op = no_none;
             if (outputOp == no_output)
             {
-                if (value->isDataset())
+                if (value->isDictionary())
+                {
+                    value.setown(createDataset(no_datasetfromdictionary, value.getClear()));
+                    value.setown(createDataset(no_selectfields, value.getClear(), createValue(no_null)));
+                    op = no_output;
+                }
+                else if (value->isDataset())
                 {
                     value.setown(createDataset(no_selectfields, LINK(value), createValue(no_null)));
                     op = no_output;
