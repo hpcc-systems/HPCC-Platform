@@ -327,8 +327,10 @@ inline ResourcerInfo * queryResourceInfo(IHqlExpression * expr) { return (Resour
 
 inline bool isResourcedActivity(IHqlExpression * expr)
 {
+    if (!expr)
+        return false;
     ResourcerInfo * extra = queryResourceInfo(expr);
-    return (extra && (extra->isActivity || extra->containsActivity));
+    return extra && extra->isResourcedActivity();
 }
 
 bool isWorthForcingHoist(IHqlExpression * expr)
@@ -965,6 +967,17 @@ void ResourceGraphInfo::removeResources(const CResources & value)
 
 //---------------------------------------------------------------------------
 
+unsigned ChildDependentArray::findOriginal(IHqlExpression * expr)
+{
+    ForEachItem(i)
+    {
+        if (item(i).original == expr)
+            return i;
+    }
+    return NotFound;
+}
+//---------------------------------------------------------------------------
+
 static void appendCloneProperty(HqlExprArray & args, IHqlExpression * expr, IAtom * name)
 {
     IHqlExpression * prop = expr->queryAttribute(name);
@@ -992,6 +1005,8 @@ ResourcerInfo::ResourcerInfo(IHqlExpression * _original, CResourceOptions * _opt
     linkedFromChild = false;
     neverSplit = false;
     isConditionalFilter = false;
+    projectResult = true; // projected must also be non empty to actually project this dataset
+    visited = false;
 }
 
 void ResourcerInfo::setConditionSource(IHqlExpression * condition, bool isFirst)            
@@ -1008,6 +1023,19 @@ bool ResourcerInfo::addCondition(IHqlExpression * condition)
     conditions.append(*LINK(condition));
     return graph->addCondition(condition);
 }
+
+void ResourcerInfo::addProjected(IHqlExpression * next)
+{
+    if (projectResult && !projected.contains(*next))
+        projected.append(*LINK(next));
+}
+
+void ResourcerInfo::clearProjected()
+{
+    projectResult = false;
+    projected.kill();
+}
+
 
 void ResourcerInfo::addSpillFlags(HqlExprArray & args, bool isRead)
 {
@@ -1949,8 +1977,7 @@ static HqlTransformerInfo eclHoistLocatorInfo("EclHoistLocator");
 class EclHoistLocator : public NewHqlTransformer
 {
 public:
-    EclHoistLocator(HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches)
-        : NewHqlTransformer(eclHoistLocatorInfo), originalMatched(_originalMatches), matched(_matches), singleNode(_singleNode), alwaysHoistMatches(_alwaysHoistMatches)
+    EclHoistLocator(ChildDependentArray & _matched) : NewHqlTransformer(eclHoistLocatorInfo), matched(_matched)
     {
         alwaysSingle = true;
     }
@@ -1963,31 +1990,32 @@ public:
 
     void noteDataset(IHqlExpression * expr, IHqlExpression * hoisted, bool alwaysHoist)
     {
-        unsigned match = originalMatched.find(*expr);
+        unsigned match = matched.findOriginal(expr);
         if (match == NotFound)
         {
             if (!hoisted)
                 hoisted = expr;
 
-            originalMatched.append(*expr);
-            matched.append(*LINK(hoisted));
-            alwaysHoistMatches.append(alwaysHoist);
-            singleNode.append(alwaysSingle);
+            CChildDependent & depend = * new CChildDependent(expr, hoisted, alwaysHoist, alwaysSingle);
+            matched.append(depend);
         }
         else
         {
-            if (alwaysHoist && !alwaysHoistMatches.item(match))
-                alwaysHoistMatches.replace(true, match);
-            if (alwaysSingle && !singleNode.item(match))
-                singleNode.replace(true, match);
+            CChildDependent & prev = matched.item(match);
+            if (alwaysHoist && !prev.alwaysHoist)
+                prev.alwaysHoist = true;
+            if (alwaysSingle && !prev.isSingleNode)
+                prev.isSingleNode = true;
         }
     }
 
     void noteScalar(IHqlExpression * expr, IHqlExpression * value)
     {
-        if (!originalMatched.contains(*expr))
+        unsigned match = matched.findOriginal(expr);
+        if (match == NotFound)
         {
             OwnedHqlExpr hoisted;
+            IHqlExpression * projected = NULL;
             if (value->getOperator() == no_select)
             {
                 bool isNew;
@@ -1995,23 +2023,14 @@ public:
                 if(isNew || row->isDatarow())
                 {
                     if (projectSelectorDatasetToField(row))
-                    {
-                        IHqlExpression * ds = row->queryChild(0);
+                        projected = value;
 
-                        //Project down to a single field.so implicit fields can still be optimized
-                        IHqlExpression * field = value->queryChild(1);
-                        OwnedHqlExpr record = createRecord(field);
-                        OwnedHqlExpr self = getSelf(record);
-                        OwnedHqlExpr activeDs = createRow(no_activetable, LINK(ds->queryNormalizedSelector()));
-                        OwnedHqlExpr selected = replaceSelector(value, row, activeDs);
-                        OwnedHqlExpr assign = createAssign(createSelectExpr(LINK(self), LINK(field)), selected.getClear());
-                        OwnedHqlExpr transform = createValue(no_newtransform, makeTransformType(record->getType()), LINK(assign));
-                        OwnedHqlExpr projectedDs = createDataset(no_newusertable, LINK(ds), createComma(LINK(record), LINK(transform)));
-                        hoisted.setown(replaceChild(row, 0, projectedDs));
-                    }
-
-                    if (!hoisted)
-                        hoisted.set(row);
+                    hoisted.set(row);
+                }
+                else
+                {
+                    //very unusual - possibly a thisnode(myfield) hoisted from an allnodes
+                    //use a createrow of a single element in the default behavour below
                 }
             }
             else if (value->getOperator() == no_createset)
@@ -2042,18 +2061,14 @@ public:
                 hoisted.setown(createRow(no_createrow, LINK(transform)));
             }
 
-            originalMatched.append(*expr);
-            matched.append(*hoisted.getClear());
-            alwaysHoistMatches.append(true);
-            singleNode.append(true);
+            CChildDependent & depend = * new CChildDependent(expr, hoisted, true, true);
+            depend.projected = projected;
+            matched.append(depend);
         }
     }
 
 protected:
-    HqlExprCopyArray & originalMatched;
-    HqlExprArray & matched;
-    BoolArray & singleNode;
-    BoolArray & alwaysHoistMatches;
+    ChildDependentArray & matched;
     bool alwaysSingle;
 };
 
@@ -2062,8 +2077,8 @@ protected:
 class EclChildSplitPointLocator : public EclHoistLocator
 {
 public:
-    EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches, bool _groupedChildIterators)
-    : EclHoistLocator(_originalMatches, _matches, _singleNode, _alwaysHoistMatches), selectors(_selectors), groupedChildIterators(_groupedChildIterators)
+    EclChildSplitPointLocator(IHqlExpression * _original, HqlExprCopyArray & _selectors, ChildDependentArray & _matches, bool _groupedChildIterators)
+    : EclHoistLocator(_matches), selectors(_selectors), groupedChildIterators(_groupedChildIterators)
     { 
         original = _original;
         okToSelect = false; 
@@ -2466,10 +2481,10 @@ protected:
 
 
 
-void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, BoolArray & alwaysHoistChild, ResourcerInfo * info, unsigned first, unsigned last)
+void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, ResourcerInfo * info, unsigned first, unsigned last)
 {
     //NB: Don't call member functions to ensure correct nesting of transform mutexes.
-    EclChildSplitPointLocator locator(expr, activeSelectors, info->originalChildDependents, info->childDependents, info->childSingleNode, alwaysHoistChild, options.groupedChildIterators);
+    EclChildSplitPointLocator locator(expr, activeSelectors, info->childDependents, options.groupedChildIterators);
     unsigned max = expr->numChildren();
 
     //If child queries are supported then don't hoist the expressions if they might only be evaluated once
@@ -2503,8 +2518,8 @@ void EclResourcer::gatherChildSplitPoints(IHqlExpression * expr, BoolArray & alw
 class EclThisNodeLocator : public EclHoistLocator
 {
 public:
-    EclThisNodeLocator(HqlExprCopyArray & _originalMatches, HqlExprArray & _matches, BoolArray & _singleNode, BoolArray & _alwaysHoistMatches)
-        : EclHoistLocator(_originalMatches, _matches, _singleNode, _alwaysHoistMatches)
+    EclThisNodeLocator(ChildDependentArray & _matches)
+        : EclHoistLocator(_matches)
     { 
         allNodesDepth = 0;
     }
@@ -2600,45 +2615,23 @@ static bool isPotentialCompoundSteppedIndexRead(IHqlExpression * expr)
     }
 }
 
-bool EclResourcer::findSplitPoints(IHqlExpression * expr)
+bool EclResourcer::findSplitPoints(IHqlExpression * expr, bool isProjected)
 {
     ResourcerInfo * info = queryResourceInfo(expr);
-    bool savedInsideNeverSplit = insideNeverSplit;
-    bool savedInsideSteppedNeverSplit = insideSteppedNeverSplit;
-    if (insideSteppedNeverSplit && info)
+    if (info && info->visited)
     {
-        if (!isPotentialCompoundSteppedIndexRead(expr) && (expr->getOperator() != no_datasetlist))
-            insideSteppedNeverSplit = false;
-    }
-
-    if (info && info->numUses)
-    {
-        if (insideNeverSplit || insideSteppedNeverSplit)
-            info->neverSplit = true;
-        if (info->isAlreadyInScope && (info->numUses == 0) && expr->isDatarow())
-        {
-            // A row is already bound to a temporary
-            info->isActivity = true;
-            info->containsActivity = true;
-            info->numUses++;
-
-            //More: May need to force child activities to not be resourced (e.g., if somehow visited via another path)
-            //info->preserve = true;
-            return info->containsActivity;
-        }
+        if (!isProjected)
+            info->clearProjected();
 
         if (info->isAlreadyInScope || info->isActivity || !info->containsActivity)
-        {
-            info->numUses++;
             return info->containsActivity;
-        }
     }
     else
     {
         info = queryCreateResourceInfo(expr);
-        info->numUses++;
-        if (insideNeverSplit || insideSteppedNeverSplit)
-            info->neverSplit = true;
+        info->visited = true;
+        if (!isProjected)
+            info->clearProjected();
 
         bool isActivity = true;
         switch (expr->getOperator())
@@ -2647,7 +2640,7 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
             //either a select from a setresult or use of a child-dataset
             if (isNewSelector(expr))
             {
-                info->containsActivity = findSplitPoints(expr->queryChild(0));
+                info->containsActivity = findSplitPoints(expr->queryChild(0), false);
                 assertex(queryResourceInfo(expr->queryChild(0))->isActivity);
             }
             if (expr->isDataset() || expr->isDatarow())
@@ -2658,16 +2651,18 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
             return info->containsActivity;
         case no_mapto:
             throwUnexpected();
-            info->containsActivity = findSplitPoints(expr->queryChild(1));
+            info->containsActivity = findSplitPoints(expr->queryChild(1), false);
             return info->containsActivity;
         case no_activerow:
             info->isActivity = true;
             info->containsActivity = false;
             return false;
+        case no_rowset:                         // don't resource this as an activity
+            isActivity = false;
+            break;
         case no_attr:
         case no_attr_expr:
         case no_attr_link:
-        case no_rowset:                         // don't resource this as an activity
         case no_getgraphloopresultset:
             info->isActivity = false;
             info->containsActivity = false;
@@ -2690,6 +2685,227 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
                 isActivity = false;
                 break;
             }
+        }
+
+        ITypeInfo * type = expr->queryType();
+        if (!type || type->isScalar())
+            return false;
+
+        info->isActivity = isActivity;
+        info->containsActivity = true;
+    }
+
+    unsigned first = getFirstActivityArgument(expr);
+    unsigned last = first + getNumActivityArguments(expr);
+
+    if (options.hoistResourced)
+    {
+        switch (expr->getOperator())
+        {
+        case no_allnodes:
+            {
+                //MORE: This needs to recursively walk and lift any contained no_selfnode, but don't go past another nested no_allnodes;
+                EclThisNodeLocator locator(info->childDependents);
+                locator.analyseChild(expr->queryChild(0), true);
+                break;
+            }
+        case no_childquery:
+            throwUnexpected();
+        default:
+            {
+                for (unsigned idx=first; idx < last; idx++)
+                {
+                    IHqlExpression * cur = expr->queryChild(idx);
+                    findSplitPoints(cur, false);
+                }
+                gatherChildSplitPoints(expr, info, first, last);
+                break;
+            }
+        }
+
+        ForEachItemIn(i2, info->childDependents)
+        {
+            CChildDependent & cur = info->childDependents.item(i2);
+            ResourcerInfo * hoistedInfo = queryCreateResourceInfo(cur.hoisted);
+            if (cur.projected)
+                hoistedInfo->addProjected(cur.projected);
+            else
+                hoistedInfo->clearProjected();
+
+            if (cur.alwaysHoist)
+                findSplitPoints(cur.hoisted, (cur.projected != NULL));
+
+            allChildDependents.append(OLINK(cur));
+        }
+    }
+    else
+    {
+        for (unsigned idx=first; idx < last; idx++)
+            findSplitPoints(expr->queryChild(idx), false);
+    }
+
+    return info->containsActivity;
+}
+
+
+void EclResourcer::findSplitPoints(HqlExprArray & exprs)
+{
+    //Finding items that should be hoisted from child queries, and evaluated at this level is tricky:
+    //* After hoisting a child expression, that may in turn contain other child expressions.
+    //* Some child expressions are only worth hoisting if they are a simple function of something
+    //  that will be evaluated here.
+    //* If we're creating a single project for each x[1] then that needs to be done after all the
+    //  expressions to hoist have been found.
+    //* The usage counts have to correct - including
+    //* The select child dependents for a ds[n] need to be inherited by the project(ds)[n]
+    //=>
+    //First walk the expression tree gathering all the expressions that will be used.
+    //Project the expressions that need projecting.
+    //Finally walk the tree again, this time calculating the correct usage counts.
+    //
+    //On reflection the hoisting and projecting could be implemented as a completely separate transformation.
+    //However, it shares a reasonable amount of the logic with the rest of the resourcing, so keep together
+    //for the moment.
+    ForEachItemIn(idx, exprs)
+        findSplitPoints(&exprs.item(idx), false);
+
+    extendSplitPoints();
+    projectChildDependents();
+
+    deriveUsageCounts(exprs);
+}
+
+void EclResourcer::extendSplitPoints()
+{
+    //NB: findSplitPoints might call this array to be extended
+    for (unsigned i1=0; i1 < allChildDependents.ordinality(); i1++)
+    {
+        CChildDependent & cur = allChildDependents.item(i1);
+        if (!cur.alwaysHoist && isWorthForcingHoist(cur.hoisted))
+            findSplitPoints(cur.hoisted, (cur.projected != NULL));
+    }
+}
+
+IHqlExpression * EclResourcer::projectChildDependent(IHqlExpression * expr)
+{
+    ResourcerInfo * info = queryResourceInfo(expr);
+    if (!info || !info->projectResult || info->projected.empty())
+        return expr;
+
+    if (info->projectedExpr)
+        return info->projectedExpr;
+
+    assertex(expr->getOperator() == no_selectnth);
+    IHqlExpression * row = expr;
+    assertex(projectSelectorDatasetToField(row));
+
+    unsigned totalFields = getFieldCount(row->queryRecord());
+    if (totalFields == info->projected.ordinality())
+    {
+        info->clearProjected();
+        return expr;
+    }
+
+    //Create a projection containing each of the fields that are used from the child queries.
+    IHqlExpression * ds = row->queryChild(0);
+    HqlExprArray fields;
+    HqlExprArray values;
+    ForEachItemIn(i, info->projected)
+    {
+        IHqlExpression * value = &info->projected.item(i);
+        IHqlExpression * field = value->queryChild(1);
+        LinkedHqlExpr projectedField = field;
+        //Check for a very unusual situation where the same field is projected from two different sub records
+        while (fields.contains(*projectedField))
+            projectedField.setown(cloneFieldMangleName(field));  // Generates a new mangled name each time
+
+        OwnedHqlExpr activeDs = createRow(no_activetable, LINK(ds->queryNormalizedSelector()));
+        fields.append(*LINK(projectedField));
+        values.append(*replaceSelector(value, row, activeDs));
+    }
+
+    OwnedHqlExpr projectedRecord = createRecord(fields);
+    OwnedHqlExpr self = getSelf(projectedRecord);
+    HqlExprArray assigns;
+    ForEachItemIn(i2, fields)
+    {
+        IHqlExpression * field = &fields.item(i2);
+        IHqlExpression * value = &values.item(i2);
+        assigns.append(*createAssign(createSelectExpr(LINK(self), LINK(field)), LINK(value)));
+    }
+    OwnedHqlExpr transform = createValue(no_newtransform, makeTransformType(projectedRecord->getType()), assigns);
+    OwnedHqlExpr projectedDs = createDataset(no_newusertable, LINK(ds), createComma(LINK(projectedRecord), LINK(transform)));
+    info->projectedExpr.setown(replaceChild(row, 0, projectedDs));
+
+    findSplitPoints(info->projectedExpr, false);
+
+    //Ensure child dependents that are no longer used are not processed - otherwise the usage counts will be wrong.
+    ForEachItemIn(ic, info->childDependents)
+    {
+        CChildDependent & cur = info->childDependents.item(ic);
+        //Clearing these ensures that isResourcedActivity returns false;
+        cur.hoisted.clear();
+        cur.projectedHoisted.clear();
+    }
+
+    return info->projectedExpr;
+}
+
+void EclResourcer::projectChildDependents()
+{
+    ForEachItemIn(i2, allChildDependents)
+    {
+        CChildDependent & cur = allChildDependents.item(i2);
+        if (isResourcedActivity(cur.hoisted))
+            cur.projectedHoisted.set(projectChildDependent(cur.hoisted));
+    }
+}
+
+void EclResourcer::deriveUsageCounts(IHqlExpression * expr)
+{
+    ResourcerInfo * info = queryResourceInfo(expr);
+    if (!info || !(info->containsActivity || info->isActivity))
+        return;
+
+    bool savedInsideNeverSplit = insideNeverSplit;
+    bool savedInsideSteppedNeverSplit = insideSteppedNeverSplit;
+    if (insideSteppedNeverSplit && info)
+    {
+        if (!isPotentialCompoundSteppedIndexRead(expr) && (expr->getOperator() != no_datasetlist) && expr->getOperator() != no_inlinetable)
+            insideSteppedNeverSplit = false;
+    }
+
+    if (info->numUses)
+    {
+        if (insideNeverSplit || insideSteppedNeverSplit)
+            info->neverSplit = true;
+
+        if (info->isAlreadyInScope || info->isActivity || !info->containsActivity)
+        {
+            info->numUses++;
+            return;
+        }
+    }
+    else
+    {
+        info->numUses++;
+        if (insideNeverSplit || insideSteppedNeverSplit)
+            info->neverSplit = true;
+
+        switch (expr->getOperator())
+        {
+        case no_select:
+            //either a select from a setresult or use of a child-dataset
+            if (isNewSelector(expr))
+                deriveUsageCounts(expr->queryChild(0));
+            return;
+        case no_activerow:
+        case no_attr:
+        case no_attr_expr:
+        case no_attr_link:
+        case no_rowset:                         // don't resource this as an activity
+        case no_getgraphloopresultset:
+            return;
         case no_keyedlimit:
             if (options.preventKeyedSplit)
                 insideNeverSplit = true;
@@ -2744,81 +2960,31 @@ bool EclResourcer::findSplitPoints(IHqlExpression * expr)
         {
             insideNeverSplit = savedInsideNeverSplit;
             insideSteppedNeverSplit = savedInsideSteppedNeverSplit;
-            return false;
+            return;
         }
-
-        info->isActivity = isActivity;
-        info->containsActivity = true;
     }
 
     unsigned first = getFirstActivityArgument(expr);
     unsigned last = first + getNumActivityArguments(expr);
 
-    if (options.hoistResourced)
-    {
-        BoolArray alwaysHoistChild;
-        switch (expr->getOperator())
-        {
-        case no_allnodes:
-            {
-                //MORE: This needs to recursively walk and lift any contained no_selfnode, but don't go past another nested no_allnodes;
-                EclThisNodeLocator locator(info->originalChildDependents, info->childDependents, info->childSingleNode, alwaysHoistChild);
-                locator.analyseChild(expr->queryChild(0), true);
-                break;
-            }
-        case no_childquery:
-            throwUnexpected();
-        default:
-            {
-                for (unsigned idx=first; idx < last; idx++)
-                {
-                    IHqlExpression * cur = expr->queryChild(idx);
-                    findSplitPoints(cur);
-                }
-                insideNeverSplit = savedInsideNeverSplit;
-                insideSteppedNeverSplit = savedInsideSteppedNeverSplit;
-                gatherChildSplitPoints(expr, alwaysHoistChild, info, first, last);
-                break;
-            }
-        }
-
-        insideNeverSplit = false;
-        insideSteppedNeverSplit = false;
-        ForEachItemIn(i2, info->childDependents)
-        {
-            IHqlExpression & cur = info->childDependents.item(i2);
-            if (alwaysHoistChild.item(i2))
-                findSplitPoints(&cur);
-            else
-                conditionalChildren.append(cur);
-        }
-    }
-    else
-    {
-        for (unsigned idx=first; idx < last; idx++)
-            findSplitPoints(expr->queryChild(idx));
-    }
+    for (unsigned idx=first; idx < last; idx++)
+        deriveUsageCounts(expr->queryChild(idx));
 
     insideNeverSplit = savedInsideNeverSplit;
     insideSteppedNeverSplit = savedInsideSteppedNeverSplit;
-    return info->containsActivity;
 }
 
 
-void EclResourcer::findSplitPoints(HqlExprArray & exprs)
+void EclResourcer::deriveUsageCounts(const HqlExprArray & exprs)
 {
-    ForEachItemIn(idx, exprs)
-        findSplitPoints(&exprs.item(idx));
-    extendSplitPoints();
-}
+    ForEachItemIn(idx2, exprs)
+        deriveUsageCounts(&exprs.item(idx2));
 
-void EclResourcer::extendSplitPoints()
-{
-    for (unsigned i=0; i < conditionalChildren.ordinality(); i++)
+    ForEachItemIn(i2, allChildDependents)
     {
-        IHqlExpression & cur = conditionalChildren.item(i);
-        if (isWorthForcingHoist(&cur))
-            findSplitPoints(&cur);
+        CChildDependent & cur = allChildDependents.item(i2);
+        if (isResourcedActivity(cur.projectedHoisted))
+            deriveUsageCounts(cur.projectedHoisted);
     }
 }
 
@@ -2966,9 +3132,9 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
 
     ForEachItemIn(i2, info->childDependents)
     {
-        IHqlExpression & cur = info->childDependents.item(i2);
-        if (isResourcedActivity(&cur))
-            createInitialGraph(&cur, expr, thisGraph, SequenceLink, true);
+        CChildDependent & cur = info->childDependents.item(i2);
+        if (isResourcedActivity(cur.projectedHoisted))
+            createInitialGraph(cur.projectedHoisted, expr, thisGraph, SequenceLink, true);
     }
 }
 
@@ -3038,9 +3204,9 @@ void EclResourcer::markChildDependentsAsUnconditional(ResourcerInfo * info, IHql
     {
         ForEachItemIn(i2, info->childDependents)
         {
-            IHqlExpression & cur = info->childDependents.item(i2);
-            if (isResourcedActivity(&cur))
-                markAsUnconditional(&cur, NULL, condition);
+            CChildDependent & cur = info->childDependents.item(i2);
+            if (isResourcedActivity(cur.projectedHoisted))
+                markAsUnconditional(cur.projectedHoisted, NULL, condition);
         }
     }
 }
@@ -3634,14 +3800,15 @@ void EclResourcer::addDependencies(IHqlExpression * expr, ResourceGraphInfo * gr
 
     ForEachItemIn(i, info->childDependents)
     {
-        IHqlExpression & cur = info->childDependents.item(i);
-        if (isResourcedActivity(&cur))
+        CChildDependent & cur = info->childDependents.item(i);
+        if (isResourcedActivity(cur.projectedHoisted))
         {
-            addDependencies(&cur, NULL, NULL);
-            ResourcerInfo * sourceInfo = queryResourceInfo(&cur);
-            if (info->childSingleNode.item(i))
+            addDependencies(cur.projectedHoisted, NULL, NULL);
+
+            ResourcerInfo * sourceInfo = queryResourceInfo(cur.projectedHoisted);
+            if (cur.isSingleNode)
                 sourceInfo->noteUsedFromChild();
-            ResourceGraphLink * link = new ResourceGraphDependencyLink(sourceInfo->graph, &cur, graph, expr);
+            ResourceGraphLink * link = new ResourceGraphDependencyLink(sourceInfo->graph, cur.projectedHoisted, graph, expr);
             graph->dependsOn.append(*link);
             links.append(*link);
         }
@@ -4223,9 +4390,9 @@ protected:
 };
 
 
-static IHqlExpression * getScalarReplacement(IHqlExpression * original, IHqlExpression * replacement)
+static IHqlExpression * getScalarReplacement(CChildDependent & cur, ResourcerInfo * hoistedInfo, IHqlExpression * replacement)
 {
-    IHqlExpression * value = original;
+    IHqlExpression * value = cur.original;
     //First skip any wrappers which are there to cause things to be hoisted.
     loop
     {
@@ -4243,16 +4410,25 @@ static IHqlExpression * getScalarReplacement(IHqlExpression * original, IHqlExpr
         IHqlExpression * ds = querySelectorDataset(value, isNew);
         if(isNew || ds->isDatarow())
         {
-            if (projectSelectorDatasetToField(ds))
-                return createNewSelectExpr(LINK(replacement), LINK(field));
+            if (cur.hoisted != cur.projectedHoisted)
+            {
+                assertex(cur.projected);
+                unsigned match = hoistedInfo->projected.find(*cur.projected);
+                assertex(match != NotFound);
+                IHqlExpression * projectedRecord = cur.projectedHoisted->queryRecord();
+                IHqlExpression * projectedField = projectedRecord->queryChild(match);
+                return createNewSelectExpr(LINK(replacement), LINK(projectedField));
+            }
             return replaceSelectorDataset(value, replacement);
         }
+        //Very unusual - can occur when a thisnode(somefield) is extracted from an allnodes.
+        //It will have gone through the default case in the noteScalar() code
     }
     else if (value->getOperator() == no_createset)
     {
         IHqlExpression * record = replacement->queryRecord();
         IHqlExpression * field = record->queryChild(0);
-        return createValue(no_createset, original->getType(), LINK(replacement), createSelectExpr(LINK(replacement->queryNormalizedSelector()), LINK(field)));
+        return createValue(no_createset, cur.original->getType(), LINK(replacement), createSelectExpr(LINK(replacement->queryNormalizedSelector()), LINK(field)));
     }
 
     IHqlExpression * record = replacement->queryRecord();
@@ -4268,23 +4444,29 @@ IHqlExpression * EclResourcer::replaceResourcedReferences(ResourcerInfo * info, 
     LinkedHqlExpr mapped = expr;
     if (info && (info->childDependents.ordinality()))
     {
+        HqlExprCopyArray originals;
         HqlExprArray replacements;
-        ForEachItemIn(i, info->originalChildDependents)
+        ForEachItemIn(i, info->childDependents)
         {
-            IHqlExpression & cur = info->childDependents.item(i);
-            LinkedHqlExpr replacement = &cur;
-            if (isResourcedActivity(&cur))
-                replacement.setown(createResourced(&cur, NULL, false, false));
+            CChildDependent & cur = info->childDependents.item(i);
+            if (!isResourcedActivity(cur.projectedHoisted))
+                continue;
 
-            IHqlExpression * original = &info->originalChildDependents.item(i);
+            OwnedHqlExpr replacement = createResourced(cur.projectedHoisted, NULL, false, false);
+
+            IHqlExpression * original = cur.original;
             if (!original->isDataset() && !original->isDatarow() && !original->isDictionary())
-                replacement.setown(getScalarReplacement(original, replacement));
+                replacement.setown(getScalarReplacement(cur, queryResourceInfo(cur.hoisted), replacement));
 
+            originals.append(*original);
             replacements.append(*replacement.getClear());
         }
 
-        ChildDependentReplacer replacer(info->originalChildDependents, replacements);
-        mapped.setown(replacer.transformRoot(mapped));
+        if (originals.ordinality())
+        {
+            ChildDependentReplacer replacer(originals, replacements);
+            mapped.setown(replacer.transformRoot(mapped));
+        }
     }
     return mapped.getClear();
 }
