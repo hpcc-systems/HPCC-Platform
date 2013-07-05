@@ -2267,7 +2267,7 @@ void ActivityInstance::buildPrefix()
     classGroupStmt = classctx.addGroupPass(sourceFileSequence);
 
     classctx.associate(*this);
-    classctx.addGroup();
+    classGroup = classctx.addGroup();
 
     if (!implementationClassName)
     {
@@ -2346,6 +2346,11 @@ void ActivityInstance::buildPrefix()
         s.clear().append("// use library for ").append(className);
         classctx.addQuoted(s);
         assertex(isExternal());
+
+        nestedctx.set(classctx);
+        createctx.set(classctx);
+        startctx.set(createctx);
+        initialGroupMarker = classGroup->numChildren();
     }
 }
 
@@ -2355,6 +2360,10 @@ void ActivityInstance::buildSuffix()
     //If onCreate() doesn't do anything special, then use an implementation in the base
     if (onCreateStmt && (calcTotalChildren(onCreateStmt) == onCreateMarker))
         onCreateStmt->setIncluded(false);
+
+    //Paranoid check to ensure that library classes aren't used when member functions were required
+    if (implementationClassName && (initialGroupMarker != classGroup->numChildren()))
+        throwUnexpectedX("Implementation class created, but member functions generated");
 
     const HqlCppOptions & options = translator.queryOptions();
     if (classStmt && (options.spotComplexClasses || options.showActivitySizeInGraph))
@@ -13094,6 +13103,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
     const char *activity;
     ThorActivityKind kind = TAKaggregate;
     node_operator specialOp = no_none;
+    IIdAtom * implementationClassId = NULL;
     if (passThrough)
     {
         activity = "ThroughAggregate";
@@ -13114,11 +13124,15 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
         {
             kind = TAKexistsaggregate;
             activity = "ExistsAggregate";
+            if (options.minimizeActivityClasses)
+                implementationClassId = newExistsAggregateArgId;
         }
         else if (specialOp == no_countgroup)
         {
             kind = TAKcountaggregate;
             activity = "CountAggregate";
+            if (options.minimizeActivityClasses)
+                implementationClassId = newCountAggregateArgId;
         }
         else
             specialOp = no_none;
@@ -13126,6 +13140,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityAggregate(BuildCtx & ctx, IHql
 
 
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, activity);
+    if (implementationClassId)
+        instance->setImplementationClass(implementationClassId);
     if (passThrough)
     {
         StringBuffer graphLabel;
