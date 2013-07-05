@@ -465,14 +465,7 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 <row>
                   <entry>--no-reload</entry>
 
-                  <entry>Does not reload the queryset</entry>
-                </row>
-
-                <row>
-                  <entry>--no-reload</entry>
-
-                  <entry>Specifies to not request a reload of the Roxie
-                  cluster</entry>
+                  <entry>Specifies to not reload the target cluster</entry>
                 </row>
 
                 <row>
@@ -2332,7 +2325,7 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>ecl roxie check</entry>
 
-                  <entry>Checks the roxie process state</entry>
+                  <entry>Checks the state of the roxie process </entry>
                 </row>
 
                 <row>
@@ -2356,6 +2349,12 @@ ecl packagemap validate roxie --active</programlisting>
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
+
+                  <entry>Max time to wait in milliseconds</entry>
                 </row>
 
                 <row>

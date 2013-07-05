@@ -512,17 +512,30 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
 
         if (cw->getWuidVersion() > 0)
         {
-            Owned<IStringIterator> eclAgentLogs = cw->getLogs("EclAgent");
-            ForEach (*eclAgentLogs)
+            IPropertyTreeIterator& eclAgents = cw->getProcesses("EclAgent", NULL);
+            ForEach (eclAgents)
             {
-                SCMStringBuffer logName;
-                eclAgentLogs->str(logName);
-                if (logName.length() < 1)
+                StringBuffer logName, agentPID;
+                eclAgents.query().getProp("@log",logName);
+                if (!logName.length())
                     continue;
 
                 Owned<IEspECLHelpFile> h= createECLHelpFile("","");
                 h->setName(logName.str());
                 h->setType(File_EclAgentLog);
+                if (version >= 1.43)
+                {
+                    offset_t fileSize;
+                    if (getFileSize(logName.str(), NULL, fileSize))
+                        h->setFileSize(fileSize);
+                    if (version >= 1.44)
+                    {
+                        if (eclAgents.query().hasProp("@pid"))
+                            h->setPID(eclAgents.query().getPropInt("@pid"));
+                        else
+                            h->setPID(cw->getAgentPID());
+                    }
+                }
                 helpers.append(*h.getLink());
             }
         }
@@ -539,6 +552,12 @@ void WsWuInfo::getHelpers(IEspECLWorkunit &info, unsigned flags)
                 Owned<IEspECLHelpFile> h= createECLHelpFile("","");
                 h->setName(name.str());
                 h->setType(File_EclAgentLog);
+                if (version >= 1.43)
+                {
+                    offset_t fileSize;
+                    if (getFileSize(name.str(), NULL, fileSize))
+                        h->setFileSize(fileSize);
+                }
                 helpers.append(*h.getLink());
                 break;
             }
@@ -965,6 +984,12 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
                 h->setName(logName.str());
                 h->setDescription(processName.str());
                 h->setType(fileType.str());
+                if (version >= 1.43)
+                {
+                    offset_t fileSize;
+                    if (getFileSize(logName.str(), NULL, fileSize))
+                        h->setFileSize(fileSize);
+                }
                 helpers.append(*h.getLink());
 
                 if (version < 1.38)
@@ -1012,6 +1037,12 @@ unsigned WsWuInfo::getWorkunitThorLogInfo(IArrayOf<IEspECLHelpFile>& helpers, IE
             Owned<IEspECLHelpFile> h= createECLHelpFile("","");
             h->setName(name.str());
             h->setType(fileType.str());
+            if (version >= 1.43)
+            {
+                offset_t fileSize;
+                if (getFileSize(name.str(), NULL, fileSize))
+                    h->setFileSize(fileSize);
+            }
             helpers.append(*h.getLink());
         }
 
@@ -1467,15 +1498,43 @@ void WsWuInfo::getResults(IEspECLWorkunit &info, unsigned flags)
     }
 }
 
+bool WsWuInfo::getFileSize(const char* fileName, const char* IPAddress, offset_t& fileSize)
+{
+    if (!fileName || !*fileName)
+        return false;
+
+    Owned<IFile> aFile;
+    if (!IPAddress || !*IPAddress)
+    {
+        aFile.setown(createIFile(fileName));
+    }
+    else
+    {
+        RemoteFilename rfn;
+        rfn.setRemotePath(fileName);
+        SocketEndpoint ep(IPAddress);
+        rfn.setIp(ep);
+        aFile.setown(createIFile(rfn));
+    }
+    if (!aFile)
+        return false;
+
+    bool isDir;
+    CDateTime modtime;
+    if (!aFile->getInfo(isDir, fileSize, modtime) || isDir)
+        return false;
+    return true;
+}
+
 void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEspECLHelpFile>& helpers)
 {
     if (!query)
         return;
 
-    SCMStringBuffer name, Ip, description;
     Owned<IConstWUAssociatedFileIterator> iter = &query->getAssociatedFiles();
     ForEach(*iter)
     {
+        SCMStringBuffer name, Ip, description;
         IConstWUAssociatedFile & cur = iter->query();
         if (cur.getType() != type)
             continue;
@@ -1489,7 +1548,6 @@ void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEsp
         {
             cur.getIp(Ip);
             h->setIPAddress(Ip.str());
-            Ip.clear();
 
             cur.getDescription(description);
             if ((description.length() < 1) && (name.length() > 0))
@@ -1503,11 +1561,14 @@ void WsWuInfo::getHelpFiles(IConstWUQuery* query, WUFileType type, IArrayOf<IEsp
                 description.set("Help File");
 
             h->setDescription(description.str());
-            description.clear();
+            if (version >= 1.43)
+            {
+                offset_t fileSize;
+                if (getFileSize(name.str(), Ip.str(), fileSize))
+                    h->setFileSize(fileSize);
+            }
         }
-
         helpers.append(*h.getLink());
-        name.clear();
     }
 }
 
@@ -1617,7 +1678,7 @@ void appendIOStreamContent(MemoryBuffer &mb, IFileIOStream *ios, bool forDownloa
     }
 }
 
-void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, MemoryBuffer& buf)
+void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, const char* agentPid, MemoryBuffer& buf)
 {
     if(!fileName || !*fileName)
         throw MakeStringException(ECLWATCH_ECLAGENT_LOG_NOT_FOUND,"Log file not specified");
@@ -1633,8 +1694,11 @@ void WsWuInfo::getWorkunitEclAgentLog(const char* fileName, MemoryBuffer& buf)
     bool eof = false;
     bool wuidFound = false;
 
-    unsigned pid = cw->getAgentPID();
-    VStringBuffer pidstr(" %5d ", pid);
+    StringBuffer pidstr;
+    if (agentPid && *agentPid)
+        pidstr.appendf(" %s ", agentPid);
+    else
+        pidstr.appendf(" %5d ", cw->getAgentPID());
     char const * pidchars = pidstr.str();
     while(!eof)
     {

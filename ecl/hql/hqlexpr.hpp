@@ -76,7 +76,6 @@ class HqlGramCtx;       // opaque, but still not very nice
 class HQL_API HqlExprArray : public IArrayOf<IHqlExpression>
 {
 public:
-    void swapWith(HqlExprArray & other);
     bool containsBody(IHqlExpression & expr);
 };
 

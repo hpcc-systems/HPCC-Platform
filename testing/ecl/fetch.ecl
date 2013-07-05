@@ -17,6 +17,9 @@
 
 //UseStandardFiles
 //UseIndexes
+
+IMPORT Std;
+
 recplus := {string45 name, unsigned8 rfpos, DG_FlatFileEvens};
 
 recplus makeRec(DG_FlatFileEvens L, DG_indexFileEvens R, string name) := TRANSFORM
@@ -45,18 +48,12 @@ varrecplus makeVarRecSkip(DG_VarFile L, DG_VarIndex R, string name) := TRANSFORM
     self := L;
 END;
 
-// temporary hack to get around codegen optimizing platform(),once call into global (and therefore hthor) context.
-nononcelib := 
-    SERVICE
-varstring platform() : library='graph', include='eclhelper.hpp', ctxmethod, entrypoint='getPlatform';
-    END;
-
 sortFixed(dataset(recplus) ds) := FUNCTION
-    RETURN IF(nononcelib.platform() = 'thor', SORT(ds, rfpos), ds);
+    RETURN IF(Std.System.Thorlib.platform() = 'thor', SORT(ds, rfpos), ds);
 END;
 
 sortVar(dataset(varrecplus) ds) := FUNCTION
-    RETURN IF(nononcelib.platform() = 'thor', SORT(ds, rfpos), ds);
+    RETURN IF(Std.System.Thorlib.platform() = 'thor', SORT(ds, rfpos), ds);
 END;
 
 SDG_indexFileEvens := SORT(DG_indexFileEvens, filepos);

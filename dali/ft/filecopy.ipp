@@ -258,7 +258,8 @@ protected:
     bool usePullOperation();
     void updateSizeRead();
     void waitForTransferSem(Semaphore & sem);
-
+    void addPrefix(size32_t len, const void * data, unsigned idx, PartitionPointArray & partitionWork);
+    
 private:
     bool calcUsePull();
 

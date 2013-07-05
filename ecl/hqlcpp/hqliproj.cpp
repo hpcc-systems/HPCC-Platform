@@ -75,7 +75,11 @@ NestedField * UsedFieldSet::addNested(IHqlExpression * field)
         assertex(originalFields->contains(*field));
 #endif
         NestedField * original = originalFields->findNested(field);
-        assertex(original);
+        if (!original)
+        {
+            EclIR::dump_ir(field, originalFields->findNestedByName(field)->field);
+            throwUnexpected();
+        }
         match = new NestedField(field, &original->used);
         appendNested(*LINK(field), match);
     }
@@ -249,6 +253,17 @@ NestedField * UsedFieldSet::findNested(IHqlExpression * field) const
     {
         NestedField & cur = nested.item(i);
         if (cur.field == field)
+            return &cur;
+    }
+    return NULL;
+}
+
+NestedField * UsedFieldSet::findNestedByName(IHqlExpression * field) const
+{
+    ForEachItemIn(i2, nested)
+    {
+        NestedField & cur = nested.item(i2);
+        if (cur.field->queryName() == field->queryName())
             return &cur;
     }
     return NULL;

@@ -17,22 +17,18 @@
 
 //UseStandardFiles
 //UseIndexes
+IMPORT Std;
+
 TYPEOF(DG_FetchFile) copy(DG_FetchFile l) := TRANSFORM
     SELF.__filepos := 0; // filepos is not consistent between different test modes, so suppress it from output
     SELF := l;
 END;
 
-// hack to get around codegen optimizing platform(),once call into global (and therefore hthor) context.
-nononcelib := 
-    SERVICE
-varstring platform() : library='graph', include='eclhelper.hpp', ctxmethod, entrypoint='getPlatform';
-    END;
-
 TYPEOF(DG_FetchFile) maybesort(TYPEOF(DG_FetchFile) in) :=
 #if (useLocal)
   SORT(in, fname, lname);
 #else
-  IF(nononcelib.platform() = 'thor', SORT(in, fname, lname), in);
+  IF(Std.System.Thorlib.platform() = 'thor', SORT(in, fname, lname), in);
 #end
 
 output(maybesort(FETCH(DG_FetchFile, DG_FetchIndex1(Lname='Anderson'),RIGHT.__filepos, copy(LEFT))));

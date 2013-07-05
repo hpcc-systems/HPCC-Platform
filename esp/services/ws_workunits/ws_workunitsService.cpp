@@ -2533,7 +2533,13 @@ void openSaveFile(IEspContext &context, int opt, const char* filename, const cha
     {
         StringBuffer headerStr("attachment;");
         if (filename && *filename)
-            headerStr.appendf("filename=%s", filename);
+        {
+            const char* pFileName = strrchr(filename, PATHSEPCHAR);
+            if (pFileName)
+                headerStr.appendf("filename=%s", pFileName+1);
+            else
+                headerStr.appendf("filename=%s", filename);
+        }
 
         MemoryBuffer buf0;
         unsigned i = 0;
@@ -2675,7 +2681,7 @@ bool CWsWorkunitsEx::onWUFile(IEspContext &context,IEspWULogFileRequest &req, IE
             }
             else if (strieq(File_EclAgentLog,req.getType()))
             {
-                winfo.getWorkunitEclAgentLog(req.getName(), mb);
+                winfo.getWorkunitEclAgentLog(req.getName(), req.getProcess(), mb);
                 openSaveFile(context, opt, "eclagent.log", HTTP_TYPE_TEXT_PLAIN, mb, resp);
             }
             else if (strieq(File_XML,req.getType()) && notEmpty(req.getName()))

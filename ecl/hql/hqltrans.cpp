@@ -3137,25 +3137,25 @@ void NewSelectorReplacingTransformer::initSelectorMapping(IHqlExpression * oldDa
     if (oldDataset->isDatarow() || op == no_activetable || op == no_self || op == no_selfref)
     {
         if (isAlwaysActiveRow(newDataset) || newDataset->isDatarow())
-            setRootMapping(oldDataset, newDataset);         // A row, so Don't change any new references to the dataset
+            setRootMapping(oldDataset, newDataset, false);         // A row, so Don't change any new references to the dataset
         else
         {
             OwnedHqlExpr newActive = ensureActiveRow(newDataset);
-            setRootMapping(oldDataset, newActive);          // A row, so Don't change any new references to the dataset
+            setRootMapping(oldDataset, newActive, false);          // A row, so Don't change any new references to the dataset
         }
     }
     else
     {
-        setRootMapping(oldDataset, oldDataset);         // Don't change any new references to the dataset
+        setRootMapping(oldDataset, oldDataset, false);         // Don't change any new references to the dataset
     }
-    setSelectorMapping(oldDataset, newSelector);
+    setRootMapping(oldDataset, newSelector, true);
 
     if (op == no_left || op == no_right)
         oldSelector.set(oldDataset);
 }
 
 
-void NewSelectorReplacingTransformer::setNestedMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlSimpleScope * oldScope, IHqlExpression * newRecord)
+void NewSelectorReplacingTransformer::setNestedMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlSimpleScope * oldScope, IHqlExpression * newRecord, bool isSelector)
 {
     ForEachChild(i, newRecord)
     {
@@ -3163,10 +3163,10 @@ void NewSelectorReplacingTransformer::setNestedMapping(IHqlExpression * oldSel, 
         switch (cur->getOperator())
         {
         case no_record:
-            setNestedMapping(oldSel, newSel, oldScope, cur);
+            setNestedMapping(oldSel, newSel, oldScope, cur, isSelector);
             break;
         case no_ifblock:
-            setNestedMapping(oldSel, newSel, oldScope, cur->queryChild(1));
+            setNestedMapping(oldSel, newSel, oldScope, cur->queryChild(1), isSelector);
             break;
         case no_field:
             {
@@ -3176,29 +3176,33 @@ void NewSelectorReplacingTransformer::setNestedMapping(IHqlExpression * oldSel, 
                 {
                     OwnedHqlExpr oldSelected = createSelectExpr(LINK(oldSel), LINK(oldField));
                     OwnedHqlExpr newSelected = createSelectExpr(LINK(newSel), LINK(cur));
-                    setRootMapping(oldSelected, newSelected, oldField->queryRecord());
+                    setRootMapping(oldSelected, newSelected, oldField->queryRecord(), isSelector);
                 }
             }
         }
     }
 }
 
-void NewSelectorReplacingTransformer::setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlExpression * oldRecord)
+void NewSelectorReplacingTransformer::setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel, IHqlExpression * oldRecord, bool isSelector)
 {
-    setMappingOnly(oldSel, newSel);
+    if (isSelector)
+        setSelectorMapping(oldSel, newSel);
+    else
+        setMappingOnly(oldSel, newSel);
+
     IHqlExpression * newRecord = newSel->queryRecord();
     if (oldRecord != newRecord)
     {
         if (oldRecord != queryNullRecord() && newRecord != queryNullRecord())
         {
-            setNestedMapping(oldSel, newSel, oldRecord->querySimpleScope(), newRecord);
+            setNestedMapping(oldSel, newSel, oldRecord->querySimpleScope(), newRecord, isSelector);
         }
     }
 }
 
-void NewSelectorReplacingTransformer::setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel)
+void NewSelectorReplacingTransformer::setRootMapping(IHqlExpression * oldSel, IHqlExpression * newSel, bool isSelector)
 {
-    setRootMapping(oldSel, newSel, oldSel->queryRecord());
+    setRootMapping(oldSel, newSel, oldSel->queryRecord(), isSelector);
 }
 
 IHqlExpression * NewSelectorReplacingTransformer::createTransformed(IHqlExpression * expr)
@@ -3307,7 +3311,7 @@ IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldS
     NewSelectorReplacingTransformer transformer;
     if (oldSelector != newSelector)
         transformer.initSelectorMapping(oldSelector, newSelector);
-    transformer.setRootMapping(newSelector, newSelector, oldSelector->queryRecord());
+    transformer.setRootMapping(newSelector, newSelector, oldSelector->queryRecord(), false);
     bool same = true;
     for (; i < max; i++)
     {

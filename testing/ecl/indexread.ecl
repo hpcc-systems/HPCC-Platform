@@ -18,6 +18,8 @@
 //UseStandardFiles
 //UseIndexes
 
+IMPORT Std;
+
 // try it with just one limit
 
 o1 := output(LIMIT(DG_FetchIndex1(Lname='Anderson'),1,SKIP), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
@@ -25,17 +27,11 @@ o2 := output(LIMIT(DG_FetchIndex1(Lname='Anderson'),10,SKIP), {Lname,Fname,TRIM(
 o3 := output(LIMIT(DG_FetchIndex1(Lname='Anderson'),1,SKIP,KEYED), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
 o4 := output(LIMIT(DG_FetchIndex1(Lname='Anderson'),10,SKIP,KEYED), {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
 
-// hack to get around codegen optimizing platform(),once call into global (and therefore hthor) context.
-nononcelib := 
-    SERVICE
-varstring platform() : library='graph', include='eclhelper.hpp', ctxmethod, entrypoint='getPlatform';
-    END;
-
 iresult := DG_FetchIndex1(Lname IN ['Anderson', 'Taylor']);
 
 lkresult := LIMIT(iresult,10,KEYED);
 lsresult := LIMIT(lkresult,10,SKIP);
-sresult := IF(nononcelib.platform() != 'hthor', SORT(lsresult,Lname), lsresult);
+sresult := IF(Std.System.Thorlib.platform() != 'hthor', SORT(lsresult,Lname), lsresult);
 o5 := output(sresult, {Lname,Fname,TRIM(tfn),state,TRIM(blobfield)});
 
 // then try with a keyed and unkeyed....

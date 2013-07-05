@@ -9758,7 +9758,7 @@ void AnnotationNormalizerTransformer::analyseExpr(IHqlExpression * expr)
     IHqlExpression * body = expr->queryBody();
     if (expr != body)
     {
-        queryCommonExtra(body)->noteAnnotation(expr);
+        queryLocationIndependentExtra(body)->noteAnnotation(expr);
         //Note: expr already tested if expr == body...
         if (alreadyVisited(body))
             return;
@@ -9792,7 +9792,7 @@ IHqlExpression * AnnotationNormalizerTransformer::createTransformed(IHqlExpressi
     case no_constant:
 //  case no_null:
         {
-            //AnnotationTransformInfo * extra = queryCommonExtra(body);
+            //AnnotationTransformInfo * extra = queryLocationIndependentExtra(body);
 
             //Don't common up the location information for this, otherwise it gets silly!  Possibly worth removing altogether if ambiguous?
             //MORE: This should probably depend on whether there is more than one annotation on the constant.
@@ -9804,10 +9804,10 @@ IHqlExpression * AnnotationNormalizerTransformer::createTransformed(IHqlExpressi
         return transform(body);
 
     OwnedHqlExpr transformed = NewHqlTransformer::createTransformed(expr);
-    return queryCommonExtra(body)->cloneAnnotations(transformed);
+    return queryLocationIndependentExtra(body)->cloneAnnotations(transformed);
 }
 
-AnnotationTransformInfo * AnnotationNormalizerTransformer::queryCommonExtra(IHqlExpression * expr)
+AnnotationTransformInfo * AnnotationNormalizerTransformer::queryLocationIndependentExtra(IHqlExpression * expr)
 {
     return static_cast<AnnotationTransformInfo *>(queryTransformExtra(queryLocationIndependent(expr)));
 }
@@ -10201,7 +10201,7 @@ ANewTransformInfo * HqlTreeNormalizer::createTransformInfo(IHqlExpression * expr
     return CREATE_NEWTRANSFORMINFO(HqlTreeNormalizerInfo, expr);
 }
 
-HqlTreeNormalizerInfo * HqlTreeNormalizer::queryCommonExtra(IHqlExpression * expr)
+HqlTreeNormalizerInfo * HqlTreeNormalizer::queryLocationIndependentExtra(IHqlExpression * expr)
 {
     return static_cast<HqlTreeNormalizerInfo *>(queryTransformExtra(queryLocationIndependent(expr)));
 }
@@ -10407,7 +10407,7 @@ void HqlTreeNormalizer::analyseExpr(IHqlExpression * expr)
     {
         IHqlExpression * symbol = queryNamedSymbol(expr);
         if (symbol)
-            queryCommonExtra(body)->noteSymbol(expr);
+            queryLocationIndependentExtra(body)->noteSymbol(expr);
     }
 
     if (alreadyVisited(body))
@@ -10528,8 +10528,12 @@ IHqlExpression * HqlTreeNormalizer::transformCaseToIfs(IHqlExpression * expr)
         OwnedHqlExpr castCurValue = ensureExprType(curValue, type);
 
         OwnedHqlExpr test = createBoolExpr(no_eq, ensureExprType(testVar, type), transform(castCurValue));
+        if (options.constantFoldNormalize)
+            test.setown(foldConstantOperator(test, 0, NULL));
         OwnedHqlExpr trueExpr = transform(cur->queryChild(1));
         elseExpr.setown(createIf(test.getClear(), trueExpr.getClear(), elseExpr.getClear()));
+        if (options.constantFoldNormalize)
+            elseExpr.setown(foldConstantOperator(elseExpr, 0, NULL));
     }
     return elseExpr.getClear();
 }
@@ -10655,6 +10659,8 @@ IHqlExpression * HqlTreeNormalizer::transformMap(IHqlExpression * expr)
     {
         IHqlExpression * cur = expr->queryChild(idx);
         elseExpr.setown(createIf(transform(cur->queryChild(0)), transform(cur->queryChild(1)), elseExpr.getClear()));
+        if (options.constantFoldNormalize)
+            elseExpr.setown(foldConstantOperator(elseExpr, 0, NULL));
     }
     return elseExpr.getClear();
 }
@@ -11210,9 +11216,6 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
     node_operator op = expr->getOperator();
     if (expr != body)
     {
-#if 0
-        OwnedHqlExpr transformedBody = transform(body);
-#else
         OwnedHqlExpr transformedBody;
         try
         {
@@ -11231,7 +11234,11 @@ IHqlExpression * HqlTreeNormalizer::createTransformed(IHqlExpression * expr)
             }
             throw;
         }
-#endif
+
+        //Don't retain any annotations on records - except for a symbol which maybe added in the createTransform()
+        //code.  Otherwise expressions that would otherwise be commoned up are treated as different.
+        if (op == no_record)
+            return transformedBody.getClear();
 
         switch (expr->getAnnotationKind())
         {
@@ -11467,7 +11474,7 @@ IHqlExpression * HqlTreeNormalizer::createTransformedBody(IHqlExpression * expr)
             if (options.ensureRecordsHaveSymbols)
             {
                 //Ensure all records only have a single unique name, and transform it here so that record types also map to that unique name
-                IHqlExpression * recordSymbol = queryCommonExtra(expr)->symbol;
+                IHqlExpression * recordSymbol = queryLocationIndependentExtra(expr)->symbol;
                 if (recordSymbol)
                 {
                     _ATOM name = recordSymbol->queryName();

@@ -2001,7 +2001,7 @@ private:
                     else if (stricmp(action, "selectGraph") == 0)
                         graphName = control->queryProp("Query/@name");
                     else if (stricmp(action, "allGraphs") != 0)  // if we get here and its NOT allgraphs - then error
-                        throw MakeStringException(ROXIE_CONTROL_MSG_ERROR, "invalid action in control:queryState %s", action);
+                        throw MakeStringException(ROXIE_CONTROL_MSG_ERROR, "invalid action in control:queryStats %s", action);
                 }
                 ReadLockBlock readBlock(packageCrit);
                 allQueryPackages->getStats(reply, id, action, graphName, logctx);
@@ -2517,6 +2517,16 @@ void mergeStats(IPropertyTree *s1, IPropertyTree *s2, unsigned level)
     }
 }
 
+void mergeStats(IPropertyTree *s1, IPropertyTree *s2)
+{
+    Owned<IPropertyTreeIterator> elems = s2->getElements("Exception");
+    ForEach(*elems)
+    {
+        s1->addPropTree("Exception", LINK(&elems->query()));
+    }
+    mergeStats(s1, s2, 0);
+}
+
 #ifdef _USE_CPPUNIT
 #include <cppunit/extensions/HelperMacros.h>
 
@@ -2707,7 +2717,7 @@ protected:
         Owned<IPropertyTree> p1 = createPTreeFromXMLString(g1);
         Owned<IPropertyTree> p2 = createPTreeFromXMLString(g2);
         Owned<IPropertyTree> e = createPTreeFromXMLString(expected);
-        mergeStats(p1, p2, 0);
+        mergeStats(p1, p2);
         StringBuffer s1, s2;
         toXML(p1, s1);
         toXML(e, s2);

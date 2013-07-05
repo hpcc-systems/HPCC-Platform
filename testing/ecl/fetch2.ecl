@@ -17,6 +17,8 @@
 
 //UseStandardFiles
 
+IMPORT Std;
+
 //Daft test of fetch retrieving a dataset
 myPeople := sqSimplePersonBookDs(surname <> '');
 
@@ -42,17 +44,11 @@ fetched := fetch(sqSimplePersonBookDs, myPeople, right.filepos, makeRec(left, ri
 fetched2 := fetch(sqSimplePersonBookDs, myPeople, right.filepos, makeRec2(left, right));
 fetched3 := fetch(sqSimplePersonBookDs, myPeople, right.filepos, makeRec3(left, right));
 
-// temporary hack to get around codegen optimizing platform(),once call into global (and therefore hthor) context.
-nononcelib := 
-    SERVICE
-varstring platform() : library='graph', include='eclhelper.hpp', ctxmethod, entrypoint='getPlatform';
-    END;
-
 recordof(sqSimplePersonBookDs) removeFp(recfp l) := TRANSFORM
     SELF := l;
 END;
 sortIt(dataset(recfp) ds) := FUNCTION
-    RETURN IF(nononcelib.platform() = 'thor', PROJECT(SORT(ds, rfpos),removeFp(LEFT)), PROJECT(ds,removeFp(LEFT)));
+    RETURN IF(Std.System.Thorlib.platform() = 'thor', PROJECT(SORT(ds, rfpos),removeFp(LEFT)), PROJECT(ds,removeFp(LEFT)));
 END;
 
 sequential(

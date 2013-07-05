@@ -238,10 +238,14 @@ public:
         switch (original->getOperator())
         {
         case no_if:
+        case no_choose:
+        case no_chooseds:
             return true;
         case no_output:
         case no_buildindex:
             return isUpdatedConditionally(original);
+        case no_filter:
+            return isConditionalFilter;
         }
         return false;
     }
@@ -289,6 +293,7 @@ public:
     bool linkedFromChild;
     bool neverSplit;
     byte pathToExpr;
+    bool isConditionalFilter;
 };
 
 struct DependencySourceInfo

@@ -314,19 +314,6 @@ ISourcePath * createSourcePath(size32_t len, const char *value)
 
 //==============================================================================================================
 
-void HqlExprArray::swapWith(HqlExprArray & other)
-{
-    void * saved_head = _head;
-    _head = other._head;
-    other._head = saved_head;
-    aindex_t savedused = used;
-    used = other.used;
-    other.used = savedused;
-    aindex_t savedmax = max;
-    max = other.max;
-    other.max = savedmax;
-}
-
 bool HqlExprArray::containsBody(IHqlExpression & expr)
 {
     IHqlExpression * body = expr.queryBody();
@@ -3476,6 +3463,15 @@ void CHqlExpression::updateFlagsAfterOperands()
         break;
     case no_failure:
         infoFlags &= ~HEFonFailDependent;
+        break;
+    case no_externalcall:
+        if (constant())
+        {
+            IHqlExpression * body = queryExternalDefinition()->queryChild(0);
+            assertex(body);
+            if (!body->hasProperty(pureAtom))
+                infoFlags2 &= ~HEF2constant;
+        }
         break;
     case no_call:
         {
@@ -10632,18 +10628,88 @@ protected:
         case no_if:
             {
                 IHqlExpression * cond  = expr->queryChild(0);
-                //Only fold things that become constant because of a parameter substitution, otherwise we get crc mismatches
-                if (!cond->isFullyBound())
+                OwnedHqlExpr newcond = transform(cond);
+                if (newcond->isConstant())
+                    newcond.setown(foldHqlExpression(newcond));
+                IValue * value = newcond->queryValue();
+                if (value && !expr->isAction())
                 {
-                    OwnedHqlExpr newcond = transform(cond);
-                    IValue * value = newcond->queryValue();
-                    if (value && !expr->isAction())
+                    unsigned branch = value->getBoolValue() ? 1 : 2;
+                    IHqlExpression * arg = expr->queryChild(branch);
+                    if (arg)
+                        return transform(arg);
+                }
+                break;
+            }
+        case no_map:
+            {
+                //This could strip leading failing matches, but for the moment only do that if we know
+                //which branch matches.
+                ForEachChild(i, expr)
+                {
+                    IHqlExpression * cur = expr->queryChild(i);
+                    if (cur->getOperator() == no_mapto)
                     {
-                        unsigned branch = value->getBoolValue() ? 1 : 2;
-                        IHqlExpression * arg = expr->queryChild(branch);
-                        if (arg)
-                            return transform(arg);
+                        OwnedHqlExpr newcond = transform(cur->queryChild(0));
+
+                        if (newcond->isConstant())
+                            newcond.setown(foldHqlExpression(newcond));
+                        IValue * value = newcond->queryValue();
+                        if (!value)
+                            break;
+
+                        if (value->getBoolValue())
+                            return transform(cur->queryChild(1));
                     }
+                    else if (!cur->isAttribute())
+                        return transform(cur);
+                }
+                break;
+            }
+        case no_case:
+            {
+                IHqlExpression * search = expr->queryChild(0);
+                if (!search->isConstant())
+                    break;
+                OwnedHqlExpr folded = foldHqlExpression(search);
+                IValue * searchValue = folded->queryValue();
+                if (!searchValue)
+                    break;
+                ITypeInfo * searchType = searchValue->queryType();
+                ForEachChildFrom(i, expr, 1)
+                {
+                    IHqlExpression * cur = expr->queryChild(i);
+                    if (cur->getOperator() == no_mapto)
+                    {
+                        OwnedHqlExpr newcond = transform(cur->queryChild(0));
+
+                        if (newcond->isConstant())
+                            newcond.setown(foldHqlExpression(newcond));
+                        IValue * compareValue = newcond->queryValue();
+                        if (!compareValue)
+                            break;
+
+                        if (searchType != newcond->queryType())
+                        {
+                            Owned<ITypeInfo> type = ::getPromotedECLCompareType(searchType, newcond->queryType());
+                            OwnedHqlExpr castSearch = ensureExprType(folded, type);
+                            OwnedHqlExpr castCompare = ensureExprType(newcond, type);
+                            IValue * castSearchValue = castSearch->queryValue();
+                            IValue * castCompareValue = castCompare->queryValue();
+                            if (!castSearchValue || !castCompareValue)
+                                break;
+
+                            if (castSearchValue->compare(castCompareValue) == 0)
+                                return transform(cur->queryChild(1));
+                        }
+                        else
+                        {
+                            if (searchValue->compare(compareValue) == 0)
+                                return transform(cur->queryChild(1));
+                        }
+                    }
+                    else if (!cur->isAttribute())
+                        return transform(cur);
                 }
                 break;
             }

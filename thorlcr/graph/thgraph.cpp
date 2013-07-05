@@ -1276,7 +1276,8 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
         start();
         if (!wait(aborted?MEDIUMTIMEOUT:INFINITE)) // can't wait indefinitely, query may have aborted and stall, but prudent to wait a short time for underlying graphs to unwind.
             GraphPrintLogEx(this, thorlog_null, MCuserWarning, "Graph wait cancelled, aborted=%s", aborted?"true":"false");
-        graphDone = true;
+        else
+            graphDone = true;
     }
     catch (IException *e)
     {

@@ -63,6 +63,7 @@ protected:
     void _space(size32_t iSize);
     void _doSwap(aindex_t pos1, aindex_t pos2, size32_t iSize);
     void _doTransfer(aindex_t to, aindex_t from, size32_t iSize);
+    void doSwapWith(Allocator & other);
 
 protected:
     void * _head;
@@ -122,6 +123,7 @@ public:
     MEMBER *getArray(aindex_t = 0) const;
     void sort(CompareFunc);
     void swap(aindex_t pos1, aindex_t pos2);
+    void swapWith(SELF & other) { this->doSwapWith(other); }
 };
 
 template <class MEMBER, class PARAM>

@@ -571,7 +571,7 @@ public:
                         CriticalBlock cb(crit);
                         if (mergedStats)
                         {
-                            mergeStats(mergedStats, &meat->query(), 0);
+                            mergeStats(mergedStats, &meat->query());
                         }
                         else
                             toXML(&meat->query(), reply);
@@ -602,7 +602,7 @@ public:
                 if (mergedStats)
                 {
                     Owned<IPropertyTree> xml = createPTreeFromXMLString(myReply);
-                    mergeStats(mergedStats, xml, 0);
+                    mergeStats(mergedStats, xml);
                 }
                 else
                     reply.append(myReply);

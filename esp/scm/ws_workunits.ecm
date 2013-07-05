@@ -114,6 +114,8 @@ ESPStruct [nil_remove] ECLHelpFile
     string Type;
     [min_ver("1.32")] string IPAddress;
     [min_ver("1.32")] string Description;
+    [min_ver("1.43")] int64 FileSize;
+    [min_ver("1.44")] unsigned PID(0);
 };
 
 //  ===========================================================================

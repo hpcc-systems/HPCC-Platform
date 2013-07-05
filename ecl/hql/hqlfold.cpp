@@ -3323,6 +3323,17 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
                 return createActionList(args);
             break;
         }
+    case no_exists:
+        if (isNull(expr->queryChild(0)))
+            return createConstant(false);
+        break;
+    case no_alias:
+        {
+            IHqlExpression * arg = expr->queryChild(0);
+            if (arg->getOperator() == no_constant)
+                return LINK(arg);
+            break;
+        }
     }
 
     return LINK(expr);
@@ -4836,6 +4847,22 @@ IHqlExpression * createListMatchStructure(node_operator op, IHqlExpression * exp
     OwnedHqlExpr newRhs = createListMatchStructure(op, rhs, args, idx);
     if ((lhs == newLhs) && (rhs == newRhs))
         return LINK(expr);
+
+    if (op == no_and)
+    {
+        if (matchesBoolean(newLhs, true))
+            return newRhs.getClear();
+        if (matchesBoolean(newRhs, true))
+            return newLhs.getClear();
+    }
+    else
+    {
+        if (matchesBoolean(newLhs, false))
+            return newRhs.getClear();
+        if (matchesBoolean(newRhs, false))
+            return newLhs.getClear();
+    }
+
     OwnedHqlExpr value = createValue(op, expr->getType(), newLhs.getClear(), newRhs.getClear());
     return expr->cloneAllAnnotations(value);
 }
