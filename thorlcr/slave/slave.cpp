@@ -140,12 +140,11 @@ void ProcessSlaveActivity::main()
         exception.setown(MakeThorFatal(NULL, TE_UnknownException, "FATAL: Unknown exception thrown by ProcessThread"));
     }
     try { endProcess(); }
-    catch (IException *_e)
+    catch (IException *e)
     {
-        ActPrintLog(_e, "Exception calling activity endProcess");
-        fireException(_e);
-        exception.set(_e);
-        _e->Release();
+        ActPrintLog(e, "Exception calling activity endProcess");
+        fireException(e);
+        exception.setown(e);
     }
 }
 

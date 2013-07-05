@@ -2817,22 +2817,20 @@ void CActivityBase::ActPrintLog(IException *e)
 
 bool CActivityBase::fireException(IException *e)
 {
+    Owned<IThorException> _te;
     IThorException *te = QUERYINTERFACE(e, IThorException);
-    StringBuffer s;
-    Owned<IException> e2;
-    if (!te)
-    {
-        IThorException *_e = MakeActivityException(this, e);
-        _e->setAudience(e->errorAudience());
-        e2.setown(_e);
-    }
-    else
+    if (te)
     {
         if (!te->queryActivityId())
             setExceptionActivityInfo(container, te);
-        e2.set(e);
     }
-    return container.queryOwner().fireException(e2);
+    else
+    {
+        te = MakeActivityException(this, e);
+        te->setAudience(e->errorAudience());
+        _te.setown(te);
+    }
+    return container.queryOwner().fireException(te);
 }
 
 

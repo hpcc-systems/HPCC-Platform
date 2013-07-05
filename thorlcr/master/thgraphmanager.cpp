@@ -775,10 +775,15 @@ void abortThor(IException *e, bool abortCurrentJob)
 {
     if (-1 == queryExitCode()) setExitCode(1);
     Owned<CJobManager> jM = ((CJobManager *)getJobManager());
+    Owned<IException> _e;
     if (0 == aborting)
     {
         aborting = 1;
-        if (!e) e = MakeThorException(TE_AbortException, "THOR ABORT");
+        if (!e)
+        {
+            e = MakeThorException(TE_AbortException, "THOR ABORT");
+            _e.setown(e);
+        }
         EXCLOG(e,"abortThor");
         LOG(MCdebugProgress, thorJob, "abortThor called");
         if (jM)

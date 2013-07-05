@@ -921,9 +921,9 @@ bool getBestFilePart(CActivityBase *activity, IPartDescriptor &partDesc, OwnedIF
                     location = l;
                     if (0 != l)
                     {
-                        IThorException *e = MakeActivityWarning(activity, 0, "Primary file missing: %s, using remote copy: %s", primaryName.str(), locationName.str());
+                        Owned<IThorException> e = MakeActivityWarning(activity, 0, "Primary file missing: %s, using remote copy: %s", primaryName.str(), locationName.str());
                         if (!eHandler)
-                            throw e;
+                            throw e.getClear();
                         eHandler->fireException(e);
                     }
                     path.append(locationName);
