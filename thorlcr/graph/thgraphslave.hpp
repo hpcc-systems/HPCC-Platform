@@ -66,7 +66,7 @@ public:
     void appendOutput(IThorDataLink *itdl) { outputs.append(itdl); };
     void appendOutputLinked(IThorDataLink *itdl) { itdl->Link(); appendOutput(itdl); };
     void startInput(IThorDataLink *itdl, const char *extra=NULL);
-    void stopInput(IThorDataLink *itdl, const char *extra=NULL);
+    void stopInput(IRowStream *itdl, const char *extra=NULL);
 
     unsigned __int64 &getTotalCyclesRef() { return totalCycles; }
     unsigned __int64 queryLocalCycles() const;
