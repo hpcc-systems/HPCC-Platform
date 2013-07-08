@@ -38,9 +38,6 @@
 #define OUTPUT_RECORDSIZE
 
 
-//void startInput(CActivityBase *activity, IThorDataLink * i, const char *extra=NULL);
-//void stopInput(IThorDataLink * i, const char * activityName = NULL, activity_id activitiyId = 0);
-
 class CPartHandler : public CSimpleInterface, implements IRowStream
 {
 public:

@@ -22,14 +22,36 @@
 
 class CLookupJoinActivityMaster : public CMasterActivity
 {
+    mptag_t lhsDistributeTag, rhsDistributeTag;
+
 public:
     CLookupJoinActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
     {
-        mpTag = container.queryJob().allocateMPTag();
+        if (container.queryLocal())
+            lhsDistributeTag = rhsDistributeTag = TAG_NULL;
+        else
+        {
+	        mpTag = container.queryJob().allocateMPTag(); // NB: base takes ownership and free's
+            lhsDistributeTag = container.queryJob().allocateMPTag();
+            rhsDistributeTag = container.queryJob().allocateMPTag();
+        }
+    }
+    ~CLookupJoinActivityMaster()
+    {
+        if (!container.queryLocal())
+        {
+            container.queryJob().freeMPTag(lhsDistributeTag);
+            container.queryJob().freeMPTag(rhsDistributeTag);
+        }
     }
     void serializeSlaveData(MemoryBuffer &dst, unsigned slave)
     {
-        dst.append((int)mpTag);
+        if (!container.queryLocal())
+        {
+            serializeMPtag(dst, mpTag);
+            serializeMPtag(dst, lhsDistributeTag);
+            serializeMPtag(dst, rhsDistributeTag);
+        }
     }
     void process()
     {

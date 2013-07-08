@@ -212,6 +212,7 @@ graph_decl StringBuffer &getRecordString(const void *key, IOutputRowSerializer *
 #define SPILL_PRIORITY_OVERFLOWABLE_BUFFER SPILL_PRIORITY_DEFAULT
 #define SPILL_PRIORITY_SPILLABLE_STREAM SPILL_PRIORITY_DEFAULT
 #define SPILL_PRIORITY_RESULT SPILL_PRIORITY_DEFAULT
+#define SPILL_PRIORITY_LOOKUPJOIN 10
 
 enum StableSortFlag { stableSort_none, stableSort_earlyAlloc, stableSort_lateAlloc };
 class CThorSpillableRowArray;
@@ -357,7 +358,7 @@ public:
     bool equal(ICompare *icmp, CThorExpandingRowArray &other);
     bool checkSorted(ICompare *icmp);
 
-    IRowStream *createRowStream(rowidx_t start=0, rowidx_t num=(rowidx_t)-1, bool streamOwns=true);
+    IRowStream *createRowStream(rowidx_t start=0, rowidx_t num=(rowidx_t)-1, bool streamOwns=true, bool clearAtEos=false);
 
     void partition(ICompare &compare, unsigned num, UnsignedArray &out); // returns num+1 points
 
@@ -370,6 +371,7 @@ public:
     void deserialize(size32_t sz, const void *buf);
     void deserializeExpand(size32_t sz, const void *data);
     bool ensure(rowidx_t requiredRows);
+    void compact();
     virtual IThorArrayLock &queryLock() { return dummyLock; }
 
 friend class CThorSpillableRowArray;
@@ -460,7 +462,7 @@ public:
         kill();
         swap(from);
     }
-    void transferFrom(CThorExpandingRowArray &src); 
+    void transferFrom(CThorExpandingRowArray &src);
 
     IRowStream *createRowStream();
 
@@ -488,7 +490,8 @@ public:
 };
 
 
-enum RowCollectorFlags { rc_mixed, rc_allMem, rc_allDisk, rc_allDiskOrAllMem };
+enum RowCollectorSpillFlags { rc_mixed, rc_allMem, rc_allDisk, rc_allDiskOrAllMem };
+#define rcflag_noAllInMemSort 0x01
 interface IThorRowCollectorCommon : extends IInterface
 {
     virtual rowcount_t numRows() const = 0;
@@ -496,8 +499,9 @@ interface IThorRowCollectorCommon : extends IInterface
     virtual unsigned overflowScale() const = 0;
     virtual void transferRowsOut(CThorExpandingRowArray &dst, bool sort=true) = 0;
     virtual void transferRowsIn(CThorExpandingRowArray &src) = 0;
-    virtual void setup(ICompare *iCompare, bool isStable=false, RowCollectorFlags diskMemMix=rc_mixed, unsigned spillPriority=50) = 0;
+    virtual void setup(ICompare *iCompare, bool isStable=false, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=50) = 0;
     virtual void ensure(rowidx_t max) = 0;
+    virtual void setOptions(unsigned options) = 0;
 };
 
 interface IThorRowLoader : extends IThorRowCollectorCommon
@@ -511,13 +515,13 @@ interface IThorRowCollector : extends IThorRowCollectorCommon
     virtual void setPreserveGrouping(bool tf) = 0;
     virtual IRowWriter *getWriter() = 0;
     virtual void reset() = 0;
-    virtual IRowStream *getStream(bool shared=false) = 0;
+    virtual IRowStream *getStream(bool shared=false, CThorExpandingRowArray *allMemRows=NULL) = 0;
 };
 
-extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare=NULL, bool isStable=false, RowCollectorFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
-extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, ICompare *iCompare=NULL, bool isStable=false, RowCollectorFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
-extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare=NULL, bool isStable=false, RowCollectorFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
-extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, ICompare *iCompare=NULL, bool isStable=false, RowCollectorFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
+extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare=NULL, bool isStable=false, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
+extern graph_decl IThorRowLoader *createThorRowLoader(CActivityBase &activity, ICompare *iCompare=NULL, bool isStable=false, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT);
+extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, IRowInterfaces *rowIf, ICompare *iCompare=NULL, bool isStable=false, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
+extern graph_decl IThorRowCollector *createThorRowCollector(CActivityBase &activity, ICompare *iCompare=NULL, bool isStable=false, RowCollectorSpillFlags diskMemMix=rc_mixed, unsigned spillPriority=SPILL_PRIORITY_DEFAULT, bool preserveGrouping=false);
 
 
 
