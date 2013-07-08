@@ -74,6 +74,8 @@ define([
 
         workunitsTab: null,
         workunitsGrid: null,
+        clusterTargetSelect: null,
+        stateSelect: null,
 
         validateDialog: null,
 
@@ -81,6 +83,8 @@ define([
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
+            this.stateSelect = registry.byId(this.id + "StateSelect");
+            this.logicalFileSearchTypeSelect = registry.byId(this.id + "LogicalFileSearchType");
         },
 
         startup: function (args) {
@@ -203,7 +207,7 @@ define([
         //  Implementation  ---
         clearFilter: function () {
             arrayUtil.forEach(registry.byId(this.id + "FilterForm").getDescendants(), function (item, idx) {
-                item.set('value', null);
+                item.set("value", null);
             });
         },
 
@@ -220,7 +224,6 @@ define([
         getFilter: function () {
             var retVal = domForm.toObject(this.id + "FilterForm");
             lang.mixin(retVal, {
-                Cluster: this.clusterTargetSelect.get("value"),
                 StartDate: this.getISOString("FromDate", "FromTime"),
                 EndDate: this.getISOString("ToDate", "ToTime")
             });
@@ -249,6 +252,16 @@ define([
                 Targets: true,
                 includeBlank: true,
                 Target: params.Cluster
+            });
+            this.stateSelect.init({
+                WUState: true,
+                includeBlank: true,
+                Target: ""
+            });
+            this.logicalFileSearchTypeSelect.init({
+                LogicalFileSearchType: true,
+                includeBlank: true,
+                Target: ""
             });
 
             this.initWorkunitsGrid();
@@ -335,7 +348,7 @@ define([
                 this.menuFilterState = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
                         context.clearFilter();
-                        registry.byId(context.id + "State").set("value", context.menuFilterState.get("hpcc_value"));
+                        registry.byId(context.id + "StateSelect").set("value", context.menuFilterState.get("hpcc_value"));
                         context.applyFilter();
                     }
                 });
@@ -436,18 +449,6 @@ define([
                 title: "Filter",
                 content: "No filter criteria specified."
             });
-            var stateOptions = [{
-                label: "any",
-                value: ""
-            }];
-            for (var key in WsWorkunits.States) {
-                stateOptions.push({
-                    label: WsWorkunits.States[key],
-                    value: WsWorkunits.States[key]
-                });
-            }
-            var stateSelect = registry.byId(this.id + "State");
-            stateSelect.addOption(stateOptions);
         },
 
         refreshGrid: function (args) {
