@@ -202,9 +202,9 @@ IHqlExpression * createNextStringValue(IHqlExpression * value, const char * pref
 #if 0
 #ifdef _DEBUG
     //Following lines are here to add a break point when debugging
-    if (stricmp(valueText.str(), "aQ") == 0)
+    if (stricmp(valueText.str(), "a1") == 0)
         valueText.length();
-    if (stricmp(valueText.str(), "aDR1") == 0)
+    if (stricmp(valueText.str(), "a2") == 0)
         valueText.length();
 #endif
 #endif
@@ -7423,14 +7423,14 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
         }
     case no_select:
         {
-            IHqlExpression * newAttr = transformed->queryAttribute(newAtom);
-            if (newAttr)
+            bool isNew;
+            IHqlExpression * row = querySelectorDataset(transformed, isNew);
+            if (isNew)
             {
                 if (isUsedUnconditionally(expr))
                 {
                     if (extra->maxActivityDepth != 0)
                     {
-                        IHqlExpression * row = transformed->queryChild(0);
                         node_operator rowOp = row->getOperator();
                         if (rowOp == no_selectnth)
                         {
@@ -7438,7 +7438,7 @@ IHqlExpression * NewScopeMigrateTransformer::createTransformed(IHqlExpression * 
                             if ((dsOp == no_workunit_dataset) || (dsOp == no_inlinetable))
                                 break;
                         }
-                        if (rowOp == no_createrow)
+                        if (rowOp == no_createrow || rowOp == no_getresult)
                             break;
                         if (!isInlineTrivialDataset(row) && !isContextDependent(row) && !transformed->isDataset() && !transformed->isDictionary())
                         {
@@ -8904,6 +8904,8 @@ IHqlExpression * HqlScopeTagger::transformSelect(IHqlExpression * expr)
     }
     //MORE: What about child datasets - should really be tagged as
     //if (!isNewDataset && field->isDataset() && !containsSelf(ds) && !isDatasetActive(ds)) isNew = true;
+    if ((newDs->getOperator() == no_select) && newDs->isDatarow())
+        return createSelectExpr(newDs.getClear(), LINK(field));
     return createNewSelectExpr(newDs.getClear(), LINK(field));
 }
 

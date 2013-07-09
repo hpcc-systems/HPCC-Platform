@@ -63,12 +63,13 @@
 //#define CONSISTENCY_CHECK
 //#define GATHER_LINK_STATS
 //#define VERIFY_EXPR_INTEGRITY
+//#define CHECK_RECORD_CONSISTENCY
 
 // To debug a symbol in the C++ generated code, use SEARCH_NAME*
 // and set a breakpoint on debugMatchedName() below
 #ifdef _DEBUG
 //#define DEBUG_SCOPE
-//#define CHECK_RECORD_CONSITENCY
+//#define CHECK_RECORD_CONSISTENCY
 //#define PARANOID
 //#define SEARCH_NAME1   "vL6R"
 //#define SEARCH_NAME2   "v19"
@@ -3522,14 +3523,16 @@ void CHqlExpression::updateFlagsAfterOperands()
 switch (op)
     {
     case no_select:
-#ifdef CHECK_RECORD_CONSITENCY
+#ifdef CHECK_RECORD_CONSISTENCY
         {
             //Paranoid check to ensure that illegal no_selects aren't created (e.g., when dataset has link counted child, but field of select isn't)
             IHqlExpression * field = queryChild(1);
             IHqlExpression * lhsRecord = queryChild(0)->queryRecord();
             if (lhsRecord && lhsRecord->numChildren() && field->getOperator() == no_field)
             {
-                OwnedHqlExpr resolved = lhsRecord->querySimpleScope()->lookupSymbol(field->queryName());
+                OwnedHqlExpr resolved = lhsRecord->querySimpleScope()->lookupSymbol(field->queryId());
+                if (resolved && resolved != field)
+                    EclIR::dump_ir(resolved.get(), field);
                 assertex(!resolved || resolved == field);
             }
         }
@@ -3546,14 +3549,18 @@ switch (op)
         }
         break;
     case no_assign:
-#ifdef CHECK_RECORD_CONSITENCY
+#ifdef CHECK_RECORD_CONSISTENCY
         assertex(queryChild(0)->getOperator() != no_assign);
         assertex(queryChild(1)->getOperator() != no_assign);
         {
             IHqlExpression * lhsRecord = queryChild(0)->queryRecord();
             IHqlExpression * rhsRecord = queryChild(1)->queryRecord();
             if (lhsRecord && rhsRecord)
+            {
+                //This condition can be broken inside a transform that changes the types of fields.
+                //It could possibly be avoided by more selective calls to transform.
                 assertex(recordTypesMatch(lhsRecord, rhsRecord));
+            }
         }
 #endif
 #ifdef PARANOID
@@ -3637,6 +3644,7 @@ switch (op)
         IHqlExpression * ds = queryChild(0);
         if ((ds->getOperator() == no_select) && !ds->isDataset())
         {
+            assertex(!hasAttribute(newAtom));
             if (hasAttribute(newAtom) && isNewSelector(ds))
             {
                 IHqlExpression * root = queryDatasetCursor(ds);
@@ -11010,7 +11018,8 @@ static void createAssignAll(HqlExprArray & assigns, IHqlExpression * self, IHqlE
         case no_field:
             {
                 OwnedHqlExpr target = createSelectExpr(LINK(self), LINK(cur));
-                OwnedHqlExpr source = createSelectExpr(LINK(left), LINK(cur));
+                OwnedHqlExpr field = lookupNewSelectedField(left, cur);;
+                OwnedHqlExpr source = createSelectExpr(LINK(left), field.getClear());
                 assigns.append(*createAssign(target.getClear(), source.getClear()));
                 break;
             }
@@ -13945,7 +13954,7 @@ static bool exprContainsCounter(RecursionChecker & checker, IHqlExpression * exp
     case no_select:
         {
             IHqlExpression * ds = expr->queryChild(0);
-            if (expr->hasAttribute(newAtom) || ((ds->getOperator() == no_select) && ds->isDatarow()))
+            if (isNewSelector(expr))
                 return exprContainsCounter(checker, ds, counter);
             return false;
         }
@@ -15942,16 +15951,13 @@ IHqlExpression * queryTransformSingleAssign(IHqlExpression * transform)
 
 IHqlExpression * convertToSimpleAggregate(IHqlExpression * expr)
 {
-    IHqlExpression * newAttr = expr->queryAttribute(newAtom);
-    if (expr->getOperator() == no_select && newAttr)
+    if ((expr->getOperator() == no_select) && expr->queryAttribute(newAtom))
     {
         expr = expr->queryChild(0);
         if (!isSelectFirstRow(expr))
             return NULL;
         expr = expr->queryChild(0);
     }
-    else
-        newAttr = NULL;
 
     if (expr->getOperator() == no_compound_childaggregate)
         expr = expr->queryChild(0);
@@ -15999,7 +16005,7 @@ IHqlExpression * convertToSimpleAggregate(IHqlExpression * expr)
     args.append(*ds);
     for (unsigned i=0; i < numArgs; i++)
         args.append(*LINK(rhs->queryChild(i)));
-    unwindChildren(args, newAttr);
+
     IHqlExpression * keyed = rhs->queryAttribute(keyedAtom);
     if (keyed)
         args.append(*LINK(keyed));

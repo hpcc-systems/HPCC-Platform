@@ -2137,38 +2137,40 @@ protected:
         switch (op)
         {
         case no_select:
-            //Only interested in the leftmost no_select
-            if (expr->hasAttribute(newAtom))
             {
-                IHqlExpression * ds = expr->queryChild(0);
-                if (isEvaluateable(ds))
+                bool isNew;
+                IHqlExpression * ds = querySelectorDataset(expr, isNew);
+                if (isNew)
                 {
-                    //MORE: Following isn't a very nice test - stops implicit denormalize getting messed up
-                    if (expr->isDataset())
-                        break;
-                    
-                    //Debtable.....
-                    //Don't hoist counts on indexes or dataset - it may mean they are evaluated more frequently than need be.
-                    //If dependencies and root graphs are handled correctly this could be deleted.
-                    if (isCompoundAggregate(ds))
-                        break;
-
-                    if (!expr->isDatarow() && !expr->isDataset() && !expr->isDictionary())
+                    if (isEvaluateable(ds))
                     {
-                        if (queryHoistDataset(ds))
+                        //MORE: Following isn't a very nice test - stops implicit denormalize getting messed up
+                        if (expr->isDataset())
+                            break;
+
+                        //Debtable.....
+                        //Don't hoist counts on indexes or dataset - it may mean they are evaluated more frequently than need be.
+                        //If dependencies and root graphs are handled correctly this could be deleted.
+                        if (isCompoundAggregate(ds))
+                            break;
+
+                        if (!expr->isDatarow() && !expr->isDataset() && !expr->isDictionary())
                         {
-                            noteScalar(expr, expr);
-                            return;
+                            if (queryHoistDataset(ds))
+                            {
+                                noteScalar(expr, expr);
+                                return;
+                            }
+                        }
+                        else
+                        {
+                            if (queryNoteDataset(ds))
+                                return;
                         }
                     }
-                    else
-                    {
-                        if (queryNoteDataset(ds))
-                            return;
-                    }
                 }
+                break;
             }
-            break;
         case no_createset:
             {
                 IHqlExpression * ds = expr->queryChild(0);

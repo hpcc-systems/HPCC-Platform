@@ -178,7 +178,6 @@ extern HQL_API IHqlExpression * replaceSelfRefSelector(IHqlExpression * expr, IH
 extern HQL_API bool isNullProject(IHqlExpression * expr, bool canIgnorePayload, bool canLoseFieldsFromEnd);
 extern HQL_API bool isSimpleProject(IHqlExpression * expr);                             // Restriction or rearrangement only
 extern HQL_API bool leftRecordIsSubsetOfRight(IHqlExpression * left, IHqlExpression * right);
-extern HQL_API IHqlExpression * transformTrivialSelectProject(IHqlExpression * select);
 extern HQL_API bool transformReturnsSide(IHqlExpression * expr, node_operator side, unsigned inputIndex);
 
 extern HQL_API bool sortDistributionMatches(IHqlExpression * dataset, bool isLocal);
