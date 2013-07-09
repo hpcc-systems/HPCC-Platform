@@ -1591,8 +1591,8 @@ public:
     }
     ~CKeyedJoinSlave()
     {
-        delete fPosToNodeMap;
-        delete fPosToLocalPartMap;
+        delete [] fPosToNodeMap;
+        delete [] fPosToLocalPartMap;
         while (doneGroups.ordinality())
         {
             CJoinGroup *jg = doneGroups.dequeue();
