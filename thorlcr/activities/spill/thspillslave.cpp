@@ -162,7 +162,7 @@ public:
         input = inputs.item(0);
         startInput(input);
         
-        dataLinkStart("SPILL", container.queryId());
+        dataLinkStart();
 
         open();
         hadrow = false;

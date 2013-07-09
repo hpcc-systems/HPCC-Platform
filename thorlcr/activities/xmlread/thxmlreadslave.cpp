@@ -214,7 +214,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDiskReadSlaveActivityBase::start();
         out = createSequentialPartHandler(partHandler, partDescs, false);
-        dataLinkStart("XMLREAD", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

@@ -30,21 +30,20 @@ protected:
     bool eos, eogNext, stopped, resultSent, anyThisGroup;
     IThorDataLink *input;
     IHThorLimitArg *helper;
-    StringAttr msg;
 
     void stopInput(rowcount_t c)
     {
         if (!stopped) {
             stopped = true;
             sendResult(c);
-            CSlaveActivity::stopInput(input, msg);
+            CSlaveActivity::stopInput(input);
         }
     }
 
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CLimitSlaveActivityBase(CGraphElementBase *_container, const char *_msg) : CSlaveActivity(_container), msg(_msg), CThorDataLink(this)
+    CLimitSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
         input = NULL;       
     }
@@ -65,7 +64,7 @@ public:
         anyThisGroup = eogNext = false;
         startInput(input);
         rowLimit = (rowcount_t)helper->getRowLimit();
-        dataLinkStart(msg, container.queryId());
+        dataLinkStart();
     }
     void sendResult(rowcount_t r)
     {
@@ -95,7 +94,7 @@ class CLimitSlaveActivity : public CLimitSlaveActivityBase, public CThorSteppabl
 {
 public:
 
-    CLimitSlaveActivity(CGraphElementBase *container) : CLimitSlaveActivityBase(container, "LIMIT"), CThorSteppable(this) { }
+    CLimitSlaveActivity(CGraphElementBase *container) : CLimitSlaveActivityBase(container), CThorSteppable(this) { }
     
     CATCH_NEXTROW()
     {
@@ -229,7 +228,7 @@ class CSkipLimitSlaveActivity : public CLimitSlaveActivityBase
     }
 
 public:
-    CSkipLimitSlaveActivity(CGraphElementBase *container,bool _rowTransform) : CLimitSlaveActivityBase(container, "SKIPLIMIT")
+    CSkipLimitSlaveActivity(CGraphElementBase *container,bool _rowTransform) : CLimitSlaveActivityBase(container)
     {
         ptrIndex = 0;
         limitChecked = eof = false;

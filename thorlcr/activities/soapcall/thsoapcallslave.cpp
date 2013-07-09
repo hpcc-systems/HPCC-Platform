@@ -68,7 +68,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         eof = false;
-        dataLinkStart(container.getKind(), container.queryId());
+        dataLinkStart();
         if (wscHelper)
             wscHelper->start();
     }
@@ -148,7 +148,7 @@ public:
         eof = false;
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart(container.getKind(), container.queryId());
+        dataLinkStart();
         wscHelper->start();
     }
     virtual void stop()

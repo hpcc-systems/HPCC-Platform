@@ -50,7 +50,7 @@ public:
         numSamples = helper->getProportion();
         whichSample = helper->getSampleNumber();
         numToSkip = whichSample ? whichSample - 1 : 0;
-        dataLinkStart("SAMPLE", container.queryId());
+        dataLinkStart();
     }
 
 

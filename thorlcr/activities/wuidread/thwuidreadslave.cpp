@@ -54,7 +54,7 @@ public:
     void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        dataLinkStart("WUIDREAD", container.queryId());
+        dataLinkStart();
 
         eogPending = false;
         if (container.queryLocal() || firstNode())

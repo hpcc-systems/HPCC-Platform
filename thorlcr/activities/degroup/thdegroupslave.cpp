@@ -44,7 +44,7 @@ public:
 
         startInput(input);
         if(!input->isGrouped()) ActPrintLog("DEGROUP: Degrouping non-grouped input!");
-        dataLinkStart("DEGROUP", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {

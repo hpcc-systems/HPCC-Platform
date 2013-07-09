@@ -163,7 +163,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart("SELFJOIN", container.queryId());
+        dataLinkStart();
         bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
         bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
 

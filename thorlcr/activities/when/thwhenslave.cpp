@@ -93,7 +93,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         input.set(inputs.item(0));
         startInput(input);
-        dataLinkStart("WHEN", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {
