@@ -1877,7 +1877,7 @@ public:
             do
             {
                 IPartDescriptor &filePart = indexParts.item(ip++);
-                unsigned crc;
+                unsigned crc=0;
                 filePart.getCrc(crc);
                 RemoteFilename rfn;
                 filePart.getFilename(0, rfn);
