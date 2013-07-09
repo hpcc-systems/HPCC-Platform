@@ -423,6 +423,9 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     if(globals->hasProp("transferbuffersize"))
         req->setTransferBufferSize(globals->getPropInt("transferbuffersize"));
 
+    if(globals->hasProp("failIfNoSourceFile"))
+        req->setFailIfNoSourceFile(globals->getPropBool("failIfNoSourceFile",false));
+
     if(srcxml == NULL)
         info("\nVariable spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
