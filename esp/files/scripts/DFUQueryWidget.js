@@ -390,7 +390,7 @@ define([
                     },
                     Name: { label: "Logical Name",
                         formatter: function (name, idx) {
-                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
+                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "LogicalNameClick'>" + name + "</a>";
                         }
                     },
                     Owner: { label: "Owner", width: 72 },

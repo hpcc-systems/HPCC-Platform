@@ -18,7 +18,7 @@ define([
     "dojo/_base/array",
     "dojo/Stateful",
 
-    "dijit/registry",
+    "dijit/registry"
 ], function (declare, arrayUtil, Stateful,
     registry) {
 

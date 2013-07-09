@@ -355,7 +355,7 @@ define([
                             } else {
                                 img += "file.png";
                             }
-                            return "<img src='" + img + "'/>&nbsp" + name;
+                            return "<img src='" + img + "'/>&nbsp;" + name;
                         }
                     }),
                     filesize: { label: "Size", width: 108 },

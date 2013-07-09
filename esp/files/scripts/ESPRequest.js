@@ -30,7 +30,9 @@ define([
         serverIP: null,
 
         constructor: function (args) {
-            declare.safeMixin(this, args);
+            if (args) {
+                declare.safeMixin(this, args);
+            }
             this.serverIP = this.getParamFromURL("ServerIP");
         },
 
@@ -262,7 +264,9 @@ define([
                 if (!this.idProperty) {
                     throw new Error("idProperty:  Undefined - Missing ID field (eg 'Wuid').");
                 }
-                declare.safeMixin(this, options);
+                if (options) {
+                    declare.safeMixin(this, options);
+                }
             },
 
             getIdentity: function (item) {
@@ -360,6 +364,7 @@ define([
                         context.postProcessResults(items);
                     }
                     deferredResults.resolve(items);
+                    return items;
                 });
 
                 return QueryResults(deferredResults);

@@ -28,7 +28,9 @@ define([
         },
 
         constructor: function (args) {
-            declare.safeMixin(this, args);
+            if (args) {
+                declare.safeMixin(this, args);
+            }
             var sampleStore = new dojo.data.ItemFileReadStore({
                 url: this.samplesURL
             });
