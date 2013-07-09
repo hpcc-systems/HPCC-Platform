@@ -447,11 +447,14 @@ extern GITFILE_API void installFileHook()
 
 extern GITFILE_API void removeFileHook()
 {
-    CriticalBlock b(*cs); // Probably overkill!
-    if (gitRepositoryFileHook)
+    if (cs)
     {
-        removeContainedFileHook(gitRepositoryFileHook);
-        gitRepositoryFileHook = NULL;
+        CriticalBlock b(*cs); // Probably overkill!
+        if (gitRepositoryFileHook)
+        {
+            removeContainedFileHook(gitRepositoryFileHook);
+            gitRepositoryFileHook = NULL;
+        }
     }
 }
 
@@ -471,4 +474,5 @@ MODULE_EXIT()
     }
     ::Release(gitRepositoryFileHook);
     delete cs;
+    cs = NULL;
 }

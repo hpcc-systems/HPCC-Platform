@@ -73,11 +73,13 @@ define([
         workunitsTab: null,
         workunitsGrid: null,
         clusterTargetSelect: null,
+        stateTargetSelect: null,
 
         postCreate: function (args) {
             this.inherited(arguments);
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
+            this.stateSelect = registry.byId(this.id + "StateSelect");
         },
 
         startup: function (args) {
@@ -221,6 +223,10 @@ define([
                 Groups: true,
                 includeBlank: true
             });
+            this.stateSelect.init({
+                DFUState: true,
+                includeBlank: true
+            });
             this.selectChild(this.workunitsTab, true);
         },
 
@@ -300,7 +306,7 @@ define([
                 this.menuFilterState = this.addMenuItem(pSubMenu, {
                     onClick: function (args) {
                         context.clearFilter();
-                        registry.byId(context.id + "State").set("value", context.menuFilterState.get("hpcc_value"));
+                        registry.byId(context.id + "StateSelect").set("value", context.menuFilterState.get("hpcc_value"));
                         context.applyFilter();
                     }
                 });
@@ -354,7 +360,7 @@ define([
                         width: 180,
                         formatter: function (ID, idx) {
                             var wu = ESPDFUWorkunit.Get(ID);
-                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# rowIndex=" + idx + " class='" + context.id + "IDClick'>" + ID + "</a>";
+                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp;<a href='#' rowIndex=" + idx + " class='" + context.id + "IDClick'>" + ID + "</a>";
                         }
                     },
                     Command: {
@@ -412,18 +418,6 @@ define([
                 title: "Filter",
                 content: "No filter criteria specified."
             });
-            var stateOptions = [{
-                label: "any",
-                value: ""
-            }];
-            for (var key in FileSpray.States) {
-                stateOptions.push({
-                    label: FileSpray.States[key],
-                    value: FileSpray.States[key]
-                });
-            }
-            var stateSelect = registry.byId(this.id + "State");
-            stateSelect.addOption(stateOptions);
         },
 
         refreshGrid: function (args) {

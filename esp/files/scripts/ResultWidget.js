@@ -39,6 +39,7 @@ define([
     "dojo/text!../templates/ResultWidget.html",
 
     "dijit/layout/BorderContainer",
+    "dijit/layout/ContentPane",
     "dijit/Toolbar",
     "dijit/form/Button",
     "dijit/ToolbarSeparator"

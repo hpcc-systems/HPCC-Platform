@@ -52,6 +52,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 ProcessSlaveActivity::ProcessSlaveActivity(CGraphElementBase *container) : CSlaveActivity(container), threaded("ProcessSlaveActivity", this)
 {
     processed = 0;
+    lastCycles = 0;
 }
 
 ProcessSlaveActivity::~ProcessSlaveActivity()

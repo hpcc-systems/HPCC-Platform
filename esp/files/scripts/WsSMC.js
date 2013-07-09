@@ -61,8 +61,7 @@ define([
 
         Activity: function (params) {
             return ESPRequest.send("WsSMC", "Activity", params);
-        },
-
+        }
     };
 });
 

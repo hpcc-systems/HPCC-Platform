@@ -142,6 +142,8 @@ public:
         while (!stopped)
         {
             Sleep(1000);
+            if (stopped)
+                break;
             if (count--==0)
             {
                 gatherAndSend();

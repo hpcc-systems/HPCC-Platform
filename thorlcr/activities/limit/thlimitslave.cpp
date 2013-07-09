@@ -45,12 +45,15 @@ public:
 
     CLimitSlaveActivityBase(CGraphElementBase *_container) : CSlaveActivity(_container), CThorDataLink(this)
     {
+        helper = (IHThorLimitArg *)queryHelper();
         input = NULL;       
+        resultSent = container.queryLocal(); // i.e. local, so don't send result to master
+        eos = stopped = anyThisGroup = eogNext = false;
+        rowLimit = RCMAX;
     }
     void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
         appendOutputLinked(this);
-        helper = (IHThorLimitArg *)queryHelper();
 
         if (!container.queryLocal())
             mpTag = container.queryJob().deserializeMPTag(data);
@@ -59,9 +62,8 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         resultSent = container.queryLocal(); // i.e. local, so don't send result to master
-        eos = stopped = false;
+        eos = stopped = anyThisGroup = eogNext = false;
         input = inputs.item(0);
-        anyThisGroup = eogNext = false;
         startInput(input);
         rowLimit = (rowcount_t)helper->getRowLimit();
         dataLinkStart();

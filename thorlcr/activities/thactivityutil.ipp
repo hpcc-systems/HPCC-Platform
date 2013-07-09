@@ -87,6 +87,7 @@ IRowStream *createSequentialPartHandler(CPartHandler *partHandler, IArrayOf<IPar
     } \
     const void *nextRowNoCatch()
 
+void initMetaInfo(ThorDataLinkMetaInfo &info);
 class CThorDataLink : implements IThorDataLink
 {
     CActivityBase *owner;

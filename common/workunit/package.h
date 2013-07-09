@@ -62,6 +62,7 @@ extern WORKUNIT_API IHpccPackageSet *createPackageSet(const char *process);
 extern WORKUNIT_API IPropertyTree * getPackageMapById(const char * id, bool readonly);
 extern WORKUNIT_API IPropertyTree * getPackageSetById(const char * id, bool readonly);
 extern WORKUNIT_API IPropertyTree * resolvePackageSetRegistry(const char *process, bool readonly);
+extern WORKUNIT_API IPropertyTree * resolveActivePackageMap(const char *process, const char *target, bool readonly);
 extern WORKUNIT_API hash64_t pkgHash64Data(size32_t len, const void *buf, hash64_t hval);
 
 

@@ -28,8 +28,7 @@ define([
 
         MyAccount: function (params) {
             return ESPRequest.send("ws_account", "MyAccount", params);
-        },
-
+        }
     };
 });
 

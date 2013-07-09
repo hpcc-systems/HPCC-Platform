@@ -2449,6 +2449,7 @@ protected:
     unsigned transactionnest;
     Linked<IUserDescriptor> udesc;
     unsigned defaultTimeout;
+    bool dirty;
 public:
 
     IPropertyTree *queryRoot() { return root; }
@@ -2459,6 +2460,7 @@ public:
         proplockcount = 0;
         transactionnest = 0;
         defaultTimeout = INFINITE;
+        dirty = false;
     }
 
     ~CDistributedFileBase<INTERFACE>()
@@ -2567,21 +2569,34 @@ public:
         bool reload = false;
         if (timeoutms==INFINITE)
             timeoutms = defaultTimeout;
-        reload = false;
-        if (proplockcount++==0) {
-            if (conn) {
+        if (proplockcount++==0)
+        {
+            if (conn)
+            {
                 conn->rollback(); // changes chouldn't be done outside lock properties
 #ifdef TRACE_LOCKS
                 PROGLOG("lockProperties: pre safeChangeModeWrite(%x)",(unsigned)(memsize_t)conn.get());
 #endif
-                try {
+                try
+                {
                     safeChangeModeWrite(conn,queryLogicalName(),reload,timeoutms);
                 }
                 catch(IException *)
                 {
                     proplockcount--;
                     dfCheckRoot("lockProperties",root,conn);
+                    if (reload)
+                        dirty = true; // safeChangeModeWrite unlocked, and reload will be need if retried
                     throw;
+                }
+                if (dirty) // a previous attempt unlocked and did not reload
+                {
+                    dirty = false;
+                    if (!reload) // if reload=true, safeChangeModeWrite has just reloaded, so no need to again here
+                    {
+                        conn->reload();
+                        reload = true;
+                    }
                 }
 #ifdef TRACE_LOCKS
                 PROGLOG("lockProperties: done safeChangeModeWrite(%x)",(unsigned)(memsize_t)conn.get());
@@ -4471,7 +4486,9 @@ class CDistributedSuperFile: public CDistributedFileBase<IDistributedSuperFile>
         }
         bool refresh() // returns true if any changes
         {
-            return (refresh(parent.get()) || refresh(file.get()));
+            bool pChanged = refresh(parent);
+            bool fChanged = refresh(file);
+            return pChanged || fChanged;
         }
     public:
         cSwapFileAction(const char *_parentlname,const char *_filelname)

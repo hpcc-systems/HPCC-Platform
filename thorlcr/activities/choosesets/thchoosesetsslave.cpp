@@ -40,7 +40,7 @@ public:
     ~BaseChooseSetsActivity()
     {
         if (tallies)
-            free(tallies);
+            delete [] tallies;
     }
     virtual void init(MemoryBuffer & data, MemoryBuffer &slaveData)
     {
@@ -52,7 +52,7 @@ public:
     {
         numSets = helper->getNumSets();
         if (tallies)
-            free(tallies);
+            delete [] tallies;
         tallies = new unsigned[numSets];
 
         memset(tallies, 0, sizeof(unsigned)*numSets);

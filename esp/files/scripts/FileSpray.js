@@ -122,7 +122,9 @@ define([
         responseQualifier: "DropZoneFilesResponse.DropZones.DropZone",
         idProperty: "calculatedID",
         constructor: function (options) {
-            declare.safeMixin(this, options);
+            if (options) {
+                declare.safeMixin(this, options);
+            }
         },
         preProcessRow: function (row) {
             lang.mixin(row, {
