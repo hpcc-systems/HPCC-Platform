@@ -25,14 +25,22 @@
     </xs:annotation>
     <xs:complexType>
       <xs:choice maxOccurs="unbounded">
-
-        <xs:element name="RoxieFarmProcess" maxOccurs="unbounded">
+        <xs:element name="RoxieServerProcess" maxOccurs="unbounded">
           <xs:annotation>
             <xs:appinfo>
-              <title>Farms</title>
+              <viewType>RoxieServers</viewType>
+              <title>Servers</title>
             </xs:appinfo>
           </xs:annotation>
           <xs:complexType>
+            <xs:attribute name="computer" type="computerType" use="required"/>
+            <xs:attribute name="netAddress" type="ipAddress">
+              <xs:annotation>
+                <xs:appinfo>
+                  <viewType>readonly</viewType>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
             <xs:attribute name="port" type="xs:nonNegativeInteger" use="optional" default="9876">
               <xs:annotation>
                 <xs:appinfo>
@@ -73,12 +81,11 @@
             </xs:attribute>
           </xs:complexType>
         </xs:element>
-
-        <xs:element name="RoxieServerProcess" maxOccurs="unbounded">
+        <xs:element name="RoxieSlaveProcess" maxOccurs="unbounded">
           <xs:annotation>
             <xs:appinfo>
-              <viewType>RoxieServers</viewType>
-              <title>Servers</title>
+              <viewType>RoxieSlaves</viewType>
+              <title>Agents</title>
             </xs:appinfo>
           </xs:annotation>
           <xs:complexType>
@@ -90,6 +97,14 @@
                 </xs:appinfo>
               </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="channel" type="xs:nonNegativeInteger" use="required">
+              <xs:annotation>
+                <xs:appinfo>
+                  <tooltip>Channel number for this agent</tooltip>
+                </xs:appinfo>
+              </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="dataDirectory" type="absolutePath" use="required"/>
           </xs:complexType>
         </xs:element>
 
