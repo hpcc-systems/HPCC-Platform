@@ -621,7 +621,7 @@ private:
 class EclCmdPackageValidate : public EclCmdCommon
 {
 public:
-    EclCmdPackageValidate() : optValidateActive(false)
+    EclCmdPackageValidate() : optValidateActive(false), optCheckDFS(false)
     {
     }
     virtual bool parseCommandLineOptions(ArgvIterator &iter)
@@ -649,6 +649,8 @@ public:
                 continue;
             }
             if (iter.matchFlag(optValidateActive, ECLOPT_ACTIVE))
+                continue;
+            if (iter.matchFlag(optCheckDFS, ECLOPT_CHECK_DFS))
                 continue;
             if (iter.matchOption(optPMID, ECLOPT_PMID) || iter.matchOption(optPMID, ECLOPT_PMID_S))
                 continue;
@@ -706,6 +708,7 @@ public:
         request->setPMID(optPMID);
         request->setTarget(optTarget);
         request->setQueryIdToVerify(optQueryId);
+        request->setCheckDFS(optCheckDFS);
 
         bool validateMessages = false;
         Owned<IClientValidatePackageResponse> resp = packageProcessClient->ValidatePackage(request);
@@ -754,6 +757,14 @@ public:
                 fprintf(stderr, "      %s\n", unusedFiles.item(i));
         }
 
+        StringArray &notInDFS = resp->getFiles().getNotInDFS();
+        if (notInDFS.ordinality()>0)
+        {
+            fputs("\n   Packagemap SubFiles not found in DFS:\n", stderr);
+            ForEachItemIn(i, notInDFS)
+                fprintf(stderr, "      %s\n", notInDFS.item(i));
+        }
+
         if (!validateMessages)
             fputs("   Validation was successful\n", stdout);
 
@@ -771,6 +782,7 @@ public:
                     "   <target>                    name of target to use when validating package map information\n"
                     "   <filename>                  name of file containing package map information\n"
                     "   --active                    validate the active packagemap\n"
+                    "   --check-dfs                 verify that subfiles exist in DFS\n"
                     "   -pm, --pmid                 id of packagemap to validate\n",
                     stdout);
 
@@ -782,6 +794,7 @@ private:
     StringAttr optPMID;
     StringAttr optQueryId;
     bool optValidateActive;
+    bool optCheckDFS;
 };
 
 class EclCmdPackageQueryFiles : public EclCmdCommon
