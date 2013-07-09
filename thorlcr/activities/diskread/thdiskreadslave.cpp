@@ -452,7 +452,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDiskReadSlaveActivityRecord::start();
         out = createSequentialPartHandler(partHandler, partDescs, grouped); // **
-        dataLinkStart("DISKREAD", container.queryId());
+        dataLinkStart();
     }
     virtual bool isGrouped() { return grouped; }
 
@@ -608,7 +608,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDiskReadSlaveActivityRecord::start();
         out = createSequentialPartHandler(partHandler, partDescs, false);
-        dataLinkStart("DISKNORMALIZE", container.queryId());
+        dataLinkStart();
     }
     virtual bool isGrouped() { return false; }
 
@@ -732,7 +732,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         CDiskReadSlaveActivityRecord::start();
         eoi = hadElement = false;
-        dataLinkStart("DISKAGGREGATE", container.queryId());
+        dataLinkStart();
     }
 
 // IRowStream
@@ -855,7 +855,7 @@ public:
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
-        dataLinkStart("DISKCOUNT", container.queryId());
+        dataLinkStart();
     }
 
 // IRowStream
@@ -967,7 +967,7 @@ public:
         gathered = eoi = false;
         localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
         localAggTable->start(queryRowAllocator());
-        dataLinkStart("DISKGROUPAGGREGATE", container.queryId());
+        dataLinkStart();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {

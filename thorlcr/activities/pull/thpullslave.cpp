@@ -47,7 +47,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         input.setown(createDataLinkSmartBuffer(this,inputs.item(0),PULL_SMART_BUFFER_SIZE,true,false,RCUNBOUND,NULL,false,&container.queryJob().queryIDiskUsage()));
         startInput(input);
-        dataLinkStart("PULL", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

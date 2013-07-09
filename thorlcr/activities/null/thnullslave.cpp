@@ -59,7 +59,7 @@ public:
     virtual void start()
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
-        dataLinkStart("NULL", container.queryId());
+        dataLinkStart();
     }
 
     virtual void stop()
@@ -106,7 +106,7 @@ public:
     {
         ActivityTimer s(totalCycles, timeActivities, NULL);
         startInput(inputs.item(0));
-        dataLinkStart("NULL", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

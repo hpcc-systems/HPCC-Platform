@@ -71,7 +71,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         input = inputs.item(0);
         startInput(input);
-        dataLinkStart("ParseSlaveActivity", container.queryId());
+        dataLinkStart();
     }
     void stop()
     { 

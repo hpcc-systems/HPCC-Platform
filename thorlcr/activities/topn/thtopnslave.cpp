@@ -258,7 +258,7 @@ public:
             eos = false;
         }
         eog = false;
-        dataLinkStart("TOPN", container.queryId());
+        dataLinkStart();
     }
     virtual bool isGrouped() { return grouped; }
     void stop()

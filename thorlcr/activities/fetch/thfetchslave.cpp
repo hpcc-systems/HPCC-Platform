@@ -376,7 +376,7 @@ public:
         };
 
         startInput(inputs.item(0));
-        dataLinkStart("FETCH", container.queryId());
+        dataLinkStart();
 
         IThorDataLink *in = inputs.item(0);
         Owned<IRowInterfaces> keyInIf;

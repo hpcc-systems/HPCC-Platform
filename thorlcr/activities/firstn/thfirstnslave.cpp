@@ -60,7 +60,7 @@ public:
         input.set(inputs.item(0));
         startInput(input);
         stopped = false;
-        dataLinkStart("FIRSTN", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {

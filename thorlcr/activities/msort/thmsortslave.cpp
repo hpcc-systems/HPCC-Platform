@@ -103,7 +103,7 @@ public:
                 barrier->cancel();
                 throw;
             }
-            dataLinkStart("SORT", container.queryId());
+            dataLinkStart();
             
             Linked<IRowInterfaces> rowif = queryRowInterfaces(input);
             Owned<IRowInterfaces> auxrowif = createRowInterfaces(helper->querySortedRecordSize(),queryActivityId(),queryCodeContext());

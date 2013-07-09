@@ -337,7 +337,7 @@ public:
                 {
                     ActivityTimer s(activity.getTotalCyclesRef(), activity.queryTimeActivities(), NULL);
                     out.setown(createParallelFunnel(activity, inputs.getArray(), inputs.ordinality(), true, abortSoon));
-                    dataLinkStart("FUNNEL", activity.queryContainer().queryId());
+                    dataLinkStart();
                 }
                 const void *nextRow()
                 {
@@ -399,8 +399,7 @@ public:
             }
             if (!current) current = input;
         }
-
-        dataLinkStart("FUNNEL", container.queryId());
+        dataLinkStart();
     }
 
     void stop()
@@ -561,8 +560,7 @@ public:
                 throw;
             }
         }
-
-        dataLinkStart("COMBINE", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {
@@ -666,7 +664,7 @@ public:
                 throw;
             }
         }
-        dataLinkStart("REGROUP", container.queryId());
+        dataLinkStart();
     }
     void stop()
     {
@@ -786,7 +784,7 @@ public:
             }
         }
         eoi = 0 == inputs.ordinality();
-        dataLinkStart("NONEMPTY", container.queryId());
+        dataLinkStart();
     }
     virtual void stop()
     {

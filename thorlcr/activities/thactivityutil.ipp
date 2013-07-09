@@ -91,30 +91,13 @@ class CThorDataLink : implements IThorDataLink
 {
     CActivityBase *owner;
     rowcount_t count, icount;
-    char *activityName;
-    activity_id activityId;
     unsigned outputId;
     unsigned limit;
 
 protected:
-    inline void dataLinkStart()
+    inline void dataLinkStart(unsigned _outputId = 0)
     {
-        dataLinkStart(NULL, 0);
-    }
-
-    inline void dataLinkStart(ThorActivityKind kind, activity_id activityId, unsigned outputId = 0)
-    {
-        dataLinkStart(activityKindStr(kind), activityId, outputId);
-    }
-    inline void dataLinkStart(const char * _activityName, activity_id _activityId, unsigned _outputId = 0)
-    {
-        if(_activityName) 
-        {
-            StringBuffer x(_activityName);
-            activityName = x.toUpperCase().detach();
-            activityId = _activityId;
-            outputId = _outputId;
-        }
+        outputId = _outputId;
 #ifdef _TESTING
         ActPrintLog(owner, "ITDL starting for output %d", outputId);
 #endif
@@ -136,11 +119,6 @@ protected:
 #ifdef _TESTING
         ActPrintLog(owner, "ITDL output %d stopped, count was %"RCPF"d", outputId, getDataLinkCount());
 #endif
-        if(activityName) 
-        {
-            free(activityName);
-            activityName = NULL;
-        }
     }
 
     inline void dataLinkIncrement()
@@ -178,8 +156,6 @@ public:
     CThorDataLink(CActivityBase *_owner) : owner(_owner)
     {
         icount = count = 0;
-        activityName = NULL;
-        activityId = 0;
     }
 #ifdef _TESTING
     ~CThorDataLink()
@@ -222,6 +198,7 @@ interface ISmartBufferNotify
     virtual void onInputStarted(IException *e) =0;      // e==NULL if start suceeded, NB only called with exception if Async
     virtual void onInputFinished(rowcount_t count) =0;
 };
+
 
 class CThorRowAggregator : public RowAggregator
 {

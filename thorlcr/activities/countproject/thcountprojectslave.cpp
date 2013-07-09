@@ -29,7 +29,7 @@ protected:
     void start()
     {
         count = 0;
-        dataLinkStart("COUNTPROJECT", container.queryId());
+        dataLinkStart();
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);

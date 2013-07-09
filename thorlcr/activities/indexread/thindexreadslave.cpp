@@ -662,7 +662,7 @@ public:
             keyedLimitCount = 0;            
         else
             eoi = true; // otherwise delayed until calc. in nextRow()
-        dataLinkStart("INDEXREAD", container.queryId());
+        dataLinkStart();
     }
     virtual void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -816,7 +816,7 @@ public:
         localAggTable.setown(new CThorRowAggregator(*this, *helper, *helper));
         localAggTable->start(queryRowAllocator());
         gathered = eoi = false;
-        dataLinkStart("INDEXGROUPAGGREGATE", container.queryId());
+        dataLinkStart();
     }
 // IRowStream
     virtual void stop()
@@ -921,7 +921,7 @@ public:
             totalCountKnown = true;
             preknownTotalCount = 0;
         }
-        dataLinkStart("INDEXCOUNT", container.queryId());
+        dataLinkStart();
     }
 
 // IRowStream
@@ -1106,7 +1106,7 @@ public:
         }
         else
             eoi = true;
-        dataLinkStart("INDEXNORMALIZE", container.queryId());
+        dataLinkStart();
     }
 
 // IRowStream
@@ -1268,7 +1268,7 @@ public:
         ActivityTimer s(totalCycles, timeActivities, NULL);
         eoi = hadElement = false;
         partn = 0;
-        dataLinkStart("INDEXAGGREGATE", container.queryId());
+        dataLinkStart();
     }
 
 // IRowStream
