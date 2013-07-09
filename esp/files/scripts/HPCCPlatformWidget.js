@@ -15,6 +15,7 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/dom",
 
     "dijit/_TemplatedMixin",
@@ -47,7 +48,7 @@ define([
     "hpcc/HPCCPlatformRoxieWidget",
     "hpcc/HPCCPlatformOpsWidget"
 
-], function (declare, dom,
+], function (declare, lang, dom,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry, Tooltip,
                 _TabContainerWidget, ESPRequest, WsAccount,
                 template) {
@@ -102,7 +103,9 @@ define([
             var context = this;
             WsAccount.MyAccount({
             }).then(function (response) {
-                dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
+                if (lang.exists("MyAccountResponse.username", response)) {
+                    dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
+                }
             },
             function (error) {
             });

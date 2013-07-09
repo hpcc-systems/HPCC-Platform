@@ -529,32 +529,59 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
     StringArray unmatchedFiles;
 
     Owned<IHpccPackageSet> set;
-    Owned<IHpccPackageMap> ownedmap;
-    const IHpccPackageMap *map = NULL;
+    Owned<IPropertyTree> mapTree;
 
+    const char *target = req.getTarget();
+    if (!target || !*target)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Target cluster required");
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    if (!clusterInfo)
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Target cluster not found");
+    SCMStringBuffer process;
+    clusterInfo->getRoxieProcess(process);
+    if (!process.length())
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Roxie process not found");
+
+    const char *pmid = req.getPMID();
     if (req.getActive()) //validate active map
     {
-        set.setown(createPackageSet("*"));
-        if (!set)
-            throw MakeStringException(PKG_CREATE_PACKAGESET_FAILED, "Unable to create PackageSet");
-        map = set->queryActiveMap(req.getTarget());
-        if (!map)
+        mapTree.setown(resolveActivePackageMap(process.str(), target, true));
+        if (!mapTree)
             throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Active package map not found");
     }
-    else if (req.getPMID())
+    else if (pmid && *pmid)
     {
-        ownedmap.setown(createPackageMapFromPtree(getPackageMapById(req.getPMID(), true), req.getTarget(), req.getPMID()));
-        if (!ownedmap)
-            throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", req.getPMID());
-        map = ownedmap;
+        mapTree.setown(getPackageMapById(pmid, true));
+        if (!mapTree)
+            throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Package map %s not found", req.getPMID());
     }
     else
     {
-        ownedmap.setown(createPackageMapFromXml(req.getInfo(), req.getTarget(), NULL));
-        if (!ownedmap)
+        mapTree.setown(createPTreeFromXMLString(req.getInfo()));
+        if (!mapTree)
             throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error processing package file content");
-        map = ownedmap;
     }
+
+    if (req.getCheckDFS())
+    {
+        Owned<IReferencedFileList> pmfiles = createReferencedFileList(context.queryUserId(), context.queryPassword());
+        pmfiles->addFilesFromPackageMap(mapTree);
+        pmfiles->resolveFiles(process.str(), NULL, true, false);
+        Owned<IReferencedFileIterator> files = pmfiles->getFiles();
+        StringArray notInDFS;
+        ForEach(*files)
+        {
+            IReferencedFile &file = files->query();
+            if (file.getFlags() & RefFileNotFound)
+                notInDFS.append(file.getLogicalName());
+        }
+        resp.updateFiles().setNotInDFS(notInDFS);
+    }
+
+    const char *id = mapTree->queryProp("@id");
+    Owned<IHpccPackageMap> map = createPackageMapFromPtree(mapTree, target, id);
+    if (!map)
+        throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", id);
 
     map->validate(req.getQueryIdToVerify(), warnings, errors, unmatchedQueries, unusedPackages, unmatchedFiles);
 

@@ -20,7 +20,9 @@ define([
     return declare(null, {
 
         constructor: function (args) {
-            declare.safeMixin(this, args);
+            if (args) {
+                declare.safeMixin(this, args);
+            }
         },
 
         getParam: function (key) {

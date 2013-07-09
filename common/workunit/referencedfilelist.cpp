@@ -127,6 +127,7 @@ public:
     virtual void addFilesFromWorkUnit(IConstWorkUnit *cw);
     virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackageMap *pm, const char *queryid);
     virtual void addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg);
+    virtual void addFilesFromPackageMap(IPropertyTree *pm);
 
     virtual IReferencedFileIterator *getFiles();
     virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo);
@@ -388,6 +389,13 @@ void ReferencedFileList::addFiles(StringArray &files)
 {
     ForEachItemIn(i, files)
         addFile(files.item(i));
+}
+
+void ReferencedFileList::addFilesFromPackageMap(IPropertyTree *pm)
+{
+    Owned<IPropertyTreeIterator> files = pm->getElements("Package/SuperFile/SubFile[@value]");
+    ForEach(*files)
+        addFile(files->query().queryProp("@value"));
 }
 
 void ReferencedFileList::addFilesFromQuery(IConstWorkUnit *cw, const IHpccPackage *pkg)
