@@ -83,7 +83,7 @@ define([
                     Name: {
                         label: "Name", width: 72, sortable: true,
                         formatter: function (Name, idx) {
-                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "GraphClick'>" + Name + "</a>";
+                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "GraphClick'>" + Name + "</a>";
                         }
                     },
                     Label: { label: "Label", sortable: true },

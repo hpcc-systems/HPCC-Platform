@@ -32,19 +32,14 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/ESPDFUWorkunit",
     "hpcc/WsSMC",
-    "hpcc/WsWorkunits",
-    "hpcc/FileSpray",
-    "hpcc/WsDfu",
     "hpcc/WUDetailsWidget",
     "hpcc/DFUWUDetailsWidget",
-    "hpcc/LFDetailsWidget",
-    "hpcc/SFDetailsWidget",
     "hpcc/ESPUtil"
 
 ], function (declare, lang, arrayUtil, on,
                 Button,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                GridDetailsWidget, ESPWorkunit, ESPDFUWorkunit, WsSMC, WsWorkunits, FileSpray, WsDfu, WUDetailsWidget, DFUWUDetailsWidget, LFDetailsWidget, SFDetailsWidget, ESPUtil) {
+                GridDetailsWidget, ESPWorkunit, ESPDFUWorkunit, WsSMC, WUDetailsWidget, DFUWUDetailsWidget, ESPUtil) {
     return declare("ActivityWidget", [GridDetailsWidget], {
 
         gridTitle: "Activity",
@@ -76,7 +71,7 @@ define([
                         label: "Active workunit", width: 180, sortable: true,
                         formatter: function (Wuid, row) {
                             var wu = row.Server === "DFUserver" ? ESPDFUWorkunit.Get(Wuid) : ESPWorkunit.Get(Wuid);
-                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp<a href=# class='" + context.id + "WuidClick'>" + Wuid + "</a>";
+                            return "<img src='../files/" + wu.getStateImage() + "'>&nbsp;<a href='#' class='" + context.id + "WuidClick'>" + Wuid + "</a>";
                         }
 
                     },
@@ -87,7 +82,7 @@ define([
                         }
                     },
                     Owner: { label: "Owner", width: 90, sortable: true },
-                    Jobname: { label: "Job Name", sortable: true },
+                    Jobname: { label: "Job Name", sortable: true }
                 }
             }, domID);
 

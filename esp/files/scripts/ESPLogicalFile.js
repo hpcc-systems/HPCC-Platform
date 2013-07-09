@@ -72,7 +72,9 @@ define([
         },
         constructor: function (args) {
             this.inherited(arguments);
-            declare.safeMixin(this, args);
+            if (args) {
+                declare.safeMixin(this, args);
+            }
             this.logicalFile = this;
         },
         save: function (description, args) {

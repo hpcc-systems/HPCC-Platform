@@ -76,7 +76,9 @@ define([
         Total: "-1",
 
         constructor: function (args) {
-            declare.safeMixin(this, args);
+            if (args) {
+                declare.safeMixin(this, args);
+            }
             if (lang.exists("Sequence", this)) {
                 this.store = new Store({
                     wuid: this.Wuid,

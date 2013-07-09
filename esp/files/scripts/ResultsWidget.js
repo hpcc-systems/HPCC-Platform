@@ -79,13 +79,13 @@ define([
                     Name: {
                         label: "Name", width: 180, sortable: true,
                         formatter: function (Name, idx) {
-                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "ResultClick'>" + Name + "</a>";
+                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "ResultClick'>" + Name + "</a>";
                         }
                     },
                     FileName: {
                         label: "FileName", sortable: true,
                         formatter: function (FileName, idx) {
-                            return "<a href=# rowIndex=" + idx + " class='" + context.id + "FileClick'>" + FileName + "</a>";
+                            return "<a href='#' rowIndex=" + idx + " class='" + context.id + "FileClick'>" + FileName + "</a>";
                         }
                     },
                     Value: { label: "Value", width: 360, sortable: true }
