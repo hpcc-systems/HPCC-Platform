@@ -2656,8 +2656,9 @@ void FileSprayer::spray()
 
     aindex_t sourceSize = sources.ordinality();
     bool failIfNoSourceFile = options->getPropBool("@failIfNoSourceFile");
-    if( (sourceSize == 0) && failIfNoSourceFile)
-        throwAbortException();
+
+    if ((sourceSize == 0) && failIfNoSourceFile)
+        throwError(DFTERR_NoFilesMatchWildcard);
 
     LocalAbortHandler localHandler(daftAbortHandler);
 

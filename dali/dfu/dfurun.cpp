@@ -1211,7 +1211,7 @@ public:
                         }
 
                         if (options->getFailIfNoSourceFile())
-                            opttree->addPropBool("@failIfNoSourceFile", true);
+                            opttree->setPropBool("@failIfNoSourceFile", true);
 
                         Owned<IFileDescriptor> fdesc = destination->getFileDescriptor(iskey,options->getSuppressNonKeyRepeats()&&!iskey);
                         if (fdesc) {
