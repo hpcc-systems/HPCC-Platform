@@ -72,7 +72,7 @@ if [ "${1:0:1}" == '-' ]; then
     echo ---SpaceUsedAndFree---
     swap=`free | tail -n 1 | awk '{print $3,$4}'`
     echo Physical Memory: $mem
-    echo Virtual Memory: $swap
+    echo Swap: $swap
 
     i=0
     for name in `df $dfOption | tail -n +2 | awk '{if(NF>=4) print $NF}'`; do
@@ -140,7 +140,7 @@ else
     echo ---SpaceUsedAndFree---
     swap=`free | tail -n 1 | awk '{print $3,$4}'`
     echo Physical Memory: $mem
-    echo Virtual Memory: $swap
+    echo Swap: $swap
     for name in `df -l | tail -n +2 | awk '{if(NF>=4) print $NF}'`
     do
         arr0[i]=$name
