@@ -1072,8 +1072,11 @@ protected:
                 break;
         }
 
-        atomic_dec(&count);
+        if (atomic_dec_and_read(&count) == 1)
+            noteEmptyPage();
     }
+
+    void noteEmptyPage();
 };
 
 //================================================================================
@@ -1853,6 +1856,7 @@ public:
     CChunkingHeap(CChunkingRowManager * _rowManager, const IContextLogger &_logctx, const IRowAllocatorCache *_allocatorCache, unsigned _flags)
         : logctx(_logctx), rowManager(_rowManager), allocatorCache(_allocatorCache), active(NULL), flags(_flags)
     {
+        atomic_set(&possibleEmptyPages, 0);
     }
 
     ~CChunkingHeap()
@@ -1908,6 +1912,15 @@ public:
 
     unsigned releaseEmptyPages(bool forceFreeAll)
     {
+        if (atomic_read(&possibleEmptyPages) == 0)
+            return 0;
+
+        //You will get a false positive if possibleEmptyPages is set while walking the active page list, but that
+        //only mean the list is walked more than it needs to be.
+        //If releaseEmptyPages() is called between the last release on a page (setting count to 1), and this flag
+        //getting set, it won't release the page *this time*.  But that is the same as the release happening
+        //slightly later.
+        atomic_set(&possibleEmptyPages, 0);
         unsigned total = 0;
         BigHeapletBase *prev = NULL;
         SpinBlock c1(crit);
@@ -1919,7 +1932,11 @@ public:
             {
                 //If this is the only page then only free it if forced to.
                 if (!prev && !next && !forceFreeAll)
+                {
+                    //There is still a potential page to release so reset the flag.
+                    atomic_set(&possibleEmptyPages, 1);
                     break;
+                }
 
                 if (memTraceLevel >= 3)
                     logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::pages() freeing Heaplet linked in active list - addr=%p pages=%u capacity=%"I64F"u rowMgr=%p",
@@ -1970,8 +1987,11 @@ public:
         return false;
     }
 
+    void noteEmptyPage() { atomic_set(&possibleEmptyPages, 1); }
+
     inline void internalLock() { crit.enter(); }
     inline void internalUnlock() { crit.leave(); }
+
 
 protected:
     virtual void reportHeapUsage(IActivityMemoryUsageMap * usageMap, unsigned numPages, memsize_t numAllocs) const = 0;
@@ -1994,6 +2014,7 @@ protected:
     const IRowAllocatorCache *allocatorCache;
     const IContextLogger & logctx;
     mutable SpinLock crit;      // MORE: Can probably be a NonReentrantSpinLock if we're careful
+    atomic_t possibleEmptyPages;  // Are there any pages with 0 records.  Primarily here to avoid walking long page chains.
 };
 
 
@@ -2128,6 +2149,12 @@ protected:
 
 //================================================================================
 //
+
+void FixedSizeHeapletBase::noteEmptyPage()
+{
+    heap->noteEmptyPage();
+}
+
 const void * FixedSizeHeapletBase::_compactRow(const void * ptr, HeapCompactState & state)
 {
     //NB: If this already belongs to a full heaplet then leave it where it is..
@@ -3378,6 +3405,8 @@ void CHugeChunkingHeap::expandHeap(void * original, memsize_t copysize, memsize_
 void * CNormalChunkingHeap::inlineDoAllocate(unsigned allocatorId)
 {
     //Only hold the spinblock while walking the list - so subsequent calls to checkLimit don't deadlock.
+    //MORE: Could split into finger->allocateChunk, and finger->initializeChunk() the latter could be done
+    //outside the spinblock, which might reduce contention (but slow down single threaded slightly).
     {
         BigHeapletBase *prev = NULL;
         SpinBlock b(crit);
