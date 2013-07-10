@@ -3796,7 +3796,6 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_transformebcdic:
     case no_transformascii:
     case no_rollupgroup:
-    case no_normalize:
     case no_normalizegroup:
     case no_parse:
     case no_newparse:
@@ -3805,6 +3804,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_selfjoin:
     case no_process:
         if (isNull(child))
+            return replaceWithNull(expr);
+        break;
+    case no_normalize:
+        if (isNull(child) || matchesConstantValue(expr->queryChild(1), 0))
             return replaceWithNull(expr);
         break;
     case no_allnodes:
