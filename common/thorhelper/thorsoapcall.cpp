@@ -1477,7 +1477,7 @@ private:
                         while (chunkSize)
                         {
                             if (chunkSize > WSCBUFFERSIZE)
-                                DBGLOG("SOAPCALL chunk size %ld", chunkSize);
+                                DBGLOG("SOAPCALL chunk size %d", chunkSize);
 
                             //read chunk data directly into response
                             size32_t count = dataProvider->getBytes(response.reserve(dataLen + chunkSize), chunkSize);
