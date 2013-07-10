@@ -4408,28 +4408,32 @@ void HqlCppTranslator::doBuildExprAlias(BuildCtx & ctx, IHqlExpression * expr, C
     while (value->getOperator() == no_alias)
         value = value->queryChild(0);
 
+    CHqlBoundExpr bound;
+    if (!tgt)
+        tgt = &bound;
+
     //The second half of this test could cause aliases to be duplicated, but has the significant effect of reducing the amount of data that is serialised.
     //so far on my examples it does the latter, but doesn't seem to cause the former
     if (expr->hasAttribute(localAtom) || (insideOnCreate(ctx) && !expr->hasAttribute(globalAtom)))
     {
         expandAliases(ctx, value);
-        if (tgt)
-            buildTempExpr(ctx, value, *tgt);
-        else
+
+        switch (value->getOperator())
         {
-            CHqlBoundExpr bound;
-            buildTempExpr(ctx, value, bound);
+        // these operations generate temporaries anyway, and the row versions are inefficient via a buildTempExpr
+        case no_getresult:
+        case no_getgraphresult:
+        case no_getgraphloopresult:
+            buildAnyExpr(ctx, value, *tgt);
+            break;
+        default:
+            buildTempExpr(ctx, value, *tgt);
+            break;
         }
     }
     else
     {
-        if (tgt)
-            doBuildAliasValue(ctx, value, *tgt);
-        else
-        {
-            CHqlBoundExpr bound;
-            doBuildAliasValue(ctx, value, bound);
-        }
+        doBuildAliasValue(ctx, value, *tgt);
     }
 }
 
