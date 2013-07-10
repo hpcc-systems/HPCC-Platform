@@ -415,7 +415,7 @@ public:
             return NULL;
         if (!fdesc || !fdesc->queryProperties().hasProp("@cloneFrom"))
             return NULL;
-        if (fdesc->queryProperties().hasProp("cloneFromGroup"))
+        if (fdesc->queryProperties().hasProp("cloneFromGroup") && fdesc->queryProperties().hasProp("@cloneFromDir"))
         {
             return recreateCloneSource(fdesc, _lfn);
         }
