@@ -5285,6 +5285,8 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                         {
                             src.set(expr->queryChild(0));
                             if (!src || src->isAttribute())
+                                src.set(queryPropertyChild(expr, defaultAtom, 0));
+                            if (!src)
                             {
                                 ERRORAT1(curRow->queryProperty(_location_Atom), HQLERR_NoDefaultProvided, expr->queryName()->str());
                                 return;
@@ -5383,6 +5385,8 @@ void TempTableTransformer::createTempTableAssign(HqlExprArray & assigns, IHqlExp
                     if (!src)
                     {
                         IHqlExpression * defaultValue = expr->queryChild(0);
+                        if (!defaultValue || defaultValue->isAttribute())
+                            defaultValue = queryPropertyChild(expr, defaultAtom, 0);
                         src.setown(replaceSelfRefSelector(defaultValue, self));
                         if (src)
                             src.setown(mapper.transformRoot(src));
