@@ -464,21 +464,22 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 </row>
 
                 <row>
-                  <entry>-sp, --suspend-prev </entry>
+                  <entry>-sp, --suspend-prev</entry>
 
                   <entry>Suspend previously active query</entry>
                 </row>
 
                 <row>
-                  <entry>-dp, --delete-prev </entry>
+                  <entry>-dp, --delete-prev</entry>
 
-                  <entry>Delete previously active query </entry>
+                  <entry>Delete previously active query</entry>
                 </row>
 
                 <row>
                   <entry>--no-files</entry>
 
-                  <entry>Does not copy files referenced by the query </entry>
+                  <entry>Does not copy DFU file information for files
+                  referenced by the query</entry>
                 </row>
 
                 <row>
