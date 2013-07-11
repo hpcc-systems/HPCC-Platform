@@ -2017,9 +2017,13 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
     MemoryBuffer filterbuf;
 
     bool bDoubleCheckState = false;
-    if(req.getState())
+    if(req.getState() && *req.getState())
     {
-        addWUQueryFilter(filters, filterCount, filterbuf, strieq(req.getState(), "unknown") ? "" : req.getState(), WUSFstate);
+        filters[filterCount++] = WUSFstate;
+        if (!strieq(req.getState(), "unknown"))
+            filterbuf.append(req.getState());
+        else
+            filterbuf.append("");
         if (strieq(req.getState(), "submitted"))
             bDoubleCheckState = true;
     }
