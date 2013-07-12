@@ -3280,22 +3280,15 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
 
         if (!strcmp(pszCompType, "RoxieCluster"))
         {
-          xpath.clear().append("RoxieFarmProcess/RoxieServerProcess");
+          xpath.clear().append(XML_TAG_ROXIE_SERVER);
           Owned<IPropertyTreeIterator> iterRoxieServers = pSrcTree->getElements(xpath.str());
 
           ForEach (*iterRoxieServers )
           {
             IPropertyTree* pRoxieServer = &iterRoxieServers->query();
-            const char* pszComputer = pRoxieServer->queryProp(XML_ATTR_COMPUTER);
-
-            if (pszComputer)
-            {
-              xpath.clear().appendf("Hardware/Computer/[@name='%s']", pszComputer);
-              IPropertyTree* pComputer= pEnvRoot->queryPropTree(xpath.str());
-              const char* pszNetAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
+             const char* pszNetAddr = pRoxieServer->queryProp(XML_ATTR_NETADDRESS);
               if (pszNetAddr)
                 pRoxieServer->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
-            }
           }
 
           xpath.clear().append(XML_TAG_ROXIE_ONLY_SLAVE);
