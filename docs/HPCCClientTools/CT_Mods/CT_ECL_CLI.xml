@@ -384,6 +384,7 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
 ecl publish --target=roxie --name=FindPersonService -A libW20120224-125557.so
 ecl publish --target=roxie --name=FindPersonService -A ArchiveQuery.xml
 ecl publish --target=roxie --name=FindPersonService --activate findperson.ecl
+ecl publish --target=roxie --name=FindPersonService --activate --no-files findperson.ecl
 ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
 </programlisting>
 
@@ -424,7 +425,7 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 <row>
                   <entry>archive</entry>
 
-                  <entry>TheECL archive to deploy</entry>
+                  <entry>The ECL archive to deploy</entry>
                 </row>
 
                 <row>
@@ -463,9 +464,29 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 </row>
 
                 <row>
+                  <entry>-sp, --suspend-prev</entry>
+
+                  <entry>Suspend previously active query</entry>
+                </row>
+
+                <row>
+                  <entry>-dp, --delete-prev</entry>
+
+                  <entry>Delete previously active query</entry>
+                </row>
+
+                <row>
+                  <entry>--no-files</entry>
+
+                  <entry>Does not copy DFU file information for files
+                  referenced by the query</entry>
+                </row>
+
+                <row>
                   <entry>--no-reload</entry>
 
-                  <entry>Specifies to not reload the target cluster</entry>
+                  <entry>Specifies to not request a reload of the Roxie
+                  cluster</entry>
                 </row>
 
                 <row>
@@ -2355,6 +2376,87 @@ ecl packagemap validate roxie --active</programlisting>
                   <entry>--wait=<emphasis>&lt;ms&gt;</emphasis></entry>
 
                   <entry>Max time to wait in milliseconds</entry>
+                </row>
+
+                <row>
+                  <entry>-u, --username</entry>
+
+                  <entry>The username (if necessary)</entry>
+                </row>
+
+                <row>
+                  <entry>-pw, --password</entry>
+
+                  <entry>The password (if necessary)</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl roxie unused-files</title>
+
+        <para><emphasis role="bold">ecl roxie unused-files
+        &lt;processName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl roxie unused-files myroxie
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl roxie unused-files</entry>
+
+                  <entry>Finds files in the DFS for the given roxie process
+                  that are not currently used by queries on that
+                  roxie.</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>--check-packagemaps</entry>
+
+                  <entry> Exclude files referenced in active
+                  packagemaps</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+
+                <row>
+                  <entry>-s, --server</entry>
+
+                  <entry>The IP Address or hostname of ESP server running
+                  eclwatch services</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
+                  <entry>--port</entry>
+
+                  <entry>The eclwatch services port (Default is 8010)</entry>
                 </row>
 
                 <row>

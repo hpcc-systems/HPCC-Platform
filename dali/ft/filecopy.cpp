@@ -2654,6 +2654,11 @@ void FileSprayer::spray()
     if (!allowSplit() && querySplitPrefix())
         throwError(DFTERR_SplitNoSplitClash);
 
+    aindex_t sourceSize = sources.ordinality();
+    bool failIfNoSourceFile = options->getPropBool("@failIfNoSourceFile");
+
+    if ((sourceSize == 0) && failIfNoSourceFile)
+        throwError(DFTERR_NoFilesMatchWildcard);
 
     LocalAbortHandler localHandler(daftAbortHandler);
 
