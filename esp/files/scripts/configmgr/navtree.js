@@ -1861,13 +1861,10 @@ function roxieSelectionToXML(table, type, parentName, selectedRows, compName) {
 function displayAddFarmDlg(self, farmName) {
   var tmpdt = self;
   var handleSubmit = function() {
-    this.hide();
     top.document.startWait();
-    var selRows = selectComputersDTDiv.selectComputersTable.getUserSelectedRows();
     var compName = tmpdt.getRecord(tmpdt.getSelectedRows()[0]).getData('Name');
-    var xmlStr = roxieSelectionToXML(selectComputersDTDiv.selectComputersTable, "RoxieFarm", tmpdt.selectComputersPanel.currentFarmName, selRows, compName);
+    var xmlStr = "<RoxieData roxieName='" + compName + "'></RoxieData>";
 
-    clearSelectComputersTable();
     YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleRoxieOperation', {
       success: function(o) {
         var form = top.window.document.forms['treeForm'];
@@ -1887,10 +1884,7 @@ function displayAddFarmDlg(self, farmName) {
   initSelectComputersPanel(tmpdt, handleSubmit);
 
   tmpdt.selectComputersPanel.currentFarmName = farmName;
-  document.getElementById('selectComputersPanel').style.display = 'block';
-  tmpdt.selectComputersPanel.render(document.body);
-  tmpdt.selectComputersPanel.center();
-  tmpdt.selectComputersPanel.show();
+  handleSubmit();
 }
 
 function displayReplaceServerDlg() {
@@ -2791,7 +2785,30 @@ function promptSlaveConfig(self) {
     top.document.startWait();
     var compName = tmpdt.getRecord(tmpdt.getSelectedRows()[0]).getData('Name');
     var xmlStr = instanceSelectionToXML(selectComputersDTDiv.selectComputersTable, selRows, tmpdt);
-    displaySlaveConfigDlg(tmpdt, selRows.length);
+
+        YAHOO.util.Connect.asyncRequest('POST', '/WsDeploy/HandleRoxieOperation', {
+          success: function(o) {
+            clearSelectComputersTable();
+            if (o.responseText.indexOf("<html") === 0) {
+              var temp = o.responseText.split(/td align=\"left\">/g);
+              var temp1 = temp[1].split(/<\/td>/g);
+              top.document.stopWait();
+              alert(temp1[0]);
+            }
+            else {
+              var form = top.window.document.forms['treeForm'];
+              form.isChanged.value = "true";
+              top.document.stopWait();
+              clickCurrentSelOrName(tmpdt);
+            }
+          },
+          failure: function(o) {
+            top.document.stopWait();
+            alert(o.statusText);
+          },
+          scope: this
+        },
+            getFileName(true) + 'Cmd=RoxieSlaveConfig&XmlArgs=' + '<RoxieData ' + 'roxieName=\'' + compName + '\'>' + xmlStr + '</RoxieData>');
   }
   initSelectComputersPanel(tmpdt, handleSubmit);
   document.getElementById('selectComputersPanel').style.display = 'block';
