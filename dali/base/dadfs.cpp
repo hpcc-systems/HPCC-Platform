@@ -8222,17 +8222,10 @@ class CInitGroups
             }
             switch (groupType) {
                 case grp_roxie:
-                // Redundant copies are located via the flags.
-                // Old environments may contain duplicated sever information for multiple ports
-                // MORE - it's not clear whether this is correct for full redundancy and overloaded clusters
-                {
-                    unsigned k;
-                    if (eps.contains(ep))
-                        break;
-                    if (k==eps.ordinality())
-                        eps.append(ep); // just add (don't care about order and no duplicates)
+                    // Redundant copies are located via the flags.
+                    // Old environments may contain duplicated sever information for multiple ports
+                    eps.appendUniq(ep);
                     break;
-                }
                 case grp_thor:
                 case grp_thorspares:
                     eps.append(ep);

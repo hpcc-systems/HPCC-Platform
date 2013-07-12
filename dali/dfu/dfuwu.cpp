@@ -2018,6 +2018,16 @@ public:
         return false;
     }
 
+    bool getFailIfNoSourceFile() const
+    {
+        return queryRoot()->getPropBool("@failIfNoSourceFile");
+    }
+
+    void setFailIfNoSourceFile(bool val)
+    {
+        queryRoot()->setPropBool("@failIfNoSourceFile",val);
+    }
+
 };
 
 class CExceptionIterator: public CInterface, implements IExceptionIterator

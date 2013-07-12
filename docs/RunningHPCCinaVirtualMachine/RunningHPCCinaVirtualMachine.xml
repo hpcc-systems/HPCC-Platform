@@ -136,8 +136,9 @@
         </listitem>
 
         <listitem>
-          <para>VMWare<superscript>®</superscript> Player or Server (version
-          3.0 or later)</para>
+          <para>A virtualization software package:
+          VMware<superscript>®</superscript> Player or Server (version 3.0 or
+          later) or Oracle VM VirtualBox (version 4.0 or later). </para>
         </listitem>
 
         <listitem>
@@ -154,14 +155,235 @@
   <chapter>
     <title>Getting the Tools and the VM Image</title>
 
-    <para>To run this version of the HPCC System, you need the VM player
-    (version 3.0 or later) from VMWare<superscript>®</superscript>.</para>
+    <para>To run the virtual machine version of the HPCC System, you need
+    virtualization software. These packages allow you to run virtual images
+    inside a single host. There are a several different vendors who make
+    virtualization software, while any or all of these could work, we support
+    the following products:</para>
 
-    <para>In the following sections, you will:</para>
+    <itemizedlist>
+      <listitem>
+        <para>VMware's Virtual Machine </para>
+      </listitem>
 
-    <para><itemizedlist>
+      <listitem>
+        <para>Oracle's VM VirtualBox</para>
+      </listitem>
+    </itemizedlist>
+
+    <sect1>
+      <title>VMware Virtual Machine</title>
+
+      <para>The VMware player from VMware<superscript>®</superscript> is a
+      virtualization software you can use to run the HPCC virtual
+      machine.</para>
+
+      <para>In the following sections, you will:</para>
+
+      <para><itemizedlist>
+          <listitem>
+            <para>Download and install the VMware Player</para>
+          </listitem>
+
+          <listitem>
+            <para>Download the HPCC virtual machine image from HPCC
+            Systems.</para>
+          </listitem>
+
+          <listitem>
+            <para>Open and import the image in the VMware Player</para>
+          </listitem>
+        </itemizedlist>Once you have completed these steps, you can evaluate
+      the HPCC Platform and learn how to use it. </para>
+
+      <sect2>
+        <title>Download and Install the VMware Player</title>
+
+        <para>If you already have VMware Player installed, you can skip this
+        section and go to <xref linkend="get_hpcc" />.</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Go to the VMware site: <ulink
+            url="http://www.vmware.com/products/player/">http://www.vmware.com/products/player/</ulink>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on download link, then follow the instructions to
+            download the <emphasis>VMware Player for 32-bit and 64-bit
+            Windows</emphasis>.</para>
+
+            <para>Registration is required, but the player is free.</para>
+          </listitem>
+
+          <listitem>
+            <para>Download the VMware Player (save to a folder on your
+            machine).</para>
+          </listitem>
+
+          <listitem>
+            <para>Follow VMware's on-screen instructions and install the
+            VMware Player.</para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <?hard-pagebreak ?>
+
+      <sect2>
+        <title id="get_hpcc">Get the latest HPCC Virtual Image File</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Download the latest HPCC virtual machine image file
+              from:</para>
+
+              <para><ulink
+              url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>Note:</term>
+
+                    <listitem>
+                      <para>You may need to register to login.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+
+            <listitem>
+              <para>Save the file to a folder on your machine.</para>
+            </listitem>
+
+            <listitem>
+              <para>Open the VMware Player. </para>
+            </listitem>
+
+            <listitem>
+              <para>From the <emphasis role="bold">Player</emphasis> menu,
+              select <emphasis role="bold">File</emphasis>, then <emphasis
+              role="bold">Open...</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Go to the folder where you saved the downloaded file and
+              select it.</para>
+
+              <para> For example (<emphasis
+              role="bluebold">HPCCSystemsVM-<emphasis>n.n.n.n</emphasis>.ova</emphasis>
+              , where n.n.n.n is the version number).</para>
+
+              <para>The .ova file should open an <emphasis>Import Virtual
+              Machine</emphasis> dialog window providing for the name of the
+              new virtual machine, and the storage path of the virtual machine
+              you selected. <figure id="ImportVm">
+                  <title xreflabel="welc">Import Virtual Machine</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg13.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Import</emphasis> button
+              to import the virtual machine into the VMware Player. </para>
+
+              <para>Wait for the HPCC virtual machine to load to the desktop
+              in the VMware player. This may take a few minutes.</para>
+
+              <variablelist>
+                <varlistentry>
+                  <term><emphasis role="bold">Note</emphasis>:</term>
+
+                  <listitem>
+                    <para>The first time you use the VM Player, you must
+                    accept the license agreement. You may also be prompted to
+                    install add-ons, but they are not necessary for the HPCC
+                    virtual machine. </para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+            </listitem>
+
+            <listitem>
+              <para>At the VMware Player main window the new virtual machine
+              you just imported is now listed. Double-click on that virtual
+              machine to start it.</para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Once the VM initialization completes, you will see a
+              window similar to the following:</para>
+
+              <figure id="welcometovm">
+                <title xreflabel="welc">VM Welcome Screen</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg01.JPG" />
+                  </imageobject>
+                </mediaobject>
+              </figure>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png" /></entry>
+
+                        <entry>Your virtual IP address could be different from
+                        the ones provided in the example images. Please use
+                        the IP address provided by <emphasis
+                        role="bold">your</emphasis> installation.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+
+              <para>Do not resize this window, you will not interact with it.
+              In addition, there is no need to Login.</para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>TIP:</term>
+
+                    <listitem>
+                      <para>If you do click on the window, it will capture
+                      your keyboard/mouse. Press <emphasis
+                      role="bold">ctrl+alt</emphasis> to return control of
+                      your mouse.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
+    </sect1>
+
+    <sect1>
+      <title>VM VirtualBox</title>
+
+      <para>Oracle's virtualization software, VM VirtualBox is supported for
+      running the HPCC virtual machine image. </para>
+
+      <para>In the following section(s), you will:</para>
+
+      <itemizedlist>
         <listitem>
-          <para>Download and install the VM Player</para>
+          <para>Download and install the VM VirtualBox</para>
         </listitem>
 
         <listitem>
@@ -170,127 +392,298 @@
         </listitem>
 
         <listitem>
-          <para>Open the image in the VM Player</para>
+          <para>Open and import the image in VM VirtualBox </para>
         </listitem>
-      </itemizedlist>Once you have completed these steps, you can evaluate the
-    HPCC Platform and learn how to use it. .</para>
+      </itemizedlist>
 
-    <sect1>
-      <title>Download and Install the VMWare player</title>
+      <sect2 id="Install_VM_VirtualBox">
+        <title>Download and Install the VM VirtualBox</title>
 
-      <para>If you already have VMPlayer (version 3.0 or later) installed, you
-      can skip this section and go to <xref linkend="get_hpcc" />.</para>
+        <para>If you already have the VM VirtualBox installed, skip to step
+        number 6, and verify the network configuration settings.</para>
 
-      <orderedlist>
-        <listitem>
-          <para>Go to the VMWare site: <ulink
-          url="http://www.vmware.com/products/player/">http://www.vmware.com/products/player/</ulink>.</para>
-        </listitem>
-
-        <listitem>
-          <para>Click on download link, then follow the instructions to
-          download the version for 32-bit and 64-bit Windows.</para>
-
-          <para>Registration is required, but the player is free.</para>
-        </listitem>
-
-        <listitem>
-          <para>Download the VMWare Player (save to a folder on your
-          machine).</para>
-        </listitem>
-
-        <listitem>
-          <para>Follow VMWare's on-screen instructions and install the VM
-          Player.</para>
-        </listitem>
-      </orderedlist>
-    </sect1>
-
-    <?hard-pagebreak ?>
-
-    <sect1>
-      <title id="get_hpcc">Get the latest HPCC Virtual Image File</title>
-
-      <para><orderedlist>
+        <orderedlist>
           <listitem>
-            <para>Download the latest HPCC virtual machine image file
-            from:</para>
-
-            <para><ulink
-            url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
-
-            <para>Note: You may need to register and login.</para>
+            <para>Go to the VirtualBox site: <ulink
+            url="https://www.virtualbox.org/wiki/Downloads">https://www.virtualbox.org/wiki/Downloads</ulink>.</para>
           </listitem>
 
           <listitem>
-            <para>Save the .zip file to a folder on your machine, and extract
-            the contents to a folder on your machine.</para>
+            <para>Click on the appropriate link for your operating system. For
+            example <emphasis>VirtualBox for Windows hosts</emphasis>.</para>
           </listitem>
 
           <listitem>
-            <para>Go to the folder where you extracted the files and
-            double-click on the .vmx. file
-            (HPCCSystemsVM-<emphasis>n.n.n.n</emphasis>.vmx , where n.n.n.n is
-            the version number).</para>
-
-            <para>The .vmx file should open in the VMWare player. If your
-            VMPlayer is not installed correctly, the .vmx file will not open.
-            Please check your VMPlayer installation.</para>
+            <para>Download the VirtualBox Installation file. Save to a folder
+            on your machine.</para>
           </listitem>
 
           <listitem>
-            <para>Wait for the HPCC virtual machine to load to the desktop in
-            the VM player. This may take a few minutes.</para>
-
-            <para><emphasis role="bold">Note</emphasis>: The first time you
-            use the VM Player, you must accept the license agreement. You may
-            also be prompted to install add-ons, but they are not necessary
-            for the HPCC virtual machine.</para>
+            <para>Double-click on the installation file to install VirtualBox.
+            </para>
           </listitem>
 
           <listitem>
-            <?dbfo keep-together="always"?>
-
-            <para>Once the VM initialization completes, you will see a window
-            similar to the following:</para>
-
-            <figure id="welcometovm">
-              <title xreflabel="welc">VM Welcome Screen</title>
-
-              <mediaobject>
-                <imageobject>
-                  <imagedata fileref="images/vmimg01.JPG" />
-                </imageobject>
-              </mediaobject>
-            </figure>
-
-            <para><informaltable colsep="1" frame="all" rowsep="1">
-                <?dbfo keep-together="always"?>
-
-                <tgroup cols="2">
-                  <colspec colwidth="49.50pt" />
-
-                  <colspec />
-
-                  <tbody>
-                    <row>
-                      <entry><inlinegraphic
-                      fileref="images/caution.png" /></entry>
-
-                      <entry>Your virtual IP address could be different from
-                      the ones provided in the example images. Please use the
-                      IP address provided by <emphasis
-                      role="bold">your</emphasis> installation.</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable></para>
-
-            <para>Do not resize this window, you will not interact with it. In
-            addition, there is no need to Login, Configure Network, or Set
-            Timezone.</para>
+            <para>Follow the on-screen instructions to complete the
+            installation of VirtualBox.</para>
           </listitem>
-        </orderedlist></para>
+
+          <listitem>
+            <para>Start the VM VirtualBox application.</para>
+          </listitem>
+
+          <listitem>
+            <para>Click on the <emphasis role="bold">Settings</emphasis> Icon,
+            this will open up the settings dialog window. <figure
+                id="VBoxSettingIcon">
+                <title xreflabel="welc">VirtualBox Settings Icon</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg16.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure> </para>
+          </listitem>
+
+          <listitem>
+            <para>Select the <emphasis role="bold">Network</emphasis> menu
+            option. On the <emphasis>Adapter 1</emphasis> tab check the
+            <emphasis>Enable Network Adapter</emphasis> box, and set the
+            <emphasis>Attached to:</emphasis> option to <emphasis
+            role="bold">NAT</emphasis>. <figure id="VBoxNet1">
+                <title xreflabel="welc">VM VirtualBox Network Adapter
+                1</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg17.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+
+            <variablelist>
+              <varlistentry>
+                <term>Note:</term>
+
+                <listitem>
+                  <para>These settings may be set as required by default. If
+                  so just verify that they are correct.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
+          </listitem>
+
+          <listitem>
+            <para>From the same <emphasis>Network - Settings</emphasis>
+            window, select the tab for<emphasis> Adapter 2</emphasis>. Check
+            the <emphasis>Enable Network Adapter</emphasis> box, and set the
+            <emphasis>Attached to:</emphasis> option to <emphasis
+            role="bold">Host-only Adapter</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
+          </listitem>
+
+          <listitem>
+            <para>From the <emphasis role="bold">File</emphasis> menu, select
+            <emphasis role="bold">Preferences</emphasis>... </para>
+
+            <para>The <emphasis>VirtualBox - Settings</emphasis> dialog
+            displays.<figure id="VBoxSettings">
+                <title xreflabel="welc">VirtualBox - Settings</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg14.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure></para>
+          </listitem>
+
+          <listitem>
+            <para>Select<emphasis role="bold"> Network</emphasis> from the
+            list on the left side of the window. </para>
+          </listitem>
+
+          <listitem>
+            <para>Double-click on the <emphasis>VirtualBox Host-Only Ethernet
+            Adaptor</emphasis>. </para>
+          </listitem>
+
+          <listitem>
+            <para>From the<emphasis> Network Details</emphasis> window, select
+            the <emphasis role="bold">DHCP Server</emphasis> Tab and check the
+            <emphasis role="bold">Enable Server</emphasis> box. <figure
+                id="NetworkDetails">
+                <title xreflabel="welc">Network Details</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg15.jpg" />
+                  </imageobject>
+                </mediaobject>
+              </figure><variablelist>
+                <varlistentry>
+                  <term>Note: </term>
+
+                  <listitem>
+                    <para>You may need to add IP Address values to the Lower
+                    Address Bound and Upper Address Bound fields. The address
+                    the VM uses is in the private IP address range of
+                    192.168.x.x </para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
+          </listitem>
+
+          <listitem>
+            <para>Press the <emphasis role="bold">OK</emphasis> button on the
+            <emphasis>Network Details</emphasis> dialog box, then press the
+            <emphasis role="bold">OK</emphasis> button on the
+            <emphasis>VirtualBox - Settings</emphasis> box. </para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2>
+        <title id="get_HPCC">Import the HPCC Virtual Image File</title>
+
+        <para><orderedlist>
+            <listitem>
+              <para>Download the latest HPCC virtual machine image file
+              from:</para>
+
+              <para><ulink
+              url="http://HPCCsystems.com/download/hpcc-vm-image">http://hpccsystems.com/download/hpcc-vm-image</ulink></para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>Note:</term>
+
+                    <listitem>
+                      <para>You may need to register to login.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+
+            <listitem>
+              <para>Save the file to a folder on your machine.</para>
+            </listitem>
+
+            <listitem>
+              <para>Open VM VirtualBox.</para>
+            </listitem>
+
+            <listitem>
+              <para>From the <emphasis role="bold">File</emphasis> menu select
+              <emphasis role="bold">Import Appliance... (Ctrl +
+              I)</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Open appliance</emphasis>
+              button from the dialog to select the appliance to import.
+              </para>
+            </listitem>
+
+            <listitem>
+              <para>Navigate to the folder where you saved the downloaded file
+              and select it.</para>
+
+              <para>For example (<emphasis
+              role="bluebold">HPCCSystemsVM-<emphasis>n.n.n.n</emphasis>.ova</emphasis>
+              , where n.n.n.n is the version number).</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">Open</emphasis> button to
+              start the import. Follow the prompts in the import process
+              pressing <emphasis role="bold">Next</emphasis> as appropriate,
+              then press <emphasis role="bold">Import</emphasis>. </para>
+
+              <para>Wait for the HPCC virtual machine to import. This may take
+              a few minutes.</para>
+            </listitem>
+
+            <listitem>
+              <para>At the main window, the newly imported virtual machine is
+              now listed. </para>
+            </listitem>
+
+            <listitem>
+              <para>Double-click on that virtual machine to start it.
+              <variablelist>
+                  <varlistentry>
+                    <term>TIP: </term>
+
+                    <listitem>
+                      <para>If you get any Network Error messages, please
+                      review the steps in <xref
+                      linkend="Install_VM_VirtualBox" /> and verify that all
+                      the network settings are set appropriately. </para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+
+            <listitem>
+              <?dbfo keep-together="always"?>
+
+              <para>Once the VM initialization completes, you will see a
+              window similar to the following:</para>
+
+              <figure id="vbox_welcome">
+                <title xreflabel="welc">VirtualBox Welcome Screen</title>
+
+                <mediaobject>
+                  <imageobject>
+                    <imagedata fileref="images/vmimg01b.JPG" />
+                  </imageobject>
+                </mediaobject>
+              </figure>
+
+              <para><informaltable colsep="1" frame="all" rowsep="1">
+                  <?dbfo keep-together="always"?>
+
+                  <tgroup cols="2">
+                    <colspec colwidth="49.50pt" />
+
+                    <colspec />
+
+                    <tbody>
+                      <row>
+                        <entry><inlinegraphic
+                        fileref="images/caution.png" /></entry>
+
+                        <entry>Your virtual IP address could be different from
+                        the ones provided in the example images. Please use
+                        the IP address provided by <emphasis
+                        role="bold">your</emphasis> installation.</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </informaltable></para>
+
+              <para>Do not resize this window, you will not interact with it.
+              In addition, there is no need to Login.</para>
+
+              <para><variablelist>
+                  <varlistentry>
+                    <term>TIP:</term>
+
+                    <listitem>
+                      <para>If you click on the window, it can capture your
+                      keyboard/mouse. Press the <emphasis role="bold">Right
+                      Ctrl</emphasis> to regain control of your mouse.</para>
+                    </listitem>
+                  </varlistentry>
+                </variablelist></para>
+            </listitem>
+          </orderedlist></para>
+      </sect2>
     </sect1>
   </chapter>
 
@@ -317,7 +710,7 @@
           Watch</emphasis> URL displayed (circled in red) in Figure 1,
           <emphasis>VM Welcome Screen</emphasis>. For example,
           http://nnn.nnn.nnn.nnn:8010, where nnn.nnn.nnn.nnn is your Virtual
-          Machine's IP address. </para>
+          Machine's IP address.</para>
 
           <para><informaltable colsep="1" frame="all" rowsep="1">
               <?dbfo keep-together="always"?>

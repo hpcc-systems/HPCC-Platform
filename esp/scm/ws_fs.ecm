@@ -80,6 +80,8 @@ ESPStruct [nil_remove] DFUWorkunit
 
     string encrypt;
     string decrypt;
+
+    [min_ver("1.08")] bool failIfNoSourceFile(false);
 };
 
 ESPStruct DFUException
@@ -300,6 +302,8 @@ ESPrequest [nil_remove] SprayFixed
     string decrypt;
     bool   wrap(false);
 
+    [min_ver("1.08")] bool failIfNoSourceFile(false);
+
 };
 
 ESPresponse [exceptions_inline] 
@@ -342,6 +346,8 @@ ESPrequest [nil_remove] SprayVariable
 
     string encrypt;
     string decrypt;
+
+    [min_ver("1.08")] bool failIfNoSourceFile(false);
 
 };
 
@@ -593,7 +599,7 @@ ESPresponse [exceptions_inline] UploadFilesResponse
 };
 
 ESPservice [
-    version("1.07"), default_client_version("1.07"),
+    version("1.08"), default_client_version("1.08"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;
