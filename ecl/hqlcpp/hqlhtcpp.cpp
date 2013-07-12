@@ -16184,6 +16184,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlParse(BuildCtx & ctx, IHqlE
 
     OwnedHqlExpr helperName = createQuoted("parsed", makeBoolType());
     funcctx.associateExpr(xmlColumnProviderMarkerExpr, helperName);
+    bindTableCursor(funcctx, queryXmlParsePseudoTable(), queryXmlParsePseudoTable());
     xmlUsesContents = false;
     doTransform(funcctx, transform, selfCursor);
     buildReturnRecordSize(funcctx, selfCursor);
@@ -17834,6 +17835,9 @@ static void logECL(const LogMsgCategory & category, size32_t len, const char * e
 
 void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr, unsigned level)
 {
+    if (!expr)
+        return;
+
     checkAbort();
 
     LOG(MCdebugInfo(200), unknownJob, "Tracing expressions: %s", title);

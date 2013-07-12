@@ -1362,7 +1362,7 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
     if (isContextDependent(expr))
         return false;
 
-    if (!containsActiveDataset(expr))
+    if (isIndependentOfScope(expr))
         return true;//isColocal();
 
     //If can evaluate in parent's start context then always worth doing there.
@@ -1589,7 +1589,7 @@ AliasKind ClassEvalContext::evaluateExpression(BuildCtx & ctx, IHqlExpression * 
 
         if (!isContextDependentExceptGraph(value))
         {
-            if (!isContextDependent(value) && !containsActiveDataset(value))
+            if (!isContextDependent(value) && !containsActiveDataset(value) && value->isIndependentOfScope())
             {
                 createMemberAlias(onCreate, ctx, value, tgt);
                 return CreateTimeAlias;

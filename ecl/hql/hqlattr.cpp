@@ -3424,7 +3424,11 @@ IHqlExpression * HqlLocationIndependentNormalizer::doCreateTransformed(IHqlExpre
         {
             //Original attributes cause chaos => remove all children from attributes
             if (expr->numChildren() != 0)
-                return createAttribute(expr->queryName());
+            {
+                IAtom * name = expr->queryName();
+                if (name != _countProject_Atom)
+                    return createAttribute(expr->queryName());
+            }
             return LINK(expr);
         }
     case no_field:

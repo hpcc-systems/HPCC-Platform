@@ -257,7 +257,7 @@ void NlpParseContext::buildValidators(HqlCppTranslator & translator, BuildCtx & 
             }
             validctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
             validctx.associateExpr(activeValidateMarkerExpr, activeValidateMarkerExpr);
-            translator.bindTableCursor(validctx, queryMatchxxxPseudoFile(), queryMatchxxxPseudoFile());
+            translator.bindTableCursor(validctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
             if (translator.queryOptions().spotCSE)
                 validateExpr.setown(spotScalarCSE(validateExpr));
             translator.buildReturn(validctx, validateExpr);
@@ -515,7 +515,7 @@ void HqlCppTranslator::doBuildParseTransform(BuildCtx & classctx, IHqlExpression
     ensureRowAllocated(funcctx, "crSelf");
     funcctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");
     funcctx.associateExpr(activeNlpMarkerExpr, activeNlpMarkerExpr);
-    bindTableCursor(funcctx, queryMatchxxxPseudoFile(), queryMatchxxxPseudoFile());
+    bindTableCursor(funcctx, queryNlpParsePseudoTable(), queryNlpParsePseudoTable());
 
     // Bind left to "left" and right to RIGHT
     IHqlExpression * dataset = expr->queryChild(0);

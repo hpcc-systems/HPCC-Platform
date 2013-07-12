@@ -71,8 +71,8 @@
 //#define DEBUG_SCOPE
 //#define CHECK_RECORD_CONSISTENCY
 //#define PARANOID
-//#define SEARCH_NAME1   "vL6R"
-//#define SEARCH_NAME2   "v19"
+//#define SEARCH_NAME1   "v1"
+//#define SEARCH_NAME2   "v2"
 //#define SEARCH_IEXPR 0x0681cb0
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
@@ -4816,8 +4816,13 @@ void CUsedTablesBuilder::cleanupProduction()
 {
     ForEachItemInRev(i, inScopeTables)
     {
-        if (inScopeTables.item(i).getOperator() == no_matchattr)
+        switch (inScopeTables.item(i).getOperator())
+        {
+        case no_matchattr:
+        case no_matchrow:
             inScopeTables.remove(i);
+            break;
+        }
     }
 }
 
@@ -4970,6 +4975,18 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             used.removeActive(left);
             used.removeParent(ds);
             used.removeRows(this, left, NULL);
+            switch (op)
+            {
+            case no_parse:
+            case no_newparse:
+                used.cleanupProduction();
+                used.removeActive(queryNlpParsePseudoTable());
+                break;
+            case no_xmlparse:
+            case no_newxmlparse:
+                used.removeActive(queryXmlParsePseudoTable());
+                break;
+            }
             cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
@@ -5201,15 +5218,6 @@ void CHqlExpressionWithTables::cacheTablesUsed()
                         used.cleanupProduction();
                         break;
                     }
-                case no_parse:
-                case no_newparse:
-                    {
-                        cacheTablesProcessChildScope(used);
-                        used.cleanupProduction();
-                        //Not strictly true - need to inherit from arg(0) if present.
-                        used.removeActive(queryMatchxxxPseudoFile());
-                        break;
-                    }
                 default:
                     {
                         ITypeInfo * thisType = queryType();
@@ -5242,6 +5250,11 @@ void CHqlExpressionWithTables::cacheTablesUsed()
             }
             switch (op)
             {
+            case no_xmltext:
+            case no_xmlunicode:
+            case no_xmlproject:
+                used.addActiveTable(queryXmlParsePseudoTable());
+                break;
             case no_matched:
             case no_matchtext:
             case no_matchunicode:
@@ -5249,8 +5262,16 @@ void CHqlExpressionWithTables::cacheTablesUsed()
             case no_matchposition:
             case no_matchrow:
             case no_matchutf8:
-                used.addActiveTable(queryMatchxxxPseudoFile());
+            case no_matchattr:
+                used.addActiveTable(queryNlpParsePseudoTable());
                 break;
+            case no_externalcall:
+                {
+                    IHqlExpression * def = queryExternalDefinition()->queryChild(0);
+                    if (def->hasAttribute(userMatchFunctionAtom))
+                        used.addActiveTable(queryNlpParsePseudoTable());
+                    break;
+                }
             }
             used.set(usedTables);
         }

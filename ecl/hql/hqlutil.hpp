@@ -585,7 +585,8 @@ extern HQL_API IHqlExpression * getFixedSizeAttr(unsigned size);
 extern HQL_API IHqlExpression * queryAlignedAttr();
 extern HQL_API IHqlExpression * queryLinkCountedAttr();
 extern HQL_API IHqlExpression * queryUnadornedAttr();
-extern HQL_API IHqlExpression * queryMatchxxxPseudoFile();
+extern HQL_API IHqlExpression * queryNlpParsePseudoTable();
+extern HQL_API IHqlExpression * queryXmlParsePseudoTable();
 extern HQL_API IHqlExpression * queryQuotedNullExpr();
 
 extern HQL_API IHqlExpression * getEmbeddedAttr();

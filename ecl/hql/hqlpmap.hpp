@@ -51,8 +51,7 @@ public:
 private:
     void addMapping(IHqlExpression * field, IHqlExpression * expr);
 
-    inline void ensureMapping()                                 { if (targets.ordinality() == 0) initMapping(); }
-    void initMapping();
+    bool ensureMapping();
 
     void setRecord(IHqlExpression * record, IHqlExpression * selector);
     void setRecord(IHqlExpression * record);
