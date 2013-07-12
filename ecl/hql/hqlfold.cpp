@@ -3460,8 +3460,14 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                     cvtRightProject = true;
                 else if (rightIsNull)
                 {
+                    //JOIN(ds,<null>) becomes a project
+                    //DENORMALIZE(ds, <null>) becomes a nop (since the transform will not be called)
+                    //DENORMALIZE(ds, <null>, GROUP) becomes a project
+                    if (op == no_denormalize)
+                        return removeParentNode(expr);  // ok because this returns queryChild(0)
+
                     cvtLeftProject = true;
-                    reason = "JOIN(ds,<empty>)";
+                    reason = "(ds,<empty>)";
                 }
             }
 
@@ -3472,8 +3478,11 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 //Never matches, so either LHS is modified by the transform - like a project, or it never returns anything.
                 if (isLeftJoin(expr))
                 {
+                    if (op == no_denormalize)
+                        return removeParentNode(expr);  // ok because this returns queryChild(0)
+
                     cvtLeftProject = true;
-                    reason = "JOIN(false)";
+                    reason = "(false)";
                 }
                 else if (isInnerJoin(expr))
                     return replaceWithNull(expr);
@@ -3487,11 +3496,11 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 if (isSpecificJoin(expr, leftouterAtom))
                 {
                     if (matchesConstantValue(queryPropertyChild(expr, keepAtom, 0), 1))
-                        potentialLeftProjectReason = "JOIN(,LEFT OUTER,KEEP(1))";
+                        potentialLeftProjectReason = "(,LEFT OUTER,KEEP(1))";
                     else if (expr->hasProperty(lookupAtom) && !expr->hasProperty(manyAtom))
-                        potentialLeftProjectReason = "JOIN(,LEFT OUTER,SINGLE LOOKUP)";
+                        potentialLeftProjectReason = "(,LEFT OUTER,SINGLE LOOKUP)";
                     else if (hasNoMoreRowsThan(expr, 1))
-                        potentialLeftProjectReason = "JOIN(<single-row>,LEFT OUTER)";
+                        potentialLeftProjectReason = "(<single-row>,LEFT OUTER)";
                 }
 
                 if (potentialLeftProjectReason)
@@ -3508,8 +3517,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 
                     if (cvtLeftProject && (expr->getOperator() == no_denormalize))
                     {
+                        OwnedHqlExpr left = createSelector(no_left, child, selSeq);
                         //Denormalize with no match will not call the transform, so we can't convert that to a project
-                        if (containsSkip(transform))
+                        //unless the transform is a nop
+                        if (!transformReturnsSide(expr, no_left, 0))
                             cvtLeftProject = false;
                     }
                 }
@@ -3528,12 +3539,22 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                     OwnedHqlExpr nullExpr = createDataset(no_null, LINK(rhs->queryRecord()));
                     newTransform.setown(replaceExpression(newTransform, rowsExpr, nullExpr));
                 }
+                if (op == no_denormalize)
+                {
+                    IHqlExpression * counter = queryPropertyChild(expr, _countProject_Atom, 0);
+                    if (counter)
+                    {
+                        OwnedHqlExpr one = createConstant(counter->queryType()->castFrom(false, I64C(1)));
+                        //Remove the annotations from the transform, otherwise it may say t(LEFT,COUNTER) which is confusing.
+                        newTransform.setown(replaceExpression(newTransform->queryBody(), counter, one));
+                    }
+                }
                 HqlExprArray args;
                 args.append(*preserveGrouping(child, expr));
                 args.append(*newTransform.getClear());
                 args.append(*LINK(selSeq));
                 OwnedHqlExpr ret = createDataset(no_hqlproject, args);
-                DBGLOG("Folder: Replace %s with PROJECT", reason);
+                DBGLOG("Folder: Replace %s%s with PROJECT", getOpString(op), reason);
                 return ret.getClear();
             }
 
