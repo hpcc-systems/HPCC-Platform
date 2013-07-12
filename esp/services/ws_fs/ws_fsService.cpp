@@ -2330,9 +2330,9 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             }
         }
 
+        CDfsLogicalFileName lfn;
         if (!bRoxie)
         {
-            CDfsLogicalFileName lfn;
             if (!lfn.setValidate(dstname))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename");
             dstname = lfn.get();
