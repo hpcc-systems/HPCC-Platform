@@ -2488,6 +2488,35 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             }
             break;
         }
+    case no_normalize:
+        //Convert NORMALIZE(ds, 0, t(LEFT, COUNTER)) to empty dataset
+        if (matchesConstantValue(transformed->queryChild(1), 0))
+            return replaceWithNull(transformed);
+        //Convert NORMALIZE(ds, 1, t(LEFT, COUNTER)) to PROJECT(ds, t(LEFT, 1));
+        if (matchesConstantValue(transformed->queryChild(1), 1))
+        {
+            IHqlExpression * counter = queryAttributeChild(transformed, _countProject_Atom, 0);
+
+            HqlExprArray args;
+            unwindChildren(args, transformed, 0, 1);
+
+            IHqlExpression * transform = transformed->queryChild(2);
+            if (counter)
+            {
+                OwnedHqlExpr one = createConstant(counter->queryType()->castFrom(false, I64C(1)));
+                //Remove the annotations from the transform, otherwise it may say t(LEFT,COUNTER) which is confusing.
+                args.append(*replaceExpression(transform->queryBody(), counter, one));
+            }
+            else
+                args.append(*LINK(transform));
+
+            DBGLOG("Optimizer: Convert %s(,1) into PROJECT", queryNode0Text(transformed));
+            unwindChildren(args, transformed, 3);
+            //This is not a count project.. so remove the attribute.
+            removeProperty(args, _countProject_Atom);
+            return createDataset(no_hqlproject, args);
+        }
+        break;
     }
 
     bool shared = childrenAreShared(transformed);
