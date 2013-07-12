@@ -857,14 +857,15 @@ bool HeapletBase::hasDestructor(const void *ptr)
         return false;
 }
 
-
 class CHeap;
+static void noteEmptyPage(CHeap * heap);
 class Heaplet : public HeapletBase
 {
     friend class CHeap;
 protected:
     Heaplet *next;
     const IRowAllocatorCache *allocatorCache;
+    CHeap * const heap;
     memsize_t chunkCapacity;
     
     inline unsigned getActivityId(unsigned allocatorId) const
@@ -873,8 +874,9 @@ protected:
     }
 
 public:
-    Heaplet(const IRowAllocatorCache *_allocatorCache, memsize_t _chunkCapacity) : chunkCapacity(_chunkCapacity)
+    Heaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, memsize_t _chunkCapacity) : heap(_heap), chunkCapacity(_chunkCapacity)
     {
+        assertex(heap);
         next = NULL;
         allocatorCache = _allocatorCache;
     }
@@ -920,7 +922,6 @@ protected:
     atomic_t freeBase;
     const size32_t chunkSize;
     unsigned sharedAllocatorId;
-    CChunkedHeap * const heap;
 
     inline char *data() const
     {
@@ -931,8 +932,8 @@ protected:
     //classes, but that means it is hard to common up some of the code efficiently
 
 public:
-    ChunkedHeaplet(CChunkedHeap * _heap, const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, size32_t _chunkCapacity)
-        : Heaplet(_allocatorCache, _chunkCapacity), heap(_heap), chunkSize(_chunkSize)
+    ChunkedHeaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, size32_t _chunkSize, size32_t _chunkCapacity)
+        : Heaplet(_heap, _allocatorCache, _chunkCapacity), chunkSize(_chunkSize)
     {
         sharedAllocatorId = 0;
         atomic_set(&freeBase, 0);
@@ -1040,11 +1041,12 @@ protected:
                 break;
         }
 
+        CHeap * savedHeap = heap;
+        // after the following dec it is possible that the page could be freed, so cannot access any members of this
+        compiler_memory_barrier();
         if (atomic_dec_and_read(&count) == 1)
-            noteEmptyPage();
+            noteEmptyPage(savedHeap);
     }
-
-    void noteEmptyPage();
 };
 
 //================================================================================
@@ -1060,7 +1062,7 @@ class FixedSizeHeaplet : public ChunkedHeaplet
 public:
     enum { chunkHeaderSize = sizeof(ChunkHeader) };
 
-    FixedSizeHeaplet(CChunkedHeap * _heap, const IRowAllocatorCache *_allocatorCache, size32_t size)
+    FixedSizeHeaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, size32_t size)
     : ChunkedHeaplet(_heap, _allocatorCache, size, size - chunkHeaderSize)
     {
     }
@@ -1286,7 +1288,7 @@ class PackedFixedSizeHeaplet : public ChunkedHeaplet
 public:
     enum { chunkHeaderSize = sizeof(ChunkHeader) };
 
-    PackedFixedSizeHeaplet(CChunkedHeap * _heap, const IRowAllocatorCache *_allocatorCache, size32_t size, unsigned _allocatorId)
+    PackedFixedSizeHeaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, size32_t size, unsigned _allocatorId)
         : ChunkedHeaplet(_heap, _allocatorCache, size, size - chunkHeaderSize)
     {
         sharedAllocatorId = _allocatorId;
@@ -1417,10 +1419,12 @@ public:
 //================================================================================
 // Row manager - chunking
 
+class CHugeHeap;
 class HugeHeaplet : public Heaplet
 {
 protected:
     unsigned allocatorId;
+    atomic_t rowCount;  // A separate rowcount is required, otherwise the page could be freed before the destructor is called
 
     inline unsigned _sizeInPages() const
     {
@@ -1438,7 +1442,7 @@ protected:
     }
 
 public:
-    HugeHeaplet(const IRowAllocatorCache *_allocatorCache, memsize_t _hugeSize, unsigned _allocatorId) : Heaplet(_allocatorCache, calcCapacity(_hugeSize))
+    HugeHeaplet(CHeap * _heap, const IRowAllocatorCache *_allocatorCache, memsize_t _hugeSize, unsigned _allocatorId) : Heaplet(_heap, _allocatorCache, calcCapacity(_hugeSize))
     {
         allocatorId = _allocatorId;
     }
@@ -1451,7 +1455,7 @@ public:
 
     bool _isShared(const void *ptr) const
     {
-        return atomic_read(&count) > 2; // The heaplet itself has a usage count of 1
+        return atomic_read(&rowCount) > 1;
     }
 
     virtual unsigned sizeInPages() 
@@ -1481,10 +1485,17 @@ public:
 
     virtual void noteReleased(const void *ptr)
     {
-        if (atomic_dec_and_test(&count))
+        if (atomic_dec_and_test(&rowCount))
         {
             if (allocatorId & ACTIVITY_FLAG_NEEDSDESTRUCTOR)
                 allocatorCache->onDestroy(allocatorId & MAX_ACTIVITY_ID, (void *)ptr);
+
+            CHeap * savedHeap = heap;
+            // after the following dec(count) it is possible that the page could be freed, so cannot access any members of this
+            compiler_memory_barrier();
+            unsigned cnt = atomic_dec_and_read(&count);
+            assertex(cnt == 1);
+            noteEmptyPage(savedHeap);
         }
     }
 
@@ -1506,12 +1517,13 @@ public:
 
     virtual void noteLinked(const void *ptr)
     {
-        atomic_inc(&count);
+        atomic_inc(&rowCount);
     }
 
     void *allocateHuge(memsize_t size)
     {
         atomic_inc(&count);
+        atomic_set(&rowCount, 1);
         dbgassertex(size <= chunkCapacity);
 #ifdef _CLEAR_ALLOCATED_HUGE_ROW
         memset(data(), 0xcc, chunkCapacity);
@@ -2092,6 +2104,12 @@ protected:
 //================================================================================
 //
 
+void noteEmptyPage(CHeap * const heap)
+{
+    heap->noteEmptyPage();
+}
+
+
 char * ChunkedHeaplet::allocateChunk()
 {
     char *ret;
@@ -2137,17 +2155,13 @@ char * ChunkedHeaplet::allocateChunk()
     return ret;
 }
 
-void ChunkedHeaplet::noteEmptyPage()
-{
-    heap->noteEmptyPage();
-}
-
 const void * ChunkedHeaplet::_compactRow(const void * ptr, HeapCompactState & state)
 {
     //NB: If this already belongs to a full heaplet then leave it where it is..
-    if (numChunks() == heap->maxChunksPerPage())
+    CChunkedHeap * chunkedHeap = static_cast<CChunkedHeap *>(heap);
+    if (numChunks() == chunkedHeap->maxChunksPerPage())
         return ptr;
-    return heap->compactRow(ptr, state);
+    return chunkedHeap->compactRow(ptr, state);
 }
 
 //================================================================================
@@ -3263,7 +3277,7 @@ HugeHeaplet * CHugeHeap::allocateHeaplet(memsize_t _size, unsigned allocatorId)
 
         void * memory = suballoc_aligned(numPages, true);
         if (memory)
-            return new (memory) HugeHeaplet(allocatorCache, _size, allocatorId);
+            return new (memory) HugeHeaplet(this, allocatorCache, _size, allocatorId);
 
         rowManager->restoreLimit(numPages);
         if (!rowManager->releaseCallbackMemory(true))
@@ -4847,10 +4861,16 @@ protected:
     };
     void testHeapletCas()
     {
+        memsize_t maxMemory = numCasThreads * numCasIter * numCasAlloc * 32;
+        //Because this is allocating from a single heaplet check if it can overflow the memory
+        if (maxMemory > FixedSizeHeaplet::dataAreaSize())
+            return;
+
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, NULL);
         CountingRowAllocatorCache rowCache;
         void * memory = suballoc_aligned(1, true);
-        FixedSizeHeaplet * heaplet = new (memory) FixedSizeHeaplet(NULL, &rowCache, 32);
+        CFixedChunkedHeap dummyHeap((CChunkingRowManager*)rowManager.get(), logctx, &rowCache, 32, 0);
+        FixedSizeHeaplet * heaplet = new (memory) FixedSizeHeaplet(&dummyHeap, &rowCache, 32);
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];
         for (unsigned i1 = 0; i1 < numCasThreads; i1++)
@@ -5112,7 +5132,8 @@ protected:
         }
         VStringBuffer title("callback(%u,%u,%u,%f,%x)", numPerPage,pages, spillPages, scale, flags);
         runCasTest(title.str(), sem, threads);
-        ASSERT(atomic_read(&rowCache.counter) == 2 * numCasThreads * numCasIter * numCasAlloc);
+        //This test can very occasionally fail if each thread has 1 single row from a different page buffered, and a buffer allocated from a different page
+        CPPUNIT_ASSERT_EQUAL(2 * numCasThreads * numCasIter * numCasAlloc, (int)atomic_read(&rowCache.counter));
     }
     void testCallbacks()
     {
