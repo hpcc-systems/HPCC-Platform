@@ -209,7 +209,8 @@
                   else
                   {
                     var bFF=/Firefox[\/\s](\d+\.\d+)/.test(navigator.userAgent)?1:0;
-                    if (show && bFF && autoUpdateChecked)
+                    var isChrome=/Chrome[\/\s](\d+\.\d+)/.test(navigator.userAgent)?1:0;
+                    if (show && (bFF || isChrome) && autoUpdateChecked)        
                       document.forms[0].submit();
                       //reloadPage();
                   }
@@ -566,8 +567,8 @@
          <xsl:if test="not(Hide=1)">
             <xsl:attribute name="checked">true</xsl:attribute>
          </xsl:if>
-         <xsl:value-of select="Caption"/>
          </input>
+         <xsl:value-of select="Caption"/>
       </td>
    </xsl:template>
    
