@@ -781,8 +781,8 @@ void abortThor(IException *e, bool abortCurrentJob)
         aborting = 1;
         if (!e)
         {
-            e = MakeThorException(TE_AbortException, "THOR ABORT");
-            _e.setown(e);
+            _e.setown(MakeThorException(TE_AbortException, "THOR ABORT"));
+            e = _e;
         }
         EXCLOG(e,"abortThor");
         LOG(MCdebugProgress, thorJob, "abortThor called");
