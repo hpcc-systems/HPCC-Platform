@@ -2330,9 +2330,9 @@ bool CFileSprayEx::onCopy(IEspContext &context, IEspCopy &req, IEspCopyResponse 
             }
         }
 
+        CDfsLogicalFileName lfn; // NOTE: must not be moved into block below, or dstname will point to invalid memory
         if (!bRoxie)
         {
-            CDfsLogicalFileName lfn;
             if (!lfn.setValidate(dstname))
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "invalid destination filename");
             dstname = lfn.get();
