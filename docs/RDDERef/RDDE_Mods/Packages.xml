@@ -168,12 +168,10 @@
       </listitem>
 
       <listitem>
-        <para>Add the packagemap(s) by associating the package information
-        with a QuerySet.</para>
-      </listitem>
+        <para>Activate the packagemap(s) with the pertinent package
+        information targeting a QuerySet.</para>
 
-      <listitem>
-        <para>Use the command</para>
+        <para>Use the command:</para>
       </listitem>
     </itemizedlist>
 
@@ -212,8 +210,10 @@
 
     <itemizedlist mark="bullet">
       <listitem>
-        <para>Add the packagemap redefining the contents of the superkey. Use
-        the command:</para>
+        <para>Add the packagemap redefining the contents of the superkey.
+        </para>
+
+        <para>Use the command:</para>
 
         <!--You should always validate or run the reporting step on the packages (NYI)-->
       </listitem>
