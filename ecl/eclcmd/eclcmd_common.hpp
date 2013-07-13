@@ -242,11 +242,11 @@ public:
     {
         EclCmdCommon::usage();
         fprintf(stdout,
-            "   --main=<definition>    definition to use from legacy ECL repository\n"
-            "   --snapshot,-sn=<label> snapshot label to use from legacy ECL repository\n"
-            "   --ecl-only             send ecl text to hpcc without generating archive\n"
-            "   --limit=<limit>        sets the result limit for the query, defaults to 100\n"
-            "   -f<option>[=value]     set an ECL option (equivalent to #option)\n"
+            "   --main=<definition>    Definition to use from legacy ECL repository\n"
+            "   --snapshot,-sn=<label> Snapshot label to use from legacy ECL repository\n"
+            "   --ecl-only             Send ecl text to hpcc without generating archive\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
+            "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
             " eclcc options:\n"
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
