@@ -705,6 +705,9 @@ function initItemForRoxieServers(item) {
   item.name_extra = "";
   item.name_ctrlType = 0;
   item.parent = -1;
+  item.computer = "";
+  item.computer_extra = "";
+  item.computer_ctrlType = 0;
   item.netAddress = "";
   item.netAddress_extra = "";
   item.netAddress_ctrlType = 0;

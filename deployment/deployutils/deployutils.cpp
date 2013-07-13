@@ -502,7 +502,7 @@ public:
 
       void addRoxieMisc(StringBuffer& jsStrBuf)
       {
-        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_SERVER, TAG_NAME, "", 0, 1, "", 0);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_SERVER, TAG_COMPUTER, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_SERVER, TAG_PROCESS, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_NAME, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_PROCESS, "", 0, 1, "", 0);
@@ -530,7 +530,7 @@ public:
           const char* serverStr = "Servers";
 
           short index = 0;
-          m_colIndex.appendf("colIndex['name%s']=%d;", serverStr, index++); 
+          m_colIndex.appendf("colIndex['computer%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['process%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['netAddress%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['port%s']=%d;", serverStr, index++);
@@ -541,7 +541,7 @@ public:
 
           index = 0;
           const char* agentStr = "Agents";
-          m_colIndex.appendf("colIndex['name%s']=%d;", agentStr, index++); 
+          m_colIndex.appendf("colIndex['computer%s']=%d;", agentStr, index++);
           m_colIndex.appendf("colIndex['netAddress%s']=%d;", agentStr, index++);
         }
         else if (!strcmp(m_compName.str(), XML_TAG_THORCLUSTER))
