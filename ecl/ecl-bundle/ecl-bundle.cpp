@@ -781,7 +781,7 @@ public:
     {
         if (iter.matchFlag(optRecurse, ECLOPT_RECURSE))
             return EclCmdOptionMatch;
-        return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
+        return EclCmdBundleBase::matchCommandLineOption(iter, finalAttempt);
     }
 
     virtual void usage()
@@ -798,7 +798,7 @@ public:
         EclCmdCommon::usage();
     }
 private:
-    bool printDependency(const IBundleCollection &allBundles, const IBundleInfo *bundle, int level, ConstPointerArray active)
+    bool printDependency(const IBundleCollection &allBundles, const IBundleInfo *bundle, int level, ConstPointerArray &active)
     {
         if (active.find(bundle) != NotFound)
             throw MakeStringException(0, "Circular dependency detected");
@@ -1156,7 +1156,7 @@ public:
             goer->deleteAllVersions(optDryRun);
             goer->deleteRedirectFile(optDryRun);
         }
-        return ok;
+        return ok ? 0 : 1;
     }
 
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
@@ -1189,6 +1189,45 @@ private:
 
 //-------------------------------------------------------------------------------------------------
 
+class EclCmdBundleUse : public EclCmdBundleBase
+{
+public:
+    EclCmdBundleUse()
+    {
+    }
+    virtual int processCMD()
+    {
+        bool ok = true;
+        CBundleCollection allBundles(bundlePath);
+        IBundleInfoSet *bundle = allBundles.queryBundleSet(optBundle);
+        if (!bundle)
+        {
+            printf("Bundle %s not found\n", optBundle.get());
+            return 1;
+        }
+        UNIMPLEMENTED;
+        return ok;
+    }
+
+    virtual void usage()
+    {
+        printf("\nUsage:\n"
+              "\n"
+              "The 'use' command makes a specified version of a bundle active\n"
+              "\n"
+              "ecl bundle use <bundle> <version>\n"
+              " Options:\n"
+              "   <bundle>               The name of an installed bundle\n"
+              "   <version>              The version of the bundle to make active, or \"none\"\n"
+             );
+        EclCmdCommon::usage();
+    }
+private:
+    StringAttr optVersion;
+};
+
+//-------------------------------------------------------------------------------------------------
+
 IEclCommand *createBundleSubCommand(const char *cmdname)
 {
     if (!cmdname || !*cmdname)
@@ -1203,6 +1242,8 @@ IEclCommand *createBundleSubCommand(const char *cmdname)
         return new EclCmdBundleList();
     else if (strieq(cmdname, "uninstall"))
         return new EclCmdBundleUninstall();
+//    else if (strieq(cmdname, "use"))
+//        return new EclCmdBundleUse();
     return NULL;
 }
 
@@ -1226,6 +1267,7 @@ public:
                 "      install      Install a bundle\n"
                 "      list         List installed bundles\n"
                 "      uninstall    Uninstall a bundle\n"
+//                "      use          Specify which version of a bundle to use\n"
                 );
     }
 };
