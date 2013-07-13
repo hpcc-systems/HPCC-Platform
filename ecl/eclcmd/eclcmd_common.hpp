@@ -198,25 +198,25 @@ class EclCmdCommon : public CInterface, implements IEclCommand
 {
 public:
     IMPLEMENT_IINTERFACE;
-    EclCmdCommon() : optVerbose(false), optSSL(false)
+    EclCmdCommon(bool _usesESP=true) : optVerbose(false), optSSL(false), usesESP(_usesESP)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
     virtual bool finalizeOptions(IProperties *globals);
 
-    virtual void usage(bool includeESP = true)
+    virtual void usage()
     {
         fprintf(stdout,
-            "   --help                 display usage information for the given command\n"
-            "   -v, --verbose          output additional tracing information\n"
+            "   --help                 Display usage information for the given command\n"
+            "   -v, --verbose          Output additional tracing information\n"
           );
-        if (includeESP)
+        if (usesESP)
             fprintf(stdout,
-                "   -s, --server=<ip>      ip of server running ecl services (eclwatch)\n"
-                "   -ssl, --ssl            use SSL to secure the connection to the server\n"
-                "   --port=<port>          ecl services port\n"
-                "   -u, --username=<name>  username for accessing ecl services\n"
-                "   -pw, --password=<pw>   password for accessing ecl services\n"
+                "   -s, --server=<ip>      IP of server running ecl services (eclwatch)\n"
+                "   -ssl, --ssl            Use SSL to secure the connection to the server\n"
+                "   --port=<port>          ECL services port\n"
+                "   -u, --username=<name>  Username for accessing ecl services\n"
+                "   -pw, --password=<pw>   Password for accessing ecl services\n"
               );
     }
 public:
@@ -226,6 +226,7 @@ public:
     StringAttr optPassword;
     bool optVerbose;
     bool optSSL;
+    bool usesESP;
 };
 
 class EclCmdWithEclTarget : public EclCmdCommon

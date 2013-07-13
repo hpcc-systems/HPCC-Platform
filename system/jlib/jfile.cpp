@@ -2929,7 +2929,7 @@ void _splitpath(const char *path, char *drive, char *dir, char *fname, char *ext
 #endif
 
 
-void splitFilename(const char * filename, StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext)
+void splitFilename(const char * filename, StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext, bool longExt)
 {
     char tdrive[_MAX_DRIVE];
     char tdir[_MAX_DIR];
@@ -2937,14 +2937,19 @@ void splitFilename(const char * filename, StringBuffer * drive, StringBuffer * p
     char text[_MAX_EXT];
 
     ::_splitpath(filename, tdrive, tdir, ttail, text);
+    char *longExtStart = longExt ? strchr(ttail, '.') : NULL;
     if (drive)
         drive->append(tdrive);
     if (path)
         path->append(tdir);
     if (tail)
-        tail->append(ttail);
+        tail->append(longExtStart ? longExtStart-ttail : strlen(ttail), ttail);
     if (ext)
+    {
+        if (longExtStart)
+            ext->append(longExtStart);
         ext->append(text);
+    }
 }
 
 
