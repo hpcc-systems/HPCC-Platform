@@ -223,13 +223,15 @@ interface IBundleInfo : extends IInterface
 interface IBundleInfoSet : extends IInterface
 {
     virtual const char *queryName() const = 0;
-    virtual const IBundleInfo *queryActive() = 0;
+    virtual IBundleInfo *queryActive() = 0;
     virtual unsigned numVersions() = 0;
-    virtual const IBundleInfo &queryVersion(const char *version) = 0;
-    virtual const IBundleInfo &queryVersion(unsigned idx) = 0;
+    virtual IBundleInfo *queryVersion(const char *version) = 0;
+    virtual IBundleInfo *queryVersion(unsigned idx) = 0;
     virtual void deleteVersion(const char *version, bool isDryRun) = 0;
     virtual void deleteAllVersions(bool isDryRun) = 0;
     virtual void deleteRedirectFile(bool isDryRun) = 0;
+    virtual void setActive(const char *version) = 0;
+    virtual void addBundle(IBundleInfo *bundle) = 0;
 };
 
 interface IBundleCollection : extends IInterface
@@ -237,7 +239,7 @@ interface IBundleCollection : extends IInterface
     virtual unsigned numBundles() const = 0;
     virtual IBundleInfoSet *queryBundleSet(const char *name) const = 0;
     virtual IBundleInfoSet *queryBundleSet(unsigned idx) const = 0;
-    virtual const IBundleInfo *queryBundle(const char *name) const = 0;  // returns active
+    virtual IBundleInfo *queryBundle(const char *name, const char *version) const = 0;  // returns active if version==NULL
     virtual bool checkDependencies(const IBundleInfo *bundle, bool going) const = 0;
 };
 
@@ -287,7 +289,11 @@ public:
             extractAttr(re, copyright);
             extractArray(re, authors);
             extractArray(re, depends);
-            cleanVersion.append(version).replace('.', '_');  // MORE - other illegal chars too...
+            // version must contain nothing but alphanumeric + . (no underscores, as they can clash with the ones we put in for .)
+            RegExpr validVersions("^[A-Za-z0-9.]*$");
+            if (!validVersions.find(version))
+                throw MakeStringException(0, "Illegal character in version string %s in bundle %s", version.get(), bundleName.str());
+            cleanVersion.append(version).replace('.', '_');
             if (isdigit(cleanVersion.charAt(0)))
                 cleanVersion.insert(0, "V");
             cleanName.set(name);
@@ -371,7 +377,7 @@ private:
         const IBundleInfo *dependentBundle = bundle;
         if (!dependentBundle)
         {
-            dependentBundle = allBundles.queryBundle(dependentName);
+            dependentBundle = allBundles.queryBundle(dependentName, NULL);
             if (!dependentBundle || !dependentBundle->isValid())
             {
                 printf("%s requires %s, which cannot be loaded\n", name.get(), dependentName);
@@ -483,39 +489,51 @@ public:
     {
         loaded = false;
         active = false;
-        splitFilename(path, NULL, NULL, &name, NULL);
-        redirectFileName.append(_bundlePath);
-        addPathSepChar(redirectFileName).append(name).append(".ecl");
+        init(_bundlePath);
+    }
+    CBundleInfoSet(const char *_path, const char *_bundlePath, IBundleInfo *_bundle)
+        : path(_path)
+    {
+        loaded = true;
+        active = false;
+        bundles.append(*LINK(_bundle));
+        init(_bundlePath);
     }
     virtual const char *queryName() const
     {
         return name.str();
     }
-    virtual const IBundleInfo *queryActive()
+    virtual IBundleInfo *queryActive()
     {
         checkLoaded();
-        // MORE - could support bundles with no active version - later
-        return &bundles.item(0);
+        if (active)
+            return &bundles.item(0);
+        else
+            return NULL;
     }
     virtual unsigned numVersions()
     {
         checkLoaded();
         return bundles.length();
     }
-    virtual const IBundleInfo &queryVersion(const char *version)
+    virtual IBundleInfo *queryVersion(const char *version)
     {
         checkLoaded();
-        return bundles.item(findVersion(version));
+        unsigned idx = findVersion(version);
+        return idx==NotFound ? NULL : &bundles.item(idx);
     }
-    virtual const IBundleInfo &queryVersion(unsigned idx)
+    virtual IBundleInfo *queryVersion(unsigned idx)
     {
         checkLoaded();
-        return bundles.item(idx);
+        return &bundles.item(idx);
     }
     virtual void deleteVersion(const char *version, bool isDryRun)
     {
         checkLoaded();
-        deleteBundle(findVersion(version), isDryRun);
+        unsigned idx = findVersion(version);
+        if (idx==NotFound)
+            throw MakeStringException(0, "No version %s found for bundle %s", version, name.str());
+        deleteBundle(idx, isDryRun);
     }
     virtual void deleteAllVersions(bool isDryRun)
     {
@@ -530,12 +548,64 @@ public:
     virtual void deleteRedirectFile(bool isDryRun)
     {
         Owned<IFile> redirector = createIFile(redirectFileName);
-        if (isDryRun || optVerbose)
-            printf("rm %s\n", redirector->queryFilename());
-        if (!isDryRun)
-            redirector->remove();
+        if (redirector->exists())
+        {
+            if (isDryRun || optVerbose)
+                printf("rm %s\n", redirector->queryFilename());
+            if (!isDryRun)
+                redirector->remove();
+        }
+    }
+    virtual void createRedirectFile(IBundleInfo *bundle)
+    {
+        Owned<IFile> redirector = createIFile(redirectFileName);
+        const char *name = bundle->queryCleanName();
+        const char *version = bundle->queryCleanVersion();
+        VStringBuffer redirect("IMPORT %s.%s.%s.%s as _%s; EXPORT %s := _%s;", VERSION_SUBDIR, name, version, name, name, name, name);
+        Owned<IFileIO> rfile = redirector->open(IFOcreaterw);
+        rfile->write(0, redirect.length(), redirect.str());
+        bundle->setActive(true);
+    }
+    virtual void setActive(const char *version)
+    {
+        checkLoaded();
+        if (strieq(version, "none"))
+        {
+            if (active)
+            {
+                bundles.item(0).setActive(false);
+                deleteRedirectFile(false);
+            }
+            active = false;
+        }
+        else
+        {
+            unsigned newidx = findVersion(version);
+            if (newidx==NotFound)
+                throw MakeStringException(0, "No version %s found for bundle %s", version, name.str());
+            IBundleInfo *newActive = &bundles.item(newidx);
+            if (active && (newidx==0))
+                printf("%s version %s is already active\n", newActive->queryBundleName(), version);
+            else
+            {
+                bundles.item(0).setActive(false);
+                bundles.swap(newidx, 0);
+                createRedirectFile(newActive);
+                active = true;
+            }
+        }
+    }
+    virtual void addBundle(IBundleInfo *_bundle)
+    {
+        bundles.append(*LINK(_bundle));
     }
 private:
+    void init(const char *_bundlePath)
+    {
+        splitFilename(path, NULL, NULL, &name, NULL);
+        redirectFileName.append(_bundlePath);
+        addPathSepChar(redirectFileName).append(name).append(".ecl");
+    }
     unsigned findVersion(const char *version)
     {
         assertex(version && *version);
@@ -544,7 +614,7 @@ private:
             if (strieq(version, bundles.item(idx).queryVersion()))
                 return idx;
         }
-        throw MakeStringException(0, "No version %s found in %s", path.get(), version);
+        return NotFound;
     }
     void deleteBundle(unsigned idx, bool isDryRun)
     {
@@ -552,6 +622,8 @@ private:
         const char *installedDir = goer.queryInstalledPath();
         Owned<IFile> versionDir = createIFile(installedDir);
         recursiveRemoveDirectory(versionDir, isDryRun);
+        if (!idx)
+            active = false;
         if (!isDryRun)
             bundles.remove(idx);
         if (bundles.length() == (isDryRun ? 1 : 0))
@@ -660,12 +732,12 @@ public:
     {
         return &bundleSets.item(idx);
     }
-    virtual const IBundleInfo *queryBundle(const char *name) const
+    virtual IBundleInfo *queryBundle(const char *name, const char *version) const
     {
         IBundleInfoSet *bundleSet = queryBundleSet(name);
         if (!bundleSet)
             return NULL;
-        const IBundleInfo *bundle = bundleSet->queryActive();
+        IBundleInfo *bundle = version ? bundleSet->queryVersion(version) : bundleSet->queryActive();
         if (!bundle || !bundle->isValid())
             return NULL;
         return bundle;
@@ -760,20 +832,75 @@ protected:
 
 //-------------------------------------------------------------------------------------------------
 
-class EclCmdBundleDepends : public EclCmdBundleBase
+class EclCmdBundleBaseWithVersion : public EclCmdBundleBase
+{
+public:
+    virtual bool parseCommandLineOptions(ArgvIterator &iter)
+    {
+        for (; !iter.done(); iter.next())
+        {
+            const char *arg = iter.query();
+            if (*arg != '-')
+            {
+                if (optBundle.isEmpty())
+                    optBundle.set(arg);
+                else
+                {
+                    fprintf(stderr, "\nunrecognized argument %s\n", arg);
+                    return false;
+                }
+                continue;
+            }
+            if (matchCommandLineOption(iter, true) != EclCmdOptionMatch)
+                return false;
+        }
+        return true;
+    }
+    virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
+    {
+        if (iter.matchOption(optVersion, ECLOPT_VERSION))
+            return EclCmdOptionMatch;
+        return EclCmdBundleBase::matchCommandLineOption(iter, finalAttempt);
+    }
+    virtual void usage()
+    {
+        printf("   --version <version>    Specify a version of the bundle\n");
+        EclCmdBundleBase::usage();
+    }
+protected:
+    IBundleInfo *loadBundle(const CBundleCollection &allBundles, bool fileOk)
+    {
+        Owned<IBundleInfo> bundle;
+        if (isFromFile())
+        {
+            if (!fileOk)
+                throw MakeStringException(0, "Please specify the name of an installed bundle (not a file)");
+            bundle.setown(new CBundleInfo(optBundle));
+        }
+        else
+            bundle.set(allBundles.queryBundle(optBundle, optVersion));
+        if (!bundle || !bundle->isValid())
+        {
+            if (optVersion.length())
+                throw MakeStringException(0, "Bundle %s version %s could not be loaded", optBundle.get(), optVersion.get());
+            else
+                throw MakeStringException(0, "Bundle %s could not be loaded", optBundle.get());
+        }
+        return bundle.getClear();
+    }
+    StringAttr optVersion;
+};
+
+//-------------------------------------------------------------------------------------------------
+
+class EclCmdBundleDepends : public EclCmdBundleBaseWithVersion
 {
 public:
     virtual int processCMD()
     {
         CBundleCollection allBundles(bundlePath);
         ConstPointerArray active;
-        Owned<const IBundleInfo> bundle;
-        if (isFromFile())
-            bundle.setown(new CBundleInfo(optBundle));
-        else
-            bundle.set(allBundles.queryBundle(optBundle));
-        if (!bundle || !bundle->isValid())
-            throw MakeStringException(0, "Bundle %s could not be loaded", optBundle.get());
+        Owned<const IBundleInfo> bundle(loadBundle(allBundles, true));
         return printDependency(allBundles, bundle, 0, active) ? 0 : 1;
     }
 
@@ -781,21 +908,21 @@ public:
     {
         if (iter.matchFlag(optRecurse, ECLOPT_RECURSE))
             return EclCmdOptionMatch;
-        return EclCmdBundleBase::matchCommandLineOption(iter, finalAttempt);
+        return EclCmdBundleBaseWithVersion::matchCommandLineOption(iter, finalAttempt);
     }
 
     virtual void usage()
     {
-        fputs("\nUsage:\n"
-              "\n"
-              "The 'depends' command will show the dependencies of a bundle\n"
-              "\n"
-              "ecl bundle depends <bundle> \n"
-              " Options:\n"
-              "   <bundle>               The name of an installed bundle, or of a bundle file\n"
-              "   --recurse              Display indirect dependencies\n",
-        stdout);
-        EclCmdCommon::usage();
+        printf("\nUsage:\n"
+                "\n"
+                "The 'depends' command will show the dependencies of a bundle\n"
+                "\n"
+                "ecl bundle depends <bundle> \n"
+                " Options:\n"
+                "   <bundle>               The name of an installed bundle, or of a bundle file\n"
+                "   --recurse              Display indirect dependencies\n"
+               );
+        EclCmdBundleBaseWithVersion::usage();
     }
 private:
     bool printDependency(const IBundleCollection &allBundles, const IBundleInfo *bundle, int level, ConstPointerArray &active)
@@ -813,7 +940,7 @@ private:
             StringArray depVersions;
             depVersions.appendList(dependency, " ");
             const char *dependentName = depVersions.item(0);
-            const IBundleInfo *dependentBundle = allBundles.queryBundle(dependentName);
+            const IBundleInfo *dependentBundle = allBundles.queryBundle(dependentName, NULL);
             if (dependentBundle)
             {
                 bool matching = true;
@@ -844,7 +971,7 @@ private:
 
 //-------------------------------------------------------------------------------------------------
 
-class EclCmdBundleInfo : public EclCmdBundleBase
+class EclCmdBundleInfo : public EclCmdBundleBaseWithVersion
 {
 public:
     virtual int processCMD()
@@ -855,10 +982,7 @@ public:
         else
         {
             CBundleCollection allBundles(bundlePath, optBundle);
-            IBundleInfoSet *bundleSet = allBundles.queryBundleSet(optBundle);
-            if (!bundleSet || !bundleSet->queryActive())
-                throw MakeStringException(0, "Bundle %s not found", optBundle.get());
-            bundle.set(bundleSet->queryActive());
+            bundle.setown(loadBundle(allBundles, true));
         }
         bundle->checkValid();
         bundle->printFullInfo();
@@ -875,7 +999,7 @@ public:
                 " Options:\n"
                 "   <bundle>               The name of a bundle file, or installed bundle\n"
                );
-        EclCmdCommon::usage();
+        EclCmdBundleBaseWithVersion::usage();
     }
 };
 
@@ -911,38 +1035,38 @@ public:
         if (bundleFile->exists())
         {
             bool ok = true;
-            bool removePrior = false;
             Owned<IBundleInfo> bundle = new CBundleInfo(optBundle);
             bundle->checkValid();
-            printf("Installing bundle %s version %s\n", bundle->queryBundleName(), bundle->queryVersion());
+            const char *version = bundle->queryVersion();
+            printf("Installing bundle %s version %s\n", bundle->queryBundleName(), version);
 
             CBundleCollection allBundles(bundlePath);
-            IBundleInfoSet *oldBundleSet = allBundles.queryBundleSet(bundle->queryCleanName());
-            if (oldBundleSet)
+            IBundleInfoSet *bundleSet = allBundles.queryBundleSet(bundle->queryCleanName());
+            if (!bundleSet)
+                bundleSet = new CBundleInfoSet(bundle->queryCleanName(), bundlePath, bundle);
+            else
             {
-                // MORE - this is not right if there are multiple versions installed...
-                const IBundleInfo *active = oldBundleSet->queryActive();
-                if (active && active->isValid() && !optUpdate)
+                const IBundleInfo *active = bundleSet->queryVersion(version);
+                if (!active)
+                    active = bundleSet->queryActive();
+                if (active && active->isValid())
                 {
-                    printf("A bundle %s version %s is already installed\n", active->queryBundleName(), active->queryVersion());
-                    printf("Specify --update to install a replacement version of this bundle\n");
-                    return 1;
-                }
-                int diff = versionCompare(bundle->queryVersion(), active->queryVersion(), true);
-                if (diff >= 0)
-                {
-                    printf("Existing version %s is newer or same version\n", active->queryVersion());
-                    ok = false;
-                }
-                else
-                {
-                    printf("Updating previously installed version %s\n", active->queryVersion());
-                }
-                if (diff == 0 || !optKeepPrior)
-                {
-                    if (optKeepPrior)
-                        printf("--keepprior not possible when reinstalling same version\n");
-                    removePrior = true;
+                    if (!optUpdate)
+                    {
+                        printf("A bundle %s version %s is already installed\n", active->queryBundleName(), active->queryVersion());
+                        printf("Specify --update to install a replacement version of this bundle\n");
+                        return 1;
+                    }
+                    int diff = versionCompare(bundle->queryVersion(), active->queryVersion(), true);
+                    if (diff >= 0)
+                    {
+                        printf("Existing active version %s is newer or same version\n", active->queryVersion());
+                        ok = false;
+                    }
+                    else
+                    {
+                        printf("Updating previously installed version %s\n", active->queryVersion());
+                    }
                 }
             }
             if (!bundle->checkDependencies(allBundles, NULL, false) || !allBundles.checkDependencies(bundle, false))
@@ -957,36 +1081,19 @@ public:
                 else
                     printf("--force specified - updating anyway\n");
             }
-            if (removePrior)
-            {
-                oldBundleSet->deleteAllVersions(optDryRun);
-            }
-
-            const char *version = bundle->queryCleanVersion();
-            const char *name = bundle->queryCleanName();
+            if (!optKeepPrior)
+                bundleSet->deleteAllVersions(optDryRun);
+            else if (bundleSet->queryVersion(version))
+                bundleSet->deleteVersion(version, optDryRun);  // if reinstalling a currently installed version, you want to delete old copy
 
             if (!optDryRun && !recursiveCreateDirectory(bundlePath))
                 throw MakeStringException(0, "Cannot create bundle directory %s", bundlePath.str());
 
-            // Create the redirector file
-            // MORE - only do this if we want to make the new one active...
-            StringBuffer redirectPath(bundlePath);
-            addPathSepChar(redirectPath).append(name).append(".ecl");
-            if (optDryRun || optVerbose)
-                printf("Create redirector file %s\n", redirectPath.str());
-            if (!optDryRun)
-            {
-                VStringBuffer redirect("IMPORT %s.%s.%s.%s as _%s; EXPORT %s := _%s;", VERSION_SUBDIR, name, version, name, name, name, name);
-                Owned<IFile> redirector = createIFile(redirectPath);
-                Owned<IFileIO> rfile = redirector->open(IFOcreaterw);
-                rfile->write(0, redirect.length(), redirect.str());
-                bundle->setActive(true);
-            }
-
             // Copy the bundle contents
             StringBuffer versionPath(bundlePath);
-            addPathSepChar(versionPath).append(VERSION_SUBDIR).append(PATHSEPCHAR).append(name).append(PATHSEPCHAR).append(version);
-            if (!recursiveCreateDirectory(versionPath))
+            addPathSepChar(versionPath).append(VERSION_SUBDIR).append(PATHSEPCHAR);
+            versionPath.append(bundle->queryCleanName()).append(PATHSEPCHAR).append(bundle->queryCleanVersion());
+            if (!optDryRun && !recursiveCreateDirectory(versionPath))
                 throw MakeStringException(0, "Cannot create bundle version directory %s", versionPath.str());
             if (bundleFile->isDirectory() == foundYes) // could also be an archive, acting as a directory
             {
@@ -1007,6 +1114,8 @@ public:
             }
             if (!optDryRun)
             {
+                bundleSet->addBundle(bundle);
+                bundleSet->setActive(bundle->queryVersion());
                 bundle->printShortInfo();
                 printf("Installation complete\n");
             }
@@ -1030,7 +1139,7 @@ public:
                 "   --keepprior            Do not remove an previous versions of the bundle\n"
                 "   --update               Update an existing installed bundle\n"
                );
-        EclCmdCommon::usage();
+        EclCmdBundleBase::usage();
     }
 private:
     void copyDirectory(IFile *sourceDir, const char *destdir)
@@ -1089,11 +1198,11 @@ public:
             {
                 for (unsigned j = 0; j < bundleSet->numVersions(); j++)
                 {
-                    const IBundleInfo &bundle = bundleSet->queryVersion(j);
-                    if (bundle.isValid())
-                       bundle.printShortInfo();
+                    const IBundleInfo *bundle = bundleSet->queryVersion(j);
+                    if (bundle->isValid())
+                       bundle->printShortInfo();
                     else
-                       printf("Bundle %s[%d] at %s could not be loaded\n", bundleSet->queryName(), j, bundle.queryInstalledPath());
+                       printf("Bundle %s[%d] at %s could not be loaded\n", bundleSet->queryName(), j, bundle->queryInstalledPath());
                 }
             }
             else
@@ -1106,16 +1215,16 @@ public:
     virtual void usage()
     {
         printf("\nUsage:\n"
-               "\n"
-               "The 'list' command will list installed bundles\n"
-               "\n"
-               "ecl bundle list [pattern]\n"
-               " Options:\n"
-               "   <pattern>              A pattern specifying what bundles to list\n"
-               "                          If omitted, all bundles are listed\n"
-               "   --details              Report details of each installed bundle\n"
-              );
-        EclCmdCommon::usage();
+                "\n"
+                "The 'list' command will list installed bundles\n"
+                "\n"
+                "ecl bundle list [pattern]\n"
+                " Options:\n"
+                "   <pattern>              A pattern specifying what bundles to list\n"
+                "                          If omitted, all bundles are listed\n"
+                "   --details              Report details of each installed bundle\n"
+               );
+        EclCmdBundleBase::usage();
     }
 protected:
     bool optDetails;
@@ -1123,7 +1232,7 @@ protected:
 
 //-------------------------------------------------------------------------------------------------
 
-class EclCmdBundleUninstall : public EclCmdBundleBase
+class EclCmdBundleUninstall : public EclCmdBundleBaseWithVersion
 {
 public:
     EclCmdBundleUninstall()
@@ -1135,28 +1244,31 @@ public:
     {
         bool ok = true;
         CBundleCollection allBundles(bundlePath);
-        IBundleInfoSet *goer = allBundles.queryBundleSet(optBundle);
-        if (!goer)
+        Owned<IBundleInfo> goer = loadBundle(allBundles, false);
+        IBundleInfoSet *bundleSet = allBundles.queryBundleSet(optBundle);
+        assertex(bundleSet); // or loadBundle would fail
+        bool wasActive = false;
+        if (goer == bundleSet->queryActive())
         {
-            printf("Bundle %s not found\n", optBundle.get());
-            return 1;
+            ok = allBundles.checkDependencies(goer, true);
+            wasActive = true;
         }
-        const IBundleInfo *active = goer->queryActive();
-        if (active && active->isValid())
-            ok = allBundles.checkDependencies(active, true);
-        if (optForce)
+        if (!ok)
         {
+            if (!optForce)
+            {
+                printf("Specify --force to force uninstallation\n");
+                return 1;
+            }
             printf("--force specified - uninstalling anyway\n");
-            ok = true;
         }
-        if (ok)
-        {
-            // NOTE - this removes ALL versions of the bundle.
-            // We probably want to change that when version checking gets more sophisticated!
-            goer->deleteAllVersions(optDryRun);
-            goer->deleteRedirectFile(optDryRun);
-        }
-        return ok ? 0 : 1;
+        if (optVersion.length())
+            bundleSet->deleteVersion(optVersion, optDryRun);
+        else
+            bundleSet->deleteAllVersions(optDryRun);
+        if (wasActive)  // this will always be true if version not specified
+            bundleSet->deleteRedirectFile(optDryRun);
+        return 0;
     }
 
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt)
@@ -1165,22 +1277,22 @@ public:
             return EclCmdOptionMatch;
         if (iter.matchFlag(optForce, ECLOPT_FORCE))
             return EclCmdOptionMatch;
-        return EclCmdCommon::matchCommandLineOption(iter, finalAttempt);
+        return EclCmdBundleBaseWithVersion::matchCommandLineOption(iter, finalAttempt);
     }
 
     virtual void usage()
     {
         printf("\nUsage:\n"
-              "\n"
-              "The 'uninstall' command will remove a bundle\n"
-              "\n"
-              "ecl bundle uninstall <bundle> \n"
-              " Options:\n"
-              "   <bundle>               The name of an installed bundle\n"
-              "   --dryrun               Print files that would be removed, but do not remove them\n"
-              "   --force                Uninstall even if other bundles are dependent on this\n"
-             );
-        EclCmdCommon::usage();
+                "\n"
+                "The 'uninstall' command will remove a bundle\n"
+                "\n"
+                "ecl bundle uninstall <bundle> \n"
+                " Options:\n"
+                "   <bundle>               The name of an installed bundle\n"
+                "   --dryrun               Print files that would be removed, but do not remove them\n"
+                "   --force                Uninstall even if other bundles are dependent on this\n"
+               );
+        EclCmdBundleBaseWithVersion::usage();
     }
 private:
     bool optDryRun;
@@ -1189,24 +1301,28 @@ private:
 
 //-------------------------------------------------------------------------------------------------
 
-class EclCmdBundleUse : public EclCmdBundleBase
+class EclCmdBundleUse : public EclCmdBundleBaseWithVersion
 {
 public:
-    EclCmdBundleUse()
-    {
-    }
     virtual int processCMD()
     {
-        bool ok = true;
         CBundleCollection allBundles(bundlePath);
-        IBundleInfoSet *bundle = allBundles.queryBundleSet(optBundle);
-        if (!bundle)
+        Owned<const IBundleInfo> bundle(loadBundle(allBundles, false));
+        IBundleInfoSet *bundleSet = allBundles.queryBundleSet(optBundle);
+        assertex(bundleSet);  // or loadBundle should have failed
+        bundleSet->setActive(optVersion);
+        bundle->printShortInfo();
+        return 0;
+    }
+    virtual bool finalizeOptions(IProperties *globals)
+    {
+        if (optVersion.isEmpty())
         {
-            printf("Bundle %s not found\n", optBundle.get());
-            return 1;
+            printf("Version must be specified\n");
+            usage();
+            return false;
         }
-        UNIMPLEMENTED;
-        return ok;
+        return EclCmdBundleBaseWithVersion::finalizeOptions(globals);
     }
 
     virtual void usage()
@@ -1218,12 +1334,10 @@ public:
               "ecl bundle use <bundle> <version>\n"
               " Options:\n"
               "   <bundle>               The name of an installed bundle\n"
-              "   <version>              The version of the bundle to make active, or \"none\"\n"
+              "   --version <version>    The version of the bundle to make active, or \"none\"\n"
              );
-        EclCmdCommon::usage();
+        EclCmdBundleBase::usage();
     }
-private:
-    StringAttr optVersion;
 };
 
 //-------------------------------------------------------------------------------------------------
@@ -1242,8 +1356,8 @@ IEclCommand *createBundleSubCommand(const char *cmdname)
         return new EclCmdBundleList();
     else if (strieq(cmdname, "uninstall"))
         return new EclCmdBundleUninstall();
-//    else if (strieq(cmdname, "use"))
-//        return new EclCmdBundleUse();
+    else if (strieq(cmdname, "use"))
+        return new EclCmdBundleUse();
     return NULL;
 }
 
@@ -1267,7 +1381,7 @@ public:
                 "      install      Install a bundle\n"
                 "      list         List installed bundles\n"
                 "      uninstall    Uninstall a bundle\n"
-//                "      use          Specify which version of a bundle to use\n"
+                "      use          Specify which version of a bundle to use\n"
                 );
     }
 };
