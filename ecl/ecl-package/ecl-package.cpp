@@ -125,8 +125,8 @@ public:
                     "\n"
                     "ecl packagemap activate <target> <packagemap>\n"
                     " Options:\n"
-                    "   <target>               name of target containing package map to activate\n"
-                    "   <packagemap>           packagemap to activate\n",
+                    "   <target>               Name of target containing package map to activate\n"
+                    "   <packagemap>           Packagemap to activate\n",
                     stdout);
         EclCmdCommon::usage();
     }
@@ -215,8 +215,8 @@ public:
                     "\n"
                     "ecl packagemap deactivate <target> <packagemap>\n"
                     " Options:\n"
-                    "   <target>               name of target containing package map to activate\n"
-                    "   <packagemap>           packagemap to activate\n",
+                    "   <target>               Name of target containing package map to activate\n"
+                    "   <packagemap>           Packagemap to activate\n",
                     stdout);
         EclCmdCommon::usage();
     }
@@ -304,7 +304,7 @@ public:
                     "\n"
                     "ecl packagemap list <target> \n"
                     " Options:\n"
-                    "   <target>               name of target containing package map to use when retrieve list of package maps\n",
+                    "   <target>               Name of target containing package map to use when retrieving list of package maps\n",
                     stdout);
         EclCmdCommon::usage();
     }
@@ -374,7 +374,7 @@ public:
                     "\n"
                     "ecl packagemap info <target> \n"
                     " Options:\n"
-                    "   <target>               name of the target to use when retrieving active package map information\n",
+                    "   <target>               Name of the target to use when retrieving active package map information\n",
                     stdout);
         EclCmdCommon::usage();
     }
@@ -469,8 +469,8 @@ public:
                     "\n"
                     "ecl packagemap delete <target> <packagemap>\n"
                     " Options:\n"
-                    "   <target>               name of the target to use \n"
-                    "   <packagemap>           name of the package map to delete\n",
+                    "   <target>               Name of the target to use \n"
+                    "   <packagemap>           Name of the package map to delete\n",
                     stdout);
         EclCmdCommon::usage();
     }
@@ -596,13 +596,13 @@ public:
                     "\n"
                     "ecl packagemap add [options] <target> <filename>\n"
                     " Options:\n"
-                    "   -O, --overwrite             overwrite existing information\n"
-                    "   -A, --activate              activate the package information\n"
-                    "   --daliip=<ip>               ip of the remote dali to use for logical file lookups\n"
-                   "   --pmid                       id of package map - defaults to filename if not specified."
+                    "   -O, --overwrite             Overwrite existing information\n"
+                    "   -A, --activate              Activate the package information\n"
+                    "   --daliip=<ip>               IP of the remote dali to use for logical file lookups\n"
+                   "   --pmid                       Identifier of package map - defaults to filename if not specified."
 // NOT-YET          "  --packageprocessname         if not set use this package process name for all clusters"
-                    "   <target>                    name of target to use when adding package map information\n"
-                    "   <filename>                  name of file containing package map information\n",
+                    "   <target>                    Name of target to use when adding package map information\n"
+                    "   <filename>                  Name of file containing package map information\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -779,11 +779,11 @@ public:
                     "\n"
                     "ecl packagemap validate <target> <filename>\n"
                     " Options:\n"
-                    "   <target>                    name of target to use when validating package map information\n"
-                    "   <filename>                  name of file containing package map information\n"
-                    "   --active                    validate the active packagemap\n"
-                    "   --check-dfs                 verify that subfiles exist in DFS\n"
-                    "   -pm, --pmid                 id of packagemap to validate\n",
+                    "   <target>                    Name of target to use when validating package map information\n"
+                    "   <filename>                  Name of file containing package map information\n"
+                    "   --active                    Validate the active packagemap\n"
+                    "   --check-dfs                 Verify that subfiles exist in DFS\n"
+                    "   -pm, --pmid                 Identifier of packagemap to validate\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -909,9 +909,9 @@ public:
                     "\n"
                     "ecl packagemap query-files <target> <queryid>\n"
                     " Options:\n"
-                    "   <target>                    name of target to use when validating package map information\n"
-                    "   <queryid>                   name of query to get file mappings for\n"
-                    "   -pm, --pmid                 optional id of packagemap to validate, defaults to active\n",
+                    "   <target>                    Name of target to use when validating package map information\n"
+                    "   <queryid>                   Name of query to get file mappings for\n"
+                    "   -pm, --pmid                 Optional id of packagemap to validate, defaults to active\n",
                     stdout);
 
         EclCmdCommon::usage();
@@ -960,14 +960,14 @@ public:
         fprintf(stdout,"\nUsage:\n\n"
             "ecl packagemap <command> [command options]\n\n"
             "   packagemap Commands:\n"
-            "      add          add a package map to the environment\n"
-            "      delete       delete a package map\n"
-            "      activate     activate a package map\n"
-            "      deactivate   deactivate a package map (package map will not get loaded)\n"
-            "      list         list loaded package map names\n"
-            "      info         return active package map information\n"
-            "      validate     validate information in the package map file \n"
-            "      query-files  show files used by a query and if/how they are mapped\n"
+            "      add          Add a package map to the environment\n"
+            "      delete       Delete a package map\n"
+            "      activate     Activate a package map\n"
+            "      deactivate   Deactivate a package map (package map will not get loaded)\n"
+            "      list         List loaded package map names\n"
+            "      info         Return active package map information\n"
+            "      validate     Validate information in the package map file \n"
+            "      query-files  Show files used by a query and if/how they are mapped\n"
         );
     }
 };

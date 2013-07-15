@@ -9031,7 +9031,6 @@ public:
     virtual bool fireException(IException *e)
     {
         EXCLOG(e, "CDaliDFSServer exception");
-        e->Release();
         return true;
     }
 } *daliDFSServer = NULL;

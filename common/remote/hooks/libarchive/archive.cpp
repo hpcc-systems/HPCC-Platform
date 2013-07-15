@@ -110,6 +110,9 @@ public:
         mode = archive_entry_filetype(entry);
         filesize = archive_entry_size(entry);
         path.set(archive_entry_pathname(entry));
+        accessTime = archive_entry_atime(entry);
+        createTime = archive_entry_ctime(entry);
+        modifiedTime = archive_entry_mtime(entry);
     }
     bool isDir() const
     {
@@ -123,10 +126,28 @@ public:
     {
         return path.get();
     }
+    CDateTime &getAccessTime(CDateTime &t)
+    {
+        t.set(accessTime);
+        return t;
+    }
+    CDateTime &getCreateTime(CDateTime &t)
+    {
+        t.set(createTime);
+        return t;
+    }
+    CDateTime &getModifiedTime(CDateTime &t)
+    {
+        t.set(modifiedTime);
+        return t;
+    }
 private:
     unsigned mode;
     offset_t filesize;
     StringAttr path;
+    time_t accessTime;
+    time_t createTime;
+    time_t modifiedTime;
 };
 
 // IFileIO implementation for reading out of libarchive-supported archives
@@ -267,7 +288,18 @@ public:
     }
     virtual bool getTime(CDateTime * createTime, CDateTime * modifiedTime, CDateTime * accessedTime)
     {
-        UNIMPLEMENTED; // MORE - maybe could implement if required
+        if (entry)
+        {
+            if (accessedTime)
+                entry->getAccessTime(*accessedTime);
+            if (createTime)
+                entry->getCreateTime(*createTime);
+            if (modifiedTime)
+                entry->getModifiedTime(*modifiedTime);
+            return true;
+        }
+        else
+            return false;
     }
     virtual fileBool isDirectory()
     {
@@ -550,6 +582,7 @@ extern ARCHIVEFILE_API void removeFileHook()
         if (archiveFileHook)
         {
             removeContainedFileHook(archiveFileHook);
+            delete archiveFileHook;
             archiveFileHook = NULL;
         }
     }

@@ -409,7 +409,7 @@ public:
         if (e)
         {
             allDoneSem.interrupt(LINK(e));
-            activity.fireException(LINK(e));
+            activity.fireException(e);
         }
         else
             allDoneSem.signal();
