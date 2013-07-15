@@ -29,7 +29,7 @@
         <xs:element name="RoxieFarmProcess" maxOccurs="unbounded">
           <xs:annotation>
             <xs:appinfo>
-              <title>Farms</title>
+              <title>Ports</title>
             </xs:appinfo>
           </xs:annotation>
           <xs:complexType>
@@ -381,6 +381,7 @@
       </xs:attribute>
       <xs:attributeGroup ref="LDAP"/>
       <xs:attributeGroup ref="Options"/>
+      <xs:attributeGroup ref="Redundancy"/>
       <xs:attributeGroup ref="Tracing"/>
       <xs:attributeGroup ref="UDP"/>
       <xs:attributeGroup ref="Cache"/>
@@ -683,7 +684,8 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="slaveThreads" type="xs:nonNegativeInteger" use="optional" default="30">
+
+   <xs:attribute name="slaveThreads" type="xs:nonNegativeInteger" use="optional" default="30">
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Number of threads processing agent requests</tooltip>
@@ -746,6 +748,34 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+  </xs:attributeGroup>
+  <xs:attributeGroup name="Redundancy">
+
+    <xs:attribute name="cyclicOffset" type="xs:nonNegativeInteger" use="optional" default="1">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Offset for cyclic redundancy mode</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+
+    <xs:attribute name="slaveConfig" use="optional" default="">
+      <xs:annotation>
+        <xs:appinfo>
+           <tooltip>Roxie data redundancy mode</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="simple"/>
+          <xs:enumeration value="overloaded"/>
+          <xs:enumeration value="full redundancy"/>
+          <xs:enumeration value="cyclic redundancy"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+
+
   </xs:attributeGroup>
   <xs:attributeGroup name="Tracing">
     <xs:attribute name="traceLevel" type="xs:nonNegativeInteger" use="optional" default="1">

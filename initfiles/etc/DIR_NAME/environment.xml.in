@@ -907,7 +907,7 @@
                       requestArrayThreads="5"/>
    <RoxieServerProcess 
                        computer="localhost"
-                       name="farm2_s1"
+                       name="s1"
                        netAddress="."/>
   </RoxieCluster>
   <SashaServerProcess autoRestartInterval="0"
