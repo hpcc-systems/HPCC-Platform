@@ -130,7 +130,7 @@ X := LIMIT(SomeFile,10, FAIL(99,'error!'));
 //single record output
 Y := LIMIT(SomeFile,10,
       ONFAIL(TRANSFORM(RecStruct,
-        SELF := ROW({0,''},RecStruct)));
+        SELF := ROW({0,''},RecStruct))));
 //no exception, just no record
 Z := LIMIT(SomeFile,10,SKIP);
 </programlisting>
