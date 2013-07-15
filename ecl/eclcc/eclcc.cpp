@@ -26,6 +26,7 @@
 #include "workunit.hpp"
 
 #include "hqlecl.hpp"
+#include "hqlir.hpp"
 #include "hqlerrors.hpp"
 #include "hqlwuerr.hpp"
 #include "hqlfold.hpp"
@@ -203,6 +204,7 @@ public:
         logTimings = false;
         optArchive = false;
         optCheckEclVersion = true;
+        optEvaluateResult = false;
         optGenerateMeta = false;
         optGenerateDepend = false;
         optIncludeMeta = false;
@@ -210,10 +212,14 @@ public:
         optShared = false;
         optWorkUnit = false;
         optNoCompile = false;
+        optNoLogFile = false;
+        optNoStdInc = false;
+        optNoBundles = false;
         optOnlyCompile = false;
         optBatchMode = false;
         optSaveQueryText = false;
         optGenerateHeader = false;
+        optShowPaths = false;
         optTargetClusterType = HThorCluster;
         optTargetCompiler = DEFAULT_COMPILER;
         optThreads = 0;
@@ -241,6 +247,7 @@ protected:
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
     IFileIO * createArchiveOutputFile(EclCompileInstance & instance);
     ICppCompiler *createCompiler(const char * coreName, const char * sourceDir = NULL, const char * targetDir = NULL);
+    void evaluateResult(EclCompileInstance & instance);
     bool generatePrecompiledHeader();
     void generateOutput(EclCompileInstance & instance);
     void instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char * queryFullName, IErrorReceiver *errs, const char * outputFile);
@@ -264,6 +271,7 @@ protected:
 protected:
     Owned<IEclRepository> pluginsRepository;
     Owned<IEclRepository> libraryRepository;
+    Owned<IEclRepository> bundlesRepository;
     Owned<IEclRepository> includeRepository;
     const char * programName;
 
@@ -272,8 +280,12 @@ protected:
     StringBuffer hooksPath;
     StringBuffer templatePath;
     StringBuffer eclLibraryPath;
+    StringBuffer eclBundlePath;
     StringBuffer stdIncludeLibraryPath;
     StringBuffer includeLibraryPath;
+    StringBuffer compilerPath;
+    StringBuffer libraryPath;
+
     StringBuffer cclogFilename;
     StringAttr optLogfile;
     StringAttr optIniFilename;
@@ -304,17 +316,22 @@ protected:
     bool logTimings;
     bool optArchive;
     bool optCheckEclVersion;
+    bool optEvaluateResult;
     bool optGenerateMeta;
     bool optGenerateDepend;
     bool optIncludeMeta;
     bool optWorkUnit;
     bool optNoCompile;
+    bool optNoLogFile;
+    bool optNoStdInc;
+    bool optNoBundles;
     bool optBatchMode;
     bool optShared;
     bool optOnlyCompile;
     bool optSaveQueryText;
     bool optLegacy;
     bool optGenerateHeader;
+    bool optShowPaths;
     int argc;
     const char **argv;
 };
@@ -364,7 +381,6 @@ static int doMain(int argc, const char *argv[])
     EclCC processor(argc, argv);
     if (!processor.parseCommandLineOptions(argc, argv))
         return 1;
-
     try
     {
         if (!processor.processFiles())
@@ -481,8 +497,6 @@ void EclCC::loadOptions()
 
     globals.setown(createProperties(optIniFilename, true));
 
-    StringBuffer compilerPath, libraryPath;
-
     if (globals->hasProp("targetGcc"))
         optTargetCompiler = globals->getPropBool("targetGcc") ? GccCppCompiler : Vs6CppCompiler;
 
@@ -501,13 +515,14 @@ void EclCC::loadOptions()
         extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
         extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
         extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share/ecllibrary/");
+        extractOption(eclBundlePath, globals, "ECLCC_ECLBUNDLE_PATH", "eclBundlesPath", syspath, "share/bundles/");
     }
     extractOption(stdIncludeLibraryPath, globals, "ECLCC_ECLINCLUDE_PATH", "eclIncludePath", ".", NULL);
 
-    if (!optLogfile.length() && !optBatchMode)
+    if (!optLogfile.length() && !optBatchMode && !optNoLogFile)
         extractOption(optLogfile, globals, "ECLCC_LOGFILE", "logfile", "eclcc.log", NULL);
 
-    if (logVerbose || optLogfile)
+    if ((logVerbose || optLogfile) && !optNoLogFile)
     {
         if (optLogfile.length())
         {
@@ -820,7 +835,12 @@ bool EclCC::checkWithinRepository(StringBuffer & attributePath, const char * sou
         return false;
 
     StringBuffer searchPath;
-    searchPath.append(eclLibraryPath).append(ENVSEPCHAR).append(stdIncludeLibraryPath).append(ENVSEPCHAR).append(includeLibraryPath);
+    searchPath.append(eclLibraryPath).append(ENVSEPCHAR);
+    if (!optNoBundles)
+        searchPath.append(eclBundlePath).append(ENVSEPCHAR);
+    if (!optNoStdInc)
+        searchPath.append(stdIncludeLibraryPath).append(ENVSEPCHAR);
+    searchPath.append(includeLibraryPath);
 
     StringBuffer expandedSourceName;
     makeAbsolutePath(sourcePathname, expandedSourceName);
@@ -828,6 +848,72 @@ bool EclCC::checkWithinRepository(StringBuffer & attributePath, const char * sou
     return findFilenameInSearchPath(attributePath, searchPath, expandedSourceName);
 }
 
+void EclCC::evaluateResult(EclCompileInstance & instance)
+{
+    IHqlExpression *query = instance.query;
+    if (query->getOperator()==no_output)
+        query = query->queryChild(0);
+    if (query->getOperator()==no_datasetfromdictionary)
+        query = query->queryChild(0);
+    if (query->getOperator()==no_selectfields)
+        query = query->queryChild(0);
+    if (query->getOperator()==no_createdictionary)
+        query = query->queryChild(0);
+    OwnedHqlExpr folded = foldHqlExpression(query, NULL, HFOthrowerror|HFOloseannotations|HFOforcefold|HFOfoldfilterproject|HFOconstantdatasets);
+    StringBuffer out;
+    IValue *result = folded->queryValue();
+    if (result)
+        result->generateECL(out);
+    else if (folded->getOperator()==no_list)
+    {
+        out.append('[');
+        ForEachChild(idx, folded)
+        {
+            IHqlExpression *child = folded->queryChild(idx);
+            if (idx)
+                out.append(", ");
+            result = child->queryValue();
+            if (result)
+                result->generateECL(out);
+            else
+                throw MakeStringException(1, "Expression cannot be evaluated");
+        }
+        out.append(']');
+    }
+    else if (folded->getOperator()==no_inlinetable)
+    {
+        IHqlExpression *transformList = folded->queryChild(0);
+        if (transformList && transformList->getOperator()==no_transformlist)
+        {
+            IHqlExpression *transform = transformList->queryChild(0);
+            assertex(transform && transform->getOperator()==no_transform);
+            out.append('[');
+            ForEachChild(idx, transform)
+            {
+                IHqlExpression *child = transform->queryChild(idx);
+                assertex(child->getOperator()==no_assign);
+                if (idx)
+                    out.append(", ");
+                result = child->queryChild(1)->queryValue();
+                if (result)
+                    result->generateECL(out);
+                else
+                    throw MakeStringException(1, "Expression cannot be evaluated");
+            }
+            out.append(']');
+        }
+        else
+            throw MakeStringException(1, "Expression cannot be evaluated");
+    }
+    else
+    {
+#ifdef _DEBUG
+        EclIR::dump_ir(folded);
+#endif
+        throw MakeStringException(1, "Expression cannot be evaluated");
+    }
+    printf("%s\n", out.str());
+}
 
 void EclCC::processSingleQuery(EclCompileInstance & instance,
                                IFileContents * queryContents,
@@ -924,7 +1010,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
             gatherWarnings(ctx.errs, instance.query);
 
-            if (instance.query && !syntaxChecking && !optGenerateMeta)
+            if (instance.query && !syntaxChecking && !optGenerateMeta && !optEvaluateResult)
                 instance.query.setown(convertAttributeToQuery(instance.query, ctx));
 
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
@@ -932,6 +1018,9 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
 
             if (optIncludeMeta || optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getMetaTree());
+
+            if (optEvaluateResult && !errs->errCount() && instance.query)
+                evaluateResult(instance);
         }
         catch (IException *e)
         {
@@ -954,7 +1043,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     if (instance.archive)
         return;
 
-    if (syntaxChecking || optGenerateMeta)
+    if (syntaxChecking || optGenerateMeta || optEvaluateResult)
         return;
 
     StringBuffer targetFilename;
@@ -1139,6 +1228,8 @@ void EclCC::processFile(EclCompileInstance & instance)
         EclRepositoryArray repositories;
         repositories.append(*LINK(pluginsRepository));
         repositories.append(*LINK(libraryRepository));
+        if (bundlesRepository)
+            repositories.append(*LINK(bundlesRepository));
 
         //Ensure that this source file is used as the definition (in case there are potential clashes)
         //Note, this will not override standard library files.
@@ -1313,7 +1404,14 @@ void EclCC::processReference(EclCompileInstance & instance, const char * queryAt
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
 
-    instance.dataServer.setown(createCompoundRepositoryF(pluginsRepository.get(), libraryRepository.get(), includeRepository.get(), NULL));
+    EclRepositoryArray repositories;
+    repositories.append(*LINK(pluginsRepository));
+    repositories.append(*LINK(libraryRepository));
+    if (bundlesRepository)
+        repositories.append(*LINK(bundlesRepository));
+    repositories.append(*LINK(includeRepository));
+    instance.dataServer.setown(createCompoundRepository(repositories));
+
     processSingleQuery(instance, NULL, queryAttributePath);
 
     if (instance.reportErrorSummary())
@@ -1378,6 +1476,20 @@ bool EclCC::processFiles()
     {
         processArgvFilename(inputFiles, inputFileNames.item(idx));
     }
+    if (optShowPaths)
+    {
+        loadOptions();
+        printf("CL_PATH=%s\n", compilerPath.str());
+        printf("ECLCC_ECLBUNDLE_PATH=%s\n", eclBundlePath.str());
+        printf("ECLCC_ECLINCLUDE_PATH=%s\n", stdIncludeLibraryPath.str());
+        printf("ECLCC_ECLLIBRARY_PATH=%s\n", eclLibraryPath.str());
+        printf("ECLCC_INCLUDE_PATH=%s\n", cppIncludePath.str());
+        printf("ECLCC_LIBRARY_PATH=%s\n", libraryPath.str());
+        printf("ECLCC_PLUGIN_PATH=%s\n", pluginsPath.str());
+        printf("ECLCC_TPL_PATH=%s\n", templatePath.str());
+        printf("HPCC_FILEHOOKS_PATH=%s\n", hooksPath.str());
+        return true;
+    }
     if (optGenerateHeader)
     {
         return generatePrecompiledHeader();
@@ -1393,10 +1505,14 @@ bool EclCC::processFiles()
 
 
     StringBuffer searchPath;
-    searchPath.append(stdIncludeLibraryPath).append(ENVSEPCHAR).append(includeLibraryPath);
+    if (!optNoStdInc)
+        searchPath.append(stdIncludeLibraryPath).append(ENVSEPCHAR);
+    searchPath.append(includeLibraryPath);
 
     Owned<IErrorReceiver> errs = createFileErrorReceiver(stderr);
     pluginsRepository.setown(createNewSourceFileEclRepository(errs, pluginsPath.str(), ESFallowplugins, logVerbose ? PLUGIN_DLL_MODULE : 0));
+    if (!optNoBundles)
+        bundlesRepository.setown(createNewSourceFileEclRepository(errs, eclBundlePath.str(), 0, 0));
     libraryRepository.setown(createNewSourceFileEclRepository(errs, eclLibraryPath.str(), 0, 0));
     includeRepository.setown(createNewSourceFileEclRepository(errs, searchPath.str(), 0, 0));
 
@@ -1563,6 +1679,15 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchOption(optLogfile, "--logfile"))
         {
         }
+        else if (iter.matchFlag(optNoLogFile, "--nologfile"))
+        {
+        }
+        else if (iter.matchFlag(optNoStdInc, "--nostdinc"))
+        {
+        }
+        else if (iter.matchFlag(optNoBundles, "--nobundles"))
+        {
+        }
         else if (iter.matchOption(optLogDetail, "--logdetail"))
         {
         }
@@ -1579,6 +1704,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         {
         }
         else if (iter.matchFlag(optGenerateDepend, "-Md"))
+        {
+        }
+        else if (iter.matchFlag(optEvaluateResult, "-Me"))
         {
         }
         else if (iter.matchFlag(optOutputFilename, "-o"))
@@ -1610,6 +1738,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
                 ERRLOG("Error: INI file '%s' does not exist",optIniFilename.get());
                 return false;
             }
+        }
+        else if (iter.matchFlag(optShowPaths, "-showpaths"))
+        {
         }
         else if (iter.matchOption(optManifestFilename, "-manifest"))
         {
@@ -1686,14 +1817,14 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     }
 
     // Option post processing follows:
-    if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend)
+    if (optArchive || optWorkUnit || optGenerateMeta || optGenerateDepend || optShowPaths)
         optNoCompile = true;
 
     loadManifestOptions();
 
     if (inputFileNames.ordinality() == 0)
     {
-        if (optGenerateHeader || (!optBatchMode && optQueryRepositoryReference))
+        if (optGenerateHeader || optShowPaths || (!optBatchMode && optQueryRepositoryReference))
             return true;
         ERRLOG("No input filenames supplied");
         return false;
@@ -1765,6 +1896,7 @@ const char * const helpText[] = {
     "!   -legacy       Use legacy import semantics (deprecated)",
     "    --logfile <file> Write log to specified file",
     "!   --logdetail=n Set the level of detail in the log file",
+    "!   --nologfile   Do not write any logfile",
 #ifdef _WIN32
     "!   -m            Enable leak checking",
 #endif

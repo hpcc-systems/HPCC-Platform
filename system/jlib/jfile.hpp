@@ -244,7 +244,7 @@ extern jlib_decl void copyFile(IFile * target, IFile * source,size32_t buffersiz
 extern jlib_decl bool recursiveCreateDirectory(const char * path);              // only works locally, use IFile::createDirectory() for remote
 extern jlib_decl bool recursiveCreateDirectoryForFile(const char *filename);    // only works locally, use IFile::createDirectory() for remote
 
-extern jlib_decl void splitFilename(const char * filename, StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext);
+extern jlib_decl void splitFilename(const char * filename, StringBuffer * drive, StringBuffer * path, StringBuffer * tail, StringBuffer * ext, bool longExt = false);
 extern jlib_decl bool splitUNCFilename(const char * filename, StringBuffer * machine, StringBuffer * path, StringBuffer * tail, StringBuffer * ext);
 extern jlib_decl StringBuffer& createUNCFilename(const char * localfilename, StringBuffer &UNC, bool useHostNames=true);
 extern jlib_decl bool ensureFileExtension(StringBuffer& filename, const char* desiredExtension);
