@@ -47,8 +47,8 @@
   in SQL when used with the IN operator. It does not remove duplicate elements
   and does not order the set.</para>
 
-  <para>One common problem is the use of SET in a filter condition, like
-  this:</para>
+  <para>One common problem is the use of the SET function in a filter
+  condition, like this:</para>
 
   <programlisting>MyDS := myDataset(myField IN SET(anotherDataset, someField));</programlisting>
 
