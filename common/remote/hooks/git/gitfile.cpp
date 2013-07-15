@@ -453,6 +453,7 @@ extern GITFILE_API void removeFileHook()
         if (gitRepositoryFileHook)
         {
             removeContainedFileHook(gitRepositoryFileHook);
+            delete gitRepositoryFileHook;
             gitRepositoryFileHook = NULL;
         }
     }

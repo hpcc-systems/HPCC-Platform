@@ -255,14 +255,14 @@
             </xsl:choose>
             <script type="text/javascript">
               var rows = new Array();
+              var rowsPorts = new Array();
               var rowsServers = new Array();
-              var rowsSlaves = new Array();
               var rowsTopology = new Array();
               var menuEnabled = new Array();
               var viewChildNodes = new Array();
               var multiRowNodes = new Array();
-              initRowsForComplexComps(rowsServers, "RoxieServers");
-              initRowsForComplexComps(rowsSlaves, "RoxieSlaves");
+              initRowsForComplexComps(rowsPorts, "RoxiePorts");
+              initRowsForComplexComps(rowsServers, "RoxieSlaves");
               initRowsForComplexComps(rowsTopology, "Topology");
               <xsl:call-template name="fillenableMenu"/>
               createDivInTabsForComp('<xsl:value-of select="$Component"/>');
@@ -596,7 +596,7 @@
                       </xsl:for-each>
                     </xsl:when>
                     <xsl:when test="(name() = 'RoxieFarmProcess')">
-                    id = rowsServers.length;
+                    id = rowsPorts.length;
                     parent = 0;
                     parentIds.splice(0, parentIds.length);
                     parentIds[parentIds.length] = parent;
@@ -608,21 +608,22 @@
                       i.parent = parentIds[parentIds.length-1];
                       parent = id;
                       i.id = id++;
-                      setParentIds(i, rowsServers, parentIds);
+                      setParentIds(i, rowsPorts, parentIds);
                       var subTypeKey = '<xsl:value-of select="@name"/>';
                       <xsl:for-each select="@*">
-                        i.<xsl:value-of select="name()"/> = "<xsl:value-of select="."/>";
-                        i.<xsl:value-of select="name()"/>_extra = cS['<xsl:value-of select="name()"/>'+subCompType].extra;
-                        i.<xsl:value-of select="name()"/>_ctrlType = cS['<xsl:value-of select="name()"/>'+subCompType].ctrlType;
+                        try {
+                         i.<xsl:value-of select="name()"/> = "<xsl:value-of select="."/>";
+                         i.<xsl:value-of select="name()"/>_extra = cS['<xsl:value-of select="name()"/>'+subCompType].extra;
+                         i.<xsl:value-of select="name()"/>_ctrlType = cS['<xsl:value-of select="name()"/>'+subCompType].ctrlType;
+                        } catch (err) {}
                       </xsl:for-each>
                       i.params = "pcType=<xsl:value-of select="$Component"/>::pcName=" + cN;
                       i.params +=  "::subType=" + subCompType + "::subTypeKey=" + subTypeKey;
-                      rowsServers[rowsServers.length] = i;
+                      rowsPorts[rowsPorts.length] = i;
                     </xsl:for-each>
                   </xsl:when>
-                    <xsl:when test="(name() = 'RoxieServerProcess')"/>
-                    <xsl:when test="(name() = 'RoxieSlave')">
-                      id = rowsSlaves.length;
+                    <xsl:when test="(name() = 'RoxieServerProcess')">
+                      id = rowsServers.length;
                       parent = 0;
                       parentIds.splice(0, parentIds.length);
                       parentIds[parentIds.length] = parent;
@@ -634,16 +635,11 @@
                         i.parent = parentIds[parentIds.length-1];
                         parent = id;
                         i.id = id++;
-                        setParentIds(i, rowsSlaves, parentIds);
+                        setParentIds(i, rowsServers, parentIds);
                         <xsl:for-each select="@*">
                           i.<xsl:value-of select="name()"/> = "<xsl:value-of select="."/>";
                         </xsl:for-each>
-                        if (i.depth > 1)
-                          i.name = '<xsl:value-of select="@number"/>';
-                        else
-                          i.name = '<xsl:value-of select="@computer"/>';
-                          
-                        rowsSlaves[rowsSlaves.length] = i;
+                        rowsServers[rowsServers.length] = i;
                       </xsl:for-each>
                     </xsl:when>
                     <xsl:when test="name() = /*[1]/ViewChildNodes/viewChildNodes/*">
@@ -787,7 +783,8 @@
                               i.value_onChangeMsg = aS.onChangeMsg;
                               i.params = "pcType=<xsl:value-of select="$Component"/>::pcName=" + cN + "::subType=" + eN;
                               i.params +="::subTypeKey=" + subTypeKey;
-                              rows[aS.tab][rows[aS.tab].length] = i;
+                              if (typeof(rows[aS.tab]) != 'undefined')
+                                rows[aS.tab][rows[aS.tab].length] = i;
                             }
                           }
                         }
@@ -799,7 +796,7 @@
                 createTablesForComp('<xsl:value-of select="$Component"/>', rows);
                 if ('<xsl:value-of select="$Component"/>'==='RoxieCluster') {
                   createMultiColTreeCtrlForComp(rowsServers, "Servers", 0);
-                  createMultiColTreeCtrlForComp(rowsSlaves, "Farms", 0);
+                  createMultiColTreeCtrlForComp(rowsPorts, "Ports", 0);
                 }
                 else if ('<xsl:value-of select="$Component"/>'==='ThorCluster')
                   createMultiColTreeCtrlForComp(rowsTopology, "Topology", 0);

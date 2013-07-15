@@ -502,11 +502,10 @@ public:
 
       void addRoxieMisc(StringBuffer& jsStrBuf)
       {
-        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_SERVER, TAG_NAME, "", 0, 1, "", 0);
+        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_SERVER, TAG_COMPUTER, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_SERVER, TAG_PROCESS, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_NAME, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_PROCESS, "", 0, 1, "", 0);
-        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_LEVEL, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_LISTENQUEUE, "", 0, 1, "", 1);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_NUMTHREADS, "", 0, 1, "", 1);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_FARM, TAG_PORT, "", 0, 1, "", 1);
@@ -520,7 +519,6 @@ public:
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_NAME, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_ITEMTYPE, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_COMPUTER, "", 0, 1, "", 0);
-        addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_LEVEL, "", 0, 1, "", 0);
         addItem(jsStrBuf, m_pEnv.get(), XML_TAG_ROXIE_CHANNEL, TAG_NUMBER, "", 0, 1, "", 0);
       }
 
@@ -532,11 +530,10 @@ public:
           const char* serverStr = "Servers";
 
           short index = 0;
-          m_colIndex.appendf("colIndex['name%s']=%d;", serverStr, index++); 
+          m_colIndex.appendf("colIndex['computer%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['process%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['netAddress%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['port%s']=%d;", serverStr, index++);
-          m_colIndex.appendf("colIndex['level%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['listenQueue%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['numThreads%s']=%d;", serverStr, index++);
           m_colIndex.appendf("colIndex['requestArrayThreads%s']=%d;", serverStr, index++);
@@ -544,11 +541,8 @@ public:
 
           index = 0;
           const char* agentStr = "Agents";
-          m_colIndex.appendf("colIndex['name%s']=%d;", agentStr, index++); 
-          m_colIndex.appendf("colIndex['itemType%s']=%d;", agentStr, index++);
+          m_colIndex.appendf("colIndex['computer%s']=%d;", agentStr, index++);
           m_colIndex.appendf("colIndex['netAddress%s']=%d;", agentStr, index++);
-          m_colIndex.appendf("colIndex['level%s']=%d;", agentStr, index++);
-          m_colIndex.appendf("colIndex['number%s']=%d;", agentStr, index++);
         }
         else if (!strcmp(m_compName.str(), XML_TAG_THORCLUSTER))
         {
@@ -1195,7 +1189,7 @@ public:
             }
 
             if (!strcmp(viewType, "Instance") || !strcmp(viewType, "instance") || 
-              !strcmp(viewType, "RoxieServers") || !strcmp(viewType, "RoxieSlaves"))
+              !strcmp(viewType, "RoxiePorts") || !strcmp(viewType, "RoxieSlaves"))
               bOptSubType = true;
           }
 
@@ -1387,12 +1381,12 @@ public:
         if (!strcmp(m_compName.str(), "Eclserver"))
           m_compName.clear().append(XML_TAG_ECLSERVERPROCESS);
 
-        m_jsStrBuf.append("var compTabs = new Array(); ");
-        m_jsStrBuf.appendf("compTabs['%s'] = new Array();", m_compName.str());
-        m_jsStrBuf.append("var hiddenTabs = new Array(); ");
-        m_jsStrBuf.appendf("hiddenTabs['%s'] = new Array();", m_compName.str());
-        m_jsStrBuf.append("var compTabToNode = new Array(); ");
-        m_jsStrBuf.append("var cS = new Array();");
+        m_jsStrBuf.append("var compTabs = new Array();\n ");
+        m_jsStrBuf.appendf("compTabs['%s'] = new Array();\n", m_compName.str());
+        m_jsStrBuf.append("var hiddenTabs = new Array();\n ");
+        m_jsStrBuf.appendf("hiddenTabs['%s'] = new Array();\n", m_compName.str());
+        m_jsStrBuf.append("var compTabToNode = new Array();\n");
+        m_jsStrBuf.append("var cS = new Array();\n");
 
         Owned<IPropertyTreeIterator> iter = schemaNode->getElements("*");
         ForEach(*iter)
