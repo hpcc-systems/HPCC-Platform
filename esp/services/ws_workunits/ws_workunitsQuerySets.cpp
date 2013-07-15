@@ -598,19 +598,21 @@ void addClusterQueryStates(IPropertyTree* queriesOnCluster, const char *target, 
     clusterState->setCluster(target);
 
     VStringBuffer xpath("Endpoint/Queries/Query[@id='%s']", id);
-    IPropertyTree *aQuery = queriesOnCluster->getBranch(xpath.str());
-    if (!aQuery)
+    Owned<IPropertyTreeIterator> iter = queriesOnCluster->getElements(xpath.str());
+    bool found = false;
+    bool suspended = false;
+    ForEach (*iter)
     {
+        found = true;
+        if (iter->query().getPropBool("@suspended", false))
+            suspended = true;
+    }
+    if (!found)
         clusterState->setState("Not Found");
-    }
-    else if (aQuery->getPropBool("@suspended", false))
-    {
+    else if (suspended)
         clusterState->setState("Suspended");
-    }
     else
-    {
         clusterState->setState("Available");
-    }
 
     clusterStates.append(*clusterState.getClear());
 }
