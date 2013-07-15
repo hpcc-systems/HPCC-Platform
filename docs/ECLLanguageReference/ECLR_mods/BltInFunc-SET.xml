@@ -54,7 +54,7 @@
 
   <para>The code generated for this is inefficient if "anotherDataset"
   contains a large number of elements, and may also cause a "Dataset too large
-  to output to workunit" error. A better way to recode the expression is
+  to output to workunit" error. A better way to recode the expression would be
   this:</para>
 
   <programlisting>MyDS := JOIN(myDataset, anotherDataset, LEFT.myField = RIGHT.someField, TRANSFORM(LEFT), LOOKUP) ;</programlisting>
