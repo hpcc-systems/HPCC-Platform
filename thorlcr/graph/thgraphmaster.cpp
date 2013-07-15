@@ -1602,7 +1602,7 @@ bool CJobMaster::go()
         }
         virtual bool action()
         {
-            job.fireException(LINK(exception)); 
+            job.fireException(exception);
             return true;
         }
     private:

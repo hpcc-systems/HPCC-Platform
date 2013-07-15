@@ -678,6 +678,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                 catch (IException *e)
                 {
                     owner.fireException(e);
+                    e->Release();
                 }
                 aborted = true;
                 owner.pendingGroupSem.signal(); // release puller if blocked on fetch groups pending, in case this has stopped early.
@@ -872,6 +873,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
                 catch (IException *e)
                 {
                     owner.fireException(e);
+                    e->Release();
                 }
                 aborted = true;
             }
@@ -1132,6 +1134,7 @@ class CKeyedJoinSlave : public CSlaveActivity, public CThorDataLink, implements 
             catch (IException *e)
             {
                 owner.fireException(e);
+                e->Release();
             }
         }
     friend class CKeyedFetchRequestProcessor;
