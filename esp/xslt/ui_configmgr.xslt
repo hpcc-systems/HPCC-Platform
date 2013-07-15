@@ -611,9 +611,11 @@
                       setParentIds(i, rowsServers, parentIds);
                       var subTypeKey = '<xsl:value-of select="@name"/>';
                       <xsl:for-each select="@*">
-                        i.<xsl:value-of select="name()"/> = "<xsl:value-of select="."/>";
-                        i.<xsl:value-of select="name()"/>_extra = cS['<xsl:value-of select="name()"/>'+subCompType].extra;
-                        i.<xsl:value-of select="name()"/>_ctrlType = cS['<xsl:value-of select="name()"/>'+subCompType].ctrlType;
+                        try {
+                         i.<xsl:value-of select="name()"/> = "<xsl:value-of select="."/>";
+                         i.<xsl:value-of select="name()"/>_extra = cS['<xsl:value-of select="name()"/>'+subCompType].extra;
+                         i.<xsl:value-of select="name()"/>_ctrlType = cS['<xsl:value-of select="name()"/>'+subCompType].ctrlType;
+                        } catch (err) {}
                       </xsl:for-each>
                       i.params = "pcType=<xsl:value-of select="$Component"/>::pcName=" + cN;
                       i.params +=  "::subType=" + subCompType + "::subTypeKey=" + subTypeKey;
