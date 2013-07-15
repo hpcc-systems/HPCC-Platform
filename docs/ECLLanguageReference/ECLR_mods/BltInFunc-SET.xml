@@ -52,15 +52,16 @@
 
   <programlisting>MyDS := myDataset(myField IN SET(anotherDataset, someField));</programlisting>
 
-  <para>The code generated for this is very inefficient and frequently
-  produces workunits that terminate with the "Dataset too large to output to
-  workunit" error. A better way to recode the expression is this: </para>
+  <para>The code generated for this is inefficient if "anotherDataset"
+  contains a large number of elements, and may also cause a "Dataset too large
+  to output to workunit" error. A better way to recode the expression is
+  this:</para>
 
   <programlisting>MyDS := JOIN(myDataset, anotherDataset, LEFT.myField = RIGHT.someField, TRANSFORM(LEFT), LOOKUP) ;</programlisting>
 
-  <para>The end result is the same, the set of myDataset records where the
-  myField value is one of the someField values from anotherDataset, but the
-  code is much more efficient in execution.</para>
+  <para>The end result is the same, the set of "myDataset" records where the
+  "myField" value is one of the "someField" values from "anotherDataset," but
+  the code is much more efficient in execution.</para>
 
   <para>Example:</para>
 
