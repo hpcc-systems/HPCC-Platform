@@ -198,7 +198,7 @@ class EclCmdCommon : public CInterface, implements IEclCommand
 {
 public:
     IMPLEMENT_IINTERFACE;
-    EclCmdCommon() : optVerbose(false), optSSL(false)
+    EclCmdCommon(bool _usesESP=true) : optVerbose(false), optSSL(false), usesESP(_usesESP)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -207,14 +207,17 @@ public:
     virtual void usage()
     {
         fprintf(stdout,
-            "   --help                 display usage information for the given command\n"
-            "   -v, --verbose          output additional tracing information\n"
-            "   -s, --server=<ip>      ip of server running ecl services (eclwatch)\n"
-            "   -ssl, --ssl            use SSL to secure the connection to the server\n"
-            "   --port=<port>          ecl services port\n"
-            "   -u, --username=<name>  username for accessing ecl services\n"
-            "   -pw, --password=<pw>   password for accessing ecl services\n"
-        );
+            "   --help                 Display usage information for the given command\n"
+            "   -v, --verbose          Output additional tracing information\n"
+          );
+        if (usesESP)
+            fprintf(stdout,
+                "   -s, --server=<ip>      IP of server running ecl services (eclwatch)\n"
+                "   -ssl, --ssl            Use SSL to secure the connection to the server\n"
+                "   --port=<port>          ECL services port\n"
+                "   -u, --username=<name>  Username for accessing ecl services\n"
+                "   -pw, --password=<pw>   Password for accessing ecl services\n"
+              );
     }
 public:
     StringAttr optServer;
@@ -223,6 +226,7 @@ public:
     StringAttr optPassword;
     bool optVerbose;
     bool optSSL;
+    bool usesESP;
 };
 
 class EclCmdWithEclTarget : public EclCmdCommon
@@ -238,11 +242,11 @@ public:
     {
         EclCmdCommon::usage();
         fprintf(stdout,
-            "   --main=<definition>    definition to use from legacy ECL repository\n"
-            "   --snapshot,-sn=<label> snapshot label to use from legacy ECL repository\n"
-            "   --ecl-only             send ecl text to hpcc without generating archive\n"
-            "   --limit=<limit>        sets the result limit for the query, defaults to 100\n"
-            "   -f<option>[=value]     set an ECL option (equivalent to #option)\n"
+            "   --main=<definition>    Definition to use from legacy ECL repository\n"
+            "   --snapshot,-sn=<label> Snapshot label to use from legacy ECL repository\n"
+            "   --ecl-only             Send ecl text to hpcc without generating archive\n"
+            "   --limit=<limit>        Sets the result limit for the query, defaults to 100\n"
+            "   -f<option>[=value]     Set an ECL option (equivalent to #option)\n"
             " eclcc options:\n"
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"

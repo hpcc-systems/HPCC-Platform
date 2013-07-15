@@ -219,7 +219,7 @@ public:
                 "\n"
                 "ecl roxie attatch <process_cluster>\n"
                 " Options:\n"
-                "   <process_cluster>      the roxie process cluster to attach\n",
+                "   <process_cluster>      The roxie process cluster to attach\n",
                 stdout);
         else
             fputs("\nUsage:\n"
@@ -230,7 +230,7 @@ public:
                 "\n"
                 "ecl roxie detatch <process_cluster>\n"
                 " Options:\n"
-                "   <process_cluster>      the roxie process cluster to detach\n",
+                "   <process_cluster>      The roxie process cluster to detach\n",
                 stdout);
 
         fputs("\n"
@@ -334,7 +334,7 @@ public:
                 "\n"
                 "ecl roxie reload <process_cluster>\n"
                 " Options:\n"
-                "   <process_cluster>      the roxie process cluster to reload\n",
+                "   <process_cluster>      The roxie process cluster to reload\n",
                 stdout);
         else
             fputs("\nUsage:\n"
@@ -344,7 +344,7 @@ public:
                 "\n"
                 "ecl roxie check <process_cluster>\n"
                 " Options:\n"
-                "   <process_cluster>      the roxie process cluster to check\n",
+                "   <process_cluster>      The roxie process cluster to check\n",
                 stdout);
 
         fputs("\n"
@@ -434,7 +434,7 @@ public:
             "\n"
             "ecl roxie unused-files <process_cluster>\n"
             " Options:\n"
-            "   <process_cluster>      the roxie process cluster to reload\n",
+            "   <process_cluster>      The roxie process cluster to reload\n",
             stdout);
 
         fputs("\n"
