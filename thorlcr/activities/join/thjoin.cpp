@@ -353,7 +353,7 @@ public:
             }
             return true;
         }
-        return CMasterActivity::fireException(e);
+        return CMasterActivity::fireException(_e);
     }
 };
 

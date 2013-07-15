@@ -447,6 +447,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
                     {
                         ActPrintLog(owner.activity, e, "HDIST: closeWrite");
                         owner.fireException(e);
+                        e->Release();
                     }
                 }
             }
@@ -656,6 +657,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
             {
                 ActPrintLog(owner.activity, e, "HDIST: sender.process");
                 owner.fireException(e);
+                e->Release();
             }
 
             ActPrintLog(owner.activity, "Distribute send finishing");
@@ -690,6 +692,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     // IExceptionHandler impl.
         virtual bool fireException(IException *e)
         {
+            ActPrintLog(owner.activity, e, "HDIST: CSender");
             if (!aborted)
             {
                 exception.set(e);
@@ -1057,11 +1060,8 @@ public:
     // IExceptionHandler impl.
     virtual bool fireException(IException *e)
     {
-        ActPrintLog(activity, e, "HDIST: sendloop");
         if (!sendException.get())
-            sendException.setown(e);
-        else
-            e->Release();
+            sendException.set(e);
         return true;
     }
 };
