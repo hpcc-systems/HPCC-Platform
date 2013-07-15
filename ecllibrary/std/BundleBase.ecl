@@ -7,7 +7,7 @@ EXPORT BundleBase := MODULE,VIRTUAL
    * Record format for Properties dictionary.
    * @return Record format for Properties dictionary.
    */
-  EXPORT PropertyRecord := { STRING key => STRING value };
+  EXPORT PropertyRecord := { UTF8 key => UTF8 value };
 
   /*
    * Name of this bundle.

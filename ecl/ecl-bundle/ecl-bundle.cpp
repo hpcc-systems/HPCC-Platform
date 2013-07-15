@@ -62,7 +62,7 @@ static int versionCompareSingleComponent(const char *v1, const char *v2)
     long l1 = strtoul(v1, &ev1, 10);
     long l2 = strtoul(v2, &ev2, 10);
     if (l1 != l2)
-        return l1 > l2 ? -1 : 1;
+        return l1 < l2 ? -1 : 1;
     return stricmp(ev1, ev2);
 }
 
@@ -81,10 +81,10 @@ static int versionCompare(const char *v1, const char *v2, bool strict)
                 return diff;
             i++;
         }
-        else if (a2.isItem(i))
-            return 1;
-        else if (strict && a2.isItem(i))  // Note: trailing info in v1 is ignored if not strict
+        else if (a2.isItem(i))  // second is longer, so first is < second
             return -1;
+        else if (strict && a1.isItem(i))  // Note: trailing info in v1 is ignored if not strict
+            return 1;
         else
             return 0;
     }
@@ -92,9 +92,9 @@ static int versionCompare(const char *v1, const char *v2, bool strict)
 
 static bool versionOk(const char *versionPresent, const char *minOk, const char *maxOk = NULL)
 {
-    if (minOk && versionCompare(versionPresent, minOk, false) > 0)
+    if (minOk && versionCompare(versionPresent, minOk, false) < 0)
         return false;
-    if (maxOk && versionCompare(versionPresent, maxOk, false) < 0)
+    if (maxOk && versionCompare(versionPresent, maxOk, false) > 0)
         return false;
     return true;
 }
@@ -109,7 +109,11 @@ unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *input)
         VStringBuffer runcmd("eclcc  --nologfile --nostdinc %s", cmd);
         pipe->run("eclcc", runcmd, ".", input != NULL, true, true);
         if (optVerbose)
-            printf("Running %s\nwith input %s\n", runcmd.str(), input);
+        {
+            printf("Running %s\n", runcmd.str());
+            if (input)
+                printf("with input %s\n", input);
+        }
         if (input)
         {
             pipe->write(strlen(input), input);
@@ -191,7 +195,7 @@ void recursiveRemoveDirectory(IFile *dir, bool isDryRun)
     if (isDryRun || optVerbose)
         printf("rmdir %s\n", dir->queryFilename());
     if (!isDryRun)
-        rmdir(dir->queryFilename());
+        dir->remove();
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -272,7 +276,7 @@ public:
                                     " [ (UTF8) B.name, (UTF8) B.version, B.description, B.license, B.copyright ] +"
                                     " [ (UTF8) COUNT(b.authors) ] + B.authors + "
                                     " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn;", bundleName.str());
-            if (doEclCommand(output, eclOpts.str(), bundleCmd)>2)
+            if (doEclCommand(output, eclOpts.str(), bundleCmd) > 0)
                 throw MakeStringException(0, "%s cannot be parsed as a bundle\n", bundle);
             // output should contain [ 'name', 'version', etc ... ]
             if (optVerbose)
@@ -369,6 +373,11 @@ public:
 private:
     bool checkDependency(const IBundleCollection &allBundles, const char *dep, const IBundleInfo *bundle, bool going) const
     {
+        // MORE - this is really doing two separate jobs, and should be split
+        // 1. check if I have a dependency on bundle
+        // 2. Check if all my dependencies are met
+        if (!dep || !*dep)
+            return true;  // Bit of a silly bundle...
         StringArray depVersions;
         depVersions.appendList(dep, " ");
         const char *dependentName = depVersions.item(0);
@@ -1058,7 +1067,7 @@ public:
                         return 1;
                     }
                     int diff = versionCompare(bundle->queryVersion(), active->queryVersion(), true);
-                    if (diff >= 0)
+                    if (diff <= 0)
                     {
                         printf("Existing active version %s is newer or same version\n", active->queryVersion());
                         ok = false;
@@ -1105,12 +1114,14 @@ public:
                 splitFilename(bundleFile->queryFilename(), NULL, NULL, &tail, &tail);
                 versionPath.append(PATHSEPCHAR).append(tail);
                 Owned<IFile> targetFile = createIFile(versionPath.str());
-                if (targetFile->exists())
-                    throw MakeStringException(0, "A bundle file %s is already installed", versionPath.str());
                 if (optDryRun || optVerbose)
                     printf("cp %s %s\n", bundleFile->queryFilename(), targetFile->queryFilename());
                 if (!optDryRun)
+                {
+                    if (targetFile->exists())
+                        throw MakeStringException(0, "A bundle file %s is already installed", versionPath.str());
                     doCopyFile(targetFile, bundleFile, 1024 * 1024, NULL, NULL, false);
+                }
             }
             if (!optDryRun)
             {
@@ -1394,6 +1405,14 @@ static int doMain(int argc, const char *argv[])
 
 int main(int argc, const char *argv[])
 {
+    assert(versionCompareSingleComponent("1", "2") < 0);
+    assert(versionCompareSingleComponent("1a", "1b") < 0);
+    assert(versionCompareSingleComponent("1", "1a") < 0);
+    assert(versionCompare("1.2.3", "1.2", false) == 0);
+    assert(versionCompare("1.2.3", "1.2", true) > 0);
+    assert(versionCompare("1.2.3", "1.2.4", false) < 0);
+    assert(versionCompare("1.2.3", "1.2.4", true) < 0);
+    assert(versionOk("1.4.2", "1.4"));
     assert(versionOk("1.4.2", "1.4"));
     assert(!versionOk("1.4.2", "1.5"));
     assert(versionOk("1.4.2", "1.4", "1.5"));

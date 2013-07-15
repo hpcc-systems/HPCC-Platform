@@ -294,7 +294,7 @@ public:
                 entry->getAccessTime(*accessedTime);
             if (createTime)
                 entry->getCreateTime(*createTime);
-            if (accessedTime)
+            if (modifiedTime)
                 entry->getModifiedTime(*modifiedTime);
             return true;
         }
