@@ -69,8 +69,8 @@ public:
     {
         const char *args[] = {"R", "--slave" };
         R = new RInside(2, args, true, false, false);
-// Make sure we are never unloaded (as JVM does not support it)
-// we do this by doing a dynamic load of the javaembed library
+// Make sure we are never unloaded (as R does not support it)
+// we do this by doing a dynamic load of the Rembed library
 #ifdef _WIN32
         char path[_MAX_PATH];
         ::GetModuleFileName((HINSTANCE)&__ImageBase, path, _MAX_PATH);
@@ -137,6 +137,7 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 MODULE_EXIT()
 {
+// Don't unload, because R seems to have problems with being reloaded, i.e. crashes on next use
 //    unload();
 }
 
