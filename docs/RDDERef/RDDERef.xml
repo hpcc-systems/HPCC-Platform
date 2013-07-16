@@ -513,7 +513,8 @@
 
   <xi:include href="RDDERef/RDDE_Mods/Packages.xml" xpointer="element(/1)"
               xmlns:xi="http://www.w3.org/2001/XInclude" />
-
+  <xi:include href="RDDERef/RDDE_Mods/directAccessToRoxie.xml" xpointer="element(/1)"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
   <chapter id="Deploying-Data-to-a-Cluster-using-DFU">
     <title>Deploying Data to a Cluster using DFU</title>
 

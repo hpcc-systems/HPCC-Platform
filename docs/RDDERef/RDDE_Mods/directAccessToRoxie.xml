@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
+"http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
+<chapter>
+  <title>Direct Access to Roxie</title>
+
+  <sect1 role="nobrk">
+    <title>Roxie Query Access
+    Overview</title>
+
+    <para>WsECL provides quick and easy access to your published queries, but
+    is not optimized for the rapid throughput Roxie provides. To take full
+    advantage of this capability, you should access Roxie directly.</para>
+
+    <para>WsECL still plays an important role when using this technique. It
+    provides an immediate means of testing, provides a web interface for
+    one-off query execution, and provides the WSDL and schema which can be
+    used for automated code generators for SOAP access. It also provides the
+    HTTP-GET and form encodes support. Finally, it also provides a JSON
+    (Javascript Simple Object Notation) which is similar to Roxie’s direct
+    interface.</para>
+
+    <para></para>
+
+    <sect2>
+      <title>Web Services</title>
+
+      <para>A Web service is a standards-based software component accessible
+      over the Internet. The service can be simple or complex.</para>
+
+      <para>For example, a Web service could request a number of stock quotes
+      and return them in an XML result set.</para>
+
+      <para>Web Services are available to any platform, object model, or
+      programming language. This provides access to users over the Internet,
+      Intranet, or Extranet regardless of the user’s platform.</para>
+
+      <para>It also simplifies distributed systems development. The use of
+      standards-based components protects development investment regardless of
+      future trends. Web Service Technologies are based upon HTTP.</para>
+
+      <sect3>
+        <title><emphasis role="bold">Simple Object Access Protocol
+        (SOAP)</emphasis></title>
+
+        <para>SOAP is the most common XML-based protocol for sending requests
+        to and receiving responses from Web Services. Basically, it is a
+        protocol for communication between applications. It is designed to
+        communicate over the Internet and is platform independent and language
+        independent. Based on XML, SOAP is simple and extensible.</para>
+      </sect3>
+
+      <sect3>
+        <title>JavaScript Object Notation<emphasis role="bold">
+        (JSON)</emphasis></title>
+
+        <para><emphasis role="bold">JSON</emphasis> is a lightweight
+        data-interchange format. It is easy for humans to read and write. It
+        is easy for machines to parse and generate. It is based on a subset of
+        the JavaScript Programming Language, it is completely language
+        independent.</para>
+
+        <para></para>
+      </sect3>
+    </sect2>
+  </sect1>
+
+  <sect1>
+    <title>Accessing your Roxie
+    Queries</title>
+
+    <para>Once you have developed, compiled, and published your queries, you
+    need to provide access to users.</para>
+
+    <sect2>
+      <title><emphasis role="bold">ESP and WsECL</emphasis></title>
+
+      <para>A standard installation of the HPCC platform includes an
+      Enterprise Services Platform (ESP) with the WsECL service configured
+      through a service binding to port 8002 (configurable).</para>
+
+      <para>WsECL provides a means to access all of your compiled and
+      published queries using a Web interface or by using SOAP or JSON.</para>
+
+      <para><emphasis role="bold">Tip: </emphasis>You can provide a JobName in
+      the URL using this form: </para>
+
+      <programlisting>http://ip:port/WsEcl/submit/query/<emphasis role="bold">&lt;targetCluster&gt;</emphasis>/<emphasis
+          role="bold">&lt;query&gt;</emphasis>?_jobname=<emphasis role="bold">&lt;jobname&gt;</emphasis></programlisting>
+
+      <para>This is useful for testing queries. It is also suitable for
+      providing real-time access to a small set of users; however, it is not
+      intended to scale to larger audiences.</para>
+    </sect2>
+
+    <sect2>
+      <title><emphasis role="bold">Access WsECL VIA SOAP</emphasis></title>
+
+      <sect3>
+        <title><emphasis role="bold">WSDL</emphasis></title>
+
+        <para>The Simple Object Access Protocol (SOAP) sets a standard for
+        communication between processes using a common xml based format. SOAP
+        libraries are readily available for many languages and development
+        platforms, including Microsoft .NET (accessible using C#, VB.NET,
+        ASP.NET, and other CLR languages), Java (e.g.,. JAX and Apache AXIS),
+        PERL, and many others.</para>
+
+        <para>Web Service Description Language (WSDL) is used to provide a
+        structured description of a Web service interface.</para>
+
+        <para>Many of the libraries available for allowing applications to use
+        the SOAP protocol also provide tools for automatically generating
+        service specific APIs from a WSDL document.</para>
+
+        <para>The WSDL description is automatically available for any
+        published query.</para>
+
+        <para>The following URL can be used to retrieve the WSDL description
+        of a published query:</para>
+
+        <para>http://<emphasis>nnn.nnn.nnn.nnn</emphasis>:8002/WsEcl/definitions/query/roxie/&lt;queryName&gt;/main/&lt;queryName&gt;.wsdl</para>
+
+        <para>where <emphasis>nnn.nnn.nnn.nnn</emphasis> is the IP address (or
+        DNS Name) of that ESP server with the binding to WsECL.</para>
+
+        <para>8002 is the default port. If you have a modified the port
+        setting, use the port you have selected for that purpose.</para>
+
+        <para>The syntax and functionality of the SOAP protocol itself is also
+        beyond the scope of this document. The following list of external
+        resources can help in your understanding of standards-based
+        technologies used.</para>
+      </sect3>
+
+      <sect3>
+        <title>SOAP</title>
+
+        <para>http://www.w3.org/TR/soap12-part0</para>
+
+        <para>http://www.w3.org/TR/soap12-part1</para>
+
+        <para>http://www.w3.org/TR/soap12-part2</para>
+      </sect3>
+
+      <sect3>
+        <title><emphasis role="bold">Web Service Definition Language (WSDL)
+        1.1</emphasis></title>
+
+        <para>http://www.w3.org/TR/wsdl</para>
+      </sect3>
+    </sect2>
+
+    <sect2>
+      <title><emphasis role="bold">Direct Access VIA SOAP</emphasis></title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Create and publish your query to a target cluster
+          (Roxie).</para>
+        </listitem>
+
+        <listitem>
+          <para>Test and validate using WsECL to access the query.</para>
+
+          <para>Use the default interface provided to test:</para>
+
+          <para>http://nnn.nnn.nnn.nnn:8002/</para>
+
+          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of that
+          ESP server with the binding to WsECL.</para>
+
+          <para>8002 is the default port. If you have a modified the port
+          setting, use the port you have selected for that purpose.</para>
+        </listitem>
+
+        <listitem>
+          <para>Begin development of the application that will consume the web
+          service by importing the WSDL from:</para>
+
+          <para>http://<emphasis>nnn.nnn.nnn.nnn</emphasis>:8002/WsEcl/definitions/query/roxie/&lt;queryName&gt;/main/&lt;queryName&gt;.wsdl</para>
+
+          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of that
+          ESP server with the binding to WsECL.</para>
+
+          <para>8002 is the default port. If you have a modified the port
+          setting, use the port you have selected for that purpose.</para>
+        </listitem>
+
+        <listitem>
+          <para>When testing is complete, change the base URL to</para>
+
+          <para>http://nnn.nnn.nnn.nnn:9876/</para>
+
+          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of a
+          Roxie Server.</para>
+
+          <para>9876 is the default port. If you have a modified the port
+          setting, use the port you have selected for that purpose.</para>
+        </listitem>
+      </orderedlist>
+
+      <para></para>
+    </sect2>
+
+    <sect2>
+      <title><emphasis role="bold">Direct Access VIA JSON</emphasis></title>
+
+      <orderedlist numeration="arabic">
+        <listitem>
+          <para>Create and publish your query to a target cluster
+          (Roxie).</para>
+        </listitem>
+
+        <listitem>
+          <para>Test and validate using WsECL to access the query.</para>
+
+          <para>Use the default interface provided to test:</para>
+
+          <para>http://nnn.nnn.nnn.nnn:8002/</para>
+
+          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of that
+          ESP server with the binding to WsECL.</para>
+
+          <para>8002 is the default port. If you have a modified the port
+          setting, use the port you have selected for that purpose.</para>
+        </listitem>
+
+        <listitem>
+          <para>Begin development of the application that will consume the web
+          service using the JSON definitions available from the form in
+          WsECL.</para>
+        </listitem>
+
+        <listitem>
+          <para>From the drop list, select JSON Test, then press the submit
+          button.</para>
+
+          <para><graphic fileref="../../images/json1.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Edit the query criteria on the left, then press the <emphasis
+          role="bold">Send Request</emphasis> button.</para>
+        </listitem>
+
+        <listitem>
+          <para>The results display on the right side.</para>
+        </listitem>
+
+        <listitem>
+          <para>Edit and resubmit (by pressing the <emphasis role="bold">Send
+          Request</emphasis> button ) to see responses for different
+          criteria.</para>
+
+          <para><graphic fileref="../../images/json2.jpg" /></para>
+        </listitem>
+
+        <listitem>
+          <para>Set the base URL in your application to</para>
+
+          <para>http://nnn.nnn.nnn.nnn:9876/</para>
+
+          <para>where nnn.nnn.nnn.nnn is the IP address (or DNS Name) of a
+          Roxie Server.</para>
+
+          <para>9876 is the default port. If you have a modified the port
+          setting, use the port you have selected for that purpose.</para>
+        </listitem>
+      </orderedlist>
+
+      <para><emphasis role="bold">Note:</emphasis> The WsECL service
+      automatically distributes the load by sending queries to Roxie Servers
+      in a round-robin fashion. To utilize all servers, your application
+      should implement a similar load distribution scheme. Alternatively, you
+      can use a load balancer and submit the query to the Virtual IP created
+      by the load balancer.</para>
+    </sect2>
+  </sect1>
+</chapter>
