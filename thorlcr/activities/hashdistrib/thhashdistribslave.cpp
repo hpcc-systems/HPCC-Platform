@@ -1080,12 +1080,11 @@ public:
     void setRecvExc(IException *e)
     {
         ActPrintLog(activity, e, "HDIST: recvloop");
-        aborted = true;
+        abort();
         if (recvException.get())
             e->Release();
         else
             recvException.setown(e);
-        sender.abort();
     }
     bool sendRecv(ICommunicator &comm, CMessageBuffer &mb, rank_t r, mptag_t tag)
     {
