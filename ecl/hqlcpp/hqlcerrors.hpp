@@ -92,7 +92,6 @@
 #define HQLERR_BadJoinConditionAtMost           4067
 #define HQLERR_BadKeyedJoinConditionAtMost      4068
 #define HQLERR_FullJoinNeedDataset              4069
-#define HQLERR_AtmostFailMatchCondition         4070
 #define HQLERR_KeyedLimitNotKeyed               4071
 #define HQLERR_ExtendMismatch                   4072
 #define HQLERR_DuplicateNameOutput              4073
@@ -376,7 +375,6 @@
 #define HQLERR_BadJoinConditionAtMost_Text      "ATMOST JOIN cannot be evaluated with this join condition%s"
 #define HQLERR_BadKeyedJoinConditionAtMost_Text "ATMOST JOIN cannot be evaluated with this join condition%s"
 #define HQLERR_FullJoinNeedDataset_Text         "RIGHT for a full keyed join must be a disk based DATASET"
-#define HQLERR_AtmostFailMatchCondition_Text    "ATMOST(%s) failed to match part of the join condition"
 #define HQLERR_KeyedLimitNotKeyed_Text          "LIMIT(%s, KEYED) could not be merged into an index read"
 #define HQLERR_ExtendMismatch_Text              "EXTEND is required on all outputs to NAMED(%s)"
 #define HQLERR_DuplicateNameOutput_Text         "Duplicate output to NAMED(%s).  EXTEND/OVERWRITE required"

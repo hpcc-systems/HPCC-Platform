@@ -26,8 +26,12 @@ extern HQL_API node_operator queryTransformSingleAggregate(IHqlExpression * tran
 extern HQL_API bool containsOnlyLeft(IHqlExpression * expr,bool ignoreSelfOrFilepos = false);
 extern HQL_API IHqlExpression * queryPhysicalRootTable(IHqlExpression * expr);
 extern HQL_API IHqlExpression * queryTableFilename(IHqlExpression * expr);
+
+extern HQL_API void extractAtmostArgs(IHqlExpression * atmost, SharedHqlExpr & atmostCond, SharedHqlExpr & atmostLimit);
+extern HQL_API void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard);
 extern HQL_API IHqlExpression * findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches);
 extern HQL_API IHqlExpression * findJoinSortOrders(IHqlExpression * expr, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches);
+
 extern HQL_API IHqlExpression * createRawIndex(IHqlExpression * index);
 extern HQL_API IHqlExpression * createImpureOwn(IHqlExpression * expr);
 extern HQL_API IHqlExpression * getNormalizedFilename(IHqlExpression * filename);

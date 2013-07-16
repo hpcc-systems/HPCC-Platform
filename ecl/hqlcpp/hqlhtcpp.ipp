@@ -294,8 +294,6 @@ protected:
     bool            matchedDataset;
 };
 
-void extractAtmostArgs(IHqlExpression * atmost, SharedHqlExpr & atmostCond, SharedHqlExpr & atmostLimit);
-
 IHqlExpression * extractFilterConditions(HqlExprAttr & invariant, IHqlExpression * expr, IHqlExpression * dataset, bool spotCSE);
 bool isLibraryScope(IHqlExpression * expr);
 extern IHqlExpression * constantMemberMarkerExpr;
