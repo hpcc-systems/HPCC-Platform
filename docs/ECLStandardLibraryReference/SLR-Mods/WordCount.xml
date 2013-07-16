@@ -62,7 +62,7 @@ str1 := 'a word a day keeps the doctor away';
 output(LENGTH(TRIM(Str1,LEFT,RIGHT)) - LENGTH(TRIM(Str1,ALL)) + 1);
                                  //finds eight words by removing spaces
 
-STD.STr.CountWords(str1);    //finds eight words based on space delimiter
+STD.Str.WordCount(str1);         //finds eight words based on space delimiter
 </programlisting>
 
   <para></para>
