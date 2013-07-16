@@ -2385,6 +2385,365 @@ ecl packagemap validate roxie --active</programlisting>
                 </row>
               </tbody>
             </tgroup>
+          </informaltable><parameter></parameter></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle depends</title>
+
+        <para><emphasis role="bold">ecl bundle depends
+        &lt;bundleName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle depends mybundle
+ecl bundle depends mybundle --version=2</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle depends</entry>
+
+                  <entry>Shows the dependencies of a bundle</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>The name of a bundle file or installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>--recurse</entry>
+
+                  <entry>Displays indirect dependencies</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Specify a version of the bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle info</title>
+
+        <para><emphasis role="bold">ecl bundle info
+        &lt;bundleName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle info mybundle
+ecl bundle info mybundle --version=2</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle info</entry>
+
+                  <entry>Lists information about a bundle</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>The name of a bundle file or installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Specify a version of the bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle install</title>
+
+        <para><emphasis role="bold">ecl bundle install
+        &lt;bundleName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle install mybundle
+ecl bundle install mybundle --dryrun
+ecl bundle install mybundle --update
+ecl bundle install mybundle --keepprior</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle install</entry>
+
+                  <entry>Installs a bundle</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>The name of a bundle file</entry>
+                </row>
+
+                <row>
+                  <entry>--dryrun</entry>
+
+                  <entry>List what would be installed, but do not copy</entry>
+                </row>
+
+                <row>
+                  <entry>--force</entry>
+
+                  <entry>Install even if required dependencies missing</entry>
+                </row>
+
+                <row>
+                  <entry>--keepprior</entry>
+
+                  <entry>Do not remove any previous versions of the
+                  bundle</entry>
+                </row>
+
+                <row>
+                  <entry>--update</entry>
+
+                  <entry>Update an existing installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle uninstall</title>
+
+        <para><emphasis role="bold">ecl bundle uninstall
+        &lt;bundleName&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle uninstall mybundle
+ecl bundle install mybundle --dryrun
+ecl bundle install mybundle --update
+ecl bundle install mybundle --keepprior</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle install</entry>
+
+                  <entry>Installs a bundle</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>The name of a bundle file</entry>
+                </row>
+
+                <row>
+                  <entry>--dryrun</entry>
+
+                  <entry>List what would be removed, but do not remove
+                  them</entry>
+                </row>
+
+                <row>
+                  <entry>--force</entry>
+
+                  <entry>Uninstall even if other bundles are dependent on
+                  this</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>Specify a version of the bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle list</title>
+
+        <para><emphasis role="bold">ecl bundle list
+        &lt;pattern&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle list
+ecl bundle list myb*
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle list</entry>
+
+                  <entry>Lists bundles matching specified pattern</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;pattern&gt;</entry>
+
+                  <entry>A pattern specifying bundles to list. If omitted, all
+                  bundles are listed</entry>
+                </row>
+
+                <row>
+                  <entry>--details</entry>
+
+                  <entry>Report details of each installed bundle</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </informaltable></para>
+      </sect2>
+
+      <sect2 role="brk">
+        <title>ecl bundle use</title>
+
+        <para><emphasis role="bold">ecl bundle use &lt;bundleName&gt;
+        &lt;version&gt;</emphasis></para>
+
+        <para>Examples:</para>
+
+        <programlisting>ecl bundle use myBundle
+ecl bundle use myBundle 2
+</programlisting>
+
+        <para></para>
+
+        <para><informaltable colsep="0" frame="none" rowsep="0">
+            <tgroup cols="2">
+              <colspec align="left" colwidth="125.55pt" />
+
+              <colspec colwidth="384.85pt" />
+
+              <tbody>
+                <row>
+                  <entry>ecl bundle use</entry>
+
+                  <entry>Makes a specified version of a bundle active</entry>
+                </row>
+
+                <row>
+                  <entry><emphasis role="bold">Options</emphasis></entry>
+                </row>
+
+                <row>
+                  <entry>&lt;bundleName&gt;</entry>
+
+                  <entry>The name of a bundle file</entry>
+                </row>
+
+                <row>
+                  <entry>--version</entry>
+
+                  <entry>The version of the bundle to make active, or
+                  "none"</entry>
+                </row>
+
+                <row>
+                  <entry>-v, --verbose</entry>
+
+                  <entry>Output additional tracing information</entry>
+                </row>
+              </tbody>
+            </tgroup>
           </informaltable></para>
       </sect2>
 
