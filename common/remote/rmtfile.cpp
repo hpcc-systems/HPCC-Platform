@@ -851,10 +851,11 @@ static void installFileHook(const char *hookFile)
         }
         else if (file->isFile() == foundYes)
         {
+            HookInstallFunction *hookInstall;
             SharedObject *so = new SharedObject(); // MORE - this leaks! Kind-of deliberate right now...
-            if (so->load(file->queryFilename(), false))
+            if (so->load(file->queryFilename(), false) &&
+                (hookInstall = (HookInstallFunction *) GetSharedProcedure(so->getInstanceHandle(), "installFileHook")) != NULL)
             {
-                HookInstallFunction *hookInstall = (HookInstallFunction *) GetSharedProcedure(so->getInstanceHandle(), "installFileHook");
                 hookInstall();
                 hookDlls->append(so);
             }
