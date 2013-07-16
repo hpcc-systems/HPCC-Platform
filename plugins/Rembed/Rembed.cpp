@@ -61,6 +61,7 @@ namespace Rembed
 {
 
 // Use a global object to ensure that the R instance is initialized only once
+// Because of R's dodgy stack checks, we also have to do so on main thread
 
 static class RGlobalState
 {
@@ -69,6 +70,11 @@ public:
     {
         const char *args[] = {"R", "--slave" };
         R = new RInside(2, args, true, false, false);
+        // The R code for checking stack limits assumes that all calls are on the same thread
+        // as the original context was created on - this will not always be true in ECL (and hardly
+        // ever true in Roxie
+        // Setting the stack limit to -1 disables this check
+        R_CStackLimit = -1;
 // Make sure we are never unloaded (as R does not support it)
 // we do this by doing a dynamic load of the Rembed library
 #ifdef _WIN32
@@ -133,6 +139,7 @@ extern void unload()
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    queryGlobalState(); // make sure gets loaded by main thread
     return true;
 }
 MODULE_EXIT()
