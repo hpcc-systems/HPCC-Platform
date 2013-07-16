@@ -15,6 +15,11 @@
       </indexterm>(</emphasis><emphasis>expression</emphasis><emphasis
     role="bold">) ;</emphasis></para>
 
+    <para><emphasis>[</emphasis><emphasis>attrname</emphasis> :=<emphasis
+    role="bold"> ] EVALUATE(</emphasis><emphasis>module </emphasis><emphasis
+    role="bold">[</emphasis><emphasis>, defname </emphasis><emphasis
+    role="bold"> ] ) ;</emphasis></para>
+
     <para><informaltable colsep="1" frame="all" rowsep="1">
         <tgroup cols="2">
           <colspec colwidth="80.60pt" />
@@ -25,28 +30,51 @@
             <row>
               <entry><emphasis>attrname</emphasis></entry>
 
-              <entry>Optional. The action name, which turns the action into an
-              attribute definition, therefore not executed until the
+              <entry>Optional. The action name, which turns the action into a
+              definition, therefore not executed until the
               <emphasis>attrname</emphasis> is used as an action.</entry>
             </row>
 
             <row>
-              <entry>expression</entry>
+              <entry><emphasis>expression</emphasis></entry>
 
               <entry>The function to call in an action context.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>module</emphasis></entry>
+
+              <entry>The module to evaluate.</entry>
+            </row>
+
+            <row>
+              <entry><emphasis>defname</emphasis></entry>
+
+              <entry>Optional. The name of a specific defintion within the
+              <emphasis>module</emphasis> to evaluate. If omitted, all
+              definitions in the <emphasis>module</emphasis> are
+              evaluated.</entry>
             </row>
           </tbody>
         </tgroup>
       </informaltable></para>
 
-    <para>The <emphasis role="bold">EVALUATE</emphasis> action names an
-    <emphasis>expression</emphasis> (typically a function call) to execute in
-    an action context. This is mainly useful for calling functions that have
-    side-effects, where you don't care about the return value.</para>
+    <para>The first form of the <emphasis role="bold">EVALUATE</emphasis>
+    action names an <emphasis>expression</emphasis> (typically a function
+    call) to execute in an action context. This is mainly useful for calling
+    functions that have side-effects, where you don't care about the return
+    value.</para>
+
+    <para>The second form of the <emphasis role="bold">EVALUATE</emphasis>
+    action recursively expands the exported definitions of the
+    <emphasis>module</emphasis> and evaluates them. If a
+    <emphasis>defname</emphasis> is specified, then only that definition is
+    evaluated.</para>
 
     <para>Example:</para>
 
-    <programlisting>myService := SERVICE
+    <programlisting>//Form 1 example:
+myService := SERVICE
  UNSIGNED4 doSomething(STRING text);
 END;
 
@@ -55,7 +83,23 @@ ds := DATASET('MyFile', {STRING20 text} , THOR);
 APPLY(ds, EVALUATE(doSomething(ds.text)));
  //calls the doSomething function once for each record in the ds
  // dataset, ignoring the returned values from the function
-</programlisting>
+ 
+//Form 2 example:
+M := MODULE
+  EXPORT a := 10;
+  EXPORT b := OUTPUT('Hello');
+END;
+ 
+M2 := MODULE
+  EXPORT mx := M;
+  EXPORT d := OUTPUT('Richard');
+END;
+ 
+EVALUATE(M2); 
+//produces three results:
+//  Result_1: 10
+//  Result_2: Hello
+//  Result_3: Richard</programlisting>
 
     <para>See Also: APPLY, SERVICE</para>
   </sect2>
