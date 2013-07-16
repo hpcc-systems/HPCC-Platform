@@ -163,6 +163,7 @@ JAVA_APPEND_LIBRARY_DIRECTORIES(JAVA_AWT_LIBRARY_DIRECTORIES
   /usr/lib/jvm/java-1.5.0-sun/jre/lib/{libarch}
   /usr/lib/jvm/java-6-sun-1.6.0.00/jre/lib/{libarch}       # can this one be removed according to #8821 ? Alex
   /usr/lib/jvm/java-6-openjdk-{libarch}/jre/lib/{libarch}  # Ubuntu 12.10 location
+  /usr/lib/jvm/java-7-openjdk-{libarch}/jre/lib/{libarch}  # Ubuntu 13.04 location
   /usr/lib/jvm/java-6-openjdk/jre/lib/{libarch}
   /usr/lib/jvm/java-1.6.0-openjdk-1.6.0.0/jre/lib/{libarch}        # fedora
   # Debian specific paths for default JVM
@@ -182,10 +183,7 @@ FOREACH(dir ${JAVA_AWT_LIBRARY_DIRECTORIES})
 ENDFOREACH(dir)
 
 
-SET(JAVA_AWT_INCLUDE_DIRECTORIES
-  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Development Kit\\1.4;JavaHome]/include"
-  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Development Kit\\1.3;JavaHome]/include"
-  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Development Kit\\${java_install_version};JavaHome]/include"
+JAVA_APPEND_LIBRARY_DIRECTORIES(JAVA_AWT_EXPANDED_INCLUDE_DIRECTORIES
   ${_JAVA_HOME}/include
   /usr/include
   /usr/local/include
@@ -195,7 +193,8 @@ SET(JAVA_AWT_INCLUDE_DIRECTORIES
   /usr/lib/jvm/java-6-sun/include
   /usr/lib/jvm/java-1.5.0-sun/include
   /usr/lib/jvm/java-6-sun-1.6.0.00/include       # can this one be removed according to #8821 ? Alex
-  /usr/lib/jvm/java-6-openjdk-amd64/jre/lib/{libarch}  # Ubuntu 12.10 location
+  /usr/lib/jvm/java-6-openjdk-{libarch}/jre/lib/{libarch}  # Ubuntu 12.10 location
+  /usr/lib/jvm/java-7-openjdk-{libarch}/include  # Ubuntu 13.04 location
   /usr/lib/jvm/java-6-openjdk/include
   /usr/local/share/java/include
   /usr/lib/j2sdk1.4-sun/include
@@ -203,6 +202,13 @@ SET(JAVA_AWT_INCLUDE_DIRECTORIES
   /opt/sun-jdk-1.5.0.04/include
   # Debian specific path for default JVM
   /usr/lib/jvm/default-java/include
+  )
+
+SET (JAVA_AWT_INCLUDE_DIRECTORIES
+  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Development Kit\\1.4;JavaHome]/include"
+  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Development Kit\\1.3;JavaHome]/include"
+  "[HKEY_LOCAL_MACHINE\\SOFTWARE\\JavaSoft\\Java Development Kit\\${java_install_version};JavaHome]/include"
+  ${JAVA_AWT_EXPANDED_INCLUDE_DIRECTORIES}
   )
 
 FOREACH(JAVA_PROG "${JAVA_RUNTIME}" "${JAVA_COMPILE}" "${JAVA_ARCHIVE}")
