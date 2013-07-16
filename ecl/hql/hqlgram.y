@@ -7645,13 +7645,12 @@ simpleDataSet
 
                             IHqlExpression * ds = createDataset(no_keyeddistribute, left, createComma(right, cond, LINK(attr), $12.getExpr()));
 
-                            HqlExprArray leftSorts, rightSorts;
-                            bool isLimitedSubstringJoin;
-                            OwnedHqlExpr match = findJoinSortOrders(cond, NULL, NULL, NULL, leftSorts, rightSorts, isLimitedSubstringJoin, NULL);
+                            JoinSortInfo joinInfo;
+                            joinInfo.findJoinSortOrders(cond, NULL, NULL, NULL, false);
                             unsigned numUnsortedFields = numPayloadFields(right);
-                            if (match || (!ds->hasAttribute(firstAtom) && (leftSorts.ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
+                            if (joinInfo.extraMatch || (!ds->hasAttribute(firstAtom) && (joinInfo.queryLeftReq().ordinality() != getFieldCount(right->queryRecord())-numUnsortedFields)))
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"Condition on DISTRIBUTE must match the key exactly");
-                            if (isLimitedSubstringJoin)
+                            if (joinInfo.hasOptionalEqualities())
                                 parser->reportError(ERR_MATCH_KEY_EXACTLY,$9,"field[1..*] is not supported for a keyed distribute");
 
                             //Should check that all index fields are accounted for...
@@ -10030,7 +10029,7 @@ JoinFlag
                         {
                             parser->normalizeExpression($3, type_numeric, false);
                             if ($3.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $4, "ATMOST(0) doesn't make any sense");
+                                parser->reportError(ERR_BAD_JOINFLAG, $3, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr()));
                             $$.setPosition($1);
                         }
@@ -10039,7 +10038,24 @@ JoinFlag
                             parser->normalizeExpression($3, type_boolean, false);
                             parser->normalizeExpression($5, type_numeric, false);
                             if ($5.isZero())
-                                parser->reportError(ERR_BAD_JOINFLAG, $6, "ATMOST(0) doesn't make any sense");
+                                parser->reportError(ERR_BAD_JOINFLAG, $5, "ATMOST(0) doesn't make any sense");
+                            $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | ATMOST '(' expression ',' sortListExpr ',' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_boolean, false);
+                            parser->normalizeExpression($7, type_numeric, false);
+                            if ($7.isZero())
+                                parser->reportError(ERR_BAD_JOINFLAG, $7, "ATMOST(0) doesn't make any sense");
+                            $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr(), $7.getExpr()));
+                            $$.setPosition($1);
+                        }
+    | ATMOST '(' sortListExpr ',' expression ')'
+                        {
+                            parser->normalizeExpression($5, type_numeric, false);
+                            if ($5.isZero())
+                                parser->reportError(ERR_BAD_JOINFLAG, $5, "ATMOST(0) doesn't make any sense");
                             $$.setExpr(createExprAttribute(atmostAtom, $3.getExpr(), $5.getExpr()));
                             $$.setPosition($1);
                         }

@@ -1644,11 +1644,11 @@ inline bool isCast(IHqlExpression * expr)
 }
 extern HQL_API bool isKey(IHqlExpression * expr);
 
-IHqlExpression * queryGrouping(IHqlExpression * expr);
-IHqlExpression * queryDistribution(IHqlExpression * expr);
-IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr);
-IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr);
-IHqlExpression * queryGroupSortOrder(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryGrouping(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryDistribution(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr);
+extern HQL_API IHqlExpression * queryGroupSortOrder(IHqlExpression * expr);
 
 inline bool isGrouped(ITypeInfo * type)                     { return type && (type->getTypeCode() == type_groupedtable); }
 inline bool isGrouped(IHqlExpression * expr)                { return isGrouped(expr->queryType()); }

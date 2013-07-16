@@ -14400,12 +14400,11 @@ bool isSelfJoin(IHqlExpression * expr)
     if (!joinSortOrdersMatch(expr->queryChild(2)))
         return false;
 
-    //Check this isn't going to generate a between join - if it is that takes precedence.  A bit arbitary
+    //Check this isn't going to generate a between join - if it is that takes precedence.  A bit arbitrary
     //when one is more efficient.
-    HqlExprArray leftSorts, rightSorts, slidingMatches;
-    bool isLimitedSubstringJoin;
-    OwnedHqlExpr fuzzy = findJoinSortOrders(expr, leftSorts, rightSorts, isLimitedSubstringJoin, &slidingMatches);
-    if ((slidingMatches.ordinality() != 0) && (leftSorts.ordinality() == slidingMatches.ordinality()))
+    JoinSortInfo joinInfo;
+    joinInfo.findJoinSortOrders(expr, true);
+    if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftReq().ordinality() == joinInfo.slidingMatches.ordinality()))
         return false;
     return true;
 }

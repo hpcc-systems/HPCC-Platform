@@ -1379,7 +1379,7 @@ bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * order, bool isLo
 
 
 //Elements in the exprarray have already been mapped;
-bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+bool isAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
 {
     HqlExprArray components;
     normalizeComponents(components, newSort);
@@ -1431,7 +1431,7 @@ static unsigned numElementsAlreadySorted(IHqlExpression * dataset, IHqlExpressio
 }
 
 //Elements in the exprarray have already been mapped;
-static unsigned numElementsAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+static unsigned numElementsAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
 {
     HqlExprArray components;
     normalizeComponents(components, newSort);
@@ -1445,7 +1445,7 @@ bool isWorthShuffling(IHqlExpression * dataset, IHqlExpression * order, bool isL
     return numElementsAlreadySorted(dataset, order, isLocal, ignoreGrouping) != 0;
 }
 
-bool isWorthShuffling(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
+bool isWorthShuffling(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping)
 {
     //MORE: Should this look at the cardinality of the already-sorted fields, and not transform if below a certain threshold?
     return numElementsAlreadySorted(dataset, newSort, isLocal, ignoreGrouping) != 0;
@@ -1502,7 +1502,7 @@ static IHqlExpression * createSubSorted(IHqlExpression * dataset, IHqlExpression
     return subsort.getClear();
 }
 
-IHqlExpression * getSubSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
+IHqlExpression * getSubSort(IHqlExpression * dataset, const HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal)
 {
     if (isAlreadySorted(dataset, order, isLocal||alwaysLocal, ignoreGrouping))
         return NULL;
