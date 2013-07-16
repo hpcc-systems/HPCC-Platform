@@ -35,7 +35,11 @@
  * Installs hooks into createIFile, spotting filenames of the form /my/directory/myfile.zip/{password}/path/within/archive
  */
 
-#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}{$|"PATHSEPSTR"}"
+#ifdef _WIN32
+#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}{$|/|\\\\}"
+#else
+#define ARCHIVE_SIGNATURE "[.]{zip|tar|tar[.]gz|tgz}{$|/}"
+#endif
 
 static RegExpr *signature;
 static SpinLock *lock;
@@ -606,5 +610,6 @@ MODULE_EXIT()
     delete signature;
     delete lock;
     lock = NULL;
+    signature = NULL;
     ::Release(archiveFileHook);
 }
