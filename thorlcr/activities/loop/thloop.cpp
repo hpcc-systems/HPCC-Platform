@@ -61,7 +61,6 @@ protected:
             if (0 == slaveEmptyIterations) // either 1st or has been reset, i.e. non-empty
                 allEmptyIterations = false;
         }
-        assertex(loopEnds==0 || loopEnds==nodes); // Not sure possible in global graph, for some to finish and not others 
         bool final = loopEnds == nodes; // final
         msg.clear();
         if (allEmptyIterations)
@@ -69,7 +68,7 @@ protected:
         else
             emptyIterations = 0;
         bool ok = emptyIterations <= maxEmptyLoopIterations;
-        msg.append(ok);
+        msg.append(ok && !final); // This is to tell slave whether it should continue or not
         n = nodes;
         while (n--) // a barrier really
             container.queryJob().queryJobComm().send(msg, n+1, mpTag, LONGTIMEOUT);
