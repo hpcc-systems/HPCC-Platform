@@ -53,6 +53,10 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
+#ifdef _WIN32
+    EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+#endif
+
 namespace Rembed
 {
 
@@ -65,7 +69,42 @@ public:
     {
         const char *args[] = {"R", "--slave" };
         R = new RInside(2, args, true, false, false);
-
+// Make sure we are never unloaded (as R does not support it)
+// we do this by doing a dynamic load of the Rembed library
+#ifdef _WIN32
+        char path[_MAX_PATH];
+        ::GetModuleFileName((HINSTANCE)&__ImageBase, path, _MAX_PATH);
+        if (strstr(path, "Rembed"))
+        {
+            HINSTANCE h = LoadSharedObject(path, false, false);
+            DBGLOG("LoadSharedObject returned %p", h);
+        }
+#else
+        FILE *diskfp = fopen("/proc/self/maps", "r");
+        if (diskfp)
+        {
+            char ln[_MAX_PATH];
+            while (fgets(ln, sizeof(ln), diskfp))
+            {
+                if (strstr(ln, "libRembed"))
+                {
+                    const char *fullName = strchr(ln, '/');
+                    if (fullName)
+                    {
+                        char *tail = (char *) strstr(fullName, SharedObjectExtension);
+                        if (tail)
+                        {
+                            tail[strlen(SharedObjectExtension)] = 0;
+                            HINSTANCE h = LoadSharedObject(fullName, false, false);
+                            DBGLOG("LoadSharedObject %s returned %p", fullName, h);
+                            break;
+                        }
+                    }
+                }
+            }
+            fclose(diskfp);
+        }
+#endif
     }
     ~RGlobalState()
     {
@@ -98,7 +137,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
 }
 MODULE_EXIT()
 {
-    unload();
+// Don't unload, because R seems to have problems with being reloaded, i.e. crashes on next use
+//    unload();
 }
 
 // Each call to a R function will use a new REmbedFunctionContext object
