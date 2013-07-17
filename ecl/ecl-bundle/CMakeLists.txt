@@ -67,5 +67,3 @@ if ( UNIX )
     install ( PROGRAMS ecl-bundle.install DESTINATION etc/init.d/install COMPONENT Runtime )
     install ( PROGRAMS ecl-bundle.uninstall DESTINATION etc/init.d/uninstall COMPONENT Runtime )
 endif ( UNIX )
-# Put the bundle-writers guide into the bundles directory - makes sure it's not empty
-install ( FILES BUNDLES.rst DESTINATION share/bundles COMPONENT Runtime )
