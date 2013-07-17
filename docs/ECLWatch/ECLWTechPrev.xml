@@ -58,7 +58,7 @@
 
       <para>ECL Watch provides an interface to the HPCC system and allows you
       to view information and interrogate nodes to confirm all expected
-      processes are running. This provides a simple centric view into the
+      processes are running. This provides a simple Web-based view into the
       system and a means to perform Workunit and data files
       maintenance.</para>
 
@@ -76,16 +76,14 @@
         </figure></para>
 
       <para>On the ECL Watch page, there are links in the Navigator panel
-      underneath the <emphasis role="bold">Tech Preview</emphasis> heading.
-      The links below the header open the respective pages for the new
-      ECLWatch. The pages available through the Tech Preview are ECL
-      Workunits, DFU Workunits, and Logical Files.</para>
+      under the <emphasis role="bold">Tech Preview</emphasis> heading. The
+      links below the header open the respective pages for the new ECL Watch.
+      There are pages available through the Tech Preview that allow you to
+      access ECL Workunits, DFU Workunits, and Logical Files.</para>
 
       <para>For the preview period, these pages are only available through the
-      Tech Preview links. These pages will later replace the ECL Browse
-      Workunits, Browse DFU Workunits, and the Browse Logical Files pages. In
-      addition each page has filter capabilities, so the search pages will
-      also be replaced. </para>
+      Tech Preview link. These redesigned pages with the improved
+      functionality will later replace ECL Watch.</para>
     </sect1>
 
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
@@ -99,10 +97,17 @@
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
                 xpointer="LogicalFiles"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-                
+
     <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
-		xpointer="Landing_Zones"
+                xpointer="Landing_Zones"
                 xmlns:xi="http://www.w3.org/2001/XInclude" />
-                
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="Pub_Query"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+    <xi:include href="ECLWatch/ECLWa_mods/ECLWatchSrc.xml"
+                xpointer="Operations"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
   </chapter>
 </book>

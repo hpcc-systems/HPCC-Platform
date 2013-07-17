@@ -53,10 +53,15 @@ extern "C" EXPORT bool getECLPluginDefinition(ECLPluginDefinitionBlock *pb)
     return true;
 }
 
+#ifdef _WIN32
+    EXTERN_C IMAGE_DOS_HEADER __ImageBase;
+#endif
+
 namespace Rembed
 {
 
 // Use a global object to ensure that the R instance is initialized only once
+// Because of R's dodgy stack checks, we also have to do so on main thread
 
 static class RGlobalState
 {
@@ -65,7 +70,47 @@ public:
     {
         const char *args[] = {"R", "--slave" };
         R = new RInside(2, args, true, false, false);
-
+        // The R code for checking stack limits assumes that all calls are on the same thread
+        // as the original context was created on - this will not always be true in ECL (and hardly
+        // ever true in Roxie
+        // Setting the stack limit to -1 disables this check
+        R_CStackLimit = -1;
+// Make sure we are never unloaded (as R does not support it)
+// we do this by doing a dynamic load of the Rembed library
+#ifdef _WIN32
+        char path[_MAX_PATH];
+        ::GetModuleFileName((HINSTANCE)&__ImageBase, path, _MAX_PATH);
+        if (strstr(path, "Rembed"))
+        {
+            HINSTANCE h = LoadSharedObject(path, false, false);
+            DBGLOG("LoadSharedObject returned %p", h);
+        }
+#else
+        FILE *diskfp = fopen("/proc/self/maps", "r");
+        if (diskfp)
+        {
+            char ln[_MAX_PATH];
+            while (fgets(ln, sizeof(ln), diskfp))
+            {
+                if (strstr(ln, "libRembed"))
+                {
+                    const char *fullName = strchr(ln, '/');
+                    if (fullName)
+                    {
+                        char *tail = (char *) strstr(fullName, SharedObjectExtension);
+                        if (tail)
+                        {
+                            tail[strlen(SharedObjectExtension)] = 0;
+                            HINSTANCE h = LoadSharedObject(fullName, false, false);
+                            DBGLOG("LoadSharedObject %s returned %p", fullName, h);
+                            break;
+                        }
+                    }
+                }
+            }
+            fclose(diskfp);
+        }
+#endif
     }
     ~RGlobalState()
     {
@@ -94,11 +139,13 @@ extern void unload()
 
 MODULE_INIT(INIT_PRIORITY_STANDARD)
 {
+    queryGlobalState(); // make sure gets loaded by main thread
     return true;
 }
 MODULE_EXIT()
 {
-    unload();
+// Don't unload, because R seems to have problems with being reloaded, i.e. crashes on next use
+//    unload();
 }
 
 // Each call to a R function will use a new REmbedFunctionContext object

@@ -24,7 +24,9 @@
 
 project( hooks )
 
-add_subdirectory(git)
+IF (USE_GIT)
+  add_subdirectory(git)
+ENDIF()
 IF (USE_LIBARCHIVE)
   add_subdirectory(libarchive)
 ENDIF()

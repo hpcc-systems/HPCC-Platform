@@ -30,8 +30,8 @@
         <row>
           <entry><emphasis>value_set</emphasis></entry>
 
-          <entry>A set of values. This may be a set expression or a
-          DICTIONARY.</entry>
+          <entry>A set of values. This may be a set expression, the SET
+          function, or a DICTIONARY.</entry>
         </row>
       </tbody>
     </tgroup>
@@ -56,6 +56,14 @@ Trades_ABCstat := Trades(IsABC(rate));
     // Trades_ABCstat is a record set definition of all those
     // trades with a trade status of A, B, or C
 
+//SET function examples
+r := {STRING1 Letter};
+SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
+                     {'F'},{'G'},{'H'},{'I'},{'J'}],r);
+x := SET(SomeFile(Letter &gt; 'C'),Letter);
+y := 'A' IN x;  //results in FALSE
+z := 'D' IN x;  //results in TRUE
+
 //DICTIONARY examples:
 rec := {STRING color,UNSIGNED1 code};
 ColorCodes := DATASET([{'Black' ,0 },
@@ -75,6 +83,8 @@ OUTPUT(ROW({'Red',2},rec) IN ColorCodesDCT);
   (<link linkend="Set_Attributes">Set Definitions</link>), <link
   linkend="Logical_Operators">Logical Operators</link>, <link
   linkend="PARSE_Pattern_Value_Types">PATTERN</link>, <link
-  linkend="DICTIONARY">DICTIONARY</link>, <link
-  linkend="ROW">ROW</link></para>
+  linkend="DICTIONARY">DICTIONARY</link>, <link linkend="ROW">ROW</link>,
+  <link linkend="SET">SET</link>, <link linkend="Recordset_Filtering">Sets and
+  Filters</link>, <link linkend="SET_OF">SET OF</link>, <link
+  linkend="Set_Operators">Set Operators</link></para>
 </sect1>

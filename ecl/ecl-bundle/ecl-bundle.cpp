@@ -629,13 +629,16 @@ private:
     {
         const IBundleInfo &goer = bundles.item(idx);
         const char *installedDir = goer.queryInstalledPath();
-        Owned<IFile> versionDir = createIFile(installedDir);
-        recursiveRemoveDirectory(versionDir, isDryRun);
+        if (installedDir)
+        {
+            Owned<IFile> versionDir = createIFile(installedDir);
+            recursiveRemoveDirectory(versionDir, isDryRun);
+        }
         if (!idx)
             active = false;
         if (!isDryRun)
             bundles.remove(idx);
-        if (bundles.length() == (isDryRun ? 1 : 0))
+        if (installedDir && bundles.length() == (isDryRun ? 1 : 0))
         {
             Owned<IFile> versionsDir = createIFile(path);
             recursiveRemoveDirectory(versionsDir, isDryRun);
@@ -1049,10 +1052,12 @@ public:
             const char *version = bundle->queryVersion();
             printf("Installing bundle %s version %s\n", bundle->queryBundleName(), version);
 
+            StringBuffer thisBundlePath(bundlePath);
+            addPathSepChar(thisBundlePath).append(VERSION_SUBDIR).append(PATHSEPCHAR).append(bundle->queryCleanName());
             CBundleCollection allBundles(bundlePath);
             IBundleInfoSet *bundleSet = allBundles.queryBundleSet(bundle->queryCleanName());
             if (!bundleSet)
-                bundleSet = new CBundleInfoSet(bundle->queryCleanName(), bundlePath, bundle);
+                bundleSet = new CBundleInfoSet(thisBundlePath, bundlePath, bundle);
             else
             {
                 const IBundleInfo *active = bundleSet->queryVersion(version);
@@ -1099,9 +1104,8 @@ public:
                 throw MakeStringException(0, "Cannot create bundle directory %s", bundlePath.str());
 
             // Copy the bundle contents
-            StringBuffer versionPath(bundlePath);
-            addPathSepChar(versionPath).append(VERSION_SUBDIR).append(PATHSEPCHAR);
-            versionPath.append(bundle->queryCleanName()).append(PATHSEPCHAR).append(bundle->queryCleanVersion());
+            StringBuffer versionPath(thisBundlePath);
+            versionPath.append(PATHSEPCHAR).append(bundle->queryCleanVersion());
             if (!optDryRun && !recursiveCreateDirectory(versionPath))
                 throw MakeStringException(0, "Cannot create bundle version directory %s", versionPath.str());
             if (bundleFile->isDirectory() == foundYes) // could also be an archive, acting as a directory

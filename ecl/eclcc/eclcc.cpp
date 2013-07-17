@@ -25,6 +25,10 @@
 #include "build-config.h"
 #include "workunit.hpp"
 
+#ifndef _WIN32
+#include <pwd.h>
+#endif
+
 #include "hqlecl.hpp"
 #include "hqlir.hpp"
 #include "hqlerrors.hpp"
@@ -160,6 +164,31 @@ static bool getPackageFolder(StringBuffer & path)
         }
     }
     return false;
+}
+
+static bool getHomeFolder(StringBuffer & homepath)
+{
+#ifdef _WIN32
+    const char *home = getenv("APPDATA");
+    if (!home)
+        return false;
+    // Not the 'official' way - which changes with every windows version
+    // but should work well enough for us (and avoids sorting out windows include mess)
+    homepath.append(home);
+    addPathSepChar(homepath).append(DIR_NAME);
+#else
+    const char *home = getenv("HOME");
+    if (!home)
+    {
+        struct passwd *pw = getpwuid(getuid());
+        home = pw->pw_dir;
+        if (!home)
+            return false;
+    }
+    homepath.append(home);
+    addPathSepChar(homepath).append(".").append(DIR_NAME);
+#endif
+    return true;
 }
 
 struct EclCompileInstance
@@ -500,8 +529,8 @@ void EclCC::loadOptions()
     if (globals->hasProp("targetGcc"))
         optTargetCompiler = globals->getPropBool("targetGcc") ? GccCppCompiler : Vs6CppCompiler;
 
-    StringBuffer syspath;
-    if (getPackageFolder(syspath))
+    StringBuffer syspath, homepath;
+    if (getPackageFolder(syspath) && getHomeFolder(homepath))
     {
 #if _WIN32
         extractOption(compilerPath, globals, "CL_PATH", "compilerPath", syspath, "componentfiles\\cl");
@@ -515,7 +544,7 @@ void EclCC::loadOptions()
         extractOption(hooksPath, globals, "HPCC_FILEHOOKS_PATH", "filehooks", syspath, "filehooks");
         extractOption(templatePath, globals, "ECLCC_TPL_PATH", "templatePath", syspath, "componentfiles");
         extractOption(eclLibraryPath, globals, "ECLCC_ECLLIBRARY_PATH", "eclLibrariesPath", syspath, "share/ecllibrary/");
-        extractOption(eclBundlePath, globals, "ECLCC_ECLBUNDLE_PATH", "eclBundlesPath", syspath, "share/bundles/");
+        extractOption(eclBundlePath, globals, "ECLCC_ECLBUNDLE_PATH", "eclBundlesPath", homepath, "/bundles/");
     }
     extractOption(stdIncludeLibraryPath, globals, "ECLCC_ECLINCLUDE_PATH", "eclIncludePath", ".", NULL);
 
@@ -1478,7 +1507,6 @@ bool EclCC::processFiles()
     }
     if (optShowPaths)
     {
-        loadOptions();
         printf("CL_PATH=%s\n", compilerPath.str());
         printf("ECLCC_ECLBUNDLE_PATH=%s\n", eclBundlePath.str());
         printf("ECLCC_ECLINCLUDE_PATH=%s\n", stdIncludeLibraryPath.str());
