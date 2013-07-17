@@ -24,7 +24,7 @@
 
 project( remote ) 
 
-HPCC_ADD_SUBDIRECTORY(hooks "PLATFORM")
+HPCC_ADD_SUBDIRECTORY(hooks)
 
 set (    SRCS 
          rmtfile.cpp 

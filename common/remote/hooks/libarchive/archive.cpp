@@ -17,6 +17,10 @@
 
 #include "platform.h"
 
+#ifdef _WIN32
+#define S_ISDIR(m) (((m)&_S_IFDIR)!=0)
+#endif
+
 #include "jlib.hpp"
 #include "jio.hpp"
 
@@ -174,8 +178,14 @@ public:
         curBuffSize = 0;
         curBuff = NULL;
         archive = archive_read_new();
+#ifdef _WIN32
+        archive_read_support_format_zip(archive);
+        archive_read_support_format_tar(archive);
+        archive_read_support_compression_bzip2(archive);
+#else
         archive_read_support_format_all(archive);
         archive_read_support_compression_all(archive);
+#endif
         int retcode = archive_read_open_filename(archive, container, 10240);
         if (retcode == ARCHIVE_OK)
         {
@@ -265,6 +275,9 @@ protected:
 #if ARCHIVE_VERSION_NUMBER < 3000000
     off_t curPos;
 #else
+#if defined(_WIN32)
+#define	int64_t	__int64
+#endif
     int64_t curPos;
 #endif
     offset_t lastPos;
@@ -467,8 +480,14 @@ public:
         entries.kill();
         curIndex = 0;
         struct archive *archive = archive_read_new();
+#ifdef _WIN32
+        archive_read_support_format_zip(archive);
+        archive_read_support_format_tar(archive);
+        archive_read_support_compression_bzip2(archive);
+#else
         archive_read_support_format_all(archive);
         archive_read_support_compression_all(archive);
+#endif
         int retcode = archive_read_open_filename(archive, container, 10240);
         if (retcode == ARCHIVE_OK)
         {
