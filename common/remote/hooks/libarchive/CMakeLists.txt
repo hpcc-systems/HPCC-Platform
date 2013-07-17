@@ -37,11 +37,21 @@ include_directories (
 include_directories ( ${LIBARCHIVE_INCLUDE_DIR} )
 
 ADD_DEFINITIONS( -D_USRDLL -DARCHIVEFILE_EXPORTS )
+if ( WIN32 )
+  ADD_DEFINITIONS( -DLIBARCHIVE_STATIC )
+endif ( WIN32 )
 
 HPCC_ADD_LIBRARY( archivefile SHARED ${SRCS}  )
-install ( TARGETS archivefile DESTINATION filehooks )
+install ( TARGETS archivefile RUNTIME DESTINATION filehooks LIBRARY DESTINATION filehooks )
 
 target_link_libraries ( archivefile
     jlib
-    archive
+    ${LIBARCHIVE_LIBRARIES}
     )
+
+if (WIN32)
+target_link_libraries ( archivefile
+    ${ZLIB_LIBRARIES}
+    ${BZIP2_LIBRARIES}
+    )
+endif (WIN32)

@@ -43,17 +43,49 @@
     </informaltable></para>
 
   <para>The <emphasis role="bold">SET </emphasis>function returns a SET for
-  use in any set operation (such as the IN operator).</para>
+  use in any set operation (such as the IN operator), similar to a sub-select
+  in SQL when used with the IN operator. It does not remove duplicate elements
+  and does not order the set.</para>
+
+  <para>One common problem is the use of the SET function in a filter
+  condition, like this:</para>
+
+  <programlisting>MyDS := myDataset(myField IN SET(anotherDataset, someField));</programlisting>
+
+  <para>The code generated for this is inefficient if "anotherDataset"
+  contains a large number of elements, and may also cause a "Dataset too large
+  to output to workunit" error. A better way to recode the expression would be
+  this:</para>
+
+  <programlisting>MyDS := JOIN(myDataset, anotherDataset, LEFT.myField = RIGHT.someField, TRANSFORM(LEFT), LOOKUP) ;</programlisting>
+
+  <para>The end result is the same, the set of "myDataset" records where the
+  "myField" value is one of the "someField" values from "anotherDataset," but
+  the code is much more efficient in execution.</para>
 
   <para>Example:</para>
 
-  <programlisting>r := {STRING1 Letter};
-SomeFile := DATASET([{'A'},{'B'},{'C'},{'D'},{'E'},
-                     {'F'},{'G'},{'H'},{'I'},{'J'}],r);
-x := SET(SomeFile(Letter &gt; 'C'),Letter);
-y := 'A' IN x;  //results in FALSE
-z := 'D' IN x;  //results in TRUE
-</programlisting>
+  <programlisting>ds := DATASET([{'X',1},{'B',3},{'C',2},{'B',5},
+               {'C',4},{'D',6},{'E',2}],
+              {STRING1 Ltr, INTEGER1 Val});
+
+//a SET of just the Ltr field values:
+s1 := SET(ds,Ltr);
+COUNT(s1);  //results in 7
+s1;         //results in ['X','B','C','B','C','D','E']
+
+//a simple way to get just the unique elements
+//is to use a crosstab TABLE:
+t := TABLE(ds,{Ltr},Ltr); //order indeterminant
+
+s2 := SET(t,Ltr);
+COUNT(s2);  //results in 5
+s2;         //results in   ['D','X','C','E','B']
+
+//sorted unique elements
+s3 := SET(SORT(t,Ltr),Ltr);
+COUNT(s3);  //results in 5
+s3;         //results in ['B','C','D','E','X']</programlisting>
 
   <para>See Also: <link linkend="Recordset_Filtering">Sets and Filters</link>,
   <link linkend="SET_OF">SET OF</link>, <link linkend="Set_Operators">Set
