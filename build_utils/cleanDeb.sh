@@ -25,6 +25,7 @@ DNAME=$(basename ${FNAME} .deb)
 mkdir -p ${DNAME}/DEBIAN
 fakeroot dpkg-deb -x ${FNAME} ${DNAME}
 fakeroot dpkg-deb -e ${FNAME} ${DNAME}/DEBIAN
+fakeroot chmod 0644 ${DNAME}/DEBIAN/md5sums
 rm ${FNAME}
 fakeroot dpkg-deb -b ${DNAME} ${FNAME}
 rm -rf ${DNAME}
