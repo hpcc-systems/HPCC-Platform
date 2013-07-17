@@ -23,7 +23,7 @@
 
 IF (NOT LIBARCHIVE_FOUND)
   IF (WIN32)
-    SET (libarchive_lib "libarchive")
+    SET (libarchive_lib "archive_static")
   ELSE()
     SET (libarchive_lib "archive")
   ENDIF()
