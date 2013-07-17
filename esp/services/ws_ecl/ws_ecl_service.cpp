@@ -603,7 +603,7 @@ static void buildReqXml(StringStack& parent, IXmlType* type, StringBuffer& out, 
             parent.push_back(typeName);
 
         int startlen = out.length();
-        appendXMLOpenTag(out, tag);
+        appendXMLOpenTag(out, tag, NULL, false);
         if (ns)
             out.append(' ').append(ns);
         out.append(">");
