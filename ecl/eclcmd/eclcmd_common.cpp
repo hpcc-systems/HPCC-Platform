@@ -380,7 +380,12 @@ public:
             if (cmd.optManifest.length())
                 cmdLine.append(" -manifest ").append(cmd.optManifest.get());
             if (cmd.optObj.value.get())
-                cmdLine.append(" ").append(streq(cmd.optObj.value.get(), "stdin") ? "- " : cmd.optObj.value.get());
+            {
+                if (streq(cmd.optObj.value.get(), "stdin"))
+                    cmdLine.append(" - ");
+                else
+                    cmdLine.append(" \"").append(cmd.optObj.value.get()).append('"');;
+            }
         }
         if (cmd.debugValues.length())
         {
