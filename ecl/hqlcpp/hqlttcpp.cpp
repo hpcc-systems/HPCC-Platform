@@ -3478,7 +3478,7 @@ IHqlExpression * ThorHqlTransformer::normalizeTableGrouping(IHqlExpression * exp
                     newsort.set(group);
 
                 LinkedHqlExpr ds = dataset;
-                if (ds->queryType()->queryGroupInfo())
+                if (isGrouped(ds))
                 {
                     ds.setown(createDataset(no_group, ds.getClear(), NULL));
                     ds.setown(cloneInheritedAnnotations(expr, ds));
@@ -4901,7 +4901,6 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
     ITypeInfo * valueType = value->queryType();
     if (value->isDataset() || value->isDictionary())
     {
-        IHqlExpression * groupOrder = (IHqlExpression *)valueType->queryGroupInfo();
         if (few)
         {
             splitSmallDataset(value, setOutput, getOutput);
@@ -4920,7 +4919,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
         if (valueType->getTypeCode() == type_groupedtable)
             args.append(*createAttribute(groupedAtom));
         else
-            assertex(groupOrder == NULL);
+            assertex(!isGrouped(valueType));
 
         bool compressFile = true;
         switch (persistOp)
@@ -4930,7 +4929,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
                 args.append(*createAttribute(_workflowPersist_Atom));
                 args.append(*createAttribute(sequenceAtom, getGlobalSequenceNumber()));
                 //add a flag to help get the resourcing right - may need to hash distribute on different size thor
-                IHqlExpression * distribution = queryDistribution(valueType);
+                IHqlExpression * distribution = queryDistribution(value);
                 if (distribution && !distribution->isAttribute())
                     args.append(*createAttribute(distributedAtom));
                 break;
@@ -4985,7 +4984,7 @@ void GlobalAttributeInfo::doSplitGlobalDefinition(ITypeInfo * type, IHqlExpressi
 
             if (persistOp == no_persist)
                 args.append(*createAttribute(_workflowPersist_Atom));
-            if (groupOrder)
+            if (isGrouped(value))
                 args.append(*createAttribute(groupedAtom));
             if (compressFile)
                 args.append(*createAttribute(__compressed__Atom));

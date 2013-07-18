@@ -794,6 +794,7 @@ enum ExprPropKind
     EPaligned,
     EPunadorned,
     EPlocationIndependent,
+    EPmeta,
     EPmax
 };
 
@@ -1470,7 +1471,7 @@ extern HQL_API IHqlNamedAnnotation * queryNameAnnotation(IHqlExpression * expr);
 inline bool hasAnnotation(IHqlExpression * expr, annotate_kind search){ return queryAnnotation(expr, search) != NULL; }
 inline IHqlExpression * queryNamedSymbol(IHqlExpression * expr) { return queryAnnotation(expr, annotate_symbol); }
 inline bool hasNamedSymbol(IHqlExpression * expr) { return hasAnnotation(expr, annotate_symbol); }
-inline bool hasAttribute(IAtom * search, HqlExprArray & exprs) { return queryAttribute(search, exprs) != NULL; }
+inline bool hasAttribute(IAtom * search, const HqlExprArray & exprs) { return queryAttribute(search, exprs) != NULL; }
 
 extern HQL_API IHqlExpression * queryAnnotationProperty(IAtom * search, IHqlExpression * annotation);
 extern HQL_API IHqlExpression * queryMetaProperty(IAtom * search, IHqlExpression * expr);
@@ -1643,17 +1644,13 @@ inline bool isCast(IHqlExpression * expr)
 }
 extern HQL_API bool isKey(IHqlExpression * expr);
 
-inline IHqlExpression * queryGrouping(ITypeInfo * type)     { return static_cast<IHqlExpression *>(type->queryGroupInfo()); }
-inline IHqlExpression * queryDistribution(ITypeInfo * type) { return static_cast<IHqlExpression *>(type->queryDistributeInfo()); }
-inline IHqlExpression * queryGlobalSortOrder(ITypeInfo * type)  { return static_cast<IHqlExpression *>(type->queryGlobalSortInfo()); }
-inline IHqlExpression * queryLocalUngroupedSortOrder(ITypeInfo * type)  { return static_cast<IHqlExpression *>(type->queryLocalUngroupedSortInfo()); }
-inline IHqlExpression * queryGroupSortOrder(ITypeInfo * type)   { return static_cast<IHqlExpression *>(type->queryGroupSortInfo()); }
-inline IHqlExpression * queryGrouping(IHqlExpression * expr)        { return queryGrouping(expr->queryType()); }
-inline IHqlExpression * queryDistribution(IHqlExpression * expr)    { return queryDistribution(expr->queryType()); }
-inline IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr) { return queryGlobalSortOrder(expr->queryType()); }
-inline IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr) { return queryLocalUngroupedSortOrder(expr->queryType()); }
-inline IHqlExpression * queryGroupSortOrder(IHqlExpression * expr)  { return queryGroupSortOrder(expr->queryType()); }
-inline bool isGrouped(ITypeInfo * type)                     { return type && type->queryGroupInfo() != NULL; }
+IHqlExpression * queryGrouping(IHqlExpression * expr);
+IHqlExpression * queryDistribution(IHqlExpression * expr);
+IHqlExpression * queryGlobalSortOrder(IHqlExpression * expr);
+IHqlExpression * queryLocalUngroupedSortOrder(IHqlExpression * expr);
+IHqlExpression * queryGroupSortOrder(IHqlExpression * expr);
+
+inline bool isGrouped(ITypeInfo * type)                     { return type && (type->getTypeCode() == type_groupedtable); }
 inline bool isGrouped(IHqlExpression * expr)                { return isGrouped(expr->queryType()); }
 
 inline IFunctionTypeExtra * queryFunctionTypeExtra(ITypeInfo * type)    { return static_cast<IFunctionTypeExtra *>(queryUnqualifiedType(type)->queryModifierExtra()); }
@@ -1666,7 +1663,7 @@ inline IHqlExpression * querySelSeq(IHqlExpression * expr)
 {
     return expr->queryAttribute(_selectorSequence_Atom);
 }
-extern HQL_API IHqlExpression * createGroupedAttribute(ITypeInfo * type);
+extern HQL_API IHqlExpression * createGroupedAttribute(IHqlExpression * grouping);
 extern HQL_API bool isSameUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API bool isSameFullyUnqualifiedType(ITypeInfo * l, ITypeInfo * r);
 extern HQL_API IHqlExpression * queryNewSelectAttrExpr();

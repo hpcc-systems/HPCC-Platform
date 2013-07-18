@@ -81,4 +81,7 @@ extern HQL_API IHqlExpression * getRecordCountInfo(IHqlExpression * expr);
 extern HQL_API bool hasNoMoreRowsThan(IHqlExpression * expr, __int64 limit);
 extern HQL_API bool spillToWorkunitNotFile(IHqlExpression * expr, ClusterType platform);
 
+class CHqlMetaProperty;
+extern HQL_API CHqlMetaProperty * queryMetaProperty(IHqlExpression * expr);
+
 #endif
