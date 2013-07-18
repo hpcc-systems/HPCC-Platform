@@ -51,8 +51,9 @@ static IHqlExpression * optimizedReplaceSelector(IHqlExpression * expr, IHqlExpr
         {
             IHqlExpression * lhs = expr->queryChild(0);
             IHqlExpression * field = expr->queryChild(1);
+            bool isNew = expr->hasAttribute(newAtom);
             OwnedHqlExpr newLhs;
-            if (expr->hasAttribute(newAtom))
+            if (isNew)
             {
                 newLhs.setown(optimizedReplaceSelector(lhs, oldDataset, newDataset));
             }
@@ -60,20 +61,22 @@ static IHqlExpression * optimizedReplaceSelector(IHqlExpression * expr, IHqlExpr
             {
                 if (lhs == oldDataset)
                 {
+                    IHqlExpression * newField = lookupNewSelectedField(newDataset, field);
+
                     if (newDataset->getOperator() == no_newrow)
-                        return createNewSelectExpr(LINK(newDataset->queryChild(0)), LINK(field));
+                        return createNewSelectExpr(LINK(newDataset->queryChild(0)), newField);
 
                     if (newDataset->getOperator() == no_activerow)
                         newDataset = newDataset->queryChild(0);
 
-                    return createSelectExpr(LINK(newDataset->queryNormalizedSelector()), LINK(field));
+                    return createSelectExpr(LINK(newDataset->queryNormalizedSelector()), newField);
                 }
                 else
                     newLhs.setown(optimizedReplaceSelector(lhs, oldDataset, newDataset));
             }
 
             if (newLhs)
-                return replaceChild(expr, 0, newLhs);
+                return createSelectExpr(LINK(newLhs), lookupNewSelectedField(newLhs, field), isNew);
             return NULL;
         }
     case no_implicitcast:
@@ -1131,71 +1134,6 @@ extern HQL_API void gatherSelects(HqlExprCopyArray & selects, IHqlExpression * e
     SelectorFieldAnalyser analyser(selects, selector);
     analyser.analyse(expr, 0);
 }
-
-//---------------------------------------------------------------------------------------------------------------------
-
-static IHqlExpression * getTrivialSelect(IHqlExpression * expr, IHqlExpression * selector, IHqlExpression * field)
-{
-    OwnedHqlExpr match = getExtractSelect(expr, field);
-    if (!match)
-        return NULL;
-
-    //More: could accept a cast field.
-    if (match->getOperator() != no_select)
-        return NULL;
-    if (match->queryChild(0) != selector)
-        return NULL;
-    IHqlExpression * matchField = match->queryChild(1);
-    //MORE: Could create a type cast if they differed,
-    if (matchField->queryType() != field->queryType())
-        return NULL;
-    return LINK(matchField);
-}
-
-
-IHqlExpression * transformTrivialSelectProject(IHqlExpression * select)
-{
-    IHqlExpression * newAttr = select->queryAttribute(newAtom);
-    if (!newAttr)
-        return NULL;
-
-    IHqlExpression * row = select->queryChild(0);
-    if (row->getOperator() != no_selectnth)
-        return NULL;
-
-    IHqlExpression * expr = row->queryChild(0);
-    IHqlExpression * transform = queryNewColumnProvider(expr);
-    if (!transform)
-        return NULL;
-    if (!transform->isPure() && transformHasSkipAttr(transform))
-        return NULL;
-
-    IHqlExpression * ds = expr->queryChild(0);
-    LinkedHqlExpr selector;
-    switch (expr->getOperator())
-    {
-    case no_hqlproject:
-    case no_projectrow:
-        selector.setown(createSelector(no_left, ds, querySelSeq(expr)));
-        break;
-    case no_newusertable:
-         if (isAggregateDataset(expr))
-             return NULL;
-         selector.set(ds->queryNormalizedSelector());
-         break;
-    default:
-        return NULL;
-    }
-
-    OwnedHqlExpr match = getTrivialSelect(transform, selector, select->queryChild(1));
-    if (match)
-    {
-        IHqlExpression * newRow = createRow(no_selectnth, LINK(ds), LINK(row->queryChild(1)));
-        return createNewSelectExpr(newRow, LINK(match));
-    }
-    return NULL;
-}
-
 
 //-----------------------------------------------------------------------------------------------
 

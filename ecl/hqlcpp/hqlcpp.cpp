@@ -11991,15 +11991,18 @@ bool HqlCppTranslator::requiresTemp(BuildCtx & ctx, IHqlExpression * expr, bool 
             return true;
         }
     case no_select:
-        if (expr->hasAttribute(newAtom))
         {
-            IHqlExpression * ds= expr->queryChild(0);
-            if (!ds->isPure() || !ds->isDatarow())
-                return true;
-            if (!ctx.queryAssociation(ds, AssocRow, NULL))
-                return true;
+            bool isNew;
+            IHqlExpression * ds = querySelectorDataset(expr, isNew);
+            if (isNew)
+            {
+                if (!ds->isPure() || !ds->isDatarow())
+                    return true;
+                if (!ctx.queryAssociation(ds, AssocRow, NULL))
+                    return true;
+            }
+            return false;
         }
-        return false;
     case no_field:
         throwUnexpected();
         return false;       // more, depends on whether conditional etc.
