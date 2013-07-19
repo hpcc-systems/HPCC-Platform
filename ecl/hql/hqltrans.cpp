@@ -189,6 +189,18 @@ StringBuffer & HqlTransformStats::getText(StringBuffer & out) const
     return out;
 }
 
+IHqlExpression * lookupNewSelectedField(IHqlExpression * ds, IHqlExpression * field)
+{
+    IHqlExpression * record = ds->queryRecord();
+    if (record)
+    {
+        IHqlExpression * matched = record->querySimpleScope()->lookupSymbol(field->queryId());
+        if (matched)
+            return matched;
+    }
+    return LINK(field);
+}
+
 
 HqlTransformerInfo::HqlTransformerInfo(const char * _name)
 {
@@ -954,6 +966,14 @@ IHqlExpression * QuickHqlTransformer::createTransformedBody(IHqlExpression * exp
             }
             break;
         }
+    case no_select:
+        {
+            IHqlExpression * field = expr->queryChild(1);
+            OwnedHqlExpr newDs = transform(expr->queryChild(0));
+            children.append(*LINK(newDs));
+            children.append(*lookupNewSelectedField(newDs, field));
+            break;
+        }
     }
 
     return completeTransform(expr, children);
@@ -1443,8 +1463,11 @@ IHqlExpression * NewHqlTransformer::createTransformed(IHqlExpression * expr)
                     children.append(*LINK(queryNewSelectAttrExpr()));
             }
 
-            if ((children.ordinality() > 2) && isAlwaysActiveRow(&ds))
-                removeProperty(children, newAtom);
+            if (children.ordinality() > 2)
+            {
+                if (isAlwaysActiveRow(&ds) || ((dsOp == no_select) && ds.isDatarow()))
+                    removeProperty(children, newAtom);
+            }
         }
         else
             return createTransformedActiveSelect(expr);
@@ -1580,6 +1603,13 @@ IHqlExpression * NewHqlTransformer::createTransformedActiveSelect(IHqlExpression
 
     if ((normLeft == newLeft) && (newRight == right))
         return LINK(expr->queryNormalizedSelector());
+
+    OwnedHqlExpr mappedRight = lookupNewSelectedField(newLeft, right);
+    if (mappedRight && newRight != mappedRight)
+    {
+        assertex(normLeft->queryNormalizedSelector() != newLeft->queryNormalizedSelector());
+        newRight = mappedRight;
+    }
 
     if (newLeft->getOperator() == no_newrow)
         return createNewSelectExpr(LINK(newLeft->queryChild(0)), LINK(newRight));
@@ -1923,17 +1953,9 @@ IHqlExpression * NewHqlTransformer::doUpdateOrphanedSelectors(IHqlExpression * e
     if (!newDs || !newDs->isDataset())
         return LINK(transformed);
 
-    //More: a specialised HEF flag would make this more efficient...
     childDatasetType childType = getChildDatasetType(expr);
-    switch (childType)
-    {
-    case childdataset_dataset:
-    case childdataset_datasetleft:
-    case childdataset_top_left_right:
-        break;
-    default:
+    if (!(childType & childdataset_hasdataset))
         return LINK(transformed);
-    }
 
     LinkedHqlExpr updated = transformed;
     IHqlExpression * ds = expr->queryChild(0);
@@ -1952,7 +1974,7 @@ IHqlExpression * NewHqlTransformer::doUpdateOrphanedSelectors(IHqlExpression * e
             updated.setown(updated->clone(args));
         }
 
-        //In unusual sitatuations we also need to map selectors for any parent datasets that are in scope
+        //In unusual situations we also need to map selectors for any parent datasets that are in scope
         IHqlExpression * newRoot = queryRoot(newDs);
         if (!newRoot || newRoot->getOperator() != no_select)
             break;
@@ -3311,7 +3333,7 @@ IHqlExpression * updateMappedFields(IHqlExpression * expr, IHqlExpression * oldS
     NewSelectorReplacingTransformer transformer;
     if (oldSelector != newSelector)
         transformer.initSelectorMapping(oldSelector, newSelector);
-    transformer.setRootMapping(newSelector, newSelector, oldSelector->queryRecord(), false);
+    transformer.setRootMapping(newSelector, newSelector, newSelector->queryRecord(), false);
     bool same = true;
     for (; i < max; i++)
     {
