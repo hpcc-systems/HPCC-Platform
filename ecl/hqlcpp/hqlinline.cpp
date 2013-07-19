@@ -494,6 +494,10 @@ bool alwaysEvaluatesToBound(IHqlExpression * expr)
 inline GraphLocalisation mergeLocalisation(GraphLocalisation l, GraphLocalisation r)
 {
     //options are GraphCoLocal, GraphNonLocal, GraphCoNonLocal, GraphNoAccess
+    if (l == GraphNeverAccess)
+        l = GraphNoAccess;
+    if (r == GraphNeverAccess)
+        r = GraphNoAccess;
     if (l == GraphNoAccess)
         return r;
     if (r == GraphNoAccess)
@@ -505,7 +509,122 @@ inline GraphLocalisation mergeLocalisation(GraphLocalisation l, GraphLocalisatio
     return l;
 }
 
-// A minimal function to catch the obviously context invarient items.
+bool exprExcludingInputNeedsParent(IHqlExpression * expr)
+{
+    unsigned first = getFirstActivityArgument(expr);
+    unsigned last = first + getNumActivityArguments(expr);
+
+    ForEachChild(i, expr)
+    {
+        if (i >= first && i < last)
+            continue;
+
+        IHqlExpression * cur = expr->queryChild(i);
+        if (isGraphDependent(cur) || usesRuntimeContext(cur))
+            return true;
+    }
+
+    if (!expr->isIndependentOfScopeIgnoringInputs())
+        return true;
+
+    return false;
+}
+
+bool exprIncludingInputNeedsParent(IHqlExpression * expr)
+{
+    if (isGraphDependent(expr) || usesRuntimeContext(expr))
+        return true;
+    if (!expr->isIndependentOfScope())
+        return true;
+    return false;
+}
+
+bool activityNeedsParent(IHqlExpression * expr)
+{
+    //This should always err on the side of yes...
+    switch (expr->getOperator())
+    {
+    case no_select:
+    case no_compound_diskread:
+    case no_compound_disknormalize:
+    case no_compound_diskaggregate:
+    case no_compound_diskcount:
+    case no_compound_diskgroupaggregate:
+    case no_compound_indexread:
+    case no_compound_indexnormalize:
+    case no_compound_indexaggregate:
+    case no_compound_indexcount:
+    case no_compound_indexgroupaggregate:
+        if (exprIncludingInputNeedsParent(expr))
+            return true;
+        break;
+    case no_libraryinput:
+        return true;
+    case no_hqlproject:
+    case no_newusertable:
+        //Filters might be merged into projects, so need to walk the inputs.
+        loop
+        {
+            if (activityNeedsParent(expr))
+                return true;
+            expr = expr->queryChild(0);
+            switch (expr->getOperator())
+            {
+            case no_sorted:
+            case no_filter:
+                break;
+            default:
+                return false;
+            }
+        }
+    case no_libraryscopeinstance:
+        {
+            //Obscure way to get at the name of the library being called.
+            IHqlExpression * moduleFunction = expr->queryBody()->queryDefinition();
+            IHqlExpression * module = moduleFunction->queryChild(0);
+            assertex(module->getOperator() == no_libraryscope);
+            IHqlExpression * nameAttr = module->queryAttribute(nameAtom);
+            if (activityNeedsParent(nameAttr))
+                return true;
+            return exprExcludingInputNeedsParent(expr);
+        }
+    default:
+        if (expr->isDatarow())
+        {
+            switch (expr->getOperator())
+            {
+            case no_split:
+            case no_spill:
+            case no_selectnth:
+                if (exprExcludingInputNeedsParent(expr))
+                    return true;
+                break;
+            default:
+                if (exprIncludingInputNeedsParent(expr))
+                    return true;
+                break;
+            }
+        }
+        else
+        {
+            if (exprExcludingInputNeedsParent(expr))
+                return true;
+        }
+        break;
+    }
+
+    //Assume the worse for queries based on ds.childdataset
+    if (getChildDatasetType(expr) & childdataset_hasdataset)
+    {
+        IHqlExpression * ds = queryRoot(expr);
+        if (ds && ds->getOperator() == no_select)
+            return true;
+    }
+    return false;
+}
+
+
+// A minimal function to catch the obviously context invariant items.
 static bool accessesData(IHqlExpression * expr)
 {
     switch (expr->getOperator())
@@ -535,9 +654,10 @@ static bool accessesData(IHqlExpression * expr)
     }
 }
 
-GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
+GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
 {
-    switch (expr->getOperator())
+    node_operator op = expr->getOperator();
+    switch (op)
     {
     case no_compound_diskread:
         {
@@ -546,12 +666,12 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
             //If a compound operation has been added, but with no other effect then don't allow that to change the localisation
             IHqlExpression * ds = expr->queryChild(0);
             if (ds->getOperator() == no_table)
-                return queryActivityLocalisation(ds);
+                return queryActivityLocalisation(ds, optimizeParentAccess);
             return GraphNonLocal;
         }
     case no_table:
         if (expr->hasAttribute(_noAccess_Atom))
-            return GraphNoAccess;
+            return GraphNeverAccess;
         //fallthrough
     case no_keyindex:
     case no_newkeyindex:
@@ -581,7 +701,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
         break;
     case no_output:
         if (expr->hasAttribute(_spill_Atom))
-            return GraphNoAccess;
+            return GraphNeverAccess;
         break;
     case no_setgraphresult:
     case no_spillgraphresult:
@@ -609,7 +729,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_actionlist:
     case no_definesideeffect:
     case no_dataset_alias:
-        return GraphNoAccess;               // Will never access any data values from anywhere
+        return GraphNeverAccess;               // Will never access any data values from anywhere
     case no_hqlproject:
     case no_newusertable:
         //Many more of these could return GraphNoAccess if I determined that only constants and the input
@@ -620,17 +740,20 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
     case no_datasetfromrow:
         {
             if (getNumActivityArguments(expr) != 0)
-                return GraphNoAccess;
+                return GraphNeverAccess;
 
             IHqlExpression * row = expr->queryChild(0);
             switch (row->getOperator())
             {
             case no_createrow:
             case no_null:
-                return queryActivityLocalisation(row);
+                return queryActivityLocalisation(row, optimizeParentAccess);
             }
             break;
         }
+    case no_workunit_dataset:
+        return GraphCoLocal; // weird exception in roxie
+    case no_getgraphresult:
     case no_datasetfromdictionary:
         return GraphCoLocal;
     case no_createrow:
@@ -642,7 +765,7 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
                 if (accessesData(expr->queryChild(i)))
                     return GraphCoLocal;
             }
-            return GraphNoAccess;
+            return GraphNeverAccess;
         }
     case no_group:
     case no_choosen:
@@ -656,31 +779,45 @@ GraphLocalisation queryActivityLocalisation(IHqlExpression * expr)
                 if (accessesData(expr->queryChild(i)))
                     return GraphCoLocal;
             }
-            return GraphNoAccess;
+            return GraphNeverAccess;
         }
     case no_newaggregate:
         if (!queryRealChild(expr, 3))
         {
             node_operator op = querySimpleAggregate(expr, false, false);
             if (op == no_existsgroup || op == no_countgroup)
-                return GraphNoAccess;
+                return GraphNeverAccess;
             //Need to check if it accesses anything in the context!
         }
         break;
     }
+
+    if (optimizeParentAccess && !activityNeedsParent(expr))
+    {
+        switch (op)
+        {
+        case no_if:
+        case no_case:
+        case no_map:
+            //May be combined into a switch.
+            break;
+        default:
+            return GraphNoAccess;
+        }
+    }
     return GraphCoLocal;
 }
 
-bool isNonLocal(IHqlExpression * expr)
+bool isNonLocal(IHqlExpression * expr, bool optimizeParentAccess)
 {
-    return (queryActivityLocalisation(expr) == GraphNonLocal);
+    return (queryActivityLocalisation(expr, optimizeParentAccess) == GraphNonLocal);
 }
 
 
-static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr);
-static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr)
+static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess);
+static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
 {
-    GraphLocalisation localisation = queryActivityLocalisation(expr);
+    GraphLocalisation localisation = queryActivityLocalisation(expr, optimizeParentAccess);
 
     if (isSourceActivity(expr))
         return localisation;
@@ -700,7 +837,7 @@ static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr)
         break;
     case no_attr:
     case no_attr_expr:
-        return GraphNoAccess;
+        return GraphNeverAccess;
     default:
         numChildren = getNumActivityArguments(expr);
         break;
@@ -708,19 +845,21 @@ static GraphLocalisation queryGraphLocalisation(IHqlExpression * expr)
 
     for (unsigned i = firstChild; i < numChildren; i++)
     {
-        localisation = mergeLocalisation(localisation, doGetGraphLocalisation(expr->queryChild(i)));
+        localisation = mergeLocalisation(localisation, doGetGraphLocalisation(expr->queryChild(i), optimizeParentAccess));
         if (localisation == GraphCoNonLocal)
             return localisation;
     }
     return localisation;
 }
 
-static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr)
+static GraphLocalisation doGetGraphLocalisation(IHqlExpression * expr, bool optimizeParentAccess)
 {
     IHqlExpression * cached = (IHqlExpression *)expr->queryTransformExtra();
     if (cached)
         return (GraphLocalisation)cached->queryValue()->getIntValue();
-    GraphLocalisation ret = queryGraphLocalisation(expr);
+    GraphLocalisation ret = queryGraphLocalisation(expr, optimizeParentAccess);
+    if (ret == GraphNeverAccess)
+        ret = GraphNoAccess;
     expr->setTransformExtraOwned(getSizetConstant((unsigned)ret));
     return ret;
 }
@@ -737,7 +876,7 @@ GraphLocalisation HqlCppTranslator::getGraphLocalisation(IHqlExpression * expr, 
         return GraphNonLocal;
 
     TransformMutexBlock lock;
-    return doGetGraphLocalisation(expr);
+    return doGetGraphLocalisation(expr, options.optimizeParentAccess);
 }
 
 bool HqlCppTranslator::isNeverDistributed(IHqlExpression * expr)
@@ -787,7 +926,7 @@ ParentExtract::~ParentExtract()
 
 void ParentExtract::associateCursors(BuildCtx & declarectx, BuildCtx & evalctx, GraphLocalisation childLocalisation)
 {
-    const CursorArray * boundCursors;
+    const CursorArray * boundCursors = NULL;
     switch (childLocalisation)
     {
     case GraphCoLocal:
@@ -1369,7 +1508,7 @@ bool EvalContext::evaluateInParent(BuildCtx & ctx, IHqlExpression * expr, bool h
     if (parent->isRowInvariant(expr))
         return true;
 
-    if (parentExtract->canEvaluate(expr))
+    if (parentExtract && parentExtract->canEvaluate(expr))
     {
         if (!isColocal() || !hasOnStart)
             return true;
