@@ -206,8 +206,8 @@ public:
 class CChildDependent : public CInterface
 {
 public:
-    CChildDependent(IHqlExpression * _original, IHqlExpression * _hoisted, bool _alwaysHoist, bool _isSingleNode)
-    : original(_original), hoisted(_hoisted), alwaysHoist(_alwaysHoist), isSingleNode(_isSingleNode)
+    CChildDependent(IHqlExpression * _original, IHqlExpression * _hoisted, bool _alwaysHoist, bool _isSingleNode, bool _forceHoist)
+    : original(_original), hoisted(_hoisted), alwaysHoist(_alwaysHoist), isSingleNode(_isSingleNode), forceHoist(_forceHoist)
     {
         projectedHoisted.set(hoisted);
         projected = NULL;
@@ -217,6 +217,7 @@ public:
     IHqlExpression * original;
     LinkedHqlExpr hoisted;
     LinkedHqlExpr projectedHoisted;
+    bool forceHoist;
     bool alwaysHoist;
     bool isSingleNode;
     IHqlExpression * projected;
@@ -251,8 +252,8 @@ public:
     bool isSplit();
     bool isSpilledWrite();
     bool okToSpillThrough();
-    void noteUsedFromChild()            { linkedFromChild = true; outputToUseForSpill = NULL; }
-    unsigned numInternalUses()          { return numUses - numExternalUses - aggregates.ordinality(); }
+    void noteUsedFromChild(bool _forceHoist);
+    unsigned numInternalUses();
     unsigned numSplitPaths();
     void setConditionSource(IHqlExpression * condition, bool isFirst);
 
@@ -323,6 +324,7 @@ public:
     bool balanced;
     bool isAlreadyInScope;
     bool linkedFromChild;
+    bool forceHoist;
     bool neverSplit;
     byte pathToExpr;
     bool isConditionalFilter;

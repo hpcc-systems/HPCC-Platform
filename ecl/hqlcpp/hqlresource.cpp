@@ -1003,6 +1003,7 @@ ResourcerInfo::ResourcerInfo(IHqlExpression * _original, CResourceOptions * _opt
     balanced = true;
     currentSource = 0;
     linkedFromChild = false;
+    forceHoist = false;
     neverSplit = false;
     isConditionalFilter = false;
     projectResult = true; // projected must also be non empty to actually project this dataset
@@ -1353,6 +1354,19 @@ bool ResourcerInfo::okToSpillThrough()
     return (options->allowThroughSpill && !options->createSpillAsDataset);
 }
 
+void ResourcerInfo::noteUsedFromChild(bool _forceHoist)
+{
+    linkedFromChild = true;
+    outputToUseForSpill = NULL;
+    if (_forceHoist)
+        forceHoist = true;
+}
+
+unsigned ResourcerInfo::numInternalUses()
+{
+    return numUses - numExternalUses - aggregates.ordinality();
+}
+
 bool ResourcerInfo::spillSharesSplitter()
 {
     if (outputToUseForSpill || useGraphResult() || useGlobalResult())
@@ -1480,6 +1494,8 @@ bool ResourcerInfo::expandRatherThanSpill(bool noteOtherSpills)
         ResourcerInfo * info = queryResourceInfo(expr);
         if (info && info->neverSplit)
             return true;
+        if (info && info->forceHoist)
+            return false;
 
         node_operator op = expr->getOperator();
         switch (op)
@@ -1996,7 +2012,7 @@ public:
             if (!hoisted)
                 hoisted = expr;
 
-            CChildDependent & depend = * new CChildDependent(expr, hoisted, alwaysHoist, alwaysSingle);
+            CChildDependent & depend = * new CChildDependent(expr, hoisted, alwaysHoist, alwaysSingle, false);
             matched.append(depend);
         }
         else
@@ -2061,7 +2077,7 @@ public:
                 hoisted.setown(createRow(no_createrow, LINK(transform)));
             }
 
-            CChildDependent & depend = * new CChildDependent(expr, hoisted, true, true);
+            CChildDependent & depend = * new CChildDependent(expr, hoisted, true, true, true);
             depend.projected = projected;
             matched.append(depend);
         }
@@ -3809,7 +3825,7 @@ void EclResourcer::addDependencies(IHqlExpression * expr, ResourceGraphInfo * gr
 
             ResourcerInfo * sourceInfo = queryResourceInfo(cur.projectedHoisted);
             if (cur.isSingleNode)
-                sourceInfo->noteUsedFromChild();
+                sourceInfo->noteUsedFromChild(cur.forceHoist);
             ResourceGraphLink * link = new ResourceGraphDependencyLink(sourceInfo->graph, cur.projectedHoisted, graph, expr);
             graph->dependsOn.append(*link);
             links.append(*link);
