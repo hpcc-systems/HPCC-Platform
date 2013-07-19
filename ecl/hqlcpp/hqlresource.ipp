@@ -252,8 +252,8 @@ public:
     bool isSplit();
     bool isSpilledWrite();
     bool okToSpillThrough();
-    void noteUsedFromChild(bool _forceHoist)            { linkedFromChild = true; outputToUseForSpill = NULL; if (_forceHoist) forceHoist = true; }
-    unsigned numInternalUses()          { return numUses - numExternalUses - aggregates.ordinality(); }
+    void noteUsedFromChild(bool _forceHoist);
+    unsigned numInternalUses();
     unsigned numSplitPaths();
     void setConditionSource(IHqlExpression * condition, bool isFirst);
 

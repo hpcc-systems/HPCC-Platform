@@ -1354,6 +1354,19 @@ bool ResourcerInfo::okToSpillThrough()
     return (options->allowThroughSpill && !options->createSpillAsDataset);
 }
 
+void ResourcerInfo::noteUsedFromChild(bool _forceHoist)
+{
+    linkedFromChild = true;
+    outputToUseForSpill = NULL;
+    if (_forceHoist)
+        forceHoist = true;
+}
+
+unsigned ResourcerInfo::numInternalUses()
+{
+    return numUses - numExternalUses - aggregates.ordinality();
+}
+
 bool ResourcerInfo::spillSharesSplitter()
 {
     if (outputToUseForSpill || useGraphResult() || useGlobalResult())
