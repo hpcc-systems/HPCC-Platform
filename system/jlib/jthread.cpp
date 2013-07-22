@@ -1657,21 +1657,23 @@ class CLinuxPipeProcess: public CInterface, implements IPipeProcess
         Semaphore stopsem;
         CriticalSection &sect;
         int &hError;
+        Semaphore &stdErrBufferThreadStarted;
     public:
-        cStdErrorBufferThread(size32_t maxbufsize,int &_hError,CriticalSection &_sect)
-            : hError(_hError), sect(_sect)
+        cStdErrorBufferThread(size32_t maxbufsize,int &_hError,CriticalSection &_sect, Semaphore &_stdErrBufferThreadStarted)
+            : hError(_hError), sect(_sect), stdErrBufferThreadStarted(_stdErrBufferThreadStarted)
         {
             buf.allocate(maxbufsize);
             bufsize = 0;
         }
         int run()
         {
-            while (!stopsem.wait(1000)) {
-                CriticalBlock block(sect); 
+            stdErrBufferThreadStarted.signal();
+            while (!stopsem.wait(10)) {
+                CriticalBlock block(sect);
                 if (hError!=(HANDLE)-1) { // hmm who did that
                     fcntl(hError,F_SETFL,O_NONBLOCK); // make sure non-blocking
                     if (bufsize<buf.length()) {
-                        size32_t sizeRead = (size32_t)::read(hError, (byte *)buf.bufferBase()+bufsize, buf.length()-bufsize); 
+                        size32_t sizeRead = (size32_t)::read(hError, (byte *)buf.bufferBase()+bufsize, buf.length()-bufsize);
                         if ((int)sizeRead>0) { 
                             bufsize += sizeRead;
                         }
@@ -1699,9 +1701,19 @@ class CLinuxPipeProcess: public CInterface, implements IPipeProcess
             Thread::join();
         }
 
-    size32_t read(size32_t sz,void *out) 
+        size32_t read(size32_t sz,void *out)
         {
-            CriticalBlock block(sect); 
+            // Wait for a while and give time to run() to read some text from stderr
+            // but avoid to block too long time if no error
+            CriticalUnblock unblock(sect);
+            int attempt = 10;
+            while ((bufsize == 0 ) && attempt-- )
+            {
+                Sleep(200);
+            }
+
+            CriticalBlock block(sect);
+
             if (bufsize<sz) 
                 sz = bufsize;
             if (sz>0) {
@@ -1735,8 +1747,8 @@ protected: friend class PipeWriterThread;
     Semaphore started;
     bool aborted;
     MemoryBuffer stderrbuf;
-    size32_t stderrbufsize;
     StringAttr allowedprogs;
+    Semaphore stdErrBufferThreadStarted;
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -1879,7 +1891,7 @@ public:
             closeOutput();
     }
 
-    bool run(const char *_title,const char *_prog,const char *_dir,bool _hasinput,bool _hasoutput, bool _haserror, size32_t stderrbufsize)
+    bool run(const char *_title,const char *_prog,const char *_dir,bool _hasinput,bool _hasoutput, bool _haserror, size32_t _stderrbufsize)
     {
         static CriticalSection runsect; // single thread process start to avoid forked handle open/closes interleaving
         CriticalBlock runblock(runsect);
@@ -1893,7 +1905,7 @@ public:
         dir.set(_dir);
         if (_title) {
             title.set(_title);
-            PROGLOG("%s: Creating PIPE program process : '%s' - hasinput=%d, hasoutput=%d stderrbufsize=%d", title.get(), prog.get(),(int)hasinput, (int)hasoutput, stderrbufsize);
+            PROGLOG("%s: Creating PIPE program process : '%s' - hasinput=%d, hasoutput=%d stderrbufsize=%d", title.get(), prog.get(),(int)hasinput, (int)hasoutput, _stderrbufsize);
         }
         CheckAllowedProgram(prog,allowedprogs);
         retcode = 0;
@@ -1916,13 +1928,16 @@ public:
             forkthread.clear();
             return false;
         }
-        if (stderrbufsize) {
+        if (_stderrbufsize) {
             if (stderrbufferthread) {
                 stderrbufferthread->stop();
                 delete stderrbufferthread;
             }
-            stderrbufferthread = new cStdErrorBufferThread(stderrbufsize,hError,sect);
+            stderrbufferthread = new cStdErrorBufferThread(_stderrbufsize,hError,sect,stdErrBufferThreadStarted);
             stderrbufferthread->start();
+
+            // Wait for stderrbufferthread
+            stdErrBufferThreadStarted.wait();
         }
         return true;
     }

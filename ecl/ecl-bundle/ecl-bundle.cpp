@@ -107,7 +107,7 @@ unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *input)
     {
         Owned<IPipeProcess> pipe = createPipeProcess();
         VStringBuffer runcmd("eclcc  --nologfile --nostdinc %s", cmd);
-        pipe->run("eclcc", runcmd, ".", input != NULL, true, true);
+        pipe->run("eclcc", runcmd, ".", input != NULL, true, true, 1024*1024);
         if (optVerbose)
         {
             printf("Running %s\n", runcmd.str());
