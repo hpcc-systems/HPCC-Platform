@@ -46,6 +46,7 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/TimingGridWidget",
     "hpcc/TimingTreeMapWidget",
+    "hpcc/WsWorkunits",
 
     "dojo/text!../templates/GraphPageWidget.html",
 
@@ -62,7 +63,7 @@ define([
             BorderContainer, TabContainer, ContentPane, registry, Dialog,
             entities,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-            _Widget, GraphWidget, ESPUtil, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
+            _Widget, GraphWidget, ESPUtil, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget, WsWorkunits,
             template) {
     return declare("GraphPageWidget", [_Widget], {
         templateString: template,
@@ -418,7 +419,7 @@ define([
                         onGetGraphs: function (graphs) {
                             if (firstLoad == true) {
                                 firstLoad = false;
-                                context.loadGraph(context.wu, context.graphName).then(function (response) {
+                                context.loadGraphFromWu(context.wu, context.graphName).then(function (response) {
                                     context.refresh(params);
                                 });
                             } else {
@@ -427,6 +428,12 @@ define([
                         }
                     });
                 });
+            } else if (params.QueryId) {
+                this.targetQuery = params.Target;
+                this.queryId = params.QueryId;
+                this.graphName = params.GraphName;
+
+                this.loadGraphFromQuery(this.targetQuery, this.queryId, this.graphName);
             }
 
             this.timingGrid.init(lang.mixin({
@@ -465,7 +472,7 @@ define([
             this.loadEdges();
         },
 
-        loadGraph: function (wu, graphName) {
+        loadGraphFromWu: function (wu, graphName) {
             var deferred = new Deferred();
             this.overview.setMessage("Fetching Data...");
             this.main.setMessage("Fetching Data...");
@@ -479,6 +486,29 @@ define([
                 deferred.resolve();
             });
             return deferred.promise;
+        },
+
+        loadGraphFromQuery: function (targetQuery, queryId, graphName) {
+            this.overview.setMessage("Fetching Data...");
+            this.main.setMessage("Fetching Data...");
+            this.local.setMessage("Fetching Data...");
+            var context = this;
+            WsWorkunits.WUQueryGetGraph({
+                request: {
+                    Target: targetQuery,
+                    QueryId: queryId,
+                    GraphName: graphName
+                }
+            }).then(function(response){
+                context.overview.setMessage("");
+                context.main.setMessage("");
+                context.local.setMessage("");
+                if(lang.exists("WUQueryGetGraphResponse.Graphs.ECLGraphEx", response)){
+                    if(response.WUQueryGetGraphResponse.Graphs.ECLGraphEx.length > 0){
+                        context.loadGraphFromXGMML(response.WUQueryGetGraphResponse.Graphs.ECLGraphEx[0].Graph, "");
+                    }
+                }
+            });
         },
 
         refreshGraph: function (wu, graphName) {

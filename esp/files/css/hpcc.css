@@ -758,6 +758,13 @@ margin-left:-20px;
     display: inline-block;
 }
 
+.iconCluster{
+    background-image: url("../img/server.png"); 
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+}
+
 .ErrorCell{
     background: red;
     color: white;

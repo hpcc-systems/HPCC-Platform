@@ -52,8 +52,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-                if (this.inherited(arguments))
-                    return;
+            if (this.inherited(arguments))
+                return;
             this.initTab();
         },
 
