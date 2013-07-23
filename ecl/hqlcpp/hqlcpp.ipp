@@ -628,7 +628,6 @@ struct HqlCppOptions
     bool                alwaysAllowAllNodes;
     bool                slidingJoins;
     bool                foldOptimized;
-    bool                globalFold;
     bool                globalOptimize;
     bool                applyInstantEclTransformations;
     bool                calculateComplexity;

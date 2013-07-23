@@ -38,22 +38,22 @@ filtered := namesTable(REGEXFIND('^(Mc|Mac)', surname));
 
 output(filtered);
 
-output(namesTable, {(string30)REGEXFIND(searchpattern, userdate, 0), '!',
-                    (string30)REGEXFIND(searchpattern, userdate, 1), '!',
-                    (string30)REGEXFIND(searchpattern, userdate, 2), '!',
-                    (string30)REGEXFIND(searchpattern, userdate, 3), '\n'});
+output(namesTable, {(string30)REGEXFIND(NOFOLD(searchpattern), userdate, 0), '!',
+                    (string30)REGEXFIND(NOFOLD(searchpattern), userdate, 1), '!',
+                    (string30)REGEXFIND(NOFOLD(searchpattern), userdate, 2), '!',
+                    (string30)REGEXFIND(NOFOLD(searchpattern), userdate, 3), '\n'});
 
-REGEXFIND(searchpattern, search, 0);
-REGEXFIND(searchpattern, search, 1);
-REGEXFIND(searchpattern, search, 2);
-REGEXFIND(searchpattern, search, 3);
+REGEXFIND(NOFOLD(searchpattern), search, 0);
+REGEXFIND(NOFOLD(searchpattern), search, 1);
+REGEXFIND(NOFOLD(searchpattern), search, 2);
+REGEXFIND(NOFOLD(searchpattern), search, 3);
 
-regexfind('Gavin','Gavin Halliday');
+REGEXFIND(NOFOLD('Gavin'),'Gavin Halliday');
 
-regexfind('GAVIN','Gavin Halliday') AND
-regexfind('GAVIN','Gavin x Halliday') AND 
-regexfind('GAVIN','Gavin Halliday',NOCASE);
-regexfind('GAVIN','Gavin x Halliday') AND regexfind('GAVIN','Gavin x Halliday',1) <> 'x';
-regexfind('GAVIN','Gavin x Halliday',NOCASE) AND regexfind('GAVIN','Gavin x Halliday',1,NOCASE) <> 'x';
-regexfind('GAVIN','Gavin x Halliday') AND regexfind('GAVIN','Gavin x Halliday',1,NOCASE) <> 'x';
-regexfind('GAVIN','Gavin x Halliday',NOCASE) AND regexfind('GAVIN','Gavin x Halliday',1) <> 'x';
+REGEXFIND(NOFOLD('GAVIN'),'Gavin Halliday') AND
+REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday') AND
+REGEXFIND(NOFOLD('GAVIN'),'Gavin Halliday',NOCASE);
+REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday') AND REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday',1) <> 'x';
+REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday',NOCASE) AND REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday',1,NOCASE) <> 'x';
+REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday') AND REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday',1,NOCASE) <> 'x';
+REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday',NOCASE) AND REGEXFIND(NOFOLD('GAVIN'),'Gavin x Halliday',1) <> 'x';
