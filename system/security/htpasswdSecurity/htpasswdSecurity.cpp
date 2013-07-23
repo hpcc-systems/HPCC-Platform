@@ -66,7 +66,7 @@ public:
 					ISecResourceList* rlist = authmap->queryResourceList(pathstr.str());
 					if(rlist == NULL)
 					{
-						rlist = createResourceList("localsecurity");
+						rlist = createResourceList("htpasswdsecurity");
 						authmap->add(pathstr.str(), rlist);
 					}
 					ISecResource* rs = rlist->addResource(rstr.str());

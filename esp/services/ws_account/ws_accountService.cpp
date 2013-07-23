@@ -157,10 +157,7 @@ bool Cws_accountEx::onMyAccount(IEspContext &context, IEspMyAccountRequest &req,
             user->getPasswordExpiration(dt);
             StringBuffer sb;
             if (dt.isNull())
-            {
-                assertex(user->getPasswordDaysRemaining() == -2);//-1 if expired, -2 if never expires
                 sb.append("Never");
-            }
             else
             {
                 dt.getString(sb);
