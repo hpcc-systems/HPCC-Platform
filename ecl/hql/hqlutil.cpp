@@ -8197,6 +8197,9 @@ bool userPreventsSort(IHqlExpression * noSortAttr, node_operator side)
 
 IHqlExpression * queryTransformAssign(IHqlExpression * transform, IHqlExpression * searchField)
 {
+    while (transform->getOperator() == no_alias_scope)
+        transform = transform->queryChild(0);
+
     ForEachChild(i, transform)
     {
         IHqlExpression * cur = transform->queryChild(i);

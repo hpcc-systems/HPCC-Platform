@@ -1610,7 +1610,7 @@ void ImplicitProjectTransformer::analyseExpr(IHqlExpression * expr)
             setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
             break;
         case FixedInputActivity:
-            assertex(child && (child->isDataset() || child->isDatarow() || child->isDictionary()));
+            assertex(child && child->queryRecord());
             setOriginal(complexExtra->leftFieldsRequired, child);
             if (getNumChildTables(expr) >= 2)
                 setOriginal(complexExtra->rightFieldsRequired, expr->queryChild(1));
@@ -2104,6 +2104,7 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
     case no_graphloop:
     case no_filtergroup:            //anything else would be tricky...
     case no_normalizegroup:
+    case no_getgraphloopresultset:
         return FixedInputActivity;
     case no_aggregate:
         if (expr->hasAttribute(mergeTransformAtom))
@@ -2157,6 +2158,10 @@ ProjectExprKind ImplicitProjectTransformer::getProjectExprKind(IHqlExpression * 
         if (getProjectExprKind(expr->queryChild(0)) == CompoundableActivity)
             return CompoundableActivity;
         return PassThroughActivity;
+    case no_serialize:
+    case no_deserialize:
+        //This needs to map fields by name.  Until that is implemented don't project these types.
+        return FixedInputActivity;
     }
 
     ITypeInfo * type = expr->queryType();
@@ -2908,7 +2913,7 @@ IHqlExpression * ImplicitProjectTransformer::createTransformed(IHqlExpression * 
                 if (cur->isDataset() || cur->isDatarow())
                 {
                     //Ensure all inputs have same format..
-                    if (cur->queryRecord() != complexExtra->queryOutputRecord())
+                    if (next->queryRecord() != complexExtra->queryOutputRecord())
                         next.setown(complexExtra->createOutputProject(next));
                 }
                 args.append(*next.getClear());
@@ -3026,7 +3031,7 @@ void ImplicitProjectTransformer::finalizeFields(IHqlExpression * expr)
         break;
     case PassThroughActivity:
         {
-            //Banches coming into this IF/MERGE etc. may have different fields (e.g., because of ITERATEs), and
+            //Branches coming into this IF/MERGE etc. may have different fields (e.g., because of ITERATEs), and
             //the output fields may be smaller (e.g., no merge sort conditions, no fields used and inputs filter)
             //So use the intersection of the inputfields as the output record.  90% of the time they will be
             //the same so no projects will be introduced.
