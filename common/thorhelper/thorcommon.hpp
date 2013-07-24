@@ -420,7 +420,10 @@ public:
     {
         return ctx->queryEngineContext();
     }
-
+    virtual char *getDaliServers()
+    {
+        return ctx->getDaliServers();
+    }
 protected:
     ICodeContext * ctx;
 };
