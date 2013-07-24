@@ -1594,7 +1594,6 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.alwaysAllowAllNodes,"alwaysAllowAllNodes", false),
         DebugOption(options.slidingJoins,"slidingJoins", false),
         DebugOption(options.foldOptimized,"foldOptimized", false),
-        DebugOption(options.globalFold,"globalFold", true),
         DebugOption(options.globalOptimize,"globalOptimize", false),
         DebugOption(options.applyInstantEclTransformations,"applyInstantEclTransformations", false),        // testing option
         DebugOption(options.calculateComplexity,"calculateComplexity", false),
@@ -1768,12 +1767,6 @@ void HqlCppTranslator::cacheOptions()
     options.minimizeWorkunitTemporaries = !options.workunitTemporaries || getDebugFlag("minimizeWorkunitTemporaries", false);//options.resourceConditionalActions);
 
     options.inlineStringThreshold = wu()->getDebugValueInt("inlineStringThreshold", (options.targetCompiler != Vs6CppCompiler) ? 0 : 10000);
-
-    if (!options.globalFold)
-    {
-        options.constantFoldNormalize = false;
-        options.constantFoldPostNormalize = false;
-    }
 
     options.implicitLinkedChildRows = true;
     options.finalizeAllRows = true;     // inline temporary rows should actually be ok.
@@ -2315,7 +2308,7 @@ void HqlCppTranslator::buildExprAssign(BuildCtx & ctx, const CHqlBoundTarget & t
     case no_notin:
         {
             OwnedHqlExpr optimized = querySimplifyInExpr(expr);
-            if (options.globalFold && optimized)
+            if (optimized)
             {
                 OwnedHqlExpr folded = foldHqlExpression(optimized);
                 buildExprAssign(ctx, target, folded);
@@ -3044,7 +3037,7 @@ void HqlCppTranslator::buildExpr(BuildCtx & ctx, IHqlExpression * expr, CHqlBoun
             else
             {
                 OwnedHqlExpr optimized = querySimplifyInExpr(expr);
-                if (options.globalFold && optimized)
+                if (optimized)
                 {
                     OwnedHqlExpr folded = foldHqlExpression(optimized);
                     buildExpr(ctx, folded, tgt);

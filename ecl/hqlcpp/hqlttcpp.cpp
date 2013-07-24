@@ -12627,7 +12627,6 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
         DEBUG_TIMER("EclServer: tree transform: substituteClusterSize", msTick()-startTime);
     }
 
-    if (options.globalFold)
     {
         unsigned startTime = msTick();
         HqlExprArray folded;
@@ -12649,7 +12648,7 @@ bool HqlCppTranslator::transformGraphForGeneration(HqlQueryContext & query, Work
     {
         unsigned startTime = msTick();
         HqlExprArray folded;
-        optimizeHqlExpression(folded, exprs, options.globalFold ? HOOfold : 0);
+        optimizeHqlExpression(folded, exprs, HOOfold);
         replaceArray(exprs, folded);
         DEBUG_TIMER("EclServer: tree transform: global optimize", msTick()-startTime);
     }
