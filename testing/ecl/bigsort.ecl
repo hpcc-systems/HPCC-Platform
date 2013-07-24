@@ -49,6 +49,6 @@ rec checksort(rec l, rec r) := TRANSFORM
   self := r;
 END;
 
-checksorted := iterate(sortedrecs, checksort(LEFT, RIGHT), LOCAL);
+checksorted := NOFOLD(iterate(sortedrecs, checksort(LEFT, RIGHT), LOCAL));
 
 if(count(checksorted) = (thornodes*numrecs), output('Sort succeeded'), FAIL('ERROR- count did not match expected'));

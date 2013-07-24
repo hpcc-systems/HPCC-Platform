@@ -76,7 +76,7 @@ dotest(kind,rec) := macro
     self := r;
   END;
 
-  %checksorted% := iterate(%sortedrecs%, %checksort%(LEFT, RIGHT));
+  %checksorted% := NOFOLD(iterate(%sortedrecs%, %checksort%(LEFT, RIGHT)));
 
   if(count(%checksorted%) = (thornodes*numrecs*4), output(kind + ' sort succeeded'), FAIL(kind + ' ERROR- count did not match expected'));
 

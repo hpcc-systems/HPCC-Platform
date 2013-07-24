@@ -636,6 +636,10 @@ IHqlExpression * CTreeOptimizer::optimizeAggregateDataset(IHqlExpression * trans
             wrapper = ds;
             next = ds->queryChild(0);
             break;
+        case no_iterate:
+            if (isSimpleCount && !containsSkip(ds->queryChild(1)))
+                next = ds->queryChild(0);
+            break;
         }
 
         if (!next)
