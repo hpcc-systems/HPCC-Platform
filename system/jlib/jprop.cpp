@@ -291,6 +291,29 @@ public:
                 properties.remove(propname);
         }
     }
+    virtual void appendProp(PTYPE propname, const char *val)
+    {
+        if (propname && val)
+        {
+            StringAttr * mapping = properties.getValue(propname);
+            if (mapping)
+            {
+                if (*val)
+                {
+                    char * str = mapping->detach();
+                    unsigned len1 = strlen(str);
+                    unsigned len2 = strlen(val);
+                    char * newstr = (char *)realloc(str, len1 + len2+1);
+                    assertex(newstr);
+                    memcpy(newstr+len1, val, len2);
+                    newstr[len1+len2] = '\0';
+                    mapping->setown(newstr);
+                }
+            }
+            else
+                properties.setValue(propname, val);
+        }
+    }
     virtual bool removeProp(PTYPE propname)
     {
         if (propname)

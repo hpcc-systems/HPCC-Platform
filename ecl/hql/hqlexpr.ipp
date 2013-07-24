@@ -397,7 +397,7 @@ class CFileContents : public CInterfaceOf<IFileContents>
 {
 private:
     Linked<IFile> file;
-    StringAttr fileContents;
+    MemoryAttr fileContents;
     Linked<ISourcePath> sourcePath;
     bool delayedRead;
 
@@ -408,21 +408,24 @@ public:
 
     virtual IFile * queryFile() { return file; }
     virtual ISourcePath * querySourcePath() { return sourcePath; }
-    virtual const char *getText()
+    virtual const char * getText()
     {
         ensureLoaded();
-        return fileContents.sget();
+        return (const char *)fileContents.get();
     }
+    //NB: This is the string length, so subtract one to remove the null terminator
     virtual size32_t length() 
     { 
         ensureLoaded();
-        return fileContents.length();
+        return fileContents.length()-1;
     }
 
 private:
     bool preloadFromFile();
     void ensureLoaded();
     void ensureUtf8(MemoryBuffer & contents);
+    void setContents(size32_t len, const char * query);
+    void setContentsOwn(MemoryBuffer & contents);
 };
 
 class HQL_API CHqlAnnotation: public CHqlExpression

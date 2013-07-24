@@ -7254,9 +7254,7 @@ bool CFileContents::preloadFromFile()
         mb.setLength(sizeRead);
     } while (rd);
     ensureUtf8(mb);
-    mb.append((byte)0);
-    mb.truncate();
-    fileContents.setown(static_cast<char *>(mb.detach()));
+    setContentsOwn(mb);
     return true;
 }
 
@@ -7296,23 +7294,42 @@ void CFileContents::ensureLoaded()
     byte * contents = static_cast<byte *>(buffer.reserve(sizeToRead));
     size32_t sizeRead = io->read(0, sizeToRead, contents);
     ensureUtf8(buffer);
-    buffer.append((byte)0);
+    setContentsOwn(buffer);
 
-    fileContents.setown(static_cast<char *>(buffer.detach()));
     if (sizeRead != sizeToRead)
         throw MakeStringException(1, "File %s only read %u of %u bytes", file->queryFilename(), sizeRead, sizeToRead);
 }
 
 CFileContents::CFileContents(const char *query, ISourcePath * _sourcePath) 
-: fileContents(query), sourcePath(_sourcePath)
+: sourcePath(_sourcePath)
 {
+    if (query)
+        setContents(strlen(query), query);
+
     delayedRead = false;
 }
 
 CFileContents::CFileContents(unsigned len, const char *query, ISourcePath * _sourcePath) 
-: fileContents(query, len), sourcePath(_sourcePath)
+: sourcePath(_sourcePath)
 {
+    setContents(len, query);
     delayedRead = false;
+}
+
+
+void CFileContents::setContents(unsigned len, const char * query)
+{
+    void * buffer = fileContents.allocate(len+1);
+    memcpy(buffer, query, len);
+    ((byte *)buffer)[len] = '\0';
+}
+
+void CFileContents::setContentsOwn(MemoryBuffer & buffer)
+{
+    buffer.append((byte)0);
+    buffer.truncate();
+    size32_t len = buffer.length();
+    fileContents.setOwn(len, buffer.detach());
 }
 
 IFileContents * createFileContentsFromText(unsigned len, const char * text, ISourcePath * sourcePath)
