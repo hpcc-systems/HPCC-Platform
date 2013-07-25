@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <!--
 ################################################################################
 #    HPCC SYSTEMS software Copyright (C) 2012 HPCC Systems.
@@ -15,8 +16,6 @@
 #    limitations under the License.
 ################################################################################
 -->
-
-<?xml version="1.0" encoding="UTF-8"?>
 <!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Rajeev Moondhra (Seisint, Inc.) -->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
     <xs:include schemaLocation="environment.xsd"/>
