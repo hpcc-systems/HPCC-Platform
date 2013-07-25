@@ -1164,6 +1164,7 @@ public:
         return createRowFromXml(rowAllocator, len, utf8, xmlTransformer, stripWhitespace);
     }
     virtual IEngineContext *queryEngineContext() { return NULL; }
+    virtual char *getDaliServers() { throwUnexpected(); }
 
     // The following from ICodeContext should never be executed in slave activity. If we are on Roxie server (or in child query on slave), they will be implemented by more derived CRoxieServerContext class
     virtual void setResultBool(const char *name, unsigned sequence, bool value) { throwUnexpected(); }
@@ -2169,6 +2170,12 @@ public:
             resultMap.replace(result, sequence);
         }
         return result;
+    }
+
+    virtual char *getDaliServers()
+    {
+        //MORE: Should this now be implemented using IRoxieDaliHelper?
+        throwUnexpected();
     }
 
     virtual void setResultBool(const char *name, unsigned sequence, bool value)

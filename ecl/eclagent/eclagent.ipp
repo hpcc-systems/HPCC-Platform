@@ -514,6 +514,7 @@ public:
     virtual IOrderedOutputSerializer * queryOutputSerializer() { return outputSerializer; }
     virtual const void * fromXml(IEngineRowAllocator * _rowAllocator, size32_t len, const char * utf8, IXmlToRowTransformer * xmlTransformer, bool stripWhitespace);
     virtual IEngineContext *queryEngineContext() { return NULL; }
+    virtual char *getDaliServers();
 
     unsigned __int64 queryStopAfter() { return stopAfter; }
 

@@ -522,6 +522,10 @@ class graph_decl CGraphBase : public CInterface, implements IEclGraphResults, im
         {
             return ctx->queryEngineContext();
         }
+        virtual char *getDaliServers()
+        {
+            return ctx->getDaliServers();
+        }
    } graphCodeContext;
 
 protected:
