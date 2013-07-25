@@ -35,8 +35,7 @@ The following debug options are currently supported by the code generator:
 "expandRepeatAnyAsDfa"   true   - is ANY* expanded in a DFA
 "forceFakeThor"          false  - force code to use hthor.
 "freezePersists"         false  - stop persists being recreated.
-"globalFold"             true   - perform a global constant fold before generating
-    "globalFoldOptions"         - options for above.
+"globalFoldOptions"      0xffff - options for global folding.
 "globalOptimize"         false  - perform a global optimize?
 "groupAllDistribute"     false  - does group,all generate a distribute or a global sort?
 "maximizeLexer"          false  - maximize the amount of work done in the lexer (?default on?)
