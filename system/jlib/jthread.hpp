@@ -104,6 +104,7 @@ public:
     ~Thread();
 
     void adjustPriority(char delta);
+    bool isCurrentThread() const;
     void setNice(char nicelevel);
     void setStackSize(size32_t size);               // required stack size in bytes - called before start() (obviously)
     const char *getName() { const char *ret = ithreadname?ithreadname->get():NULL; return ret?ret:"unknown"; }

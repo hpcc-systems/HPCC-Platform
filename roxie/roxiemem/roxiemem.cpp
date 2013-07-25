@@ -2171,10 +2171,15 @@ const void * ChunkedHeaplet::_compactRow(const void * ptr, HeapCompactState & st
 
 class BufferedRowCallbackManager
 {
-    class ReleaseBufferThread : public Thread
+    friend class ReleaseBufferThread;
+
+    class BackgroundReleaseBufferThread : public Thread
     {
     public:
-        ReleaseBufferThread(BufferedRowCallbackManager * _owner) : Thread("ReleaseBufferThread"), owner(_owner) {};
+        BackgroundReleaseBufferThread(BufferedRowCallbackManager * _owner)
+        : Thread("BackgroundReleaseBufferThread"), owner(_owner)
+        {
+        }
 
         virtual int run()
         {
@@ -2186,12 +2191,73 @@ class BufferedRowCallbackManager
         BufferedRowCallbackManager * owner;
     };
 
+    class ReleaseBufferThread : public Thread
+    {
+    public:
+        ReleaseBufferThread(BufferedRowCallbackManager & _owner)
+        : Thread("ReleaseBufferThread"), owner(_owner), abort(false)
+        {
+        }
+
+        virtual int run()
+        {
+            loop
+            {
+                goSem.wait();
+                if (abort)
+                    break;
+                args.result = owner.releaseBuffersNow(args.critical, false, 0);
+                doneSem.signal();
+            }
+            return 0;
+        }
+
+        bool releaseBuffers(const bool critical)
+        {
+            if (isCurrentThread())
+                return owner.releaseBuffersNow(critical, false, 0);
+
+            bool ok;
+            {
+                CriticalBlock block(cs);
+                args.critical = critical;
+                goSem.signal();
+                doneSem.wait();
+                ok = args.result;
+            }
+            return ok;
+        }
+
+        void stop()
+        {
+            //This should not be called while any active heap operations could be occuring
+            CriticalBlock block(cs);
+            abort = true;
+            goSem.signal();
+        }
+
+    private:
+        BufferedRowCallbackManager & owner;
+        CriticalSection cs;
+        Semaphore goSem;
+        Semaphore doneSem;
+        struct
+        {
+            bool critical;
+            bool result;
+        } args;
+        bool abort;
+    };
+
 public:
     BufferedRowCallbackManager(IRowManager * _owner) : owner(_owner)
     {
         atomic_set(&releasingBuffers, 0);
         atomic_set(&releaseSeq, 0);
         abortBufferThread = false;
+        minCallbackThreshold = 1;
+        releaseWhenModifyCallback = false;
+        releaseWhenModifyCallbackCritical = false;
     }
     ~BufferedRowCallbackManager()
     {
@@ -2204,6 +2270,9 @@ public:
 
     void addRowBuffer(IBufferedRowCallback * callback)
     {
+        if (releaseWhenModifyCallback)
+            releaseBuffers(releaseWhenModifyCallbackCritical, false, 0);
+
         CriticalBlock block(callbackCrit);
         //Assuming a small number so perform an insertion sort.
         unsigned max = rowBufferCallbacks.ordinality();
@@ -2221,6 +2290,9 @@ public:
 
     void removeRowBuffer(IBufferedRowCallback * callback)
     {
+        if (releaseWhenModifyCallback)
+            releaseBuffers(releaseWhenModifyCallbackCritical, false, 0);
+
         CriticalBlock block(callbackCrit);
         rowBufferCallbacks.zap(callback);
         updateCallbackInfo();
@@ -2270,6 +2342,90 @@ public:
         }
     }
 
+    //Release buffers will ensure that the rows are attempted to be cleaned up before returning
+    bool releaseBuffers(const bool critical, bool checkSequence, unsigned prevReleaseSeq)
+    {
+        if (!releaseBuffersThread)
+            return releaseBuffersNow(critical, checkSequence, prevReleaseSeq);
+        return releaseBuffersThread->releaseBuffers(critical);
+    }
+
+    void runReleaseBufferThread()
+    {
+        loop
+        {
+            releaseBuffersSem.wait();
+            if (abortBufferThread)
+                break;
+            releaseBuffersNow(false, false, 0);
+            atomic_set(&releasingBuffers, 0);
+        }
+    }
+
+    void releaseBuffersInBackground()
+    {
+        if (atomic_cas(&releasingBuffers, 1, 0))
+        {
+            assertex(backgroundReleaseBuffersThread);
+            releaseBuffersSem.signal();
+        }
+    }
+
+    void startReleaseBufferThread()
+    {
+        if (!backgroundReleaseBuffersThread)
+        {
+            backgroundReleaseBuffersThread.setown(new BackgroundReleaseBufferThread(this));
+            backgroundReleaseBuffersThread->start();
+        }
+    }
+
+    void stopReleaseBufferThread()
+    {
+        if (backgroundReleaseBuffersThread)
+        {
+            abortBufferThread = true;
+            releaseBuffersSem.signal();
+            backgroundReleaseBuffersThread->join();
+            backgroundReleaseBuffersThread.clear();
+            abortBufferThread = false;
+        }
+    }
+
+    void setCallbackOnThread(bool value)
+    {
+        //May crash if called in parallel with any ongoing memory operations.
+        if (value)
+        {
+            if (!releaseBuffersThread)
+            {
+                releaseBuffersThread.setown(new ReleaseBufferThread(*this));
+                releaseBuffersThread->start();
+            }
+        }
+        else
+        {
+            if (releaseBuffersThread)
+            {
+                releaseBuffersThread->stop();
+                releaseBuffersThread->join();
+                releaseBuffersThread.clear();
+            }
+        }
+    }
+
+    void setMemoryCallbackThreshold(unsigned value)
+    {
+        minCallbackThreshold = value;
+    }
+
+    virtual void setReleaseWhenModifyCallback(bool value, bool critical)
+    {
+        releaseWhenModifyCallback = value;
+        releaseWhenModifyCallbackCritical = critical;
+    }
+
+protected:
     bool doReleaseBuffers(const bool critical, const unsigned minSuccess)
     {
         const unsigned numCallbacks = rowBufferCallbacks.ordinality();
@@ -2313,8 +2469,9 @@ public:
     }
 
     //Release buffers will ensure that the rows are attempted to be cleaned up before returning
-    bool releaseBuffers(const bool critical, const unsigned minSuccess, bool checkSequence, unsigned prevReleaseSeq)
+    bool releaseBuffersNow(const bool critical, bool checkSequence, unsigned prevReleaseSeq)
     {
+        const unsigned minSuccess = minCallbackThreshold;
         CriticalBlock block(callbackCrit);
         //While we were waiting check if something freed some memory up
         //if so try again otherwise we might end up calling more callbacks than we need to.
@@ -2341,59 +2498,21 @@ public:
         return false;
     }
 
-    void runReleaseBufferThread()
-    {
-        loop
-        {
-            releaseBuffersSem.wait();
-            if (abortBufferThread)
-                break;
-            releaseBuffers(false, 1, false, 0);
-            atomic_set(&releasingBuffers, 0);
-        }
-    }
-
-    void releaseBuffersInBackground()
-    {
-        if (atomic_cas(&releasingBuffers, 1, 0))
-        {
-            assertex(releaseBuffersThread);
-            releaseBuffersSem.signal();
-        }
-    }
-
-    void startReleaseBufferThread()
-    {
-        if (!releaseBuffersThread)
-        {
-            releaseBuffersThread.setown(new ReleaseBufferThread(this));
-            releaseBuffersThread->start();
-        }
-    }
-
-    void stopReleaseBufferThread()
-    {
-        if (releaseBuffersThread)
-        {
-            abortBufferThread = true;
-            releaseBuffersSem.signal();
-            releaseBuffersThread->join();
-            releaseBuffersThread.clear();
-            abortBufferThread = false;
-        }
-    }
-
 protected:
     CriticalSection callbackCrit;
     Semaphore releaseBuffersSem;
     PointerArrayOf<IBufferedRowCallback> rowBufferCallbacks;
     PointerArrayOf<IBufferedRowCallback> activeCallbacks;
+    Owned<BackgroundReleaseBufferThread> backgroundReleaseBuffersThread;
     Owned<ReleaseBufferThread> releaseBuffersThread;
     UnsignedArray callbackRanges;  // the maximum index of the callbacks for the nth priority
     UnsignedArray nextCallbacks;  // the next call back to try and free for the nth priority
     IRowManager * owner;
     atomic_t releasingBuffers;  // boolean if pre-emptive releasing thread is active
     atomic_t releaseSeq;
+    unsigned minCallbackThreshold;
+    bool releaseWhenModifyCallback;
+    bool releaseWhenModifyCallbackCritical;
     volatile bool abortBufferThread;
 };
 
@@ -2456,6 +2575,8 @@ class CChunkingRowManager : public CInterface, implements IRowManager
     unsigned __int64 cyclesCheckInterval; // How often we need to check timelimit
     bool ignoreLeaks;
     bool trackMemoryByActivity;
+    bool minimizeFootprint;
+    bool minimizeFootprintCritical;
 
     inline unsigned getActivityId(unsigned rawId) const
     {
@@ -2490,6 +2611,8 @@ public:
         activeBuffs = NULL;
         dataBuffPages = 0;
         ignoreLeaks = _ignoreLeaks;
+        minimizeFootprint = false;
+        minimizeFootprintCritical = false;
 #ifdef _DEBUG
         trackMemoryByActivity = true; 
 #else
@@ -2773,6 +2896,27 @@ public:
             logctx.CTXLOG("RoxieMemMgr: CChunkingRowManager::setMemoryLimit new memlimit=%"I64F"u pageLimit=%u spillLimit=%u rowMgr=%p", (unsigned __int64) bytes, pageLimit, spillPageLimit, this);
     }
 
+    virtual void setMemoryCallbackThreshold(unsigned value)
+    {
+        callbacks.setMemoryCallbackThreshold(value);
+    }
+
+    virtual void setCallbackOnThread(bool value)
+    {
+        callbacks.setCallbackOnThread(value);
+    }
+
+    virtual void setMinimizeFootprint(bool value, bool critical)
+    {
+        minimizeFootprint = value;
+        minimizeFootprintCritical = critical;
+    }
+
+    virtual void setReleaseWhenModifyCallback(bool value, bool critical)
+    {
+        callbacks.setReleaseWhenModifyCallback(value, critical);
+    }
+
     virtual void resizeRow(memsize_t &capacity, void * & ptr, memsize_t copysize, memsize_t newsize, unsigned activityId)
     {
         void * const original = ptr;
@@ -2932,6 +3076,9 @@ public:
     {
         unsigned totalPages;
         releaseEmptyPages(false);
+        if (minimizeFootprint)
+            callbacks.releaseBuffers(minimizeFootprintCritical, false, 0);
+
         loop
         {
             unsigned lastReleaseSeq = callbacks.getReleaseSeq();
@@ -2962,7 +3109,7 @@ public:
             //The following reduces the nubmer of times the callback is called, but I'm not sure how this affects
             //performance.  I think better if a single free is likely to free up some memory, and worse if not.
             const bool skipReleaseIfAnotherThreadReleases = true;
-            if (!callbacks.releaseBuffers(true, 1, skipReleaseIfAnotherThreadReleases, lastReleaseSeq))
+            if (!callbacks.releaseBuffers(true, skipReleaseIfAnotherThreadReleases, lastReleaseSeq))
             {
                 //Check if a background thread has freed up some memory.  That can be checked by a comparing value of a counter
                 //which is incremented each time releaseBuffers is successful.
@@ -3002,7 +3149,7 @@ public:
 
     bool releaseCallbackMemory(bool critical)
     {
-        return callbacks.releaseBuffers(critical, 1, false, 0);
+        return callbacks.releaseBuffers(critical, false, 0);
     }
 
 protected:
@@ -5119,6 +5266,10 @@ protected:
         CountingRowAllocatorCache rowCache;
         Owned<IRowManager> rowManager = createRowManager(0, NULL, logctx, &rowCache);
         rowManager->setMemoryLimit(pages * numCasThreads * HEAP_ALIGNMENT_SIZE, spillPages * numCasThreads * HEAP_ALIGNMENT_SIZE);
+        rowManager->setMemoryCallbackThreshold((unsigned)-1);
+        rowManager->setCallbackOnThread(true);
+        rowManager->setMinimizeFootprint(true, true);
+        rowManager->setReleaseWhenModifyCallback(true, true);
 
         Semaphore sem;
         CasAllocatorThread * threads[numCasThreads];

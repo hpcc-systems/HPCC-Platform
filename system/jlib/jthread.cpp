@@ -223,6 +223,11 @@ void Thread::adjustNiceLevel()
 #endif
 }
 
+bool Thread::isCurrentThread() const
+{
+    return GetCurrentThreadId() == threadid;
+}
+
 // _nicelevel ranges from -20 to 19, the higher the nice level, the less cpu time the thread will get.
 void Thread::setNice(char _nicelevel)
 {
