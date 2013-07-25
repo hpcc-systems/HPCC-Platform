@@ -43,6 +43,7 @@ interface jlib_decl IPropertiesOf : extends serializable
     virtual const char *queryProp(PTYPE propname) = 0;
     virtual void setProp(PTYPE propname, int val) = 0;
     virtual void setProp(PTYPE propname, const char *val) = 0;
+    virtual void appendProp(PTYPE propname, const char *val) = 0;
     virtual bool hasProp(PTYPE propname) = 0;
     virtual PITER *getIterator() = 0;
     virtual void loadFile(const char *filename) = 0;

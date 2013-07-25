@@ -1115,9 +1115,13 @@ class HqlLex
         bool isMacroActive(IHqlExpression *expr);
         bool isAborting();
         void pushMacro(IHqlExpression *expr);
+        void pushText(IFileContents * text, int startLineNo, int startColumn);
         void pushText(const char *s, int startLineNo, int startColumn);
         bool getParameter(StringBuffer &curParam, const char* for_what, int* startLine=NULL, int* startCol=NULL);
+        IValue *foldConstExpression(const YYSTYPE & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol);
         IValue *parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int line, int col);
+        IValue *parseConstExpression(const YYSTYPE & errpos, IFileContents * contents, IXmlScope *xmlScope, int line, int col);
+        IHqlExpression * parseECL(IFileContents * contents, IXmlScope *xmlScope, int startLine, int startCol);
         IHqlExpression * parseECL(const char * curParam, IXmlScope *xmlScope, int startLine, int startCol);
         void setMacroParam(const YYSTYPE & errpos, IHqlExpression* funcdef, StringBuffer& curParam, IIdAtom * argumentName, unsigned& parmno,IProperties *macroParms);
         unsigned getTypeSize(unsigned lengthTypeName);
@@ -1166,8 +1170,8 @@ private:
         Owned<IProperties> macroParms;
         IIterator *forLoop;
         IHqlExpression *macroExpr;
-        StringBuffer forBody;
-        StringBuffer forFilter;
+        Owned<IFileContents> forBody;
+        Owned<IFileContents> forFilter;
 
         IXmlScope *xmlScope;
 
