@@ -337,6 +337,9 @@ void getPkgInfo(const char *target, const char *process, StringBuffer &info)
     IPropertyTree *root = globalLock->queryRoot();
     Owned<IPropertyTree> tree = createPTree("PackageMaps");
     Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry((process && *process) ? process : "*", NULL, true);
+    if (!pkgSetRegistry)
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process %s", (process && *process) ? process : "*");
+
     StringBuffer xpath("PackageMap[@active='1']");
     if (target && *target)
         xpath.appendf("[@querySet='%s']", target);
