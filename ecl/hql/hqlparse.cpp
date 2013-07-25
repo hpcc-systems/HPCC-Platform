@@ -302,15 +302,21 @@ IHqlExpression * HqlLex::createIntegerConstant(__int64 value, bool isSigned)
     return createConstant(createIntValue(value, makeIntType(8, isSigned)));
 }
 
-void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
+void HqlLex::pushText(IFileContents * text, int startLineNo, int startColumn)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::pushText");
 #endif
-    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath);
-    inmacro = new HqlLex(yyParser, macroContents, NULL, NULL);
+    inmacro = new HqlLex(yyParser, text, NULL, NULL);
     inmacro->set_yyLineNo(startLineNo);
     inmacro->set_yyColumn(startColumn);
+}
+
+
+void HqlLex::pushText(const char *s, int startLineNo, int startColumn)
+{
+    Owned<IFileContents> macroContents = createFileContentsFromText(s, sourcePath);
+    pushText(macroContents, startLineNo, startColumn);
 }
 
 
@@ -1089,16 +1095,17 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
         return;
     }
     name = returnToken.getId();
-    forFilter.clear();
+
+    StringBuffer forFilterText;
     // Note - we gather the for filter and body in skip mode (deferring evaluation of #if etc) since the context will be different each time...
     skipping = 1;
     int tok = yyLex(returnToken, false,0);
     if (tok == '(')
     {
-        forFilter.append('(');
-        while (getParameter(forFilter, forwhat.str()))
-            forFilter.append(") AND (");
-        forFilter.append(')');
+        forFilterText.append('(');
+        while (getParameter(forFilterText, forwhat.str()))
+            forFilterText.append(") AND (");
+        forFilterText.append(')');
         tok = yyLex(returnToken, false,0);
     }
     if (tok != ')')
@@ -1109,8 +1116,9 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
         pushText(get_yyText());
         returnToken.release();
     }
+
     // Now gather the tokens we are going to repeat...
-    forBody.clear();
+    StringBuffer forBodyText;
     for (;;)
     {
         int tok = yyLex(returnToken, false,0);
@@ -1128,12 +1136,17 @@ void HqlLex::doFor(YYSTYPE & returnToken, bool doAll)
         }
         if (tok == HASHEND && !skipping)
             break;
-        forBody.append(' ');
-        getTokenText(forBody);
+        forBodyText.append(' ');
+        getTokenText(forBodyText);
         returnToken.release();
     } 
     ::Release(forLoop);
+
     forLoop = getSubScopes(returnToken, name->getAtomNamePtr(), doAll);
+    if (forFilterText.length())
+        forFilter.setown(createFileContentsFromText(forFilterText, sourcePath));
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
+
     loopTimes = 0;
     if (forLoop && forLoop->first()) // more - check filter
         checkNextLoop(returnToken, true, startLine, startCol);
@@ -1147,7 +1160,7 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
     
 
     // Now gather the tokens we are going to repeat...
-    forBody.clear();
+    StringBuffer forBodyText;
     // Note - we gather the for filter and body in skip mode (deferring evaluation of #if etc) since the context will be different each time...
     skipping = 1;
     hasHashbreak = false;
@@ -1168,8 +1181,8 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
         }
         if (tok == HASHEND && !skipping)
             break;
-        forBody.append(' ');
-        getTokenText(forBody);
+        forBodyText.append(' ');
+        getTokenText(forBodyText);
         returnToken.release();
     } 
     if (!hasHashbreak)
@@ -1177,9 +1190,11 @@ void HqlLex::doLoop(YYSTYPE & returnToken)
         reportError(returnToken, ERR_TMPLT_NOBREAKINLOOP,"No #BREAK inside %s: infinite loop will occur", forwhat.str());
         return;
     }
+
     ::Release(forLoop);
     forLoop = new CDummyScopeIterator(ensureTopXmlScope(returnToken));
     forFilter.clear();
+    forBody.setown(createFileContentsFromText(forBodyText, sourcePath));
     loopTimes = 0;
     if (forLoop->first()) // more - check filter
         checkNextLoop(returnToken, true,startLine,startCol);
@@ -1458,7 +1473,7 @@ void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, in
     {
         bool filtered;
         IXmlScope *subscope = (IXmlScope *) &forLoop->query();
-        if (forFilter.length())
+        if (forFilter)
         {
 #ifdef TIMING_DEBUG
             MTIME_SECTION(timer, "HqlLex::checkNextLoopcond");
@@ -1471,7 +1486,7 @@ void HqlLex::checkNextLoop(const YYSTYPE & errpos, bool first, int startLine, in
             filtered = false;
         if (!filtered)
         {
-            pushText(forBody.str(),startLine,startCol);
+            pushText(forBody,startLine,startCol);
             inmacro->xmlScope = LINK(subscope);
             return;
         }
@@ -1674,7 +1689,7 @@ void HqlLex::doDefined(YYSTYPE & returnToken)
         pushText(param2Text);
 }
 
-IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
+IHqlExpression *HqlLex::parseECL(IFileContents * contents, IXmlScope *xmlScope, int startLine, int startCol)
 {
 #ifdef TIMING_DEBUG
     MTIME_SECTION(timer, "HqlLex::parseConstExpression");
@@ -1684,19 +1699,22 @@ IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int sta
 
     HqlGramCtx parentContext(yyParser->lookupCtx);
     yyParser->saveContext(parentContext, false);
-    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath());
     HqlGram parser(parentContext, scope, contents, xmlScope, true);
     parser.getLexer()->set_yyLineNo(startLine);
     parser.getLexer()->set_yyColumn(startCol);
     return parser.yyParse(false, false);
 }
 
-IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
+
+IHqlExpression *HqlLex::parseECL(const char * text, IXmlScope *xmlScope, int startLine, int startCol)
 {
-#ifdef TIMING_DEBUG
-    MTIME_SECTION(timer, "HqlLex::parseConstExpression");
-#endif
-    OwnedHqlExpr expr = parseECL(curParam, xmlScope, startLine, startCol);
+    Owned<IFileContents> contents = createFileContentsFromText(text, querySourcePath());
+    return parseECL(contents, xmlScope, startLine, startCol);
+}
+
+
+IValue *HqlLex::foldConstExpression(const YYSTYPE & errpos, IHqlExpression * expr, IXmlScope *xmlScope, int startLine, int startCol)
+{
     OwnedIValue value;
     if (expr)
     {
@@ -1722,6 +1740,24 @@ IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curPa
         reportError(errpos, ERR_EXPECTED_CONST, "Constant expression expected"); // errpos could be better
 
     return value.getClear();
+}
+
+IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, StringBuffer &curParam, IXmlScope *xmlScope, int startLine, int startCol)
+{
+#ifdef TIMING_DEBUG
+    MTIME_SECTION(timer, "HqlLex::parseConstExpression");
+#endif
+    OwnedHqlExpr expr = parseECL(curParam, xmlScope, startLine, startCol);
+    return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
+}
+
+IValue *HqlLex::parseConstExpression(const YYSTYPE & errpos, IFileContents * text, IXmlScope *xmlScope, int startLine, int startCol)
+{
+#ifdef TIMING_DEBUG
+    MTIME_SECTION(timer, "HqlLex::parseConstExpression");
+#endif
+    OwnedHqlExpr expr = parseECL(text, xmlScope, startLine, startCol);
+    return foldConstExpression(errpos, expr, xmlScope, startLine, startCol);
 }
 
 int hexchar(char c)
