@@ -197,6 +197,72 @@ static void appendServerAddress(StringBuffer &s, IPropertyTree &env, IPropertyTr
     s.append(netAddress).append(':').append(port ? port : "9876");
 }
 
+
+const char *nextParameterTag(StringAttr &tag, const char *path)
+{
+    while (*path=='.')
+        path++;
+    const char *finger = strchr(path, '.');
+    if (finger)
+    {
+        tag.set(path, finger - path);
+        finger++;
+    }
+    else
+        tag.set(path);
+    return finger;
+}
+
+void ensureParameter(IPropertyTree *pt, const char *tag, const char *path, const char *value, const char *fullpath)
+{
+    unsigned idx = 1;
+    if (path && isdigit(*path))
+    {
+        StringAttr pos;
+        path = nextParameterTag(pos, path);
+        idx = (unsigned) atoi(pos.sget())+1;
+        if (idx>25) //adf
+            throw MakeStringException(-1, "Array items above 25 not supported in WsECL HTTP parameters: %s", fullpath);
+    }
+    unsigned count = pt->getCount(tag);
+    while (count++ < idx)
+        pt->addPropTree(tag, createPTree(tag));
+    StringBuffer xpath(tag);
+    xpath.append('[').append(idx).append(']');
+    pt = pt->queryPropTree(xpath);
+
+    if (!path || !*path)
+    {
+        pt->setProp(NULL, value);
+        return;
+    }
+
+    StringAttr nextTag;
+    path = nextParameterTag(nextTag, path);
+    ensureParameter(pt, nextTag, path, value, fullpath);
+}
+
+void ensureParameter(IPropertyTree *pt, const char *path, const char *value)
+{
+    const char *fullpath = path;
+    StringAttr tag;
+    path = nextParameterTag(tag, path);
+    ensureParameter(pt, tag, path, value, fullpath);
+}
+
+IPropertyTree *createPTreeFromHttpParameters(const char *name, IProperties *parameters)
+{
+    Owned<IPropertyTree> pt = createPTree(name);
+    Owned<IPropertyIterator> props = parameters->getIterator();
+    ForEach(*props)
+    {
+        const char *key = props->getPropKey();
+        const char *value = parameters->queryProp(key);
+        ensureParameter(pt, key, value);
+    }
+    return pt.getClear();
+}
+
 bool CWsEclService::init(const char * name, const char * type, IPropertyTree * cfg, const char * process)
 {
     StringBuffer xpath;
@@ -223,17 +289,25 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
     xpath.clear().appendf("EspService[@name='%s']/VIPS", name);
     IPropertyTree *vips = prc->queryPropTree(xpath.str());
 
-    Owned<IPropertyTreeIterator> it = pRoot->getElements("Software/RoxieCluster");
-    ForEach(*it)
+    Owned<IStringIterator> roxieTargets = getTargetClusters("RoxieCluster", NULL);
+    ForEach(*roxieTargets)
     {
-        const char *name = it->query().queryProp("@name");
-        if (connMap.getValue(name)) //bad config?
+        SCMStringBuffer target;
+        roxieTargets->str(target);
+        if (!target.length() || connMap.getValue(target.str())) //bad config?
             continue;
-        bool loadBalanced = false;
-        StringBuffer list;
+        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target.str());
+        if (!clusterInfo)
+            continue;
+        SCMStringBuffer process;
+        clusterInfo->getRoxieProcess(process);
+        if (!process.length())
+            continue;
         const char *vip = NULL;
         if (vips)
-            vip = vips->queryProp(xpath.clear().appendf("ProcessCluster[@name='%s']/@vip", name).str());
+            vip = vips->queryProp(xpath.clear().appendf("ProcessCluster[@name='%s']/@vip", process.str()).str());
+        StringBuffer list;
+        bool loadBalanced = false;
         if (vip && *vip)
         {
             list.append(vip);
@@ -241,14 +315,19 @@ bool CWsEclService::init(const char * name, const char * type, IPropertyTree * c
         }
         else
         {
-            Owned<IPropertyTreeIterator> servers = it->query().getElements("RoxieServerProcess");
-            ForEach(*servers)
-                appendServerAddress(list, *pRoot, servers->query(), daliAddress.str());
+            VStringBuffer xpath("Software/RoxieCluster[@name='%s']", process.str());
+            Owned<IPropertyTreeIterator> it = pRoot->getElements(xpath.str());
+            ForEach(*it)
+            {
+                Owned<IPropertyTreeIterator> servers = it->query().getElements("RoxieServerProcess");
+                ForEach(*servers)
+                    appendServerAddress(list, *pRoot, servers->query(), daliAddress.str());
+            }
         }
         if (list.length())
         {
             Owned<ISmartSocketFactory> sf = createSmartSocketFactory(list.str(), !loadBalanced);
-            connMap.setValue(name, sf.get());
+            connMap.setValue(target.str(), sf.get());
         }
     }
 
@@ -1689,9 +1768,12 @@ void buildParametersXml(IPropertyTree *parmtree, IProperties *parms)
             parmtree->setProp(xpath.str(), val);
         }
     }
-    StringBuffer xml;
-    toXML(parmtree, xml);
-    DBGLOG("parmtree: %s", xml.str());
+    if (getEspLogLevel()>LogNormal)
+    {
+        StringBuffer xml;
+        toXML(parmtree, xml);
+        DBGLOG("parmtree: %s", xml.str());
+    }
 }
 
 void appendValidInputBoxContent(StringBuffer &xml, const char *in)
@@ -1721,7 +1803,8 @@ void CWsEclBinding::getWsEcl2XmlRequest(StringBuffer& soapmsg, IEspContext &cont
 
     StringBuffer schemaXml;
     getSchema(schemaXml, context, request, wsinfo);
-    DBGLOG("request schema: %s", schemaXml.str());
+    if (getEspLogLevel()>LogNormal)
+        DBGLOG("request schema: %s", schemaXml.str());
     Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
     if (schema.get())
     {
@@ -1793,7 +1876,8 @@ void CWsEclBinding::getWsEclJsonRequest(StringBuffer& jsonmsg, IEspContext &cont
 
         StringBuffer schemaXml;
         getSchema(schemaXml, context, request, wsinfo);
-        DBGLOG("request schema: %s", schemaXml.str());
+        if (getEspLogLevel()>LogNormal)
+            DBGLOG("request schema: %s", schemaXml.str());
         Owned<IXmlSchema> schema = createXmlSchemaFromString(schemaXml);
         if (schema.get())
         {
@@ -2267,16 +2351,9 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
     SocketEndpoint ep;
     try
     {
-        Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
-        if (!clusterInfo)
-            throw MakeStringException(-1, "target cluster not found");
-
-        SCMStringBuffer process;
-        clusterInfo->getRoxieProcess(process);
-        ISmartSocketFactory *conn = wsecl->connMap.getValue(process.str());
+        ISmartSocketFactory *conn = wsecl->connMap.getValue(target);
         if (!conn)
-            throw MakeStringException(-1, "process cluster not found: %s", process.str());
-
+            throw MakeStringException(-1, "roxie target cluster not mapped: %s", target);
         ep = conn->nextEndpoint();
 
         Owned<IHttpClientContext> httpctx = getHttpClientContext();
@@ -2285,7 +2362,7 @@ void CWsEclBinding::sendRoxieRequest(const char *target, StringBuffer &req, Stri
 
         Owned<IHttpClient> httpclient = httpctx->createHttpClient(NULL, url);
         if (0 > httpclient->sendRequest("POST", contentType, req, resp, status))
-            throw MakeStringException(-1, "Process cluster communication error: %s", process.str());
+            throw MakeStringException(-1, "Roxie cluster communication error: %s", target);
     }
     catch (IException *e)
     {
@@ -2322,7 +2399,8 @@ int CWsEclBinding::onSubmitQueryOutput(IEspContext &context, CHttpRequest* reque
     StringBuffer soapmsg;
 
     getSoapMessage(soapmsg, context, request, wsinfo, REQXML_TRIM|REQXML_ROOT);
-    DBGLOG("submitQuery soap: %s", soapmsg.str());
+    if (getEspLogLevel()>LogNormal)
+        DBGLOG("submitQuery soap: %s", soapmsg.str());
 
     const char *thepath = request->queryPath();
 
@@ -2375,7 +2453,8 @@ int CWsEclBinding::onSubmitQueryOutputView(IEspContext &context, CHttpRequest* r
     StringBuffer soapmsg;
 
     getSoapMessage(soapmsg, context, request, wsinfo, REQXML_TRIM|REQXML_ROOT);
-    DBGLOG("submitQuery soap: %s", soapmsg.str());
+    if (getEspLogLevel()>LogNormal)
+        DBGLOG("submitQuery soap: %s", soapmsg.str());
 
     const char *thepath = request->queryPath();
 
@@ -2664,8 +2743,60 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         {
             return getWsEcl2Form(request, response, thepath);
         }
+        else if (!stricmp(methodName.str(), "proxy"))
+        {
+            context->addTraceSummaryValue("wseclMode", "proxy");
+
+            StringBuffer wuid;
+            StringBuffer target;
+            StringBuffer qid;
+
+            splitLookupInfo(parms, thepath, wuid, target, qid);
+
+            StringBuffer format;
+            nextPathNode(thepath, format);
+
+            if (!wsecl->connMap.getValue(target.str()))
+                throw MakeStringException(-1, "Target cluster not mapped to roxie process!");
+            Owned<IPropertyTree> pt = createPTreeFromHttpParameters(qid.str(), parms);
+            StringBuffer soapreq(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                "<soap:Envelope xmlns:soap=\"http://schemas.xmlsoap.org/soap/envelope/\""
+                  " xmlns:SOAP-ENC=\"http://schemas.xmlsoap.org/soap/encoding/\">"
+                    " <soap:Body>"
+                );
+            toXML(pt, soapreq);
+            soapreq.append("</soap:Body></soap:Envelope>");
+            StringBuffer output;
+            StringBuffer status;
+            if (getEspLogLevel()>LogNormal)
+                DBGLOG("roxie req: %s", soapreq.str());
+            sendRoxieRequest(target, soapreq, output, status, qid);
+            if (getEspLogLevel()>LogNormal)
+                DBGLOG("roxie resp: %s", output.str());
+
+            if (context->queryRequestParameters()->hasProp("display"))
+            {
+                unsigned pos = 0;
+                const char *start = output.str();
+                if (!strnicmp(start, "<?xml ", 6))
+                {
+                    const char *enddecl = strstr(start, "?>");
+                    if (enddecl)
+                        pos = enddecl - start + 2;
+                }
+                output.insert(pos, "<?xml-stylesheet type='text/xsl' href='/esp/xslt/xmlformatter.xsl' ?>");
+            }
+
+            response->setContent(output.str());
+            response->setContentType("application/xml");
+            response->setStatus("200 OK");
+            response->send();
+        }
         else if (!stricmp(methodName.str(), "submit"))
         {
+            context->addTraceSummaryValue("wseclMode", "submit");
+
             StringBuffer wuid;
             StringBuffer qs;
             StringBuffer qid;
@@ -2680,6 +2811,8 @@ int CWsEclBinding::onGet(CHttpRequest* request, CHttpResponse* response)
         }
         else if (!stricmp(methodName.str(), "xslt"))
         {
+            context->addTraceSummaryValue("wseclMode", "xslt");
+
             StringBuffer wuid;
             StringBuffer qs;
             StringBuffer qid;
@@ -2770,6 +2903,7 @@ void createPTreeFromJsonString(const char *json, bool caseInsensitive, StringBuf
 void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *response)
 {
     IEspContext *ctx = request->queryContext();
+    ctx->addTraceSummaryValue("wseclMode", "JSONPost");
     IProperties *parms = request->queryParameters();
     StringBuffer jsonresp;
 
@@ -2810,21 +2944,22 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
             nextPathNode(thepath, queryname);
         }
 
-        WsEclWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
-        SCMStringBuffer clustertype;
-        wsinfo.wu->getDebugValue("targetclustertype", clustertype);
 
         StringBuffer content(request->queryContent());
         StringBuffer status;
-        if (strieq(clustertype.str(), "roxie"))
+        if (wsecl->connMap.getValue(queryset.str()))
         {
             StringBuffer output;
-            DBGLOG("json req: %s", content.str());
-            sendRoxieRequest(wsinfo.qsetname.get(), content, jsonresp, status, wsinfo.queryname, "application/json");
-            DBGLOG("json resp: %s", jsonresp.str());
+            if (getEspLogLevel()>LogNormal)
+                DBGLOG("roxie json req: %s", content.str());
+            sendRoxieRequest(queryset.str(), content, jsonresp, status, queryname.str(), "application/json");
+            if (getEspLogLevel()>LogNormal)
+                DBGLOG("roxie json resp: %s", jsonresp.str());
         }
         else
         {
+            WsEclWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
+
             StringBuffer soapfromjson;
             soapfromjson.append(
                 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
@@ -2834,7 +2969,8 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
                 );
             createPTreeFromJsonString(content.str(), false, soapfromjson, "Request");
             soapfromjson.append("</soap:Body></soap:Envelope>");
-            DBGLOG("soap from json req: %s", soapfromjson.str());
+            if (getEspLogLevel()>LogNormal)
+                DBGLOG("soap from json req: %s", soapfromjson.str());
 
             StringBuffer soapresp;
             unsigned xmlflags = WWV_ADD_SOAP | WWV_ADD_RESULTS_TAG | WWV_ADD_RESPONSE_TAG | WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES;
@@ -2846,7 +2982,8 @@ void CWsEclBinding::handleJSONPost(CHttpRequest *request, CHttpResponse *respons
                 xmlflags |= WWV_OMIT_SCHEMAS;
 
             submitWsEclWorkunit(*ctx, wsinfo, soapfromjson.str(), soapresp, xmlflags);
-            DBGLOG("HandleSoapRequest response: %s", soapresp.str());
+            if (getEspLogLevel()>LogNormal)
+                DBGLOG("HandleSoapRequest response: %s", soapresp.str());
             getWsEclJsonResponse(jsonresp, *ctx, request, soapresp.str(), wsinfo);
         }
 
@@ -2880,6 +3017,7 @@ void CWsEclBinding::handleHttpPost(CHttpRequest *request, CHttpResponse *respons
 int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* response)
 {
     IEspContext *ctx = request->queryContext();
+    ctx->addTraceSummaryValue("wseclMode", "SOAPPost");
     IProperties *parms = request->queryParameters();
 
     const char *thepath = request->queryPath();
@@ -2908,29 +3046,24 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
     nextPathNode(thepath, lookup);
 
     StringBuffer wuid;
-    StringBuffer queryset;
+    StringBuffer target;
     StringBuffer queryname;
 
     if (strieq(lookup.str(), "wuid"))
     {
         nextPathNode(thepath, wuid);
-        queryset.append(parms->queryProp("qset"));
+        target.append(parms->queryProp("qset"));
         queryname.append(parms->queryProp("qname"));
     }
     else if (strieq(lookup.str(), "query"))
     {
-        nextPathNode(thepath, queryset);
+        nextPathNode(thepath, target);
         nextPathNode(thepath, queryname);
     }
-
-    WsEclWuInfo wsinfo(wuid.str(), queryset.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
 
     StringBuffer content(request->queryContent());
     StringBuffer soapresp;
     StringBuffer status;
-
-    SCMStringBuffer clustertype;
-    wsinfo.wu->getDebugValue("targetclustertype", clustertype);
 
     unsigned xmlflags = WWV_ADD_SOAP | WWV_ADD_RESULTS_TAG | WWV_ADD_RESPONSE_TAG | WWV_INCL_NAMESPACES | WWV_INCL_GENERATED_NAMESPACES;
     if (ctx->queryRequestParameters()->hasProp("display"))
@@ -2940,19 +3073,29 @@ int CWsEclBinding::HandleSoapRequest(CHttpRequest* request, CHttpResponse* respo
     else
         xmlflags |= WWV_OMIT_SCHEMAS;
 
-    if (strieq(clustertype.str(), "roxie"))
+    if (wsecl->connMap.getValue(target))
     {
         StringBuffer content(request->queryContent());
         StringBuffer output;
-        sendRoxieRequest(wsinfo.qsetname.get(), content, output, status, wsinfo.queryname);
-        Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
-        if (web.get())
-            web->expandResults(output.str(), soapresp, xmlflags);
+        sendRoxieRequest(target, content, output, status, queryname);
+        if (!(xmlflags  & WWV_CDATA_SCHEMAS))
+            soapresp.swapWith(output);
+        else
+        {
+            WsEclWuInfo wsinfo(wuid.str(), target.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
+            Owned<IWuWebView> web = createWuWebView(*wsinfo.wu, wsinfo.queryname.get(), getCFD(), true);
+            if (web.get())
+                web->expandResults(output.str(), soapresp, xmlflags);
+        }
     }
     else
+    {
+        WsEclWuInfo wsinfo(wuid.str(), target.str(), queryname.str(), ctx->queryUserId(), ctx->queryPassword());
         submitWsEclWorkunit(*ctx, wsinfo, content.str(), soapresp, xmlflags);
+    }
 
-    DBGLOG("HandleSoapRequest response: %s", soapresp.str());
+    if (getEspLogLevel()>LogNormal)
+        DBGLOG("HandleSoapRequest response: %s", soapresp.str());
 
     response->setContent(soapresp.str());
     response->setContentType("text/xml");

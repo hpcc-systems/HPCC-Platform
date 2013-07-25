@@ -595,6 +595,7 @@ interface ICodeContext : public IResourceContext
     virtual void getExternalResultRaw(unsigned & tlen, void * & tgt, const char * wuid, const char * stepname, unsigned sequence, IXmlToRowTransformer * xmlTransformer, ICsvToRowTransformer * csvTransformer) = 0;    // shouldn't really be here, but it broke thor.
     virtual char * queryIndexMetaData(char const * lfn, char const * xpath) = 0;
     virtual IEngineContext *queryEngineContext() = 0;
+    virtual char *getDaliServers() = 0;
 };
 
 

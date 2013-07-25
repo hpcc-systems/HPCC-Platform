@@ -31,7 +31,7 @@
 
 //#define TIMING_DEBUG
 
-#define  MAX_LOOP_TIMES 10000
+#define  MAX_LOOP_TIMES 250000
 
 // =========================== local helper functions ===================================
 

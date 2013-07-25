@@ -71,6 +71,22 @@ const char *CThorCodeContextBase::loadResource(unsigned id)
     return (const char *) querySo.getResource(id);
 }
 
+char *CThorCodeContextBase::getDaliServers()
+{
+    StringBuffer dali;
+    IGroup &group = queryCoven().queryComm().queryGroup();
+    Owned<INodeIterator> coven = group.getIterator();
+    bool first = true;
+    ForEach(*coven)
+    {
+        if (first)
+            first = false;
+        else
+            dali.append(',');
+        coven->query().endpoint().getUrlStr(dali);
+    }
+    return dali.detach();
+}
 
 void CThorCodeContextBase::expandLogicalName(StringBuffer & fullname, const char * logicalName)
 {
