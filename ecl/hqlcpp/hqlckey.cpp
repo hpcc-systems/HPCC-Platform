@@ -1110,7 +1110,7 @@ bool KeyedJoinInfo::processFilter()
 
     IHqlExpression * cond = expr->queryChild(2);
     OwnedHqlExpr fuzzy, hard;
-    translator.splitFuzzyCondition(cond, atmostCond, fuzzy, hard);
+    splitFuzzyCondition(cond, atmostCond, fuzzy, hard);
 
     OwnedHqlExpr keyedKeyFilter, fuzzyKeyFilter;
     splitFilter(hard, keyedKeyFilter);

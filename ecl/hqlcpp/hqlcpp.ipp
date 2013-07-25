@@ -1755,7 +1755,6 @@ protected:
     IHqlExpression * normalizeGlobalIfCondition(BuildCtx & ctx, IHqlExpression * expr);
     void substituteClusterSize(HqlExprArray & exprs);
     void throwCannotCast(ITypeInfo * from, ITypeInfo * to);
-    void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard);
 
     void ensureSerialized(BuildCtx & ctx, const CHqlBoundTarget & variable);
 

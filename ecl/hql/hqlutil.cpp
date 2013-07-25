@@ -552,7 +552,7 @@ void expandRecord(HqlExprArray & selects, IHqlExpression * selector, IHqlExpress
     }
 }
 
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------------------------------------------------
 
 static IHqlExpression * queryOnlyTableChild(IHqlExpression * expr)
 {
@@ -599,6 +599,97 @@ static IHqlExpression * findCommonExpression(IHqlExpression * lower, IHqlExpress
 }
 
 
+//---------------------------------------------------------------------------------------------------------------------
+
+void extractAtmostArgs(IHqlExpression * atmost, SharedHqlExpr & atmostCond, SharedHqlExpr & atmostLimit)
+{
+    atmostLimit.setown(getSizetConstant(0));
+    if (atmost)
+    {
+        IHqlExpression * arg0 = atmost->queryChild(0);
+        if (arg0->isBoolean())
+        {
+            atmostCond.set(arg0);
+            atmostLimit.set(atmost->queryChild(1));
+        }
+        else
+            atmostLimit.set(arg0);
+    }
+}
+
+static bool matchesAtmostCondition(IHqlExpression * cond, HqlExprArray & atConds, unsigned & numMatched)
+{
+    if (atConds.find(*cond) != NotFound)
+    {
+        numMatched++;
+        return true;
+    }
+    if (cond->getOperator() != no_assertkeyed)
+        return false;
+    unsigned savedMatched = numMatched;
+    HqlExprArray conds;
+    cond->queryChild(0)->unwindList(conds, no_and);
+    ForEachItemIn(i, conds)
+    {
+        if (!matchesAtmostCondition(&conds.item(i), atConds, numMatched))
+        {
+            numMatched = savedMatched;
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool doSplitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard)
+{
+    if (atmostCond)
+    {
+        //If join condition has evaluated to a constant then allow any atmost condition.
+        if (!condition->isConstant())
+        {
+            HqlExprArray conds, atConds;
+            condition->unwindList(conds, no_and);
+            atmostCond->unwindList(atConds, no_and);
+            unsigned numAtmostMatched = 0;
+            ForEachItemIn(i, conds)
+            {
+                IHqlExpression & cur = conds.item(i);
+                if (matchesAtmostCondition(&cur, atConds, numAtmostMatched))
+                    extendConditionOwn(hard, no_and, LINK(&cur));
+                else
+                    extendConditionOwn(fuzzy, no_and, LINK(&cur));
+            }
+            if (atConds.ordinality() != numAtmostMatched)
+            {
+                hard.clear();
+                fuzzy.clear();
+                return false;
+            }
+        }
+    }
+    else
+        hard.set(condition);
+    return true;
+}
+
+void splitFuzzyCondition(IHqlExpression * condition, IHqlExpression * atmostCond, SharedHqlExpr & fuzzy, SharedHqlExpr & hard)
+{
+    if (!doSplitFuzzyCondition(condition, atmostCond, fuzzy, hard))
+    {
+        //Ugly, but sometimes the condition only matches after it has been constant folded.
+        //And this function can be called from the normalizer before the expression tree is folded.
+        OwnedHqlExpr foldedCond = foldHqlExpression(condition);
+        OwnedHqlExpr foldedAtmost = foldHqlExpression(atmostCond);
+        if (!doSplitFuzzyCondition(foldedCond, foldedAtmost, fuzzy, hard))
+        {
+            StringBuffer s;
+            getExprECL(atmostCond, s);
+            throwError1(HQLERR_AtmostFailMatchCondition, s.str());
+        }
+    }
+}
+
+//---------------------------------------------------------------------------------------------------------------------
 
 
 
@@ -948,8 +1039,22 @@ IHqlExpression * findJoinSortOrders(IHqlExpression * condition, IHqlExpression *
 
 extern HQL_API IHqlExpression * findJoinSortOrders(IHqlExpression * expr, HqlExprArray &leftSorts, HqlExprArray &rightSorts, bool & isLimitedSubstringJoin, HqlExprArray * slidingMatches)
 {
+    OwnedHqlExpr atmostCond, atmostLimit;
+    extractAtmostArgs(expr->queryAttribute(atmostAtom), atmostCond, atmostLimit);
+
+    OwnedHqlExpr fuzzy, hard;
+    splitFuzzyCondition(expr->queryChild(2), atmostCond, fuzzy, hard);
+
     IHqlExpression * lhs = expr->queryChild(0);
-    return findJoinSortOrders(expr->queryChild(2), lhs, queryJoinRhs(expr), querySelSeq(expr), leftSorts, rightSorts, isLimitedSubstringJoin, slidingMatches);
+    OwnedHqlExpr soft = findJoinSortOrders(hard, lhs, queryJoinRhs(expr), querySelSeq(expr), leftSorts, rightSorts, isLimitedSubstringJoin, slidingMatches);
+    if (fuzzy && soft)
+    {
+        //The atmost condition can't be implemented by equalities. ... something is wrong.
+        return createBoolExpr(no_and, soft.getClear(), fuzzy.getClear());
+    }
+    if (soft)
+        return soft.getClear();
+    return fuzzy.getClear();
 }
 
 IHqlExpression * createImpureOwn(IHqlExpression * expr)
@@ -5501,7 +5606,7 @@ void TempTableTransformer::reportWarning(IHqlExpression * location, int code,con
 IHqlExpression *getDictionaryKeyRecord(IHqlExpression *record)
 {
     IHqlExpression * payload = record->queryAttribute(_payload_Atom);
-    unsigned payloadSize = payload ? getIntValue(payload->queryChild(0)) : 0;
+    unsigned payloadSize = payload ? (unsigned)getIntValue(payload->queryChild(0)) : 0;
     unsigned max = record->numChildren() - payloadSize;
     IHqlExpression *newrec = createRecord();
     for (unsigned idx = 0; idx < max; idx++)
