@@ -632,7 +632,7 @@ void CSlaveGraph::done()
         progressActive = false;
         progressToCollect = true; // NB: ensure collected after end of graph
     }
-    if (!aborted && (!queryOwner() || isGlobal()))
+    if (!aborted && graphDone && (!queryOwner() || isGlobal()))
         getDoneSem.wait(); // must wait on master
     if (!queryOwner())
     {
