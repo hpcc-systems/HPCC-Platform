@@ -419,8 +419,6 @@ public:
     {
         return this;
     }
-
-
 };
 
 
@@ -1541,6 +1539,194 @@ ISharedSmartBuffer *createSharedSmartMemBuffer(CActivityBase *activity, unsigned
 {
     return new CSharedWriteAheadMem(activity, outputs, rowIf, buffSize);
 }
+
+
+class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWriterReader
+{
+    rowidx_t granularity, writerGranularity, rowPos, limit, rowsToRead;
+    CThorSpillableRowArray rows;
+    const void **readRows;
+    CActivityBase &activity;
+    IRowInterfaces *rowIf;
+    bool readerBlocked, eos, eow;
+    Semaphore emptySem, fullSem;
+    unsigned numWriters, writersComplete, writersBlocked;
+
+    class CAWriter : public CSimpleInterface, implements IRowWriter
+    {
+        CRowMultiWriterReader &owner;
+        CThorExpandingRowArray rows;
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CAWriter(CRowMultiWriterReader &_owner) : owner(_owner), rows(_owner.activity, _owner.rowIf)
+        {
+        }
+        ~CAWriter()
+        {
+            flush();
+            owner.writerStopped();
+        }
+    // IRowWriter impl.
+        virtual void putRow(const void *row)
+        {
+            if (rows.ordinality() >= owner.writerGranularity)
+                owner.addRows(rows);
+            rows.append(row);
+        }
+        virtual void flush()
+        {
+            if (rows.ordinality())
+                owner.addRows(rows);
+        }
+    };
+
+    void addRows(CThorExpandingRowArray &inRows)
+    {
+        loop
+        {
+            {
+                CThorArrayLockBlock block(rows);
+                if (rows.numCommitted() < limit)
+                {
+                    // NB: allowed to go over limit, by as much as inRows.ordinality()-1
+                    rowidx_t num = inRows.ordinality();
+                    for (rowidx_t r=0; r<num; r++)
+                        rows.append(inRows.getClear(r));
+                    inRows.clearRows();
+
+                    if (readerBlocked && (rows.numCommitted() >= granularity))
+                    {
+                        emptySem.signal();
+                        readerBlocked = false;
+                    }
+                    break;
+                }
+                writersBlocked++;
+            }
+            fullSem.wait();
+            if (eos)
+            {
+                inRows.kill();
+                return;
+            }
+        }
+
+    }
+public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+    CRowMultiWriterReader(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _limit)
+        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf), limit(_limit)
+    {
+        numWriters = 0;
+        writerGranularity = 500; // Amount writers buffer up before committing to output
+        granularity = 500; // Amount reader extracts when empty to avoid contention with writer
+        roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
+        readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId()));
+        eos = eow = readerBlocked = false;
+        rowPos = rowsToRead = 0;
+        writersComplete = writersBlocked = 0;
+    }
+    ~CRowMultiWriterReader()
+    {
+        while (rowPos < rowsToRead)
+        {
+            ReleaseThorRow(readRows[rowPos++]);
+        }
+        ReleaseThorRow(readRows);
+    }
+    void abort()
+    {
+        eos = true;
+        CThorArrayLockBlock block(rows);
+        if (writersBlocked)
+        {
+            fullSem.signal(writersBlocked);
+            writersBlocked = 0;
+        }
+        if (readerBlocked)
+        {
+            emptySem.signal();
+            readerBlocked = false;
+        }
+    }
+    void writerStopped()
+    {
+        CThorArrayLockBlock block(rows);
+        writersComplete++;
+        if (writersComplete == numWriters)
+        {
+            rows.flush();
+            eow = true;
+            if (readerBlocked)
+            {
+                emptySem.signal();
+                readerBlocked = false;
+            }
+        }
+    }
+// ISharedWriteBuffer impl.
+    virtual IRowWriter *getWriter()
+    {
+        ++numWriters;
+        return new CAWriter(*this);
+    }
+// IRowStream impl.
+    virtual const void *nextRow()
+    {
+        if (eos)
+            return NULL;
+        if (rowPos == rowsToRead)
+        {
+            loop
+            {
+                {
+                    CThorArrayLockBlock block(rows);
+                    if (rows.numCommitted() >= granularity || eow)
+                    {
+                        rowsToRead = (eow && rows.numCommitted() < granularity) ? rows.numCommitted() : granularity;
+                        if (0 == rowsToRead)
+                        {
+                            eos = true;
+                            return NULL;
+                        }
+                        const void **toRead = rows.getBlock(rowsToRead);
+                        memcpy(readRows, toRead, rowsToRead * sizeof(void *));
+                        rows.noteSpilled(rowsToRead);
+                        rowPos = 0;
+                        if (writersBlocked)
+                        {
+                            fullSem.signal(writersBlocked);
+                            writersBlocked = 0;
+                        }
+                        break; // fall through to return a row
+                    }
+                    readerBlocked = true;
+                }
+                emptySem.wait();
+                if (eos)
+                    return NULL;
+            }
+        }
+        const void *row = readRows[rowPos];
+        readRows[rowPos] = NULL;
+        ++rowPos;
+        return row;
+    }
+    virtual void stop()
+    {
+        eos = true;
+    }
+};
+
+IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit)
+{
+    return new CRowMultiWriterReader(*activity, rowif, limit);
+}
+
+
+
 
 class CRCFileStream: public CSimpleInterface, implements IFileIOStream
 {
