@@ -1817,7 +1817,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
                     break;
                 }
                 try {
-                    parent->doMatch(*work,outqueue);
+                    parent->doMatch(*work,parent->outqueue);
                     delete work;
                 }
                 catch (IException *e) {

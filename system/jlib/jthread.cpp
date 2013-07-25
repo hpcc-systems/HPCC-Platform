@@ -1696,6 +1696,16 @@ class CLinuxPipeProcess: public CInterface, implements IPipeProcess
                 }
 
             }
+            if (hError!=(HANDLE)-1) { // hmm who did that
+                fcntl(hError,F_SETFL,0); // read any remaining data in blocking mode
+                while (bufsize<buf.length()) {
+                    size32_t sizeRead = (size32_t)::read(hError, (byte *)buf.bufferBase()+bufsize, buf.length()-bufsize);
+                    if ((int)sizeRead>0)
+                        bufsize += sizeRead;
+                    else
+                        break;
+                }
+            }
             return 0;
         }
         void stop() 
@@ -2033,6 +2043,8 @@ public:
     unsigned wait()
     {
         CriticalBlock block(sect); 
+        if (stderrbufferthread)
+            stderrbufferthread->stop();
         if (forkthread) {
             {
                 CriticalUnblock unblock(sect);

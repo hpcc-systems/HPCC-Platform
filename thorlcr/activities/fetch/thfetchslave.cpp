@@ -174,12 +174,17 @@ public:
     {
         fposHash = new CFPosHandler(*iFetchHandler, offsetCount, offsetTable);
         keyIn.set(_keyIn);
-        distributor = createHashDistributor(&owner, owner.queryContainer().queryJob().queryJobComm(), tag, abortSoon, false, this);
+        distributor = createHashDistributor(&owner, owner.queryContainer().queryJob().queryJobComm(), tag, false, this);
         keyOutStream.setown(distributor->connect(keyRowIf, keyIn, fposHash, NULL));
     }
     virtual IRowStream *queryOutput() { return this; }
     virtual IFileIO *queryPartIO(unsigned part) { assertex(part<files); return fPosMultiPartTable[part].file->queryFileIO(); }
     virtual StringBuffer &getPartName(unsigned part, StringBuffer &out) { return getPartFilename(parts.item(part), fPosMultiPartTable[part].location, out, true); }
+    virtual void abort()
+    {
+        if (distributor)
+            distributor->abort();
+    }
 
     // IStopInput
     virtual void stopInput()
@@ -458,6 +463,11 @@ public:
     {
         fetchStreamOut->stop();
         dataLinkStop();
+    }
+    virtual void abort()
+    {
+        if (fetchStream)
+            fetchStream->abort();
     }
     CATCH_NEXTROW()
     {

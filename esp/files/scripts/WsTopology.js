@@ -30,13 +30,16 @@ define([
             lang.mixin(params.request, {
                 Type: "ALLSERVICES"
             });
-            ESPRequest.send("WsTopology", "TpServiceQuery", params);
+            return ESPRequest.send("WsTopology", "TpServiceQuery", params);
         },
         TpTargetClusterQuery: function (params) {
-            ESPRequest.send("WsTopology", "TpTargetClusterQuery", params);
+            return ESPRequest.send("WsTopology", "TpTargetClusterQuery", params);
         },
         TpGroupQuery: function (params) {
-            ESPRequest.send("WsTopology", "TpGroupQuery", params);
+            return ESPRequest.send("WsTopology", "TpGroupQuery", params);
+        },
+        TpLogicalClusterQuery: function (params) {
+            return ESPRequest.send("WsTopology", "TpLogicalClusterQuery", params);
         }
     };
 });
