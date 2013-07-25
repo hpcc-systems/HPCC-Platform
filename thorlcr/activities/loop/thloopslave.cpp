@@ -309,14 +309,7 @@ public:
                     {
                         ret.setown(curInput->nextRow()); // more cope with groups somehow....
                         if (!ret)
-                        {
-                            if (finishedLooping)
-                            {
-                                eof = true;
-                                return NULL;
-                            }
                             break;
-                        }
                     }
 
                     if (finishedLooping || 
@@ -335,15 +328,14 @@ public:
                 {
                 case TAKloopdataset:
                     assertex(flags & IHThorLoopArg::LFnewloopagain);
+                    // NB: finishedLooping set at end of loop, based on loopAgain result
                     break;
                 case TAKlooprow:
                     if (0 == loopPendingCount)
-                    {
-                        sendEndLooping();
-                        finishedLooping = true;
-                        eof = true;
-                        return NULL;
-                    }
+                        finishedLooping = true; // This slave has finished
+                    break;
+                case TAKloopcount:
+                    // NB: finishedLooping set at end of loop, so that last getNextRow() iteration spits out final rows
                     break;
                 }
 
@@ -364,8 +356,22 @@ public:
                     }
                 }
 
-                if (!sendLoopingCount(loopCounter, emptyIterations)) // only if global
+                if (global)
+                {
+                    // 0 signals this slave has finished, but don't stop until all have
+                    if (!sendLoopingCount(finishedLooping ? 0 : loopCounter, finishedLooping ? 0 : emptyIterations))
+                    {
+                        sentEndLooping = true; // prevent sendEndLooping() sending end again
+                        eof = true;
+                        return NULL;
+                    }
+                }
+                else if (finishedLooping)
+                {
+                    eof = true;
                     return NULL;
+                }
+
                 loopPending->flush();
 
                 IThorBoundLoopGraph *boundGraph = queryContainer().queryLoopGraph();
@@ -401,15 +407,13 @@ public:
                     assertex(row);
                     //Result is a row which contains a single boolean field.
                     if (!((const bool *)row.get())[0])
-                        finishedLooping = true;
+                        finishedLooping = true; // NB: will finish when loopPending has been consumed
                 }
                 loopPending.setown(createOverflowableBuffer(*this, this, false, true));
                 loopPendingCount = 0;
                 ++loopCounter;
                 if ((container.getKind() == TAKloopcount) && (loopCounter > maxIterations))
-                    finishedLooping = true;
-                if (finishedLooping)
-                    sendEndLooping();
+                    finishedLooping = true; // NB: will finish when loopPending has been consumed
             }
         }
         return NULL;

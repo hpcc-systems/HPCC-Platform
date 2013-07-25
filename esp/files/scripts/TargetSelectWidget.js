@@ -215,30 +215,29 @@ require([
 
         loadTargets: function () {
             var context = this;
-            WsTopology.TpTargetClusterQuery({
-                load: function (response) {
-                    if (lang.exists("TpTargetClusterQueryResponse.TpTargetClusters.TpTargetCluster", response)) {
-                        var targetData = response.TpTargetClusterQueryResponse.TpTargetClusters.TpTargetCluster;
-                        var has_hthor = false;
-                        for (var i = 0; i < targetData.length; ++i) {
-                            context.targetSelectControl.options.push({
-                                label: targetData[i].Name,
-                                value: targetData[i].Name
-                            });
-                            if (targetData[i].Name == "hthor") {
-                                has_hthor = true;
-                            }
+            WsTopology.TpLogicalClusterQuery({
+            }).then(function (response) {
+                if (lang.exists("TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster", response)) {
+                    var targetData = response.TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster;
+                    var has_hthor = false;
+                    for (var i = 0; i < targetData.length; ++i) {
+                        context.targetSelectControl.options.push({
+                            label: targetData[i].Name,
+                            value: targetData[i].Name
+                        });
+                        if (targetData[i].Name == "hthor") {
+                            has_hthor = true;
                         }
-
-                        if (!context.includeBlank && context._value == "") {
-                            if (has_hthor) {
-                                context._value = "hthor";
-                            } else {
-                                context._value = context.targetSelectControl.options[0].value;
-                            }
-                        }
-                        context.resetDefaultSelection();
                     }
+
+                    if (!context.includeBlank && context._value == "") {
+                        if (has_hthor) {
+                            context._value = "hthor";
+                        } else {
+                            context._value = context.targetSelectControl.options[0].value;
+                        }
+                    }
+                    context.resetDefaultSelection();
                 }
             });
         }
