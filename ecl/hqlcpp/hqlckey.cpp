@@ -966,6 +966,9 @@ static void doGatherFieldsAccessed(RecursionChecker & checker, HqlExprArray & fi
 
 static void gatherFieldsAccessed(HqlExprArray & fieldsAccessed, IHqlExpression * cond, IHqlExpression * ds)
 {
+    if (!cond)
+        return;
+
     RecursionChecker checker;
 
     doGatherFieldsAccessed(checker, fieldsAccessed, cond, ds);
@@ -1000,6 +1003,7 @@ void KeyedJoinInfo::optimizeExtractJoinFields()
     else
     {
         gatherFieldsAccessed(fieldsAccessed, expr->queryChild(3), right);
+        gatherFieldsAccessed(fieldsAccessed, queryAttributeChild(expr, onFailAtom, 0), right);
 
         if (isFullJoin())
         {
