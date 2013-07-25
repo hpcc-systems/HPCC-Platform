@@ -23,11 +23,12 @@ define([
     "dojo/store/Observable",
 
     "hpcc/WsWorkunits",
+    "hpcc/WsTopology",
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPResult"
 ], function (declare, arrayUtil, lang, Deferred, ObjectStore, QueryResults, Observable,
-    WsWorkunits, ESPUtil, ESPRequest, ESPResult) {
+    WsWorkunits, WsTopology, ESPUtil, ESPRequest, ESPResult) {
 
     var _workunits = {};
 
@@ -190,15 +191,28 @@ define([
         submit: function (target) {
             this._assertHasWuid();
             var context = this;
-            WsWorkunits.WUSubmit({
-                request: {
-                    Wuid: this.Wuid,
-                    Cluster: target
-                },
-                load: function (response) {
-                    context.onSubmit();
-                }
+            var deferred = new Deferred()
+            deferred.promise.then(function (target) {
+                WsWorkunits.WUSubmit({
+                    request: {
+                        Wuid: context.Wuid,
+                        Cluster: target
+                    },
+                    load: function (response) {
+                        context.onSubmit();
+                    }
+                });
             });
+
+            if (target) {
+                deferred.resolve(target);
+            } else {
+                WsTopology.TpLogicalClusterQuery().then(function (response) {
+                    if (lang.exists("TpLogicalClusterQueryResponse.default", response)) {
+                        deferred.resolve(response.TpLogicalClusterQueryResponse.default.Name);
+                    }
+                });
+            }
         },
         _resubmit: function (clone, resetWorkflow) {
             this._assertHasWuid();
