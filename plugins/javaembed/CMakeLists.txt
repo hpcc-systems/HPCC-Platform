@@ -67,7 +67,7 @@ if (USE_JNI)
 
     target_link_libraries ( javaembed
     #    ${JSIG_LIBRARY}
-        ${JNI_LIBRARIES}
+        ${JAVA_JVM_LIBRARY}
         eclrtl
         jlib
         )

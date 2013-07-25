@@ -149,7 +149,6 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
                     {
                         tail[strlen(SharedObjectExtension)] = 0;
                         HINSTANCE h = LoadSharedObject(fullName, false, false);
-                        DBGLOG("LoadSharedObject %s returned %p", fullName, h);
                         break;
                     }
                 }
