@@ -61,6 +61,7 @@ extern graph_decl ISmartRowBuffer * createSmartInMemoryBuffer(CActivityBase *act
                                                       IRowInterfaces *rowIf,
                                                       size32_t buffsize);
 
+// Multiple readers, one writer
 interface ISharedSmartBuffer : extends IRowWriter
 {
     virtual IRowStream *queryOutput(unsigned output) = 0;
@@ -80,5 +81,14 @@ interface IRowWriterMultiReader : extends IRowWriter
 
 extern graph_decl IRowWriterMultiReader *createOverflowableBuffer(CActivityBase &activity, IRowInterfaces *rowif, bool grouped, bool shared=false, unsigned spillPriority=SPILL_PRIORITY_OVERFLOWABLE_BUFFER);
 // NB first write all then read (not interleaved!)
+
+// Multiple writers, one reader
+interface IRowMultiWriterReader : extends IRowStream
+{
+    virtual IRowWriter *getWriter() = 0;
+};
+
+IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit);
+
 
 #endif
