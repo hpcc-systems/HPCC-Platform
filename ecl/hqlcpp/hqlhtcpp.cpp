@@ -11768,6 +11768,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
     if (isLookupJoin && isManyLookup) flags.append("|JFmanylookup");
     if (expr->hasProperty(onFailAtom))
         flags.append("|JFonfail");
+    if (expr->hasProperty(unorderedAtom))
+        flags.append("|JFreorderable");
     if (transformReturnsSide(expr, no_left, 0))
         flags.append("|JFtransformmatchesleft");
     if (isLimitedSubstringJoin)
