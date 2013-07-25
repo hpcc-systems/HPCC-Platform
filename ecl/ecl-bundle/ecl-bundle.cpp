@@ -107,7 +107,7 @@ unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *input)
     {
         Owned<IPipeProcess> pipe = createPipeProcess();
         VStringBuffer runcmd("eclcc  --nologfile --nostdinc %s", cmd);
-        pipe->run("eclcc", runcmd, ".", input != NULL, true, true);
+        pipe->run("eclcc", runcmd, ".", input != NULL, true, true, 1024*1024);
         if (optVerbose)
         {
             printf("Running %s\n", runcmd.str());
@@ -119,15 +119,7 @@ unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *input)
             pipe->write(strlen(input), input);
             pipe->closeInput();
         }
-        StringBuffer error;
         char buf[1024];
-        while (true)
-        {
-            size32_t read = pipe->readError(sizeof(buf), buf);
-            if (!read)
-                break;
-            error.append(read, buf);
-        }
         while (true)
         {
             size32_t read = pipe->read(sizeof(buf), buf);
@@ -136,6 +128,14 @@ unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *input)
             output.append(read, buf);
         }
         int ret = pipe->wait();
+        StringBuffer error;
+        while (true)
+        {
+            size32_t read = pipe->readError(sizeof(buf), buf);
+            if (!read)
+                break;
+            error.append(read, buf);
+        }
         if (optVerbose && (ret > 0 || error.length()))
             printf("eclcc return code was %d, output to stderr:\n%s", ret, error.str());
         return ret;
