@@ -39,7 +39,7 @@ interface IFunctionInfo;
 // used to represent an association of something already calculated in the context
 // e.g. a cursor, temporary value, or even dependency information.
 
-enum AssocKind { AssocAny, AssocExpr, AssocActivity, AssocCursor, AssocClass, 
+enum AssocKind { AssocExpr, AssocActivity, AssocCursor, AssocClass,
                  AssocRow,
                  AssocActivityInstance,
                  AssocExtract,
@@ -48,6 +48,7 @@ enum AssocKind { AssocAny, AssocExpr, AssocActivity, AssocCursor, AssocClass,
                  AssocGraphNode,
                  AssocSubGraph,
                  AssocStmt,
+                 AssocMax,
  };
 
 class CHqlBoundExpr;
@@ -226,6 +227,7 @@ protected:
 protected:
     HqlStmts * rootStmts;
     unsigned curIdx;
+    unsigned searchMask;
     HqlStmts * curStmts;
 };
 
@@ -233,7 +235,11 @@ protected:
 class FilteredAssociationIterator : public AssociationIterator
 {
 public:
-    FilteredAssociationIterator(BuildCtx & ctx, AssocKind _searchKind) : AssociationIterator(ctx) { searchKind = _searchKind; }
+    FilteredAssociationIterator(BuildCtx & ctx, AssocKind _searchKind) : AssociationIterator(ctx)
+    {
+        searchKind = _searchKind;
+        searchMask = (1 << searchKind);
+    }
 
     virtual bool doNext();
 
@@ -247,7 +253,10 @@ class BoundRow;
 class RowAssociationIterator : public AssociationIterator
 {
 public:
-    RowAssociationIterator(BuildCtx & ctx) : AssociationIterator(ctx) {}
+    RowAssociationIterator(BuildCtx & ctx) : AssociationIterator(ctx)
+    {
+        searchMask = (1 << AssocRow) | (1 << AssocCursor);
+    }
 
     virtual bool doNext();
 
