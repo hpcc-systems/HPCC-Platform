@@ -17,6 +17,7 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
+    "dojo/_base/array",
     "dojo/store/Memory",
 
     "dijit/registry",
@@ -28,7 +29,7 @@ define([
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
-    function (declare, lang, Memory,
+    function (declare, lang, arrayUtil, Memory,
             registry, 
             TreeMap,
             _Widget, ESPWorkunit,
@@ -127,6 +128,20 @@ define([
                         if (item) {
                             selectedItems.push(item);
                         }
+                    }
+                    this.treeMap.set("selectedItems", selectedItems);
+                }
+            },
+
+            setSelectedGraphs: function (selItems) {
+                if (this.store) {
+                    var selectedItems = [];
+                    for (var i = 0; i < selItems.length; ++i) {
+                        arrayUtil.forEach(this.store.data, function (item, idx) {
+                            if (item.GraphName == selItems[i].Name) {
+                                selectedItems.push(item);
+                            }
+                        });
                     }
                     this.treeMap.set("selectedItems", selectedItems);
                 }

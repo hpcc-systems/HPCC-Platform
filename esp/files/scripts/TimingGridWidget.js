@@ -70,7 +70,7 @@ define([
                     columns: {
                         id: { label: "##", width: 45 },
                         Name: { label: "Component" },
-                        Seconds: { label: "Time (Seconds)", width: 54 }
+                        Seconds: { label: "Time (Seconds)", width: 124 }
                     },
                     store: this.timingStore
                 }, this.id + "TimingGrid");
