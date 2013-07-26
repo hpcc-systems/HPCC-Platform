@@ -1512,6 +1512,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.optimizeBoolReturn,"optimizeBoolReturn", true),
         DebugOption(options.freezePersists,"freezePersists", false),
         DebugOption(options.maxRecordSize, "defaultMaxLengthRecord", MAX_RECORD_SIZE),
+        DebugOption(options.subgraphToRegeneate, "subgraphToRegeneate", 0),
 
         DebugOption(options.checkRoxieRestrictions,"checkRoxieRestrictions", true),     // a debug aid for running regression suite
         DebugOption(options.checkThorRestrictions,"checkThorRestrictions", true),       // a debug aid for running regression suite

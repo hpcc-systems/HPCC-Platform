@@ -566,7 +566,7 @@ IValue *createStringValue(const char *val, ITypeInfo *type)
     return new StringValue(val, type);
 }
 
-IValue *createStringValue(const char *val, ITypeInfo *type, int srcLength, ICharsetInfo *srcCharset)
+IValue *createStringValue(const char *val, ITypeInfo *type, size32_t srcLength, ICharsetInfo *srcCharset)
 {
     ITranslationInfo * translation = queryDefaultTranslation(type->queryCharset(), srcCharset);
     size32_t tgtLength = type->getSize();
@@ -624,8 +624,10 @@ const char *UnicodeValue::generateECL(StringBuffer &out)
 {
     char * buff;
     unsigned bufflen;
-    rtlUnicodeToQuotedUTF8X(bufflen, buff, type->getStringLen(), (UChar const *)val.get());
-    out.append("U'").append(bufflen, buff).append('\'');
+    rtlUnicodeToUtf8X(bufflen, buff, type->getStringLen(), (UChar const *)val.get());
+    out.append("U'");
+    appendUtf8AsECL(out, rtlUtf8Size(bufflen, buff), buff);
+    out.append('\'');
     rtlFree(buff);
     return out.str();
 }
@@ -831,8 +833,10 @@ const char * VarUnicodeValue::generateECL(StringBuffer & out)
 {
     char * buff;
     unsigned bufflen;
-    rtlUnicodeToQuotedUTF8X(bufflen, buff, val.length(), val.get());
-    out.append("U'").append(bufflen, buff).append('\'');
+    rtlUnicodeToUtf8X(bufflen, buff, val.length(), val.get());
+    out.append("U'");
+    appendUtf8AsECL(out, rtlUtf8Size(bufflen, buff), buff);
+    out.append('\'');
     rtlFree(buff);
     return out.str();
 }

@@ -2476,6 +2476,9 @@ IHqlExpression * HqlGram::endIfBlock()
 void HqlGram::checkFieldnameValid(const attribute &errpos, IIdAtom * name)
 {
     OwnedHqlExpr self = getSelfScope();
+    if (!self)
+        throwUnexpected();
+
     IHqlSimpleScope *recordScope = self->querySimpleScope();
     OwnedHqlExpr t(recordScope->lookupSymbol(name));
     if (t.get())
