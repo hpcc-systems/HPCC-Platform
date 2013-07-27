@@ -1879,6 +1879,24 @@ mapEnums sortFields[] =
    { WUSFterm, NULL }
 };
 
+mapEnums querySortFields[] =
+{
+   { WUQSFId, "@id" },
+   { WUQSFwuid, "@wuid" },
+   { WUQSFname, "@name" },
+   { WUQSFdll, "@dll" },
+   { WUQSFmemoryLimit, "@memoryLimit" },
+   { WUQSFmemoryLimitHi, "@memoryLimit" },
+   { WUQSFtimeLimit, "@timeLimit" },
+   { WUQSFtimeLimitHi, "@timeLimit" },
+   { WUQSFwarnTimeLimit, "@warnTimeLimit" },
+   { WUQSFwarnTimeLimitHi, "@warnTimeLimit" },
+   { WUQSFpriority, "@priority" },
+   { WUQSFpriorityHi, "@priority" },
+   { WUQSFQuerySet, "../@id" },
+   { WUQSFterm, NULL }
+};
+
 class asyncRemoveDllWorkItem: public CInterface, implements IWorkQueueItem // class only used in asyncRemoveDll
 {
     StringAttr name;
@@ -1916,6 +1934,47 @@ public:
         Owned<IFile> file = createIFile(name);
         PROGLOG("WU removeDll %s",file->queryFilename());
         file->remove();
+    }
+};
+
+//==========================================================================================
+
+class CConstQuerySetQueryIterator : public CInterface, implements IConstQuerySetQueryIterator
+{
+    IArrayOf<IPropertyTree> trees;
+    unsigned index;
+public:
+    IMPLEMENT_IINTERFACE;
+    CConstQuerySetQueryIterator(IArrayOf<IPropertyTree> &_trees)
+    {
+        ForEachItemIn(t, _trees)
+            trees.append(*LINK(&_trees.item(t)));
+        index = 0;
+    }
+    ~CConstQuerySetQueryIterator()
+    {
+        trees.kill();
+    }
+    bool  first()
+    {
+        index = 0;
+        return (trees.ordinality()!=0);
+    }
+
+    bool  next()
+    {
+        index++;
+        return (index<trees.ordinality());
+    }
+
+    bool  isValid()
+    {
+        return (index<trees.ordinality());
+    }
+
+    IPropertyTree &  query()
+    {
+        return trees.item(index);
     }
 };
 
@@ -2304,6 +2363,63 @@ public:
         return getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, NULL, NULL, total);
     }
 
+    IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder, // list of fields to sort by (terminated by WUSFterm)
+                                                WUQuerySortField *filters,   // NULL or list of fields to folteron (terminated by WUSFterm)
+                                                const void *filterbuf,  // (appended) string values for filters
+                                                unsigned startoffset,
+                                                unsigned maxnum,
+                                                __int64 *cachehint,
+                                                unsigned *total)
+    {
+        StringAttr querySet;
+        StringBuffer xPath;
+        StringBuffer so;
+        if (filters) {
+            const char *fv = (const char *)filterbuf;
+            for (unsigned i=0;filters[i]!=WUQSFterm;i++) {
+                int fmt = filters[i];
+                int subfmt = (fmt&0xff);
+                if (subfmt==WUQSFQuerySet)
+                    querySet.set(fv);
+                else if ((subfmt==WUQSFmemoryLimit) || (subfmt==WUQSFtimeLimit) || (subfmt==WUQSFwarnTimeLimit) || (subfmt==WUQSFpriority))
+                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append(">=").append(fv).append("]");
+                else if ((subfmt==WUQSFmemoryLimitHi) || (subfmt==WUQSFtimeLimitHi) || (subfmt==WUQSFwarnTimeLimitHi) || (subfmt==WUQSFpriorityHi))
+                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append("<=").append(fv).append("]");
+                else {
+                    xPath.append('[').append(getEnumText(subfmt,querySortFields)).append('=');
+                    if (fmt&WUQSFnocase)
+                        xPath.append('?');
+                    if (fmt&WUQSFnumeric)
+                        xPath.append('#');
+                    if (fmt&WUQSFwild)
+                        xPath.append('~');
+                    xPath.append('"').append(fv).append("\"]");
+                }
+                fv = fv + strlen(fv)+1;
+            }
+        }
+        if (xPath.length() < 1)
+            xPath.set("*");
+        if (sortorder) {
+            for (unsigned i=0;sortorder[i]!=WUQSFterm;i++) {
+                if (so.length())
+                    so.append(',');
+                int fmt = sortorder[i];
+                if (fmt&WUQSFreverse)
+                    so.append('-');
+                if (fmt&WUQSFnocase)
+                    so.append('?');
+                if (fmt&WUQSFnumeric)
+                    so.append('#');
+                so.append(getEnumText(fmt&0xff,querySortFields));
+            }
+        }
+        IArrayOf<IPropertyTree> results;
+        Owned<IRemoteConnection> conn=getElementsPaged("QuerySets", xPath.str(), so.length()?so.str():NULL,startoffset,maxnum,
+            NULL,"",cachehint,querySet.get(),NULL,results,total);
+        return new CConstQuerySetQueryIterator(results);
+    }
+
     virtual unsigned numWorkUnits()
     {
         Owned<IRemoteConnection> conn = sdsManager->connect("/WorkUnits", session, 0, SDS_LOCK_TIMEOUT);
@@ -2568,6 +2684,17 @@ public:
                                                         unsigned *total)
     {
         return factory->getWorkUnitsSorted(sortorder,filters,filterbuf,startoffset,maxnum,queryowner,cachehint, secMgr.get(), secUser.get(), total);
+    }
+
+    virtual IConstQuerySetQueryIterator* getQuerySetQueriesSorted( WUQuerySortField *sortorder,
+                                                WUQuerySortField *filters,
+                                                const void *filterbuf,
+                                                unsigned startoffset,
+                                                unsigned maxnum,
+                                                __int64 *cachehint,
+                                                unsigned *total)
+    {
+        return factory->getQuerySetQueriesSorted(sortorder,filters,filterbuf,startoffset,maxnum,cachehint,total);
     }
 
     virtual unsigned numWorkUnits()
