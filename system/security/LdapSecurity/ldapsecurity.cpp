@@ -1273,6 +1273,13 @@ bool CLdapSecManager::clearPermissionsCache(ISecUser& user)
     }
     return true;
 }
+bool CLdapSecManager::authenticateUser(ISecUser & user, bool &superUser)
+{
+    if (!authenticate(&user))
+        return false;
+    superUser = isSuperUser(&user);
+    return true;
+}
 
 extern "C"
 {

@@ -187,6 +187,37 @@ public:
         user->credentials().setPassword(password);
         return ldapsecurity->clearPermissionsCache(*user);
     }
+
+    bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err)
+    {
+        bool superUser;
+        StringBuffer username;
+        StringBuffer password;
+        udesc->getUserName(username);
+        udesc->getPassword(password);
+        Owned<ISecUser> user = ldapsecurity->createUser(username);
+        user->credentials().setPassword(password);
+        if (!ldapsecurity->authenticateUser(*user,superUser) || !superUser)
+        {
+            *err = -1;
+            return false;
+        }
+        unsigned flags = getLDAPflags();
+        if (enable)
+        {
+            DBGLOG("Scope Scans Enabled by user %s",username.str());
+            flags |= (unsigned)DLF_SCOPESCANS;
+        }
+        else
+        {
+            DBGLOG("Scope Scans Disabled by user %s",username.str());
+            flags &= ~(unsigned)DLF_SCOPESCANS;
+        }
+        setLDAPflags(flags);
+        *err = 0;
+        return true;
+    }
+
     bool checkScopeScans()
     {
         return (ldapflags&DLF_SCOPESCANS)!=0;
