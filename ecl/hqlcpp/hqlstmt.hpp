@@ -39,16 +39,21 @@ interface IFunctionInfo;
 // used to represent an association of something already calculated in the context
 // e.g. a cursor, temporary value, or even dependency information.
 
-enum AssocKind { AssocExpr, AssocActivity, AssocCursor, AssocClass,
-                 AssocRow,
-                 AssocActivityInstance,
-                 AssocExtract,
-                 AssocExtractContext,
-                 AssocSubQuery,
-                 AssocGraphNode,
-                 AssocSubGraph,
-                 AssocStmt,
-                 AssocMax,
+//These are represented using unique bits, so that a mask can be stored to indicate which associations are held
+enum AssocKind
+{
+    AssocExpr              = 0x0000001,
+    AssocActivity          = 0x0000002,
+    AssocCursor            = 0x0000004,
+    AssocClass             = 0x0000008,
+    AssocRow               = 0x0000010,
+    AssocActivityInstance  = 0x0000020,
+    AssocExtract           = 0x0000040,
+    AssocExtractContext    = 0x0000080,
+    AssocSubQuery          = 0x0000100,
+    AssocGraphNode         = 0x0000200,
+    AssocSubGraph          = 0x0000400,
+    AssocStmt              = 0x0000800,
  };
 
 class CHqlBoundExpr;
@@ -142,7 +147,6 @@ public:
 
     void                        set(IAtom * section);
     void                        set(BuildCtx & _owner);
-    void                        walkAssociations(IAssociationVisitor & visitor);
 
 public:
     enum { ConPrio = 1, EarlyPrio =3000, NormalPrio = 5000, LatePrio = 7000, DesPrio = 9999, OutermostScopePrio };
@@ -238,7 +242,7 @@ public:
     FilteredAssociationIterator(BuildCtx & ctx, AssocKind _searchKind) : AssociationIterator(ctx)
     {
         searchKind = _searchKind;
-        searchMask = (1 << searchKind);
+        searchMask = searchKind;
     }
 
     virtual bool doNext();
@@ -255,7 +259,7 @@ class RowAssociationIterator : public AssociationIterator
 public:
     RowAssociationIterator(BuildCtx & ctx) : AssociationIterator(ctx)
     {
-        searchMask = (1 << AssocRow) | (1 << AssocCursor);
+        searchMask = AssocRow|AssocCursor;
     }
 
     virtual bool doNext();
