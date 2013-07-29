@@ -93,6 +93,10 @@ define([
             this.initFilter();
         },
 
+        getTitle: function () {
+            return "ECL Workunits";
+        },
+
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.refreshGrid();
