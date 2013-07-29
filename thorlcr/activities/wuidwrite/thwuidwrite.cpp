@@ -155,6 +155,7 @@ public:
     }
     void init()
     {
+        CWorkUnitWriteGlobalMasterBase::init();
         if (appendOutput)
         {
             Owned<IWorkUnit> wu = &container.queryJob().queryWorkUnit().lock();
