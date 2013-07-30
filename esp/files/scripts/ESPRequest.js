@@ -104,6 +104,9 @@ define([
         },
 
         send: function (service, action, params) {
+            if (!params)
+                params = {};
+
             dojo.publish("hpcc/standbyBackgroundShow");
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
