@@ -494,7 +494,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                 throw MakeStringException(ROXIE_INVALID_TOPOLOGY, "topology file %s not found", topologyFile.str());
             }
             topology=createPTreeFromXMLString(
-                "<RoxieTopology numChannels='1' localSlave='1'>"
+                "<RoxieTopology localSlave='1'>"
                 " <RoxieFarmProcess/>"
                 " <RoxieServerProcess netAddress='.'/>"
                 "</RoxieTopology>"
@@ -619,7 +619,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
 
         headRegionSize = topology->getPropInt("@headRegionSize", 50);
-        numChannels = topology->getPropInt("@numChannels", 0);
         statsExpiryTime = topology->getPropInt("@statsExpiryTime", 3600);
         roxiemem::memTraceSizeLimit = (memsize_t) topology->getPropInt64("@memTraceSizeLimit", 0);
         callbackRetries = topology->getPropInt("@callbackRetries", 3);
@@ -817,8 +816,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         topology->addPropBool("@linuxOS", true);
 #endif
         allQuerySetNames.appendListUniq(topology->queryProp("@querySets"), ",");
-        if (!numChannels)
-            throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels attribute must be specified");
 
         Owned<IPropertyTreeIterator> roxieServers = topology->getElements("./RoxieServerProcess");
         ForEach(*roxieServers)
@@ -850,15 +847,17 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
 
         // Generate the slave channels
         unsigned numDataCopies = topology->getPropInt("@numDataCopies", 1);
+        if (!numDataCopies)
+            throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numDataCopies should be > 0");
+        unsigned channelsPerNode = topology->getPropInt("@channelsPerNode", 1);
         unsigned numNodes = getNumNodes();
         const char *slaveConfig = topology->queryProp("@slaveConfig");
         if (!slaveConfig)
             slaveConfig = "simple";
         if (strnicmp(slaveConfig, "cyclic", 6) == 0)
         {
-            if (numChannels != numNodes)
-                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels does not match number of servers");
-            unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 0);
+            numChannels = numNodes;
+            unsigned cyclicOffset = topology->getPropInt("@cyclicOffset", 1);
             for (int i=0; i<numNodes; i++)
             {
                 int channel = i+1;
@@ -873,13 +872,13 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         else if (strnicmp(slaveConfig, "overloaded", 10) == 0)
         {
-            unsigned copiesPerNode = numChannels / numNodes;
-            if (numChannels != numNodes * copiesPerNode)
-                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels does not match expected value");
+            if (!channelsPerNode)
+                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - channelsPerNode should be > 0");
+            numChannels = numNodes * channelsPerNode;
             for (int i=0; i<numNodes; i++)
             {
                 int channel = i+1;
-                for (int copy=0; copy<copiesPerNode; copy++)
+                for (int copy=0; copy<channelsPerNode; copy++)
                 {
                     channel = channel + copy*numNodes;
                     addChannel(i, channel, copy);
@@ -888,8 +887,9 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         }
         else    // 'Full redundancy' or 'simple' mode
         {
-            if (numChannels != numNodes / numDataCopies)
-                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels does not match expected value");
+            if (numNodes % numDataCopies)
+                throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels not an integer");
+            numChannels = numNodes / numDataCopies;
             int channel = 1;
             for (int i=0; i<numNodes; i++)
             {
@@ -899,6 +899,8 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
                     channel = 1;
             }
         }
+        if (!numChannels)
+            throw MakeStringException(MSGAUD_operator, ROXIE_INVALID_TOPOLOGY, "Invalid topology file - numChannels calculated at 0");
         // Now we know all the channels, we can open and subscribe the multicast channels
         if (!localSlave)
             openMulticastSocket();
