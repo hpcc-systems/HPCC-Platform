@@ -200,8 +200,13 @@ public:
         legacyMode = _legacyMode;
         ignoreUnknownImport = false;
         fromArchive = false;
+        stats.parseTime = 0;
+        stats.generateTime = 0;
+        stats.xmlSize = 0;
+        stats.cppSize = 0;
     }
 
+    void logStats();
     bool reportErrorSummary();
 
 public:
@@ -219,6 +224,12 @@ public:
     bool legacyMode;
     bool fromArchive;
     bool ignoreUnknownImport;
+    struct {
+        unsigned parseTime;
+        unsigned generateTime;
+        offset_t xmlSize;
+        offset_t cppSize;
+    } stats;
 };
 
 class EclCC : public CInterfaceOf<ICodegenContextCallback>
@@ -692,6 +703,7 @@ void EclCC::instantECL(EclCompileInstance & instance, IWorkUnit *wu, const char 
                 generator->setSaveGeneratedFiles(optSaveCpp);
 
                 bool generateOk = generator->processQuery(instance.query, target);  // NB: May clear instance.query
+                instance.stats.cppSize = generator->getGeneratedSize();
                 if (generateOk && !optNoCompile)
                 {
                     Owned<ICppCompiler> compiler = createCompiler(processName.toCharArray());
@@ -1042,8 +1054,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
             if (instance.query && !syntaxChecking && !optGenerateMeta && !optEvaluateResult)
                 instance.query.setown(convertAttributeToQuery(instance.query, ctx));
 
+            instance.stats.parseTime = msTick()-startTime;
+
             if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-                instance.wu->setTimerInfo("EclServer: parse query", NULL, msTick()-startTime, 1, 0);
+                instance.wu->setTimerInfo("EclServer: parse query", NULL, instance.stats.parseTime, 1, 0);
 
             if (optIncludeMeta || optGenerateMeta)
                 instance.generatedMeta.setown(parseCtx.getMetaTree());
@@ -1115,8 +1129,10 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         }
     }
 
+    unsigned totalTime = msTick() - startTime;
+    instance.stats.generateTime = totalTime - instance.stats.parseTime;
     if (instance.wu->getDebugValueBool("addTimingToWorkunit", true))
-        instance.wu->setTimerInfo("EclServer: totalTime", NULL, msTick()-startTime, 1, 0);
+        instance.wu->setTimerInfo("EclServer: totalTime", NULL, totalTime, 1, 0);
 }
 
 void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML)
@@ -1558,12 +1574,16 @@ bool EclCC::processFiles()
         EclCompileInstance info(NULL, *errs, stderr, optOutputFilename, optLegacy);
         processReference(info, optQueryRepositoryReference);
         ok = (errs->errCount() == 0);
+
+        info.logStats();
     }
     else
     {
         EclCompileInstance info(&inputFiles.item(0), *errs, stderr, optOutputFilename, optLegacy);
         processFile(info);
         ok = (errs->errCount() == 0);
+
+        info.logStats();
     }
 
     if (logTimings)
@@ -1581,6 +1601,19 @@ void EclCC::setDebugOption(const char * name, bool value)
     debugOptions.append(temp);
 }
 
+
+void EclCompileInstance::logStats()
+{
+    if (wu && wu->getDebugValueBool("logCompileStats", false))
+    {
+        memsize_t peakVm, peakResident;
+        getPeakMemUsage(peakVm, peakResident);
+        //Stats: added as a prefix so it is easy to grep, and a comma so can be read as a csv list.
+        DBGLOG("Stats:,parse,%u,generate,%u,peakmem,%u,xml,%"I64F"u,cpp,%"I64F"u",
+                stats.parseTime, stats.generateTime, (unsigned)(peakResident / 0x100000),
+                (unsigned __int64)stats.xmlSize, (unsigned __int64)stats.cppSize);
+    }
+}
 
 bool EclCompileInstance::reportErrorSummary()
 {
@@ -2019,7 +2052,13 @@ void EclCC::processBatchedFile(IFile & file, bool multiThreaded)
             dbglogTransformStats(true);
             if (info.wu &&
                 (info.wu->getDebugValueBool("generatePartialOutputOnError", false) || info.errs->errCount() == 0))
+            {
                 exportWorkUnitToXMLFile(info.wu, xmlFilename, XML_NoBinaryEncode64, true);
+                Owned<IFile> xml = createIFile(xmlFilename);
+                info.stats.xmlSize = xml->size();
+            }
+
+            info.logStats();
         }
     }
     catch (IException * e)

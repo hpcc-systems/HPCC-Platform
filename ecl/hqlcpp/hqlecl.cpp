@@ -70,6 +70,7 @@ public:
         generateTarget = EclGenerateNone;
         code.setown(createCppInstance(wu, wuname));
         deleteGenerated = false;
+        totalGeneratedSize = 0;
     }
     IMPLEMENT_IINTERFACE
 
@@ -98,6 +99,7 @@ protected:
     bool generateCode(HqlQueryContext & query);
     bool generateFullFieldUsageStatistics(HqlCppTranslator & translator, IHqlExpression * query);
     IPropertyTree * generateSingleFieldUsageStatistics(IHqlExpression * expr, const char * variety, const IPropertyTree * exclude);
+    offset_t getGeneratedSize() const;
     void insertStandAloneCode();
     void setWuState(bool ok);
     inline bool abortRequested();
@@ -114,6 +116,7 @@ protected:
     unsigned defaultMaxCompileThreads;
     StringArray sourceFiles;
     StringArray libraries;
+    offset_t totalGeneratedSize;
     bool checkForLocalFileUploads;
     bool noOutput;
     EclGenerateTarget generateTarget;
@@ -180,6 +183,8 @@ void HqlDllGenerator::expandCode(const char * templateName, const char * ext, IH
     props->setProp("outputName", fullname.str());
 
     expander->generate(*writer, pass, props);
+
+    totalGeneratedSize += out->size();
 
     if (!deleteGenerated)
         addCppName(fullname);
@@ -593,12 +598,17 @@ double HqlDllGenerator::getECLcomplexity(IHqlExpression * exprs)
     return translator.getComplexity(*code, query.expr);
 }
 
+offset_t HqlDllGenerator::getGeneratedSize() const
+{
+    return totalGeneratedSize;
+}
 
 extern HQLCPP_API double getECLcomplexity(IHqlExpression * exprs, IErrorReceiver * errs, IWorkUnit *wu, ClusterType targetClusterType)
 {
     HqlDllGenerator generator(errs, "unknown", NULL, wu, NULL, targetClusterType, NULL, false);
     return generator.getECLcomplexity(exprs);
 }
+
 
 extern HQLCPP_API IHqlExprDllGenerator * createDllGenerator(IErrorReceiver * errs, const char *wuname, const char * targetdir, IWorkUnit *wu, const char * template_dir, ClusterType targetClusterType, ICodegenContextCallback *ctxCallback, bool checkForLocalFileUploads)
 {
