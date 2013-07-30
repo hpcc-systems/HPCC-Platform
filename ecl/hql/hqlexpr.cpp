@@ -11565,8 +11565,10 @@ IHqlExpression *createDataset(node_operator op, HqlExprArray & parms)
                     mapper.setMapping(transform, leftSelect);
 
                     if (hasProperty(unorderedAtom, parms))
-                        type.setown(getTypeRemoveAllSortOrders(type));
-                    type.setown(getTypeUngroup(datasetType));
+                        type.setown(getTypeRemoveAllSortOrders(datasetType));
+                    else
+                        type.set(datasetType);
+                    type.setown(getTypeUngroup(type));
                     type.setown(getTypeProject(type, transform->queryRecord(), mapper));
                 }
                 else
