@@ -42,6 +42,7 @@ public:
     virtual bool generateDll(ICppCompiler * _compiler) = 0;
     virtual bool generateExe(ICppCompiler * _compiler) = 0;
     virtual bool generatePackage(const char * packageName) = 0;
+    virtual offset_t getGeneratedSize() const = 0;
     virtual bool processQuery(OwnedHqlExpr & parsedQuery, EclGenerateTarget generateTarget) = 0;
     virtual void setMaxCompileThreads(unsigned max) = 0;
     virtual void addManifest(const char *filename) = 0;
