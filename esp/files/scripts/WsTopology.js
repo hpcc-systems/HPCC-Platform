@@ -17,14 +17,12 @@
 define([
     "dojo/_base/declare",
     "dojo/_base/lang",
-    "dojo/_base/xhr",
+    "dojo/_base/array",
     "dojo/_base/Deferred",
-    "dojo/store/util/QueryResults",
 
-    "hpcc/ESPBase",
     "hpcc/ESPRequest"
-], function (declare, lang, xhr, Deferred, QueryResults,
-    ESPBase, ESPRequest) {
+], function (declare, lang, arrayUtil, Deferred,
+    ESPRequest) {
     return {
         TpServiceQuery: function (params) {
             lang.mixin(params.request, {
@@ -39,7 +37,31 @@ define([
             return ESPRequest.send("WsTopology", "TpGroupQuery", params);
         },
         TpLogicalClusterQuery: function (params) {
-            return ESPRequest.send("WsTopology", "TpLogicalClusterQuery", params);
+            return ESPRequest.send("WsTopology", "TpLogicalClusterQuery", params).then(function (response) {
+                var best = null;
+                var hthor = null;
+                if (lang.exists("TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster", response)) {
+                    arrayUtil.forEach(response.TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster, function (item, idx) {
+                        if (!best) {
+                            best = item;
+                        }
+                        if (item.Name.indexOf("hthor") !== -1) {
+                            hthor = item;
+                            return false;
+                        } else if (item.Name.indexOf("thor") !== -1) {
+                            best = item;
+                        }
+                    });
+                }
+                if (hthor) {
+                    response.TpLogicalClusterQueryResponse.default = hthor;
+                } else if (best) {
+                    response.TpLogicalClusterQueryResponse.default = best;
+                } else {
+                    response.TpLogicalClusterQueryResponse.default = null;
+                }
+                return response;
+            });
         }
     };
 });
