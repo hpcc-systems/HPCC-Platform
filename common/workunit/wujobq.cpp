@@ -1163,7 +1163,7 @@ public:
         return copyItemsImpl(qd,dest);
     }
 
-    void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state)
+    void copyItemsAndState(CJobQueueContents& contents, StringBuffer& state, StringBuffer& stateDetails)
     {
         assertex(qdata);
         Cconnlockblock block(this,false);
@@ -1174,6 +1174,12 @@ public:
         const char *st = qdata->root->queryProp("@state");
         if (st&&*st)
             state.set(st);
+        if (st && (strieq(st, "paused") || strieq(st, "stopped")))
+        {
+            const char *stDetails = qdata->root->queryProp("@stateDetails");
+            if (stDetails&&*stDetails)
+                stateDetails.set(stDetails);
+        }
     }
 
     unsigned takeItems(sQueueData &qd,CJobQueueContents &dest)
@@ -1768,8 +1774,19 @@ public:
     {
         Cconnlockblock block(this,true);
         ForEachQueue(qd) {
-            if (qd->root) 
+            if (qd->root)
                 qd->root->setProp("@state","paused");
+        }
+    }
+    void pause(const char* info)
+    {
+        Cconnlockblock block(this,true);
+        ForEachQueue(qd) {
+            if (qd->root) {
+                qd->root->setProp("@state","paused");
+                if (info && *info)
+                    qd->root->setProp("@stateDetails",info);
+            }
         }
     }
     bool paused()
@@ -1785,12 +1802,41 @@ public:
         }
         return true;
     }
+    bool paused(StringBuffer& info)
+    {
+        // true if all paused
+        Cconnlockblock block(this,false);
+        ForEachQueue(qd) {
+            if (qd->root) {
+                const char *state = qd->root->queryProp("@state");
+                if (state&&(strcmp(state,"paused")!=0))
+                    return false;
+                if (state&&!info.length()) {
+                    const char *stateDetails = qd->root->queryProp("@stateDetails");
+                    if (stateDetails && *stateDetails)
+                        info.set(stateDetails);
+                }
+            }
+        }
+        return true;
+    }
     void stop()
     {
         Cconnlockblock block(this,true);
         ForEachQueue(qd) {
-            if (qd->root) 
+            if (qd->root)
                 qd->root->setProp("@state","stopped");
+        }
+    }
+    void stop(const char* info)
+    {
+        Cconnlockblock block(this,true);
+        ForEachQueue(qd) {
+            if (qd->root) {
+                qd->root->setProp("@state","stopped");
+                if (info && *info)
+                    qd->root->setProp("@stateDetails",info);
+            }
         }
     }
     bool stopped()
@@ -1806,6 +1852,24 @@ public:
         }
         return true;
     }
+    bool stopped(StringBuffer& info)
+    {
+        // true if all stopped
+        Cconnlockblock block(this,false);
+        ForEachQueue(qd) {
+            if (qd->root) {
+                const char *state = qd->root->queryProp("@state");
+                if (state&&(strcmp(state,"stopped")!=0))
+                    return false;
+                if (state&&!info.length()) {
+                    const char *stateDetails = qd->root->queryProp("@stateDetails");
+                    if (stateDetails && *stateDetails)
+                        info.set(stateDetails);
+                }
+            }
+        }
+        return true;
+    }
 
     void resume()
     {
@@ -1813,6 +1877,17 @@ public:
         ForEachQueue(qd) {
             if (qd->root)
                 qd->root->setProp("@state","active");
+        }
+    }
+    void resume(const char* info)
+    {
+        Cconnlockblock block(this,true);
+        ForEachQueue(qd) {
+            if (qd->root) {
+                qd->root->setProp("@state","active");
+                if (info && *info)
+                    qd->root->setProp("@stateDetails",info);
+            }
         }
     }
 
