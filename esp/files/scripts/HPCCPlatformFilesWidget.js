@@ -48,6 +48,9 @@ define([
             this.inherited(arguments);
         },
 
+        getTitle: function () {
+            return "HPCC Platform - Files";
+        },
         //  Hitched actions  ---
 
         //  Implementation  ---

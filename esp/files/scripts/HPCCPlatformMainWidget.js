@@ -47,6 +47,10 @@ define([
             this.inherited(arguments);
         },
 
+        getTitle: function () {
+            return "HPCC Platform - Home";
+        },
+
         //  Hitched actions  ---
 
         //  Implementation  ---

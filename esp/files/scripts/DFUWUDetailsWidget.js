@@ -76,6 +76,10 @@ define([
             stateSelect.addOption(stateOptions);
         },
 
+        getTitle: function () {
+            return "DFU Workunit";
+        },
+
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.wu.refresh(true);

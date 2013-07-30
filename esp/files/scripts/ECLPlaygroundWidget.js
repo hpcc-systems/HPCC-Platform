@@ -163,6 +163,10 @@ define([
             this.updateInput("State", null, "...");
         },
 
+        getTitle: function () {
+            return "ECL Playground";
+        },
+
         watchWU: function () {
             if (this.watching) {
                 this.watching.unwatch();
