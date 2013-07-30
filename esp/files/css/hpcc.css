@@ -594,6 +594,10 @@ margin-left:-20px;
     background-color: rgb(208, 233, 252);
 }
 
+.TimingTreeMapWidget p {
+    padding-left:5px;
+}
+
 .dijitValidationTextBoxLabel {
     width:170px;
     text-align: left;
@@ -677,7 +681,6 @@ margin-left:-20px;
     height: 16px;
 }
 
-
 /*WUSTATES*/
 .iconWorkunit {
     background-image: url("../img/workunit.png"); 
@@ -686,20 +689,18 @@ margin-left:-20px;
     display: inline-block;
 }
 
-
 .iconCompiled, .iconCompleted{
     background-image: url("../img/workunit_completed.png"); 
     width: 16px;
     height: 16px;
     display: inline-block;
-
 }
 
 .iconRunning, .iconCompiling, .iconDebugRunning {
     background-image: url("../img/workunit_running.png"); 
     width: 16px;
     height: 16px; 
-    display: inline-block;  
+    display: inline-block;
 }
 
 .iconFailed, .iconStateAborted{
@@ -714,7 +715,7 @@ margin-left:-20px;
     background-image: url("../img/workunit_warning.png"); 
     width: 16px;
     height: 16px;
-    display: inline-block;    
+    display: inline-block;
 }
 
 .iconAborting{
