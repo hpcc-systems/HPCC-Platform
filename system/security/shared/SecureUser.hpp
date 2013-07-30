@@ -198,9 +198,9 @@ public:
         return m_userID;
     }
 
-    virtual CDateTime & getPasswordExpiration(CDateTime& expirationDate){ assertex(false); return expirationDate; }
-    virtual bool setPasswordExpiration(CDateTime& expirationDate) { assertex(false);return true; }
-    virtual int getPasswordDaysRemaining() {assertex(false);return -1;}
+    virtual CDateTime & getPasswordExpiration(CDateTime& expirationDate){ return expirationDate; }
+    virtual bool setPasswordExpiration(CDateTime& expirationDate) { return true; }
+    virtual int getPasswordDaysRemaining() {return -1;}
     virtual authStatus getAuthenticateStatus() {return m_authenticateStatus;}
     virtual void setAuthenticateStatus(authStatus status){m_authenticateStatus = status;}
 
