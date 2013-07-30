@@ -1543,7 +1543,7 @@ ISharedSmartBuffer *createSharedSmartMemBuffer(CActivityBase *activity, unsigned
 
 class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWriterReader
 {
-    rowidx_t granularity, writerGranularity, rowPos, limit, rowsToRead;
+    rowidx_t readGranularity, writeGranularity, rowPos, limit, rowsToRead;
     CThorSpillableRowArray rows;
     const void **readRows;
     CActivityBase &activity;
@@ -1570,7 +1570,7 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
     // IRowWriter impl.
         virtual void putRow(const void *row)
         {
-            if (rows.ordinality() >= owner.writerGranularity)
+            if (rows.ordinality() >= owner.writeGranularity)
                 owner.addRows(rows);
             rows.append(row);
         }
@@ -1587,15 +1587,16 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
         {
             {
                 CThorArrayLockBlock block(rows);
+                if (eos)
+                {
+                    inRows.kill();
+                    return;
+                }
                 if (rows.numCommitted() < limit)
                 {
                     // NB: allowed to go over limit, by as much as inRows.ordinality()-1
-                    rowidx_t num = inRows.ordinality();
-                    for (rowidx_t r=0; r<num; r++)
-                        rows.append(inRows.getClear(r));
-                    inRows.clearRows();
-
-                    if (readerBlocked && (rows.numCommitted() >= granularity))
+                    rows.appendRows(inRows, true);
+                    if (readerBlocked && (rows.numCommitted() >= readGranularity))
                     {
                         emptySem.signal();
                         readerBlocked = false;
@@ -1605,28 +1606,23 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
                 writersBlocked++;
             }
             fullSem.wait();
-            if (eos)
-            {
-                inRows.kill();
-                return;
-            }
         }
-
     }
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowMultiWriterReader(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _limit)
-        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf), limit(_limit)
+    CRowMultiWriterReader(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _limit, unsigned _readGranularity, unsigned _writerGranularity)
+        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf), limit(_limit), readGranularity(_readGranularity), writeGranularity(_writerGranularity)
     {
+        if (readGranularity > limit)
+            readGranularity = limit; // readGranularity must be <= limit;
         numWriters = 0;
-        writerGranularity = 500; // Amount writers buffer up before committing to output
-        granularity = 500; // Amount reader extracts when empty to avoid contention with writer
         roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
-        readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId()));
+        readRows = static_cast<const void * *>(rowManager->allocate(readGranularity * sizeof(void*), activity.queryContainer().queryId()));
         eos = eow = readerBlocked = false;
         rowPos = rowsToRead = 0;
         writersComplete = writersBlocked = 0;
+        rows.setup(rowIf, false, stableSort_none, true); // turning on throwOnOom;
     }
     ~CRowMultiWriterReader()
     {
@@ -1635,21 +1631,6 @@ public:
             ReleaseThorRow(readRows[rowPos++]);
         }
         ReleaseThorRow(readRows);
-    }
-    void abort()
-    {
-        eos = true;
-        CThorArrayLockBlock block(rows);
-        if (writersBlocked)
-        {
-            fullSem.signal(writersBlocked);
-            writersBlocked = 0;
-        }
-        if (readerBlocked)
-        {
-            emptySem.signal();
-            readerBlocked = false;
-        }
     }
     void writerStopped()
     {
@@ -1672,6 +1653,21 @@ public:
         ++numWriters;
         return new CAWriter(*this);
     }
+    virtual void abort()
+    {
+        CThorArrayLockBlock block(rows);
+        eos = true;
+        if (writersBlocked)
+        {
+            fullSem.signal(writersBlocked);
+            writersBlocked = 0;
+        }
+        if (readerBlocked)
+        {
+            emptySem.signal();
+            readerBlocked = false;
+        }
+    }
 // IRowStream impl.
     virtual const void *nextRow()
     {
@@ -1683,9 +1679,9 @@ public:
             {
                 {
                     CThorArrayLockBlock block(rows);
-                    if (rows.numCommitted() >= granularity || eow)
+                    if (rows.numCommitted() >= readGranularity || eow)
                     {
-                        rowsToRead = (eow && rows.numCommitted() < granularity) ? rows.numCommitted() : granularity;
+                        rowsToRead = (eow && rows.numCommitted() < readGranularity) ? rows.numCommitted() : readGranularity;
                         if (0 == rowsToRead)
                         {
                             eos = true;
@@ -1720,9 +1716,9 @@ public:
     }
 };
 
-IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit)
+IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit, unsigned readGranularity, unsigned writeGranularity)
 {
-    return new CRowMultiWriterReader(*activity, rowif, limit);
+    return new CRowMultiWriterReader(*activity, rowif, limit, readGranularity, writeGranularity);
 }
 
 

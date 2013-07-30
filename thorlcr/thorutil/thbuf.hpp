@@ -86,9 +86,12 @@ extern graph_decl IRowWriterMultiReader *createOverflowableBuffer(CActivityBase 
 interface IRowMultiWriterReader : extends IRowStream
 {
     virtual IRowWriter *getWriter() = 0;
+    virtual void abort() = 0;
 };
 
-IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit);
+#define DEFAULT_WR_READ_GRANULARITY 10000 // Amount reader extracts when empty to avoid contention with writer
+#define DEFAULT_WR_WRITE_GRANULARITY 1000 // Amount writers buffer up before committing to output
+IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit, unsigned readGranularity=DEFAULT_WR_READ_GRANULARITY, unsigned writeGranularity=DEFAULT_WR_WRITE_GRANULARITY);
 
 
 #endif

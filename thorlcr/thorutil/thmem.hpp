@@ -239,8 +239,16 @@ public:
     inline ~CThorArrayLockUnblock() { alock.lock(); }
 };
 
-class graph_decl CThorExpandingRowArray : public CSimpleInterface, implements IThorArrayLock
+class graph_decl CThorExpandingRowArray : public CSimpleInterface
 {
+    class CDummyLock : implements IThorArrayLock
+    {
+    public:
+        // IThorArrayLock
+        virtual void lock() const { }
+        virtual void unlock() const {  }
+    } dummyLock;
+
 protected:
     CActivityBase &activity;
     IRowInterfaces *rowIf;
@@ -333,9 +341,11 @@ public:
         swap(from);
     }
     void transferRows(rowidx_t & outNumRows, const void * * & outRows);
+    void transferRowsCopy(rowidx_t & outNumRows, const void **outRows);
     void transferFrom(CThorExpandingRowArray &src);
     void transferFrom(CThorSpillableRowArray &src);
     void removeRows(rowidx_t start, rowidx_t n);
+    bool appendRows(CThorExpandingRowArray &inRows, bool takeOwnership);
     void clearUnused();
     void sort(ICompare &compare, unsigned maxCores);
     void reorder(rowidx_t start, rowidx_t num, rowidx_t *neworder);
@@ -356,9 +366,7 @@ public:
     void deserialize(size32_t sz, const void *buf);
     void deserializeExpand(size32_t sz, const void *data);
     bool ensure(rowidx_t requiredRows);
-// IThorArrayLock
-    virtual void lock() const { }
-    virtual void unlock() const { }
+    virtual IThorArrayLock &queryLock() { return dummyLock; }
 };
 
 interface IWritePosCallback : extends IInterface
@@ -367,7 +375,7 @@ interface IWritePosCallback : extends IInterface
     virtual void filePosition(offset_t pos) = 0;
 };
 
-class graph_decl CThorSpillableRowArray : public CThorExpandingRowArray
+class graph_decl CThorSpillableRowArray : private CThorExpandingRowArray, implements IThorArrayLock
 {
     const size32_t commitDelta;  // How many rows need to be written before they are added to the committed region?
     rowidx_t firstRow; // Only rows firstRow..numRows are considered initialized.  Only read/write within cs.
@@ -378,10 +386,10 @@ public:
 
     CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
     ~CThorSpillableRowArray();
-    // NB: throwOnOom false
-    void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none)
+    // NB: default throwOnOom to false
+    void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=false)
     {
-        CThorExpandingRowArray::setup(rowIf, allowNulls, stableSort, false);
+        CThorExpandingRowArray::setup(rowIf, allowNulls, stableSort, throwOnOom);
     }
     void registerWriteCallback(IWritePosCallback &cb);
     void unregisterWriteCallback(IWritePosCallback &cb);
@@ -406,6 +414,7 @@ public:
             flush();
         return true;
     }
+    bool appendRows(CThorExpandingRowArray &inRows, bool takeOwnership);
 
     //The following can be accessed from the reader without any need to lock
     inline const void *query(rowidx_t i) const
@@ -465,6 +474,8 @@ public:
     void deserialize(size32_t sz, const void *buf, bool hasNulls){ CThorExpandingRowArray::deserialize(sz, buf); }
     void deserializeRow(IRowDeserializerSource &in) { CThorExpandingRowArray::deserializeRow(in); }
     bool ensure(rowidx_t requiredRows) { return CThorExpandingRowArray::ensure(requiredRows); }
+
+    virtual IThorArrayLock &queryLock() { return *this; }
 // IThorArrayLock
     virtual void lock() const { cs.enter(); }
     virtual void unlock() const { cs.leave(); }

@@ -1758,7 +1758,7 @@ public:
 // IMulticoreIntercept impl.
     virtual void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
-        /* NB: This is adds a work item to each worker in sequence
+        /* NB: This adds a work item to each worker in sequence
          * The pull side, also pulls from the workers in sequence
          * This ensures the output is return in input order.
          */
@@ -1789,6 +1789,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
             e->Release();
         else
             exc.setown(e);
+        multiWriter->abort();
     }
 
     SimpleInterThreadQueueOf<cWorkItem,false> workqueue;
@@ -1871,8 +1872,12 @@ public:
         : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
     {
         reader.parent = this;
-        unsigned limit = numworkers*1000; // shouldn't be that large but just in case
-        multiWriter.setown(createSharedWriteBuffer(&activity, rowIf, limit));
+
+        unsigned limit = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"limit\"]/@value", numworkers*1000);
+        unsigned readGranularity = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"readgranularity\"]/@value", DEFAULT_WR_READ_GRANULARITY);
+        unsigned writeGranularity = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"writegranularity\"]/@value", DEFAULT_WR_WRITE_GRANULARITY);
+        ActPrintLog(&activity, "CMultiCoreUnorderedJoinHelper: limit=%d, readGranularity=%d, writeGranularity=%d", limit, readGranularity, writeGranularity);
+        multiWriter.setown(createSharedWriteBuffer(&activity, rowIf, limit, readGranularity, writeGranularity));
         workers = new cWorker *[numthreads];
         for (unsigned i=0;i<numthreads;i++) 
             workers[i] = new cWorker(this);
@@ -1967,7 +1972,8 @@ IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IR
     IJoinHelper *jhelper = new CJoinHelper(activity, helper, rowIf);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
-    unsigned numthreads = getAffinityCpus();
+    unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, getAffinityCpus());
+    ActPrintLog(&activity, "Join helper using %d threads", numthreads);
     if (unsortedoutput)
         return new CMultiCoreUnorderedJoinHelper(activity, numthreads, false, jhelper, helper, rowIf);
     return new CMultiCoreJoinHelper(activity, numthreads, false, jhelper, helper, rowIf);
@@ -1985,10 +1991,9 @@ IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper
     IJoinHelper *jhelper = new SelfJoinHelper(activity, helper, rowIf);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
-    unsigned numthreads = getAffinityCpus();
+    unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, getAffinityCpus());
+    ActPrintLog(&activity, "Self join helper using %d threads", numthreads);
     if (unsortedoutput)
         return new CMultiCoreUnorderedJoinHelper(activity, numthreads, true, jhelper, helper, rowIf);
     return new CMultiCoreJoinHelper(activity, numthreads, true, jhelper, helper, rowIf);
 }
-
-

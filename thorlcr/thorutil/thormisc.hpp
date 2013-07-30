@@ -56,6 +56,7 @@
 #define THOROPT_SORT_MAX_DEVIANCE     "sort_max_deviance"
 #define THOROPT_OUTPUT_FLUSH_THRESHOLD "output_flush_threshold"
 #define THOROPT_OUTPUTLIMIT           "outputLimit"
+#define THOROPT_JOINHELPER_THREADS    "joinHelperThreads"
 
 #define INITIAL_SELFJOIN_MATCH_WARNING_LEVEL 20000  // max of row matches before selfjoin emits warning
 
