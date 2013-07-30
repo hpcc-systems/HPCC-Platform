@@ -377,6 +377,7 @@ define([
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,
+                query: this.getFilter(),
                 rowsPerPage: 50,
                 pagingLinks: 1,
                 pagingTextBox: true,

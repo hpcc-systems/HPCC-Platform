@@ -31,7 +31,6 @@ define([
 
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
-    "hpcc/SampleSelectWidget",
     "hpcc/GraphWidget",
     "hpcc/ResultsWidget",
     "hpcc/InfoGridWidget",
@@ -40,7 +39,7 @@ define([
     "dojo/text!../templates/DFUSearchWidget.html"
 ], function (declare, xhr, dom,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry,
-                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, Workunit,
+                EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, Workunit,
                 template) {
     return declare("DFUSearchWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
