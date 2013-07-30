@@ -105,6 +105,7 @@ define([
                     widget.init(params);
                 }
 
+                document.title = widget.getTitle ? widget.getTitle() : params.Widget;
                 /*
                 dojo.publish("hpccMessageTopic", {
                     type: "warning",

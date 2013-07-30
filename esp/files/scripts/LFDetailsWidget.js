@@ -103,6 +103,10 @@ define([
             });
         },
 
+        getTitle: function () {
+            return "Logical File Details";
+        },
+
         _handleResponse: function (wuidQualifier, response) {
             if (lang.exists(wuidQualifier, response)) {
                 var wu = ESPDFUWorkunit.Get(lang.getObject(wuidQualifier, false, response));
