@@ -1543,7 +1543,7 @@ ISharedSmartBuffer *createSharedSmartMemBuffer(CActivityBase *activity, unsigned
 
 class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWriterReader
 {
-    rowidx_t granularity, writerGranularity, rowPos, limit, rowsToRead;
+    rowidx_t readGranularity, writerGranularity, rowPos, limit, rowsToRead;
     CThorSpillableRowArray rows;
     const void **readRows;
     CActivityBase &activity;
@@ -1595,7 +1595,7 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
                         rows.append(inRows.getClear(r));
                     inRows.clearRows();
 
-                    if (readerBlocked && (rows.numCommitted() >= granularity))
+                    if (readerBlocked && (rows.numCommitted() >= readGranularity))
                     {
                         emptySem.signal();
                         readerBlocked = false;
@@ -1616,14 +1616,12 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CRowMultiWriterReader(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _limit)
-        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf), limit(_limit)
+    CRowMultiWriterReader(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _limit, unsigned _readGranularity, unsigned _writerGranularity)
+        : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf), limit(_limit), readGranularity(_readGranularity), writerGranularity(_writerGranularity)
     {
         numWriters = 0;
-        writerGranularity = 500; // Amount writers buffer up before committing to output
-        granularity = 500; // Amount reader extracts when empty to avoid contention with writer
         roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
-        readRows = static_cast<const void * *>(rowManager->allocate(granularity * sizeof(void*), activity.queryContainer().queryId()));
+        readRows = static_cast<const void * *>(rowManager->allocate(readGranularity * sizeof(void*), activity.queryContainer().queryId()));
         eos = eow = readerBlocked = false;
         rowPos = rowsToRead = 0;
         writersComplete = writersBlocked = 0;
@@ -1683,9 +1681,9 @@ public:
             {
                 {
                     CThorArrayLockBlock block(rows);
-                    if (rows.numCommitted() >= granularity || eow)
+                    if (rows.numCommitted() >= readGranularity || eow)
                     {
-                        rowsToRead = (eow && rows.numCommitted() < granularity) ? rows.numCommitted() : granularity;
+                        rowsToRead = (eow && rows.numCommitted() < readGranularity) ? rows.numCommitted() : readGranularity;
                         if (0 == rowsToRead)
                         {
                             eos = true;
@@ -1720,9 +1718,9 @@ public:
     }
 };
 
-IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit)
+IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit, unsigned readGranularity, unsigned writerGranularity)
 {
-    return new CRowMultiWriterReader(*activity, rowif, limit);
+    return new CRowMultiWriterReader(*activity, rowif, limit, readGranularity, writerGranularity);
 }
 
 

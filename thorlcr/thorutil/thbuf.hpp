@@ -88,7 +88,9 @@ interface IRowMultiWriterReader : extends IRowStream
     virtual IRowWriter *getWriter() = 0;
 };
 
-IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit);
+#define DEFAULT_WR_READ_GRANULARITY 500 // Amount reader extracts when empty to avoid contention with writer
+#define DEFAULT_WR_WRITE_GRANULARITY 500 // Amount writers buffer up before committing to output
+IRowMultiWriterReader *createSharedWriteBuffer(CActivityBase *activity, IRowInterfaces *rowif, unsigned limit, unsigned readGranularity=DEFAULT_WR_READ_GRANULARITY, unsigned writerGranularity=DEFAULT_WR_WRITE_GRANULARITY);
 
 
 #endif
