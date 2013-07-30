@@ -37,7 +37,6 @@ define([
     "hpcc/ESPWorkunit",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
-    "hpcc/SampleSelectWidget",
     "hpcc/GraphsWidget",
     "hpcc/ResultsWidget",
     "hpcc/SourceFilesWidget",
@@ -59,7 +58,7 @@ define([
 ], function (declare, dom, domAttr, domClass, query, Memory, Observable,
                 _TemplatedMixin, _WidgetsInTemplateMixin, registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-                _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
+                _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
                 template) {
     return declare("WUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
