@@ -920,7 +920,7 @@ bool addWUQSQueryFilterInt64(WUQuerySortField *filters, unsigned short &count, M
 bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequest & req, IEspWUListQueriesResponse & resp)
 {
     bool descending = req.getDescending();
-    const char *sortBy =  req.getSortBy();
+    const char *sortBy =  req.getSortby();
     WUQuerySortField sortOrder[2] = {WUQSFId, WUQSFterm};
     if(notEmpty(sortBy))
     {
@@ -946,28 +946,27 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
             sortOrder[0] = (WUQuerySortField) (sortOrder[0] | WUQSFreverse);
     }
 
-    IConstWUListQueriesFilters& filterReqs = req.getFilters();
     WUQuerySortField filters[16];
     unsigned short filterCount = 0;
     MemoryBuffer filterBuf;
-    const char* clusterReq = filterReqs.getClusterName();
-    addWUQSQueryFilter(filters, filterCount, filterBuf, filterReqs.getQuerySetName(), WUQSFQuerySet);
-    if (!filterReqs.getMemoryLimitLow_isNull())
-        addWUQSQueryFilterInt64(filters, filterCount, filterBuf, filterReqs.getMemoryLimitLow(), (WUQuerySortField) (WUQSFmemoryLimit | WUQSFnumeric));
-    if (!filterReqs.getMemoryLimitHigh_isNull())
-        addWUQSQueryFilterInt64(filters, filterCount, filterBuf, filterReqs.getMemoryLimitHigh(), (WUQuerySortField) (WUQSFmemoryLimitHi | WUQSFnumeric));
-    if (!filterReqs.getTimeLimitLow_isNull())
-        addWUQSQueryFilterInt(filters, filterCount, filterBuf, filterReqs.getTimeLimitLow(), (WUQuerySortField) (WUQSFtimeLimit | WUQSFnumeric));
-    if (!filterReqs.getTimeLimitHigh_isNull())
-        addWUQSQueryFilterInt(filters, filterCount, filterBuf, filterReqs.getTimeLimitHigh(), (WUQuerySortField) (WUQSFtimeLimitHi | WUQSFnumeric));
-    if (!filterReqs.getWarnTimeLimitLow_isNull())
-        addWUQSQueryFilterInt(filters, filterCount, filterBuf, filterReqs.getWarnTimeLimitLow(), (WUQuerySortField) (WUQSFwarnTimeLimit | WUQSFnumeric));
-    if (!filterReqs.getWarnTimeLimitHigh_isNull())
-        addWUQSQueryFilterInt(filters, filterCount, filterBuf, filterReqs.getWarnTimeLimitHigh(), (WUQuerySortField) (WUQSFwarnTimeLimitHi | WUQSFnumeric));
-    if (!filterReqs.getPriorityLow_isNull())
-        addWUQSQueryFilterInt(filters, filterCount, filterBuf, filterReqs.getPriorityLow(), (WUQuerySortField) (WUQSFpriority | WUQSFnumeric));
-    if (!filterReqs.getPriorityHigh_isNull())
-        addWUQSQueryFilterInt(filters, filterCount, filterBuf, filterReqs.getPriorityHigh(), (WUQuerySortField) (WUQSFpriorityHi | WUQSFnumeric));
+    const char* clusterReq = req.getClusterName();
+    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQuerySetName(), WUQSFQuerySet);
+    if (!req.getMemoryLimitLow_isNull())
+        addWUQSQueryFilterInt64(filters, filterCount, filterBuf, req.getMemoryLimitLow(), (WUQuerySortField) (WUQSFmemoryLimit | WUQSFnumeric));
+    if (!req.getMemoryLimitHigh_isNull())
+        addWUQSQueryFilterInt64(filters, filterCount, filterBuf, req.getMemoryLimitHigh(), (WUQuerySortField) (WUQSFmemoryLimitHi | WUQSFnumeric));
+    if (!req.getTimeLimitLow_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getTimeLimitLow(), (WUQuerySortField) (WUQSFtimeLimit | WUQSFnumeric));
+    if (!req.getTimeLimitHigh_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getTimeLimitHigh(), (WUQuerySortField) (WUQSFtimeLimitHi | WUQSFnumeric));
+    if (!req.getWarnTimeLimitLow_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getWarnTimeLimitLow(), (WUQuerySortField) (WUQSFwarnTimeLimit | WUQSFnumeric));
+    if (!req.getWarnTimeLimitHigh_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getWarnTimeLimitHigh(), (WUQuerySortField) (WUQSFwarnTimeLimitHi | WUQSFnumeric));
+    if (!req.getPriorityLow_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getPriorityLow(), (WUQuerySortField) (WUQSFpriority | WUQSFnumeric));
+    if (!req.getPriorityHigh_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getPriorityHigh(), (WUQuerySortField) (WUQSFpriorityHi | WUQSFnumeric));
     filters[filterCount] = WUQSFterm;
 
     unsigned numberOfQueries = 0;
