@@ -355,14 +355,6 @@
           </xs:appinfo>
         </xs:annotation>
       </xs:attribute>
-      <xs:attribute name="numChannels" type="xs:nonNegativeInteger" use="optional">
-        <xs:annotation>
-          <xs:appinfo>
-            <tooltip>Number of channels in this Roxie cluster. Should be equal to the number of agents, normally</tooltip>
-            <viewType>readonly</viewType>
-          </xs:appinfo>
-        </xs:annotation>
-      </xs:attribute>
       <xs:attribute name="directory" type="absolutePath" use="optional" default="${EXEC_PREFIX}/lib/${DIR_NAME}/roxie/">
         <xs:annotation>
           <xs:appinfo>
@@ -755,6 +747,22 @@
       <xs:annotation>
         <xs:appinfo>
           <tooltip>Offset for cyclic redundancy mode</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+
+    <xs:attribute name="channelsPerNode" type="xs:nonNegativeInteger" use="optional" default="1">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Number of channels/data locations to use per node, in overloaded mode</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
+
+    <xs:attribute name="numDataCopies" type="xs:nonNegativeInteger" use="optional" default="1">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Number of copies of the data in redundant modes</tooltip>
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
