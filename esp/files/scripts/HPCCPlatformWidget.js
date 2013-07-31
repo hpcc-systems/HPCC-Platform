@@ -70,6 +70,10 @@ define([
             this.inherited(arguments);
         },
 
+        getTitle: function () {
+            return "HPCC Platform";
+        },
+
         //  Hitched actions  ---
         _onFind: function (evt) {
             this.stackContainer.selectChild(this.mainPage);

@@ -95,6 +95,10 @@ define([
             this.initFilter();
         },
 
+        getTitle: function () {
+            return "Logical Files";
+        },
+
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.refreshGrid();

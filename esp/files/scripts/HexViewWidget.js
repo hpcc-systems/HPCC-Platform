@@ -109,7 +109,7 @@ define([
                         context.watchWU();
                     },
                     onUpdate: function () {
-                        context.wu.submit("hthor");
+                        context.wu.submit();
                     },
                     onSubmit: function () {
                     }

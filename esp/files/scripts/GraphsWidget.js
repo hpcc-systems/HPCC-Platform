@@ -126,6 +126,9 @@ define([
         refreshGrid: function (args) {
             var context = this;
             this.wu.getInfo({
+                onGetTimers: function (timers) {
+                    //  Required to calculate Graphs Total Time  ---
+                },
                 onGetGraphs: function (graphs) {
                     context.store.setData(graphs);
                     context.grid.refresh();

@@ -59,6 +59,10 @@ define([
             this._refreshActionState();
         },
 
+        getTitle: function () {
+            return "Activity";
+        },
+
         createGrid: function (domID) {
             var context = this;
             var retVal = new declare([OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry, ESPUtil.GridHelper])({

@@ -94,13 +94,7 @@ public:
     void                            inheritDefinitions(HqlStmts & owwther);
     HqlStmt *                       queryStmt() { return owner; };
 
-    inline void appendOwn(HqlExprAssociation & next)
-    {
-        defs.append(next);
-#ifdef CACHE_DEFINITION_HASHES
-        exprHashes.append(getSearchHash(next.represents));
-#endif
-    }
+    void appendOwn(HqlExprAssociation & next);
 
     inline bool zap(HqlExprAssociation & next)
     {
@@ -117,6 +111,8 @@ public:
 protected:
     HqlStmt *                       owner;
     CIArrayOf<HqlExprAssociation>   defs;
+    // A bit mask of which types of associations this contains.  Don't worry about false positives.
+    unsigned                        associationMask;
 #ifdef CACHE_DEFINITION_HASHES
     DefinitionHashArray             exprHashes;
 #endif
