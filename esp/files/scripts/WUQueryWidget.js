@@ -93,6 +93,10 @@ define([
             this.initFilter();
         },
 
+        getTitle: function () {
+            return "ECL Workunits";
+        },
+
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.refreshGrid();
@@ -373,6 +377,7 @@ define([
                 allowSelectAll: true,
                 deselectOnRefresh: false,
                 store: store,
+                query: this.getFilter(),
                 rowsPerPage: 50,
                 pagingLinks: 1,
                 pagingTextBox: true,

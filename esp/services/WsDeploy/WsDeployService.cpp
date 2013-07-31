@@ -4104,6 +4104,10 @@ bool CWsDeployFileInfo::handleComponent(IEspContext &context, IEspHandleComponen
       Owned<IPropertyTree> pSchema = loadSchema(pEnvRoot->queryPropTree("./Programs/Build[1]"), pBuildSet, buildSetPath, m_Environment);
       xpath.clear().appendf("./Software/%s[@name='%s']", processName, buildSetName);
       IPropertyTree* pCompTree = generateTreeFromXsd(pEnvRoot, pSchema, processName, buildSetName, m_pService->getCfg(), m_pService->getName(), false);
+
+      if (processName != NULL && strcmp(processName, XML_TAG_ROXIECLUSTER) == 0 && pCompTree->queryPropTree(XML_TAG_ROXIE_SERVER) != NULL)
+        pCompTree->removeTree(pCompTree->queryPropTree(XML_TAG_ROXIE_SERVER));
+
       IPropertyTree* pInstTree = pCompTree->queryPropTree(XML_TAG_INSTANCE);
 
       if (pInstTree)

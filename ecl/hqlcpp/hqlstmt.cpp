@@ -618,46 +618,53 @@ HqlExprAssociation * BuildCtx::queryAssociation(IHqlExpression * search, AssocKi
     if (!search)
         return NULL;
     search = search->queryBody();
+    unsigned searchMask = (1 << kind);
+    if (selectors)
+        searchMask |= (1 << AssocCursor);
 
     // search all statements in the tree before this one, to see
     // if an expression already exists...  If so return the target
     // of the assignment.
     loop
     {
-        const CIArrayOf<HqlExprAssociation> & defs = searchStmts->defs;
-#ifdef CACHE_DEFINITION_HASHES
-        if (!selectors)
+
+        if (searchStmts->associationMask & searchMask)
         {
-            unsigned searchHash = getSearchHash(search);
-            const DefinitionHashArray & hashes = searchStmts->exprHashes;
-            ForEachItemInRev(idx, hashes)
+            const CIArrayOf<HqlExprAssociation> & defs = searchStmts->defs;
+    #ifdef CACHE_DEFINITION_HASHES
+            if (!selectors)
             {
-                if (hashes.item(idx) == searchHash)
+                unsigned searchHash = getSearchHash(search);
+                const DefinitionHashArray & hashes = searchStmts->exprHashes;
+                ForEachItemInRev(idx, hashes)
                 {
-                    HqlExprAssociation & cur = defs.item(idx);
-                    if (cur.represents == search)
+                    if (hashes.item(idx) == searchHash)
                     {
-                        if ((kind == AssocAny) || (cur.getKind() == kind))
-                            return &cur;
+                        HqlExprAssociation & cur = defs.item(idx);
+                        if (cur.represents == search)
+                        {
+                            if (cur.getKind() == kind)
+                                return &cur;
+                        }
                     }
                 }
             }
-        }
-        else
-#endif
-        {
-            ForEachItemInRev(idx, defs)
+            else
+    #endif
             {
-                HqlExprAssociation & cur = defs.item(idx);
-                IHqlExpression * represents = cur.represents.get();
-                if (selectors && (cur.getKind() == AssocCursor))
+                ForEachItemInRev(idx, defs)
                 {
-                    if (selectors->contains(*represents))
-                        return NULL;
+                    HqlExprAssociation & cur = defs.item(idx);
+                    IHqlExpression * represents = cur.represents.get();
+                    if (selectors && (cur.getKind() == AssocCursor))
+                    {
+                        if (selectors->contains(*represents))
+                            return NULL;
+                    }
+                    if (represents == search)
+                        if (cur.getKind() == kind)
+                            return &cur;
                 }
-                if (represents == search)
-                    if ((kind == AssocAny) || (cur.getKind() == kind))
-                        return &cur;
             }
         }
 
@@ -693,18 +700,22 @@ void BuildCtx::removeAssociation(HqlExprAssociation * search)
 HqlExprAssociation * BuildCtx::queryFirstAssociation(AssocKind searchKind)
 {
     HqlStmts * searchStmts = curStmts;
+    unsigned searchMask = (1 << searchKind);
 
     // search all statements in the tree before this one, to see
     // if an expression already exists...  If so return the target
     // of the assignment.
     loop
     {
-        CIArray & defs = searchStmts->defs;
-        ForEachItemInRev(idx, defs)
+        if (searchStmts->associationMask & searchMask)
         {
-            HqlExprAssociation & cur = (HqlExprAssociation &)defs.item(idx);
-            if (cur.getKind() == searchKind)
-                return &cur;
+            CIArray & defs = searchStmts->defs;
+            ForEachItemInRev(idx, defs)
+            {
+                HqlExprAssociation & cur = (HqlExprAssociation &)defs.item(idx);
+                if (cur.getKind() == searchKind)
+                    return &cur;
+            }
         }
 
         HqlStmt * limitStmt = searchStmts->queryStmt();
@@ -720,21 +731,25 @@ HqlExprAssociation * BuildCtx::queryFirstAssociation(AssocKind searchKind)
 HqlExprAssociation * BuildCtx::queryFirstCommonAssociation(AssocKind searchKind)
 {
     HqlStmts * searchStmts = curStmts;
+    unsigned searchMask = (1 << searchKind) | (1 << AssocCursor);
 
     // search all statements in the tree before this one, to see
     // if an expression already exists...  If so return the target
     // of the assignment.
     loop
     {
-        CIArray & defs = searchStmts->defs;
-        ForEachItemInRev(idx, defs)
+        if (searchStmts->associationMask & searchMask)
         {
-            HqlExprAssociation & cur = (HqlExprAssociation &)defs.item(idx);
-            AssocKind kind = cur.getKind();
-            if (kind == searchKind)
-                return &cur;
-            if (kind == AssocCursor)
-                return NULL;
+            CIArray & defs = searchStmts->defs;
+            ForEachItemInRev(idx, defs)
+            {
+                HqlExprAssociation & cur = (HqlExprAssociation &)defs.item(idx);
+                AssocKind kind = cur.getKind();
+                if (kind == searchKind)
+                    return &cur;
+                if (kind == AssocCursor)
+                    return NULL;
+            }
         }
 
         HqlStmt * limitStmt = searchStmts->queryStmt();
@@ -948,6 +963,30 @@ IHqlStmt * BuildCtx::selectBestContext(IHqlExpression * expr)
 
 HqlStmts::HqlStmts(HqlStmt * _owner)    : owner(_owner) 
 {
+    associationMask = 0;
+}
+
+void HqlStmts::appendOwn(HqlExprAssociation & next)
+{
+    defs.append(next);
+#ifdef CACHE_DEFINITION_HASHES
+    exprHashes.append(getSearchHash(next.represents));
+#endif
+    associationMask |= (1 << next.getKind());
+}
+
+void HqlStmts::inheritDefinitions(HqlStmts & other)
+{
+    ForEachItemIn(i, other.defs)
+    {
+        HqlExprAssociation & cur = other.defs.item(i);
+        defs.append(OLINK(cur));
+        associationMask |= (1 << cur.getKind());
+#ifdef CACHE_DEFINITION_HASHES
+        exprHashes.append(other.exprHashes.item(i));
+#endif
+    }
+
 }
 
 void HqlStmts::appendStmt(HqlStmt & stmt)
@@ -1087,18 +1126,6 @@ IHqlExpression * HqlStmt::queryExpr(unsigned index)
     return NULL;
 }
 
-
-void HqlStmts::inheritDefinitions(HqlStmts & other)
-{
-    ForEachItemIn(i, other.defs)
-    {
-        defs.append(OLINK(other.defs.item(i)));
-#ifdef CACHE_DEFINITION_HASHES
-        exprHashes.append(other.exprHashes.item(i));
-#endif
-    }
-
-}
 
 //---------------------------------------------------------------------------
 
@@ -1819,13 +1846,17 @@ AssociationIterator::AssociationIterator(BuildCtx & ctx)
     rootStmts = ctx.curStmts;
     curStmts = NULL;
     curIdx = 0;
+    searchMask = (unsigned)-1;
 }
 
 
 bool AssociationIterator::first()
 {
     curStmts = rootStmts;
-    curIdx = curStmts->defs.ordinality();
+    if (curStmts->associationMask & searchMask)
+        curIdx = curStmts->defs.ordinality();
+    else
+        curIdx = 0;
     return doNext();
 }
 
@@ -1843,7 +1874,10 @@ bool AssociationIterator::doNext()
             return false;
         }
         curStmts = limitStmt->queryContainer();
-        curIdx = curStmts->defs.ordinality();
+        if (curStmts->associationMask & searchMask)
+            curIdx = curStmts->defs.ordinality();
+        else
+            curIdx = 0;
     }
 }
 

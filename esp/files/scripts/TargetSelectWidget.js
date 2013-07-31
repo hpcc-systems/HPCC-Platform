@@ -17,65 +17,41 @@ require([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/array",
+    "dojo/_base/xhr",
+    "dojo/data/ItemFileReadStore",
+    "dojo/on",
     "dojo/dom",
 
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/form/Select",
     "dijit/registry",
 
     "hpcc/WsTopology",
     "hpcc/WsWorkunits",
-    "hpcc/FileSpray",
+    "hpcc/FileSpray"
+], function (declare, lang, arrayUtil, xhr, ItemFileReadStore, on, dom,
+    Select, registry,
+    WsTopology, WsWorkunits, FileSpray) {
+    return declare("TargetSelectWidget", Select, {
 
-    "dojo/text!./templates/TargetSelectWidget.html"
-], function (declare, lang, arrayUtil, dom,
-    _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, Select, registry,
-    WsTopology, WsWorkunits, FileSpray,
-    template) {
-    return declare("TargetSelectWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
-        templateString: template,
-        baseClass: "TargetSelectWidget",
-
-        targetSelectControl: null,
-        name: "",
-        _value: "",
-
-        postCreate: function (args) {
-            this.inherited(arguments);
-            this._initControls();
-        },
-
-        resize: function (args) {
-            this.inherited(arguments);
-        },
-
-        layout: function (args) {
-            this.inherited(arguments);
-        },
+        loading: false,
+        defaultValue: "",
 
         //  Implementation  ---
-        _initControls: function () {
-            var context = this;
-            this.targetSelectControl = registry.byId(this.id + "TargetSelect");
-            this.targetSelectControl.onChange = function () {
-                context.onChange(this.get("value"));
-            };
-        },
-
         init: function (params) {
             if (this.initalized)
                 return;
             this.initalized = true;
-            this.targetSelectControl.options = [];
+            this.loading = true;
+            this.options = [];
 
             if (params.Target) {
-                this._value = params.Target;
+                this.defaultValue = params.Target;
+                this.set("value", params.Target);
             }
+
             if (params.includeBlank) {
                 this.includeBlank = params.includeBlank;
-                this.targetSelectControl.options.push({
+                this.options.push({
                     label: "&nbsp;",
                     value: ""
                 });
@@ -88,6 +64,8 @@ require([
                 this.loadWUState();
             } else if (params.DFUState === true) {
                 this.loadDFUState();
+            } else if (params.ECLSamples === true) {
+                this.loadECLSamples();
             } else {
                 this.loadTargets();
             }
@@ -98,50 +76,25 @@ require([
             }
         },
 
-        onChange: function (target) {
-            this._value = target;
-            this._valueItem = null;
-            var context = this;
-            var idx = arrayUtil.forEach(this.targetSelectControl.options, function(item, idx) {
-                if (item.value === context._value) {
-                    context._valueItem = item;
-                }
-            });
-            if (this.callback) {
-                this.callback(this._value, this._valueItem);
-            }
-        },
-
-        setValue: function (target) {
-            if (target !== null && this._value != target) {
-                this._value = target;
-                this.targetSelectControl.set("value", target);
-            }
-        },
-
         _setValueAttr: function (target) {
-            if (target === null) {
+            if (target === null)
                 target = "";
-            }
-            if (target !== null && this._value != target) {
-                this._value = target;
-                this.targetSelectControl.set("value", target);
-            }
-        },
-
-        getValue: function () {
-            return this._value;
+            this.inherited(arguments);
         },
 
         _getValueAttr: function () {
-            return this._value;
+            if (this.loading)
+                return this.defaultValue;
+
+            return this.value;
         },
 
-        resetDefaultSelection: function () {
-            if (this._value == "") {
-                this._value = this.targetSelectControl.options[0].value;
+        _postLoad: function () {
+            if (this.defaultValue == "") {
+                this.defaultValue = this.options[0].value;
             }
-            this.targetSelectControl.set("value", this._value);
+            this.set("value", this.defaultValue);
+            this.loading = false;
         },
 
         loadDropZones: function () {
@@ -151,13 +104,13 @@ require([
                     if (lang.exists("TpServiceQueryResponse.ServiceList.TpDropZones.TpDropZone", response)) {
                         var targetData = response.TpServiceQueryResponse.ServiceList.TpDropZones.TpDropZone;
                         for (var i = 0; i < targetData.length; ++i) {
-                            context.targetSelectControl.options.push({
+                            context.options.push({
                                 label: targetData[i].Name,
                                 value: targetData[i].Name,
                                 machine: targetData[i].TpMachines.TpMachine[0]
                             });
                         }
-                        context.resetDefaultSelection();
+                        context._postLoad();
                     }
                 }
             });
@@ -170,12 +123,12 @@ require([
                     if (lang.exists("TpGroupQueryResponse.TpGroups.TpGroup", response)) {
                         var targetData = response.TpGroupQueryResponse.TpGroups.TpGroup;
                         for (var i = 0; i < targetData.length; ++i) {
-                            context.targetSelectControl.options.push({
+                            context.options.push({
                                 label: targetData[i].Name,
                                 value: targetData[i].Name
                             });
                         }
-                        context.resetDefaultSelection();
+                        context._postLoad();
                     }
                 }
             });
@@ -183,34 +136,34 @@ require([
 
         loadWUState: function() {
             for (var key in WsWorkunits.States) {
-                this.targetSelectControl.options.push({
+                this.options.push({
                     label: WsWorkunits.States[key],
                     value: WsWorkunits.States[key]
                 });
             }
-            this.resetDefaultSelection();
+            this._postLoad();
         },
 
         loadDFUState: function () {
             for (var key in FileSpray.States) {
-                this.targetSelectControl.options.push({
+                this.options.push({
                     label: FileSpray.States[key],
                     value: FileSpray.States[key]
                 });
             }
-            this.resetDefaultSelection();
+            this._postLoad();
         },
 
         LogicalFileSearchType: function() {
-            this.targetSelectControl.options.push({
+            this.options.push({
                 label: "Created",
                 value: "Created"
             });
-            this.targetSelectControl.options.push({
+            this.options.push({
                 label: "Used",
                 value: "Referenced"
             });
-            this.resetDefaultSelection();
+            this._postLoad();
         },
 
         loadTargets: function () {
@@ -219,27 +172,44 @@ require([
             }).then(function (response) {
                 if (lang.exists("TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster", response)) {
                     var targetData = response.TpLogicalClusterQueryResponse.TpLogicalClusters.TpLogicalCluster;
-                    var has_hthor = false;
                     for (var i = 0; i < targetData.length; ++i) {
-                        context.targetSelectControl.options.push({
+                        context.options.push({
                             label: targetData[i].Name,
                             value: targetData[i].Name
                         });
-                        if (targetData[i].Name == "hthor") {
-                            has_hthor = true;
-                        }
                     }
 
                     if (!context.includeBlank && context._value == "") {
-                        if (has_hthor) {
-                            context._value = "hthor";
+                        if (response.TpLogicalClusterQueryResponse.default) {
+                            context._value = response.TpLogicalClusterQueryResponse.default.Name;
                         } else {
-                            context._value = context.targetSelectControl.options[0].value;
+                            context._value = context.options[0].value;
                         }
                     }
-                    context.resetDefaultSelection();
                 }
+                context._postLoad();
             });
+        },
+
+        loadECLSamples: function () {
+            var sampleStore = new ItemFileReadStore({
+                url: "ecl/ECLPlaygroundSamples.json"
+            });
+            this.setStore(sampleStore);
+            var context = this;
+            this.on("change", function (evt) {
+                var filename = this.get("value");
+                xhr.get({
+                    url: "ecl/" + filename,
+                    handleAs: "text",
+                    load: function (eclText) {
+                        context.onNewSelection(eclText);
+                    },
+                    error: function () {
+                    }
+                });
+            });
+            context._postLoad();
         }
     });
 });

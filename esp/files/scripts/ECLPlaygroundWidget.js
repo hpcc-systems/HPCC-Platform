@@ -30,7 +30,6 @@ define([
 
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
-    "hpcc/SampleSelectWidget",
     "hpcc/GraphWidget",
     "hpcc/ECLPlaygroundResultsWidget",
     "hpcc/ESPWorkunit",
@@ -38,7 +37,7 @@ define([
     "dojo/text!../templates/ECLPlaygroundWidget.html"
 ], function (declare, xhr, lang, dom, query,
                 _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry,
-                EclSourceWidget, TargetSelectWidget, SampleSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit,
+                EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, ESPWorkunit,
                 template) {
     return declare("ECLPlaygroundWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
         templateString: template,
@@ -116,7 +115,7 @@ define([
                 this.watchWU();
             } else {
                 this.initSamples();
-                this.graphControl.watchSelect(this.sampleSelectWidget.selectControl);
+                this.graphControl.watchSelect(this.sampleSelectWidget);
             }
             this.graphControl.watchSplitter(this.borderContainer.getSplitter("right"));
             this.graphControl.watchSplitter(this.borderContainer.getSplitter("bottom"));
@@ -129,7 +128,10 @@ define([
                 context.resetPage();
                 context.editorControl.setText(eclText);
             };
-            this.sampleSelectWidget.load();
+            this.sampleSelectWidget.init({
+                ECLSamples: true,
+                Target: "default.ecl"
+            });
         },
 
         initEditor: function () {
@@ -161,6 +163,10 @@ define([
             this.graphControl.clear();
             this.resultsWidget.clear();
             this.updateInput("State", null, "...");
+        },
+
+        getTitle: function () {
+            return "ECL Playground";
         },
 
         watchWU: function () {

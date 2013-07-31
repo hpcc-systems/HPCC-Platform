@@ -87,6 +87,10 @@ define([
             this.initFilter();
         },
 
+        getTitle: function () {
+            return "DFU Workunits";
+        },
+
         //  Hitched actions  ---
         _onRefresh: function (event) {
             this.refreshGrid();

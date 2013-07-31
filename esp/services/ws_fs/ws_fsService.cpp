@@ -548,26 +548,29 @@ void setRoxieClusterPartDiskMapping(const char *clusterName, const char *default
     }
 
     bool replicate =  false;
-    unsigned redundancy = 0;
-    int replicateOffset = 1;
-    unsigned channelsPerNode = 1;
+    unsigned redundancy = 0;       // Number of "spare" copies of the data
+    unsigned channelsPerNode = 1;  // Overloaded and cyclic modes
+    int replicateOffset = 1;        // Used In cyclic mode only
+
+    unsigned numDataCopies = process.getPropInt("@numDataCopies", 1);
+
     ClusterPartDiskMapSpec spec;
     spec.setDefaultBaseDir(defaultFolder);
     if (strieq(slaveConfig, "overloaded"))
     {
-        channelsPerNode = process.getCount("RoxieSlave[1]/RoxieChannel");
+        channelsPerNode = process.getPropInt("@channelsPernode", 1);
         spec.setDefaultReplicateDir(defaultReplicateFolder);
     }
     else if (strieq(slaveConfig, "full redundancy"))
     {
-        redundancy = 1;
+        redundancy = numDataCopies-1;
         replicateOffset = 0;
         replicate = true;
     }
     else if (strieq(slaveConfig, "cyclic redundancy"))
     {
-        redundancy = 1;
-        channelsPerNode = process.getCount("RoxieSlave[1]/RoxieChannel");
+        redundancy = numDataCopies-1;
+        channelsPerNode = numDataCopies;
         replicateOffset = process.getPropInt("@cyclicOffset", 1);
         spec.setDefaultReplicateDir(defaultReplicateFolder);
         replicate = true;

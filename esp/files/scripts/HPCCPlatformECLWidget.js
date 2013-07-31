@@ -46,6 +46,10 @@ define([
             this.inherited(arguments);
         },
 
+        getTitle: function () {
+            return "HPCC Platform - ECL";
+        },
+
         //  Hitched actions  ---
 
         //  Implementation  ---
