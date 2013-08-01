@@ -193,6 +193,24 @@
                   <input id="clearPermissionsCacheBtn" class="sbutton" type="submit" name="action" value="Clear Permissions Cache" onclick="return confirm('Are you sure you want to clear the DALI and ESP permissions caches? Running workunit performance might degrade significantly until the caches have been refreshed.')"/>
                 </form>
             </td>
+
+            <xsl:if test="scopeScansStatus/retcode=0">
+              <xsl:if test="scopeScansStatus/isEnabled=0">
+                <td>
+                  <form action="/ws_access/EnableScopeScans">
+                    <input id="EnableScopeScansBtn" class="sbutton" type="submit"  name="action" value="Enable Scope Scans" onclick="return confirm('Are you sure you want to enable Scope Scans?')"/>
+                  </form>
+                </td>
+              </xsl:if>
+              <xsl:if test="scopeScansStatus/isEnabled=1">
+                <td>
+                  <form action="/ws_access/DisableScopeScans">
+                    <input id="DisableScopeScansBtn" class="sbutton" type="submit"  name="action" value="Disable Scope Scans" onclick="return confirm('Are you sure you want to disable Scope Scans?')"/>
+                  </form>
+                </td>
+              </xsl:if>
+            </xsl:if>
+
                 </tr>
             </table>
       <form action="/ws_access/ResourceAddInput" id="addform">

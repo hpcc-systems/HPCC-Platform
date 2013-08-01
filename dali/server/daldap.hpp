@@ -31,6 +31,7 @@ interface IDaliLdapConnection: extends IInterface
     virtual unsigned getLDAPflags() = 0;
     virtual void setLDAPflags(unsigned flags) = 0;
     virtual bool clearPermissionsCache(IUserDescriptor *udesc) = 0;
+    virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int *err) = 0;
 };
 
 extern IDaliLdapConnection *createDaliLdapConnection(IPropertyTree *proptree);

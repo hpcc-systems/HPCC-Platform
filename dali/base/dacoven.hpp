@@ -50,7 +50,6 @@ interface ICoven: extends ICommunicator // ICoven can be used to communicate wit
     virtual rank_t          chooseServer(DALI_UID uid, int tag=0)=0;    // choose a server deterministically based on UID and tag
 
     inline ICommunicator &queryComm() { return *this; }
-
 };
 
 class da_decl CDaliVersion

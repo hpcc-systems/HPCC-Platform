@@ -362,6 +362,13 @@ ESPstruct Resource
     bool isSpecial;
 };
 
+ESPstruct ScopeScanStatusStruct
+{
+    bool    isEnabled;
+    int     retcode;
+    string  retmsg;
+};
+
 ESPresponse ResourcesResponse
 {
     string basedn;
@@ -373,6 +380,7 @@ ESPresponse ResourcesResponse
     string default_name;
     string prefix;
     [min_ver("1.05")] bool toomany;
+    [min_ver("1.08")] ESPstruct ScopeScanStatusStruct scopeScansStatus;
 };
 
 ESPrequest ResourceAddInputRequest
@@ -561,6 +569,34 @@ ESPresponse ClearPermissionsCacheResponse
 {
     int retcode;
 };
+
+ESPrequest QueryScopeScansEnabledRequest
+{
+};
+
+ESPresponse QueryScopeScansEnabledResponse
+{
+    [min_ver("1.08")] ESPstruct ScopeScanStatusStruct scopeScansStatus;
+};
+
+ESPrequest EnableScopeScansRequest
+{
+};
+
+ESPresponse EnableScopeScansResponse
+{
+    [min_ver("1.08")] ESPstruct ScopeScanStatusStruct scopeScansStatus;
+};
+
+ESPrequest DisableScopeScansRequest
+{
+};
+
+ESPresponse DisableScopeScansResponse
+{
+    [min_ver("1.08")] ESPstruct ScopeScanStatusStruct scopeScansStatus;
+};
+
 ESPrequest PermissionActionRequest
 {
     string basedn;
@@ -655,7 +691,7 @@ ESPresponse [nil_remove] UserAccountExportResponse
 };
 
 
-ESPservice [version("1.07"), default_client_version("1.07"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
+ESPservice [version("1.08"), default_client_version("1.08"), exceptions_inline("./smc_xslt/exceptions.xslt")] ws_access
 {
     ESPmethod [client_xslt("/esp/xslt/access_users.xslt")] Users(UserRequest, UserResponse);
     ESPmethod [client_xslt("/esp/xslt/access_useredit.xslt")] UserEdit(UserEditRequest, UserEditResponse);
@@ -690,6 +726,9 @@ ESPservice [version("1.07"), default_client_version("1.07"), exceptions_inline("
     ESPmethod [client_xslt("/esp/xslt/access_permissionresetinput.xslt")] PermissionsResetInput(PermissionsResetInputRequest, PermissionsResetInputResponse);
     ESPmethod [client_xslt("/esp/xslt/access_permissionsreset.xslt")] PermissionsReset(PermissionsResetRequest, PermissionsResetResponse);
     ESPmethod [client_xslt("/esp/xslt/access_clearpermissionscache.xslt")] ClearPermissionsCache(ClearPermissionsCacheRequest, ClearPermissionsCacheResponse);
+    ESPmethod QueryScopeScansEnabled(QueryScopeScansEnabledRequest, QueryScopeScansEnabledResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_enablescopescans.xslt")] EnableScopeScans(EnableScopeScansRequest, EnableScopeScansResponse);
+    ESPmethod [client_xslt("/esp/xslt/access_disablescopescans.xslt")] DisableScopeScans(DisableScopeScansRequest, DisableScopeScansResponse);
     //ESPmethod [client_xslt("/esp/xslt/access_useraccountexport.xslt")] UserAccountExport(UserAccountExportRequest, UserAccountExportResponse);
     ESPmethod UserAccountExport(UserAccountExportRequest, UserAccountExportResponse);
 
