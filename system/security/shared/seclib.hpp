@@ -299,6 +299,7 @@ interface ISecManager : extends IInterface
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) = 0;
     virtual int queryDefaultPermission(ISecUser& user) = 0;
     virtual bool clearPermissionsCache(ISecUser & user) = 0;
+    virtual bool authenticateUser(ISecUser & user, bool &superUser) = 0;
 };
 
 interface IExtSecurityManager

@@ -77,6 +77,7 @@ class Cws_accessEx : public Cws_access
         bool deny_access, bool deny_read, bool deny_write, bool deny_full);
     void getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr, const char* prefix, const char* accountName, 
         int accountType, StringArray& basednNames);
+    int enableDisableScopeScans(IEspContext &context, bool doEnable, StringBuffer &retMsg);
 
 public:
     IMPLEMENT_IINTERFACE;
@@ -117,6 +118,9 @@ public:
     virtual bool onPermissionsReset(IEspContext &context, IEspPermissionsResetRequest &req, IEspPermissionsResetResponse &resp);
     virtual bool onUserAccountExport(IEspContext &context, IEspUserAccountExportRequest &req, IEspUserAccountExportResponse &resp);
     virtual bool onClearPermissionsCache(IEspContext &context, IEspClearPermissionsCacheRequest &req, IEspClearPermissionsCacheResponse &resp);
+    virtual bool onQueryScopeScansEnabled(IEspContext &context, IEspQueryScopeScansEnabledRequest &req, IEspQueryScopeScansEnabledResponse &resp);
+    virtual bool onEnableScopeScans(IEspContext &context, IEspEnableScopeScansRequest &req, IEspEnableScopeScansResponse &resp);
+    virtual bool onDisableScopeScans(IEspContext &context, IEspDisableScopeScansRequest &req, IEspDisableScopeScansResponse &resp);
 };
 
 #endif //_ESPWIZ_ws_access_HPP__
