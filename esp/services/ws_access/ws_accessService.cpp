@@ -1436,6 +1436,20 @@ bool Cws_accessEx::onResources(IEspContext &context, IEspResourcesRequest &req, 
 
             rarray.append(*oneresource.getLink());
         }
+        if (version >= 1.08)
+        {
+            Owned<IUserDescriptor> userdesc;
+            userdesc.setown(createUserDescriptor());
+            userdesc->set(context.queryUserId(), context.queryPassword());
+            int retCode;
+            StringBuffer retMsg;
+            bool isEnabled = querySessionManager().queryScopeScansEnabled(userdesc, &retCode, retMsg);
+            if (retCode != 0)
+                DBGLOG("Error %d querying scope scan status : %s", retCode, retMsg.str());
+            resp.updateScopeScansStatus().setIsEnabled(isEnabled);
+            resp.updateScopeScansStatus().setRetcode(retCode);
+            resp.updateScopeScansStatus().setRetmsg(retMsg.str());
+        }
         resp.setResources(rarray);
     }
     catch(IException* e)
@@ -1918,6 +1932,64 @@ bool Cws_accessEx::onClearPermissionsCache(IEspContext &context, IEspClearPermis
     resp.setRetcode(ok ? 0 : -1);
     return true;
 }
+
+bool Cws_accessEx::onQueryScopeScansEnabled(IEspContext &context, IEspQueryScopeScansEnabledRequest &req, IEspQueryScopeScansEnabledResponse &resp)
+{
+    ISecManager* secmgr = context.querySecManager();
+    if(secmgr == NULL)
+        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+    Owned<IUserDescriptor> userdesc;
+    userdesc.setown(createUserDescriptor());
+    userdesc->set(context.queryUserId(), context.queryPassword());
+    int retCode;
+    StringBuffer retMsg;
+    bool isEnabled = querySessionManager().queryScopeScansEnabled(userdesc, &retCode, retMsg);
+    if (retCode != 0)
+        throw MakeStringException(ECLWATCH_OLD_CLIENT_VERSION, "Error %d querying scope scan status : %s", retCode, retMsg.str());
+    resp.updateScopeScansStatus().setIsEnabled(isEnabled);
+    resp.updateScopeScansStatus().setRetcode(retCode);
+    resp.updateScopeScansStatus().setRetmsg(retMsg.str());
+    return true;
+
+}
+
+bool Cws_accessEx::onEnableScopeScans(IEspContext &context, IEspEnableScopeScansRequest &req, IEspEnableScopeScansResponse &resp)
+{
+    StringBuffer retMsg;
+    int rc = enableDisableScopeScans(context, true, retMsg);
+    resp.updateScopeScansStatus().setIsEnabled(rc == 0);
+    resp.updateScopeScansStatus().setRetcode(rc);
+    resp.updateScopeScansStatus().setRetmsg(retMsg.str());
+    return true;
+}
+
+bool Cws_accessEx::onDisableScopeScans(IEspContext &context, IEspDisableScopeScansRequest &req, IEspDisableScopeScansResponse &resp)
+{
+    StringBuffer retMsg;
+    int rc = enableDisableScopeScans(context, false, retMsg);
+    resp.updateScopeScansStatus().setIsEnabled(rc != 0);
+    resp.updateScopeScansStatus().setRetcode(rc);
+    resp.updateScopeScansStatus().setRetmsg(retMsg.str());
+    return true;
+}
+
+int Cws_accessEx::enableDisableScopeScans(IEspContext &context, bool doEnable, StringBuffer &retMsg)
+{
+    ISecManager* secmgr = context.querySecManager();
+    if(secmgr == NULL)
+        throw MakeStringException(ECLWATCH_INVALID_SEC_MANAGER, MSG_SEC_MANAGER_IS_NULL);
+
+    Owned<IUserDescriptor> userdesc;
+    userdesc.setown(createUserDescriptor());
+    userdesc->set(context.queryUserId(), context.queryPassword());
+    int retCode;
+    bool rc = querySessionManager().enableScopeScans(userdesc, doEnable, &retCode, retMsg);
+    if (!rc || retCode != 0)
+        DBGLOG("Error %d enabling Scope Scans : %s", retCode, retMsg.str());
+    return retCode;
+}
+
 bool Cws_accessEx::permissionsReset(CLdapSecManager* ldapsecmgr, const char* basedn, const char* rtype0, const char* prefix,
         const char* resourceName, ACT_TYPE accountType, const char* accountName,
         bool allow_access, bool allow_read, bool allow_write, bool allow_full,

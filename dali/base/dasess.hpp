@@ -78,6 +78,7 @@ interface IUserDescriptor: extends serializable
 };
 
 extern da_decl IUserDescriptor *createUserDescriptor();
+extern da_decl IUserDescriptor *createUserDescriptor(MemoryBuffer &mb);
 
 const static IUserDescriptor * unknownUser = NULL;//use of this should be avoided
 #define UNKNOWN_USER (IUserDescriptor*)unknownUser
@@ -111,7 +112,8 @@ interface ISessionManager: extends IInterface
     virtual unsigned getLDAPflags()=0;
     virtual void setLDAPflags(unsigned flags)=0;
     virtual bool clearPermissionsCache(IUserDescriptor *udesc)=0;
-
+    virtual bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)=0;
+    virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)=0;
 };
 
 // the following are getPermissionsLDAP input flags for audit reporting
@@ -127,7 +129,12 @@ extern da_decl ISessionManager &querySessionManager();
 
 #define myProcessSession() (querySessionManager().lookupProcessSession())
 
-
+interface IMessageWrapper
+{
+public:
+    virtual void serializeReq(CMessageBuffer &mb) = 0;
+    virtual void deserializeReq(CMessageBuffer &mb) = 0;
+};
 
 // for server use
 interface IDaliServer;

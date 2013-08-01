@@ -303,6 +303,13 @@ ecl deploy --target=roxie --name=FindPersonService libW20120224-125557.so
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -538,6 +545,13 @@ ecl publish --target=roxie --name=FindPersonService --no-activate findperson.ecl
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -660,6 +674,13 @@ ecl unpublish roxie "FindpersonService*"
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -810,6 +831,13 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -947,6 +975,13 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -1027,6 +1062,13 @@ ecl run --target=thor --input="&lt;request&gt;&lt;LName&gt;JONES&lt;/LName&gt;&l
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -1159,6 +1201,13 @@ ecl queries list roxie --target=roxie --show=A </programlisting>
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -1319,6 +1368,13 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -1439,6 +1495,13 @@ ecl queries copy //192.168.1.10:8010/thor/findperson thor
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -1563,6 +1626,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -1635,6 +1705,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -1721,6 +1798,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -1800,6 +1884,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -1888,6 +1979,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -1971,6 +2069,13 @@ ecl packagemap add roxie mypackagemap.pkg --daliip=192.168.11.11
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -2113,6 +2218,13 @@ ecl packagemap validate roxie --active</programlisting>
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -2175,6 +2287,13 @@ ecl packagemap validate roxie --active</programlisting>
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -2243,6 +2362,13 @@ ecl packagemap validate roxie --active</programlisting>
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -2308,6 +2434,13 @@ ecl packagemap validate roxie --active</programlisting>
                 </row>
 
                 <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
+                </row>
+
+                <row>
                   <entry>-u, --username</entry>
 
                   <entry>The username (if necessary)</entry>
@@ -2346,7 +2479,7 @@ ecl packagemap validate roxie --active</programlisting>
                 <row>
                   <entry>ecl roxie check</entry>
 
-                  <entry>Checks the state of the roxie process </entry>
+                  <entry>Checks the state of the roxie process</entry>
                 </row>
 
                 <row>
@@ -2370,6 +2503,13 @@ ecl packagemap validate roxie --active</programlisting>
                   <entry>--port</entry>
 
                   <entry>The eclwatch services port (Default is 8010)</entry>
+                </row>
+
+                <row>
+                  <entry>-ssl</entry>
+
+                  <entry>Use SSL to secure the connection to the
+                  server.</entry>
                 </row>
 
                 <row>
@@ -2788,7 +2928,7 @@ ecl bundle use myBundle 2
                 <row>
                   <entry>--check-packagemaps</entry>
 
-                  <entry> Exclude files referenced in active
+                  <entry>Exclude files referenced in active
                   packagemaps</entry>
                 </row>
 
