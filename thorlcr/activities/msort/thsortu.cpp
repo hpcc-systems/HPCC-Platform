@@ -1790,6 +1790,7 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
             e->Release();
         else
             exc.setown(e);
+        multiWriter->abort();
     }
 
     SimpleInterThreadQueueOf<cWorkItem,false> workqueue;

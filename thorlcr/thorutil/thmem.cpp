@@ -1107,8 +1107,8 @@ void CThorSpillableRowArray::flush()
 {
     CThorArrayLockBlock block(*this);
     dbgassertex(numRows >= commitRows);
-    //This test could be improved...
-    if (firstRow != 0 && firstRow == commitRows)
+    // if firstRow over 50% of commitRows, meaning over half of row array is empty, then reduce
+    if (firstRow != 0 && (firstRow >= commitRows/2))
     {
         //A block of rows was removed - copy these rows to the start of the block.
         memmove(rows, rows+firstRow, (numRows-firstRow) * sizeof(void *));

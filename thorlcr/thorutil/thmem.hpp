@@ -378,10 +378,10 @@ public:
 
     CThorSpillableRowArray(CActivityBase &activity, IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, rowidx_t initialSize=InitialSortElements, size32_t commitDelta=CommitStep);
     ~CThorSpillableRowArray();
-    // NB: throwOnOom false
-    void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none)
+    // NB: default throwOnOom to false
+    void setup(IRowInterfaces *rowIf, bool allowNulls=false, StableSortFlag stableSort=stableSort_none, bool throwOnOom=false)
     {
-        CThorExpandingRowArray::setup(rowIf, allowNulls, stableSort, false);
+        CThorExpandingRowArray::setup(rowIf, allowNulls, stableSort, throwOnOom);
     }
     void registerWriteCallback(IWritePosCallback &cb);
     void unregisterWriteCallback(IWritePosCallback &cb);

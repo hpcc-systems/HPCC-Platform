@@ -1551,6 +1551,7 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
     bool readerBlocked, eos, eow;
     Semaphore emptySem, fullSem;
     unsigned numWriters, writersComplete, writersBlocked;
+    unsigned __int64 emptyCycles, fullCycles;
 
     class CAWriter : public CSimpleInterface, implements IRowWriter
     {
@@ -1587,6 +1588,11 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
         {
             {
                 CThorArrayLockBlock block(rows);
+                if (eos)
+                {
+                    inRows.kill();
+                    return;
+                }
                 if (rows.numCommitted() < limit)
                 {
                     // NB: allowed to go over limit, by as much as inRows.ordinality()-1
@@ -1604,11 +1610,9 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
                 }
                 writersBlocked++;
             }
-            fullSem.wait();
-            if (eos)
             {
-                inRows.kill();
-                return;
+                ActivityTimer s(fullCycles, true, NULL);
+                fullSem.wait();
             }
         }
 
@@ -1619,35 +1623,31 @@ public:
     CRowMultiWriterReader(CActivityBase &_activity, IRowInterfaces *_rowIf, unsigned _limit, unsigned _readGranularity, unsigned _writerGranularity)
         : activity(_activity), rowIf(_rowIf), rows(_activity, _rowIf), limit(_limit), readGranularity(_readGranularity), writerGranularity(_writerGranularity)
     {
+        if (limit < readGranularity)
+            limit = readGranularity; // limit can't be less than min read granularity
         numWriters = 0;
         roxiemem::IRowManager *rowManager = activity.queryJob().queryRowManager();
         readRows = static_cast<const void * *>(rowManager->allocate(readGranularity * sizeof(void*), activity.queryContainer().queryId()));
         eos = eow = readerBlocked = false;
         rowPos = rowsToRead = 0;
         writersComplete = writersBlocked = 0;
+        emptyCycles = fullCycles = 0;
+        rows.setup(rowIf, false, stableSort_none, true); // turning on throwOnOom;
     }
     ~CRowMultiWriterReader()
     {
+        __int64 emptyNs = cycle_to_nanosec(emptyCycles);
+        __int64 fullNs = cycle_to_nanosec(fullCycles);
+
+        PROGLOG("emptyNs = %"I64F"d, fullNs = %"I64F"d", emptyNs, fullNs);
+        PROGLOG("emptyMs = %"I64F"d, fullMs = %"I64F"d", emptyNs/1000000, fullNs/1000000);
+
+
         while (rowPos < rowsToRead)
         {
             ReleaseThorRow(readRows[rowPos++]);
         }
         ReleaseThorRow(readRows);
-    }
-    void abort()
-    {
-        eos = true;
-        CThorArrayLockBlock block(rows);
-        if (writersBlocked)
-        {
-            fullSem.signal(writersBlocked);
-            writersBlocked = 0;
-        }
-        if (readerBlocked)
-        {
-            emptySem.signal();
-            readerBlocked = false;
-        }
     }
     void writerStopped()
     {
@@ -1669,6 +1669,21 @@ public:
     {
         ++numWriters;
         return new CAWriter(*this);
+    }
+    virtual void abort()
+    {
+        CThorArrayLockBlock block(rows);
+        eos = true;
+        if (writersBlocked)
+        {
+            fullSem.signal(writersBlocked);
+            writersBlocked = 0;
+        }
+        if (readerBlocked)
+        {
+            emptySem.signal();
+            readerBlocked = false;
+        }
     }
 // IRowStream impl.
     virtual const void *nextRow()
@@ -1702,7 +1717,10 @@ public:
                     }
                     readerBlocked = true;
                 }
-                emptySem.wait();
+                {
+                    ActivityTimer s(emptyCycles, true, NULL);
+                    emptySem.wait();
+                }
                 if (eos)
                     return NULL;
             }
