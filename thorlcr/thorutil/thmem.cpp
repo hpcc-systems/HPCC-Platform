@@ -624,6 +624,15 @@ void CThorExpandingRowArray::transferRows(rowidx_t & outNumRows, const void * * 
     stableTable = NULL;
 }
 
+void CThorExpandingRowArray::transferRowsCopy(rowidx_t &outNumRows, const void **outRows)
+{
+    outNumRows = numRows;
+    memcpy(outRows, rows, numRows*sizeof(void **));
+    memset(rows, 0, numRows*sizeof(void **));
+    numRows = 0;
+    maxRows = 0;
+}
+
 void CThorExpandingRowArray::transferFrom(CThorExpandingRowArray &donor)
 {
     kill();
@@ -652,6 +661,33 @@ void CThorExpandingRowArray::removeRows(rowidx_t start, rowidx_t n)
         memmove(from, from+n, (numRows-end) * sizeof(void *));
         numRows -= n;
     }
+}
+
+bool CThorExpandingRowArray::appendRows(CThorExpandingRowArray &inRows, bool takeOwnership)
+{
+    rowidx_t num = inRows.ordinality();
+    if (0 == num)
+        return true;
+    if (numRows+num >= maxRows)
+    {
+        if (!ensure(numRows + num))
+            return false;
+    }
+    const void **_inRows = inRows.getRowArray();
+    const void **newRows = rows+numRows;
+    inRows.transferRowsCopy(num, newRows);
+    if (!takeOwnership)
+    {
+        const void **lastNewRow = newRows+num-1;
+        do
+        {
+            LinkThorRow(*newRows);
+            newRows++;
+        }
+        while (newRows != lastNewRow);
+    }
+    numRows += num;
+    return true;
 }
 
 void CThorExpandingRowArray::clearUnused()
@@ -1117,6 +1153,39 @@ void CThorSpillableRowArray::flush()
     }
 
     commitRows = numRows;
+}
+
+bool CThorSpillableRowArray::appendRows(CThorExpandingRowArray &inRows, bool takeOwnership)
+{
+    rowidx_t num = inRows.ordinality();
+    if (0 == num)
+        return true;
+    if (numRows+num >= maxRows)
+    {
+        if (!ensure(numRows + num))
+        {
+            flush();
+            if (numRows+num >= maxRows)
+                return false;
+        }
+    }
+    const void **_inRows = inRows.getRowArray();
+    const void **newRows = rows+numRows;
+    inRows.transferRowsCopy(num, newRows);
+    if (!takeOwnership)
+    {
+        const void **lastNewRow = newRows+num-1;
+        do
+        {
+            LinkThorRow(*newRows);
+            newRows++;
+        }
+        while (newRows != lastNewRow);
+    }
+    numRows += num;
+    if (numRows >= commitRows + commitDelta)
+        flush();
+    return true;
 }
 
 void CThorSpillableRowArray::transferFrom(CThorExpandingRowArray &src)

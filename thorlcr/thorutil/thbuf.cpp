@@ -1596,11 +1596,7 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
                 if (rows.numCommitted() < limit)
                 {
                     // NB: allowed to go over limit, by as much as inRows.ordinality()-1
-                    rowidx_t num = inRows.ordinality();
-                    for (rowidx_t r=0; r<num; r++)
-                        rows.append(inRows.getClear(r));
-                    inRows.clearRows();
-
+                    rows.appendRows(inRows, true);
                     if (readerBlocked && (rows.numCommitted() >= readGranularity))
                     {
                         emptySem.signal();

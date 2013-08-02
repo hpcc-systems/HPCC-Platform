@@ -1873,8 +1873,8 @@ public:
         : CMultiCoreJoinHelperBase(activity, numthreads, _jhelper, _helper, _rowIf)
     {
         reader.parent = this;
-        unsigned limit = numworkers*1000; // shouldn't be that large but just in case
 
+        unsigned limit = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"limit\"]/@value", numworkers*1000);
         unsigned readGranularity = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"readgranularity\"]/@value", DEFAULT_WR_READ_GRANULARITY);
         unsigned writeGranularity = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"writegranularity\"]/@value", DEFAULT_WR_WRITE_GRANULARITY);
         ActPrintLog(&activity, "CMultiCoreUnorderedJoinHelper: readGranularity=%d, writeGranularity=%d", readGranularity, writeGranularity);

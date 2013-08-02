@@ -333,9 +333,11 @@ public:
         swap(from);
     }
     void transferRows(rowidx_t & outNumRows, const void * * & outRows);
+    void transferRowsCopy(rowidx_t & outNumRows, const void **outRows);
     void transferFrom(CThorExpandingRowArray &src);
     void transferFrom(CThorSpillableRowArray &src);
     void removeRows(rowidx_t start, rowidx_t n);
+    bool appendRows(CThorExpandingRowArray &inRows, bool takeOwnership);
     void clearUnused();
     void sort(ICompare &compare, unsigned maxCores);
     void reorder(rowidx_t start, rowidx_t num, rowidx_t *neworder);
@@ -406,6 +408,7 @@ public:
             flush();
         return true;
     }
+    bool appendRows(CThorExpandingRowArray &inRows, bool takeOwnership);
 
     //The following can be accessed from the reader without any need to lock
     inline const void *query(rowidx_t i) const
