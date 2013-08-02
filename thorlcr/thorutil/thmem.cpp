@@ -536,7 +536,8 @@ void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &com
         parqsortvec((void **const)rows, n, compare, maxCores);
 }
 
-CThorExpandingRowArray::CThorExpandingRowArray(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _allowNulls, StableSortFlag _stableSort, bool _throwOnOom, rowidx_t initialSize) : activity(_activity)
+CThorExpandingRowArray::CThorExpandingRowArray(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _allowNulls, StableSortFlag _stableSort, bool _throwOnOom, rowidx_t initialSize)
+    : activity(_activity)
 {
     init(initialSize, _stableSort);
     setup(_rowIf, _allowNulls, _stableSort, _throwOnOom);
@@ -708,7 +709,8 @@ bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
     if (currentMaxRows < requiredRows) // check, because may have expanded previously, but failed to allocate stableTable and set new maxRows
     {
         capacity = ((memsize_t)getNewSize(requiredRows)) * sizeof(void *);
-        CResizeRowCallback callback(*(void ***)(&rows), capacity, *this);
+
+        CResizeRowCallback callback(*(void ***)(&rows), capacity, queryLock());
         if (!resizeRowTable((void **)rows, capacity, true, callback)) // callback will reset capacity
         {
             if (throwOnOom)
@@ -719,7 +721,7 @@ bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
     if (stableSort_earlyAlloc == stableSort)
     {
         memsize_t dummy;
-        CResizeRowCallback callback(stableTable, dummy, *this);
+        CResizeRowCallback callback(stableTable, dummy, queryLock());
         if (!resizeRowTable(stableTable, capacity, false, callback))
         {
             if (throwOnOom)
@@ -732,7 +734,7 @@ bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
     }
 
     // Both row tables updated, only now update maxRows
-    CThorArrayLockBlock block(*this);
+    CThorArrayLockBlock block(queryLock());
     maxRows = capacity / sizeof(void *);
     return true;
 }
