@@ -137,8 +137,8 @@
 
         <listitem>
           <para>A virtualization software package:
-          VMware<superscript>®</superscript> Player or Server (version 3.0 or
-          later) or Oracle VM VirtualBox (version 4.0 or later). </para>
+          VMware<superscript>®</superscript> Player or Server (version 4.0 or
+          later) or Oracle VM VirtualBox (version 4.0 or later).</para>
         </listitem>
 
         <listitem>
@@ -163,7 +163,7 @@
 
     <itemizedlist>
       <listitem>
-        <para>VMware's Virtual Machine </para>
+        <para>VMware's Virtual Machine</para>
       </listitem>
 
       <listitem>
@@ -194,7 +194,7 @@
             <para>Open and import the image in the VMware Player</para>
           </listitem>
         </itemizedlist>Once you have completed these steps, you can evaluate
-      the HPCC Platform and learn how to use it. </para>
+      the HPCC Platform and learn how to use it.</para>
 
       <sect2>
         <title>Download and Install the VMware Player</title>
@@ -257,7 +257,7 @@
             </listitem>
 
             <listitem>
-              <para>Open the VMware Player. </para>
+              <para>Open the VMware Player.</para>
             </listitem>
 
             <listitem>
@@ -270,7 +270,7 @@
               <para>Go to the folder where you saved the downloaded file and
               select it.</para>
 
-              <para> For example (<emphasis
+              <para>For example (<emphasis
               role="bluebold">HPCCSystemsVM-<emphasis>n.n.n.n</emphasis>.ova</emphasis>
               , where n.n.n.n is the version number).</para>
 
@@ -290,7 +290,7 @@
 
             <listitem>
               <para>Press the <emphasis role="bold">Import</emphasis> button
-              to import the virtual machine into the VMware Player. </para>
+              to import the virtual machine into the VMware Player.</para>
 
               <para>Wait for the HPCC virtual machine to load to the desktop
               in the VMware player. This may take a few minutes.</para>
@@ -303,7 +303,7 @@
                     <para>The first time you use the VM Player, you must
                     accept the license agreement. You may also be prompted to
                     install add-ons, but they are not necessary for the HPCC
-                    virtual machine. </para>
+                    virtual machine.</para>
                   </listitem>
                 </varlistentry>
               </variablelist>
@@ -377,7 +377,7 @@
       <title>VM VirtualBox</title>
 
       <para>Oracle's virtualization software, VM VirtualBox is supported for
-      running the HPCC virtual machine image. </para>
+      running the HPCC virtual machine image.</para>
 
       <para>In the following section(s), you will:</para>
 
@@ -392,7 +392,7 @@
         </listitem>
 
         <listitem>
-          <para>Open and import the image in VM VirtualBox </para>
+          <para>Open and import the image in VM VirtualBox</para>
         </listitem>
       </itemizedlist>
 
@@ -419,8 +419,8 @@
           </listitem>
 
           <listitem>
-            <para>Double-click on the installation file to install VirtualBox.
-            </para>
+            <para>Double-click on the installation file to install
+            VirtualBox.</para>
           </listitem>
 
           <listitem>
@@ -443,7 +443,7 @@
                     <imagedata fileref="images/vmimg16.jpg" />
                   </imageobject>
                 </mediaobject>
-              </figure> </para>
+              </figure></para>
           </listitem>
 
           <listitem>
@@ -488,7 +488,7 @@
 
           <listitem>
             <para>From the <emphasis role="bold">File</emphasis> menu, select
-            <emphasis role="bold">Preferences</emphasis>... </para>
+            <emphasis role="bold">Preferences</emphasis>...</para>
 
             <para>The <emphasis>VirtualBox - Settings</emphasis> dialog
             displays.<figure id="VBoxSettings">
@@ -504,12 +504,12 @@
 
           <listitem>
             <para>Select<emphasis role="bold"> Network</emphasis> from the
-            list on the left side of the window. </para>
+            list on the left side of the window.</para>
           </listitem>
 
           <listitem>
             <para>Double-click on the <emphasis>VirtualBox Host-Only Ethernet
-            Adaptor</emphasis>. </para>
+            Adaptor</emphasis>.</para>
           </listitem>
 
           <listitem>
@@ -526,13 +526,13 @@
                 </mediaobject>
               </figure><variablelist>
                 <varlistentry>
-                  <term>Note: </term>
+                  <term>Note:</term>
 
                   <listitem>
                     <para>You may need to add IP Address values to the Lower
                     Address Bound and Upper Address Bound fields. The address
                     the VM uses is in the private IP address range of
-                    192.168.x.x </para>
+                    192.168.x.x</para>
                   </listitem>
                 </varlistentry>
               </variablelist></para>
@@ -542,7 +542,7 @@
             <para>Press the <emphasis role="bold">OK</emphasis> button on the
             <emphasis>Network Details</emphasis> dialog box, then press the
             <emphasis role="bold">OK</emphasis> button on the
-            <emphasis>VirtualBox - Settings</emphasis> box. </para>
+            <emphasis>VirtualBox - Settings</emphasis> box.</para>
           </listitem>
         </orderedlist>
       </sect2>
@@ -585,8 +585,7 @@
 
             <listitem>
               <para>Press the <emphasis role="bold">Open appliance</emphasis>
-              button from the dialog to select the appliance to import.
-              </para>
+              button from the dialog to select the appliance to import.</para>
             </listitem>
 
             <listitem>
@@ -602,7 +601,7 @@
               <para>Press the <emphasis role="bold">Open</emphasis> button to
               start the import. Follow the prompts in the import process
               pressing <emphasis role="bold">Next</emphasis> as appropriate,
-              then press <emphasis role="bold">Import</emphasis>. </para>
+              then press <emphasis role="bold">Import</emphasis>.</para>
 
               <para>Wait for the HPCC virtual machine to import. This may take
               a few minutes.</para>
@@ -610,20 +609,20 @@
 
             <listitem>
               <para>At the main window, the newly imported virtual machine is
-              now listed. </para>
+              now listed.</para>
             </listitem>
 
             <listitem>
               <para>Double-click on that virtual machine to start it.
               <variablelist>
                   <varlistentry>
-                    <term>TIP: </term>
+                    <term>TIP:</term>
 
                     <listitem>
                       <para>If you get any Network Error messages, please
                       review the steps in <xref
                       linkend="Install_VM_VirtualBox" /> and verify that all
-                      the network settings are set appropriately. </para>
+                      the network settings are set appropriately.</para>
                     </listitem>
                   </varlistentry>
                 </variablelist></para>
