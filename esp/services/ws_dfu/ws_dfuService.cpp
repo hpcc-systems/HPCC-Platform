@@ -1199,6 +1199,7 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
                     emsg.replaceString("Create ", "Delete ");
 
                 returnStr.appendf("<Message><Value>Cannot delete %s: %s</Value></Message>", filename, emsg.str());
+                e->Release();
             }
             catch(...)
             {
