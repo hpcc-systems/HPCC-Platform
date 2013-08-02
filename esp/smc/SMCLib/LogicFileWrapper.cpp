@@ -67,16 +67,23 @@ bool LogicFileWrapper::doDeleteFile(const char* logicalName,const char *cluster,
 
     try
     {
-        Owned<IDistributedFile> df = queryDistributedFileDirectory().lookup(cname.str(), udesc, true) ;
-        if(!df)
+        IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
         {
-            returnStr.appendf("<Message><Value>File %s not found</Value></Message>", cname.str());
-            return false;
+            Owned<IDistributedFile> df = fdir.lookup(cname.str(), udesc, true) ;
+            if(!df)
+            {
+                returnStr.appendf("<Message><Value>File %s not found</Value></Message>", cname.str());
+                return false;
+            }
         }
 
-        df->detach();
-        returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", cname.str());
-        DBGLOG("%s", returnStr.str());
+        if (!fdir.removeEntry(cname.str(), udesc))
+            returnStr.appendf("<Message><Value>Failed to delete %s</Value></Message>", cname.str());
+        else
+        {
+            returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", cname.str());
+            DBGLOG("%s", returnStr.str());
+        }
         return true;
     }
     catch (IException *e)

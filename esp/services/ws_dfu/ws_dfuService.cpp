@@ -1158,23 +1158,35 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
 
             if (j>0)
             { // 2nd pass, now we want to skip superfiles and the files which cannot do the lookup.
-
-                if (superFileNames.contains(filename))
-                    continue;
-
-                if (filesCannotBeDeleted.contains(filename))
+                if (superFileNames.contains(filename) || filesCannotBeDeleted.contains(filename))
                     continue;
             }
 
-            Owned<IDistributedFile> df;
             try
             {
-                df.setown(queryDistributedFileDirectory().lookup(filename, userdesc, true));
-                if(!df)
+                IDistributedFileDirectory &fdir = queryDistributedFileDirectory();
                 {
-                    returnStr.appendf("<Message><Value>Cannot delete %s: file not found</Value></Message>", filename);
-                    filesCannotBeDeleted.append(filename);
-                    continue;
+                    Owned<IDistributedFile> df = fdir.lookup(filename, userdesc, true);
+                    if(!df)
+                    {
+                        returnStr.appendf("<Message><Value>Cannot delete %s: file not found</Value></Message>", filename);
+                        filesCannotBeDeleted.append(filename);
+                        continue;
+                    }
+                    if (0==j) // skip non-super files on 1st pass
+                    {
+                        if(!df->querySuperFile())
+                            continue;
+
+                        superFileNames.append(filename);
+                    }
+                }
+                if (!fdir.removeEntry(filename, userdesc, NULL, REMOVE_FILE_SDS_CONNECT_TIMEOUT))
+                    returnStr.appendf("<Message><Value>Failed to delete %s</Value></Message>", filename);
+                else
+                {
+                    PROGLOG("Deleted Logical File: %s by: %s\n",filename, username.str());
+                    returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", filename);
                 }
             }
             catch(IException* e)
@@ -1191,32 +1203,6 @@ bool CWsDfuEx::DFUDeleteFiles(IEspContext &context, IEspDFUArrayActionRequest &r
             catch(...)
             {
                 returnStr.appendf("<Message><Value>Cannot delete %s: unknown exception.</Value></Message>", filename);
-            }
-            if (df)
-            {
-                if (0==j) // skip non-super files on 1st pass
-                {
-                    if(!df->querySuperFile())
-                        continue;
-
-                    superFileNames.append(filename);
-                }
-
-                DBGLOG("CWsDfuEx::DFUDeleteFiles User=%s Action=Delete File=%s",username.str(), filename);
-                try
-                {
-                    df->detach(REMOVE_FILE_SDS_CONNECT_TIMEOUT);
-                    PROGLOG("Deleted Logical File: %s\n",filename);
-                    returnStr.appendf("<Message><Value>Deleted File %s</Value></Message>", filename);
-                }
-                catch (IException *e)
-                {
-                    StringBuffer errorMsg;
-                    e->errorMessage(errorMsg);
-                    PROGLOG("%s", errorMsg.str());
-                    e->Release();
-                    returnStr.appendf("<Message><Value>%s</Value></Message>", errorMsg.str());
-                }
             }
         }
     }
