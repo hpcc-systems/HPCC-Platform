@@ -2497,10 +2497,13 @@ int rtlCompareEStrEStr(unsigned l1, const char * p1, unsigned l2, const char * p
     return diff;
 }
 
+const static UChar nullUStr = 0;
 int rtlCompareUnicodeUnicode(unsigned l1, UChar const * p1, unsigned l2, UChar const * p2, char const * locale)
 {
     while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
     while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
+    if (!p1) p1 = &nullUStr;
+    if (!p2) p2 = &nullUStr;
     return ucol_strcoll(queryRTLLocale(locale)->queryCollator(), p1, l1, p2, l2);
 }
 
@@ -2508,6 +2511,8 @@ int rtlCompareUnicodeUnicodeStrength(unsigned l1, UChar const * p1, unsigned l2,
 {
     while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
     while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
+    if (!p1) p1 = &nullUStr;
+    if (!p2) p2 = &nullUStr;
     return ucol_strcoll(queryRTLLocale(locale)->queryCollator(strength), p1, l1, p2, l2);
 }
 
@@ -2781,6 +2786,7 @@ int rtlNewSearchUnicodeTable(unsigned count, unsigned elemlen, UChar * * table, 
     int left = 0;
     int right = count;
     
+    if (!search) search = &nullUStr;
     size32_t trimWidth = rtlQuickTrimUnicode(width, search);
 
     do
