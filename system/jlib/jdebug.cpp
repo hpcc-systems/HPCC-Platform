@@ -33,6 +33,11 @@
  #define new new(_NORMAL_BLOCK, __FILE__, __LINE__)
 #endif
 
+#ifdef _WIN32
+#define DPSAPI_VERSION 1
+#include <psapi.h>
+#endif
+
 #ifdef __linux__
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -982,65 +987,6 @@ static void getMemUsage(unsigned &inuse,unsigned &active,unsigned &total,unsigne
     swapinuse = swaptotal-swapfree-swapcached;
 }
 
-static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
-{
-    size32_t len = strlen(prefix);
-    if (strncmp(prefix, line, len)==0)
-    {
-        char * tail = NULL;
-        value = strtol(line+len, &tail, 10);
-        while (isspace(*tail))
-            tail++;
-        if (strncmp(tail, "kB", 2) == 0)
-            value *= 0x400;
-        else if (strncmp(tail, "mB", 2) == 0)
-            value *= 0x100000;
-        return true;
-    }
-    return false;
-}
-
-void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
-{
-    peakVm = 0;
-    peakResident = 0;
-
-#ifdef _WIN32
-    PROCESS_MEMORY_COUNTERS pmc;
-    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
-    {
-        peakVM = pmc.PeakWorkingSetSize;
-        peakResident = pmc.PeakWorkingSetSize;
-
-    }
-#else
-    static int memfd = -1;
-    if (memfd==-1)
-        memfd = open("/proc/self/status",O_RDONLY);
-    if (memfd==-1)
-        return;
-    lseek(memfd, 0L, 0);
-
-    char buf[2048];
-    size32_t l = read(memfd, buf, sizeof(buf)-1);
-    if ((int)l<=0)
-        return;
-    buf[l] = 0;
-
-    const char *bufptr = buf;
-    while (bufptr) {
-        if (*bufptr =='\n')
-            bufptr++;
-        if (!matchExtract("VmPeak:", bufptr, peakVm) &&
-            !matchExtract("VmHWM:", bufptr, peakResident))
-        {
-            //ignore this line
-        }
-        bufptr = strchr(bufptr, '\n');
-    }
-#endif
-}
-
 class CInt64fix 
 {
     __int64 val;
@@ -1145,6 +1091,65 @@ void getDiskUsage(char const * path, unsigned __int64 & total, unsigned __int64 
 }
 
 #endif
+
+static bool matchExtract(const char * prefix, const char * line, memsize_t & value)
+{
+    size32_t len = strlen(prefix);
+    if (strncmp(prefix, line, len)==0)
+    {
+        char * tail = NULL;
+        value = strtol(line+len, &tail, 10);
+        while (isspace(*tail))
+            tail++;
+        if (strncmp(tail, "kB", 2) == 0)
+            value *= 0x400;
+        else if (strncmp(tail, "mB", 2) == 0)
+            value *= 0x100000;
+        return true;
+    }
+    return false;
+}
+
+void getPeakMemUsage(memsize_t &peakVm,memsize_t &peakResident)
+{
+    peakVm = 0;
+    peakResident = 0;
+
+#ifdef _WIN32
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc)))
+    {
+        peakVm = pmc.PeakWorkingSetSize;
+        peakResident = pmc.PeakWorkingSetSize;
+
+    }
+#else
+    static int memfd = -1;
+    if (memfd==-1)
+        memfd = open("/proc/self/status",O_RDONLY);
+    if (memfd==-1)
+        return;
+    lseek(memfd, 0L, 0);
+
+    char buf[2048];
+    size32_t l = read(memfd, buf, sizeof(buf)-1);
+    if ((int)l<=0)
+        return;
+    buf[l] = 0;
+
+    const char *bufptr = buf;
+    while (bufptr) {
+        if (*bufptr =='\n')
+            bufptr++;
+        if (!matchExtract("VmPeak:", bufptr, peakVm) &&
+            !matchExtract("VmHWM:", bufptr, peakResident))
+        {
+            //ignore this line
+        }
+        bufptr = strchr(bufptr, '\n');
+    }
+#endif
+}
 
 #define RXMAX 1000000       // can be 10x bigger but this produces reasonable amounts
 
