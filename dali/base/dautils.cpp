@@ -1641,41 +1641,6 @@ public:
 CriticalSection cSort::sortsect;
 cSort *cSort::sortthis;
 
-void getQuerySetQueries(const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTreeRoot)
-{
-    Owned<IPropertyTreeIterator> iter = querySetTree->getElements(xPath);
-    ForEach(*iter)
-    {
-        IPropertyTree &query = iter->query();
-        query.addProp("@querySetId", querySetId);
-        queryTreeRoot->addPropTree("Query", LINK(&query));
-    }
-}
-
-IPropertyTree* getAllQuerySetQueries(IRemoteConnection* conn, const char *querySet, const char *xPath)
-{
-    Owned<IPropertyTree> queryTreeRoot = createPTreeFromXMLString("<Queries/>");
-    IPropertyTree* root = conn->queryRoot();
-    if (querySet && *querySet)
-    {
-        VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
-        getQuerySetQueries(querySet, root, path.str(), queryTreeRoot);
-        return queryTreeRoot.getClear();
-    }
-
-    Owned<IPropertyTreeIterator> iter = root->getElements("QuerySet");
-    ForEach(*iter)
-    {
-        IPropertyTree &querySet = iter->query();
-        const char* id = querySet.queryProp("@id");
-        if (id && *id)
-        {
-            VStringBuffer path("Query%s", xPath);
-            getQuerySetQueries(id, &querySet, path.str(), queryTreeRoot);
-        }
-    }
-    return queryTreeRoot.getClear();
-}
 
 IRemoteConnection *getSortedElements( const char *basexpath,
                                      const char *xpath,
@@ -1687,19 +1652,7 @@ IRemoteConnection *getSortedElements( const char *basexpath,
     Owned<IRemoteConnection> conn = querySDS().connect(basexpath, myProcessSession(), 0, SDS_LOCK_TIMEOUT);
     if (!conn)
         return NULL;
-    Owned<IPropertyTreeIterator> iter;
-    if (strieq(basexpath, "QuerySets"))
-    {
-        Owned<IPropertyTree> fileTree = getAllQuerySetQueries(conn, namefilterlo, xpath);
-        if (!fileTree)
-            return NULL;
-        iter.setown(fileTree->getElements("*"));
-        namefilterlo = NULL;
-    }
-    else
-    {
-        iter.setown(conn->getElements(xpath));
-    }
+    Owned<IPropertyTreeIterator> iter = conn->getElements(xpath);
     if (!iter)
         return NULL;
     if (namefilterlo&&!*namefilterlo)
@@ -1873,20 +1826,34 @@ public:
     Owned<IBitSet> passesFilter;
 };
 
-IRemoteConnection *getElementsPaged( const char *basexpath,
-                                     const char *xpath,
-                                     const char *sortorder,
+void sortElements(IPropertyTreeIterator* elementsIter,
+                    const char *sortOrder,
+                    const char *nameFilterLo,
+                    const char *nameFilterHi,
+                    IArrayOf<IPropertyTree> &sortedElements)
+{
+    if (nameFilterLo&&!*nameFilterLo)
+        nameFilterLo = NULL;
+    if (nameFilterHi&&!*nameFilterHi)
+        nameFilterHi = NULL;
+    cSort sort;
+    if (sortOrder && *sortOrder)
+        sort.dosort(*elementsIter,sortOrder,nameFilterLo,nameFilterHi,sortedElements);
+    else
+        ForEach(*elementsIter)
+            filteredAdd(sortedElements,nameFilterLo,nameFilterHi,&elementsIter->query());
+};
+
+IRemoteConnection *getElementsPaged( IElementsPager *elementsPager,
                                      unsigned startoffset,
                                      unsigned pagesize,
                                      ISortedElementsTreeFilter *postfilter, // filters before adding to page
                                      const char *owner,
                                      __int64 *hint,
-                                     const char *namefilterlo,
-                                     const char *namefilterhi,
                                      IArrayOf<IPropertyTree> &results,
                                      unsigned *total)
 {
-    if (pagesize==0)
+    if ((pagesize==0) || !elementsPager)
         return NULL;
     {
         CriticalBlock block(pagedElementsCacheSect);
@@ -1904,7 +1871,7 @@ IRemoteConnection *getElementsPaged( const char *basexpath,
     if (!elem)
         elem.setown(new CPECacheElem(owner, postfilter));
     if (!elem->conn)
-        elem->conn.setown(getSortedElements(basexpath,xpath,sortorder,namefilterlo,namefilterhi,elem->totalres));
+        elem->conn.setown(elementsPager->getElements(elem->totalres));
     if (!elem->conn)
         return NULL;
     unsigned n;
