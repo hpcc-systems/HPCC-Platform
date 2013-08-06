@@ -73,7 +73,9 @@ interface IUserDescriptor: extends serializable
 {
     virtual StringBuffer &getUserName(StringBuffer &buf)=0;
     virtual StringBuffer &getPassword(StringBuffer &buf)=0;
-    virtual void set(const char *name,const char *password)=0;
+    virtual bool getTrusted()=0;
+    virtual void setTrusted(bool _trusted)=0;
+    virtual void set(const char *name,const char *password, bool _trusted=false)=0;
     virtual void clear()=0;
 };
 
@@ -114,6 +116,7 @@ interface ISessionManager: extends IInterface
     virtual bool clearPermissionsCache(IUserDescriptor *udesc)=0;
     virtual bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)=0;
     virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)=0;
+    virtual void processConfig(IPropertyTree *cfg)=0;
 };
 
 // the following are getPermissionsLDAP input flags for audit reporting
@@ -142,7 +145,7 @@ interface IPropertyTree;
 interface IFile;
 interface IDaliLdapConnection;
 interface IDaliClientAuthConnection;
-extern da_decl IDaliServer *createDaliSessionServer(); // called for coven members
+extern da_decl IDaliServer *createDaliSessionServer(IPropertyTree *config); // called for coven members
 extern da_decl void setLDAPconnection(IDaliLdapConnection *ldapconn); // called for coven members
 extern da_decl void setClientAuth(IDaliClientAuthConnection *authconn); // called for coven members
 

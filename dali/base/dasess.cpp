@@ -98,8 +98,11 @@ static CriticalSection sessionCrit;
 #define SESSIONREPLYTIMEOUT (3*60*1000)
 
 
-#define CLDAPE_getpermtimeout (-1)
-#define CLDAPE_ldapfailure    (-2)
+#define CLDAPE_getpermtimeout           (-1)
+#define CLDAPE_ldapfailure              (-2)
+#define CLDAPE_challengeresponsefailure (-3)
+
+#define MAKEHASH(h,i) { StringBuffer val; val.append(val); hash = hashc((const unsigned char *)val.str(), val.length(), i); }
 
 class CDaliLDAP_Exception: public CInterface, implements IException
 {
@@ -356,6 +359,26 @@ public:
     }
 };
 
+//manages attributes of a trusted user (verified via challenge/response
+class CTrustedUser : public CInterface
+{
+public:
+    IMPLEMENT_IINTERFACE;
+
+    CTrustedUser(StringBuffer &_username, StringBuffer _sender, unsigned _clientToken, unsigned _serverToken, CDateTime &_whenExpires)
+        : username(_username), sender(_sender), clientToken(_clientToken), serverToken(_serverToken), whenExpires(_whenExpires)
+    {
+        key.append(sender).append('/').append(username);
+    }
+    StringBuffer key;
+    StringAttr  username;
+    StringAttr  sender;
+    unsigned    clientToken;
+    unsigned    serverToken;
+    CDateTime   whenExpires;
+};
+typedef CTrustedUser *CTrustedUserPtr;
+typedef MapStringTo<CTrustedUserPtr> CTrustedUserMap;
 
 
 enum MSessionRequestKind { 
@@ -370,7 +393,12 @@ enum MSessionRequestKind {
     MSR_CLEAR_PERMISSIONS_CACHE,
     MSR_EXIT, // TBD
     MSR_QUERY_SCOPE_SCANS_ENABLED,
-    MSR_ENABLE_SCOPE_SCANS
+    MSR_ENABLE_SCOPE_SCANS,
+    MSR_CR_LOOKUP_LDAP_PERMISSIONS,
+    MSR_CR_SERVER_CHALLENGE,
+    MSR_CR_CLIENT_RESPONSE,
+    MSR_CR_SERVER_RESPONSE,
+    MSR_CR_CONFIRMED
 };
 
 class CQueryScopeScansEnabledReq : implements IMessageWrapper
@@ -417,17 +445,108 @@ public:
     }
 };
 
+class CCRServerChallengeMsg : implements IMessageWrapper//sent from server to client
+{
+public:
+    mptag_t crTag;//tag to be used for C/R exchange
+    unsigned sc;//server challenge
+
+    CCRServerChallengeMsg(mptag_t _crTag, unsigned &_sc) : crTag(_crTag), sc(_sc) {}
+    CCRServerChallengeMsg() {}
+
+    void serializeReq(CMessageBuffer &mb)
+    {
+        mb.append((unsigned)MSR_CR_SERVER_CHALLENGE);
+        serializeMPtag(mb, crTag);
+        mb.append(sc);
+    }
+    void deserializeReq(CMessageBuffer &mb)
+    {
+        deserializeMPtag(mb, crTag);
+        mb.read(sc);
+    }
+};
+
+class CCRClientResponseMsg : implements IMessageWrapper//sent from client to server
+{
+public:
+    unsigned  cr;//client response to server challenge
+    unsigned  cc;//client challenge to server
+
+    CCRClientResponseMsg(unsigned &_ClientResponse, unsigned &_ClientChallenge) : cr(_ClientResponse), cc(_ClientChallenge) {}
+    CCRClientResponseMsg() {}
+
+    void serializeReq(CMessageBuffer &mb)   { mb.append((unsigned)MSR_CR_CLIENT_RESPONSE).append(cr).append(cc); }
+    void deserializeReq(CMessageBuffer &mb) { mb.read(cr).read(cc); }
+};
+
+class CCRServerResponseMsg : implements IMessageWrapper//sent from server to client
+{
+public:
+    unsigned    sr;//server response to client challenge
+    unsigned    crClientToken;
+
+    CCRServerResponseMsg(unsigned &_sr, unsigned _crClientToken) : sr(_sr), crClientToken(_crClientToken) {}
+    CCRServerResponseMsg() {}
+
+    void serializeReq(CMessageBuffer &mb)   { mb.append((unsigned)MSR_CR_SERVER_RESPONSE).append(sr).append(crClientToken); }
+    void deserializeReq(CMessageBuffer &mb) { mb.read(sr).read(crClientToken); }
+};
+
+//Concludes the Challenge/Response exchange
+class CCRConfirmed : implements IMessageWrapper//sent from client to server
+{
+public:
+    unsigned    crServerToken;
+    unsigned    crClientToken;
+
+    CCRConfirmed(unsigned _crClientToken, unsigned _crServerToken) : crClientToken(_crClientToken), crServerToken(_crServerToken) {}
+    CCRConfirmed() {}
+
+    void serializeReq(CMessageBuffer &mb)   { mb.append((unsigned)MSR_CR_CONFIRMED).append(crClientToken).append(crServerToken); }
+    void deserializeReq(CMessageBuffer &mb) { mb.read(crClientToken).read(crServerToken); }
+};
+
+
+
+
 class CSessionRequestServer: public Thread
 {
     bool stopped;
     ISessionManagerServer &manager;
     Semaphore acceptConnections;
 
+    bool useChallengeResponse;
+    CTrustedUserMap trustedUsersMap;
+    CriticalSection trustedUsersMapCrit;
+    CDateTime nextTrustedUserMapFlush;
+    unsigned trustedUserCacheTimeout;//in minutes
+    unsigned crKey;
 public:
-    CSessionRequestServer(ISessionManagerServer &_manager) 
+    CSessionRequestServer(ISessionManagerServer &_manager, IPropertyTree *_config)
         : Thread("Session Manager, CSessionRequestServer"), manager(_manager)
     {
         stopped = true;
+        useChallengeResponse = false;
+        if (_config)
+        {
+            IPropertyTree *crCfg = _config->getPropTree("Coven/challengeResponse");
+            if (crCfg)
+            {
+                useChallengeResponse = crCfg->getPropBool("@enabled",false);
+                if (useChallengeResponse)
+                {
+                    if (queryDaliServerVersion().compare("3.11") < 0)
+                        throw MakeStringException(-1, "challengeResponse enabled but DALI version not 3.11 or newer");
+                    trustedUserCacheTimeout = crCfg->getPropInt("@userCacheTimeout",5);
+                    StringBuffer ecrKey(crCfg->queryProp("@key"));
+                    StringBuffer dcrKey;
+                    decrypt(dcrKey, ecrKey);
+                    crKey = atoi(dcrKey.str());
+                }
+            }
+        }
+        PROGLOG("Challenge/Response %s", useChallengeResponse ? "enabled" : "disabled" );
     }
 
     int run()
@@ -452,6 +571,157 @@ public:
             }
         }
         return 0;
+    }
+
+    //------------------------------------------------------------------------------------
+    // In response to a request from an ESP client, Dali replies back with a server challenge SC.
+    // ESP responds with a client response CR to the SC, and issues a client challenge CC to the
+    // Dali server. Dali verifies the CR, and sends a unique client token and a server response
+    // SR to the CC. ESP will verify the CR, and respond to Dali which will register the user as being trusted
+    //------------------------------------------------------------------------------------
+    int exchangeChallengeResponse(ICoven &coven, CMessageBuffer &mb, StringBuffer &_username)
+    {
+        #define CR_SUCCESS   0
+        #define CR_FAIL      1
+
+        CDateTime now;
+        now.setNow();
+        if (0 == trustedUsersMap.count())
+        {
+            CriticalBlock block(trustedUsersMapCrit);
+            nextTrustedUserMapFlush.setNow();
+            nextTrustedUserMapFlush.adjustTime(trustedUserCacheTimeout);
+        }
+        else if (now.compare(nextTrustedUserMapFlush) >= 0)
+        {
+            //flush expired entries
+            HashIterator iter(trustedUsersMap);
+            StringArray expired;
+            CriticalBlock block(trustedUsersMapCrit);
+            ForEach(iter)
+            {
+                IMapping &cur = iter.query();
+                CTrustedUser *us = *(trustedUsersMap.mapToValue(&cur));
+                if (now.compare(us->whenExpires) >= 0)
+                {
+                    expired.append(us->key);
+                    us->Release();
+                }
+            }
+            for (aindex_t i=0; i<expired.ordinality(); i++)
+                trustedUsersMap.remove(expired.item(i));
+            expired.kill();
+            nextTrustedUserMapFlush.setNow();
+            nextTrustedUserMapFlush.adjustTime(trustedUserCacheTimeout);
+        }
+
+        StringBuffer key;
+        mb.getSender().getIpText(key);
+        key.append('/').append(_username);
+
+        {   //protected block
+            CriticalBlock block(trustedUsersMapCrit);
+            CTrustedUserPtr *trustedUser = trustedUsersMap.getValue(key.str());
+            if (trustedUser)
+            {
+                if (now.compare((*trustedUser)->whenExpires) > 0)
+                {
+                    StringAttr key((*trustedUser)->key);
+                    (*trustedUser)->Release();
+                    trustedUsersMap.remove(key);
+                }
+                else
+                    return 0;//previously verified
+            }
+        }
+
+        //send challenge to client
+        mb.clear().append(CR_SUCCESS);
+        mptag_t crTag = createReplyTag();//C/R communications on this mptag_t
+        unsigned serverChallenge = getRandom() + crKey;//create unique server challenge SC
+        CCRServerChallengeMsg msgSC(crTag, serverChallenge);
+        msgSC.serializeReq(mb);
+        coven.reply(mb);
+
+        unsigned clientToken = -1;
+        StringBuffer sb;
+        while (true)
+        {
+            if (!coven.recv(mb, RANK_ALL, crTag))
+            {
+                PROGLOG("Challenge/Response failed to receive response from client %s for user %s", mb.getSender().getUrlStr(sb).str(), _username.str());
+                mb.clear().append(CR_FAIL);
+                coven.reply(mb);
+                return CLDAPE_challengeresponsefailure;
+            }
+            unsigned retCode;
+            mb.read(retCode);
+            if (retCode != CR_SUCCESS)
+            {
+                PROGLOG("Challenge/Response error %d received from client %s for user %s", retCode, mb.getSender().getUrlStr(sb).str(), _username.str());
+                mb.clear().append(CR_FAIL);
+                coven.reply(mb);
+                return CLDAPE_challengeresponsefailure;
+            }
+            unsigned reqType;
+            mb.read(reqType);
+            switch (reqType)
+            {
+            case MSR_CR_CLIENT_RESPONSE:
+                {
+                    CCRClientResponseMsg msgCR;
+                    msgCR.deserializeReq(mb);
+
+                    unsigned hash;
+                    MAKEHASH(serverChallenge + msgCR.cc + crKey, crKey/2);
+                    if (msgCR.cr != hash)
+                    {
+                        PROGLOG("Challenge/Response error : Client %s response does not match expected for user %s", mb.getSender().getUrlStr(sb).str(), _username.str());
+                        mb.clear().append(CR_FAIL);
+                        coven.reply(mb);
+                        return CLDAPE_challengeresponsefailure;
+                    }
+
+                    mb.clear().append(CR_SUCCESS);
+                    MAKEHASH(serverChallenge + msgCR.cc + crKey, crKey/2);//Compute SR to CC (sr = hash(sc + cc + crKey))
+
+                    clientToken = getRandom() + crKey;
+                    CCRServerResponseMsg srMsg(hash, clientToken);
+                    srMsg.serializeReq(mb);
+                    coven.reply(mb);
+                    break;
+                }
+            case MSR_CR_CONFIRMED:
+                {
+                    CCRConfirmed msgConf;
+                    msgConf.deserializeReq(mb);
+                    if (msgConf.crClientToken != clientToken)
+                    {
+                        PROGLOG("Challenge/Response error : Client %s token mismatch for user %s", mb.getSender().getUrlStr(sb).str(), _username.str());
+                        mb.clear().append(CR_FAIL);
+                        coven.reply(mb);
+                        return CLDAPE_challengeresponsefailure;
+                    }
+                    //Add to map of trusted users
+                    CDateTime whenExpires;
+                    whenExpires.setNow();
+                    whenExpires.adjustTime(5);//expires in 5 minutes
+                    StringBuffer sender;
+                    mb.getSender().getIpText(sender);
+                    CTrustedUser * trustedUser = new CTrustedUser(_username, sender, clientToken, msgConf.crServerToken, whenExpires);
+                    CriticalBlock block(trustedUsersMapCrit);
+                    trustedUsersMap.setValue(trustedUser->key.str(), trustedUser);
+                    return 0;
+                }
+            default:
+                StringBuffer eps;
+                PROGLOG("Challenge/Response error : Unexpected message type %d from client %s for user %s", reqType, mb.getSender().getUrlStr(eps).str(), _username.str());
+                mb.clear().append(CR_FAIL);
+                coven.reply(mb);
+                return CLDAPE_challengeresponsefailure;
+            }
+        }
+        return CLDAPE_challengeresponsefailure;//unreachable
     }
 
     void processMessage(CMessageBuffer &mb)
@@ -483,7 +753,7 @@ public:
                     PROGLOG("Connection to %s authorized",mb.getSender().getUrlStr(eps).str());
 #endif
                 }
-                
+
                 IGroup *covengrp;
                 id = manager.registerClientProcess(node.get(),covengrp,(DaliClientRole)role);
                 mb.clear().append(id);
@@ -549,19 +819,19 @@ public:
                 coven.reply(mb);
             }
             break;
-        case MSR_LOOKUP_LDAP_PERMISSIONS: {
+        case MSR_LOOKUP_LDAP_PERMISSIONS:
+        case MSR_CR_LOOKUP_LDAP_PERMISSIONS:{
                 StringAttr key;
                 StringAttr obj;
                 Owned<IUserDescriptor> udesc=createUserDescriptor();
-                StringAttr username;
-                StringAttr passwordenc;
+                StringBuffer username;
+                udesc->getUserName(username);
                 mb.read(key).read(obj);
                 udesc->deserialize(mb);
 #ifndef _NO_DALIUSER_STACKTRACE
                 //following debug code to be removed
-                StringBuffer sb;
-                udesc->getUserName(sb);
-                if (0==sb.length())
+                udesc->getUserName(username);
+                if (0==username.length())
                 {
                     DBGLOG("UNEXPECTED USER (NULL) in dasess.cpp CSessionRequestServer::processMessage() line %d", __LINE__);
                 }
@@ -569,9 +839,19 @@ public:
                 unsigned auditflags = 0;
                 if (mb.length()-mb.getPos()>=sizeof(auditflags))
                     mb.read(auditflags);
+                int perms = 0;
                 int err = 0;
-                int ret=manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
-                mb.clear().append(ret);
+                if (fn == MSR_CR_LOOKUP_LDAP_PERMISSIONS && useChallengeResponse)
+                {
+                    err = exchangeChallengeResponse(coven, mb, username);
+                    if (0 == err)
+                        udesc->setTrusted(true);
+                    else
+                        break;
+                }
+                if (0 == err)
+                    perms = manager.getPermissionsLDAP(key,obj,udesc,auditflags,&err);
+                mb.clear().append(perms);
                 if (err)
                     mb.append(err);
                 coven.reply(mb);
@@ -806,6 +1086,8 @@ public:
 class CClientSessionManager: public CSessionManagerBase, implements IConnectionMonitor
 {
     bool securitydisabled;
+    bool useChallengeResponse;
+    unsigned crKey;
 public:
     IMPLEMENT_IINTERFACE;
 
@@ -860,7 +1142,15 @@ public:
             return -1;
         }
         CMessageBuffer mb;
-        mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
+        if (useChallengeResponse && queryDaliServerVersion().compare("3.11") >= 0)
+        {
+            StringBuffer usr;
+            udesc->getUserName(usr);
+            udesc->set(usr.str(), NULL, true);//clear password, flag as trusted
+            mb.append((int)MSR_CR_LOOKUP_LDAP_PERMISSIONS);
+        }
+        else
+            mb.append((int)MSR_LOOKUP_LDAP_PERMISSIONS);
         mb.append(key).append(obj);
 #ifndef _NO_DALIUSER_STACKTRACE
         //following debug code to be removed
@@ -875,7 +1165,77 @@ public:
 #endif
         udesc->serialize(mb);
         mb.append(auditflags);
-        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        bool challenged = true;
+        if (useChallengeResponse && queryDaliServerVersion().compare("3.11") >= 0)
+        {
+            unsigned clientToken = -1;
+            unsigned serverToken = -1;
+            unsigned clientChallenge = -1;
+            unsigned serverChallenge = -1;
+
+            mptag_t crTag = MPTAG_DALI_SESSION_REQUEST;//initially send on this tag, server will provide tag for C/R communication
+            while (challenged)
+            {
+                if (!queryCoven().sendRecv(mb, RANK_RANDOM, crTag, SESSIONREPLYTIMEOUT))
+                    return 0;
+                unsigned retCode;
+                mb.read(retCode);
+                if (retCode != CR_SUCCESS)
+                {
+                    StringBuffer eps;
+                    StringBuffer user;
+                    udesc->getUserName(user);
+                    DBGLOG("Challenge/Response error : received error %d from server %s for user %s", retCode,mb.getSender().getUrlStr(eps).str(), user.str());
+                    return 0;
+                }
+
+                unsigned reqType;
+                mb.read(reqType);
+                switch (reqType)
+                {
+                case MSR_CR_SERVER_CHALLENGE://respond to server challenge with server response and issue client challenge
+                    {
+                        CCRServerChallengeMsg msgSC;
+                        msgSC.deserializeReq(mb);
+                        crTag = msgSC.crTag;//use this tag for future C/R communication
+                        serverChallenge = msgSC.sc;
+                        clientChallenge = getRandom() + crKey;
+
+                        unsigned hash;
+                        MAKEHASH(clientChallenge + msgSC.sc + crKey, crKey/2);//compute CR to SC = hash(cc + sc + crKey)
+
+                        mb.clear().append(CR_SUCCESS);
+                        CCRClientResponseMsg msgCR(hash, clientChallenge);
+                        msgCR.serializeReq(mb);
+                        break;
+                    }
+                case MSR_CR_SERVER_RESPONSE://Verify server response to client challenge
+                    {
+                        CCRServerResponseMsg msgSR;
+                        msgSR.deserializeReq(mb);
+
+                        unsigned hash;
+                        MAKEHASH(serverChallenge + clientChallenge + crKey, crKey/2);
+                        if (msgSR.sr != hash)
+                        {
+                            PROGLOG("Challenge/Response error : Server %s response does not match expected", mb.getSender().getUrlStr(sb).str());
+                            mb.clear().append(CR_FAIL);
+                            queryCoven().sendRecv(mb, RANK_RANDOM, crTag, SESSIONREPLYTIMEOUT);
+                            return 0;
+                        }
+                        clientToken = msgSR.crClientToken;
+                        serverToken = getRandom() + crKey;//generate server token
+                        mb.clear().append(CR_SUCCESS);
+                        CCRConfirmed msgGetPerms(clientToken, serverToken);
+                        msgGetPerms.serializeReq(mb);
+                        queryCoven().sendRecv(mb, RANK_RANDOM, crTag, SESSIONREPLYTIMEOUT);
+                        challenged = false;
+                        break;
+                    }
+                }
+            } 
+        }
+        else if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
             return 0;
         int ret=-1;
         if (mb.remaining()>=sizeof(ret)) {
@@ -1011,6 +1371,26 @@ public:
         return true;
     }
 
+    void processConfig(IPropertyTree *cfg)
+    {
+        useChallengeResponse = false;
+        if (cfg)
+        {
+            IPropertyTree *crCfg = cfg->getPropTree("challengeResponse");
+            if (crCfg)
+            {
+                useChallengeResponse = crCfg->getPropBool("@enabled",false);
+                if (useChallengeResponse)
+                {
+                    StringBuffer ecrKey(crCfg->queryProp("@key"));
+                    StringBuffer dcrKey;
+                    decrypt(dcrKey, ecrKey);
+                    crKey = atoi(dcrKey.str());
+                }
+            }
+        }
+        PROGLOG("Challenge/Response %s", useChallengeResponse ? "enabled" : "disabled" );
+    }
 
     SessionId startSession(SecurityToken tok, SessionId parentid)
     {
@@ -1214,8 +1594,8 @@ class CCovenSessionManager: public CSessionManagerBase, implements ISessionManag
 public:
     IMPLEMENT_IINTERFACE;
 
-    CCovenSessionManager()
-        : sessionrequestserver(*this)
+    CCovenSessionManager(IPropertyTree *_config)
+        : sessionrequestserver(*this, _config)
     {
         mySessionId = queryCoven().getUniqueId(); // tell others in coven TBD
         registerSubscriptionManager(SESSION_PUBLISHER,this);
@@ -1542,7 +1922,9 @@ public:
     {
         UNIMPLEMENTED; // TBD
     }
-
+    void processConfig(IPropertyTree *cfg)
+    {
+    }
 protected:
 
     class CSessionSubscriptionStub: public CInterface
@@ -1723,10 +2105,11 @@ ISessionManager &querySessionManager()
 
 class CDaliSessionServer: public CInterface, public IDaliServer
 {
+    IPropertyTree *config;
 public:
     IMPLEMENT_IINTERFACE;
 
-    CDaliSessionServer()
+    CDaliSessionServer(IPropertyTree *_config) : config(_config)
     {
     }
 
@@ -1734,7 +2117,9 @@ public:
     {
         CriticalBlock block(sessionCrit);
         assertex(queryCoven().inCoven()); // must be member of coven
-        CCovenSessionManager *serv = new CCovenSessionManager();
+        CCovenSessionManager *serv = new CCovenSessionManager(config);
+        if (config)
+            serv->processConfig(config);
         SessionManagerServer = serv;
         SessionManager = serv;
         SessionManagerServer->start();
@@ -1765,9 +2150,9 @@ public:
 
 };
 
-IDaliServer *createDaliSessionServer()
+IDaliServer *createDaliSessionServer(IPropertyTree *_config)
 {
-    return new CDaliSessionServer();
+    return new CDaliSessionServer(_config);
 }
 
 void setLDAPconnection(IDaliLdapConnection *ldapconn)
@@ -1915,8 +2300,11 @@ class CUserDescriptor: public CInterface, implements IUserDescriptor
 {
     StringAttr username;
     StringAttr passwordenc;
+    bool    trusted;
 public:
     IMPLEMENT_IINTERFACE;
+
+    CUserDescriptor() { trusted = false; }
     StringBuffer &getUserName(StringBuffer &buf)
     {
         return buf.append(username);
@@ -1926,12 +2314,15 @@ public:
         decrypt(buf,passwordenc);
         return buf;
     }
-    virtual void set(const char *name,const char *password)
+    virtual bool getTrusted() { return trusted; }
+    virtual void setTrusted(bool _trusted) { trusted = _trusted; }
+    virtual void set(const char *name,const char *password, bool _trusted)
     {
         username.set(name);
         StringBuffer buf;
         encrypt(buf,password);
         passwordenc.set(buf.str());
+        trusted = _trusted;
     }
     virtual void clear()
     {

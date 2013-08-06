@@ -40,13 +40,14 @@ private:
     StringBuffer    m_Peer;
     SecUserStatus   m_status;
     Owned<IProperties> m_parameters;
+    bool            m_trusted;
 
     CriticalSection crit;
 public:
     IMPLEMENT_IINTERFACE
 
     CSecureUser(const char *name, const char *pw) : 
-        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown)
+        m_name(name), m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_userID(0), m_status(SecUserStatus_Unknown), m_trusted(false)
     {
     }
 
@@ -188,6 +189,8 @@ public:
     {
         return m_pw.str();
     }
+    virtual void setTrusted(bool _trusted)  { m_trusted = _trusted; }
+    virtual bool getTrusted()               { return m_trusted; }
 
     bool addToken(unsigned type, void * data, unsigned length)
     {
@@ -215,6 +218,7 @@ public:
         destination.setFqdn(getFqdn());
         destination.setPeer(getPeer());
         destination.credentials().setPassword(credentials().getPassword());
+        destination.credentials().setTrusted(credentials().getTrusted());
         CDateTime tmpTime;
         destination.setPasswordExpiration(getPasswordExpiration(tmpTime));
         destination.setStatus(getStatus());
