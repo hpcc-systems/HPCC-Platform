@@ -179,7 +179,9 @@ on(_24,"focusin, focusout",function(evt){
 var _26=evt.target;
 if(_26._cssState&&!_26.getAttribute("widgetId")){
 var _27=_b.getEnclosingWidget(_26);
+if(_27){
 _27._subnodeCssMouseEvent(_26,_26._cssState,evt);
+}
 }
 });
 });

@@ -41,6 +41,7 @@ var _9=this._filters[i];
 _8=_8.replace(_9.regexp,_9.handler);
 }
 _8=_3.html.format.prettyPrint(_8);
+this.editor.focus();
 this.editor.execCommand("inserthtml",_8);
 },_cancel:function(){
 this._dialog.hide();

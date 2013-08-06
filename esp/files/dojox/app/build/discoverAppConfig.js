@@ -55,7 +55,7 @@ define([
 			console.log(e);
 		}
 		if(config){
-			var mids = [];
+			var mids = [], params = {};
 			if(config.loaderConfig){
 				require(config.loaderConfig);
 			}
@@ -86,6 +86,8 @@ define([
 				mids.push("dojox/css3/transit");
 			}
 			if(config.template){
+				params.text = true;
+				bc.layers[mainLayer].include.push("dojo/text");
 				mids.push(config.template);
 			}
 			if(config.controller && config.controller != "none"){
@@ -93,10 +95,8 @@ define([
 			}
 			if(config.nls){
 				// we use nls let's add dojo/i18n to the main layer as it will be shared by a lot of views
-				if(!params.nls){
-					params.nls = true;
-					bc.layers[mainLayer].include.push("dojo/i18n");
-				}
+				params.nls = true;
+				bc.layers[mainLayer].include.push("dojo/i18n");
 				mids.push(config.nls);
 			}
 			if(config.view){
@@ -108,7 +108,7 @@ define([
 			}
 			// go into the view children
 			if(config.views){
-				parseViews(mids, mainLayer, config.views, {});
+				parseViews(mids, mainLayer, config.views, params);
 			}
 			Array.prototype.splice.apply(bc.layers[mainLayer].include, [bc.layers[mainLayer].length, 0].concat(mids));
 		}else{

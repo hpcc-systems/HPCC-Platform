@@ -100,7 +100,7 @@ this._timeRangeInvalidated=true;
 if(this._timeRangeInvalidated){
 this._timeRangeInvalidated=false;
 var _23=this.computeTimeInterval();
-if(this._timeInterval==null||cal.compare(this._timeInterval[0],_23[0]!=0)||cal.compare(this._timeInterval[1],_23[1]!=0)){
+if(this._timeInterval==null||cal.compare(this._timeInterval[0],_23[0])!=0||cal.compare(this._timeInterval[1],_23[1])!=0){
 this.onTimeIntervalChange({oldStartTime:this._timeInterval==null?null:this._timeInterval[0],oldEndTime:this._timeInterval==null?null:this._timeInterval[1],startTime:_23[0],endTime:_23[1]});
 }
 this._timeInterval=_23;

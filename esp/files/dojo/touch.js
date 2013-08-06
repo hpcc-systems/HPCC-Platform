@@ -73,7 +73,7 @@ _9.doc.addEventListener(_29,function(e){
 if(!e._dojo_click&&(new Date()).getTime()<=_14+1000&&!(e.target.tagName=="INPUT"&&_4.contains(e.target,"dijitOffScreen"))){
 e.stopPropagation();
 e.stopImmediatePropagation&&e.stopImmediatePropagation();
-if(_29=="click"&&(e.target.tagName!="INPUT"||e.target.type=="radio"||e.target.type=="checkbox")&&e.target.tagName!="TEXTAREA"){
+if(_29=="click"&&(e.target.tagName!="INPUT"||e.target.type=="radio"||e.target.type=="checkbox")&&e.target.tagName!="TEXTAREA"&&e.target.tagName!="AUDIO"&&e.target.tagName!="VIDEO"){
 e.preventDefault();
 }
 }

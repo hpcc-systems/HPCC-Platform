@@ -150,6 +150,9 @@ return;
 this.defer(function(){
 this._onInput(_13);
 });
+if(e.type=="keypress"){
+e.stopPropagation();
+}
 };
 this.own(on(this.textbox,"keydown, keypress, paste, cut, input, compositionend",_6.hitch(this,_10)));
 },_blankValue:"",filter:function(val){
