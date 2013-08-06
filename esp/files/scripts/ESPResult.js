@@ -63,7 +63,7 @@ define([
             } else {
                 this.XmlSchema = [];
             }
-            var rows = this.getValues(domXml, "Row");
+            var rows = this.getValues(domXml, "Row", ["Row"]);
             arrayUtil.forEach(rows, function (item, index) {
                 item.rowNum = request.Start + index + 1;
             });
@@ -137,7 +137,7 @@ define([
         getFirstSequenceNode: function (schemaNode) {
             var row = this.getFirstSchemaNode(schemaNode, "Row");
             if (!row)
-                return null;
+                row = schemaNode;
             var complexType = this.getFirstSchemaNode(row, "complexType");
             if (!complexType)
                 return null;
@@ -146,26 +146,25 @@ define([
 
         rowToTable: function (cell) {
             var table = domConstruct.create("table", { border: 1, cellspacing: 0, width: "100%" });
-            if (cell && cell.Row) {
-                if (!cell.Row.length) {
-                    cell.Row = [cell.Row];
-                }
-
-                for (var i = 0; i < cell.Row.length; ++i) {
+            if (Object.prototype.toString.call(cell) === '[object Object]') {
+                cell = [cell];
+            } 
+            if (Object.prototype.toString.call(cell) === '[object Array]') {
+                for (var i = 0; i < cell.length; ++i) {
                     if (i == 0) {
                         var tr = domConstruct.create("tr", null, table);
-                        for (key in cell.Row[i]) {
+                        for (key in cell[i]) {
                             var th = domConstruct.create("th", { innerHTML: entities.encode(key) }, tr);
                         }
                     }
                     var tr = domConstruct.create("tr", null, table);
-                    for (var key in cell.Row[i]) {
-                        if (cell.Row[i][key]) {
-                            if (cell.Row[i][key].Row) {
+                    for (var key in cell[i]) {
+                        if (cell[i][key]) {
+                            if (Object.prototype.toString.call(cell[i][key]) === '[object Object]' || Object.prototype.toString.call(cell[i][key]) === '[object Array]') {
                                 var td = domConstruct.create("td", null, tr);
-                                td.appendChild(this.rowToTable(cell.Row[i][key]));
+                                td.appendChild(this.rowToTable(cell[i][key]));
                             } else {
-                                var td = domConstruct.create("td", { innerHTML: entities.encode(cell.Row[i][key]) }, tr);
+                                var td = domConstruct.create("td", { innerHTML: entities.encode(cell[i][key]) }, tr);
                             }
                         } else {
                             var td = domConstruct.create("td", { innerHTML: "" }, tr);
@@ -238,7 +237,7 @@ define([
                         label: key,
                         field: key,
                         formatter: function (cell, row, grid) {
-                            if (cell && cell.Row) {
+                            if (Object.prototype.toString.call(cell) === '[object Object]' || Object.prototype.toString.call(cell) === '[object Array]') {
                                 var div = document.createElement("div");
                                 div.appendChild(context.rowToTable(cell));
                                 return div.innerHTML;
