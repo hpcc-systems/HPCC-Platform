@@ -179,7 +179,7 @@ CEspConfig::CEspConfig(IProperties* inputs, IPropertyTree* envpt, IPropertyTree*
         IPropertyTreeIterator *pt_iter = NULL;
         StringBuffer daliservers;
         if (m_cfg->getProp("@daliServers", daliservers))
-            initDali(daliservers.str());
+            initDali(daliservers.str(), m_cfg);
 
 #ifndef _DEBUG
         startPerformanceMonitor(m_cfg->getPropInt("@perfReportDelay", 60)*1000);
@@ -333,7 +333,7 @@ void CEspConfig::sendAlert(int severity, char const * descr, char const * subjec
 {
 }
 
-void CEspConfig::initDali(const char *servers)
+void CEspConfig::initDali(const char *servers, IPropertyTree *cfg)
 {
     if (servers!=NULL && *servers!=0 && !daliClientActive())
     {
@@ -348,7 +348,7 @@ void CEspConfig::initDali(const char *servers)
             throw MakeStringException(0, "Could not instantiate dali IGroup");
 
         // Initialize client process
-        if (!initClientProcess(serverGroup, DCR_EspServer))
+        if (!initClientProcess(serverGroup, DCR_EspServer, 0, NULL, NULL, MP_WAIT_FOREVER, cfg))
             throw MakeStringException(0, "Could not initialize dali client");
         setPasswordsFromSDS();
 

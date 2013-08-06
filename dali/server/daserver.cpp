@@ -81,7 +81,7 @@ void setMsgLevel(ILogMsgHandler * fileMsgHandler, unsigned level)
 void AddServers(const char *auditdir)
 {
     // order significant
-    servers.append(*createDaliSessionServer());
+    servers.append(*createDaliSessionServer(serverConfig));
     servers.append(*createDaliPublisherServer());
     servers.append(*createDaliSDSServer(serverConfig));
     servers.append(*createDaliNamedQueueServer());
