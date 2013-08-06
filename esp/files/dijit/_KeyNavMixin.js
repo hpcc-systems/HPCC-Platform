@@ -79,14 +79,14 @@ evt.stopPropagation();
 evt.preventDefault();
 this._searchString="";
 }else{
-if(evt.keyCode==_4.SPACE&&this._searchTimer&&!(evt.ctrlKey||evt.altKey)){
+if(evt.keyCode==_4.SPACE&&this._searchTimer&&!(evt.ctrlKey||evt.altKey||evt.metaKey)){
 evt.stopImmediatePropagation();
 evt.preventDefault();
 this._keyboardSearch(evt," ");
 }
 }
 },_onContainerKeypress:function(evt){
-if(evt.charCode<_4.SPACE||(evt.ctrlKey||evt.altKey)||(evt.charCode==_4.SPACE&&this._searchTimer)){
+if(evt.charCode<_4.SPACE||evt.ctrlKey||evt.altKey||evt.metaKey||(evt.charCode==_4.SPACE&&this._searchTimer)){
 return;
 }
 evt.preventDefault();

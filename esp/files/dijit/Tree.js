@@ -1,4 +1,5 @@
 //>>built
+require({cache:{"url:dijit/templates/Tree.html":"<div role=\"tree\">\n\t<div class=\"dijitInline dijitTreeIndent\" style=\"position: absolute; top: -9999px\" data-dojo-attach-point=\"indentDetector\"></div>\n\t<div class=\"dijitTreeExpando dijitTreeExpandoLoading\" data-dojo-attach-point=\"rootLoadingIndicator\"></div>\n\t<div data-dojo-attach-point=\"containerNode\" class=\"dijitTreeContainer\" role=\"presentation\">\n\t</div>\n</div>\n","url:dijit/templates/TreeNode.html":"<div class=\"dijitTreeNode\" role=\"presentation\"\n\t><div data-dojo-attach-point=\"rowNode\" class=\"dijitTreeRow\" role=\"presentation\"\n\t\t><span data-dojo-attach-point=\"expandoNode\" class=\"dijitInline dijitTreeExpando\" role=\"presentation\"></span\n\t\t><span data-dojo-attach-point=\"expandoNodeText\" class=\"dijitExpandoText\" role=\"presentation\"></span\n\t\t><span data-dojo-attach-point=\"contentNode\"\n\t\t\tclass=\"dijitTreeContent\" role=\"presentation\">\n\t\t\t<span role=\"presentation\" class=\"dijitInline dijitIcon dijitTreeIcon\" data-dojo-attach-point=\"iconNode\"></span\n\t\t\t><span data-dojo-attach-point=\"labelNode,focusNode\" class=\"dijitTreeLabel\" role=\"treeitem\" tabindex=\"-1\" aria-selected=\"false\"></span>\n\t\t</span\n\t></div>\n\t<div data-dojo-attach-point=\"containerNode\" class=\"dijitTreeNodeContainer\" role=\"presentation\" style=\"display: none;\"></div>\n</div>\n"}});
 define("dijit/Tree",["dojo/_base/array","dojo/aspect","dojo/_base/connect","dojo/cookie","dojo/_base/declare","dojo/Deferred","dojo/promise/all","dojo/dom","dojo/dom-class","dojo/dom-geometry","dojo/dom-style","dojo/errors/create","dojo/fx","dojo/has","dojo/_base/kernel","dojo/keys","dojo/_base/lang","dojo/on","dojo/topic","dojo/touch","dojo/when","./a11yclick","./focus","./registry","./_base/manager","./_Widget","./_TemplatedMixin","./_Container","./_Contained","./_CssStateMixin","./_KeyNavMixin","dojo/text!./templates/TreeNode.html","dojo/text!./templates/Tree.html","./tree/TreeStoreModel","./tree/ForestStoreModel","./tree/_dndSelector","dojo/query!css2"],function(_1,_2,_3,_4,_5,_6,_7,_8,_9,_a,_b,_c,_d,_e,_f,_10,_11,on,_12,_13,_14,_15,_16,_17,_18,_19,_1a,_1b,_1c,_1d,_1e,_1f,_20,_21,_22,_23){
 function _24(d){
 return _11.delegate(d.promise||d,{addCallback:function(_25){
@@ -515,143 +516,136 @@ return null;
 }
 },childSelector:".dijitTreeRow",isExpandoNode:function(_92,_93){
 return _8.isDescendant(_92,_93.expandoNode)||_8.isDescendant(_92,_93.expandoNodeText);
-},_onClick:function(_94,e){
-var _95=e.target,_96=this.isExpandoNode(_95,_94);
-if(_94.isExpandable&&(this.openOnClick||_96)){
+},__click:function(_94,e,_95,_96){
+var _97=e.target,_98=this.isExpandoNode(_97,_94);
+if(_94.isExpandable&&(_95||_98)){
 this._onExpandoClick({node:_94});
 }else{
 this._publish("execute",{item:_94.item,node:_94,evt:e});
-this.onClick(_94.item,_94,e);
+this[_96](_94.item,_94,e);
 this.focusNode(_94);
 }
 e.stopPropagation();
 e.preventDefault();
-},_onDblClick:function(_97,e){
-var _98=e.target,_99=(_98==_97.expandoNode||_98==_97.expandoNodeText);
-if(_97.isExpandable&&(this.openOnClick||_99)){
-this._onExpandoClick({node:_97});
+},_onClick:function(_99,e){
+this.__click(_99,e,this.openOnClick,"onClick");
+},_onDblClick:function(_9a,e){
+this.__click(_9a,e,this.openOnDblClick,"onDblClick");
+},_onExpandoClick:function(_9b){
+var _9c=_9b.node;
+this.focusNode(_9c);
+if(_9c.isExpanded){
+this._collapseNode(_9c);
 }else{
-this._publish("execute",{item:_97.item,node:_97,evt:e});
-this.onDblClick(_97.item,_97,e);
-this.focusNode(_97);
-}
-e.stopPropagation();
-e.preventDefault();
-},_onExpandoClick:function(_9a){
-var _9b=_9a.node;
-this.focusNode(_9b);
-if(_9b.isExpanded){
-this._collapseNode(_9b);
-}else{
-this._expandNode(_9b);
+this._expandNode(_9c);
 }
 },onClick:function(){
 },onDblClick:function(){
 },onOpen:function(){
 },onClose:function(){
-},_getNextNode:function(_9c){
+},_getNextNode:function(_9d){
 _f.deprecated(this.declaredClass+"::_getNextNode(node) is deprecated. Use _getNext(node) instead.","","2.0");
-return this._getNext(_9c);
+return this._getNext(_9d);
 },_getRootOrFirstNode:function(){
 _f.deprecated(this.declaredClass+"::_getRootOrFirstNode() is deprecated. Use _getFirst() instead.","","2.0");
 return this._getFirst();
-},_collapseNode:function(_9d){
-if(_9d._expandNodeDeferred){
-delete _9d._expandNodeDeferred;
+},_collapseNode:function(_9e){
+if(_9e._expandNodeDeferred){
+delete _9e._expandNodeDeferred;
 }
-if(_9d.state=="Loading"){
+if(_9e.state=="Loading"){
 return;
 }
-if(_9d.isExpanded){
-var ret=_9d.collapse();
-this.onClose(_9d.item,_9d);
-this._state(_9d,false);
+if(_9e.isExpanded){
+var ret=_9e.collapse();
+this.onClose(_9e.item,_9e);
+this._state(_9e,false);
 this._startPaint(ret);
 return ret;
 }
-},_expandNode:function(_9e){
-if(_9e._expandNodeDeferred){
-return _9e._expandNodeDeferred;
+},_expandNode:function(_9f){
+if(_9f._expandNodeDeferred){
+return _9f._expandNodeDeferred;
 }
-var _9f=this.model,_a0=_9e.item,_a1=this;
-if(!_9e._loadDeferred){
-_9e.markProcessing();
-_9e._loadDeferred=new _6();
-_9f.getChildren(_a0,function(_a2){
-_9e.unmarkProcessing();
-_9e.setChildItems(_a2).then(function(){
-_9e._loadDeferred.resolve(_a2);
+var _a0=this.model,_a1=_9f.item,_a2=this;
+if(!_9f._loadDeferred){
+_9f.markProcessing();
+_9f._loadDeferred=new _6();
+_a0.getChildren(_a1,function(_a3){
+_9f.unmarkProcessing();
+_9f.setChildItems(_a3).then(function(){
+_9f._loadDeferred.resolve(_a3);
 });
 },function(err){
-console.error(_a1,": error loading "+_9e.label+" children: ",err);
-_9e._loadDeferred.reject(err);
+console.error(_a2,": error loading "+_9f.label+" children: ",err);
+_9f._loadDeferred.reject(err);
 });
 }
-var def=_9e._loadDeferred.then(_11.hitch(this,function(){
-var _a3=_9e.expand();
-this.onOpen(_9e.item,_9e);
-this._state(_9e,true);
-return _a3;
+var def=_9f._loadDeferred.then(_11.hitch(this,function(){
+var _a4=_9f.expand();
+this.onOpen(_9f.item,_9f);
+this._state(_9f,true);
+return _a4;
 }));
 this._startPaint(def);
 return def;
-},focusNode:function(_a4){
-this.focusChild(_a4);
+},focusNode:function(_a5){
+this.focusChild(_a5);
 },_onNodeMouseEnter:function(){
 },_onNodeMouseLeave:function(){
-},_onItemChange:function(_a5){
-var _a6=this.model,_a7=_a6.getIdentity(_a5),_a8=this._itemNodesMap[_a7];
-if(_a8){
-var _a9=this.getLabel(_a5),_aa=this.getTooltip(_a5);
-_1.forEach(_a8,function(_ab){
-_ab.set({item:_a5,label:_a9,tooltip:_aa});
-_ab._updateItemClasses(_a5);
+},_onItemChange:function(_a6){
+var _a7=this.model,_a8=_a7.getIdentity(_a6),_a9=this._itemNodesMap[_a8];
+if(_a9){
+var _aa=this.getLabel(_a6),_ab=this.getTooltip(_a6);
+_1.forEach(_a9,function(_ac){
+_ac.set({item:_a6,label:_aa,tooltip:_ab});
+_ac._updateItemClasses(_a6);
 });
 }
-},_onItemChildrenChange:function(_ac,_ad){
-var _ae=this.model,_af=_ae.getIdentity(_ac),_b0=this._itemNodesMap[_af];
-if(_b0){
-_1.forEach(_b0,function(_b1){
-_b1.setChildItems(_ad);
+},_onItemChildrenChange:function(_ad,_ae){
+var _af=this.model,_b0=_af.getIdentity(_ad),_b1=this._itemNodesMap[_b0];
+if(_b1){
+_1.forEach(_b1,function(_b2){
+_b2.setChildItems(_ae);
 });
 }
-},_onItemDelete:function(_b2){
-var _b3=this.model,_b4=_b3.getIdentity(_b2),_b5=this._itemNodesMap[_b4];
-if(_b5){
-_1.forEach(_b5,function(_b6){
-this.dndController.removeTreeNode(_b6);
-var _b7=_b6.getParent();
-if(_b7){
-_b7.removeChild(_b6);
+},_onItemDelete:function(_b3){
+var _b4=this.model,_b5=_b4.getIdentity(_b3),_b6=this._itemNodesMap[_b5];
+if(_b6){
+_1.forEach(_b6,function(_b7){
+this.dndController.removeTreeNode(_b7);
+var _b8=_b7.getParent();
+if(_b8){
+_b8.removeChild(_b7);
 }
-_b6.destroyRecursive();
+_b7.destroyRecursive();
 },this);
-delete this._itemNodesMap[_b4];
+delete this._itemNodesMap[_b5];
 }
 },_initState:function(){
 this._openedNodes={};
 if(this.persist&&this.cookieName){
-var _b8=_4(this.cookieName);
-if(_b8){
-_1.forEach(_b8.split(","),function(_b9){
-this._openedNodes[_b9]=true;
+var _b9=_4(this.cookieName);
+if(_b9){
+_1.forEach(_b9.split(","),function(_ba){
+this._openedNodes[_ba]=true;
 },this);
 }
 }
-},_state:function(_ba,_bb){
+},_state:function(_bb,_bc){
 if(!this.persist){
 return false;
 }
-var _bc=_1.map(_ba.getTreePath(),function(_bd){
-return this.model.getIdentity(_bd);
+var _bd=_1.map(_bb.getTreePath(),function(_be){
+return this.model.getIdentity(_be);
 },this).join("/");
 if(arguments.length===1){
-return this._openedNodes[_bc];
+return this._openedNodes[_bd];
 }else{
-if(_bb){
-this._openedNodes[_bc]=true;
+if(_bc){
+this._openedNodes[_bd]=true;
 }else{
-delete this._openedNodes[_bc];
+delete this._openedNodes[_bd];
 }
 this._saveExpandedNodes();
 }
@@ -678,9 +672,9 @@ this.rootNode=null;
 this.inherited(arguments);
 },destroyRecursive:function(){
 this.destroy();
-},resize:function(_be){
-if(_be){
-_a.setMarginBox(this.domNode,_be);
+},resize:function(_bf){
+if(_bf){
+_a.setMarginBox(this.domNode,_bf);
 }
 this._nodePixelIndent=_a.position(this.tree.indentDetector).w||this._nodePixelIndent;
 this.expandChildrenDeferred.then(_11.hitch(this,function(){
@@ -707,8 +701,8 @@ delete this._adjustWidthsTimer;
 }
 this.containerNode.style.width="auto";
 this.containerNode.style.width=this.domNode.scrollWidth>this.domNode.offsetWidth?"auto":"100%";
-},_createTreeNode:function(_bf){
-return new _27(_bf);
+},_createTreeNode:function(_c0){
+return new _27(_c0);
 },focus:function(){
 if(this.lastFocusedChild){
 this.focusNode(this.lastFocusedChild);
@@ -717,10 +711,10 @@ this.focusFirstChild();
 }
 }});
 if(_e("dojo-bidi")){
-_53.extend({_setTextDirAttr:function(_c0){
-if(_c0&&this.textDir!=_c0){
-this._set("textDir",_c0);
-this.rootNode.set("textDir",_c0);
+_53.extend({_setTextDirAttr:function(_c1){
+if(_c1&&this.textDir!=_c1){
+this._set("textDir",_c1);
+this.rootNode.set("textDir",_c1);
 }
 }});
 }
@@ -728,4 +722,3 @@ _53.PathError=_c("TreePathError");
 _53._TreeNode=_27;
 return _53;
 });
-require({cache:{"url:dijit/templates/Tree.html":"<div role=\"tree\">\n\t<div class=\"dijitInline dijitTreeIndent\" style=\"position: absolute; top: -9999px\" data-dojo-attach-point=\"indentDetector\"></div>\n\t<div class=\"dijitTreeExpando dijitTreeExpandoLoading\" data-dojo-attach-point=\"rootLoadingIndicator\"></div>\n\t<div data-dojo-attach-point=\"containerNode\" class=\"dijitTreeContainer\" role=\"presentation\">\n\t</div>\n</div>\n","url:dijit/templates/TreeNode.html":"<div class=\"dijitTreeNode\" role=\"presentation\"\n\t><div data-dojo-attach-point=\"rowNode\" class=\"dijitTreeRow\" role=\"presentation\"\n\t\t><span data-dojo-attach-point=\"expandoNode\" class=\"dijitInline dijitTreeExpando\" role=\"presentation\"></span\n\t\t><span data-dojo-attach-point=\"expandoNodeText\" class=\"dijitExpandoText\" role=\"presentation\"></span\n\t\t><span data-dojo-attach-point=\"contentNode\"\n\t\t\tclass=\"dijitTreeContent\" role=\"presentation\">\n\t\t\t<span role=\"presentation\" class=\"dijitInline dijitIcon dijitTreeIcon\" data-dojo-attach-point=\"iconNode\"></span\n\t\t\t><span data-dojo-attach-point=\"labelNode,focusNode\" class=\"dijitTreeLabel\" role=\"treeitem\" tabindex=\"-1\" aria-selected=\"false\"></span>\n\t\t</span\n\t></div>\n\t<div data-dojo-attach-point=\"containerNode\" class=\"dijitTreeNodeContainer\" role=\"presentation\" style=\"display: none;\"></div>\n</div>\n"}});

@@ -91,7 +91,7 @@ this.openExternalView(_1d,_1f);
 return;
 }else{
 if(_1d.href){
-if(_1d.hrefTarget){
+if(_1d.hrefTarget&&_1d.hrefTarget!="_self"){
 _6.global.open(_1d.href,_1d.hrefTarget);
 }else{
 var _20;
