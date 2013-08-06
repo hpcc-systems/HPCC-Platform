@@ -1855,7 +1855,7 @@ public:
     virtual IStringVal & str(IStringVal &s) { s.clear(); return s; }
 };
 
-mapEnums sortFields[] = 
+mapEnums workunitSortFields[] =
 {
    { WUSFuser, "@submitID" },
    { WUSFcluster, "@clusterName" },
@@ -1955,24 +1955,24 @@ public:
     {
         trees.kill();
     }
-    bool  first()
+    bool first()
     {
         index = 0;
         return (trees.ordinality()!=0);
     }
 
-    bool  next()
+    bool next()
     {
         index++;
         return (index<trees.ordinality());
     }
 
-    bool  isValid()
+    bool isValid()
     {
         return (index<trees.ordinality());
     }
 
-    IPropertyTree &  query()
+    IPropertyTree &query()
     {
         return trees.item(index);
     }
@@ -2346,7 +2346,7 @@ public:
                 else if (subfmt==WUSFwuidhigh) 
                     namefilterhi.set(fv);
                 else {
-                    query.append('[').append(getEnumText(subfmt,sortFields)).append('=');
+                    query.append('[').append(getEnumText(subfmt,workunitSortFields)).append('=');
                     if (fmt&WUSFnocase)
                         query.append('?');
                     if (fmt&WUSFwild)
@@ -2367,7 +2367,7 @@ public:
                     so.append('?');
                 if (fmt&WUSFnumeric) 
                     so.append('#');
-                so.append(getEnumText(fmt&0xff,sortFields));
+                so.append(getEnumText(fmt&0xff,workunitSortFields));
             }
         }
         IArrayOf<IPropertyTree> results;
@@ -2416,24 +2416,25 @@ public:
 
             IPropertyTree* getAllQuerySetQueries(IRemoteConnection* conn, const char *querySet, const char *xPath)
             {
-                Owned<IPropertyTree> queryTreeRoot = createPTreeFromXMLString("<Queries/>");
+                Owned<IPropertyTree> queryTreeRoot = createPTree("Queries");
                 IPropertyTree* root = conn->queryRoot();
                 if (querySet && *querySet)
                 {
                     VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
                     getQuerySetQueries(querySet, root, path.str(), queryTreeRoot);
-                    return queryTreeRoot.getClear();
                 }
-
-                Owned<IPropertyTreeIterator> iter = root->getElements("QuerySet");
-                ForEach(*iter)
+                else
                 {
-                    IPropertyTree &querySet = iter->query();
-                    const char* id = querySet.queryProp("@id");
-                    if (id && *id)
+                    Owned<IPropertyTreeIterator> iter = root->getElements("QuerySet");
+                    ForEach(*iter)
                     {
-                        VStringBuffer path("Query%s", xPath);
-                        getQuerySetQueries(id, &querySet, path.str(), queryTreeRoot);
+                        IPropertyTree &querySet = iter->query();
+                        const char* id = querySet.queryProp("@id");
+                        if (id && *id)
+                        {
+                            VStringBuffer path("Query%s", xPath);
+                            getQuerySetQueries(id, &querySet, path.str(), queryTreeRoot);
+                        }
                     }
                 }
                 return queryTreeRoot.getClear();
@@ -2464,7 +2465,8 @@ public:
         StringAttr querySet;
         StringBuffer xPath;
         StringBuffer so;
-        if (filters) {
+        if (filters)
+        {
             const char *fv = (const char *)filterbuf;
             for (unsigned i=0;filters[i]!=WUQSFterm;i++) {
                 int fmt = filters[i];
