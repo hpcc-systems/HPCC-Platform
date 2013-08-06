@@ -2409,8 +2409,8 @@ public:
                 ForEach(*iter)
                 {
                     IPropertyTree &query = iter->query();
-                    query.addProp("@querySetId", querySetId);
-                    queryTreeRoot->addPropTree("Query", LINK(&query));
+                    IPropertyTree *queryWithSetId = queryTreeRoot->addPropTree("Query", LINK(&query));
+                    queryWithSetId->addProp("@querySetId", querySetId);
                 }
             }
 
