@@ -2728,7 +2728,7 @@ void CJobBase::runSubgraph(CGraphBase &graph, size32_t parentExtractSz, const by
 
 IEngineRowAllocator *CJobBase::getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
 {
-    return thorAllocator->getRowAllocator(meta, activityId);
+    return thorAllocator->getRowAllocator(meta, activityId, flags);
 }
 
 roxiemem::IRowManager *CJobBase::queryRowManager() const
