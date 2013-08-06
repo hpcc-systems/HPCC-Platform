@@ -22,7 +22,7 @@ _3=1?_2.rawConfig:this.dojoConfig||this.djConfig||{};
 _5(_3,"config",1);
 _5(_3.has,"",1);
 }
-if(!_3.locale){
+if(!_3.locale&&typeof navigator!="undefined"){
 _3.locale=(navigator.language||navigator.userLanguage).toLowerCase();
 }
 return _3;

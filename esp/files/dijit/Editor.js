@@ -193,7 +193,7 @@ var _29=b.mark;
 var col=b.isCollapsed;
 var r,_2a,_2b,sel;
 if(_29){
-if(_c("ie")<9){
+if(_c("ie")<9||(_c("ie")===9&&_c("quirks"))){
 if(_b.isArray(_29)){
 _28=[];
 _2.forEach(_29,function(n){
@@ -284,7 +284,7 @@ var b=this.selection.getBookmark();
 var tmp=[];
 if(b&&b.mark){
 var _2e=b.mark;
-if(_c("ie")<9){
+if(_c("ie")<9||(_c("ie")===9&&_c("quirks"))){
 var sel=_17.getSelection(this.window);
 if(!_b.isArray(_2e)){
 if(sel){

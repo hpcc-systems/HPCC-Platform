@@ -53,10 +53,10 @@ this.searchTimer=this.defer("_startSearchFromInput",1);
 }
 },onSearch:function(){
 },_startSearchFromInput:function(){
-this._startSearch(this.focusNode.value.replace(/([\\\*\?])/g,"\\$1"));
+this._startSearch(this.focusNode.value);
 },_startSearch:function(_10){
 this._abortQuery();
-var _11=this,_4=_3.clone(this.query),_12={start:0,count:this.pageSize,queryOptions:{ignoreCase:this.ignoreCase,deep:true}},qs=_5.substitute(this.queryExpr,[_10]),q,_13=function(){
+var _11=this,_4=_3.clone(this.query),_12={start:0,count:this.pageSize,queryOptions:{ignoreCase:this.ignoreCase,deep:true}},qs=_5.substitute(this.queryExpr,[_10.replace(/([\\\*\?])/g,"\\$1")]),q,_13=function(){
 var _14=_11._fetchHandle=_11.store.query(_4,_12);
 if(_11.disabled||_11.readOnly||(q!==_11._lastQuery)){
 return;

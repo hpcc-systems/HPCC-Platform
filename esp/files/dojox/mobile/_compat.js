@@ -107,9 +107,9 @@ _5.extend(_18,{_changeState:function(_24,_25){
 var on=(_24==="on");
 var pos;
 if(!on){
-pos=this.isLeftToRight()?-this.inner.firstChild.firstChild.offsetWidth:0;
+pos=this.isLeftToRight()?-_b.get(this.right,"left"):0;
 }else{
-pos=this.isLeftToRight()?0:-this.inner.firstChild.firstChild.offsetWidth;
+pos=this.isLeftToRight()?0:-_b.get(this.right,"left");
 }
 this.left.style.display="";
 this.right.style.display="";

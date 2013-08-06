@@ -32,6 +32,7 @@ this.repositionTimer=this.endHandler=null;
 }
 this.inherited(arguments);
 _7.remove(this.domNode,"aria-owns");
+_7.set(this.domNode,"aria-expanded","false");
 _b.close(this.dropDown);
 this._opened=false;
 if(_e("windows-theme")&&this.domNode.disabled){
@@ -43,6 +44,7 @@ this.domNode.removeAttribute("disabled");
 var _f=!this._opened;
 var _10=this.dropDown,_11=_10.domNode,_12=this.domNode,_13=this;
 _7.set(_10.domNode,"role","listbox");
+_7.set(this.domNode,"aria-expanded","true");
 if(_10.id){
 _7.set(this.domNode,"aria-owns",_10.id);
 }
@@ -141,6 +143,7 @@ return _19;
 this.inherited(arguments);
 this.connect(this.domNode,"onclick","_onClick");
 _7.set(this.domNode,"role","combobox");
+_7.set(this.domNode,"aria-expanded","false");
 },destroy:function(){
 if(this.repositionTimer){
 clearInterval(this.repositionTimer);
