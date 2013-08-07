@@ -915,8 +915,9 @@ ICoven &queryCoven()
 {
     if (coven==NULL)
     {
-        ERRLOG("No active dali server connection available");
-        throw MakeStringException(-1,"No active dali server connection available");
+        Owned<IException> e = MakeStringException(-1, "No access to Dali - this normally means a plugin call is being called from a thorslave");
+        EXCLOG(e, NULL);
+        throw e.getClear();
     }
     return *coven;
 }
