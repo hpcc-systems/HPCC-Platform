@@ -98,9 +98,14 @@ public:
     virtual void notify(SubscriptionId subid, const char *xpath, SDSNotifyFlags flags, unsigned valueLen, const void *valueData)
     {
         Linked<CDaliPackageWatcher> me = this;  // Ensure that I am not released by the notify call (which would then access freed memory to release the critsec)
-        CriticalBlock b(crit);
-        if (notifier)
-            notifier->notify(subid, xpath, flags, valueLen, valueData);
+        Linked<ISDSSubscription> myNotifier;
+        {
+            CriticalBlock b(crit);
+            myNotifier.set(notifier);
+            // allow crit to be released, allowing this to be unsubscribed, to avoid deadlocking when other threads via notify call unsubscribe
+        }
+        if (myNotifier)
+            myNotifier->notify(subid, xpath, flags, valueLen, valueData);
     }
 };
 
