@@ -3368,12 +3368,12 @@ public:
                     {
                         bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
                         bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
-                        joinhelper.setown(createJoinHelper(*this, joinargs, queryRowAllocator(), hintparallelmatch, hintunsortedoutput));
+                        joinhelper.setown(createJoinHelper(*this, joinargs, this, hintparallelmatch, hintunsortedoutput));
                     }
                     break;
                 case TAKhashdenormalize:
                 case TAKhashdenormalizegroup:
-                    joinhelper.setown(createDenormalizeHelper(*this, joinargs, queryRowAllocator()));
+                    joinhelper.setown(createDenormalizeHelper(*this, joinargs, this));
                     break;
                 default:
                     throwUnexpected();
