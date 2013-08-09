@@ -1601,7 +1601,7 @@ class CRowMultiWriterReader : public CSimpleInterface, implements IRowMultiWrite
                         emptySem.signal();
                         readerBlocked = false;
                     }
-                    break;
+                    return;
                 }
                 writersBlocked++;
             }
