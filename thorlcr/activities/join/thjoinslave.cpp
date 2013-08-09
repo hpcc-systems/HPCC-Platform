@@ -233,11 +233,12 @@ public:
         dataLinkStart(activityName, container.queryId());
         CriticalBlock b(joinHelperCrit);
         if (denorm)
-            joinhelper.setown(createDenormalizeHelper(*this, helperdn, queryRowAllocator()));
-        else {
+            joinhelper.setown(createDenormalizeHelper(*this, helperdn, this));
+        else
+        {
             bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
             bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
-            joinhelper.setown(createJoinHelper(*this, helperjn, queryRowAllocator(), hintparallelmatch, hintunsortedoutput));
+            joinhelper.setown(createJoinHelper(*this, helperjn, this, hintparallelmatch, hintunsortedoutput));
         }
     }
 

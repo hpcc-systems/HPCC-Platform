@@ -45,7 +45,7 @@ interface IMulticoreIntercept
 };
 
 class CActivityBase;
-interface IJoinHelper: public IInterface
+interface IJoinHelper: public IRowStream
 {
     virtual bool init(
             IRowStream *strmL,
@@ -57,14 +57,15 @@ interface IJoinHelper: public IInterface
             IMulticoreIntercept *mcoreintercept=NULL
         )=0;
 
-    virtual const void *nextRow() = 0;
     virtual rowcount_t getLhsProgress() const = 0;
     virtual rowcount_t getRhsProgress() const = 0;
+    virtual const void *nextRow() = 0;
+    virtual void stop() = 0;
 };
 
-IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IEngineRowAllocator *allocator,bool parallelmatch,bool unsortedoutput);
-IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IEngineRowAllocator *allocator,bool parallelmatch,bool unsortedoutput);
-IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IEngineRowAllocator *allocator);
+IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput);
+IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput);
+IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IRowInterfaces *rowIf);
 
 
 
