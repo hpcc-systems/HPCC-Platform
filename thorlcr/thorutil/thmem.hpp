@@ -249,6 +249,10 @@ class graph_decl CThorExpandingRowArray : public CSimpleInterface
         virtual void unlock() const {  }
     } dummyLock;
 
+
+// for direct access by another CThorExpandingRowArray only
+    inline void transferRowsCopy(const void **outRows, bool takeOwnership);
+
 protected:
     CActivityBase &activity;
     IRowInterfaces *rowIf;
@@ -341,7 +345,6 @@ public:
         swap(from);
     }
     void transferRows(rowidx_t & outNumRows, const void * * & outRows);
-    void transferRowsCopy(rowidx_t & outNumRows, const void **outRows);
     void transferFrom(CThorExpandingRowArray &src);
     void transferFrom(CThorSpillableRowArray &src);
     void removeRows(rowidx_t start, rowidx_t n);
@@ -367,6 +370,8 @@ public:
     void deserializeExpand(size32_t sz, const void *data);
     bool ensure(rowidx_t requiredRows);
     virtual IThorArrayLock &queryLock() { return dummyLock; }
+
+friend class CThorSpillableRowArray;
 };
 
 interface IWritePosCallback : extends IInterface

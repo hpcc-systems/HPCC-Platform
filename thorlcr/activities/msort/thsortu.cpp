@@ -1400,9 +1400,11 @@ ILimitedCompareHelper *createLimitedCompareHelper()
 
 //===============================================================
 
-class CMultiCoreJoinHelperBase: extends CInterface, implements IJoinHelper, implements IMulticoreIntercept
+class CMultiCoreJoinHelperBase: extends CSimpleInterface, implements IJoinHelper, implements IMulticoreIntercept
 {
 public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
     CActivityBase &activity;
     IRowInterfaces *rowIf;
     IJoinHelper *jhelper;
@@ -1668,8 +1670,6 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
     } **workers;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CMultiCoreJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
         : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
     {
@@ -1866,8 +1866,6 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
     } **workers;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
     CMultiCoreUnorderedJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
         : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
     {

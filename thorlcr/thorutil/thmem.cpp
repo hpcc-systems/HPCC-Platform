@@ -625,13 +625,24 @@ void CThorExpandingRowArray::transferRows(rowidx_t & outNumRows, const void * * 
     stableTable = NULL;
 }
 
-void CThorExpandingRowArray::transferRowsCopy(rowidx_t &outNumRows, const void **outRows)
+void CThorExpandingRowArray::transferRowsCopy(const void **outRows, bool takeOwnership)
 {
-    outNumRows = numRows;
+    if (0 == numRows)
+        return;
     memcpy(outRows, rows, numRows*sizeof(void **));
-    memset(rows, 0, numRows*sizeof(void **));
-    numRows = 0;
-    maxRows = 0;
+    if (takeOwnership)
+        numRows = 0;
+    else
+    {
+        const void **lastNewRow = outRows+numRows-1;
+        loop
+        {
+            LinkThorRow(*outRows);
+            if (outRows == lastNewRow)
+                break;
+            outRows++;
+        }
+    }
 }
 
 void CThorExpandingRowArray::transferFrom(CThorExpandingRowArray &donor)
@@ -674,19 +685,9 @@ bool CThorExpandingRowArray::appendRows(CThorExpandingRowArray &inRows, bool tak
         if (!ensure(numRows + num))
             return false;
     }
-    const void **_inRows = inRows.getRowArray();
     const void **newRows = rows+numRows;
-    inRows.transferRowsCopy(num, newRows);
-    if (!takeOwnership)
-    {
-        const void **lastNewRow = newRows+num-1;
-        do
-        {
-            LinkThorRow(*newRows);
-            newRows++;
-        }
-        while (newRows != lastNewRow);
-    }
+    inRows.transferRowsCopy(newRows, takeOwnership);
+
     numRows += num;
     return true;
 }
@@ -1171,19 +1172,9 @@ bool CThorSpillableRowArray::appendRows(CThorExpandingRowArray &inRows, bool tak
                 return false;
         }
     }
-    const void **_inRows = inRows.getRowArray();
     const void **newRows = rows+numRows;
-    inRows.transferRowsCopy(num, newRows);
-    if (!takeOwnership)
-    {
-        const void **lastNewRow = newRows+num-1;
-        do
-        {
-            LinkThorRow(*newRows);
-            newRows++;
-        }
-        while (newRows != lastNewRow);
-    }
+    inRows.transferRowsCopy(newRows, takeOwnership);
+
     numRows += num;
     if (numRows >= commitRows + commitDelta)
         flush();
