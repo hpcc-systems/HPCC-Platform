@@ -5,12 +5,14 @@ define([
     "dojo/hash",
     "dojo/router",
 
-    "dijit/registry",
-    "dijit/layout/_LayoutWidget"
-], function (declare, lang, dom, hash, router,
-    registry, _LayoutWidget) {
+    "hpcc/_Widget",
 
-    return declare("_TabContainerWidget", [_LayoutWidget], {
+    "dijit/registry"
+], function (declare, lang, dom, hash, router,
+    _Widget,
+    registry) {
+
+    return declare("_TabContainerWidget", [_Widget], {
         //  Assumptions:
         //    this.id + "BorderContainer" may exist.
         //    this.id + "TabContainer" exits.

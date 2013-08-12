@@ -24,8 +24,6 @@ define([
     "dojo/dom-form",
     "dojo/query",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -53,10 +51,10 @@ define([
 
     "dijit/TooltipDialog"
 ], function (exports, declare, lang, arrayUtil, dom, domAttr, domClass, domForm, query,
-                _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
+                BorderContainer, TabContainer, ContentPane, Toolbar, TooltipDialog, Form, SimpleTextarea, TextBox, Button, DropDownButton, TitlePane, registry,
                 _TabContainerWidget, ResultWidget, EclSourceWidget, FilePartsWidget, WUDetailsWidget, DFUWUDetailsWidget, TargetSelectWidget, ESPLogicalFile, ESPDFUWorkunit,
                 template) {
-    exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    exports.fixCircularDependency = declare("LFDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "LFDetailsWidget",
         borderContainer: null,
@@ -72,7 +70,6 @@ define([
 
         logicalFile: null,
         prevState: "",
-        initalized: false,
 
         postCreate: function (args) {
             this.inherited(arguments);
@@ -158,9 +155,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             var context = this;
             if (params.Name) {

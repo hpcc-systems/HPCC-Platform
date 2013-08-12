@@ -44,9 +44,8 @@ define([
         wu: null,
 
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);

@@ -18,21 +18,19 @@ define([
     "dojo/_base/declare",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
 
+    "hpcc/_Widget",
     "hpcc/TimingGridWidget",
     "hpcc/TimingTreeMapWidget",
 
     "dojo/text!../templates/TimingPageWidget.html"
 ],
     function (declare,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer,
-            TimingGridWidget, TimingTreeMapWidget,
+            registry, BorderContainer,
+            _Widget, TimingGridWidget, TimingTreeMapWidget,
             template) {
-        return declare("TimingPageWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("TimingPageWidget", [_Widget], {
             templateString: template,
             baseClass: "TimingPageWidget",
             borderContainer: null,
@@ -65,9 +63,8 @@ define([
 
             //  Plugin wrapper  ---
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 var context = this;
                 this.timingGrid.init(params);

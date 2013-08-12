@@ -49,6 +49,11 @@ require([
             //  Known control properties  ---
             DOT_META_ATTR: "DOT_META_ATTR",
 
+            _onClickRefresh: function () {
+                this.setMessage("Performing Layout...");
+                this.startLayout("dot");
+            },
+
             _onClickZoomOrig: function (args) {
                 this.setScale(100);
                 this.centerOnItem(0);
