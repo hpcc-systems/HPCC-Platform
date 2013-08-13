@@ -536,7 +536,8 @@ void CThorExpandingRowArray::doSort(rowidx_t n, void **const rows, ICompare &com
         parqsortvec((void **const)rows, n, compare, maxCores);
 }
 
-CThorExpandingRowArray::CThorExpandingRowArray(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _allowNulls, StableSortFlag _stableSort, bool _throwOnOom, rowidx_t initialSize) : activity(_activity)
+CThorExpandingRowArray::CThorExpandingRowArray(CActivityBase &_activity, IRowInterfaces *_rowIf, bool _allowNulls, StableSortFlag _stableSort, bool _throwOnOom, rowidx_t initialSize)
+    : activity(_activity)
 {
     init(initialSize, _stableSort);
     setup(_rowIf, _allowNulls, _stableSort, _throwOnOom);
@@ -624,6 +625,26 @@ void CThorExpandingRowArray::transferRows(rowidx_t & outNumRows, const void * * 
     stableTable = NULL;
 }
 
+void CThorExpandingRowArray::transferRowsCopy(const void **outRows, bool takeOwnership)
+{
+    if (0 == numRows)
+        return;
+    memcpy(outRows, rows, numRows*sizeof(void **));
+    if (takeOwnership)
+        numRows = 0;
+    else
+    {
+        const void **lastNewRow = outRows+numRows-1;
+        loop
+        {
+            LinkThorRow(*outRows);
+            if (outRows == lastNewRow)
+                break;
+            outRows++;
+        }
+    }
+}
+
 void CThorExpandingRowArray::transferFrom(CThorExpandingRowArray &donor)
 {
     kill();
@@ -654,6 +675,23 @@ void CThorExpandingRowArray::removeRows(rowidx_t start, rowidx_t n)
     }
 }
 
+bool CThorExpandingRowArray::appendRows(CThorExpandingRowArray &inRows, bool takeOwnership)
+{
+    rowidx_t num = inRows.ordinality();
+    if (0 == num)
+        return true;
+    if (numRows+num >= maxRows)
+    {
+        if (!ensure(numRows + num))
+            return false;
+    }
+    const void **newRows = rows+numRows;
+    inRows.transferRowsCopy(newRows, takeOwnership);
+
+    numRows += num;
+    return true;
+}
+
 void CThorExpandingRowArray::clearUnused()
 {
     if (rows)
@@ -672,7 +710,8 @@ bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
     if (currentMaxRows < requiredRows) // check, because may have expanded previously, but failed to allocate stableTable and set new maxRows
     {
         capacity = ((memsize_t)getNewSize(requiredRows)) * sizeof(void *);
-        CResizeRowCallback callback(*(void ***)(&rows), capacity, *this);
+
+        CResizeRowCallback callback(*(void ***)(&rows), capacity, queryLock());
         if (!resizeRowTable((void **)rows, capacity, true, callback)) // callback will reset capacity
         {
             if (throwOnOom)
@@ -683,7 +722,7 @@ bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
     if (stableSort_earlyAlloc == stableSort)
     {
         memsize_t dummy;
-        CResizeRowCallback callback(stableTable, dummy, *this);
+        CResizeRowCallback callback(stableTable, dummy, queryLock());
         if (!resizeRowTable(stableTable, capacity, false, callback))
         {
             if (throwOnOom)
@@ -696,7 +735,7 @@ bool CThorExpandingRowArray::ensure(rowidx_t requiredRows)
     }
 
     // Both row tables updated, only now update maxRows
-    CThorArrayLockBlock block(*this);
+    CThorArrayLockBlock block(queryLock());
     maxRows = capacity / sizeof(void *);
     return true;
 }
@@ -1107,8 +1146,8 @@ void CThorSpillableRowArray::flush()
 {
     CThorArrayLockBlock block(*this);
     dbgassertex(numRows >= commitRows);
-    //This test could be improved...
-    if (firstRow != 0 && firstRow == commitRows)
+    // if firstRow over 50% of commitRows, meaning over half of row array is empty, then reduce
+    if (firstRow != 0 && (firstRow >= commitRows/2))
     {
         //A block of rows was removed - copy these rows to the start of the block.
         memmove(rows, rows+firstRow, (numRows-firstRow) * sizeof(void *));
@@ -1117,6 +1156,29 @@ void CThorSpillableRowArray::flush()
     }
 
     commitRows = numRows;
+}
+
+bool CThorSpillableRowArray::appendRows(CThorExpandingRowArray &inRows, bool takeOwnership)
+{
+    rowidx_t num = inRows.ordinality();
+    if (0 == num)
+        return true;
+    if (numRows+num >= maxRows)
+    {
+        if (!ensure(numRows + num))
+        {
+            flush();
+            if (numRows+num >= maxRows)
+                return false;
+        }
+    }
+    const void **newRows = rows+numRows;
+    inRows.transferRowsCopy(newRows, takeOwnership);
+
+    numRows += num;
+    if (numRows >= commitRows + commitDelta)
+        flush();
+    return true;
 }
 
 void CThorSpillableRowArray::transferFrom(CThorExpandingRowArray &src)

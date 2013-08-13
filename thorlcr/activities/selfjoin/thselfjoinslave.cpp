@@ -170,11 +170,12 @@ public:
         if (helper->getJoinFlags()&JFlimitedprefixjoin) {
             CriticalBlock b(joinHelperCrit);
             // use std join helper (less efficient but implements limited prefix)
-            joinhelper.setown(createJoinHelper(*this, helper, queryRowAllocator(), hintparallelmatch, hintunsortedoutput));
+            joinhelper.setown(createJoinHelper(*this, helper, this, hintparallelmatch, hintunsortedoutput));
         }
-        else {
+        else
+        {
             CriticalBlock b(joinHelperCrit);
-            joinhelper.setown(createSelfJoinHelper(*this, helper, queryRowAllocator(), hintparallelmatch, hintunsortedoutput));
+            joinhelper.setown(createSelfJoinHelper(*this, helper, this, hintparallelmatch, hintunsortedoutput));
         }
         strm.setown(isLightweight? doLightweightSelfJoin() : (isLocal ? doLocalSelfJoin() : doGlobalSelfJoin()));
         assertex(strm);
