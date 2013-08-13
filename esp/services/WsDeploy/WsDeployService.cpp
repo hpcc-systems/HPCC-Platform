@@ -3257,6 +3257,9 @@ bool CWsDeployFileInfo::displaySettings(IEspContext &context, IEspDisplaySetting
                   {
                     xpath.clear().appendf("Hardware/Computer/[@name='%s']", pszComputer);
                     IPropertyTree* pComputer= pEnvRoot->queryPropTree(xpath.str());
+
+                    if (pComputer == NULL)
+                      break;
                     const char* pszNetAddr = pComputer->queryProp(XML_ATTR_NETADDRESS);
                     if (pszNetAddr)
                       pSlaveNode->addProp(XML_ATTR_NETADDRESS, pszNetAddr);
