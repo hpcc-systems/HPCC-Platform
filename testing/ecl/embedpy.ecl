@@ -32,10 +32,6 @@ unicode add7(unicode val) := EMBED(Python)
 return val+'1'
 ENDEMBED;
 
-integer testThrow(integer val) := EMBED(Python)
-raise Exception('Error from Python')
-ENDEMBED;
-
 data testData(data val) := EMBED(Python)
 val[0] = val[0] + 1
 return val
@@ -87,16 +83,6 @@ add7(U'Стоял');
 
 add2('Oh là là Straße');  // Passing latin chars - should be untranslated
 
-// Can't catch an expression(only a dataset)
-d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
-
-d t := transform
-  self.a := FAILCODE;
-  self.m := FAILMESSAGE;
-  self := [];
-end;
-
-catch(d(testThrow(a) = a), onfail(t));
 testData(D'aa');
 testSet([1,3,2]);
 testSet2(['red','green','yellow']);
