@@ -131,7 +131,7 @@
 #define DFTERR_CannotPushAndCompress_Text       "Need to pull the data when compressing the output"
 #define DFTERR_CannotFindFirstXmlRecord_Text    "Could not find the start of the first record"
 #define DFTERR_CouldNotOpenCompressedFile_Text  "Could not open file %s as compressed file"
-#define DFTERR_EndOfXmlRecordNotFound_Text      "End of XML record not found (need to increase maxRecordSize?)!\nCXmlQuickPartitioner::findSplitPoint: at offset:%"I64F"d, record size (>%d bytes) is larger than expected maxRecordSize (%d bytes) [and blockSize (%d bytes)]."
+#define DFTERR_EndOfXmlRecordNotFound_Text      "End of XML record not found (need to increase maxRecordSize?)! At offset:%"I64F"d, record size (>%d bytes) is larger than expected maxRecordSize (%d bytes)."
 
 #define DFTERR_UnknownFormatType_Text           "INTERNAL: Save unknown format type"
 #define DFTERR_OutputOffsetMismatch_Text        "INTERNAL: Output offset does not match expected (%"I64F"d expected %"I64F"d) at %s of block %d"

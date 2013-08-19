@@ -294,14 +294,7 @@ void CInputBasePartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor
 CInputBasePartitioner::CInputBasePartitioner(unsigned _headerSize, unsigned expectedRecordSize)
 {
     headerSize = _headerSize;
-    if( expectedRecordSize == 8192)
-        // Give room for some extreme large record and to try avoid
-        // "DFURUN Exception:  : End of XML record not found (need to increase maxRecordSize?)!"
-        blockSize = 0x80 * expectedRecordSize; // 1 MB
-    else
-        // User has knowledge/prediction about what is the max record size
-        // use this to create proper size block
-        blockSize = 4 * expectedRecordSize;
+    blockSize = 0x40000;
     bufferSize = 4 * blockSize + expectedRecordSize;
     doInputCRC = false;
     CriticalBlock block(openfilecachesect);
@@ -1197,7 +1190,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                 if (sizeAvailable >= format.maxRecordSize)
                 {
                     LOG(MCdebugProgressDetail, unknownJob, "CXmlQuickPartitioner::findSplitPoint: record size (>%d bytes) is larger than expected maxRecordSize (%d bytes) [and blockSize (%d bytes)]", sizeRecord, format.maxRecordSize, blockSize);
-                    throwError4(DFTERR_EndOfXmlRecordNotFound, splitOffset+bufferOffset, sizeRecord, format.maxRecordSize, blockSize);
+                    throwError3(DFTERR_EndOfXmlRecordNotFound, splitOffset+bufferOffset, sizeRecord, format.maxRecordSize);
                 }
                 LOG(MCdebugProgress, unknownJob, "Failed to find split after reading %d", ensureSize);
                 ensureSize += blockSize;
