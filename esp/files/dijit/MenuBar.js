@@ -1,4 +1,5 @@
 //>>built
+require({cache:{"url:dijit/templates/MenuBar.html":"<div class=\"dijitMenuBar dijitMenuPassive\" data-dojo-attach-point=\"containerNode\" role=\"menubar\" tabIndex=\"${tabIndex}\"\n\t ></div>\n"}});
 define("dijit/MenuBar",["dojo/_base/declare","dojo/keys","./_MenuBase","dojo/text!./templates/MenuBar.html"],function(_1,_2,_3,_4){
 return _1("dijit.MenuBar",_3,{templateString:_4,baseClass:"dijitMenuBar",popupDelay:0,_isMenuBar:true,_orient:["below"],_moveToPopup:function(_5){
 if(this.focusedChild&&this.focusedChild.popup&&!this.focusedChild.disabled){
@@ -31,4 +32,3 @@ this.inherited(arguments);
 }
 }});
 });
-require({cache:{"url:dijit/templates/MenuBar.html":"<div class=\"dijitMenuBar dijitMenuPassive\" data-dojo-attach-point=\"containerNode\" role=\"menubar\" tabIndex=\"${tabIndex}\"\n\t ></div>\n"}});

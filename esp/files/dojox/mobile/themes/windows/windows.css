@@ -4281,7 +4281,7 @@ h6.mblHeading {
   background-color: #1f1f1f;
   color: #ffffff;
   width: 100%;
-  height: calc(100% - 50px);
+  height: calc(100% - 50px) !important;
   padding: 50px 0 0 0;
   left: 0px !important;
   -ms-touch-action: none;

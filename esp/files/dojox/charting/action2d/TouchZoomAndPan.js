@@ -62,15 +62,19 @@ this._middleCoord=t(_16)[this.axis];
 this._startCoord=_17.bounds.from;
 this._endCoord=_17.bounds.to;
 }else{
+if(!_10.touches||_10.touches.length==1){
 if(!this._startTime){
 this._startTime=new Date().getTime();
 }else{
-if((new Date().getTime()-this._startTime)<250&&Math.abs(this._startPageCoord.x-_15.x)<50&&Math.abs(this._startPageCoord.y-_15.y)<50){
+if((new Date().getTime()-this._startTime)<250&&Math.abs(this._startPageCoord.x-_15.x)<30&&Math.abs(this._startPageCoord.y-_15.y)<30){
 this._startTime=0;
 this.onDoubleTap(_10);
 }else{
 this._startTime=0;
 }
+}
+}else{
+this._startTime=0;
 }
 if(this.enableScroll){
 this._startScroll(_12);
