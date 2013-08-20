@@ -363,7 +363,7 @@ void getPkgInfo(const char *target, const char *process, StringBuffer &info)
     toXML(tree, info);
 }
 
-bool deletePkgInfo(const char *name, const char *target, const char *process)
+bool deletePkgInfo(const char *name, const char *target, const char *process, bool globalScope)
 {
     Owned<IRemoteConnection> pkgSetsConn = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (!pkgSetsConn)
@@ -384,8 +384,13 @@ bool deletePkgInfo(const char *name, const char *target, const char *process)
     StringBuffer lcName(name);
     name = lcName.toLowerCase().str();
 
-    VStringBuffer xpath("PackageMap[@id='%s::%s'][@querySet='%s']", target, name, target);
-    IPropertyTree *mapEntry = pkgSetRegistry->getPropTree(xpath.str());
+    IPropertyTree *mapEntry = NULL;
+    StringBuffer xpath;
+    if (!globalScope)
+    {
+        xpath.appendf("PackageMap[@id='%s::%s'][@querySet='%s']", target, name, target);
+        mapEntry = pkgSetRegistry->getPropTree(xpath.str());
+    }
     if (!mapEntry)
     {
         xpath.clear().appendf("PackageMap[@id='%s'][@querySet='%s']", name, target);
@@ -412,7 +417,7 @@ bool deletePkgInfo(const char *name, const char *target, const char *process)
     return true;
 }
 
-void activatePackageMapInfo(const char *target, const char *name, const char *process, bool activate)
+void activatePackageMapInfo(const char *target, const char *name, const char *process, bool globalScope, bool activate)
 {
     if (!target || !*target)
         throw MakeStringExceptionDirect(PKG_TARGET_NOT_DEFINED, "No target defined");
@@ -440,8 +445,12 @@ void activatePackageMapInfo(const char *target, const char *name, const char *pr
     IPropertyTree *pkgSetTree = root->queryPropTree(xpath);
     if (pkgSetTree)
     {
-        xpath.clear().appendf("PackageMap[@querySet='%s'][@id='%s::%s']", target, target, name);
-        IPropertyTree *mapTree = pkgSetTree->queryPropTree(xpath);
+        IPropertyTree *mapTree = NULL;
+        if (!globalScope)
+        {
+            xpath.clear().appendf("PackageMap[@querySet='%s'][@id='%s::%s']", target, target, name);
+            mapTree = pkgSetTree->queryPropTree(xpath);
+        }
         if (!mapTree)
         {
             xpath.clear().appendf("PackageMap[@querySet='%s'][@id='%s']", target, name);
@@ -465,7 +474,10 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     if (name.isEmpty())
         throw MakeStringExceptionDirect(PKG_MISSING_PARAM, "PackageMap name parameter required");
 
-    VStringBuffer pmid("%s::%s", target.get(), name.get());
+    StringBuffer pmid;
+    if (!req.getGlobalScope())
+        pmid.append(target).append("::");
+    pmid.append(name.get());
 
     StringBuffer info(req.getInfo());
     bool activate = req.getActivate();
@@ -503,7 +515,7 @@ bool CWsPackageProcessEx::onDeletePackage(IEspContext &context, IEspDeletePackag
     if (processName.length()==0)
         processName.set("*");
 
-    bool ret = deletePkgInfo(pkgMap.get(), req.getTarget(), processName.get());
+    bool ret = deletePkgInfo(pkgMap.get(), req.getTarget(), processName.get(), req.getGlobalScope());
     StringBuffer msg;
     (ret) ? msg.append("Successfully ") : msg.append("Unsuccessfully ");
     msg.append("deleted ").append(pkgMap.get()).append(" from ").append(req.getTarget());
@@ -515,14 +527,14 @@ bool CWsPackageProcessEx::onDeletePackage(IEspContext &context, IEspDeletePackag
 bool CWsPackageProcessEx::onActivatePackage(IEspContext &context, IEspActivatePackageRequest &req, IEspActivatePackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
-    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), true);
+    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), req.getGlobalScope(), true);
     return true;
 }
 
 bool CWsPackageProcessEx::onDeActivatePackage(IEspContext &context, IEspDeActivatePackageRequest &req, IEspDeActivatePackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
-    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), false);
+    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), req.getGlobalScope(), false);
     return true;
 }
 
@@ -577,7 +589,7 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
     }
     else if (pmid && *pmid)
     {
-        mapTree.setown(getPackageMapById(target, pmid, true));
+        mapTree.setown(getPackageMapById(req.getGlobalScope() ? NULL : target, pmid, true));
         if (!mapTree)
             throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Package map %s not found", req.getPMID());
     }
@@ -642,7 +654,7 @@ bool CWsPackageProcessEx::onGetQueryFileMapping(IEspContext &context, IEspGetQue
     const char *pmid = req.getPMID();
     if (pmid && *pmid)
     {
-        ownedmap.setown(createPackageMapFromPtree(getPackageMapById(target, pmid, true), target, pmid));
+        ownedmap.setown(createPackageMapFromPtree(getPackageMapById(req.getGlobalScope() ? NULL : target, pmid, true), target, pmid));
         if (!ownedmap)
             throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", req.getPMID());
         map = ownedmap;

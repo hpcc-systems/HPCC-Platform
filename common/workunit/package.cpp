@@ -222,11 +222,14 @@ extern WORKUNIT_API IPropertyTree * getPackageMapById(const char * id, bool read
 
 extern WORKUNIT_API IPropertyTree * getPackageMapById(const char *target, const char * id, bool readonly)
 {
-    VStringBuffer xpath("/PackageMaps/PackageMap[@id='%s::%s']", target, id);
-    Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        return getPackageMapById(id, readonly);
-    return conn->getRoot();
+    if (target && *target)
+    {
+        VStringBuffer xpath("/PackageMaps/PackageMap[@id='%s::%s']", target, id);
+        Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+        if (conn)
+            return conn->getRoot();
+    }
+    return getPackageMapById(id, readonly);
 }
 
 extern WORKUNIT_API IPropertyTree * getPackageSetById(const char * id, bool readonly)
