@@ -85,6 +85,8 @@ interface ISessionManagerServer: implements IConnectionMonitor
     virtual void start() = 0;
     virtual void ready() = 0;
     virtual void stop() = 0;
+    virtual bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg) = 0;
+    virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg) = 0;
 };
 
 
@@ -366,7 +368,53 @@ enum MSessionRequestKind {
     MSR_IMPORT_CAPABILITIES,
     MSR_LOOKUP_LDAP_PERMISSIONS,
     MSR_CLEAR_PERMISSIONS_CACHE,
-    MSR_EXIT // TBD
+    MSR_EXIT, // TBD
+    MSR_QUERY_SCOPE_SCANS_ENABLED,
+    MSR_ENABLE_SCOPE_SCANS
+};
+
+class CQueryScopeScansEnabledReq : implements IMessageWrapper
+{
+public:
+    bool enabled;
+    Linked<IUserDescriptor> udesc;
+
+    CQueryScopeScansEnabledReq(IUserDescriptor *_udesc) : udesc(_udesc) {}
+    CQueryScopeScansEnabledReq() {}
+
+    void serializeReq(CMessageBuffer &mb)
+    {
+        mb.append(MSR_QUERY_SCOPE_SCANS_ENABLED);
+        udesc->serialize(mb);
+    }
+
+    void deserializeReq(CMessageBuffer &mb)
+    {
+        udesc.setown(createUserDescriptor(mb));
+    }
+};
+
+class CEnableScopeScansReq : implements IMessageWrapper
+{
+public:
+    bool doEnable;
+    Linked<IUserDescriptor> udesc;
+
+    CEnableScopeScansReq(IUserDescriptor *_udesc, bool _doEnable) : udesc(_udesc), doEnable(_doEnable) {}
+    CEnableScopeScansReq() {}
+
+    void serializeReq(CMessageBuffer &mb)
+    {
+        mb.append(MSR_ENABLE_SCOPE_SCANS);
+        udesc->serialize(mb);
+        mb.append(doEnable);
+    }
+
+    void deserializeReq(CMessageBuffer &mb)
+    {
+        udesc.setown(createUserDescriptor(mb));
+        mb.read(doEnable);
+    }
 };
 
 class CSessionRequestServer: public Thread
@@ -534,6 +582,41 @@ public:
                 udesc->deserialize(mb);
                 bool ok = manager.clearPermissionsCache(udesc);
                 mb.append(ok);
+                coven.reply(mb);
+            }
+            break;
+        case MSR_QUERY_SCOPE_SCANS_ENABLED:{
+                CQueryScopeScansEnabledReq req;
+                req.deserializeReq(mb);
+                int err;
+                StringBuffer retMsg;
+                bool enabled = manager.queryScopeScansEnabled(req.udesc, &err, retMsg);
+                mb.clear().append(err);
+                mb.append(enabled);
+                mb.append(retMsg.str());
+                if (err != 0 || retMsg.length())
+                {
+                    StringBuffer user;
+                    req.udesc->getUserName(user);
+                    DBGLOG("Error %d querying scope scan status for %s : %s", err, user.str(), retMsg.str());
+                }
+                coven.reply(mb);
+            }
+            break;
+        case MSR_ENABLE_SCOPE_SCANS:{
+                CEnableScopeScansReq req;
+                req.deserializeReq(mb);
+                int err;
+                StringBuffer retMsg;
+                bool ok = manager.enableScopeScans(req.udesc, req.doEnable, &err, retMsg);
+                mb.clear().append(err);
+                mb.append(retMsg.str());
+                if (err != 0 || retMsg.length())
+                {
+                    StringBuffer user;
+                    req.udesc->getUserName(user);
+                    DBGLOG("Error %d %sing Scope Scan Status for %s: %s", err, req.doEnable?"Enabl":"Disabl", user.str(), retMsg.str());
+                }
                 coven.reply(mb);
             }
             break;
@@ -823,6 +906,89 @@ public:
         udesc->serialize(mb);
         return queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT);
     }
+
+    bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)
+    {
+        if (queryDaliServerVersion().compare("3.10") < 0)
+        {
+            *err = -1;
+            StringBuffer ver;
+            queryDaliServerVersion().toString(ver);
+            retMsg.appendf("Scope Scan status feature requires Dali V3.10 or newer, current Dali version %s",ver.str());
+            return false;
+        }
+        if (securitydisabled)
+        {
+            *err = -1;
+            retMsg.append("Security not enabled");
+            return false;
+        }
+        if (queryDaliServerVersion().compare("1.8") < 0) {
+            *err = -1;
+            retMsg.append("Security not enabled");
+            securitydisabled = true;
+            return false;
+        }
+        CMessageBuffer mb;
+        CQueryScopeScansEnabledReq req(udesc);
+        req.serializeReq(mb);
+        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        {
+            *err = -1;
+            retMsg.append("DALI Send/Recv error");
+            return false;
+        }
+        int rc;
+        bool enabled;
+        mb.read(rc).read(enabled).read(retMsg);
+        *err = rc;
+        return enabled;
+    }
+
+    bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)
+    {
+        if (queryDaliServerVersion().compare("3.10") < 0)
+        {
+            *err = -1;
+            StringBuffer ver;
+            queryDaliServerVersion().toString(ver);
+            retMsg.appendf("Scope Scan enable/disable feature requires Dali V3.10 or newer, current Dali version %s",ver.str());
+            return false;
+        }
+
+        if (securitydisabled)
+        {
+            *err = -1;
+            retMsg.append("Security not enabled");
+            return false;
+        }
+        if (queryDaliServerVersion().compare("1.8") < 0) {
+            *err = -1;
+            retMsg.append("Security not enabled");
+            securitydisabled = true;
+            return false;
+        }
+        CMessageBuffer mb;
+        CEnableScopeScansReq req(udesc,enable);
+        req.serializeReq(mb);
+        if (!queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DALI_SESSION_REQUEST,SESSIONREPLYTIMEOUT))
+        {
+            *err = -1;
+            retMsg.append("DALI Send/Recv error");
+            return false;
+        }
+        int rc;
+        mb.read(rc).read(retMsg);
+        *err = rc;
+        if (rc == 0)
+        {
+            StringBuffer user;
+            udesc->getUserName(user);
+            DBGLOG("Scope Scans %sabled by %s",enable ? "En" : "Dis", user.str());
+        }
+        return rc == 0;
+    }
+
     bool checkScopeScansLDAP()
     {
         assertex(!"checkScopeScansLDAP called on client");
@@ -1299,6 +1465,37 @@ public:
 #endif
         return ok;
     }
+
+    virtual bool queryScopeScansEnabled(IUserDescriptor *udesc, int * err, StringBuffer &retMsg)
+    {
+#ifdef _NO_LDAP
+        *err = -1;
+        retMsg.append("LDAP not enabled");
+        return false;
+#else
+        *err = 0;
+        return checkScopeScansLDAP();
+#endif
+    }
+
+    virtual bool enableScopeScans(IUserDescriptor *udesc, bool enable, int * err, StringBuffer &retMsg)
+    {
+#ifdef _NO_LDAP
+        *err = -1;
+        retMsg.append("LDAP not supporteded");
+        return false;
+#else
+        if (!ldapconn)
+        {
+            *err = -1;
+            retMsg.append("LDAP not connected");
+            return false;
+        }
+
+        return ldapconn->enableScopeScans(udesc, enable, err);
+#endif
+    }
+
     virtual bool checkScopeScansLDAP()
     {
 #ifdef _NO_LDAP
@@ -1756,7 +1953,12 @@ IUserDescriptor *createUserDescriptor()
     return new CUserDescriptor;
 }
 
-
+IUserDescriptor *createUserDescriptor(MemoryBuffer &mb)
+{
+    IUserDescriptor * udesc = createUserDescriptor();
+    udesc->deserialize(mb);
+    return udesc;
+}
 
 MODULE_INIT(INIT_PRIORITY_DALI_DASESS)
 {

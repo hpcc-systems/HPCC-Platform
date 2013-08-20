@@ -288,6 +288,7 @@ public:
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) {UNIMPLEMENTED; }
     virtual int queryDefaultPermission(ISecUser& user) {UNIMPLEMENTED; }
     virtual bool clearPermissionsCache(ISecUser& user) {return false;}
+    virtual bool authenticateUser(ISecUser & user, bool &superUser) {return false;}
 protected:
     const char* getServer(){return m_dbserver.toCharArray();}
     const char* getUser(){return m_dbuser.toCharArray();}

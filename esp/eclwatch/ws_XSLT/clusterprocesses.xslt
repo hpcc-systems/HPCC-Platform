@@ -732,17 +732,22 @@
           <xsl:text disable-output-escaping="yes"><![CDATA[ <br /> ]]></xsl:text>
           <xsl:value-of select="$memNode/Total"/> MB Total
         </xsl:attribute>
-         <xsl:if test="$threshold != 0">
-                <xsl:choose>
-                        <xsl:when test="$thresholdType=0 and $memNode/PercentAvail &lt; $threshold">
-                    <xsl:attribute name="bgcolor">FF8800</xsl:attribute>
-                        </xsl:when>
-                        <xsl:when test="$thresholdType=1 and $memNode/Available &lt; $threshold">
-                    <xsl:attribute name="bgcolor">FF8800</xsl:attribute>
-                        </xsl:when>
-                    </xsl:choose>
-         </xsl:if>
-         <xsl:value-of select="$memNode/PercentAvail"/>%
+        <xsl:choose>
+          <xsl:when test="$memNode/Total=0">N/A</xsl:when>
+          <xsl:otherwise>
+            <xsl:if test="$threshold != 0">
+              <xsl:choose>
+                <xsl:when test="$thresholdType=0 and $memNode/PercentAvail &lt; $threshold">
+                  <xsl:attribute name="bgcolor">FF8800</xsl:attribute>
+                </xsl:when>
+                <xsl:when test="$thresholdType=1 and $memNode/Available &lt; $threshold">
+                  <xsl:attribute name="bgcolor">FF8800</xsl:attribute>
+                </xsl:when>
+              </xsl:choose>
+            </xsl:if>
+            <xsl:value-of select="$memNode/PercentAvail"/>%
+          </xsl:otherwise>
+        </xsl:choose>
       </td>            
    </xsl:template>
   
