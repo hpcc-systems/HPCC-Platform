@@ -1051,7 +1051,7 @@ public:
         offset_t dfsSize = partProps.getPropInt64("@size", -1);
         bool local = partProps.getPropBool("@local");
         unsigned crc;
-        if (!pdesc->getCrc(crc))
+        if (!crcResources || !pdesc->getCrc(crc))
             crc = 0;
         CDateTime dfsDate;
         if (checkFileDate)

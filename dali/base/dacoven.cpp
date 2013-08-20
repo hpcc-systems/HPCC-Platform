@@ -37,7 +37,7 @@ extern void closedownDFS();
 // base is saved in store whenever block exhausted, so replacement coven servers can restart 
 
 // server side versioning.
-#define ServerVersion    "3.9"
+#define ServerVersion    "3.10"
 #define MinClientVersion "1.5"
 
 
@@ -327,7 +327,6 @@ public:
         if (comm)
             comm->cancel(srcrank,tag);
     }
-
 };
 
 
@@ -916,8 +915,9 @@ ICoven &queryCoven()
 {
     if (coven==NULL)
     {
-        ERRLOG("No active dali server connection available");
-        throw MakeStringException(-1,"No active dali server connection available");
+        Owned<IException> e = MakeStringException(-1, "No access to Dali - this normally means a plugin call is being called from a thorslave");
+        EXCLOG(e, NULL);
+        throw e.getClear();
     }
     return *coven;
 }

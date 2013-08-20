@@ -639,6 +639,12 @@ margin-left:-20px;
     height: 16px;
 }
 
+.iconNewPage {
+    background-image: url("../img/openNewPage.png"); 
+    width: 16px;
+    height: 16px;
+}
+
 .iconZoomOrig {
     background-image: url("../img/zoomOrig.png");
     width: 16px;

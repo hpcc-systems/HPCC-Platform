@@ -18,8 +18,6 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
@@ -34,10 +32,10 @@ define([
     "dijit/layout/ContentPane"
 
 ], function (declare, Memory, Observable,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                registry,
                 _TabContainerWidget,
                 template) {
-    return declare("GridDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("GridDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GridDetailsWidget",
 

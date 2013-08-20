@@ -17,13 +17,11 @@ define([
     "dojo/_base/declare",
     "dojo/dom",
 
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
     "dijit/layout/ContentPane",
     "dijit/registry",
 
+    "hpcc/_Widget",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/ECLSourceWidget.html",
@@ -31,10 +29,10 @@ define([
     "dijit/Toolbar", "dijit/ToolbarSeparator", "dijit/form/Button"
 ],
     function (declare, dom,
-            _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, ContentPane, registry,
-            ESPWorkunit,
+            BorderContainer, ContentPane, registry,
+            _Widget, ESPWorkunit,
             template) {
-        return declare("ECLSourceWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("ECLSourceWidget", [_Widget], {
             templateString: template,
             baseClass: "ECLSourceWidget",
             borderContainer: null,
@@ -69,9 +67,8 @@ define([
 
             //  Plugin wrapper  ---
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 var mode = "ecl";
                 if (params.sourceMode !== undefined) {

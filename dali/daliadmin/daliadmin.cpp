@@ -2168,7 +2168,7 @@ static void dodalilocks(const char *pattern,const char *obj,Int64Array *conn,boo
                     while (*x)
                         curxpath.append(*(x++));
                     if (begins(ln,"/Files")) {
-                        while (*ln&&(begins(ln,"/Scope[@name=\"")||begins(ln,"/File[@name=\""))) {
+                        while (*ln&&(begins(ln,"/Scope[@name=\"")||begins(ln,"/File[@name=\"")||begins(ln,"/SuperFile[@name=\""))) {
                             if (curfile.length())
                                 curfile.append("::");
                             while (*ln&&(*ln!='"'))

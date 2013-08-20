@@ -16,8 +16,6 @@
 define([
     "dojo/_base/declare",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
@@ -31,10 +29,10 @@ define([
     "dijit/layout/ContentPane"
 
 ], function (declare,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                registry,
                 _TabContainerWidget, WUQueryWidget, ECLPlaygroundWidget,
                 template) {
-    return declare("HPCCPlatformECLWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("HPCCPlatformECLWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformECLWidget",
 
@@ -54,9 +52,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
-                return;
-            this.initalized = true;
+                if (this.inherited(arguments))
+                    return;
             this.initTab();
         },
 

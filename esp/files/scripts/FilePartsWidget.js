@@ -21,9 +21,6 @@ define([
     "dojo/store/Observable",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -32,14 +29,16 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
-    "dojo/text!../templates/FilePartsWidget.html"
+    "hpcc/_Widget",
 
+    "dojo/text!../templates/FilePartsWidget.html"
 ],
     function (declare, array, Memory, Observable,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
+            registry,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
+            _Widget,
             template) {
-        return declare("FilePartsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("FilePartsWidget", [_Widget], {
             templateString: template,
             baseClass: "FilePartsWidget",
             filePartsGrid: null,
@@ -88,9 +87,8 @@ define([
 
             //  Plugin wrapper  ---
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 this.filePartsStore.setData(params.fileParts);
                 this.filePartsGrid.set("query", {
