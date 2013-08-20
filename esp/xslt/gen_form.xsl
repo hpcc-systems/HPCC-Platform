@@ -38,6 +38,8 @@
     <xsl:param name="formOptionsAccess" select="0"/>
     <xsl:param name="noDefaultValue" select="0"/> 
     <xsl:param name="includeSoapTest" select="1"/>
+    <xsl:param name="includeRoxieTest" select="0"/>
+    <!--xsl:param name="includeGatewayTest" select="0"/-->
     <xsl:param name="schemaRoot" select="xsd:schema"/>
     <xsl:param name="esdl_links" select="0"/>
     
@@ -247,20 +249,22 @@
 
                 <tr class='commands'>
                   <td align='left'>
-           <input type='submit' value='Submit' name='S1' onclick='return onSubmit(0)'/>
-                <xsl:if test="$includeSoapTest">
-              &nbsp;<input type='submit' value='SOAP Test' onclick='return onSubmit(1)'/>
-                </xsl:if>          
-          &nbsp;<input type='reset' value='Reset'  title='Reset the form'/>
-          &nbsp;<input type='button' value='Clear All' onclick='onClearAll()'  title='Reset the form, and remove all arrays you added'/>
-          &nbsp;<input type='button' value='Link to This Form' title='Generate a link to this page with form filled' onclick='onSubmit(2)'/>
+                   <input type='submit' value='Submit' name='S1' onclick='return onSubmit(0)'/>
+                   <xsl:if test="$includeSoapTest">
+                    &nbsp;<input type='submit' value='SOAP Test' onclick='return onSubmit(1)'/>
+                   </xsl:if>
+                   <xsl:if test="$includeRoxieTest">
+                    &nbsp;<input type='submit' value='Roxie Test' onclick='return onSubmit(3)'/>
+                   </xsl:if>
+                   &nbsp;<input type='reset' value='Reset'  title='Reset the form'/>
+                   &nbsp;<input type='button' value='Clear All' onclick='onClearAll()'  title='Reset the form, and remove all arrays you added'/>
+                   &nbsp;<input type='button' value='Link to This Form' title='Generate a link to this page with form filled' onclick='onSubmit(2)'/>
            </td>
                  </tr>
-                 
                 <xsl:if test="$formOptionsAccess">
-                <tr><td height="6"></td></tr>                  
+                <tr><td height="6"></td></tr>
                  <tr class='options'>
-                    <td> 
+                    <td>
                      <input type='button' value='Options &gt;&gt;' onclick='show_hide(document.getElementById("option_span"));'/>
                      <span id='option_span' style='display:none'>
                         <input type='checkbox' id='esp_dest' name='esp_dest' value='0' onclick='onClickDest(this.checked, document.getElementById("dest_url"));'>Destination</input>
