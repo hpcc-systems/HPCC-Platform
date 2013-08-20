@@ -10,7 +10,6 @@ string add3(varstring val) := EMBED(javascript) val+'1'; ENDEMBED;
 utf8 add4(utf8 val) := EMBED(javascript) val+'1'; ENDEMBED;
 unicode add5(unicode val) := EMBED(javascript, U' val+\' at Oh là là Straße\';');
 
-integer testThrow(integer val) := EMBED(javascript) throw new Error("Error from JavaScript"); ENDEMBED;
 data testData(data val) := EMBED(javascript) val[0] = val[0] + 1; val; ENDEMBED;
 set of integer testSet(set of integer val) := EMBED(javascript)
 t = val [1];
@@ -90,16 +89,6 @@ add5(U'Стоял');
 
 add2('Oh là là Straße');  // Passing latin chars - should be untranslated
 
-// Test exception throwing/catching
-d := dataset([{ 1, '' }], { integer a, string m} ) : stored('nofold');
-
-d t := transform
-  self.a := FAILCODE;
-  self.m := FAILMESSAGE;
-  self := [];
-end;
-
-catch(d(testThrow(a) = a), onfail(t));
 testdata(D'aa');
 testSet([1,2,3]);
 testSet0([30000,40000,50000]);
