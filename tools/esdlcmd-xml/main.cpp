@@ -54,7 +54,7 @@ void parseCommandLine(int argc, char* argv[])
             if (stricmp(argv[i], "-?")==0 || stricmp(argv[i], "-h")==0)
                 usage(argv[0]);
 
-            else 
+            else
             {
                 printf("Unknown option: %s\n", argv[i]);
                 exit(1);
@@ -65,7 +65,7 @@ void parseCommandLine(int argc, char* argv[])
     }
     gArgv[gArgc] = NULL;
 
-    if (gArgc<2 || gArgc>4) 
+    if (gArgc<2 || gArgc>4)
         usage(argv[0]);
 }
 
@@ -75,10 +75,10 @@ void parseCommandLine(int argc, char* argv[])
 int main(int argc, char* argv[])
 {
     parseCommandLine(argc, argv);
-    
+
     char* sourcefile = gArgv[1];
     char* outdir = (gArgc>=3)?(char*)gArgv[2]:(char*)"";
-    
+
     ESDLcompiler hc(sourcefile, outdir);
     hc.Process();
 

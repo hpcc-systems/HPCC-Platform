@@ -100,7 +100,8 @@ EspHttpBinding::EspHttpBinding(IPropertyTree* tree, const char *bindname, const 
 {
     Owned<IPropertyTree> proc_cfg = getProcessConfig(tree, procname);
     m_viewConfig = proc_cfg ? proc_cfg->getPropBool("@httpConfigAccess") : false;   
-    m_formOptions = proc_cfg ? proc_cfg->getPropBool("@formOptionsAccess") : false; 
+    m_formOptions = proc_cfg ? proc_cfg->getPropBool("@formOptionsAccess") : false;
+    m_roxieOption = proc_cfg ? proc_cfg->getPropBool("@roxieTestAccess") : false;
     m_includeSoapTest = true;
     m_configFile.set(tree ? tree->queryProp("@config") : "esp.xml");
     Owned<IPropertyTree> bnd_cfg = getBindingConfig(tree, bindname, procname);
@@ -367,6 +368,26 @@ StringBuffer &EspHttpBinding::generateNamespace(IEspContext &context, CHttpReque
     if (serv && *serv)
         ns.appendLower(strlen(serv), serv);
     return ns;
+}
+
+void EspHttpBinding::getSchemaLocation( IEspContext &context, CHttpRequest* request, StringBuffer &schemaLocation )
+{
+    const char* svcName = request->queryServiceName();
+    const char* method = request->queryServiceMethod();
+    if ( !svcName || !(*svcName) )
+        return;
+
+    StringBuffer host;
+    const char* wsdlAddr = request->queryParameters()->queryProp("__wsdl_address");
+    if (wsdlAddr && *wsdlAddr)
+        host.append(wsdlAddr);
+    else
+    {
+        host.append(request->queryHost());
+        if (request->getPort()>0)
+          host.append(":").append(request->getPort());
+    }
+    schemaLocation.appendf("%s/%s/%s?xsd&amp;ver_=%g", host.str(), svcName, method ? method : "", context.getClientVersion());
 }
 
 int EspHttpBinding::getMethodDescription(IEspContext &context, const char *serv, const char *method, StringBuffer &page)
@@ -1440,6 +1461,57 @@ void EspHttpBinding::generateSampleXml(bool isRequest, IEspContext &context, CHt
     throw MakeStringException(-1,"Unknown type: %s", element.str());
 }
 
+void EspHttpBinding::generateSampleXmlFromSchema(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method, const char * schemaxml)
+{
+    StringBuffer serviceQName, methodQName;
+
+    if (!qualifyServiceName(context, serv, method, serviceQName, &methodQName))
+        return;
+
+    MethodInfoArray info;
+    getQualifiedNames(context, info);
+    StringBuffer element;
+    for (unsigned i=0; i<info.length(); i++)
+    {
+        CMethodInfo& m = info.item(i);
+        if (stricmp(m.m_label, methodQName)==0)
+        {
+            element.set(isRequest ? m.m_requestLabel : m.m_responseLabel);
+            break;
+        }
+    }
+
+    if (!element.length())
+        element.append(methodQName.str()).append(isRequest ? "Request" : "Response");
+
+    StringBuffer schemaXmlbuff(schemaxml);
+
+    Owned<IXmlSchema> schema = createXmlSchema(schemaXmlbuff);
+    if (schema.get())
+    {
+        IXmlType* type = schema->queryElementType(element);
+        if (type)
+        {
+            StringBuffer content;
+            StringStack parent;
+            StringBuffer nsdecl("xmlns=\"");
+
+            content.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            if (context.queryRequestParameters()->hasProp("display"))
+                content.append("<?xml-stylesheet type=\"text/xsl\" href=\"/esp/xslt/xmlformatter.xsl\"?>");
+
+            genSampleXml(parent,type, content, element, generateNamespace(context, request, serviceQName.str(), methodQName.str(), nsdecl).append('\"').str());
+            response->setContent(content.length(), content.str());
+            response->setContentType(HTTP_TYPE_APPLICATION_XML_UTF8);
+            response->setStatus(HTTP_STATUS_OK);
+            response->send();
+            return;
+        }
+    }
+
+    throw MakeStringException(-1,"Unknown type: %s", element.str());
+}
+
 int EspHttpBinding::onGetReqSampleXml(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method)
 {
     generateSampleXml(true, ctx, request, response, serv, method);
@@ -1757,7 +1829,7 @@ int EspHttpBinding::onGetIndex(IEspContext &context, CHttpRequest* request,  CHt
 
 // Interestingly, only single quote needs to HTML escape.
 // ", <, >, & don't need escape.
-static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped)
+void EspHttpBinding::escapeSingleQuote(StringBuffer& src, StringBuffer& escaped)
 {
     for (const char* p = src.str(); *p!=0; p++)
     {
@@ -1820,6 +1892,7 @@ int EspHttpBinding::onGetXForm(IEspContext &context, CHttpRequest* request, CHtt
 
         xform->setParameter("formOptionsAccess", m_formOptions?"1":"0");
         xform->setParameter("includeSoapTest", m_includeSoapTest?"1":"0");
+        xform->setParameter("includeRoxieTest", m_roxieOption?"1":"0");
 
         // set the prop noDefaultValue param
         IProperties* props = context.queryRequestParameters();
