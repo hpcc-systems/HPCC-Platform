@@ -18,9 +18,6 @@ define([
     "dojo/_base/xhr",
     "dojo/dom",
 
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -29,6 +26,7 @@ define([
     "dijit/TitlePane",
     "dijit/registry",
 
+    "hpcc/_Widget",
     "hpcc/ECLSourceWidget",
     "hpcc/TargetSelectWidget",
     "hpcc/GraphWidget",
@@ -38,10 +36,10 @@ define([
 
     "dojo/text!../templates/DFUSearchWidget.html"
 ], function (declare, xhr, dom,
-                _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry,
-                EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, Workunit,
+                BorderContainer, TabContainer, ContentPane, Toolbar, Textarea, TitlePane, registry,
+                _Widget, EclSourceWidget, TargetSelectWidget, GraphWidget, ResultsWidget, InfoGridWidget, Workunit,
                 template) {
-    return declare("DFUSearchWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("DFUSearchWidget", [_Widget], {
         templateString: template,
         baseClass: "DFUSearchWidget",
         borderContainer: null,
@@ -157,9 +155,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             //dom.byId("showWuid").innerHTML = params.Wuid;
             if (params.Wuid) {

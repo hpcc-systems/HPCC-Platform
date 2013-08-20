@@ -24,9 +24,6 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
 
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
     "dijit/layout/TabContainer",
     "dijit/layout/ContentPane",
@@ -42,6 +39,7 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
+    "hpcc/_Widget",
     "hpcc/GraphWidget",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
@@ -60,12 +58,12 @@ define([
     "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton"
 ], function (declare, lang, arrayUtil, dom, domConstruct, on, html, Memory, Observable,
-            _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer, TabContainer, ContentPane, registry, Dialog,
+            BorderContainer, TabContainer, ContentPane, registry, Dialog,
             entities,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-            GraphWidget, ESPUtil, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
+            _Widget, GraphWidget, ESPUtil, ESPWorkunit, TimingGridWidget, TimingTreeMapWidget,
             template) {
-    return declare("GraphPageWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("GraphPageWidget", [_Widget], {
         templateString: template,
         baseClass: "GraphPageWidget",
         borderContainer: null,
@@ -91,7 +89,6 @@ define([
         overviewDepth: null,
         localDepth: null,
         localDistance: null,
-        initalized: false,
 
         buildRendering: function (args) {
             this.inherited(arguments);
@@ -289,11 +286,6 @@ define([
             this._initItemGrid(this.edgesGrid);
         },
 
-        _onMainRefresh: function () {
-            this.main.setMessage("Performing Layout...");
-            this.main.startLayout("dot");
-        },
-
         _onLocalRefresh: function () {
             this.refreshLocal(this.local.getSelectionAsGlobalID());
         },
@@ -390,10 +382,9 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized) {
+            if (this.inherited(arguments))
                 return;
-            }
-            this.initalized = true;
+
             if (params.SafeMode) {
                 this.overviewDepth.set("value", 0)
                 this.mainDepth.set("value", 1)

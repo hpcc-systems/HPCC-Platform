@@ -54,9 +54,8 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             this._refreshActionState();
         },

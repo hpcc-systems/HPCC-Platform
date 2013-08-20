@@ -20,22 +20,20 @@ define([
     "dojo/store/Memory",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
 
     "dojox/treemap/TreeMap",
 
+    "hpcc/_Widget",
     "hpcc/ESPWorkunit",
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
     function (declare, lang, Memory,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
+            registry, 
             TreeMap,
-            ESPWorkunit,
+            _Widget, ESPWorkunit,
             template) {
-        return declare("TimingTreeMapWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("TimingTreeMapWidget", [_Widget], {
             templateString: template,
             baseClass: "TimingTreeMapWidget",
             treeMap: null,
@@ -81,9 +79,8 @@ define([
             },
 
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 this.defaultQuery = "*";
                 if (params.query) {
