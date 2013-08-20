@@ -25,8 +25,6 @@ define([
     "dojo/date",
     "dojo/on",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
     "dijit/Dialog",
     "dijit/Menu",
@@ -74,11 +72,11 @@ define([
     "dojox/form/uploader/FileList"
 
 ], function (declare, lang, arrayUtil, dom, domAttr, domClass, domForm, iframe, date, on,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 OnDemandGrid, tree, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, FileSpray, ESPUtil, ESPRequest, ESPDFUWorkunit, HexViewWidget, DFUWUDetailsWidget, TargetSelectWidget,
                 template) {
-    return declare("LZBrowseWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ESPUtil.FormHelper], {
+    return declare("LZBrowseWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "LZBrowseWidget",
 
@@ -284,9 +282,9 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
+
             this.initLandingZonesGrid();
             this.selectChild(this.landingZonesTab, true);
             var context = this;
