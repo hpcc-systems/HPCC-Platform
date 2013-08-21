@@ -113,8 +113,8 @@ interface IEspWsdlSections
     virtual int getWsdlBindings(IEspContext &context, CHttpRequest *request, StringBuffer &content, const char *service, const char *method, bool mda)=0;
 };
 
-class esp_http_decl EspHttpBinding : 
-    implements IEspHttpBinding, 
+class esp_http_decl EspHttpBinding :
+    implements IEspHttpBinding,
     implements IEspWsdlSections
 {
 private:
@@ -125,7 +125,7 @@ private:
     bool                    m_formOptions;
     StringAttr              m_configFile;
     double                  m_wsdlVer;
-    
+
     HINSTANCE               m_hSecDll;
 
     StringBuffer            m_authtype;
@@ -137,9 +137,7 @@ private:
     Owned<IAuthMap>         m_authmap;
     Owned<IAuthMap>         m_feature_authmap;
     Owned<IAuthMap>         m_setting_authmap;
-
     Owned<IPTree>           m_subservices;
-    StringAttr              m_defaultSvcVersion;
 
     StringAttrMapping desc_map;
     StringAttrMapping help_map;
@@ -148,6 +146,8 @@ protected:
     MethodInfoArray m_methods;
     bool                    m_includeSoapTest;
     StringBuffer            m_challenge_realm;
+    StringAttr              m_defaultSvcVersion;
+    bool                    m_roxieOption;
 
 public:
     EspHttpBinding(IPropertyTree* cfg, const char *bindname=NULL, const char *procname=NULL);
@@ -164,6 +164,8 @@ public:
     const char* getChallengeRealm() {return m_challenge_realm.str();}
     double getWsdlVersion(){return m_wsdlVer;}
     void setWsdlVersion(double ver){m_wsdlVer=ver;}
+    const char *getWsdlAddress(){return m_wsdlAddress.str();}
+    void setWsdlAddress(const char *wsdladdress){m_wsdlAddress.clear().append(wsdladdress);}
 
     virtual void setRequestPath(const char *path);
     virtual bool rootAuthRequired();
@@ -174,6 +176,7 @@ public:
     virtual const char* getRootPage() {return NULL;}
 
     virtual StringBuffer &generateNamespace(IEspContext &context, CHttpRequest* request, const char *serv, const char *method, StringBuffer &ns);
+    virtual void getSchemaLocation(IEspContext &context, CHttpRequest* request, StringBuffer &schemaLocation );
 
     virtual StringBuffer &getRequestPath(){return m_reqPath;}
     static int formatHtmlResultSet(IEspContext &context, const char *serv, const char *method, const char *resultsXml, StringBuffer &html);
@@ -203,7 +206,7 @@ public:
     virtual int onGet(CHttpRequest* request, CHttpResponse* response);
     virtual int onGetWsdl(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName);
     virtual int onGetXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serviceName, const char *methodName);
-    
+
     virtual int onPost(CHttpRequest* request, CHttpResponse* response){return 0;};
 
     virtual int onGetNotFound(IEspContext &context, CHttpRequest* request,  CHttpResponse* response, const char *serv);
@@ -221,9 +224,9 @@ public:
     virtual int onGetIframe(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *path);
     virtual int onGetContent(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method);
     virtual int onGetSoapBuilder(IEspContext &context, CHttpRequest* request, CHttpResponse* response,  const char *serv, const char *method);
-    
+
     virtual int onSoapRequest(CHttpRequest* request, CHttpResponse* response){return 0;}
-    
+
     // In general, there is no difference between a query and an instant query;
     //   in some cases we may want to return the url for results from a query
     //   and the results themselves from an instant query.
@@ -231,7 +234,7 @@ public:
     {
         return onGetInstantQuery(context,request,response,serviceName,methodName);
     }
-    
+
     virtual int onGetService(IEspContext &context, CHttpRequest* request,   CHttpResponse* response, const char *serv, const char *method, const char *pathex)
     {
         //when a service url is requested with no parameters, the default is to treat it as a query with no parameters
@@ -284,18 +287,21 @@ public:
     }
     ISecManager* querySecManager() {return m_secmgr.get(); }
 
+    static void escapeSingleQuote(StringBuffer& src, StringBuffer& escaped);
+
 protected:
     virtual bool basicAuth(IEspContext* ctx);
     int getWsdlOrXsd(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, bool isWsdl);
     bool getSchema(StringBuffer& schema, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method,bool standalone);
     virtual void appendSchemaNamespaces(IPropertyTree *namespaces, IEspContext &ctx, CHttpRequest* req, const char *service, const char *method){}
     void generateSampleXml(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response,    const char *serv, const char *method);
+    void generateSampleXmlFromSchema(bool isRequest, IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *serv, const char *method, const char * schemaxml);
     virtual void getSoapMessage(StringBuffer& soapmsg, IEspContext &context, CHttpRequest* request, const char *serv, const char *method);
-    void onBeforeSendResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst, 
+    void onBeforeSendResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst,
                             const char *serviceName, const char* methodName);
-    void validateResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst, 
+    void validateResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst,
                             const char *serviceName, const char* methodName);
-    void sortResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst, 
+    void sortResponse(IEspContext& context, CHttpRequest* request,MemoryBuffer& contentconst,
                             const char *serviceName, const char* methodName);
     const char* queryAuthMethod() {return m_authmethod.str(); }
 };

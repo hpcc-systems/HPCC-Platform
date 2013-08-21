@@ -18,8 +18,6 @@ define([
     "dojo/_base/lang",
     "dojo/dom",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
@@ -31,10 +29,10 @@ define([
 
     "dijit/layout/TabContainer"
 ], function (declare, lang, dom, 
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                registry,
                 _TabContainerWidget, ESPWorkunit, ResultWidget, LFDetailsWidget,
                 template) {
-    return declare("ECLPlaygroundResultsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("ECLPlaygroundResultsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "ECLPlaygroundResultsWidget",
 
@@ -51,25 +49,25 @@ define([
             }
         },
 
-        ensurePane: function (id, params) {
+        ensurePane: function (id, title, params) {
             var retVal = registry.byId(id);
             if (!retVal) {
                 if (lang.exists("Name", params) && lang.exists("Cluster", params)) {
                     retVal = new LFDetailsWidget.fixCircularDependency({
                         id: id,
-                        title: params.Name,
+                        title: title,
                         params: params
                     });
                 } else if (lang.exists("Wuid", params) && lang.exists("exceptions", params)) {
                     retVal = new InfoGridWidget({
                         id: id,
-                        title: "Errors/Warnings",
+                        title: title,
                         params: params
                     });
-                } else if (lang.exists("result", params)) {
+                } else if (lang.exists("Wuid", params) && lang.exists("Sequence", params)) {
                     retVal = new ResultWidget({
                         id: id,
-                        title: params.result.Name,
+                        title: title,
                         params: params
                     });
                 }
@@ -79,9 +77,8 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
@@ -93,7 +90,7 @@ define([
                         context.wu.getInfo({
                             onGetWUExceptions: function (exceptions) {
                                 if (params.ShowErrors && exceptions.length) {
-                                    context.ensurePane(context.id + "_exceptions", {
+                                    context.ensurePane(context.id + "_exceptions", "Errors/Warnings", {
                                         Wuid: params.Wuid,
                                         onErrorClick: context.onErrorClick,
                                         exceptions: exceptions
@@ -104,7 +101,7 @@ define([
                             onGetSourceFiles: function (sourceFiles) {
                                 if (params.SourceFiles) {
                                     for (var i = 0; i < sourceFiles.length; ++i) {
-                                        var tab = context.ensurePane(context.id + "_logicalFile" + i, {
+                                        var tab = context.ensurePane(context.id + "_logicalFile" + i, sourceFiles[i].Name, {
                                             Name: sourceFiles[i].Name,
                                             Cluster: sourceFiles[i].FileCluster
                                         });
@@ -117,8 +114,9 @@ define([
                             onGetResults: function (results) {
                                 if (!params.SourceFiles) {
                                     for (var i = 0; i < results.length; ++i) {
-                                        var tab = context.ensurePane(context.id + "_result" + i, {
-                                            result: results[i]
+                                        var tab = context.ensurePane(context.id + "_result" + i, results[i].Name, {
+                                            Wuid: results[i].Wuid,
+                                            Sequence: results[i].Sequence
                                         });
                                         if (i == 0) {
                                             context.initTab();

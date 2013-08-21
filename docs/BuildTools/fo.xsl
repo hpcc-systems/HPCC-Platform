@@ -103,6 +103,10 @@
    <fo:block break-after='page'/>
 </xsl:template>
   
+<xsl:template match="processing-instruction('linebreak')">
+  <fo:block/>
+</xsl:template>  
+  
 <xsl:template match="programlisting[@role='tab']">
   <fo:block xsl:use-attribute-sets="monospace.verbatim.properties">
    <xsl:attribute name="font-family">serif</xsl:attribute>

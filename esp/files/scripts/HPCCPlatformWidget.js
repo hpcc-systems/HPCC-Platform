@@ -18,8 +18,6 @@ define([
     "dojo/_base/lang",
     "dojo/dom",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
     "dijit/Tooltip",
 
@@ -49,10 +47,10 @@ define([
     "hpcc/HPCCPlatformOpsWidget"
 
 ], function (declare, lang, dom,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Tooltip,
+                registry, Tooltip,
                 _TabContainerWidget, ESPRequest, WsAccount,
                 template) {
-    return declare("HPCCPlatformWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "HPCCPlatformWidget",
 
@@ -100,9 +98,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+             if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             var context = this;
             WsAccount.MyAccount({

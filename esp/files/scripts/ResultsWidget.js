@@ -49,9 +49,8 @@ define([
         },
 
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
@@ -136,7 +135,10 @@ define([
                     style: "padding: 0px; overflow: hidden",
                     hpcc: {
                         type: "ResultWidget",
-                        params: row
+                        params: {
+                            Wuid: row.Wuid,
+                            Sequence: row.Sequence
+                        }
                     }
                 });
             }

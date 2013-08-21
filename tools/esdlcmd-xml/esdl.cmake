@@ -14,20 +14,20 @@
 #    limitations under the License.
 ################################################################################
 
-# Component: esdl 
+# Component: esdl-xml
 
 #####################################################
 # Description:
 # ------------
-#    Cmake Input File for esdl
+#    Cmake Input File for esdl-xml
 #####################################################
 
 
-project( esdl ) 
+project( esdl-xml )
 
-include_directories ( 
-         ./../../system/include 
-         ./../../system/jlib 
+include_directories (
+         ./../../system/include
+         ./../../system/jlib
     )
 
 ADD_DEFINITIONS ( -D_CONSOLE )
@@ -37,14 +37,20 @@ add_custom_command ( OUTPUT esdlgram.cpp esdlgram.h
     DEPENDS esdlgram.h
 )
 
-add_custom_command ( OUTPUT esdllex.cpp 
+add_custom_command ( OUTPUT esdllex.cpp
     COMMAND ../pcyacc/pclex -i -Cesdllex.cpp esdllex.l
     DEPENDS esdllex.l
 )
 
 set ( SRCS esdlgram.cpp esdllex.cpp main.cpp esdlcomp.cpp esdl_utils.cpp )
-# esdlgram.y esdllex.l main.cpp esdlcomp.cpp esdl_utils.cpp 
-HPCC_ADD_EXECUTABLE ( esdl ${SRCS} )
-install ( TARGETS esdl RUNTIME DESTINATION ${EXEC_DIR} )
-#add_dependencies ( esdl esdlgram.cpp esdlgram.h esdllex.cpp )
+# esdlgram.y esdllex.l main.cpp esdlcomp.cpp esdl_utils.cpp
 
+HPCC_ADD_EXECUTABLE ( esdl-xml ${SRCS} )
+
+# The tool esdl-xml is built in HPCCPlatform as a build-time
+# pre-req. But it is not distributed in CE packages.
+if ("${BUILD_LEVEL}" STREQUAL "ENTERPRISE")
+    MESSAGE("----INSTALLING ESDL-XML")
+    install ( TARGETS esdl-xml RUNTIME DESTINATION ${EXEC_DIR} )
+    add_dependencies ( esdl-xml esdlgram.cpp esdlgram.h esdllex.cpp )
+endif()

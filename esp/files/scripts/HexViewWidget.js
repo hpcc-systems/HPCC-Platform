@@ -23,10 +23,8 @@ define([
     "dojo/request/iframe",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
 
+    "hpcc/_Widget",
     "hpcc/ESPWorkunit",
     "hpcc/ECLSourceWidget",
 
@@ -36,10 +34,10 @@ define([
     "dijit/form/CheckBox"
 ],
     function (declare, arrayUtil, lang, Memory, Observable, iframe,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
-            ESPWorkunit, ECLSourceWidget,
+            registry,
+            _Widget, ESPWorkunit, ECLSourceWidget,
             template) {
-        return declare("HexViewWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("HexViewWidget", [_Widget], {
             templateString: template,
             baseClass: "HexViewWidget",
 
@@ -91,9 +89,8 @@ define([
             },
 
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 this.logicalFile = params.logicalFile;
 

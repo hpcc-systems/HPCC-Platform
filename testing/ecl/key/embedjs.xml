@@ -20,50 +20,47 @@
  <Row><Result_7>Oh l&#224; l&#224; Stra&#223;e1</Result_7></Row>
 </Dataset>
 <Dataset name='Result 8'>
- <Row><a>0</a><m>v8embed: Error: Error from JavaScript</m></Row>
+ <Row><Result_8>6261</Result_8></Row>
 </Dataset>
 <Dataset name='Result 9'>
- <Row><Result_9>6261</Result_9></Row>
+ <Row><Result_9><Item>1</Item><Item>3</Item><Item>2</Item></Result_9></Row>
 </Dataset>
 <Dataset name='Result 10'>
- <Row><Result_10><Item>1</Item><Item>3</Item><Item>2</Item></Result_10></Row>
+ <Row><Result_10><Item>30000</Item><Item>50000</Item><Item>40000</Item></Result_10></Row>
 </Dataset>
 <Dataset name='Result 11'>
- <Row><Result_11><Item>30000</Item><Item>50000</Item><Item>40000</Item></Result_11></Row>
+ <Row><Result_11><Item>one</Item><Item>three</Item><Item>two</Item></Result_11></Row>
 </Dataset>
 <Dataset name='Result 12'>
- <Row><Result_12><Item>one</Item><Item>three</Item><Item>two</Item></Result_12></Row>
+ <Row><Result_12><Item>uno     </Item><Item>tre     </Item><Item>dos     </Item></Result_12></Row>
 </Dataset>
 <Dataset name='Result 13'>
- <Row><Result_13><Item>uno     </Item><Item>tre     </Item><Item>dos     </Item></Result_13></Row>
+ <Row><Result_13><Item>un</Item><Item>trois</Item><Item>deux</Item></Result_13></Row>
 </Dataset>
 <Dataset name='Result 14'>
- <Row><Result_14><Item>un</Item><Item>trois</Item><Item>deux</Item></Result_14></Row>
+ <Row><Result_14><Item>ein</Item><Item>drei</Item><Item>zwei</Item></Result_14></Row>
 </Dataset>
 <Dataset name='Result 15'>
- <Row><Result_15><Item>ein</Item><Item>drei</Item><Item>zwei</Item></Result_15></Row>
+ <Row><Result_15><Item>false</Item><Item>false</Item><Item>true</Item><Item>true</Item></Result_15></Row>
 </Dataset>
 <Dataset name='Result 16'>
- <Row><Result_16><Item>false</Item><Item>false</Item><Item>true</Item><Item>true</Item></Result_16></Row>
+ <Row><Result_16><Item>1.100000023841858</Item><Item>3.299999952316284</Item><Item>2.200000047683716</Item></Result_16></Row>
 </Dataset>
 <Dataset name='Result 17'>
- <Row><Result_17><Item>1.100000023841858</Item><Item>3.299999952316284</Item><Item>2.200000047683716</Item></Result_17></Row>
+ <Row><Result_17><Item>1.2</Item><Item>3.4</Item><Item>2.3</Item></Result_17></Row>
 </Dataset>
 <Dataset name='Result 18'>
- <Row><Result_18><Item>1.2</Item><Item>3.4</Item><Item>2.3</Item></Result_18></Row>
+ <Row><Result_18><Item>-111</Item><Item>113</Item><Item>0</Item></Result_18></Row>
 </Dataset>
 <Dataset name='Result 19'>
- <Row><Result_19><Item>-111</Item><Item>113</Item><Item>0</Item></Result_19></Row>
+ <Row><Result_19>46875625000</Result_19></Row>
 </Dataset>
 <Dataset name='Result 20'>
- <Row><Result_20>46875625000</Result_20></Row>
+ <Row><Result_20>328126500000</Result_20></Row>
 </Dataset>
 <Dataset name='Result 21'>
- <Row><Result_21>328126500000</Result_21></Row>
+ <Row><Result_21>46875625000</Result_21></Row>
 </Dataset>
 <Dataset name='Result 22'>
- <Row><Result_22>46875625000</Result_22></Row>
-</Dataset>
-<Dataset name='Result 23'>
- <Row><Result_23>328126500000</Result_23></Row>
+ <Row><Result_22>328126500000</Result_22></Row>
 </Dataset>

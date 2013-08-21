@@ -29,14 +29,14 @@ return _10[_f];
 }
 return null;
 },addOption:function(_12){
-_1.forEach([].concat(_12),function(i){
+_1.forEach(_9.isArray(_12)?_12:[_12],function(i){
 if(i&&_9.isObject(i)){
 this.options.push(i);
 }
 },this);
 this._loadChildren();
 },removeOption:function(_13){
-var _14=this.getOptions([].concat(_13));
+var _14=this.getOptions(_9.isArray(_13)?_13:[_13]);
 _1.forEach(_14,function(_15){
 if(_15){
 this.options=_1.filter(this.options,function(_16){
@@ -47,7 +47,7 @@ this._removeOptionItem(_15);
 },this);
 this._loadChildren();
 },updateOption:function(_17){
-_1.forEach([].concat(_17),function(i){
+_1.forEach(_9.isArray(_17)?_17:[_17],function(i){
 var _18=this.getOptions({value:i.value}),k;
 if(_18){
 for(k in i){

@@ -22,8 +22,6 @@ define([
     "dojo/store/Memory",
     "dojo/store/Observable",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "dgrid/OnDemandGrid",
@@ -56,11 +54,11 @@ define([
     "dijit/TooltipDialog",
     "dijit/TitlePane"
 ], function (declare, dom, domAttr, domClass, query, Memory, Observable,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+                registry,
                 OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
                 _TabContainerWidget, ESPWorkunit, EclSourceWidget, TargetSelectWidget, GraphsWidget, ResultsWidget, SourceFilesWidget, InfoGridWidget, LogsWidget, TimingPageWidget, ECLPlaygroundWidget,
                 template) {
-    return declare("WUDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("WUDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "WUDetailsWidget",
         summaryWidget: null,
@@ -81,7 +79,6 @@ define([
         xmlWidget: null,
         xmlWidgetLoaded: false,
 
-        initalized: false,
         wu: null,
         prevState: "",
 
@@ -162,9 +159,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             if (params.Wuid) {
                 this.summaryWidget.set("title", params.Wuid);

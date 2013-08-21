@@ -114,7 +114,7 @@ char *appendstr(char *text,const char *str);
 struct attribute
 {
 private:
-    union 
+    union
     {
         char *str_val;
         int int_val;
@@ -123,7 +123,7 @@ private:
 
     enum { t_none, t_string, t_int, t_double } atr_type;
     char name_[MAX_IDENT];
-    
+
 public:
 
     attribute()
@@ -136,7 +136,7 @@ public:
     {
         release();
     }
-    
+
     void release()
     {
         if (atr_type==t_string)
@@ -188,7 +188,7 @@ public:
     {
         strcpy(name_,(value)? value : (char *)"");
     }
-    
+
     void setNameF(const char *format, ...) __attribute__((format(printf, 2, 3)))
     {
         va_list args;
@@ -214,7 +214,7 @@ class MetaTagInfo
 {
 private:
     char *name_;
-    
+
     union
     {
         char *str_val_;
@@ -288,7 +288,7 @@ public:
     {
         if (mttype_==mt_string && str_val_!=NULL)
             free(str_val_);
-        
+
         str_val_=strdup(val);
 
         mttype_=mt_string;
@@ -380,7 +380,7 @@ inline bool getMetaStringValue(MetaTagInfo *list, StrBuffer &val, const char *ta
     if (!mtval || strlen(mtval)<2)
         return false;
     val.append(strlen(mtval)-2, mtval+1);
-    return true;    
+    return true;
 }
 
 inline int getMetaInt(MetaTagInfo *list, const char *tag, int def_val=0)
@@ -411,7 +411,7 @@ public:
     ParamInfo();
     ~ParamInfo();
 
-    char *bytesize(int deref=0); 
+    char *bytesize(int deref=0);
     bool simpleneedsswap();
     void cat_type(char *s,int deref=0,int var=0);
     clarion_special_type_enum clarion_special_type();
@@ -423,7 +423,7 @@ public:
     size_t typesizealign(size_t &ofs);
     void write_body_struct_elem(int ref);
     void write_param_convert(int deref=0);
-    
+
     bool isEspArrayOf(const char *elem_type=NULL, bool def=true)
     {
         if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
@@ -442,14 +442,14 @@ public:
         return false;
     }
 
-    bool isPrimitiveArray() 
-    { 
+    bool isPrimitiveArray()
+    {
         if (flags & PF_TEMPLATE && !strcmp(templ, "ESParray"))
             return (kind != TK_STRUCT && kind != TK_null && kind != TK_ESPENUM && kind != TK_ESPSTRUCT) || !typname;
         return false;
     }
 
-    type_kind getArrayItemType() 
+    type_kind getArrayItemType()
     {
         assert(isPrimitiveArray());
         return kind;
@@ -506,7 +506,7 @@ public:
     const char *getMetaXsdType() {  const char* xsd = getMetaString("xsd_type",NULL);  return xsd ? xsd : getMetaString("format_as",NULL); }
 
     // should be call once at a time. Better: use CStringBuffer
-    const char* getXmlTag() 
+    const char* getXmlTag()
     {
         static char buffer[256];
         const char* xmlTag = getMetaString("xml_tag", NULL);
@@ -542,7 +542,7 @@ public:
         {
             char typestr[256]={0};
             cat_type(typestr, 0, 0);
-            
+
             outf(" %s=\"%s\"", (kind==TK_ESPSTRUCT) ? "complex_type" : "type", typestr);
         }
     }
@@ -589,13 +589,13 @@ public:
     char      *sizebytes;
     unsigned   flags;
     LayoutInfo *layouts;
-    ParamInfo  *next;   
+    ParamInfo  *next;
     MetaTagInfo     *tags;
 
 private:
     char      *xsdtype;
     StrBuffer *m_arrayImplType;
-};  
+};
 
 class ProcInfo
 {
@@ -611,8 +611,8 @@ public:
     char      * calltimeout;
     int         async;
     int         callback;
-    ParamInfo * firstin;    
-    ParamInfo * lastin; 
+    ParamInfo * firstin;
+    ParamInfo * lastin;
     int         virt;
     int         constfunc;
 };
@@ -630,7 +630,7 @@ public:
     ModuleInfo  *next;
     bool            isSCMinterface;
 };
-        
+
 class ExportDefInfo
 {
 public:
@@ -639,7 +639,7 @@ public:
         name_=strdup(name);
         next=NULL;
     }
-    
+
     ~ExportDefInfo()
     {
         if (name_)
@@ -680,7 +680,7 @@ public:
        outf(1, "<EsdlInclude file=\"%s\"/>\n", pathstr.str());
    }
 
-   StrBuffer pathstr;   
+   StrBuffer pathstr;
    IncludeInfo  *next;
 };
 
@@ -701,7 +701,7 @@ public:
        outf(1, "<EsdlVersion name=\"%s\" version=\"%f\" />\n", version_name.str(), version_value);
    }
 
-   StrBuffer version_name;  
+   StrBuffer version_name;
    double version_value;
    VersionInfo *next;
 };
@@ -772,7 +772,7 @@ public:
         espm_type_=type;
 
         name_ =strdup(procInfo->name);
-        
+
         if (espm_type_==espm_struct)
         {
             name_ =(char *)malloc(strlen(procInfo->name)+6);
@@ -817,7 +817,7 @@ public:
             free(name_);
         name_=strdup(name);
     }
-    
+
     const char *getBase(){return base_;}
     void setBase(const char *base)
     {
@@ -857,7 +857,7 @@ public:
         return xsdgrouptype;
     }
 
-    
+
     const char *getMetaString(const char *tag, const char *def_val)
     {
         return ::getMetaString(tags, tag, def_val);
@@ -901,7 +901,7 @@ public:
     }
 
     EspMessageInfo *find_parent();
-    
+
     void write_esxdl_children()
     {
         EspMessageInfo *parmsg = find_parent();
@@ -962,17 +962,17 @@ public:
         tags=NULL;
         next=NULL;
     }
-    
+
     EspMethodInfo(ProcInfo *procInfo)
     {
         proc_=procInfo;
 
         name_ =strdup(procInfo->name);
-        
+
         request_ =(char *)malloc(strlen(name_)+8);
         strcpy(request_, name_);
         strcat(request_, "Request");
-        
+
         response_ =(char *)malloc(strlen(name_)+9);
         strcpy(response_, name_);
         strcat(response_, "Response");
@@ -980,7 +980,7 @@ public:
         tags=NULL;
         next=NULL;
     }
-    
+
     const char *getName(){return name_;}
     void setName(const char *name)
     {
@@ -1056,7 +1056,7 @@ public:
         tags=NULL;
         next=NULL;
     }
-    
+
     const char *getName(){return name_;}
     void setName(const char *name)
     {
@@ -1110,7 +1110,7 @@ public:
         tags=NULL;
         next=NULL;
     }
-    
+
     const char *getName(){return name_;}
     void setName(const char *name)
     {
@@ -1139,7 +1139,7 @@ public:
 };
 
 typedef enum _catch_type
-{ 
+{
     ct_httpresp,
     ct_soapresp,
 } catch_type;
@@ -1164,7 +1164,7 @@ public:
         next=NULL;
         needsXslt = false;
     }
-    
+
     ~EspServInfo()
     {
         if (name_)
@@ -1210,7 +1210,7 @@ public:
         for (MetaTagInfo *mtag=tags; mtag; mtag=mtag->next)
             mtag->write_xml_attr();
         outs(">\n");
-        
+
         for (EspMethodInfo *mth=methods; mth; mth=mth->next)
             mth->write_esxdl();
         outs(2, "</EsdlService>");

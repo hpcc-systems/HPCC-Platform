@@ -32,6 +32,9 @@
 #include "thorxmlwrite.hpp"
 #include "thexception.hpp"
 
+#include "roxierow.hpp"
+#include "thbufdef.hpp"
+
 //#define TRACEROLLING
 
 //#define TEST_PARALLEL_MATCH
@@ -276,9 +279,10 @@ void swapRows(RtlDynamicRowBuilder &row1, RtlDynamicRowBuilder &row2)
     row1.swapWith(row2);
 }
 
-class CJoinHelper : public IJoinHelper, public CSimpleInterface
+class CJoinHelper : public CSimpleInterface, implements IJoinHelper
 {
     CActivityBase &activity;
+    IRowInterfaces *rowIf;
     ICompare *compareLR;
     ICompare *compareL; 
     ICompare *compareR; 
@@ -352,9 +356,10 @@ class CJoinHelper : public IJoinHelper, public CSimpleInterface
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
-        : activity(_activity), allocator(_allocator), denormTmp(NULL), rightgroup(_activity, NULL), denormRows(_activity, NULL)
+    CJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+        : activity(_activity), rowIf(_rowIf), denormTmp(NULL), rightgroup(_activity, NULL), denormRows(_activity, NULL)
     {
+        allocator.set(rowIf->queryRowAllocator());
         kind = activity.queryContainer().getKind();
         helper = _helper; 
         denormCount = 0;
@@ -745,7 +750,7 @@ public:
             break;
         }
     }
-    const void *nextRow()
+    virtual const void *nextRow()
     {
         OwnedConstThorRow ret;
         RtlDynamicRowBuilder failret(allocator, false);
@@ -911,13 +916,15 @@ public:
         CATCH_MEMORY_EXCEPTIONS
         return ret.getClear();;
     }
+    virtual void stop() { }
     virtual rowcount_t getLhsProgress() const { return lhsProgressCount; }
     virtual rowcount_t getRhsProgress() const { return rhsProgressCount; }
 };
 
-class SelfJoinHelper: public IJoinHelper, public CSimpleInterface
+class SelfJoinHelper: public CSimpleInterface, implements IJoinHelper
 {
     CActivityBase &activity;
+    IRowInterfaces *rowIf;
     ICompare *compare;
     CThorExpandingRowArray curgroup;
     unsigned leftidx;
@@ -953,9 +960,10 @@ class SelfJoinHelper: public IJoinHelper, public CSimpleInterface
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    SelfJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
-        : activity(_activity), allocator(_allocator), curgroup(_activity, &_activity)
+    SelfJoinHelper(CActivityBase &_activity, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+        : activity(_activity), rowIf(_rowIf), curgroup(_activity, &_activity)
     {
+        allocator.set(rowIf->queryRowAllocator());
         helper = _helper;       
         outputmetaL = NULL;
         mcoreintercept = NULL;
@@ -1046,7 +1054,7 @@ public:
         nextrow.clear();
     }
 
-    const void *nextRow()
+    virtual const void *nextRow()
     {
         OwnedConstThorRow ret;
         RtlDynamicRowBuilder failret(allocator, false);
@@ -1243,13 +1251,14 @@ retry:
         CATCH_MEMORY_EXCEPTIONS
         return ret.getClear();
     }
+    virtual void stop() { }
     virtual rowcount_t getLhsProgress() const { return progressCount; }
     virtual rowcount_t getRhsProgress() const { return progressCount; }
 };
 
-IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IEngineRowAllocator *allocator)
+IJoinHelper *createDenormalizeHelper(CActivityBase &activity, IHThorDenormalizeArg *helper, IRowInterfaces *rowIf)
 {
-    return new CJoinHelper(activity, helper, allocator);
+    return new CJoinHelper(activity, helper, rowIf);
 }
 
 
@@ -1297,7 +1306,7 @@ public:
         loop {
             CRollingCacheElem * r = cache->mid(0);
             if (!r)
-                break; // kit eos              
+                break; // hit eos
             int c = cmp->docompare(left,r->row);
             if (c==0) {
                 r->cmp = limitedcmp->docompare(left,r->row);
@@ -1391,10 +1400,13 @@ ILimitedCompareHelper *createLimitedCompareHelper()
 
 //===============================================================
 
-class CMultiCoreJoinHelperBase: extends CInterface, implements IJoinHelper, implements IMulticoreIntercept
+class CMultiCoreJoinHelperBase: extends CSimpleInterface, implements IJoinHelper, implements IMulticoreIntercept
 {
 public:
+    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
     CActivityBase &activity;
+    IRowInterfaces *rowIf;
     IJoinHelper *jhelper;
     bool leftouter;  
     bool rightouter;  
@@ -1408,7 +1420,7 @@ public:
     ThorActivityKind kind;
     Owned<IException> exc;
     CriticalSection sect;
-    bool eos;
+    bool eos, selfJoin;
 
 
     void setException(IException *e,const char *title)
@@ -1463,23 +1475,10 @@ public:
         }
     };
 
-    class cOutItem
-    {
-    public:
-        cOutItem(const void *_row,bool _done)
-        {
-            row = _row;
-            done = _done;
-        }
-        const void *row;
-        bool done; 
-    };
-
-
-    void doMatch(cWorkItem &work,SimpleInterThreadQueueOf<cOutItem,false> &outqueue) 
+    void doMatch(cWorkItem &work, IRowWriter &writer, IEngineRowAllocator *theAllocator)
     {
         MemoryBuffer rmatchedbuf;  
-        CThorExpandingRowArray &rgroup = (kind==TAKselfjoin||kind==TAKselfjoinlight)?work.lgroup:work.rgroup;
+        CThorExpandingRowArray &rgroup = selfJoin?work.lgroup:work.rgroup;
         bool *rmatched;
         if (rightouter) {
             rmatched = (bool *)rmatchedbuf.clear().reserve(rgroup.ordinality());
@@ -1491,37 +1490,38 @@ public:
             for (unsigned rightidx=0; rightidx<rgroup.ordinality(); rightidx++) {
                 if (helper->match(work.lgroup.query(leftidx),rgroup.query(rightidx))) {
                     lmatched = true;
-                    if (rightouter) 
+                    if (rightouter)
                         rmatched[rightidx] = true;
-                    RtlDynamicRowBuilder ret(allocator);
+                    RtlDynamicRowBuilder ret(theAllocator);
                     size32_t sz = exclude?0:helper->transform(ret,work.lgroup.query(leftidx),rgroup.query(rightidx));
-                    if (sz) 
-                        outqueue.enqueue(new cOutItem(ret.finalizeRowClear(sz),false));
+                    if (sz)
+                        writer.putRow(ret.finalizeRowClear(sz));
 
                 }
             }
             if (!lmatched) {
-                RtlDynamicRowBuilder ret(allocator);
+                RtlDynamicRowBuilder ret(theAllocator);
                 size32_t sz =  helper->transform(ret, work.lgroup.query(leftidx), defaultRight);
-                if (sz) 
-                    outqueue.enqueue(new cOutItem(ret.finalizeRowClear(sz),false));
-            }   
+                if (sz)
+                    writer.putRow(ret.finalizeRowClear(sz));
+            }
         }
         if (rightouter) {
             ForEachItemIn(rightidx2,rgroup) {
                 if (!rmatched[rightidx2]) {
-                    RtlDynamicRowBuilder ret(allocator);
+                    RtlDynamicRowBuilder ret(theAllocator);
                     size32_t sz =  helper->transform(ret, defaultLeft, rgroup.query(rightidx2));
-                    if (sz) 
-                        outqueue.enqueue(new cOutItem(ret.finalizeRowClear(sz),false));
+                    if (sz)
+                        writer.putRow(ret.finalizeRowClear(sz));
                 }
             }
         }
     }
 
-    CMultiCoreJoinHelperBase(CActivityBase &_activity, unsigned numthreads, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
-        : activity(_activity), allocator(_allocator)
+    CMultiCoreJoinHelperBase(CActivityBase &_activity, unsigned numthreads, bool _selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+        : activity(_activity), rowIf(_rowIf)
     {
+        allocator.set(rowIf->queryRowAllocator());
         kind = activity.queryContainer().getKind();
         jhelper = _jhelper;
         helper = _helper;
@@ -1529,6 +1529,7 @@ public:
         leftouter = (flags & JFleftouter) != 0;
         rightouter = (flags & JFrightouter) != 0;
         exclude = (flags & JFexclude) != 0;
+        selfJoin = _selfJoin;
         numworkers = numthreads;
         eos = false;
     }
@@ -1558,19 +1559,19 @@ public:
         return true;
     }
 
-    rowcount_t getLhsProgress() const
+// IJoinHelper impl.
+    virtual rowcount_t getLhsProgress() const
     {
         if (jhelper)
             return jhelper->getLhsProgress();
         return 0;
     }
-    rowcount_t getRhsProgress() const
+    virtual rowcount_t getRhsProgress() const
     {
         if (jhelper)
             return jhelper->getRhsProgress();
         return 0;
     }
-
 };
 
 
@@ -1578,8 +1579,8 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
 {
     unsigned curin;         // only updated from cReader thread
     unsigned curout;            // only updated from cReader thread
+    bool stopped;
     
-
     class cReader: public Thread
     {
     public:
@@ -1612,57 +1613,65 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         cWorkItem work;
         Semaphore workready;
         Semaphore workwait;
-        SimpleInterThreadQueueOf<cOutItem,false> outqueue;
+        Owned<ISmartRowBuffer> rowStream;
+        bool stopped;
 
         cWorker(CActivityBase &activity, CMultiCoreJoinHelper *_parent)
             : Thread("CMultiCoreJoinHelper::cWorker"), parent(_parent), work(activity)
         {
-        }
-
-        ~cWorker()
-        {
-            while (outqueue.ordinality())
-                delete outqueue.dequeue();
+            stopped = false;
         }
         int run()
         {
             PROGLOG("CMultiCoreJoinHelper::cWorker started");
-            MemoryBuffer rmatchedbuf;  
-            bool selfjoin = (parent->kind==TAKselfjoin||parent->kind==TAKselfjoinlight);
-            loop {
+
+            // Create an allocator per thread, to avoid heavy contention
+            // JCSMORE - there should be a way to ask the cache for an allocator that is based on flags
+            activity_id activityId = parent->activity.queryContainer().queryId();
+            Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
+            IOutputMetaData *meta = rowIf->queryRowMetaData();
+            roxiemem::IRowManager *rowManager = parent->activity.queryJob().queryRowManager();
+            Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, activityId, 1, (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
+
+            // JCSMORE - could have a spilling variety instead here..
+            rowStream.setown(createSmartInMemoryBuffer(&parent->activity, parent->rowIf, SMALL_SMART_BUFFER_SIZE));
+            IRowWriter *rowWriter = rowStream->queryWriter();
+            loop
+            {
                 work.clear();
                 workready.signal();
                 workwait.wait();
-                try {
-                    if (work.row) {
-                        outqueue.enqueue(new cOutItem(work.row,false));
-                    }
-                    else {
+                try
+                {
+                    if (work.row)
+                        rowWriter->putRow(work.row);
+                    else
+                    {
                         if (work.lgroup.ordinality()==0)
                             break;
-                        parent->doMatch(work,outqueue);
+                        parent->doMatch(work, *rowWriter, allocator);
                     }
-                    outqueue.enqueue(new cOutItem(NULL,false));
+                    rowWriter->putRow(NULL);
                 }
-                catch (IException *e) {
+                catch (IException *e)
+                {
                     parent->setException(e,"CMultiCoreJoinHelper::cWorker");
                     break;
                 }
             }
-            outqueue.enqueue(new cOutItem(NULL,true));
+            // reader will check stopped, which will only be set once all read, becasue flush() will block until all read
+            rowWriter->putRow(NULL); // end-of-stream
+            rowWriter->flush();
+            stopped = true; // NB: will not get past flush(), until all read
             PROGLOG("CMultiCoreJoinHelper::cWorker exit");
-
-
             return 0;
-
         }
+        bool isStopped() const { return stopped; }
     } **workers;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-    CMultiCoreJoinHelper(CActivityBase &activity, unsigned numthreads, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
-        : CMultiCoreJoinHelperBase(activity, numthreads, _jhelper, _helper, _allocator)
+    CMultiCoreJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+        : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
     {
         reader.parent = this;
         workers = new cWorker *[numthreads];
@@ -1674,6 +1683,7 @@ public:
 
     ~CMultiCoreJoinHelper()
     {
+        stop(); // if hasn't been already
         if (!reader.join(1000*60))
             ERRLOG("~CMultiCoreJoinHelper reader join timed out");
         for (unsigned i=0;i<numworkers;i++) {
@@ -1686,8 +1696,8 @@ public:
         ::Release(jhelper);
     }
 
-
-    bool init(
+// IJoinHelper impl.
+    virtual bool init(
             IRowStream *strmL,
             IRowStream *strmR,      // not used for self join - must be NULL
             IEngineRowAllocator *allocatorL,
@@ -1699,50 +1709,66 @@ public:
     {
         if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,this))
             return false;
-        for (unsigned i=0;i<numworkers;i++) {
-            workers[i]->outqueue.setLimit(1000);  // shouldn't be that large but just in case
+        stopped = false;
+        for (unsigned i=0;i<numworkers;i++)
             workers[i]->start();
-        }
         reader.start();
         return true;
     }
-
     virtual const void *nextRow()
     {
-        cOutItem * item;
-        loop {
+        /* NB: workers fill and block, they output NULL at end of group
+         * which signals this to move onto next worker.
+         * When all work has been added to workers, a end work item marker is added to the workqueue
+         * which causes the workers to finish, mark stopped and flush their stream.
+         */
+        loop
+        {
             if (eos)
                 return NULL;
-            item = workers[curout]->outqueue.dequeue(); 
-            if (exc.get()) {
+            const void *row = workers[curout]->rowStream->nextRow();
+            if (exc.get())
+            {
+                ::ReleaseThorRow(row);
                 CriticalBlock b(sect);
                 throw exc.getClear();
             }
-            if (item&&item->row)
-                break;
-            eos = item->done;
-            delete item;
+            if (row)
+                return row;
+            else
+            {
+                if (workers[curout]->isStopped())
+                {
+                    eos = true;
+                    return NULL;
+                }
+            }
             curout = (curout+1)%numworkers;
         }
-
-        const void * ret = item->row;
-        delete item;
-        return ret;
+    }
+    virtual void stop()
+    {
+        if (stopped)
+            return;
+        stopped = true;
+        for (unsigned i=0;i<numworkers;i++)
+            workers[i]->rowStream->stop();
     }
 
-    void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
+// IMulticoreIntercept impl.
+    virtual void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
-        if (!lgroup||!lgroup->ordinality()) {
-            PROGLOG("hello");
-        }
+        /* NB: This adds a work item to each worker in sequence
+         * The pull side, also pulls from the workers in sequence
+         * This ensures the output is return in input order.
+         */
         cWorker *worker = workers[curin];
         worker->workready.wait();
         workers[curin]->work.set(lgroup,rgroup);
         worker->workwait.signal();
         curin = (curin+1)%numworkers;
     }
-
-    void addRow(const void *row)
+    virtual void addRow(const void *row)
     {
         cWorker *worker = workers[curin];
         worker->workready.wait();
@@ -1750,13 +1776,11 @@ public:
         worker->workwait.signal();
         curin = (curin+1)%numworkers;
     }
-
 };
+
 
 class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
 {
-    unsigned stoppedworkers;
-    
     void setException(IException *e,const char *title)
     {
         CriticalBlock b(sect);
@@ -1765,12 +1789,12 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
             e->Release();
         else
             exc.setown(e);
+        multiWriter->abort();
     }
 
-
     SimpleInterThreadQueueOf<cWorkItem,false> workqueue;
-    SimpleInterThreadQueueOf<cOutItem,false> outqueue;          // used in unordered
-
+    Owned<IRowMultiWriterReader> multiWriter;
+    Owned<IRowWriter> rowWriter;
 
     class cReader: public Thread
     {
@@ -1790,59 +1814,68 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
             catch (IException *e) {
                 parent->setException(e,"CMulticoreUnorderedJoinHelper::cReader");
             }
-            for (unsigned i=0;i<parent->numworkers;i++) 
-                parent->workqueue.enqueue(new cWorkItem(parent->activity, NULL, NULL));
+            parent->stopWorkers();
             PROGLOG("CMulticoreUnorderedJoinHelper::cReader exit");
             return 0;
         }
     } reader;
 
-
     class cWorker: public Thread
     {
         CMultiCoreUnorderedJoinHelper *parent;
     public:
-        SimpleInterThreadQueueOf<cOutItem,false> outqueue;          // used in ordered
         cWorker(CMultiCoreUnorderedJoinHelper *_parent)
             : Thread("CMulticoreUnorderedJoinHelper::cWorker"), parent(_parent)
         {
         }
         int run()
         {
+            // Create an allocator per thread, to avoid heavy contention
+            // JCSMORE - there should be a way to ask the cache for an allocator that is based on flags
+            activity_id activityId = parent->activity.queryContainer().queryId();
+            Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
+            IOutputMetaData *meta = rowIf->queryRowMetaData();
+            roxiemem::IRowManager *rowManager = parent->activity.queryJob().queryRowManager();
+            Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, activityId, 1, (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
+
+            Owned<IRowWriter> rowWriter = parent->multiWriter->getWriter();
             PROGLOG("CMulticoreUnorderedJoinHelper::cWorker started");
-            loop {
+            loop
+            {
                 cWorkItem *work = parent->workqueue.dequeue();
-                if (!work||((work->lgroup.ordinality()==0)&&(work->rgroup.ordinality()==0))) {
+                if (!work||((work->lgroup.ordinality()==0)&&(work->rgroup.ordinality()==0)))
+                {
                     delete work;
                     break;
                 }
-                try {
-                    parent->doMatch(*work,parent->outqueue);
+                try
+                {
+                    parent->doMatch(*work, *rowWriter, allocator);
                     delete work;
                 }
-                catch (IException *e) {
+                catch (IException *e)
+                {
                     parent->setException(e,"CMulticoreUnorderedJoinHelper::cWorker");
                     delete work;
                     break;
                 }
             }
-            parent->outqueue.enqueue(new cOutItem(NULL,true));
             PROGLOG("CMulticoreUnorderedJoinHelper::cWorker exit");
-
-
             return 0;
-
         }
     } **workers;
 
 public:
-    IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
-
-    CMultiCoreUnorderedJoinHelper(CActivityBase &activity, unsigned numthreads, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IEngineRowAllocator *_allocator)
-        : CMultiCoreJoinHelperBase(activity, numthreads, _jhelper, _helper, _allocator)
+    CMultiCoreUnorderedJoinHelper(CActivityBase &activity, unsigned numthreads, bool selfJoin, IJoinHelper *_jhelper, IHThorJoinArg *_helper, IRowInterfaces *_rowIf)
+        : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
     {
         reader.parent = this;
-        stoppedworkers = 0;
+
+        unsigned limit = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"limit\"]/@value", numworkers*1000);
+        unsigned readGranularity = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"readgranularity\"]/@value", DEFAULT_WR_READ_GRANULARITY);
+        unsigned writeGranularity = activity.queryContainer().queryXGMML().getPropInt("hint[@name=\"writegranularity\"]/@value", DEFAULT_WR_WRITE_GRANULARITY);
+        ActPrintLog(&activity, "CMultiCoreUnorderedJoinHelper: limit=%d, readGranularity=%d, writeGranularity=%d", limit, readGranularity, writeGranularity);
+        multiWriter.setown(createSharedWriteBuffer(&activity, rowIf, limit, readGranularity, writeGranularity));
         workers = new cWorker *[numthreads];
         for (unsigned i=0;i<numthreads;i++) 
             workers[i] = new cWorker(this);
@@ -1856,18 +1889,23 @@ public:
             if (!workers[i]->join(1000*60))
                 ERRLOG("~CMulticoreUnorderedJoinHelper worker[%d] join timed out",i);
         }
-        while (outqueue.ordinality())
-            delete outqueue.dequeue();
         while (workqueue.ordinality())
             delete workqueue.dequeue();
         for (unsigned i=0;i<numworkers;i++) 
             delete workers[i];
-        delete workers;
+        delete [] workers;
         ::Release(jhelper);
     }
 
+    void stopWorkers()
+    {
+        for (unsigned i=0;i<numworkers;i++)
+            addWork(NULL, NULL);
+        rowWriter.clear();
+    }
 
-    bool init(
+// IJoinHelper impl.
+    virtual bool init(
             IRowStream *strmL,
             IRowStream *strmR,      // not used for self join - must be NULL
             IEngineRowAllocator *allocatorL,
@@ -1880,57 +1918,47 @@ public:
         if (!CMultiCoreJoinHelperBase::init(strmL,strmR,allocatorL,allocatorR,outputmetaL,_abort,this))
             return false;
         workqueue.setLimit(numworkers+1);
-        outqueue.setLimit(numworkers*1000);  // shouldn't be that large but just in case
+        rowWriter.setown(multiWriter->getWriter());
         for (unsigned i=0;i<numworkers;i++)
             workers[i]->start();
         reader.start();
         return true;
     }
-
     virtual const void *nextRow()
     {
-        cOutItem * item;
         if (eos)
             return NULL;
-        loop {
-            if (stoppedworkers==numworkers) {
-                eos = true;
-                return NULL;
-            }
-            item = outqueue.dequeue(); 
-            if (exc.get()) {
-                delete item;
-                CriticalBlock b(sect);
-                throw exc.getClear();
-            }
-            if (item&&item->row)
-                break;
-            delete item;
-            stoppedworkers++;
+        const void *ret = multiWriter->nextRow();
+        if (exc.get())
+        {
+            ::ReleaseThorRow(ret);
+            CriticalBlock b(sect);
+            throw exc.getClear();
         }
-
-        const void * ret = item->row;
-        delete item;
-        return ret;
+        if (ret)
+            return ret;
+        eos = true;
+        return NULL;
+    }
+    virtual void stop()
+    {
     }
 
-    void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
+// IMulticoreIntercept impl.
+    virtual void addWork(CThorExpandingRowArray *lgroup,CThorExpandingRowArray *rgroup)
     {
         cWorkItem *item = new cWorkItem(activity, lgroup, rgroup);
         workqueue.enqueue(item);
     }
-
-    void addRow(const void *row)
+    virtual void addRow(const void *row)
     {
         assertex(row);
-        cOutItem *item = new cOutItem(row,false);
-        outqueue.enqueue(item);
+        rowWriter->putRow(row);
     }
-
 };
 
 
-IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IEngineRowAllocator *allocator, bool parallelmatch, bool unsortedoutput)
+IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput)
 {
     // 
 #ifdef TEST_PARALLEL_MATCH
@@ -1939,17 +1967,18 @@ IJoinHelper *createJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IE
 #ifdef TEST_UNSORTED_OUT
     unsortedoutput = true;
 #endif
-    IJoinHelper *jhelper = new CJoinHelper(activity, helper, allocator);
+    IJoinHelper *jhelper = new CJoinHelper(activity, helper, rowIf);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
-    unsigned numthreads = getAffinityCpus();
+    unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, getAffinityCpus());
+    ActPrintLog(&activity, "Join helper using %d threads", numthreads);
     if (unsortedoutput)
-        return new CMultiCoreUnorderedJoinHelper(activity, numthreads, jhelper, helper, allocator);
-    return new CMultiCoreJoinHelper(activity, numthreads, jhelper, helper, allocator);
+        return new CMultiCoreUnorderedJoinHelper(activity, numthreads, false, jhelper, helper, rowIf);
+    return new CMultiCoreJoinHelper(activity, numthreads, false, jhelper, helper, rowIf);
 }
 
 
-IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IEngineRowAllocator *allocator, bool parallelmatch, bool unsortedoutput)
+IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper, IRowInterfaces *rowIf, bool parallelmatch, bool unsortedoutput)
 {
 #ifdef TEST_PARALLEL_MATCH
     parallelmatch = true;
@@ -1957,13 +1986,12 @@ IJoinHelper *createSelfJoinHelper(CActivityBase &activity, IHThorJoinArg *helper
 #ifdef TEST_UNSORTED_OUT
     unsortedoutput = true;
 #endif
-    IJoinHelper *jhelper = new SelfJoinHelper(activity, helper, allocator);
+    IJoinHelper *jhelper = new SelfJoinHelper(activity, helper, rowIf);
     if (!parallelmatch||helper->getKeepLimit()||((helper->getJoinFlags()&JFslidingmatch)!=0)) // currently don't support betweenjoin or keep and multicore
         return jhelper;
-    unsigned numthreads = getAffinityCpus();
+    unsigned numthreads = activity.getOptInt(THOROPT_JOINHELPER_THREADS, getAffinityCpus());
+    ActPrintLog(&activity, "Self join helper using %d threads", numthreads);
     if (unsortedoutput)
-        return new CMultiCoreUnorderedJoinHelper(activity, numthreads, jhelper, helper, allocator);
-    return new CMultiCoreJoinHelper(activity, numthreads, jhelper, helper, allocator);
+        return new CMultiCoreUnorderedJoinHelper(activity, numthreads, true, jhelper, helper, rowIf);
+    return new CMultiCoreJoinHelper(activity, numthreads, true, jhelper, helper, rowIf);
 }
-
-
