@@ -60,7 +60,7 @@ int es_createFile(const char* src, const char* ext)
     char * path = es_changeext(src,ext);
     //printf("Target: %s\n", path);
     int h = open(path,_O_WRONLY | _O_CREAT | _O_TRUNC | _O_TEXT  , _S_IREAD|_S_IWRITE);
-    if (h==-1) 
+    if (h==-1)
     {
         printf("Could not open file for write: %s (current dir: %s)\n",path,getcwd(NULL,0));
     }
@@ -101,20 +101,20 @@ char * es_changeext(const char *fn,const char *ext)
     char *p;
     for (p=(char*)(fn+preext-1); p>=fn; p--)
     {
-        if (*p == '.')  
+        if (*p == '.')
         {
             preext = p-fn;
             break;
         }
     }
-    
+
     //  char *ret=gettail(fn);
     //  size_t l = strlen(ret);
     //  ret = (char *)realloc(ret,l+strlen(ext)+2);
-    
+
     char *ret = (char *)malloc(preext+strlen(ext)+2);
     memcpy(ret, fn, preext);
-    
+
     ret[preext] = '.';
     strcpy(ret+preext+1,ext);
     return ret;
@@ -127,16 +127,16 @@ char * es_changetail(const char *fn,const char *tail, const char *ext)
     char *p;
     for (p=(char*)(fn+preext-1); p>=fn; p--)
     {
-        if (*p == '.')  
+        if (*p == '.')
         {
             preext = p-fn;
             break;
         }
     }
-    
+
     char *ret = (char *)malloc(preext+strlen(tail)+strlen(ext)+2);
     memcpy(ret, fn, preext);
-    
+
     ret[preext] = 0;
     strcat(ret,tail);
     strcat(ret,".");
@@ -156,7 +156,7 @@ int es_createFile(const char* src, const char* tail, const char* ext)
 {
     char * path=es_changetail(src,tail,ext);
     int h = open(path,_O_WRONLY | _O_CREAT | _O_TRUNC | _O_TEXT  , _S_IREAD|_S_IWRITE);
-    if (h==-1) 
+    if (h==-1)
     {
         printf("Could not open file for write: %s (current dir: %s)\n",path,getcwd(NULL,0));
     }
@@ -213,7 +213,7 @@ void StrBuffer::_realloc(size32_t newLen)
         char * newStr;
         if(!newMax || !(newStr=(char *)realloc(buffer, newMax)))
             throw "StrBuffer::_realloc: Failed to realloc memory";
-        
+
         buffer = newStr;
         maxLen = newMax;
     }
@@ -222,7 +222,7 @@ void StrBuffer::_realloc(size32_t newLen)
 StrBuffer & StrBuffer::append(int value)
 {
     char temp[12];
-    
+
     unsigned written = sprintf(temp, "%d", value);
     return append(written, temp);
 }
@@ -230,12 +230,12 @@ StrBuffer & StrBuffer::append(int value)
 StrBuffer & StrBuffer::append(unsigned int value)
 {
     char temp[12];
-    
+
     unsigned written = sprintf(temp, "%u", value);
     return append(written, temp);
 }
 
-StrBuffer & StrBuffer::append(char c) 
+StrBuffer & StrBuffer::append(char c)
 {
     appendf("%c",c);
     return *this;
@@ -253,7 +253,7 @@ StrBuffer & StrBuffer::append(const char * value)
     if (value)
     {
         size32_t SourceLen = (size32_t)::strlen(value);
-        
+
         ensureCapacity(SourceLen);
         memcpy(buffer + curLen, value, SourceLen);
         curLen += SourceLen;
@@ -322,7 +322,7 @@ StrBuffer & StrBuffer::valist_appendf(const char *format, va_list args)
 {
     const int BUF_SIZE = 1024;
     char  buf[BUF_SIZE];
-    
+
     int len = _vsnprintf(buf,sizeof(buf),format,args);
     if (len >= 0)
     {
@@ -332,7 +332,7 @@ StrBuffer & StrBuffer::valist_appendf(const char *format, va_list args)
         {
             ensureCapacity(len);
             // no need for _vsnprintf since the buffer is already made big enough
-            vsprintf(buffer+curLen,format,args); 
+            vsprintf(buffer+curLen,format,args);
             curLen += len;
         }
     }
@@ -348,7 +348,7 @@ StrBuffer & StrBuffer::valist_appendf(const char *format, va_list args)
         append(len, pbuf);
         free(pbuf);
     }
-    
+
     return *this;
 }
 
@@ -494,5 +494,5 @@ void splitFilename(const char * filename, StrBuffer * drive, StrBuffer * path, S
         ext->append(text);
 }
 
-bool streq(const char* s, const char* t) 
+bool streq(const char* s, const char* t)
 { return strcmp(s,t)==0; }

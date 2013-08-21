@@ -19,11 +19,9 @@ FOREACH( iFILES
     ${CMAKE_CURRENT_SOURCE_DIR}/appframe.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/dict_sort.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/env2jstree.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/esdl2ecl.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/esdl_method.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/espheader.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/esxdl2req.xslt
-    ${CMAKE_CURRENT_SOURCE_DIR}/esxdl2xsd.xslt
     ${CMAKE_CURRENT_SOURCE_DIR}/gen_form.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/multistatus.xsl
     ${CMAKE_CURRENT_SOURCE_DIR}/nav.xsl
