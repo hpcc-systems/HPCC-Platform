@@ -17,6 +17,7 @@ define([
     "dojo/_base/declare",
     "dojo/_base/lang",
     "dojo/_base/array",
+    "dojo/_base/Deferred",
     "dojo/dom",
     "dojo/dom-construct",
     "dojo/on",
@@ -57,7 +58,7 @@ define([
     "dijit/form/SimpleTextarea",
     "dijit/form/NumberSpinner",
     "dijit/form/DropDownButton"
-], function (declare, lang, arrayUtil, dom, domConstruct, on, html, Memory, Observable,
+], function (declare, lang, arrayUtil, Deferred, dom, domConstruct, on, html, Memory, Observable,
             BorderContainer, TabContainer, ContentPane, registry, Dialog,
             entities,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
@@ -286,6 +287,11 @@ define([
             this._initItemGrid(this.edgesGrid);
         },
 
+        _onMainRefresh: function () {
+            this.main.setMessage("Performing Layout...");
+            this.main.startLayout("dot");
+        },
+
         _onLocalRefresh: function () {
             this.refreshLocal(this.local.getSelectionAsGlobalID());
         },
@@ -406,7 +412,9 @@ define([
                         onGetGraphs: function (graphs) {
                             if (firstLoad == true) {
                                 firstLoad = false;
-                                context.loadGraph(context.wu, context.graphName);
+                                context.loadGraph(context.wu, context.graphName).then(function (response) {
+                                    context.refresh(params);
+                                });
                             } else {
                                 context.refreshGraph(context.wu, context.graphName);
                             }
@@ -423,6 +431,13 @@ define([
                 query: this.graphName
             }, params));
 
+        },
+
+        refresh: function (params) {
+            if (params && params.SubGraphId) {
+                this.global.setSelectedAsGlobalID([params.SubGraphId]);
+                this.syncSelectionFrom(this.global);
+            }
         },
 
         loadGraphFromXGMML: function (xgmml) {
@@ -444,6 +459,7 @@ define([
         },
 
         loadGraph: function (wu, graphName) {
+            var deferred = new Deferred();
             this.overview.setMessage("Fetching Data...");
             this.main.setMessage("Fetching Data...");
             this.local.setMessage("Fetching Data...");
@@ -453,7 +469,9 @@ define([
                 context.main.setMessage("");
                 context.local.setMessage("");
                 context.loadGraphFromXGMML(xgmml, svg);
+                deferred.resolve();
             });
+            return deferred.promise;
         },
 
         refreshGraph: function (wu, graphName) {
