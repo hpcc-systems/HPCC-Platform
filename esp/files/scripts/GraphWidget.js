@@ -300,8 +300,7 @@ require([
                     if (this._isPluginInstalled) {
                         var pluginID = this.id + "Plugin";
                         if (has("ie")) {
-                            this.graphContentPane.domNode.innerHTML = '<object '
-                                                    + 'type="application/x-hpccsystemsgraphviewcontrol" '
+                            this.graphContentPane.domNode.innerHTML = '<object type="application/x-hpccsystemsgraphviewcontrol" '
                                                     + 'id="' + pluginID + '" '
                                                     + 'name="' + pluginID + '" '
                                                     + 'width="100%" '
