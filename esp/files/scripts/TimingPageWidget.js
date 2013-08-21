@@ -18,26 +18,22 @@ define([
     "dojo/_base/declare",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/layout/BorderContainer",
 
+    "hpcc/_Widget",
     "hpcc/TimingGridWidget",
-    "hpcc/TimingTreeMapWidget",
 
     "dojo/text!../templates/TimingPageWidget.html"
 ],
     function (declare,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, BorderContainer,
-            TimingGridWidget, TimingTreeMapWidget,
+            registry, BorderContainer,
+            _Widget, TimingGridWidget,
             template) {
-        return declare("TimingPageWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("TimingPageWidget", [_Widget], {
             templateString: template,
             baseClass: "TimingPageWidget",
             borderContainer: null,
             timingGrid: null,
-            timingTreeMap: null,
 
             buildRendering: function (args) {
                 this.inherited(arguments);
@@ -47,7 +43,6 @@ define([
                 this.inherited(arguments);
                 this.borderContainer = registry.byId(this.id + "BorderContainer");
                 this.timingGrid = registry.byId(this.id + "Grid");
-                this.timingTreeMap = registry.byId(this.id + "TreeMap");
             },
 
             startup: function (args) {
@@ -65,37 +60,11 @@ define([
 
             //  Plugin wrapper  ---
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 var context = this;
                 this.timingGrid.init(params);
-                this.timingGrid.onClick = function (items) {
-                    context.syncSelectionFrom(context.timingGrid);
-                };
-
-                this.timingTreeMap.init(params);
-                this.timingTreeMap.onClick = function (value) {
-                    context.syncSelectionFrom(context.timingTreeMap);
-                }
-            },
-
-            syncSelectionFrom: function (sourceControl) {
-                var items = [];
-
-                //  Get Selected Items  ---
-                if (sourceControl == this.timingGrid || sourceControl == this.timingTreeMap) {
-                    items = sourceControl.getSelected();
-                }
-
-                //  Set Selected Items  ---
-                if (sourceControl != this.timingGrid) {
-                    this.timingGrid.setSelected(items);
-                }
-                if (sourceControl != this.timingTreeMap) {
-                    this.timingTreeMap.setSelected(items);
-                }
             }
         });
     });

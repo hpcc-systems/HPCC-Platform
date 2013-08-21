@@ -15,11 +15,10 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/store/Memory",
     "dojo/store/Observable",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
 
     "hpcc/_TabContainerWidget",
@@ -33,11 +32,11 @@ define([
     "dijit/ToolbarSeparator",
     "dijit/layout/ContentPane"
 
-], function (declare, Memory, Observable,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry,
+], function (declare, lang, Memory, Observable,
+                registry,
                 _TabContainerWidget,
                 template) {
-    return declare("GridDetailsWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+    return declare("GridDetailsWidget", [_TabContainerWidget], {
         templateString: template,
         baseClass: "GridDetailsWidget",
 
@@ -107,11 +106,15 @@ define([
 
         initTab: function () {
             var currSel = this.getSelectedChild();
-            if (currSel && !currSel.initalized) {
-                if (currSel.hpcc) {
-                    currSel.init(currSel.hpcc.params);
+            if (currSel) {
+                if (!currSel.initalized) {
+                    if (currSel.hpcc) {
+                        currSel.init(currSel.hpcc.params);
+                    }
+                    currSel.initalized = true;
+                } else if (currSel.refresh) {
+                    currSel.refresh(currSel.hpcc.refreshParams);
                 }
-                currSel.initalized = true;
             }
         },
 
@@ -125,6 +128,10 @@ define([
             if (!retVal) {
                 retVal = this.createDetail(id, row, params);
                 this.addChild(retVal);
+            } else {
+                lang.mixin(retVal.hpcc, {
+                    refreshParams: params
+                });
             }
             return retVal;
         },

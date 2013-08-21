@@ -183,7 +183,7 @@ this.app.emit("app-resize");
 var _34=true;
 if(_a&&(!_2c||_31!=null)){
 var _35=_2.mixin({},_26);
-_35=_2.mixin({},_35,{reverse:(_35.reverse||_35.transitionDir===-1)?true:false,transition:this._getTransition(_29,_25,_35)});
+_35=_2.mixin({},_35,{reverse:(_35.reverse||_35.transitionDir===-1)?true:false,transition:this._getTransition(_29,_2e,_35)});
 if(_30){
 this.app.log("    > in Transition._doTransition calling transit for current ="+_30.name);
 }

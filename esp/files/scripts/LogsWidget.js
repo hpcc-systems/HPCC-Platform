@@ -23,9 +23,6 @@ define([
     "dojo/request/iframe",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
 
     "dgrid/OnDemandGrid",
     "dgrid/Keyboard",
@@ -34,6 +31,7 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
+    "hpcc/_Widget",
     "hpcc/ESPUtil",
     "hpcc/ESPRequest",
     "hpcc/ESPWorkunit",
@@ -41,11 +39,11 @@ define([
     "dojo/text!../templates/LogsWidget.html"
 ],
     function (declare, array, lang, Memory, Observable, iframe,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin,
+            registry,
             OnDemandGrid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry,
-            ESPUtil, ESPRequest, ESPWorkunit,
+            _Widget, ESPUtil, ESPRequest, ESPWorkunit,
             template) {
-        return declare("LogsWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("LogsWidget", [_Widget], {
             templateString: template,
             baseClass: "LogsWidget",
             borderContainer: null,
@@ -148,9 +146,8 @@ define([
             },
             //  Plugin wrapper  ---
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 this.logData = [];
                 var context = this;

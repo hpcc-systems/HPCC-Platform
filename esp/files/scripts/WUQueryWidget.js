@@ -23,8 +23,6 @@ define([
     "dojo/date",
     "dojo/on",
 
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
     "dijit/registry",
     "dijit/Dialog",
     "dijit/Menu",
@@ -64,11 +62,11 @@ define([
     "dojox/layout/TableContainer"
 
 ], function (declare, lang, arrayUtil, dom, domClass, domForm, date, on,
-                _TemplatedMixin, _WidgetsInTemplateMixin, registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
+                registry, Dialog, Menu, MenuItem, MenuSeparator, PopupMenuItem,
                 Grid, Keyboard, Selection, selector, ColumnResizer, DijitRegistry, Pagination,
                 _TabContainerWidget, WsWorkunits, ESPUtil, ESPWorkunit, WUDetailsWidget, TargetSelectWidget,
                 template) {
-    return declare("WUQueryWidget", [_TabContainerWidget, _TemplatedMixin, _WidgetsInTemplateMixin, ESPUtil.FormHelper], {
+    return declare("WUQueryWidget", [_TabContainerWidget, ESPUtil.FormHelper], {
         templateString: template,
         baseClass: "WUQueryWidget",
 
@@ -248,9 +246,8 @@ define([
 
         //  Implementation  ---
         init: function (params) {
-            if (this.initalized)
+            if (this.inherited(arguments))
                 return;
-            this.initalized = true;
 
             this.clusterTargetSelect.init({
                 Targets: true,

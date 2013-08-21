@@ -367,7 +367,7 @@ break;
 case "E":
 case "e":
 case "c":
-s="\\S+";
+s=".+?";
 break;
 case "h":
 s="1[0-2]|"+p2+"[1-9]";

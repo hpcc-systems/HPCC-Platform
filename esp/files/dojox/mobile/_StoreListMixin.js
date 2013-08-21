@@ -9,42 +9,44 @@ var _8=this.store;
 this.store=null;
 this.setStore(_8,this.query,this.queryOptions);
 },createListItem:function(_9){
-var _a={};
-if(!_9["label"]){
-_a["label"]=_9[this.labelProperty];
+return new this.itemRenderer(this._createItemProperties(_9));
+},_createItemProperties:function(_a){
+var _b={};
+if(!_a["label"]){
+_b["label"]=_a[this.labelProperty];
 }
-if(_5("dojo-bidi")&&typeof _a["dir"]=="undefined"){
-_a["dir"]=this.isLeftToRight()?"ltr":"rtl";
+if(_5("dojo-bidi")&&typeof _b["dir"]=="undefined"){
+_b["dir"]=this.isLeftToRight()?"ltr":"rtl";
 }
-for(var _b in _9){
-_a[(this.itemMap&&this.itemMap[_b])||_b]=_9[_b];
+for(var _c in _a){
+_b[(this.itemMap&&this.itemMap[_c])||_c]=_a[_c];
 }
-return new this.itemRenderer(_a);
-},_setDirAttr:function(_c){
-return _c;
-},generateList:function(_d){
+return _b;
+},_setDirAttr:function(_d){
+return _d;
+},generateList:function(_e){
 if(!this.append){
-_1.forEach(this.getChildren(),function(_e){
-_e.destroyRecursive();
+_1.forEach(this.getChildren(),function(_f){
+_f.destroyRecursive();
 });
 }
-_1.forEach(_d,function(_f,_10){
-this.addChild(this.createListItem(_f));
-if(_f[this.childrenProperty]){
-_1.forEach(_f[this.childrenProperty],function(_11,_12){
-this.addChild(this.createListItem(_11));
+_1.forEach(_e,function(_10,_11){
+this.addChild(this.createListItem(_10));
+if(_10[this.childrenProperty]){
+_1.forEach(_10[this.childrenProperty],function(_12,_13){
+this.addChild(this.createListItem(_12));
 },this);
 }
 },this);
-},onComplete:function(_13){
-this.generateList(_13);
+},onComplete:function(_14){
+this.generateList(_14);
 },onError:function(){
-},onAdd:function(_14,_15){
-this.addChild(this.createListItem(_14),_15);
-},onUpdate:function(_16,_17){
-this.getChildren()[_17].set(_16);
-},onDelete:function(_18,_19){
-this.getChildren()[_19].destroyRecursive();
+},onAdd:function(_15,_16){
+this.addChild(this.createListItem(_15),_16);
+},onUpdate:function(_17,_18){
+this.getChildren()[_18].set(this._createItemProperties(_17));
+},onDelete:function(_19,_1a){
+this.getChildren()[_1a].destroyRecursive();
 }});
 return _5("dojo-bidi")?_2("dojox.mobile._StoreListMixin",[_7,_6]):_7;
 });

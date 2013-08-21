@@ -53,7 +53,7 @@ public:
     inline size32_t length() const                      { return curLen; }
     void            setLength(unsigned len);
     inline void     ensureCapacity(unsigned max)        { if (maxLen <= curLen + max) _realloc(curLen + max); }
-    
+
     StrBuffer &  append(int value);
     StrBuffer &  append(unsigned int value);
     StrBuffer &  append(char c);
@@ -65,7 +65,7 @@ public:
     StrBuffer &  setf(const char* format, ...) __attribute__((format(printf, 2, 3)));
     StrBuffer &  set(const char* val) { return clear().append(val); }
     StrBuffer &  clear() { curLen = 0; return *this; }
-    
+
     StrBuffer & append(const char*, int offset, int len);
     StrBuffer & replace(char oldChar, char newChar);
 
@@ -73,14 +73,14 @@ public:
     operator const char* () const { return str(); }
     char charAt(size32_t pos) { return buffer[pos]; }
     void setCharAt(size32_t pos, char value) { buffer[pos] = value; }
-    char* detach() 
-    { 
+    char* detach()
+    {
         if (buffer)
         {
             buffer[curLen] = 0;
-            char* ret = buffer; 
+            char* ret = buffer;
             init();
-            return ret; 
+            return ret;
         }
         return strdup("");
     }
@@ -97,7 +97,7 @@ protected:
     void _realloc(size32_t newLen);
     StrBuffer & valist_appendf(const char *format, va_list args);
 
-private:    
+private:
     mutable char * buffer;
     size32_t       curLen;
     size32_t       maxLen;

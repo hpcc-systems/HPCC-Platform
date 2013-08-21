@@ -86,13 +86,18 @@ define([
         _ResultsSetter: function (Results) {
             var results = [];
             var sequenceResults = [];
+            var namedResults = [];
             for (var i = 0; i < Results.ECLResult.length; ++i) {
                 var espResult = ESPResult.Get(lang.mixin({ wu: this.wu, Wuid: this.Wuid }, Results.ECLResult[i]));
                 results.push(espResult);
                 sequenceResults[Results.ECLResult[i].Sequence] = espResult;
+                if (Results.ECLResult[i].Name) {
+                    namedResults[Results.ECLResult[i].Name] = espResult;
+                }
             }
             this.set("results", results);
             this.set("sequenceResults", sequenceResults);
+            this.set("namedResults", namedResults);
         },
         _SourceFilesSetter: function (SourceFiles) {
             var sourceFiles = [];

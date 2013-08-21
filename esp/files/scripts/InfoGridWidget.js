@@ -23,9 +23,6 @@ define([
     "dojo/store/Observable",
 
     "dijit/registry",
-    "dijit/layout/_LayoutWidget",
-    "dijit/_TemplatedMixin",
-    "dijit/_WidgetsInTemplateMixin",
 
     "dojox/data/AndOrReadStore",
 
@@ -35,6 +32,7 @@ define([
     "dgrid/extensions/ColumnResizer",
     "dgrid/extensions/DijitRegistry",
 
+    "hpcc/_Widget",
     "hpcc/ESPUtil",
     "hpcc/ESPWorkunit",
 
@@ -45,12 +43,12 @@ define([
     "dijit/form/CheckBox"
 ],
     function (declare, lang, arrayUtil, domClass, Memory, Observable,
-            registry, _LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin, 
+            registry, 
             AndOrReadStore,
             OnDemandGrid, Keyboard, Selection, ColumnResizer, DijitRegistry,
-            ESPUtil, ESPWorkunit,
+            _Widget, ESPUtil, ESPWorkunit,
             template) {
-        return declare("InfoGridWidget", [_LayoutWidget, _TemplatedMixin, _WidgetsInTemplateMixin], {
+        return declare("InfoGridWidget", [_Widget], {
             templateString: template,
             baseClass: "InfoGridWidget",
             borderContainer: null,
@@ -161,9 +159,8 @@ define([
             },
 
             init: function (params) {
-                if (this.initalized)
+                if (this.inherited(arguments))
                     return;
-                this.initalized = true;
 
                 if (params.onErrorClick) {
                     this.onErrorClick = params.onErrorClick;

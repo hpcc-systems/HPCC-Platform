@@ -17,9 +17,10 @@ define([
     "dojo/_base/declare",
     "dojo/_base/array",
     "dojo/Stateful",
+    "dojo/json",
 
     "dijit/registry"
-], function (declare, arrayUtil, Stateful,
+], function (declare, arrayUtil, Stateful, json,
     registry) {
 
     var SingletonData = declare([Stateful], {
@@ -53,9 +54,9 @@ define([
         updateData: function (response) {
             var changed = false;
             for (var key in response) {
-                var json = dojo.toJson(response[key]);
-                if (this._changedCache[key] !== json) {
-                    this._changedCache[key] = json;
+                var jsonStr = json.stringify(response[key]);
+                if (this._changedCache[key] !== jsonStr) {
+                    this._changedCache[key] = jsonStr;
                     this.set(key, response[key]);
                     changed = true;
                 }

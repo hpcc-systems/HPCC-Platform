@@ -49,6 +49,11 @@ require([
             //  Known control properties  ---
             DOT_META_ATTR: "DOT_META_ATTR",
 
+            _onClickRefresh: function () {
+                this.setMessage("Performing Layout...");
+                this.startLayout("dot");
+            },
+
             _onClickZoomOrig: function (args) {
                 this.setScale(100);
                 this.centerOnItem(0);
@@ -295,8 +300,7 @@ require([
                     if (this._isPluginInstalled) {
                         var pluginID = this.id + "Plugin";
                         if (has("ie")) {
-                            this.graphContentPane.domNode.innerHTML = '<object '
-                                                    + 'type="application/x-hpccsystemsgraphviewcontrol" '
+                            this.graphContentPane.domNode.innerHTML = '<object type="application/x-hpccsystemsgraphviewcontrol" '
                                                     + 'id="' + pluginID + '" '
                                                     + 'name="' + pluginID + '" '
                                                     + 'width="100%" '

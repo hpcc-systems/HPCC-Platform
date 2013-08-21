@@ -9,24 +9,32 @@ define("dojo/node",["./has"],function(_1){
 if(!0){
 throw new Error("node plugin failed to load because environment is not Node.js");
 }
-return {load:function(id,_2,_3){
-if(!_2.nodeRequire){
+var _2;
+if(require.nodeRequire){
+_2=require.nodeRequire("path");
+}else{
+throw new Error("node plugin failed to load because it cannot find the original Node.js require");
+}
+return {load:function(id,_3,_4){
+if(!_3.nodeRequire){
 throw new Error("Cannot find native require function");
 }
-_3((function(id,_4){
-var _5=define,_6;
+_4((function(id,_5){
+var _6=define,_7;
 define=undefined;
 try{
-_6=_4(id);
+_7=_5(id);
 }
 finally{
-define=_5;
+define=_6;
 }
-return _6;
-})(id,_2.nodeRequire));
-},normalize:function(id){
+return _7;
+})(id,_3.nodeRequire));
+},normalize:function(id,_8){
 if(id.charAt(0)==="."){
-id=require.baseUrl+id;
+var _9=require.toUrl(_8(".")).replace("/",_2.sep),_a=id.split("/");
+_a.unshift(_9);
+id=_2.join.apply(_2,_a);
 }
 return id;
 }};
