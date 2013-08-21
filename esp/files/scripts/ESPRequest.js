@@ -37,7 +37,11 @@ define([
         },
 
         getParamFromURL: function (key) {
-            var value = dojo.queryToObject(dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0)))[key];
+            var value = "";
+            if (dojo.doc.location.search) {
+                var searchStr = dojo.doc.location.search.substr((dojo.doc.location.search.substr(0, 1) == "?" ? 1 : 0));
+                value = searchStr ? dojo.queryToObject(searchStr)[key] : "";
+            }
 
             if (value)
                 return value;
