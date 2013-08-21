@@ -31,6 +31,7 @@
 #include "dasds.hpp"
 
 #include "dafdesc.hpp"
+#include "dadfs.hpp"
 
 #define INCLUDE_1_OF_1    // whether to use 1_of_1 for single part files
 
@@ -213,7 +214,7 @@ void ClusterPartDiskMapSpec::fromProp(IPropertyTree *tree)
     // if directory is specified then must match default base to be default replicated
     StringBuffer dir;
     if (tree&&tree->getProp("@directory",dir)) {
-        const char * base = queryBaseDirectory(0, SepCharBaseOs(getPathSepChar(dir.str())));
+        const char * base = queryBaseDirectory(grp_unknown, 0, SepCharBaseOs(getPathSepChar(dir.str())));
         size32_t l = strlen(base);
         if ((memcmp(base,dir.str(),l)!=0)||((l!=dir.length())&&!isPathSepChar(dir.charAt(l))))
             defrep = 0;
@@ -369,14 +370,22 @@ struct CClusterInfo: public CInterface, implements IClusterInfo
     StringAttr name; // group name
     StringAttr roxielabel; // roxie label (alternative to group name)
     ClusterPartDiskMapSpec mspec;
-    void checkClusterName(IGroupResolver *resolver)
+    void checkClusterName(INamedGroupStore *resolver)
     {
         // check name matches group
         if (resolver&&group) {
             if (!name.isEmpty()) {
-                Owned<IGroup> lgrp = resolver->lookup(name);
+                StringBuffer defaultDir;
+                GroupType groupType;
+                Owned<IGroup> lgrp = resolver->lookup(name, defaultDir, groupType);
                 if (lgrp&&lgrp->equals(group))
+                {
+                    if (mspec.defaultBaseDir.isEmpty())
+                    {
+                        mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
+                    }
                     return; // ok
+                }
                 name.clear();
             }
             StringBuffer gname;
@@ -387,7 +396,7 @@ struct CClusterInfo: public CInterface, implements IClusterInfo
 
 public:
     IMPLEMENT_IINTERFACE;
-    CClusterInfo(MemoryBuffer &mb,IGroupResolver *resolver)
+    CClusterInfo(MemoryBuffer &mb,INamedGroupStore *resolver)
     {
         StringAttr grptext;
         mb.read(grptext);
@@ -402,7 +411,7 @@ public:
         checkClusterName(resolver);
     }
 
-    CClusterInfo(const char *_name,IGroup *_group,const ClusterPartDiskMapSpec &_mspec,IGroupResolver *resolver,const char *_roxielabel)
+    CClusterInfo(const char *_name,IGroup *_group,const ClusterPartDiskMapSpec &_mspec,INamedGroupStore *resolver,const char *_roxielabel)
         : name(_name),group(_group), roxielabel(_roxielabel)
     {
         name.toLowerCase();
@@ -410,19 +419,29 @@ public:
         mspec =_mspec;
         checkClusterName(resolver);
     }
-    CClusterInfo(IPropertyTree *pt,IGroupResolver *resolver,unsigned flags)
+    CClusterInfo(IPropertyTree *pt,INamedGroupStore *resolver,unsigned flags)
     {
         if (!pt)
             return;
         name.set(pt->queryProp("@name"));
         roxielabel.set(pt->queryProp("@roxieLabel"));
+        mspec.fromProp(pt);
         if ((((flags&IFDSF_EXCLUDE_GROUPS)==0)||name.isEmpty())&&pt->hasProp("Group"))
             group.setown(createIGroup(pt->queryProp("Group")));
         if (!name.isEmpty()&&!group.get()&&resolver)
-            group.setown(resolver->lookup(name.get()));
+        {
+            StringBuffer defaultDir;
+            GroupType groupType;
+            group.setown(resolver->lookup(name.get(), defaultDir, groupType));
+            if (mspec.defaultBaseDir.isEmpty())
+            {
+                mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
+                // MORE - work out why this code pulled out of checkClusterName (to bypass the roxieLabel stuff, I assume)
+                // and work out what the roxielabel stuff is trying to do and if still needed/wanted
+            }
+        }
         else
             checkClusterName(resolver);
-        mspec.fromProp(pt);
     }
 
     const char *queryGroupName()
@@ -525,16 +544,16 @@ public:
 
     void getBaseDir(StringBuffer &basedir,DFD_OS os)
     {
-        if (mspec.defaultBaseDir.isEmpty())  // assume thor default
-            basedir.append(queryBaseDirectory(0, os));
+        if (mspec.defaultBaseDir.isEmpty())  // assume current platform's default
+            basedir.append(queryBaseDirectory(grp_unknown, 0, os));
         else
             basedir.append(mspec.defaultBaseDir);
     }
 
     void getReplicateDir(StringBuffer &basedir,DFD_OS os)
     {
-        if (mspec.defaultReplicateDir.isEmpty())  // assume thor default
-            basedir.append(queryBaseDirectory(1, os));
+        if (mspec.defaultReplicateDir.isEmpty())  // assume current platform's default
+            basedir.append(queryBaseDirectory(grp_unknown, 1, os));
         else
             basedir.append(mspec.defaultReplicateDir);
     }
@@ -563,19 +582,19 @@ public:
 IClusterInfo *createClusterInfo(const char *name,
                                 IGroup *grp,
                                 const ClusterPartDiskMapSpec &mspec,
-                                IGroupResolver *resolver,
+                                INamedGroupStore *resolver,
                                 const char *roxielabel)
 {
     return new CClusterInfo(name,grp,mspec,resolver,roxielabel);
 }
 IClusterInfo *deserializeClusterInfo(MemoryBuffer &mb,
-                                IGroupResolver *resolver)
+                                INamedGroupStore *resolver)
 {
     return new CClusterInfo(mb,resolver);
 }
 
 IClusterInfo *deserializeClusterInfo(IPropertyTree *pt,
-                                IGroupResolver *resolver,
+                                INamedGroupStore *resolver,
                                 unsigned flags)
 {
     return new CClusterInfo(pt,resolver,flags);
@@ -875,7 +894,7 @@ public:
     CPartDescriptorArray array;
 };
 
-void getClusterInfo(IPropertyTree &pt, IGroupResolver *resolver, unsigned flags, IArrayOf<IClusterInfo> &clusters)
+void getClusterInfo(IPropertyTree &pt, INamedGroupStore *resolver, unsigned flags, IArrayOf<IClusterInfo> &clusters)
 {
     unsigned nc = pt.getPropInt("@numclusters");
     if (!nc) { // legacy format
@@ -1348,7 +1367,7 @@ public:
 
 
 
-    CFileDescriptor(IPropertyTree *tree,IGroupResolver *resolver,unsigned flags)
+    CFileDescriptor(IPropertyTree *tree, INamedGroupStore *resolver, unsigned flags)
     {
         pending = NULL;
         if ((flags&IFDSF_ATTR_ONLY)||!tree) {
@@ -1541,7 +1560,7 @@ public:
             if (!sc)
                 sc = getPathSepChar(dirname);
             StringBuffer tmp;
-            tmp.append(queryBaseDirectory(0, SepCharBaseOs(sc))).append(sc).append(s);
+            tmp.append(queryBaseDirectory(grp_unknown, 0, SepCharBaseOs(sc))).append(sc).append(s);
             directory.set(tmp.str());
         }
         else
@@ -2208,9 +2227,9 @@ IFileDescriptor *deserializeFileDescriptor(MemoryBuffer &mb)
     return doDeserializePartFileDescriptors(mb,NULL);
 }
 
-IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tree,IGroupResolver *resolver,unsigned flags)
+IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tree, INamedGroupStore *resolver, unsigned flags)
 {
-    return new CFileDescriptor(tree,resolver,flags);
+    return new CFileDescriptor(tree, resolver, flags);
 }
 
 
@@ -2220,8 +2239,31 @@ inline bool validFNameChar(char c)
     return (c>=32 && c<127 && !strchr(invalids, c));
 }
 
-static StringAttr winbasedirs[MAX_REPLICATION_LEVELS];
-static StringAttr unixbasedirs[MAX_REPLICATION_LEVELS];
+static const char * defaultWindowsBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS] =
+    {
+            { "c:\\thordata", "d:\\thordata" },
+            { "c:\\thordata", "d:\\thordata" },
+            { "c:\\roxiedata", "d:\\roxiedata" },
+            { "c:\\hthordata", "d:\\hthordata" },
+    };
+static const char * defaultUnixBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS] =
+    {
+        { "/var/lib/HPCCSystems/hpcc-data/thor", "/var/lib/HPCCSystems/hpcc-mirror/thor" },
+        { "/var/lib/HPCCSystems/hpcc-data/thor", "/var/lib/HPCCSystems/hpcc-mirror/thor" },
+        { "/var/lib/HPCCSystems/hpcc-data/roxie", "/var/lib/HPCCSystems/hpcc-data2/roxie", "/var/lib/HPCCSystems/hpcc-data3/roxie", "/var/lib/HPCCSystems/hpcc-data4/roxie" },
+        { "/var/lib/HPCCSystems/hpcc-data/eclagent", "/var/lib/HPCCSystems/hpcc-mirror/eclagent" },
+    };
+static const char *componentNames[__grp_size] =
+    {
+        "thor", "thor", "roxie", "eclagent", "unknown"
+    };
+static const char *dirTypeNames[MAX_REPLICATION_LEVELS] =
+    {
+        "data", "data2", "data3", "data4"
+    };
+
+static StringAttr windowsBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS];
+static StringAttr unixBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS];
 
 static StringAttr defaultpartmask("$L$._$P$_of_$N$");
 
@@ -2233,39 +2275,42 @@ void loadDefaultBases()
     if (ldbDone)
         return;
     ldbDone = true;
-    // assumed default first thor
-    // first set 
-    if (winbasedirs[1].isEmpty())
-        winbasedirs[1].set("d:\\thordata");
-    if (winbasedirs[0].isEmpty())
-        winbasedirs[0].set("c:\\thordata");
+
     SessionId mysessid = myProcessSession();
-    if (mysessid && (unixbasedirs[1].isEmpty() || unixbasedirs[0].isEmpty())) {
+    if (mysessid)
+    {
         Owned<IRemoteConnection> conn = querySDS().connect("/Environment/Software/Directories", mysessid, RTM_LOCK_READ, SDS_CONNECT_TIMEOUT);
         if (conn) {
             IPropertyTree* dirs = conn->queryRoot();
-            StringBuffer dirout;
-            if (unixbasedirs[1].isEmpty())
-                if (getConfigurationDirectory(dirs,"mirror", "thor",
-                    "mythor",   // NB this is dummy value should really get 1st thor (but actually hopefully not used anyway)
-                    dirout))
-                    unixbasedirs[1].set(dirout.str());
-            if (unixbasedirs[0].isEmpty())
-                if (getConfigurationDirectory(dirs,"data", "thor",
-                    "mythor",   // NB this is dummy value should really get 1st thor (but actually hopefully not used anyway)
-                    dirout.clear()))
-                    unixbasedirs[0].set(dirout.str());
-
+            for (unsigned groupType = 0; groupType < __grp_size; groupType++)
+            {
+                const char *component = componentNames[groupType];
+                for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
+                {
+                    StringBuffer dirout;
+                    const char *dirType = dirTypeNames[replicationLevel];
+                    if (replicationLevel==1 && groupType!=grp_roxie)
+                        dirType = "mirror";
+                    if (getConfigurationDirectory(dirs, dirType, component,
+                        "dummy",   // NB this is dummy value (but actually hopefully not used anyway)
+                        dirout))
+                       unixBaseDirectories[groupType][replicationLevel].set(dirout.str());
+                }
+            }
         }
     }
-    if (unixbasedirs[0].isEmpty())
-        unixbasedirs[0].set("/var/lib/HPCCSystems/hpcc-data/thor");
-    if (unixbasedirs[1].isEmpty())
-        unixbasedirs[1].set("/var/lib/HPCCSystems/hpcc-mirror/thor");
+    for (unsigned groupType = 0; groupType < __grp_size; groupType++)
+        for (unsigned replicationLevel = 0; replicationLevel < MAX_REPLICATION_LEVELS; replicationLevel++)
+        {
+            if (unixBaseDirectories[groupType][replicationLevel].isEmpty())
+                unixBaseDirectories[groupType][replicationLevel].set(defaultUnixBaseDirectories[groupType][replicationLevel]);
+            if (windowsBaseDirectories[groupType][replicationLevel].isEmpty())
+                windowsBaseDirectories[groupType][replicationLevel].set(defaultWindowsBaseDirectories[groupType][replicationLevel]);
+        }
 }
 
 
-const char *queryBaseDirectory(unsigned replicateLevel, DFD_OS os)
+const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel, DFD_OS os)
 {
     if (os==DFD_OSdefault)
 #ifdef _WIN32
@@ -2278,9 +2323,9 @@ const char *queryBaseDirectory(unsigned replicateLevel, DFD_OS os)
     switch (os)
     {
     case DFD_OSwindows:
-        return winbasedirs[replicateLevel];
+        return windowsBaseDirectories[groupType][replicateLevel];
     case DFD_OSunix:
-        return unixbasedirs[replicateLevel];
+        return unixBaseDirectories[groupType][replicateLevel];
     }
     return NULL;
 }
@@ -2297,6 +2342,7 @@ void setBaseDirectory(const char * dir, unsigned replicateLevel, DFD_OS os)
         os = DFD_OSunix;
 #endif
     assertex(replicateLevel < MAX_REPLICATION_LEVELS);
+    loadDefaultBases();
     StringBuffer out;
     if (!dir||!*dir||!isAbsolutePath(dir))
         throw MakeStringException(-1,"setBaseDirectory(%s) requires an absolute path",dir ? dir : "null");
@@ -2305,10 +2351,10 @@ void setBaseDirectory(const char * dir, unsigned replicateLevel, DFD_OS os)
         l--;
     switch (os) {
     case DFD_OSwindows:
-        winbasedirs[replicateLevel].set(dir,l);
+        windowsBaseDirectories[grp_unknown][replicateLevel].set(dir,l);
         break;
     case DFD_OSunix:
-        unixbasedirs[replicateLevel].set(dir,l);
+        unixBaseDirectories[grp_unknown][replicateLevel].set(dir,l);
         break;
     }
 }
@@ -2462,7 +2508,7 @@ StringBuffer &makePhysicalPartName(const char *lname, unsigned partno, unsigned 
         result.append(diroverride);
     }
     else
-        result.append(queryBaseDirectory(replicateLevel, os));
+        result.append(queryBaseDirectory(grp_unknown, replicateLevel, os));
 
     size32_t l = result.length();
     if ((l>3)&&(result.charAt(l-1)!=OsSepChar(os))) {
@@ -2540,7 +2586,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
     if (!sep)
         return false;
     DFD_OS os = SepCharBaseOs(*sep);
-    const char *d = baseDir?baseDir:queryBaseDirectory(isrep ? 0 : 1,os);
+    const char *d = baseDir?baseDir:queryBaseDirectory(grp_unknown, isrep ? 0 : 1,os);
     if (!d)
         return false;
     unsigned match = 0;
@@ -2551,7 +2597,7 @@ bool setReplicateDir(const char *dir,StringBuffer &out,bool isrep,const char *ba
             match = i;
             count++;
         }
-    const char *r = repDir?repDir:queryBaseDirectory(isrep ? 1 : 0,os);
+    const char *r = repDir?repDir:queryBaseDirectory(grp_unknown, isrep ? 1 : 0,os);
     if (d[i]==0) {
         if ((dir[i]==0)||isPathSepChar(dir[i])) {
             out.append(r).append(dir+i);
