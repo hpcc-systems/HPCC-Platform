@@ -25,6 +25,7 @@ var _b=_4("[widgetId]",this.dropDownContainer)[0];
 this.popup=_5.byNode(_b);
 }
 this.ownerDocumentBody.appendChild(this.popup.domNode);
+this.popup.domNode.setAttribute("aria-labelledby",this.containerNode.id);
 this.popup.startup();
 this.popup.domNode.style.display="none";
 if(this.arrowWrapper){
