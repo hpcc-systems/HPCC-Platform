@@ -18,9 +18,9 @@
 -->
 <!DOCTYPE section PUBLIC "-//OASIS//DTD DocBook XML V4.3//EN" "http://www.oasis-open.org/docbook/xml/4.3/docbookx.dtd">
 <section>
-    <title>tools/esdl</title>
+    <title>tools/esdl-xml</title>
 
     <para>
-        The tools/esdl directory contains the sources for the tools/esdl library.
+        This tool is created in HPCCPlatform, but not distributed in any CE package.
     </para>
 </section>

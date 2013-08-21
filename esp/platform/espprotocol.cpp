@@ -107,12 +107,12 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
             }
         }
     }
-    
+
     if (!xslp)
        throw MakeStringException(0,"Error - CEspApplicationPort XSLT processor not initialized");
-    
+
     bool embedded_url=(inner&&*inner);
-    
+
     StringBuffer params;
     bool needRefresh = true;
     if (!getUrlParams(ctx->queryRequestParameters(), params))
@@ -144,7 +144,7 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
         StringBuffer encoded_inner;
         if(inner && *inner)
             encodeXML(inner, encoded_inner);
-        
+
         // replace & with &amps;
         params.replaceString("&","&amp;");
 
@@ -160,7 +160,7 @@ const StringBuffer &CEspApplicationPort::getAppFrameHtml(time_t &modified, const
     if (!needRefresh && !embedded_url)
         html.clear().append(appFrameHtml.str());
 
-    static time_t startup_time = time(NULL);    
+    static time_t startup_time = time(NULL);
     modified = startup_time;
     return html;
 }
@@ -223,7 +223,7 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
             else
             {
                 xslsource.append(getCFD()).append("./xslt/nav.xsl");
-                    
+
             }
             xform->loadXslFromFile(xslsource.str());
 
@@ -236,7 +236,7 @@ const StringBuffer &CEspApplicationPort::getNavBarContent(IEspContext &context, 
     return content;
 }
 
-const StringBuffer &CEspApplicationPort::getDynNavData(IEspContext &context, IProperties *params, StringBuffer &content, 
+const StringBuffer &CEspApplicationPort::getDynNavData(IEspContext &context, IProperties *params, StringBuffer &content,
                                                        StringBuffer &contentType, bool& bVolatile)
 {
     Owned<IPropertyTree> navtree=createPTree("EspDynNavData");
@@ -266,7 +266,7 @@ int CEspApplicationPort::onBuildSoapRequest(IEspContext &context, IHttpMessage* 
 {
     CHttpRequest *request=dynamic_cast<CHttpRequest*>(ireq);
     CHttpResponse *response=dynamic_cast<CHttpResponse*>(iresp);
-    
+
     int handled=0;
     int count = getBindingCount();
     for (int idx = 0; !handled && idx<count; idx++)
@@ -475,7 +475,7 @@ IPropertyTree *CEspBinding::addNavException(IPropertyTree &folder, const char *m
 {
     IPropertyTree *ret = folder.addPropTree("Exception", createPTree());
     ret->addProp("@message", message ? message : "Unknown exception");
-    ret->setPropInt("@code", code); 
+    ret->setPropInt("@code", code);
     ret->setProp("@source", source);
     return ret;
 }
@@ -490,18 +490,24 @@ void CEspBinding::getNavigationData(IEspContext &context, IPropertyTree & data)
         if (!getUrlParams(context.queryRequestParameters(), params))
         {
             if (context.getClientVersion()>0)
-                params.appendf("&ver_=%g", context.getClientVersion());
+                params.appendf("%cver_=%g", params.length()?'&':'?', context.getClientVersion());
         }
-        if (params.length())
-            params.setCharAt(0,'&');
-        
+
         IPropertyTree *folder=createPTree("Folder");
         folder->addProp("@name", serviceName.str());
         folder->addProp("@info", serviceName.str());
-        folder->addProp("@urlParams", params.str());
+
+        StringBuffer encodedparams;
+        if (params.length())
+            encodeUtf8XML(params.str(), encodedparams, 0);
+
+        folder->addProp("@urlParams", encodedparams);
         if (showSchemaLinks())
             folder->addProp("@showSchemaLinks", "true");
-        
+
+        if (params.length())
+            params.setCharAt(0,'&'); //the entire params string will follow the initial param: "?form"
+
         MethodInfoArray methods;
         wsdl->getQualifiedNames(context, methods);
         ForEachItemIn(idx, methods)
@@ -638,7 +644,7 @@ unsigned CEspApplicationPort::updatePassword(IEspContext &context, IHttpMessage*
 }
 #endif
 
-CEspProtocol::CEspProtocol() 
+CEspProtocol::CEspProtocol()
 {
    m_viewConfig=false;
    m_MaxRequestEntityLength = DEFAULT_MAX_REQUEST_ENTITY_LENGTH;
