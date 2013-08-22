@@ -502,21 +502,27 @@ static bool checkClusterCount(UnsignedArray &counts, unsigned clusterNo, unsigne
     return true;
 }
 
-static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, bool checkSelf)
+static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName)
 {
     UnsignedArray clusterCounts;
     unsigned numCopies = pdesc->numCopies();
     for (unsigned copy = 0; copy < numCopies; copy++)
     {
         unsigned clusterNo = pdesc->copyClusterNum(copy);
-        if (!checkClusterCount(clusterCounts, clusterNo, 2))
-            continue;
-        if (checkSelf && isCopyFromCluster(pdesc, clusterNo, roxieName.str())) //don't add ourself
-            continue;
         RemoteFilename r;
         pdesc->getFilename(copy,r);
         StringBuffer path;
-        locations.append(r.getRemotePath(path).str());
+        r.getRemotePath(path);
+        if (localFileName && r.isLocal())
+        {
+            StringBuffer l;
+            r.getLocalPath(l);
+            if (streq(l, localFileName))
+                continue; // don't add ourself
+        }
+        if (!checkClusterCount(clusterCounts, clusterNo, 2))  // Don't add more than 2 from one cluster
+            continue;
+        locations.append(path.str());
     }
 }
 
@@ -589,7 +595,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
-            appendRemoteLocations(pdesc, localLocations, true);
+            appendRemoteLocations(pdesc, localLocations, localLocation);
             ForEachItemIn(roxie_idx, localLocations)
             {
                 try
@@ -1295,7 +1301,7 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
 {
     StringArray remoteLocations;
     if (remotePDesc)
-        appendRemoteLocations(remotePDesc, remoteLocations, false);
+        appendRemoteLocations(remotePDesc, remoteLocations, NULL);
 
     return queryFileCache().lookupFile(id, fileType, pdesc, numParts, replicationLevel[channel], remoteLocations, startCopy);
 }
