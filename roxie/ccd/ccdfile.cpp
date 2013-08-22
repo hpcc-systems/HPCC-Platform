@@ -485,12 +485,6 @@ static IPartDescriptor *queryMatchingRemotePart(IPartDescriptor *pdesc, IFileDes
     return NULL;
 }
 
-static bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const char *process)
-{
-    StringBuffer s;
-    return strieq(process, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
-}
-
 static bool checkClusterCount(UnsignedArray &counts, unsigned clusterNo, unsigned max)
 {
     while (!counts.isItem(clusterNo))
