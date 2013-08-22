@@ -2367,6 +2367,7 @@ private:
     Owned<ILocalOrDistributedFile> dFile;
     Owned<IFile> localFile;
     Owned<IGroup> localCluster;
+    StringAttr localClusterName;
     IArrayOf<IGroup> remoteNodes;
     StringArray allClusters;
 
@@ -2428,7 +2429,7 @@ private:
             if (localCluster)
             {
                 desc->addCluster(localCluster, partmap);
-                desc->setClusterRoxieLabel(0, roxieName); // MORE not sure what this is for!!
+                desc->setClusterGroupName(0, localClusterName.get());
             }
             ForEachItemIn(idx, remoteNodes)
                 desc->addCluster(&remoteNodes.item(idx), partmap);
@@ -2455,6 +2456,7 @@ private:
                 throw MakeStringException(0, "Cluster %s occupies node already specified while writing file %s",
                         cluster, dFile->queryLogicalName());
             localCluster.setown(group.getClear());
+            localClusterName.set(cluster);
         }
         else
         {

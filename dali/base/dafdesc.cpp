@@ -368,7 +368,6 @@ struct CClusterInfo: public CInterface, implements IClusterInfo
 {
     Linked<IGroup> group;
     StringAttr name; // group name
-    StringAttr roxielabel; // roxie label (alternative to group name)
     ClusterPartDiskMapSpec mspec;
     void checkClusterName(INamedGroupStore *resolver)
     {
@@ -389,7 +388,7 @@ struct CClusterInfo: public CInterface, implements IClusterInfo
                 name.clear();
             }
             StringBuffer gname;
-            if (roxielabel.isEmpty()&&(resolver->find(group,gname,true)||(group->ordinality()>1)))
+            if (resolver->find(group,gname,true)||(group->ordinality()>1))
                 name.set(gname);
         }
     }
@@ -404,18 +403,13 @@ public:
             group.setown(createIGroup(grptext));
         mspec.deserialize(mb);
         mb.read(name);
-        if ((name.length()==1)&&(*name.get()=='!')) { // flag for roxie label
-            mb.read(roxielabel);
-            name.clear();
-        }
         checkClusterName(resolver);
     }
 
-    CClusterInfo(const char *_name,IGroup *_group,const ClusterPartDiskMapSpec &_mspec,INamedGroupStore *resolver,const char *_roxielabel)
-        : name(_name),group(_group), roxielabel(_roxielabel)
+    CClusterInfo(const char *_name,IGroup *_group,const ClusterPartDiskMapSpec &_mspec,INamedGroupStore *resolver)
+        : name(_name),group(_group)
     {
         name.toLowerCase();
-        roxielabel.toLowerCase();
         mspec =_mspec;
         checkClusterName(resolver);
     }
@@ -424,7 +418,6 @@ public:
         if (!pt)
             return;
         name.set(pt->queryProp("@name"));
-        roxielabel.set(pt->queryProp("@roxieLabel"));
         mspec.fromProp(pt);
         if ((((flags&IFDSF_EXCLUDE_GROUPS)==0)||name.isEmpty())&&pt->hasProp("Group"))
             group.setown(createIGroup(pt->queryProp("Group")));
@@ -436,8 +429,7 @@ public:
             if (mspec.defaultBaseDir.isEmpty())
             {
                 mspec.setDefaultBaseDir(defaultDir);   // MORE - should possibly set up the rest of the mspec info from the group info here
-                // MORE - work out why this code pulled out of checkClusterName (to bypass the roxieLabel stuff, I assume)
-                // and work out what the roxielabel stuff is trying to do and if still needed/wanted
+                // MORE - work out why this code pulled out of checkClusterName
             }
         }
         else
@@ -459,13 +451,12 @@ public:
     StringBuffer &getGroupName(StringBuffer &ret,IGroupResolver *resolver)
     {
         if (name.isEmpty()) {
-            if (group) {
+            if (group)
+            {
                if (resolver)
                     resolver->find(group,ret,true); // this will set single node as well
-               else if (group->ordinality()==1) {
-                   if (roxielabel.isEmpty())
-                       group->getText(ret);
-               }
+               else if (group->ordinality()==1)
+                    group->getText(ret);
             }
         }
         else
@@ -480,12 +471,7 @@ public:
             group->getText(grptext);
         mb.append(grptext);
         mspec.serialize(mb);
-        if (roxielabel.isEmpty())
-            mb.append(name);
-        else {
-            StringAttr tmp("!");
-            mb.append(tmp).append(roxielabel);
-        }
+        mb.append(name);
     }
     INode *queryNode(unsigned idx,unsigned maxparts,unsigned copy)
     {
@@ -517,8 +503,6 @@ public:
         }
         if (!name.isEmpty()&&((flags&IFDSF_EXCLUDE_CLUSTERNAMES)==0))
             pt->setProp("@name",name);
-        if (!roxielabel.isEmpty())
-            pt->setProp("@roxieLabel",roxielabel);
     }
 
     ClusterPartDiskMapSpec  &queryPartDiskMapping()
@@ -558,23 +542,9 @@ public:
             basedir.append(mspec.defaultReplicateDir);
     }
 
-    void setRoxieLabel(const char *_label)
-    {
-        roxielabel.set(_label);
-        roxielabel.toLowerCase();
-    }
-
-    const char *queryRoxieLabel()
-    {
-        return roxielabel.isEmpty()?NULL:roxielabel.get();
-    }
-
     StringBuffer &getClusterLabel(StringBuffer &ret)
     {
-        const char * label = queryRoxieLabel();
-        if (label)
-            return ret.append(label);
-        return getGroupName(ret,NULL);
+        return getGroupName(ret, NULL);
     }
 
 };
@@ -582,10 +552,9 @@ public:
 IClusterInfo *createClusterInfo(const char *name,
                                 IGroup *grp,
                                 const ClusterPartDiskMapSpec &mspec,
-                                INamedGroupStore *resolver,
-                                const char *roxielabel)
+                                INamedGroupStore *resolver)
 {
-    return new CClusterInfo(name,grp,mspec,resolver,roxielabel);
+    return new CClusterInfo(name,grp,mspec,resolver);
 }
 IClusterInfo *deserializeClusterInfo(MemoryBuffer &mb,
                                 INamedGroupStore *resolver)
@@ -1892,12 +1861,6 @@ public:
         clusters.item(clusternum).setGroupName(name);
     }
 
-    const char *queryClusterRoxieLabel(unsigned clusternum)
-    {
-        return clusters.item(clusternum).queryRoxieLabel();
-    }
-
-
     StringBuffer &getClusterLabel(unsigned clusternum,StringBuffer &ret)
         // either roxie label or node group name
     {
@@ -1905,14 +1868,6 @@ public:
         assertex(clusternum<numClusters());
         return clusters.item(clusternum).getClusterLabel(ret);
     }
-
-    void setClusterRoxieLabel(unsigned clusternum,const char *name)
-    {
-        closePending();
-        assertex(clusternum<numClusters());
-        clusters.item(clusternum).setRoxieLabel(name);
-    }
-
 
     void setClusterOrder(StringArray &names,bool exclusive)
     {

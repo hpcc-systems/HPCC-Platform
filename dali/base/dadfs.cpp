@@ -3056,8 +3056,7 @@ public:
                                     fdesc->getClusterGroupName(i,cname,NULL).str(),
                                     fdesc->queryClusterGroup(i),
                                     fdesc->queryPartDiskMapping(i),
-                                    &queryNamedGroupStore(),
-                                    fdesc->queryClusterRoxieLabel(i)
+                                    &queryNamedGroupStore()
                                     );
 #ifdef EXTRA_LOGGING
                 PROGLOG("setClusters(%d,%s)",i,cname.str());

@@ -234,10 +234,7 @@ if endCluster is not called it will assume only one cluster and not replicated
 
     virtual ISuperFileDescriptor *querySuperFileDescriptor() = 0;   // returns NULL if not superfile descriptor (or if superfile contained <=1 subfiles)
 
-    virtual void setClusterRoxieLabel(unsigned clusternum,const char *name) = 0;
-    virtual const char *queryClusterRoxieLabel(unsigned clusternum) = 0;            // NULL if not set
-
-    virtual StringBuffer &getClusterLabel(unsigned clusternum,StringBuffer &ret) = 0; // roxie label or node group name
+    virtual StringBuffer &getClusterLabel(unsigned clusternum,StringBuffer &ret) = 0; // node group name
 
     virtual void ensureReplicate() = 0;                                             // make sure a file can be replicated
 };
@@ -269,17 +266,14 @@ interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDist
     virtual void setGroupName(const char *name)=0;
     virtual void getBaseDir(StringBuffer &basedir, DFD_OS os)=0;
     virtual void getReplicateDir(StringBuffer &basedir, DFD_OS os)=0;
-    virtual void setRoxieLabel(const char *label)=0;
-    virtual const char *queryRoxieLabel()=0;     // for roxie (NULL otherwise)
-    virtual StringBuffer &getClusterLabel(StringBuffer &name)=0; // either roxie label or node group name
+    virtual StringBuffer &getClusterLabel(StringBuffer &name)=0; // node group name
 
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set
                                 IGroup *grp,
                                 const ClusterPartDiskMapSpec &mspec,
-                                INamedGroupStore *resolver=NULL,
-                                const char *roxielabel = NULL        // set for roxie 
+                                INamedGroupStore *resolver=NULL
                                 );
 IClusterInfo *createRoxieClusterInfo(const char *label,
                                 const ClusterPartDiskMapSpec &mspec
