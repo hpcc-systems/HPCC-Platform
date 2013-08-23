@@ -31,9 +31,8 @@
         <row>
           <entry><emphasis>xmlstring</emphasis></entry>
 
-          <entry>A string expression either naming an .XML file to open, or
-          containing the XML text to process inline (no carriage returns or
-          line feeds).</entry>
+          <entry>A string expression containing the XML text to process inline
+          (no carriage returns or line feeds).</entry>
         </row>
 
         <row>
@@ -64,9 +63,7 @@
 
   <para>Example:</para>
 
-  <programlisting>LOADXML('MyFile.XML')  //process the XML in MyFile.XML
-LOADXML('&lt;section&gt;&lt;item type="count"&gt;&lt;set&gt;person&lt;/set&gt;&lt;/item&gt;&lt;/section&gt;')
-     //in-line XML
+  <programlisting>LOADXML('&lt;section&gt;&lt;item type="count"&gt;&lt;set&gt;person&lt;/set&gt;&lt;/item&gt;&lt;/section&gt;')
 //this macro receives in-line XML as its parameter
 //and demonstrates the code for multiple row drilldown
 EXPORT id(xmlRow) :=   MACRO
@@ -144,5 +141,7 @@ OUTPUT(%'{@type}'%
 OUTPUT('Done');
 </programlisting>
 
-  <para>See Also: <link linkend="Templates">Templates</link>, <link linkend="_EXPORT">#EXPORT</link>, <link linkend="_EXPORTXML">#EXPORTXML</link></para>
+  <para>See Also: <link linkend="Templates">Templates</link>, <link
+  linkend="_EXPORT">#EXPORT</link>, <link
+  linkend="_EXPORTXML">#EXPORTXML</link></para>
 </sect1>
