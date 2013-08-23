@@ -843,12 +843,15 @@ typedef enum _JSONFieldCategory
 
 JSONField_Category xsdTypeToJSONFieldCategory(const char *xsdtype)
 {
-    if (!strnicmp(xsdtype, "real", 4) || !strnicmp(xsdtype, "dec", 3) || !strnicmp(xsdtype, "double", 6) || !strnicmp(xsdtype, "float", 5))
-        return JSONField_Real;
-    if (!strnicmp(xsdtype, "int", 3))
+    //map XML Schema types used in ECL generated schemas to basic JSON formatting types
+    if (streq(xsdtype, "integer") || streq(xsdtype, "nonNegativeInteger"))
         return JSONField_Integer;
-    if (!strnicmp(xsdtype, "bool", 4))
+    if (streq(xsdtype, "boolean"))
         return JSONField_Boolean;
+    if (streq(xsdtype, "double"))
+        return JSONField_Real;
+    if (!strncmp(xsdtype, "decimal", 7)) //ecl creates derived types of the form decimal#_#
+        return JSONField_Real;
     return JSONField_String;
 }
 
