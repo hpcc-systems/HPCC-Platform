@@ -9,7 +9,8 @@
     </indexterm><indexterm>
       <primary>Str.SplitWords</primary>
     </indexterm>(</emphasis> <emphasis>source, separator </emphasis><emphasis
-  role="bold">)</emphasis></para>
+  role="bold">[ </emphasis><emphasis>, allowblank</emphasis><emphasis
+  role="bold"> ] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -28,6 +29,13 @@
           <entry><emphasis>separator</emphasis></entry>
 
           <entry>A string containing the word delimiter to use.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>allowblank</emphasis></entry>
+
+          <entry>Optional. If TRUE, specifies allowing blank items in the result. 
+          If omitted, the default is FALSE.</entry>
         </row>
 
         <row>
