@@ -28,6 +28,7 @@ ESPrequest AddPackageRequest
     string PackageMap;
     string Process;
     string DaliIp;
+    bool GlobalScope(0);
 };
 
 
@@ -42,6 +43,7 @@ ESPrequest DeletePackageRequest
     string Target;
     string PackageMap;
     string Process;
+    bool GlobalScope(0);
 };
 
 ESPresponse [exceptions_inline] DeletePackageResponse
@@ -54,6 +56,7 @@ ESPrequest ActivatePackageRequest
     string Target;
     string PackageMap;
     string Process;
+    bool GlobalScope(0);
 };
 
 ESPresponse [exceptions_inline] ActivatePackageResponse
@@ -66,6 +69,7 @@ ESPrequest DeActivatePackageRequest
     string Target;
     string PackageMap;
     string Process;
+    bool GlobalScope(0);
 };
 
 ESPresponse [exceptions_inline] DeActivatePackageResponse
@@ -119,6 +123,7 @@ ESPrequest ValidatePackageRequest
     string PMID;
     string QueryIdToVerify;
     bool CheckDFS;
+    bool GlobalScope(0);
 };
 
 ESPstruct ValidatePackageInfo
@@ -153,6 +158,7 @@ ESPrequest GetQueryFileMappingRequest
     string Target;
     string PMID;
     string QueryName;
+    bool GlobalScope(0);
 };
 
 ESPstruct SuperFile
