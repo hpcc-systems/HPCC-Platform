@@ -8790,7 +8790,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
         }
         else
         {
-            reportError(ERR_RESULT_IGNORED, errpos, "WHEN must be used to associated an action with a definition");
+            reportError(ERR_RESULT_IGNORED, errpos, "WHEN must be used to associate an action with a definition");
         }
         clearSideEffects();
     }
