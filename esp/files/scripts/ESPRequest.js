@@ -236,7 +236,7 @@ define([
                 delete target[arrayName];
                 var singularName = arrayName.substr(0, arrayName.length - 1);
                 var i = 0;
-                for (key in appData) {
+                for (var key in appData) {
                     target[arrayName + "." + singularName + "." + i + '.Application'] = "ESPRequest.js";
                     target[arrayName + "." + singularName + "." + i + '.Name'] = key;
                     target[arrayName + "." + singularName + "." + i + '.Value'] = appData[key];

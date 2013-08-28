@@ -366,7 +366,7 @@ define([
                 getSelected: function () {
                     var retVal = [];
                     var store = FileSpray.CreateFileListStore();
-                    for (key in this.selection) {
+                    for (var key in this.selection) {
                         retVal.push(store.get(key));
                     }
                     return retVal;
