@@ -732,6 +732,10 @@ IHqlExpression * NewProjectMapper2::doCollapseFields(IHqlExpression * expr, IHql
     unsigned match = sources.find(*expr);
     if (match != NotFound)
     {
+        //Don't collapse expressions that don't depend on the input dataset, since they may be used in contexts where
+        //they aren't dependent on the input dataset (e.g., priorities on stepped criteria).
+        if (!expr->usesSelector(oldParent))
+            return LINK(expr);
         IHqlExpression & collapsed = targets.item(match);
         return replaceSelector(&collapsed, self, newDataset);
     }
