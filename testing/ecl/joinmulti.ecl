@@ -30,7 +30,7 @@ unsigned delay(unsigned d, unsigned us) := BEGINC++ if (us) usleep(us); return d
 // RIGHT.keyn>=delay(RIGHT.keyn) is fake test on field to add some work to match()
 baseJoin := JOIN(bigstream, bigstream, LEFT.key=RIGHT.key AND RIGHT.keyn>=delay(RIGHT.keyn, fakeWorkUs));
 parallelJoin := JOIN(bigstream, bigstream, LEFT.key=RIGHT.key AND RIGHT.keyn>=delay(RIGHT.keyn, fakeWorkUs), HINT(parallel_match));
-parallelUnorderedJoin := JOIN(bigstream, bigstream, LEFT.key=RIGHT.key AND RIGHT.keyn>=delay(RIGHT.keyn, fakeWorkUs), HINT(parallel_match), HINT(unsorted_output));
+parallelUnorderedJoin := JOIN(bigstream, bigstream, LEFT.key=RIGHT.key AND RIGHT.keyn>=delay(RIGHT.keyn, fakeWorkUs), UNORDERED);
 
 
 countGroups(dataset(rec) ds) := FUNCTION
