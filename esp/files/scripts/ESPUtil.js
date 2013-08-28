@@ -137,7 +137,7 @@ define([
         }),
 
         GridHelper: declare(null, {
-            workunitsGridObserver: [],
+            pagedGridObserver: [],
 
             onSelectionChanged: function (callback) {
                 this.on("dgrid-select", function (event) {
@@ -152,10 +152,10 @@ define([
                 var context = this;
                 this.on("dgrid-page-complete", function (event) {
                     callback();
-                    if (context.workunitsGridObserver[event.page]) {
-                        context.workunitsGridObserver[event.page].cancel();
+                    if (context.pagedGridObserver[event.page]) {
+                        context.pagedGridObserver[event.page].cancel();
                     }
-                    context.workunitsGridObserver[event.page] = event.results.observe(function (object, removedFrom, insertedInto) {
+                    context.pagedGridObserver[event.page] = event.results.observe(function (object, removedFrom, insertedInto) {
                         callback(object, removedFrom, insertedInto);
                     }, true);
                 });
