@@ -101,6 +101,8 @@ public:
     void removeRows(IHqlExpression * expr, IHqlExpression * left, IHqlExpression * right);
     void set(CUsedTables & tables) { tables.set(inScopeTables, newScopeTables); }
 
+    inline bool isIndependentOfScope() const { return inScopeTables.ordinality() == 0; }
+
 protected:
     HqlExprCopyArray inScopeTables;     // may need to rename, since use has changed.
     HqlExprCopyArray newScopeTables;
@@ -285,6 +287,7 @@ public:
     inline CHqlExpressionWithTables(node_operator op) : CHqlExpression(op) {}
 
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -293,9 +296,11 @@ protected:
     void cacheChildrenTablesUsed(CUsedTablesBuilder & used, unsigned from, unsigned to);
     void cacheInheritChildTablesUsed(IHqlExpression * ds, CUsedTablesBuilder & used, const HqlExprCopyArray & childInScopeTables);
     void cachePotentialTablesUsed(CUsedTablesBuilder & used);
-    void cacheTablesProcessChildScope(CUsedTablesBuilder & used);
+    void cacheTablesProcessChildScope(CUsedTablesBuilder & used, bool ignoreInputs);
     void cacheTablesUsed();
     void cacheTableUseage(CUsedTablesBuilder & used, IHqlExpression * expr);
+
+    void calcTablesUsed(CUsedTablesBuilder & used, bool ignoreInputs);
 
 protected:
     CUsedTables usedTables;
@@ -355,6 +360,7 @@ public:
     virtual ITypeInfo *getType();
 
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -493,6 +499,7 @@ public:
     virtual IHqlExpression *queryChild(unsigned idx) const;
     virtual unsigned numChildren() const;
     virtual bool isIndependentOfScope();
+    virtual bool isIndependentOfScopeIgnoringInputs();
     virtual bool usesSelector(IHqlExpression * selector);
     virtual void gatherTablesUsed(CUsedTablesBuilder & used);
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope);
@@ -1278,6 +1285,7 @@ public:
     virtual ITypeInfo *getType();
 
     virtual bool isIndependentOfScope() { return true; }
+    virtual bool isIndependentOfScopeIgnoringInputs() { return true; }
     virtual bool usesSelector(IHqlExpression * selector) { return false; }
     virtual void gatherTablesUsed(CUsedTablesBuilder & used) {}
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) {}

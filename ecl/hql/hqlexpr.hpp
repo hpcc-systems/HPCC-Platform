@@ -126,7 +126,7 @@ enum
     HEFfunctionOfGroupAggregate = 0x00000200,
     HEFvolatile                 = 0x00000400,           // value changes each time called - e.g., random()
     HEFaction                   = 0x00000800,           // an action, or something that can have a side-effect
-  HEF____unused4____          = 0x00000100,
+    HEFaccessRuntimeContext     = 0x00000100,
     HEFthrowscalar              = 0x00002000,           // scalar/action that can throw an exception
     HEFthrowds                  = 0x00004000,           // dataset that can throw an exception
     HEFoldthrows                = 0x00008000,           // old throws flag, which I should remove asap
@@ -166,7 +166,7 @@ enum
                                    HEFonFailDependent|HEFcontainsActiveDataset|HEFcontainsActiveNonSelector|HEFcontainsDataset|
                                    HEFtranslated|HEFgraphDependent|HEFcontainsNlpText|HEFcontainsXmlText|HEFtransformDependent|
                                    HEFcontainsSkip|HEFcontainsCounter|HEFassertkeyed|HEFcontextDependentException|HEFcontainsAlias|HEFcontainsAliasLocally|
-                                   HEFinternalSelect|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally),
+                                   HEFinternalSelect|HEFcontainsThisNode|HEFcontainsDatasetAliasLocally|HEFaccessRuntimeContext),
 
     HEFcontextDependentNoThrow  = (HEFcontextDependent & ~(HEFthrowscalar|HEFthrowds|HEFoldthrows)),
     HEFcontextDependentDataset  = (HEFcontextDependent & ~(HEFthrowscalar)),
@@ -1119,6 +1119,7 @@ interface IHqlExpression : public IInterface
     virtual unsigned numChildren() const = 0;
     virtual bool isIndependentOfScope() = 0;
     virtual bool usesSelector(IHqlExpression * selector) = 0;
+    virtual bool isIndependentOfScopeIgnoringInputs() = 0;
     virtual void gatherTablesUsed(HqlExprCopyArray * newScope, HqlExprCopyArray * inScope) = 0;
     virtual IValue *queryValue() const = 0;
     virtual IInterface *queryUnknownExtra() = 0;
@@ -1696,6 +1697,7 @@ inline bool containsTranslated(IHqlExpression * expr)   { return (expr->getInfoF
 inline bool containsSideEffects(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFaction|HEFthrowscalar|HEFthrowds)) != 0; }
 inline bool containsInternalSelect(IHqlExpression * expr)  { return (expr->getInfoFlags() & (HEFinternalSelect)) != 0; }
 inline bool containsThisNode(IHqlExpression * expr)     { return (expr->getInfoFlags() & (HEFcontainsThisNode)) != 0; }
+inline bool usesRuntimeContext(IHqlExpression * expr)   { return (expr->getInfoFlags() & (HEFaccessRuntimeContext)) != 0; }
 
 inline bool containsWorkflow(IHqlExpression * expr)     { return (expr->getInfoFlags2() & (HEF2workflow)) != 0; }
 inline bool containsMustHoist(IHqlExpression * expr)    { return (expr->getInfoFlags2() & (HEF2mustHoist)) != 0; }

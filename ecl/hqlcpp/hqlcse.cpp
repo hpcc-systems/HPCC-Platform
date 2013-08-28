@@ -116,6 +116,9 @@ bool canCreateTemporary(IHqlExpression * expr)
     case type_transform:
     case type_null:
     case type_void:
+    case type_rule:
+    case type_pattern:
+    case type_token:
         return false;
     default:
         return true;
@@ -1318,6 +1321,9 @@ bool TableInvariantTransformer::isInvariant(IHqlExpression * expr)
         break;
     default:
         if (!isContextDependent(expr))
+        //MORE: The following line is needed if the xml/parse flags are removed from the context, but it causes problems
+        //preventing counts from being hoisted as aliases.  That is really correct - but it makes code worse for some examples.
+        //if (!isContextDependent(expr) && expr->isIndependentOfScope())
         {
             if (!expr->isAction())// && !expr->isDataset() && !expr->isDatarow())
             {

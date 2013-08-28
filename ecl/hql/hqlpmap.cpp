@@ -315,28 +315,28 @@ void NewProjectMapper2::setUnknownMapping()
     mapping = queryUnknownAttribute();
 }
 
-void NewProjectMapper2::initMapping()
+bool NewProjectMapper2::ensureMapping()
 {
     if (targets.ordinality())
-        return;
+        return true;
 
     switch (mapping->getOperator())
     {
     case no_record:
         setRecord(mapping);
-        break;
+        return true;
     case no_newtransform:
         setTransform(mapping);
-        break;
+        return true;
     case no_transform:
         setTransform(mapping);
-        break;
+        return true;
     case no_alias_scope:
     case no_none:
     case no_externalcall:
     case no_outofline:
     case no_attr:
-        break;              // avoid internal error when values not provided for a record structure
+        return false;              // avoid internal error when values not provided for a record structure
     default:
         UNIMPLEMENTED_XY("mapping", getOpString(mapping->getOperator()));
         break;
@@ -351,8 +351,7 @@ void NewProjectMapper2::initSelf(IHqlExpression * dataset)
 
 bool NewProjectMapper2::isMappingKnown()
 {
-    initMapping();
-    return targets.ordinality() != 0;
+    return ensureMapping();
 }
 
 void NewProjectMapper2::setRecord(IHqlExpression * record, IHqlExpression * selector)

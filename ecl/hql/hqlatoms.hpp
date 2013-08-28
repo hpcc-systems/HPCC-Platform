@@ -234,7 +234,6 @@ extern HQL_API IAtom * lzwAtom;
 extern HQL_API IAtom * macroAtom;
 extern HQL_API IAtom * manyAtom;
 extern HQL_API IAtom * markerAtom;
-extern HQL_API IAtom * matchxxxPseudoFileAtom;
 extern HQL_API IAtom * maxAtom;
 extern HQL_API IAtom * maxCountAtom;
 extern HQL_API IAtom * maxLengthAtom;
@@ -253,6 +252,7 @@ extern HQL_API IAtom * namedAtom;
 extern HQL_API IAtom * namespaceAtom;
 extern HQL_API IAtom * newAtom;
 extern HQL_API IAtom * newSetAtom;
+extern HQL_API IAtom * _nlpParse_Atom;
 extern HQL_API IAtom * noBoundCheckAtom;
 extern HQL_API IAtom * noCaseAtom;
 extern HQL_API IAtom * _noHoist_Atom;
@@ -414,6 +414,7 @@ extern HQL_API IAtom * workunitAtom;
 extern HQL_API IAtom * wuidAtom;
 extern HQL_API IAtom * xmlAtom;
 extern HQL_API IAtom * xmlDefaultAtom;
+extern HQL_API IAtom * _xmlParse_Atom;
 extern HQL_API IAtom * xpathAtom;
 
 inline bool isInternalAttributeName(IAtom * name) { return (name->str()[0] == '$'); }

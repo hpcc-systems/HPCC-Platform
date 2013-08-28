@@ -56,7 +56,8 @@ static IHqlExpression * cacheLinkCountedAttr;
 static IHqlExpression * cacheReferenceAttr;
 static IHqlExpression * cacheStreamedAttr;
 static IHqlExpression * cacheUnadornedAttr;
-static IHqlExpression * matchxxxPseudoFile;
+static IHqlExpression * nlpParsePsuedoTable;
+static IHqlExpression * xmlParsePsuedoTable;
 static IHqlExpression * cachedQuotedNullExpr;
 static IHqlExpression * cachedGlobalSequenceNumber;
 static IHqlExpression * cachedLocalSequenceNumber;
@@ -84,7 +85,8 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     cacheReferenceAttr = createAttribute(referenceAtom);
     cacheStreamedAttr = createAttribute(streamedAtom);
     cacheUnadornedAttr = createAttribute(_propUnadorned_Atom);
-    matchxxxPseudoFile = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(matchxxxPseudoFileAtom));
+    nlpParsePsuedoTable = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(_nlpParse_Atom));
+    xmlParsePsuedoTable = createDataset(no_pseudods, createRecord()->closeExpr(), createAttribute(_xmlParse_Atom));
     cachedQuotedNullExpr = createValue(no_nullptr, makeBoolType());
     cachedOmittedValueExpr = createValue(no_omitted, makeAnyType());
 
@@ -110,7 +112,8 @@ MODULE_EXIT()
     cacheReferenceAttr->Release();
     cacheStreamedAttr->Release();
     cacheUnadornedAttr->Release();
-    matchxxxPseudoFile->Release();
+    xmlParsePsuedoTable->Release();
+    nlpParsePsuedoTable->Release();
     cachedQuotedNullExpr->Release();
     cachedGlobalSequenceNumber->Release();
     cachedLocalSequenceNumber->Release();
@@ -230,9 +233,14 @@ extern HQL_API IHqlExpression * getReferenceAttr()
     return LINK(cacheReferenceAttr);
 }
 
-extern HQL_API IHqlExpression * queryMatchxxxPseudoFile()
+extern HQL_API IHqlExpression * queryNlpParsePseudoTable()
 {
-    return matchxxxPseudoFile;
+    return nlpParsePsuedoTable;
+}
+
+extern HQL_API IHqlExpression * queryXmlParsePseudoTable()
+{
+    return xmlParsePsuedoTable;
 }
 
 IHqlExpression * getGlobalSequenceNumber()      { return LINK(cachedGlobalSequenceNumber); }

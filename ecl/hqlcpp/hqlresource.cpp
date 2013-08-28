@@ -2127,7 +2127,7 @@ protected:
     void findSplitPoints(IHqlExpression * expr)
     {
         //containsNonActiveDataset() would be nice - but that isn't percolated outside assigns etc.
-        if (containsAnyDataset(expr) || containsMustHoist(expr))
+        if (containsAnyDataset(expr) || containsMustHoist(expr) || !expr->isIndependentOfScope())
         {
             if (!gathered)
             {

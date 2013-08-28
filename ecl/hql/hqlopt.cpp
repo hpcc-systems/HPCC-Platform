@@ -1782,9 +1782,15 @@ IHqlExpression * CTreeOptimizer::moveProjectionOverSimple(IHqlExpression * trans
     {
         if (idx != 0)
         {
-            bool ok = false;
+            bool ok = true;
             IHqlExpression * cur = child->queryChild(idx);
-            IHqlExpression * collapsed = mapper->collapseFields(cur, grandchild, newProject, &ok);
+            IHqlExpression * collapsed;
+            //NB: Attributes are generally independent of the input dataset, so they shouldn't be reverse mapped,
+            //otherwise if a input-invariant expression is projected it can cause problems (jholt44.eclxml)
+            if (cur->isAttribute())
+                collapsed = LINK(cur);
+            else
+                collapsed = mapper->collapseFields(cur, grandchild, newProject, &ok);
             if (!ok)
             {
                 ::Release(collapsed);

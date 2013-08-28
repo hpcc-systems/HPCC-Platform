@@ -41,11 +41,12 @@
 
 enum { HintSpeed = 1, HintSize = 2 };
 enum GraphLocalisation {
-    GraphNoAccess = 0,
-    GraphCoLocal = 1,
-    GraphNonLocal = 2,
-    GraphCoNonLocal = 3,
-    GraphRemote = 4
+    GraphNeverAccess,  // This variant of an activity never accesses the parent
+    GraphNoAccess,  // This activity would normally access the parent, but doesn't here
+    GraphCoLocal,  // activity runs on the same node as the
+    GraphNonLocal,
+    GraphCoNonLocal,
+    GraphRemote
 };
 
 enum { 
@@ -718,6 +719,7 @@ struct HqlCppOptions
     bool                expandHashJoin;
     bool                traceIR;
     bool                preserveCaseExternalParameter;
+    bool                optimizeParentAccess;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
@@ -2003,7 +2005,7 @@ extern bool canIterateInline(BuildCtx * ctx, IHqlExpression * expr);
 extern bool canAssignInline(BuildCtx * ctx, IHqlExpression * expr);
 extern bool canEvaluateInline(BuildCtx * ctx, IHqlExpression * expr);
 extern bool canAssignNotEvaluateInline(BuildCtx * ctx, IHqlExpression * expr);
-extern bool isNonLocal(IHqlExpression * expr);
+extern bool isNonLocal(IHqlExpression * expr, bool optimizeParentAccess);
 extern bool alwaysEvaluatesToBound(IHqlExpression * expr);
 
 extern void buildClearPointer(BuildCtx & ctx, IHqlExpression * expr);
@@ -2021,7 +2023,8 @@ extern bool filterIsTableInvariant(IHqlExpression * expr);
 // e.g., if same LEFT selector is in current context and parent.
 extern bool mustEvaluateInContext(BuildCtx & ctx, IHqlExpression * expr);
 extern const char * boolToText(bool value);
-extern GraphLocalisation queryActivityLocalisation(IHqlExpression * expr);
+extern bool activityNeedsParent(IHqlExpression * expr);
+extern GraphLocalisation queryActivityLocalisation(IHqlExpression * expr, bool optimizeParentAccess);
 extern bool isGraphIndependent(IHqlExpression * expr, IHqlExpression * graph);
 extern IHqlExpression * adjustBoundIntegerValues(IHqlExpression * left, IHqlExpression * right, bool subtract);
 extern bool isNullAssign(const CHqlBoundTarget & target, IHqlExpression * expr);
