@@ -231,7 +231,6 @@ IAtom * lzwAtom;
 IAtom * macroAtom;
 IAtom * manyAtom;
 IAtom * markerAtom;
-IAtom * matchxxxPseudoFileAtom;
 IAtom * maxAtom;
 IAtom * maxCountAtom;
 IAtom * maxLengthAtom;
@@ -250,6 +249,7 @@ IAtom * namedAtom;
 IAtom * namespaceAtom;
 IAtom * newAtom;
 IAtom * newSetAtom;
+IAtom * _nlpParse_Atom;
 IAtom * noBoundCheckAtom;
 IAtom * noCaseAtom;
 IAtom * _noHoist_Atom;
@@ -410,6 +410,7 @@ IAtom * workunitAtom;
 IAtom * wuidAtom;
 IAtom * xmlAtom;
 IAtom * xmlDefaultAtom;
+IAtom * _xmlParse_Atom;
 IAtom * xpathAtom;
 
 #define MAKEID(x)   x##Id = createIdAtom(#x)
@@ -634,7 +635,6 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(macro);
     MAKEATOM(many);
     MAKEATOM(marker);
-    MAKEATOM(matchxxxPseudoFile);
     MAKEATOM(max);
     MAKEATOM(maxCount);
     MAKEATOM(maxLength);
@@ -653,6 +653,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(namespace);
     MAKEATOM(new);
     MAKEATOM(newSet);
+    MAKESYSATOM(nlpParse);
     MAKEATOM(noBoundCheck);
     MAKEATOM(noCase);
     MAKESYSATOM(noHoist);
@@ -812,6 +813,7 @@ MODULE_INIT(INIT_PRIORITY_HQLATOM)
     MAKEATOM(wuid);
     MAKEATOM(xml);
     MAKEATOM(xmlDefault);
+    MAKESYSATOM(xmlParse);
     MAKEATOM(xpath);
 
     return true;

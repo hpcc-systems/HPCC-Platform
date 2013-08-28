@@ -196,6 +196,7 @@ public:
     bool         isMember;
     bool         instanceIsLocal;
     bool         isCoLocal;
+    bool         isNoAccess;
     bool         executedRemotely;
     bool         includedInHeader;
     bool         isLocal;

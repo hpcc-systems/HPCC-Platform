@@ -1802,6 +1802,7 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
 
     includedInHeader = false;
     isCoLocal = false;
+    isNoAccess = false;
     executedRemotely = translator.targetThor();// && !translator.isNeverDistributed(dataset);
     containerActivity = NULL;
     subgraph = queryActiveSubGraph(ctx);
@@ -1815,17 +1816,28 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     parentEvalContext.set(translator.queryEvalContext(ctx));
     parentExtract.set(static_cast<ParentExtract*>(ctx.queryFirstAssociation(AssocExtract)));
 
+    bool optimizeParentAccess = translator.queryOptions().optimizeParentAccess;
     if (parentExtract)
     {
         GraphLocalisation localisation = parentExtract->queryLocalisation();
-        activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset);
+        activityLocalisation = translator.isAlwaysCoLocal() ? GraphCoLocal : queryActivityLocalisation(dataset, optimizeParentAccess);
+        if (activityLocalisation == GraphNoAccess)
+            isNoAccess = true;
+        else if (activityLocalisation == GraphNeverAccess)
+            activityLocalisation = GraphNoAccess;
 
         if (translator.targetThor() && !translator.insideChildQuery(ctx))
             executedRemotely = true;
         else
             executedRemotely = ((activityLocalisation == GraphNonLocal) || (localisation == GraphRemote));
 
-        isCoLocal = containerActivity && !executedRemotely && (localisation != GraphNonLocal) && (activityLocalisation != GraphNoAccess);    // if we supported GraphNonCoLocal the last test would not be needed
+        isCoLocal = false;
+        if (containerActivity && !executedRemotely && (localisation != GraphNonLocal))
+        {
+            // if we supported GraphNonCoLocal this test would not be needed
+            if (activityLocalisation != GraphNoAccess)
+                isCoLocal = true;
+        }
 
         //if top level activity within a query library then need to force access to the parent extract
         if (!containerActivity && translator.insideLibrary())
@@ -1844,14 +1856,14 @@ ActivityInstance::ActivityInstance(HqlCppTranslator & _translator, BuildCtx & ct
     {
         if (executedRemotely)
         {
-            GraphLocalisation localisation = queryActivityLocalisation(dataset);
-            if ((kind == TAKsimpleaction) || (localisation == GraphNoAccess))
+            GraphLocalisation localisation = queryActivityLocalisation(dataset, optimizeParentAccess);
+            if ((kind == TAKsimpleaction) || (localisation == GraphNeverAccess) || (localisation == GraphNoAccess))
                 executedRemotely = false;
         }
     }
 
     if (!parentExtract && (translator.getTargetClusterType() == RoxieCluster))
-        executedRemotely = isNonLocal(dataset);
+        executedRemotely = isNonLocal(dataset, false);
 
 
     unsigned containerId = 0;
@@ -2148,6 +2160,8 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
         addAttributeInt("_parentActivity", containerActivity->activityId);
     if (parentExtract && isCoLocal)
         addAttributeBool("coLocal", true);
+    if (isNoAccess)
+        addAttributeBool("noAccess", true);
 
     if (graphEclText.length() == 0)
         toECL(dataset->queryBody(), graphEclText, false, true);
@@ -5019,7 +5033,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
     ITypeInfo * resultType = type ? type->queryPromotedType() : value->queryType()->queryPromotedType();
     Linked<ITypeInfo> schemaType = resultType;
     type_t retType = schemaType->getTypeCode();
-    IIdAtom * func;
+    IIdAtom * func = NULL;
     CHqlBoundExpr valueToSave;
     LinkedHqlExpr castValue = value;
     switch(retType)
@@ -5125,6 +5139,7 @@ void HqlCppTranslator::buildSetResultInfo(BuildCtx & ctx, IHqlExpression * origi
         }
     }
 
+    assertex(func);
     OwnedHqlExpr nameText = createResultName(name, isPersist);
     if (retType == type_decimal)
     {
@@ -16184,6 +16199,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityXmlParse(BuildCtx & ctx, IHqlE
 
     OwnedHqlExpr helperName = createQuoted("parsed", makeBoolType());
     funcctx.associateExpr(xmlColumnProviderMarkerExpr, helperName);
+    bindTableCursor(funcctx, queryXmlParsePseudoTable(), queryXmlParsePseudoTable());
     xmlUsesContents = false;
     doTransform(funcctx, transform, selfCursor);
     buildReturnRecordSize(funcctx, selfCursor);
@@ -17834,6 +17850,9 @@ static void logECL(const LogMsgCategory & category, size32_t len, const char * e
 
 void HqlCppTranslator::traceExpression(const char * title, IHqlExpression * expr, unsigned level)
 {
+    if (!expr)
+        return;
+
     checkAbort();
 
     LOG(MCdebugInfo(200), unknownJob, "Tracing expressions: %s", title);

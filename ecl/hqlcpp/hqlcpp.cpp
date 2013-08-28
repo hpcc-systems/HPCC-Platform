@@ -1704,6 +1704,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.expandHashJoin,"expandHashJoin",false),
         DebugOption(options.traceIR,"traceIR",false),
         DebugOption(options.preserveCaseExternalParameter,"preserveCaseExternalParameter",true),
+        DebugOption(options.optimizeParentAccess,"optimizeParentAccess",false),
     };
 
     //get options values from workunit

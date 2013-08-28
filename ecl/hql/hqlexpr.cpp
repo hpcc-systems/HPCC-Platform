@@ -71,8 +71,8 @@
 //#define DEBUG_SCOPE
 //#define CHECK_RECORD_CONSISTENCY
 //#define PARANOID
-//#define SEARCH_NAME1   "vL6R"
-//#define SEARCH_NAME2   "v19"
+//#define SEARCH_NAME1   "v1"
+//#define SEARCH_NAME2   "v2"
 //#define SEARCH_IEXPR 0x0681cb0
 //#define CHECK_SELSEQ_CONSISTENCY
 //#define GATHER_COMMON_STATS
@@ -3243,6 +3243,10 @@ void CHqlExpression::initFlagsBeforeOperands()
     case no_decimalstack:
         infoFlags |= HEFaction;
         break;
+    case no_getresult:
+    case no_workunit_dataset:
+        infoFlags |= HEFaccessRuntimeContext;
+        break;
     }
 }
 
@@ -4816,8 +4820,13 @@ void CUsedTablesBuilder::cleanupProduction()
 {
     ForEachItemInRev(i, inScopeTables)
     {
-        if (inScopeTables.item(i).getOperator() == no_matchattr)
+        switch (inScopeTables.item(i).getOperator())
+        {
+        case no_matchattr:
+        case no_matchrow:
             inScopeTables.remove(i);
+            break;
+        }
     }
 }
 
@@ -4930,19 +4939,41 @@ void CHqlExpressionWithTables::cachePotentialTablesUsed(CUsedTablesBuilder & use
 }
 
 
-void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder & used)
+void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder & used, bool ignoreInputs)
 {
     unsigned max = numChildren();
     switch (getChildDatasetType(this))
     {
     case childdataset_none: 
+        cacheChildrenTablesUsed(used, 0, max);
+        break;
     case childdataset_many_noscope:
+        if (ignoreInputs)
+        {
+            unsigned first = getFirstActivityArgument(this);
+            unsigned last = first + getNumActivityArguments(this);
+            cacheChildrenTablesUsed(used, 0, first);
+            cacheChildrenTablesUsed(used, last, max);
+        }
+        else
+            cacheChildrenTablesUsed(used, 0, max);
+        break;
+    case childdataset_dataset_noscope:
+        if (ignoreInputs)
+            cacheChildrenTablesUsed(used, 1, max);
+        else
+            cacheChildrenTablesUsed(used, 0, max);
+        break;
     case childdataset_if:
+        if (ignoreInputs)
+            cacheChildrenTablesUsed(used, 0, 1);
+        else
+            cacheChildrenTablesUsed(used, 0, max);
+        break;
     case childdataset_case:
     case childdataset_map:
-    case childdataset_dataset_noscope: 
+        //Assume the worst
         cacheChildrenTablesUsed(used, 0, max);
-        //None of these have any scoped arguments, so no need to remove them
         break;
     case childdataset_many:
         {
@@ -4950,7 +4981,8 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             unsigned firstAttr = getNumChildTables(this);
             cacheChildrenTablesUsed(used, firstAttr, max);
             used.removeActive(queryActiveTableSelector());
-            cacheChildrenTablesUsed(used, 0, firstAttr);
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, firstAttr);
             break;
         }
     case childdataset_dataset:
@@ -4958,7 +4990,8 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             IHqlExpression * ds = queryChild(0);
             cacheChildrenTablesUsed(used, 1, max);
             used.removeParent(ds);
-            cacheChildrenTablesUsed(used, 0, 1);
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, 1);
         }
         break;
     case childdataset_datasetleft:
@@ -4970,7 +5003,20 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             used.removeActive(left);
             used.removeParent(ds);
             used.removeRows(this, left, NULL);
-            cacheChildrenTablesUsed(used, 0, 1);
+            switch (op)
+            {
+            case no_parse:
+            case no_newparse:
+                used.cleanupProduction();
+                used.removeActive(queryNlpParsePseudoTable());
+                break;
+            case no_xmlparse:
+            case no_newxmlparse:
+                used.removeActive(queryXmlParsePseudoTable());
+                break;
+            }
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
 #endif
@@ -4984,7 +5030,9 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             cacheChildrenTablesUsed(used, 1, max);
             used.removeActive(left);
             used.removeRows(this, left, NULL);
-            cacheChildrenTablesUsed(used, 0, 1);
+
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
 #endif
@@ -5001,7 +5049,9 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
             used.removeActive(left);
             used.removeActive(right);
             used.removeRows(this, left, right);
-            cacheChildrenTablesUsed(used, 0, 1);
+
+            if (!ignoreInputs)
+                cacheChildrenTablesUsed(used, 0, 1);
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
             used.addHiddenTable(right, selSeq);
@@ -5041,12 +5091,14 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
                 //two datasets form of normalize is weird because right dataset is based on left
                 cacheChildrenTablesUsed(used, 1, 2);
                 used.removeActive(left);
-                cacheChildrenTablesUsed(used, 0, 1);
+                if (!ignoreInputs)
+                    cacheChildrenTablesUsed(used, 0, 1);
             }
             else
             {
                 used.removeActive(left);
-                cacheChildrenTablesUsed(used, 0, 2);
+                if (!ignoreInputs)
+                    cacheChildrenTablesUsed(used, 0, 2);
             }
 #ifdef GATHER_HIDDEN_SELECTORS
             used.addHiddenTable(left, selSeq);
@@ -5063,6 +5115,177 @@ void CHqlExpressionWithTables::cacheTablesProcessChildScope(CUsedTablesBuilder &
 }
 
 
+void CHqlExpressionWithTables::calcTablesUsed(CUsedTablesBuilder & used, bool ignoreInputs)
+{
+    switch (op)
+    {
+    case no_attr:
+    case no_attr_link:
+    case no_keyed:
+    case no_colon:
+    case no_cluster:
+    case no_nameof:
+    case no_translated:
+    case no_constant:
+        break;
+    case no_select:
+        {
+            IHqlExpression * ds = queryChild(0);
+            if (isSelectRootAndActive())
+            {
+                used.addActiveTable(ds);
+            }
+            else
+            {
+                ds->gatherTablesUsed(used);
+            }
+            break;
+        }
+    case no_activerow:
+        used.addActiveTable(queryChild(0));
+        break;
+    case no_rows:
+    case no_rowset:
+        //MORE: This is a bit strange!
+        used.addActiveTable(queryChild(0));
+        break;
+    case no_left:
+    case no_right:
+        used.addActiveTable(this);
+        break;
+    case no_counter:
+        //NB: Counter is added as a pseudo table, because it is too hard to keep track of nested counters otherwise
+        used.addActiveTable(this);
+        break;
+    case no_filepos:
+    case no_file_logicalname:
+        used.addActiveTable(queryChild(0));
+        break;
+    case NO_AGGREGATE:
+    case no_createset:
+        {
+#ifdef GATHER_HIDDEN_SELECTORS
+            cachePotentialTablesUsed(used);
+            used.removeParent(queryChild(0));
+#else
+            HqlExprCopyArray childInScopeTables;
+            ForEachChild(idx, this)
+                queryChild(idx)->gatherTablesUsed(NULL, &childInScopeTables);
+
+            //The argument to the operator is a new table, don't inherit grandchildren
+            IHqlExpression * ds = queryChild(0);
+            cacheInheritChildTablesUsed(ds, used, childInScopeTables);
+#endif
+        }
+        break;
+    case no_sizeof:
+        cachePotentialTablesUsed(used);
+        used.removeActive(queryActiveTableSelector());
+        used.removeActiveRecords();
+        break;
+    case no_externalcall:
+    case no_rowvalue:
+    case no_offsetof:
+    case no_eq:
+    case no_ne:
+    case no_lt:
+    case no_le:
+    case no_gt:
+    case no_ge:
+    case no_order:
+    case no_assign:
+    case no_call:
+    case no_libraryscopeinstance:
+        //MORE: Should check this doesn't make the comparison invalid.
+        cachePotentialTablesUsed(used);
+        break;
+    case no_keyindex:
+    case no_newkeyindex:
+        cacheChildrenTablesUsed(used, 1, numChildren());
+        used.removeParent(queryChild(0));
+        //Distributed attribute might contain references to the no_activetable
+        used.removeActive(queryActiveTableSelector());
+        break;
+    case no_evaluate:
+        cacheTableUseage(used, queryChild(0));
+        queryChild(1)->gatherTablesUsed(used);
+        break;
+    case no_table:
+        {
+            cacheChildrenTablesUsed(used, 0, numChildren());
+            IHqlExpression * parent = queryChild(3);
+            if (parent)
+                used.removeParent(parent);
+            break;
+        }
+    case no_pat_production:
+        {
+            cacheChildrenTablesUsed(used, 0, numChildren());
+            used.cleanupProduction();
+            break;
+        }
+    default:
+        {
+            ITypeInfo * thisType = queryType();
+            unsigned max = numChildren();
+            if (max)
+            {
+                if (thisType)
+                {
+                    switch (thisType->getTypeCode())
+                    {
+                    case type_void:
+                    case type_dictionary:
+                    case type_table:
+                    case type_groupedtable:
+                    case type_row:
+                    case type_transform:
+                        {
+                            cacheTablesProcessChildScope(used, ignoreInputs);
+                            IHqlExpression * counter = queryAttribute(_countProject_Atom);
+                            if (counter)
+                                used.removeActive(counter->queryChild(0));
+                            break;
+                        }
+                    default:
+                        cacheChildrenTablesUsed(used, 0, max);
+                        break;
+                    }
+                }
+                else
+                    cacheChildrenTablesUsed(used, 0, max);
+            }
+            break;
+        }
+    }
+
+    switch (op)
+    {
+    case no_xmltext:
+    case no_xmlunicode:
+    case no_xmlproject:
+        used.addActiveTable(queryXmlParsePseudoTable());
+        break;
+    case no_matched:
+    case no_matchtext:
+    case no_matchunicode:
+    case no_matchlength:
+    case no_matchposition:
+    case no_matchrow:
+    case no_matchutf8:
+    case no_matchattr:
+        used.addActiveTable(queryNlpParsePseudoTable());
+        break;
+    case no_externalcall:
+        {
+            IHqlExpression * def = queryExternalDefinition()->queryChild(0);
+            if (def->hasAttribute(userMatchFunctionAtom))
+                used.addActiveTable(queryNlpParsePseudoTable());
+            break;
+        }
+    }
+}
+
 void CHqlExpressionWithTables::cacheTablesUsed()
 {
     if (!(infoFlags & HEFgatheredNew))
@@ -5072,7 +5295,8 @@ void CHqlExpressionWithTables::cacheTablesUsed()
         //So need an ensureCached() function surrounding it that is cs protected.
 
         //Special case some common operators that can avoid going through the general code
-        bool specialCased = true;
+        bool specialCased = false;
+        if (false)
         switch (op)
         {
         case no_attr:
@@ -5127,131 +5351,7 @@ void CHqlExpressionWithTables::cacheTablesUsed()
         if (!specialCased)
         {
             CUsedTablesBuilder used;
-            if (numChildren())
-            {
-                switch (op)
-                {
-                case no_select:
-                    {
-                        IHqlExpression * ds = queryChild(0);
-                        dbgassertex(!isSelectRootAndActive());
-                        ds->gatherTablesUsed(used);
-                        break;
-                    }
-                case NO_AGGREGATE:
-                case no_createset:
-                    {
-    #ifdef GATHER_HIDDEN_SELECTORS
-                        cachePotentialTablesUsed(used);
-                        used.removeParent(queryChild(0));
-    #else
-                        HqlExprCopyArray childInScopeTables;
-                        ForEachChild(idx, this)
-                            queryChild(idx)->gatherTablesUsed(NULL, &childInScopeTables);
-
-                        //The argument to the operator is a new table, don't inherit grandchildren
-                        IHqlExpression * ds = queryChild(0);
-                        cacheInheritChildTablesUsed(ds, used, childInScopeTables);
-    #endif
-                    }
-                    break;
-                case no_sizeof:
-                    cachePotentialTablesUsed(used);
-                    used.removeActive(queryActiveTableSelector());
-                    used.removeActiveRecords();
-                    break;
-                case no_externalcall:
-                case no_rowvalue:
-                case no_offsetof:
-                case no_eq:
-                case no_ne:
-                case no_lt:
-                case no_le:
-                case no_gt:
-                case no_ge:
-                case no_order:
-                case no_assign:
-                case no_call:
-                case no_libraryscopeinstance:
-                    //MORE: Should check this doesn't make the comparison invalid.
-                    cachePotentialTablesUsed(used);
-                    break;
-                case no_keyindex:
-                case no_newkeyindex:
-                    cacheChildrenTablesUsed(used, 1, numChildren());
-                    used.removeParent(queryChild(0));
-                    //Distributed attribute might contain references to the no_activetable
-                    used.removeActive(queryActiveTableSelector());
-                    break;
-                case no_evaluate:
-                    cacheTableUseage(used, queryChild(0));
-                    queryChild(1)->gatherTablesUsed(used);
-                    break;
-                case no_table:
-                    {
-                        cacheChildrenTablesUsed(used, 0, numChildren());
-                        IHqlExpression * parent = queryChild(3);
-                        if (parent)
-                            used.removeParent(parent);
-                        break;
-                    }
-                case no_pat_production:
-                    {
-                        cacheChildrenTablesUsed(used, 0, numChildren());
-                        used.cleanupProduction();
-                        break;
-                    }
-                case no_parse:
-                case no_newparse:
-                    {
-                        cacheTablesProcessChildScope(used);
-                        used.cleanupProduction();
-                        //Not strictly true - need to inherit from arg(0) if present.
-                        used.removeActive(queryMatchxxxPseudoFile());
-                        break;
-                    }
-                default:
-                    {
-                        ITypeInfo * thisType = queryType();
-                        if (thisType)
-                        {
-                            switch (thisType->getTypeCode())
-                            {
-                            case type_void:
-                            case type_dictionary:
-                            case type_table:
-                            case type_groupedtable:
-                            case type_row:
-                            case type_transform:
-                                {
-                                    cacheTablesProcessChildScope(used);
-                                    IHqlExpression * counter = queryAttribute(_countProject_Atom);
-                                    if (counter)
-                                        used.removeActive(counter->queryChild(0));
-                                    break;
-                                }
-                            default:
-                                cacheChildrenTablesUsed(used, 0, numChildren());
-                            }
-                        }
-                        else
-                            cacheChildrenTablesUsed(used, 0, numChildren());
-                        break;
-                    }
-                }
-            }
-            switch (op)
-            {
-            case no_matched:
-            case no_matchtext:
-            case no_matchunicode:
-            case no_matchlength:
-            case no_matchposition:
-            case no_matchrow:
-            case no_matchutf8:
-                used.addActiveTable(queryMatchxxxPseudoFile());
-                break;
-            }
+            calcTablesUsed(used, false);
             used.set(usedTables);
         }
         infoFlags |= HEFgatheredNew;
@@ -5262,6 +5362,14 @@ bool CHqlExpressionWithTables::isIndependentOfScope()
 {
     cacheTablesUsed();
     return usedTables.isIndependentOfScope();
+}
+
+bool CHqlExpressionWithTables::isIndependentOfScopeIgnoringInputs()
+{
+    CUsedTablesBuilder used;
+    //MORE: We could try using a flag set by cacheTablesUsed() instead
+    calcTablesUsed(used, true);
+    return used.isIndependentOfScope();
 }
 
 bool CHqlExpressionWithTables::usesSelector(IHqlExpression * selector)
@@ -5380,6 +5488,20 @@ bool CHqlSelectBaseExpression::isIndependentOfScope()
         return ds->isIndependentOfScope();
     }
 }
+
+bool CHqlSelectBaseExpression::isIndependentOfScopeIgnoringInputs()
+{
+    if (isSelectRootAndActive())
+    {
+        return false;
+    }
+    else
+    {
+        IHqlExpression * ds = queryChild(0);
+        return ds->isIndependentOfScopeIgnoringInputs();
+    }
+}
+
 
 bool CHqlSelectBaseExpression::usesSelector(IHqlExpression * selector)
 {
@@ -6418,6 +6540,11 @@ IHqlExpression * CHqlAnnotation::cloneAllAnnotations(IHqlExpression * newbody)
 bool CHqlAnnotation::isIndependentOfScope()
 {
     return body->isIndependentOfScope();
+}
+
+bool CHqlAnnotation::isIndependentOfScopeIgnoringInputs()
+{
+    return body->isIndependentOfScopeIgnoringInputs();
 }
 
 bool CHqlAnnotation::usesSelector(IHqlExpression * selector)
@@ -9676,6 +9803,9 @@ CHqlExternalCall::CHqlExternalCall(IHqlExpression * _funcdef, ITypeInfo * _type,
 
     if (def->hasAttribute(contextSensitiveAtom))
         infoFlags |= HEFcontextDependentException;
+
+    if (def->hasAttribute(ctxmethodAtom) || def->hasAttribute(gctxmethodAtom) || def->hasAttribute(globalContextAtom) || def->hasAttribute(contextAtom))
+        infoFlags |= HEFaccessRuntimeContext;
 }
 
 bool CHqlExternalCall::equals(const IHqlExpression & other) const

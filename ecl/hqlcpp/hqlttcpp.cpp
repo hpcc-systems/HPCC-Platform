@@ -6959,7 +6959,7 @@ void ScalarGlobalTransformer::analyseExpr(IHqlExpression * expr)
             if (extra->createGlobal)
                 return;
             //Allow a global to be created inside a global marked from somewhere else.
-            if (containsAnyDataset(expr) || expr->isConstant() || isContextDependent(expr))
+            if (containsAnyDataset(expr) || expr->isConstant() || isContextDependent(expr) || !expr->isIndependentOfScope())
                 return;
         }
     }
@@ -7012,7 +7012,7 @@ void ScalarGlobalTransformer::doAnalyseExpr(IHqlExpression * expr)
 #ifndef NEW_SCALAR_CODE
 //  Commented line has problems with SELF used in HOLE definition, and explosion in thumphrey7 etc.
 //  if (okToHoist && isIndependentOfScope(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure())
-    if (okToHoist && !containsAnyDataset(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure())
+    if (okToHoist && !containsAnyDataset(expr) && !expr->isConstant() && !isContextDependent(expr) && expr->isPure() && expr->isIndependentOfScope())
     {
         ITypeInfo * type = expr->queryType();
         if (isTypeToHoist(type))
