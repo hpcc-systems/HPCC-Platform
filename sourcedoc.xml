@@ -115,7 +115,7 @@
             <para>
                 The HPCC platform requires a number of third party tools and libraries in order to build.
 
-                On Ubuntu 11, the following commands will install the required libraries
+                On Ubuntu 12.04, the following commands will install the required libraries
                 <programlisting>
                   sudo apt-get install cmake
                   sudo apt-get install bison
@@ -129,7 +129,17 @@
                   sudo apt-get install libssl-dev
                   sudo apt-get install libldap2-dev
                   sudo apt-get install expect
+                  sudo apt-get install libtool
+                  sudo apt-get install docbook
+                  sudo apt-get install xsltproc
+                  sudo apt-get install fop
                 </programlisting>
+                
+                In addition the following are required:
+            
+                libarchive-3.1.2 downloadable from http://www.libarchive.org
+                
+                apr-1.4.8 and apr-util-1.5.2 downloadable from http://apr.apache.org
 
             </para>
         </sect1>
@@ -257,6 +267,7 @@
                     regression engine can reach it. You should see a new file, 'regress.ini'.
                     Edit it to accommodate to your preferred setup.
                 </para>
+                <para>
                     Note: There is a current issue with Roxie tests, so you should comment out
                     the 'roxie' from 'setup_clusters'. That will leave you about 650 tests to run.
                 </para>
