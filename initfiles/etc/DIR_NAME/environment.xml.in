@@ -810,6 +810,7 @@
                 forceStdLog="false"
                 highTimeout="2000"
                 ignoreMissingFiles="false"
+                ignoreOrphans="true"
                 indexReadChunkSize="60000"
                 initIbytiDelay="100"
                 jumboFrames="false"

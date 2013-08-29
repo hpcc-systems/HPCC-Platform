@@ -99,6 +99,7 @@ bool useRemoteResources;
 bool checkFileDate;
 bool lazyOpen;
 bool localSlave;
+bool ignoreOrphans;
 bool doIbytiDelay = true; 
 unsigned initIbytiDelay; // In MillSec
 unsigned minIbytiDelay;  // In MillSec
@@ -650,6 +651,7 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         initIbytiDelay = topology->getPropInt("@initIbytiDelay", 50);
         allFilesDynamic = topology->getPropBool("@allFilesDynamic", false);
         crcResources = topology->getPropBool("@crcResources", false);
+        ignoreOrphans = topology->getPropBool("@ignoreOrphans", true);
         chunkingHeap = topology->getPropBool("@chunkingHeap", true);
         readTimeout = topology->getPropInt("@readTimeout", 300);
         logFullQueries = topology->getPropBool("@logFullQueries", false);

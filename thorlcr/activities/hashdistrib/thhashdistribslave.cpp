@@ -3362,8 +3362,8 @@ public:
             {
                 case TAKhashjoin:
                     {
-                        bool hintparallelmatch = container.queryXGMML().getPropInt("hint[@name=\"parallel_match\"]/@value")!=0;
-                        bool hintunsortedoutput = container.queryXGMML().getPropInt("hint[@name=\"unsorted_output\"]/@value")!=0;
+                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & joinargs->getJoinFlags());
+                        bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                         joinhelper.setown(createJoinHelper(*this, joinargs, this, hintparallelmatch, hintunsortedoutput));
                     }
                     break;

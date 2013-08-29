@@ -807,7 +807,7 @@ public:
             iswin = grp->ordinality()?(getDaliServixOs(grp->queryNode(0).endpoint())==DAFS_OSwindows):false;
             setBaseDirectory(ddir,0,iswin?DFD_OSwindows:DFD_OSunix);
             setBaseDirectory(rdir,1,iswin?DFD_OSwindows:DFD_OSunix);
-            rootdir.set(queryBaseDirectory(0,iswin?DFD_OSwindows:DFD_OSunix));
+            rootdir.set(queryBaseDirectory(grp_unknown, 0, iswin?DFD_OSwindows:DFD_OSunix));
         }
         else {
             rootdir.set(basedir);

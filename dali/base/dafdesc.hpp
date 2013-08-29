@@ -31,6 +31,7 @@ interface IPropertyTree;
 interface IFileDescriptor;
 interface IClusterInfo;
 interface IReplicatedFile;
+interface INamedGroupStore;
 
 #define SUPPORTS_MULTI_CLUSTERS  // always now set
 
@@ -48,6 +49,9 @@ enum DFD_Replicate
     DFD_NoCopies      = 1,
     DFD_DefaultCopies = 2
 };
+
+enum GroupType { grp_thor, grp_thorspares, grp_roxie, grp_hthor, grp_unknown, __grp_size };
+
 
 // ==CLUSTER PART MAPPING ==============================================================================================
 
@@ -230,10 +234,7 @@ if endCluster is not called it will assume only one cluster and not replicated
 
     virtual ISuperFileDescriptor *querySuperFileDescriptor() = 0;   // returns NULL if not superfile descriptor (or if superfile contained <=1 subfiles)
 
-    virtual void setClusterRoxieLabel(unsigned clusternum,const char *name) = 0;
-    virtual const char *queryClusterRoxieLabel(unsigned clusternum) = 0;            // NULL if not set
-
-    virtual StringBuffer &getClusterLabel(unsigned clusternum,StringBuffer &ret) = 0; // roxie label or node group name
+    virtual StringBuffer &getClusterLabel(unsigned clusternum,StringBuffer &ret) = 0; // node group name
 
     virtual void ensureReplicate() = 0;                                             // make sure a file can be replicated
 };
@@ -265,28 +266,25 @@ interface IClusterInfo: extends IInterface  // used by IFileDescriptor and IDist
     virtual void setGroupName(const char *name)=0;
     virtual void getBaseDir(StringBuffer &basedir, DFD_OS os)=0;
     virtual void getReplicateDir(StringBuffer &basedir, DFD_OS os)=0;
-    virtual void setRoxieLabel(const char *label)=0;
-    virtual const char *queryRoxieLabel()=0;     // for roxie (NULL otherwise)
-    virtual StringBuffer &getClusterLabel(StringBuffer &name)=0; // either roxie label or node group name
+    virtual StringBuffer &getClusterLabel(StringBuffer &name)=0; // node group name
 
 };
 
 IClusterInfo *createClusterInfo(const char *grpname,                  // NULL if roxie label set
                                 IGroup *grp,
                                 const ClusterPartDiskMapSpec &mspec,
-                                IGroupResolver *resolver=NULL,
-                                const char *roxielabel = NULL        // set for roxie 
+                                INamedGroupStore *resolver=NULL
                                 );
 IClusterInfo *createRoxieClusterInfo(const char *label,
                                 const ClusterPartDiskMapSpec &mspec
                                 );
 IClusterInfo *deserializeClusterInfo(MemoryBuffer &mb,
-                                IGroupResolver *resolver=NULL);
+                                INamedGroupStore *resolver=NULL);
 IClusterInfo *deserializeClusterInfo(IPropertyTree *pt,
-                                IGroupResolver *resolver=NULL,
+                                INamedGroupStore *resolver=NULL,
                                 unsigned flags=0);
 
-void getClusterInfo(IPropertyTree &pt, IGroupResolver *resolver, unsigned flags, IArrayOf<IClusterInfo> &clusters);
+void getClusterInfo(IPropertyTree &pt, INamedGroupStore *resolver, unsigned flags, IArrayOf<IClusterInfo> &clusters);
 
 
 
@@ -311,7 +309,7 @@ extern da_decl StringBuffer &makeSinglePhysicalPartName(const char *lname, // si
                                                         );    
 
 // set/get defaults
-extern da_decl const char *queryBaseDirectory(unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);
+extern da_decl const char *queryBaseDirectory(GroupType groupType, unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);
 extern da_decl void setBaseDirectory(const char * dir, unsigned replicateLevel=0, DFD_OS os=DFD_OSdefault);
 extern da_decl const char *queryPartMask();
 extern da_decl StringBuffer &getPartMask(StringBuffer &ret,const char *lname=NULL,unsigned partmax=0);
@@ -322,7 +320,7 @@ extern da_decl IFileDescriptor *createFileDescriptor();
 extern da_decl IFileDescriptor *createFileDescriptor(IPropertyTree *attr);      // ownership of attr tree is taken
 extern da_decl ISuperFileDescriptor *createSuperFileDescriptor(IPropertyTree *attr);        // ownership of attr tree is taken
 extern da_decl IFileDescriptor *deserializeFileDescriptor(MemoryBuffer &mb);
-extern da_decl IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tree,IGroupResolver *resolver=NULL,unsigned flags=0);  // flags IFDSF_*
+extern da_decl IFileDescriptor *deserializeFileDescriptorTree(IPropertyTree *tree, INamedGroupStore *resolver=NULL, unsigned flags=0);  // flags IFDSF_*
 extern da_decl IFileDescriptor *createFileDescriptor(const char *lname,IGroup *grp,IPropertyTree *tree,DFD_OS os=DFD_OSdefault,unsigned width=0);  // creates default
 extern da_decl IPartDescriptor *deserializePartFileDescriptor(MemoryBuffer &mb);
 extern da_decl void deserializePartFileDescriptors(MemoryBuffer &mb,IArrayOf<IPartDescriptor> &parts);

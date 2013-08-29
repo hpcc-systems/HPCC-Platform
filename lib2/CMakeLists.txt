@@ -57,6 +57,11 @@ foreach(dylib ${DYLIBS})
         set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
 
         #TODO:  Should be able resolve alias's to alias's correctly?
+        string(REPLACE ".2.21.dylib" ".2.dylib" dylib_2_path "${dylib_path}")
+        if (NOT "${dylib_2_path}" STREQUAL "${dylib_path}")
+            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_2_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+        endif ()
+
         string(REPLACE ".28.0.dylib" ".28.dylib" dylib_28_path "${dylib_path}")
         if (NOT "${dylib_28_path}" STREQUAL "${dylib_path}")
             set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_28_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
@@ -67,13 +72,18 @@ foreach(dylib ${DYLIBS})
             set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_48_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
         endif ()
 
+        string(REPLACE ".51.2.dylib" ".51.dylib" dylib_51_path "${dylib_path}")
+        if (NOT "${dylib_51_path}" STREQUAL "${dylib_path}")
+            set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_51_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
+        endif ()
+
         string(REPLACE ".110.0.dylib" ".dylib" dylib_110_path "${dylib_path}")
         if (NOT "${dylib_110_path}" STREQUAL "${dylib_path}")
             set(fixupCommand "${fixupCommand}\r\nexecute_process(COMMAND install_name_tool -change \"${dylib_110_path}\" \"@loader_path/../lib2/${dylib_name_ext}\" \${file})")
         endif ()
 
         install(CODE "
-            file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${EXEC_DIR}/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/*.dylib\")
+            file(GLOB files \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${EXEC_DIR}/*\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${LIB_DIR}/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/plugins/*.dylib\" \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/lib2/*.dylib\")
             foreach(file \${files})
               ${fixupCommand}
             endforeach ()

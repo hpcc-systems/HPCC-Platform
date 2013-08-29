@@ -546,6 +546,13 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="ignoreOrphans" type="xs:boolean" use="optional" default="true">
+      <xs:annotation>
+        <xs:appinfo>
+          <tooltip>Treat out-of-date local files as if they were not present.</tooltip>
+        </xs:appinfo>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="lazyOpen" use="optional" default="smart">
         <xs:annotation>
           <xs:appinfo>

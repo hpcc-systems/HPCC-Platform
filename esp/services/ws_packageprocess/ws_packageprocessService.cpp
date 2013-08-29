@@ -55,33 +55,45 @@ bool CWsPackageProcessEx::onEcho(IEspContext &context, IEspEchoRequest &req, IEs
     return true;
 }
 
-IPropertyTree *getPkgSetRegistry(const char *id, const char *process, bool readonly)
+inline StringBuffer &buildPkgSetId(StringBuffer &id, const char *process)
+{
+    if (!process || !*process)
+        process = "*";
+    return id.append("default_").append(process).replace('*', '#').replace('?', '~');
+}
+
+IPropertyTree *getPkgSetRegistry(const char *process, bool readonly)
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
+    if (!globalLock)
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to connect to PackageSet information in dali /PackageSets");
+    IPropertyTree *pkgSets = globalLock->queryRoot();
+    if (!pkgSets)
+        throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to open PackageSet information in dali /PackageSets");
+
+    if (!process || !*process)
+        process = "*";
+    StringBuffer id;
+    buildPkgSetId(id, process);
 
     //Only lock the branch for the target we're interested in.
-    StringBuffer xpath;
-    xpath.append("/PackageSets/PackageSet[@id=\"").append(id).append("\"]");
+    VStringBuffer xpath("/PackageSets/PackageSet[@id='%s']", id.str());
     Owned<IRemoteConnection> conn = querySDS().connect(xpath.str(), myProcessSession(), readonly ? RTM_LOCK_READ : RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
     if (!conn)
     {
         if (readonly)
             return NULL;
-        Owned<IPropertyTree> querySet = createPTree();
-        querySet->setProp("@id", id);
-        if (!process || !*process)
-            querySet->setProp("@process", "*");
-        else
-            querySet->setProp("@process", process);
-        globalLock->queryRoot()->addPropTree("PackageSet", querySet.getClear());
+
+        Owned<IPropertyTree> pkgSet = createPTree();
+        pkgSet->setProp("@id", id.str());
+        pkgSet->setProp("@process", process);
+        pkgSets->addPropTree("PackageSet", pkgSet.getClear());
         globalLock->commit();
 
         conn.setown(querySDS().connect(xpath.str(), myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT));
-        if (!conn)
-            throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali %s", xpath.str());
     }
 
-    return conn->getRoot();
+    return (conn) ? conn->getRoot() : NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -160,42 +172,35 @@ void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const ch
 }
 
 
-void makePackageActive(IPropertyTree *pkgSetRegistry, IPropertyTree *pkgSetTree, const char *setName)
+void makePackageActive(IPropertyTree *pkgSetRegistry, IPropertyTree *pkgSetTree, const char *target, bool activate)
 {
-    VStringBuffer xpath("PackageMap[@querySet='%s'][@active='1']", setName);
-    Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements(xpath.str());
-    ForEach(*iter)
+    if (activate)
     {
-        iter->query().setPropBool("@active", false);
+        VStringBuffer xpath("PackageMap[@querySet='%s'][@active='1']", target);
+        Owned<IPropertyTreeIterator> iter = pkgSetRegistry->getElements(xpath.str());
+        ForEach(*iter)
+            iter->query().setPropBool("@active", false);
     }
-    pkgSetTree->setPropBool("@active", true);
-}
-
-const char *buildPkgSetId(StringBuffer &pkgSetId, const char *processName)
-{
-    pkgSetId.appendf("default_%s", processName);
-    pkgSetId.replace('*', '#');
-    pkgSetId.replace('?', '~');
-    return pkgSetId.str();
+    pkgSetTree->setPropBool("@active", activate);
 }
 
 //////////////////////////////////////////////////////////
 
-void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry, const char *target, const char *packageMapName, const char *packageSetName, const char *lookupDaliIp, IPropertyTree *packageInfo, bool active, bool overWrite, IUserDescriptor* userdesc)
+void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, IPropertyTree *packageInfo, bool activate, bool overWrite, IUserDescriptor* userdesc)
 {
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
 
-    StringBuffer lcName(packageMapName);
-    lcName.toLowerCase();
-    StringBuffer xpath;
-    xpath.append("PackageMap[@id='").append(lcName).append("']");
+    StringBuffer lcPmid(pmid);
+    pmid = lcPmid.toLowerCase().str();
+
+    VStringBuffer xpath("PackageMap[@id='%s']", pmid);
 
     IPropertyTree *pkgRegTree = pkgSetRegistry->queryPropTree(xpath.str());
     IPropertyTree *root = globalLock->queryRoot();
     IPropertyTree *mapTree = root->queryPropTree(xpath);
 
     if (!overWrite && (pkgRegTree || mapTree))
-        throw MakeStringException(PKG_NAME_EXISTS, "Package name %s already exists, either delete it or specify overwrite", lcName.str());
+        throw MakeStringException(PKG_NAME_EXISTS, "Package name %s already exists, either delete it or specify overwrite", pmid);
 
     if (mapTree)
         root->removeTree(mapTree);
@@ -205,7 +210,7 @@ void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry
 
 
     mapTree = root->addPropTree("PackageMap", createPTree());
-    mapTree->addProp("@id", lcName);
+    mapTree->addProp("@id", pmid);
 
     StringArray fileNames;
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
@@ -257,12 +262,10 @@ void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry
     globalLock->commit();
 
     IPropertyTree *pkgSetTree = pkgSetRegistry->addPropTree("PackageMap", createPTree("PackageMap"));
-    pkgSetTree->setProp("@id", lcName);
+    pkgSetTree->setProp("@id", pmid);
     pkgSetTree->setProp("@querySet", target);
-    if (active)
-        makePackageActive(pkgSetRegistry, pkgSetTree, target);
-    else
-        pkgSetTree->setPropBool("@active", false);
+
+    makePackageActive(pkgSetRegistry, pkgSetTree, target, activate);
 }
 
 void getPackageListInfo(IPropertyTree *mapTree, IEspPackageListMapData *pkgList)
@@ -305,7 +308,7 @@ void listPkgInfo(const char *target, const char *process, IArrayOf<IConstPackage
     if (!globalLock)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali /PackageMaps");
     IPropertyTree *root = globalLock->queryRoot();
-    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry((process && *process) ? process : "*", NULL, true);
+    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(process, true);
     if (!pkgSetRegistry)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process %s", (process && *process) ? process : "*");
 
@@ -336,10 +339,9 @@ void getPkgInfo(const char *target, const char *process, StringBuffer &info)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali /PackageMaps");
     IPropertyTree *root = globalLock->queryRoot();
     Owned<IPropertyTree> tree = createPTree("PackageMaps");
-    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry((process && *process) ? process : "*", NULL, true);
+    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(process, true);
     if (!pkgSetRegistry)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve package information from dali for process %s", (process && *process) ? process : "*");
-
     StringBuffer xpath("PackageMap[@active='1']");
     if (target && *target)
         xpath.appendf("[@querySet='%s']", target);
@@ -361,13 +363,13 @@ void getPkgInfo(const char *target, const char *process, StringBuffer &info)
     toXML(tree, info);
 }
 
-bool deletePkgInfo(const char *packageMap, const char *target, const char *process)
+bool deletePkgInfo(const char *name, const char *target, const char *process, bool globalScope)
 {
-    Owned<IRemoteConnection> pkgSet = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-    if (!pkgSet)
+    Owned<IRemoteConnection> pkgSetsConn = querySDS().connect("/PackageSets/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+    if (!pkgSetsConn)
         throw MakeStringException(PKG_NONE_DEFINED, "No package sets defined");
 
-    IPropertyTree* packageSets = pkgSet->queryRoot();
+    IPropertyTree* packageSets = pkgSetsConn->queryRoot();
 
     StringBuffer pkgSetId;
     buildPkgSetId(pkgSetId, process);
@@ -376,43 +378,62 @@ bool deletePkgInfo(const char *packageMap, const char *target, const char *proce
     if (!pkgSetRegistry)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "No package sets defined for %s", process);
 
-    StringBuffer lcName(packageMap);
-    lcName.toLowerCase();
-    VStringBuffer xpath("PackageMap[@id='%s'][@querySet='%s']", lcName.str(), target);
-    IPropertyTree *pm = pkgSetRegistry->getPropTree(xpath.str());
-    if (pm)
-        pkgSetRegistry->removeTree(pm);
-    else
-        throw MakeStringException(PKG_DELETE_NOT_FOUND, "Unable to delete %s - information not found", lcName.str());
+    StringBuffer lcTarget(target);
+    target = lcTarget.toLowerCase().str();
 
-    VStringBuffer ps_xpath("PackageSet/PackageMap[@id='%s']", lcName.str());
+    StringBuffer lcName(name);
+    name = lcName.toLowerCase().str();
 
-    if (!packageSets->hasProp(ps_xpath))
+    IPropertyTree *mapEntry = NULL;
+    StringBuffer xpath;
+    if (!globalScope)
     {
-        Owned<IRemoteConnection> pkgMap = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
-        if (pkgMap)
-        {
-            VStringBuffer map_xpath("PackageMap[@id='%s']", lcName.str());
-            IPropertyTree *pkgMaproot = pkgMap->queryRoot();
-            IPropertyTree *pm = pkgMaproot->getPropTree(map_xpath.str());
-            if (pm)
-                pkgMaproot->removeTree(pm);
-        }
+        xpath.appendf("PackageMap[@id='%s::%s'][@querySet='%s']", target, name, target);
+        mapEntry = pkgSetRegistry->getPropTree(xpath.str());
+    }
+    if (!mapEntry)
+    {
+        xpath.clear().appendf("PackageMap[@id='%s'][@querySet='%s']", name, target);
+        mapEntry = pkgSetRegistry->getPropTree(xpath.str());
+        if (!mapEntry)
+            throw MakeStringException(PKG_DELETE_NOT_FOUND, "Unable to delete %s - information not found", lcName.str());
+    }
+    StringAttr pmid(mapEntry->queryProp("@id"));
+    pkgSetRegistry->removeTree(mapEntry);
+
+    xpath.clear().appendf("PackageSet/PackageMap[@id='%s']", pmid.get());
+    if (!packageSets->hasProp(xpath))
+    {
+        Owned<IRemoteConnection> pkgMapsConn = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE, SDS_LOCK_TIMEOUT);
+        if (!pkgMapsConn)
+            throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve PackageMaps information from dali [/PackageMaps]");
+        IPropertyTree *pkgMaps = pkgMapsConn->queryRoot();
+        if (!pkgMaps)
+            throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve PackageMaps information from dali [/PackageMaps]");
+        IPropertyTree *mapTree = pkgMaps->getPropTree(xpath.clear().appendf("PackageMap[@id='%s']", pmid.get()).str());
+        if (mapTree)
+            pkgMaps->removeTree(mapTree);
     }
     return true;
 }
 
-void activatePackageMapInfo(const char *target, const char *packageMap, const char *process, bool activate)
+void activatePackageMapInfo(const char *target, const char *name, const char *process, bool globalScope, bool activate)
 {
     if (!target || !*target)
-        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "No target defined");
+        throw MakeStringExceptionDirect(PKG_TARGET_NOT_DEFINED, "No target defined");
+
+    if (!name || !*name)
+        throw MakeStringExceptionDirect(PKG_MISSING_PARAM, "No pmid specified");
 
     Owned<IRemoteConnection> globalLock = querySDS().connect("PackageSets", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
     if (!globalLock)
         throw MakeStringException(PKG_DALI_LOOKUP_ERROR, "Unable to retrieve PackageSets information from dali /PackageSets");
 
-    StringBuffer lcName(target);
-    lcName.toLowerCase();
+    StringBuffer lcTarget(target);
+    target = lcTarget.toLowerCase().str();
+
+    StringBuffer lcName(name);
+    name = lcName.toLowerCase().str();
 
     IPropertyTree *root = globalLock->queryRoot();
     if (!root)
@@ -420,32 +441,47 @@ void activatePackageMapInfo(const char *target, const char *packageMap, const ch
 
     StringBuffer pkgSetId;
     buildPkgSetId(pkgSetId, process);
-    VStringBuffer pkgSet_xpath("PackageSet[@id='%s']", pkgSetId.str());
-    IPropertyTree *pkgSetTree = root->queryPropTree(pkgSet_xpath.str());
+    VStringBuffer xpath("PackageSet[@id='%s']", pkgSetId.str());
+    IPropertyTree *pkgSetTree = root->queryPropTree(xpath);
     if (pkgSetTree)
     {
-        if (packageMap && *packageMap)
+        IPropertyTree *mapTree = NULL;
+        if (!globalScope)
         {
-            StringBuffer lcMapName(packageMap);
-            lcMapName.toLowerCase();
-            VStringBuffer xpath_map("PackageMap[@id=\"%s\"]", lcMapName.str());
-            IPropertyTree *mapTree = pkgSetTree->queryPropTree(xpath_map);
-            if (activate)
-                makePackageActive(pkgSetTree, mapTree, lcName.str());
-            else
-                mapTree->setPropBool("@active", false);
+            xpath.clear().appendf("PackageMap[@querySet='%s'][@id='%s::%s']", target, target, name);
+            mapTree = pkgSetTree->queryPropTree(xpath);
         }
+        if (!mapTree)
+        {
+            xpath.clear().appendf("PackageMap[@querySet='%s'][@id='%s']", target, name);
+            mapTree = pkgSetTree->queryPropTree(xpath);
+        }
+        if (!mapTree)
+            throw MakeStringException(PKG_ACTIVATE_NOT_FOUND, "PackageMap %s not found on target %s", name, target);
+        makePackageActive(pkgSetTree, mapTree, target, activate);
     }
 }
 
 bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageRequest &req, IEspAddPackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
+
+    StringAttr target(req.getTarget());
+    StringAttr name(req.getPackageMap());
+
+    if (target.isEmpty())
+        throw MakeStringExceptionDirect(PKG_MISSING_PARAM, "Target cluster parameter required");
+    if (name.isEmpty())
+        throw MakeStringExceptionDirect(PKG_MISSING_PARAM, "PackageMap name parameter required");
+
+    StringBuffer pmid;
+    if (!req.getGlobalScope())
+        pmid.append(target).append("::");
+    pmid.append(name.get());
+
     StringBuffer info(req.getInfo());
     bool activate = req.getActivate();
     bool overWrite = req.getOverWrite();
-    StringAttr target(req.getTarget());
-    StringAttr pkgMapName(req.getPackageMap());
     StringAttr processName(req.getProcess());
 
     Owned<IUserDescriptor> userdesc;
@@ -457,17 +493,16 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
         userdesc->set(user, password);
     }
 
+    Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
+    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(processName.get(), false);
+    StringArray filesNotFound;
     StringBuffer pkgSetId;
     buildPkgSetId(pkgSetId, processName.get());
-
-    Owned<IPropertyTree> packageTree = createPTreeFromXMLString(info.str());
-    Owned<IPropertyTree> pkgSetRegistry = getPkgSetRegistry(pkgSetId.str(), processName.get(), false);
-    StringArray filesNotFound;
-    addPackageMapInfo(filesNotFound, pkgSetRegistry, target.get(), pkgMapName.get(), pkgSetId.str(), req.getDaliIp(), LINK(packageTree), activate, overWrite, userdesc);
+    addPackageMapInfo(filesNotFound, pkgSetRegistry, target.get(), pmid.str(), pkgSetId.str(), req.getDaliIp(), LINK(packageTree), activate, overWrite, userdesc);
     resp.setFilesNotFound(filesNotFound);
 
     StringBuffer msg;
-    msg.append("Successfully loaded ").append(pkgMapName.get());
+    msg.append("Successfully loaded ").append(name.get());
     resp.updateStatus().setDescription(msg.str());
     return true;
 }
@@ -480,7 +515,7 @@ bool CWsPackageProcessEx::onDeletePackage(IEspContext &context, IEspDeletePackag
     if (processName.length()==0)
         processName.set("*");
 
-    bool ret = deletePkgInfo(pkgMap.get(), req.getTarget(), processName.get());
+    bool ret = deletePkgInfo(pkgMap.get(), req.getTarget(), processName.get(), req.getGlobalScope());
     StringBuffer msg;
     (ret) ? msg.append("Successfully ") : msg.append("Unsuccessfully ");
     msg.append("deleted ").append(pkgMap.get()).append(" from ").append(req.getTarget());
@@ -492,14 +527,14 @@ bool CWsPackageProcessEx::onDeletePackage(IEspContext &context, IEspDeletePackag
 bool CWsPackageProcessEx::onActivatePackage(IEspContext &context, IEspActivatePackageRequest &req, IEspActivatePackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
-    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), true);
+    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), req.getGlobalScope(), true);
     return true;
 }
 
 bool CWsPackageProcessEx::onDeActivatePackage(IEspContext &context, IEspDeActivatePackageRequest &req, IEspDeActivatePackageResponse &resp)
 {
     resp.updateStatus().setCode(0);
-    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), false);
+    activatePackageMapInfo(req.getTarget(), req.getPackageMap(), req.getProcess(), req.getGlobalScope(), false);
     return true;
 }
 
@@ -554,7 +589,7 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
     }
     else if (pmid && *pmid)
     {
-        mapTree.setown(getPackageMapById(pmid, true));
+        mapTree.setown(getPackageMapById(req.getGlobalScope() ? NULL : target, pmid, true));
         if (!mapTree)
             throw MakeStringException(PKG_PACKAGEMAP_NOT_FOUND, "Package map %s not found", req.getPMID());
     }
@@ -619,7 +654,7 @@ bool CWsPackageProcessEx::onGetQueryFileMapping(IEspContext &context, IEspGetQue
     const char *pmid = req.getPMID();
     if (pmid && *pmid)
     {
-        ownedmap.setown(createPackageMapFromPtree(getPackageMapById(pmid, true), target, pmid));
+        ownedmap.setown(createPackageMapFromPtree(getPackageMapById(req.getGlobalScope() ? NULL : target, pmid, true), target, pmid));
         if (!ownedmap)
             throw MakeStringException(PKG_LOAD_PACKAGEMAP_FAILED, "Error loading package map %s", req.getPMID());
         map = ownedmap;
