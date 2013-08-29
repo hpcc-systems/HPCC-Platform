@@ -126,10 +126,12 @@ static bool getFileInfo(RemoteFilename &fn, Owned<IFile> &f, offset_t &size,CDat
 
 class CFileCloner
 {
+public:
     StringAttr nameprefix;
     Owned<INode> foreigndalinode;
     Linked<IUserDescriptor> userdesc;
     Linked<IUserDescriptor> foreignuserdesc;
+    StringAttr srcCluster;
     StringAttr cluster1;
     Owned<IGroup> grp1;
     ClusterPartDiskMapSpec spec1;
@@ -402,7 +404,7 @@ class CFileCloner
             throw afor2.exc.getClear();
     }
 
-    void cloneSubFile(IPropertyTree *ftree,const char *destfilename, INode *srcdali)   // name already has prefix added
+    void cloneSubFile(IPropertyTree *ftree,const char *destfilename, INode *srcdali, const char *srcCluster)   // name already has prefix added
     {
         Owned<IFileDescriptor> srcfdesc = deserializeFileDescriptorTree(ftree, NULL, 0);
         const char * kind = srcfdesc->queryProperties().queryProp("@kind");
@@ -450,16 +452,22 @@ class CFileCloner
             physicalReplicateFile(dstfdesc,destfilename);
         }
 
-        if (srcdali && !srcdali->endpoint().isNull())
+        if (!srcdali || srcdali->endpoint().isNull())
+            dstfdesc->queryProperties().setProp("@cloneFromPeerCluster", srcCluster);
+        else
         {
             StringBuffer s;
             dstfdesc->queryProperties().setProp("@cloneFrom", srcdali->endpoint().getUrlStr(s).str());
             dstfdesc->queryProperties().setProp("@cloneFromDir", srcfdesc->queryDefaultDir());
+            if (srcCluster && *srcCluster) //where to copy from has been explicity set to a remote location, don't copy from local sources
+                dstfdesc->queryProperties().setProp("@cloneFromPeerCluster", "-");
             unsigned numClusters = srcfdesc->numClusters();
             for (unsigned clusterNum = 0; clusterNum < numClusters; clusterNum++)
             {
                 StringBuffer sourceGroup;
                 srcfdesc->getClusterGroupName(clusterNum, sourceGroup, NULL);
+                if (srcCluster && *srcCluster && !streq(sourceGroup, srcCluster))
+                    continue;
                 Owned<IPropertyTree> groupInfo = createPTree("cloneFromGroup");
                 groupInfo->setProp("@groupName", sourceGroup);
                 ClusterPartDiskMapSpec &spec = srcfdesc->queryPartDiskMapping(clusterNum);
@@ -620,7 +628,7 @@ public:
             dfile.clear();
         }
         if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_File))==0) {
-            cloneSubFile(ftree,dlfn.get(), srcdali);
+            cloneSubFile(ftree,dlfn.get(), srcdali, srcCluster);
         }
         else if (strcmp(ftree->queryName(),queryDfsXmlBranchName(DXB_SuperFile))==0) {
             StringArray subfiles;
@@ -690,7 +698,7 @@ public:
             dfile->detach();
             dfile.clear();
         }
-        cloneSubFile(ftree,dlfn.get(),srcdali);
+        cloneSubFile(ftree,dlfn.get(),srcdali, srcCluster);
         level--;
     }
 
@@ -960,6 +968,7 @@ public:
     }
 
     void createSingleFileClone(const char *srcname,         // src LFN (can't be super)
+                         const char *srcCluster,            // optional specific cluster to copy data from
                          const char *dstname,               // dst LFN
                          const char *cluster1,              // group name of roxie cluster
                          DFUclusterPartDiskMapping clustmap, // how the nodes are mapped
@@ -974,6 +983,7 @@ public:
     {
         CFileCloner cloner;
         cloner.init(cluster1,clustmap,repeattlk,cluster2,userdesc,foreigndali,foreignuserdesc,NULL,overwrite,dophysicalcopy);
+        cloner.srcCluster.set(srcCluster);
         cloner.cloneFile(srcname,dstname);
     }
 
