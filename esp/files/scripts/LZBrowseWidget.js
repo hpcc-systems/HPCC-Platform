@@ -92,7 +92,6 @@ define([
             this.landingZonesTab = registry.byId(this.id + "_LandingZones");
             this.uploader = registry.byId(this.id + "Upload");
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
-            this.uploadFileList.uploaderId = this.id + "Upload";
             this.sprayFixedDestinationSelect = registry.byId(this.id + "SprayFixedDestination");
             this.sprayVariableDestinationSelect = registry.byId(this.id + "SprayVariableDestination");
             this.sprayXmlDestinationSelect = registry.byId(this.id + "SprayXmlDestinationSelect");
@@ -192,7 +191,8 @@ define([
         },
 
         _onUploadSubmit: function (event) {
-            this.uploader.set("uploadUrl", this.uploadUrl);
+            var item = this.dropZoneSelect.get("row");
+            this.uploader.set("uploadUrl", "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + item.machine.Netaddress + "&OS=" + item.machine.OS + "&Path=" + item.machine.Directory);
             this.uploader.upload();
         },
 
@@ -298,12 +298,8 @@ define([
                 Groups: true
             });
             this.dropZoneSelect.init({
-                DropZones: true,
-                callback: function (value, item) {
-                    context.uploadUrl = "/FileSpray/UploadFile.json?upload_&rawxml_=1&NetAddress=" + item.machine.Netaddress + "&OS=" + item.machine.OS + "&Path=" + item.machine.Directory;
-                }
+                DropZones: true
             });
-            
         },
 
         initTab: function () {
