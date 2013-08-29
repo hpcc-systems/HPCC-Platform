@@ -108,10 +108,10 @@
   order in which the <emphasis>childrecset</emphasis> records are sent to the
   <emphasis>transform</emphasis> is undefined.</para>
 
-  <para>Because DENORMALIZE is basically a highly-specialized form of JOIN,
-  the various join types (LEFT OUTER, RIGHT OUTER, FULL OUTER, LEFT ONLY,
-  RIGHT ONLY, FULL ONLY) are also available for use on DENORMALIZE and act
-  just as they do with JOIN.</para>
+  <para>Because DENORMALIZE is basically a specialized form of JOIN, the
+  various join types (LEFT OUTER, RIGHT OUTER, FULL OUTER, LEFT ONLY, RIGHT
+  ONLY, FULL ONLY) are also available for use on DENORMALIZE and act just as
+  they do with JOIN.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Denormalize">
     <title>DENORMALIZE TRANSFORM Function Requirements</title>
@@ -141,7 +141,7 @@
     <emphasis>transform</emphasis> function must be a record set of the same
     format as the LEFT record.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <para>Form 1 example:</para>
 

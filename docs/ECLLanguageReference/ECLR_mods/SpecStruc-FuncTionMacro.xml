@@ -87,15 +87,16 @@
   FUNCTIONMACRO has over the MACRO structure is that it may be called in an
   expression context, just like a FUNCTION would be.</para>
 
-  <para>#UNIQUENAME is not necessary to prevent internal definition name
-  clashes when the FUNCTIONMACRO is used multiple times within the same
-  visibility scope. However, the <emphasis role="bold">LOCAL</emphasis>
-  keyword must be explicitly used within the FUNCTIONMACRO structure to
-  clearly identify that the scope of a definition is limited to the code
-  generated within the FUNCTIONMACRO, if that definition name is also used
-  outside the FUNCTIONMACRO and within the same visibility scope.</para>
+  <para>Unlike the MACRO structure, #UNIQUENAME is not necessary to prevent
+  internal definition name clashes when the FUNCTIONMACRO is used multiple
+  times within the same visibility scope. However, the <emphasis
+  role="bold">LOCAL</emphasis> keyword must be explicitly used within the
+  FUNCTIONMACRO if a definition name in its <emphasis>code</emphasis> may also
+  have been defined outside the FUNCTIONMACRO and within the same visibility
+  scope -- LOCAL clearly identifies that the definition is limited to the
+  <emphasis>code</emphasis> within the FUNCTIONMACRO.</para>
 
-  <para>Example:</para>
+  <para><emphasis role="bold">Example:</emphasis></para>
 
   <para>This example demonstrates the FUNCTIONMACRO used in an expression
   context. It also shows how the FUNCTIONMACRO may be called multiple times

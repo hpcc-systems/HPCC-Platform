@@ -103,11 +103,10 @@ LocalDef2 := Definition4 + LocalDef;
 
     <para>The <emphasis role="bold">LOCAL</emphasis><indexterm>
         <primary>LOCAL</primary>
-      </indexterm> keyword is valid for use only within a FUNCTIONMACRO
-    structure to clearly identify that the scope of a definition is limited to
-    the code generated within the FUNCTIONMACRO. Although you can use LOCAL
-    outside of a FUNCTIONMACRO structure without generating a syntax error, it
-    has no effect elsewhere.</para>
+      </indexterm> keyword is valid for use within any nested structure, but
+    most useful within a FUNCTIONMACRO structure to clearly identify that the
+    scope of a definition is limited to the code generated within the
+    FUNCTIONMACRO.</para>
 
     <programlisting>AddOne(num) := FUNCTIONMACRO
   LOCAL numPlus := num + 1;
