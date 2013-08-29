@@ -35,6 +35,7 @@
 #define RefFileCopyInfoFailed 0x080
 #define RefFileCloned         0x100
 #define RefFileInPackage      0x200
+#define RefFileNotOnSource    0x400
 
 interface IReferencedFile : extends IInterface
 {
@@ -56,7 +57,7 @@ interface IReferencedFileList : extends IInterface
     virtual void addFiles(StringArray &files)=0;
 
     virtual IReferencedFileIterator *getFiles()=0;
-    virtual void resolveFiles(const char *process, const char *remoteIP, bool checkLocalFirst, bool addSubFiles)=0;
+    virtual void resolveFiles(const char *process, const char *remoteIP, const char *srcCluster, bool checkLocalFirst, bool addSubFiles)=0;
     virtual void cloneAllInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo)=0;
     virtual void cloneFileInfo(IDFUhelper *helper, bool overwrite, bool cloneSuperInfo)=0;
     virtual void cloneRelationships()=0;

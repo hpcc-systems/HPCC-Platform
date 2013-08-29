@@ -323,6 +323,8 @@ public:
             }
             if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
                 continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
+                continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
                 continue;
             if (iter.matchFlag(optNoReload, ECLOPT_NORELOAD))
@@ -383,6 +385,7 @@ public:
         req->setTarget(optTargetCluster.get());
         req->setCluster(optTargetCluster.get());
         req->setDaliServer(optDaliIP.get());
+        req->setSourceProcess(optSourceProcess);
         req->setActivate(optActivate);
         req->setOverwrite(optOverwrite);
         req->setDontCopyFiles(optDontCopyFiles);
@@ -429,6 +432,7 @@ public:
             "   <target>               Name of target cluster to copy the query to\n"
             "   --no-files             Do not copy files referenced by query\n"
             "   --daliip=<ip>          For file copying if remote version < 3.8\n"
+            "   --source-process       Process cluster to copy files from\n"
             "   -A, --activate         Activate the new query\n"
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   -O, --overwrite        Overwrite existing files\n"
@@ -449,6 +453,7 @@ private:
     StringAttr optTargetQuerySet;
     StringAttr optTargetCluster;
     StringAttr optDaliIP;
+    StringAttr optSourceProcess;
     StringAttr optMemoryLimit;
     StringAttr optPriority;
     StringAttr optComment;

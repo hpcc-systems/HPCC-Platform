@@ -215,6 +215,8 @@ public:
                 continue;
             if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
                 continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
+                continue;
             if (iter.matchOption(optMsToWait, ECLOPT_WAIT))
                 continue;
             if (iter.matchOption(optTimeLimit, ECLOPT_TIME_LIMIT))
@@ -317,6 +319,7 @@ public:
         if (optTargetCluster.length())
             req->setCluster(optTargetCluster.get());
         req->setRemoteDali(optDaliIP.get());
+        req->setSourceProcess(optSourceProcess);
         req->setWait(optMsToWait);
         req->setNoReload(optNoReload);
         req->setDontCopyFiles(optDontCopyFiles);
@@ -377,6 +380,7 @@ public:
             "   --no-reload            Do not request a reload of the (roxie) cluster\n"
             "   --no-files             Do not copy files referenced by query\n"
             "   --daliip=<IP>          The IP of the DALI to be used to locate remote files\n"
+            "   --source-process       Process cluster to copy files from\n"
             "   --timeLimit=<ms>       Value to set for query timeLimit configuration\n"
             "   --warnTimeLimit=<ms>   Value to set for query warnTimeLimit configuration\n"
             "   --memoryLimit=<mem>    Value to set for query memoryLimit configuration\n"
@@ -391,6 +395,7 @@ public:
 private:
     StringAttr optName;
     StringAttr optDaliIP;
+    StringAttr optSourceProcess;
     StringAttr optMemoryLimit;
     StringAttr optPriority;
     StringAttr optComment;
