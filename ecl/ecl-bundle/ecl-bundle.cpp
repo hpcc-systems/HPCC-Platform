@@ -148,6 +148,24 @@ unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *input)
     }
 }
 
+static bool platformVersionDone = false;
+static StringBuffer platformVersion;
+
+static const char *queryPlatformVersion()
+{
+    if (!platformVersionDone)
+    {
+        StringBuffer output;
+        doEclCommand(output, "--version", NULL);
+        RegExpr re("_[0-9]+[.][0-9]+[.][0-9]+");
+        const char *found = re.find(output);
+        if (!found)
+            throw MakeStringException(0, "Unexpected response from eclcc\n");
+        platformVersion.append(re.findlen()-1, found+1);  // Skip the leading _
+    }
+    return platformVersion.str();
+}
+
 static void extractValueFromEnvOutput(StringBuffer &path, const char *specs, const char *name)
 {
     StringBuffer search(name);
@@ -216,6 +234,7 @@ interface IBundleInfo : extends IInterface
     virtual void printFullInfo() const = 0;
     virtual void printShortInfo() const = 0;
     virtual void checkValid() const = 0;
+    virtual bool checkPlatformVersion() const = 0;
     virtual bool checkVersion(const char *required) const = 0;
     virtual bool checkDependencies(const IBundleCollection &allBundles, const IBundleInfo *bundle, bool going) const = 0;
 
@@ -275,7 +294,8 @@ public:
             VStringBuffer bundleCmd("IMPORT %s.Bundle as B;"
                                     " [ (UTF8) B.name, (UTF8) B.version, B.description, B.license, B.copyright ] +"
                                     " [ (UTF8) COUNT(b.authors) ] + B.authors + "
-                                    " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn;", bundleName.str());
+                                    " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn + "
+                                    " [ (UTF8) #IFDEFINED(B.platformVersion, '')]", bundleName.str());
             if (doEclCommand(output, eclOpts.str(), bundleCmd) > 0)
                 throw MakeStringException(0, "%s cannot be parsed as a bundle\n", bundle);
             // output should contain [ 'name', 'version', etc ... ]
@@ -293,6 +313,7 @@ public:
             extractAttr(re, copyright);
             extractArray(re, authors);
             extractArray(re, depends);
+            extractAttr(re, platformVersion);
             // version must contain nothing but alphanumeric + . (no underscores, as they can clash with the ones we put in for .)
             RegExpr validVersions("^[A-Za-z0-9.]*$");
             if (!validVersions.find(version))
@@ -338,6 +359,7 @@ public:
         printAttr("Copyright:", copyright);
         printArray("Authors:", authors);
         printArray("DependsOn:", depends);
+        printAttr("Platform:", platformVersion);
     }
     virtual void printShortInfo() const
     {
@@ -355,10 +377,32 @@ public:
         const char *minOk, *maxOk;
         minOk = requiredVersions.item(0);
         if (requiredVersions.isItem(1))
-            maxOk = requiredVersions.item(0);
+            maxOk = requiredVersions.item(1);
         else
             maxOk = NULL;
         return versionOk(version, minOk, maxOk);
+    }
+    virtual bool checkPlatformVersion() const
+    {
+        bool ok = true;
+        if (platformVersion.length())
+        {
+            const char *platformFound = queryPlatformVersion();
+            StringArray requiredVersions;
+            requiredVersions.appendList(platformVersion, "-");
+            const char *minOk, *maxOk;
+            minOk = requiredVersions.item(0);
+            if (requiredVersions.isItem(1))
+                maxOk = requiredVersions.item(1);
+            else
+                maxOk = NULL;
+            if (!versionOk(platformFound, minOk, maxOk))
+            {
+                printf("%s requires platform version %s, version %s found\n", name.get(), platformVersion.get(), platformFound);
+                ok = false;
+            }
+        }
+        return ok;
     }
     virtual bool checkDependencies(const IBundleCollection &allBundles, const IBundleInfo *bundle, bool going) const
     {
@@ -486,6 +530,7 @@ private:
     StringAttr copyright;
     StringArray authors;
     StringArray depends;
+    StringAttr platformVersion;
     Owned<IException> exception;
     bool active;
 };
@@ -1083,7 +1128,12 @@ public:
                     }
                 }
             }
-            if (!bundle->checkDependencies(allBundles, NULL, false) || !allBundles.checkDependencies(bundle, false))
+            // Don't combine these using ||  - they have side effects of reporting what the reasons are for not installing
+            if (!bundle->checkPlatformVersion())
+                ok = false;
+            if (!bundle->checkDependencies(allBundles, NULL, false))
+                ok = false;
+            if (!allBundles.checkDependencies(bundle, false))
                 ok = false;
             if (!ok)
             {
