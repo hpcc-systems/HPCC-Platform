@@ -581,8 +581,8 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             ret->addSource(local.getLink());
             ret->setRemote(false);
         }
-        else if (local->exists())  // Implies local dali and local file out of sync
-            throw MakeStringException(ROXIE_FILE_ERROR, "File does not match DFS information");
+        else if (local->exists() && !ignoreOrphans)  // Implies local dali and local file out of sync
+            throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
         else
         {
             bool addedOne = false;
@@ -638,7 +638,12 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
             }
 
             if (!addedOne)
-                throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
+            {
+                if (local->exists())  // Implies local dali and local file out of sync
+                    throw MakeStringException(ROXIE_FILE_ERROR, "Local file %s does not match DFS information", localLocation);
+                else
+                    throw MakeStringException(ROXIE_FILE_OPEN_FAIL, "Could not open file %s", localLocation);
+            }
             ret->setRemote(true);
         }
         ret->setCache(this);
