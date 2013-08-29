@@ -2200,6 +2200,7 @@ static const char * defaultWindowsBaseDirectories[__grp_size][MAX_REPLICATION_LE
             { "c:\\thordata", "d:\\thordata" },
             { "c:\\roxiedata", "d:\\roxiedata" },
             { "c:\\hthordata", "d:\\hthordata" },
+            { "c:\\hthordata", "d:\\hthordata" },
     };
 static const char * defaultUnixBaseDirectories[__grp_size][MAX_REPLICATION_LEVELS] =
     {
@@ -2207,6 +2208,7 @@ static const char * defaultUnixBaseDirectories[__grp_size][MAX_REPLICATION_LEVEL
         { "/var/lib/HPCCSystems/hpcc-data/thor", "/var/lib/HPCCSystems/hpcc-mirror/thor" },
         { "/var/lib/HPCCSystems/hpcc-data/roxie", "/var/lib/HPCCSystems/hpcc-data2/roxie", "/var/lib/HPCCSystems/hpcc-data3/roxie", "/var/lib/HPCCSystems/hpcc-data4/roxie" },
         { "/var/lib/HPCCSystems/hpcc-data/eclagent", "/var/lib/HPCCSystems/hpcc-mirror/eclagent" },
+        { "/var/lib/HPCCSystems/hpcc-data/unknown", "/var/lib/HPCCSystems/hpcc-mirror/unknown" },
     };
 static const char *componentNames[__grp_size] =
     {
