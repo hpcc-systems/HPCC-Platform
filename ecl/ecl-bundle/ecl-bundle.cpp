@@ -377,7 +377,7 @@ public:
         const char *minOk, *maxOk;
         minOk = requiredVersions.item(0);
         if (requiredVersions.isItem(1))
-            maxOk = requiredVersions.item(0);
+            maxOk = requiredVersions.item(1);
         else
             maxOk = NULL;
         return versionOk(version, minOk, maxOk);
@@ -393,7 +393,7 @@ public:
             const char *minOk, *maxOk;
             minOk = requiredVersions.item(0);
             if (requiredVersions.isItem(1))
-                maxOk = requiredVersions.item(0);
+                maxOk = requiredVersions.item(1);
             else
                 maxOk = NULL;
             if (!versionOk(platformFound, minOk, maxOk))
