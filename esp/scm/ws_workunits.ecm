@@ -1094,6 +1094,7 @@ ESPrequest [nil_remove] WUPublishWorkunitRequest
     string RemoteDali;
     string Comment;
     bool DontCopyFiles(false);
+    string SourceProcess;
 };
 
 ESPresponse [exceptions_inline] WUPublishWorkunitResponse
@@ -1352,6 +1353,7 @@ ESPrequest [nil_remove] WUQuerySetCopyQueryRequest
     nonNegativeInteger WarnTimeLimit(0);
     string priority;
     string Comment;
+    string SourceProcess;
 };
 
 ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse

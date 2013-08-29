@@ -29,6 +29,7 @@ ESPrequest AddPackageRequest
     string Process;
     string DaliIp;
     bool GlobalScope(0);
+    string SourceProcess;
 };
 
 

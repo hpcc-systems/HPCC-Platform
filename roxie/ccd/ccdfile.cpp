@@ -496,13 +496,21 @@ static bool checkClusterCount(UnsignedArray &counts, unsigned clusterNo, unsigne
     return true;
 }
 
-static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName)
+static bool isCopyFromCluster(IPartDescriptor *pdesc, unsigned clusterNo, const char *name)
+{
+    StringBuffer s;
+    return strieq(name, pdesc->queryOwner().getClusterGroupName(clusterNo, s));
+}
+
+static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName, const char *fromCluster)
 {
     UnsignedArray clusterCounts;
     unsigned numCopies = pdesc->numCopies();
     for (unsigned copy = 0; copy < numCopies; copy++)
     {
         unsigned clusterNo = pdesc->copyClusterNum(copy);
+        if (fromCluster && *fromCluster && !isCopyFromCluster(pdesc, clusterNo, fromCluster))
+            continue;
         RemoteFilename r;
         pdesc->getFilename(copy,r);
         StringBuffer path;
@@ -519,6 +527,20 @@ static void appendRemoteLocations(IPartDescriptor *pdesc, StringArray &locations
         locations.append(path.str());
     }
 }
+
+static void appendPeerLocations(IPartDescriptor *pdesc, StringArray &locations, const char *localFileName)
+{
+    const char *peerCluster = pdesc->queryOwner().queryProperties().queryProp("@cloneFromPeerCluster");
+    if (peerCluster)
+    {
+        if (*peerCluster=='-') //a remote cluster was specified explicitly
+            return;
+        if (streq(peerCluster, roxieName))
+            peerCluster=NULL;
+    }
+    appendRemoteLocations(pdesc, locations, localFileName, peerCluster);
+}
+
 
 //----------------------------------------------------------------------------------------------
 
@@ -589,7 +611,7 @@ class CRoxieFileCache : public CInterface, implements ICopyFileProgress, impleme
 
             // put the peerRoxieLocations next in the list
             StringArray localLocations;
-            appendRemoteLocations(pdesc, localLocations, localLocation);
+            appendPeerLocations(pdesc, localLocations, localLocation);
             ForEachItemIn(roxie_idx, localLocations)
             {
                 try
@@ -1295,7 +1317,7 @@ ILazyFileIO *createPhysicalFile(const char *id, IPartDescriptor *pdesc, IPartDes
 {
     StringArray remoteLocations;
     if (remotePDesc)
-        appendRemoteLocations(remotePDesc, remoteLocations, NULL);
+        appendRemoteLocations(remotePDesc, remoteLocations, NULL, NULL);
 
     return queryFileCache().lookupFile(id, fileType, pdesc, numParts, replicationLevel[channel], remoteLocations, startCopy);
 }
