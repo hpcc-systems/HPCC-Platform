@@ -132,6 +132,9 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_DALIIP "--daliip"
 #define ECLOPT_PROCESS "--process"
 #define ECLOPT_PROCESS_S "-p"
+#define ECLOPT_SOURCE_PROCESS "--source-process"
+
+
 
 #define ECLOPT_LIB_PATH_S "-L"
 #define ECLOPT_IMP_PATH_S "-I"
