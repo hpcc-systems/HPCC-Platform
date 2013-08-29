@@ -15,6 +15,7 @@
   </emphasis> <emphasis>includenormal</emphasis> <emphasis role="bold"> ] [,
   </emphasis> <emphasis>includesuper</emphasis> <emphasis role="bold">
   ]</emphasis> <emphasis role="bold"> [, </emphasis> <emphasis>unknownszero
+  </emphasis> <emphasis role="bold">] </emphasis><emphasis role="bold"> [, </emphasis> <emphasis>foreigndali
   </emphasis> <emphasis role="bold">] )</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
@@ -51,6 +52,14 @@
           <entry>Optional. A boolean flag indicating to set file sizes that
           are unknown to zero (0) instead of minus-one (-1). If omitted, the
           default is FALSE.</entry>
+        </row>
+
+        <row>
+          <entry><emphasis>foreigndali</emphasis></entry>
+
+          <entry>Optional. The IP address of the foreign dali used to resolve the file. 
+          If blank then the file is resolved locally.  If omitted, the
+          default is blank.</entry>
         </row>
 
         <row>

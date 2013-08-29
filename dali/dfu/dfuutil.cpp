@@ -480,7 +480,7 @@ class CFileCloner
         Owned<IDistributedFile> dfile = fdir->lookup(dstlfn,userdesc,true);
         if (dfile) {
             ClusterPartDiskMapSpec spec = spec1;
-            const char * kind = ftree->queryProp("@kind");
+            const char * kind = ftree->queryProp("Attr/@kind");
             bool iskey = kind&&(strcmp(kind,"key")==0);
             if (iskey&&repeattlk)
                 spec.setRepeatedCopies(CPDMSRP_lastRepeated,false);

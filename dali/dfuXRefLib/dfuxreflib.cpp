@@ -2677,8 +2677,8 @@ IPropertyTree *  runXRef(unsigned nclusters,const char **clusters,IXRefProgressC
     Owned<IGroup> group = queryNamedGroupStore().lookup(clusters[0]);
     if (group)
         islinux = queryOS(group->queryNode(0).endpoint())==MachineOsLinux;
-    dirs[0] = queryBaseDirectory(0,islinux?DFD_OSunix:DFD_OSwindows);
-    dirs[1] = queryBaseDirectory(1,islinux?DFD_OSunix:DFD_OSwindows);
+    dirs[0] = queryBaseDirectory(grp_unknown, 0,islinux?DFD_OSunix:DFD_OSwindows);  // MORE - should use the info from the group store
+    dirs[1] = queryBaseDirectory(grp_unknown, 1,islinux?DFD_OSunix:DFD_OSwindows);
     numdirs = 2;
     IPropertyTree *ret=NULL;
     try {

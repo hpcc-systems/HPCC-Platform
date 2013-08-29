@@ -1483,7 +1483,7 @@ void CJobMaster::saveSpills()
 
             StringBuffer newName;
             queryThorFileManager().addScope(*this, tmpName, newName, true, true);
-            verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory()));
+            verifyex(file->renamePhysicalPartFiles(newName.str(), NULL, NULL, queryBaseDirectory(grp_unknown)));
 
             file->attach(newName,userDesc);
 

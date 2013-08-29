@@ -334,6 +334,7 @@ extern bool useRemoteResources;
 extern bool checkFileDate;
 extern bool lazyOpen;
 extern bool localSlave;
+extern bool ignoreOrphans;
 extern bool doIbytiDelay;
 extern unsigned initIbytiDelay;
 extern unsigned minIbytiDelay;

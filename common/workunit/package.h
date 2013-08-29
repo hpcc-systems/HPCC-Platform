@@ -60,6 +60,7 @@ extern WORKUNIT_API IHpccPackageMap *createPackageMapFromPtree(IPropertyTree *t,
 
 extern WORKUNIT_API IHpccPackageSet *createPackageSet(const char *process);
 extern WORKUNIT_API IPropertyTree * getPackageMapById(const char * id, bool readonly);
+extern WORKUNIT_API IPropertyTree * getPackageMapById(const char *target, const char * id, bool readonly);
 extern WORKUNIT_API IPropertyTree * getPackageSetById(const char * id, bool readonly);
 extern WORKUNIT_API IPropertyTree * resolvePackageSetRegistry(const char *process, bool readonly);
 extern WORKUNIT_API IPropertyTree * resolveActivePackageMap(const char *process, const char *target, bool readonly);
