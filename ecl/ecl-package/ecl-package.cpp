@@ -529,6 +529,8 @@ public:
                 continue;
             if (iter.matchOption(optDaliIP, ECLOPT_DALIIP))
                 continue;
+            if (iter.matchOption(optSourceProcess, ECLOPT_SOURCE_PROCESS))
+                continue;
             if (iter.matchFlag(optActivate, ECLOPT_ACTIVATE)||iter.matchFlag(optActivate, ECLOPT_ACTIVATE_S))
                 continue;
             if (iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE)||iter.matchFlag(optOverWrite, ECLOPT_OVERWRITE_S))
@@ -589,6 +591,7 @@ public:
         request->setDaliIp(optDaliIP);
         request->setOverWrite(optOverWrite);
         request->setGlobalScope(optGlobalScope);
+        request->setSourceProcess(optSourceProcess);
 
         Owned<IClientAddPackageResponse> resp = packageProcessClient->AddPackage(request);
         if (resp->getExceptions().ordinality())
@@ -619,7 +622,7 @@ public:
                     "   --daliip=<ip>               IP of the remote dali to use for logical file lookups\n"
                     "   --pmid                      Identifier of package map - defaults to filename if not specified\n"
                     "   --global-scope              The specified packagemap can be shared across multiple targets\n"
-// NOT-YET          "  --packageprocessname         if not set use this package process name for all clusters"
+                    "   --source-process            Process cluster to copy files from\n"
                     "   <target>                    Name of target to use when adding package map information\n"
                     "   <filename>                  Name of file containing package map information\n",
                     stdout);
@@ -633,6 +636,7 @@ private:
     StringAttr optProcess;
     StringAttr optDaliIP;
     StringAttr optPackageMapId;
+    StringAttr optSourceProcess;
     bool optActivate;
     bool optOverWrite;
     bool optGlobalScope;
