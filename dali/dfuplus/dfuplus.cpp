@@ -384,6 +384,9 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
             // even it is empty to override default value
             req->setSourceCsvQuote(quote);
         }
+        const char* escape = globals->queryProp("escape");
+        if(escape && *escape)
+            req->setSourceCsvEscape(escape);
     }
     else 
         encoding = format; // may need extra later
