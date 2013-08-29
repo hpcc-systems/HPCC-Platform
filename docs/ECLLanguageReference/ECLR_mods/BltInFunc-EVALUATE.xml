@@ -50,7 +50,7 @@
             <row>
               <entry><emphasis>defname</emphasis></entry>
 
-              <entry>Optional. The name of a specific defintion within the
+              <entry>Optional. The name of a specific definition within the
               <emphasis>module</emphasis> to evaluate. If omitted, all
               definitions in the <emphasis>module</emphasis> are
               evaluated.</entry>
@@ -73,9 +73,10 @@
 
     <para>Example:</para>
 
-    <programlisting>//Form 1 example:
-myService := SERVICE
- UNSIGNED4 doSomething(STRING text);
+    <para>Form 1 example:</para>
+
+    <programlisting>myService := SERVICE
+  UNSIGNED4 doSomething(STRING text);
 END;
 
 ds := DATASET('MyFile', {STRING20 text} , THOR);
@@ -83,9 +84,11 @@ ds := DATASET('MyFile', {STRING20 text} , THOR);
 APPLY(ds, EVALUATE(doSomething(ds.text)));
  //calls the doSomething function once for each record in the ds
  // dataset, ignoring the returned values from the function
- 
-//Form 2 example:
-M := MODULE
+</programlisting>
+
+    <para>Form 2 example:</para>
+
+    <programlisting>M := MODULE
   EXPORT a := 10;
   EXPORT b := OUTPUT('Hello');
 END;
@@ -101,7 +104,8 @@ EVALUATE(M2);
 //  Result_2: Hello
 //  Result_3: Richard</programlisting>
 
-    <para>See Also: APPLY, SERVICE</para>
+    <para>See Also: <link linkend="APPLY">APPLY</link>, <link
+    linkend="SERVICE_Structure">SERVICE Structure</link>,</para>
   </sect2>
 
   <sect2 id="EVALUATE_function">

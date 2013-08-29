@@ -380,6 +380,9 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
         const char* quote = globals->queryProp("quote");
         if(quote && *quote)
             req->setSourceCsvQuote(quote);
+        const char* escape = globals->queryProp("escape");
+        if(escape && *escape)
+            req->setSourceCsvEscape(escape);
     }
     else 
         encoding = format; // may need extra later

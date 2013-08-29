@@ -63,4 +63,12 @@ EXPORT BundleBase := MODULE,VIRTUAL
    * @return Properties dictionary
    */
   EXPORT Properties := DICTIONARY([], PropertyRecord);
+
+  /*
+   * Required version of platform (optional). Can specify a version or version range. If a single version
+   * is specified, it is treated as a minimum version.
+   * @return Required platform version
+   */
+  EXPORT STRING PlatformVersion := '';
+
 END;

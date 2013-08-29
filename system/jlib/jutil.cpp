@@ -332,12 +332,16 @@ HINSTANCE LoadSharedObject(const char *name, bool isGlobal, bool raiseOnError)
     if(h == NULL)
     {
         // Try again, with .so extension if necessary
-        if (strncmp(".so", name+(strlen(name)-3), 3) != 0)
+        StringBuffer path, tail, ext;
+        splitFilename(name, &path, &path, &tail, &ext, false);
+        if (!streq(ext.str(), SharedObjectExtension))
         {
-            // Assume if there's no .so, there's also no lib at the beginning
-            StringBuffer nameBuf;
-            nameBuf.append("lib").append(name).append(".so");
-            h = dlopen((char *)nameBuf.str(), isGlobal ? RTLD_NOW|RTLD_GLOBAL : RTLD_NOW);
+            // Assume if there's no .so, there may also be no lib at the beginning
+            if (strncmp(tail.str(), SharedObjectPrefix, strlen(SharedObjectPrefix) != 0))
+                path.append(SharedObjectPrefix);
+            path.append(tail).append(ext).append(SharedObjectExtension);
+            name = path.str();
+            h = dlopen((char *)name, isGlobal ? RTLD_NOW|RTLD_GLOBAL : RTLD_NOW);
         }
         if (h == NULL)
         {
