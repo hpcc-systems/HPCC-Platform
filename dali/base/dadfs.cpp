@@ -1181,7 +1181,7 @@ public:
         if (!file->canRemove(reason, false))
             ThrowStringException(-1, "Can't remove %s: %s", lfn.get(), reason.str());
 
-        // This will do the right thing for either super-files and logical-files
+        // This will do the right thing for either super-files and logical-files.
         file->detach();
     }
 };
@@ -3056,8 +3056,7 @@ public:
                                     fdesc->getClusterGroupName(i,cname,NULL).str(),
                                     fdesc->queryClusterGroup(i),
                                     fdesc->queryPartDiskMapping(i),
-                                    &queryNamedGroupStore(),
-                                    fdesc->queryClusterRoxieLabel(i)
+                                    &queryNamedGroupStore()
                                     );
 #ifdef EXTRA_LOGGING
                 PROGLOG("setClusters(%d,%s)",i,cname.str());
@@ -3592,7 +3591,7 @@ public:
         if (newbasedir)
             diroverride = newbasedir;
 
-        const char *myBase = queryBaseDirectory(0, os);
+        const char *myBase = queryBaseDirectory(grp_unknown, 0, os);
         StringBuffer baseDir, newPath;
         makePhysicalPartName(logicalName.get(), 0, 0, newPath, false, os, diroverride);
         if (!getBase(directory, newPath, baseDir))
@@ -6210,8 +6209,10 @@ public:
             Owned<IPropertyTree> pt = getNamedPropTree(conn->queryRoot(),"Group","@name",gname.str(),true);
             if (!pt)
                 return NULL;
-            groupdir.set(pt->queryProp("@dir"));
             type = translateGroupType(pt->queryProp("@kind"));
+            groupdir.set(pt->queryProp("@dir"));
+            if (groupdir.isEmpty())
+                groupdir.set(queryBaseDirectory(type));
             Owned<IPropertyTreeIterator> pe2 = pt->getElements("Node");
             ForEach(*pe2) {
                 SocketEndpoint ep(pe2->query().queryProp("@ip"));
