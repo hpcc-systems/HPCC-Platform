@@ -115,19 +115,20 @@ define([
             var handleAs = params.handleAs ? params.handleAs : "json";
             return this._send(service, action, params).then(function (response) {
                 if (!params.suppressExceptionToaster && handleAs == "json") {
-                    var exceptionCode20080 = false; //  Deleted WU
+                    var deletedWorkunit = false; //  Deleted WU
                     if (lang.exists("Exceptions.Source", response)) {
                         var message = "<h3>" + response.Exceptions.Source + "</h3>";
                         if (lang.exists("Exceptions.Exception", response)) {
                             exceptions = response.Exceptions.Exception;
                             for (var i = 0; i < response.Exceptions.Exception.length; ++i) {
-                                if (service === "WsWorkunits" && action === "WUInfo" && response.Exceptions.Exception[i].Code === 20080) {
-                                    exceptionCode20080 = true;
+                                if ((service === "WsWorkunits" && action === "WUInfo" && response.Exceptions.Exception[i].Code === 20080) ||
+                                    (service === "WsWorkunits" && action === "WUQuery" && response.Exceptions.Exception[i].Code === 20081)) {
+                                    deletedWorkunit = true;
                                 }
                                 message += "<p>" + response.Exceptions.Exception[i].Message + "</p>";
                             }
                         }
-                        if (!exceptionCode20080) {
+                        if (!deletedWorkunit) {
                             dojo.publish("hpcc/brToaster", {
                                 message: message,
                                 type: "error",
