@@ -5271,7 +5271,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
     {
         OwnedHqlExpr list = createValue(no_null);
         OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
-        return convertTempTableToInlineTable(errorHandler, listAttr.pos, table);
+        return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
         return createDataset(no_null, LINK(record));
     }
 
@@ -5312,7 +5312,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
         reportError(ERR_RECORD_NOT_MATCH_SET, recordAttr, "The field in the record does not match the type of the set elements");
     
     OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
-    return convertTempTableToInlineTable(errorHandler, listAttr.pos, table);
+    return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
 }
 
 

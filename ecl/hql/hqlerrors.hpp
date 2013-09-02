@@ -464,6 +464,7 @@
 #define HQLERR_UnexpectedType                   3126
 #define HQLERR_PayloadMismatch                  3127
 #define HQLERR_MemberXContainsVirtualRef        3128
+#define HQLERR_FieldHasNoDefaultValue           3129
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contain an illegal cycle/recursive definition %s"
@@ -494,6 +495,7 @@
 #define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on a IFBLOCK for a inline table"
 #define HQLERR_PayloadMismatch_Text             "Mismatched => in inline dictionary definition"
 #define HQLERR_MemberXContainsVirtualRef_Text   "Member %s contains virtual references but not supported as virtual"
+#define HQLERR_FieldHasNoDefaultValue_Text      "Field '%s' doesn't have a defined value"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */
