@@ -7204,7 +7204,7 @@ simpleDictionary
                         {
                             HqlExprArray values;  // Empty list
                             OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $6.getExpr());
-                            OwnedHqlExpr ds = convertTempTableToInlineTable(parser->errorHandler, $4.pos, table);
+                            OwnedHqlExpr ds = convertTempTableToInlineTable(*parser->errorHandler, $4.pos, table);
                             $$.setExpr(createDictionary(no_createdictionary, ds.getClear()), $1);
                         }
     | DICTIONARY '(' '[' beginList inlineDatasetValueList ']' ',' recordDef ')'
@@ -7212,7 +7212,7 @@ simpleDictionary
                             HqlExprArray values;
                             parser->endList(values);
                             OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $8.getExpr());
-                            OwnedHqlExpr ds = convertTempTableToInlineTable(parser->errorHandler, $5.pos, table);
+                            OwnedHqlExpr ds = convertTempTableToInlineTable(*parser->errorHandler, $5.pos, table);
                             $$.setExpr(createDictionary(no_createdictionary, ds.getClear()), $1);
                         }
     | '(' dictionary  ')'  {
@@ -8486,7 +8486,7 @@ simpleDataSet
                             HqlExprArray values;
                             parser->endList(values);
                             OwnedHqlExpr table = createDataset(no_temptable, createValue(no_recordlist, NULL, values), $8.getExpr());
-                            $$.setExpr(convertTempTableToInlineTable(parser->errorHandler, $5.pos, table));
+                            $$.setExpr(convertTempTableToInlineTable(*parser->errorHandler, $5.pos, table));
                             $$.setPosition($1);
                         }
     | DATASET '(' '[' beginList transformList ']' ')'

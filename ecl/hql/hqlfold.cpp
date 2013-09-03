@@ -4811,7 +4811,7 @@ IHqlExpression * CExprFolderTransformer::doFoldTransformed(IHqlExpression * unfo
             {
                 ECLlocation dummyLocation(0, 0, 0, NULL);
                 ThrowingErrorReceiver errorReporter;
-                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, expr);
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
                 if (expr != inlineTable)
                     return inlineTable.getClear();
             }

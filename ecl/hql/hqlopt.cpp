@@ -2492,7 +2492,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             {
                 ECLlocation dummyLocation(0, 0, 0, NULL);
                 ThrowingErrorReceiver errorReporter;
-                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, transformed);
+                OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, transformed);
                 if (transformed != inlineTable)
                     return inlineTable.getClear();
             }

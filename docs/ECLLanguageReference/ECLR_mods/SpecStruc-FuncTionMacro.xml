@@ -82,16 +82,25 @@
   </informaltable>
 
   <para>The <emphasis role="bold">FUNCTIONMACRO </emphasis>structure is a code
-  generation tool, like the MACRO structure, coupled with code encapsulation
-  benefits of the FUNCTION structure. This means that #UNIQUENAME is not
-  necessary to prevent definition name clashes -- the definitions in the
-  <emphasis>code</emphasis> are local within the FUNCTIONMACRO.</para>
+  generation tool, like the MACRO structure, coupled with the code
+  encapsulation benefits of the FUNCTION structure. One advantage the
+  FUNCTIONMACRO has over the MACRO structure is that it may be called in an
+  expression context, just like a FUNCTION would be.</para>
 
-  <para>One additional advantage the FUNCTIONMACRO has over the MACRO
-  structure is that it may be called in an expression context, just like a
-  FUNCTION would be.</para>
+  <para>Unlike the MACRO structure, #UNIQUENAME is not necessary to prevent
+  internal definition name clashes when the FUNCTIONMACRO is used multiple
+  times within the same visibility scope. However, the <emphasis
+  role="bold">LOCAL</emphasis> keyword must be explicitly used within the
+  FUNCTIONMACRO if a definition name in its <emphasis>code</emphasis> may also
+  have been defined outside the FUNCTIONMACRO and within the same visibility
+  scope -- LOCAL clearly identifies that the definition is limited to the
+  <emphasis>code</emphasis> within the FUNCTIONMACRO.</para>
 
-  <para>Example:</para>
+  <para><emphasis role="bold">Example:</emphasis></para>
+
+  <para>This example demonstrates the FUNCTIONMACRO used in an expression
+  context. It also shows how the FUNCTIONMACRO may be called multiple times
+  without name clashes from its internal definitions:</para>
 
   <programlisting>EXPORT Field_Population(infile,infield,compareval) := FUNCTIONMACRO
   c1 := COUNT(infile(infield=compareval));
@@ -106,7 +115,28 @@ ds1 := dataset([{'M'},{'M'},{'M'},{''},{''},{'M'},{''},{'M'},{'M'},{''}],{STRING
 ds2 := dataset([{''},{'M'},{'M'},{''},{''},{'M'},{''},{''},{'M'},{''}],{STRING1 Gender});
 
 OUTPUT(Field_Population(ds1,Gender,''));
-OUTPUT(Field_Population(ds2,Gender,''));        </programlisting>
+OUTPUT(Field_Population(ds2,Gender,''));</programlisting>
 
-  <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION Structure</link>, <link linkend="MACRO_Structure">MACRO Structure</link></para>
+  <para>This example demonstrates use of the LOCAL keyword to prevent name
+  clashes with external definitions within the same visibility scope as the
+  FUNCTIONMACRO:</para>
+
+  <programlisting>numPlus := 'this creates a syntax error without LOCAL in the FUNCTIONMACRO';
+AddOne(num) := FUNCTIONMACRO
+  LOCAL numPlus := num + 1;   //LOCAL required here
+  RETURN numPlus;
+ENDMACRO;
+
+AddTwo(num) := FUNCTIONMACRO
+  LOCAL numPlus := num + 2;   //LOCAL required here
+  RETURN numPlus;
+ENDMACRO;
+
+numPlus;
+AddOne(5);
+AddTwo(8);</programlisting>
+
+  <para>See Also: <link linkend="FUNCTION_Structure">FUNCTION
+  Structure</link>, <link linkend="MACRO_Structure">MACRO
+  Structure</link></para>
 </sect1>

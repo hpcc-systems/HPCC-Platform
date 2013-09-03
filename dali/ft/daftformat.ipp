@@ -239,7 +239,7 @@ protected:
     }
 
 protected:
-    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4 };
+    enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned        maxElementLength;
     FileFormat      format;
     StringMatcher   matcher;

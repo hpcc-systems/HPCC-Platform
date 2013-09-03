@@ -81,8 +81,8 @@
 
             <entry>Specifies grouping the <emphasis>childrecset</emphasis>
             records based on the join condition so all the related child
-            records are passed as a dataset parameter to the transform.
-            </entry>
+            records are passed as a dataset parameter to the
+            transform.</entry>
           </row>
 
           <row>
@@ -107,6 +107,11 @@
   <emphasis>transform</emphasis> and the remaining child. Also like JOIN, the
   order in which the <emphasis>childrecset</emphasis> records are sent to the
   <emphasis>transform</emphasis> is undefined.</para>
+
+  <para>Because DENORMALIZE is basically a specialized form of JOIN, the
+  various join types (LEFT OUTER, RIGHT OUTER, FULL OUTER, LEFT ONLY, RIGHT
+  ONLY, FULL ONLY) are also available for use on DENORMALIZE and act just as
+  they do with JOIN.</para>
 
   <sect2 id="TRANSFORM_Function_Requirements_Denormalize">
     <title>DENORMALIZE TRANSFORM Function Requirements</title>
@@ -136,10 +141,11 @@
     <emphasis>transform</emphasis> function must be a record set of the same
     format as the LEFT record.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>//Form 1 example:
-NormRec := RECORD
+    <para>Form 1 example:</para>
+
+    <programlisting>NormRec := RECORD
   STRING20  thename;
   STRING20  addr;
 END;
@@ -172,9 +178,11 @@ DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
                             LEFT.thename = RIGHT.thename,
                             DeNormThem(LEFT,RIGHT,COUNTER));
 OUTPUT(DeNormedRecs);
+</programlisting>
 
-//Form 2 example:
-NormRec := RECORD
+    <para>Form 2 example:</para>
+
+    <programlisting>NormRec := RECORD
   STRING20  thename;
   STRING20  addr;
 END;
@@ -203,9 +211,11 @@ DeNormedRecs := DENORMALIZE(NamesTable, NormAddrs,
                            GROUP,
                            DeNormThem(LEFT,ROWS(RIGHT)));
 OUTPUT(DeNormedRecs);
+</programlisting>
 
-// NOSORT example
-MyRec := RECORD
+    <para>NOSORT example:</para>
+
+    <programlisting>MyRec := RECORD
   STRING1 Value1;
   STRING1 Value2;
 END;
@@ -236,8 +246,8 @@ OUTPUT(DeNormedRecs);
  */
 </programlisting>
 
-    <para>See Also: <link linkend="TRANSFORM_Structure">TRANSFORM
-    Structure</link>, <link
+    <para>See Also: <link linkend="JOIN">JOIN</link>, <link
+    linkend="TRANSFORM_Structure">TRANSFORM Structure</link>, <link
     linkend="RECORD_Structure">RECORD Structure</link>, <link
     linkend="NORMALIZE">NORMALIZE</link></para>
   </sect2>

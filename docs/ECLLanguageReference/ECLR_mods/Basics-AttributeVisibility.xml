@@ -84,7 +84,7 @@ EXPORT Definition3 := $.Definition2 + 5;
     are referenced by their definition name alone; no qualification is
     needed.</para>
 
-    <programlisting>//then inside the Definition4.ecl file (in the sam efolder as Definition2) you have:
+    <programlisting>//then inside the Definition4.ecl file (in the same folder as Definition2) you have:
 IMPORT $;  
    //makes definitions from the current module available to this code, as needed
 
@@ -100,9 +100,27 @@ LocalDef2 := Definition4 + LocalDef;
   //or SHARED definition in the file are meaningless 
   //since they can never be used by anything
 </programlisting>
-  </sect2>
 
-  <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
-  linkend="EXPORT">EXPORT</link>, <link linkend="SHARED">SHARED</link>, <link
-  linkend="MODULE_Structure">MODULE</link></para>
+    <para>The <emphasis role="bold">LOCAL</emphasis><indexterm>
+        <primary>LOCAL</primary>
+      </indexterm> keyword is valid for use within any nested structure, but
+    most useful within a FUNCTIONMACRO structure to clearly identify that the
+    scope of a definition is limited to the code generated within the
+    FUNCTIONMACRO.</para>
+
+    <programlisting>AddOne(num) := FUNCTIONMACRO
+  LOCAL numPlus := num + 1;
+  RETURN numPlus;
+ENDMACRO;
+
+numPlus := 'this is a syntax error without LOCAL in the FUNCTIONMACRO';
+numPlus;
+AddOne(5);
+</programlisting>
+
+    <para>See Also: <link linkend="IMPORT">IMPORT</link>, <link
+    linkend="EXPORT">EXPORT</link>, <link linkend="SHARED">SHARED</link>,
+    <link linkend="MODULE_Structure">MODULE</link>, <link
+    linkend="FUNCTIONMACRO_Structure">FUNCTIONMACRO</link></para>
+  </sect2>
 </sect1>

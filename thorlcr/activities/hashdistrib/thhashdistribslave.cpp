@@ -1091,11 +1091,21 @@ public:
     }
     bool sendRecv(ICommunicator &comm, CMessageBuffer &mb, rank_t r, mptag_t tag)
     {
+        mptag_t replyTag = createReplyTag();
         loop
         {
             if (aborted)
                 return false;
-            if (comm.sendRecv(mb, r, tag, MEDIUMTIMEOUT))
+            mb.setReplyTag(replyTag);
+            if (comm.send(mb, r, tag, MEDIUMTIMEOUT))
+                break;
+            // try again
+        }
+        loop
+        {
+            if (aborted)
+                return false;
+            if (comm.recv(mb, r, replyTag, NULL, MEDIUMTIMEOUT))
                 return true;
             // try again
         }

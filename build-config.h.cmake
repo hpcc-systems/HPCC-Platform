@@ -82,6 +82,18 @@
     #cmakedefine BUILD_TAG "${BUILD_TAG}"
 #endif
 
+#ifndef BUILD_VERSION_MAJOR
+    #define BUILD_VERSION_MAJOR ${HPCC_MAJOR}
+#endif
+
+#ifndef BUILD_VERSION_MINOR
+    #define BUILD_VERSION_MINOR ${HPCC_MINOR}
+#endif
+
+#ifndef BUILD_VERSION_POINT
+    #define BUILD_VERSION_POINT ${HPCC_POINT}
+#endif
+
 #ifndef BASE_BUILD_TAG
     #cmakedefine BASE_BUILD_TAG "${BASE_BUILD_TAG}"
 #endif

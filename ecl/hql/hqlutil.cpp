@@ -5596,7 +5596,7 @@ IHqlExpression * convertTempRowToCreateRow(IErrorReceiver * errors, ECLlocation 
     return expr->cloneAllAnnotations(ret);
 }
 
-static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+static IHqlExpression * convertTempTableToInline(IErrorReceiver & errors, ECLlocation & location, IHqlExpression * expr)
 {
     IHqlExpression * oldValues = expr->queryChild(0);
     IHqlExpression * record = expr->queryChild(1);
@@ -5609,7 +5609,7 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLloc
     if ((valueOp != no_recordlist) && (valueOp != no_list))
         return LINK(expr);
 
-    TempTableTransformer transformer(errors, location);
+    TempTableTransformer transformer(&errors, location);
     HqlExprArray transforms;
     ForEachChild(idx, values)
     {
@@ -5623,7 +5623,16 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLloc
             {
                 IHqlExpression * field = cur->queryChild(idx);
                 if (field->getOperator() == no_field)
-                    row.append(*LINK(field->queryChild(0)));
+                {
+                    IHqlExpression * value = queryRealChild(field, 0);
+                    if (value)
+                        row.append(*LINK(value));
+                    else
+                    {
+                        VStringBuffer msg(HQLERR_FieldHasNoDefaultValue_Text, field->queryName()->str());
+                        errors.reportError(HQLERR_FieldHasNoDefaultValue, msg.str(), location.sourcePath->str(), location.lineno, location.column, location.position);
+                    }
+                }
             }
             cur.setown(createValue(no_rowvalue, makeNullType(), row));
         }
@@ -5637,7 +5646,7 @@ static IHqlExpression * convertTempTableToInline(IErrorReceiver * errors, ECLloc
     return expr->cloneAllAnnotations(ret);
 }
 
-IHqlExpression * convertTempTableToInlineTable(IErrorReceiver * errors, ECLlocation & location, IHqlExpression * expr)
+IHqlExpression * convertTempTableToInlineTable(IErrorReceiver & errors, ECLlocation & location, IHqlExpression * expr)
 {
     return convertTempTableToInline(errors, location, expr);
 }

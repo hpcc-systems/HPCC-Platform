@@ -10837,7 +10837,7 @@ IHqlExpression * HqlTreeNormalizer::transformTempTable(IHqlExpression * expr)
 {
     ECLlocation dummyLocation(0, 0, 0, NULL);
     AbortingErrorReceiver errorReporter(errors);
-    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, expr);
+    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
     if (expr != inlineTable)
         return transform(inlineTable);
 
