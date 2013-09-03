@@ -197,6 +197,20 @@ static void extractValueFromEnvOutput(StringBuffer &path, const char *specs, con
     }
 }
 
+bool directoryContainsBundleFile(IFile *dir)
+{
+    Owned<IDirectoryIterator> files = dir->directoryFiles(NULL, false, false);
+    ForEach(*files)
+    {
+        IFile *thisFile = &files->query();
+        StringBuffer fileName;
+        splitFilename(thisFile->queryFilename(), NULL, NULL, &fileName, &fileName);
+        if (stricmp(fileName.str(), "bundle.ecl")==0)
+            return true;
+    }
+    return false;
+}
+
 void recursiveRemoveDirectory(IFile *dir, bool isDryRun)
 {
     Owned<IDirectoryIterator> files = dir->directoryFiles(NULL, false, true);
@@ -280,10 +294,19 @@ public:
             Owned<IFile> bundleFile = createIFile(bundle);
             if (bundleFile->exists())
             {
+                StringBuffer cleanedParam(bundle);
+                removeTrailingPathSepChar(cleanedParam);
                 StringBuffer drive, path;
-                splitFilename(bundle, &drive, &path, &bundleName, NULL, true);
+                splitFilename(cleanedParam, &drive, &path, &bundleName, NULL, true);
                 if (bundleFile->isDirectory())
-                    eclOpts.appendf(" -I%s", bundle);
+                {
+                    // Distinguish a directory containing a single file (zipped single module case) from a
+                    // directory containing multiple exported files. Somehow.
+                    if (directoryContainsBundleFile(bundleFile))
+                        eclOpts.appendf(" -I%s%s", drive.str(), path.str());
+                    else
+                        eclOpts.appendf(" -I%s", bundle);
+                }
                 else if (drive.length() + path.length())
                     eclOpts.appendf(" -I%s%s", drive.str(), path.str());
                 else
@@ -878,7 +901,7 @@ protected:
     }
     bool isFromFile() const
     {
-        // If a supplied bundle id contains pathsep or ., assume a filename is being supplied
+        // If a supplied bundle id contains pathsep or ., assume a filename or directory is being supplied
         return strchr(optBundle, PATHSEPCHAR) != NULL || strchr(optBundle, '.') != NULL;
     }
     StringAttr optBundle;
@@ -1160,6 +1183,12 @@ public:
                 throw MakeStringException(0, "Cannot create bundle version directory %s", versionPath.str());
             if (bundleFile->isDirectory() == foundYes) // could also be an archive, acting as a directory
             {
+                if (directoryContainsBundleFile(bundleFile))
+                {
+                    versionPath.append(PATHSEPCHAR).append(bundle->queryCleanName());
+                    if (!optDryRun && !recursiveCreateDirectory(versionPath))
+                        throw MakeStringException(0, "Cannot create bundle version directory %s", versionPath.str());
+                }
                 copyDirectory(bundleFile, versionPath);
             }
             else
