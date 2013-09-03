@@ -744,6 +744,9 @@ UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleFind(unsigned srcLen, UCh
 
 UNICODELIB_API unsigned UNICODELIB_CALL ulUnicodeLocaleFindAtStrength(unsigned srcLen, UChar const * src, unsigned hitLen, UChar const * hit, unsigned instance, char const * localename, char strength)
 {
+    //Very strange behaviour - if source or pattern lengths are 0 search->getCollator() is invalid
+    if (srcLen == 0 || hitLen == 0)
+        return 0;
     UnicodeString const source(src, srcLen);
     UnicodeString const pattern(hit, hitLen);
     UErrorCode error = U_ZERO_ERROR;
@@ -976,9 +979,15 @@ UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleFindReplace(unsigned & tgtLen
 UNICODELIB_API void UNICODELIB_CALL ulUnicodeLocaleFindAtStrengthReplace(unsigned & tgtLen, UChar * & tgt, unsigned srcLen, UChar const * src, unsigned stokLen, UChar const * stok, unsigned rtokLen, UChar const * rtok, char const * localename, char strength)
 {
     UnicodeString source(src, srcLen);
-    UnicodeString const pattern(stok, stokLen);
-    UnicodeString const replace(rtok, rtokLen);
-    doUnicodeLocaleFindAtStrengthReplace(source, pattern, replace, localename, strength);
+
+    //Very strange behaviour - if source or pattern lengths are 0 search->getCollator() is invalid
+    if (srcLen && stokLen)
+    {
+        UnicodeString const pattern(stok, stokLen);
+        UnicodeString const replace(rtok, rtokLen);
+        doUnicodeLocaleFindAtStrengthReplace(source, pattern, replace, localename, strength);
+    }
+
     tgtLen = source.length();
     tgt = (UChar *)CTXMALLOC(parentCtx, tgtLen*2);
     source.extract(0, tgtLen, tgt);
