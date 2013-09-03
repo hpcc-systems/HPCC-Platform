@@ -1832,12 +1832,6 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
                 throw MakeStringException(ECLWATCH_INVALID_INPUT, "Source file not specified.");
         }
 
-        bool nosplit = req.getNosplit();
-        int recordsize = req.getSourceRecordSize();
-        if(recordsize == 0 && !nosplit)             // -ve record sizes for blocked
-            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid record size"); 
-
-
         const char* destname = req.getDestLogicalName();
         if(!destname || !*destname)
             throw MakeStringException(ECLWATCH_INVALID_INPUT, "Destination file not specified.");
@@ -1891,24 +1885,34 @@ bool CFileSprayEx::onSprayFixed(IEspContext &context, IEspSprayFixed &req, IEspS
         }
 
         IDFUfileSpec *destination = wu->queryUpdateDestination();
-        if(recordsize > 0)
-            source->setRecordSize(recordsize);
-        else if (recordsize == RECFMVB_RECSIZE_ESCAPE) {
+        bool nosplit = req.getNosplit();
+        int recordsize = req.getSourceRecordSize();
+        const char* format = req.getSourceFormat();
+        if ((recordsize == RECFMVB_RECSIZE_ESCAPE) || (format && strieq(format, "recfmvb")))
+        {//recordsize may be set by dfuplus; format may be set by EclWatch
             source->setFormat(DFUff_recfmvb);
             destination->setFormat(DFUff_variable);
         }
-        else if (recordsize == RECFMV_RECSIZE_ESCAPE) {
+        else if ((recordsize == RECFMV_RECSIZE_ESCAPE) || (format && strieq(format, "recfmv")))
+        {
             source->setFormat(DFUff_recfmv);
             destination->setFormat(DFUff_variable);
         }
-        else if (recordsize == PREFIX_VARIABLE_RECSIZE_ESCAPE) {
+        else if ((recordsize == PREFIX_VARIABLE_RECSIZE_ESCAPE) || (format && strieq(format, "variable")))
+        {
             source->setFormat(DFUff_variable);
             destination->setFormat(DFUff_variable);
         }
-        else if (recordsize == PREFIX_VARIABLE_BIGENDIAN_RECSIZE_ESCAPE) {
+        else if((recordsize == PREFIX_VARIABLE_BIGENDIAN_RECSIZE_ESCAPE) || (format && strieq(format, "variablebigendian")))
+        {
             source->setFormat(DFUff_variablebigendian);
             destination->setFormat(DFUff_variable);
         }
+        else if(recordsize == 0 && !nosplit)             // -ve record sizes for blocked
+            throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid record size");
+        else
+            source->setRecordSize(recordsize);
+
         destination->setLogicalName(destname);
         destination->setDirectory(destFolder.str());
 
