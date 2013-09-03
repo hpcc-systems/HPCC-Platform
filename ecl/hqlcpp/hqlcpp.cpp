@@ -4332,6 +4332,10 @@ void HqlCppTranslator::buildTempExpr(BuildCtx & ctx, IHqlExpression * expr, CHql
     case no_id2blob:
         buildExpr(ctx, expr, tgt);
         return;
+    case no_call:
+        if (!isEmbedCall(expr))
+            break;
+        //fall through
     case no_externalcall:
         if (format == FormatNatural && expr->isDataset())
             format = hasLinkCountedModifier(expr->queryType()) ? FormatLinkedDataset : FormatBlockedDataset;

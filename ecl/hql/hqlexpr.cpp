@@ -3659,6 +3659,12 @@ switch (op)
     }
 #endif
 
+    if ((op == no_call) || (op == no_funcdef) || (op == no_outofline) || (op == no_embedbody))
+    {
+        if (recordRequiresLinkCount(::queryRecord(queryType())) && !hasLinkCountedModifier(queryType()))
+            throwUnexpected();
+    }
+
 #if 0
     //Useful code for detecting when types get messed up for comparisons
     if (op == no_eq || op == no_ne)
@@ -10712,6 +10718,22 @@ bool isExternalFunction(IHqlExpression * funcdef)
         return (body->getOperator() == no_external);
     }
     return false;
+}
+
+
+bool isEmbedFunction(IHqlExpression * funcdef)
+{
+    IHqlExpression * body = funcdef->queryChild(0);
+    if (body->getOperator() != no_outofline)
+        return false;
+    return body->queryChild(0)->getOperator() == no_embedbody;
+}
+
+
+bool isEmbedCall(IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_call);
+    return isEmbedFunction(expr->queryBody()->queryFunctionDefinition());
 }
 
 

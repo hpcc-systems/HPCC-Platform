@@ -3277,8 +3277,9 @@ bool recordRequiresDestructor(IHqlExpression * expr)
     if (!expr)
         return false;
 
+    IHqlExpression * body = expr->queryBody();
     //true if the internal serialized form is different
-    if (querySerializedForm(expr, internalAtom) != expr)
+    if (querySerializedForm(body, internalAtom) != body)
         return true;
 
     return false;
