@@ -466,7 +466,8 @@
         you for the required packages. Installation of these packages can vary
         depending on your platform. For details of the specific installation
         commands for obtaining and installing these packages, see the commands
-        specific to your Operating System. <variablelist>
+        specific to your Operating System.    <variablelist>
+
             <varlistentry>
               <term>Note:</term>
 
@@ -476,6 +477,14 @@
               </listitem>
             </varlistentry>
           </variablelist></para>
+        <para>Optionally you can use a --nodeps option to force an
+        installation when the dependency check fails. If you choose to do so,
+        you should be familiar enough with libraries and packages that you can
+        resolve any dependency or library issues you may encounter. Some
+        components or even the entire HPCC System may not operate correctly
+        without the appropriate packages installed.*** </para>
+
+
       </sect2>
 
       <sect2 id="SSH_Keys" role="brk">
@@ -654,7 +663,8 @@
         <para>To install the package, follow the appropriate installation
         instructions:</para>
 
-        <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+        <sect3 id="Installing_CentOS-RedHat-Suse">
+          <title>Centos/Red Hat/SuSe</title>
 
         <para>Install RPM with the -Uvh switch.</para>
 
@@ -664,26 +674,74 @@
 
         <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
 
-        <blockquote>
-          <para><emphasis role="bold">Note:</emphasis> For ANY version of SuSe
-          you must set a password for the hpcc user on all nodes. One way to
-          do do this is to issue the following command:</para>
+          <blockquote>
+            <para><emphasis role="bold">NOTE :</emphasis> For ANY version of
+            SuSe you must set a password for the hpcc user on all nodes. One
+            way to do do this is to issue the following command:</para>
 
-          <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
-          set the password on ALL nodes.</para>
+            <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
+            set the password on ALL nodes.</para>
 
           <para><emphasis role="bold">Note:</emphasis> For Centos
           installations, the Fedora EPEL repository is required.</para>
         </blockquote>
 
-        <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+          <sect4 id="Optional_Plug-ins">
+            <title>Optional Plug-ins</title>
+
+            <para>For RPM based systems, there are two different installation
+            packages available. One package includes the optional plug-ins to
+            support embedded code from other languages, such as JAVA,
+            JavaScript, R, or Python.</para>
+
+            <para>If you do not want support for other languages, choose the
+            package for your distro that begins with:</para>
+
+            <programlisting> hpccsystems-platform_community-  </programlisting>
+
+            <para>If you want support for other languages, choose the package
+            for your distro that begins with: </para>
+
+            <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
+
+            <para>You must install the packages that have the plug-ins using
+            the --nodeps option. Then you will have to install the
+            dependencies for each language you wish to support. The
+            dependencies to support each language are installed separately.
+            </para>
+
+            <para>The optional plug-ins are: </para>
+
+            <para><blockquote>
+                <para><itemizedlist>
+                    <listitem>
+                      <para>Python : pyembed</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>JAVA : jniembed </para>
+                    </listitem>
+
+                    <listitem>
+                      <para>JavaScript : v8embed </para>
+                    </listitem>
+
+                    <listitem>
+                      <para>R : Rembed </para>
+                    </listitem>
+                  </itemizedlist></para>
+              </blockquote></para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="Installing_Ubuntu-Debian">
+          <title>Ubuntu/Debian </title>
 
         <para>For Ubuntu installations a Debian package is provided. To
         install the package, use:</para>
 
         <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
-
-        <para></para>
+        </sect3>
       </sect2>
 
       <sect2 id="initial-startup">
