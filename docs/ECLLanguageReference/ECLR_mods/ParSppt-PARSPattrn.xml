@@ -409,7 +409,12 @@ the following supported syntax elements:
  [0-9abcdef]    A set of characters
                         (may use ^ for exclusion list)
  (?=…) (?!...)     Look ahead assertion
- (?&lt;=…) (?&lt;!...)   Look behind assertion</programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
+ (?&lt;=…) (?&lt;!...)   Look behind assertion
+
+Escape sequences can be used to define UNICODE Character ranges. The encoding is UTF-16 Big Endian.  
+For example:
+PATTERN AnyChar    := PATTERN(U'[\u0001-\u7fff]');
+</programlisting><!--*** Note this and the following row entries have been monospace optimized for PDF/HTML*** --></entry>
           </row>
 
           <row>
