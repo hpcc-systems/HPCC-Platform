@@ -27,6 +27,7 @@
 #define HQL_API
 #endif
 #include "hqlatoms.hpp"
+#include "build-config.h"
 
 #define stringify(x) # x
 #define estringify(x) stringify(x)
@@ -47,9 +48,9 @@ Relevant changes include
 
 */
 
-#define LANGUAGE_VERSION_MAJOR      4
-#define LANGUAGE_VERSION_MINOR      0
-#define LANGUAGE_VERSION_SUB        0
+#define LANGUAGE_VERSION_MAJOR      BUILD_VERSION_MAJOR
+#define LANGUAGE_VERSION_MINOR      BUILD_VERSION_MINOR
+#define LANGUAGE_VERSION_SUB        BUILD_VERSION_POINT
 
 #define LANGUAGE_VERSION   estringify(LANGUAGE_VERSION_MAJOR) "." estringify(LANGUAGE_VERSION_MINOR) "." estringify(LANGUAGE_VERSION_SUB)
 
