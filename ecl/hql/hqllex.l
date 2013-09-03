@@ -1333,7 +1333,7 @@ RECORDSET           {
                         if (!lookup)
                             return lookupIdentifierToken(returnToken, lexer, lookup, activeState, CUR_TOKEN_TEXT);
 
-                        returnToken.setType(makeTableType(NULL, NULL, NULL, NULL));
+                        returnToken.setType(makeTableType(NULL));
                         return(SIMPLE_TYPE);
                     }
 SWAPPED             { 

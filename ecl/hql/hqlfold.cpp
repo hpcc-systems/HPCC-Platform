@@ -31,6 +31,7 @@
 #include "hqlerrors.hpp"
 #include "hqlutil.hpp"
 #include "hqlpmap.hpp"
+#include "hqlmeta.hpp"
 
 #include "hqlfold.hpp"
 #include "hqlthql.hpp"
@@ -3379,7 +3380,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
             if (expr->hasAttribute(skewAtom))
             	break;
             //Careful - distribute also destroys grouping, so don't remove if input is grouped.
-            if ((expr->queryType()->queryDistributeInfo() == child->queryType()->queryDistributeInfo()) && !isGrouped(child))
+            if ((queryDistribution(expr) == queryDistribution(child)) && !isGrouped(child))
                 return removeParentNode(expr);
             break;
         }
@@ -3388,7 +3389,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_sorted:
         {
             //If action does not change the type information, then it can't have done anything...
-            if (expr->queryType() == child->queryType())
+            if (hasSameSortGroupDistribution(expr, child))
                 return removeParentNode(expr);
             if (isNull(child) || hasNoMoreRowsThan(child, 1))
                 return removeParentNode(expr);
@@ -3425,7 +3426,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 //  case no_preservemeta:
         {
             //If action does not change the type information, then it can't have done anything...
-            if (expr->queryType() == child->queryType())
+            if (hasSameSortGroupDistribution(expr, child))
                 return removeParentNode(expr);
             if (isNull(child))
                 return replaceWithNull(expr);

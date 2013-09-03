@@ -47,7 +47,7 @@ class HQL_API CHqlDynamicProperty
 {
     friend class CHqlExpression;
 public:
-    inline CHqlDynamicProperty(ExprPropKind _kind, IHqlExpression *_value)
+    inline CHqlDynamicProperty(ExprPropKind _kind, IInterface *_value)
         : kind(_kind), value(_value)
     {
         next = NULL;
@@ -56,9 +56,10 @@ public:
 
 protected:
     CHqlDynamicProperty * next;
-    LinkedHqlExpr value;
     ExprPropKind kind;
+    Linked<IInterface> value;
 };
+
 
 class CUsedTablesBuilder;
 
@@ -121,7 +122,7 @@ public:
 
 protected:
     unsigned hashcode;          // CInterface is 4 byte aligned in 64bits, so use this to pad
-                                // Worth storing becuase it significantly speeds up equality checking
+                                // Worth storing because it significantly speeds up equality checking
     IInterface * transformExtra[NUM_PARALLEL_TRANSFORMS];
     unsigned cachedCRC;
     unsigned infoFlags;
@@ -168,7 +169,6 @@ protected:
         operands.append(child);
         onAppendOperand(child, which);
     }
-    IHqlExpression * queryExistingProperty(ExprPropKind kind) const;
 
     void initFlagsBeforeOperands();
     void updateFlagsAfterOperands();
@@ -178,7 +178,8 @@ protected:
     virtual unsigned getCachedEclCRC();
     void setInitialHash(unsigned typeHash);
 
-    void addProperty(ExprPropKind kind, IHqlExpression * value);
+    virtual void addProperty(ExprPropKind kind, IInterface * value);
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
 
 public:
     virtual void Link(void) const;
@@ -1065,11 +1066,6 @@ public:
     virtual IAtom * queryLocale()                 { return NULL; }
 //  virtual IAtom * queryName() const             { return id; }
     virtual ITypeInfo * queryChildType()        { return NULL; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return this; }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }
@@ -1609,11 +1605,6 @@ public:
     virtual ICollationInfo * queryCollation()   { return NULL; }
     virtual IAtom * queryLocale()                 { return NULL; }
     virtual ITypeInfo * queryChildType()        { return NULL; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return this; }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }
@@ -1661,10 +1652,14 @@ public:
     bool equals(const IHqlExpression & r) const;
     virtual IHqlExpression *clone(HqlExprArray &newkids);
 
+    virtual void addProperty(ExprPropKind kind, IInterface * value);
+    virtual IInterface * queryExistingProperty(ExprPropKind kind) const;
+
 protected:
     IHqlDataset *rootTable;
     IHqlExpression * container;
     OwnedHqlExpr normalized;
+    Owned<IInterface> metaProperty;
 
     void cacheParent();
 
@@ -1735,11 +1730,6 @@ public:
     virtual IAtom * queryName() const { return id->lower(); }
     virtual IIdAtom * queryId() const { return id; }
     virtual ITypeInfo * queryChildType() { return logical; }
-    virtual IInterface * queryDistributeInfo()  { return NULL; }
-    virtual IInterface * queryGroupInfo()       { return NULL; }
-    virtual IInterface * queryGlobalSortInfo()  { return NULL; }
-    virtual IInterface * queryLocalUngroupedSortInfo()   { return NULL; }
-    virtual IInterface * queryGroupSortInfo()   { return NULL; }
     virtual ITypeInfo * queryPromotedType()     { return logical->queryPromotedType(); }
     virtual ITypeInfo * queryTypeBase()         { return this; }
     virtual typemod_t queryModifier()           { return typemod_none; }

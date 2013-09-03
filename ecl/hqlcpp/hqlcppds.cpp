@@ -2080,7 +2080,7 @@ void HqlCppTranslator::doBuildDataset(BuildCtx & ctx, IHqlExpression * expr, CHq
             if (expr->isDictionary())
                 type.setown(makeDictionaryType(makeRowType(record->getType())));
             else
-                type.setown(makeTableType(makeRowType(record->getType()), NULL, NULL, NULL));
+                type.setown(makeTableType(makeRowType(record->getType())));
             if ((format == FormatLinkedDataset) || (format == FormatArrayDataset) || expr->isDictionary())
                 type.setown(setLinkCountedAttr(type, true));
             tgt.expr.setown(createValue(no_nullptr, makeReferenceModifier(type.getClear())));
@@ -2844,7 +2844,7 @@ bool HqlCppTranslator::doBuildDatasetInlineTable(BuildCtx & ctx, IHqlExpression 
 
     unsigned maxRows = values->numChildren();
     Owned<ITypeInfo> declareType = makeConstantModifier(makeArrayType(LINK(rowType), maxRows));
-    OwnedITypeInfo rowsType = makeOutOfLineModifier(makeTableType(LINK(rowType), NULL, NULL, NULL));
+    OwnedITypeInfo rowsType = makeOutOfLineModifier(makeTableType(LINK(rowType)));
     if (options.canLinkConstantRows)
         rowsType.setown(setLinkCountedAttr(rowsType, true));
 
@@ -4573,7 +4573,7 @@ void HqlCppTranslator::convertBoundRowToDataset(BuildCtx & ctx, CHqlBoundExpr & 
 {
     IHqlExpression * boundRow = row->queryBound();
     IHqlExpression * record = row->queryDataset()->queryRecord();
-    Owned<ITypeInfo> type = makeTableType(makeRowType(LINK(record->queryType())), NULL, NULL, NULL);
+    Owned<ITypeInfo> type = makeTableType(makeRowType(LINK(record->queryType())));
     Owned<ITypeInfo> refType = makeReferenceModifier(LINK(type));
     if (hasLinkCountedModifier(boundRow->queryType()) && (preferredFormat != FormatBlockedDataset))
     {

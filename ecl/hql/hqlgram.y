@@ -725,8 +725,7 @@ explicitDatasetType
     : explicitDatasetType1
     | GROUPED explicitDatasetType1
                         {
-                            IHqlExpression * grouping = getUnknownSortlist();
-                            $$.setType(makeGroupedTableType($2.getType(), grouping, NULL));
+                            $$.setType(makeGroupedTableType($2.getType()));
                             $$.setPosition($1);
                         }
     ;
@@ -734,7 +733,7 @@ explicitDatasetType
 explicitDatasetType1
     : DATASET
                         {
-                            $$.setType(makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL));
+                            $$.setType(makeTableType(makeRowType(queryNullRecord()->getType())));
                             $$.setPosition($1);
                         }
     | DATASET '(' recordDef childDatasetOptions ')'
@@ -742,7 +741,7 @@ explicitDatasetType1
                             OwnedHqlExpr record = $3.getExpr();
                             OwnedHqlExpr options = $4.getExpr();
                             ITypeInfo * recordType = createRecordType(record);
-                            Owned<ITypeInfo> tableType = makeTableType(makeRowType(recordType), NULL, NULL, NULL);
+                            Owned<ITypeInfo> tableType = makeTableType(makeRowType(recordType));
                             if (options)
                                 tableType.setown(makeAttributeModifier(LINK(tableType), createAttribute(_childAttr_Atom, LINK(options))));
                             $$.setType(tableType.getClear());
@@ -852,7 +851,7 @@ paramType
     | abstractDataset   {
                             OwnedHqlExpr record = $1.getExpr();
                             OwnedHqlExpr abstractRecord = createAbstractRecord(record);
-                            OwnedITypeInfo type = makeTableType(makeRowType(abstractRecord->getType()), NULL, NULL, NULL);
+                            OwnedITypeInfo type = makeTableType(makeRowType(abstractRecord->getType()));
                             $$.setType(type.getClear(), $1);
                             parser->setTemplateAttribute();
                         }
@@ -3669,7 +3668,7 @@ paramDefinition
     | ANY DATASET knownOrUnknownId
                         {
                             $$.clear();
-                            parser->addParameter($1, $3.getId(), makeTableType(makeRowType(queryNullRecord()->getType()), NULL, NULL, NULL), NULL);
+                            parser->addParameter($1, $3.getId(), makeTableType(makeRowType(queryNullRecord()->getType())), NULL);
                         }
     | ANY knownOrUnknownId defvalue
                         {
@@ -4254,7 +4253,7 @@ fieldDef
                             }
 
                             IHqlExpression *value = $7.getExpr();
-                            Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)), NULL, NULL, NULL);
+                            Owned<ITypeInfo> datasetType = makeTableType(makeRowType(createRecordType(record)));
                             parser->addDatasetField($2, $2.getId(), datasetType, value, attrs.getClear());
                         }
     | setType knownOrUnknownId optFieldAttrs defaultValue
@@ -8200,19 +8199,6 @@ simpleDataSet
                             OwnedHqlExpr attrs;
                             IHqlExpression *groupOrder = parser->processSortList($6, no_group, input, sortItems, NULL, &attrs);
                             OwnedHqlExpr args = createComma(groupOrder, LINK(attrs));
-                            
-                            //Non-all Group only make sense if the rows are together.  This can occur if
-                            //the dataset is sorted, or if previous operation was a grouped aggregate
-                            bool isLocal = queryAttributeInList(localAtom, attrs) != NULL;
-                            if (groupOrder && !queryAttributeInList(allAtom, attrs) && !appearsToBeSorted(input->queryType(), isLocal, true))
-                            {
-                                bool ok = (input->getOperator() == no_usertable) &&
-                                          (datasetHasGroupBy(input));// || isGrouped(input->queryChild(0)));
-                                if (!ok && !isLocal && isPartitionedForGroup(input, groupOrder, false) && appearsToBeSorted(input->queryType(), true, true))
-                                    ok = true;
-                                if (!ok && (groupOrder && groupOrder->numChildren()))
-                                    parser->reportWarning(WRN_NOT_SORTED, $2.pos, "GROUP on a table that does not appear to be sorted, was this intended?");
-                            }
                             $$.setExpr(createDataset(no_group, input.getClear(), args.getClear()), $1);
                         }
     | GROUPED '(' startTopFilter startGROUP beginList sortList endGROUP
@@ -8282,7 +8268,7 @@ simpleDataSet
                             if (grouping && !queryAttributeInList(groupedAtom, attrs))
                             {
                                 parser->checkGrouping($7, dataset,record,grouping);
-                                if (dataset->getOperator() == no_group && dataset->queryType()->queryGroupInfo())
+                                if (dataset->getOperator() == no_group && isGrouped(dataset))
                                     parser->reportWarning(WRN_GROUPINGIGNORED, $3.pos, "Grouping of table input will have no effect, was this intended?");
                             }
 

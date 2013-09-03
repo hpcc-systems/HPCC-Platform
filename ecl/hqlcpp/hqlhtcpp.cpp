@@ -222,7 +222,7 @@ bool canIterateTableInline(IHqlExpression * expr)
     case no_newaggregate:
         {
             IHqlExpression * child = expr->queryChild(0);
-            if (!child->queryType()->queryGroupInfo())
+            if (!isGrouped(child))
                 return canIterateTableInline(child);
             return false;
         }
@@ -2146,7 +2146,7 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     addAttributeBool("local", isLocal);
 
 #ifdef _DEBUG
-    assertex(dataset->isAction() == isActivitySink(kind));
+//    assertex(dataset->isAction() == isActivitySink(kind));
 #endif
     if (dataset->isAction())
     {
@@ -2181,30 +2181,29 @@ void ActivityInstance::createGraphNode(IPropertyTree * defaultSubGraph, bool alw
     if (translator.queryOptions().showMetaInGraph)
     {
         StringBuffer s;
-        ITypeInfo * type = dataset->queryType();
         if (translator.targetThor())
         {
-            IHqlExpression * distribution = queryDistribution(type);
+            IHqlExpression * distribution = queryDistribution(dataset);
             if (distribution && distribution->queryName() != localAtom)
                 addAttribute("metaDistribution", getExprECL(distribution, s.clear(), true).str());
         }
 
-        IHqlExpression * grouping = (IHqlExpression *)type->queryGroupInfo();
+        IHqlExpression * grouping = queryGrouping(dataset);
         if (grouping)
             addAttribute("metaGrouping", getExprECL(grouping, s.clear(), true).str());
 
         if (translator.targetThor())
         {
-            IHqlExpression * globalSortOrder = (IHqlExpression *)type->queryGlobalSortInfo();
+            IHqlExpression * globalSortOrder = queryGlobalSortOrder(dataset);
             if (globalSortOrder)
                 addAttribute("metaGlobalSortOrder", getExprECL(globalSortOrder, s.clear(), true).str());
         }
 
-        IHqlExpression * localSortOrder = (IHqlExpression *)type->queryLocalUngroupedSortInfo();
+        IHqlExpression * localSortOrder = queryLocalUngroupedSortOrder(dataset);
         if (localSortOrder)
             addAttribute("metaLocalSortOrder", getExprECL(localSortOrder, s.clear(), true).str());
 
-        IHqlExpression * groupSortOrder = (IHqlExpression *)type->queryGroupSortInfo();
+        IHqlExpression * groupSortOrder = queryGroupSortOrder(dataset);
         if (groupSortOrder)
             addAttribute("metaGroupSortOrder", getExprECL(groupSortOrder, s.clear(), true).str());
     }
@@ -13535,7 +13534,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
 
     IHqlExpression * dataset = expr->queryChild(0);
     IHqlExpression * selSeq = querySelSeq(expr);
-    bool isGrouped = (dataset->queryType()->queryGroupInfo() != NULL);
+    bool isGrouped = ::isGrouped(dataset);
     bool isLocal = isLocalActivity(expr);
     bool useHash = expr->hasAttribute(hashAtom);
     if (targetThor() && !isGrouped && !isLocal)
@@ -13571,7 +13570,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityDedup(BuildCtx & ctx, IHqlExpr
             ForEachItemIn(i1, info.equalities)
                 normalizedEqualities.append(*replaceSelector(info.equalities.item(i1).queryBody(), dataset, queryActiveTableSelector()));
 
-            IHqlExpression * grouping = static_cast<IHqlExpression *>(dataset->queryType()->queryGroupInfo());
+            IHqlExpression * grouping = queryGrouping(dataset);
             ForEachChild(i, grouping)
             {
                 IHqlExpression * curGroup = grouping->queryChild(i);
@@ -14912,12 +14911,12 @@ void HqlCppTranslator::bindRows(BuildCtx & ctx, node_operator side, IHqlExpressi
     OwnedHqlExpr selector = createSelector(side, dataset, selSeq);
     OwnedHqlExpr rowsExpr = createDataset(no_rows, LINK(selector), LINK(rowsid));
 
-    ITypeInfo * rowType = makeReferenceModifier(LINK(rowsExpr->queryType()->queryChildType()));
+    Owned<ITypeInfo> rowType = makeReferenceModifier(LINK(rowsExpr->queryType()->queryChildType()));
     if (rowsAreLinkCounted)
-        rowType = makeAttributeModifier(rowType, getLinkCountedAttr());
+        rowType.setown(setLinkCountedAttr(rowType, true));
 
     //Rows may be link counted, but rows() is not a linkable rowset
-    OwnedITypeInfo rowsType = makeReferenceModifier(makeTableType(rowType, NULL, NULL, NULL));
+    OwnedITypeInfo rowsType = makeReferenceModifier(makeTableType(rowType.getClear()));
     rowsType.setown(makeOutOfLineModifier(LINK(rowsType)));
 
     CHqlBoundExpr boundRows;
@@ -15527,7 +15526,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityGroup(BuildCtx & ctx, IHqlExpr
         child = child->queryChild(0);
 
     Owned<ABoundActivity> boundDataset = buildCachedActivity(ctx, child);
-    if (expr->queryType()->queryGroupInfo() == child->queryType()->queryGroupInfo())
+    if (queryGrouping(expr) == queryGrouping(child))
         return boundDataset.getClear();
 
     IHqlExpression * sortlist = queryRealChild(expr, 1);

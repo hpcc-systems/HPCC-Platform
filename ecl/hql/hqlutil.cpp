@@ -3651,13 +3651,13 @@ IDefRecordElement * RecordMetaCreator::createField(IHqlExpression * cur, IHqlExp
         childDefRecord.setown(createRecord(fieldRecord, self));
         break;
     case type_table:
-        defType.setown(makeTableType(makeRowType(makeRecordType()), NULL, NULL, NULL));
+        defType.setown(makeTableType(makeRowType(makeRecordType())));
         childDefRecord.setown(::createMetaRecord(fieldRecord, callback));
         break;
     case type_groupedtable:
         {
-            ITypeInfo * tableType = makeTableType(makeRowType(makeRecordType()), NULL, NULL, NULL);
-            defType.setown(makeGroupedTableType(tableType, createAttribute(groupedAtom), NULL));
+            ITypeInfo * tableType = makeTableType(makeRowType(makeRecordType()));
+            defType.setown(makeGroupedTableType(tableType));
             childDefRecord.setown(::createMetaRecord(fieldRecord, callback));
             break;
         }
