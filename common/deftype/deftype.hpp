@@ -194,11 +194,6 @@ public:
     virtual ICharsetInfo * queryCharset() = 0;
     virtual ICollationInfo * queryCollation() = 0;
     virtual IAtom * queryLocale() = 0;
-    virtual IInterface * queryDistributeInfo() = 0;
-    virtual IInterface * queryGroupInfo() = 0;
-    virtual IInterface * queryGlobalSortInfo() = 0;
-    virtual IInterface * queryLocalUngroupedSortInfo() = 0;
-    virtual IInterface * queryGroupSortInfo() = 0;
     virtual ITypeInfo * queryPromotedType() = 0;
     virtual ITypeInfo * queryTypeBase() = 0;
     virtual unsigned getCrc() = 0;      // must be run independant.
@@ -249,8 +244,8 @@ extern DEFTYPE_API ITypeInfo *makeType(type_t type, int size);
 extern DEFTYPE_API IEnumeratedTypeBuilder *makeEnumeratedTypeBuilder(ITypeInfo *base, aindex_t numvalues);
 extern DEFTYPE_API ITypeInfo *makeDecimalType(unsigned digits, unsigned prec, bool isSigned);
 extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype);
-extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype, IInterface * distributeinfo, IInterface *gloalSortinfo, IInterface * localSortInfo);
-extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype, IInterface *groupinfo, IInterface *sortinfo);
+extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype);
+extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeRowType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeSetType(ITypeInfo *basetype);
 extern DEFTYPE_API ITypeInfo *makeTransformType(ITypeInfo *basetype);

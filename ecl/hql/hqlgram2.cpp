@@ -2403,7 +2403,7 @@ void HqlGram::addDatasetField(const attribute &errpos, IIdAtom * name, ITypeInfo
         if (!dsType || queryRecord(dsType)->numChildren() == 0)
         {
             ITypeInfo * recordType = queryRecordType(valueType);
-            dsType.setown(makeTableType(makeRowType(LINK(recordType)), NULL, NULL, NULL));
+            dsType.setown(makeTableType(makeRowType(LINK(recordType))));
         }
         else if (!dsType->assignableFrom(valueType))
         {
@@ -7562,7 +7562,6 @@ static const char * getName(IHqlExpression * e)
 
 void HqlGram::checkDistribution(attribute &errpos, IHqlExpression *input, bool localSpecified, bool ignoreGrouping)
 {
-    IInterface *distribution = input->queryType()->queryDistributeInfo();
     bool inputIsGrouped = isGrouped(input);
     if (localSpecified)
     {
@@ -7571,7 +7570,7 @@ void HqlGram::checkDistribution(attribute &errpos, IHqlExpression *input, bool l
     }
     else
     {
-        if (distribution && isExplicitlyDistributed(input))
+        if (isExplicitlyDistributed(input))
         {
             if (!inputIsGrouped || ignoreGrouping)
             {
@@ -8432,9 +8431,9 @@ void HqlGram::checkRecordIsValid(const attribute &atr, IHqlExpression *record)
 void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
 {
     IHqlExpression * expr = atr.queryExpr();
-    if (appearsToBeSorted(expr->queryType(), isLocal, true))
+    if (appearsToBeSorted(expr, isLocal, true))
         return;
-    if (!isLocal && appearsToBeSorted(expr->queryType(), true, true))
+    if (!isLocal && appearsToBeSorted(expr, true, true))
     {
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "INPUT to MERGE appears to be sorted locally but not globally");
         return;
@@ -8453,7 +8452,7 @@ void HqlGram::checkMergeInputSorted(attribute &atr, bool isLocal)
         }
     }
     
-    if (isGrouped(expr) && appearsToBeSorted(expr->queryType(), false, false))
+    if (isGrouped(expr) && appearsToBeSorted(expr, false, false))
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE is only sorted with the group");
     else
         reportWarning(WRN_MERGE_NOT_SORTED, atr.pos, "Input to MERGE doesn't appear to be sorted");
@@ -9105,7 +9104,9 @@ void HqlGram::defineSymbolProduction(attribute & nameattr, attribute & paramattr
                     {
                         //allow dataset with no record to match, as long as base type is the same
                         if (queryRecord(type) != queryNullRecord() || (type->getTypeCode() != matchType->getTypeCode()))
+                        {
                             reportError(ERR_SAME_TYPE_REQUIRED, nameattr, "Explicit type for %s doesn't match definition in base module", name->str());
+                        }
                         else
                         {
                             type.set(matchType);
@@ -11371,12 +11372,14 @@ void parseAttribute(IHqlScope * scope, IFileContents * contents, HqlLookupContex
 
 void testHqlInternals()
 {
-    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u)\n",
+    printf("Sizes: const(%u) expr(%u) select(%u) dataset(%u) annotation(%u) prop(%u)\n",
             (unsigned)sizeof(CHqlConstant),
             (unsigned)sizeof(CHqlExpressionWithType),
             (unsigned)sizeof(CHqlSelectExpression),
             (unsigned)sizeof(CHqlDataset),
-            (unsigned)sizeof(CHqlAnnotation));
+            (unsigned)sizeof(CHqlAnnotation),
+            (unsigned)sizeof(CHqlDynamicProperty)
+            );
 
     //
     // test getOpString()

@@ -99,7 +99,7 @@ void DataSourceMetaItem::serialize(MemoryBuffer & out) const
 
 DataSourceDatasetItem::DataSourceDatasetItem(const char * _name, const char * _xpath, IHqlExpression * expr) : DataSourceMetaItem(FVFFdataset, NULL, NULL, NULL), record(expr->queryRecord(), 0, true, false, false)
 {
-    type.setown(makeTableType(NULL, NULL, NULL, NULL));
+    type.setown(makeTableType(NULL));
     name.set(_name);
     xpath.set(_xpath);
     splitXmlTagNamesFromXPath(_xpath, record.tagname, &tagname);
@@ -109,7 +109,7 @@ DataSourceDatasetItem::DataSourceDatasetItem(const char * _name, const char * _x
 
 DataSourceDatasetItem::DataSourceDatasetItem(unsigned flags, MemoryBuffer & in) : DataSourceMetaItem(FVFFdataset, NULL, NULL, NULL), record(in)
 {
-    type.setown(makeTableType(NULL, NULL, NULL, NULL));
+    type.setown(makeTableType(NULL));
     in.read(name);
 }
 

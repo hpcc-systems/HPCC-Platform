@@ -1379,40 +1379,6 @@ bool CTableTypeInfo::assignableFrom(ITypeInfo *t2)
     return false;
 }
 
-IInterface *CTableTypeInfo::queryDistributeInfo()
-{
-    return distributeinfo;
-}
-
-IInterface *CTableTypeInfo::queryGlobalSortInfo()
-{
-    return globalsortinfo;
-}
-
-IInterface *CTableTypeInfo::queryLocalUngroupedSortInfo()
-{
-    return localsortinfo;
-}
-
-unsigned CTableTypeInfo::getHash() const
-{
-    unsigned hashcode = CBasedTypeInfo::getHash();
-    HASHFIELD(distributeinfo);
-    HASHFIELD(globalsortinfo);
-    HASHFIELD(localsortinfo);
-    return hashcode;
-}
-
-
-bool CTableTypeInfo::equals(const CTypeInfo & _other) const
-{
-    if (!CBasedTypeInfo::equals(_other))
-        return false;
-    const CTableTypeInfo & other = static_cast<const CTableTypeInfo &>(_other);
-    return (distributeinfo == other.distributeinfo) && (globalsortinfo == other.globalsortinfo) && (localsortinfo == other.localsortinfo);
-}
-
-
 StringBuffer & CTableTypeInfo::getECLType(StringBuffer & out)   
 { 
     ITypeInfo * recordType = ::queryRecordType(this);
@@ -1425,12 +1391,11 @@ StringBuffer & CTableTypeInfo::getECLType(StringBuffer & out)
     return out; 
 }
 
+
 void CTableTypeInfo::serialize(MemoryBuffer &tgt)
-{ 
-    assertex(!globalsortinfo && !localsortinfo && !distributeinfo);
+{
     CBasedTypeInfo::serializeSkipChild(tgt);
 }
-
 
 bool CGroupedTableTypeInfo::assignableFrom(ITypeInfo *t2)
 {
@@ -1445,55 +1410,6 @@ bool CGroupedTableTypeInfo::assignableFrom(ITypeInfo *t2)
     }
     return false;
 }
-
-IInterface *CGroupedTableTypeInfo::queryDistributeInfo()
-{
-    return queryChildType()->queryDistributeInfo();
-}
-
-IInterface *CGroupedTableTypeInfo::queryGroupInfo()
-{
-    return groupinfo;
-}
-
-IInterface *CGroupedTableTypeInfo::queryGlobalSortInfo()
-{
-    return queryChildType()->queryGlobalSortInfo();
-}
-
-IInterface *CGroupedTableTypeInfo::queryLocalUngroupedSortInfo()
-{
-    return queryChildType()->queryLocalUngroupedSortInfo();
-}
-
-IInterface *CGroupedTableTypeInfo::queryGroupSortInfo()
-{
-    return groupsortinfo;
-}
-
-unsigned CGroupedTableTypeInfo::getHash() const
-{
-    unsigned hashcode = CBasedTypeInfo::getHash();
-    HASHFIELD(groupinfo);
-    HASHFIELD(groupsortinfo);
-    return hashcode;
-}
-
-
-bool CGroupedTableTypeInfo::equals(const CTypeInfo & _other) const
-{
-    if (!CBasedTypeInfo::equals(_other))
-        return false;
-    const CGroupedTableTypeInfo & other = static_cast<const CGroupedTableTypeInfo &>(_other);
-    return (groupsortinfo == other.groupsortinfo) && (groupinfo == other.groupinfo);
-}
-
-void CGroupedTableTypeInfo::serialize(MemoryBuffer &tgt)
-{ 
-    assertex(!groupsortinfo && !groupinfo);
-    CBasedTypeInfo::serialize(tgt);
-}
-
 
 bool CSetTypeInfo::assignableFrom(ITypeInfo *t2)
 {
@@ -2014,10 +1930,10 @@ extern DEFTYPE_API ITypeInfo *makeRuleType(ITypeInfo *basetype)
     return commonUpType(new CRuleTypeInfo(basetype));
 }
 
-extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype, IInterface * distributeinfo, IInterface *globalsortinfo, IInterface *localsortinfo)
+extern DEFTYPE_API ITypeInfo *makeTableType(ITypeInfo *basetype)
 {
     assertex(!basetype || basetype->getTypeCode() == type_row);
-    return commonUpType(new CTableTypeInfo(basetype, distributeinfo, globalsortinfo, localsortinfo));
+    return commonUpType(new CTableTypeInfo(basetype));
 }
 
 extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype)
@@ -2026,9 +1942,9 @@ extern DEFTYPE_API ITypeInfo *makeDictionaryType(ITypeInfo *basetype)
     return commonUpType(new CDictionaryTypeInfo(basetype));
 }
 
-extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype, IInterface *groupinfo, IInterface *sortinfo)
+extern DEFTYPE_API ITypeInfo *makeGroupedTableType(ITypeInfo *basetype)
 {
-    return commonUpType(new CGroupedTableTypeInfo(basetype, groupinfo, sortinfo));
+    return commonUpType(new CGroupedTableTypeInfo(basetype));
 }
 
 extern DEFTYPE_API ITypeInfo *makeFunctionType(ITypeInfo *basetype, IInterface * parameters, IInterface * defaults)
@@ -3409,10 +3325,10 @@ ITypeInfo * replaceChildType(ITypeInfo * type, ITypeInfo * newChild)
         newType.setown(makeDictionaryType(LINK(newChild)));
         break;
     case type_table:
-        newType.setown(makeTableType(LINK(newChild), LINK(type->queryDistributeInfo()), LINK(type->queryGlobalSortInfo()), LINK(type->queryLocalUngroupedSortInfo())));
+        newType.setown(makeTableType(LINK(newChild)));
         break;
     case type_groupedtable:
-        newType.setown(makeGroupedTableType(LINK(newChild), LINK(type->queryGroupInfo()), LINK(type->queryGroupSortInfo())));
+        newType.setown(makeGroupedTableType(LINK(newChild)));
         break;
     case type_row:
         newType.setown(makeRowType(LINK(newChild)));
@@ -3631,12 +3547,12 @@ extern DEFTYPE_API ITypeInfo * deserializeType(MemoryBuffer &src)
     case type_table:
         {
             ITypeInfo *base = deserializeType(src);
-            return makeTableType(makeRowType(base), NULL, NULL, NULL);
+            return makeTableType(makeRowType(base));
         }
     case type_groupedtable:
         {
             ITypeInfo *base = deserializeType(src);
-            return makeGroupedTableType(base, NULL, NULL);
+            return makeGroupedTableType(base);
         }
 
         

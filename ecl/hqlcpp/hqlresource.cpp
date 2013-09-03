@@ -488,7 +488,7 @@ bool lightweightAndReducesDatasetSize(IHqlExpression * expr)
         return true;
     case no_group:
         //removing grouping will reduce size of the spill file.
-        if (expr->queryType()->queryGroupInfo() == NULL)
+        if (!isGrouped(expr))
             return true;
         break;
     }
@@ -1040,8 +1040,7 @@ void ResourcerInfo::clearProjected()
 
 void ResourcerInfo::addSpillFlags(HqlExprArray & args, bool isRead)
 {
-    IHqlExpression * grouping = (IHqlExpression *)original->queryType()->queryGroupInfo();
-    if (grouping)
+    if (isGrouped(original))
         args.append(*createAttribute(groupedAtom));
 
     if (outputToUseForSpill)
@@ -3123,7 +3122,7 @@ void EclResourcer::createInitialGraph(IHqlExpression * expr, IHqlExpression * ow
                 if (filename && (filename->getOperator() == no_constant) && !expr->hasAttribute(xmlAtom) && !expr->hasAttribute(csvAtom))
                 {
                     IHqlExpression * dataset = expr->queryChild(0);
-                    if (expr->hasAttribute(groupedAtom) == (dataset->queryType()->queryGroupInfo() != NULL))
+                    if (expr->hasAttribute(groupedAtom) == isGrouped(dataset))
                     {
                         StringBuffer filenameText;
                         filename->queryValue()->getStringValue(filenameText);

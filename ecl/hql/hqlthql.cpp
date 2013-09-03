@@ -702,15 +702,14 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
         {
             if (expr->isDataset())
             {
-                ITypeInfo * type = expr->queryType();
-                IHqlExpression * group = (IHqlExpression*)type->queryGroupInfo();
+                IHqlExpression * group = queryGroupInfo(expr);
                 if (group)
                     getExprECL(group, s.append("G(")).append(")");
-                IHqlExpression * distrib = queryDistribution(type);
+                IHqlExpression * distrib = queryDistribution(expr);
                 if (distrib) getExprECL(distrib, s.append("D(")).append(")");
-                appendSortOrder(s, "GO", queryGlobalSortOrder(type));
-                appendSortOrder(s, "LO", queryLocalUngroupedSortOrder(type));
-                appendSortOrder(s, "RO", queryGroupSortOrder(type));
+                appendSortOrder(s, "GO", queryGlobalSortOrder(expr));
+                appendSortOrder(s, "LO", queryLocalUngroupedSortOrder(expr));
+                appendSortOrder(s, "RO", queryGroupSortOrder(expr));
             }
         }
         s.append("]");
