@@ -164,7 +164,7 @@ define([
                 for (var i = 0; i < cell.length; ++i) {
                     if (i == 0) {
                         var tr = domConstruct.create("tr", null, table);
-                        for (key in cell[i]) {
+                        for (var key in cell[i]) {
                             var th = domConstruct.create("th", { innerHTML: entities.encode(key) }, tr);
                         }
                     }
