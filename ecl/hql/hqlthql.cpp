@@ -50,19 +50,6 @@
 
 #define MAX_GRAPHTEXT_LEN   80      // Truncate anything more than 80 characters
 
-inline bool isInternalAttribute(IHqlExpression * e)
-{
-    if (e->isAttribute())
-    {
-        IAtom * name= e->queryName();
-        if ((name == sequenceAtom) || isInternalAttributeName(name))
-            return true;
-        if ((name == updateAtom) && e->hasAttribute(alwaysAtom))
-            return true;
-    }
-    return false;
-}
-
 bool endsWithDotDotDot(const StringBuffer & s)
 {
     if (s.length() < 3)
@@ -89,6 +76,7 @@ public:
     void setLowerCaseIds(bool value)        { lowerCaseIds = value; }
     void setMinimalSelectors(bool value)    { minimalSelectors = value; }
     void setMaxRecurseDepth(int depth)      { maxDatasetDepth = depth; }
+    void setTryToRegenerate(bool value)         { tryToRegenerate = value; }
 
 private:
     void childrenToECL(IHqlExpression *expr, StringBuffer &s, bool inType, bool needComma, unsigned first);
@@ -133,7 +121,41 @@ private:
 
     StringBuffer & appendId(StringBuffer & s, IIdAtom * name);
     StringBuffer & queryNewline(StringBuffer &s);
-    
+
+    bool isExported(IHqlExpression * expr)
+    {
+        return ::isExported(expr) && !tryToRegenerate;
+    }
+
+    bool isShared(IHqlExpression * expr)
+    {
+        return ::isShared(expr) && !tryToRegenerate;
+    }
+
+    bool isPublicSymbol(IHqlExpression * expr)
+    {
+        return ::isPublicSymbol(expr) && !tryToRegenerate;
+    }
+
+    bool isInternalAttribute(IHqlExpression * e)
+    {
+        if (e->isAttribute())
+        {
+            IAtom * name= e->queryName();
+            if ((name == sequenceAtom) || isInternalAttributeName(name))
+                return true;
+            if ((name == updateAtom) && e->hasAttribute(alwaysAtom))
+                return true;
+            if (tryToRegenerate)
+            {
+                if (name == jobTempAtom)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+private:
     bool          m_recurse;
     bool          ignoreModuleNames;
     bool          insideNewTransform;
@@ -151,6 +173,7 @@ private:
     bool          ignoreVirtualAttrs;
     bool          lowerCaseIds;
     bool          minimalSelectors;
+    bool          tryToRegenerate;
     StringBufferArray m_exports;
     StringBufferArray m_service_names;
     StringBufferArray m_export_names;
@@ -178,6 +201,7 @@ HqltHql::HqltHql(bool recurse, bool _xgmmlGraphText) :
     ignoreVirtualAttrs = false;
     minimalSelectors = false;
     lowerCaseIds = false;
+    tryToRegenerate = false;
     clashCounter = 0;
 }
 
@@ -1981,14 +2005,35 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             break;
         case no_typetransfer:
         {
-            s.append(getEclOpString(no));
-            s.append('(');
-            toECL(child0, s, child0->getPrecedence() < 0, inType);
-            s.append(", ");
-            getTypeString(expr->queryType(), s);
-            s.append(')');
+            if (expr->isDatarow())
+            {
+                s.append(getEclOpString(no));
+                s.append('(');
+                toECL(child1, s, child0->getPrecedence() < 0, inType);
+                s.append(", ");
+                toECL(child0, s, child0->getPrecedence() < 0, inType);
+                s.append(')');
+            }
+            else
+            {
+                s.append(getEclOpString(no));
+                s.append('(');
+                toECL(child0, s, child0->getPrecedence() < 0, inType);
+                s.append(", ");
+                getTypeString(expr->queryType(), s);
+                s.append(')');
+            }
             break;
         }
+        case no_embedbody:
+            {
+                s.append("BEGINC++\n");
+                IValue * value = child0->queryValue();
+                if (value)
+                    value->getUTF8Value(s);
+                s.append("ENDC++");
+                break;
+            }
         case no_nofold:
         case no_nohoist:
         case no_selectfields:
@@ -2062,14 +2107,20 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 s.append("TRANSFORM(");
                 getTypeString(expr->queryType(), s);
                 s.append(",");
+                if (tryToRegenerate)
+                    s.newline();
                 unsigned kids = expr->numChildren();
                 for (unsigned idx = 0; idx < kids; idx++)
                 {
                     if (queryAddDotDotDot(s, startLength))
                         break;
                     IHqlExpression *child = expr->queryChild(idx);
+                    if (tryToRegenerate)
+                        s.append("\t");
                     toECL(child, s, child->getPrecedence() < 0, inType);
                     s.append(';');
+                    if (tryToRegenerate)
+                        s.newline();
                 }
                 s.append(")");
             }
@@ -2186,6 +2237,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 toECL(child0, s, false, inType);
                 curDatasetDepth++;
             }
+            else if (tryToRegenerate)
+                defaultToECL(child0, s, inType);
             else
                 defaultToECL(expr, s, inType);
             break;
@@ -2496,14 +2549,21 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
             break;
         case no_subgraph:
             {
-                s.append(getEclOpString(expr->getOperator())).append("(");
-                ForEachChild(i, expr)
+                if (tryToRegenerate)
                 {
-                    s.newline().append("\t");
-                    toECL(expr->queryChild(i), s, false, inType);
+                    childrenToECL(expr, s, false, false, 0);
                 }
-                s.append(")");
-                break;
+                else
+                {
+                    s.append(getEclOpString(expr->getOperator())).append("(");
+                    ForEachChild(i, expr)
+                    {
+                        s.newline().append("\t");
+                        toECL(expr->queryChild(i), s, false, inType);
+                    }
+                    s.append(")");
+                    break;
+                }
             }
         case no_sequence:
             if (expr->queryName())
@@ -2591,6 +2651,8 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 toECL(child0, s, false, inType);
                 curDatasetDepth++;
             }
+            else if (tryToRegenerate)
+                toECL(child0, s, false, inType);
             else
                 defaultToECL(expr, s, inType);
             break;
@@ -2601,6 +2663,26 @@ void HqltHql::toECL(IHqlExpression *expr, StringBuffer &s, bool paren, bool inTy
                 childrenToECL(expr, s, inType, false, 1);
                 popScope();
             }
+            else
+                defaultToECL(expr, s, inType);
+            break;
+        case no_compound_indexread:
+        case no_compound_disknormalize:
+        case no_compound_diskaggregate:
+        case no_compound_diskcount:
+        case no_compound_diskgroupaggregate:
+        case no_compound_indexnormalize:
+        case no_compound_indexaggregate:
+        case no_compound_indexcount:
+        case no_compound_indexgroupaggregate:
+        case no_compound_childread:
+        case no_compound_childnormalize:
+        case no_compound_childaggregate:
+        case no_compound_childcount:
+        case no_compound_childgroupaggregate:
+        case no_compound_inline:
+            if (tryToRegenerate)
+                toECL(child0, s, false, inType);
             else
                 defaultToECL(expr, s, inType);
             break;
@@ -2843,7 +2925,7 @@ const char * HqltHql::getEclOpString(node_operator op)
     case no_ne:
         return "!=";
     case no_not:
-        return "~";
+        return "NOT ";
     case no_or:
         return "OR";
     case no_and:
@@ -3124,7 +3206,7 @@ void HqltHql::defineCallTarget(IHqlExpression * call, StringBuffer & name)
                 newdef.append("SHARED ");
             }
         }
-        else
+        else if (!tryToRegenerate)
             newdef.append("EXPORT ");           //not really right - the information is lost about whether the service definition is exported or not.
 
         newdef.append(name).append(" := ").newline();
@@ -3217,6 +3299,18 @@ StringBuffer &toECL(IHqlExpression * expr, StringBuffer &s, bool recurse, bool x
     HqlExprArray queries;
     unwindCommaCompound(queries, expr);
     return toECL(s, hqlthql, queries, recurse);
+}
+
+
+StringBuffer &regenerateECL(IHqlExpression * expr, StringBuffer &s)
+{
+    HqltHql hqlthql(true, false);
+    hqlthql.setIgnoreModuleNames(true);
+    hqlthql.setTryToRegenerate(true);
+
+    HqlExprArray queries;
+    unwindCommaCompound(queries, expr);
+    return toECL(s, hqlthql, queries, true);
 }
 
 

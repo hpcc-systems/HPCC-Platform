@@ -359,6 +359,7 @@ extern jlib_decl StringBuffer & appendDataAsHex(StringBuffer &out, unsigned len,
 extern jlib_decl StringBuffer & appendStringAsSQL(StringBuffer & out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendStringAsECL(StringBuffer & out, unsigned len, const char * src);
 extern jlib_decl StringBuffer & appendStringAsQuotedECL(StringBuffer &out, unsigned len, const char * src);
+extern jlib_decl StringBuffer & appendUtf8AsECL(StringBuffer &out, unsigned len, const char * src);
 
 extern jlib_decl const char *decodeJSON(const char *x, StringBuffer &ret, unsigned len=(unsigned)-1, const char **errMark=NULL);
 extern jlib_decl void extractItem(StringBuffer & res, const char * src, const char * sep, int whichItem, bool caps);

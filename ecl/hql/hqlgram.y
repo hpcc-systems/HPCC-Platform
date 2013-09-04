@@ -1759,7 +1759,7 @@ transform
                         {
                             $$.setExpr(parser->bindParameters($1, $4.getExpr()), $1);
                         }
-    | startInlineTransform transformOptions ',' transformations ')'
+    | startInlineTransform transformOptions semiComma transformations ')'
                         {
                             $$.setExpr(parser->closeTransform($4), $1);
                             parser->leaveCompoundObject();
@@ -1817,7 +1817,7 @@ startTransform
 
 transformOptions
     :
-    | transformOptions ',' transformOption
+    | transformOptions semiComma transformOption
                         {
                             parser->appendTransformOption($3.getExpr());
                             $$.setPosition($1);

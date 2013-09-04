@@ -336,7 +336,6 @@ ECLRTL_API void rtlUnicodeToStr(unsigned outlen, char * out, unsigned inlen, UCh
 ECLRTL_API void rtlStrToUnicodeX(unsigned & outlen, UChar * & out, unsigned inlen, char const * in);
 ECLRTL_API void rtlUnicodeToStrX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in);
 ECLRTL_API void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UChar const * in);
-ECLRTL_API void rtlUnicodeToQuotedUTF8X(unsigned & outlen, char * & out, unsigned inlen, UChar const * in);
 ECLRTL_API bool rtlCodepageToCodepage(unsigned outlen, char * out, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage); //returns success, false probably means illegal input or overflow
 ECLRTL_API int rtlSingleUtf8ToCodepage(char * out, unsigned inlen, char const * in, char const * outcodepage); //returns number of trailbytes on character in UTF8 if valid, -1 error (illegal input or overflow (this routine assumes output is single character, which can break if outcodepage uses multibyte sequences, so don't do that))
 

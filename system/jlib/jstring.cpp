@@ -1256,7 +1256,7 @@ void appendURL(StringBuffer *dest, const char *src, size32_t len, char lower)
 }
 
 
-static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len, const char * src, bool addBreak, bool isCpp)
+static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len, const char * src, bool addBreak, bool isCpp, bool isUtf8)
 {
     const int minBreakPos = 0;
     const int commaBreakPos = 70;
@@ -1313,7 +1313,7 @@ static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len,
                     out.append(c);
                 break;
             default:
-                if ((c >= ' ') && (c <= 126))
+                if (isUtf8 || (c >= ' ') && (c <= 126))
                     out.append(c);
                 else
                     out.appendf("\\%03o", c); 
@@ -1331,13 +1331,19 @@ static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len,
 
 StringBuffer & appendStringAsCPP(StringBuffer &out, unsigned len, const char * src, bool addBreak)
 {
-    return appendStringExpandControl(out, len, src, addBreak, true);
+    return appendStringExpandControl(out, len, src, addBreak, true, false);
 }
 
 
 StringBuffer & appendStringAsECL(StringBuffer &out, unsigned len, const char * src)
 {
-    return appendStringExpandControl(out, len, src, false, false);
+    return appendStringExpandControl(out, len, src, false, false, false);
+}
+
+
+StringBuffer & appendUtf8AsECL(StringBuffer &out, unsigned len, const char * src)
+{
+    return appendStringExpandControl(out, len, src, false, false, true);
 }
 
 
