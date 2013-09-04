@@ -655,7 +655,7 @@
         instructions:</para>
 
         <sect3 id="Installing_CentOS-RedHat-Suse">
-          <title>Centos/Red Hat/SuSe</title>
+          <title>CentOS/Red Hat/SuSe</title>
 
           <para>Install RPM with the -Uvh switch.</para>
 
@@ -673,7 +673,7 @@
             <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
             set the password on ALL nodes.</para>
 
-            <para><emphasis role="bold">Note:</emphasis> For Centos
+            <para><emphasis role="bold">Note:</emphasis> For CentOS
             installations, the Fedora EPEL repository is required.</para>
           </blockquote>
 
