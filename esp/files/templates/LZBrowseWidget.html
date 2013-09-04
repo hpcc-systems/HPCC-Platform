@@ -130,6 +130,7 @@
                         </div>
                     </div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}NewPage" class="right" data-dojo-attach-event="onClick:_onNewPage" data-dojo-props="iconClass:'iconNewPage', showLabel:false" data-dojo-type="dijit.form.Button">Open in New Page</div>
                 </div>
                 <div id="${id}LandingZonesGridCP" style="border:0px; padding: 0px; border-color:none" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
                     <div id="${id}LandingZonesGrid">
@@ -138,12 +139,14 @@
             </div>
         </div>
     </div>
-    <div id="${id}FileListDialog" title="Info Dialog" data-dojo-type="dijit.Dialog">
+    <div id="${id}FileListDialog" title="File Uploader" data-dojo-type="dijit.Dialog">
         <div class="dijitDialogPaneContentArea">
             <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
-                <input id="${id}DropZoneTargetSelect" title="Group:" style="width: 95%;" colspan="2" data-dojo-type="TargetSelectWidget" />
+                <input id="${id}DropZoneTargetSelect" title="Landing Zone:" style="width: 95%;" colspan="2" data-dojo-type="TargetSelectWidget" />
             </div>
-            <div id="${id}UploadFileList" class="dijitDialogPaneContentArea" data-dojo-type="dojox.form.uploader.FileList"></div>
+            <p>
+            <div id="${id}UploadFileList" class="dijitDialogPaneContentArea" data-dojo-props="uploaderId: '${id}Upload'" data-dojo-type="dojox.form.uploader.FileList"></div>
+            </p>
         </div>
         <div class="dijitDialogPaneActionBar">
             <button id="${id}FileListDialogUpload" data-dojo-attach-event="onClick:_onUploadSubmit" data-dojo-type="dijit.form.Button">Start</button>
