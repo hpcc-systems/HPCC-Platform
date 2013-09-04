@@ -263,17 +263,22 @@ interface ISortedElementsTreeFilter : extends IInterface
 {
     virtual bool isOK(IPropertyTree &tree) = 0;
 };
-
-extern da_decl IRemoteConnection *getElementsPaged( const char *basexpath, 
-                                     const char *xpath, 
+interface IElementsPager : extends IInterface
+{
+    virtual IRemoteConnection *getElements(IArrayOf<IPropertyTree> &elements) = 0;
+};
+extern da_decl void sortElements( IPropertyTreeIterator* elementsIter,
                                      const char *sortorder, 
+                                     const char *namefilterlo, // if non null filter less than this value
+                                     const char *namefilterhi, // if non null filter greater than this value
+                                     IArrayOf<IPropertyTree> &sortedElements);
+
+extern da_decl IRemoteConnection *getElementsPaged(IElementsPager *elementsPager,
                                      unsigned startoffset, 
                                      unsigned pagesize, 
                                      ISortedElementsTreeFilter *postfilter, // if non-NULL filters before adding to page
                                      const char *owner,
                                      __int64 *hint,                         // if non null points to in/out cache hint
-                                     const char *namefilterlo, // if non null filter less than this value
-                                     const char *namefilterhi, // if non null filter greater than this value
                                      IArrayOf<IPropertyTree> &results,
                                      unsigned *total); // total possible filtered matches, i.e. irrespective of startoffset and pagesize
 
