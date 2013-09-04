@@ -466,25 +466,16 @@
         you for the required packages. Installation of these packages can vary
         depending on your platform. For details of the specific installation
         commands for obtaining and installing these packages, see the commands
-        specific to your Operating System.    <variablelist>
-
+        specific to your Operating System. <variablelist>
             <varlistentry>
               <term>Note:</term>
 
               <listitem>
-                <para>For Centos installations, the Fedora EPEL repository is
+                <para>For CentOS installations, the Fedora EPEL repository is
                 required.</para>
               </listitem>
             </varlistentry>
           </variablelist></para>
-        <para>Optionally you can use a --nodeps option to force an
-        installation when the dependency check fails. If you choose to do so,
-        you should be familiar enough with libraries and packages that you can
-        resolve any dependency or library issues you may encounter. Some
-        components or even the entire HPCC System may not operate correctly
-        without the appropriate packages installed.*** </para>
-
-
       </sect2>
 
       <sect2 id="SSH_Keys" role="brk">
@@ -666,13 +657,13 @@
         <sect3 id="Installing_CentOS-RedHat-Suse">
           <title>Centos/Red Hat/SuSe</title>
 
-        <para>Install RPM with the -Uvh switch.</para>
+          <para>Install RPM with the -Uvh switch.</para>
 
-        <para>This is the upgrade command and will perform an automatic
-        upgrade if a previous version is installed or it will just install
-        fresh if no other version has been installed.</para>
+          <para>This is the upgrade command and will perform an automatic
+          upgrade if a previous version is installed or it will just install
+          fresh if no other version has been installed.</para>
 
-        <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
+          <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
 
           <blockquote>
             <para><emphasis role="bold">NOTE :</emphasis> For ANY version of
@@ -682,9 +673,9 @@
             <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
             set the password on ALL nodes.</para>
 
-          <para><emphasis role="bold">Note:</emphasis> For Centos
-          installations, the Fedora EPEL repository is required.</para>
-        </blockquote>
+            <para><emphasis role="bold">Note:</emphasis> For Centos
+            installations, the Fedora EPEL repository is required.</para>
+          </blockquote>
 
           <sect4 id="Optional_Plug-ins">
             <title>Optional Plug-ins</title>
@@ -700,17 +691,21 @@
             <programlisting> hpccsystems-platform_community-  </programlisting>
 
             <para>If you want support for other languages, choose the package
-            for your distro that begins with: </para>
+            for your distro that begins with:</para>
 
             <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
 
-            <para>You must install the packages that have the plug-ins using
-            the --nodeps option. Then you will have to install the
-            dependencies for each language you wish to support. The
-            dependencies to support each language are installed separately.
-            </para>
+            <para>You must install the packages that <emphasis
+            role="bold">have</emphasis> the plug-ins using the --nodeps
+            option. For example:</para>
 
-            <para>The optional plug-ins are: </para>
+            <programlisting>sudo rpm -Uvh --nodeps &lt;rpm file name&gt;</programlisting>
+
+            <para>Then you must install the dependencies for each language you
+            wish to support. The dependencies to support each language are
+            installed separately.</para>
+
+            <para>The optional plug-ins are:</para>
 
             <para><blockquote>
                 <para><itemizedlist>
@@ -719,15 +714,15 @@
                     </listitem>
 
                     <listitem>
-                      <para>JAVA : jniembed </para>
+                      <para>JAVA : jniembed</para>
                     </listitem>
 
                     <listitem>
-                      <para>JavaScript : v8embed </para>
+                      <para>JavaScript : v8embed</para>
                     </listitem>
 
                     <listitem>
-                      <para>R : Rembed </para>
+                      <para>R : Rembed</para>
                     </listitem>
                   </itemizedlist></para>
               </blockquote></para>
@@ -735,12 +730,12 @@
         </sect3>
 
         <sect3 id="Installing_Ubuntu-Debian">
-          <title>Ubuntu/Debian </title>
+          <title>Ubuntu/Debian</title>
 
-        <para>For Ubuntu installations a Debian package is provided. To
-        install the package, use:</para>
+          <para>For Ubuntu installations a Debian package is provided. To
+          install the package, use:</para>
 
-        <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
         </sect3>
       </sect2>
 
@@ -875,7 +870,7 @@
               </listitem>
             </orderedlist></para>
 
-          <para> </para>
+          <para></para>
         </sect3>
 
         <sect3 role="brk">
