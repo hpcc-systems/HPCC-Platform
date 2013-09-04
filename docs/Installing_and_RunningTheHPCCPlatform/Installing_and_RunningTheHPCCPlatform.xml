@@ -312,8 +312,6 @@
                 (for load balancing clusters not nodes)</para>
 
                 <para>or</para>
-
-                <para></para>
               </listitem>
 
               <listitem>
@@ -471,7 +469,7 @@
               <term>Note:</term>
 
               <listitem>
-                <para>For Centos installations, the Fedora EPEL repository is
+                <para>For CentOS installations, the Fedora EPEL repository is
                 required.</para>
               </listitem>
             </varlistentry>
@@ -654,36 +652,89 @@
         <para>To install the package, follow the appropriate installation
         instructions:</para>
 
-        <para><emphasis role="bold">Centos/Red Hat/SuSe</emphasis></para>
+        <sect3 id="Installing_CentOS-RedHat-Suse">
+          <title>CentOS/Red Hat/SuSe</title>
 
-        <para>Install RPM with the -Uvh switch.</para>
+          <para>Install RPM with the -Uvh switch.</para>
 
-        <para>This is the upgrade command and will perform an automatic
-        upgrade if a previous version is installed or it will just install
-        fresh if no other version has been installed.</para>
+          <para>This is the upgrade command and will perform an automatic
+          upgrade if a previous version is installed or it will just install
+          fresh if no other version has been installed.</para>
 
-        <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
+          <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
 
-        <blockquote>
-          <para><emphasis role="bold">Note:</emphasis> For ANY version of SuSe
-          you must set a password for the hpcc user on all nodes. One way to
-          do do this is to issue the following command:</para>
+          <blockquote>
+            <para><emphasis role="bold">Note:</emphasis> For ANY version of
+            SuSe you must set a password for the hpcc user on all nodes. One
+            way to do do this is to issue the following command:</para>
 
-          <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
-          set the password on ALL nodes.</para>
+            <para><programlisting>sudo passwd hpcc</programlisting>Be sure to
+            set the password on ALL nodes.</para>
 
-          <para><emphasis role="bold">Note:</emphasis> For Centos
-          installations, the Fedora EPEL repository is required.</para>
-        </blockquote>
+            <para><emphasis role="bold">Note:</emphasis> For CentOS
+            installations, the Fedora EPEL repository is required.</para>
+          </blockquote>
 
-        <para><emphasis role="bold">Ubuntu/Debian </emphasis></para>
+          <sect4 id="Optional_Plug-ins">
+            <title>Optional Plug-ins</title>
 
-        <para>For Ubuntu installations a Debian package is provided. To
-        install the package, use:</para>
+            <para>For RPM based systems, there are two different installation
+            packages available. One package includes the optional plug-ins to
+            support embedded code from other languages, such as JAVA,
+            JavaScript, R, or Python.</para>
 
-        <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+            <para>If you do not want support for other languages, choose the
+            package for your distro that begins with:</para>
 
-        <para></para>
+            <programlisting> hpccsystems-platform_community-  </programlisting>
+
+            <para>If you want support for other languages, choose the package
+            for your distro that begins with:</para>
+
+            <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
+
+            <para>You must install the packages that <emphasis
+            role="bold">have</emphasis> the plug-ins using the --nodeps
+            option. For example:</para>
+
+            <programlisting>sudo rpm -Uvh --nodeps &lt;rpm file name&gt;</programlisting>
+
+            <para>Then you must install the dependencies for each language you
+            wish to support. The dependencies to support each language are
+            installed separately.</para>
+
+            <para>The optional plug-ins are:</para>
+
+            <para><blockquote>
+                <para><itemizedlist>
+                    <listitem>
+                      <para>Python : pyembed</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>JAVA : jniembed</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>JavaScript : v8embed</para>
+                    </listitem>
+
+                    <listitem>
+                      <para>R : Rembed</para>
+                    </listitem>
+                  </itemizedlist></para>
+              </blockquote></para>
+          </sect4>
+        </sect3>
+
+        <sect3 id="Installing_Ubuntu-Debian">
+          <title>Ubuntu/Debian</title>
+
+          <para>For Ubuntu installations a Debian package is provided. To
+          install the package, use:</para>
+
+          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+        </sect3>
       </sect2>
 
       <sect2 id="initial-startup">
@@ -817,7 +868,7 @@
               </listitem>
             </orderedlist></para>
 
-          <para> </para>
+          <para></para>
         </sect3>
 
         <sect3 role="brk">
