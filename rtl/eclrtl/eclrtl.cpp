@@ -3192,16 +3192,6 @@ void rtlUnicodeToEscapedStrX(unsigned & outlen, char * & out, unsigned inlen, UC
     memcpy(out, outbuff.str(), outlen);
 }
 
-void rtlUnicodeToQuotedUTF8X(unsigned & outlen, char * & out, unsigned inlen, UChar const * in)
-{
-    UnicodeString unicode(in, inlen);
-    unicode.findAndReplace("'", "\\'");
-    //pre-flight length - may be more efficient to guess length and only re-extract if guess no good, but what to guess?
-    outlen = unicode.extract(0, unicode.length(), 0, 0, UTF8_CODEPAGE);
-    out = (char *)rtlMalloc(outlen);
-    unicode.extract(0, unicode.length(), out, outlen, UTF8_CODEPAGE);
-}
-
 bool rtlCodepageToCodepage(unsigned outlen, char * out, unsigned inlen, char const * in, char const * outcodepage, char const * incodepage)
 {
     UConverter * inconv = queryRTLUnicodeConverter(incodepage)->query();

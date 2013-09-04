@@ -557,6 +557,7 @@ struct HqlCppOptions
     unsigned            applyInstantEclTransformationsLimit;
     unsigned            complexClassesThreshold;
     unsigned            complexClassesActivityFilter;
+    unsigned            subgraphToRegeneate;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
     bool                peephole;
