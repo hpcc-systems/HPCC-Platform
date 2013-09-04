@@ -2403,25 +2403,25 @@ public:
             StringAttr xPath;
             StringAttr sortOrder;
 
-            void getQuerySetQueries(const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTreeRoot)
+            void populateQueryTree(const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
             {
                 Owned<IPropertyTreeIterator> iter = querySetTree->getElements(xPath);
                 ForEach(*iter)
                 {
                     IPropertyTree &query = iter->query();
-                    IPropertyTree *queryWithSetId = queryTreeRoot->addPropTree("Query", LINK(&query));
+                    IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", LINK(&query));
                     queryWithSetId->addProp("@querySetId", querySetId);
                 }
             }
 
             IPropertyTree* getAllQuerySetQueries(IRemoteConnection* conn, const char *querySet, const char *xPath)
             {
-                Owned<IPropertyTree> queryTreeRoot = createPTree("Queries");
+                Owned<IPropertyTree> queryTree = createPTree("Queries");
                 IPropertyTree* root = conn->queryRoot();
                 if (querySet && *querySet)
                 {
                     VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
-                    getQuerySetQueries(querySet, root, path.str(), queryTreeRoot);
+                    populateQueryTree(querySet, root, path.str(), queryTree);
                 }
                 else
                 {
@@ -2433,11 +2433,11 @@ public:
                         if (id && *id)
                         {
                             VStringBuffer path("Query%s", xPath);
-                            getQuerySetQueries(id, &querySet, path.str(), queryTreeRoot);
+                            populateQueryTree(id, &querySet, path.str(), queryTree);
                         }
                     }
                 }
-                return queryTreeRoot.getClear();
+                return queryTree.getClear();
             }
 
         public:
