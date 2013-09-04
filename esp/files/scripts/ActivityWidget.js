@@ -55,7 +55,6 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            this.refreshGrid();
             this._refreshActionState();
         },
 
