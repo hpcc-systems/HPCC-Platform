@@ -312,8 +312,6 @@
                 (for load balancing clusters not nodes)</para>
 
                 <para>or</para>
-
-                <para></para>
               </listitem>
 
               <listitem>
@@ -666,7 +664,7 @@
           <programlisting>sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>
 
           <blockquote>
-            <para><emphasis role="bold">NOTE :</emphasis> For ANY version of
+            <para><emphasis role="bold">Note:</emphasis> For ANY version of
             SuSe you must set a password for the hpcc user on all nodes. One
             way to do do this is to issue the following command:</para>
 
