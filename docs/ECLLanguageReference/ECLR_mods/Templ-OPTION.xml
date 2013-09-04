@@ -336,7 +336,7 @@
 
               <entry>Default: false</entry>
 
-              <entry>Specifies the CRC check on indexes is produces a warning
+              <entry>Specifies the CRC check on indexes producing a warning
               and not an error.</entry>
             </row>
 
