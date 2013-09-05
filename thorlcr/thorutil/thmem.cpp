@@ -1802,12 +1802,12 @@ class CThorAllocator : public CSimpleInterface, implements IThorAllocator, imple
 protected:
     mutable Owned<IRowAllocatorMetaActIdCache> allocatorMetaCache;
     Owned<roxiemem::IRowManager> rowManager;
-    roxiemem::RoxieHeapFlags flags;
+    roxiemem::RoxieHeapFlags defaultFlags;
     IContextLogger &logctx;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CThorAllocator(memsize_t memSize, unsigned memorySpillAt, IContextLogger &_logctx, roxiemem::RoxieHeapFlags _flags) : logctx(_logctx), flags(_flags)
+    CThorAllocator(memsize_t memSize, unsigned memorySpillAt, IContextLogger &_logctx, roxiemem::RoxieHeapFlags _defaultFlags) : logctx(_logctx), defaultFlags(_defaultFlags)
     {
         allocatorMetaCache.setown(createRowAllocatorCache(this));
         rowManager.setown(roxiemem::createRowManager(memSize, NULL, logctx, allocatorMetaCache, false));
@@ -1819,20 +1819,24 @@ public:
         allocatorMetaCache.clear();
     }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id) const
+    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned id, roxiemem::RoxieHeapFlags flags) const
     {
         return createRoxieRowAllocator(*rowManager, meta, activityId, id, flags);
     }
 // IThorAllocator
+    virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const
+    {
+        return allocatorMetaCache->ensure(meta, activityId, flags);
+    }
     virtual IEngineRowAllocator *getRowAllocator(IOutputMetaData * meta, unsigned activityId) const
     {
-        return allocatorMetaCache->ensure(meta, activityId);
+        return allocatorMetaCache->ensure(meta, activityId, defaultFlags);
     }
     virtual roxiemem::IRowManager *queryRowManager() const
     {
         return rowManager;
     }
-    virtual roxiemem::RoxieHeapFlags queryFlags() const { return flags; }
+    virtual roxiemem::RoxieHeapFlags queryFlags() const { return defaultFlags; }
     virtual bool queryCrc() const { return false; }
 };
 
@@ -1846,7 +1850,7 @@ public:
 // IThorAllocator
     virtual bool queryCrc() const { return true; }
 // roxiemem::IRowAllocatorMetaActIdCacheCallback
-    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned cacheId) const
+    virtual IEngineRowAllocator *createAllocator(IOutputMetaData *meta, unsigned activityId, unsigned cacheId, roxiemem::RoxieHeapFlags flags) const
     {
         return createCrcRoxieRowAllocator(*rowManager, meta, activityId, cacheId, flags);
     }
