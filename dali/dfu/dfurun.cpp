@@ -1057,6 +1057,7 @@ public:
         cAbortNotify abortnotify;
         wu->subscribeAbort(&abortnotify);
         bool iskey=false;
+        StringAttr kind;
         bool multiclusterinsert = false;
         bool multiclustermerge = false;
         bool useserverreplicate = false;
@@ -1129,16 +1130,15 @@ public:
                             }
                         }
                     }
-                    const char * kind;
                     if (foreigncopy) {
                         foreignfdesc.setown(queryDistributedFileDirectory().getFileDescriptor(tmp.str(),foreignuserdesc,foreigndalinode));
                         if (!foreignfdesc) {
                             StringBuffer s;
                             throw MakeStringException(-1,"Source file %s could not be found in Dali %s",tmp.str(),foreigndalinode->endpoint().getUrlStr(s).str());
                         }
-                        kind = foreignfdesc->queryProperties().queryProp("@kind");
+                        kind.set(foreignfdesc->queryProperties().queryProp("@kind"));
                         oldRoxiePrefix.set(foreignfdesc->queryProperties().queryProp("@roxiePrefix"));
-                        iskey = kind&&(strcmp(kind,"key")==0);
+                        iskey = strsame("key", kind);
                         if (destination->getWrap()||iskey)
                             destination->setNumPartsOverride(foreignfdesc->numParts());
                         if (options->getPush()) {// need to set ftslave location
@@ -1159,6 +1159,7 @@ public:
                             throw MakeStringException(-1,"Source file %s could not be found",tmp.str());
                         oldRoxiePrefix.set(srcFile->queryAttributes().queryProp("@roxiePrefix"));
                         iskey = isFileKey(srcFile);
+                        kind.set(srcFile->queryAttributes().queryProp("@kind"));
                         if (destination->getWrap()||(iskey&&(cmd==DFUcmd_copy)))    // keys default wrap for copy
                             destination->setNumPartsOverride(srcFile->numParts());
                         if (options->getSubfileCopy()) 
@@ -1258,6 +1259,8 @@ public:
                                 fdesc->queryProperties().setProp("@roxiePrefix", newroxieprefix.str());
                             if (iskey)
                                 fdesc->queryProperties().setProp("@kind", "key");
+                            else if (kind.length()) // JCSMORE may not really need seperate if (iskey) line above
+                                fdesc->queryProperties().setProp("@kind", kind);
                             if (multiclusterinsert||multiclustermerge) 
                                 multifdesc.setown(fdesc.getClear());
                             else

@@ -1470,6 +1470,7 @@ void CJobMaster::saveSpills()
             fillClusterArray(*this, tmpName, clusters, groups);
             Owned<IFileDescriptor> fileDesc = queryThorFileManager().create(*this, tmpName, clusters, groups, true, TDXtemporary|TDWnoreplicate);
             fileDesc->queryProperties().setPropBool("@pausefile", true); // JCSMORE - mark to keep, may be able to distinguish via other means
+            fileDesc->queryProperties().setProp("@kind", "flat");
 
             IPropertyTree &props = fileDesc->queryProperties();
             props.setPropBool("@owned", true);
