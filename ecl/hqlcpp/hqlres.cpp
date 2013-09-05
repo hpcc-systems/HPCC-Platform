@@ -74,28 +74,21 @@ void ResourceManager::addNamed(const char * type, unsigned len, const void * dat
         Owned<IPropertyTree> entry=createPTree("Resource");
         entry->setProp("@type", type);
         entry->setPropInt("@id", id);
-        if (compressed)
-            entry->setPropBool("@compressed", true);
+        entry->setPropBool("@compressed", compressed);
+        entry->setPropBool("@header", true);
         if (manifestEntry)
             mergePTree(entry, manifestEntry);
         ensureManifestInfo()->addPropTree("Resource", entry.getClear());
     }
-    resources.append(*new ResourceItem(type, id, len, data));
+    MemoryBuffer mb;
+    appendResource(mb, len, data, compressed);
+    resources.append(*new ResourceItem(type, id, mb.length(), mb.toByteArray()));
 }
 
 bool ResourceManager::addCompress(const char * type, unsigned len, const void * data, IPropertyTree *manifestEntry, unsigned id, bool addToManifest)
 {
-    bool isCompressed=false;
-    if (len>=32) //lzw assert if too small
-    {
-        isCompressed = true;
-        MemoryBuffer compressed;
-        compressResource(compressed, len, data);
-        addNamed(type, compressed.length(), compressed.toByteArray(), manifestEntry, id, addToManifest, isCompressed);
-    }
-    else
-        addNamed(type, len, data, manifestEntry, id, addToManifest, isCompressed);
-    return isCompressed;
+    addNamed(type, len, data, manifestEntry, id, addToManifest, true);
+    return true;
 }
 
 static void loadResource(const char *filepath, MemoryBuffer &content)
