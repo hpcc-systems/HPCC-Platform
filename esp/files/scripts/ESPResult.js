@@ -44,7 +44,10 @@ define([
         startProperty: "Start",
         countProperty: "Count",
         preRequest: function (request) {
-            if (this.name) {
+            if (this.name && this.cluster) {
+                request['LogicalName'] = this.name;
+                request['Cluster'] = this.cluster;
+            } else if (this.name) {
                 request['LogicalName'] = this.name;
             } else {
                 request['Wuid'] = this.wuid;
@@ -85,6 +88,13 @@ define([
                     wuid: this.Wuid,
                     sequence: this.Sequence,
                     isComplete: this.isComplete()
+                });
+            } else if (lang.exists("Name", this) && lang.exists("ClusterName", this)) {
+                this.store = new Store({
+                    wuid: this.Wuid,
+                    cluster: this.ClusterName,
+                    name: this.Name,
+                    isComplete: true
                 });
             } else {
                 this.store = new Store({
@@ -154,7 +164,7 @@ define([
                 for (var i = 0; i < cell.length; ++i) {
                     if (i == 0) {
                         var tr = domConstruct.create("tr", null, table);
-                        for (key in cell[i]) {
+                        for (var key in cell[i]) {
                             var th = domConstruct.create("th", { innerHTML: entities.encode(key) }, tr);
                         }
                     }
@@ -346,6 +356,9 @@ define([
                 if (this.Wuid && lang.exists("Sequence", this)) {
                     request['Wuid'] = this.Wuid;
                     request['Sequence'] = this.Sequence;
+                } else if (this.Name && this.ClusterName) {
+                    request['LogicalName'] = this.Name;
+                    request['Cluster'] = this.ClusterName;
                 } else if (this.Name) {
                     request['LogicalName'] = this.Name;
                 }

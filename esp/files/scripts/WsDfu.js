@@ -21,9 +21,13 @@ define([
     "dojo/_base/array",
     "dojo/store/util/QueryResults",
 
+    "dojox/xml/parser",
+
+    "hpcc/ESPBase",
     "hpcc/ESPRequest"
 ], function (declare, lang, Deferred, arrayUtil, QueryResults,
-    ESPRequest) {
+    parser,
+    ESPBase, ESPRequest) {
 
     return {
         DFUArrayAction: function (logicalFiles, actionType, callback) {
@@ -134,7 +138,18 @@ define([
             lang.mixin(params, {
                 handleAs: "text"
             });
-            return ESPRequest.send("WsDfu", "DFUDefFile", params);
+            return ESPRequest.send("WsDfu", "DFUDefFile", params).then(function (response) {
+                var domXml = parser.parse(response);
+                var espBase = new ESPBase();
+                var exceptions = espBase.getValues(domXml, "Exception", ["Exception"]);
+                if (exceptions.length) {
+                    response = "";
+                    arrayUtil.forEach(exceptions, function (item, idx) {
+                        response += item.Message + "\n";
+                    });
+                }
+                return response;
+            });
         }
     };
 });

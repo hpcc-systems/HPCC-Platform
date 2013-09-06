@@ -170,10 +170,9 @@ define([
                 request: {
                     Name: this.Name,
                     Format: format
-                },
-                load: function (response) {
-                    onFetchStructure(response);
                 }
+            }).then(function(response) {
+                onFetchStructure(response);
             });
         },
         fetchDEF: function (onFetchXML) {

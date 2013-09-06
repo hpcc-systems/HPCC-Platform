@@ -256,7 +256,7 @@ require([
                     var first = true;
                     var table = {};
                     var tr = {};
-                    for (key in props) {
+                    for (var key in props) {
                         if (key[0] == "_")
                             continue;
 

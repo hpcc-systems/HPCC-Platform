@@ -80,6 +80,9 @@ require([
             if (target === null)
                 target = "";
             this.inherited(arguments);
+            if (this.callback) {
+                this.callback(this.value, this._getRowAttr());
+            }
         },
 
         _getValueAttr: function () {
@@ -87,6 +90,18 @@ require([
                 return this.defaultValue;
 
             return this.value;
+        },
+
+        _getRowAttr: function () {
+            var context = this;
+            var retVal = null;
+            arrayUtil.forEach(this.options, function (item, idx) {
+                if (context.value === item.value) {
+                    retVal = item;
+                    return false;
+                }
+            });
+            return retVal;
         },
 
         _postLoad: function () {
