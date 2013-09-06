@@ -150,6 +150,7 @@ public:
             case TAKsoap_rowaction:
             case TAKsoap_datasetdataset:
             case TAKsoap_datasetaction:
+            case TAKhttp_rowdataset:
                 ret = new CMasterActivity(this);
                 break;
             case TAKskipcatch:
