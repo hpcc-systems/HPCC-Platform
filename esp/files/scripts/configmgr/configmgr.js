@@ -912,7 +912,7 @@ function handleConfigCellClickEvent(oArgs, caller, isComplex) {
 
     if (record.getData(column.key + '_ctrlType') === 5) {
       caller.editors[5].cancel();
-      top.document.navDT.promptVerifyPwd(category, params, attrName, oldValue, newValue, recordIndex + 1, callback);
+      top.document.navDT.promptVerifyPwd(category, params, attrName, oldValue, newValue, recordIndex + 1, callback, record.getData("name") == "hashKey");
       return false;
     }
 

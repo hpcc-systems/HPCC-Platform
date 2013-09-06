@@ -257,6 +257,22 @@
             </xsl:attribute>
           </xsl:element>
         </xsl:element>
+        <xsl:if test="string(@enabled) = 'true' and string(@hashKey) = ''">
+            <xsl:message terminate="yes">
+              Invalid hashKey. Cannot be empty if Challenge-Response is enabled.
+            </xsl:message>
+        </xsl:if>
+        <xsl:element name="challengeResponse">
+           <xsl:attribute name="enabled">
+              <xsl:value-of select="@enabled"/>
+           </xsl:attribute>
+           <xsl:attribute name="key">
+              <xsl:value-of select="@hashKey"/>
+           </xsl:attribute>
+           <xsl:attribute name="userCacheTimeout">
+              <xsl:value-of select="@userCacheTimeout"/>
+           </xsl:attribute>
+        </xsl:element>
         <xsl:if test="string(@ldapServer) != ''">
           <xsl:element name="ldapSecurity">
             <xsl:copy-of select="@ldapProtocol | @authMethod | @maxConnections | @workunitsBasedn | @filesDefaultUser | @filesDefaultPassword"/>

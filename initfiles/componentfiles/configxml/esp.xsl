@@ -72,6 +72,8 @@
             </xsl:attribute>
             
             <xsl:call-template name="addEnvironmentInfo"/>
+            <xsl:call-template name="addChallengeResponse">
+            </xsl:call-template>
             
             <xsl:for-each select="Authentication">
                 <xsl:if test="@method='ldap' or @method='ldaps'">
@@ -210,6 +212,14 @@
             <xsl:message terminate="yes">No ESP service definition found in <xsl:value-of select="$serviceFileName"/>!</xsl:message>
         </xsl:if>
         <xsl:copy-of select="$serviceFileNode"/>
+    </xsl:template>
+
+    <xsl:template name="addChallengeResponse">
+        <ChallengeResponse>
+            <xsl:variable name="daliServerName" select="@daliServers"/>
+            <xsl:copy-of select="/Environment/Software/DaliServerProcess[@name=$daliServerName]/@enabled"/>
+            <xsl:attribute name="key"><xsl:value-of select="/Environment/Software/DaliServerProcess[@name=$daliServerName]/@hashKey"/></xsl:attribute>
+        </ChallengeResponse>
     </xsl:template>
     
     
