@@ -971,7 +971,6 @@ public:
     bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
 
-    static bool cannotRemove(CDfsLogicalFileName &name,IUserDescriptor *user,StringBuffer &reason,bool ignoresub, unsigned timeoutms);
     void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
     unsigned setDefaultTimeout(unsigned timems)
@@ -3017,7 +3016,13 @@ protected:
                         ThrowStringException(-1, "Cluster %s not present in file %s", clusterName.str(), logicalName.get());
                 }
             }
-
+            if (removeFile)
+            {
+                // check can remove, e.g. cannot if this is a subfile of a super
+                StringBuffer reason;
+                if (!canRemove(reason))
+                    throw MakeStringException(-1,"detach: %s", reason.str());
+            }
             // detach this IDistributeFile
             writeLock.clear();
             root.setown(closeConnection(removeFile));

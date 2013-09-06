@@ -15,6 +15,7 @@
 ############################################################################## */
 define([
     "dojo/_base/declare",
+    "dojo/_base/lang",
     "dojo/dom",
 
     "dijit/layout/BorderContainer",
@@ -28,7 +29,7 @@ define([
 
     "dijit/Toolbar", "dijit/ToolbarSeparator", "dijit/form/Button"
 ],
-    function (declare, dom,
+    function (declare, lang, dom,
             BorderContainer, ContentPane, registry,
             _Widget, ESPWorkunit,
             template) {
@@ -102,8 +103,8 @@ define([
                             context.editor.setValue(text);
                         });
                     }
-                } else if (params.ECL) {
-                    context.editor.setValue(params.ECL);
+                } else if (lang.exists("ECL"), params) {
+                    context.editor.setValue(params.ECL ? params.ECL : "");
                 }
             },
 

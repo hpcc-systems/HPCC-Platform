@@ -309,8 +309,7 @@
 
               <entry>Default: true</entry>
 
-              <entry>Specifies sorting (or not) payload fields during
-              a</entry>
+              <entry>Specifies sorting (or not) payload fields</entry>
             </row>
 
             <row>
@@ -326,7 +325,7 @@
 
               <entry>Default: false</entry>
 
-              <entry>Specifies all the stored variables are replaced with
+              <entry>Specifies that all the stored variables are replaced with
               their default values, or values overridden by #stored. This can
               significantly reduce the size of the graph generated.</entry>
             </row>
@@ -336,7 +335,7 @@
 
               <entry>Default: false</entry>
 
-              <entry>Specifies the CRC check on indexes is produces a warning
+              <entry>Specifies that the CRC check on indices produces a warning
               and not an error.</entry>
             </row>
 
@@ -357,7 +356,7 @@
 
               <entry>Default: false</entry>
 
-              <entry>If true, specifies the workunit is automatically
+              <entry>If true, specifies that the workunit is automatically
               re-assigned to execute on another available cluster listed in
               allowedClusters when blocked on its assigned cluster.</entry>
             </row>
@@ -367,7 +366,7 @@
 
               <entry>Default: false</entry>
 
-              <entry>If true, specifies the code generator automatically
+              <entry>If true, specifies that the code generator automatically
               detects opportunities for Common Sub-expression Elimination that
               may be "buried" within multiple PERSISTed attributes. If false,
               notification of these opportunities are displayed to the

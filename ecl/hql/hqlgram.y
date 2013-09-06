@@ -11613,7 +11613,7 @@ pattern0
                         {
                             parser->checkPattern($3, true);
                             if ($3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, $4.getExpr()));
@@ -11623,7 +11623,7 @@ pattern0
                             parser->checkPattern($3, true);
                             parser->normalizeExpression($5, type_int, true);
                             if ($3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, $5.getExpr(), $6.getExpr()));
@@ -11633,7 +11633,7 @@ pattern0
                             parser->checkPattern($3, true);
                             parser->normalizeExpression($5, type_int, true);
                             if ($3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, $5.getExpr(), createValue(no_any, makeNullType()), $8.getExpr()));
@@ -11644,7 +11644,7 @@ pattern0
                             parser->normalizeExpression($5, type_int, true);
                             parser->normalizeExpression($7, type_int, true);
                             if ($3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use REPEAT on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, $5.getExpr(), $7.getExpr(), $8.getExpr()));
@@ -11653,7 +11653,7 @@ pattern0
                         {
                             parser->checkPattern($3, true);
                             if ($4.queryExpr() && $3.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use OPT with count on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use OPT with count on a rule with an associated row");
 
                             IHqlExpression * pattern = $3.getExpr();
                             IHqlExpression * max = $4.getExpr();
@@ -11664,7 +11664,7 @@ pattern0
     | pattern0 '*'      {
                             parser->checkPattern($1, true);
                             if ($1.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with an associated row");
 
                             IHqlExpression * pattern = $1.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern));
@@ -11672,7 +11672,7 @@ pattern0
     | pattern0 '+'      {
                             parser->checkPattern($1, true);
                             if ($1.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use + on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use + on a rule with an associated row");
 
                             IHqlExpression * pattern = $1.getExpr();
                             $$.setExpr(createValue(no_pat_repeat, parser->getCompoundRuleType(pattern), pattern, createConstantOne(), createValue(no_any, makeNullType())));
@@ -11696,7 +11696,7 @@ pattern0
                             parser->normalizeExpression($3, type_int, true);
                             parser->checkPattern($1, true);
                             if ($1.queryExpr()->queryRecord())
-                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with associated an row");
+                                parser->reportError(ERR_AMBIGUOUS_PRODUCTION, $1, "Cannot use * on a rule with an associated row");
 
                             IHqlExpression * pattern = $1.getExpr();
                             IHqlExpression * count = $3.getExpr();

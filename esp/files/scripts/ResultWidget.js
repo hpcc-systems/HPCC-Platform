@@ -142,6 +142,14 @@ define([
                         context.initResult(logicalFile.result);
                     }
                 });
+            } else if (params.result && params.result.Name) {
+                var logicalFile = ESPLogicalFile.Get(params.result.Name);
+                var context = this;
+                logicalFile.getInfo({
+                    onAfterSend: function (response) {
+                        context.initResult(logicalFile.result);
+                    }
+                });
             } else {
                 this.initResult(null);
             }
