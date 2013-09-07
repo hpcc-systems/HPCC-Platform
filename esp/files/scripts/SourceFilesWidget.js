@@ -112,7 +112,9 @@ define([
                     closable: true,
                     hpcc: {
                         type: "LFDetailsWidget",
-                        params: row
+                        params: {
+                            Name: row.Name
+                        }
                     }
                 });
             }

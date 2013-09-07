@@ -475,7 +475,9 @@ define([
                         id: id,
                         title: params.Name,
                         closable: true,
-                        _hpccParams: params
+                        _hpccParams: {
+                            Name: params.Name
+                        }
                     });
                 }
                 this.addChild(retVal, 1);
