@@ -63,7 +63,7 @@ define([
             var currSel = this.getSelectedChild();
             if (currSel && !currSel.initalized) {
                 if (currSel.init) {
-                    currSel.init(currSel.params);
+                    currSel.init({});
                 }
             }
         }

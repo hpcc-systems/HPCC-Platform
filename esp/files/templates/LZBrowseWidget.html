@@ -5,11 +5,11 @@
                 <div id="${id}Toolbar" class="topPanel" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
                     <div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
+                    <div id="${id}HexPreview" data-dojo-attach-event="onClick:_onHexPreview" data-dojo-type="dijit.form.Button">Hex Preview</div>
+                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <input id="${id}Upload" label="Upload" type="file" data-dojo-attach-event="onChange:_onUpload" data-dojo-props='multiple: true' data-dojo-type="dojox.form.Uploader"/>
                     <div id="${id}Download" data-dojo-attach-event="onClick:_onDownload" data-dojo-type="dijit.form.Button">Download</div>
                     <div id="${id}Delete" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
-                    <span data-dojo-type="dijit.ToolbarSeparator"></span>
-                    <div id="${id}HexPreview" data-dojo-attach-event="onClick:_onHexPreview" data-dojo-type="dijit.form.Button">Hex Preview</div>
                     <span data-dojo-type="dijit.ToolbarSeparator"></span>
                     <b>Spray:</b>
                     <div id="${id}SprayFixedDropDown" data-dojo-type="dijit.form.DropDownButton">
