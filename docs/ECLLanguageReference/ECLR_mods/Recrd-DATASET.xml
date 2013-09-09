@@ -259,7 +259,7 @@
         <row>
           <entry><emphasis>count</emphasis></entry>
 
-          <entry>An integer expression sopecifying the number of records to
+          <entry>An integer expression specifying the number of records to
           create.</entry>
         </row>
 
@@ -603,9 +603,8 @@ PtblE := DATASET('~Thor400::RTTEMP::TestFileEncrypted',
             <entry><para>Optional. The string escape character used to
             indicate the next character (usually a control character) is part
             of the data and not to be interpreted as a field or row delimiter.
-            If omitted, the default is a backslash ('\\') or the escape
-            character specified in the spray operation that put the file on
-            disk.</para></entry>
+            If omitted, the default is the escape character specified in the
+            spray operation that put the file on disk (if any).</para></entry>
           </row>
 
           <row>
