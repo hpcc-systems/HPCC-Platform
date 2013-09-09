@@ -134,7 +134,6 @@ define([
             var formData = domForm.toObject(this.id + "AddToSuperfileForm");
             WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
                 load: function (response) {
-                    context.workunitsGrid.rowSelectCell.toggleAllSelection(false);
                     context.refreshGrid(response);
                 }
             });
