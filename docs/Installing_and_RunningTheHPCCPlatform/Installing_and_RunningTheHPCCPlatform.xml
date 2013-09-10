@@ -105,6 +105,106 @@
           </tbody>
         </tgroup>
       </informaltable></para>
+
+    <sect1 id="Quick_Start">
+      <title>Quick Start Guide</title>
+
+      <para>We recommend taking the time to read this manual in its entirety;
+      however, the following is a quick start summary of steps. There are many
+      aspects of the HPCC System platform and this guide is intended to help
+      you get the most out of your system. This section is not intended to
+      replace the more comprehensive material in the remainder of this
+      book.</para>
+
+      <orderedlist>
+        <listitem>
+          <para>Install HPCC.</para>
+
+          <para>Download the installation package from <ulink
+          url="http://hpccsystems.com/download/free-community-edition">http://hpccsystems.com/download/free-community-edition</ulink>
+          and install.</para>
+
+          <para>On CentOS/Red Hat/SuSe:</para>
+
+          <para><programlisting> sudo rpm -Uvh &lt;rpm file name&gt;</programlisting>On
+          Ubuntu/Debian:</para>
+
+          <programlisting>sudo dpkg -i &lt;deb filename&gt;</programlisting>
+        </listitem>
+
+        <listitem>
+          <para>Start your HPCC System.</para>
+
+          <para>On CentOS/Red Hat/SuSe:</para>
+
+          <para><programlisting>sudo /sbin/service hpcc-init start</programlisting></para>
+
+          <para>Ubuntu:</para>
+
+          <programlisting>sudo service hpcc-init start</programlisting>
+
+          <para>Debian 6 (Squeeze):</para>
+
+          <para><programlisting>sudo /etc/init.d/hpcc-init start</programlisting></para>
+        </listitem>
+
+        <listitem>
+          <para>Run <emphasis role="bold">ECL Watch</emphasis>. Check out your
+          system.</para>
+
+          <para>Using a browser, go to <emphasis role="bold">ECL
+          Watch</emphasis> running on port 8010 of your HPCC Node.</para>
+
+          <para>For example, http://nnn.nnn.nnn.nnn:8010, where
+          nnn.nnn.nnn.nnn is your node's IP address.</para>
+        </listitem>
+
+        <listitem>
+          <para>Create and run some ECL.</para>
+
+          <para>You can do this right from ECL Watch, click on the Playground
+          link.</para>
+        </listitem>
+
+        <listitem>
+          <para>Get and install the ECL IDE and Client tools.</para>
+        </listitem>
+      </orderedlist>
+
+      <sect2>
+        <title>Now What?</title>
+
+        <para>Now that you have HPCC started and running, what do you want to
+        do? Maybe evaluate your needs and proceed to develop a custom
+        configuration suitable for those needs. Maybe you want to expand your
+        system and add nodes. Those topics and several others are covered in
+        the following sections.</para>
+
+        <para>To familiarize yourself with what your system can do we
+        recommend following the steps in:<itemizedlist spacing="compact">
+            <listitem>
+              <para>The <emphasis role="bold">HPCC Data
+              Tutorial</emphasis></para>
+            </listitem>
+
+            <listitem>
+              <para><emphasis role="bold">The Six Degrees of Kevin
+              Bacon</emphasis> example</para>
+            </listitem>
+
+            <listitem>
+              <para>Read <emphasis role="bold">Using Config Manager</emphasis>
+              to learn how to configure an HPCC platform using Advanced
+              View.</para>
+            </listitem>
+
+            <listitem>
+              <para>Use your new skills to process your own massive
+              dataset!</para>
+            </listitem>
+          </itemizedlist></para>
+      </sect2>
+    </sect1>
   </chapter>
 
   <chapter id="Hardware-and-Software-Requirements">
