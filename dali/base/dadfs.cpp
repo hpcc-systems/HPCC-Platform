@@ -1009,7 +1009,6 @@ public:
     {
         assertex(_transaction);
         transaction.set(_transaction);
-        transaction->addAction(this);
     }
     // Clear all locked files (when re-using transaction on auto-commit mode)
     virtual ~CDFAction() { unlock(); }
@@ -5429,8 +5428,8 @@ public:
             }
             localtrans->ascend();
         } else {
-            // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
             cAddSubFileAction *action = new cAddSubFileAction(localtrans,queryLogicalName(),subfile,before,other);
+            localtrans->addAction(action);  // transaction owns action
         }
 
         localtrans->autoCommit();
@@ -5482,9 +5481,8 @@ public:
             localtrans->ascend();
         }
 
-        // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
         cRemoveSubFileAction *action = new cRemoveSubFileAction(localtrans,queryLogicalName(),subfile,remsub);
-
+        localtrans->addAction(action);   // transaction owns action
         localtrans->autoCommit();
 
         // MORE - auto-commit will throw an exception, change this to void
@@ -5510,9 +5508,8 @@ public:
         // Make sure this file is in cache
         localtrans->addFile(this);
 
-        // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
         cSwapFileAction *action = new cSwapFileAction(localtrans,queryLogicalName(),_file->queryLogicalName());
-
+        localtrans->addAction(action);  // transaction owns action
         localtrans->autoCommit();
 
         return true;
@@ -7082,9 +7079,8 @@ IDistributedSuperFile *CDistributedFileDirectory::createSuperFile(const char *_l
             throw MakeStringException(-1,"createSuperFile: SuperFile %s already exists",logicalname.get());
     }
 
-    // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
     CCreateSuperFileAction *action = new CCreateSuperFileAction(localtrans,this,user,_logicalname,_interleaved);
-
+    localtrans->addAction(action);  // transaction owns action
     localtrans->autoCommit();
 
     return localtrans->lookupSuperFile(_logicalname);
@@ -7105,9 +7101,8 @@ void CDistributedFileDirectory::removeSuperFile(const char *_logicalname, bool d
         localtrans.setown(new CDistributedFileTransaction(user));
     }
 
-    // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
     CRemoveSuperFileAction *action = new CRemoveSuperFileAction(localtrans, user, _logicalname, delSubs);
-
+    localtrans->addAction(action);  // transaction owns action
     localtrans->autoCommit();
 }
 
@@ -7178,9 +7173,8 @@ void CDistributedFileDirectory::renamePhysical(const char *oldname,const char *n
         localtrans.setown(new CDistributedFileTransaction(user));
     }
 
-    // action is owned by transaction (acquired on CDFAction's c-tor) so don't unlink or delete!
     CRenameFileAction *action = new CRenameFileAction(localtrans, this, user, oldlogicalname.get(), newname);
-
+    localtrans->addAction(action);  // transaction owns action
     localtrans->autoCommit();
 }
 
