@@ -253,7 +253,7 @@
       </tgroup>
     </informaltable>
 
-  <informaltable colsep="1" frame="all" rowsep="1">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -441,7 +441,7 @@
     You must ensure that any MAXLENGTH/MAXCOUNT is specified correctly on each
     field in both RECORD Structures.</para>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
     <programlisting>R1 := {STRING1 F1,STRING1 F2,STRING1 F3,STRING1 F4,STRING1 F5};
 R2 := {STRING1 F4,STRING1 F5,STRING1 F6};
@@ -556,7 +556,7 @@ END;</programlisting>
       </tgroup>
     </informaltable>
 
-  <informaltable colsep="1" frame="all" rowsep="1">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="200pt" />
 
@@ -670,7 +670,7 @@ END;</programlisting>
     <para><emphasis role="bold">node[qualifier] / node[qualifier]
     ...</emphasis></para>
 
-  <informaltable colsep="1" frame="all" rowsep="1">
+    <informaltable colsep="1" frame="all" rowsep="1">
       <tgroup cols="2">
         <colspec align="left" colwidth="122.40pt" />
 
@@ -696,8 +696,9 @@ END;</programlisting>
       </tgroup>
     </informaltable>
 
-    <para>These operators are valid for comparisons: &lt;, &lt;=, &gt;, &gt;=,
-    =, !=</para>
+    <para>These operators are valid for comparisons:</para>
+
+    <programlisting>&lt;, &lt;=, &gt;, &gt;=, =, !=</programlisting>
 
     <para>An example of a supported xpath:</para>
 
@@ -715,6 +716,10 @@ STRING blah{xpath('a/b&lt;&gt;')};
 //contains all of b, including any child definitions and values
 END;</programlisting>
 
+    <para>An XPATH for a value cannot be ambiguous. If the element occurs
+    multiple times, you must use the ordinal operation (for example,
+    /foo[1]/bar) to explicit select the first occurrence.</para>
+
     <para>For XML DATASET reading and processing results of the
     SOAPCALL<indexterm>
         <primary>SOAPCALL</primary>
@@ -725,7 +730,7 @@ END;</programlisting>
     then it is used, otherwise the lower case <emphasis>identifier</emphasis>
     of the field is used.</para>
 
-    <programlisting>STRING name; //matches: &lt;name&gt;Kevin&lt;/name&gt;
+    <programlisting>STRING name;                  //matches: &lt;name&gt;Kevin&lt;/name&gt;
 STRING Fname{xpath('Fname')}; //matches: &lt;Fname&gt;Kevin&lt;/Fname&gt;</programlisting>
 
     <para>2) For a field whose type is a RECORD structure, the specified XPATH
@@ -778,13 +783,13 @@ END;</programlisting>
                        &lt;LName&gt;Richards&lt;/LName&gt;
                      &lt;/person&gt; */</programlisting>
 
-    <para>4) For a SET OF <emphasis>type</emphasis> field, an xpath attribute
-    on a set field can have one of three formats: "Repeated",
-    "Container/Repeated" or "Container/Repeated/@attr". They are processed in
-    a similar way to datasets, except for the following. If Container is
-    specified, then the XML reading checks for a tag "Container/All", and if
-    present the set contains all possible values. The third form allows you to
-    read XML attribute values.</para>
+    <para>4) For a SET OF <emphasis>type</emphasis> field, an xpath on a set
+    field can have one of three formats: "Repeated", "Container/Repeated" or
+    "Container/Repeated/@attr". They are processed in a similar way to
+    datasets, except for the following. If Container is specified, then the
+    XML reading checks for a tag "Container/All", and if present the set
+    contains all possible values. The third form allows you to read XML
+    attribute values.</para>
 
     <programlisting>SET OF STRING people;
     //matches: &lt;people&gt;&lt;All/&gt;&lt;/people&gt;
@@ -798,23 +803,33 @@ SET OF STRING Xpeople{xpath('/Name/@id')};
     <para>For writing XML files using OUTPUT, the rules are similar with the
     following exceptions:</para>
 
-    <para>1) For scalar fields, simple tag names and XML attributes are
-    supported.</para>
+    <itemizedlist>
+      <listitem>
+        <para>For scalar fields, simple tag names and XML attributes are
+        supported.</para>
+      </listitem>
 
-    <para>2) For SET fields, &lt;All&gt; will only be generated if the
-    container name is specified.</para>
+      <listitem>
+        <para>For SET fields, &lt;All&gt; will only be generated if the
+        container name is specified.</para>
+      </listitem>
 
-    <para>3) xpath filters are not supported.</para>
+      <listitem>
+        <para>xpath filters are not supported.</para>
+      </listitem>
 
-    <para>4) The "Container/Repeated/@attr" form for a SET is not
-    supported.</para>
+      <listitem>
+        <para>The "Container/Repeated/@attr" form for a SET is not
+        supported.</para>
+      </listitem>
+    </itemizedlist>
 
-    <para>Example:</para>
+    <para><emphasis role="bold">Example:</emphasis></para>
 
-    <programlisting>//For DATASET or the result type of a TRANSFORM function, 
-//you need only specify the value type and 
-//name of each field in the layout:
-R1 := RECORD
+    <para>For DATASET or the result type of a TRANSFORM function, you need
+    only specify the value type and name of each field in the layout:</para>
+
+    <programlisting>R1 := RECORD
   UNSIGNED1 F1; //only value type and name required
   UNSIGNED4 F2;
   STRING100 F3;
@@ -822,20 +837,22 @@ END;
           
 D1 := DATASET('RTTEMP::SomeFile',R1,THOR);
 
-//**************************
-For "vertical slice" TABLE, you need to specify the value
-type, name, and data source for each field in the layout:
-        
-R2 := RECORD
+      
+</programlisting>
+
+    <para>For "vertical slice" TABLE, you need to specify the value type,
+    name, and data source for each field in the layout:</para>
+
+    <programlisting>R2 := RECORD
   UNSIGNED1 F1 := D1.F1; //value type, name, data source all explicit
   D1.F2; //value type, name, data source all implicit
 END;
 
-T1 := TABLE(D1,R2);
-       
-//**************************
-    For "crosstab report" TABLE:
-R3 := RECORD
+T1 := TABLE(D1,R2);</programlisting>
+
+    <para>For "crosstab report" TABLE:</para>
+
+    <programlisting>R3 := RECORD
   D1.F1;            //"group by" fields must come first 
   UNSIGNED4 GrpCount := COUNT(GROUP); 
                    //value type, column name, and aggregate
@@ -844,8 +861,11 @@ R3 := RECORD
 END;
 
 T2 := TABLE(D1,R3,F1);
-//**************************
-Form1 := RECORD
+</programlisting>
+
+    <para></para>
+
+    <programlisting>Form1 := RECORD
     Person.per_last_name; //field name is per_last_name - size
                          //is as declared in the person dataset
     STRING25 LocalID := Person.per_first_name;
@@ -889,16 +909,18 @@ Form4 := RECORD, MAXLENGTH(10000)
 
       END;
 END;
+</programlisting>
 
-         
-//**************************
-//in-line record structures, demoing same field name use
-ds := DATASET('d', { STRING s; }, THOR);
+    <para>in-line record structures, demonstrating same field name use</para>
+
+    <programlisting>ds := DATASET('d', { STRING s; }, THOR);
 t := TABLE(ds, { STRING60 s := ds.s; });
     // new “s” field is OK with value type explicitly defined
-    //**************************
-    //”Child dataset” RECORD structures
-ChildRec := RECORD
+</programlisting>
+
+    <para>”Child dataset” RECORD structures</para>
+
+    <programlisting>ChildRec := RECORD
     UNSIGNED4 person_id;
     STRING20 per_surname;
     STRING20 per_forename;
@@ -911,10 +933,11 @@ ParentRecord := RECORD
     UNSIGNED2 numKids;
     DATASET(ChildRec) children{MAXCOUNT(100)};
 END;
-          
-//**************************
-//an example using {XPATH('tag')}
-R := record
+</programlisting>
+
+    <para>an example using {XPATH('tag')}</para>
+
+    <programlisting>R := record
      STRING10 fname;
      STRING12 lname;
      SET OF STRING1 MySet{XPATH('Set/Element')}; //define set tags
@@ -935,9 +958,11 @@ OUTPUT(B,,'~RTTEST::test.xml', XML);
 &lt;Set&gt;&lt;Element&gt;E&lt;/Element&gt;&lt;Element&gt;F&lt;/Element&gt;&lt;/Set&gt;&lt;/Row&gt;
 &lt;/Dataset&gt;
 */
-          
-//another XML example with a 1-field child dataset
-cr := RECORD,MAXLENGTH(1024)
+</programlisting>
+
+    <para>another XML example with a 1-field child dataset</para>
+
+    <programlisting>cr := RECORD,MAXLENGTH(1024)
   STRING phoneEx{XPATH('')};
 END;
 r := RECORD,MAXLENGTH(4096)
