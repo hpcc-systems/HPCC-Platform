@@ -105,6 +105,7 @@ ESPStruct DFUFileDetail
     [min_ver("1.06")] bool FromRoxieCluster;
     [min_ver("1.07")] ESParray<string, ECLGraph> Graphs;
     [min_ver("1.09")] string UserPermission;
+    [min_ver("1.21")] string ContentType;
 };
 
 ESPStruct DFUSpaceItem
@@ -626,7 +627,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.20"), default_client_version("1.20"),
+    version("1.21"), default_client_version("1.21"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {
