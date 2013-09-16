@@ -103,8 +103,6 @@ static CriticalSection sessionCrit;
 #define CLDAPE_challengeresponseDisabled (-3)
 #define CLDAPE_challengeresponseFailure  (-4)
 
-#define MAKEHASH(h,i) { StringBuffer val; val.append(val); hash = hashc((const unsigned char *)val.str(), val.length(), i); }
-
 class CDaliLDAP_Exception: public CInterface, implements IException
 {
     int errcode;
@@ -361,15 +359,17 @@ public:
 };
 
 //manages attributes of a trusted user (verified via challenge/response
-class CTrustedUser : public CInterface
+class CTrustedUser : public CInterface, implements IInterface
 {
 public:
     IMPLEMENT_IINTERFACE;
 
-    CTrustedUser(StringBuffer &_username, StringBuffer _sender, unsigned _clientToken, unsigned _serverToken, CDateTime &_whenExpires)
-        : username(_username), sender(_sender), clientToken(_clientToken), serverToken(_serverToken), whenExpires(_whenExpires)
+    CTrustedUser(StringBuffer &_username, StringBuffer _sender, unsigned _clientToken, unsigned _serverToken)
+        : username(_username), sender(_sender), clientToken(_clientToken), serverToken(_serverToken)
     {
         key.append(sender).append('/').append(username);
+        whenExpires.setNow();
+        whenExpires.adjustTime(5);//expires in 5 minutes
     }
     StringBuffer key;
     StringAttr  username;
@@ -378,8 +378,6 @@ public:
     unsigned    serverToken;
     CDateTime   whenExpires;
 };
-typedef CTrustedUser *CTrustedUserPtr;
-typedef MapStringTo<CTrustedUserPtr> CTrustedUserMap;
 
 
 enum MSessionRequestKind { 
@@ -518,7 +516,7 @@ class CSessionRequestServer: public Thread
     Semaphore acceptConnections;
 
     bool useChallengeResponse;
-    CTrustedUserMap trustedUsersMap;
+    MapStringToMyClass<CTrustedUser> trustedUsersMap;
     CriticalSection trustedUsersMapCrit;
     CDateTime nextTrustedUserMapFlush;
     unsigned trustedUserCacheTimeout;//in minutes
@@ -537,8 +535,6 @@ public:
                 useChallengeResponse = crCfg->getPropBool("@enabled",false);
                 if (useChallengeResponse)
                 {
-                    if (queryDaliServerVersion().compare("3.11") < 0)
-                        throw MakeStringException(-1, "challengeResponse enabled but DALI version not 3.11 or newer");
                     trustedUserCacheTimeout = crCfg->getPropInt("@userCacheTimeout",5);
                     StringBuffer ecrKey(crCfg->queryProp("@key"));
                     StringBuffer dcrKey;
@@ -593,22 +589,15 @@ public:
         if (now.compare(nextTrustedUserMapFlush) >= 0)
         {
             //flush expired entries
-            HashIterator iter(trustedUsersMap);
-            StringArray expired;
             CriticalBlock block(trustedUsersMapCrit);
+            HashIterator iter(trustedUsersMap);
             ForEach(iter)
             {
                 IMapping &cur = iter.query();
-                CTrustedUser *us = *(trustedUsersMap.mapToValue(&cur));
+                CTrustedUser *us = trustedUsersMap.mapToValue(&cur);
                 if (now.compare(us->whenExpires) >= 0)
-                {
-                    expired.append(us->key);
-                    us->Release();
-                }
+                    trustedUsersMap.remove(us->key);
             }
-            for (aindex_t i=0; i<expired.ordinality(); i++)
-                trustedUsersMap.remove(expired.item(i));
-            expired.kill();
             nextTrustedUserMapFlush.setNow();
             nextTrustedUserMapFlush.adjustTime(trustedUserCacheTimeout);
         }
@@ -619,15 +608,11 @@ public:
 
         {   //protected block
             CriticalBlock block(trustedUsersMapCrit);
-            CTrustedUserPtr *trustedUser = trustedUsersMap.getValue(key.str());
+            CTrustedUser *trustedUser = trustedUsersMap.getValue(key.str());
             if (trustedUser)
             {
-                if (now.compare((*trustedUser)->whenExpires) > 0)
-                {
-                    StringAttr key((*trustedUser)->key);
-                    (*trustedUser)->Release();
-                    trustedUsersMap.remove(key);
-                }
+                if (now.compare((trustedUser)->whenExpires) > 0)
+                    trustedUsersMap.remove(trustedUser->key);
                 else
                     return 0;//previously verified
             }
@@ -639,17 +624,17 @@ public:
         unsigned serverChallenge = getRandom() + crKey;//create unique server challenge SC
         CCRServerChallengeMsg msgSC(crTag, serverChallenge);
         msgSC.serializeReq(mb);
-        coven.reply(mb);
+        coven.reply(mb, SESSIONREPLYTIMEOUT);
 
         unsigned clientToken = -1;
         StringBuffer sb;
         while (true)
         {
-            if (!coven.recv(mb, RANK_ALL, crTag))
+            if (!coven.recv(mb, RANK_ALL, crTag, 0, SESSIONREPLYTIMEOUT))
             {
                 PROGLOG("Challenge/Response failed to receive response from client %s for user %s", mb.getSender().getUrlStr(sb).str(), _username.str());
                 mb.clear().append(CR_FAIL);
-                coven.reply(mb);
+                coven.reply(mb, SESSIONREPLYTIMEOUT);
                 return CLDAPE_challengeresponseFailure;
             }
             unsigned retCode;
@@ -658,9 +643,11 @@ public:
             {
                 PROGLOG("Challenge/Response error %d received from client %s for user %s", retCode, mb.getSender().getUrlStr(sb).str(), _username.str());
                 mb.clear().append(CR_FAIL);
-                coven.reply(mb);
+                coven.reply(mb, SESSIONREPLYTIMEOUT);
                 return CLDAPE_challengeresponseFailure;
             }
+            StringBuffer val;
+            unsigned hash;
             unsigned reqType;
             mb.read(reqType);
             switch (reqType)
@@ -670,23 +657,24 @@ public:
                     CCRClientResponseMsg msgCR;
                     msgCR.deserializeReq(mb);
 
-                    unsigned hash;
-                    MAKEHASH(serverChallenge + msgCR.cc + crKey, crKey/2);
+                    val.clear().append(serverChallenge + msgCR.cc + crKey);
+                    hash = hashc((const unsigned char *)val.str(), val.length(), crKey/2);
                     if (msgCR.cr != hash)
                     {
                         PROGLOG("Challenge/Response error : Client %s response does not match expected for user %s", mb.getSender().getUrlStr(sb).str(), _username.str());
                         mb.clear().append(CR_FAIL);
-                        coven.reply(mb);
+                        coven.reply(mb, SESSIONREPLYTIMEOUT);
                         return CLDAPE_challengeresponseFailure;
                     }
 
                     mb.clear().append(CR_SUCCESS);
-                    MAKEHASH(serverChallenge + msgCR.cc + crKey, crKey/2);//Compute SR to CC (sr = hash(sc + cc + crKey))
+                    val.clear().append((serverChallenge / 2) + msgCR.cc + crKey);
+                    hash = hashc((const unsigned char *)val.str(), val.length(), crKey/2);
 
                     clientToken = getRandom() + crKey;
                     CCRServerResponseMsg srMsg(hash, clientToken);
                     srMsg.serializeReq(mb);
-                    coven.reply(mb);
+                    coven.reply(mb, SESSIONREPLYTIMEOUT);
                     break;
                 }
             case MSR_CR_CONFIRMED:
@@ -697,25 +685,23 @@ public:
                     {
                         PROGLOG("Challenge/Response error : Client %s token mismatch for user %s", mb.getSender().getUrlStr(sb).str(), _username.str());
                         mb.clear().append(CR_FAIL);
-                        coven.reply(mb);
+                        coven.reply(mb, SESSIONREPLYTIMEOUT);
                         return CLDAPE_challengeresponseFailure;
                     }
                     //Add to map of trusted users
-                    CDateTime whenExpires;
-                    whenExpires.setNow();
-                    whenExpires.adjustTime(5);//expires in 5 minutes
                     StringBuffer sender;
                     mb.getSender().getIpText(sender);
-                    CTrustedUser * trustedUser = new CTrustedUser(_username, sender, clientToken, msgConf.crServerToken, whenExpires);
+                    CTrustedUser * trustedUser = new CTrustedUser(_username, sender, clientToken, msgConf.crServerToken);
                     CriticalBlock block(trustedUsersMapCrit);
                     trustedUsersMap.setValue(trustedUser->key.str(), trustedUser);
+                    trustedUser->Release();
                     return 0;
                 }
             default:
                 StringBuffer eps;
                 PROGLOG("Challenge/Response error : Unexpected message type %d from client %s for user %s", reqType, mb.getSender().getUrlStr(eps).str(), _username.str());
                 mb.clear().append(CR_FAIL);
-                coven.reply(mb);
+                coven.reply(mb, SESSIONREPLYTIMEOUT);
                 return CLDAPE_challengeresponseFailure;
             }
         }
@@ -1095,17 +1081,20 @@ class CClientSessionManager: public CSessionManagerBase, implements IConnectionM
     bool useChallengeResponse;
     unsigned crKey;
 
-    class CNonCRDali : public CInterface//represents a DALI that either doesn't support C/R, or where it is not enabled
+    class CNonCRDali : public CInterface, implements IInterface//represents a DALI that either doesn't support C/R, or where it is not enabled
     {
     public:
         StringBuffer ip;
         CDateTime whenExpires;
 
         IMPLEMENT_IINTERFACE;
-        CNonCRDali(const char *_ip, CDateTime &_whenExpires) : ip(_ip), whenExpires(_whenExpires) {}
+        CNonCRDali(const char *_ip) : ip(_ip)
+        {
+            whenExpires.setNow();
+            whenExpires.adjustTime(30);
+        }
     };
-    typedef CNonCRDali *CNonCRDaliPtr;
-    MapStringTo<CNonCRDaliPtr> nonCRDaliMap;//map of DALIs that don't utilize C/R
+    MapStringToMyClass<CNonCRDali> nonCRDaliMap;//map of DALIs that don't utilize C/R
     CDateTime nextNonCRDaliMapFlush;
     CriticalSection nonCRDaliMapCrit;
 
@@ -1176,21 +1165,14 @@ public:
             {
                 //flush expired entries
                 HashIterator iter(nonCRDaliMap);
-                StringArray expired;
                 CriticalBlock block(nonCRDaliMapCrit);
                 ForEach(iter)
                 {
                     IMapping &cur = iter.query();
-                    CNonCRDali *item = *(nonCRDaliMap.mapToValue(&cur));
+                    CNonCRDali *item = nonCRDaliMap.mapToValue(&cur);
                     if (now.compare(item->whenExpires) >= 0)
-                    {
-                        expired.append(item->ip);
-                        item->Release();
-                    }
+                        nonCRDaliMap.remove(item->ip);
                 }
-                for (aindex_t i=0; i<expired.ordinality(); i++)
-                    nonCRDaliMap.remove(expired.item(i));
-                expired.kill();
                 nextNonCRDaliMapFlush.setNow();
                 nextNonCRDaliMapFlush.adjustTime(30);
             }
@@ -1204,15 +1186,11 @@ public:
             {   //protected block
                 //Check whether or not we know if this DALI has C/R disabled
                 CriticalBlock block(nonCRDaliMapCrit);
-                CNonCRDaliPtr *item = nonCRDaliMap.getValue(ip.str());
+                CNonCRDali *item = nonCRDaliMap.getValue(ip.str());
                 if (item)
                 {
-                    if (now.compare((*item)->whenExpires) > 0)//make sure not stale entry
-                    {
-                        StringAttr key((*item)->ip);
-                        (*item)->Release();
-                        nonCRDaliMap.remove(key);
-                    }
+                    if (now.compare(item->whenExpires) > 0)//make sure not stale entry
+                        nonCRDaliMap.remove(item->ip);
                     else
                         allowChallengeResponse = false;//Target DALI does not have C/R enabled
                 }
@@ -1263,12 +1241,10 @@ public:
                     {//Remember DALIs that don't support C/R
                         StringBuffer ip;
                         mb.getSender().getIpText(ip);
-                        CDateTime now;
-                        now.setNow();
-                        now.adjustTime(30);
-                        CNonCRDali * p = new CNonCRDali(ip.str(), now);
+                        CNonCRDali * p = new CNonCRDali(ip.str());
                         CriticalBlock block(nonCRDaliMapCrit);
                         nonCRDaliMap.setValue(ip, p);
+                        p->Release();
                     }
 
                     //Challenge/Response disabled at dali, retry using legacy message
@@ -1282,7 +1258,8 @@ public:
                     DBGLOG("Challenge/Response error : received error %d from server %s for user %s", retCode,mb.getSender().getUrlStr(eps).str(), user.str());
                     return 0;
                 }
-
+                unsigned hash;
+                StringBuffer val;
                 unsigned reqType;
                 mb.read(reqType);
                 switch (reqType)
@@ -1295,8 +1272,8 @@ public:
                         serverChallenge = msgSC.sc;
                         clientChallenge = getRandom() + crKey;
 
-                        unsigned hash;
-                        MAKEHASH(clientChallenge + msgSC.sc + crKey, crKey/2);//compute CR to SC = hash(cc + sc + crKey)
+                        val.clear().append(clientChallenge + msgSC.sc + crKey);
+                        hash = hashc((const unsigned char *)val.str(), val.length(), crKey/2);
 
                         mb.clear().append(CR_SUCCESS);
                         CCRClientResponseMsg msgCR(hash, clientChallenge);
@@ -1308,8 +1285,8 @@ public:
                         CCRServerResponseMsg msgSR;
                         msgSR.deserializeReq(mb);
 
-                        unsigned hash;
-                        MAKEHASH(serverChallenge + clientChallenge + crKey, crKey/2);
+                        val.clear().append((serverChallenge / 2) + clientChallenge + crKey);
+                        hash = hashc((const unsigned char *)val.str(), val.length(), crKey/2);
                         if (msgSR.sr != hash)
                         {
                             PROGLOG("Challenge/Response error : Server %s response does not match expected", mb.getSender().getUrlStr(sb).str());
