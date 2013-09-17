@@ -267,6 +267,13 @@
               </row>
 
               <row>
+                <entry>-Me</entry>
+
+                <entry>eclcc should evaluate supplied ecl code rather than
+                generating a workunit</entry>
+              </row>
+
+              <row>
                 <entry>-q</entry>
 
                 <entry>Save ECL query text as part of workunit</entry>
