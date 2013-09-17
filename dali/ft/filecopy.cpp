@@ -1130,6 +1130,13 @@ void FileSprayer::calculateSprayPartition()
         const SocketEndpoint & ep = cur.filename.queryEndpoint();
         IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
 
+        // CSV record structure discovery of every source
+        if (srcFormat.type == FFTcsv)
+        {
+            bool isRecordStructurePresent = options->getPropBool("@recordStructurePresent", false);
+            ((CCsvQuickPartitioner *)partitioner)->setRecordStructurePresent(isRecordStructurePresent);
+        }
+
         RemoteFilename name;
         name.set(cur.filename);
         setCanAccessDirectly(name);
@@ -1159,6 +1166,17 @@ void FileSprayer::calculateSprayPartition()
 
     ForEachItemIn(idx2, partitioners)
         partitioners.item(idx2).getResults(partition);
+
+    if (srcFormat.type == FFTcsv)
+    {
+        // Store discovered CSV record structure into target logical file.
+        StringBuffer recStru;
+        CCsvQuickPartitioner * partitioner = (CCsvQuickPartitioner *)&partitioners.item(0);
+        partitioner->getRecordStructure(recStru);
+        IDistributedFile * target = distributedTarget.get();
+        target->setECL(recStru.str());
+    }
+
 }
 
 void FileSprayer::calculateOutputOffsets()

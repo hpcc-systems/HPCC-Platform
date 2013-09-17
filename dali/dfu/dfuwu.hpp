@@ -168,6 +168,8 @@ interface IConstDFUoptions : extends IInterface
 
     virtual IPropertyTree *queryTree() const = 0;                   // used by DFU server
     virtual bool getFailIfNoSourceFile() const = 0;
+
+    virtual bool getRecordStructurePresent() const = 0;
 };
 
 interface IDFUoptions : extends IConstDFUoptions
@@ -203,6 +205,7 @@ interface IDFUoptions : extends IConstDFUoptions
     virtual void setSubfileCopy(bool val=true) = 0;                             // i.e. called by supercopy
     virtual void setEncDec(const char *enc,const char *dec) = 0;
     virtual void setFailIfNoSourceFile(bool val=false) = 0;
+    virtual void setRecordStructurePresent(bool val=false) = 0;
 };
 
 interface IConstDFUfileSpec: extends IInterface

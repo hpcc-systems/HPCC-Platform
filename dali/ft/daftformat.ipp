@@ -229,6 +229,9 @@ public:
     CCsvPartitioner(const FileFormat & _format);
 
     virtual void setTarget(IOutputProcessor * _target);
+    virtual void getRecordStructure(StringBuffer & _recordStructure) { _recordStructure = recordStructure; }
+    virtual void setRecordStructurePresent( bool _isRecordStructurePresent) {isRecordStructurePresent = _isRecordStructurePresent;}
+    virtual unsigned getFieldCount(void) { return fieldCount; }
 
 protected:
     virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer, bool ateof);
@@ -243,6 +246,10 @@ protected:
     unsigned        maxElementLength;
     FileFormat      format;
     StringMatcher   matcher;
+    bool            isRecordStructurePresent;
+    StringBuffer    recordStructure;
+    unsigned        fieldCount;
+    bool            isFirstRow;
 };
 
 

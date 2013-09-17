@@ -572,6 +572,10 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
 
     matcher.queryAddEntry(1, " ", WHITESPACE);
     matcher.queryAddEntry(1, "\t", WHITESPACE);
+    recordStructure.append("fileRec := RECORD\n");
+    isRecordStructurePresent = false;
+    fieldCount = 0;
+    isFirstRow = true;
 }
 
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
@@ -610,6 +614,26 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
             // Quoted separator
             if (quote == 0)
             {
+                if (isFirstRow)
+                {
+                    ++fieldCount;
+                    recordStructure.append("STRING ");
+                    // If record structure present in the first row and we have at least one character
+                    // long string then it will be this field name.
+                    // Otherwise we use "fieldx" (where x is the number of this field) as name.
+                    // This prevents to generate wrong record structure if field name(s) missing:
+                    // e.g: first row -> fieldA,fieldB,,fieldC,\n
+                    if (isRecordStructurePresent && (0 < lastGood-firstGood))
+                    {
+                        recordStructure.append((const char*)firstGood, 0, lastGood-firstGood);
+                    }
+                    else
+                    {
+                        recordStructure.append("field");
+                        recordStructure.append(fieldCount);
+                    }
+                    recordStructure.append(";\n");
+                }
                 lastEscape = false;
                 quoteToStrip = 0;
                 firstGood = cur + matchLen;
@@ -619,6 +643,28 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         case TERMINATOR:
             if (quote == 0) // Is this a good idea? Means a mismatched quote is not fixed by EOL
             {
+               if (isFirstRow)
+               {
+                   // TODO For further improvement we can use second
+                   // row to check discovered record structure (field count).
+                   isFirstRow = false;
+
+                   // Process last field
+                   ++fieldCount;
+                   recordStructure.append("STRING ");
+                   if (isRecordStructurePresent&& (0 < lastGood-firstGood))
+                   {
+                       recordStructure.append((const char*)firstGood, 0, lastGood-firstGood);
+                   }
+                   else
+                   {
+                       recordStructure.append("field");
+                       recordStructure.append(fieldCount);
+                   }
+                   recordStructure.append(";\n");
+                   recordStructure.append("end;");
+               }
+
                if (processFullBuffer)
                {
                    last = cur + matchLen;
