@@ -1674,6 +1674,7 @@ public:
         : CMultiCoreJoinHelperBase(activity, numthreads, selfJoin, _jhelper, _helper, _rowIf)
     {
         reader.parent = this;
+        stopped = false;
         workers = new cWorker *[numthreads];
         curin = 0;
         curout = 0;
