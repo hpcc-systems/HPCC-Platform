@@ -196,6 +196,44 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         }
     }
 
+    void processOption(const char *option, const char *value, StringBuffer &eclccCmd, StringBuffer &eclccProgName, IPipeProcess &pipe)
+    {
+        if (memicmp(option, "eclcc-", 6) == 0 || *option=='-')
+        {
+            //Allow eclcc-xx-<n> so that multiple values can be passed through for the same named debug symbol
+            const char * start = option + (*option=='-' ? 1 : 6);
+            const char * dash = strchr(start, '-');     // position of second dash, if present
+            StringAttr optName;
+            if (dash)
+                optName.set(start, dash-start);
+            else
+                optName.set(start);
+
+            if (stricmp(optName, "hook") == 0)
+                eclccProgName.set(value);
+            else if (stricmp(optName, "compileOption") == 0)
+                eclccCmd.appendf(" -Wc,%s", value);
+            else if (stricmp(optName, "includeLibraryPath") == 0)
+                eclccCmd.appendf(" -I%s", value);
+            else if (stricmp(optName, "libraryPath") == 0)
+                eclccCmd.appendf(" -L%s", value);
+            else if (stricmp(start, "-allow")==0)
+                ; // Don't allow people to grant themselves permissions
+            else
+                eclccCmd.appendf(" -%s=%s", start, value);
+        }
+        else if (strchr(option, '-'))
+        {
+            StringBuffer envVar(option);
+            envVar.toUpperCase();
+            envVar.replace('-','_');
+            DBGLOG("Setting environment %s=%s", envVar.str(), value);
+            pipe.setenv(envVar, value);
+        }
+        else
+            eclccCmd.appendf(" -f%s=%s", option, value);
+    }
+
     bool compile(const char *wuid, const char *target, const char *targetCluster)
     {
         Owned<IConstWUQuery> query = workunit->getQuery();
@@ -210,7 +248,8 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         query->getQueryText(eclQuery);
         query->getQueryMainDefinition(mainDefinition);
 
-        StringBuffer eclccCmd("eclcc -shared");
+        StringBuffer eclccProgName("eclcc");
+        StringBuffer eclccCmd(" -shared");
         if (eclQuery.length())
             eclccCmd.append(" -");
         if (mainDefinition.length())
@@ -218,25 +257,16 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         if (workunit->getDebugValueBool("addTimingToWorkunit", true))
             eclccCmd.append(" --timings");
 
+        Owned<IPipeProcess> pipe = createPipeProcess();
         Owned<IPropertyTreeIterator> options = globals->getElements("./Option");
         ForEach(*options)
         {
             IPropertyTree &option = options->query();
             const char *name = option.queryProp("@name");
             const char *value = option.queryProp("@value");
-            const char *cluster = option.queryProp("@cluster");
+            const char *cluster = option.queryProp("@cluster");                // if cluster is set it's specific to a particular target
             if (name && (cluster==NULL || cluster[0]==0 || strcmp(cluster, targetCluster)==0))
-            {
-                // options starting '-' are simply passed through to eclcc as name=value
-                // others are passed as -foption=value
-                // if cluster is set it's specific to a particular target
-                eclccCmd.append(" ");
-                if (name[0]!='-')
-                    eclccCmd.append("-f");
-                eclccCmd.append(name);
-                if (value)
-                    eclccCmd.append('=').append(value);
-            }
+                processOption(name, value, eclccCmd, eclccProgName, *pipe);
         }
         eclccCmd.appendf(" -o%s", wuid);
         eclccCmd.appendf(" -platform=%s", target);
@@ -247,30 +277,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             SCMStringBuffer debugStr, valueStr;
             debugValues->str(debugStr);
             workunit->getDebugValue(debugStr.str(), valueStr);
-            if (memicmp(debugStr.str(), "eclcc-", 6) == 0)
-            {
-                //Allow eclcc-xx-<n> so that multiple values can be passed through for the same named debug symbol
-                const char * start = debugStr.str() + 6;
-                const char * dash = strchr(start, '-');
-                StringAttr optName;
-                if (dash)
-                    optName.set(start, dash-start);
-                else
-                    optName.set(start);
-
-                if (stricmp(optName, "compileOption") == 0)
-                    eclccCmd.appendf(" -Wc,%s", valueStr.str());
-                else if (stricmp(optName, "includeLibraryPath") == 0)
-                    eclccCmd.appendf(" -I%s", valueStr.str());
-                else if (stricmp(optName, "libraryPath") == 0)
-                    eclccCmd.appendf(" -L%s", valueStr.str());
-                else if (stricmp(start, "-allow")==0)
-                    ; // Don't allow people to grant themselves permissions
-                else
-                    eclccCmd.appendf(" -%s=%s", start, valueStr.str());
-            }
-            else
-                eclccCmd.appendf(" -f%s=%s", debugStr.str(), valueStr.str());
+            processOption(debugStr.str(), valueStr.str(), eclccCmd, eclccProgName, *pipe);
         }
         if (workunit->getResultLimit())
         {
@@ -279,9 +286,9 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         try
         {
             unsigned time = msTick();
-            Owned<IPipeProcess> pipe = createPipeProcess();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
-            pipe->run("eclcc", eclccCmd, ".", true, false, true, 0);
+            eclccCmd.insert(0, eclccProgName);
+            pipe->run("eclccProgName", eclccCmd, ".", true, false, true, 0);
             errorReader->start();
             try
             {
