@@ -1130,6 +1130,13 @@ void FileSprayer::calculateSprayPartition()
         const SocketEndpoint & ep = cur.filename.queryEndpoint();
         IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
 
+        // For CSV record structure discovery
+        if(srcFormat.type == FFTcsv)
+        {
+            bool isRecordStructurePresent = options->getPropBool("@recordStructurePresent", false);
+            ((CCsvQuickPartitioner *)partitioner)->setRecordStructurePresent(isRecordStructurePresent);
+        }
+
         RemoteFilename name;
         name.set(cur.filename);
         setCanAccessDirectly(name);

@@ -572,6 +572,9 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
 
     matcher.queryAddEntry(1, " ", WHITESPACE);
     matcher.queryAddEntry(1, "\t", WHITESPACE);
+    recordStructure.append("fileRec := RECORD\n");
+    isRecordStructurePresent = false;
+    isFirstRow = true;
 }
 
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
@@ -585,6 +588,8 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
     const byte * lastGood = start;
     const byte * last = start;
     bool lastEscape = false;
+
+    unsigned fieldCount = 1;
 
     while (cur != end)
     {
@@ -610,6 +615,20 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
             // Quoted separator
             if (quote == 0)
             {
+                if (isFirstRow)
+                {
+                    recordStructure.append("STRING ");
+                    if (isRecordStructurePresent)
+                    {
+                        recordStructure.append((const char*)firstGood, 0, lastGood-firstGood);
+                    }
+                    else
+                    {
+                        recordStructure.append("field");
+                        recordStructure.append(fieldCount++);
+                    }
+                    recordStructure.append(";\n");
+                }
                 lastEscape = false;
                 quoteToStrip = 0;
                 firstGood = cur + matchLen;
@@ -619,6 +638,24 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
         case TERMINATOR:
             if (quote == 0) // Is this a good idea? Means a mismatched quote is not fixed by EOL
             {
+               if (isFirstRow)
+               {
+                   isFirstRow = false;
+                   // Process last field
+                   recordStructure.append("STRING ");
+                   if (isRecordStructurePresent)
+                   {
+                       recordStructure.append((const char*)firstGood, 0, lastGood-firstGood);
+                   }
+                   else
+                   {
+                       recordStructure.append("field");
+                       recordStructure.append(fieldCount++);
+                   }
+                   recordStructure.append(";\n");
+                   recordStructure.append("end;");
+               }
+
                if (processFullBuffer)
                {
                    last = cur + matchLen;
