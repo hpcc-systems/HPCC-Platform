@@ -1620,6 +1620,8 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
             : Thread("CMultiCoreJoinHelper::cWorker"), parent(_parent), work(activity)
         {
             stopped = false;
+            // JCSMORE - could have a spilling variety instead here..
+            rowStream.setown(createSmartInMemoryBuffer(&parent->activity, parent->rowIf, SMALL_SMART_BUFFER_SIZE));
         }
         int run()
         {
@@ -1633,8 +1635,6 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
             roxiemem::IRowManager *rowManager = parent->activity.queryJob().queryRowManager();
             Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, activityId, 1, (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
-            // JCSMORE - could have a spilling variety instead here..
-            rowStream.setown(createSmartInMemoryBuffer(&parent->activity, parent->rowIf, SMALL_SMART_BUFFER_SIZE));
             IRowWriter *rowWriter = rowStream->queryWriter();
             loop
             {
