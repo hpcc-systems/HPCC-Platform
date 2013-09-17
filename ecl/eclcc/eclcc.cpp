@@ -64,7 +64,7 @@
 
 //The following flag could be used not free items to speed up closedown
 static bool optDebugMemLeak = false;
-            
+
 #if defined(_WIN32) && defined(_DEBUG)
 static HANDLE leakHandle;
 static void appendLeaks(size32_t len, const void * data)
@@ -92,7 +92,7 @@ void initLeakCheck(const char * title)
 //  set the states we want to monitor
 //
     int LeakTmpFlag = _CrtSetDbgFlag( _CRTDBG_REPORT_FLAG );
-    LeakTmpFlag    &= ~_CRTDBG_CHECK_CRT_DF; 
+    LeakTmpFlag    &= ~_CRTDBG_CHECK_CRT_DF;
     LeakTmpFlag    |= _CRTDBG_LEAK_CHECK_DF;
     _CrtSetDbgFlag(LeakTmpFlag);
 }
@@ -389,7 +389,7 @@ static int doSelfTest(int argc, const char *argv[])
         CppUnit::TestFactoryRegistry &registry = CppUnit::TestFactoryRegistry::getRegistry();
         runner.addTest( registry.makeTest() );
     }
-    else 
+    else
     {
         // MORE - maybe add a 'list' function here?
         for (int name = 2; name < argc; name++)
@@ -628,7 +628,7 @@ ICppCompiler * EclCC::createCompiler(const char * coreName, const char * sourceD
 
     ForEachItemIn(iLib, libraryPaths)
         compiler->addLibraryPath(libraryPaths.item(iLib));
-    
+
     return compiler.getClear();
 }
 
@@ -1114,7 +1114,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
         const char * queryFullName = NULL;
         instantECL(instance, instance.wu, queryFullName, errs, targetFilename);
     }
-    else 
+    else
     {
         if (stdIoHandle(targetFilename) == -1)
         {
@@ -1141,7 +1141,7 @@ void EclCC::processXmlFile(EclCompileInstance & instance, const char *archiveXML
 
     IPropertyTree * archiveTree = instance.srcArchive;
     Owned<IPropertyTreeIterator> iter = archiveTree->getElements("Option");
-    ForEach(*iter) 
+    ForEach(*iter)
     {
         IPropertyTree &item = iter->query();
         instance.wu->setDebugValue(item.queryProp("@name"), item.queryProp("@value"), true);
@@ -1233,7 +1233,7 @@ void EclCC::processFile(EclCompileInstance & instance)
     const char * queryTxt = queryText->getText();
     if (optArchive || optGenerateDepend)
         instance.archive.setown(createAttributeArchive());
-    
+
     instance.wu.setown(createLocalWorkUnit());
     if (optSaveQueryText)
     {
@@ -1858,7 +1858,7 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optWorkUnit, "-wu"))
         {
         }
-        else if (strcmp(arg, "-")==0) 
+        else if (strcmp(arg, "-")==0)
         {
             inputFileNames.append("stdin:");
         }
@@ -1926,6 +1926,7 @@ const char * const helpText[] = {
     "    -E            Output preprocessed ECL in xml archive form",
     "!   -M            Output meta information for the ecl files",
     "!   -Md           Output dependency information",
+    "!   -Me           eclcc should evaluate supplied ecl code rather than generating a workunit",
     "    -q            Save ECL query text as part of workunit",
     "    -wu           Only generate workunit information as xml file",
     "",
@@ -2091,7 +2092,7 @@ typedef SafeQueueOf<IFile, true> RegressQueue;
 class BatchThread : public Thread
 {
 public:
-    BatchThread(EclCC & _compiler, RegressQueue & _queue, Semaphore & _fileReady) 
+    BatchThread(EclCC & _compiler, RegressQueue & _queue, Semaphore & _fileReady)
         : compiler(_compiler), queue(_queue), fileReady(_fileReady)
     {
     }
