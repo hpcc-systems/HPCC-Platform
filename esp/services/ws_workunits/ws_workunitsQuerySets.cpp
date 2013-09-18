@@ -833,8 +833,6 @@ void retrieveAllQuerysetDetails(IArrayOf<IEspWUQuerySetDetail> &details, const c
     if (!root)
         throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet Registry not found");
     Owned<IPropertyTreeIterator> querysets = root->getElements("QuerySet");
-    if (!root)
-        throw MakeStringException(ECLWATCH_QUERYSET_NOT_FOUND, "QuerySet Registry not found");
     ForEach(*querysets)
         retrieveQuerysetDetails(details, &querysets->query(), type, value);
 }
@@ -897,6 +895,150 @@ bool CWsWorkunitsEx::onWUMultiQuerysetDetails(IEspContext &context, IEspWUMultiQ
         retrieveAllQuerysetDetails(respDetails, req.getFilterTypeAsString(), req.getFilter());
 
     resp.setQuerysets(respDetails);
+
+    return true;
+}
+
+bool addWUQSQueryFilter(WUQuerySortField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, WUQuerySortField name)
+{
+    if (isEmpty(value))
+        return false;
+    filters[count++] = name;
+    buff.append(value);
+    return true;
+}
+
+bool addWUQSQueryFilterInt(WUQuerySortField *filters, unsigned short &count, MemoryBuffer &buff, int value, WUQuerySortField name)
+{
+    VStringBuffer vBuf("%d", value);
+    filters[count++] = name;
+    buff.append(vBuf.str());
+    return true;
+}
+
+bool addWUQSQueryFilterInt64(WUQuerySortField *filters, unsigned short &count, MemoryBuffer &buff, __int64 value, WUQuerySortField name)
+{
+    VStringBuffer vBuf("%ld", value);
+    filters[count++] = name;
+    buff.append(vBuf.str());
+    return true;
+}
+
+bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequest & req, IEspWUListQueriesResponse & resp)
+{
+    bool descending = req.getDescending();
+    const char *sortBy =  req.getSortby();
+    WUQuerySortField sortOrder[2] = {WUQSFId, WUQSFterm};
+    if(notEmpty(sortBy))
+    {
+        if (strieq(sortBy, "Name"))
+            sortOrder[0] = WUQSFname;
+        else if (strieq(sortBy, "WUID"))
+            sortOrder[0] = WUQSFwuid;
+        else if (strieq(sortBy, "DLL"))
+            sortOrder[0] = WUQSFdll;
+        else if (strieq(sortBy, "MemoryLimit"))
+            sortOrder[0] = (WUQuerySortField) (WUQSFmemoryLimit | WUQSFnumeric);
+        else if (strieq(sortBy, "TimeLimit"))
+            sortOrder[0] = (WUQuerySortField) (WUQSFtimeLimit | WUQSFnumeric);
+        else if (strieq(sortBy, "WarnTimeLimit"))
+            sortOrder[0] = (WUQuerySortField) (WUQSFwarnTimeLimit | WUQSFnumeric);
+        else if (strieq(sortBy, "Priority"))
+            sortOrder[0] = (WUQuerySortField) (WUQSFpriority | WUQSFnumeric);
+        else
+            sortOrder[0] = WUQSFId;
+
+        sortOrder[0] = (WUQuerySortField) (sortOrder[0] | WUQSFnocase);
+        if (descending)
+            sortOrder[0] = (WUQuerySortField) (sortOrder[0] | WUQSFreverse);
+    }
+
+    WUQuerySortField filters[16];
+    unsigned short filterCount = 0;
+    MemoryBuffer filterBuf;
+    const char* clusterReq = req.getClusterName();
+    addWUQSQueryFilter(filters, filterCount, filterBuf, req.getQuerySetName(), WUQSFQuerySet);
+    if (!req.getMemoryLimitLow_isNull())
+        addWUQSQueryFilterInt64(filters, filterCount, filterBuf, req.getMemoryLimitLow(), (WUQuerySortField) (WUQSFmemoryLimit | WUQSFnumeric));
+    if (!req.getMemoryLimitHigh_isNull())
+        addWUQSQueryFilterInt64(filters, filterCount, filterBuf, req.getMemoryLimitHigh(), (WUQuerySortField) (WUQSFmemoryLimitHi | WUQSFnumeric));
+    if (!req.getTimeLimitLow_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getTimeLimitLow(), (WUQuerySortField) (WUQSFtimeLimit | WUQSFnumeric));
+    if (!req.getTimeLimitHigh_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getTimeLimitHigh(), (WUQuerySortField) (WUQSFtimeLimitHi | WUQSFnumeric));
+    if (!req.getWarnTimeLimitLow_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getWarnTimeLimitLow(), (WUQuerySortField) (WUQSFwarnTimeLimit | WUQSFnumeric));
+    if (!req.getWarnTimeLimitHigh_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getWarnTimeLimitHigh(), (WUQuerySortField) (WUQSFwarnTimeLimitHi | WUQSFnumeric));
+    if (!req.getPriorityLow_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getPriorityLow(), (WUQuerySortField) (WUQSFpriority | WUQSFnumeric));
+    if (!req.getPriorityHigh_isNull())
+        addWUQSQueryFilterInt(filters, filterCount, filterBuf, req.getPriorityHigh(), (WUQuerySortField) (WUQSFpriorityHi | WUQSFnumeric));
+    filters[filterCount] = WUQSFterm;
+
+    unsigned numberOfQueries = 0;
+    unsigned pageSize = req.getPageSize();
+    unsigned pageStartFrom = req.getPageStartFrom();
+    if(pageSize < 1)
+        pageSize = 100;
+    __int64 cacheHint = 0;
+    if (!req.getCacheHint_isNull())
+        cacheHint = req.getCacheHint();
+
+    Owned<IWorkUnitFactory> factory = getWorkUnitFactory(context.querySecManager(), context.queryUser());
+    Owned<IConstQuerySetQueryIterator> it = factory->getQuerySetQueriesSorted(sortOrder, filters, filterBuf.bufferBase(), pageStartFrom, pageSize, &cacheHint, &numberOfQueries);
+    resp.setCacheHint(cacheHint);
+
+    IArrayOf<IEspQuerySetQuery> queries;
+    ForEach(*it)
+    {
+        IPropertyTree &query=it->query();
+        Owned<IEspQuerySetQuery> q = createQuerySetQuery();
+        q->setId(query.queryProp("@id"));
+        q->setName(query.queryProp("@name"));
+        q->setQuerySetId(query.queryProp("@querySetId"));
+        q->setDll(query.queryProp("@dll"));
+        q->setWuid(query.queryProp("@wuid"));
+        q->setSuspended(query.getPropBool("@suspended", false));
+        if (query.hasProp("@memoryLimit"))
+        {
+            StringBuffer s;
+            memoryLimitStringFromUInt64(s, query.getPropInt64("@memoryLimit"));
+            q->setMemoryLimit(s);
+        }
+        if (query.hasProp("@timeLimit"))
+            q->setTimeLimit(query.getPropInt("@timeLimit"));
+        if (query.hasProp("@warnTimeLimit"))
+            q->setWarnTimeLimit(query.getPropInt("@warnTimeLimit"));
+        if (query.hasProp("@priority"))
+            q->setPriority(getQueryPriorityName(query.getPropInt("@priority")));
+        if (query.hasProp("@comment"))
+            q->setComment(query.queryProp("@comment"));
+
+        try
+        {
+            const char* cluster = clusterReq;
+            const char* querySetId = query.queryProp("@querySetId");
+            if (isEmpty(cluster))
+                cluster = querySetId;
+            Owned<IPropertyTree> queriesOnCluster = getQueriesOnCluster(cluster, querySetId);
+            if (queriesOnCluster)
+            {
+                IArrayOf<IEspClusterQueryState> clusters;
+                addClusterQueryStates(queriesOnCluster, cluster, query.queryProp("@id"), clusters);
+                q->setClusters(clusters);
+            }
+        }
+        catch(IException *e)
+        {
+            StringBuffer err;
+            DBGLOG("Get exception in WUListQueries: %s", e->errorMessage(err.append(e->errorCode()).append(' ')).str());
+            e->Release();
+        }
+        queries.append(*q.getClear());
+    }
+    resp.setQuerysetQueries(queries);
+    resp.setNumberOfQueries(numberOfQueries);
 
     return true;
 }

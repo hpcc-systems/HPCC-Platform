@@ -1027,7 +1027,6 @@ interface IConstWorkUnitIterator : extends IScmIterator
     virtual IConstWorkUnit & query() = 0;
 };
 
-
 //! IWUTimers
 
 interface IWUTimers : extends IInterface
@@ -1085,6 +1084,29 @@ enum WUSortField
     WUSFwild = 2048
 };
 
+enum WUQuerySortField
+{
+    WUQSFId = 1,
+    WUQSFname = 2,
+    WUQSFwuid = 3,
+    WUQSFdll = 4,
+    WUQSFmemoryLimit = 5,
+    WUQSFmemoryLimitHi = 6,
+    WUQSFtimeLimit = 7,
+    WUQSFtimeLimitHi = 8,
+    WUQSFwarnTimeLimit = 9,
+    WUQSFwarnTimeLimitHi = 10,
+    WUQSFpriority = 11,
+    WUQSFpriorityHi = 12,
+    WUQSFQuerySet = 13,
+    WUQSFterm = 0,
+    WUQSFreverse = 256,
+    WUQSFnocase = 512,
+    WUQSFnumeric = 1024,
+    WUQSFwild = 2048
+};
+
+typedef IIteratorOf<IPropertyTree> IConstQuerySetQueryIterator;
 
 
 interface IWorkUnitFactory : extends IInterface
@@ -1105,6 +1127,7 @@ interface IWorkUnitFactory : extends IInterface
     virtual unsigned numWorkUnitsFiltered(WUSortField * filters, const void * filterbuf) = 0;
     virtual void descheduleAllWorkUnits() = 0;
     virtual bool deleteWorkUnitEx(const char * wuid) = 0;
+    virtual IConstQuerySetQueryIterator * getQuerySetQueriesSorted(WUQuerySortField *sortorder, WUQuerySortField *filters, const void *filterbuf, unsigned startoffset, unsigned maxnum, __int64 *cachehint, unsigned *total) = 0;
 };
 
 
