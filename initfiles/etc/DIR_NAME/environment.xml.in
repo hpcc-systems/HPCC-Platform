@@ -327,9 +327,11 @@
   </DafilesrvProcess>
   <DaliServerProcess build="${projname}_${version}-${stagever}"
                      buildSet="dali"
+                     enabled="false"
                      environment="${CONFIG_DIR}/${ENV_XML_FILE}"
                      name="mydali"
-                     recoverFromIncErrors="true">
+                     recoverFromIncErrors="true"
+                     userCacheTimeout="5">
    <Instance computer="localhost"
              directory="${RUNTIME_PATH}/mydali"
              name="s1"

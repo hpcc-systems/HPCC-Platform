@@ -129,6 +129,7 @@
       <xs:attributeGroup ref="Store"/>
       <xs:attributeGroup ref="Backup"/>
       <xs:attributeGroup ref="LDAP"/>
+      <xs:attributeGroup ref="Challenge-Response"/>
       <xs:attributeGroup ref="DFS"/>
       <xs:attribute name="build" type="buildType" use="required">
         <xs:annotation>
@@ -299,6 +300,30 @@
           <tooltip>Number of threads to use to process DFS requests</tooltip>
         </xs:appinfo>
       </xs:annotation>
+    </xs:attribute>
+   </xs:attributeGroup>
+   <xs:attributeGroup name="Challenge-Response">
+    <xs:attribute name="enabled" type="xs:boolean" default="false">
+        <xs:annotation>
+            <xs:appinfo>
+                <tooltip>Enable Challenge-Response in Dali</tooltip>
+            </xs:appinfo>
+        </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="hashKey" type="xs:nonNegativeInteger" default="">
+        <xs:annotation>
+            <xs:appinfo>
+                <viewType>password</viewType>
+                <tooltip>8-10 digit Hash key</tooltip>
+            </xs:appinfo>
+        </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="userCacheTimeout" type="xs:nonNegativeInteger" default="5">
+        <xs:annotation>
+            <xs:appinfo>
+                <tooltip>Trusted user cache timeout specified in minutes</tooltip>
+            </xs:appinfo>
+        </xs:annotation>
     </xs:attribute>
    </xs:attributeGroup>
    <xs:attributeGroup name="LDAP">

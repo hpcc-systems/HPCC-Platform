@@ -2532,7 +2532,16 @@ function refreshNavTree(paramds, paramdt, selRec) {
       getFileName(false));
 }
 
-function promptVerifyPwd(category, params, attrName, oldValue, newValue, recordIndex, callback) {
+function promptVerifyPwd(category, params, attrName, oldValue, newValue, recordIndex, callback, isHashKey) {
+
+  if (isHashKey === true) {
+    if (isNaN(newValue) ===  true || newValue < 10000000 || newValue > 9999999999)
+    {
+      alert("Hash Key needs to be a numeric with 8-10 digits")
+      return false;
+    }
+  }
+
   var caller = this;
   this.focus();
   var handleCancel = function() {
