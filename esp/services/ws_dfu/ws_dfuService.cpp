@@ -1747,6 +1747,9 @@ void CWsDfuEx::doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, co
     //@format - what format the file is (if not fixed with)
     FileDetails.setFormat(df->queryAttributes().queryProp("@format"));
 
+    if ((version >= 1.21) && (df->queryAttributes().hasProp("@kind")))
+        FileDetails.setContentType(df->queryAttributes().queryProp("@kind"));
+
     //@maxRecordSize - what the maximum length of records is
     FileDetails.setMaxRecordSize(df->queryAttributes().queryProp("@maxRecordSize"));
 
