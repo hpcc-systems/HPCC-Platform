@@ -1259,7 +1259,7 @@ public:
                                 fdesc->queryProperties().setProp("@roxiePrefix", newroxieprefix.str());
                             if (iskey)
                                 fdesc->queryProperties().setProp("@kind", "key");
-                            else if (kind.length()) // JCSMORE may not really need seperate if (iskey) line above
+                            else if (kind.length()) // JCSMORE may not really need separate "if (iskey)" line above
                                 fdesc->queryProperties().setProp("@kind", kind);
                             if (multiclusterinsert||multiclustermerge) 
                                 multifdesc.setown(fdesc.getClear());
