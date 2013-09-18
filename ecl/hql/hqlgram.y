@@ -9394,7 +9394,7 @@ sectionArgument
     ;
 
 enumDef
-    : enumBegin enumValues ')'
+    : enumBegin enumFirst enumValues ')'
                         {
                             $$.setExpr(parser->leaveEnum($1), $1);
                         }
@@ -9404,19 +9404,24 @@ enumBegin
     : ENUM '('
                         {
                             OwnedITypeInfo type = makeIntType(4, false);
-                            parser->enterEnum(type);
-                            $$.clear();
-                        }
-    | ENUM '(' SIMPLE_TYPE ','
-                        {
-                            OwnedITypeInfo type = $3.getType();
-                            parser->enterEnum(type);
+                            parser->enterEnum($1, type);
                             $$.clear();
                         }
     ;
 
-enumValues
+enumFirst
     : enumValue
+    | scalarType
+                        {
+                            OwnedITypeInfo type = $1.getType();
+                            parser->setEnumType($1, type);
+                            $$.clear();
+                        }
+    ;
+
+
+enumValues
+    :
     | enumValues ',' enumValue
     ;
 
@@ -9428,6 +9433,20 @@ enumValue
                         }
     | UNKNOWN_ID EQ expression
                         {
+                            parser->normalizeExpression($3, type_numeric, false);
+                            OwnedHqlExpr nextValue = $3.getExpr();
+                            parser->processEnum($1, nextValue);
+                            $$.clear();
+                        }
+    | SCOPE_ID
+                        {
+                            $1.setId(parser->getNameFromExpr($1));
+                            parser->processEnum($1, NULL);
+                            $$.clear();
+                        }
+    | SCOPE_ID EQ expression
+                        {
+                            $1.setId(parser->getNameFromExpr($1));
                             parser->normalizeExpression($3, type_numeric, false);
                             OwnedHqlExpr nextValue = $3.getExpr();
                             parser->processEnum($1, nextValue);
