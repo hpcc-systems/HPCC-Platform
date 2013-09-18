@@ -90,6 +90,8 @@ extern jlib_decl void decompressToBuffer(MemoryBuffer & out, const void * src);
 extern jlib_decl void decompressToBuffer(MemoryBuffer & out, MemoryBuffer & in);
 extern jlib_decl void decompressToAttr(MemoryAttr & out, const void * src);
 extern jlib_decl void decompressToBuffer(MemoryAttr & out, MemoryBuffer & in);
+extern jlib_decl void appendToBuffer(MemoryBuffer & out, size32_t len, const void * src); //format as failed compression
+
 
 #define COMPRESS_METHOD_ROWDIF 1
 #define COMPRESS_METHOD_LZW    2
