@@ -52,6 +52,7 @@ public:
         }
         props.setProp("@rowTag", rowTag.str());
         props.setProp("@format", "utf8n");
+        props.setProp("@kind", "xml");
     }
 };
 

@@ -57,7 +57,7 @@ public:
             props.setPropBool("@blockCompressed", true);        
         if (0 != (helper->getFlags() & TDXgrouped))
             fileDesc->queryProperties().setPropBool("@grouped", true);
-
+        props.setProp("@kind", "flat");
         if (container.queryOwner().queryOwner() && (!container.queryOwner().isGlobal())) // I am in a child query
         { // do early, because this will be local act. and will not come back to master until end of owning graph.
             container.queryTempHandler()->registerFile(fname, container.queryOwner().queryGraphId(), helper->getTempUsageCount(), TDXtemporary & helper->getFlags(), getDiskOutputKind(helper->getFlags()), &clusters);

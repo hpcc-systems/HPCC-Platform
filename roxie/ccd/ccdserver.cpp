@@ -10852,6 +10852,7 @@ public:
         const char *recordECL = helper.queryRecordECL();
         if (recordECL && *recordECL)
             fileProps.setProp("ECL", recordECL);
+        fileProps.setProp("@kind", "flat"); // default, derivitives may override
     }
 
     virtual IUserDescriptor *queryUserDescriptor() const
@@ -10937,6 +10938,7 @@ public:
         props.setProp("@csvQuote", rs.setown(csvParameters->getQuote(0)));
         props.setProp("@csvTerminate", rs.setown(csvParameters->getTerminator(0)));
         props.setProp("@csvEscape", rs.setown(csvParameters->getEscape(0)));
+        props.setProp("@kind", "csv");
     }
 
     virtual bool isOutputTransformed() const { return true; }
@@ -11008,6 +11010,7 @@ public:
         CRoxieServerDiskWriteActivity::setFileProperties(desc);
         desc->queryProperties().setProp("@format","utf8n");
         desc->queryProperties().setProp("@rowTag",rowTag.get());
+        desc->queryProperties().setProp("@kind", "xml");
     }
 
     virtual bool isOutputTransformed() const { return true; }
