@@ -2615,6 +2615,8 @@ public:
         iHash = helper->queryHash();
         appendOutputLinked(this);
         iCompare = helper->queryCompare();
+
+        // JCSMORE - really should ask / lookup what flags the allocator created for extractKey has...
         allocFlags = queryJob().queryThorAllocator()->queryFlags();
 
         // JCSMORE - it may not be worth extracting the key,
