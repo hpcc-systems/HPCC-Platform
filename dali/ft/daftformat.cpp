@@ -1220,6 +1220,7 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
     numInBuffer = bufferOffset = 0;
     if (splitOffset != 0)
     {
+        LOG(MCdebugProgressDetail, unknownJob, "CXmlQuickPartitioner::findSplitPoint(splitOffset:%"I64F"d)", splitOffset);
         unsigned delta = (unsigned)(splitOffset & (unitSize-1));
         if (delta)
             splitOffset += (unitSize - delta);
@@ -1244,7 +1245,10 @@ void CXmlQuickPartitioner::findSplitPoint(offset_t splitOffset, PartitionCursor 
                     break;
                 }
                 if (sizeAvailable >= format.maxRecordSize)
-                    throwError(DFTERR_EndOfRecordNotFound);
+                {
+                    LOG(MCdebugProgressDetail, unknownJob, "CXmlQuickPartitioner::findSplitPoint: record size (>%d bytes) is larger than expected maxRecordSize (%d bytes) [and blockSize (%d bytes)]", sizeRecord, format.maxRecordSize, blockSize);
+                    throwError3(DFTERR_EndOfXmlRecordNotFound, splitOffset+bufferOffset, sizeRecord, format.maxRecordSize);
+                }
                 LOG(MCdebugProgress, unknownJob, "Failed to find split after reading %d", ensureSize);
                 ensureSize += blockSize;
                 if (ensureSize > format.maxRecordSize)
