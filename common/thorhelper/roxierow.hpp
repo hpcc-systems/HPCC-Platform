@@ -28,10 +28,7 @@ extern THORHELPER_API IEngineRowAllocator * createCrcRoxieRowAllocator(roxiemem:
 
 interface IRowAllocatorMetaActIdCache : extends roxiemem::IRowAllocatorCache
 {
-    virtual bool remove(IOutputMetaData *meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) = 0;
-    virtual IEngineRowAllocator *lookup(IOutputMetaData *meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) const = 0;
     virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags) = 0;
-    virtual void clear() = 0;
     virtual unsigned items() const = 0;
 };
 

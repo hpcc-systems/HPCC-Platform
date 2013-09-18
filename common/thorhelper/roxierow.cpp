@@ -417,48 +417,26 @@ public:
     {
         SpinBlock b(allAllocatorsLock);
         CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
-        unsigned allocatorId;
-        bool doCacheAdd = true;
         if (container)
         {
             if (0 == (roxiemem::RHFunique & flags))
                 return LINK(&container->queryElement());
             // if in cache but unique, reuse allocatorId
-            allocatorId = container->queryAllocatorId();
-            doCacheAdd = false;
+            return callback->createAllocator(meta, activityId, container->queryAllocatorId(), flags);
         }
-        else
-        {
-            assertex(allAllocators.ordinality() < ALLOCATORID_MASK);
-            allocatorId = allAllocators.ordinality();
-            // NB: a RHFunique allocator, will cause 1st to be added to 'allAllocators'
-            // subsequent requests for the same type of unique allocator, will share same allocatorId
-            // resulting in the 1st allocator being reused by all instances for onDestroy() etc.
-        }
+        // NB: a RHFunique allocator, will cause 1st to be added to 'allAllocators'
+        // subsequent requests for the same type of unique allocator, will share same allocatorId
+        // resulting in the 1st allocator being reused by all instances for onDestroy() etc.
+
+        assertex(allAllocators.ordinality() < ALLOCATORID_MASK);
+        unsigned allocatorId = allAllocators.ordinality();
         IEngineRowAllocator *ret = callback->createAllocator(meta, activityId, allocatorId, flags);
-        if (doCacheAdd)
-        {
-            AllocatorKey key(meta, activityId, flags);
-            CAllocatorCacheItem *container = new CAllocatorCacheItem(LINK(ret), allocatorId, key);
-            cache.replace(*container);
-            allAllocators.append(*LINK(ret));
-        }
+        AllocatorKey key(meta, activityId, flags);
+        container = new CAllocatorCacheItem(LINK(ret), allocatorId, key);
+        cache.replace(*container);
+        allAllocators.append(*LINK(ret));
+
         return ret;
-    }
-    virtual bool remove(IOutputMetaData *meta, unsigned activityId, roxiemem::RoxieHeapFlags flags)
-    {
-        SpinBlock b(allAllocatorsLock);
-        CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
-        if (!container)
-            return false;
-        allAllocators.zap(container->queryElement());
-        return cache.removeExact(container);
-    }
-    virtual void clear()
-    {
-        SpinBlock b(allAllocatorsLock);
-        cache.kill();
-        allAllocators.kill();
     }
     virtual unsigned items() const
     {
@@ -729,9 +707,6 @@ protected:
         }
         // test that 64 in cache
         ASSERT(allocatorCache->items() == 64);
-        // lookup one
-        Owned<IEngineRowAllocator> allocator = allocatorCache->lookup(&metas.item(0), 1, roxiemem::RHFnone);
-        ASSERT(NULL != allocator);
 
         // test ensure again
         for (unsigned fixedSize=1; fixedSize<=64; fixedSize++)
@@ -741,16 +716,6 @@ protected:
             Owned<IEngineRowAllocator> allocator = allocatorCache->ensure(meta, activityId, roxiemem::RHFnone);
         }
         ASSERT(allocatorCache->items() == 64);
-
-        // remove all
-        for (unsigned fixedSize=1; fixedSize<=64; fixedSize++)
-        {
-            unsigned activityId = 1 + ((fixedSize-1) % 32); // i.e. make an id, so half are duplicates
-            IOutputMetaData *meta = &metas.item(fixedSize-1); // from 1st round
-            ASSERT(allocatorCache->remove(meta, activityId, roxiemem::RHFnone));
-        }
-        // test that all removed
-        ASSERT(allocatorCache->items() == 0);
 
         metas.kill();
         allocatorCache.clear();
