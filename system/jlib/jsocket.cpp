@@ -24,6 +24,9 @@
     look at loopback
 */
 
+#ifndef _USE_EPOLL
+# define _USE_EPOLL
+#endif
 
 #include "platform.h"
 #ifdef _VER_C5
@@ -65,6 +68,17 @@
 #include "jdebug.hpp"
 #include "build-config.h"
 
+// epoll only with linux
+
+#ifndef __linux__
+# undef _USE_EPOLL
+#endif
+#ifdef _USE_EPOLL
+# include <unistd.h>
+# include <sys/epoll.h>
+//#define EPOLLTRACE
+#endif
+
 // various options 
 
 #define CONNECT_TIMEOUT_REFUSED_WAIT    1000        // maximum to sleep on connect_timeout
@@ -83,6 +97,9 @@
 
 #ifdef _DEBUG
 //#define SOCKTRACE
+# ifdef _USE_EPOLL
+//#  define EPOLLTRACE
+# endif
 #endif
 
 #ifdef _TESTING
@@ -3495,7 +3512,9 @@ class CSocketSelectThread: public Thread
     T_SOCKET dummysock; 
 #endif
     bool dummysockopen;
-
+#ifdef _USE_EPOLL
+    int epfd;
+#endif
 
     void opendummy()
     {
@@ -3519,12 +3538,36 @@ class CSocketSelectThread: public Thread
                 }
             }
             CHECKSOCKRANGE(dummysock[0]);
+#ifdef _USE_EPOLL
+            int srtn;
+            struct epoll_event event;
+            event.events = EPOLLIN;
+            event.data.fd = -1;
+            srtn = ::epoll_ctl( epfd, EPOLL_CTL_ADD, dummysock[0], &event );
+            if(srtn < 0){
+                int err = ERRNO();
+                LOGERR(err,1,"epoll_ctl(ADD)");
+                THROWJSOCKEXCEPTION2(err);
+            }
+#endif
 #else
             if (IP6preferred)
                 dummysock = ::socket(AF_INET6, SOCK_STREAM, PF_INET6);
             else
                 dummysock = ::socket(AF_INET, SOCK_STREAM, 0);
             CHECKSOCKRANGE(dummysock);
+#ifdef _USE_EPOLL
+            int srtn;
+            struct epoll_event event;
+            event.events = EPOLLERR;
+            event.data.fd = -1;
+            srtn = ::epoll_ctl( epfd, EPOLL_CTL_ADD, dummysock, &event );
+            if(srtn < 0){
+                int err = ERRNO();
+                LOGERR(err,1,"epoll_ctl(ADD)");
+                THROWJSOCKEXCEPTION2(err);
+            }
+#endif
 #endif
             dummysockopen = true;
         }
@@ -3537,12 +3580,20 @@ class CSocketSelectThread: public Thread
         CriticalBlock block(sect);
         if (dummysockopen) { 
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
+#ifdef _USE_EPOLL
+            struct epoll_event event;
+            ::epoll_ctl( epfd, EPOLL_CTL_DEL, dummysock[0], &event );
+#endif
 #ifdef SOCKTRACE
             PROGLOG("SOCKTRACE: Closing dummy sockets %x %d %x %d (%x)", dummysock[0], dummysock[0], dummysock[1], dummysock[1], this);
 #endif
             ::close(dummysock[0]);
             ::close(dummysock[1]);
 #else
+#ifdef _USE_EPOLL
+            struct epoll_event event;
+            ::epoll_ctl( epfd, EPOLL_CTL_DEL, dummysock, &event );
+#endif
 #ifdef _WIN32
             ::closesocket(dummysock);
 #else
@@ -3646,7 +3697,6 @@ public:
         : Thread("CSocketSelectThread")
     {
         dummysockopen = false;
-        opendummy();
         terminating = false;
         atomic_set(&tickwait,0);
         waitingchange = 0;
@@ -3659,6 +3709,18 @@ public:
 #ifdef _WIN32
         inithash();
 #endif      
+#ifdef _USE_EPOLL
+        epfd = ::epoll_create(XFD_SETSIZE);
+        if(epfd < 0){
+          int err = ERRNO();
+          LOGERR(err,1,"epoll_create()");
+          THROWJSOCKEXCEPTION2(err);
+        }
+# ifdef EPOLLTRACE
+        DBGLOG("EPOLL: creating epfd %d", epfd );
+# endif
+#endif
+        opendummy();
     }
 
     ~CSocketSelectThread()
@@ -3667,6 +3729,10 @@ public:
         ForEachItemIn(i,items) {
             try {
                 SelectItem &si = items.item(i);
+#ifdef _USE_EPOLL
+                struct epoll_event event;
+                ::epoll_ctl( epfd, EPOLL_CTL_DEL, si.handle, &event );
+#endif
                 si.sock->Release();
                 si.nfy->Release();
             }
@@ -3675,18 +3741,34 @@ public:
                 e->Release();
             }
         }
+#ifdef _USE_EPOLL
+        if ( epfd >= 0 ) {
+# ifdef EPOLLTRACE
+            DBGLOG("EPOLL: closing epfd %d", epfd );
+# endif
+            ::close( epfd );
+            epfd = -1;
+        }
+#endif
     }
 
     Owned<IException> termexcept;
 
     void updateItems()
     {
+# ifdef EPOLLTRACE
+        DBGLOG("EPOLL: entering updateItems()");
+# endif
         // must be in CriticalBlock block(sect); 
         unsigned n = items.ordinality();
         bool hashupdateneeded = (n!=basesize); // additions all come at end
         for (unsigned i=0;i<n;) {
             SelectItem &si = items.item(i);
             if (si.del) {
+#ifdef _USE_EPOLL
+                struct epoll_event event;
+                ::epoll_ctl( epfd, EPOLL_CTL_DEL, si.handle, &event );
+#endif
                 si.nfy->Release();
                 try {
 #ifdef SOCKTRACE
@@ -3713,6 +3795,9 @@ public:
             reinithash();
 #endif
         basesize = n;
+# ifdef EPOLLTRACE
+        DBGLOG("EPOLL: leaving updateItems()");
+# endif
     }
 
 
@@ -3843,6 +3928,9 @@ public:
     void updateSelectVars(T_FD_SET &rdfds,T_FD_SET &wrfds,T_FD_SET &exfds,bool &isrd,bool &iswr,bool &isex,unsigned &ni,T_SOCKET &max_sockid)
     {
         CriticalBlock block(sect);
+#ifdef EPOLLTRACE
+        DBGLOG("EPOLL: entering updateSelectVars()");
+#endif
         selectvarschange = false;
         if (waitingchange) {
             waitingchangesem.signal(waitingchange);
@@ -3872,6 +3960,18 @@ public:
         opendummy();
         max_sockid=dummysockopen?dummysock:0;
 #endif
+
+#ifdef _USE_EPOLL
+        // delete remaining handles here and add them
+        // back in below to get correct indexes ...
+        int srtn, ep_mode;
+        struct epoll_event event;
+        ForEachItemIn(pi,items) {
+            SelectItem &psi = items.item(pi);
+            ::epoll_ctl( epfd, EPOLL_CTL_DEL, psi.handle, &event );
+        }
+#endif
+
         ni = items.ordinality();
 #ifdef _WIN32
         if (offset>=ni)
@@ -3880,9 +3980,6 @@ public:
         unsigned j=offset;
         ForEachItemIn(i,items) {
             SelectItem &si = items.item(j);
-            j++;
-            if (j==ni)
-                j = 0;
             if (si.mode & SELECTMODE_READ) {
                 FD_SET( si.handle, &rdfds );
                 isrd = true;
@@ -3895,8 +3992,38 @@ public:
                 FD_SET( si.handle, &exfds );
                 isex = true;
             }
+#ifdef _USE_EPOLL
+            if ( si.mode != 0 ){
+                ep_mode = 0;
+                if (si.mode & SELECTMODE_READ) {
+                    ep_mode |= (EPOLLIN | EPOLLPRI);
+                }
+                if (si.mode & SELECTMODE_WRITE) {
+                    ep_mode |= EPOLLOUT;
+                }
+                if (si.mode & SELECTMODE_EXCEPT) {
+                    ep_mode |= EPOLLERR;
+                }
+                if(ep_mode != 0){
+                    // TODO - add EPOLLRDHUP ?
+                    ep_mode |= EPOLLRDHUP;
+                    event.events = ep_mode;
+                    event.data.fd = j;
+                    srtn = ::epoll_ctl( epfd, EPOLL_CTL_ADD, si.handle, &event );
+                    if(srtn < 0){
+                        int err = ERRNO();
+                        LOGERR(err,1,"epoll_ctl(ADD)");
+                        THROWJSOCKEXCEPTION2(err);
+                    }
+                }
+            }
+            j++;
+            if (j==ni)
+                j = 0;
+#endif
             max_sockid=std::max(si.handle, max_sockid);
         }
+
         if (dummysockopen) {
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
             FD_SET( dummysock[0], &rdfds );
@@ -3911,6 +4038,9 @@ public:
 #ifdef SOCKTRACE
         PROGLOG("SOCKTRACE: selecting on %d sockets",ni);
 #endif
+#ifdef EPOLLTRACE
+        DBGLOG("EPOLL: leaving updateSelectVars()");
+#endif
     }
 
     int run()
@@ -3920,6 +4050,9 @@ public:
             T_FD_SET wrfds;
             T_FD_SET exfds;
             timeval selecttimeout;
+#ifdef _USE_EPOLL
+            struct epoll_event events[XFD_SETSIZE];
+#endif
             bool isrd;
             bool iswr;
             bool isex;
@@ -3942,11 +4075,12 @@ public:
                     validateerrcount = 0;
                     atomic_inc(&tickwait);                  
                     if(!selectvarschange&&!terminating) 
-                    ticksem.wait(SELECT_TIMEOUT_SECS*1000);
+                        ticksem.wait(SELECT_TIMEOUT_SECS*1000);
                     atomic_dec(&tickwait);
                         
                     continue;
                 }
+#ifndef _USE_EPOLL
                 T_FD_SET rs;
                 T_FD_SET ws;
                 T_FD_SET es;
@@ -3954,6 +4088,14 @@ public:
                 T_FD_SET *wsp = iswr?cpyfds(ws,wrfds):NULL;
                 T_FD_SET *esp = isex?cpyfds(es,exfds):NULL;
                 int n = ::select(maxsockid,(fd_set *)rsp,(fd_set *)wsp,(fd_set *)esp,&selecttimeout); // first parameter needed for posix
+#else
+                int n = ::epoll_wait( epfd, events, XFD_SETSIZE, 1000);
+
+# ifdef EPOLLTRACE
+                DBGLOG("EPOLL: after epoll_wait(), n = %d", n);
+# endif
+#endif
+
                 if (terminating)
                     break;
                 if (n < 0) {
@@ -3961,7 +4103,7 @@ public:
                     int err = ERRNO();
                     if (err != EINTRCALL) {
                         if (dummysockopen) {
-                            LOGERR(err,12,"CSocketSelectThread select error"); // should cache error ?
+                            LOGERR(err,12,"CSocketSelectThread select/epoll error"); // should cache error ?
                             validateselecterror = err;
 #ifndef _USE_PIPE_FOR_SELECT_TRIGGER
                             closedummy();  // just in case was culprit
@@ -3981,6 +4123,7 @@ public:
                     SelectItemArray tonotify;
                     { 
                         CriticalBlock block(sect);
+#ifndef _USE_EPOLL
 #ifdef _WIN32
                         if (isrd) 
                             processfds(rs,SELECTMODE_READ,tonotify);
@@ -3997,12 +4140,14 @@ public:
                         bool e = isex;
 #ifdef _USE_PIPE_FOR_SELECT_TRIGGER
                         if (r&&dummysockopen&&findfds(rs,dummysock[0],r)) {
+                            // DBGLOG("EPOLL: select says dummy fd %d read ready", dummysock[0]);
                             resettrigger();
                             --n;
                         }           
 #endif
                         for (i=0;(n>0)&&(i<ni);i++) {
                             if (r&&findfds(rs,si->handle,r)) {
+                                // DBGLOG("EPOLL: select says fd %d read ready", si->handle);
                                 if (!si->del) {
                                     tonotify.append(*si);
                                     tonotify.item(tonotify.length()-1).mode = SELECTMODE_READ;
@@ -4010,6 +4155,7 @@ public:
                                 --n;
                             }
                             if (w&&findfds(ws,si->handle,w)) {
+                                // DBGLOG("EPOLL: select says fd %d write ready", si->handle);
                                 if (!si->del) {
                                     tonotify.append(*si);
                                     tonotify.item(tonotify.length()-1).mode = SELECTMODE_WRITE;
@@ -4017,6 +4163,7 @@ public:
                                 --n;
                             }
                             if (e&&findfds(es,si->handle,e)) {
+                                // DBGLOG("EPOLL: select says fd %d except ready", si->handle);
                                 if (!si->del) {
                                     tonotify.append(*si);
                                     tonotify.item(tonotify.length()-1).mode = SELECTMODE_EXCEPT;
@@ -4028,6 +4175,40 @@ public:
                                 si = items.getArray();
                         }
 #endif
+#else // _USE_EPOLL
+                        for(int j=0;j<n;j++){
+# ifdef EPOLLTRACE
+                            DBGLOG("EPOLL: events[%d].data.fd (index) = %d, events mask = %d", j, events[j].data.fd, events[j].events);
+# endif
+                            if( (dummysockopen) && (events[j].data.fd < 0) ){
+                                resettrigger();
+                                continue;
+                            }
+                            if( events[j].data.fd >= 0 ){
+                                SelectItem *epsi = items.getArray(events[j].data.fd);
+                                if (!epsi->del) {
+                                    unsigned int ep_mode = 0;
+                                    if ( events[j].events & (EPOLLIN | EPOLLPRI) ) {
+                                        ep_mode |= SELECTMODE_READ;
+                                    }
+                                    if ( events[j].events & (EPOLLERR | EPOLLHUP) ) {
+                                        ep_mode |= SELECTMODE_READ;
+                                    }
+                                    if ( events[j].events & EPOLLRDHUP ) {
+                                        // TODO - or should we set EXCEPT ... ?
+                                        ep_mode |= SELECTMODE_READ;
+                                    }
+                                    if ( events[j].events & EPOLLOUT ) {
+                                        ep_mode |= SELECTMODE_WRITE;
+                                    }
+                                    if(ep_mode != 0){
+                                        tonotify.append(*epsi);
+                                        tonotify.item(tonotify.length()-1).mode = ep_mode;
+                                    }
+                                }
+                            }
+                        }
+#endif // _USE_EPOLL
                     }
                     ForEachItemIn(j,tonotify) {
                         SelectItem &si = tonotify.item(j);
