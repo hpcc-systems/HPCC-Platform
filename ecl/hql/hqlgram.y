@@ -520,6 +520,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   VALUE_MACRO
   DEFINITIONS_MACRO
 
+  BOOL_CONST
   INTEGER_CONST
   STRING_CONST
   DATA_CONST
@@ -11423,6 +11424,7 @@ const
     | TOK_FALSE         {
                             $$.setExpr(createConstant(false), $1);
                         }
+    | BOOL_CONST
     ;
 
 stringConstExpr
