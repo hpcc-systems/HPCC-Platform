@@ -233,7 +233,10 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         }
         else if (strchr(option, '-'))
         {
-            StringBuffer envVar(option);
+            StringBuffer envVar;
+            if (isLocal)
+                envVar.append("WU_");
+            envVar.append(option);
             envVar.toUpperCase();
             envVar.replace('-','_');
             pipe.setenv(envVar, value);

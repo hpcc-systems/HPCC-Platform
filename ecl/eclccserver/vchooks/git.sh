@@ -32,10 +32,23 @@ if [ -z "$GIT_URL" ]; then
     exit 2
 fi
 
+if [ -n "$WU_GIT_VERBOSE" ]; then
+    GIT_VERBOSE=1
+fi
+
+if [ -n "$WU_GIT_BRANCH" ]; then
+    if [ -z GIT_BRANCH_LOCKED ]; then
+        echo "GIT: Overrideing branch is not allowed" 1>&2
+        exit 2
+    else
+        GIT_BRANCH=$WU_GIT_BRANCH
+    fi
+fi
+
 if [ -z "$GIT_BRANCH" ]; then
     GIT_BRANCH=master
     if [ -n "$GIT_VERBOSE" ]; then
-        echo "GIT: No branch specified - assuming master"
+        echo "GIT: No branch specified - assuming master" 1>&2
     fi
 else
     if [ -n "$GIT_VERBOSE" ]; then
