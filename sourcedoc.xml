@@ -264,7 +264,7 @@
                     Text::Wrap            (Optional: if available, makes output of -listreports neater)
                 </para>
                 <para>
-                    Step 1: Configure your regression suites. This only need to be done once.
+                    Step 1: Configure your regression suites. This need only be done once.
                     <programlisting>./runregress -ini=environment.xml</programlisting>
                     The file 'environment.xml' is normally located in your '/etc/HPCCPlatform'
                     directory and contains information on how your cluster is set-up, so the
