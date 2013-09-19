@@ -130,6 +130,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
 {
     StringAttr wuid;
     Owned<IWorkUnit> workunit;
+    StringBuffer idxStr;
 
     virtual void reportError(IException *e)
     {
@@ -196,7 +197,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         }
     }
 
-    void processOption(const char *option, const char *value, StringBuffer &eclccCmd, StringBuffer &eclccProgName, IPipeProcess &pipe)
+    void processOption(const char *option, const char *value, StringBuffer &eclccCmd, StringBuffer &eclccProgName, IPipeProcess &pipe, bool isLocal)
     {
         if (memicmp(option, "eclcc-", 6) == 0 || *option=='-')
         {
@@ -210,7 +211,11 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
                 optName.set(start);
 
             if (stricmp(optName, "hook") == 0)
+            {
+                if (isLocal)
+                    throw MakeStringException(0, "eclcc-hook option can not be set per-workunit");  // for security reasons
                 eclccProgName.set(value);
+            }
             else if (stricmp(optName, "compileOption") == 0)
                 eclccCmd.appendf(" -Wc,%s", value);
             else if (stricmp(optName, "includeLibraryPath") == 0)
@@ -218,7 +223,11 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             else if (stricmp(optName, "libraryPath") == 0)
                 eclccCmd.appendf(" -L%s", value);
             else if (stricmp(start, "-allow")==0)
-                ; // Don't allow people to grant themselves permissions
+            {
+                if (isLocal)
+                    throw MakeStringException(0, "eclcc-allow option can not be set per-workunit");  // for security reasons
+                eclccCmd.appendf(" -%s=%s", start, value);
+            }
             else
                 eclccCmd.appendf(" -%s=%s", start, value);
         }
@@ -227,7 +236,6 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             StringBuffer envVar(option);
             envVar.toUpperCase();
             envVar.replace('-','_');
-            DBGLOG("Setting environment %s=%s", envVar.str(), value);
             pipe.setenv(envVar, value);
         }
         else
@@ -258,6 +266,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             eclccCmd.append(" --timings");
 
         Owned<IPipeProcess> pipe = createPipeProcess();
+        pipe->setenv("ECLCCSERVER_THREAD_INDEX", idxStr.str());
         Owned<IPropertyTreeIterator> options = globals->getElements("./Option");
         ForEach(*options)
         {
@@ -266,7 +275,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             const char *value = option.queryProp("@value");
             const char *cluster = option.queryProp("@cluster");                // if cluster is set it's specific to a particular target
             if (name && (cluster==NULL || cluster[0]==0 || strcmp(cluster, targetCluster)==0))
-                processOption(name, value, eclccCmd, eclccProgName, *pipe);
+                processOption(name, value, eclccCmd, eclccProgName, *pipe, false);
         }
         eclccCmd.appendf(" -o%s", wuid);
         eclccCmd.appendf(" -platform=%s", target);
@@ -277,7 +286,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             SCMStringBuffer debugStr, valueStr;
             debugValues->str(debugStr);
             workunit->getDebugValue(debugStr.str(), valueStr);
-            processOption(debugStr.str(), valueStr.str(), eclccCmd, eclccProgName, *pipe);
+            processOption(debugStr.str(), valueStr.str(), eclccCmd, eclccProgName, *pipe, true);
         }
         if (workunit->getResultLimit())
         {
@@ -348,6 +357,11 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
 
 public:
     IMPLEMENT_IINTERFACE;
+    EclccCompileThread(unsigned _idx)
+    {
+        idxStr.append(_idx);
+    }
+
     virtual void init(void *param)
     {
         wuid.set((const char *) param);
@@ -482,7 +496,7 @@ class EclccServer : public CInterface, implements IThreadFactory, implements IAb
     Owned<IThreadPool> pool;
 
     unsigned threadsActive;
-    unsigned maxThreadsActive;
+    CriticalSection threadActiveCrit;
     bool running;
     CSDSServerStatus serverstatus;
     Owned<IJobQueue> queue;
@@ -493,7 +507,6 @@ public:
         : queueName(_queueName), poolSize(_poolSize), serverstatus("ECLCCserver")
     {
         threadsActive = 0;
-        maxThreadsActive = 0;
         running = false;
         pool.setown(createThreadPool("eclccServerPool", this, NULL, poolSize, INFINITE));
         serverstatus.queryProperties()->setProp("@queue",queueName.get());
@@ -555,7 +568,8 @@ public:
 
     virtual IPooledThread *createNew()
     {
-        return new EclccCompileThread();
+        CriticalBlock b(threadActiveCrit);
+        return new EclccCompileThread(threadsActive++);
     }
 
     virtual bool onAbort() 
