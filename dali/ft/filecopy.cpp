@@ -1130,6 +1130,7 @@ void FileSprayer::calculateSprayPartition()
         const SocketEndpoint & ep = cur.filename.queryEndpoint();
         IFormatPartitioner * partitioner = createFormatPartitioner(ep, srcFormat, tgtFormat, calcOutput, queryFixedSlave(), wuid);
 
+
         // CSV record structure discovery of every source
         if (srcFormat.type == FFTcsv)
         {
