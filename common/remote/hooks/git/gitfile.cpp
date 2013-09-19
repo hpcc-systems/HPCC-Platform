@@ -28,6 +28,7 @@
 /*
  * Direct access to files in git repositories, by revision, without needing to check them out first
  * Installs hooks into createIFile, spotting filenames of the form /my/directory/.git/{revision}/path/within/git
+ * Bare repositories of the form  /my/directory.git/{revision}/path/within/git also supported
  */
 
 IDirectoryIterator *createGitRepositoryDirectoryIterator(const char *gitFileName, const char *mask=NULL, bool sub=false,bool includedirs=false);
@@ -35,25 +36,21 @@ IDirectoryIterator *createGitRepositoryDirectoryIterator(const char *gitFileName
 static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAttr &revision, StringAttr &relPath)
 {
     assertex(fullName);
-    const char *git = strstr(fullName, PATHSEPSTR ".git" PATHSEPSTR);
+    const char *git = strstr(fullName, ".git" PATHSEPSTR "{" );
     assertex(git);
-    const char *tail = git+6;
+    const char *tail = git+5;
     gitDir.set(fullName, tail-fullName);
-    if (*tail=='{')
-    {
+    assertex (*tail=='{');
+    tail++;
+    const char *end = strchr(tail, '}');
+    if (!end)
+        throw MakeStringException(0, "Invalid git repository filename - no matching } found");
+    revision.set(tail, end - tail);
+    tail = end+1;
+    if (*tail==PATHSEPCHAR)
         tail++;
-        const char *end = strchr(tail, '}');
-        if (!end)
-            throw MakeStringException(0, "Invalid git repository filename - no matching } found");
-        revision.set(tail, end - tail);
-        tail = end+1;
-        if (*tail==PATHSEPCHAR)
-            tail++;
-        else if (*tail != 0)
-            throw MakeStringException(0, "Invalid git repository filename - " PATHSEPSTR " expected after }");
-    }
-    else
-        revision.clear();
+    else if (*tail != 0)
+        throw MakeStringException(0, "Invalid git repository filename - " PATHSEPSTR " expected after }");
     if (tail && *tail)
     {
         StringBuffer s(tail);
@@ -62,13 +59,17 @@ static void splitGitFileName(const char *fullName, StringAttr &gitDir, StringAtt
     }
     else
         relPath.clear();
+    // Check it's a valid git repository
+    StringBuffer configName(gitDir);
+    configName.append("config");
+    if (!checkFileExists(configName.str()))
+        throw MakeStringException(0, "Invalid git repository - config file %s not found", configName.str());
 }
 
 static StringBuffer & buildGitFileName(StringBuffer &fullname, const char *gitDir, const char *revision, const char *relPath)
 {
     fullname.append(gitDir);
-    if (revision && *revision)
-        fullname.append('{').append(revision).append('}').append(PATHSEPCHAR);
+    fullname.append('{').append(revision).append('}').append(PATHSEPCHAR);
     if (relPath && *relPath)
         fullname.append(relPath);
     return fullname;
@@ -267,6 +268,10 @@ static IFile *createGitFile(const char *gitFileName)
     StringBuffer fname(gitFileName);
     assertex(fname.length());
     removeTrailingPathSepChar(fname);
+    StringAttr gitDirectory, revision, relDir;
+    splitGitFileName(fname, gitDirectory, revision, relDir);
+    if (relDir.isEmpty())
+        return new GitRepositoryFile(fname, 0, true, true);  // Special case the root - ugly but apparently necessary
     Owned<IDirectoryIterator> dir = createGitRepositoryDirectoryIterator(fname, NULL, false, true);
     if (dir->first())
     {
@@ -427,7 +432,7 @@ public:
 protected:
     static bool isGitFileName(const char *fileName)
     {
-        if (fileName && strstr(fileName, PATHSEPSTR ".git" PATHSEPSTR))
+        if (fileName && strstr(fileName, ".git" PATHSEPSTR "{"))
             return true;
         return false;
     }
