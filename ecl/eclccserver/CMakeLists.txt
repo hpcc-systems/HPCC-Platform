@@ -52,3 +52,5 @@ target_link_libraries ( eclccserver
          workunit
     )
 
+HPCC_ADD_SUBDIRECTORY (vchooks "PLATFORM")
+
