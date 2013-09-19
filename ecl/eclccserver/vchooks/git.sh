@@ -79,7 +79,7 @@ if [ -z "$GIT_DIRECTORY" ]; then
             echo "GIT: performing initial clone"
             git clone --bare $GIT_URL 1>&2 || exit $?
         else
-            git clone --bare $GIT_URL 2>&1 /dev/null
+            git clone --bare $GIT_URL 2>&1 >/dev/null
             if [ $? -ne 0 ]; then
                 echo "Failed to run git clone $GIT_URL" 1>&2
                 exit 2
