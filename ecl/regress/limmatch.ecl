@@ -56,7 +56,7 @@ recO T(recL l,recR r) := TRANSFORM
 END;
 
 
-J1 := JOIN(dsL,dsR,left.name[1..*]=right.name[3..*] and left.val<right.val,T(LEFT,RIGHT), ATMOST(left.name[1..*]=right.name[3..*],3));
+J1 := JOIN(dsL,dsR,left.name[1..*]=right.name[3..*] and left.val<right.val,T(LEFT,RIGHT), ATMOST(left.name[1..*]=right.name[3..*],3), LOCAL);
 
 output(J1);
 

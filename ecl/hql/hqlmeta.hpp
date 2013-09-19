@@ -107,13 +107,13 @@ extern HQL_API bool matchDedupDistribution(IHqlExpression * distn, const HqlExpr
 extern HQL_API bool matchesAnyDistribution(IHqlExpression * distn);
 
 extern HQL_API bool appearsToBeSorted(IHqlExpression * dataset, bool isLocal, bool ignoreGrouping);
-extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
+extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
 extern HQL_API bool isAlreadySorted(IHqlExpression * dataset, IHqlExpression * newSort, bool isLocal, bool ignoreGrouping);
 extern HQL_API IHqlExpression * ensureSorted(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal, bool allowSubSort);
 
 extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping);
-extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
-extern HQL_API IHqlExpression * getSubSort(IHqlExpression * dataset, HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
+extern HQL_API bool isWorthShuffling(IHqlExpression * dataset, const HqlExprArray & newSort, bool isLocal, bool ignoreGrouping);
+extern HQL_API IHqlExpression * getSubSort(IHqlExpression * dataset, const HqlExprArray & order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
 extern HQL_API IHqlExpression * getSubSort(IHqlExpression * dataset, IHqlExpression * order, bool isLocal, bool ignoreGrouping, bool alwaysLocal);
 extern HQL_API IHqlExpression * convertSubSortToGroupedSort(IHqlExpression * expr);
 
