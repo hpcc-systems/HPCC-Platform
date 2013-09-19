@@ -250,7 +250,9 @@ ECLRTL_API void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned s
 ECLRTL_API bool rtlGetNormalizedUnicodeLocaleName(unsigned len, char const * in, char * out);
 
 ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const char * p2);
+ECLRTL_API int rtlPrefixDiffStrEx(unsigned l1, const char * p1, unsigned l2, const char * p2, unsigned origin);
 ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, const char * locale);
+ECLRTL_API int rtlPrefixDiffUnicodeEx(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, const char * locale, unsigned origin);
 
 ECLRTL_API void rtlTrimRight(unsigned &tlen, char * &tgt, unsigned slen, const char * src); // YMA
 ECLRTL_API void rtlTrimUnicodeRight(unsigned &tlen, UChar * &tgt, unsigned slen, UChar const * src);

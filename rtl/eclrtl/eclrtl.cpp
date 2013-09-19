@@ -2544,7 +2544,7 @@ void rtlKeyUnicodeStrengthX(unsigned & tlen, void * & tgt, unsigned slen, const 
     ucol_getSortKey(coll, src, slen, (unsigned char *)tgt, tlen);
 }
 
-ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const char * p2)
+ECLRTL_API int rtlPrefixDiffStrEx(unsigned l1, const char * p1, unsigned l2, const char * p2, unsigned origin)
 {
     unsigned len = l1 < l2 ? l1 : l2;
     const byte * str1 = (const byte *)p1;
@@ -2556,18 +2556,23 @@ ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const
         if (c1 != c2)
         {
             if (c1 < c2)
-                return -(int)(i+1);
+                return -(int)(i+origin+1);
             else
-                return (int)(i+1);
+                return (int)(i+origin+1);
         }
     }
     if (l1 != l2)
-        return (l1 < l2) ? -(int)(len+1) : (int)(len + 1);
+        return (l1 < l2) ? -(int)(len+origin+1) : (int)(len+origin+1);
     return 0;
 }
 
+ECLRTL_API int rtlPrefixDiffStr(unsigned l1, const char * p1, unsigned l2, const char * p2)
+{
+    return rtlPrefixDiffStrEx(l1, p1, l2, p2, 0);
+}
+
 //MORE: I'm not sure this can really be implemented....
-ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, char const * locale)
+ECLRTL_API int rtlPrefixDiffUnicodeEx(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, char const * locale, unsigned origin)
 {
     while(l1 && u_isUWhiteSpace(p1[l1-1])) l1--;
     while(l2 && u_isUWhiteSpace(p2[l2-1])) l2--;
@@ -2578,18 +2583,20 @@ ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, 
         {
             int c = ucol_strcoll(queryRTLLocale(locale)->queryCollator(), p1+i, l1-i, p2+i, l2-i);
             if (c < 0)
-                return -(int)(i+1);
+                return -(int)(i+origin+1);
             else if (c > 0)
-                return (int)(i+1);
-            else
-                return 0;       //weird!
+                return (int)(i+origin+1);
         }
     }
     if (l1 != l2)
-        return (l1 < l2) ? -(int)(len+1) : (int)(len + 1);
+        return (l1 < l2) ? -(int)(len+origin+1) : (int)(len+origin+1);
     return 0;
 }
 
+ECLRTL_API int rtlPrefixDiffUnicode(unsigned l1, const UChar * p1, unsigned l2, const UChar * p2, char const * locale)
+{
+    return rtlPrefixDiffUnicodeEx(l1, p1, l2, p2, locale, 0);
+}
 
 //-----------------------------------------------------------------------------
 

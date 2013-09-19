@@ -5113,12 +5113,11 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                     IHqlExpression * selSeq = querySelSeq(updated);
                     IHqlExpression * updatedLhs = updated->queryChild(0);
                     IHqlExpression * updatedRhs = (op == no_selfjoin) ? updatedLhs : updated->queryChild(1);
-                    HqlExprArray leftSorts, rightSorts;
-                    bool isLimitedSubstringJoin;
-                    OwnedHqlExpr extra = findJoinSortOrders(updatedCond, updatedLhs, updatedRhs, selSeq, leftSorts, rightSorts, isLimitedSubstringJoin, NULL);
+                    JoinSortInfo joinInfo;
+                    joinInfo.findJoinSortOrders(updatedCond, updatedLhs, updatedRhs, selSeq, false);
 
                     //if will convert to an all join, then restore the old condition,
-                    if (leftSorts.ordinality() == 0)
+                    if (!joinInfo.hasRequiredEqualities())
                         updated.setown(replaceChild(updated, 2, oldCond));
                     else
                         updated.setown(appendOwnedOperand(updated, createAttribute(_conditionFolded_Atom)));

@@ -2485,7 +2485,7 @@ IHqlExpression * ThorHqlTransformer::normalizeCoGroup(IHqlExpression * expr)
     return expr->cloneAllAnnotations(grouped);
 }
 
-static IHqlExpression * getNonThorSortedJoinInput(IHqlExpression * joinExpr, IHqlExpression * dataset, HqlExprArray & sorts, bool implicitSubSort)
+static IHqlExpression * getNonThorSortedJoinInput(IHqlExpression * joinExpr, IHqlExpression * dataset, const HqlExprArray & sorts, bool implicitSubSort)
 {
     if (!sorts.length())
         return LINK(dataset);
@@ -2521,7 +2521,7 @@ static bool sameOrGrouped(IHqlExpression * newLeft, IHqlExpression * oldLeft)
     return (newLeft->queryBody() == oldLeft->queryBody());
 }
 
-bool canReorderMatchExistingLocalSort(HqlExprArray & newElements1, HqlExprArray & newElements2, IHqlExpression * ds1, Shared<IHqlExpression> & ds2, const HqlExprArray & elements1, HqlExprArray & elements2, bool canSubSort, bool isLocal, bool alwaysLocal)
+static bool canReorderMatchExistingLocalSort(HqlExprArray & newElements1, HqlExprArray & newElements2, IHqlExpression * ds1, Shared<IHqlExpression> & ds2, const HqlExprArray & elements1, const HqlExprArray & elements2, bool canSubSort, bool isLocal, bool alwaysLocal)
 {
     newElements1.kill();
     newElements2.kill();
@@ -2674,15 +2674,14 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     }
 
 
-    HqlExprArray leftSorts, rightSorts, slidingMatches;
-    bool isLimitedSubstringJoin;
-    OwnedHqlExpr fuzzyMatch = findJoinSortOrders(expr, leftSorts, rightSorts, isLimitedSubstringJoin, canBeSlidingJoin(expr) ? &slidingMatches : NULL);
+    JoinSortInfo joinInfo;
+    joinInfo.findJoinSortOrders(expr, canBeSlidingJoin(expr));
 
     //If the data is already distributed so the data is on the correct machines then perform the join locally.
     //Should be equally applicable to lookup, hash, all and normal joins.
-    if (!isLocal && !isLimitedSubstringJoin && leftSorts.ordinality())
+    if (!isLocal && !joinInfo.hasOptionalEqualities() && joinInfo.queryLeftReq().ordinality())
     {
-        if (isDistributedCoLocally(leftDs, rightDs, leftSorts, rightSorts))
+        if (isDistributedCoLocally(leftDs, rightDs, joinInfo.queryLeftReq(), joinInfo.queryRightReq()))
             return appendOwnedOperand(expr, createLocalAttribute());
 
         if (options.matchExistingDistributionForJoin)
@@ -2698,10 +2697,10 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             if (matchesAnyDistribution(leftDistribution))
                 return appendOwnedOperand(expr, createLocalAttribute());
 
-            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, leftSorts, true))
+            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, joinInfo.queryLeftReq(), true))
             {
                 //MORE: May need a flag to stop this - to prevent issues with skew.
-                OwnedHqlExpr newHash = createMatchingDistribution(leftDistribution, leftSorts, rightSorts);
+                OwnedHqlExpr newHash = createMatchingDistribution(leftDistribution, joinInfo.queryLeftReq(), joinInfo.queryRightReq());
                 if (newHash)
                 {
                     OwnedHqlExpr dist = replaceSelector(newHash, queryActiveTableSelector(), rightDs);
@@ -2714,9 +2713,16 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         else
         {
             IHqlExpression * leftDistribution = queryDistribution(leftDs);
-            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, leftSorts, true))
+            if (!isPersistDistribution(leftDistribution) && !isSortedDistribution(leftDistribution) && isPartitionedForGroup(leftDs, joinInfo.queryLeftReq(), true))
                 DBGLOG("MORE: Potential for distributed join optimization");
         }
+    }
+
+    if (joinInfo.hasOptionalEqualities() && !isLocal && !expr->hasAttribute(hashAtom) && !expr->hasAttribute(allAtom))
+    {
+        if (joinInfo.hasRequiredEqualities())
+            return appendAttribute(expr, hashAtom);
+        throwError(HQLERR_PrefixJoinRequiresEquality);
     }
 
     if (expr->hasAttribute(allAtom))
@@ -2728,10 +2734,10 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     //Try and convert local joins to a lightweight join that doesn't require any sorting of the inputs.
     //Improves resourcing for thor, and prevents lookup conversion for hthor/roxie
     //Worthwhile even for lookup joins
-    if (isLightweightJoinCandidate(expr, isLocal, isLimitedSubstringJoin))
+    if (isLightweightJoinCandidate(expr, isLocal, joinInfo.hasOptionalEqualities()))
     {
-        if (isAlreadySorted(leftDs, leftSorts, true, true) &&
-            isAlreadySorted(rightDs, rightSorts, true, true))
+        if (isAlreadySorted(leftDs, joinInfo.queryLeftSort(), true, true) &&
+            isAlreadySorted(rightDs, joinInfo.queryRightSort(), true, true))
         {
             //If this is a lookup join without a many then we need to make sure only the first match is retained.
             return appendOwnedOperand(expr, createAttribute(_lightweight_Atom));
@@ -2740,18 +2746,18 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         //Check for a local join where we can reorder the condition so both sides match the existing sort orders.
         //could special case self-join to do less work, but probably not worth the effort.
         HqlExprArray sortedLeft, sortedRight;
-        if (!isLimitedSubstringJoin)
+        if (!joinInfo.hasOptionalEqualities())
         {
             //Since the distribution and order of global joins is not defined this could probably be used for non-local as well.
             LinkedHqlExpr newLeftDs = leftDs;
             LinkedHqlExpr newRightDs = rightDs;
             bool canSubSort = options.subsortLocalJoinConditions;
             bool reordered = canReorderMatchExistingLocalSort(sortedLeft, sortedRight, newLeftDs, newRightDs,
-                                                              leftSorts, rightSorts, canSubSort, isLocal, alwaysLocal);
+                                                              joinInfo.queryLeftSort(), joinInfo.queryRightSort(), canSubSort, isLocal, alwaysLocal);
             //If allowed to subsort then try the otherway around
             if (!reordered && canSubSort)
                 reordered = canReorderMatchExistingLocalSort(sortedRight, sortedLeft, newRightDs, newLeftDs,
-                                                             rightSorts, leftSorts, canSubSort, isLocal, alwaysLocal);
+                                                             joinInfo.queryRightSort(), joinInfo.queryLeftSort(), canSubSort, isLocal, alwaysLocal);
 
             if (reordered)
             {
@@ -2765,7 +2771,7 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                     OwnedHqlExpr rc = replaceSelector(&sortedRight.item(i), queryActiveTableSelector(), rightSelector);
                     extendConditionOwn(newcond, no_and, createValue(no_eq, makeBoolType(), lc.getClear(), rc.getClear()));
                 }
-                extendConditionOwn(newcond, no_and, fuzzyMatch.getClear());
+                extendConditionOwn(newcond, no_and, LINK(joinInfo.extraMatch));
                 HqlExprArray args;
                 args.append(*newLeftDs.getClear());
                 args.append(*newRightDs.getClear());
@@ -2788,12 +2794,12 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
                     createLookup = !expr->hasAttribute(_lightweight_Atom);
         }
 
-        if (isLimitedSubstringJoin)
+        if (joinInfo.hasOptionalEqualities())
             createLookup = false;           //doesn't support it yet
-        else if (createLookup && leftSorts.ordinality() && rightSorts.ordinality())
+        else if (createLookup && joinInfo.queryLeftSort().ordinality())
         {
             //Check this isn't going to generate a between join - if it is that takes precedence.
-            if ((slidingMatches.ordinality() != 0) && (leftSorts.ordinality() == slidingMatches.ordinality()))
+            if ((joinInfo.slidingMatches.ordinality() != 0) && (joinInfo.queryLeftSort().ordinality() == joinInfo.slidingMatches.ordinality()))
                 createLookup = false;
         }
 
@@ -2814,8 +2820,8 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
             return expr->clone(args);
         }
 
-        OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, leftSorts, options.implicitSubSort);
-        OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, rightSorts, options.implicitSubSort);
+        OwnedHqlExpr newLeft = getNonThorSortedJoinInput(expr, leftDs, joinInfo.queryLeftSort(), options.implicitSubSort);
+        OwnedHqlExpr newRight = getNonThorSortedJoinInput(expr, rightDs, joinInfo.queryRightSort(), options.implicitSubSort);
         try
         {
             if ((leftDs != newLeft) || (rightDs != newRight))
@@ -2840,15 +2846,9 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
     if ((op == no_selfjoin) && expr->hasAttribute(hashAtom))
     {
         assertex(!isLocal);
-        if (isLimitedSubstringJoin)
+        if (joinInfo.hasRequiredEqualities())
         {
-            leftSorts.pop();
-            rightSorts.pop();
-        }
-
-        if (leftSorts.ordinality())
-        {
-            OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), leftSorts);
+            OwnedHqlExpr sortlist = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftReq());
             OwnedHqlExpr distribute;
             //Only likely to catch this partition test if isLimitedSubstringJoin true, otherwise caught above
             if (!isPartitionedForGroup(leftDs, sortlist, true))
@@ -2868,11 +2868,11 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         }
     }
 
-    if (options.expandHashJoin && isThorCluster(targetClusterType) && expr->hasAttribute(hashAtom) && !isLimitedSubstringJoin)
+    if (options.expandHashJoin && isThorCluster(targetClusterType) && expr->hasAttribute(hashAtom) && !joinInfo.hasOptionalEqualities())
     {
         HqlExprArray args;
-        args.append(*createDistributedInput(leftDs, leftSorts, false));
-        args.append(*createDistributedInput(rightDs, rightSorts, false));
+        args.append(*createDistributedInput(leftDs, joinInfo.queryLeftReq(), false));
+        args.append(*createDistributedInput(rightDs, joinInfo.queryRightReq(), false));
         unwindChildren(args, expr, 2);
         removeProperty(args, hashAtom);
         args.append(*createLocalAttribute());
@@ -2885,9 +2885,9 @@ IHqlExpression * ThorHqlTransformer::normalizeJoinOrDenormalize(IHqlExpression *
         OwnedHqlExpr newLeft;
         OwnedHqlExpr newRight;
         if (!userPreventsSort(noSortAttr, no_left))
-            newLeft.setown(getSubSort(leftDs, leftSorts, isLocal, true, alwaysLocal));
+            newLeft.setown(getSubSort(leftDs, joinInfo.queryLeftSort(), isLocal, true, alwaysLocal));
         if (!userPreventsSort(noSortAttr, no_right))
-            newRight.setown(getSubSort(rightDs, rightSorts, isLocal, true, alwaysLocal));
+            newRight.setown(getSubSort(rightDs, joinInfo.queryRightSort(), isLocal, true, alwaysLocal));
         if (newLeft || newRight)
         {
             HqlExprArray args;

@@ -465,6 +465,11 @@
 #define HQLERR_PayloadMismatch                  3127
 #define HQLERR_MemberXContainsVirtualRef        3128
 #define HQLERR_FieldHasNoDefaultValue           3129
+#define HQLERR_AtmostFailMatchCondition         3130
+#define HQLERR_AtmostCannotImplementOpt         3131
+#define HQLERR_PrefixJoinRequiresEquality       3132
+#define HQLERR_AtmostFollowUnknownSubstr        3133
+#define HQLERR_AtmostLegacyMismatch             3134
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
 #define HQLERR_CycleWithModuleDefinition_Text   "Module definition contain an illegal cycle/recursive definition %s"
@@ -496,6 +501,11 @@
 #define HQLERR_PayloadMismatch_Text             "Mismatched => in inline dictionary definition"
 #define HQLERR_MemberXContainsVirtualRef_Text   "Member %s contains virtual references but not supported as virtual"
 #define HQLERR_FieldHasNoDefaultValue_Text      "Field '%s' doesn't have a defined value"
+#define HQLERR_AtmostFailMatchCondition_Text    "ATMOST(%s) failed to match part of the join condition"
+#define HQLERR_AtmostCannotImplementOpt_Text    "ATMOST() optional condition is too complex"
+#define HQLERR_PrefixJoinRequiresEquality_Text  "Global JOIN with no required equalities requires ALL"
+#define HQLERR_AtmostFollowUnknownSubstr_Text   "ATMOST [1..*] on an unknown length string must be last in the optional list"
+#define HQLERR_AtmostLegacyMismatch_Text        "Legacy JOIN condition on field[1..*] should be included in the optional fields"
 
 /* parser error */
 #define ERR_PARSER_CANNOTRECOVER    3005  /* The parser can not recover from previous error(s) */

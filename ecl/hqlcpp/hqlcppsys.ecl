@@ -227,8 +227,8 @@ const char * cppSystemText[]  = {
     "   integer4 compareVUnicodeVUnicode(const varunicode l, const varunicode r, const varstring loc) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareVUnicodeVUnicode';",
     "   integer4 compareVUnicodeVUnicodeStrength(const varunicode l, const varunicode r, const varstring loc, unsigned4 str) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareVUnicodeVUnicodeStrength';",
 
-    "   integer4 prefixDiffStr(const string l, const string r) : eclrtl,pure,library='eclrtl',entrypoint='rtlPrefixDiffStr';",
-    "   integer4 prefixDiffUnicode(const unicode l, const unicode r, const varstring loc) : eclrtl,pure,library='eclrtl',entrypoint='rtlPrefixDiffUnicode';",
+    "   integer4 prefixDiffStr(const string l, const string r, unsigned4 origin) : eclrtl,pure,library='eclrtl',entrypoint='rtlPrefixDiffStrEx';",
+    "   integer4 prefixDiffUnicode(const unicode l, const unicode r, const varstring loc, unsigned4 origin) : eclrtl,pure,library='eclrtl',entrypoint='rtlPrefixDiffUnicodeEx';",
 
     "   createOrder(data1 tgt, const data1 src, unsigned4 num, unsigned4 width, const data1 compare) : eclrtl,library='eclrtl',entrypoint='rtlCreateOrder';",
     "   unsigned4 rankFromOrder(unsigned4 idx, unsigned4 num, const data1 order) : eclrtl,pure,library='eclrtl',entrypoint='rtlRankFromOrder';",
