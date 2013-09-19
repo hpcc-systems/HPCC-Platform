@@ -566,6 +566,12 @@ public:
         __int64 fs = file->getFileSize(false,false);
         if (fs!=-1)
             file->queryAttributes().setPropInt64("@size",fs);
+        if (file->isCompressed())
+        {
+            fs = file->getDiskSize(false,false);
+            if (fs!=-1)
+                file->queryAttributes().setPropInt64("@compressedSize",fs);
+        }
         file->attach(scopedName.str(), job.queryUserDescriptor());
         unsigned c=0;
         for (; c<fileDesc.numClusters(); c++)

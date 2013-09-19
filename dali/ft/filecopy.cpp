@@ -2309,7 +2309,7 @@ void FileSprayer::setSource(IDistributedFile * source)
             next.mirrorFilename.set(curPart->getFilename(rfn,1));
         // don't set the following here - force to check disk
         //next.size = curPart->getFileSize(true,false);
-        //next.psize = curPart->getDiskSize();
+        //next.psize = curPart->getDiskSize(true,false);
         sources.append(next);
     }
 
