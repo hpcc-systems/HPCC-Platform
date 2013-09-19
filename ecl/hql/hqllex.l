@@ -982,6 +982,11 @@ __ECL_VERSION_SUBMINOR__ {
                         returnToken.setExpr(createIntegerConstant(LANGUAGE_VERSION_SUB, false));
                         return (INTEGER_CONST);
                     }
+__ECL_LEGACY_MODE__ {
+                        setupdatepos;
+                        returnToken.setExpr(createConstant(queryLegacyEclSemantics()));
+                        return (BOOL_CONST);
+                    }
 __OS__              { 
                         setupdatepos; 
                         if (!lookup)
