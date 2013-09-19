@@ -57,6 +57,7 @@ void handleSyntax()
     out.append("        decrypt=<password> -- optional, decrypt source\n");
     out.append("        push=0|1 -- optional override pull/push default\n");
     out.append("        jobname=<jobname> -- specify the jobname for spray, despray, copy, rename and replicate.\n");
+    out.append("        failifnosourcefile=0|1 -- optional, don't generate exception when source file set is empty.\n");
     out.append("    spray options:\n");
     out.append("        srcip=<source-machine-ip>\n");
     out.append("        srcfile=<source-file-path>\n");
