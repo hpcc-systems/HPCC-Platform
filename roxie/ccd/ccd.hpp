@@ -358,7 +358,6 @@ extern unsigned socketCheckInterval;
 extern memsize_t defaultMemoryLimit;
 extern unsigned defaultTimeLimit[3];
 extern unsigned defaultWarnTimeLimit[3];
-extern bool checkPrimaries;
 extern bool pretendAllOpt;
 extern ClientCertificate clientCert;
 extern bool useHardLink;
