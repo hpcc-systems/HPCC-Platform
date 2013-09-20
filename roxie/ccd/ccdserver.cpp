@@ -3799,8 +3799,8 @@ public:
             ctx->addSlavesReplyLen(mc->queryBytesReceived());
         mc.clear(); // Or we won't free memory for graphs that get recreated
         mu.clear(); //ditto
-        mergeOrder = NULL; // MORE - is that needed?
         deferredStart = false;
+        // NOTE: do NOT clear mergeOrder - this is set at create time not per child query
     }
 
     virtual IOutputMetaData * queryOutputMeta() const
