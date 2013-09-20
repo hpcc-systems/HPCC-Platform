@@ -853,11 +853,24 @@ ESPresponse [encode(0), exceptions_inline] WUProcessGraphResponse
 ESPrequest WUGetGraphRequest
 {
     string Wuid;
-    [min_ver("1.19")] string GraphName; 
+    [min_ver("1.19")] string GraphName;
     [min_version("1.21")] string SubGraphId;
 };
 
 ESPresponse [exceptions_inline] WUGetGraphResponse
+{
+    ESParray<ESPstruct ECLGraphEx> Graphs;
+};
+
+ESPrequest WUQueryGetGraphRequest
+{
+    string Target;
+    string QueryId;
+    [min_ver("1.19")] string GraphName;
+    [min_version("1.21")] string SubGraphId;
+};
+
+ESPresponse [exceptions_inline] WUQueryGetGraphResponse
 {
     ESParray<ESPstruct ECLGraphEx> Graphs;
 };
@@ -1440,6 +1453,7 @@ ESPservice [
     ESPmethod WUFile(WULogFileRequest, WULogFileResponse);
     ESPmethod [resp_xsl_default("/esp/xslt/graphStats.xslt")] WUProcessGraph(WUProcessGraphRequest, WUProcessGraphResponse); 
     ESPmethod WUGetGraph(WUGetGraphRequest, WUGetGraphResponse);
+    ESPmethod WUQueryGetGraph(WUQueryGetGraphRequest, WUQueryGetGraphResponse);
     ESPmethod WUGetDependancyTrees(WUGetDependancyTreesRequest, WUGetDependancyTreesResponse);
 
     ESPmethod WUListLocalFileRequired(WUListLocalFileRequiredRequest, WUListLocalFileRequiredResponse);
