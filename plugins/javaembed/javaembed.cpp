@@ -88,6 +88,10 @@ public:
             newPath.append(ENVSEPCHAR);
             conf->getProp("classpath", newPath);
         }
+        else
+        {
+            newPath.append(ENVSEPCHAR).append(INSTALL_DIR).append(PATHSEPCHAR).append("classes");
+        }
         newPath.append(ENVSEPCHAR).append(".");
 
 
