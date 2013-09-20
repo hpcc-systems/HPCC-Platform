@@ -1015,6 +1015,7 @@ public:
         b=(const byte *)prev;
         state = S_pre_repeat;
         rs = _rs;
+        cnt = 0;
     }
 
     inline void skip(size32_t sz)

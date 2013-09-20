@@ -1354,6 +1354,8 @@ ABoundActivity * HqlCppTranslator::doBuildActivityKeyedJoinOrDenormalize(BuildCt
     case no_denormalizegroup:
         kind = TAKkeyeddenormalizegroup;
         break;
+    default:
+        throwUnexpected();
     }
     Owned<ActivityInstance> instance = new ActivityInstance(*this, ctx, kind, expr, (op == no_join) ? "KeyedJoin" : "KeyedDenormalize");
 

@@ -393,7 +393,7 @@ const void *getAggregate(CActivityBase &activity, unsigned partialResults, IRowI
         }
     }
     RtlDynamicRowBuilder result(rowIf.queryRowAllocator(), false);
-    size32_t sz;
+    size32_t sz = 0;
     bool first = true;
     _partialResults = 0;
     for (;_partialResults<partialResults; _partialResults++)

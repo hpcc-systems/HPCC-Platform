@@ -2200,7 +2200,7 @@ bool CInstallFileMap::resolveConflicts(IPropertyTree& processNode, const char* m
         const_iterator iLower = lower_bound(destPath);
         const_iterator iUpper = upper_bound(destPath);
         offset_t srcSz = 0;
-        unsigned srcCRC;
+        unsigned srcCRC = 0;
 
         for (const_iterator it=iLower; it != iUpper; it++)
         {
@@ -2407,7 +2407,7 @@ void CDeploymentEngine::processCustomMethod(const char* method, const char *sour
 //---------------------------------------------------------------------------
 void CDeploymentEngine::siteCertificate(IPropertyTree& process, const char *instanceName, const char *outputFile)
 {
-    const char* pszCertFile;
+    const char* pszCertFile = NULL;
     const char* pszPrivFile;
     StringBuffer sPrivKey;
     StringBuffer sCertificate;

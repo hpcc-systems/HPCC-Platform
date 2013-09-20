@@ -167,7 +167,11 @@ static const char *splitpath(const char *path,StringBuffer &head,StringBuffer &t
 static unsigned __int64 hextoll(const char *str, bool &error)
 {
     unsigned len = strlen(str);
-    if (!len) return 0;
+    if (!len)
+    {
+        error = true;
+        return 0;
+    }
 
     unsigned __int64 factor = 1;
     unsigned __int64 rolling = 0;

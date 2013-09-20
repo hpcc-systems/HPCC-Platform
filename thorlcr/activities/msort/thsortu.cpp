@@ -1479,7 +1479,7 @@ public:
     {
         MemoryBuffer rmatchedbuf;  
         CThorExpandingRowArray &rgroup = selfJoin?work.lgroup:work.rgroup;
-        bool *rmatched;
+        bool *rmatched = NULL;
         if (rightouter) {
             rmatched = (bool *)rmatchedbuf.clear().reserve(rgroup.ordinality());
             memset(rmatched,0,rgroup.ordinality());

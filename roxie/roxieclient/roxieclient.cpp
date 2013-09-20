@@ -35,7 +35,7 @@ int CDataInputCache::readInput()
     if(inputstream == NULL)
         return 0;
 
-    int bytes;
+    int bytes = 0;
     if(input->record_width > 0)
     {
         char* inbuf = (char*)buffer.str();

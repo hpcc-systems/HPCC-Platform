@@ -1170,6 +1170,9 @@ bool CWsDeployFileInfo::saveSetting(IEspContext &context, IEspSaveSettingRequest
                   pBuildSet->addProp(XML_ATTR_SCHEMA, "directories.xsd");
                   pBuildSet->addProp(XML_ATTR_PROCESS_NAME, "Directories");
                 }
+                else
+                    throwUnexpected();
+
                 const char* buildSetName = pBuildSet->queryProp(XML_ATTR_NAME);
                 const char* processName = pBuildSet->queryProp(XML_ATTR_PROCESS_NAME);
 

@@ -1411,7 +1411,7 @@ private:
         size32_t payloadofs = 0;
         size32_t payloadsize = 0;
         StringBuffer dbgheader;
-        bool chunked;
+        bool chunked = false;
         size32_t read = 0;
         do {
             checkTimeLimitExceeded(&remainingMS);

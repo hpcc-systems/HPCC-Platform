@@ -305,6 +305,8 @@ class cParQSortBase
             NonReentrantSpinUnblock unblock(joblock);
             jobqsem.wait();
         }
+        s = 0; // remove uninitialised variable warnings
+        n = 0;
         return false;
     }
 

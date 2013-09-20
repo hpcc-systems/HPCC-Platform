@@ -918,7 +918,7 @@ bool addWUQSQueryFilterInt(WUQuerySortField *filters, unsigned short &count, Mem
 
 bool addWUQSQueryFilterInt64(WUQuerySortField *filters, unsigned short &count, MemoryBuffer &buff, __int64 value, WUQuerySortField name)
 {
-    VStringBuffer vBuf("%ld", value);
+    VStringBuffer vBuf("%"I64F"d", value);
     filters[count++] = name;
     buff.append(vBuf.str());
     return true;
