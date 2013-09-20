@@ -574,7 +574,7 @@ bool invoke_program(const char *command_line, DWORD &runcode, bool wait, const c
 
         ERRLOG("%s",s.toCharArray());
         if(throwException)
-            throw MakeStringException(-1, "%s", s.str());
+            throw MakeStringExceptionDirect(-1, s.str());
         return false;
     }
 

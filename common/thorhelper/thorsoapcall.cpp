@@ -1738,7 +1738,7 @@ public:
                                 err.append("Failure to establish secure connection to ");
                                 connUrl.getUrlString(err);
                                 err.append(": returned ").append(status);
-                                throw MakeStringException(0, "%s", err.str());
+                                throw MakeStringExceptionDirect(0, err.str());
                             }
                             socket.setown(ssock.getLink());
                         }

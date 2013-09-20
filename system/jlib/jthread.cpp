@@ -588,7 +588,7 @@ void CThreadedPersistent::start()
         VStringBuffer msg("CThreadedPersistent::start(%s) - not ready", athread.getName());
         WARNLOG("%s", msg.str());
         PrintStackReport();
-        throw MakeStringException(-1, "%s", msg.str());
+        throw MakeStringExceptionDirect(-1, msg.str());
     }
     sem.signal();
 }

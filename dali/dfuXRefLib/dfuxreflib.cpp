@@ -349,7 +349,7 @@ static unsigned short getDafsPort(const SocketEndpoint &ep,unsigned &numfails,Cr
     else 
         numfails++;
 #else
-    throw MakeStringException(-1, "%s", err.str());
+    throw MakeStringExceptionDirect(-1, err.str());
 #endif
     return 0;
 }
