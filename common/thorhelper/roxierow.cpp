@@ -36,7 +36,7 @@ public:
 };
 
 //NOTE: If a row requires checking then the row will also have the bit set to indicate it requires a destructor
-//so that rows are checked on destructon.
+//so that rows are checked on destruction.
 //Therefore checking if the destructor is set for a row in isValid() to protect us from uninitialised crcs.
 class Crc16CheckingHelper
 {
@@ -483,7 +483,7 @@ public:
         }
         if (!RoxieRowCheckValid(cacheId, row))
         {
-            //MORE: Give an error, but don't throw an exception!
+            throw MakeStringException(0, "ERROR: crc check failure destroying row!");
         }
         allocator->queryOutputMeta()->destruct((byte *) row);
     }
@@ -503,7 +503,7 @@ public:
         }
         if (!RoxieRowCheckValid(cacheId, row))
         {
-            //MORE: Give an error, but don't throw an exception!
+            throw MakeStringException(0, "ERROR: crc check failure cloning row!");
         }
         //This should only be called if the destructor needs to be called - so don't bother checking
         ChildRowLinkerWalker walker;
@@ -513,7 +513,7 @@ public:
     {
         if (!RoxieRowCheckValid(cacheId, row))
         {
-            //MORE: Throw an exception?
+            throw MakeStringException(0, "ERROR: crc check failure checking row!");
         }
     }
 };
