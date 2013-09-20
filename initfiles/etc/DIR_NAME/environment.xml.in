@@ -776,7 +776,6 @@
                 callbackTimeout="500"
                 checkCompleted="true"
                 checkFileDate="true"
-                checkPrimaries="true"
                 clusterWidth="1"
                 copyResources="false"
                 crcResources="false"

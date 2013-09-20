@@ -1104,13 +1104,6 @@
         </xs:appinfo>
       </xs:annotation>
     </xs:attribute>
-      <xs:attribute name="checkPrimaries" type="xs:boolean" use="optional" default="true">
-      <xs:annotation>
-        <xs:appinfo>
-          <tooltip>Verify that topology specifies a different agent first for each channel</tooltip>
-        </xs:appinfo>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="dafilesrvLookupTimeout" type="xs:nonNegativeInteger" use="optional" default="10000">
       <xs:annotation>
         <xs:appinfo>
