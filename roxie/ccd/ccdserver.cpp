@@ -8285,7 +8285,7 @@ public:
         virtual void start(unsigned parentExtractSize, const byte *parentExtract, bool paused)
         {
             // NOTE: it is tempting to move the init() of all output adaptors here. However that is not a good idea, 
-            // since adaptors that have not yet started or stoppped (but are going to) still need to have been init()'ed 
+            // since adaptors that have not yet started or stopped (but are going to) still need to have been init()'ed
             // for minIndex to give the correct answers
             // therefore, we call init() on all adaptors on receipt of the first start() or stop()
 
@@ -8310,7 +8310,8 @@ public:
         {
             if (traceStartStop)
                 parent->CTXLOG("%p reset Input adaptor %d stopped = %d", this, oid, stopped);
-            parent->reset(oid, processed);
+            parent->reset(oid);
+            parent->noteProcessed(oid, processed, 0, 0);
             processed = 0;
             idx = 0; // value should not be relevant really but this is the safest...
             stopped = false;
@@ -8406,7 +8407,6 @@ public:
                     const void *row = input->nextInGroup();
                     CriticalBlock b3(crit);
                     headIdx++;
-                    if (row) processed++;
                     if (activeOutputs==1)
                     {
 #ifdef TRACE_SPLIT
@@ -8538,7 +8538,7 @@ public:
         CRoxieServerActivity::stop(aborting);
     };
 
-    void reset(unsigned oid, unsigned _processed)
+    void reset(unsigned oid)
     {
         if (traceStartStop)
             CTXLOG("SPLIT %p: reset %d child %d activeOutputs %d numOutputs %d numOriginalOutputs %d state %s", this, activityId, oid, activeOutputs, numOutputs, numOriginalOutputs, queryStateText(state));
