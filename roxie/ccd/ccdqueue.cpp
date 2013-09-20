@@ -465,6 +465,7 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
     anyOutput = false;
     intercept = false;
     debuggerActive = false;
+    checkingHeap = false;
     traceActivityTimes = false;
     start = msTick();
     if (packet)
@@ -489,6 +490,8 @@ void SlaveContextLogger::set(IRoxieQueryPacket *packet)
                 traceActivityTimes = true;
             if (loggingFlags & LOGGING_BLIND)
                 blind = true;
+            if (loggingFlags & LOGGING_CHECKINGHEAP)
+                checkingHeap = true;
             if (loggingFlags & LOGGING_DEBUGGERACTIVE)
             {
                 assertex(traceLength > sizeof(unsigned short));
