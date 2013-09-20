@@ -1539,7 +1539,7 @@ void CSocket::read(void* buf, size32_t min_size, size32_t max_size, size32_t &si
     unsigned startt=usTick();
     size_read = 0;
     unsigned start;
-    unsigned timeleft;
+    unsigned timeleft = 0;
     if (state != ss_open) {
         THROWJSOCKEXCEPTION(JSOCKERR_not_opened);
     }
@@ -1895,7 +1895,7 @@ EintrRetry:
     i = 0;
     size32_t os = 0;
     size32_t left = total;
-    byte *b;
+    byte *b = NULL;
     size32_t s=0;
     loop {
         while (!s&&(i<num)) {
@@ -1940,8 +1940,8 @@ bool CSocket::send_block(const void *blk,size32_t sz)
 {
     unsigned startt=usTick();
 #ifdef TRACE_SLOW_BLOCK_TRANSFER
-    unsigned startt2;
-    unsigned startt3;
+    unsigned startt2 = startt;
+    unsigned startt3 = startt;
 #endif
     if (blockflags&BF_SYNC_TRANSFER_PULL) {
         size32_t rd;
@@ -3920,11 +3920,11 @@ public:
             T_FD_SET wrfds;
             T_FD_SET exfds;
             timeval selecttimeout;
-            bool isrd;
-            bool iswr;
-            bool isex;
-            T_SOCKET maxsockid;
-            unsigned ni;
+            bool isrd = false;
+            bool iswr = false;
+            bool isex = false;
+            T_SOCKET maxsockid = 0;
+            unsigned ni = 0;
             selectvarschange = true;
             unsigned numto = 0;
             unsigned lastnumto = 0;
@@ -4298,7 +4298,7 @@ public:
         assertex(!sock);
         ISocket *newsock=NULL;
         state = Sconnect;
-        unsigned start;
+        unsigned start = 0;
         if (timeoutms!=(unsigned)INFINITE)
             start = msTick();
         while (state==Sconnect) {

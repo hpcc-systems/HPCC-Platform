@@ -912,7 +912,7 @@ protected:
     jvalue result;
 private:
 
-    void typeError(const char *ECLtype)
+    void typeError(const char *ECLtype) __attribute__((noreturn))
     {
         const char *javaType;
         int javaLen = 0;

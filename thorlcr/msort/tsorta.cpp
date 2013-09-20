@@ -344,7 +344,7 @@ int CThorKeyArray::binchopPartition(const void * row,bool lt)
         return -1;
     int a = 0;
     int b = n;
-    int cmp;
+    int cmp = 0;
 #ifdef _TESTING
 try {
 #endif

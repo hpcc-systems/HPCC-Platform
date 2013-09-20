@@ -2395,7 +2395,7 @@ public:
 
     void seek(offset_t pos, IFSmode origin)
     {
-        offset_t newOffset;
+        offset_t newOffset = 0;
         switch (origin)
         {
         case IFScurrent:
@@ -2407,6 +2407,8 @@ public:
         case IFSbegin:
             newOffset = pos;
             break;
+        default:
+            throwUnexpected();
         }
 
         if (reading)
@@ -2798,7 +2800,7 @@ void doCopyFile(IFile * target, IFile * source, size32_t buffersize, ICopyFilePr
     void * buffer = copyintercept?NULL:mb.allocate(buffersize);
     
     offset_t offset = 0;
-    offset_t total; 
+    offset_t total = 0;
     Owned<IException> exc;
     try
     {

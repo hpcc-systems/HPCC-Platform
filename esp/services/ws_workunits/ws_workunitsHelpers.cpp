@@ -366,7 +366,7 @@ void WsWuInfo::getTimers(IEspECLWorkunit &info, unsigned flags)
     try
     {
         StringBuffer totalThorTimeValue;
-        unsigned totalThorTimerCount; //Do we need this?
+        unsigned totalThorTimerCount = 0; //Do we need this?
 
         IArrayOf<IEspECLTimer> timers;
         Owned<IStringIterator> it = &cw->getTimers();

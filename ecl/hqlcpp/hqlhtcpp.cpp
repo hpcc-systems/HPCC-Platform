@@ -4909,7 +4909,7 @@ void HqlCppTranslator::buildGetResultInfo(BuildCtx & ctx, IHqlExpression * expr,
     case type_row:      UNIMPLEMENTED; break; //should be translated to rawData.
     default:
         PrintLog("%d", ttc);
-        assertex(!"No getResult defined for this type");
+        throwUnexpectedX("No getResult defined for this type");
         break;
     }
 

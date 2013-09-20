@@ -2595,8 +2595,10 @@ public:
             mb.read(nm);
             s = (const char *)mb.readDirect(mb.length()-mb.getPos());
         }
-        else
+        else {
             nm = 0;
+            s = NULL;
+        }
         unsigned i;
         unsigned no = 0;
         mbout.append(no);

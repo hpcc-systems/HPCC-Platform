@@ -853,7 +853,7 @@ public:
 
 // Helper functions
 
-    void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4)));            // override the global function to try and add more context information
+    void ThrowStringException(int code,const char *format, ...) __attribute__((format(printf, 3, 4), noreturn));            // override the global function to try and add more context information
 
     void buildAddress(BuildCtx & ctx, IHqlExpression * expr, CHqlBoundExpr & tgt);
     void buildBlockCopy(BuildCtx & ctx, IHqlExpression * tgt, CHqlBoundExpr & src);

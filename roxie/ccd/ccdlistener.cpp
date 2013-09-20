@@ -746,7 +746,7 @@ public:
     {
         bool allowed = true;
         StringBuffer errorMsg;
-        int errorCode;
+        int errorCode = -1;
         ForEachItemIn(idx, accessTable)
         {
             AccessTableEntry &item = accessTable.item(idx);

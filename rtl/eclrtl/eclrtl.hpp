@@ -41,6 +41,11 @@
 #define ECLRTL_API
 #endif
 
+#ifdef _MSC_VER
+#undef __attribute__ // in case platform.h has been included
+#define __attribute__(param) /* do nothing */
+#endif
+
 #ifndef I64C
 #ifdef _WIN32
 #define I64C(n) n##i64
@@ -377,12 +382,12 @@ ECLRTL_API unsigned rtlCrcVUnicode(UChar const * k, unsigned initval);
 
 ECLRTL_API unsigned rtlRandom();
 ECLRTL_API void rtlSeedRandom(unsigned value);
-ECLRTL_API void rtlFail(int code, const char *msg);
-ECLRTL_API void rtlSysFail(int code, const char *msg);
-ECLRTL_API void rtlFailUnexpected();
-ECLRTL_API void rtlFailOnAssert();
-ECLRTL_API void rtlFailDivideByZero();
-ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg);
+ECLRTL_API void rtlFail(int code, const char *msg) __attribute__((noreturn));
+ECLRTL_API void rtlSysFail(int code, const char *msg) __attribute__((noreturn));
+ECLRTL_API void rtlFailUnexpected() __attribute__((noreturn));
+ECLRTL_API void rtlFailOnAssert() __attribute__((noreturn));
+ECLRTL_API void rtlFailDivideByZero() __attribute__((noreturn));
+ECLRTL_API void rtlThrowOutOfMemory(int code, const char *msg) __attribute__((noreturn));
 
 ECLRTL_API void rtlReportFieldOverflow(unsigned size, unsigned max, const char * name);
 ECLRTL_API void rtlReportRowOverflow(unsigned size, unsigned max);

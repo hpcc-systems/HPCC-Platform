@@ -394,7 +394,7 @@ FILESERVICES_API bool FILESERVICES_CALL fsFileValidate(ICodeContext *ctx, const 
             IDistributedFilePart & part = partIter->query();
             unsigned numCopies = part.numCopies();
             bool gotone = false;
-            offset_t partSize;
+            offset_t partSize = (offset_t)-1;
             for (unsigned copy=0; copy < numCopies; copy++)
             {
                 RemoteFilename remote;

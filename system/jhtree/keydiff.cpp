@@ -1132,7 +1132,7 @@ private:
         bool eosold = !readOld();
         while(true)
         {
-            int cmp;
+            int cmp = -1;
             unsigned skipcount = 0;
             size32_t doc = (size32_t)-1;
             while (!eosold&&(skipcount < CKeyDiff::MAX_SKIP))

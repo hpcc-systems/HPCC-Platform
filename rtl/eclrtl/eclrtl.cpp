@@ -5280,6 +5280,8 @@ ECLRTL_API void xmlDecodeUStrX(size32_t & outLen, UChar * & out, size32_t inLen,
                         digit = next-'a'+10;
                     else if (next==';')
                         break;
+                    else
+                        digit = base;
                     if (digit >= base)
                     {
                         error = true;

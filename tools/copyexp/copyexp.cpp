@@ -134,8 +134,8 @@ int copyExpanded(const char *from, const char *to, bool stats)
         printf("ERROR: file '%s' already exists\n",to);
         doexit(4);
     }
-    unsigned start;
-    unsigned startu;
+    unsigned start = 0;
+    unsigned startu = 0;
     if (stats) {
          start = msTick();
          startu = usTick();
@@ -240,8 +240,8 @@ void copyCompress(const char *from, const char *to, size32_t rowsize, bool fast,
         printf("ERROR: file '%s' already exists\n",to);
         doexit(4);
     }
-    unsigned start;
-    unsigned startu;
+    unsigned start = 0;
+    unsigned startu = 0;
     if (stats) {
          start = msTick();
          startu = usTick();
