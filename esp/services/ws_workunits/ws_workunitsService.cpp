@@ -1770,6 +1770,7 @@ bool CWsWorkunitsEx::onWUInfo(IEspContext &context, IEspWUInfoRequest &req, IEsp
                 if (e->errorCode() != ECLWATCH_CANNOT_OPEN_WORKUNIT)
                     throw e;
                 getArchivedWUInfo(context, wuid.str(), resp);
+                e->Release();
             }
 
             switch (resp.getWorkunit().getStateID())

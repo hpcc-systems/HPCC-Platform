@@ -110,6 +110,7 @@ void doWuFileCopy(IClientFileSpray &fs, IEspWULogicalFileCopyInfo &info, const c
     {
         StringBuffer msg;
         info.setDfuCopyError(e->errorMessage(msg).str());
+        e->Release();
     }
 }
 
@@ -1405,6 +1406,7 @@ bool CWsWorkunitsEx::onWUQuerysetQueryAction(IEspContext &context, IEspWUQuerySe
             result->setMessage(e->errorMessage(msg).str());
             result->setCode(e->errorCode());
             result->setSuccess(false);
+            e->Release();
         }
         results.append(*result.getClear());
     }
@@ -1448,6 +1450,7 @@ bool CWsWorkunitsEx::onWUQuerysetAliasAction(IEspContext &context, IEspWUQuerySe
             result->setMessage(e->errorMessage(msg).str());
             result->setCode(e->errorCode());
             result->setSuccess(false);
+            e->Release();
         }
         results.append(*result.getClear());
     }
