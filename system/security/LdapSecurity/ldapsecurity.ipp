@@ -61,6 +61,7 @@ private:
     StringAttr   m_sudoHost;
     StringAttr   m_sudoCommand;
     StringAttr   m_sudoOption;
+    bool         m_trusted;
 
 public:
     IMPLEMENT_IINTERFACE
@@ -144,6 +145,8 @@ public:
     const char* getPassword();
     bool setEncodedPassword(SecPasswordEncoding enc, void * pw, unsigned length, void * salt, unsigned saltlen);
     bool addToken(unsigned type, void * data, unsigned length);
+    void setTrusted(bool trusted);
+    bool getTrusted();
 
 // Posix specific fields
     virtual void setGidnumber(const char* gidnumber)

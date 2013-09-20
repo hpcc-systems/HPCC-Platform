@@ -143,6 +143,7 @@ public:
             Owned<ISecUser> user = ldapsecurity->createUser(username);
             if (user) {
                 user->credentials().setPassword(password);
+                user->credentials().setTrusted(udesc->getTrusted());
                 if (filescope)
                     perm=ldapsecurity->authorizeFileScope(*user, obj);
                 else if (wuscope)

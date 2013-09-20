@@ -28,7 +28,7 @@
  *     CLdapSecUser                                       *
  **********************************************************/
 CLdapSecUser::CLdapSecUser(const char *name, const char *pw) : 
-    m_pw(pw), m_authenticateStatus(AS_UNKNOWN)
+    m_pw(pw), m_authenticateStatus(AS_UNKNOWN), m_trusted(false)
 {
     setName(name);
 }
@@ -178,6 +178,15 @@ bool CLdapSecUser::setEncodedPassword(SecPasswordEncoding enc, void * pw, unsign
 {
     return FALSE;  //not supported yet
 }
+void CLdapSecUser::setTrusted(bool trusted)
+{
+    m_trusted = trusted;
+}
+
+bool CLdapSecUser::getTrusted()
+{
+    return m_trusted;
+}
 
 bool CLdapSecUser::addToken(unsigned type, void * data, unsigned length)
 {
@@ -200,6 +209,7 @@ void CLdapSecUser::copyTo(ISecUser& destination)
     dest->setUserSid(m_usersid.length(), m_usersid.toByteArray());
     dest->setUserID(m_userid);
     dest->setPasswordExpiration(m_passwordExpiration);
+    dest->setTrusted(m_trusted);
 }
 
 ISecUser * CLdapSecUser::clone()
@@ -577,6 +587,15 @@ bool CLdapSecManager::authenticate(ISecUser* user)
 
     if(user->getAuthenticateStatus() == AS_AUTHENTICATED)
         return true;
+
+    if(user->credentials().getTrusted())
+    {
+#if _DEBUG
+        DBGLOG("Setting trusted user %s to AS_AUTHENTICATED",user->getName());
+#endif
+        user->setAuthenticateStatus(AS_AUTHENTICATED);
+        return true;
+    }
 
     if(m_permissionsCache.isCacheEnabled() && !m_usercache_off && m_permissionsCache.lookup(*user))
     {

@@ -154,7 +154,7 @@ public:
     }
 
     void initPtree(const char *location, bool isDali);
-    void initDali(const char *location);
+    void initDali(const char *location, IPropertyTree *cfg);
 
     bool isValid(){return (m_cfg.get() != NULL);}
     IPropertyTree* queryConfigPTree(){return m_cfg.get();}
