@@ -559,7 +559,7 @@ static void blockUntilComplete(const char * label, IClientFileSpray &server, ICo
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(0, errmsg.str());
         }
 
         IConstDFUWorkunit & dfuwu = result->getResult();
@@ -687,11 +687,11 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayFixed(ICodeContext *ctx, const
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(0, errmsg.str());
         }
         else
         {
-            throw MakeStringException(0, "Result's dfu WUID is empty");
+            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
         }
     }
 
@@ -743,11 +743,11 @@ static char * implementSprayVariable(ICodeContext *ctx, const char * sourceIP, c
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(0, errmsg.str());
         }
         else
         {
-            throw MakeStringException(0, "Result's dfu WUID is empty");
+            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
         }
     }
 
@@ -826,11 +826,11 @@ FILESERVICES_API char * FILESERVICES_CALL fsfSprayXml(ICodeContext *ctx, const c
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(0, errmsg.str());
         }
         else
         {
-            throw MakeStringException(0, "Result's dfu WUID is empty");
+            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
         }
     }
 
@@ -875,11 +875,11 @@ FILESERVICES_API char * FILESERVICES_CALL fsfDespray(ICodeContext *ctx, const ch
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(0, errmsg.str());
         }
         else
         {
-            throw MakeStringException(0, "Result's dfu WUID is empty");
+            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
         }
     }
 
@@ -938,11 +938,11 @@ FILESERVICES_API char * FILESERVICES_CALL fsfCopy(ICodeContext *ctx, const char 
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(0, errmsg.str());
         }
         else
         {
-            throw MakeStringException(0, "Result's dfu WUID is empty");
+            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
         }
     }
 
@@ -981,11 +981,11 @@ FILESERVICES_API char * FILESERVICES_CALL fsfReplicate(ICodeContext *ctx, const 
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(0, errmsg.str());
         }
         else
         {
-            throw MakeStringException(0, "Result's dfu WUID is empty");
+            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
         }
     }
 
@@ -1794,11 +1794,11 @@ FILESERVICES_API char * FILESERVICES_CALL fsfRemotePull(ICodeContext *ctx,
         {
             StringBuffer errmsg;
             excep->errorMessage(errmsg);
-            throw MakeStringException(0, "%s", errmsg.str());
+            throw MakeStringExceptionDirect(0, errmsg.str());
         }
         else
         {
-            throw MakeStringException(0, "Result's dfu WUID is empty");
+            throw MakeStringExceptionDirect(0, "Result's dfu WUID is empty");
         }
     }
 
