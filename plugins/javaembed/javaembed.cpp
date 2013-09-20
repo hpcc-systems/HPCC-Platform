@@ -76,7 +76,8 @@ public:
     JavaGlobalState()
     {
         JavaVMInitArgs vm_args; /* JDK/JRE 6 VM initialization arguments */
-        JavaVMOption* options = new JavaVMOption[3];
+
+        StringArray optionStrings;
         const char* origPath = getenv("CLASSPATH");
         StringBuffer newPath;
         newPath.append("-Djava.class.path=").append(origPath);
@@ -88,20 +89,30 @@ public:
             newPath.append(ENVSEPCHAR);
             conf->getProp("classpath", newPath);
         }
+        else
+        {
+            newPath.append(ENVSEPCHAR).append(INSTALL_DIR).append(PATHSEPCHAR).append("classes");
+        }
         newPath.append(ENVSEPCHAR).append(".");
+        optionStrings.append(newPath);
+        if (conf && conf->hasProp("jvmoptions"))
+        {
+            optionStrings.appendList(conf->queryProp("jvmoptions"), ENVSEPSTR);
+        }
 
+        // These may be useful for debugging
+        // optionStrings.append("-Xcheck:jni");
+        // optionStrings.append("-verbose:jni");
 
-        options[0].optionString = (char *) newPath.str();
-        options[1].optionString = (char *) "-Xcheck:jni";
-        options[2].optionString = (char *) "-verbose:jni";
-        vm_args.version = JNI_VERSION_1_6;
-#ifdef _DEBUG
-        vm_args.nOptions = 1;  // set to 3 if you want the verbose...
-#else
-        vm_args.nOptions = 1;
-#endif
+        JavaVMOption* options = new JavaVMOption[optionStrings.length()];
+        ForEachItemIn(idx, optionStrings)
+        {
+            options[idx].optionString = (char *) optionStrings.item(idx);
+        }
+        vm_args.nOptions = optionStrings.length();
         vm_args.options = options;
-        vm_args.ignoreUnrecognized = false;
+        vm_args.ignoreUnrecognized = true;
+        vm_args.version = JNI_VERSION_1_6;
         /* load and initialize a Java VM, return a JNI interface pointer in env */
         JNIEnv *env;       /* receives pointer to native method interface */
         JNI_CreateJavaVM(&javaVM, (void**)&env, &vm_args);

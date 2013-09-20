@@ -176,7 +176,7 @@ public:
 IPropertyTree *getDirectory(const char * directory, INode * node, unsigned short port)
 {
     //DBGLOG("IPropertyTree * getDirectory");
-    unsigned retries;
+    unsigned retries = 0;
     loop {
         StringAttr nextDir;
         try {

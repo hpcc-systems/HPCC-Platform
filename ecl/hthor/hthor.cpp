@@ -735,6 +735,7 @@ void CHThorDiskWriteActivity::setFormat(IFileDescriptor * desc)
     const char *recordECL = helper.queryRecordECL();
     if (recordECL && *recordECL)
         desc->queryProperties().setProp("ECL", recordECL);
+    desc->queryProperties().setProp("@kind", "flat");
 }
 
 void CHThorDiskWriteActivity::checkSizeLimit()
@@ -867,6 +868,7 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     desc->queryProperties().setProp("@csvTerminate", rs.setown(csvInfo->getTerminator(0)));
     desc->queryProperties().setProp("@csvEscape", rs.setown(csvInfo->getEscape(0)));
     desc->queryProperties().setProp("@format","utf8n");
+    desc->queryProperties().setProp("@kind", "csv");
 }
 
 //=====================================================================================================
@@ -929,6 +931,7 @@ void CHThorXmlWriteActivity::setFormat(IFileDescriptor * desc)
 {
     desc->queryProperties().setProp("@format","utf8n");
     desc->queryProperties().setProp("@rowTag",rowTag.str());
+    desc->queryProperties().setProp("@kind", "xml");
 }
 
 //=====================================================================================================
