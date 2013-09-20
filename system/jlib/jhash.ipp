@@ -46,11 +46,9 @@ class jlib_decl MappingKey
     void    *key;               /* points to the key for this element */
 };
 
-class jlib_decl MappingBase : implements IMapping, public CInterface
+class jlib_decl MappingBase : public CInterfaceOf<IMapping>
 {
   public:
-    IMPLEMENT_IINTERFACE
-
     virtual unsigned            getHash() const;
     virtual void                setHash(unsigned);
 
