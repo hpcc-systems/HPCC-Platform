@@ -163,7 +163,7 @@ void CSlaveActivity::startInput(IThorDataLink *itdl, const char *extra)
 #endif
 }
 
-void CSlaveActivity::stopInput(IThorDataLink *itdl, const char *extra)
+void CSlaveActivity::stopInput(IRowStream *itdl, const char *extra)
 {
     StringBuffer s("Stopping input for");
     if (extra)
@@ -184,6 +184,7 @@ void CSlaveActivity::stopInput(IThorDataLink *itdl, const char *extra)
     itdl->stop();
 #endif
 }
+
 
 void CSlaveActivity::abort()
 {
