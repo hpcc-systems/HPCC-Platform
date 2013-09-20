@@ -521,6 +521,8 @@ void CLdapSecManager::init(const char *serviceName, IPropertyTree* cfg)
         pp = new CIPlanetAciProcessor(cfg);
     else if(ldap_client->getServerType() == OPEN_LDAP)
         pp = new COpenLdapAciProcessor(cfg);
+    else
+        throwUnexpected();
 
     ldap_client->init(pp);
     pp->setLdapClient(ldap_client);

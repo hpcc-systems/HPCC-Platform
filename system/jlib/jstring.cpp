@@ -1313,7 +1313,7 @@ static StringBuffer & appendStringExpandControl(StringBuffer &out, unsigned len,
                     out.append(c);
                 break;
             default:
-                if (isUtf8 || (c >= ' ') && (c <= 126))
+                if (isUtf8 || ((c >= ' ') && (c <= 126)))
                     out.append(c);
                 else
                     out.appendf("\\%03o", c); 

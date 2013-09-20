@@ -10248,6 +10248,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
             unsigned srclen = from->getSize();
             ICharsetInfo * srcset = NULL;
             ICharsetInfo * tgtset = to->queryCharset();
+            IIdAtom * func = NULL;
 
             switch (fromType)
             {
@@ -10282,7 +10283,6 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                             {
                                 if (fromType == type_varstring)
                                 {
-                                    IIdAtom * func;
                                     switch (toType)
                                     {
                                     case type_varstring: func = vstr2VStrId; break;
@@ -10308,7 +10308,6 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                                 }
                                 else
                                 {
-                                    IIdAtom * func;
                                     switch (toType)
                                     {
                                     case type_data:
@@ -10358,7 +10357,6 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     }
                     else
                     {
-                        IIdAtom * func;
                         switch (toType)
                         {
                         case type_varstring: func = qstr2VStrId; break;
@@ -10376,7 +10374,6 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                 case type_unicode:
                 case type_varunicode:
                     {
-                        IIdAtom * func;
                         switch(toType)
                         {
                         case type_data:
@@ -10401,7 +10398,6 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     break;
                 case type_utf8:
                     {
-                        IIdAtom * func;
                         switch(toType)
                         {
                         case type_data:
@@ -10479,7 +10475,6 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                         OwnedHqlExpr sp = getElementPointer(targetVar);
                         args.append(*ensureIndexable(sp));
 
-                        IIdAtom * func;
                         switch (toType)
                         {
                         case type_string: func = DecPopStringId; break;
@@ -10494,7 +10489,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     break;
                 case type_boolean:
                     {
-                        IIdAtom * func = (toType == type_varstring) ? bool2VStrId : (toType == type_data) ? bool2DataId : bool2StrId;
+                        func = (toType == type_varstring) ? bool2VStrId : (toType == type_data) ? bool2DataId : bool2StrId;
                         args.append(*getSizetConstant(toSize));
                         args.append(*getElementPointer(targetVar));
                         args.append(*pure.expr.getLink());
@@ -10507,7 +10502,7 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                         args.append(*strlen);
                         args.append(*getElementPointer(targetVar));
                         args.append(*pure.expr.getLink());
-                        IIdAtom * func = (toType == type_varstring) ? f2vnId : f2anId;
+                        func = (toType == type_varstring) ? f2vnId : f2anId;
                         callProcedure(ctx, func, args);
                         if (toType != type_data)
                         {
@@ -10563,6 +10558,8 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                     }
                     func = utf82UnicodeId;
                     break;
+                default:
+                    throwUnexpected();
                 }
                 args.append(*getSizetConstant(toSize/2));
                 args.append(*getElementPointer(targetVar));
@@ -10606,6 +10603,8 @@ void HqlCppTranslator::assignAndCast(BuildCtx & ctx, const CHqlBoundTarget & tar
                 case type_varstring:
                     func = codepageToUtf8Id;
                     break;
+                default:
+                    throwUnexpected();
                 }
                 args.append(*getSizetConstant(toSize/4));
                 args.append(*getElementPointer(targetVar));
@@ -11931,6 +11930,7 @@ IHqlExpression * HqlCppTranslator::getIndexedElementPointer(IHqlExpression * sou
 
 IHqlExpression * HqlCppTranslator::needFunction(IIdAtom * name)
 {
+    assertex(name);
     HqlDummyLookupContext dummyctx(errors);
     return internalScope->lookupSymbol(name, LSFsharedOK, dummyctx);
 }

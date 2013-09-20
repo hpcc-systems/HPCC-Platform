@@ -280,7 +280,7 @@ bool RegExpr::init(const char *exp,bool nocase)
       re->mlen = (size32_t)len;
     }
   }
-  int reloc;
+  int reloc = 0;
   if (re->must)
     reloc = re->must-re->program;
   re->program = (char *)realloc(re->program,(re->code-re->program)+1);
@@ -524,7 +524,7 @@ char *RECOMP::reg (bool paren, REGFLAGS &flags)
   char *ret;
   char *br;
   char *ender;
-  int parno;
+  int parno = 0;
 
   flags = HASWIDTH;  /* Tentatively. */
 

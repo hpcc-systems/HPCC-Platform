@@ -898,7 +898,7 @@ void throwExceptionIfAborting()
 StringBuffer & hexdump2string(byte const * in, size32_t inSize, StringBuffer & out)
 {
     out.append("[");
-    byte last;
+    byte last = 0;
     unsigned seq = 1;
     for(unsigned i=0; i<inSize; ++i)
     {

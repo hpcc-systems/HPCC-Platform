@@ -829,7 +829,7 @@ public:
         IJobQueueItem *ret=NULL;
         bool waitingset = false;
         while (!dequeuestop) {
-            unsigned t;
+            unsigned t = 0;
             if (timeout!=(unsigned)INFINITE)
                 t = msTick();
             {

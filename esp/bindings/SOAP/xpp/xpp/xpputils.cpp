@@ -52,7 +52,7 @@ IMultiException *xppMakeException(XmlPullParser &xppx)
     }
 
     IMultiException * me = MakeMultiException(sourcestr.str());
-    me->append(*MakeStringException(code, msg.str()));
+    me->append(*MakeStringExceptionDirect(code, msg.str()));
 
     return me;
 }

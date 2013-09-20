@@ -3706,7 +3706,7 @@ public:
                 case TAKkeyedjoin:
                 case TAKkeyeddenormalizegroup:
                     {
-                        size32_t transformedSize;
+                        size32_t transformedSize = 0;
                         try
                         {
                             RtlDynamicRowBuilder rowBuilder(rowAllocator);

@@ -442,7 +442,7 @@ public:
 
     int requestToSend(int sendingNode)
     {
-        int receivingNode;
+        int receivingNode = 0;
         if (simpleSequential)
         {
             {

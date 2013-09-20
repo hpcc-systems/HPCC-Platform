@@ -1050,7 +1050,7 @@ public:
                     StringBuffer fn;
                     StringBuffer dir;
                     StringBuffer lastdir;
-                    cDirDesc *pdir;
+                    cDirDesc *pdir = NULL;
                     bool islost = false;
                     bool incluster = true;          
                     for (unsigned p=0;p<np;p++) {

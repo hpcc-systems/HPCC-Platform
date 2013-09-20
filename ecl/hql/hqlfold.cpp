@@ -779,14 +779,14 @@ IValue * foldExternalCall(IHqlExpression* expr, unsigned foldOptions, ITemplateC
 #endif
     char* strbuf = fstack.getMem();
 
-    int intresult;
+    int intresult = 0;
 #ifdef __64BIT__
-    __int64 int64result;
+    __int64 int64result = 0;
 #else
-    int intresulthigh;
+    int intresulthigh = 0;
 #endif
-    float floatresult;
-    double doubleresult;
+    float floatresult = 0.0;
+    double doubleresult = 0.0;
 
 #ifdef __64BIT__
 //  __asm__ ("\tint $0x3\n"); // for debugging
