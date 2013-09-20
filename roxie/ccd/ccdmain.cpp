@@ -68,7 +68,6 @@ unsigned readTimeout = 300;
 unsigned indexReadChunkSize = 60000;
 unsigned maxBlockSize = 10000000;
 unsigned maxLockAttempts = 5;
-bool checkPrimaries = true;
 bool pretendAllOpt = false;
 bool traceStartStop = false;
 bool traceServerSideCache = false;
@@ -716,7 +715,6 @@ int STARTQUERY_API start_query(int argc, const char *argv[])
         diskReadBufferSize = topology->getPropInt("@diskReadBufferSize", 0x10000);
         fieldTranslationEnabled = topology->getPropBool("@fieldTranslationEnabled", false);
 
-        checkPrimaries = topology->getPropBool("@checkPrimaries", true);
         pretendAllOpt = topology->getPropBool("@ignoreMissingFiles", false);
         memoryStatsInterval = topology->getPropInt("@memoryStatsInterval", 60);
         roxiemem::setMemoryStatsInterval(memoryStatsInterval);
