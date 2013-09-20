@@ -869,6 +869,9 @@ void CHThorCsvWriteActivity::setFormat(IFileDescriptor * desc)
     desc->queryProperties().setProp("@csvEscape", rs.setown(csvInfo->getEscape(0)));
     desc->queryProperties().setProp("@format","utf8n");
     desc->queryProperties().setProp("@kind", "csv");
+    const char *recordECL = helper.queryRecordECL();
+    if (recordECL && *recordECL)
+        desc->queryProperties().setProp("ECL", recordECL);
 }
 
 //=====================================================================================================
