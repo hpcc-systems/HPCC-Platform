@@ -1627,13 +1627,9 @@ class CMultiCoreJoinHelper: public CMultiCoreJoinHelperBase
         {
             PROGLOG("CMultiCoreJoinHelper::cWorker started");
 
-            // Create an allocator per thread, to avoid heavy contention
-            // JCSMORE - there should be a way to ask the cache for an allocator that is based on flags
-            activity_id activityId = parent->activity.queryContainer().queryId();
+            CJobBase &job = parent->activity.queryJob();
             Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
-            IOutputMetaData *meta = rowIf->queryRowMetaData();
-            roxiemem::IRowManager *rowManager = parent->activity.queryJob().queryRowManager();
-            Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, activityId, 1, (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
+            Owned<IEngineRowAllocator> allocator = job.getRowAllocator(rowIf->queryRowMetaData(), parent->activity.queryActivityId(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             IRowWriter *rowWriter = rowStream->queryWriter();
             loop
@@ -1831,13 +1827,9 @@ class CMultiCoreUnorderedJoinHelper: public CMultiCoreJoinHelperBase
         }
         int run()
         {
-            // Create an allocator per thread, to avoid heavy contention
-            // JCSMORE - there should be a way to ask the cache for an allocator that is based on flags
-            activity_id activityId = parent->activity.queryContainer().queryId();
+            CJobBase &job = parent->activity.queryJob();
             Owned<IRowInterfaces> rowIf = parent->activity.getRowInterfaces();
-            IOutputMetaData *meta = rowIf->queryRowMetaData();
-            roxiemem::IRowManager *rowManager = parent->activity.queryJob().queryRowManager();
-            Owned<IEngineRowAllocator> allocator = createRoxieRowAllocator(*rowManager, meta, activityId, 1, (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
+            Owned<IEngineRowAllocator> allocator = job.getRowAllocator(rowIf->queryRowMetaData(), parent->activity.queryActivityId(), (roxiemem::RoxieHeapFlags)(roxiemem::RHFpacked|roxiemem::RHFunique));
 
             Owned<IRowWriter> rowWriter = parent->multiWriter->getWriter();
             PROGLOG("CMulticoreUnorderedJoinHelper::cWorker started");
