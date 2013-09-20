@@ -840,6 +840,11 @@ public:
         return traceActivityTimes;
     }
 
+    virtual bool queryCheckingHeap() const
+    {
+        return checkingHeap;
+    }
+
     virtual void checkAbort()
     {
         // MORE - really should try to apply limits at slave end too

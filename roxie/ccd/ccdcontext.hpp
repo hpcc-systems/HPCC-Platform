@@ -65,6 +65,7 @@ interface IRoxieSlaveContext : extends IRoxieContextLogger
     virtual void noteProcessed(const IRoxieContextLogger &_activityContext, const IRoxieServerActivity *activity, unsigned _idx, unsigned _processed, unsigned __int64 _totalCycles, unsigned __int64 _localCycles) const = 0;
     virtual IProbeManager *queryProbeManager() const = 0;
     virtual bool queryTimeActivities() const = 0;
+    virtual bool queryCheckingHeap() const = 0;
     virtual IDebuggableContext *queryDebugContext() const = 0;
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence) = 0;
     virtual void setWUState(WUState state) = 0;

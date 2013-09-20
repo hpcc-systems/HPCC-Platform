@@ -363,6 +363,10 @@ public:
     {
         return ctx->queryTimeActivities();
     }
+    virtual bool queryCheckingHeap() const
+    {
+        return ctx->queryCheckingHeap();
+    }
     virtual void printResults(IXmlWriter *output, const char *name, unsigned sequence)
     {
         ctx->printResults(output, name, sequence);
@@ -3405,6 +3409,8 @@ private:
                     loggingFlags |= LOGGING_TIMEACTIVITIES; 
                 if (activity.queryLogCtx().isBlind())
                     loggingFlags |= LOGGING_BLIND;
+                if (ctx->queryCheckingHeap())
+                    loggingFlags |= LOGGING_CHECKINGHEAP;
                 if (debugContext)
                 {
                     loggingFlags |= LOGGING_DEBUGGERACTIVE;
