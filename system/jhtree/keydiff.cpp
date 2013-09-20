@@ -1390,7 +1390,7 @@ private:
         keydiff.readHeaderVersionInfo();
         StringBuffer versionError;
         if(!keydiff.compatibleVersions(versionError))
-            throw MakeStringException(0, "%s", versionError.str());
+            throw MakeStringExceptionDirect(0, versionError.str());
         keydiff.readHeaderFileInfo();
         if(!oldIndex.get())
             oldIndex.set(keydiff.queryHeader().queryOldIndex());

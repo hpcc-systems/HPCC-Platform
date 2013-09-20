@@ -6007,7 +6007,7 @@ IHqlDataset *CHqlDataset::queryTable()
 
     StringBuffer s("queryDataset() return NULL for: ");
     s.append(getOpString(op));
-    throw MakeStringException(2, "%s", s.str());
+    throw MakeStringExceptionDirect(2, s.str());
 }
 
 void CHqlDataset::sethash() 

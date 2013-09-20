@@ -719,13 +719,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             sMsg.append(":\n\n").append(sErrMsg);
 
-          throw MakeStringException(0, "%s", sMsg.str());
+          throw MakeStringExceptionDirect(0, sMsg.str());
         }
         else
         {
           StringBuffer sMsg;
           sMsg.append("Error locking environment. ").append(sErrMsg.str());
-          throw MakeStringException(-1, "%s", sMsg.str());
+          throw MakeStringExceptionDirect(-1, sMsg.str());
         }
       }
     }
@@ -817,13 +817,13 @@ bool CWsDeployFileInfo::navMenuEvent(IEspContext &context,
           else
             sMsg.append(":\n\n").append(sErrMsg);
 
-          throw MakeStringException(0, "%s", sMsg.str());
+          throw MakeStringExceptionDirect(0, sMsg.str());
         }
         else
         {
           StringBuffer sMsg;
           sMsg.append("Error unlocking environment. ").append(sErrMsg.str());
-          throw MakeStringException(-1, "%s", sMsg.str());
+          throw MakeStringExceptionDirect(-1, sMsg.str());
         }
       }
     }
@@ -4329,7 +4329,7 @@ bool CWsDeployFileInfo::handleHardwareCopy(IPropertyTree *pComponents, IProperty
 
       errMsg.setCharAt(errMsg.length()-2 , ']');
 
-      throw MakeStringException(-1, "%s", errMsg.str());
+      throw MakeStringExceptionDirect(-1, errMsg.str());
     }
   }
   else
@@ -5918,7 +5918,7 @@ void CWsDeployFileInfo::saveEnvironment(IEspContext* pContext, IConstWsDeployReq
       else
         sMsg.append(":\n\n").append(sErrMsg);
 
-      throw MakeStringException(0, "%s", sMsg.str());
+      throw MakeStringExceptionDirect(0, sMsg.str());
     }
   }
 

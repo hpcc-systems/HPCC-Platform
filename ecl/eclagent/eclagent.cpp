@@ -1417,7 +1417,7 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
                 if (optional) return NULL;
                 if (!errorTxt) return NULL;
                 StringBuffer errorMsg(errorTxt);
-                throw MakeStringException(0, "%s", errorMsg.append(": Superkey '").append(lfn).append("' is empty").str());
+                throw MakeStringExceptionDirect(0, errorMsg.append(": Superkey '").append(lfn).append("' is empty").str());
             }
 
             if (noteRead)
@@ -1432,7 +1432,7 @@ ILocalOrDistributedFile *EclAgent::resolveLFN(const char *fname, const char *err
         if (optional) return NULL;
         if (!errorTxt) return NULL;
         StringBuffer errorMsg(errorTxt);
-        throw MakeStringException(0, "%s", errorMsg.append(": Logical file name '").append(lfn).append("' could not be resolved").str());
+        throw MakeStringExceptionDirect(0, errorMsg.append(": Logical file name '").append(lfn).append("' could not be resolved").str());
     }
     return ldFile.getClear();
 }
@@ -2225,13 +2225,13 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     {
         StringBuffer errmsg;
         errmsg.append("Internal error in generated code: for wfid ").append(wfid).append(", persist CRC wfid ").append(item.queryPersistWfid()).append(" did not call returnPersistVersion");
-        throw MakeStringException(0, "%s", errmsg.str());
+        throw MakeStringExceptionDirect(0, errmsg.str());
     }
     if(strcmp(name.str(), persist->logicalName.get()) != 0)
     {
         StringBuffer errmsg;
         errmsg.append("Failed workflow/persist consistency check: wfid ").append(wfid).append(", WU persist name ").append(name.str()).append(", runtime persist name ").append(persist->logicalName.get());
-        throw MakeStringException(0, "%s", errmsg.str());
+        throw MakeStringExceptionDirect(0, errmsg.str());
     }
     if(agent.arePersistsFrozen())
     {

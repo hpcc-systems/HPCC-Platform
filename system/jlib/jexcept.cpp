@@ -515,7 +515,7 @@ void RaiseAssertException(const char *assertion, const char *file, unsigned line
 #endif
 #endif
 
-    throw MakeStringException(3000, "%s", s.toCharArray()); // 3000: internal error
+    throw MakeStringExceptionDirect(3000, s.toCharArray()); // 3000: internal error
 }
 
 void RaiseAssertCore(const char *assertion, const char *file, unsigned line)

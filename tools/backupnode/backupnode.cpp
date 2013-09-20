@@ -707,7 +707,7 @@ int main(int argc, const char *argv[])
                     println("Creating part lists, please wait...");
                 StringBuffer errstr;
                 if (!outputPartsFiles(args.item(0),args.item(1),args.item(2),errstr,verbose))
-                    throw MakeStringException(-1, "%s", errstr.str());
+                    throw MakeStringExceptionDirect(-1, errstr.str());
             }
         }
         else
