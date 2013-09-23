@@ -202,6 +202,11 @@ public:
     {
         if (javaClass)
             JNIenv->DeleteGlobalRef(javaClass);
+        
+        // According to the Java VM 1.7 docs, "A native thread attached to
+        // the VM must call DetachCurrentThread() to detach itself before
+        // exiting."
+        globalState->javaVM->DetachCurrentThread();
     }
 
     void checkException()
@@ -557,9 +562,16 @@ public:
     {
         argcount = 0;
         argsig = NULL;
+        
+        // Create a new frame for local references and increase the capacity
+        // of those references to 64 (default is 16)
+        sharedCtx->JNIenv->PushLocalFrame(64);
     }
     ~JavaEmbedImportContext()
     {
+        // Pop local reference frame; explicitly frees all local
+        // references made during that frame's lifetime
+        sharedCtx->JNIenv->PopLocalFrame(NULL);
     }
 
     virtual bool getBooleanResult()
