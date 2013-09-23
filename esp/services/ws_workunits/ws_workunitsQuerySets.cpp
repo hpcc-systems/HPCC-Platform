@@ -940,7 +940,7 @@ bool addWUQSQueryFilterInt64(WUQuerySortField *filters, unsigned short &count, M
     return true;
 }
 
-unsigned CWsWorkunitsEx::getGraphIdsQueryId(const char *target, const char *queryId, StringArray& graphIds)
+unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *queryId, StringArray& graphIds)
 {
     if (!target || !*target)
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Target name required");
@@ -1142,7 +1142,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
             libUsed.append(libs->query().getName(s).str());
         if (libUsed.length())
             resp.setLibrariesUsed(libUsed);
-        unsigned numGraphIds = getGraphIdsQueryId(querySet, queryId, graphIds);
+        unsigned numGraphIds = getGraphIdsByQueryId(querySet, queryId, graphIds);
         resp.setCountGraphs(numGraphIds);
         if (numGraphIds > 0)
             resp.setGraphIds(graphIds);
