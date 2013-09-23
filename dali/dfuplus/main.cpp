@@ -74,7 +74,7 @@ void handleSyntax()
     out.append("            terminator=<terminator> -- optional, default is \\r,\\r\\n\n");
     out.append("            quote=<quote> -- optional, default is '\n");
     out.append("            escape=<escape> -- optional, no default value \n");
-    out.append("            recordstructurepresent=0|1 -- optional, field names don't present in first row \n");
+    out.append("            recordstructurepresent=0|1 -- optional, default is 0 (no field names in first row) \n");
     out.append("        options for xml:\n");
     out.append("            rowtag=rowTag -- required\n");
     out.append("            encoding=utf8|utf8n|utf16|utf16le|utf16be|utf32|utf32le|utf32be -- optional, default is utf8\n");

@@ -161,6 +161,17 @@ void CPartitioner::setTarget(IOutputProcessor * _target)
     target.set(_target);
 }
 
+void CPartitioner::setRecordStructurePresent(bool _recordStructurePresent)
+{
+
+}
+
+void CPartitioner::getRecordStructure(StringBuffer & _recordStructure)
+{
+    _recordStructure.clear();
+}
+
+
 //----------------------------------------------------------------------------
 
 
@@ -572,10 +583,40 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
 
     matcher.queryAddEntry(1, " ", WHITESPACE);
     matcher.queryAddEntry(1, "\t", WHITESPACE);
-    recordStructure.append("fileRec := RECORD\n");
+    recordStructure.append("RECORD\n");
     isRecordStructurePresent = false;
     fieldCount = 0;
     isFirstRow = true;
+}
+
+void CCsvPartitioner::storeFieldName(const char * start, unsigned len)
+{
+    ++fieldCount;
+    recordStructure.append("    STRING ");
+    // If record structure present in the first row and we have at least one character
+    // long string then it will be this field name.
+    // Otherwise we use "fieldx" (where x is the number of this field) as name.
+    // This prevents to generate wrong record structure if field name(s) missing:
+    // e.g: first row -> fieldA,fieldB,,fieldC,\n
+
+    // Check the field name
+    StringBuffer fieldName;
+    fieldName.append(start, 0, len);
+    fieldName.trim();
+
+    if (isRecordStructurePresent && (0 < fieldName.length() ))
+    {
+        fieldName.replace('-', '_');
+        fieldName.replace(' ', '_');
+
+        recordStructure.append(fieldName);
+    }
+    else
+    {
+        recordStructure.append("field");
+        recordStructure.append(fieldCount);
+    }
+    recordStructure.append(";\n");
 }
 
 size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToRead, bool processFullBuffer, bool ateof)
@@ -616,24 +657,9 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
             {
                 if (isFirstRow)
                 {
-                    ++fieldCount;
-                    recordStructure.append("STRING ");
-                    // If record structure present in the first row and we have at least one character
-                    // long string then it will be this field name.
-                    // Otherwise we use "fieldx" (where x is the number of this field) as name.
-                    // This prevents to generate wrong record structure if field name(s) missing:
-                    // e.g: first row -> fieldA,fieldB,,fieldC,\n
-                    if (isRecordStructurePresent && (0 < lastGood-firstGood))
-                    {
-                        recordStructure.append((const char*)firstGood, 0, lastGood-firstGood);
-                    }
-                    else
-                    {
-                        recordStructure.append("field");
-                        recordStructure.append(fieldCount);
-                    }
-                    recordStructure.append(";\n");
+                    storeFieldName((const char*)firstGood, lastGood-firstGood);
                 }
+
                 lastEscape = false;
                 quoteToStrip = 0;
                 firstGood = cur + matchLen;
@@ -650,19 +676,8 @@ size32_t CCsvPartitioner::getSplitRecordSize(const byte * start, unsigned maxToR
                    isFirstRow = false;
 
                    // Process last field
-                   ++fieldCount;
-                   recordStructure.append("STRING ");
-                   if (isRecordStructurePresent&& (0 < lastGood-firstGood))
-                   {
-                       recordStructure.append((const char*)firstGood, 0, lastGood-firstGood);
-                   }
-                   else
-                   {
-                       recordStructure.append("field");
-                       recordStructure.append(fieldCount);
-                   }
-                   recordStructure.append(";\n");
-                   recordStructure.append("end;");
+                   storeFieldName((const char*)firstGood, lastGood-firstGood);
+                   recordStructure.append("END;");
                }
 
                if (processFullBuffer)
@@ -1439,6 +1454,16 @@ void CRemotePartitioner::setSource(unsigned _whichInput, const RemoteFilename & 
     passwordProvider.addPasswordForFilename(fullPath);
     compressedInput = _compressedInput;
     decryptKey.set(_decryptKey);
+}
+
+void CRemotePartitioner::setRecordStructurePresent(bool _recordStructurePresent)
+{
+
+}
+
+void CRemotePartitioner::getRecordStructure(StringBuffer & _recordStructure)
+{
+    _recordStructure.clear();
 }
 
 

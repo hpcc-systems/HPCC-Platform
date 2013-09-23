@@ -37,6 +37,8 @@ public:
     virtual void setPartitionRange(offset_t _totalSize, offset_t _thisOffset, offset_t _thisSize, unsigned _thisHeaderSize, unsigned _numParts);
     virtual void setSource(unsigned _whichInput, const RemoteFilename & _fullPath, bool compressedInput, const char *decryptKey);
     virtual void setTarget(IOutputProcessor * _target);
+    virtual void setRecordStructurePresent(bool _recordStructurePresent);
+    virtual void getRecordStructure(StringBuffer & _recordStructure);
 
 protected:
     virtual void findSplitPoint(offset_t curOffset, PartitionCursor & cursor) = 0;
@@ -232,7 +234,6 @@ public:
 
     virtual void getRecordStructure(StringBuffer & _recordStructure) { _recordStructure = recordStructure; }
     virtual void setRecordStructurePresent( bool _isRecordStructurePresent) {isRecordStructurePresent = _isRecordStructurePresent;}
-    virtual unsigned getFieldCount(void) { return fieldCount; }
 
 protected:
     virtual size32_t getSplitRecordSize(const byte * record, unsigned maxToRead, bool processFullBuffer, bool ateof);
@@ -242,6 +243,9 @@ protected:
         return getSplitRecordSize(record,maxToRead,processFullBuffer,true);
     }
 
+private:
+	void storeFieldName(const char * start, unsigned len);
+	
 protected:
     enum { NONE=0, SEPARATOR=1, TERMINATOR=2, WHITESPACE=3, QUOTE=4, ESCAPE=5 };
     unsigned        maxElementLength;
@@ -419,6 +423,8 @@ public:
     virtual void setPartitionRange(offset_t _totalSize, offset_t _thisOffset, offset_t _thisSize, unsigned _thisHeaderSize, unsigned _numParts);
     virtual void setSource(unsigned _whichInput, const RemoteFilename & _fullPath, bool compressedInput, const char *decryptKey);
     virtual void setTarget(IOutputProcessor * _target) { UNIMPLEMENTED; }
+    virtual void setRecordStructurePresent(bool _recordStructurePresent);
+    virtual void getRecordStructure(StringBuffer & _recordStructure);
 
 protected:
     void callRemote();
