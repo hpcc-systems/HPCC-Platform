@@ -390,6 +390,7 @@ private:
     ILogMsgHandler *logMsgHandler;
     StringAttr agentTempDir;
     Owned<IOrderedOutputSerializer> outputSerializer;
+    int retcode;
 
 private:
     void doSetResultString(type_t type, const char * stepname, unsigned sequence, int len, const char *val);
@@ -493,6 +494,8 @@ public:
     virtual char *getGroupName();
     virtual char *queryIndexMetaData(char const * lfn, char const * xpath);
     virtual void  abort();
+    virtual int getRetcode();
+    virtual void setRetcode(int code);
 
     virtual bool fileExists(const char * filename);
     virtual char * getExpandLogicalName(const char * logicalName);
