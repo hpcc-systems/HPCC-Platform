@@ -52,8 +52,9 @@ ESPStruct DFULogicalFile
     [min_ver("1.01")] int64 IntRecordCount;
     [min_ver("1.02")] bool FromRoxieCluster;
     [min_ver("1.03")] bool BrowseData;
-    [min_ver("1.14")] bool IsKeyFile;
+    [min_ver("1.14"), depr_ver("1.24")] bool IsKeyFile;
     [min_ver("1.22")] bool IsCompressed;
+    [min_ver("1.24")] string ContentType;
     [min_ver("1.22")] int64 CompressedFileSize;
 };
 
@@ -124,10 +125,7 @@ ESPStruct DFUSpaceItem
     string SmallestSize;
 };
 
-ESPrequest 
-[
-]
-DFUQueryRequest
+ESPrequest [nil_remove] DFUQueryRequest
 {
     string Prefix;
     string ClusterName;
@@ -140,7 +138,7 @@ DFUQueryRequest
     int64 FileSizeFrom(-1);
     int64 FileSizeTo(-1);
     int FirstN(-1);
-    string FirstNType;
+    [depr_ver("1.24")] string FirstNType;
 
     int PageSize;
     int PageStartFrom;
@@ -149,6 +147,7 @@ DFUQueryRequest
     bool Descending(false);
 
     bool OneLevelDirFileReturn(false);
+    [min_ver("1.24")] int64 CacheHint;
 };
 
 ESPresponse 
@@ -170,7 +169,7 @@ DFUQueryResponse
     int64 FileSizeFrom(-1);
     int64 FileSizeTo(-1);
     int FirstN(-1);
-    string FirstNType;
+    [depr_ver("1.24")] string FirstNType;
 
     int PageSize(20);
     int64 PageStartFrom(1);
@@ -185,6 +184,7 @@ DFUQueryResponse
     string BasicQuery;
     string ParametersForPaging;
     string Filters;
+    [min_ver("1.24")] int64 CacheHint;
 };
 
 ESPrequest 
@@ -631,7 +631,7 @@ ESPresponse [exceptions_inline, nil_remove, http_encode(0)] DFUSearchDataRespons
 
 //  ===========================================================================
 ESPservice [
-    version("1.23"), default_client_version("1.23"),
+    version("1.24"), default_client_version("1.24"),
     noforms, 
     exceptions_inline("./smc_xslt/exceptions.xslt")] WsDfu
 {

@@ -2409,589 +2409,955 @@ bool CWsDfuEx::checkDescription(const char *description, const char *description
     return true;
 }
 
-bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp)
+//The code inside this method is copied from previous code for legacy (< 5.0) dali support
+void CWsDfuEx::getAPageOfSortedLogicalFile(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp)
 {
-    DBGLOG("CWsDfuEx::doLogicalFileSearch\n");
-
     double version = context.getClientVersion();
 
     IArrayOf<IEspDFULogicalFile> LogicalFiles;
+    StringBuffer filter;
+    const char* fname = req.getLogicalName();
+    if(fname && *fname)
+    {
+        filter.append(fname);
+    }
+    else
+    {
+        if(req.getPrefix() && *req.getPrefix())
+        {
+            filter.append(req.getPrefix());
+            filter.append("::");
+        }
+        filter.append("*");
+    }
+
+    Owned<IDFAttributesIterator> fi;
+    bool bNotInSuperfile = false;
+    const char* sFileType = req.getFileType();
+    if (sFileType && !stricmp(sFileType, "Not in Superfiles"))
+    {
+        bNotInSuperfile = true;
+    }
+
+    if (bNotInSuperfile)
+    {
+        fi.setown(createSubFileFilter(
+            queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(),udesc,true,true, NULL),udesc,false)); // NB wrapper owns wrapped iterator
+    }
+    else
+    {
+        fi.setown(queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(), udesc,true,true, NULL));
+    }
+    if(!fi)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
+
+    StringBuffer wuFrom, wuTo;
+    if(req.getStartDate() && *req.getStartDate())
+    {
+        CDateTime wuTime;
+        wuTime.setString(req.getStartDate(),NULL,true);
+
+        unsigned year, month, day, hour, minute, second, nano;
+        wuTime.getDate(year, month, day, true);
+        wuTime.getTime(hour, minute, second, nano, true);
+        wuFrom.appendf("%4d-%02d-%02d %02d:%02d:%02d",year,month,day,hour,minute,second);
+    }
+
+    if(req.getEndDate() && *req.getEndDate())
+    {
+        CDateTime wuTime;
+        wuTime.setString(req.getEndDate(),NULL,true);
+
+        unsigned year, month, day, hour, minute, second, nano;
+        wuTime.getDate(year, month, day, true);
+        wuTime.getTime(hour, minute, second, nano, true);
+        wuTo.appendf("%4d-%02d-%02d %02d:%02d:%02d",year,month,day,hour,minute,second);
+    }
+
+    char sortBy[256];
+    if(req.getSortby() && *req.getSortby())
+    {
+        strcpy(sortBy, req.getSortby());
+    }
+
+    unsigned pagesize = req.getPageSize();
+    if (pagesize < 1)
+    {
+        pagesize = 100;
+    }
+
+    __int64 displayStartReq = 1;
+    if (req.getPageStartFrom() > 0)
+        displayStartReq = req.getPageStartFrom();
+
+    __int64 displayStart = displayStartReq - 1;
+    __int64 displayEnd = displayStart + pagesize;
+
+    bool descending = req.getDescending();
+    const int nFirstN = req.getFirstN();
+    const char* sFirstNType = req.getFirstNType();
+    const __int64 nFileSizeFrom = req.getFileSizeFrom();
+    const __int64 nFileSizeTo = req.getFileSizeTo();
+    if (nFirstN > 0)
+    {
+        displayStart = 0;
+        displayEnd = nFirstN;
+        if (!stricmp(sFirstNType, "newest"))
+        {
+            strcpy(sortBy, "Modified");
+            descending = true;
+        }
+        else if (!stricmp(sFirstNType, "oldest"))
+        {
+            strcpy(sortBy, "Modified");
+            descending = false;
+        }
+        else if (!stricmp(sFirstNType, "largest"))
+        {
+            strcpy(sortBy, "FileSize");
+            descending = true;
+        }
+        else if (!stricmp(sFirstNType, "smallest"))
+        {
+            strcpy(sortBy, "FileSize");
+            descending = false;
+        }
+        pagesize = nFirstN;
+    }
+
+    StringArray roxieClusterNames;
+    IArrayOf<IEspTpCluster> roxieclusters;
+    CTpWrapper dummy;
+    dummy.getClusterProcessList(eqRoxieCluster, roxieclusters);
+    ForEachItemIn(k, roxieclusters)
+    {
+        IEspTpCluster& cluster = roxieclusters.item(k);
+        StringBuffer sName = cluster.getName();
+        roxieClusterNames.append(sName.str());
+    }
+
+    StringArray clustersReq;
+    const char* clustersReq0 = req.getClusterName();
+    if (clustersReq0 && *clustersReq0)
+    {
+        char* pStr = (char*) clustersReq0;
+        while (pStr)
+        {
+            char clusterName[256];
+            char* ppStr = strchr(pStr, ',');
+            if (!ppStr)
+            {
+                strcpy(clusterName, pStr);
+                pStr = NULL;
+            }
+            else
+            {
+                strncpy(clusterName, pStr, ppStr - pStr );
+                clusterName[ppStr - pStr] = 0;
+                pStr = ppStr+1;
+            }
+
+            clustersReq.append(clusterName);
+        }
+    }
+
+    StringBuffer size;
+    __int64 totalFiles = 0;
+    IArrayOf<IEspDFULogicalFile> LogicalFileList;
+    ForEach(*fi)
+    {
+        IPropertyTree &attr=fi->query();
+
+        const char* logicalName=attr.queryProp("@name");
+        if (!logicalName || (logicalName[0] == 0))
+            continue;
+
+        StringBuffer pref;
+        const char *c=strstr(logicalName, "::");
+        if (c)
+            pref.append(c-logicalName, logicalName);
+        else
+            pref.append(logicalName);
+
+        const char* owner=attr.queryProp("@owner");
+        if (req.getOwner() && *req.getOwner()!=0)
+        {
+            if (!owner || stricmp(owner, req.getOwner()))
+                continue;
+        }
+        StringArray clusters;
+        StringArray clusters1;
+        if (getFileGroups(&attr,clusters1)==0)
+        {
+            if (clustersReq.length() < 1)
+            {
+                clusters.append("");
+            }
+        }
+        else
+        {
+            // check specified cluster name in list
+            if (clustersReq.length() > 0)
+            {
+                ForEachItemIn(ii,clustersReq)
+                {
+                    StringBuffer clusterFound;
+
+                    const char * cluster0 = clustersReq.item(ii);
+                    ForEachItemIn(i,clusters1)
+                    {
+                        if (!stricmp(clusters1.item(i), cluster0))
+                        {
+                            clusterFound.append(cluster0);
+                            break;
+                        }
+                    }
+                    if (clusterFound.length() > 0)
+                        clusters.append(clusterFound);
+                }
+            }
+            else
+            {
+                if (clusters1.length() > 0)
+                {
+                    ForEachItemIn(i,clusters1)
+                    {
+                        const char * cluster0 = clusters1.item(i);
+                        clusters.append(cluster0);
+                    }
+                }
+            }
+        }
+
+        const char* desc = attr.queryProp("@description");
+        if(req.getDescription() && *req.getDescription())
+        {
+            if (!checkDescription(desc, req.getDescription()))
+                continue;
+        }
+
+        if (sFileType && *sFileType)
+        {
+            bool bHasSubFiles = attr.hasProp("@numsubfiles");
+            if (bHasSubFiles && (bNotInSuperfile || !stricmp(sFileType, "Logical Files Only")))
+                continue;
+            else if (!bHasSubFiles && !stricmp(sFileType, "Superfiles Only"))
+                continue;
+        }
+
+        __int64 recordSize=attr.getPropInt64("@recordSize",0), size=attr.getPropInt64("@size",-1);
+
+        if (nFileSizeFrom > 0 && size < nFileSizeFrom)
+            continue;
+        if (nFileSizeTo > 0 && size > nFileSizeTo)
+            continue;
+
+        StringBuffer modf(attr.queryProp("@modified"));
+        char* t=(char *) strchr(modf.str(),'T');
+        if(t) *t=' ';
+
+        if (wuFrom.length() && strcmp(modf.str(),wuFrom.str())<0)
+            continue;
+
+        if (wuTo.length() && strcmp(modf.str(),wuTo.str())>0)
+            continue;
+
+        __int64 parts = 0;
+        if(!attr.hasProp("@numsubfiles"))
+            parts = attr.getPropInt64("@numparts");
+
+        __int64 records = 0;
+        if (attr.hasProp("@recordCount"))
+            records = attr.getPropInt64("@recordCount");
+        else if(recordSize)
+            records = size/recordSize;
+
+        char description[DESCRIPTION_DISPLAY_LENGTH + 1];
+        description[0] = 0;
+        if (desc && *desc)
+        {
+            if (strlen(desc) <= DESCRIPTION_DISPLAY_LENGTH) //Only 12 characters is required for display
+            {
+                strcpy(description, desc);
+            }
+            else
+            {
+                strncpy(description, desc, DESCRIPTION_DISPLAY_LENGTH - 3);
+                description[DESCRIPTION_DISPLAY_LENGTH - 3] = 0;
+                strcat(description, "...");
+            }
+        }
+
+        ForEachItemIn(i, clusters)
+        {
+            const char* clusterName = clusters.item(i);
+            __int64 addToPos = -1; //Add to tail
+            if (stricmp(sortBy, "FileSize")==0)
+            {
+                addToPos = findPositionBySize(size, descending, LogicalFileList);
+            }
+            else if (stricmp(sortBy, "Parts")==0)
+            {
+                addToPos = findPositionByParts(parts, descending, LogicalFileList);
+            }
+            else if (stricmp(sortBy, "Owner")==0)
+            {
+                addToPos = findPositionByOwner(owner, descending, LogicalFileList);
+            }
+            else if (stricmp(sortBy, "Cluster")==0)
+            {
+                addToPos = findPositionByCluster(clusterName, descending, LogicalFileList);
+            }
+            else if (stricmp(sortBy, "Records")==0)
+            {
+                addToPos = findPositionByRecords(records, descending, LogicalFileList);
+            }
+            else if (stricmp(sortBy, "Modified")==0)
+            {
+                addToPos = findPositionByDate(modf.str(), descending, LogicalFileList);
+            }
+            else if (stricmp(sortBy, "Description")==0)
+            {
+                addToPos = findPositionByDescription(description, descending, LogicalFileList);
+            }
+            else
+            {
+                addToPos = findPositionByName(logicalName, descending, LogicalFileList);
+            }
+
+            totalFiles++;
+            if (addToPos < 0 && (totalFiles > displayEnd))
+                continue;
+
+            Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
+
+            File->setPrefix(pref);
+            File->setClusterName(clusterName);
+            File->setName(logicalName);
+            File->setOwner(owner);
+            File->setDescription(description);
+            File->setModified(modf.str());
+            File->setReplicate(true);
+
+            ForEachItemIn(j, roxieClusterNames)
+            {
+                const char* roxieClusterName = roxieClusterNames.item(j);
+                if (roxieClusterName && clusterName && !stricmp(roxieClusterName, clusterName))
+                {
+                    File->setFromRoxieCluster(true);
+                    break;
+                }
+            }
+
+            bool bSuperfile = false;
+            int numSubFiles = attr.hasProp("@numsubfiles");
+            if(!numSubFiles)
+            {
+                File->setDirectory(attr.queryProp("@directory"));
+                File->setParts(attr.queryProp("@numparts"));
+            }
+            else
+            {
+                bSuperfile = true;
+            }
+            File->setIsSuperfile(bSuperfile);
+
+            if (version < 1.22)
+                File->setIsZipfile(isCompressed(attr));
+            else
+            {
+                File->setIsCompressed(isCompressed(attr));
+                if (attr.hasProp("@compressedSize"))
+                    File->setCompressedFileSize(attr.getPropInt64("@compressedSize"));
+            }
+
+            //File->setBrowseData(bKeyFile); //Bug: 39750 - All files should be viewable through ViewKeyFile function
+            if (numSubFiles > 1) //Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
+                File->setBrowseData(false);
+            else
+                File->setBrowseData(true);
+
+            if (version > 1.13)
+            {
+                bool bKeyFile = false;
+                const char * kind = attr.queryProp("@kind");
+                if (kind && (stricmp(kind, "key") == 0))
+                {
+                    bKeyFile = true;
+                }
+
+                File->setIsKeyFile(bKeyFile);
+            }
+
+            StringBuffer buf;
+            buf << comma(size);
+            File->setTotalsize(buf.str());
+            char temp[64];
+            numtostr(temp, size);
+            File->setLongSize(temp);
+            numtostr(temp, records);
+            File->setLongRecordCount(temp);
+            if (records > 0)
+                File->setRecordCount((buf.clear()<<comma(records)).str());
+
+            if (addToPos < 0)
+                LogicalFileList.append(*File.getClear());
+            else
+                LogicalFileList.add(*File.getClear(), (int) addToPos);
+
+            if (LogicalFileList.length() > displayEnd)
+                LogicalFileList.pop();
+        }
+    }
+
+    if (displayEnd > LogicalFileList.length())
+        displayEnd = LogicalFileList.length();
+
+    for (int i = (int) displayStart; i < (int) displayEnd; i++)
+    {
+        Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
+        IEspDFULogicalFile& File0 = LogicalFileList.item(i);
+        File->copy(File0);
+        LogicalFiles.append(*File.getClear());
+    }
+
+    resp.setNumFiles(totalFiles);
+    resp.setPageSize(pagesize);
+    resp.setPageStartFrom(displayStart+1);
+    resp.setPageEndAt(displayEnd);
+
+    if (displayStart - pagesize > 0)
+        resp.setPrevPageFrom(displayStart - pagesize + 1);
+    else if(displayStart > 0)
+        resp.setPrevPageFrom(1);
+
+    if(displayEnd < totalFiles)
+    {
+        resp.setNextPageFrom(displayEnd+1);
+        resp.setLastPageFrom((int)(pagesize * floor((double) ((totalFiles-1) / pagesize)) + 1));
+    }
+
+    StringBuffer basicQuery;
+    if (req.getClusterName() && *req.getClusterName())
+    {
+        resp.setClusterName(req.getClusterName());
+        addToQueryString(basicQuery, "ClusterName", req.getClusterName());
+    }
+    if (req.getOwner() && *req.getOwner())
+    {
+        resp.setOwner(req.getOwner());
+        addToQueryString(basicQuery, "Owner", req.getOwner());
+    }
+    if (req.getPrefix() && *req.getPrefix())
+    {
+        resp.setPrefix(req.getPrefix());
+        addToQueryString(basicQuery, "Prefix", req.getPrefix());
+    }
+    if (req.getLogicalName() && *req.getLogicalName())
+    {
+        resp.setLogicalName(req.getLogicalName());
+        addToQueryString(basicQuery, "LogicalName", req.getLogicalName());
+    }
+    if (req.getDescription() && *req.getDescription())
+    {
+        resp.setDescription(req.getDescription());
+        addToQueryString(basicQuery, "Description", req.getDescription());
+    }
+    if (req.getStartDate() && *req.getStartDate())
+    {
+        resp.setStartDate(req.getStartDate());
+        addToQueryString(basicQuery, "StartDate", req.getStartDate());
+    }
+    if (req.getEndDate() && *req.getEndDate())
+    {
+        resp.setEndDate(req.getEndDate());
+        addToQueryString(basicQuery, "EndDate", req.getEndDate());
+    }
+    if (req.getFileType() && *req.getFileType())
+    {
+        resp.setFileType(req.getFileType());
+        addToQueryString(basicQuery, "FileType", req.getFileType());
+    }
+    if (req.getFileSizeFrom())
+    {
+        resp.setFileSizeFrom(req.getFileSizeFrom());
+        addToQueryStringFromInt(basicQuery, "FileSizeFrom", req.getFileSizeFrom());
+    }
+    if (req.getFileSizeTo())
+    {
+        resp.setFileSizeTo(req.getFileSizeTo());
+        addToQueryStringFromInt(basicQuery, "FileSizeTo", req.getFileSizeTo());
+    }
+
+    StringBuffer ParametersForFilters = basicQuery;
+    StringBuffer ParametersForPaging = basicQuery;
+
+    addToQueryStringFromInt(ParametersForFilters, "PageSize",pagesize);
+    addToQueryStringFromInt(ParametersForPaging, "PageSize", pagesize);
+
+    if (ParametersForFilters.length() > 0)
+        resp.setFilters(ParametersForFilters.str());
+
+    sortBy[0] = 0;
+    descending = false;
+    if ((req.getFirstN() > 0) && req.getFirstNType() && *req.getFirstNType())
+    {
+        const char *sFirstNType = req.getFirstNType();
+        if (!stricmp(sFirstNType, "newest"))
+        {
+            strcpy(sortBy, "Modified");
+            descending = true;
+        }
+        else if (!stricmp(sFirstNType, "oldest"))
+        {
+            strcpy(sortBy, "Modified");
+            descending = false;
+        }
+        else if (!stricmp(sFirstNType, "largest"))
+        {
+            strcpy(sortBy, "FileSize");
+            descending = true;
+        }
+        else if (!stricmp(sFirstNType, "smallest"))
+        {
+            strcpy(sortBy, "FileSize");
+            descending = false;
+        }
+
+    }
+    else if (req.getSortby() && *req.getSortby())
+    {
+        strcpy(sortBy, req.getSortby());
+        if (req.getDescending())
+            descending = req.getDescending();
+    }
+
+    if (sortBy && *sortBy)
+    {
+        resp.setSortby(sortBy);
+        resp.setDescending(descending);
+
+        StringBuffer strbuf = sortBy;
+        strbuf.append("=");
+        String str1(strbuf.str());
+        String str(basicQuery.str());
+        if (str.indexOf(str1) < 0)
+        {
+            addToQueryString(ParametersForPaging, "Sortby", sortBy);
+            addToQueryString(basicQuery, "Sortby", sortBy);
+            if (descending)
+            {
+                addToQueryString(ParametersForPaging, "Descending", "1");
+                addToQueryString(basicQuery, "Descending", "1");
+            }
+        }
+    }
+
+    if (basicQuery.length() > 0)
+        resp.setBasicQuery(basicQuery.str());
+    if (ParametersForPaging.length() > 0)
+        resp.setParametersForPaging(ParametersForPaging.str());
+    resp.setDFULogicalFiles(LogicalFiles);
+    return;
+}
+
+bool CWsDfuEx::addDFUQueryFilter(DFUQResultField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, DFUQResultField name)
+{
+    if (!value || !*value)
+        return false;
+    filters[count++] = name;
+    buff.append(value);
+    return true;
+}
+
+void CWsDfuEx::appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, StringBuffer& filterBuf)
+{
+    if (!name || !*name || !value || !*value)
+        return;
+    filterBuf.append(type).append(DFUQFilterSeparator).append(name).append(DFUQFilterSeparator).append(value).append(DFUQFilterSeparator);
+}
+
+void CWsDfuEx::appendDFUQueryFilter(const char *name, DFUQFilterType type, const char *value, const char *valueHigh, StringBuffer& filterBuf)
+{
+    if (!name || !*name || !value || !*value)
+        return;
+    filterBuf.append(type).append(DFUQFilterSeparator).append(name).append(DFUQFilterSeparator).append(value).append(DFUQFilterSeparator);
+    filterBuf.append(valueHigh).append(DFUQFilterSeparator);
+}
+
+void CWsDfuEx::setFileTypeFilter(const char* fileType, StringBuffer& filterBuf)
+{
+    DFUQFileTypeFilter fileTypeFilter = DFUQFFTall;
+    if (!fileType || !*fileType)
+    {
+        filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(fileTypeFilter).append(DFUQFilterSeparator);
+        return;
+    }
+    bool notInSuperfile = false;
+    if (strieq(fileType, "Superfiles Only"))
+        fileTypeFilter = DFUQFFTsuperfileonly;
+    else if (strieq(fileType, "Logical Files Only"))
+        fileTypeFilter = DFUQFFTnonsuperfileonly;
+    else if (strieq(fileType, "Not in Superfiles"))
+        notInSuperfile = true;
+    else
+        fileTypeFilter = DFUQFFTall;
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileType).append(DFUQFilterSeparator).append(fileTypeFilter).append(DFUQFilterSeparator);
+    if (notInSuperfile)
+        appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFsuperowner), DFUQFThasProp, "0", filterBuf);
+}
+
+void CWsDfuEx::setFileNameFilter(const char* fname, const char* prefix, StringBuffer &filterBuf)
+{
+    StringBuffer fileNameFilter;
+    if(fname && *fname)
+        fileNameFilter.append(fname);//ex. *part_of_file_name*
+    else
+    {
+        if(prefix && *prefix)
+        {
+            fileNameFilter.append(prefix);
+            fileNameFilter.append("::");
+        }
+        fileNameFilter.append("*");
+    }
+    filterBuf.append(DFUQFTspecial).append(DFUQFilterSeparator).append(DFUQSFFileNameWithPrefix).append(DFUQFilterSeparator).append(fileNameFilter.str()).append(DFUQFilterSeparator);
+}
+
+void CWsDfuEx::setDFUQueryFilters(IEspDFUQueryRequest& req, StringBuffer& filterBuf)
+{
+    setFileNameFilter(req.getLogicalName(), req.getPrefix(), filterBuf);
+    setFileTypeFilter(req.getFileType(), filterBuf);
+    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFdescription), DFUQFTwildcardMatch, req.getDescription(), filterBuf);
+    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFattrowner), DFUQFTwildcardMatch, req.getOwner(), filterBuf);
+    appendDFUQueryFilter(getDFUQFilterFieldName(DFUQFFgroup), DFUQFTcontainString, req.getClusterName(), ",", filterBuf);
+
+    __int64 sizeFrom = req.getFileSizeFrom();
+    __int64 sizeTo = req.getFileSizeTo();
+    if ((sizeFrom > 0) || (sizeTo > 0))
+    {
+        StringBuffer buf;
+        if (sizeFrom > 0)
+            buf.append(sizeFrom);
+        buf.append("|");
+        if (sizeTo > 0)
+            buf.append(sizeTo);
+        filterBuf.append(DFUQFTintegerRange).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFattrsize));
+        filterBuf.append(DFUQFilterSeparator).append(buf.str()).append(DFUQFilterSeparator);
+    }
+    const char* startDate = req.getStartDate();
+    const char* endDate = req.getEndDate();
+    if((startDate && *startDate) || (endDate && *endDate))
+    {
+        StringBuffer buf;
+        if(startDate && *startDate)
+        {
+            StringBuffer wuFrom;
+            CDateTime wuTime;
+            wuTime.setString(startDate,NULL);
+            buf.append(wuTime.getString(wuFrom).str());
+        }
+        buf.append("|");
+        if(endDate && *endDate)
+        {
+            StringBuffer wuTo;
+            CDateTime wuTime;
+            wuTime.setString(endDate,NULL);
+            buf.append(wuTime.getString(wuTo).str());
+        }
+        filterBuf.append(DFUQFTstringRange).append(DFUQFilterSeparator).append(getDFUQFilterFieldName(DFUQFFtimemodified));
+        filterBuf.append(DFUQFilterSeparator).append(buf.str()).append(DFUQFilterSeparator);
+    }
+}
+
+void CWsDfuEx::setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sortBy, bool& descending, DFUQResultField* sortOrder)
+{
+    const char* sortByReq = req.getSortby();
+    if (!sortByReq || !*sortByReq)
+        return;
+
+    sortBy.set(sortByReq);
+    if (req.getDescending())
+        descending = req.getDescending();
+
+    const char* sortByPtr = sortBy.str();
+    if (strieq(sortByPtr, "FileSize"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFsize | DFUQRFnumeric);
+    else if (strieq(sortByPtr, "CompressedSize"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFcompressedsize | DFUQRFnumeric);
+    else if (strieq(sortByPtr, "Parts"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFnumparts | DFUQRFnumeric);
+    else if (strieq(sortByPtr, "Records"))
+        sortOrder[0] = (DFUQResultField) (DFUQRFrecordcount | DFUQRFnumeric);
+    else if (strieq(sortByPtr, "Owner"))
+        sortOrder[0] = DFUQRFowner;
+    else if (strieq(sortByPtr, "Cluster"))
+        sortOrder[0] = DFUQRFcluster;
+    else if (strieq(sortByPtr, "Modified"))
+        sortOrder[0] = DFUQRFtimemodified;
+    else if (strieq(sortByPtr, "Description"))
+        sortOrder[0] = DFUQRFdescription;
+    else
+        sortOrder[0] = DFUQRFname;
+
+    sortOrder[0] = (DFUQResultField) (sortOrder[0] | DFUQRFnocase);
+    if (descending)
+        sortOrder[0] = (DFUQResultField) (sortOrder[0] | DFUQRFreverse);
+    return;
+}
+
+const char* CWsDfuEx::getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix)
+{
+    if (!logicalName || !*logicalName)
+        return NULL;
+
+    const char *c=strstr(logicalName, "::");
+    if (c)
+        prefix.append(c-logicalName, logicalName);
+    else
+        prefix.append(logicalName);
+    return prefix.str();
+}
+
+const char* CWsDfuEx::getShortDescription(const char* description, StringBuffer& shortDesc)
+{
+    if (!description || !*description)
+        return NULL;
+
+    shortDesc.set(description);
+    if (shortDesc.length() > DESCRIPTION_DISPLAY_LENGTH) //Only DESCRIPTION_DISPLAY_LENGTH characters is required for display
+    {
+        shortDesc.setLength(DESCRIPTION_DISPLAY_LENGTH - 3);
+        shortDesc.append("...");
+    }
+    return shortDesc.str();
+}
+
+bool CWsDfuEx::addToLogicalFileList(IPropertyTree& file, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles)
+{
+    const char* logicalName = file.queryProp(getDFUQResultFieldName(DFUQRFname));
+    if (!logicalName || !*logicalName)
+        return false;
+
+    Owned<IEspDFULogicalFile> lFile = createDFULogicalFile("","");
+    lFile->setName(logicalName);
+    lFile->setOwner(file.queryProp(getDFUQResultFieldName(DFUQRFowner)));
+
+    StringBuffer buf(file.queryProp(getDFUQResultFieldName(DFUQRFtimemodified)));
+    lFile->setModified(buf.replace('T', ' ').str());
+    lFile->setPrefix(getPrefixFromLogicalName(logicalName, buf.clear()));
+    lFile->setDescription(getShortDescription(file.queryProp(getDFUQResultFieldName(DFUQRFdescription)), buf.clear()));
+    lFile->setTotalsize((buf.clear()<<comma(file.getPropInt64(getDFUQResultFieldName(DFUQRForigsize),-1))).str());
+
+    const char* clusterName = file.queryProp(getDFUQResultFieldName(DFUQRFcluster));
+    if (clusterName && *clusterName)
+        lFile->setClusterName(clusterName);
+
+    int numSubFiles = file.hasProp(getDFUQResultFieldName(DFUQRFnumsubfiles));
+    if(numSubFiles)
+        lFile->setIsSuperfile(true);
+    else
+    {
+        lFile->setIsSuperfile(false);
+        lFile->setDirectory(file.queryProp(getDFUQResultFieldName(DFUQRFdirectory)));
+        lFile->setParts(file.queryProp(getDFUQResultFieldName(DFUQRFnumparts)));
+    }
+    lFile->setBrowseData(numSubFiles > 1 ? false : true); ////Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
+
+    __int64 records = file.getPropInt64(getDFUQResultFieldName(DFUQRFrecordcount));
+    if (records > 0)
+        lFile->setRecordCount((buf.clear()<<comma(records)).str());
+
+    bool isKeyFile = false;
+    if (version > 1.13)
+    {
+        const char * kind = file.queryProp(getDFUQResultFieldName(DFUQRFkind));
+        if (kind && *kind)
+        {
+            if (strieq(kind, "key"))
+                isKeyFile = true;
+            if (version >= 1.24)
+                lFile->setContentType(kind);
+            else
+                lFile->setIsKeyFile(isKeyFile);
+        }
+    }
+    bool isFileCompressed = false;
+    IPropertyTree* attr = file.queryBranch("Attr");
+    if (isKeyFile || (attr && isCompressed(*attr)))
+    {
+        isFileCompressed = true;
+        if ((version >= 1.22) && file.hasProp(getDFUQResultFieldName(DFUQRFcompressedsize)))
+            lFile->setCompressedFileSize(file.getPropInt64(getDFUQResultFieldName(DFUQRFcompressedsize)));
+    }
+    if (version < 1.22)
+        lFile->setIsZipfile(isFileCompressed);
+    else
+        lFile->setIsCompressed(isFileCompressed);
+
+    logicalFiles.append(*lFile.getClear());
+    return true;
+}
+
+void CWsDfuEx::setDFUQueryResponse(IEspContext &context, unsigned totalFiles, StringBuffer& sortBy, bool descending, unsigned pageStart, unsigned pageSize,
+                                   IEspDFUQueryRequest& req, IEspDFUQueryResponse& resp)
+{
+    //for legacy
+    unsigned pageEnd = pageStart + pageSize;
+    if (pageEnd > totalFiles)
+        pageEnd = totalFiles;
+    resp.setNumFiles(totalFiles);
+    resp.setPageSize(pageSize);
+    resp.setPageStartFrom(pageStart+1);
+    resp.setPageEndAt(pageEnd);
+    if (pageStart > pageSize)
+        resp.setPrevPageFrom(pageStart - pageSize + 1);
+    else if(pageStart > 0)
+        resp.setPrevPageFrom(1);
+    if(pageEnd < totalFiles)
+    {
+        resp.setNextPageFrom(pageEnd+1);
+        resp.setLastPageFrom((int)(pageSize * floor((double) ((totalFiles-1) / pageSize)) + 1));
+    }
+
+    StringBuffer queryReq;
+    if (req.getClusterName() && *req.getClusterName())
+    {
+        resp.setClusterName(req.getClusterName());
+        addToQueryString(queryReq, "ClusterName", req.getClusterName());
+    }
+    if (req.getOwner() && *req.getOwner())
+    {
+        resp.setOwner(req.getOwner());
+        addToQueryString(queryReq, "Owner", req.getOwner());
+    }
+    if (req.getPrefix() && *req.getPrefix())
+    {
+        resp.setPrefix(req.getPrefix());
+        addToQueryString(queryReq, "Prefix", req.getPrefix());
+    }
+    if (req.getLogicalName() && *req.getLogicalName())
+    {
+        resp.setLogicalName(req.getLogicalName());
+        addToQueryString(queryReq, "LogicalName", req.getLogicalName());
+    }
+    if (req.getDescription() && *req.getDescription())
+    {
+        resp.setDescription(req.getDescription());
+        addToQueryString(queryReq, "Description", req.getDescription());
+    }
+    if (req.getStartDate() && *req.getStartDate())
+    {
+        resp.setStartDate(req.getStartDate());
+        addToQueryString(queryReq, "StartDate", req.getStartDate());
+    }
+    if (req.getEndDate() && *req.getEndDate())
+    {
+        resp.setEndDate(req.getEndDate());
+        addToQueryString(queryReq, "EndDate", req.getEndDate());
+    }
+    if (req.getFileType() && *req.getFileType())
+    {
+        resp.setFileType(req.getFileType());
+        addToQueryString(queryReq, "FileType", req.getFileType());
+    }
+    if (req.getFileSizeFrom())
+    {
+        resp.setFileSizeFrom(req.getFileSizeFrom());
+        addToQueryStringFromInt(queryReq, "FileSizeFrom", req.getFileSizeFrom());
+    }
+    if (req.getFileSizeTo())
+    {
+        resp.setFileSizeTo(req.getFileSizeTo());
+        addToQueryStringFromInt(queryReq, "FileSizeTo", req.getFileSizeTo());
+    }
+
+    StringBuffer queryReqNoPageSize = queryReq;
+    addToQueryStringFromInt(queryReq, "PageSize", pageSize);
+    resp.setFilters(queryReq.str());
+
+    if (sortBy.length())
+    {
+        resp.setSortby(sortBy.str());
+        resp.setDescending(descending);
+        addToQueryString(queryReq, "Sortby", sortBy.str());
+        addToQueryString(queryReqNoPageSize, "Sortby", sortBy.str());
+        if (descending)
+        {
+            addToQueryString(queryReq, "Descending", "1");
+            addToQueryString(queryReqNoPageSize, "Descending", "1");
+        }
+    }
+    resp.setBasicQuery(queryReqNoPageSize.str());
+    resp.setParametersForPaging(queryReq.str());
+    return;
+}
+
+bool CWsDfuEx::doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp)
+{
+    double version = context.getClientVersion();
+
     if (req.getOneLevelDirFileReturn())
     {
         int numDirs = 0;
         int numFiles = 0;
-        getLogicalFileAndDirectory(context, udesc, req.getLogicalName(), LogicalFiles, numFiles, numDirs);
+        IArrayOf<IEspDFULogicalFile> logicalFiles;
+        getLogicalFileAndDirectory(context, udesc, req.getLogicalName(), logicalFiles, numFiles, numDirs);
+        return true;
     }
-    else
+
+    if (queryDaliServerVersion().compare("5.0") < 0)
     {
-        StringBuffer filter;
-        const char* fname = req.getLogicalName();
-        if(fname && *fname)
-        {
-            filter.append(fname);
-        }
-        else
-        {
-            if(req.getPrefix() && *req.getPrefix())
-            {
-                filter.append(req.getPrefix());
-                filter.append("::");
-            }
-            filter.append("*");
-        }
-
-        Owned<IDFAttributesIterator> fi;
-        bool bNotInSuperfile = false;
-        const char* sFileType = req.getFileType();
-        if (sFileType && !stricmp(sFileType, "Not in Superfiles"))
-        {
-            bNotInSuperfile = true;
-        }
-
-        if (bNotInSuperfile)
-        {
-            fi.setown(createSubFileFilter( 
-                      queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(),udesc,true,true, NULL),udesc,false)); // NB wrapper owns wrapped iterator
-        }
-        else
-        {
-            fi.setown(queryDistributedFileDirectory().getDFAttributesIterator(filter.toLowerCase().str(), udesc,true,true, NULL));
-        }
-        if(!fi)
-            throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
-
-        StringBuffer wuFrom, wuTo;
-        if(req.getStartDate() && *req.getStartDate())
-        {
-            CDateTime wuTime;
-            wuTime.setString(req.getStartDate(),NULL,true);
-
-            unsigned year, month, day, hour, minute, second, nano;
-            wuTime.getDate(year, month, day, true);
-            wuTime.getTime(hour, minute, second, nano, true);
-            wuFrom.appendf("%4d-%02d-%02d %02d:%02d:%02d",year,month,day,hour,minute,second);
-        }
-
-        if(req.getEndDate() && *req.getEndDate())
-        {
-            CDateTime wuTime;
-            wuTime.setString(req.getEndDate(),NULL,true);
-
-            unsigned year, month, day, hour, minute, second, nano;
-            wuTime.getDate(year, month, day, true);
-            wuTime.getTime(hour, minute, second, nano, true);
-            wuTo.appendf("%4d-%02d-%02d %02d:%02d:%02d",year,month,day,hour,minute,second);
-        }
-
-        char sortBy[256];
-        if(req.getSortby() && *req.getSortby())
-        {
-            strcpy(sortBy, req.getSortby());
-        }
-
-        unsigned pagesize = req.getPageSize();
-        if (pagesize < 1)
-        {
-            pagesize = 100;
-        }
-//DBGLOG("pagesize=%d\n", pagesize);
-
-        __int64 displayStartReq = 1;
-        if (req.getPageStartFrom() > 0)
-            displayStartReq = req.getPageStartFrom();
-
-        __int64 displayStart = displayStartReq - 1;
-        __int64 displayEnd = displayStart + pagesize;
-
-        bool descending = req.getDescending();
-        const int nFirstN = req.getFirstN();
-        const char* sFirstNType = req.getFirstNType();
-        const __int64 nFileSizeFrom = req.getFileSizeFrom();
-        const __int64 nFileSizeTo = req.getFileSizeTo();
-        if (nFirstN > 0)
-        {
-            displayStart = 0;
-            displayEnd = nFirstN;
-            if (!stricmp(sFirstNType, "newest"))
-            {
-                strcpy(sortBy, "Modified");
-                descending = true;
-            }
-            else if (!stricmp(sFirstNType, "oldest"))
-            {
-                strcpy(sortBy, "Modified");
-                descending = false;
-            }
-            else if (!stricmp(sFirstNType, "largest"))
-            {
-                strcpy(sortBy, "Size");
-                descending = true;
-            }
-            else if (!stricmp(sFirstNType, "smallest"))
-            {
-                strcpy(sortBy, "Size");
-                descending = false;
-            }
-            pagesize = nFirstN;
-        }
-
-        StringArray roxieClusterNames;
-        IArrayOf<IEspTpCluster> roxieclusters;
-        CTpWrapper dummy;
-        dummy.getClusterProcessList(eqRoxieCluster, roxieclusters);
-        ForEachItemIn(k, roxieclusters)
-        {
-            IEspTpCluster& cluster = roxieclusters.item(k);
-            StringBuffer sName = cluster.getName();
-            roxieClusterNames.append(sName.str());
-        }
-
-        StringArray clustersReq;
-        const char* clustersReq0 = req.getClusterName();
-        if (clustersReq0 && *clustersReq0)
-        {
-            char* pStr = (char*) clustersReq0;
-            while (pStr)
-            {
-                char clusterName[256];
-                char* ppStr = strchr(pStr, ',');
-                if (!ppStr)
-                {
-                    strcpy(clusterName, pStr);
-                    pStr = NULL;
-                }
-                else
-                {
-                    strncpy(clusterName, pStr, ppStr - pStr );
-                    clusterName[ppStr - pStr] = 0;
-                    pStr = ppStr+1;
-                }
-
-                clustersReq.append(clusterName);
-            }
-        }
-
-        StringBuffer size;
-        __int64 totalFiles = 0;
-        IArrayOf<IEspDFULogicalFile> LogicalFileList;
-        ForEach(*fi) 
-        {
-            IPropertyTree &attr=fi->query();
-
-            const char* logicalName=attr.queryProp("@name");
-            if (!logicalName || (logicalName[0] == 0))
-                    continue;
-
-            StringBuffer pref;
-            const char *c=strstr(logicalName, "::");
-            if (c)
-                pref.append(c-logicalName, logicalName);
-            else
-                pref.append(logicalName);
-
-            const char* owner=attr.queryProp("@owner");
-        if (req.getOwner() && *req.getOwner()!=0)
-            {
-                if (!owner || stricmp(owner, req.getOwner()))
-                    continue;
-            }
-#if 0
-            char* clusterName = (char*)attr.queryProp("@group");      // ** TBD - Handling for multiple clusters?
-            if (clusterName)
-            {//special process for roxie cluster names
-                unsigned len = strlen(clusterName);
-                if (len > 8)
-                {
-                    char *pName = clusterName + len - 8; 
-                    if (!stricmp(pName, "__slaves"))
-                    {
-                        pName[0] = 0;//we did not specify slaves when copy/spray the file
-                    }
-                }
-            }
-
-        if (req.getClusterName() && *req.getClusterName()!=0)
-            {
-                if (!clusterName || stricmp(clusterName, req.getClusterName()))
-                    continue;
-            }
-#else
-            StringArray clusters;
-            StringArray clusters1;
-            if (getFileGroups(&attr,clusters1)==0) 
-            {
-                if (clustersReq.length() < 1)
-                {
-                    clusters.append("");
-                }
-            }
-            else 
-            {
-                // check specified cluster name in list
-                if (clustersReq.length() > 0)
-                {
-                    ForEachItemIn(ii,clustersReq) 
-                    {
-                        StringBuffer clusterFound;
-
-                        const char * cluster0 = clustersReq.item(ii);
-                        ForEachItemIn(i,clusters1) 
-                        {
-                            if (!stricmp(clusters1.item(i), cluster0))
-                            {
-                                clusterFound.append(cluster0);
-                                break;
-                            }
-                        }
-                        if (clusterFound.length() > 0)
-                            clusters.append(clusterFound);
-                    }
-                }
-                else
-                {
-                    if (clusters1.length() > 0)
-                    {
-                        ForEachItemIn(i,clusters1) 
-                        {
-                            const char * cluster0 = clusters1.item(i);
-                            clusters.append(cluster0);
-                        }
-                    }
-                }
-            }
-#endif
-            const char* desc = attr.queryProp("@description");
-            if(req.getDescription() && *req.getDescription())
-            {
-                if (!checkDescription(desc, req.getDescription()))
-                    continue;
-            }
-
-            if (sFileType && *sFileType)
-            {
-                bool bHasSubFiles = attr.hasProp("@numsubfiles");
-                if (bHasSubFiles && (bNotInSuperfile || !stricmp(sFileType, "Logical Files Only")))
-                    continue;
-                else if (!bHasSubFiles && !stricmp(sFileType, "Superfiles Only"))
-                    continue;
-            }
-
-            __int64 recordSize=attr.getPropInt64("@recordSize",0), size=attr.getPropInt64("@size",-1);
-        
-            if (nFileSizeFrom > 0 && size < nFileSizeFrom)
-                continue;
-            if (nFileSizeTo > 0 && size > nFileSizeTo)
-                continue;
-
-            StringBuffer modf(attr.queryProp("@modified"));
-            char* t=(char *) strchr(modf.str(),'T');
-            if(t) *t=' ';
-
-            if (wuFrom.length() && strcmp(modf.str(),wuFrom.str())<0)
-                continue;
-
-            if (wuTo.length() && strcmp(modf.str(),wuTo.str())>0)
-                continue;
-
-            __int64 parts = 0;
-            if(!attr.hasProp("@numsubfiles"))
-                parts = attr.getPropInt64("@numparts");
-
-            __int64 records = 0;
-            if (attr.hasProp("@recordCount"))
-                records = attr.getPropInt64("@recordCount");
-            else if(recordSize)
-                records = size/recordSize;
-
-            char description[DESCRIPTION_DISPLAY_LENGTH + 1]; 
-            description[0] = 0;
-            if (desc && *desc)
-            {
-                if (strlen(desc) <= DESCRIPTION_DISPLAY_LENGTH) //Only 12 characters is required for display
-                {
-                    strcpy(description, desc); 
-                }
-                else
-                {
-                    strncpy(description, desc, DESCRIPTION_DISPLAY_LENGTH - 3); 
-                    description[DESCRIPTION_DISPLAY_LENGTH - 3] = 0;
-                    strcat(description, "...");
-                }
-            }
-
-            ForEachItemIn(i, clusters)
-            {
-                const char* clusterName = clusters.item(i);
-                __int64 addToPos = -1; //Add to tail
-                if (stricmp(sortBy, "Size")==0)
-                {
-                    addToPos = findPositionBySize(size, descending, LogicalFileList);
-                }
-                else if (stricmp(sortBy, "Parts")==0)
-                {
-                    addToPos = findPositionByParts(parts, descending, LogicalFileList);
-                }
-                else if (stricmp(sortBy, "Owner")==0)
-                {
-                    addToPos = findPositionByOwner(owner, descending, LogicalFileList);
-                }
-                else if (stricmp(sortBy, "Cluster")==0)
-                {
-                    addToPos = findPositionByCluster(clusterName, descending, LogicalFileList);
-                }
-                else if (stricmp(sortBy, "Records")==0)
-                {
-                    addToPos = findPositionByRecords(records, descending, LogicalFileList);
-                }
-                else if (stricmp(sortBy, "Modified")==0)
-                {
-                    addToPos = findPositionByDate(modf.str(), descending, LogicalFileList);
-                }
-                else if (stricmp(sortBy, "Description")==0)
-                {
-                    addToPos = findPositionByDescription(description, descending, LogicalFileList);
-                }
-                else
-                {
-                    addToPos = findPositionByName(logicalName, descending, LogicalFileList);
-                }
-
-                totalFiles++;
-                if (addToPos < 0 && (totalFiles > displayEnd))
-                    continue;
-
-                Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
-
-                File->setPrefix(pref);
-                File->setClusterName(clusterName);
-                File->setName(logicalName);
-                File->setOwner(owner);
-                File->setDescription(description);
-                File->setModified(modf.str());
-                File->setReplicate(true);
-
-                ForEachItemIn(j, roxieClusterNames)
-                {
-                    const char* roxieClusterName = roxieClusterNames.item(j);
-                    if (roxieClusterName && clusterName && !stricmp(roxieClusterName, clusterName))
-                    {
-                        File->setFromRoxieCluster(true);
-                        break;
-                    }
-                }
-
-                bool bSuperfile = false;
-                int numSubFiles = attr.hasProp("@numsubfiles");
-                if(!numSubFiles)
-                {
-                    File->setDirectory(attr.queryProp("@directory"));
-                    File->setParts(attr.queryProp("@numparts"));
-                }
-                else
-                {
-                    bSuperfile = true;
-                }
-                File->setIsSuperfile(bSuperfile);
-
-                if (version < 1.22)
-                    File->setIsZipfile(isCompressed(attr));
-                else
-                {
-                    File->setIsCompressed(isCompressed(attr));
-                    if (attr.hasProp("@compressedSize"))
-                        File->setCompressedFileSize(attr.getPropInt64("@compressedSize"));
-                }
-
-                //File->setBrowseData(bKeyFile); //Bug: 39750 - All files should be viewable through ViewKeyFile function
-                if (numSubFiles > 1) //Bug 41379 - ViewKeyFile Cannot handle superfile with multiple subfiles
-                    File->setBrowseData(false); 
-                else
-                    File->setBrowseData(true); 
-
-                if (version > 1.13)
-                {
-                    bool bKeyFile = false;
-                    const char * kind = attr.queryProp("@kind");
-                    if (kind && (stricmp(kind, "key") == 0))
-                    {
-                        bKeyFile = true;
-                    }
-
-                    File->setIsKeyFile(bKeyFile);
-                }
-
-                StringBuffer buf;
-                buf << comma(size);
-                File->setTotalsize(buf.str());
-                char temp[64];
-                numtostr(temp, size);
-                File->setLongSize(temp);
-                numtostr(temp, records);
-                File->setLongRecordCount(temp);
-                if (records > 0)
-                    File->setRecordCount((buf.clear()<<comma(records)).str());
-
-                if (addToPos < 0)
-                    LogicalFileList.append(*File.getClear());
-                else
-                    LogicalFileList.add(*File.getClear(), (int) addToPos);
-
-                if (LogicalFileList.length() > displayEnd)
-                    LogicalFileList.pop();
-            }
-        }
-
-        if (displayEnd > LogicalFileList.length())
-            displayEnd = LogicalFileList.length();
-
-        for (int i = (int) displayStart; i < (int) displayEnd; i++)
-        {
-            Owned<IEspDFULogicalFile> File = createDFULogicalFile("","");
-            IEspDFULogicalFile& File0 = LogicalFileList.item(i);
-            File->copy(File0);
-            LogicalFiles.append(*File.getClear());
-        }
-
-        resp.setNumFiles(totalFiles);
-        resp.setPageSize(pagesize);
-        resp.setPageStartFrom(displayStart+1);
-        resp.setPageEndAt(displayEnd);
-
-        if (displayStart - pagesize > 0)
-            resp.setPrevPageFrom(displayStart - pagesize + 1);
-        else if(displayStart > 0)
-            resp.setPrevPageFrom(1);
-
-        if(displayEnd < totalFiles)
-        {
-            resp.setNextPageFrom(displayEnd+1);
-            resp.setLastPageFrom((int)(pagesize * floor((double) ((totalFiles-1) / pagesize)) + 1));
-        }
-
-        StringBuffer basicQuery;
-        if (req.getClusterName() && *req.getClusterName())
-        {
-            resp.setClusterName(req.getClusterName());
-            addToQueryString(basicQuery, "ClusterName", req.getClusterName());
-        }
-        if (req.getOwner() && *req.getOwner())
-        {
-            resp.setOwner(req.getOwner());
-            addToQueryString(basicQuery, "Owner", req.getOwner());
-        }
-        if (req.getPrefix() && *req.getPrefix())
-        {
-            resp.setPrefix(req.getPrefix());
-            addToQueryString(basicQuery, "Prefix", req.getPrefix());
-        }
-        if (req.getLogicalName() && *req.getLogicalName())
-        {
-            resp.setLogicalName(req.getLogicalName());
-            addToQueryString(basicQuery, "LogicalName", req.getLogicalName());
-        }
-        if (req.getDescription() && *req.getDescription())
-        {
-            resp.setDescription(req.getDescription());
-            addToQueryString(basicQuery, "Description", req.getDescription());
-        }
-        if (req.getStartDate() && *req.getStartDate())
-        {
-            resp.setStartDate(req.getStartDate());
-            addToQueryString(basicQuery, "StartDate", req.getStartDate());
-        }
-        if (req.getEndDate() && *req.getEndDate())
-        {
-            resp.setEndDate(req.getEndDate());
-            addToQueryString(basicQuery, "EndDate", req.getEndDate());
-        }
-        if (req.getFileType() && *req.getFileType())
-        {
-            resp.setFileType(req.getFileType());
-            addToQueryString(basicQuery, "FileType", req.getFileType());
-        }
-        if (req.getFileSizeFrom())
-        {
-            resp.setFileSizeFrom(req.getFileSizeFrom());
-            addToQueryStringFromInt(basicQuery, "FileSizeFrom", req.getFileSizeFrom());
-        }
-        if (req.getFileSizeTo())
-        {
-            resp.setFileSizeTo(req.getFileSizeTo());
-            addToQueryStringFromInt(basicQuery, "FileSizeTo", req.getFileSizeTo());
-        }
-        
-        StringBuffer ParametersForFilters = basicQuery;
-        StringBuffer ParametersForPaging = basicQuery;
-
-        addToQueryStringFromInt(ParametersForFilters, "PageSize",pagesize);
-        addToQueryStringFromInt(ParametersForPaging, "PageSize", pagesize);
-
-        if (ParametersForFilters.length() > 0)
-            resp.setFilters(ParametersForFilters.str());
-
-        sortBy[0] = 0;
-        descending = false;
-        if ((req.getFirstN() > 0) && req.getFirstNType() && *req.getFirstNType())
-        {
-            const char *sFirstNType = req.getFirstNType();
-            if (!stricmp(sFirstNType, "newest"))
-            {
-                strcpy(sortBy, "Modified");
-                descending = true;
-            }
-            else if (!stricmp(sFirstNType, "oldest"))
-            {
-                strcpy(sortBy, "Modified");
-                descending = false;
-            }
-            else if (!stricmp(sFirstNType, "largest"))
-            {
-                strcpy(sortBy, "Size");
-                descending = true;
-            }
-            else if (!stricmp(sFirstNType, "smallest"))
-            {
-                strcpy(sortBy, "Size");
-                descending = false;
-            }
-
-        }
-        else if (req.getSortby() && *req.getSortby())
-        {
-            strcpy(sortBy, req.getSortby());
-            if (req.getDescending())
-                descending = req.getDescending();
-        }
-            
-        if (sortBy && *sortBy)
-        {
-            resp.setSortby(sortBy);
-            resp.setDescending(descending);
-
-            StringBuffer strbuf = sortBy;
-            strbuf.append("=");
-            String str1(strbuf.str());
-            String str(basicQuery.str());
-            if (str.indexOf(str1) < 0)
-            {
-                addToQueryString(ParametersForPaging, "Sortby", sortBy);
-                addToQueryString(basicQuery, "Sortby", sortBy);
-                if (descending)
-                {
-                    addToQueryString(ParametersForPaging, "Descending", "1");
-                    addToQueryString(basicQuery, "Descending", "1");
-                }
-            }
-        }
-
-        if (basicQuery.length() > 0)
-            resp.setBasicQuery(basicQuery.str());
-        if (ParametersForPaging.length() > 0)
-            resp.setParametersForPaging(ParametersForPaging.str());
-//DBGLOG("basicQuery=%s\n", basicQuery);
+        getAPageOfSortedLogicalFile(context, udesc, req, resp);
+        return true;
     }
 
-    resp.setDFULogicalFiles(LogicalFiles);
+    StringBuffer filterBuf;
+    setDFUQueryFilters(req, filterBuf);
+
+    //Now, set filters which are used to filter query result received from dali server.
+    unsigned short localFilterCount = 0;
+    DFUQResultField localFilters[8];
+    MemoryBuffer localFilterBuf;
+    addDFUQueryFilter(localFilters, localFilterCount, localFilterBuf, req.getClusterName(), DFUQRFcluster);
+    localFilters[localFilterCount] = DFUQRFterm;
+
+    StringBuffer sortBy;
+    bool descending = false;
+    DFUQResultField sortOrder[2] = {DFUQRFname, DFUQRFterm};
+    setDFUQuerySortOrder(req, sortBy, descending, sortOrder);
+
+    unsigned pageStart = 0;
+    if (req.getPageStartFrom() > 0)
+        pageStart = req.getPageStartFrom() - 1;
+    unsigned pageSize = req.getPageSize();
+    if (pageSize < 1)
+        pageSize = 100;
+    const int firstN = req.getFirstN();
+    if (firstN > 0)
+    {
+        pageStart = 0;
+        pageSize = firstN;
+    }
+
+    __int64 cacheHint = 0;
+    if (!req.getCacheHint_isNull())
+        cacheHint = req.getCacheHint();
+
+    unsigned totalFiles = 0;
+    Owned<IDFAttributesIterator> it = queryDistributedFileDirectory().getLogicalFilesSorted(udesc, sortOrder, filterBuf.str(),
+        localFilters, localFilterBuf.bufferBase(), pageStart, pageSize, &cacheHint, &totalFiles);
+    if(!it)
+        throw MakeStringException(ECLWATCH_CANNOT_GET_FILE_ITERATOR,"Cannot get information from file system.");
+
+    IArrayOf<IEspDFULogicalFile> logicalFiles;
+    ForEach(*it)
+        addToLogicalFileList(it->query(), version, logicalFiles);
+
+    if (version >= 1.24)
+        resp.setCacheHint(cacheHint);
+    resp.setDFULogicalFiles(logicalFiles);
+    setDFUQueryResponse(context, totalFiles, sortBy, descending, pageStart, pageSize, req, resp); //This call may be removed after 5.0
 
     return true;
 }

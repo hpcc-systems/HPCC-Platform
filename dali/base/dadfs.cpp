@@ -75,6 +75,7 @@ enum MDFSRequestKind
     MDFS_SET_FILE_ACCESSED,
     MDFS_ITERATE_RELATIONSHIPS,
     MDFS_SET_FILE_PROTECT,
+    MDFS_ITERATE_FILTEREDFILES,
     MDFS_MAX
 };
 
@@ -899,6 +900,8 @@ public:
 
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user);
     IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
+    IPropertyTreeIterator *getDFAttributesTreeIterator(const char *filters, DFUQResultField* localFilters, const char *localFilterBuf,
+        IUserDescriptor *user, INode *foreigndali,unsigned foreigndalitimeout);
     IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT)
     {
         Owned<INode> foreign;
@@ -969,6 +972,8 @@ public:
     unsigned queryProtectedCount(const CDfsLogicalFileName &logicalname, const char *owner);                    
     bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
+    IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUQResultField *sortOrder, const void *filterBuf, DFUQResultField *specialFilters,
+            const void *specialFilterBuf, unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total);
 
     void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
@@ -1869,7 +1874,14 @@ public:
         }
         index = 0;
     }
-    
+
+    CDFAttributeIterator(IArrayOf<IPropertyTree>& trees)
+    {
+        ForEachItemIn(t, trees)
+            attrs.append(*LINK(&trees.item(t)));
+        index = 0;
+    }
+
     ~CDFAttributeIterator()
     {
         attrs.kill();
@@ -8021,8 +8033,6 @@ GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const cha
     return GFCN_NotFound;
 }
 
-
-
 // --------------------------------------------------------
 
 
@@ -8203,6 +8213,378 @@ public:
 typedef CIArrayOf<CScope> CScopeArray;
 
 
+const char* DFUQFilterFieldNames[] = { "", "@description", "@directory", "@group", "@modified", "@name", "@numclusters", "@numparts",
+    "@partmask", "@OrigName", "Attr", "Attr/@job", "Attr/@owner", "Attr/@recordCount", "Attr/@recordSize", "Attr/@size",
+    "Attr/@compressedsize", "Attr/@workunit", "Cluster", "Cluster/@defaultBaseDir", "Cluster/@defaultReplDir", "Cluster/@mapFlags",
+    "Cluster/@name", "Part", "Part/@name", "Part/@num", "Part/@size", "SuperOwner", "SuperOwner/@name",
+    "SubFile", "SubFile/@name", "SubFile/@num" };
+
+extern da_decl const char* getDFUQFilterFieldName(DFUQFilterField feild)
+{
+    return DFUQFilterFieldNames[feild];
+}
+
+class CDFUSFFilter : public CInterface
+{
+    DFUQFilterType filterType;
+    StringAttr attrPath;
+    bool hasFilter;
+    bool hasFilterHigh;
+    StringAttr filterValue;
+    StringAttr filterValueHigh;
+    int filterValueInt;
+    int filterValueHighInt;
+    __int64 filterValueInt64;
+    __int64 filterValueHighInt64;
+    bool filterValueBoolean;
+    StringAttr sep;
+    StringArray filterArray;
+
+public:
+    CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, const char *_filterValue, const char *_filterValueHigh)
+        : filterType(_filterType), attrPath(_attrPath), filterValue(_filterValue), filterValueHigh(_filterValueHigh) {};
+    CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, bool _hasFilter, const int _filterValue, bool _hasFilterHigh, const int _filterValueHigh)
+        : filterType(_filterType), attrPath(_attrPath), hasFilter(_hasFilter), filterValueInt(_filterValue), hasFilterHigh(_hasFilterHigh), filterValueHighInt(_filterValueHigh) {};
+    CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, bool _hasFilter, const __int64 _filterValue, bool _hasFilterHigh, const __int64 _filterValueHigh)
+        : filterType(_filterType), attrPath(_attrPath), hasFilter(_hasFilter), filterValueInt64(_filterValue), hasFilterHigh(_hasFilterHigh), filterValueHighInt64(_filterValueHigh) {};
+    CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, bool _filterValue)
+        : filterType(_filterType), attrPath(_attrPath), filterValueBoolean(_filterValue) {};
+    CDFUSFFilter(DFUQFilterType _filterType, const char *_attrPath, const char *_filterValue, const char *_sep, StringArray& _filterArray)
+        : filterType(_filterType), attrPath(_attrPath), filterValue(_filterValue), sep(_sep)
+    {
+        ForEachItemIn(i,_filterArray)
+        {
+            const char* filter = _filterArray.item(i);
+            if (filter && *filter)
+                filterArray.append(filter);
+        }
+    };
+
+    DFUQFilterType getFilterType() { return filterType;}
+    const char * getAttrPath() { return attrPath.get();}
+    const char * getFilterValue() { return filterValue.get();}
+    const char * getFilterValueHigh() { return filterValueHigh.get();}
+    const int getFilterValueInt() { return filterValueInt;}
+    const int getFilterValueHighInt() { return filterValueHighInt;}
+    const __int64 getFilterValueInt64() { return filterValueInt64;}
+    const __int64 getFilterValueHighInt64() { return filterValueHighInt64;}
+    const bool getFilterValueBoolean() { return filterValueBoolean;}
+    const char * getSep() { return sep.get();}
+    void getFilterArray(StringArray &filters)
+    {
+        ForEachItemIn(c, filterArray)
+            filters.append(filterArray.item(c));
+    }
+
+    bool checkFilter(IPropertyTree &file)
+    {
+        bool match = true;
+        switch(filterType)
+        {
+        case DFUQFTwildcardMatch:
+            match = doWildMatch(file);
+            break;
+        case DFUQFTbooleanMatch:
+            match = doBooleanMatch(file);
+            break;
+        case DFUQFThasProp:
+            match = checkHasPropFilter(file);
+            break;
+        case DFUQFTcontainString:
+            match = checkContainStringFilter(file);
+            break;
+        case DFUQFTstringRange:
+            match = checkStringRangeFilter(file);
+            break;
+        case DFUQFTintegerRange:
+            match = checkIntegerRangeFilter(file);
+            break;
+        case DFUQFTinteger64Range:
+            match = checkInteger64RangeFilter(file);
+            break;
+        }
+        return match;
+    }
+    bool doWildMatch(IPropertyTree &file)
+    {
+        const char* filter = filterValue.get();
+        if (!attrPath.get() || !filter || !*filter || streq(filter, "*"))
+            return true;
+
+        const char* prop = file.queryProp(attrPath.get());
+        if (prop && WildMatch(prop, filter, true))
+            return true;
+        return false;
+    }
+    bool doBooleanMatch(IPropertyTree &file)
+    {
+        if (!attrPath.get())
+            return true;
+
+        return filterValueBoolean == file.getPropBool(attrPath.get(), true);
+    }
+    bool checkHasPropFilter(IPropertyTree &file)
+    {
+        if (!attrPath.get())
+            return true;
+
+        return filterValueBoolean == file.hasProp(attrPath.get());
+    }
+    bool checkContainStringFilter(IPropertyTree &file)
+    {
+        if (!attrPath.get())
+            return true;
+        const char* prop = file.queryProp(attrPath.get());
+        if (!prop || !*prop)
+            return false;
+
+        bool found = false;
+        if (!sep.get())
+        {
+            if (filterArray.find(prop) != NotFound) //Match with one of values in the filter
+               found = true;
+            return found;
+        }
+        StringArray propArray;
+        propArray.appendListUniq(prop, sep.get());
+        ForEachItemIn(i,propArray)
+        {
+            const char* value = propArray.item(i);
+            if (!value || !*value)
+                continue;
+            if (filterArray.find(value) != NotFound) //Match with one of values in the filter
+            {
+                found = true;
+                break;
+            }
+        }
+        return found;
+    }
+    bool checkStringRangeFilter(IPropertyTree &file)
+    {
+        if (!attrPath.get())
+            return true;
+        const char* prop = file.queryProp(attrPath.get());
+        if (!prop || !*prop)
+            return false;
+        if (filterValue && (strcmp(filterValue, prop) > 0))
+            return false;
+        if (filterValueHigh && (strcmp(filterValueHigh, prop) < 0))
+            return false;
+        return true;
+    }
+    bool checkIntegerRangeFilter(IPropertyTree &file)
+    {
+        if (!attrPath.get())
+            return true;
+        int prop = file.getPropInt(attrPath.get());
+        if (hasFilter && (prop < filterValueInt))
+            return false;
+        if (hasFilterHigh && (prop > filterValueHighInt))
+            return false;
+        return true;
+    }
+    bool checkInteger64RangeFilter(IPropertyTree &file)
+    {
+        if (!attrPath.get())
+            return true;
+        __int64 prop = file.getPropInt64(attrPath.get());
+        if (hasFilter && (prop < filterValueInt64))
+            return false;
+        if (hasFilterHigh && (prop > filterValueHighInt64))
+            return false;
+        return true;
+    }
+};
+typedef CIArrayOf<CDFUSFFilter> CDFUSFFilterArray;
+
+class CFileScanFilterContainer : public CInterface
+{
+    StringAttr filterBuf; //Hold original filter string just in case
+    StringAttr wildNameFilter;
+    DFUQFileTypeFilter fileTypeFilter;
+    CIArrayOf<CDFUSFFilter> filters;
+    //The 'filters' contains the file scan filters other than wildNameFilter and fileTypeFilter. Those filters are used for
+    //filtering the files using File Attributes tree and CDFUSFFilter::checkFilter(). The wildNameFilter and fileTypeFilter need
+    //special code to filter the files.
+
+    bool isValidInteger(const char *s)
+    {
+        if (!s)
+            return false;
+        while (*s)
+        {
+            if ((*s != '-') && !isdigit(*s))
+                return false;
+            s++;
+        }
+        return true;
+    }
+    void addFilter(DFUQFilterType filterType, const char* attr, const char* value, const char* valueHigh)
+    {
+        if (!attr || !*attr)
+            return;
+        if ((DFUQFTwildcardMatch == filterType) || (DFUQFTstringRange == filterType))
+        {
+            filters.append(*new CDFUSFFilter(filterType, attr, value, valueHigh));
+            return;
+        }
+        if ((DFUQFTbooleanMatch == filterType) || (DFUQFThasProp == filterType))
+        {
+            bool filter = true;
+            if (value && (streq(value, "0") || strieq(value, "false")))
+                filter = false;
+            filters.append(*new CDFUSFFilter(filterType, attr, filter));
+            return;
+        }
+        if ((DFUQFTintegerRange == filterType) || (DFUQFTinteger64Range == filterType))
+        {
+            bool hasFilter = false;
+            bool hasFilterHigh = false;
+            if (value && isValidInteger(value))
+                hasFilter = true;
+            if (valueHigh && isValidInteger(valueHigh))
+                hasFilterHigh = true;
+            if (!hasFilter && !hasFilterHigh)
+                return;
+            if (DFUQFTintegerRange == filterType)
+                filters.append(*new CDFUSFFilter(filterType, attr, hasFilter, atoi(value), hasFilterHigh, atoi(valueHigh)));
+            else
+                filters.append(*new CDFUSFFilter(filterType, attr, hasFilter, (__int64) atol(value), hasFilterHigh, (__int64) atol(valueHigh)));
+            return;
+        }
+    }
+    void addFilterArray(DFUQFilterType filterType, const char* attr, const char* value, const char* sep)
+    {
+        if (!attr || !*attr || !value || !*value)
+            return;
+
+        StringArray filterArray;
+        filterArray.appendListUniq(value, sep);
+        filters.append(*new CDFUSFFilter(filterType, attr, value, sep, filterArray));
+    }
+    void addSpecialFilter(const char* attr, const char* value)
+    {
+        if (!attr || !*attr || !value || !*value)
+            return;
+        if (!isdigit(*attr))
+        {
+            PROGLOG("Unsupported Speical Filter: %s", attr);
+            return;
+        }
+        DFUQSpecialFilter filterName = (DFUQSpecialFilter) atoi(attr);
+        switch(filterName)
+        {
+        case DFUQSFFileNameWithPrefix:
+            wildNameFilter.set(value);
+            break;
+        case DFUQSFFileType:
+            if (isdigit(*value))
+                fileTypeFilter = (DFUQFileTypeFilter) atoi(value);
+            else
+                PROGLOG("Unsupported Speical Filter: %s, value %s", attr, value);
+            break;
+        default:
+            PROGLOG("Unsupported Speical Filter: %d", filterName);
+            break;
+        }
+    }
+
+    bool doWildMatch(const char* filter, const char* value)
+    {
+        if (!filter || !*filter || streq(filter, "*") || (value && WildMatch(value, filter, true)))
+            return true;
+
+        return false;
+    }
+
+public:
+    CFileScanFilterContainer()
+    {
+        fileTypeFilter = DFUQFFTall;
+        wildNameFilter.set("*");
+        filterBuf.clear();
+    };
+    void readScanFilters(const char *filterStr)
+    {
+        if (!filterStr || !*filterStr)
+            return;
+
+        filterBuf.set(filterStr);
+        StringArray filterStringArray;
+        char sep[] = { DFUQFilterSeparator, '\0' };
+        filterStringArray.appendList(filterStr, sep);
+
+        unsigned filterFieldsToRead = filterStringArray.length();
+        ForEachItemIn(i,filterStringArray)
+        {
+            const char* filterTypeStr = filterStringArray.item(i);
+            if (!filterTypeStr || !*filterTypeStr)
+                continue;
+            if (!isdigit(*filterTypeStr))
+                continue;
+            unsigned filterSize = 4;
+            DFUQFilterType filterType = (DFUQFilterType) atoi(filterTypeStr);
+            switch(filterType)
+            {
+            case DFUQFTcontainString:
+                if (filterFieldsToRead >= filterSize) //DFUQFilterType | filter name | separator | filter value separated by the separator
+                    addFilterArray(DFUQFTcontainString, filterStringArray.item(i+1), (const char*)filterStringArray.item(i+2), (const char*)filterStringArray.item(i+3));
+                break;
+            case DFUQFThasProp:
+            case DFUQFTbooleanMatch:
+            case DFUQFTwildcardMatch:
+                filterSize = 3;
+                if (filterFieldsToRead >= filterSize) //DFUQFilterType | filter name | filter value
+                    addFilter(filterType, filterStringArray.item(i+1), (const char*)filterStringArray.item(i+2), NULL);
+                break;
+            case DFUQFTstringRange:
+            case DFUQFTintegerRange:
+            case DFUQFTinteger64Range:
+                if (filterFieldsToRead >= filterSize) //DFUQFilterType | filter name | from filter | to filter
+                    addFilter(filterType, filterStringArray.item(i+1), (const char*)filterStringArray.item(i+2), (const char*)filterStringArray.item(i+3));
+                break;
+            case DFUQFTspecial:
+                filterSize = 3;
+                if (filterFieldsToRead >= filterSize) //DFUQFilterType | filter name | filter value
+                    addSpecialFilter(filterStringArray.item(i+1), (const char*)filterStringArray.item(i+2));
+                break;
+            }
+            filterFieldsToRead -= filterSize;
+            i += (filterSize - 1);
+        }
+    }
+    bool matchFileScanFilter(const char* name, IPropertyTree &file)
+    {
+        if (!doWildMatch(wildNameFilter.get(), name))
+            return false;
+
+        if (!filters.length())
+            return true;
+        ForEachItemIn(i,filters)
+        {
+            CDFUSFFilter &filter = filters.item(i);
+            bool match = filter.checkFilter(file);
+            if (!match)
+                return match;
+        }
+        return true;
+    }
+
+    DFUQFileTypeFilter getFileTypeFilter() { return fileTypeFilter; }
+    void setFileTypeFilter(DFUQFileTypeFilter _fileType)
+    {
+        fileTypeFilter = _fileType;
+    }
+    const char* getNameFilter() { return wildNameFilter.get(); }
+    void setNameFilter(const char* _wildName)
+    {
+        if (!_wildName || !*_wildName)
+            return;
+        wildNameFilter.set(_wildName);
+    }
+};
+
 class CFileScanner
 {
     bool recursive;
@@ -8210,14 +8592,20 @@ class CFileScanner
     StringAttr wildname;
     Owned<CScope> topLevelScope;
     CScope *currentScope;
+    bool fileScanWithFilter;
+    CFileScanFilterContainer fileScanFilterContainer;
 
     bool scopeMatch(const char *name)
     {   // name has trailing '::'
-        if (!*name)
+        if (!name || !*name)
             return true;
-        if (wildname.isEmpty())
+        const char *s1 = NULL;
+        if (!fileScanWithFilter)
+            s1 = wildname.get();
+        else
+            s1 = fileScanFilterContainer.getNameFilter();
+        if (!s1 || !*s1)
             return true;
-        const char *s1 = wildname.get();
         const char *s2 = name;
         while (*s2) {
             if (*s1=='*') {
@@ -8269,7 +8657,10 @@ class CFileScanner
                     }
                 } while (iter->next());
             }
-            ret |= processFiles(root,name);
+            if (!fileScanWithFilter)
+                ret |= processFiles(root,name);
+            else
+                ret |= processFilesWithFilters(root,name);
         }
         if (!ret && parentScope)
             parentScope->popLastScope(); // discard scopes where no matches
@@ -8313,15 +8704,54 @@ class CFileScanner
         return ret;
     }
 
+    bool processFilesWithFilters(IPropertyTree &root, StringBuffer &name)
+    {
+        bool ret = false;
+        size32_t ns = name.length();
+        DFUQFileTypeFilter fileTypeFilter = fileScanFilterContainer.getFileTypeFilter();
+        if (fileTypeFilter != DFUQFFTsuperfileonly)
+            addMatchedFiles(root.getElements(queryDfsXmlBranchName(DXB_File)), false, name, ns, ret);
+        if ((fileTypeFilter == DFUQFFTall) || (fileTypeFilter == DFUQFFTsuperfileonly))
+            addMatchedFiles(root.getElements(queryDfsXmlBranchName(DXB_SuperFile)), true, name, ns, ret);
+        return ret;
+    }
+
+    void addMatchedFiles(IPropertyTreeIterator* files, bool isSuper, StringBuffer &name, size32_t ns, bool& ret)
+    {
+        Owned<IPropertyTreeIterator> iter = files;
+        ForEach(*iter)
+        {
+            IPropertyTree &file = iter->query();
+            name.append(file.queryProp("@name"));
+            if (fileScanFilterContainer.matchFileScanFilter(name.str(), file))
+            {
+                currentScope->addMatch(name,file,isSuper);
+                ret = true;
+            }
+            name.setLength(ns);
+        }
+    }
 public:
     void scan(IPropertyTree *sroot, const char *_wildname,bool _recursive,bool _includesuper)
     {
+        fileScanWithFilter =  false;
         if (_wildname)
             wildname.set(_wildname);
         else
             wildname.clear();
         recursive = _recursive;
         includesuper = _includesuper;
+        StringBuffer name;
+        topLevelScope.clear();
+        currentScope = NULL;
+        processScopes(*sroot->queryPropTree(querySdsFilesRoot()),name);
+    }
+    void scan(IPropertyTree *sroot, const char *filters, bool _recursive)
+    {
+        fileScanWithFilter =  true;
+        recursive = _recursive;
+        fileScanFilterContainer.readScanFilters(filters);
+
         StringBuffer name;
         topLevelScope.clear();
         currentScope = NULL;
@@ -9050,6 +9480,59 @@ public:
         mb.writeDirect(0,sizeof(count),&count);
     }
 
+    void iterateFilteredFiles(CMessageBuffer &mb,StringBuffer &trc)
+    {
+        TransactionLog transactionLog(*this, MDFS_ITERATE_FILTEREDFILES, mb.getSender());
+
+        Owned<IUserDescriptor> udesc;
+        StringAttr filters;
+        bool recursive;
+        mb.read(filters).read(recursive);
+        trc.appendf("iterateFilteredFiles(%s,%s)",filters.sget(),recursive?"recursive":"");
+        if (queryTransactionLogging())
+            transactionLog.log("%s", trc.str());
+        if (mb.getPos()<mb.length())
+        {
+            udesc.setown(createUserDescriptor());
+            udesc->deserialize(mb);
+        }
+
+        mb.clear();
+        unsigned count=0;
+        mb.append(count);
+
+        CFileScanner scanner;
+        CSDSServerLockBlock sdsLock; // lock sds while scanning
+        unsigned start = msTick();
+        scanner.scan(sdsLock, filters.get(), recursive);
+        unsigned tookMs = msTick()-start;
+        if (tookMs>100)
+            PROGLOG("TIMING(filescan): %s: took %dms",trc.str(), tookMs);
+        sdsLock.unlock(); // unlock to perform authentification
+
+        bool auth = querySessionManager().checkScopeScansLDAP()&&getScopePermissions(NULL,udesc,(unsigned)-1);
+        StringArray authScopes;
+        CIArrayOf<CFileMatch> matchingFiles;
+        start = msTick();
+        count = scanner.getResults(auth, udesc, matchingFiles, authScopes);
+        tookMs = msTick()-start;
+        if (tookMs>100)
+            PROGLOG("TIMING(LDAP): %s: took %dms, %d lookups, file matches = %d", trc.str(), tookMs, authScopes.ordinality(), count);
+
+        sdsLock.lock(); // re-lock sds while serializing
+        start = msTick();
+        ForEachItemIn(m, matchingFiles)
+        {
+            CFileMatch &fileMatch = matchingFiles.item(m);
+            CDFAttributeIterator::serializeFileAttributes(mb, fileMatch.queryFileTree(), fileMatch.queryName(), fileMatch.queryIsSuper());
+        }
+        tookMs = msTick()-start;
+        if (tookMs>100)
+            PROGLOG("TIMING(filescan-serialization): %s: took %dms, %d files",trc.str(), tookMs, count);
+
+        mb.writeDirect(0,sizeof(count),&count);
+    }
+
     void iterateRelationships(CMessageBuffer &mb,StringBuffer &trc)
     {
         TransactionLog transactionLog(*this, MDFS_ITERATE_RELATIONSHIPS, mb.getSender());
@@ -9274,6 +9757,10 @@ public:
                     iterateFiles(mb,trc);                    
                 }
                 break;
+            case MDFS_ITERATE_FILTEREDFILES: {
+                    iterateFilteredFiles(mb,trc);
+                }
+                break;
             case MDFS_ITERATE_RELATIONSHIPS: {
                     iterateRelationships(mb,trc);                    
                 }
@@ -9325,6 +9812,8 @@ public:
         {
         case MDFS_ITERATE_FILES:
             return ret.append("MDFS_ITERATE_FILES");
+        case MDFS_ITERATE_FILTEREDFILES:
+            return ret.append("MDFS_ITERATE_FILTEREDFILES");
         case MDFS_ITERATE_RELATIONSHIPS:
             return ret.append("MDFS_ITERATE_RELATIONSHIPS");
         case MDFS_GET_FILE_TREE:
@@ -11197,6 +11686,261 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
     return new CDFProtectedIterator(owner,notsuper,superonly,defaultTimeout);
 }
 
+const char* DFUQResultFieldNames[] = { "@name", "@description", "@group", "@kind", "@modified", "@job", "@owner",
+    "@DFUSFrecordCount", "@recordCount", "@recordSize", "@DFUSFsize", "@size", "@workunit", "@DFUSFcluster", "@numsubfiles",
+    "@accessed", "@numparts", "@compressedSize", "@directory", "@partmask" };
+
+extern da_decl const char* getDFUQResultFieldName(DFUQResultField feild)
+{
+    return DFUQResultFieldNames[feild];
+}
+
+IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer& mb, DFUQResultField* localFilters, const char* localFilterBuf)
+{
+    class CFileAttrIterator: public CInterface, implements IPropertyTreeIterator
+    {
+        Owned<IPropertyTree> cur;
+        StringArray fileClusterGroups;
+
+        void setFileCluster(IPropertyTree *attr, const char* group, StringArray& clusterFilter)
+        {
+            if (!group || !*group)
+                return;
+
+            //The group may contain multiple clusters and some of them may match with the clusterFilter.
+            if (clusterFilter.length() == 1)
+                attr->setProp(getDFUQResultFieldName(DFUQRFcluster), clusterFilter.item(0));//Filter has been handled on server side.
+            else
+            {
+                StringArray clusters;
+                clusters.appendListUniq(group, ",");
+                ForEachItemIn(i,clusters)
+                {
+                    //Add a cluster if no cluster filter or the cluster matchs with cluster filter
+                    const char* cluster = clusters.item(i);
+                    if (cluster && *cluster && ((!clusterFilter.length()) || (clusterFilter.find(cluster) != NotFound)))
+                        fileClusterGroups.append(cluster);
+                }
+                if (fileClusterGroups.length())
+                {
+                    //if this file exists on multiple clusters, set one of the clusters as the "@DFUSFcluster" prop for
+                    //this attr, leaving the rest inside the fileClusterGroups array. Those clusters will be used by the
+                    //duplicateFileAttrOnOtherClusterGroup() to duplicate this file attr on other clusters.
+                    attr->setProp(getDFUQResultFieldName(DFUQRFcluster), fileClusterGroups.item(fileClusterGroups.length() -1));
+                    fileClusterGroups.pop();
+                }
+            }
+        }
+
+        void setRecordCount(IPropertyTree* file)
+        {
+            __int64 recordCount = 0;
+            if (file->hasProp(getDFUQResultFieldName(DFUQRForigrecordcount)))
+                recordCount = file->getPropInt64(getDFUQResultFieldName(DFUQRForigrecordcount));
+            else
+            {
+                __int64 recordSize=file->getPropInt64(getDFUQResultFieldName(DFUQRFrecordsize),0);
+                if(recordSize)
+                {
+                    __int64 size=file->getPropInt64(getDFUQResultFieldName(DFUQRForigsize),-1);
+                    recordCount = size/recordSize;
+                }
+            }
+            file->setPropInt64(getDFUQResultFieldName(DFUQRFrecordcount),recordCount);
+            return;
+        }
+
+        IPropertyTree *deserializeFileAttr(MemoryBuffer &mb, StringArray& clusterFilter)
+        {
+            IPropertyTree *attr = getEmptyAttr();
+            StringAttr val;
+            unsigned n;
+            mb.read(val);
+            attr->setProp(getDFUQResultFieldName(DFUQRFname),val.get());
+            mb.read(val);
+            if (strieq(val,"!SF"))
+            {
+                mb.read(n);
+                attr->setPropInt(getDFUQResultFieldName(DFUQRFnumsubfiles),n);
+                mb.read(val);   // not used currently
+            }
+            else
+            {
+                attr->setProp(getDFUQResultFieldName(DFUQRFdirectory),val.get());
+                mb.read(n);
+                attr->setPropInt(getDFUQResultFieldName(DFUQRFnumparts),n);
+                mb.read(val);
+                attr->setProp(getDFUQResultFieldName(DFUQRFpartmask),val.get());
+            }
+            mb.read(val);
+            attr->setProp(getDFUQResultFieldName(DFUQRFtimemodified),val.get());
+            unsigned count;
+            mb.read(count);
+            StringAttr at;
+            while (count--)
+            {
+                mb.read(at);
+                mb.read(val);
+                attr->setProp(at.get(),val.get());
+                if (strieq(at.get(), getDFUQResultFieldName(DFUQRFgroup)))
+                    setFileCluster(attr, val.get(), clusterFilter);
+            }
+            attr->setPropInt64(getDFUQResultFieldName(DFUQRFsize), attr->getPropInt64(getDFUQResultFieldName(DFUQRForigsize), -1));//Sort the files with empty size to front
+            setRecordCount(attr);
+            return attr;
+        }
+
+        IPropertyTree *duplicateFileAttrOnOtherClusterGroup(IPropertyTree *previousAttr)
+        {
+            IPropertyTree *attr = getEmptyAttr();
+            Owned<IAttributeIterator> ai = previousAttr->getAttributes();
+            ForEach(*ai)
+                attr->setProp(ai->queryName(),ai->queryValue());
+            attr->setProp(getDFUQResultFieldName(DFUQRFcluster), fileClusterGroups.item(fileClusterGroups.length()-1));
+            fileClusterGroups.pop();
+            return attr;
+        }
+
+    public:
+        IMPLEMENT_IINTERFACE;
+        MemoryBuffer mb;
+        unsigned numfiles;
+        StringArray clusterFilter;
+
+        bool first()
+        {
+            mb.reset();
+            mb.read(numfiles);
+
+            return next();
+        }
+
+        bool next()
+        {
+            if (fileClusterGroups.length())
+            {
+                IPropertyTree *attr = duplicateFileAttrOnOtherClusterGroup(cur);
+                cur.clear();
+                cur.setown(attr);
+                return true;
+            }
+            cur.clear();
+            if (mb.getPos()>=mb.length())
+                return false;
+            cur.setown(deserializeFileAttr(mb, clusterFilter));
+            return true;
+        }
+
+        bool isValid()
+        {
+            return cur.get()!=NULL;
+        }
+
+        IPropertyTree  & query()
+        {
+            return *cur;
+        }
+
+        void setLocalFilters(DFUQResultField* localFilters, const char* localFilterBuf)
+        {
+            if (!localFilters || !localFilterBuf || !*localFilterBuf)
+                return;
+
+            const char *fv = localFilterBuf;
+            for (unsigned i=0;localFilters[i]!=DFUQRFterm;i++)
+            {
+                int fmt = localFilters[i];
+                int subfmt = (fmt&0xff);
+                if ((subfmt==DFUQRFcluster) && fv && *fv)
+                    clusterFilter.appendListUniq(fv, ",");
+                //Add more if needed
+                fv = fv + strlen(fv)+1;
+            }
+        }
+
+    } *fai = new CFileAttrIterator;
+    mb.swapWith(fai->mb);
+    fai->setLocalFilters(localFilters, localFilterBuf);
+    return fai;
+}
+
+IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(const char* filters, DFUQResultField* localFilters,
+    const char* localFilterBuf, IUserDescriptor* user, INode* foreigndali, unsigned foreigndalitimeout)
+{
+    CMessageBuffer mb;
+    mb.append((int)MDFS_ITERATE_FILTEREDFILES).append(filters).append(true);
+    if (user)
+        user->serialize(mb);
+
+    if (foreigndali)
+        foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
+    else
+        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
+    checkDfsReplyException(mb);
+
+    return deserializeFileAttrIterator(mb, localFilters, localFilterBuf);
+}
+
+IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
+    IUserDescriptor* udesc,
+    DFUQResultField *sortOrder, // list of fields to sort by (terminated by DFUSFterm)
+    const void *filters,  // (appended) string values for filters used by dali server
+    DFUQResultField *localFilters, //used for filtering query result received from dali server.
+    const void *localFilterBuf,
+    unsigned startOffset,
+    unsigned maxNum,
+    __int64 *cacheHint,
+    unsigned *total)
+{
+    class CDFUPager : public CSimpleInterface, implements IElementsPager
+    {
+        IUserDescriptor* udesc;
+        //StringAttr clusterFilter;
+        StringAttr filters;
+        DFUQResultField *localFilters;
+        StringAttr localFilterBuf;
+        StringAttr sortOrder;
+
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CDFUPager(IUserDescriptor* _udesc, const char*_filters, DFUQResultField*_localFilters, const char*_localFilterBuf,
+            const char*_sortOrder) : udesc(_udesc), filters(_filters), localFilters(_localFilters), localFilterBuf(_localFilterBuf),
+            sortOrder(_sortOrder)
+        {
+        }
+        virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
+        {
+            Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesTreeIterator(filters.get(),
+                localFilters, localFilterBuf.get(), udesc);
+            sortElements(fi, sortOrder.get(), NULL, NULL, elements);
+            return NULL;
+        }
+    };
+
+    StringBuffer so;
+    if (sortOrder)
+    {
+        for (unsigned i=0;sortOrder[i]!=DFUQRFterm;i++)
+        {
+            if (so.length())
+                so.append(',');
+            int fmt = sortOrder[i];
+            if (fmt&DFUQRFreverse)
+                so.append('-');
+            if (fmt&DFUQRFnocase)
+                so.append('?');
+            if (fmt&DFUQRFnumeric)
+                so.append('#');
+            so.append(getDFUQResultFieldName((DFUQResultField) (fmt&0xff)));
+        }
+    }
+    IArrayOf<IPropertyTree> results;
+    Owned<IElementsPager> elementsPager = new CDFUPager(udesc, (const char*) filters, localFilters, (const char*) localFilterBuf,
+        so.length()?so.str():NULL );
+    getElementsPaged(elementsPager,startOffset,maxNum,NULL,"",cacheHint,results,total,false);
+    return new CDFAttributeIterator(results);
+}
 #ifdef _USE_CPPUNIT
 /*
  * This method removes files only logically. removeEntry() used to do that, but the only
@@ -11211,5 +11955,5 @@ extern da_decl void removeLogical(const char *fname, IUserDescriptor *user) {
         f->detachLogical();
     }
 }
-
+}
 #endif // _USE_CPPUNIT
