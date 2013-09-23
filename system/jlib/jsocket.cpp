@@ -372,6 +372,7 @@ protected:
 #ifdef _TRACE
     char        *   tracename;
 #endif
+    int             pre_conn_unreach_cnt;
     
 public:
     void        open(int listen_queue_size,bool reuseports=false);
@@ -768,6 +769,7 @@ size32_t CSocket::avail_read()
     return 0;
 }
 
+#define PRE_CONN_UNREACH_ELIM  100
 
 int CSocket::pre_connect (bool block)
 {
@@ -791,9 +793,18 @@ int CSocket::pre_connect (bool block)
     int rc = ::connect(sock, &u.sa, ul);
     if (rc==SOCKET_ERROR) {
         err = ERRNO();
-        if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED))    // handled by caller
-            LOGERR2(err,1,"pre_connect");
-    }
+        if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED)) {   // handled by caller
+            if (err != ENETUNREACH) {
+                LOGERR2(err,1,"pre_connect");
+                pre_conn_unreach_cnt = 0;
+            } else {
+                if (pre_conn_unreach_cnt++ < PRE_CONN_UNREACH_ELIM)
+                    LOGERR2(err,1,"pre_connect network unreachable - check gateway");
+            }
+        } else
+            pre_conn_unreach_cnt = 0;
+    } else
+        pre_conn_unreach_cnt = 0;
 #ifdef SOCKTRACE
     PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%x) err=%d", block?"(block)":"", sock, sock, (int)this, err);
 #endif
@@ -1233,6 +1244,7 @@ void CSocket::connect_wait(unsigned timems)
     bool exit = false;
     int err;
     unsigned refuseddelay = 1;
+    pre_conn_unreach_cnt = 0;
     while (!exit) {
 #ifdef CENTRAL_NODE_RANDOM_DELAY
         ForEachItemIn(cn,CentralNodeArray) {
