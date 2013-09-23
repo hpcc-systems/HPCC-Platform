@@ -116,6 +116,34 @@ enum DFTransactionState {
     TAS_FAILURE  // rolling back
 };
 
+enum DFUQueryFileType
+{
+    DFUQFTall = 1,
+    DFUQFTsuperfileonly = 2,
+    DFUQFTnonsuperfileonly = 3,
+    DFUQFTnotinsuperfile = 4
+};
+
+enum DFUSortField
+{
+    DFUSFfiletype = 0,
+    DFUSFname = 1,
+    DFUSFsize = 2,
+    DFUSFparts = 3,
+    DFUSFrecords = 4,
+    DFUSFclusters = 5,
+    DFUSFdescription = 6,
+    DFUSFowner = 7,
+    DFUSFtimemodified = 8,
+    DFUSFcompressedsize = 9,
+    DFUSFterm = 10,
+    DFUSFreverse = 256,
+    DFUSFnocase = 512,
+    DFUSFnumeric = 1024,
+    DFUSFwild = 2048
+};
+
+
 // ==DISTRIBUTED FILES===================================================================================================
 
 /**
@@ -269,7 +297,7 @@ interface IDistributedFile: extends IInterface
 
     virtual bool getFormatCrc(unsigned &crc) =0;   // CRC for record format 
     virtual bool getRecordSize(size32_t &rsz) =0;   
-    virtual bool getRecordLayout(MemoryBuffer &layout) =0;   
+    virtual bool getRecordLayout(MemoryBuffer &layout) =0;
 
 
     virtual void enqueueReplicate()=0;
@@ -445,6 +473,7 @@ interface IDistributedFileDirectory: extends IInterface
     virtual IDistributedFileIterator *getIterator(const char *wildname, bool includesuper, IUserDescriptor *user) = 0;
             // wildname is in form scope/name and may contain wild components for either
     virtual IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
+    virtual IPropertyTreeIterator *getDFAttributesTreeIterator(const char *allFilters, const char *nameFilter, const char *clusterFilter, IUserDescriptor *user, bool includesuper=false, INode *foreigndali=NULL, unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
     virtual IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT) = 0;
 
     virtual IDFScopeIterator *getScopeIterator(IUserDescriptor *user, const char *subscope=NULL,bool recursive=true,bool includeempty=false)=0;
@@ -548,6 +577,8 @@ interface IDistributedFileDirectory: extends IInterface
                                            StringArray &names, UnsignedArray &counts) = 0;
 
     virtual IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false)=0; // if owner = NULL then all
+    virtual IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUSortField *sortOrder, DFUSortField *filters, const void *filterBuf,
+        unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total) = 0;
 
     virtual unsigned setDefaultTimeout(unsigned timems) = 0;                                // sets default timeout for SDS connections and locking
                                                                                             // returns previous value

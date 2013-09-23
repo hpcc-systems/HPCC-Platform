@@ -899,6 +899,7 @@ public:
 
     IDistributedFileIterator *getIterator(const char *wildname, bool includesuper,IUserDescriptor *user);
     IDFAttributesIterator *getDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive, bool includesuper,INode *foreigndali,unsigned foreigndalitimeout);
+    IPropertyTreeIterator *getDFAttributesTreeIterator(const char *allFilters, const char* nameFilter, const char* clusterFilter, IUserDescriptor *user, bool includesuper, INode *foreigndali,unsigned foreigndalitimeout);
     IDFAttributesIterator *getForeignDFAttributesIterator(const char *wildname, IUserDescriptor *user, bool recursive=true, bool includesuper=false, const char *foreigndali="", unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT)
     {
         Owned<INode> foreign;
@@ -969,6 +970,8 @@ public:
     unsigned queryProtectedCount(const CDfsLogicalFileName &logicalname, const char *owner);                    
     bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
+    IDFAttributesIterator* getLogicalFilesSorted(IUserDescriptor* udesc, DFUSortField *sortOrder, DFUSortField *filters, const void *filterBuf,
+        unsigned startOffset, unsigned maxNum, __int64 *cacheHint, unsigned *total);
 
     void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
@@ -1875,7 +1878,14 @@ public:
         }
         index = 0;
     }
-    
+
+    CDFAttributeIterator(IArrayOf<IPropertyTree>& trees)
+    {
+        ForEachItemIn(t, trees)
+            attrs.append(*LINK(&trees.item(t)));
+        index = 0;
+    }
+
     ~CDFAttributeIterator()
     {
         attrs.kill();
@@ -7785,8 +7795,6 @@ GetFileClusterNamesType CDistributedFileDirectory::getFileClusterNames(const cha
     return GFCN_NotFound;
 }
 
-
-
 // --------------------------------------------------------
 
 
@@ -7966,12 +7974,267 @@ public:
 };
 typedef CIArrayOf<CScope> CScopeArray;
 
+class CFileScanFilter : public CInterface
+{
+    DFUQueryFileType fileType;
+    bool hasFilter;//This flag is set to true if at least one of the following filters is set.
+    bool notInSuperfile;
+    StringAttr wildName;
+    StringAttr description;
+    StringAttr owner;
+    StringArray clusters;
+    StringAttr modified;
+    StringAttr modifiedHigh;
+    __int64 fileSize;
+    __int64 fileSizeHigh;
+
+    void setFilter(const char* idStr, const char* value)
+    {
+        if (!idStr || !*idStr || !value || !*value || !isdigit(*idStr))
+            return;
+
+        DFUSortField id = (DFUSortField) atoi(idStr);
+        switch(id)
+        {
+        case DFUSFname:
+            setNameFilter(value);
+            break;
+        case DFUSFdescription:
+            setDescriptionFilter(value);
+            break;
+        case DFUSFowner:
+            setOwnerFilter(value);
+            break;
+        case DFUSFclusters:
+            setClusterFilters(value);
+            break;
+        case DFUSFsize:
+            setFileSizeFilter(value);
+            break;
+        case DFUSFtimemodified:
+            setModifiedFilter(value);
+            break;
+        }
+        return;
+    }
+
+    bool doWildMatch(const char* filter, const char* value)
+    {
+        if (filter&&!WildMatch(value, filter,true))
+            return false;
+        return true;
+    }
+    bool doWildMatch(const char* filter, IPropertyTree &file, const char* propName)
+    {
+        if (!filter)
+            return true;
+
+        const char* prop = file.queryProp(propName);
+        if (!prop || !WildMatch(prop, filter,true))
+            return false;
+        return true;
+    }
+
+    public:
+    CFileScanFilter()
+    {
+        fileType = DFUQFTall;
+        hasFilter = false;
+        notInSuperfile = false;
+        fileSize = 0;
+        fileSizeHigh = -1;
+        wildName.clear();
+        description.clear();
+        owner.clear();
+        modified.clear();
+        modifiedHigh.clear();
+    };
+    void readScanFilter(const char *filters, bool _includesuper)
+    {
+        setFileType(_includesuper? DFUQFTsuperfileonly: DFUQFTall);
+        if (!filters || !*filters)
+            return;
+
+        //filters: nameFilter,fileType,filterName,filterValue,filterName,filterValue,...
+        StringArray tempStringArray;
+        tempStringArray.appendListUniq(filters, ",");
+        ForEachItemIn(i,tempStringArray)
+        {
+            const char* value = tempStringArray.item(i);
+            if (!value || !*value)
+                continue;
+            if (i == 0)
+                setNameFilter(value);
+            else if (i==1)
+            {
+                if (isdigit(*value))
+                    setFileType((DFUQueryFileType) atoi(value));
+            }
+            else
+            {
+                i++;
+                if (i < tempStringArray.length())
+                    setFilter(value, tempStringArray.item(i));
+            }
+        }
+    }
+    bool matchFileScanFilter(const char* name, IPropertyTree &file)
+    {
+        if (!hasFilter)
+            return true;
+        if (notInSuperfile && file.queryPropTree("SuperOwner"))
+            return false;
+        if (!doWildMatch(wildName.get(), name))
+            return false;
+        if (!doWildMatch(description.get(), file, "@description"))
+            return false;
+        if (!doWildMatch(owner.get(), file, "Attr/@owner"))
+            return false;
+        if (modified.get() || modifiedHigh.get())
+        {
+            const char* fileModified = file.queryProp("@modified");
+            if (!fileModified || !*fileModified)
+                return false;
+            if (modified.get() && (strcmp(modified.get(), fileModified) > 0))
+                return false;
+            if (modifiedHigh.get() && (strcmp(modifiedHigh.get(), fileModified) < 0))
+                return false;
+        }
+        if ((fileSize > 0) || (fileSizeHigh > -1))
+        {
+            __int64 size =  file.getPropInt64("Attr/@size");
+            if (size < fileSize)
+                return false;
+            if ((fileSizeHigh > -1) && (size > fileSizeHigh))
+                return false;
+        }
+        if (clusters.length())
+        {
+            char* clusterNames=(char*)file.queryProp("@group");
+            if (!clusterNames || !*clusterNames)
+                return false;
+            bool foundCluster = false;
+            StringArray clusterNameArray;
+            clusterNameArray.appendListUniq(clusterNames, ",");
+            ForEachItemIn(i,clusterNameArray)
+            {
+                const char* clusterName = clusterNameArray.item(i);
+                if (!clusterName || !*clusterName)
+                    continue;
+                if (clusters.find(clusterName) != NotFound) //Match with one of cluster filters
+                {
+                    foundCluster = true;
+                    break;
+                }
+            }
+            if (!foundCluster)
+                return false;
+        }
+        return true;
+    }
+
+    DFUQueryFileType getFileType() { return fileType; }
+    void setFileType(DFUQueryFileType _fileType)
+    {
+        fileType = _fileType;
+        if (fileType == DFUQFTnotinsuperfile)
+            setNotInSuperfileFilter();
+    }
+    const char* getNameFilter() { return wildName.get(); }
+    void setNameFilter(const char* _wildName)
+    {
+        if (!_wildName || !*_wildName)
+            return;
+        wildName.set(_wildName);
+        if (!streq(_wildName, "*"))
+            hasFilter = true;
+    }
+    void setNotInSuperfileFilter()
+    {
+        hasFilter = true;
+        notInSuperfile = true;
+    }
+    void setDescriptionFilter(const char* _description)
+    {
+        if (!_description || !*_description)
+            return;
+        description.set(_description);
+        hasFilter = true;
+    }
+    void setOwnerFilter(const char* _owner)
+    {
+        if (!_owner || !*_owner)
+            return;
+        owner.set(_owner);
+        hasFilter = true;
+    }
+    void setModifiedFilter(const char* _modified)
+    {
+        //ModifiedFilter: low/high
+        StringArray tempArray;
+        tempArray.appendListUniq(_modified, "/");
+        const char* tempStr = tempArray.item(0);
+        if (tempStr && *tempStr)
+        {
+            hasFilter = true;
+            modified.set(tempStr);
+        }
+        if (tempArray.length()> 1)
+        {
+            tempStr = tempArray.item(1);
+            if (tempStr && *tempStr)
+            {
+                hasFilter = true;
+                modifiedHigh.set(tempStr);
+            }
+        }
+    }
+    void setFileSizeFilter(const char* size)
+    {
+        //SizeFilter: low/high
+        StringArray tempArray;
+        tempArray.appendListUniq(size, "/");
+        const char* tempStr = tempArray.item(0);
+        if (tempStr && isdigit(*tempStr))
+            fileSize = atol(tempStr);
+        if (tempArray.length()> 1)
+        {
+            tempStr = tempArray.item(1);
+            if (tempStr && isdigit(*tempStr))
+                fileSizeHigh = atol(tempStr);
+        }
+        if ((fileSize > 0) || (fileSizeHigh > -1))
+            hasFilter = true;
+    }
+    void setClusterFilters(const char* _clusters)
+    {
+        //_clusters: cluster1/cluster2/...
+        if (!_clusters || !*_clusters)
+            return;
+        StringArray tempStringArray;
+        tempStringArray.appendListUniq(_clusters, "/");
+        clusters.empty();
+        ForEachItemIn(i, tempStringArray)
+        {
+            const char* item = tempStringArray.item(i);
+            if (item || *item)
+                clusters.append(item);
+        }
+        hasFilter = (clusters.length() > 0);
+    }
+    void addClusterFilter(const char* _cluster)
+    {
+        if (!_cluster || !*_cluster)
+            return;
+        clusters.append(_cluster);
+        hasFilter = true;
+    }
+};
 
 class CFileScanner
 {
     bool recursive;
-    bool includesuper;
-    StringAttr wildname;
+    CFileScanFilter fileScanFilter;
     Owned<CScope> topLevelScope;
     CScope *currentScope;
 
@@ -7979,9 +8242,9 @@ class CFileScanner
     {   // name has trailing '::'
         if (!*name)
             return true;
-        if (wildname.isEmpty())
+        const char *s1 = fileScanFilter.getNameFilter();
+        if (!s1 || !*s1)
             return true;
-        const char *s1 = wildname.get();
         const char *s2 = name;
         while (*s2) {
             if (*s1=='*') {
@@ -8045,28 +8308,29 @@ class CFileScanner
     bool processFiles(IPropertyTree &root,StringBuffer &name)
     {
         bool ret = false;
-        const char *s1 = wildname.get();
         size32_t ns = name.length();
-        Owned<IPropertyTreeIterator> iter = root.getElements(queryDfsXmlBranchName(DXB_File));
-        if (iter->first()) {
-            IPropertyTree &scope = iter->query();
-            do {
-                IPropertyTree &file = iter->query();
-                name.append(file.queryProp("@name"));
-                if (!s1||WildMatch(name.str(),s1,true)) {
-                    currentScope->addMatch(name,file,false);
-                    ret = true;
-                }
-                name.setLength(ns);
-            } while (iter->next());
+        Owned<IPropertyTreeIterator> iter;
+        if (fileScanFilter.getFileType() != DFUQFTsuperfileonly) {
+            iter.setown(root.getElements(queryDfsXmlBranchName(DXB_File)));
+                if (iter->first()) {
+                do {
+                    IPropertyTree &file = iter->query();
+                    name.append(file.queryProp("@name"));
+                    if (fileScanFilter.matchFileScanFilter(name.str(), file)) {
+                        currentScope->addMatch(name,file,false);
+                        ret = true;
+                    }
+                    name.setLength(ns);
+                } while (iter->next());
+            }
         }
-        if (includesuper) {
+        if ((fileScanFilter.getFileType() == DFUQFTall) || (fileScanFilter.getFileType() == DFUQFTsuperfileonly)) {
             iter.setown(root.getElements(queryDfsXmlBranchName(DXB_SuperFile)));
             if (iter->first()) {
                 do {
                     IPropertyTree &file = iter->query();
                     name.append(file.queryProp("@name"));
-                    if (!s1||WildMatch(name.str(),s1,true)) {
+                    if (fileScanFilter.matchFileScanFilter(name.str(), file)) {
                         currentScope->addMatch(name,file,true);
                         ret = true;
                     }
@@ -8076,16 +8340,12 @@ class CFileScanner
         }
         return ret;
     }
-
 public:
     void scan(IPropertyTree *sroot, const char *_wildname,bool _recursive,bool _includesuper)
     {
-        if (_wildname)
-            wildname.set(_wildname);
-        else
-            wildname.clear();
         recursive = _recursive;
-        includesuper = _includesuper;
+        fileScanFilter.readScanFilter(_wildname, _includesuper);
+
         StringBuffer name;
         topLevelScope.clear();
         currentScope = NULL;
@@ -8775,6 +9035,11 @@ public:
             if (mb.getPos()<mb.length()) {
                 udesc.setown(createUserDescriptor());
                 udesc->deserialize(mb);
+                if (mb.getPos()<mb.length()) {
+                    //If exists, this block contains all of the filters, including wildname and includesuper.
+                    wildname.clear();
+                    mb.read(wildname);
+                }
             }
         }
 
@@ -10961,6 +11226,285 @@ IDFProtectedIterator *CDistributedFileDirectory::lookupProtectedFiles(const char
     return new CDFProtectedIterator(owner,notsuper,superonly,defaultTimeout);
 }
 
+IPropertyTreeIterator *deserializeFileAttrIterator(MemoryBuffer &mb, const char* clusterFilter)
+{
+    class CFileAttrIterator: public CInterface, implements IPropertyTreeIterator
+    {
+        Owned<IPropertyTree> cur;
+        StringArray fileClusterGroups;
+
+        void setFileCluster(IPropertyTree *attr, const char* group, StringArray& clusterFilter)
+        {
+            if (!group || !*group)
+                return;
+
+            //The group may contain multiple clusters and some of them may match with the clusterFilter.
+            if (clusterFilter.length() == 1)
+                attr->setProp("@DFUSFcluster", clusterFilter.item(0));//Filter has been handled on server side.
+            else
+            {
+                StringArray clusters;
+                clusters.appendListUniq(group, ",");
+                ForEachItemIn(i,clusters)
+                {
+                    //Add a cluster if no cluster filter or the cluster matchs with cluster filter
+                    const char* cluster = clusters.item(i);
+                    if (cluster && *cluster && ((!clusterFilter.length()) || (clusterFilter.find(cluster) != NotFound)))
+                        fileClusterGroups.append(cluster);
+                }
+                if (fileClusterGroups.length())
+                {
+                    //if this file exists on multiple clusters, set one of the clusters as the "@DFUSFcluster" prop for
+                    //this attr, leaving the rest inside the fileClusterGroups array. Those clusters will be used by the
+                    //duplicateFileAttrOnOtherClusterGroup() to duplicate this file attr on other clusters.
+                    attr->setProp("@DFUSFcluster", fileClusterGroups.item(fileClusterGroups.length() -1));
+                    fileClusterGroups.pop();
+                }
+            }
+        }
+
+        void setRecordCount(IPropertyTree* file)
+        {
+            __int64 recordCount = 0;
+            if (file->hasProp("@recordCount"))
+                recordCount = file->getPropInt64("@recordCount");
+            else
+            {
+                __int64 recordSize=file->getPropInt64("@recordSize",0);
+                if(recordSize)
+                {
+                    __int64 size=file->getPropInt64("@size",-1);
+                    recordCount = size/recordSize;
+                }
+            }
+            file->setPropInt64("@DFUSFrecordCount",recordCount);
+            return;
+        }
+
+        IPropertyTree *deserializeFileAttr(MemoryBuffer &mb, StringArray& clusterFilter)
+        {
+            IPropertyTree *attr = getEmptyAttr();
+            StringAttr val;
+            unsigned n;
+            mb.read(val);
+            attr->setProp("@name",val.get());
+            mb.read(val);
+            if (strieq(val,"!SF"))
+            {
+                mb.read(n);
+                attr->setPropInt("@numsubfiles",n);
+                mb.read(val);   // not used currently
+            }
+            else
+            {
+                attr->setProp("@directory",val.get());
+                mb.read(n);
+                attr->setPropInt("@numparts",n);
+                mb.read(val);
+                attr->setProp("@partmask",val.get());
+            }
+            mb.read(val);
+            attr->setProp("@modified",val.get());
+            unsigned count;
+            mb.read(count);
+            StringAttr at;
+            while (count--)
+            {
+                mb.read(at);
+                mb.read(val);
+                attr->setProp(at.get(),val.get());
+                if (strieq(at.get(), "@group"))
+                    setFileCluster(attr, val.get(), clusterFilter);
+            }
+            attr->setPropInt64("@DFUSFsize", attr->getPropInt64("@size", -1));//Sort the files with empty size to front
+            setRecordCount(attr);
+            return attr;
+        }
+
+        IPropertyTree *duplicateFileAttrOnOtherClusterGroup(IPropertyTree *previousAttr)
+        {
+            IPropertyTree *attr = getEmptyAttr();
+            Owned<IAttributeIterator> ai = previousAttr->getAttributes();
+            ForEach(*ai)
+                attr->setProp(ai->queryName(),ai->queryValue());
+            attr->setProp("@DFUSFcluster", fileClusterGroups.item(fileClusterGroups.length()-1));
+            fileClusterGroups.pop();
+            return attr;
+        }
+
+    public:
+        IMPLEMENT_IINTERFACE;
+        MemoryBuffer mb;
+        unsigned numfiles;
+        StringArray clusterFilter;
+
+        bool first()
+        {
+            mb.reset();
+            mb.read(numfiles);
+
+            return next();
+        }
+
+        bool next()
+        {
+            if (fileClusterGroups.length())
+            {
+                IPropertyTree *attr = duplicateFileAttrOnOtherClusterGroup(cur);
+                cur.clear();
+                cur.setown(attr);
+                return true;
+            }
+            cur.clear();
+            if (mb.getPos()>=mb.length())
+                return false;
+            cur.setown(deserializeFileAttr(mb, clusterFilter));
+            return true;
+        }
+
+        bool isValid()
+        {
+            return cur.get()!=NULL;
+        }
+
+        IPropertyTree  & query()
+        {
+            return *cur;
+        }
+
+        void setClusterFilter(const char* _clusterFilter)
+        {
+            if (_clusterFilter && *_clusterFilter)
+                clusterFilter.appendListUniq(_clusterFilter, ",");
+        }
+
+    } *fai = new CFileAttrIterator;
+    mb.swapWith(fai->mb);
+    fai->setClusterFilter(clusterFilter);
+    return fai;
+}
+
+IPropertyTreeIterator *CDistributedFileDirectory::getDFAttributesTreeIterator(const char* allFilters, const char* nameFilter,
+    const char* clusterFilter, IUserDescriptor *user, bool includeSuper, INode *foreigndali,unsigned foreigndalitimeout)
+{
+    CMessageBuffer mb;
+    mb.append((int)MDFS_ITERATE_FILES).append(nameFilter).append(true).append("").append(includeSuper); //for legacy dali
+    if (user)
+        user->serialize(mb);
+    else
+    {
+        Owned<IUserDescriptor> userdesc = createUserDescriptor();
+        userdesc->set("", "");//Not sure whether this may break something on server side or not.
+        userdesc->serialize(mb);
+    }
+    mb.append(allFilters);
+
+    if (foreigndali)
+        foreignDaliSendRecv(foreigndali,mb,foreigndalitimeout);
+    else
+        queryCoven().sendRecv(mb,RANK_RANDOM,MPTAG_DFS_REQUEST);
+    checkDfsReplyException(mb);
+
+    return deserializeFileAttrIterator(mb, clusterFilter);
+}
+
+IDFAttributesIterator* CDistributedFileDirectory::getLogicalFilesSorted(
+    IUserDescriptor* udesc,
+    DFUSortField *sortOrder, // list of fields to sort by (terminated by DFUSFterm)
+    DFUSortField *filters,   // NULL or list of fields to filteron (terminated by DFUSFterm)
+    const void *filterBuf,  // (appended) string values for filters
+    unsigned startOffset,
+    unsigned maxNum,
+    __int64 *cacheHint,
+    unsigned *total)
+{
+    class CDFUPager : public CSimpleInterface, implements IElementsPager
+    {
+        IUserDescriptor* udesc;
+        DFUQueryFileType fileType;
+        StringAttr clusterFilter;
+        StringAttr nameFilter;//for legacy dali
+        StringAttr allFilters;
+        StringAttr sortOrder;
+
+    public:
+        IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
+
+        CDFUPager(IUserDescriptor* _udesc, DFUQueryFileType _fileType, const char *_clusterFilter, const char *_nameFilter,
+            const char *_allFilters, const char *_sortOrder) : udesc(_udesc), fileType(_fileType), clusterFilter(_clusterFilter),
+            nameFilter(_nameFilter), allFilters(_allFilters), sortOrder(_sortOrder)
+        {
+        }
+        virtual IRemoteConnection* getElements(IArrayOf<IPropertyTree> &elements)
+        {
+            bool includeSuper = ((fileType == DFUQFTall) || (fileType == DFUQFTsuperfileonly));//for legacy dali
+            Owned<IPropertyTreeIterator> fi = queryDistributedFileDirectory().getDFAttributesTreeIterator(allFilters.get(),
+                nameFilter.get(), clusterFilter.get(), udesc, includeSuper);
+            sortElements(fi, sortOrder.get(), NULL, NULL, elements);
+            return NULL;
+        }
+    };
+
+    const char* logicalFileSortFields[] = { "", "@name", "@DFUSFsize", "@numparts", "@DFUSFrecordCount",
+        "@DFUSFcluster", "@description", "@owner", "@modified", "@compressedsize" };
+
+    DFUQueryFileType fileType = DFUQFTall;
+    StringAttr clusterFilter;
+    StringAttr nameFilter;
+    StringBuffer otherFilters;
+    StringBuffer so;
+    if (filters)
+    {
+        const char *fv = (const char *)filterBuf;
+        for (unsigned i=0;filters[i]!=DFUSFterm;i++)
+        {
+            int fmt = filters[i];
+            int subfmt = (fmt&0xff);
+            if (subfmt==DFUSFfiletype)
+                fileType = (DFUQueryFileType) atoi(fv);//superfile, notsuperfile, notinsuperfile, etc.
+            else if (subfmt==DFUSFname)
+                nameFilter.set(fv);
+            else if (subfmt==DFUSFclusters)
+            {
+                clusterFilter.set(fv);//may contain multiple clusters
+                StringBuffer buf(fv);
+                buf.replace(',', '/');
+                otherFilters.append(",").append(subfmt).append(",").append(buf.str());
+            }
+            else if (subfmt<DFUSFterm)
+                otherFilters.append(",").append(subfmt).append(",").append(fv);
+            fv = fv + strlen(fv)+1;
+        }
+    }
+    if (!nameFilter.length())
+        nameFilter.set("*");
+
+    VStringBuffer allFilters("%s,%d", nameFilter.get(), fileType);
+    if (otherFilters.length())
+        allFilters.append(otherFilters.str());
+
+    if (sortOrder)
+    {
+        for (unsigned i=0;sortOrder[i]!=DFUSFterm;i++)
+        {
+            if (so.length())
+                so.append(',');
+            int fmt = sortOrder[i];
+            if (fmt&DFUSFreverse)
+                so.append('-');
+            if (fmt&DFUSFnocase)
+                so.append('?');
+            if (fmt&DFUSFnumeric)
+                so.append('#');
+            so.append(logicalFileSortFields[fmt&0xff]);
+        }
+    }
+    IArrayOf<IPropertyTree> results;
+    Owned<IElementsPager> elementsPager = new CDFUPager(udesc, fileType, clusterFilter.get(), nameFilter.get(), allFilters.str(),
+        so.length()?so.str():NULL);
+    getElementsPaged(elementsPager,startOffset,maxNum,NULL,"",cacheHint,results,total,false);
+    return new CDFAttributeIterator(results);
+}
 #ifdef _USE_CPPUNIT
 /*
  * This method removes files only logically. removeEntry() used to do that, but the only

@@ -28,23 +28,7 @@
 
 #include "fileview.hpp"
 #include "fvrelate.hpp"
-
-/*
-class CSpaceItem64 : public CInterface
-{
-public:
-    char Name[256];
-    char LargestFile[256];
-    char SmallestFile[256];
-    __int64 NumOfFilesInt;
-    __int64 NumOfFilesIntUnknown;
-    __int64 TotalSizeInt;
-    __int64 LargestSizeInt;
-    __int64 SmallestSizeInt;
-
-    IMPLEMENT_IINTERFACE;
-};*/
-
+#include "dadfs.hpp"
 
 class CWsDfuSoapBindingEx : public CWsDfuSoapBinding
 {
@@ -88,9 +72,18 @@ public:
     virtual bool onSuperfileAction(IEspContext &context, IEspSuperfileActionRequest &req, IEspSuperfileActionResponse &resp);
 
 private:
+    const char* getPrefixFromLogicalName(const char* logicalName, StringBuffer& prefix);
+    const char* getShortDescription(const char* description, StringBuffer& shortDesc);
+    bool addDFUQueryFilter(DFUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char* value, DFUSortField name);
+    bool addDFUQueryFilterInt(DFUSortField *filters, unsigned short &count, MemoryBuffer &buff, int value, DFUSortField name);
+    void setFileNameFIlter(DFUSortField *filters, unsigned short &count, MemoryBuffer &buff, const char* fname, const char* prefix);
+    void setDFUQueryFilters(IEspDFUQueryRequest& req, DFUSortField* filters, MemoryBuffer& filterBuf);
+    void setDFUQuerySortOrder(IEspDFUQueryRequest& req, StringBuffer& sortBy, bool& descending, DFUSortField* sortOrder);
+    bool addToLogicalFileList(IPropertyTree& file, double version, IArrayOf<IEspDFULogicalFile>& logicalFiles);
+    void setDFUQueryResponse(IEspContext &context, unsigned totalFiles, StringBuffer& sortBy, bool descending, unsigned pageStart,
+        unsigned pageSize, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void getLogicalFileAndDirectory(IEspContext &context, IUserDescriptor* udesc, const char *dirname, IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& numFiles, int& numDirs);
     bool doLogicalFileSearch(IEspContext &context, IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
-    //bool doLogicalFileSearch(IUserDescriptor* udesc, IEspDFUQueryRequest & req, IEspDFUQueryResponse & resp);
     void doGetFileDetails(IEspContext &context, IUserDescriptor* udesc, const char *name,const char *cluster,
         const char *description,IEspDFUFileDetail& FileDetails);
     bool createSpaceItemsByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, unsigned& yearFrom, 
@@ -98,17 +91,6 @@ private:
     bool setSpaceItemByScope(IArrayOf<IEspSpaceItem>& SpaceItems64, const char*scopeName, const char*logicalName, __int64 size);
     bool setSpaceItemByOwner(IArrayOf<IEspSpaceItem>& SpaceItems64, const char *owner, const char *logicalName, __int64 size);
     bool setSpaceItemByDate(IArrayOf<IEspSpaceItem>& SpaceItems, StringBuffer interval, StringBuffer mod, const char*logicalName, __int64 size);
-    bool findPositionToAdd(const char *datetime, const __int64 size, const int numNeeded, const unsigned orderType, 
-                       IArrayOf<IEspDFULogicalFile>& LogicalFiles, int& addToPos, bool& reachLimit);
-    __int64 findPositionByParts(const __int64 parts, bool decsend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    __int64 findPositionBySize(const __int64 size, bool decsend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    __int64 findPositionByRecords(const __int64 records, bool decsend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    __int64 findPositionByName(const char *name, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    __int64 findPositionByOwner(const char *owner, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    __int64 findPositionByCluster(const char *Cluster, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    __int64 findPositionByDate(const char *datetime, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    __int64 findPositionByDescription(const char *description, bool descend, IArrayOf<IEspDFULogicalFile>& LogicalFiles);
-    bool checkDescription(const char *description, const char *descriptionFilter);
     void getDefFile(IUserDescriptor* udesc, const char* FileName,StringBuffer& returnStr);
     void xsltTransformer(const char* xsltPath,StringBuffer& source,StringBuffer& returnStr);
     bool onDFUAction(IUserDescriptor* udesc, const char* LogicalFileName, const char* ClusterName, const char* ActionType, StringBuffer& returnStr);
