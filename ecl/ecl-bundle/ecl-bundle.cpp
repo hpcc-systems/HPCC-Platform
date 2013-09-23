@@ -101,13 +101,13 @@ static bool versionOk(const char *versionPresent, const char *minOk, const char 
 
 //--------------------------------------------------------------------------------------------------------------
 
-unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *input)
+unsigned doEclCommand(StringBuffer &output, const char *cmd, const char *args, const char *input)
 {
     try
     {
         Owned<IPipeProcess> pipe = createPipeProcess();
-        VStringBuffer runcmd("eclcc  --nologfile --nostdinc %s", cmd);
-        pipe->run("eclcc", runcmd, ".", input != NULL, true, true, 1024*1024);
+        VStringBuffer runcmd("%s %s", cmd, args);
+        pipe->run(cmd, runcmd, ".", input != NULL, true, true, 1024*1024);
         if (optVerbose)
         {
             printf("Running %s\n", runcmd.str());
@@ -156,7 +156,7 @@ static const char *queryPlatformVersion()
     if (!platformVersionDone)
     {
         StringBuffer output;
-        doEclCommand(output, "--version", NULL);
+        doEclCommand(output, "eclcc", "--nologfile --version", NULL);
         RegExpr re("_[0-9]+[.][0-9]+[.][0-9]+");
         const char *found = re.find(output);
         if (!found)
@@ -253,6 +253,7 @@ interface IBundleInfo : extends IInterface
     virtual bool checkDependencies(const IBundleCollection &allBundles, const IBundleInfo *bundle, bool going) const = 0;
 
     virtual const char *queryInstalledPath() const = 0;
+    virtual bool selftest() const = 0;
     virtual void setInstalledPath(const char *path) = 0;
     virtual void setActive(bool active) = 0;
 };
@@ -289,7 +290,7 @@ public:
         try
         {
             StringBuffer output;
-            StringBuffer eclOpts("- -Me --nobundles");
+            StringBuffer eclOpts("- --nologfile --nostdinc -Me --nobundles");
             StringBuffer bundleName;
             Owned<IFile> bundleFile = createIFile(bundle);
             if (bundleFile->exists())
@@ -303,23 +304,24 @@ public:
                     // Distinguish a directory containing a single file (zipped single module case) from a
                     // directory containing multiple exported files. Somehow.
                     if (directoryContainsBundleFile(bundleFile))
-                        eclOpts.appendf(" -I%s%s", drive.str(), path.str());
+                        includeOpt.appendf(" -I%s%s", drive.str(), path.str());
                     else
-                        eclOpts.appendf(" -I%s", bundle);
+                        includeOpt.appendf(" -I%s", bundle);
                 }
                 else if (drive.length() + path.length())
-                    eclOpts.appendf(" -I%s%s", drive.str(), path.str());
+                    includeOpt.appendf(" -I%s%s", drive.str(), path.str());
                 else
-                    eclOpts.appendf(" -I.");
+                    includeOpt.appendf(" -I.");
             }
             else
                 throw MakeStringException(0, "File not found");
+            eclOpts.append(includeOpt);
             VStringBuffer bundleCmd("IMPORT %s.Bundle as B;"
                                     " [ (UTF8) B.name, (UTF8) B.version, B.description, B.license, B.copyright ] +"
                                     " [ (UTF8) COUNT(b.authors) ] + B.authors + "
                                     " [ (UTF8) COUNT(B.dependsOn) ] + B.dependsOn + "
                                     " [ (UTF8) #IFDEFINED(B.platformVersion, '')]", bundleName.str());
-            if (doEclCommand(output, eclOpts.str(), bundleCmd) > 0)
+            if (doEclCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
                 throw MakeStringException(0, "%s cannot be parsed as a bundle\n", bundle);
             // output should contain [ 'name', 'version', etc ... ]
             if (optVerbose)
@@ -437,6 +439,36 @@ public:
         }
         return ok;
     }
+
+    bool selftest() const
+    {
+        VStringBuffer exeFileName(".%c_%s-bundle-selftest", PATHSEPCHAR, cleanName.str());
+        VStringBuffer eclOpts("-   --nologfile -o%s", exeFileName.str());
+        VStringBuffer bundleCmd("IMPORT %s as B;\n"
+                                "#IF (#ISDEFINED(B.__selftesdft))\n"
+                                "  EVALUATE(B.__selftest);\n"
+                                "#ELSE\n"
+                                "  FAIL(253, 'No selftests exported');\n"
+                                "#END\n"
+                , cleanName.str());
+        StringBuffer output;
+        if (doEclCommand(output, "eclcc", eclOpts.str(), bundleCmd) > 0)
+        {
+            printf("%s\n", output.str());
+            printf("%s selftests cannot be compiled\n", cleanName.str());
+        }
+        int retcode = doEclCommand(output, exeFileName, "", NULL);
+        printf("%s\n", output.str());
+        if (retcode > 0)
+        {
+            if (retcode != 253)
+                printf("%s selftests returned non-zero\n", cleanName.str());
+            return false;
+        }
+        else
+            printf("%s selftests succeeded\n", cleanName.str());
+        return true;
+    }
 private:
     bool checkDependency(const IBundleCollection &allBundles, const char *dep, const IBundleInfo *bundle, bool going) const
     {
@@ -543,6 +575,7 @@ private:
         }
     }
 
+    StringBuffer includeOpt;    // The -I option to pass to eclcc to get this bundle included
     StringAttr installedPath;
     StringAttr name;
     StringBuffer cleanName;
@@ -895,7 +928,7 @@ protected:
     void getCompilerPaths()
     {
         StringBuffer output;
-        doEclCommand(output, "-showpaths", NULL);
+        doEclCommand(output, "eclcc", "--nologfile -showpaths", NULL);
         extractValueFromEnvOutput(bundlePath, output, ECLCC_ECLBUNDLE_PATH);
         extractValueFromEnvOutput(hooksPath, output, HPCC_FILEHOOKS_PATH);
     }
@@ -1326,6 +1359,40 @@ protected:
 
 //-------------------------------------------------------------------------------------------------
 
+class EclCmdBundleSelfTest : public EclCmdBundleBaseWithVersion
+{
+public:
+    virtual int processCMD()
+    {
+        Owned<const IBundleInfo> bundle;
+        if (isFromFile())
+            bundle.setown(new CBundleInfo(optBundle));
+        else
+        {
+            CBundleCollection allBundles(bundlePath, optBundle);
+            bundle.setown(loadBundle(allBundles, true));
+        }
+        bundle->checkValid();
+        bundle->selftest();
+        return 0;
+    }
+
+    virtual void usage()
+    {
+        printf("\nUsage:\n"
+                "\n"
+                "The 'selftest' command will run a bundle's selftests\n"
+                "\n"
+                "ecl bundle info <bundle> \n"
+                " Options:\n"
+                "   <bundle>               The name of a bundle file, or installed bundle\n"
+               );
+        EclCmdBundleBaseWithVersion::usage();
+    }
+};
+
+//-------------------------------------------------------------------------------------------------
+
 class EclCmdBundleUninstall : public EclCmdBundleBaseWithVersion
 {
 public:
@@ -1448,6 +1515,8 @@ IEclCommand *createBundleSubCommand(const char *cmdname)
         return new EclCmdBundleInstall();
     else if (strieq(cmdname, "list"))
         return new EclCmdBundleList();
+    else if (strieq(cmdname, "selftest"))
+        return new EclCmdBundleSelfTest();
     else if (strieq(cmdname, "uninstall"))
         return new EclCmdBundleUninstall();
     else if (strieq(cmdname, "use"))
@@ -1474,6 +1543,7 @@ public:
                 "      info         Show bundle information\n"
                 "      install      Install a bundle\n"
                 "      list         List installed bundles\n"
+                "      selftest     Run bundle selftests\n"
                 "      uninstall    Uninstall a bundle\n"
                 "      use          Specify which version of a bundle to use\n"
                 );
