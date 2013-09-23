@@ -279,7 +279,7 @@ ESPrequest [nil_remove] SprayFixed
     string sourceIP;
     string sourcePath;
     binary srcxml;
-    string sourceFormat;
+    [min_ver("1.09")] string sourceFormat;
     int sourceRecordSize;
 
     string destGroup;
@@ -600,7 +600,7 @@ ESPresponse [exceptions_inline] UploadFilesResponse
 };
 
 ESPservice [
-    version("1.08"), default_client_version("1.08"),
+    version("1.09"), default_client_version("1.09"),
     exceptions_inline("./smc_xslt/exceptions.xslt")] FileSpray
 {
     ESPuses ESPstruct DFUWorkunit;
