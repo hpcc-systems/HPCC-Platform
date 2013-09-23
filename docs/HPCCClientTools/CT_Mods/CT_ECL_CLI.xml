@@ -2753,7 +2753,7 @@ ecl bundle install mybundle --keepprior</programlisting>
                 <row>
                   <entry>&lt;bundleName&gt;</entry>
 
-                  <entry>The name of am installed bundle</entry>
+                  <entry>The name of an installed bundle</entry>
                 </row>
 
                 <row>
