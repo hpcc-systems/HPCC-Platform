@@ -1241,7 +1241,13 @@ void EclCC::processFile(EclCompileInstance & instance)
         q->setQueryText(queryTxt);
     }
 
-    if (isArchiveQuery(queryTxt))
+    //On a system with userECL not allowed, all compilations must be from checked-in code that has been
+    //deployed to the eclcc machine via other means (typically via a version-control system)
+    if (!allowAccess("userECL") && (!optQueryRepositoryReference || queryText->length()))
+    {
+        instance.errs->reportError(HQLERR_UserCodeNotAllowed, HQLERR_UserCodeNotAllowed_Text, NULL, 1, 0, 0);
+    }
+    else if (isArchiveQuery(queryTxt))
     {
         instance.fromArchive = true;
         processXmlFile(instance, queryTxt);
