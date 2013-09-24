@@ -53,11 +53,14 @@ if [[ $1 = '' ]]; then
     echo
     echo " * -q can be used to run/rerun a single query"
     echo " * -l is used to generate a detailed log for debugging"
+    echo " * -p changes the number of parallel compiles"
+    echo " * -f allows you to add a debug option"
+    echo " * -x allows you to pass through an arbitrary option"
     echo
     exit -1
 fi
 if [[ $* != '' ]]; then
-    while getopts "t:c:I:e:d:f:q:l:x:v" opt; do
+    while getopts "t:c:I:e:d:f:q:l:p:x:v" opt; do
         case $opt in
             t)
                 target_dir=$OPTARG
@@ -85,6 +88,9 @@ if [[ $* != '' ]]; then
                 ;;
             x)
                 userflags="$userflags $OPTARG"
+                ;;
+            p)
+                np="$OPTARG"
                 ;;
             v)
                	valgrind="valgrind --leak-check=full --suppressions=suppressions.txt "
