@@ -27,9 +27,14 @@
 ################################################################################
 
 originalDir=$PWD
-if [ -n "$WU_GIT_VERBOSE" ]; then
-    GIT_VERBOSE=1
-fi
+
+## Some options can be overridden per workunit, and should accept 0 to mean false
+
+if [ -n "$WU_GIT_VERBOSE" ]; then GIT_VERBOSE=$WU_GIT_VERBOSE ; fi
+if [ "$GIT_VERBOSE" == 0 2> /dev/null ] ; then unset GIT_VERBOSE ; fi
+if [ -n "$WU_GIT_FETCH_EXPIRES" ] ; then GIT_FETCH_EXPIRES=$WU_GIT_FETCH_EXPIRES ; fi
+if [ -n "$WU_GIT_IGNORE_FETCH_ERRORS" ] ; then GIT_IGNORE_FETCH_ERRORS=$WU_GIT_IGNORE_FETCH_ERRORS ; fi
+if [ "$GIT_IGNORE_FETCH_ERRORS" == 0 2> /dev/null ] ; then unset GIT_IGNORE_FETCH_ERRORS ;  fi
 
 function fetch_repo {
     repo=$1
@@ -97,17 +102,30 @@ function fetch_repo {
         fi
     fi
     cd $git_directory
-    # MORE - may want to not do every time? Add option to check time since last fetched?
-    if [ -n "$GIT_VERBOSE" ]; then
-        echo "GIT: using directory $git_directory" 1>&2
-        echo "GIT: Running git fetch $git_url" 1>&2
-        git fetch $git_url 2>&1 >/dev/null
-    else
-        git fetch $git_url >/dev/null
+    fetch_needed=1
+    if [ -n "$GIT_FETCH_EXPIRES" -a -f .last_fetched ]; then
+        lastfetch=$(cat .last_fetched)
+        now=$(date +%s)
+        let expires=$lastfetch+$GIT_FETCH_EXPIRES
+        if [ $now -le $expires ]; then
+            unset fetch_needed
+        fi
     fi
-    if [ $? -ne 0 ]; then
-        echo "Failed to run git fetch $git_url" 1>&2
-        exit 2
+    if [ -n "$fetch_needed" ]; then
+        if [ -n "$GIT_VERBOSE" ]; then
+            echo "GIT: using directory $git_directory" 1>&2
+            echo "GIT: Running git fetch $git_url" 1>&2
+            git fetch $git_url 2>&1 >/dev/null
+        else
+            git fetch $git_url >/dev/null
+        fi
+        if [ $? -ne 0 ]; then
+            echo "Failed to run git fetch $git_url" 1>&2
+            if [ -n "$GIT_IGNORE_FETCH_ERRORS" ]; then
+                exit 2
+            fi
+        fi
+        date +%s >.last_fetched
     fi
     # Map the branch to a SHA, to avoid issues with the branch being updated by another eclcc process
     # while this one is compiling (not 100% failsafe, but good enough)
