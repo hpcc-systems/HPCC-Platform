@@ -78,6 +78,7 @@ define([
         playgroundWidgetLoaded: false,
         xmlWidget: null,
         xmlWidgetLoaded: false,
+        publishForm: null,
 
         wu: null,
         prevState: "",
@@ -94,6 +95,7 @@ define([
             this.logsWidget = registry.byId(this.id + "_Logs");
             this.playgroundWidget = registry.byId(this.id + "_Playground");
             this.xmlWidget = registry.byId(this.id + "_XML");
+            this.publishForm = registry.byId(this.id + "PublishForm");
 
             this.infoGridWidget = registry.byId(this.id + "InfoContainer");
         },
@@ -153,8 +155,10 @@ define([
             this.wu.restart();
         },
         _onPublish: function (event) {
-            registry.byId(this.id + "Publish").closeDropDown();
-            this.wu.publish(dom.byId(this.id + "Jobname2").value);
+            if (this.publishForm.validate()) {
+                registry.byId(this.id + "Publish").closeDropDown();
+                this.wu.publish(dom.byId(this.id + "Jobname2").value);
+            }
         },
 
         //  Implementation  ---

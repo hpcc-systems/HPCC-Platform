@@ -80,6 +80,10 @@ define([
         templateString: template,
         baseClass: "LZBrowseWidget",
 
+        sprayFixedDialog: null,
+        sprayVariableDialog: null,
+        sprayXmlDialog: null,
+
         landingZonesTab: null,
         landingZonesGrid: null,
 
@@ -89,6 +93,9 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.sprayFixedDialog = registry.byId(this.id + "SprayFixedDialog");
+            this.sprayVariableDialog = registry.byId(this.id + "SprayVariableDialog");
+            this.sprayXmlDialog = registry.byId(this.id + "SprayXmlDialog");
             this.landingZonesTab = registry.byId(this.id + "_LandingZones");
             this.uploader = registry.byId(this.id + "Upload");
             this.uploadFileList = registry.byId(this.id + "UploadFileList");
@@ -201,73 +208,67 @@ define([
         },
 
         _onSprayFixed: function (event) {
-            var context = this;
-            var selections = this.landingZonesGrid.getSelected();
-            var context = this;
-            arrayUtil.forEach(selections, function (item, idx) {
-                var formData = domForm.toObject(context.id + "SprayFixedDialog");
-                lang.mixin(formData, {
-                    sourceIP: item.DropZone.NetAddress,
-                    sourcePath: item.fullPath
+            if (this.sprayFixedDialog.validate()) {
+                var context = this;
+                var selections = this.landingZonesGrid.getSelected();
+                var context = this;
+                arrayUtil.forEach(selections, function (item, idx) {
+                    var formData = domForm.toObject(context.id + "SprayFixedDialog");
+                    lang.mixin(formData, {
+                        sourceIP: item.DropZone.NetAddress,
+                        sourcePath: item.fullPath
+                    });
+
+                    FileSpray.SprayFixed({
+                        request: formData
+                    }).then(function (response) {
+                        context._handleResponse("SprayFixedResponse.wuid", response);
+                    })
                 });
-
-                FileSpray.SprayFixed({
-                    request: formData
-                }).then(function (response) {
-                    context._handleResponse("SprayFixedResponse.wuid", response);
-                })
-            });
-             registry.byId(this.id + "SprayFixedDropDown").closeDropDown();
-        },
-
-        _onSprayFixedCancel: function (event) {
-            registry.byId(this.id + "SprayFixedDropDown").closeDropDown();
+                registry.byId(this.id + "SprayFixedDropDown").closeDropDown();
+            }
         },
 
         _onSprayVariable: function(event) {
-            var context = this;
-            var selections = this.landingZonesGrid.getSelected();
-            var context = this;
-            arrayUtil.forEach(selections, function (item, idx) {
-                var formData = domForm.toObject(context.id + "SprayVariableDialog");
-                lang.mixin(formData, {
-                    sourceIP: item.DropZone.NetAddress,
-                    sourcePath: item.DropZone.fullPath
+            if (this.sprayVariableDialog.validate()) {
+                var context = this;
+                var selections = this.landingZonesGrid.getSelected();
+                var context = this;
+                arrayUtil.forEach(selections, function (item, idx) {
+                    var formData = domForm.toObject(context.id + "SprayVariableDialog");
+                    lang.mixin(formData, {
+                        sourceIP: item.DropZone.NetAddress,
+                        sourcePath: item.DropZone.fullPath
+                    });
+                    FileSpray.SprayVariable({
+                        request: formData
+                    }).then(function (response) {
+                        context._handleResponse("SprayResponse.wuid", response);
+                    });
                 });
-                FileSpray.SprayVariable({
-                    request: formData
-                }).then(function (response) {
-                    context._handleResponse("SprayResponse.wuid", response);
-                });
-            });
-             registry.byId(this.id + "SprayVariableDropDown").closeDropDown();
-        },
-
-        _onSprayVariableCancel: function (event) {
-            registry.byId(this.id + "SprayVariableDropDown").closeDropDown();
+                registry.byId(this.id + "SprayVariableDropDown").closeDropDown();
+            }
         },
 
         _onSprayXml: function(event) {
-            var context = this;
-            var selections = this.landingZonesGrid.getSelected();
-            var context = this;
-            arrayUtil.forEach(selections, function (item, idx) {
-                var formData = domForm.toObject(context.id + "SprayXmlDialog");
-                lang.mixin(formData, {
-                    sourceIP: item.DropZone.NetAddress,
-                    sourcePath: item.DropZone.fullPath
+            if (this.sprayXmlDialog.validate()) {
+                var context = this;
+                var selections = this.landingZonesGrid.getSelected();
+                var context = this;
+                arrayUtil.forEach(selections, function (item, idx) {
+                    var formData = domForm.toObject(context.id + "SprayXmlDialog");
+                    lang.mixin(formData, {
+                        sourceIP: item.DropZone.NetAddress,
+                        sourcePath: item.DropZone.fullPath
+                    });
+                    FileSpray.SprayVariable({
+                        request: formData
+                    }).then(function (response) {
+                        context._handleResponse("SprayResponse.wuid", response);
+                    });
                 });
-                FileSpray.SprayVariable({
-                    request: formData
-                }).then(function (response) {
-                    context._handleResponse("SprayResponse.wuid", response);
-                });
-            });
-             registry.byId(this.id + "SprayXmlDropDown").closeDropDown();
-        },
-
-        _onSprayXmlCancel: function (event) {
-            registry.byId(this.id + "SprayXmlDropDown").closeDropDown();
+                registry.byId(this.id + "SprayXmlDropDown").closeDropDown();
+            }
         },
 
         _onRowDblClick: function (wuid) {

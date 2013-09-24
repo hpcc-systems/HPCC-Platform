@@ -76,6 +76,9 @@ define([
         templateString: template,
         baseClass: "DFUQueryWidget",
 
+        addToSuperFileForm: null,
+        desprayDialog: null,
+
         workunitsTab: null,
         workunitsGrid: null,
 
@@ -83,6 +86,8 @@ define([
 
         postCreate: function (args) {
             this.inherited(arguments);
+            this.addToSuperFileForm = registry.byId(this.id + "AddToSuperfileForm");
+            this.desprayDialog = registry.byId(this.id + "DesprayDialog");
             this.workunitsTab = registry.byId(this.id + "_Workunits");
             this.filter = registry.byId(this.id + "Filter");
             this.clusterTargetSelect = registry.byId(this.id + "ClusterTargetSelect");
@@ -130,20 +135,17 @@ define([
         },
 
         _onAddToSuperfileOk: function (event) {
-            var context = this;
-            var formData = domForm.toObject(this.id + "AddToSuperfileForm");
-            WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
-                load: function (response) {
-                    context.refreshGrid(response);
-                }
-            });
-            var d = registry.byId(this.id + "AddtoDropDown");
-            registry.byId(this.id + "AddtoDropDown").closeDropDown();
-        },
-
-        _onAddToSuperfileCancel: function (event) {
-            var d = registry.byId(this.id + "AddtoDropDown");
-            registry.byId(this.id + "AddtoDropDown").closeDropDown();
+            if (this.addToSuperFileForm.validate()) {
+                var context = this;
+                var formData = domForm.toObject(this.id + "AddToSuperfileForm");
+                WsDfu.AddtoSuperfile(this.workunitsGrid.getSelected(), formData.Superfile, formData.ExistingFile, {
+                    load: function (response) {
+                        context.refreshGrid(response);
+                    }
+                });
+                var d = registry.byId(this.id + "AddtoDropDown");
+                registry.byId(this.id + "AddtoDropDown").closeDropDown();
+            }
         },
 
         _handleResponse: function (wuidQualifier, response) {
@@ -160,23 +162,21 @@ define([
         },
 
         _onDesprayOk: function (event) {
-            var context = this;
-            arrayUtil.forEach(this.workunitsGrid.getSelected(), function (item, idx) {
-                item.refresh().then(function (response) {
-                    var request = domForm.toObject(context.id + "DesprayDialog");
-                    request.destPath += item.Filename;
-                    item.despray({
-                        request: request
-                    }).then(function (response) {
-                        context._handleResponse("DesprayResponse.wuid", response);
+            if (this.desprayDialog.validate()) {
+                var context = this;
+                arrayUtil.forEach(this.workunitsGrid.getSelected(), function (item, idx) {
+                    item.refresh().then(function (response) {
+                        var request = domForm.toObject(context.id + "DesprayDialog");
+                        request.destPath += item.Filename;
+                        item.despray({
+                            request: request
+                        }).then(function (response) {
+                            context._handleResponse("DesprayResponse.wuid", response);
+                        });
                     });
                 });
-            });
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
-        },
-
-        _onDesprayCancel: function (event) {
-            registry.byId(this.id + "DesprayDropDown").closeDropDown();
+                registry.byId(this.id + "DesprayDropDown").closeDropDown();
+            }
         },
 
         _onRowDblClick: function (item) {
