@@ -69,7 +69,7 @@ public:
     }
 
     int onGetInstantQuery(IEspContext &context, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method);
-    int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, IMultiException *me);
+    int onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response, const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me);
 
 private:
     IPropertyTree* createPTreeForXslt(const char* method, const char* dfuwuid);

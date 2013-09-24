@@ -18,6 +18,12 @@ ESPstruct BasePackageStatus
     string Description;
 };
 
+ESPstruct PackageMapEntry
+{
+    string Id;
+    string Target;
+    string Process;
+};
 
 ESPrequest AddPackageRequest
 {
@@ -45,6 +51,7 @@ ESPrequest DeletePackageRequest
     string PackageMap;
     string Process;
     bool GlobalScope(0);
+    ESParray<ESPstruct PackageMapEntry, PackageMap> PackageMaps;
 };
 
 ESPresponse [exceptions_inline] DeletePackageResponse
@@ -90,6 +97,17 @@ ESPresponse [exceptions_inline] GetPackageResponse
     string Info;
 };
 
+ESPrequest GetPackageMapByIdRequest
+{
+    string PackageMapId;
+};
+
+ESPresponse [exceptions_inline] GetPackageMapByIdResponse
+{
+    ESPstruct BasePackageStatus status;
+    string Info;
+};
+
 ESPrequest ListPackageRequest
 {
     string Target;
@@ -106,8 +124,10 @@ ESPstruct PackageListMapData
 {
     string Id;
     string Target;
+    [min_ver("1.01")] string Process;
     ESParray<ESPstruct PackageListData> PkgListData;
     boolean Active;
+    [min_ver("1.01")] string Description;
 };
 
 ESPresponse [exceptions_inline] ListPackageResponse
@@ -116,10 +136,24 @@ ESPresponse [exceptions_inline] ListPackageResponse
     ESParray<ESPstruct PackageListMapData> PkgListMapData;
 };
 
+ESPrequest [nil_remove] ListPackagesRequest
+{
+    string Target;
+    string Process;
+    string ProcessFilter;
+};
+
+ESPresponse [nil_remove, exceptions_inline] ListPackagesResponse
+{
+    ESPstruct BasePackageStatus status;
+    ESParray<ESPstruct PackageListMapData> PackageMapList;
+};
+
 ESPrequest ValidatePackageRequest
 {
     string Info;
     string Target;
+    string Process;
     bool Active;
     string PMID;
     string QueryIdToVerify;
@@ -175,7 +209,28 @@ ESPresponse [exceptions_inline] GetQueryFileMappingResponse
 };
 
 
-ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
+ESPstruct TargetData
+{
+    string Name;
+    string Type;
+    ESParray<string> Processes;
+};
+
+ESPrequest GetPackageMapSelectOptionsRequest
+{
+    bool IncludeTargets(true);
+    bool IncludeProcesses(true);
+    bool IncludeProcessFilters(true);
+};
+
+ESPresponse [exceptions_inline] GetPackageMapSelectOptionsResponse
+{
+    ESPstruct BasePackageStatus status;
+    ESParray<ESPstruct TargetData> Targets;
+    ESParray<string> ProcessFilters;
+};
+
+ESPservice [version("1.01"), default_client_version("1.01"), exceptions_inline("./smc_xslt/exceptions.xslt")] WsPackageProcess
 {
     ESPmethod Echo(EchoRequest, EchoResponse);
     ESPmethod AddPackage(AddPackageRequest, AddPackageResponse);
@@ -183,9 +238,12 @@ ESPservice [version("1.00"), default_client_version("1.00"), exceptions_inline("
     ESPmethod ActivatePackage(ActivatePackageRequest, ActivatePackageResponse);
     ESPmethod DeActivatePackage(DeActivatePackageRequest, DeActivatePackageResponse);
     ESPmethod ListPackage(ListPackageRequest, ListPackageResponse);
+    ESPmethod ListPackages(ListPackagesRequest, ListPackagesResponse);
     ESPmethod GetPackage(GetPackageRequest, GetPackageResponse);
+    ESPmethod GetPackageMapById(GetPackageMapByIdRequest, GetPackageMapByIdResponse);
     ESPmethod ValidatePackage(ValidatePackageRequest, ValidatePackageResponse);
     ESPmethod GetQueryFileMapping(GetQueryFileMappingRequest, GetQueryFileMappingResponse);
+    ESPmethod GetPackageMapSelectOptions(GetPackageMapSelectOptionsRequest, GetPackageMapSelectOptionsResponse);
 };
 
 SCMexportdef(WsPackageProcess);

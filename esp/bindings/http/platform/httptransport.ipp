@@ -360,6 +360,7 @@ public:
     bool readUploadFileName(CMimeMultiPart* mimemultipart, StringBuffer& fileName, MemoryBuffer& contentBuffer, __int64& bytesNotRead);
     IFile* createUploadFile(StringBuffer netAddress, const char* filePath, StringBuffer& fileName);
     virtual int readContentToFiles(StringBuffer netAddress, StringBuffer path, StringArray& fileNames);
+    virtual void readUploadFileContent(StringArray& fileNames, StringArray& files);
 };
 
 class CHttpResponse : public CHttpMessage

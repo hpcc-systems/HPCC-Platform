@@ -464,7 +464,7 @@ void CFileSpraySoapBindingEx::downloadFile(IEspContext &context, CHttpRequest* r
     return;
 }
 
-int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,   const char *service, const char *method, StringArray& fileNames, IMultiException *me)
+int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* request, CHttpResponse* response,   const char *service, const char *method, StringArray& fileNames, StringArray& files, IMultiException *me)
 {
     if (!me || (me->ordinality()==0))
     {
@@ -514,7 +514,7 @@ int CFileSpraySoapBindingEx::onFinishUpload(IEspContext &ctx, CHttpRequest* requ
         if ((ctx.getResponseFormat() == ESPSerializationXML) || (ctx.getResponseFormat() == ESPSerializationJSON))
             response->handleExceptions(NULL, me, "FileSpray", "UploadFile", NULL);
         else
-            return EspHttpBinding::onFinishUpload(ctx, request, response, service, method, fileNames, me);
+            return EspHttpBinding::onFinishUpload(ctx, request, response, service, method, fileNames, files, me);
     }
 
     return 0;
