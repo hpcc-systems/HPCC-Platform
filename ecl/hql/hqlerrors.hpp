@@ -472,7 +472,7 @@
 #define HQLERR_AtmostLegacyMismatch             3134
 
 #define HQLERR_DedupFieldNotFound_Text          "Field removed from dedup could not be found"
-#define HQLERR_CycleWithModuleDefinition_Text   "Module definition contain an illegal cycle/recursive definition %s"
+#define HQLERR_CycleWithModuleDefinition_Text   "Module definition contains an illegal cycle/recursive definition %s"
 #define HQLERR_BadProjectOfStepping_Text        "Cannot calculate inversion of PROJECT on STEPPED index%s"
 #define HQLERR_DatasetNotExpected_Text          "Dataset not expected in this context"
 #define HQLERR_AtmostSubstringNotMatch_Text     "Equality on field[n..*] must match a similar equality"
@@ -497,7 +497,7 @@
 #define HQLERR_NoDefaultProvided_Text           "No value or default provided for field %s in inline table"
 #define HQLERR_TooManyInitializers_Text         "Too many initializers (value %s) for inline dataset definition"
 #define HQLERR_IncompatibleTypesForField_Text   "Initializer for field %s has the wrong type"
-#define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on a IFBLOCK for a inline table"
+#define HQLWRN_CouldNotConstantFoldIf_Text      "Could not constant fold the condition on an IFBLOCK for an inline table"
 #define HQLERR_PayloadMismatch_Text             "Mismatched => in inline dictionary definition"
 #define HQLERR_MemberXContainsVirtualRef_Text   "Member %s contains virtual references but not supported as virtual"
 #define HQLERR_FieldHasNoDefaultValue_Text      "Field '%s' doesn't have a defined value"
