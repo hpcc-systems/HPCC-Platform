@@ -422,14 +422,30 @@ public:
     virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId)
     {
         SpinBlock b(allAllocatorsLock);
-        IEngineRowAllocator *ret = _lookup(meta, activityId);
-        if (ret)
-            return LINK(ret);
-        assertex(allAllocators.ordinality() < ALLOCATORID_MASK);
-        ret = callback->createAllocator(meta, activityId, allAllocators.ordinality());
-        _add(LINK(ret), meta, activityId);
-        allAllocators.append(*LINK(ret));
-        return ret;
+        loop
+        {
+            IEngineRowAllocator *ret = _lookup(meta, activityId);
+            if (ret)
+                return LINK(ret);
+            unsigned allocatorId = allAllocators.ordinality();
+            assertex(allocatorId < ALLOCATORID_MASK);
+            {
+                SpinUnblock b(allAllocatorsLock);
+                ret = callback->createAllocator(meta, activityId, allocatorId);
+                assertex(ret);
+            }
+            if (allocatorId == allAllocators.ordinality())
+            {
+                _add(LINK(ret), meta, activityId);
+                allAllocators.append(*LINK(ret));
+                return ret;
+            }
+            else
+            {
+                // someone has used the allocatorId I was going to use.. release and try again (hopefully happens very seldom)
+                ret->Release();
+            }
+        }
     }
     virtual bool remove(IOutputMetaData *meta, unsigned activityId)
     {
