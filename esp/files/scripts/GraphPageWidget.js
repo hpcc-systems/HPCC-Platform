@@ -428,7 +428,8 @@ define([
             }, params));
 
             this.timingTreeMap.init(lang.mixin({
-                query: this.graphName
+                query: this.graphName,
+                hideHelp: true
             }, params));
 
         },
