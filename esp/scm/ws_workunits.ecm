@@ -1154,6 +1154,7 @@ ESPStruct ClusterQueryState
 {
     string Cluster;
     string State;
+    [min_ver("1.46")] string Errors;
 };
 
 ESPStruct [nil_remove] QuerySetQuery
@@ -1170,6 +1171,8 @@ ESPStruct [nil_remove] QuerySetQuery
     string priority;
     string Comment;
     [min_ver("1.45")] string QuerySetId;
+    [min_ver("1.46")] bool IsLibrary;
+    [min_ver("1.46")] string PublishedBy;
 };
 
 ESPStruct QuerySetAlias
@@ -1263,7 +1266,12 @@ ESPresponse [exceptions_inline] WUQueryDetailsResponse
 
     ESParray<string> LogicalFiles;
     [min_ver("1.44")] ESParray<ESPstruct QuerySuperFile, SuperFile> SuperFiles;
-
+    [min_ver("1.46")] bool IsLibrary;
+    [min_ver("1.46")] string Priority;
+    [min_ver("1.46")] string WUSnapShot; //Label
+    [min_ver("1.46")] ESParray<string> LibrariesUsed;
+    [min_ver("1.46")] int CountGraphs;
+    [min_ver("1.46")] ESParray<string> GraphIds;
 };
 
 ESPrequest WUMultiQuerySetDetailsRequest
@@ -1390,7 +1398,7 @@ ESPresponse [exceptions_inline] WUQuerySetCopyQueryResponse
 };
 
 ESPservice [
-    version("1.45"), default_client_version("1.45"),
+    version("1.46"), default_client_version("1.46"),
     noforms,exceptions_inline("./smc_xslt/exceptions.xslt"),use_method_name] WsWorkunits
 {
     ESPmethod [resp_xsl_default("/esp/xslt/workunits.xslt")]     WUQuery(WUQueryRequest, WUQueryResponse);
