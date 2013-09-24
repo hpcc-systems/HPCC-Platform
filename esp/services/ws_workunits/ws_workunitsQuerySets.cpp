@@ -1561,3 +1561,68 @@ bool CWsWorkunitsEx::onWUQuerysetCopyQuery(IEspContext &context, IEspWUQuerySetC
         reloadCluster(target, remainingMsWait(req.getWait(), start));
     return true;
 }
+
+void CWsWorkunitsEx::getGraphsByQueryId(const char *target, const char *queryId, const char *graphId, const char *subGraphId, IArrayOf<IEspECLGraphEx>& ECLGraphs)
+{
+    if (!target || !*target)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Target name required");
+    if (!queryId || !*queryId)
+        throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query Id required");
+
+    Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
+    if (!info || (info->getPlatform()!=RoxieCluster)) //Only support roxie for now
+        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid Roxie name");
+
+    const SocketEndpointArray &eps = info->getRoxieServers();
+    if (eps.empty())
+        return;
+
+    VStringBuffer xpath("<control:querystats><Query id='%s'/></control:querystats>", queryId);
+    Owned<ISocket> sock = ISocket::connect_timeout(eps.item(0), ROXIECONNECTIONTIMEOUT);
+    Owned<IPropertyTree> querystats = sendRoxieControlQuery(sock, xpath.str(), ROXIECONTROLQUERYTIMEOUT);
+    if (!querystats)
+        return;
+
+    Owned<IPropertyTreeIterator> graphs = querystats->getElements("Endpoint/Query/Graph");
+    ForEach(*graphs)
+    {
+        IPropertyTree &graph = graphs->query();
+        const char* aGraphId = graph.queryProp("@id");
+        if (graphId && *graphId && !strieq(graphId, aGraphId))
+            continue;
+
+        IPropertyTree* xgmml = graph.getBranch("xgmml/graph/graph");
+        if (!xgmml)
+            continue;
+
+        Owned<IEspECLGraphEx> g = createECLGraphEx("","");
+        g->setName(aGraphId);
+
+        StringBuffer xml;
+        if (!subGraphId || !*subGraphId)
+            toXML(xgmml, xml);
+        else
+        {
+            VStringBuffer xpath("//node[@id='%s']", subGraphId);
+            toXML(xgmml->queryPropTree(xpath.str()), xml);
+        }
+        g->setGraph(xml.str());
+        ECLGraphs.append(*g.getClear());
+    }
+    return;
+}
+
+bool CWsWorkunitsEx::onWUQueryGetGraph(IEspContext& context, IEspWUQueryGetGraphRequest& req, IEspWUQueryGetGraphResponse& resp)
+{
+    try
+    {
+        IArrayOf<IEspECLGraphEx> graphs;
+        getGraphsByQueryId(req.getTarget(), req.getQueryId(), req.getGraphName(), req.getSubGraphId(), graphs);
+        resp.setGraphs(graphs);
+    }
+    catch(IException* e)
+    {
+        FORWARDEXCEPTION(context, e,  ECLWATCH_INTERNAL_ERROR);
+    }
+    return true;
+}
