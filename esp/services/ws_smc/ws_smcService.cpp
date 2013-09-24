@@ -272,6 +272,7 @@ void addQueuedWorkUnits(const char *queueName, CJobQueueContents &contents, IArr
                 wu->setQueueName(queueName);
 
                 aws.append(*wu.getLink());
+                e->Release();
             }
         }
     }
@@ -460,6 +461,7 @@ void CWsSMCEx::addRunningWUs(IEspContext &context, IPropertyTree& node, CConstWU
             wu->setQueueName(qname.str());
 
             aws.append(*wu.getLink());
+            e->Release();
         }
     }
 
@@ -798,6 +800,7 @@ void CWsSMCEx::getServersAndWUs(IEspContext &context, IEspActivityRequest &req, 
                             wu1->setInstance(serverName);
                             wu1->setQueueName(queueName);
                             aws.append(*wu1.getLink());
+                            e->Release();
                         }
                     }
                     addServerJobQueue(serverJobQueues, queueName, serverName, "DFUserver");
@@ -853,6 +856,7 @@ void CWsSMCEx::createActiveWorkUnit(Owned<IEspActiveWorkunit>& ownedWU, IEspCont
         StringBuffer msg;
         ownedWU.setown(new CActiveWorkunitWrapper(wuid, "", "", e->errorMessage(msg).str(), "normal"));
         ownedWU->setStateID(WUStateUnknown);
+        e->Release();
     }
 
     ownedWU->setServer(serverName);
@@ -983,6 +987,7 @@ void CWsSMCEx::readRunningWUsOnECLAgent(IEspContext& context, IPropertyTreeItera
             {//Exception may be thrown when the openWorkUnit() is called inside the CWUWrapper
                 StringBuffer msg;
                 WARNLOG("Failed to open workunit %s: %s", wuid, e->errorMessage(msg).str());
+                e->Release();
                 continue;
             }
 
@@ -1272,6 +1277,7 @@ void CWsSMCEx::readDFUWUs(IEspContext &context, const char* queueName, const cha
         {
             e->errorMessage(error);
             state.appendf(" (%s)", error.str());
+            e->Release();
         }
 
         Owned<IEspActiveWorkunit> wu(new CActiveWorkunitWrapper(wuid, uname.str(), jname.str(), state.str(), "normal"));
