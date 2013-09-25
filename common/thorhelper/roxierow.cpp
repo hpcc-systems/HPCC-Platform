@@ -416,27 +416,44 @@ public:
     virtual IEngineRowAllocator *ensure(IOutputMetaData * meta, unsigned activityId, roxiemem::RoxieHeapFlags flags)
     {
         SpinBlock b(allAllocatorsLock);
-        CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
-        if (container)
+        loop
         {
-            if (0 == (roxiemem::RHFunique & flags))
-                return LINK(&container->queryElement());
-            // if in cache but unique, reuse allocatorId
-            return callback->createAllocator(meta, activityId, container->queryAllocatorId(), flags);
+            CAllocatorCacheItem *container = _lookup(meta, activityId, flags);
+            if (container)
+            {
+                if (0 == (roxiemem::RHFunique & flags))
+                    return LINK(&container->queryElement());
+                // if in cache but unique, reuse allocatorId
+                SpinUnblock b(allAllocatorsLock);
+                return callback->createAllocator(meta, activityId, container->queryAllocatorId(), flags);
+            }
+            // NB: a RHFunique allocator, will cause 1st to be added to 'allAllocators'
+            // subsequent requests for the same type of unique allocator, will share same allocatorId
+            // resulting in the 1st allocator being reused by all instances for onDestroy() etc.
+
+            assertex(allAllocators.ordinality() < ALLOCATORID_MASK);
+            unsigned allocatorId = allAllocators.ordinality();
+            IEngineRowAllocator *ret;
+            {
+                SpinUnblock b(allAllocatorsLock);
+                ret = callback->createAllocator(meta, activityId, allocatorId, flags);
+                assertex(ret);
+            }
+            if (allocatorId == allAllocators.ordinality())
+            {
+                AllocatorKey key(meta, activityId, flags);
+                container = new CAllocatorCacheItem(LINK(ret), allocatorId, key);
+                cache.replace(*container);
+                allAllocators.append(*LINK(ret));
+
+                return ret;
+            }
+            else
+            {
+                // someone has used the allocatorId I was going to use.. release and try again (hopefully happens very seldom)
+                ret->Release();
+            }
         }
-        // NB: a RHFunique allocator, will cause 1st to be added to 'allAllocators'
-        // subsequent requests for the same type of unique allocator, will share same allocatorId
-        // resulting in the 1st allocator being reused by all instances for onDestroy() etc.
-
-        assertex(allAllocators.ordinality() < ALLOCATORID_MASK);
-        unsigned allocatorId = allAllocators.ordinality();
-        IEngineRowAllocator *ret = callback->createAllocator(meta, activityId, allocatorId, flags);
-        AllocatorKey key(meta, activityId, flags);
-        container = new CAllocatorCacheItem(LINK(ret), allocatorId, key);
-        cache.replace(*container);
-        allAllocators.append(*LINK(ret));
-
-        return ret;
     }
     virtual unsigned items() const
     {
