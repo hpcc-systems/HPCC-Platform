@@ -542,6 +542,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             curProgress.status = (gotLength == 0) ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
             curProgress.inputLength = input->tell()-startInputOffset;
             curProgress.outputLength = out->tell()-startOutputOffset;
+            //curProgress.outputLength = 14752; //out->tell()-startOutputOffset;
             //curProgress.outputLength = out->size();
             LOG(MCdebugProgress, unknownJob, "inputLength: %"I64F"u, outputLength: %"I64F"u", (unsigned __int64)curProgress.inputLength, (unsigned __int64)curProgress.outputLength);
 
@@ -550,6 +551,7 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             if (calcInputCRC)
                 curProgress.hasInputCRC = input->getInputCRC(curProgress.inputCRC);
             sendProgress(curProgress);
+            curProgress.outputLength = out->tell()-startOutputOffset;
         }
 
         if (!gotLength)
