@@ -3019,6 +3019,9 @@ IHqlExpression * foldConstantOperator(IHqlExpression * expr, unsigned foldOption
             IValue * value = child->queryValue();
             if (value)
                 return createConstant(value->castTo(expr->queryType()));
+
+            if (dataset->getOperator() == no_datasetfromrow)
+                return replaceSelector(child, dataset, dataset->queryChild(0));
         }
         break;
     case no_countdict:
