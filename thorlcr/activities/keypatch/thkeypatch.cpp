@@ -31,6 +31,7 @@ class CKeyPatchMaster : public CMasterActivity
     bool local;
     unsigned width;
     StringArray clusters;
+    Owned<IDistributedFile> originalIndexFile, patchFile;
 
 public:
     CKeyPatchMaster(CMasterGraphElement *info) : CMasterActivity(info)
@@ -48,8 +49,8 @@ public:
 
         OwnedRoxieString originalName(helper->getOriginalName());
         OwnedRoxieString patchName(helper->getPatchName());
-        Owned<IDistributedFile> originalIndexFile = queryThorFileManager().lookup(container.queryJob(), originalName);
-        Owned<IDistributedFile> patchFile = queryThorFileManager().lookup(container.queryJob(), patchName);
+        originalIndexFile.setown(queryThorFileManager().lookup(container.queryJob(), originalName));
+        patchFile.setown(queryThorFileManager().lookup(container.queryJob(), patchName));
         
         if (originalIndexFile->numParts() != patchFile->numParts())
             throw MakeActivityException(this, TE_KeyPatchIndexSizeMismatch, "Index %s and patch %s differ in width", originalName.get(), patchName.get());

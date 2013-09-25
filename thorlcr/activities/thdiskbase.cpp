@@ -38,8 +38,8 @@ CDiskReadMasterBase::CDiskReadMasterBase(CMasterGraphElement *info) : CMasterAct
 void CDiskReadMasterBase::init()
 {
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
-    OwnedRoxieString fileName(helper->getFileName());
-    Owned<IDistributedFile> file = queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true);
+    fileName.setown(helper->getFileName());
+    file.setown(queryThorFileManager().lookup(container.queryJob(), fileName, 0 != ((TDXtemporary|TDXjobtemp) & helper->getFlags()), 0 != (TDRoptional & helper->getFlags()), true));
 
     if (file)
     {
@@ -97,7 +97,6 @@ void CDiskReadMasterBase::init()
 void CDiskReadMasterBase::serializeSlaveData(MemoryBuffer &dst, unsigned slave)
 {
     IHThorDiskReadBaseArg *helper = (IHThorDiskReadBaseArg *) queryHelper();
-    OwnedRoxieString fileName(helper->getFileName());
     dst.append(fileName);
     dst.append(subfileLogicalFilenames.ordinality());
     if (subfileLogicalFilenames.ordinality())
@@ -118,10 +117,7 @@ void CDiskReadMasterBase::done()
     if (!abortSoon) // in case query has relinquished control of file usage to another query (e.g. perists) 
     {
         if (0 != (helper->getFlags() & TDXupdateaccessed))
-        {
-            OwnedRoxieString fileName(helper->getFileName());
             queryThorFileManager().updateAccessTime(container.queryJob(), fileName);
-        }
     }
 }
 
