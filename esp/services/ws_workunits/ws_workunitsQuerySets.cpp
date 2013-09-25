@@ -1049,6 +1049,7 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
         q->setQuerySetId(query.queryProp("@querySetId"));
         q->setDll(query.queryProp("@dll"));
         q->setWuid(query.queryProp("@wuid"));
+        q->setActivated(query.getPropBool("@activated", false));
         q->setSuspended(query.getPropBool("@suspended", false));
         if (query.hasProp("@memoryLimit"))
         {
@@ -1159,7 +1160,7 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
 
     if (version >= 1.42)
     {
-        xpath.clear().appendf("Alias[@name='%s']", queryName);
+        xpath.clear().appendf("Alias[@id='%s']", queryId);
         IPropertyTree *alias = queryRegistry->queryPropTree(xpath.str());
         if (!alias)
             resp.setActivated(false);
