@@ -1249,7 +1249,6 @@ void CSocket::connect_wait(unsigned timems)
     bool exit = false;
     int err;
     unsigned refuseddelay = 1;
-    pre_conn_unreach_cnt = 0;
     while (!exit) {
 #ifdef CENTRAL_NODE_RANDOM_DELAY
         ForEachItemIn(cn,CentralNodeArray) {
@@ -2341,6 +2340,7 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
     hostname = NULL;
     mcastreq = NULL;
     tracename = NULL;
+    pre_conn_unreach_cnt = 0;
     StringBuffer tmp;
     if ((smode==sm_multicast_server)&&(name&&*name)) {
         mcastreq = new MCASTREQ(name);
@@ -2385,6 +2385,7 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     mcastreq = NULL;
     hostport = 0;
     tracename = NULL;
+    pre_conn_unreach_cnt = 0;
     state = ss_open;
     sockmode = smode;
     owned = _owned;
