@@ -1286,10 +1286,12 @@ void CGraphBase::doExecute(size32_t parentExtractSz, const byte *parentExtract, 
     }
     try
     {
+        if (!exception && abortException)
+            exception.setown(abortException.getClear());
         if (exception)
         {
             if (NULL == owner || isGlobal())
-                waitBarrier->cancel();
+                waitBarrier->cancel(exception);
             if (!queryOwner())
             {
                 StringBuffer str;
@@ -1611,7 +1613,7 @@ bool CGraphBase::wait(unsigned timeout)
     {
         if (INFINITE != timeout && tm.timedout(&remaining))
             waitException.throwException();
-        if (!waitBarrier->wait(false, remaining))
+        if (!waitBarrier->wait(true, remaining))
             return false;
     }
     return true;
@@ -1647,11 +1649,11 @@ void CGraphBase::abort(IException *e)
             iter->query().abort(e); // JCSMORE - could do in parallel, they can take some time to timeout
         }
         if (startBarrier)
-            startBarrier->cancel();
+            startBarrier->cancel(e);
         if (waitBarrier)
-            waitBarrier->cancel();
+            waitBarrier->cancel(e);
         if (doneBarrier)
-            doneBarrier->cancel();
+            doneBarrier->cancel(e);
     }
 }
 
