@@ -114,9 +114,10 @@ offset_t CTransformer::tell()
 
 size32_t CTransformer::getBlock(IFileIOStream * out)
 {
+    LOG(MCdebugProgress, unknownJob, "CTransformer::getBlock()");
     unsigned gotLength = getN(buffer, bufferSize);
     if (gotLength)
-        out->write(gotLength, buffer);
+        gotLength = out->write(gotLength, buffer);
     return gotLength;
 }
 
@@ -370,6 +371,7 @@ CGeneralTransformer::CGeneralTransformer(const FileFormat & srcFormat, const Fil
 
 size32_t CGeneralTransformer::getBlock(IFileIOStream * out)
 {
+    LOG(MCdebugProgress, unknownJob, "CGeneralTransformer::getBlock()");
     return processor->transformBlock(maxOffset, cursor);
 }
 
@@ -522,6 +524,8 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
     loop
     {
         unsigned gotLength = input->getBlock(out);
+        LOG(MCdebugProgress, unknownJob, "gotLength: %"I64F"u ", (unsigned __int64)gotLength);
+
         totalLengthRead  += gotLength;
 
         if (gpfFrequency || !gotLength || ((unsigned)(msTick() - lastTick)) > updateFrequency)
@@ -538,6 +542,9 @@ void TransferServer::appendTransformed(unsigned chunkIndex, ITransformer * input
             curProgress.status = (gotLength == 0) ? OutputProgress::StatusCopied : OutputProgress::StatusActive;
             curProgress.inputLength = input->tell()-startInputOffset;
             curProgress.outputLength = out->tell()-startOutputOffset;
+            //curProgress.outputLength = out->size();
+            LOG(MCdebugProgress, unknownJob, "inputLength: %"I64F"u, outputLength: %"I64F"u", (unsigned __int64)curProgress.inputLength, (unsigned __int64)curProgress.outputLength);
+
             if (crcOut)
                 curProgress.outputCRC = crcOut->getCRC();
             if (calcInputCRC)
