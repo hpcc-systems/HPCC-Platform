@@ -949,8 +949,8 @@ unsigned CWsWorkunitsEx::getGraphIdsByQueryId(const char *target, const char *qu
         throw MakeStringException(ECLWATCH_MISSING_PARAMS, "Query Id required");
 
     Owned<IConstWUClusterInfo> info = getTargetClusterInfo(target);
-    if (!info || (info->getPlatform()!=RoxieCluster)) //Only support roxie for now
-        throw MakeStringException(ECLWATCH_INVALID_CLUSTER_NAME, "Invalid Roxie name");
+    if (!info || (info->getPlatform()!=RoxieCluster)) //Only roxie query has query graph.
+        return 0;
 
     const SocketEndpointArray &eps = info->getRoxieServers();
     if (eps.empty())
