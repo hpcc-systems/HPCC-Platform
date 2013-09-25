@@ -4204,6 +4204,7 @@ IHqlExpression * ModuleExpander::createExpanded(IHqlExpression * scopeExpr, IHql
             switch (value->getOperator())
             {
             case no_typedef:
+            case no_enum:
                 op = no_none;
                 break;
             }
