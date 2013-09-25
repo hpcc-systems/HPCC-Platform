@@ -1686,10 +1686,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     for (; !iter.done(); iter.next())
     {
         const char * arg = iter.query();
-        if (memcmp(arg, "-a", 2)==0)
+        if (iter.matchFlag(tempArg, "-a"))
         {
-            if (arg[2])
-                applicationOptions.append(arg+2);
+            applicationOptions.append(tempArg);
         }
         else if (iter.matchOption(tempArg, "--allow"))
         {
@@ -1724,10 +1723,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optArchive, "-E"))
         {
         }
-        else if (memcmp(arg, "-f", 2)==0)
+        else if (iter.matchFlag(tempArg, "-f"))
         {
-            if (arg[2])
-                debugOptions.append(arg+2);
+            debugOptions.append(tempArg);
         }
         else if (iter.matchFlag(tempBool, "-g"))
         {

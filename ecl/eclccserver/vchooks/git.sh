@@ -51,7 +51,7 @@ function fetch_repo {
     fi
 
     if [ -n "$wu_git_branch" ]; then
-        if [ -z git_branch_locked ]; then
+        if [ -z "$git_branch_locked" ]; then
             echo "GIT: Overriding branch is not allowed" 1>&2
             exit 2
         else

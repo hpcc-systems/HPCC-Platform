@@ -81,7 +81,7 @@ public:
     IMPLEMENT_IINTERFACE;
     GitRepositoryFileIO(const char * gitDirectory, const char * revision, const char * relFileName)
     {
-        VStringBuffer gitcmd("git --git-dir=%s show %s:%s", gitDirectory, revision ? revision : "HEAD", relFileName);
+        VStringBuffer gitcmd("git --git-dir=%s show %s:%s", gitDirectory, (revision && *revision) ? revision : "HEAD", relFileName);
         Owned<IPipeProcess> pipe = createPipeProcess();
         if (pipe->run("git", gitcmd, ".", false, true, false, 0))
         {

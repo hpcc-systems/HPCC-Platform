@@ -300,7 +300,7 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
             unsigned time = msTick();
             Owned<ErrorReader> errorReader = new ErrorReader(pipe, this);
             eclccCmd.insert(0, eclccProgName);
-            pipe->run("eclccProgName", eclccCmd, ".", true, false, true, 0);
+            pipe->run(eclccProgName, eclccCmd, ".", true, false, true, 0);
             errorReader->start();
             try
             {
