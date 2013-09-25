@@ -1,0 +1,58 @@
+<div class="${baseClass}">
+	<div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
+		<div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+			<div id="${id}_Users" style="width: 100%; height: 100%" data-dojo-props='title:"Users", iconClass:"iconUser"' data-dojo-type="dijit.layout.BorderContainer">
+				<div id="${id}Toolbar" class="topPanel" style="padding: 0px; overflow: hidden" data-dojo-props="region: 'top'" data-dojo-type="dijit.Toolbar">
+						<div id="${id}Refresh" data-dojo-attach-event="onClick:_onRefresh" data-dojo-props="iconClass:'iconRefresh'" data-dojo-type="dijit.form.Button">Refresh</div>
+						<span data-dojo-type="dijit.ToolbarSeparator"></span>
+						<div id="${id}Open" data-dojo-attach-event="onClick:_onOpen" data-dojo-type="dijit.form.Button">Open</div>
+						<span data-dojo-type="dijit.ToolbarSeparator"></span>
+						<div id="${id}AddUsers" data-dojo-attach-event="onClick:_onAdd" data-dojo-type="dijit.form.Button">Add</div>
+						<div id="${id}DeleteUsers" data-dojo-attach-event="onClick:_onDelete" data-dojo-type="dijit.form.Button">Delete</div>
+						<div id="${id}EditUsers" data-dojo-attach-event="onClick:_onEdit" data-dojo-type="dijit.form.Button">Edit</div>
+						<span data-dojo-type="dijit.ToolbarSeparator"></span>
+						<div id="${id}Password" data-dojo-attach-event="onClick:_onPassword" data-dojo-type="dijit.form.Button">Change Password</div>
+						<span data-dojo-type="dijit.ToolbarSeparator"></span>
+				</div>
+				<div id="${id}GridCP" style="padding: 0px; border:0px; border-color:none; overflow: hidden" data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+					<div id="${id}UsersGrid"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div id="${id}EditDialog" data-dojo-type="dijit.Dialog" title="Edit User">
+		<div id="${id}EditForm" style="width:400px" data-dojo-type="dijit.form.Form">
+			<div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+				<input id="${id}UsersUsername" title="Username:" name="username" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+				<input id="${id}UsersFirstName" title="First&nbsp;Name:" name="firstname" colspan="2" data-dojo-props="trim: true, placeHolder:'john'" data-dojo-type="dijit.form.TextBox" />
+				<input id="${id}UsersLastName" title="Last&nbsp;Name:" name="lastname" colspan="2" data-dojo-props="trim: true, placeHolder:'smith'" data-dojo-type="dijit.form.TextBox" />
+			</div>
+			<button id="${id}_onEditSubmit" class="bottomFormButtons" data-dojo-attach-event="onClick:_onEditSubmit" data-dojo-type="dijit.form.Button">Apply</button>
+			<button class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">Cancel</button>
+		</div>
+	</div>
+	<div id="${id}PasswordDialog" data-dojo-type="dijit.Dialog" title="Change Password">
+		<div id="${id}PasswordForm" style="width:400px" data-dojo-type="dijit.form.Form">
+			<div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+				<input id="${id}PasswordUsername" title="Username:" name="username" colspan="2" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+				<input id="${id}NewPassword" title="New&nbsp;password:" name="newPassword" type="password" pwType="new" colspan="2" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+				<input id="${id}VerifyPassword" title="Retype&nbsp;new&nbsp;password:" name="newPasswordRetype" type="password" pwType="verify" colspan="2" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+			</div>
+			<button id="${id}_onPasswordSubmit" class="bottomFormButtons" data-dojo-attach-event="onClick:_onPasswordSubmit" data-dojo-type="dijit.form.Button">Apply</button>
+			<button class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">Cancel</button>
+		</div>
+	</div>
+	<div id="${id}AddUserDialog" data-dojo-type="dijit.Dialog" title="Add User">
+		<div id="${id}AddUserForm" style="width:400px" data-dojo-type="dijit.form.Form">
+			<div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+				<input id="${id}AddUsername" title="User&nbsp;ID:" name="username" colspan="2" data-dojo-props="trim: true" data-dojo-type="dijit.form.TextBox" />
+				<input id="${id}AddUserFirstName" title="First&nbsp;Name:" name="firstname" colspan="2" data-dojo-props="trim: true, placeHolder:'john'" data-dojo-type="dijit.form.TextBox" />
+				<input id="${id}AddUserLastName" title="Last&nbsp;Name:" name="lastname" colspan="2" data-dojo-props="trim: true, placeHolder:'smith'" data-dojo-type="dijit.form.TextBox" />
+				<input id="${id}AddUserPassword" title="Password:" name="password1" colspan="2" type="password" data-dojo-props="trim: true, placeHolder:'must contain uppercase and symbol'" required="true" pwType="new" data-dojo-type="dijit.form.ValidationTextBox" />
+				<input id="${id}RetypeUserPassword" title="Retype&nbsp;Password:" name="password2" colspan="2" type="password" pwType="verify" data-dojo-props="trim: true, placeHolder:'must contain uppercase and symbol'" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+			</div>
+			<button id="${id}_onAddSubmit" class="bottomFormButtons" data-dojo-attach-event="onClick:_onAddSubmit" data-dojo-type="dijit.form.Button">Apply</button>
+			<button class="bottomFormButtons" data-dojo-attach-event="onClick:_onCancelDialog" data-dojo-type="dijit.form.Button">Cancel</button>
+		</div>
+	</div>
+</div>

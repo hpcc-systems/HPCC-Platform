@@ -1,0 +1,42 @@
+<div class="${baseClass}">
+    <div id="${id}BorderContainer" class="${baseClass}BorderContainer" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.BorderContainer">
+        <div id="${id}TabContainer" data-dojo-props="region: 'center', tabPosition: 'top'" style="width: 100%; height: 100%" data-dojo-type="dijit.layout.TabContainer">
+            <div id="${id}_Myaccount" style="width: 100%; height: 100%" data-dojo-props='title:"My Account", iconClass:"iconLogicalFile"' data-dojo-type="dijit.layout.BorderContainer">
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}credentials" data-dojo-type="dijit.form.Form">
+                        <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+                           <input id="${id}UserName" title="User&nbsp;Name:" name="username" readonly="readonly" colspan="2" style="width:20%;" data-dojo-props="trim: true,iconClass:'dijitEditorIcon dijitEditorIconCut'" data-dojo-type="dijit.form.TextBox" />
+                           <input id="${id}FirstName" title="First&nbsp;Name:" name="firstName" readonly="readonly" colspan="2" style="width:20%;" data-dojo-props="trim: true," data-dojo-type="dijit.form.TextBox" />
+                           <input id="${id}LastName" title="Last&nbsp;Name:" name="lastName" readonly="readonly" colspan="2" style="width:20%;" data-dojo-props="trim: true," data-dojo-type="dijit.form.TextBox" />
+                            <input id="${id}PasswordExpiration" title="Password&nbsp;Expires:" name="passwordExpiration" readonly="readonly" colspan="2" style="width:20%;" data-dojo-props="trim: true," data-dojo-type="dijit.form.TextBox" />
+                            <input id="${id}OldPassword" type="password" title="Old&nbsp;Password:" pwType="old" name="oldpass" colspan="2" style="width:20%;" data-dojo-props="trim: true" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+                            <input id="${id}NewPassword" title="New&nbsp;Password:" name="newpass1" type="password" pwType="new" colspan="2" style="width:20%;" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+                            <input id="${id}VerifyPassword" title="Verify&nbsp;Password:" name="newpass2" type="password" pwType="verify" colspan="2" style="width:20%;" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+                        </div>
+                        <button class="bottomButtons" data-dojo-attach-event="onClick:_onSubmit" data-dojo-type="dijit.form.Button">Submit</button>
+                        <button class="bottomButtons" data-dojo-attach-event="onClick:_onClear" data-dojo-type="dijit.form.Button">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!--<div id="${id}_Changepass" style="width: 100%; height: 100%" data-dojo-props='title:"Change Password", iconClass:"iconLogicalFile"' data-dojo-type="dijit.layout.BorderContainer">
+                <div data-dojo-props="region: 'center'" data-dojo-type="dijit.layout.ContentPane">
+                    <div id="${id}credentials" data-dojo-type="dijit.form.Form">
+                        <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+                            <input id="${id}UserName" title="User&nbsp;Name:" name="username" colspan="2" style="width:20%;" data-dojo-props="trim: true, readonly: true," data-dojo-type="dijit.form.TextBox" />
+                            <input type="password" id="${id}OldPassword" title="Old&nbsp;Password:" pwType="old" name="oldpass" colspan="2" style="width:20%;" data-dojo-props="trim: true" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+                            <input id="${id}NewPassword" title="New&nbsp;Password:" name="newpass1" type="password" pwType="new" colspan="2" style="width:20%;" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+                            <input id="${id}VerifyPassword" title="Verify&nbsp;Password:" name="newpass2" type="password" pwType="verify" colspan="2" style="width:20%;" required="true" data-dojo-type="dijit.form.ValidationTextBox" />
+                        </div>
+                        <button class="bottomButtons" data-dojo-attach-event="onClick:_onSubmit" data-dojo-type="dijit.form.Button">Submit</button>
+                        <button class="bottomButtons" data-dojo-attach-event="onClick:_onClear" data-dojo-type="dijit.form.Button">Clear</button>
+                    </div>
+                </div>
+            </div>-->
+            <!--<div id="${id}_Users" data-dojo-props='title:"Users", iconClass:"iconLogicalFile"' data-dojo-type="ChangePassWordWidget"></div>
+            <div id="${id}_Users" data-dojo-props='title:"Users", iconClass:"iconLogicalFile"' data-dojo-type="UsersWidget"></div>
+            <div id="${id}_Groups" data-dojo-props='title:"Groups", iconClass:"iconLogicalFile"' data-dojo-type="GroupsWidget"></div>
+            <div id="${id}_Permissions" data-dojo-props='title:"Permissions", iconClass:"iconLogicalFile"' data-dojo-type="PermissionsWidget"></div>-->
+        </div>
+    </div>
+</div>
