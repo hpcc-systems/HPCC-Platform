@@ -283,6 +283,7 @@ public:
 
 protected:
     void addFilenameDependency(StringBuffer & target, EclCompileInstance & instance, const char * filename);
+    void applyApplicationOptions(IWorkUnit * wu);
     void applyDebugOptions(IWorkUnit * wu);
     bool checkWithinRepository(StringBuffer & attributePath, const char * sourcePathname);
     IFileIO * createArchiveOutputFile(EclCompileInstance & instance);
@@ -337,6 +338,7 @@ protected:
 
     IFileArray inputFiles;
     StringArray inputFileNames;
+    StringArray applicationOptions;
     StringArray debugOptions;
     StringArray compileOptions;
     StringArray linkOptions;
@@ -608,6 +610,25 @@ void EclCC::applyDebugOptions(IWorkUnit * wu)
                 else
                     wu->setDebugValue(option, "1", true);
             }
+        }
+    }
+}
+
+void EclCC::applyApplicationOptions(IWorkUnit * wu)
+{
+    ForEachItemIn(i, applicationOptions)
+    {
+        const char * option = applicationOptions.item(i);
+        const char * eq = strchr(option, '=');
+        if (eq)
+        {
+            StringAttr name;
+            name.set(option, eq-option);
+            wu->setApplicationValue("eclcc", name, eq+1, true);
+        }
+        else
+        {
+            wu->setApplicationValueInt("eclcc", option, 1, true);
         }
     }
 }
@@ -975,6 +996,7 @@ void EclCC::processSingleQuery(EclCompileInstance & instance,
     instance.wu->setCloneable(true);
 
     applyDebugOptions(instance.wu);
+    applyApplicationOptions(instance.wu);
 
     if (optTargetCompiler != DEFAULT_COMPILER)
         instance.wu->setDebugValue("targetCompiler", compilerTypeText[optTargetCompiler], true);
@@ -1670,7 +1692,11 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
     for (; !iter.done(); iter.next())
     {
         const char * arg = iter.query();
-        if (iter.matchOption(tempArg, "--allow"))
+        if (iter.matchFlag(tempArg, "-a"))
+        {
+            applicationOptions.append(tempArg);
+        }
+        else if (iter.matchOption(tempArg, "--allow"))
         {
             allowedPermissions.append(tempArg);
         }
@@ -1703,10 +1729,9 @@ bool EclCC::parseCommandLineOptions(int argc, const char* argv[])
         else if (iter.matchFlag(optArchive, "-E"))
         {
         }
-        else if (memcmp(arg, "-f", 2)==0)
+        else if (iter.matchFlag(tempArg, "-f"))
         {
-            if (arg[2])
-                debugOptions.append(arg+2);
+            debugOptions.append(tempArg);
         }
         else if (iter.matchFlag(tempBool, "-g"))
         {
@@ -1949,6 +1974,7 @@ const char * const helpText[] = {
     "    -shared       Generate workunit shared object instead of a stand-alone exe",
     "",
     "Other options:",
+    "!   -aoption[=value] Set an application option",
     "!   --allow=str   Allow use of named feature",
     "!   -b            Batch mode.  Each source file is processed in turn.  Output",
     "!                 name depends on the input filename",

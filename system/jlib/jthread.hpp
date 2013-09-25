@@ -266,6 +266,7 @@ interface IPipeProcess: extends IInterface
     virtual void abort() = 0;
     virtual void notifyTerminated(HANDLE pid,unsigned retcode) = 0; // internal
     virtual HANDLE getProcessHandle() = 0;                          // used to auto kill
+    virtual void setenv(const char *var, const char *value) = 0;  // Set a value to be passed in the called process environment
 };
 
 extern jlib_decl IPipeProcess *createPipeProcess(const char *allowedprograms=NULL);
