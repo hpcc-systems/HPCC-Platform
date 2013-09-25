@@ -1307,6 +1307,7 @@ bool CWsDfuEx::onDFUArrayAction(IEspContext &context, IEspDFUArrayActionRequest 
                 }
 
                 returnStr.appendf("<Message><Value>%s</Value></Message>", emsg.str());
+                e->Release();
             }
             catch(...)
             {
