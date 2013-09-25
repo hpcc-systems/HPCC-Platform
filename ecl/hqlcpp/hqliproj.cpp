@@ -1883,8 +1883,14 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
             }
 
 #ifdef _DEBUG
-            //MORE: This doesn't currently cope with access to parents within normalized child datasets
-            //e.g, sqnormds1.hql.  
+            //The following code is commented out because it doesn't work with implicit normalize of child datasets
+            //E.g., ds(count(ds.x.y(ds.x != 0)))
+            //The problem is that it is hard to determine when ds.x is no longer valid. (It is implicitly brought
+            //into scope by the use of ds.x.y.  The correct solution is for it to be removed by the last thing
+            //that uses the dataset operator - i.e. the count, or once normalized the [1] on the no_newaggregate.
+            //There are (semi-pathological) examples of this in the regression suite.
+            //Until it is revisited and fixed the following lines should stay commented out.
+#if 0
             const SelectUsedArray & selectsUsed = extra->querySelectsUsed();
             if (isIndependentOfScope(expr) && selectsUsed.ordinality() != 0)
             {
@@ -1905,6 +1911,7 @@ void ImplicitProjectTransformer::gatherFieldsUsed(IHqlExpression * expr, Implici
                     }
                 }
             }
+#endif
 #endif
             break;
         }
