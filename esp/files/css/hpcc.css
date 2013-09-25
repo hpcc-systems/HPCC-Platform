@@ -435,6 +435,24 @@ hr.dashedLine {
     margin-bottom: 9px;
 }
 
+
+.claro .dijitReadOnly input {
+    background:url("../img/locked.png") no-repeat scroll;
+    background-position: right ;
+}
+
+.claro .dijitReadOnly * {
+    background-color: rgb(219, 219, 219);
+}
+
+.claro .dijitReadOnly .dijitTextBoxReadOnlyFocused{
+    background-color: rgb(219, 219, 219);
+}
+
+.claro .dijitReadOnly .dijitInputInner {
+    color: rgb(122, 122, 122)
+}
+
 .titleLowLite {
     background-color: rgb(24, 59, 79);
 }
@@ -617,12 +635,39 @@ margin-left:-20px;
     width: auto;
 }
 
+.iconUsers{
+    background-image: url("../img/users_silhouette.png");
+    width: 16px;
+    height: 16px;
+    border:none;
+    display:inline-block;
+    vertical-align: middle;
+}
+
+.iconGroups{
+    background-image: url("../img/groups_silhouette.png");
+    width: 16px;
+    height: 16px;
+    border:none;
+    display:inline-block;
+    vertical-align: middle;
+}
+
 .iconAlign{
     vertical-align: middle;
 }
 
 .iconFilter{
     background-image: url("../img/filter.png");
+    width: 16px;
+    height: 16px;
+    border:none;
+    display:inline-block;
+    vertical-align: middle;
+}
+
+.iconFolder{
+    background-image: url("../img/folder.png");
     width: 16px;
     height: 16px;
     border:none;
