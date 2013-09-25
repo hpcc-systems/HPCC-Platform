@@ -2176,6 +2176,17 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
             //If left outer join, and transform doesn't reference RIGHT, and only one rhs record  could match each lhs record (e.g., it was rolled
             //up, or a non-many lookup join, then the join could be converted into a project
             //Can occur once fields get implicitly removed from transforms etc. - e.g., bc10.xhql, although that code has since been fixed.
+
+            //There is no point in distributing the rhs of a global lookup join => remove it.
+            if (transformed->hasAttribute(lookupAtom) && !transformed->hasAttribute(localAtom))
+            {
+                IHqlExpression * rhs = transformed->queryChild(1);
+                if (rhs->getOperator() == no_distribute)
+                {
+                    DBGLOG("Optimizer: Remove %s from RHS of global LOOKUP JOIN", queryNode0Text(rhs));
+                    return ::replaceChild(transformed, 1, rhs->queryChild(0));
+                }
+            }
             break;
         }
     case no_dedup:
