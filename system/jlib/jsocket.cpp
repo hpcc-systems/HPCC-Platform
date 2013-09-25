@@ -795,11 +795,16 @@ int CSocket::pre_connect (bool block)
         err = ERRNO();
         if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED)) {   // handled by caller
             if (err != ENETUNREACH) {
-                LOGERR2(err,1,"pre_connect");
                 pre_conn_unreach_cnt = 0;
+                LOGERR2(err,1,"pre_connect");
             } else {
-                if (pre_conn_unreach_cnt++ < PRE_CONN_UNREACH_ELIM)
-                    LOGERR2(err,1,"pre_connect network unreachable - check gateway");
+                if (pre_conn_unreach_cnt < PRE_CONN_UNREACH_ELIM) {
+                    pre_conn_unreach_cnt++;
+                    LOGERR2(err,1,"pre_connect network unreachable");
+                } else if (pre_conn_unreach_cnt == PRE_CONN_UNREACH_ELIM) {
+                    pre_conn_unreach_cnt++;
+                    LOGERR2(err,1,"pre_connect network unreachable, skipping addl msgs of this type ...");
+                }
             }
         } else
             pre_conn_unreach_cnt = 0;
