@@ -1185,6 +1185,7 @@ ESPStruct [nil_remove] QuerySetQuery
     string Comment;
     [min_ver("1.45")] string QuerySetId;
     [min_ver("1.46")] bool IsLibrary;
+    [min_ver("1.46")] bool Activated;
     [min_ver("1.46")] string PublishedBy;
 };
 
