@@ -2403,7 +2403,7 @@ public:
             StringAttr xPath;
             StringAttr sortOrder;
 
-            void populateQueryTree(const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
+            void populateQueryTree(IPropertyTree* queryRegistry, const char* querySetId, IPropertyTree* querySetTree, const char *xPath, IPropertyTree* queryTree)
             {
                 Owned<IPropertyTreeIterator> iter = querySetTree->getElements(xPath);
                 ForEach(*iter)
@@ -2411,17 +2411,29 @@ public:
                     IPropertyTree &query = iter->query();
                     IPropertyTree *queryWithSetId = queryTree->addPropTree("Query", LINK(&query));
                     queryWithSetId->addProp("@querySetId", querySetId);
+
+                    bool activated = false;
+                    const char* queryId = query.queryProp("@id");
+                    if (queryId && *queryId)
+                    {
+                        VStringBuffer xPath("Alias[@id='%s']", queryId);
+                        IPropertyTree *alias = queryRegistry->queryPropTree(xPath.str());
+                        if (alias)
+                            activated = true;
+                    }
+                    queryWithSetId->addPropBool("@activated", activated);
                 }
             }
 
             IPropertyTree* getAllQuerySetQueries(IRemoteConnection* conn, const char *querySet, const char *xPath)
             {
+                Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
                 Owned<IPropertyTree> queryTree = createPTree("Queries");
                 IPropertyTree* root = conn->queryRoot();
                 if (querySet && *querySet)
                 {
                     VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
-                    populateQueryTree(querySet, root, path.str(), queryTree);
+                    populateQueryTree(queryRegistry, querySet, root, path.str(), queryTree);
                 }
                 else
                 {
@@ -2433,7 +2445,7 @@ public:
                         if (id && *id)
                         {
                             VStringBuffer path("Query%s", xPath);
-                            populateQueryTree(id, &querySet, path.str(), queryTree);
+                            populateQueryTree(queryRegistry, id, &querySet, path.str(), queryTree);
                         }
                     }
                 }
