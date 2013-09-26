@@ -8322,8 +8322,12 @@ class CInitGroups
 
     bool constructGroup(IPropertyTree &cluster, const char *altName, IPropertyTree *oldEnvCluster, GroupType groupType, bool force, StringBuffer &messages)
     {
+        /* a 'realCluster' is a cluster who's name matches it's nodeGroup
+         * if the nodeGroup differs it implies it's sharing the nodeGroup with other thor instance(s).
+         */
         bool realCluster = true;
-        StringBuffer gname;
+        bool oldRealCluster = true;
+        StringBuffer gname, oldGname;
         const char *defDir = NULL;
         switch (groupType)
         {
@@ -8331,6 +8335,12 @@ class CInitGroups
                 getClusterGroupName(cluster, gname);
                 if (!streq(cluster.queryProp("@name"), gname.str()))
                     realCluster = false;
+                if (oldEnvCluster)
+                {
+                    getClusterGroupName(*oldEnvCluster, oldGname);
+                    if (!streq(oldEnvCluster->queryProp("@name"), oldGname.str()))
+                        oldRealCluster = false;
+                }
                 break;
             case grp_thorspares:
                 getClusterSpareGroupName(cluster, gname);
@@ -8351,17 +8361,26 @@ class CInitGroups
         bool matchOldEnv = false;
         Owned<IPropertyTree> newClusterGroup = createClusterGroupFromEnvCluster(groupType, cluster, defDir, realCluster);
         bool matchExisting = clusterGroupCompare(newClusterGroup, existingClusterGroup);
-        if (oldEnvCluster) {
-            Owned<IPropertyTree> oldClusterGroup = createClusterGroupFromEnvCluster(groupType, *oldEnvCluster, defDir, realCluster);
-            matchOldEnv = clusterGroupCompare(newClusterGroup, oldClusterGroup);
+        if (oldEnvCluster)
+        {
+            // new matches old, only if neither has changed it's name to mismatch it's nodeGroup name
+            if (realCluster == oldRealCluster)
+            {
+                Owned<IPropertyTree> oldClusterGroup = createClusterGroupFromEnvCluster(groupType, *oldEnvCluster, defDir, oldRealCluster);
+                matchOldEnv = clusterGroupCompare(newClusterGroup, oldClusterGroup);
+            }
+            else
+                matchOldEnv = false;
         }
-        if (force && !matchExisting) {
+        if (force && !matchExisting)
+        {
             VStringBuffer msg("Forcing new group layout for %s [ matched active = %s, matched old environment = %s ]", gname.str(), matchExisting?"true":"false", matchOldEnv?"true":"false");
             WARNLOG("%s", msg.str());
             messages.append(msg).newline();
             matchExisting = matchOldEnv = false;
         }
-        if (!matchExisting && !matchOldEnv) {
+        if (!matchExisting && !matchOldEnv)
+        {
             VStringBuffer msg("New cluster layout for cluster %s", gname.str());
             WARNLOG("%s", msg.str());
             messages.append(msg).newline();
