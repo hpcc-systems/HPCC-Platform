@@ -259,6 +259,9 @@ define([
         },
 
         Store: declare(null, {
+            SortbyProperty: 'Sortby',
+            DescendingProperty: 'Descending',
+
             constructor: function (options) {
                 if (!this.service) {
                     throw new Error("service:  Undefined - Missing service name (eg 'WsWorkunts').");
@@ -329,10 +332,8 @@ define([
                     }
                 }
                 if (options !== undefined && options.sort !== undefined && options.sort[0].attribute !== undefined) {
-                    request['Sortby'] = options.sort[0].attribute;
-                    if (options.sort[0].descending) {
-                        request['Descending'] = options.sort[0].descending;
-                    }
+                    request[this.SortbyProperty] = options.sort[0].attribute;
+                    request[this.DescendingProperty] = options.sort[0].descending ? true : false;
                 }
                 if (this.preRequest) {
                     this.preRequest(request);

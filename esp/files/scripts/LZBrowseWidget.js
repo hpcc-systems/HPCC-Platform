@@ -339,11 +339,13 @@ define([
                                 }
                             }
                             return false;
-                        }
+                        },
+                        sortable: false
                     }),
                     displayName: tree({
                         label: "Name",
                         collapseOnRefresh: true,
+                        sortable: false,
                         formatter: function (name, row) {
                             var img = "../files/img/";
                             if (row.isDir === undefined) {
@@ -356,8 +358,8 @@ define([
                             return "<img src='" + img + "'/>&nbsp;" + name;
                         }
                     }),
-                    filesize: { label: "Size", width: 108 },
-                    modifiedtime: { label: "Date", width: 180 }
+                    filesize: { label: "Size", width: 108, sortable: false },
+                    modifiedtime: { label: "Date", width: 180, sortable: false }
                 },
                 getSelected: function () {
                     var retVal = [];

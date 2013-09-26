@@ -42,6 +42,11 @@ define([
         countProperty: "Count",
 
         _watched: [],
+        preRequest: function (request) {
+            if (request.Sortby && request.Sortby === "TotalThorTime") {
+                request.Sortby = "ThorTime";
+            }
+        },
         create: function (id) {
             return new Workunit({
                 Wuid: id
