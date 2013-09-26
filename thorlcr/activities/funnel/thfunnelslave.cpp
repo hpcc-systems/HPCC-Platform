@@ -892,6 +892,7 @@ public:
     }
     void stop()
     {
+        stopInput(inputs.item(0));
         if (selectedInput)
             selectedInput->stop();
         dataLinkStop();
