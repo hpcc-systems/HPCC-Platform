@@ -1186,6 +1186,7 @@ offset_t XmlSplitter::getFooterLength(BufferedDirectReader & reader, offset_t si
 CXmlPartitioner::CXmlPartitioner(const FileFormat & _format) : CInputBasePartitioner( _format.maxRecordSize, (_format.maxRecordSize > 0x100000 ?_format.maxRecordSize: 0x100000)), splitter(_format)
 {
     format.set(_format);
+    format.maxRecordSize = _format.maxRecordSize > 0x100000 ?_format.maxRecordSize: 0x100000;
     unitSize = format.getUnitSize();
     utfFormat = getUtfFormatType(format.type);
 }
