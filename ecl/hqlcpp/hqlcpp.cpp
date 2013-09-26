@@ -67,6 +67,8 @@
 #define MAX_STATIC_ROW_SIZE             10000
 #define MAX_LOCAL_ROW_SIZE              32
 #define DEFAULT_NLP_DETAIL              1
+#define DEFAULT_EXPIRY_PERIOD               7
+#define DEFAULT_PERSIST_EXPIRY_PERIOD       0           // Persists that expire by default have a period defined in sasha
 
 
 #ifdef _WIN32
@@ -1526,6 +1528,9 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.reduceNetworkTraffic,"aggressiveOptimizeProjects", false),
         DebugOption(options.notifyOptimizedProjects, "notifyOptimizedProjects", 0),
         DebugOption(options.optimizeProjectsPreservePersists,"optimizeProjectsPreservePersists", false),
+        DebugOption(options.expirePersists, "expirePersists", true),
+        DebugOption(options.defaultPersistExpiry, "defaultPersistExpiry", DEFAULT_PERSIST_EXPIRY_PERIOD),
+        DebugOption(options.defaultExpiry, "defaultExpiry", DEFAULT_EXPIRY_PERIOD),
 
         DebugOption(options.checkAsserts,"checkAsserts", true),
         DebugOption(options.optimizeLoopInvariant,"optimizeLoopInvariant", false),      // doesn't fully work yet! and has little effect, and messes up the alias dependencies

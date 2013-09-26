@@ -558,6 +558,8 @@ struct HqlCppOptions
     unsigned            complexClassesThreshold;
     unsigned            complexClassesActivityFilter;
     unsigned            subgraphToRegeneate;
+    unsigned            defaultPersistExpiry;
+    unsigned            defaultExpiry;
     CompilerType        targetCompiler;
     DBZaction           divideByZeroAction;
     bool                peephole;
@@ -723,6 +725,7 @@ struct HqlCppOptions
     bool                multiplePersistInstances;
     bool                optimizeParentAccess;
     bool                expandPersistInputDependencies;
+    bool                expirePersists;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
