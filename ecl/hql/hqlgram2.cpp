@@ -7659,8 +7659,8 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
     IHqlExpression * keyed = join->queryAttribute(keyedAtom);
     if (keyed)
     {
-        if (join->hasAttribute(allAtom) || join->hasAttribute(lookupAtom))
-            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL not compatible with KEYED");
+        if (join->hasAttribute(allAtom) || join->hasAttribute(lookupAtom) || join->hasAttribute(smartAtom))
+            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL/SMART not compatible with KEYED");
 
         IHqlExpression * index = keyed->queryChild(0);
         if (index)
@@ -7705,9 +7705,9 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
             }
         }
     }
-    if (join->hasAttribute(lookupAtom))
+    if (join->hasAttribute(lookupAtom) || join->hasAttribute(smartAtom))
     {
-        bool isMany = join->hasAttribute(manyAtom);
+        bool isMany = join->hasAttribute(manyAtom) || join->hasAttribute(smartAtom);
         if (ro || fo)
             reportError(ERR_BADKIND_LOOKUPJOIN, err, "JOIN(LOOKUP) only supports INNER, LEFT OUTER, and LEFT ONLY joins");
         if (join->hasAttribute(partitionRightAtom))
@@ -10367,6 +10367,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case SIZEOF: msg.append("SIZEOF"); break;
     case SKEW: msg.append("SKEW"); break;
     case SKIP: msg.append("SKIP"); break;
+    case SMART: msg.append("SMART"); break;
     case SOAPACTION: msg.append("SOAPACTION"); break;
     case __STAND_ALONE__: msg.append("__STAND_ALONE__"); break;
     case HTTPHEADER: msg.append("HTTPHEADER"); break;

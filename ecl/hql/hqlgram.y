@@ -396,6 +396,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   SIZEOF
   SKEW
   SKIP
+  SMART
   SOAPACTION
   SOAPCALL
   SORT
@@ -10040,6 +10041,7 @@ JoinFlag
     | GROUPED           {   $$.setExpr(createComma(createAttribute(lookupAtom), createAttribute(manyAtom), createAttribute(groupedAtom))); $$.setPosition($1); }
     | MANY              {   $$.setExpr(createAttribute(manyAtom)); $$.setPosition($1); }
     | LOOKUP            {   $$.setExpr(createAttribute(lookupAtom)); $$.setPosition($1); }
+    | SMART             {   $$.setExpr(createAttribute(smartAtom)); $$.setPosition($1); }
     | NOSORT            {   $$.setExpr(createAttribute(noSortAtom)); $$.setPosition($1); }
     | NOSORT '(' LEFT ')'
                         {   $$.setExpr(createAttribute(noSortAtom, createAttribute(leftAtom))); $$.setPosition($1); }

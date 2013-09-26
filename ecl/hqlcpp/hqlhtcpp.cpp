@@ -11506,6 +11506,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         isAllJoin = true;
 
     bool isLookupJoin = expr->hasAttribute(lookupAtom);
+    bool isSmartJoin = expr->hasAttribute(smartAtom);
     bool isHashJoin = targetThor() && expr->hasAttribute(hashAtom);
     bool isLocalJoin = !isHashJoin && expr->hasAttribute(localAtom);
     bool joinToSelf = (op == no_selfjoin);
@@ -11628,7 +11629,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             kind = TAKalljoin;
             argName = "AllJoin";
         }
-        else if (isLookupJoin)
+        else if (isLookupJoin || isSmartJoin)
         {
             kind = TAKlookupjoin;
             argName = "HashJoin";
@@ -11651,7 +11652,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             kind = TAKalldenormalize;
             argName = "AllDenormalize";
         }
-        else if (isLookupJoin)
+        else if (isLookupJoin || isSmartJoin)
         {
             kind = TAKlookupdenormalize;
             argName = "HashDenormalize";
@@ -11674,7 +11675,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             kind = TAKalldenormalizegroup;
             argName = "AllDenormalizeGroup";
         }
-        else if (isLookupJoin)
+        else if (isLookupJoin || isSmartJoin)
         {
             kind = TAKlookupdenormalizegroup;
             argName = "HashDenormalizeGroup";
@@ -11764,6 +11765,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         flags.append("|JFleftSortedLocally");
     if (isAlreadySorted(dataset2, joinInfo.queryRightSort(), true, true) || userPreventsSort(noSortAttr, no_right))
         flags.append("|JFrightSortedLocally");
+    if (isSmartJoin) flags.append("|JFsmart|JFmanylookup");
 
     if (flags.length())
         doBuildUnsignedFunction(instance->classctx, "getJoinFlags", flags.str()+1);
@@ -11851,7 +11853,7 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
         buildSlidingMatchFunction(instance->nestedctx, joinInfo.queryLeftSort(), joinInfo.queryRightSort(), joinInfo.slidingMatches, "CompareLeftRightUpper", 2, lhsDsRef, rhsDsRef);
     }
 
-    if (isHashJoin||isLookupJoin)
+    if (isHashJoin||isLookupJoin|isSmartJoin)
     {
         OwnedHqlExpr leftList = createValueSafe(no_sortlist, makeSortListType(NULL), joinInfo.queryLeftReq());
         buildHashOfExprsClass(instance->nestedctx, "HashLeft", leftList, lhsDsRef, false);

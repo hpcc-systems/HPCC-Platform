@@ -1571,6 +1571,7 @@ enum {
     JFindexfromactivity          = 0x02000000,
     JFleftSortedLocally          = 0x04000000,
     JFrightSortedLocally         = 0x08000000,
+    JFsmart                      = 0x10000000,
 };
 
 // FetchFlags

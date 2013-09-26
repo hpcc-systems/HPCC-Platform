@@ -14305,7 +14305,7 @@ bool isKeyedJoin(IHqlExpression * expr)
     node_operator op = expr->getOperator();
     if ((op == no_join) || (op == no_joincount) || (op == no_denormalize) || (op == no_denormalizegroup))
     {
-        if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom))
+        if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom))
             return false;
         if (expr->hasAttribute(keyedAtom) || containsAssertKeyed(expr->queryChild(2)))
             return true;
@@ -14385,7 +14385,7 @@ bool isSelfJoin(IHqlExpression * expr)
     if (datasetL->queryBody() != datasetR->queryBody())
         return false;
 
-    if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom))
+    if (expr->hasAttribute(allAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom))
         return false;
 
     if (expr->queryChild(2)->isConstant())

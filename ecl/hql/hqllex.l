@@ -897,6 +897,7 @@ SINH                { RETURNSYM(SINH); }
 SIZEOF              { RETURNSYM(SIZEOF); }
 SKEW                { RETURNSYM(SKEW); }
 SKIP                { RETURNSYM(SKIP); }
+SMART               { RETURNSYM(SMART); }
 SOAPACTION          { RETURNSYM(SOAPACTION); }
 SOAPCALL            { RETURNSYM(SOAPCALL); }
 SORT                { RETURNSYM(SORT); }
