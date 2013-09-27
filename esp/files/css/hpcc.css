@@ -214,6 +214,12 @@ hr.dashedLine {
     top:56px !important;
 }
 
+.claro .dgridInfo {
+    background-position:left center;
+    background-repeat: no-repeat;
+    padding-left:25px;
+}
+
 #stubTitlebar :focus {
     outline: none;
 }

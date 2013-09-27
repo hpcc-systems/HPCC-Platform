@@ -106,7 +106,7 @@ define([
             if (params.Wuid) {
                 this.wu = ESPWorkunit.Get(params.Wuid);
                 var data = this.wu.getData();
-                for (key in data) {
+                for (var key in data) {
                     this.updateInput(key, null, data[key]);
                 }
                 this.watchWU();

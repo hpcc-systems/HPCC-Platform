@@ -10503,6 +10503,22 @@ bool isExternalFunction(IHqlExpression * funcdef)
 }
 
 
+bool isEmbedFunction(IHqlExpression * funcdef)
+{
+    IHqlExpression * body = funcdef->queryChild(0);
+    if (body->getOperator() != no_outofline)
+        return false;
+    return body->queryChild(0)->getOperator() == no_embedbody;
+}
+
+
+bool isEmbedCall(IHqlExpression * expr)
+{
+    assertex(expr->getOperator() == no_call);
+    return isEmbedFunction(expr->queryBody()->queryFunctionDefinition());
+}
+
+
 inline bool isExternalMethodDefinition(IHqlExpression * funcdef)
 {
     if (funcdef->getOperator() == no_funcdef)

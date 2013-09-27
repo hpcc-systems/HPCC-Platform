@@ -979,7 +979,7 @@ bool CDfsLogicalFileName::setFromMask(const char *fname,const char *rootdir)
         return false;
     // first remove base dir from fname if present
     DFD_OS os = SepCharBaseOs(getPathSepChar(fname));
-    const char *dir = (rootdir&&*rootdir)?rootdir:queryBaseDirectory(0, os);
+    const char *dir = (rootdir&&*rootdir)?rootdir:queryBaseDirectory(grp_unknown, 0, os);
     // ignore drive if present
     if (os==DFD_OSwindows) {
         if (dir[1]==':')

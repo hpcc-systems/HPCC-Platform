@@ -8616,6 +8616,23 @@ IHqlExpression * HqlLinkedChildRowTransformer::createTransformedBody(IHqlExpress
             }
         }
         break;
+    case no_embedbody:
+        //Don't change the type of an embed body - otherwise result it will become link counted when not expected.
+        return LINK(expr);
+    case no_select:
+        {
+            OwnedHqlExpr newDs = transform(expr->queryChild(0));
+            IHqlExpression * record = newDs->queryRecord();
+            IHqlExpression * field = expr->queryChild(1);
+            LinkedHqlExpr newField;
+            if (record)
+                newField.setown(record->querySimpleScope()->lookupSymbol(field->queryName()));
+            HqlExprArray children;
+            children.append(*LINK(newDs));
+            if (newField)
+                children.append(*newField.getClear());
+            return completeTransform(expr, children);
+        }
     }
     return QuickHqlTransformer::createTransformedBody(expr);
 }
@@ -10715,7 +10732,7 @@ IHqlExpression * HqlTreeNormalizer::transformTempTable(IHqlExpression * expr)
 {
     ECLlocation dummyLocation(0, 0, 0, NULL);
     AbortingErrorReceiver errorReporter(errors);
-    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(&errorReporter, dummyLocation, expr);
+    OwnedHqlExpr inlineTable = convertTempTableToInlineTable(errorReporter, dummyLocation, expr);
     if (expr != inlineTable)
         return transform(inlineTable);
 

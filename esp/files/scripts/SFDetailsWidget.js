@@ -139,7 +139,7 @@ define([
             if (params.Name) {
                 this.logicalFile = ESPLogicalFile.Get(params.Name);
                 var data = this.logicalFile.getData();
-                for (key in data) {
+                for (var key in data) {
                     this.updateInput(key, null, data[key]);
                 }
                 this.logicalFile.watch(function (name, oldValue, newValue) {

@@ -443,7 +443,7 @@ extern ECLRTL_API byte *rtlDictionaryLookupString(size32_t tableSize, byte **tab
 extern ECLRTL_API byte *rtlDictionaryLookupStringN(size32_t tableSize, byte **table, size32_t N, size32_t len, const char *source, byte *defaultRow);
 extern ECLRTL_API byte *rtlDictionaryLookupSigned(size32_t tableSize, byte **table, __int64 source, byte *defaultRow);
 extern ECLRTL_API byte *rtlDictionaryLookupUnsigned(size32_t tableSize, byte **table, __uint64 source, byte *defaultRow);
-extern ECLRTL_API byte *rtlDictionaryLookupSignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source, byte *defaultRow);
+extern ECLRTL_API byte *rtlDictionaryLookupSignedN(size32_t tableSize, byte **table, size32_t size, __int64 source, byte *defaultRow);
 extern ECLRTL_API byte *rtlDictionaryLookupUnsignedN(size32_t tableSize, byte **table, size32_t size, __uint64 source, byte *defaultRow);
 
 extern ECLRTL_API bool rtlDictionaryLookupExists(IHThorHashLookupInfo &hashInfo, size32_t tableSize, byte **table, const byte *source);

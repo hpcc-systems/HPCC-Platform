@@ -945,7 +945,6 @@ public:
     bool getProtectedInfo(const CDfsLogicalFileName &logicalname, StringArray &names, UnsignedArray &counts);
     IDFProtectedIterator *lookupProtectedFiles(const char *owner=NULL,bool notsuper=false,bool superonly=false);
 
-    static bool cannotRemove(CDfsLogicalFileName &name,IUserDescriptor *user,StringBuffer &reason,bool ignoresub, unsigned timeoutms);
     void setFileProtect(CDfsLogicalFileName &dlfn,IUserDescriptor *user, const char *owner, bool set, const INode *foreigndali=NULL,unsigned foreigndalitimeout=FOREIGN_DALI_TIMEOUT);
 
     unsigned setDefaultTimeout(unsigned timems)
@@ -1181,7 +1180,7 @@ public:
         if (!file->canRemove(reason, false))
             ThrowStringException(-1, "Can't remove %s: %s", lfn.get(), reason.str());
 
-        // This will do the right thing for either super-files and logical-files
+        // This will do the right thing for either super-files and logical-files.
         file->detach();
     }
 };
@@ -2801,7 +2800,13 @@ protected:
                         ThrowStringException(-1, "Cluster %s not present in file %s", clusterName.str(), logicalName.get());
                 }
             }
-
+            if (removeFile)
+            {
+                // check can remove, e.g. cannot if this is a subfile of a super
+                StringBuffer reason;
+                if (!canRemove(reason))
+                    throw MakeStringException(-1,"detach: %s", reason.str());
+            }
             // detach this IDistributeFile
             writeLock.clear();
             root.setown(closeConnection(removeFile));
@@ -3056,8 +3061,7 @@ public:
                                     fdesc->getClusterGroupName(i,cname,NULL).str(),
                                     fdesc->queryClusterGroup(i),
                                     fdesc->queryPartDiskMapping(i),
-                                    &queryNamedGroupStore(),
-                                    fdesc->queryClusterRoxieLabel(i)
+                                    &queryNamedGroupStore()
                                     );
 #ifdef EXTRA_LOGGING
                 PROGLOG("setClusters(%d,%s)",i,cname.str());
@@ -3592,7 +3596,7 @@ public:
         if (newbasedir)
             diroverride = newbasedir;
 
-        const char *myBase = queryBaseDirectory(0, os);
+        const char *myBase = queryBaseDirectory(grp_unknown, 0, os);
         StringBuffer baseDir, newPath;
         makePhysicalPartName(logicalName.get(), 0, 0, newPath, false, os, diroverride);
         if (!getBase(directory, newPath, baseDir))
@@ -6210,8 +6214,10 @@ public:
             Owned<IPropertyTree> pt = getNamedPropTree(conn->queryRoot(),"Group","@name",gname.str(),true);
             if (!pt)
                 return NULL;
-            groupdir.set(pt->queryProp("@dir"));
             type = translateGroupType(pt->queryProp("@kind"));
+            groupdir.set(pt->queryProp("@dir"));
+            if (groupdir.isEmpty())
+                groupdir.set(queryBaseDirectory(type));
             Owned<IPropertyTreeIterator> pe2 = pt->getElements("Node");
             ForEach(*pe2) {
                 SocketEndpoint ep(pe2->query().queryProp("@ip"));

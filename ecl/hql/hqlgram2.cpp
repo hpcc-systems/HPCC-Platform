@@ -5271,7 +5271,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
     {
         OwnedHqlExpr list = createValue(no_null);
         OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
-        return convertTempTableToInlineTable(errorHandler, listAttr.pos, table);
+        return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
         return createDataset(no_null, LINK(record));
     }
 
@@ -5312,7 +5312,7 @@ IHqlExpression * HqlGram::createDatasetFromList(attribute & listAttr, attribute 
         reportError(ERR_RECORD_NOT_MATCH_SET, recordAttr, "The field in the record does not match the type of the set elements");
     
     OwnedHqlExpr table = createDataset(no_temptable, LINK(list), record.getClear());
-    return convertTempTableToInlineTable(errorHandler, listAttr.pos, table);
+    return convertTempTableToInlineTable(*errorHandler, listAttr.pos, table);
 }
 
 
@@ -8778,7 +8778,7 @@ IHqlExpression * HqlGram::associateSideEffects(IHqlExpression * expr, const ECLl
         }
         else
         {
-            reportError(ERR_RESULT_IGNORED, errpos, "WHEN must be used to associated an action with a definition");
+            reportError(ERR_RESULT_IGNORED, errpos, "WHEN must be used to associate an action with a definition");
         }
         clearSideEffects();
     }

@@ -1155,7 +1155,8 @@ typedef IArrayOf<IConstWUClusterInfo> CConstWUClusterInfoArray;
 extern WORKUNIT_API unsigned getEnvironmentClusterInfo(CConstWUClusterInfoArray &clusters);
 extern WORKUNIT_API unsigned getEnvironmentClusterInfo(IPropertyTree* environmentRoot, CConstWUClusterInfoArray &clusters);
 extern WORKUNIT_API void getRoxieProcessServers(const char *process, SocketEndpointArray &servers);
-
+extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *process);
+extern WORKUNIT_API bool isProcessCluster(const char *process);
 
 extern WORKUNIT_API bool getWorkUnitCreateTime(const char *wuid,CDateTime &time); // based on WUID
 extern WORKUNIT_API bool restoreWorkUnit(const char *base,const char *wuid);

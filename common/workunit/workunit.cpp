@@ -4246,6 +4246,31 @@ extern WORKUNIT_API IStringIterator *getTargetClusters(const char *processType, 
     return ret.getClear();
 }
 
+extern WORKUNIT_API bool isProcessCluster(const char *process)
+{
+    if (!process || !*process)
+        return false;
+    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
+    if (!conn)
+        return false;
+    VStringBuffer xpath("Software/*Cluster[@name=\"%s\"]", process);
+    return conn->queryRoot()->hasProp(xpath.str());
+}
+
+extern WORKUNIT_API bool isProcessCluster(const char *remoteDali, const char *process)
+{
+    if (!remoteDali || !*remoteDali)
+        return isProcessCluster(process);
+    if (!process || !*process)
+        return false;
+    Owned<INode> remote = createINode(remoteDali, 7070);
+    if (!remote)
+        return false;
+    VStringBuffer xpath("Environment/Software/*Cluster[@name=\"%s\"]/@name", process);
+    Owned<IPropertyTreeIterator> clusters = querySDS().getElementsRaw(xpath, remote, 1000*60*1);
+    return clusters->first();
+}
+
 IConstWUClusterInfo* getTargetClusterInfo(IPropertyTree *environment, IPropertyTree *cluster)
 {
     const char *clustname = cluster->queryProp("@name");

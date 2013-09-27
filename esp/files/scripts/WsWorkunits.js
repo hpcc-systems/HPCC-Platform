@@ -82,7 +82,24 @@ define([
         },
 
         WUQuery: function (params) {
-            return ESPRequest.send("WsWorkunits", "WUQuery", params);
+            return ESPRequest.send("WsWorkunits", "WUQuery", params).then(function (response) {
+                if (lang.exists("Exceptions.Exception", response)) {
+                    arrayUtil.forEach(response.Exceptions.Exception, function (item, idx) {
+                        if (item.Code === 20081) {
+                            lang.mixin(response, {
+                                WUQueryResponse: {
+                                    Workunit: {
+                                        Wuid: params.request.Wuid,
+                                        StateID: 999,
+                                        State: "deleted"
+                                    }
+                                }
+                            });
+                        }
+                    });
+                }
+                return response;
+            });
         },
 
         WUInfo: function (params) {

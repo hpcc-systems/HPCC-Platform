@@ -322,25 +322,25 @@ static bool deleteEmptyDir(IFile *dir)
 {
     // this is a bit odd - basically we already know no files but there may be empty sub-dirs
     Owned<IDirectoryIterator> iter = dir->directoryFiles(NULL,false,true);
-    IArrayOf<IFile> subdirs;
     bool candelete = true;
-    ForEach(*iter) {
-        if (iter->isDir()) 
-            subdirs.append(iter->get());
+    ForEach(*iter)
+    {
+        if (iter->isDir())
+        {
+            Owned<IFile> file = &iter->get();
+            try
+            {
+                if (!deleteEmptyDir(file))
+                    candelete = false;
+            }
+            catch (IException *e)
+            {
+                EXCLOG(e,"deleteEmptyDir");
+                candelete = false;
+            }
+        }
         else
             candelete = false;
-    }
-    if (!candelete)
-        return false;
-    try {
-        ForEachItemIn(i,subdirs) {
-            if (!deleteEmptyDir(&subdirs.item(i)))
-                candelete = false;
-        }
-    }
-    catch (IException *e) {
-        EXCLOG(e,"deleteEmptyDir");
-        candelete = false;
     }
     if (!candelete)
         return false;

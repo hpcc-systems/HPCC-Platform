@@ -101,17 +101,6 @@ const unsigned roxieQueryRoxieTimeOut = 60000;
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
-bool isRoxieProcess(const char *process)
-{
-    if (!process)
-        return false;
-    Owned<IRemoteConnection> conn = querySDS().connect("Environment", myProcessSession(), RTM_LOCK_READ, SDS_LOCK_TIMEOUT);
-    if (!conn)
-        return false;
-    VStringBuffer xpath("Software/RoxieCluster[@name=\"%s\"]", process);
-    return conn->queryRoot()->hasProp(xpath.str());
-}
-
 bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, IUserDescriptor* userdesc)
 {
     Owned<IDistributedFile> dst = queryDistributedFileDirectory().lookup(logicalname, userdesc, true);
@@ -134,7 +123,7 @@ bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, con
     return isFileKnownOnCluster(logicalname, lookupDaliIp, clusterInfo, userdesc);
 }
 
-void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, bool overWrite, IUserDescriptor* userdesc)
+void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, bool overWrite, IUserDescriptor* userdesc)
 {
     StringBuffer user;
     StringBuffer password;
@@ -148,8 +137,8 @@ void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const ch
     Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password);
     wufiles->addFiles(fileNames);
     SCMStringBuffer processName;
-    clusterInfo->getRoxieProcess(processName);
-    wufiles->resolveFiles(processName.str(), lookupDaliIp, !overWrite, false);
+    dstInfo->getRoxieProcess(processName);
+    wufiles->resolveFiles(processName.str(), lookupDaliIp, srcCluster, !overWrite, false);
     Owned<IDFUhelper> helper = createIDFUhelper();
     wufiles->cloneAllInfo(helper, overWrite, true);
 
@@ -157,18 +146,18 @@ void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const ch
     ForEach(*iter)
     {
         IReferencedFile &item = iter->query();
-        if (item.getFlags() & RefFileNotFound)
+        if (item.getFlags() & (RefFileNotFound | RefFileNotOnSource))
             notFound.append(item.getLogicalName());
     }
 }
 
-void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const char *lookupDaliIp, const char *target, bool overWrite, IUserDescriptor* userdesc)
+void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, bool overWrite, IUserDescriptor* userdesc)
 {
-    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
+    Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(dstCluster);
     if (!clusterInfo)
-        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
+        throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", dstCluster);
 
-    cloneFileInfoToDali(notFound, fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
+    cloneFileInfoToDali(notFound, fileNames, lookupDaliIp, clusterInfo, srcCluster, overWrite, userdesc);
 }
 
 
@@ -186,8 +175,13 @@ void makePackageActive(IPropertyTree *pkgSetRegistry, IPropertyTree *pkgSetTree,
 
 //////////////////////////////////////////////////////////
 
-void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, IPropertyTree *packageInfo, bool activate, bool overWrite, IUserDescriptor* userdesc)
+void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry, const char *target, const char *pmid, const char *packageSetName, const char *lookupDaliIp, const char *srcCluster, IPropertyTree *packageInfo, bool activate, bool overWrite, IUserDescriptor* userdesc)
 {
+    if (srcCluster && *srcCluster)
+    {
+        if (!isProcessCluster(lookupDaliIp, srcCluster))
+            throw MakeStringException(PKG_INVALID_CLUSTER_TYPE, "Process cluster %s not found on %s DALI", srcCluster, lookupDaliIp ? lookupDaliIp : "local");
+    }
     Owned<IRemoteConnection> globalLock = querySDS().connect("/PackageMaps/", myProcessSession(), RTM_LOCK_WRITE|RTM_CREATE_QUERY, SDS_LOCK_TIMEOUT);
 
     StringBuffer lcPmid(pmid);
@@ -257,7 +251,7 @@ void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry
     }
 
     mergePTree(mapTree, baseInfo);
-    cloneFileInfoToDali(filesNotFound, fileNames, lookupDaliIp, clusterInfo, overWrite, userdesc);
+    cloneFileInfoToDali(filesNotFound, fileNames, lookupDaliIp, clusterInfo, srcCluster, overWrite, userdesc);
 
     globalLock->commit();
 
@@ -498,7 +492,7 @@ bool CWsPackageProcessEx::onAddPackage(IEspContext &context, IEspAddPackageReque
     StringArray filesNotFound;
     StringBuffer pkgSetId;
     buildPkgSetId(pkgSetId, processName.get());
-    addPackageMapInfo(filesNotFound, pkgSetRegistry, target.get(), pmid.str(), pkgSetId.str(), req.getDaliIp(), LINK(packageTree), activate, overWrite, userdesc);
+    addPackageMapInfo(filesNotFound, pkgSetRegistry, target.get(), pmid.str(), pkgSetId.str(), req.getDaliIp(), req.getSourceProcess(), LINK(packageTree), activate, overWrite, userdesc);
     resp.setFilesNotFound(filesNotFound);
 
     StringBuffer msg;
@@ -604,7 +598,7 @@ bool CWsPackageProcessEx::onValidatePackage(IEspContext &context, IEspValidatePa
     {
         Owned<IReferencedFileList> pmfiles = createReferencedFileList(context.queryUserId(), context.queryPassword());
         pmfiles->addFilesFromPackageMap(mapTree);
-        pmfiles->resolveFiles(process.str(), NULL, true, false);
+        pmfiles->resolveFiles(process.str(), NULL, NULL, true, false);
         Owned<IReferencedFileIterator> files = pmfiles->getFiles();
         StringArray notInDFS;
         ForEach(*files)

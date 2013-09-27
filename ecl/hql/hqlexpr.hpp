@@ -1713,6 +1713,8 @@ extern HQL_API bool isUpdatedConditionally(IHqlExpression * expr);
 extern HQL_API bool activityMustBeCompound(IHqlExpression * expr);
 extern HQL_API unsigned queryCurrentTransformDepth();                   // debugging - only valid inside a transform
 extern HQL_API bool isExternalFunction(IHqlExpression * funcdef);
+extern HQL_API bool isEmbedFunction(IHqlExpression * expr);
+extern HQL_API bool isEmbedCall(IHqlExpression * expr);
 
 typedef enum { 
     //Flags to indicate which datasets are available in scope
