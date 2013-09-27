@@ -433,60 +433,6 @@
           </listitem>
 
           <listitem>
-            <para>Click on the <emphasis role="bold">Settings</emphasis> Icon,
-            this will open up the settings dialog window. <figure
-                id="VBoxSettingIcon">
-                <title xreflabel="welc">VirtualBox Settings Icon</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/vmimg16.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-          </listitem>
-
-          <listitem>
-            <para>Select the <emphasis role="bold">Network</emphasis> menu
-            option. On the <emphasis>Adapter 1</emphasis> tab check the
-            <emphasis>Enable Network Adapter</emphasis> box, and set the
-            <emphasis>Attached to:</emphasis> option to <emphasis
-            role="bold">NAT</emphasis>. <figure id="VBoxNet1">
-                <title xreflabel="welc">VM VirtualBox Network Adapter
-                1</title>
-
-                <mediaobject>
-                  <imageobject>
-                    <imagedata fileref="images/vmimg17.jpg" />
-                  </imageobject>
-                </mediaobject>
-              </figure></para>
-
-            <variablelist>
-              <varlistentry>
-                <term>Note:</term>
-
-                <listitem>
-                  <para>These settings may be set as required by default. If
-                  so just verify that they are correct.</para>
-                </listitem>
-              </varlistentry>
-            </variablelist>
-          </listitem>
-
-          <listitem>
-            <para>From the same <emphasis>Network - Settings</emphasis>
-            window, select the tab for<emphasis> Adapter 2</emphasis>. Check
-            the <emphasis>Enable Network Adapter</emphasis> box, and set the
-            <emphasis>Attached to:</emphasis> option to <emphasis
-            role="bold">Host-only Adapter</emphasis>.</para>
-          </listitem>
-
-          <listitem>
-            <para>Press the <emphasis role="bold">OK</emphasis> button.</para>
-          </listitem>
-
-          <listitem>
             <para>From the <emphasis role="bold">File</emphasis> menu, select
             <emphasis role="bold">Preferences</emphasis>...</para>
 
@@ -610,6 +556,65 @@
             <listitem>
               <para>At the main window, the newly imported virtual machine is
               now listed.</para>
+            </listitem>
+
+            <listitem>
+              <para>Select the new virtual machine.</para>
+            </listitem>
+
+            <listitem>
+              <para>Click on the <emphasis role="bold">Settings</emphasis>
+              Icon, this will open up the settings dialog window. <figure
+                  id="VBoxSettingIcon">
+                  <title xreflabel="welc">VirtualBox Settings Icon</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg16.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+            </listitem>
+
+            <listitem>
+              <para>Select the <emphasis role="bold">Network</emphasis> menu
+              option. On the <emphasis>Adapter 1</emphasis> tab check the
+              <emphasis>Enable Network Adapter</emphasis> box, and set the
+              <emphasis>Attached to:</emphasis> option to <emphasis
+              role="bold">NAT</emphasis>. <figure id="VBoxNet1">
+                  <title xreflabel="welc">VM VirtualBox Network Adapter
+                  1</title>
+
+                  <mediaobject>
+                    <imageobject>
+                      <imagedata fileref="images/vmimg17.jpg" />
+                    </imageobject>
+                  </mediaobject>
+                </figure></para>
+
+              <variablelist>
+                <varlistentry>
+                  <term>Note:</term>
+
+                  <listitem>
+                    <para>These settings may be set as required by default. If
+                    so just verify that they are correct.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>
+            </listitem>
+
+            <listitem>
+              <para>From the same <emphasis>Network - Settings</emphasis>
+              window, select the tab for<emphasis> Adapter 2</emphasis>. Check
+              the <emphasis>Enable Network Adapter</emphasis> box, and set the
+              <emphasis>Attached to:</emphasis> option to <emphasis
+              role="bold">Host-only Adapter</emphasis>.</para>
+            </listitem>
+
+            <listitem>
+              <para>Press the <emphasis role="bold">OK</emphasis>
+              button.</para>
             </listitem>
 
             <listitem>
