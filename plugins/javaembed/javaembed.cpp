@@ -108,6 +108,7 @@ public:
         ForEachItemIn(idx, optionStrings)
         {
             options[idx].optionString = (char *) optionStrings.item(idx);
+            options[idx].extraInfo = NULL;
         }
         vm_args.nOptions = optionStrings.length();
         vm_args.options = options;
