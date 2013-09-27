@@ -613,6 +613,7 @@
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
                             <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                            <xsl:with-param name="statusDetails" select="StatusDetails"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -623,6 +624,7 @@
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
                             <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                            <xsl:with-param name="statusDetails" select="StatusDetails"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -633,6 +635,7 @@
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
                             <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                            <xsl:with-param name="statusDetails" select="StatusDetails"/>
                         </xsl:call-template>
                     </xsl:for-each>
 
@@ -643,6 +646,7 @@
                             <xsl:with-param name="clusterType" select="ServerType"/>
                             <xsl:with-param name="queue" select="QueueName"/>
                             <xsl:with-param name="queueStatus" select="QueueStatus"/>
+                            <xsl:with-param name="statusDetails" select="StatusDetails"/>
                         </xsl:call-template>
                     </xsl:for-each>
                     <xsl:apply-templates select="DFUJobs"/>
@@ -768,15 +772,12 @@
                                 <xsl:choose>
                                     <xsl:when test="$queueStatus='paused'">
                                         <xsl:attribute name="class">thorrunningpausedqueuejobs</xsl:attribute>
-                                        <xsl:attribute name="title">Queue paused</xsl:attribute>
                                     </xsl:when>
                                     <xsl:when test="$queueStatus='stopped'">
                                         <xsl:attribute name="class">thorrunningpausedqueuejobs</xsl:attribute>
-                                        <xsl:attribute name="title">Queue stopped</xsl:attribute>
                                     </xsl:when>
                                     <xsl:otherwise>
                                         <xsl:attribute name="class">thorrunning</xsl:attribute>
-                                        <xsl:attribute name="title">Queue running</xsl:attribute>
                                     </xsl:otherwise>
                                 </xsl:choose>
                             </xsl:when>
@@ -798,11 +799,11 @@
                                         <xsl:attribute name="class">thorrunning</xsl:attribute>
                                     </xsl:otherwise>
                                 </xsl:choose>
-                                <xsl:attribute name="title">
-                                    <xsl:value-of select="$statusDetails"/>
-                                </xsl:attribute>
                             </xsl:otherwise>
                         </xsl:choose>
+                        <xsl:attribute name="title">
+                            <xsl:value-of select="$statusDetails"/>
+                        </xsl:attribute>
                         <xsl:if test="$clusterType = 'THOR'">
                             <xsl:attribute name="href">javascript:go('/WsTopology/TpClusterInfo?Name=<xsl:value-of select="$cluster"/>')</xsl:attribute>
                         </xsl:if>
