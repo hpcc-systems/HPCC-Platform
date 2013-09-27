@@ -5255,6 +5255,7 @@ WorkflowTransformer::WorkflowTransformer(IWorkUnit * _wu, HqlCppTranslator & _tr
     onceWfid = 0;
     combineAllStored = translator.queryOptions().combineAllStored;
     combineTrivialStored = translator.queryOptions().combineTrivialStored;
+    expandPersistInputDependencies = translator.queryOptions().expandPersistInputDependencies;
     isRootAction = true;
     isRoxie = (translator.getTargetClusterType() == RoxieCluster);
     workflowOut = NULL;
@@ -5417,6 +5418,9 @@ void WorkflowTransformer::extractDependentInputs(UnsignedArray & visited, Depend
         switch (match->workflowOp)
         {
         case no_persist:
+            if (expandPersistInputDependencies)
+                break;
+            continue;
         case no_stored:
             continue;
         }
