@@ -497,7 +497,7 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     inline bool isLookup() { return (joinKind==join_lookup)||(joinKind==denormalize_lookup); }
     inline bool isAll() { return (joinKind==join_all)||(joinKind==denormalize_all); }
     inline bool isDenormalize() { return (joinKind==denormalize_all)||(joinKind==denormalize_lookup); }
-    inline bool isGroupOp() { return (TAKlookupdenormalizegroup == container.getKind() || TAKalldenormalizegroup == container.getKind()); }
+    inline bool isGroupOp() { return (TAKlookupdenormalizegroup == container.getKind() || TAKsmartdenormalizegroup == container.getKind() || TAKalldenormalizegroup == container.getKind()); }
     StringBuffer &getJoinTypeStr(StringBuffer &str)
     {
         switch(joinType)

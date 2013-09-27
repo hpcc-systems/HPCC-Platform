@@ -1,0 +1,67 @@
+<Dataset name='Result 1'>
+ <Row><i>1</i><idl>A</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>A</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>A</idl><idr>c</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>c</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>a</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>b</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>c</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>x</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>y</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>x</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>y</idr></Row>
+</Dataset>
+<Dataset name='Result 2'>
+ <Row><cnt>13</cnt></Row>
+</Dataset>
+<Dataset name='Result 3'>
+ <Row><i>1</i><idl>A</idl><idr>A</idr></Row>
+ <Row><i>1</i><idl>A</idl><idr>B</idr></Row>
+ <Row><i>1</i><idl>A</idl><idr>C</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>A</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>B</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>C</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>A</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>B</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>C</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>X</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>Y</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>X</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>Y</idr></Row>
+</Dataset>
+<Dataset name='Result 4'>
+ <Row><i>1</i><idl>A</idl><idr>abc</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>abc</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>abc</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>xy</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>xy</idr></Row>
+</Dataset>
+<Dataset name='Result 5'>
+ <Row><cnt>5</cnt></Row>
+</Dataset>
+<Dataset name='Result 6'>
+ <Row><i>1</i><idl>A</idl><idr>ABC</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>ABC</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>ABC</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>XY</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>XY</idr></Row>
+</Dataset>
+<Dataset name='Result 7'>
+ <Row><i>1</i><idl>A</idl><idr>abc</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>abc</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>abc</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>xy</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>xy</idr></Row>
+</Dataset>
+<Dataset name='Result 8'>
+ <Row><cnt>5</cnt></Row>
+</Dataset>
+<Dataset name='Result 9'>
+ <Row><i>1</i><idl>A</idl><idr>ABC</idr></Row>
+ <Row><i>1</i><idl>B</idl><idr>ABC</idr></Row>
+ <Row><i>1</i><idl>C</idl><idr>ABC</idr></Row>
+ <Row><i>2</i><idl>X</idl><idr>XY</idr></Row>
+ <Row><i>2</i><idl>Y</idl><idr>XY</idr></Row>
+</Dataset>

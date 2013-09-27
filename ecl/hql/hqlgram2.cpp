@@ -7654,14 +7654,33 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
     bool ro = join->hasAttribute(rightouterAtom) || ronly;
     bool fo = join->hasAttribute(fullouterAtom) || fonly;
     bool keep = join->hasAttribute(keepAtom);
+    bool isLookup = join->hasAttribute(lookupAtom);
+    bool isSmart = join->hasAttribute(smartAtom);
+    bool isAll = join->hasAttribute(allAtom);
     IHqlExpression * rowLimit = join->queryAttribute(rowLimitAtom);
-
     IHqlExpression * keyed = join->queryAttribute(keyedAtom);
+
     if (keyed)
     {
-        if (join->hasAttribute(allAtom) || join->hasAttribute(lookupAtom) || join->hasAttribute(smartAtom))
-            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL/SMART not compatible with KEYED");
+        if (isAll || isLookup || isSmart)
+            reportError(ERR_KEYEDINDEXINVALID, err, "LOOKUP/ALL/SMART is not compatible with KEYED");
+    }
+    else if (isLookup)
+    {
+        //The following should be, and will become, an error.  However too many legacy queries have it, so make a warning for now.
+        if (isAll)
+            reportWarning(ERR_KEYEDINDEXINVALID, err.pos, "ALL is not compatible with LOOKUP");
+        if (isSmart)
+            reportError(ERR_KEYEDINDEXINVALID, err.pos, "SMART is not compatible with LOOKUP");
+    }
+    else if (isSmart)
+    {
+        if (isAll)
+            reportError(ERR_KEYEDINDEXINVALID, err, "ALL is not compatible with KEYED");
+    }
 
+    if (keyed)
+    {
         IHqlExpression * index = keyed->queryChild(0);
         if (index)
         {
@@ -7705,21 +7724,22 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
             }
         }
     }
-    if (join->hasAttribute(lookupAtom) || join->hasAttribute(smartAtom))
+    if (isLookup || isSmart)
     {
-        bool isMany = join->hasAttribute(manyAtom) || join->hasAttribute(smartAtom);
+        bool isMany = join->hasAttribute(manyAtom) || isSmart;
+        const char * joinText = isSmart ? "Smart" : "Lookup";
         if (ro || fo)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "JOIN(LOOKUP) only supports INNER, LEFT OUTER, and LEFT ONLY joins");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins only support INNER, LEFT OUTER, and LEFT ONLY joins", joinText);
         if (join->hasAttribute(partitionRightAtom))
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support PARTITION RIGHT");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support PARTITION RIGHT", joinText);
         if (keep && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support KEEP");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support KEEP", joinText);
         if (join->hasAttribute(atmostAtom) && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support ATMOST");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support ATMOST", joinText);
         if (rowLimit && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Lookup joins do not support LIMIT (they can only match 1 entry)");
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support LIMIT (they can only match 1 entry)", joinText);
         if (isKey(join->queryChild(1)))
-            reportWarning(ERR_BADKIND_LOOKUPJOIN, err.pos, "Lookup specified on an unfiltered keyed join - was this intended?");
+            reportWarning(ERR_BADKIND_LOOKUPJOIN, err.pos, "%s specified on an unfiltered keyed join - was this intended?", joinText);
     }
     else if (isKeyedJoin(join))
     {
@@ -7769,6 +7789,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
         if (isKey(cur))
             reportWarning(ERR_BAD_JOINFLAG, err.pos, "Filtered RIGHT prevents a keyed join being used.  Consider including the filter in the join condition.");
     }
+
 }
 
 

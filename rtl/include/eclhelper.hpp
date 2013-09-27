@@ -850,6 +850,9 @@ enum ThorActivityKind
     TAKexternalprocess,
     TAKdictionaryworkunitwrite,
     TAKdictionaryresultwrite,
+    TAKsmartjoin,
+    TAKsmartdenormalize,
+    TAKsmartdenormalizegroup,
 
     TAKlast
 };

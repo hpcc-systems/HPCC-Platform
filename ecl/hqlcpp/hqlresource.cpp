@@ -91,7 +91,6 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
         }
         else if (expr->hasAttribute(smartAtom))
         {
-            //GH->JCS what should we assume here?
             resources.setHeavyweight();
             setHashResources(expr, resources, options);
         }

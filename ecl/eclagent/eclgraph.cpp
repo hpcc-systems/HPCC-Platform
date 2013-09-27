@@ -91,6 +91,9 @@ static IHThorActivity * createActivity(IAgentContext & agent, unsigned activityI
     case TAKlookupjoin:
     case TAKlookupdenormalize:
     case TAKlookupdenormalizegroup:
+    case TAKsmartjoin:
+    case TAKsmartdenormalize:
+    case TAKsmartdenormalizegroup:
         return createLookupJoinActivity(agent, activityId, subgraphId, (IHThorHashJoinArg &)arg, kind);
     case TAKalljoin:
     case TAKalldenormalize:

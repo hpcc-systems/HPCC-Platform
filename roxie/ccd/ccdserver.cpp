@@ -17095,6 +17095,7 @@ private:
     bool limitFail;
     bool limitOnFail;
     bool hasGroupLimit;
+    bool isSmartJoin;
     unsigned keepCount;
     bool gotMatch;
     bool cloneLeft;
@@ -17140,7 +17141,8 @@ public:
         atmostsTriggered = 0;
         limitLimit = 0;
         hasGroupLimit = false;
-        getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
+        isSmartJoin = (joinFlags & JFsmart) != 0;
+        getLimitType(joinFlags, limitFail, limitOnFail);
     }
 
     void loadRight()
@@ -17201,7 +17203,17 @@ public:
         if(atmostLimit==0) atmostLimit = static_cast<unsigned>(-1);
         if(limitLimit==0) limitLimit = static_cast<unsigned>(-1);
         getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
-        if (((activityKind==TAKlookupjoin || activityKind==TAKlookupdenormalizegroup) && leftOuterJoin) || limitOnFail)
+        switch (activityKind)
+        {
+        case TAKlookupjoin:
+        case TAKlookupdenormalizegroup:
+        case TAKsmartjoin:
+        case TAKsmartdenormalizegroup:
+            if (leftOuterJoin)
+                createDefaultRight();
+            break;
+        }
+        if (limitOnFail)
             createDefaultRight();
     }
 
@@ -17229,9 +17241,12 @@ public:
         switch (activityKind)
         {
             case TAKlookupjoin:
+            case TAKsmartjoin:
                 return nextInGroupJoin();
             case TAKlookupdenormalize:
             case TAKlookupdenormalizegroup:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
                 return nextInGroupDenormalize();
         }
         throwUnexpected();
@@ -17251,14 +17266,20 @@ private:
                 keepCount = keepLimit;
                 if(!left)
                 {
-                    if(matchedGroup || eog)
+                    if (isSmartJoin)
+                        left = input->nextInGroup();
+
+                    if (!left)
                     {
-                        matchedGroup = false;
+                        if(matchedGroup || eog)
+                        {
+                            matchedGroup = false;
+                            eog = true;
+                            return NULL;
+                        }
                         eog = true;
-                        return NULL;
+                        continue;
                     }
-                    eog = true;
-                    continue;
                 }
                 eog = false;
                 gotMatch = false;
@@ -17315,7 +17336,7 @@ private:
             left = input->nextInGroup();
             if(!left)
             {
-                if (!matchedGroup)
+                if (!matchedGroup || isSmartJoin)
                     left = input->nextInGroup();
 
                 if (!left)
@@ -17330,7 +17351,7 @@ private:
             const void * ret = NULL;
             if (failingLimit)
                 ret = joinException(left, failingLimit);
-            else if (activityKind == TAKlookupdenormalize)
+            else if (activityKind == TAKlookupdenormalize || activityKind == TAKsmartdenormalize)
             {
                 OwnedConstRoxieRow newLeft;
                 newLeft.set(left);

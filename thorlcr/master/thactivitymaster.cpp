@@ -262,6 +262,9 @@ public:
             case TAKalljoin:
             case TAKlookupdenormalize:
             case TAKlookupdenormalizegroup:
+            case TAKsmartjoin:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
             case TAKalldenormalize:
             case TAKalldenormalizegroup:
                 ret = createLookupJoinActivityMaster(this);

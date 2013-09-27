@@ -11629,9 +11629,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             kind = TAKalljoin;
             argName = "AllJoin";
         }
-        else if (isLookupJoin || isSmartJoin)
+        else if (isLookupJoin)
         {
             kind = TAKlookupjoin;
+            argName = "HashJoin";
+        }
+        else if (isSmartJoin)
+        {
+            kind = TAKsmartjoin;
             argName = "HashJoin";
         }
         else if (isHashJoin)
@@ -11652,9 +11657,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             kind = TAKalldenormalize;
             argName = "AllDenormalize";
         }
-        else if (isLookupJoin || isSmartJoin)
+        else if (isLookupJoin)
         {
             kind = TAKlookupdenormalize;
+            argName = "HashDenormalize";
+        }
+        else if (isSmartJoin)
+        {
+            kind = TAKsmartdenormalize;
             argName = "HashDenormalize";
         }
         else if (isHashJoin)
@@ -11675,9 +11685,14 @@ ABoundActivity * HqlCppTranslator::doBuildActivityJoinOrDenormalize(BuildCtx & c
             kind = TAKalldenormalizegroup;
             argName = "AllDenormalizeGroup";
         }
-        else if (isLookupJoin || isSmartJoin)
+        else if (isLookupJoin)
         {
             kind = TAKlookupdenormalizegroup;
+            argName = "HashDenormalizeGroup";
+        }
+        else if (isSmartJoin)
+        {
+            kind = TAKsmartdenormalizegroup;
             argName = "HashDenormalizeGroup";
         }
         else if (isHashJoin)
