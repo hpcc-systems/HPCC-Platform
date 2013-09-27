@@ -103,6 +103,15 @@ require([
             },
 
             //  Plugin wrapper  ---
+            showToolbar: function (show) {
+                if (show) {
+                    domClass.remove(this.id + "Toolbar", "hidden");
+                } else {
+                    domClass.add(this.id + "Toolbar", "hidden");
+                }
+                this.resize();
+            },
+
             clear: function () {
                 if (this._plugin) {
                     this.xgmml = "";
@@ -141,12 +150,12 @@ require([
 
             load: function (dot, layout) {
                 this.registerEvents();
-                if (this._plugin && this.xgmml != xgmml) {
+                if (this._plugin && this.dot != dot) {
                     this.setMessage("Loading Data...");
                     this._plugin.loadDOT(dot);
                     this.setMessage("Performing Layout...");
                     this._plugin.startLayout(layout);
-                    this.xgmml = xgmml;
+                    this.dot = dot;
                 }
             },
 
@@ -167,6 +176,7 @@ require([
             },
 
             getVersion: function () {
+                this.registerEvents();
                 if (this._plugin) {
                     return this._plugin.version;
                 }
