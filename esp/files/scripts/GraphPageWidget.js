@@ -158,6 +158,10 @@ define([
                 //  TODO:  Could be too expensive  ---
                 //context.wu.setGraphSvg(context.graphName, context.main.svg);
             };
+            this.main.onDoubleClick = function (globalID) {
+                var mainItem = context.main.getItem(globalID);
+                context.main.centerOnItem(mainItem, true);
+            };
 
             this.overview = registry.byId(this.id + "MiniGraphWidget");
             this.overview.onSelectionChanged = function (items) {
@@ -174,7 +178,9 @@ define([
             };
             this.local.onDoubleClick = function (globalID) {
                 var mainItem = context.main.getItem(globalID);
+                context._onLocalRefresh();
                 context.main.centerOnItem(mainItem, true);
+                context.syncSelectionFrom(context.local);
             };
         },
 
@@ -391,7 +397,7 @@ define([
             if (this.inherited(arguments))
                 return;
 
-            if (params.SafeMode) {
+            if (params.SafeMode && params.SafeMode != "false") {
                 this.overviewDepth.set("value", 0)
                 this.mainDepth.set("value", 1)
                 this.localDepth.set("value", 2)

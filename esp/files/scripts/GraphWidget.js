@@ -580,7 +580,6 @@ require([
                     this.eventsRegistered = true;
                     var context = this;
                     this.registerEvent("MouseDoubleClick", function (item) {
-                        context._plugin.centerOnItem(item, true);
                         context.onDoubleClick(context._plugin.getGlobalID(item));
                     });
                     this.registerEvent("LayoutFinished", function () {
