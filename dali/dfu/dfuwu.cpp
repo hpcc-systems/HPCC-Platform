@@ -2028,6 +2028,15 @@ public:
         queryRoot()->setPropBool("@failIfNoSourceFile",val);
     }
 
+    bool getRecordStructurePresent() const
+    {
+        return queryRoot()->getPropBool("@recordStructurePresent");
+    }
+
+    void setRecordStructurePresent(bool val)
+    {
+        queryRoot()->setPropBool("@recordStructurePresent",val);
+    }
 };
 
 class CExceptionIterator: public CInterface, implements IExceptionIterator
