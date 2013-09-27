@@ -206,7 +206,6 @@ void ProcessSlaveActivity::done()
 #include "join/thjoinslave.ipp"
 #include "keyedjoin/thkeyedjoinslave.ipp"
 #include "limit/thlimitslave.ipp"
-#include "lookupjoin/thlookupjoinslave.ipp"
 #include "merge/thmergeslave.ipp"
 #include "msort/thgroupsortslave.ipp"
 #include "msort/thmsortslave.ipp"
@@ -232,6 +231,7 @@ void ProcessSlaveActivity::done()
 #include "wuidwrite/thwuidwriteslave.ipp"
 #include "xmlwrite/thxmlwriteslave.ipp"
 
+CActivityBase *createLookupJoinSlave(CGraphElementBase *container);
 CActivityBase *createXmlParseSlave(CGraphElementBase *container);
 CActivityBase *createKeyDiffSlave(CGraphElementBase *container);
 CActivityBase *createKeyPatchSlave(CGraphElementBase *container);
@@ -439,10 +439,12 @@ public:
                 break;
             case TAKlookupjoin:
             case TAKsmartjoin:
-                ret = createLookupJoinSlave(this);
-                break;
+            case TAKlookupdenormalize:
+            case TAKlookupdenormalizegroup:
             case TAKalljoin:
-                ret = createAllJoinSlave(this);
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
+                ret = createLookupJoinSlave(this);
                 break;
             case TAKselfjoin:
                 if (queryLocalOrGrouped())
@@ -535,6 +537,7 @@ public:
             case TAKnwayjoin:
                 ret = createNWayMergeJoinActivity(this);
                 break;
+<<<<<<< HEAD
             case TAKalldenormalize:
             case TAKalldenormalizegroup:
                 ret = createAllDenormalizeSlave(this);
@@ -545,6 +548,8 @@ public:
             case TAKsmartdenormalizegroup:
                 ret = createLookupDenormalizeSlave(this);
                 break;
+=======
+>>>>>>> HPCC-8245 - Clear up a few things
             case TAKchilddataset:
                 UNIMPLEMENTED;
             case TAKchilditerator:

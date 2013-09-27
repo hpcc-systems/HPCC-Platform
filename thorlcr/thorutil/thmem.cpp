@@ -1418,6 +1418,15 @@ protected:
                     instrms.append(*spillableRowSet->createRowStream());
                 }
             }
+            else
+            {
+                // 0 rows, no overflow and candidate for allMemRows
+                if ((rc_allDiskOrAllMem == diskMemMix) || // must supply allMemRows, only here if no spilling (see above)
+                    (NULL!=allMemRows && (rc_allMem == diskMemMix)) ||
+                    (NULL!=allMemRows && (rc_mixed == diskMemMix) && 0 == overflowCount) // if allMemRows given, only if no spilling
+                   )
+                    return NULL;
+            }
         }
         if (0 == instrms.ordinality())
             return createNullRowStream();

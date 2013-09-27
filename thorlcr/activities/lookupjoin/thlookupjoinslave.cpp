@@ -15,7 +15,6 @@
     limitations under the License.
 ############################################################################## */
 
-#include "thlookupjoinslave.ipp"
 #include "thactivityutil.ipp"
 #include "javahash.hpp"
 #include "javahash.tpp"
@@ -35,8 +34,11 @@
 #define _TRACEBROADCAST
 #endif
 
+//#define TEST_FAILOVER_DISTRIBUTED_LOOKUPJOIN
+//#define TEST_FAILOVER_HASHJOIN
+
+
 enum join_t { JT_Undefined, JT_Inner, JT_LeftOuter, JT_RightOuter, JT_LeftOnly, JT_RightOnly, JT_LeftOnlyTransform };
-enum joinkind_t { join_lookup, join_all, denormalize_lookup, denormalize_all };
 
 
 #define MAX_SEND_SIZE 0x100000 // 1MB
@@ -487,7 +489,7 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     const void *rhsNext;
     Owned<IOutputMetaData> outputMeta;
     rowcount_t rhsTotalCount;
-    mptag_t lhsDistributeTag, rhsDistributeTag;
+    mptag_t lhsDistributeTag, rhsDistributeTag, broadcast2MpTag;
 
     PointerArrayOf<CThorExpandingRowArray> rhsNodeRows;
     CBroadcaster broadcaster;
@@ -515,10 +517,54 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     ICompare *compareLeft;
     Owned<IJoinHelper> joinHelper;
 
-    inline bool isLookup() { return (joinKind==join_lookup)||(joinKind==denormalize_lookup); }
-    inline bool isAll() { return (joinKind==join_all)||(joinKind==denormalize_all); }
-    inline bool isDenormalize() { return (joinKind==denormalize_all)||(joinKind==denormalize_lookup); }
-    inline bool isGroupOp() { return (TAKlookupdenormalizegroup == container.getKind() || TAKsmartdenormalizegroup == container.getKind() || TAKalldenormalizegroup == container.getKind()); }
+    inline bool isLookup() const
+    {
+        switch (container.getKind())
+        {
+            case TAKlookupjoin:
+            case TAKlookupdenormalize:
+            case TAKlookupdenormalizegroup:
+            case TAKsmartjoin:
+                return true;
+        }
+        return false;
+    }
+    inline bool isAll() const
+    {
+        switch (container.getKind())
+        {
+            case TAKalljoin:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
+                return true;
+        }
+        return false;
+    }
+    inline bool isDenormalize() const
+    {
+        switch (container.getKind())
+        {
+            case TAKlookupdenormalize:
+            case TAKlookupdenormalizegroup:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
+            case TAKsmartdenormalizegroup:
+            case TAKsmartdenormalize:
+                return true;
+        }
+        return false;
+    }
+    inline bool isGroupOp() const
+    {
+        switch (container.getKind())
+        {
+            case (TAKlookupdenormalizegroup:
+            case TAKsmartdenormalizegroup:
+            case TAKalldenormalizegroup:
+                return true;
+        }
+        return false;
+    }
     StringBuffer &getJoinTypeStr(StringBuffer &str)
     {
         switch(joinType)
@@ -627,13 +673,11 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
                 rows->kill();
         }
     }
-protected:
-    joinkind_t joinKind;
 public:
     IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-    CLookupJoinActivity(CGraphElementBase *_container, joinkind_t _joinKind) 
-        : CSlaveActivity(_container), CThorDataLink(this), joinKind(_joinKind), broadcaster(*this), rhs(*this, NULL), ht(*this, NULL, true),
+    CLookupJoinActivity(CGraphElementBase *_container)
+        : CSlaveActivity(_container), CThorDataLink(this), broadcaster(*this), rhs(*this, NULL), ht(*this, NULL, true),
           rowProcessor(*this)
     {
         gotRHS = false;
@@ -647,8 +691,99 @@ public:
         myNode = queryJob().queryMyRank();
         numNodes = queryJob().querySlaves();
         needGlobal = !container.queryLocal() && (container.queryJob().querySlaves() > 1);
-        lhsDistributeTag = rhsDistributeTag = TAG_NULL;
-        failoverToLocalLookupJoin = failoverToStdJoin = false;
+        broadcast2MpTag = lhsDistributeTag = rhsDistributeTag = TAG_NULL;
+
+        rhsTable = NULL;
+        rhsTableLen = htCount = htDedupCount = 0;
+        rhsRows = RIUNSET;
+        rhsTotalCount = RCUNSET;
+        leftITDL = rightITDL = NULL;
+        candidateIndex = 0;
+
+        eos = false;
+        eog = someSinceEog = false;
+        joined = 0;
+        doRightOuter = false;
+        leftMatch = false;
+        grouped = false;
+        lastRightOuter = 0;
+        fuzzyMatch = returnMany = dedup = false;
+        waitForOtherRO = true;
+
+        hashJoinHelper = NULL;
+        allJoinHelper = NULL;
+        exclude = false;
+        abortLimit = keepLimit = 0;
+        allJoinHelper = NULL;
+        hashJoinHelper = NULL;
+        leftHash = rightHash = NULL;
+        hashJoinHelper = NULL;
+        compareLeft = compareRight = compareLeftRight = NULL;
+
+        switch (container.getKind())
+        {
+            case TAKalljoin:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
+            {
+                allJoinHelper = (IHThorAllJoinArg *)queryHelper();
+                flags = allJoinHelper->getJoinFlags();
+                returnMany = true;
+                keepLimit = allJoinHelper->getKeepLimit();
+                fuzzyMatch = 0 != (JFmatchrequired & flags);
+                break;
+            }
+            case TAKlookupjoin:
+            case TAKlookupdenormalize:
+            case TAKlookupdenormalizegroup:
+            {
+                hashJoinHelper = (IHThorHashJoinArg *)queryHelper();
+                flags = hashJoinHelper->getJoinFlags();
+                leftHash = hashJoinHelper->queryHashLeft();
+                rightHash = hashJoinHelper->queryHashRight();
+                compareRight = hashJoinHelper->queryCompareRight();
+                compareLeft = hashJoinHelper->queryCompareLeft();
+                compareLeftRight = hashJoinHelper->queryCompareLeftRight();
+                if (JFmanylookup & flags)
+                    returnMany = true;
+                keepLimit = hashJoinHelper->getKeepLimit();
+                abortLimit = hashJoinHelper->getMatchAbortLimit();
+                atMost = hashJoinHelper->getJoinLimit();
+
+                fuzzyMatch = 0 != (JFmatchrequired & flags);
+                bool maySkip = 0 != (flags & JFtransformMaySkip);
+                dedup = compareRight && !maySkip && !fuzzyMatch && !returnMany;
+
+                // code gen should spot invalid constants on KEEP with LOOKUP (without MANY)
+                break;
+            }
+            default:
+                assertex(!"Unexpected join kind");
+        }
+        exclude = 0 != (flags & JFexclude);
+        if(0 == keepLimit)
+            keepLimit = (unsigned)-1;
+        if (0 == abortLimit)
+            abortLimit = (unsigned)-1;
+        if (0 == atMost)
+            atMost = (unsigned)-1;
+        if (abortLimit < atMost)
+            atMost = abortLimit;
+
+        if (flags & JFleftouter)
+            joinType = exclude ? JT_LeftOnly : JT_LeftOuter;
+        else if (flags & JFrightouter)
+        {
+            UNIMPLEMENTED;
+            rightMatchSet.setown(createBitSet());
+            joinType = exclude ? JT_RightOnly : JT_RightOuter;
+        }
+        else
+            joinType = JT_Inner;
+        StringBuffer str;
+        ActPrintLog("Join type is %s", getJoinTypeStr(str).str());
+
+        failoverToLocalLookupJoin = failoverToStdJoin = (0 != (flags & JFsmart));
     }
     ~CLookupJoinActivity()
     {
@@ -700,96 +835,12 @@ public:
 // IThorSlaveActivity overloaded methods
     virtual void init(MemoryBuffer &data, MemoryBuffer &slaveData)
     {
-        ActPrintLog("init");
         appendOutputLinked(this);
-
-        eos = false;
-        someSinceEog = false;
-        eog = false;
-        joined = 0;
-        doRightOuter = false;
-        leftMatch = false;
-        grouped = false;
-        lastRightOuter = 0;
-        waitForOtherRO = true;
-        hashJoinHelper = NULL;
-        allJoinHelper = NULL;
-        abortLimit = 0;
-        compareRight = NULL;
-        leftHash = NULL;
-        rightHash = NULL;
-        compareLeftRight = NULL;
-        keepLimit = 0;
-        switch (joinKind)
-        {
-            case join_all:
-            case denormalize_all:
-            {
-                allJoinHelper = (IHThorAllJoinArg *)queryHelper();
-                flags = allJoinHelper->getJoinFlags();
-                returnMany = true;
-                keepLimit = allJoinHelper->getKeepLimit();
-                fuzzyMatch = 0 != (JFmatchrequired & flags);
-                break;
-            }
-            case join_lookup:
-            case denormalize_lookup:
-            {
-                hashJoinHelper = (IHThorHashJoinArg *)queryHelper();
-                leftHash = hashJoinHelper->queryHashLeft();
-                rightHash = hashJoinHelper->queryHashRight();
-                compareRight = hashJoinHelper->queryCompareRight();
-                compareLeft = hashJoinHelper->queryCompareLeft();
-                compareLeftRight = hashJoinHelper->queryCompareLeftRight();
-                flags = hashJoinHelper->getJoinFlags();
-                if (JFmanylookup & flags)
-                    returnMany = true;
-                keepLimit = hashJoinHelper->getKeepLimit();
-                abortLimit = hashJoinHelper->getMatchAbortLimit();
-                atMost = hashJoinHelper->getJoinLimit();
-
-                fuzzyMatch = 0 != (JFmatchrequired & flags);
-                bool maySkip = 0 != (flags & JFtransformMaySkip);
-                dedup = compareRight && !maySkip && !fuzzyMatch && !returnMany;
-
-#if 0 // JCS->GH - Need new flag (HPCC-10068)
-                if (0 != (flags & JFnoorderedlhs))
-                {
-                    failoverToLocalLookupJoin = true;
-                    failoverToStdJoin = true;
-                }
-#endif
-
-                // code gen should spot invalid constants on KEEP with LOOKUP (without MANY)
-                break;
-            }
-            default:
-                assertex(!"Unexpected join kind");
-        }
-        exclude = 0 != (flags & JFexclude);
-        if(0 == keepLimit)
-            keepLimit = (unsigned)-1;
-        if (0 == abortLimit)
-            abortLimit = (unsigned)-1;
-        if (0 == atMost)
-            atMost = (unsigned)-1;
-        if (abortLimit < atMost)
-            atMost = abortLimit;
-
-        if (flags & JFleftouter)        
-            joinType = exclude ? JT_LeftOnly : JT_LeftOuter;        
-        else if (flags & JFrightouter)
-        {
-            UNIMPLEMENTED;
-            rightMatchSet.setown(createBitSet());
-            joinType = exclude ? JT_RightOnly : JT_RightOuter;
-        }
-        else
-            joinType = JT_Inner;
 
         if (!container.queryLocal())
         {
             mpTag = container.queryJob().deserializeMPTag(data);
+            broadcast2MpTag = container.queryJob().deserializeMPTag(data);
             lhsDistributeTag = container.queryJob().deserializeMPTag(data);
             rhsDistributeTag = container.queryJob().deserializeMPTag(data);
         }
@@ -798,8 +849,6 @@ public:
         rhsNodeRows.ensure(slaves);
         while (slaves--)
             rhsNodeRows.append(new CThorExpandingRowArray(*this, NULL, true)); // true, nulls not needed?
-        StringBuffer str;
-        ActPrintLog("Join type is %s", getJoinTypeStr(str).str());
     }
     virtual void onInputStarted(IException *except)
     {
@@ -847,8 +896,8 @@ public:
 
         if (failoverToLocalLookupJoin && hashJoinHelper) // only for LOOKUP not ALL
         {
-        	if (needGlobal)
-        		queryJob().queryRowManager()->addRowBuffer(this);
+            if (needGlobal)
+                queryJob().queryRowManager()->addRowBuffer(this);
         }
 
         try
@@ -876,10 +925,11 @@ public:
             rl.ensureRow();
         size32_t rrsz=0;
         size32_t rlsz=0;
-        switch(joinKind)
+        switch (container.getKind())
         {
-            case join_all:
-            case denormalize_all:
+            case TAKalljoin:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
             {
                 if (rr.exists()) 
                     rrsz = allJoinHelper->createDefaultRight(rr);
@@ -887,8 +937,9 @@ public:
                     rlsz = allJoinHelper->createDefaultLeft(rl);
                 break;
             }
-            case join_lookup:
-            case denormalize_lookup:
+            case TAKlookupjoin:
+            case TAKlookupdenormalize:
+            case TAKlookupdenormalizegroup:
             {
                 if (rr.exists()) 
                     rrsz = hashJoinHelper->createDefaultRight(rr);
@@ -920,7 +971,7 @@ public:
         if (!gotRHS && needGlobal)
             getRHS(true); // If global, need to handle RHS until all are slaves stop
 
-        // JCS->GH - if in a child query, it would be to preserve RHS.. would need tip/flag from codegen that constant
+        // JCS->GH - if in a child query, it would be good to preserve RHS.. would need tip/flag from codegen that constant
         clearRHS();
 
         if (right)
@@ -946,13 +997,15 @@ public:
     }
     inline bool match(const void *lhs, const void *rhsrow)
     {
-        switch (joinKind)
+        switch (container.getKind())
         {
-            case join_all:
-            case denormalize_all:
+            case TAKalljoin:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
                 return allJoinHelper->match(lhs, rhsrow);
-            case join_lookup:
-            case denormalize_lookup:
+            case TAKlookupjoin:
+            case TAKlookupdenormalize:
+            case TAKlookupdenormalizegroup:
                 return hashJoinHelper->match(lhs, rhsrow);
             default:
                 throwUnexpected();
@@ -962,14 +1015,16 @@ public:
     {
         RtlDynamicRowBuilder row(allocator);
         size32_t thisSize;
-        switch (joinKind)
+        switch (container.getKind())
         {
-            case join_all:
-            case denormalize_all:
+            case TAKalljoin:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
                 thisSize = allJoinHelper->transform(row, lhs, rhsrow);
                 break;
-            case join_lookup:
-            case denormalize_lookup:
+            case TAKlookupjoin:
+            case TAKlookupdenormalize:
+            case TAKlookupdenormalizegroup:
                 thisSize = hashJoinHelper->transform(row, lhs, rhsrow);
                 break;
             default:
@@ -1350,10 +1405,7 @@ public:
                 {
                     OwnedConstThorRow row = right->ungroupedNextRow();
                     if (!row)
-                    {
-                        ActPrintLog("broadcasting last row (!row)");
                         break;
-                    }
 
                     {
                         CriticalBlock b(localHashCrit);
@@ -1382,23 +1434,14 @@ public:
                         break;
                 }
                 if (0 == mb.length())
-                {
-                    ActPrintLog("Stopped broadcasting because 0 == mb.length()");
                     break;
-                }
                 if (stopRHSBroadcast)
                     sendItem->setFlag(bcastflag_spilt);
                 ThorCompress(mb, sendItem->queryMsg());
                 if (!broadcaster.send(sendItem))
-                {
-                    ActPrintLog("Stopped broadcasting because !broadcaster.send(sendItem)");
                     break;
-                }
                 if (stopRHSBroadcast)
-                {
-                    ActPrintLog("Stopped broadcasting because stopRHSBroadcast");
                     break;
-                }
                 mb.clear();
                 broadcaster.resetSendItem(sendItem);
             }
@@ -1489,20 +1532,18 @@ public:
             if (!receiveMsg(msg, 0, mpTag))
                 return;
             msg.read(rhsTotalCount);
-        }
-		if (needGlobal)
-		{
-			rowProcessor.start();
-			broadcaster.start(this, mpTag, stopping);
-			broadcastRHS();
-			broadcaster.end();
-			rowProcessor.wait();
 
-			if (stopping)
-			{
-			    queryJob().queryRowManager()->removeRowBuffer(this);
-			    return;
-			}
+            rowProcessor.start();
+            broadcaster.start(this, mpTag, stopping);
+            broadcastRHS();
+            broadcaster.end();
+            rowProcessor.wait();
+
+            if (stopping)
+            {
+                queryJob().queryRowManager()->removeRowBuffer(this);
+                return;
+            }
 
             rhsRows = 0;
             {
@@ -1528,27 +1569,33 @@ public:
             else
                 rhs.ensure(rhsRows);
 
-			/* NB: Potentially one of the slaves spilt late after broadcast and rowprocessor finished
-			 * Need to remove spill callback and broadcast one last message to know.
-			 */
+            /* NB: Potentially one of the slaves spilt late after broadcast and rowprocessor finished
+             * Need to remove spill callback and broadcast one last message to know.
+             */
 
-			queryJob().queryRowManager()->removeRowBuffer(this);
+            queryJob().queryRowManager()->removeRowBuffer(this);
 
-			broadcaster.reset();
-			broadcaster.start(this, mpTag, false);
-	        Owned<CSendItem> sendItem = broadcaster.newSendItem(bcast_stop);
-	        if (spiltBroadcastingRHS)
-	            sendItem->setFlag(bcastflag_spilt);
-	        ActPrintLog("Sending final RHS broadcast packet");
-	        broadcaster.send(sendItem); // signals stop to others
-			broadcaster.end();
+            ActPrintLog("Broadcasting final split status");
+            broadcaster.reset();
+            // NB: using a different tag from 1st broadcast, as 2nd on other nodes can start sending before 1st on this has quit receiving
+            broadcaster.start(this, broadcast2MpTag, false);
+            Owned<CSendItem> sendItem = broadcaster.newSendItem(bcast_stop);
+            if (spiltBroadcastingRHS)
+                sendItem->setFlag(bcastflag_spilt);
+            broadcaster.send(sendItem); // signals stop to others
+            broadcaster.end();
 
-			/* All slaves now know whether any one spilt or not, i.e. whether to perform local hash join or not
-			 * If any have, still need to distribute rest of RHS..
-			 */
+            /* All slaves now know whether any one spilt or not, i.e. whether to perform local hash join or not
+             * If any have, still need to distribute rest of RHS..
+             */
 
-			if (spiltBroadcastingRHS) // NB: Can only be active for LOOKUP (not ALL)
-			{
+#if defined(TEST_FAILOVER_DISTRIBUTED_LOOKUPJOIN) || defined (TEST_FAILOVER_HASHJOIN)
+            if (failoverToLocalLookupJoin && isLookup())
+                clearNonLocalRows("testing");
+#endif
+
+            if (spiltBroadcastingRHS) // NB: Can only be active for LOOKUP (not ALL)
+            {
                 ActPrintLog("Spilt whilst broadcasting, will attempt distribute local lookup join");
                 localLookupJoin = true;
 
@@ -1558,9 +1605,9 @@ public:
                     throw MakeActivityException(this, 0, "Degraded to distributed lookup join, LHS order cannot be preserved");
 
                 // If HT sized already (due to total from meta) and now spilt, too big clear and size later
-			    ht.kill();
+                ht.kill();
 
-				setupDistributors();
+                setupDistributors();
 
                 IArrayOf<IRowStream> streams;
                 streams.append(*right.getLink()); // what remains of 'right' will be read through distributor
@@ -1570,50 +1617,54 @@ public:
                     streams.append(*rowArray.createRowStream(0, (rowidx_t)-1, true, true)); // NB: will kill array when stream exhausted
                 }
                 right.setown(createConcatRowStream(streams.ordinality(), streams.getArray()));
-			}
-			else
-			{
-	            if (rhsTotalCount != RCUNSET) // verify matches meta if set/calculated (and haven't spilt)
-	                assertex(rhsRows == rhsTotalCount);
-			}
-		}
-		else
-		{
+            }
+            else
+            {
+                if (rhsTotalCount != RCUNSET) // verify matches meta if set/calculated (and haven't spilt)
+                    assertex(rhsRows == rhsTotalCount);
+            }
+        }
+        else
+        {
             if (isLookup())
                 localLookupJoin = true;
-		    else
-		    {
-	            if (RCUNSET != rhsTotalCount)
-	            {
-	                rhsRows = (rowidx_t)rhsTotalCount;
-	                rhs.ensure(rhsRows);
-	            }
-		        // local ALL join, must fit into memory
-	            while (!abortSoon)
-	            {
-	                OwnedConstThorRow row = right->ungroupedNextRow();
-	                if (!row)
-	                    break;
-	                rhs.append(row.getClear());
-	            }
-	            if (RIUNSET == rhsRows)
-	                rhsRows = rhs.ordinality();
-		    }
-		}
+            else
+            {
+                if (RCUNSET != rhsTotalCount)
+                {
+                    rhsRows = (rowidx_t)rhsTotalCount;
+                    rhs.ensure(rhsRows);
+                }
+                // local ALL join, must fit into memory
+                while (!abortSoon)
+                {
+                    OwnedConstThorRow row = right->ungroupedNextRow();
+                    if (!row)
+                        break;
+                    rhs.append(row.getClear());
+                }
+                if (RIUNSET == rhsRows)
+                    rhsRows = rhs.ordinality();
+            }
+        }
 
-		if (localLookupJoin) // NB: Can only be active for LOOKUP (not ALL)
-		{
-		    Owned<IThorRowLoader> rowLoader;
-		    if (failoverToStdJoin)
-		    {
-		        rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, false, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
+        if (localLookupJoin) // NB: Can only be active for LOOKUP (not ALL)
+        {
+            Owned<IThorRowLoader> rowLoader;
+            if (failoverToStdJoin)
+            {
+#ifdef TEST_FAILOVER_HASHJOIN
+                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, false, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
+#else
+                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, false, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
                 rowLoader->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it sorted
-		    }
-		    else
-		    {
-		        // i.e. will fire OOM if runs out of memory loading local right
+#endif
+            }
+            else
+            {
+                // i.e. will fire OOM if runs out of memory loading local right
                 rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, false, rc_allMem, SPILL_PRIORITY_DISABLE));
-		    }
+            }
             Owned<IRowStream> rightStream = rowLoader->load(right, abortSoon, false, &rhs);
 
             if (!rightStream)
@@ -1684,9 +1735,9 @@ public:
                 joinHelper->init(left, rightStream, leftAllocator, rightAllocator, ::queryRowMetaData(leftITDL), &abortSoon);
                 return;
             }
-		}
-		if (!stopping)
-			prepareRHS();
+        }
+        if (!stopping)
+            prepareRHS();
     }
     void prepareRHS()
     {
@@ -1759,27 +1810,12 @@ public:
     }
     virtual bool freeBufferedRows(bool critical)
     {
-    	// NB: only installed if lookup join and global
+        // NB: only installed if lookup join and global
         return clearNonLocalRows("Out of memory callback");
     }
 };
 
 CActivityBase *createLookupJoinSlave(CGraphElementBase *container) 
 { 
-    return new CLookupJoinActivity(container, join_lookup); 
-}
-
-CActivityBase *createAllJoinSlave(CGraphElementBase *container) 
-{ 
-    return new CLookupJoinActivity(container, join_all); 
-}
-
-CActivityBase *createLookupDenormalizeSlave(CGraphElementBase *container) 
-{ 
-    return new CLookupJoinActivity(container, denormalize_lookup); 
-}
-
-CActivityBase *createAllDenormalizeSlave(CGraphElementBase *container) 
-{ 
-    return new CLookupJoinActivity(container, denormalize_all); 
+    return new CLookupJoinActivity(container);
 }
