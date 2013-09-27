@@ -120,6 +120,7 @@ static bool IP6preferred=false;         // e.g. for DNS and socket create
 IpSubNet PreferredSubnet(NULL,NULL);    // set this if you prefer a particular subnet for debugging etc
                                         // e.g. PreferredSubnet("192.168.16.0", "255.255.255.0")
 
+static atomic_t pre_conn_unreach_cnt = ATOMIC_INIT(0);    // global count of pre_connect() ENETUNREACH error
 
 #define IPV6_SERIALIZE_PREFIX (0x00ff00ff)
 
@@ -372,7 +373,6 @@ protected:
 #ifdef _TRACE
     char        *   tracename;
 #endif
-    int             pre_conn_unreach_cnt;
     
 public:
     void        open(int listen_queue_size,bool reuseports=false);
@@ -795,21 +795,19 @@ int CSocket::pre_connect (bool block)
         err = ERRNO();
         if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED)) {   // handled by caller
             if (err != ENETUNREACH) {
-                pre_conn_unreach_cnt = 0;
+                atomic_set(&pre_conn_unreach_cnt, 0);
                 LOGERR2(err,1,"pre_connect");
             } else {
-                if (pre_conn_unreach_cnt < PRE_CONN_UNREACH_ELIM) {
-                    pre_conn_unreach_cnt++;
+                int ecnt = atomic_read(&pre_conn_unreach_cnt);
+                if (ecnt <= PRE_CONN_UNREACH_ELIM) {
+                    atomic_inc(&pre_conn_unreach_cnt);
                     LOGERR2(err,1,"pre_connect network unreachable");
-                } else if (pre_conn_unreach_cnt == PRE_CONN_UNREACH_ELIM) {
-                    pre_conn_unreach_cnt++;
-                    LOGERR2(err,1,"pre_connect network unreachable, skipping addl msgs of this type ...");
                 }
             }
         } else
-            pre_conn_unreach_cnt = 0;
+            atomic_set(&pre_conn_unreach_cnt, 0);
     } else
-        pre_conn_unreach_cnt = 0;
+        atomic_set(&pre_conn_unreach_cnt, 0);
 #ifdef SOCKTRACE
     PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%x) err=%d", block?"(block)":"", sock, sock, (int)this, err);
 #endif
@@ -2340,7 +2338,6 @@ CSocket::CSocket(const SocketEndpoint &ep,SOCKETMODE smode,const char *name)
     hostname = NULL;
     mcastreq = NULL;
     tracename = NULL;
-    pre_conn_unreach_cnt = 0;
     StringBuffer tmp;
     if ((smode==sm_multicast_server)&&(name&&*name)) {
         mcastreq = new MCASTREQ(name);
@@ -2385,7 +2382,6 @@ CSocket::CSocket(T_SOCKET new_sock,SOCKETMODE smode,bool _owned)
     mcastreq = NULL;
     hostport = 0;
     tracename = NULL;
-    pre_conn_unreach_cnt = 0;
     state = ss_open;
     sockmode = smode;
     owned = _owned;
