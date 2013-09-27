@@ -140,6 +140,8 @@ typedef IEclCommand *(*EclCommandFactory)(const char *cmdname);
 #define ECLOPT_IMP_PATH_S "-I"
 #define ECLOPT_MANIFEST "--manifest"
 #define ECLOPT_MANIFEST_DASH "-manifest"
+#define ECLOPT_LEGACY "--legacy"
+#define ECLOPT_LEGACY_DASH "-legacy"
 
 #define ECLOPT_VERBOSE "--verbose"
 #define ECLOPT_VERBOSE_S "-v"
@@ -236,7 +238,7 @@ public:
 class EclCmdWithEclTarget : public EclCmdCommon
 {
 public:
-    EclCmdWithEclTarget() : optNoArchive(false), optResultLimit((unsigned)-1)
+    EclCmdWithEclTarget() : optLegacy(false), optNoArchive(false), optResultLimit((unsigned)-1)
     {
     }
     virtual eclCmdOptionMatchIndicator matchCommandLineOption(ArgvIterator &iter, bool finalAttempt=false);
@@ -255,6 +257,7 @@ public:
             "   -Ipath                 Add path to locations to search for ecl imports\n"
             "   -Lpath                 Add path to locations to search for system libraries\n"
             "   --manifest             Specify path to manifest file\n"
+            "   --legacy               Use legacy import semantics (deprecated)\n"
         );
     }
 public:
@@ -268,6 +271,7 @@ public:
     IArrayOf<IEspNamedValue> debugValues;
     unsigned optResultLimit;
     bool optNoArchive;
+    bool optLegacy;
 };
 
 class EclCmdWithQueryTarget : public EclCmdCommon
