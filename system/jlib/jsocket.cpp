@@ -120,6 +120,7 @@ static bool IP6preferred=false;         // e.g. for DNS and socket create
 IpSubNet PreferredSubnet(NULL,NULL);    // set this if you prefer a particular subnet for debugging etc
                                         // e.g. PreferredSubnet("192.168.16.0", "255.255.255.0")
 
+static atomic_t pre_conn_unreach_cnt = ATOMIC_INIT(0);    // global count of pre_connect() ENETUNREACH error
 
 #define IPV6_SERIALIZE_PREFIX (0x00ff00ff)
 
@@ -768,6 +769,7 @@ size32_t CSocket::avail_read()
     return 0;
 }
 
+#define PRE_CONN_UNREACH_ELIM  100
 
 int CSocket::pre_connect (bool block)
 {
@@ -791,9 +793,21 @@ int CSocket::pre_connect (bool block)
     int rc = ::connect(sock, &u.sa, ul);
     if (rc==SOCKET_ERROR) {
         err = ERRNO();
-        if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED))    // handled by caller
-            LOGERR2(err,1,"pre_connect");
-    }
+        if ((err != EINPROGRESS)&&(err != EWOULDBLOCK)&&(err != ETIMEDOUT)&&(err!=ECONNREFUSED)) {   // handled by caller
+            if (err != ENETUNREACH) {
+                atomic_set(&pre_conn_unreach_cnt, 0);
+                LOGERR2(err,1,"pre_connect");
+            } else {
+                int ecnt = atomic_read(&pre_conn_unreach_cnt);
+                if (ecnt <= PRE_CONN_UNREACH_ELIM) {
+                    atomic_inc(&pre_conn_unreach_cnt);
+                    LOGERR2(err,1,"pre_connect network unreachable");
+                }
+            }
+        } else
+            atomic_set(&pre_conn_unreach_cnt, 0);
+    } else
+        atomic_set(&pre_conn_unreach_cnt, 0);
 #ifdef SOCKTRACE
     PROGLOG("SOCKTRACE: pre-connected socket%s %x %d (%x) err=%d", block?"(block)":"", sock, sock, (int)this, err);
 #endif
