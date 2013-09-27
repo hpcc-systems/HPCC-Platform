@@ -1706,6 +1706,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.traceIR,"traceIR",false),
         DebugOption(options.preserveCaseExternalParameter,"preserveCaseExternalParameter",true),
         DebugOption(options.optimizeParentAccess,"optimizeParentAccess",false),
+        DebugOption(options.expandPersistInputDependencies,"expandPersistInputDependencies",true),
     };
 
     //get options values from workunit
@@ -1800,6 +1801,9 @@ void HqlCppTranslator::postProcessOptions()
 
     //Probably best to ignore this warning. - possibly configure it based on some other option
     queryWarningProcessor().addGlobalOnWarning(HQLWRN_FoldRemoveKeyed, ignoreAtom);
+
+    //Ensure the settings for the following options are always present in the workunit
+    wu()->setDebugValueInt("expandPersistInputDependencies",options.expandPersistInputDependencies,true);
 
     if (options.forceVariableWuid)
         wu()->setCloneable(true);
