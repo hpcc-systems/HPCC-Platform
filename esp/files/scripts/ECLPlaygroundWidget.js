@@ -154,6 +154,10 @@ define([
             };
         },
 
+        getGraph: function () {
+            return registry.byId(this.id + "GraphControl");
+        },
+
         resetPage: function () {
             this.editorControl.clearErrors();
             this.editorControl.clearHighlightLines();

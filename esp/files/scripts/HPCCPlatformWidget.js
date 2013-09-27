@@ -24,6 +24,8 @@ define([
     "hpcc/_TabContainerWidget",
     "hpcc/ESPRequest",
     "hpcc/WsAccount",
+    "hpcc/WsSMC",
+    "hpcc/GraphWidget",
 
     "dojo/text!../templates/HPCCPlatformWidget.html",
 
@@ -48,7 +50,7 @@ define([
 
 ], function (declare, lang, dom,
                 registry, Tooltip,
-                _TabContainerWidget, ESPRequest, WsAccount,
+                _TabContainerWidget, ESPRequest, WsAccount, WsSMC, GraphWidget,
                 template) {
     return declare("HPCCPlatformWidget", [_TabContainerWidget], {
         templateString: template,
@@ -57,6 +59,7 @@ define([
         postCreate: function (args) {
             this.inherited(arguments);
             this.searchText = registry.byId(this.id + "FindText");
+            this.aboutDialog = registry.byId(this.id + "AboutDialog");
             this.searchPage = registry.byId(this.id + "_Main" + "_Search");
             this.stackContainer = registry.byId(this.id + "TabContainer");
             this.mainPage = registry.byId(this.id + "_Main");
@@ -84,7 +87,25 @@ define([
             win.focus();
         },
 
+        _onAboutLoaded: false,
         _onAbout: function (evt) {
+            if (!this._onAboutLoaded) {
+                this._onAboutLoaded = true;
+                var context = this;
+                WsSMC.Activity({
+                }).then(function (response) {
+                    if (lang.exists("ActivityResponse.Build", response)) {
+                        dom.byId(context.id + "ServerVersion").value = response.ActivityResponse.Build;
+                    }
+                    var gc = registry.byId(context.id + "GraphControl");
+                    dom.byId(context.id + "GraphControlVersion").value = gc.getVersion();
+                });
+            }
+            this.aboutDialog.show();
+        },
+
+        _onAboutClose: function (evt) {
+            this.aboutDialog.hide();
         },
 
         createStackControllerTooltip: function (widgetID, text) {
@@ -107,8 +128,6 @@ define([
                 if (lang.exists("MyAccountResponse.username", response)) {
                     dom.byId(context.id + "UserID").innerHTML = response.MyAccountResponse.username;
                 }
-            },
-            function (error) {
             });
 
             this.createStackControllerTooltip(this.id + "_ECL", "ECL");
