@@ -46,6 +46,7 @@
 #define PARTITION_RECOVERY_LIMIT 1000
 #define EXPECTED_RESPONSE_TIME          (60 * 1000)
 #define RESPONSE_TIME_TIMEOUT           (60 * 60 * 1000)
+#define DEFAULT_MAX_XML_RECORD_SIZE 0x100000
 
 //#define CLEANUP_RECOVERY
 
@@ -1241,6 +1242,18 @@ void FileSprayer::checkFormats()
             }
             break;
         }
+    }
+    switch (srcType)
+    {
+        case FFTutf: case FFTutf8: case FFTutf8n: case FFTutf16: case FFTutf16be: case FFTutf16le: case FFTutf32: case FFTutf32be: case FFTutf32le:
+            if (srcFormat.rowTag)
+            {
+                srcFormat.maxRecordSize = srcFormat.maxRecordSize > DEFAULT_MAX_XML_RECORD_SIZE ? srcFormat.maxRecordSize : DEFAULT_MAX_XML_RECORD_SIZE;
+            }
+            break;
+
+        default:
+            break;
     }
 }
 
