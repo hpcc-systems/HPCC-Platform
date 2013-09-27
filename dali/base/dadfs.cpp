@@ -1121,6 +1121,8 @@ static bool checkLogicalName(const CDfsLogicalFileName &dlfn,IUserDescriptor *us
     if (dlfn.isMulti()) { //is temporary superFile?
         if (specialnotallowedmsg)
             throw MakeStringException(-1,"cannot %s a multi file name (%s)",specialnotallowedmsg,dlfn.get());
+        if (dlfn.isWild())
+            const_cast<CDfsLogicalFileName &>(dlfn).expand(user);
         unsigned i = dlfn.multiOrdinality();
         while (--i)//continue looping even when ret is false, in order to check for illegal elements (foreigns/externals), and to check each scope permission
             ret = checkLogicalName(dlfn.multiItem(i),user,readreq,createreq,allowquery,specialnotallowedmsg)&&ret;
@@ -4668,6 +4670,8 @@ public:
     {
         // temp super file
         assertex(_name.isMulti());
+        if (_name.isWild())
+            const_cast<CDfsLogicalFileName &>(_name).expand(user);
         Owned<IPropertyTree> tree = _name.createSuperTree();
         init(_parent,tree,_name,user,transaction);
     }
@@ -6644,8 +6648,12 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
 {
     const CDfsLogicalFileName *logicalname = &_logicalname;
     if (logicalname->isMulti()) 
+    {
+        if (_logicalname.isWild())
+            const_cast<CDfsLogicalFileName &>(_logicalname).expand(user);
         // don't bother checking because the sub file creation will
         return new CDistributedSuperFile(this,*logicalname,user,transaction); // temp superfile
+    }
     Owned<IDfsLogicalFileNameIterator> redmatch;
     loop {
         checkLogicalName(*logicalname,user,true,writeattr,true,NULL);
