@@ -533,6 +533,7 @@ protected:
     bool                      combineTrivialStored;
     bool                      isRootAction;
     bool                      isRoxie;
+    bool                      expandPersistInputDependencies;
     UnsignedArray             cumulativeDependencies;
     UnsignedArray             emptyDependencies;
     UnsignedArray             storedWfids;

@@ -721,6 +721,7 @@ struct HqlCppOptions
     bool                traceIR;
     bool                preserveCaseExternalParameter;
     bool                optimizeParentAccess;
+    bool                expandPersistInputDependencies;
 };
 
 //Any information gathered while processing the query should be moved into here, rather than cluttering up the translator class
