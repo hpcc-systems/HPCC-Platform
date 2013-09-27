@@ -1802,6 +1802,9 @@ void HqlCppTranslator::postProcessOptions()
     //Probably best to ignore this warning. - possibly configure it based on some other option
     queryWarningProcessor().addGlobalOnWarning(HQLWRN_FoldRemoveKeyed, ignoreAtom);
 
+    //Ensure the settings for the following options are always present in the workunit
+    wu()->setDebugValueInt("expandPersistInputDependencies",options.expandPersistInputDependencies,true);
+
     if (options.forceVariableWuid)
         wu()->setCloneable(true);
 }
