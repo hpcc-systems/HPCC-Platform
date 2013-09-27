@@ -2232,7 +2232,10 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
         throw MakeStringException(0, "PERSIST not supported when running standalone");
     }
     unsigned wfid = item.queryWfid();
-    doExecuteItemDependencies(item, wfid);
+    // Old persist model requires dependencies to be executed BEFORE checking if the persist is up to date
+    // Defaults to old model, in case executing a WU that is created by earlier eclcc
+    if (!agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
+        doExecuteItemDependencies(item, wfid);
     SCMStringBuffer name;
     item.getPersistName(name);
     if(persistsPrelocked)
@@ -2259,6 +2262,9 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     else if(!agent.isPersistUptoDate(name.str(), persist->eclCRC, persist->allCRC, persist->isFile))
     {
         agent.clearPersist(name.str());
+        // New persist model allows dependencies to be executed AFTER checking if the persist is up to date
+        if (agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
+            doExecuteItemDependencies(item, wfid);
         doExecuteItem(item, wfid);
         agent.updatePersist(name.str(), persist->eclCRC, persist->allCRC);
     }
