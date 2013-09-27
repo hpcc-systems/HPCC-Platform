@@ -265,19 +265,13 @@ public:
     CCsvQuickPartitioner(const FileFormat & _format, bool _noTranslation) 
         : CCsvPartitioner(_format) 
     { 
-        noTranslation = _noTranslation; 
-        if (_format.quote.get()) { 
+        noTranslation = _noTranslation;
+        const char * quote = _format.quote.get();  
+        if (quote && (*quote == '\0')) { 
             isquoted = false;
-            StringArray csl;
-            csl.appendList(_format.quote, ","); // OTT but catches previous kludge of ","
-            ForEachItemIn(i,csl) {
-                if (strlen(csl.item(i)))
-                isquoted = true;
-            }
         }       
-        else // default is NULL which is quoted
+        else // default is quoted
             isquoted = true;
-        isquoted = (!_format.quote.get()) || (*_format.quote.get()); // sic - null or not empty
     }
 
 protected:
