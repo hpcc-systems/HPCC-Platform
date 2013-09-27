@@ -14,10 +14,8 @@
                     <a id="${id}UserID" href="#"></a>
                 </div>
                 <div class="seperator grey"></div>
-                <div id="${id}More" class="left glow" data-dojo-type="dijit.form.DropDownButton">
-                    <span>
-                        <img src="img/Info.png" alt="User" />
-                    </span>
+                <div id="${id}More" class="left glow" data-dojo-props="iconClass:'iconAdvanced', showLabel:false" data-dojo-type="dijit.form.DropDownButton">
+                    <span>Advanced</span>
                     <div data-dojo-type="dijit.DropDownMenu">
                         <div id="${id}Legacy" data-dojo-attach-event="onClick:_onOpenLegacy" data-dojo-type="dijit.MenuItem">Open Legacy ECL Watch</div>
                         <span data-dojo-type="dijit.MenuSeparator"></span>
@@ -37,6 +35,19 @@
             </div>
             <div id="${id}_OPS" data-dojo-props="iconClass: 'iconOperations'" data-dojo-type="HPCCPlatformOpsWidget">
             </div>
+        </div>
+    </div>
+    <div id="${id}AboutDialog" title="About HPCC Platform" style="width: 480px;" data-dojo-type="dijit/Dialog">
+        <div class="dijitDialogPaneContentArea">
+            <div data-dojo-props="cols:2" data-dojo-type="dojox.layout.TableContainer">
+                <input id="${id}ServerVersion" title="Server:" name="ServerVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
+                <input id="${id}GraphControlVersion" title="Graph&nbsp;Control:" name="GraphControlVersion" colspan="2" style="width:100%;" data-dojo-props="trim: true, readonly: true" data-dojo-type="dijit.form.Textarea" />
+            </div>
+            <div id="${id}GraphControl" style="width: 1px; height: 1px" data-dojo-props="minSize:120, region: 'right', splitter:true" data-dojo-type="GraphWidget">
+            </div>
+        </div>
+        <div class="dijitDialogPaneActionBar">
+            <button id="${id}Close" type="submit" data-dojo-attach-event="onClick:_onAboutClose" data-dojo-type="dijit/form/Button">Close</button>
         </div>
     </div>
 </div>

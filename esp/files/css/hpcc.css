@@ -369,6 +369,13 @@ hr.dashedLine {
     cursor: pointer;
 }
 
+.iconAdvanced{
+    background-image: url("../img/Info.png");
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
 /*###############################*/
 #appLayout {
     height: 100%;
