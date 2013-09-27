@@ -19,6 +19,8 @@ define([
     "dojo/_base/lang",
     "dojo/_base/array",
     "dojo/store/Memory",
+    "dojo/dom",
+    "dojo/dom-class",
 
     "dijit/registry",
 
@@ -29,7 +31,7 @@ define([
 
     "dojo/text!../templates/TimingTreeMapWidget.html"
 ],
-    function (declare, lang, arrayUtil, Memory,
+    function (declare, lang, arrayUtil, Memory, dom, domClass,
             registry, 
             TreeMap,
             _Widget, ESPWorkunit,
@@ -82,6 +84,10 @@ define([
             init: function (params) {
                 if (this.inherited(arguments))
                     return;
+
+                if (params.hideHelp) {
+                    domClass.add(this.id + "Help", "hidden");
+                }
 
                 this.defaultQuery = "*";
                 if (params.query) {
