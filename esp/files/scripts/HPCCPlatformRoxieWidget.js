@@ -67,7 +67,7 @@ define([
                     }));
                     currSel.initalized = true;
                 } else if (currSel.init) {
-                    currSel.init(currSel.params);
+                    currSel.init({});
                 }
             }
         }
