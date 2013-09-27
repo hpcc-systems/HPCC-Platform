@@ -189,7 +189,7 @@ define([
                 if (currSel.id == this.summaryWidget.id) {
                 } else if (currSel.id == this.contentWidget.id) {
                     this.contentWidget.init({
-                        result: this.logicalFile.result
+                        LogicalName: this.logicalFile.Name
                     });
                 } else if (currSel.id == this.sourceWidget.id) {
                     this.sourceWidget.init({
