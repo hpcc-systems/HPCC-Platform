@@ -1134,7 +1134,8 @@ bool CWsWorkunitsEx::onWUQueryDetails(IEspContext &context, IEspWUQueryDetailsRe
         if(!cw)
             throw MakeStringException(ECLWATCH_CANNOT_UPDATE_WORKUNIT,"Cannot open workunit %s.",wuid);
 
-        resp.setPriority(getQueryPriorityName(query->getPropInt("@priority")));
+        if (query->hasProp("@priority"))
+            resp.setPriority(getQueryPriorityName(query->getPropInt("@priority")));
         resp.setIsLibrary(query->getPropBool("@isLibrary"));
         SCMStringBuffer s;
         resp.setWUSnapShot(cw->getSnapshot(s).str()); //Label
