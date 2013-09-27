@@ -58,6 +58,8 @@ public:
     virtual void setPartitionRange(offset_t _totalSize, offset_t _thisOffset, offset_t _thisSize, unsigned _thisHeaderSize, unsigned _numParts) = 0;
     virtual void setSource(unsigned _whichInput, const RemoteFilename & _fullPath, bool compressedInput, const char *decryptKey) = 0;
     virtual void setTarget(IOutputProcessor * _target) = 0;
+    virtual void setRecordStructurePresent(bool _recordStructurePresent) = 0;
+    virtual void getRecordStructure(StringBuffer & _recordStructure) = 0;
 };
 
 interface IFormatProcessor : public IFormatPartitioner

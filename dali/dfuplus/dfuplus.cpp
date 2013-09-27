@@ -433,6 +433,9 @@ bool CDfuPlusHelper::variableSpray(const char* srcxml,const char* srcip,const ch
     if(globals->hasProp("failIfNoSourceFile"))
         req->setFailIfNoSourceFile(globals->getPropBool("failIfNoSourceFile",false));
 
+    if(globals->hasProp("recordStructurePresent"))
+        req->setRecordStructurePresent(globals->getPropBool("recordStructurePresent",false));
+
     if(srcxml == NULL)
         info("\nVariable spraying from %s on %s to %s\n", srcfile, srcip, dstname);
     else
