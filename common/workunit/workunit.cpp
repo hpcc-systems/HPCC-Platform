@@ -2427,11 +2427,11 @@ public:
 
             IPropertyTree* getAllQuerySetQueries(IRemoteConnection* conn, const char *querySet, const char *xPath)
             {
-                Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
                 Owned<IPropertyTree> queryTree = createPTree("Queries");
                 IPropertyTree* root = conn->queryRoot();
                 if (querySet && *querySet)
                 {
+                    Owned<IPropertyTree> queryRegistry = getQueryRegistry(querySet, false);
                     VStringBuffer path("QuerySet[@id='%s']/Query%s", querySet, xPath);
                     populateQueryTree(queryRegistry, querySet, root, path.str(), queryTree);
                 }
@@ -2440,12 +2440,13 @@ public:
                     Owned<IPropertyTreeIterator> iter = root->getElements("QuerySet");
                     ForEach(*iter)
                     {
-                        IPropertyTree &querySet = iter->query();
-                        const char* id = querySet.queryProp("@id");
+                        IPropertyTree &querySetTree = iter->query();
+                        const char* id = querySetTree.queryProp("@id");
                         if (id && *id)
                         {
+                            Owned<IPropertyTree> queryRegistry = getQueryRegistry(id, false);
                             VStringBuffer path("Query%s", xPath);
-                            populateQueryTree(queryRegistry, id, &querySet, path.str(), queryTree);
+                            populateQueryTree(queryRegistry, id, &querySetTree, path.str(), queryTree);
                         }
                     }
                 }
