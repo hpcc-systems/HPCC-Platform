@@ -374,6 +374,18 @@ bool outputPartsFiles(const char *daliserver,const char *cluster,const char *out
             CFileListWriter writer;
             Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
             if (group) {
+                const char * overrideBaseDirectory = NULL;
+                const char * overrideReplicateDirectory = NULL;
+                StringBuffer datadir;
+                StringBuffer repdir;
+                if (getConfigurationDirectory(NULL,"data","thor",cluster,datadir))
+                    overrideBaseDirectory = datadir.str();
+                if (getConfigurationDirectory(NULL,"mirror","thor",cluster,repdir))
+                    overrideReplicateDirectory = repdir.str();
+                if (overrideBaseDirectory&&*overrideBaseDirectory)
+                    setBaseDirectory(overrideBaseDirectory, false);
+                if (overrideReplicateDirectory&&*overrideBaseDirectory)
+                    setBaseDirectory(overrideReplicateDirectory, true);
                 IArrayOf<IFileIOStream> outStreams;
                 StringBuffer path;
                 ForEachNodeInGroup(i,*group) {
