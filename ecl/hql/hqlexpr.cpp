@@ -15054,15 +15054,20 @@ bool recordTypesMatch(ITypeInfo * left, ITypeInfo * right)
     return false;
 }
 
-bool assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right)
+void assertRecordTypesMatch(ITypeInfo * left, ITypeInfo * right)
 {
     if (recordTypesMatch(left, right))
-        return true;
+        return;
 
     EclIR::dbglogIR(2, left, right);
     throwUnexpected();
 }
 
+
+void assertRecordTypesMatch(IHqlExpression * left, IHqlExpression * right)
+{
+    assertRecordTypesMatch(left->queryRecordType(), right->queryRecordType());
+}
 
 bool recordTypesMatch(IHqlExpression * left, IHqlExpression * right)
 {

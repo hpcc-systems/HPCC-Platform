@@ -12033,7 +12033,7 @@ BoundRow * HqlCppTranslator::buildTransformCursors(BuildCtx & ctx, IHqlExpressio
     if (transform->getOperator() == no_skip)
         return NULL;
 
-    assertex(recordTypesMatch(self->queryRecord(), transform->queryRecord()));
+    assertRecordTypesMatch(self->queryRecord(), transform->queryRecord());
 
     if (left)
         ctx.addQuoted("const unsigned char * left = (const unsigned char *) _left;");

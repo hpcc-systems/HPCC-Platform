@@ -2063,8 +2063,11 @@ bool isLimitedDataset(IHqlExpression * expr, bool onFailOnly)
         {
         case no_choosen:
         case no_limit:
-//      case no_keyedlimit: // not included because it is done before everything else, so filters can be merged in
             if (!onFailOnly || expr->hasAttribute(onFailAtom))
+                return true;
+            break;
+        case no_keyedlimit:
+            if (onFailOnly && expr->hasAttribute(onFailAtom))
                 return true;
             break;
         case no_table:

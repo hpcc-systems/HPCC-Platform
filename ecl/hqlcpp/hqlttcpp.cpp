@@ -3545,6 +3545,7 @@ void CompoundSourceInfo::reset()
     isFiltered = false;
     isPostFiltered = false;
     isCreateRowLimited = false;
+    hasOnFail = false;
 }
 
 
@@ -3623,6 +3624,7 @@ bool CompoundSourceInfo::inherit(const CompoundSourceInfo & other, node_operator
     isPostFiltered = other.isPostFiltered;
     isPreloaded = other.isPreloaded;
     isCreateRowLimited = other.isCreateRowLimited;
+    hasOnFail = other.hasOnFail;
     mode = other.mode;
     uid.set(other.uid);
 
@@ -3818,6 +3820,8 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             {
                 extra->inherit(*parentExtra);
                 extra->ensureCompound();
+                if (expr->hasAttribute(onFailAtom))
+                    extra->hasOnFail = true;
             }
             break;
         }
@@ -3961,6 +3965,10 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
             {
                 //Don't yet have csv/xml variants!
                 if (!parentExtra->isBinary())
+                    break;
+
+                //ONFAIL isn't supported for compound aggregates at the moment - although it could be....
+                if (parentExtra->hasOnFail)
                     break;
 
                 IHqlExpression * root = queryRoot(dataset);
