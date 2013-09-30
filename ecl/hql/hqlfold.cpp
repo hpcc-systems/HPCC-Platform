@@ -3391,9 +3391,13 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
     case no_subsort:
     case no_sorted:
         {
-            //If action does not change the type information, then it can't have done anything...
-            if (hasSameSortGroupDistribution(expr, child))
-                return removeParentNode(expr);
+            //Subsort is unusual because the order applied to an unsorted dataset will also be unsorted
+            if ((op != no_subsort) || hasKnownSortGroupDistribution(child, expr->hasAttribute(localAtom)))
+            {
+                //If action does not change the type information, then it can't have done anything...
+                if (hasSameSortGroupDistribution(expr, child))
+                    return removeParentNode(expr);
+            }
             if (isNull(child) || hasNoMoreRowsThan(child, 1))
                 return removeParentNode(expr);
             //If all arguments to sort are constant then remove it, otherwise the activities will not like it.
