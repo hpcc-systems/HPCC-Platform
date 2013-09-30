@@ -80,21 +80,34 @@ public:
         StringArray optionStrings;
         const char* origPath = getenv("CLASSPATH");
         StringBuffer newPath;
-        newPath.append("-Djava.class.path=").append(origPath);
+        newPath.append("-Djava.class.path=");
+        if (origPath && *origPath)
+        {
+            newPath.append(origPath).append(ENVSEPCHAR);
+        }
         StringBuffer envConf;
         envConf.append(CONFIG_DIR).append(PATHSEPSTR).append("environment.conf");
         Owned<IProperties> conf = createProperties(envConf.str(), true);
         if (conf && conf->hasProp("classpath"))
         {
-            newPath.append(ENVSEPCHAR);
             conf->getProp("classpath", newPath);
+            newPath.append(ENVSEPCHAR);
         }
         else
         {
-            newPath.append(ENVSEPCHAR).append(INSTALL_DIR).append(PATHSEPCHAR).append("classes");
+            newPath.append(INSTALL_DIR).append(PATHSEPCHAR).append("classes").append(ENVSEPCHAR);
         }
-        newPath.append(ENVSEPCHAR).append(".");
+        newPath.append(".");
         optionStrings.append(newPath);
+        
+        if (conf && conf->hasProp("jvmlibpath"))
+        {
+            StringBuffer libPath;
+            libPath.append("-Djava.library.path=");
+            conf->getProp("jvmlibpath", libPath);
+            optionStrings.append(libPath);
+        }
+        
         if (conf && conf->hasProp("jvmoptions"))
         {
             optionStrings.appendList(conf->queryProp("jvmoptions"), ENVSEPSTR);
@@ -107,6 +120,7 @@ public:
         JavaVMOption* options = new JavaVMOption[optionStrings.length()];
         ForEachItemIn(idx, optionStrings)
         {
+            DBGLOG("javaembed: Setting JVM option: %s",(char *)optionStrings.item(idx));
             options[idx].optionString = (char *) optionStrings.item(idx);
             options[idx].extraInfo = NULL;
         }
@@ -116,9 +130,12 @@ public:
         vm_args.version = JNI_VERSION_1_6;
         /* load and initialize a Java VM, return a JNI interface pointer in env */
         JNIEnv *env;       /* receives pointer to native method interface */
-        JNI_CreateJavaVM(&javaVM, (void**)&env, &vm_args);
+        int createResult = JNI_CreateJavaVM(&javaVM, (void**)&env, &vm_args);
 
         delete [] options;
+        
+        if (createResult != 0)
+            throw MakeStringException(0, "javaembed: Unable to initialize JVM (%d)",createResult);
     }
     ~JavaGlobalState()
     {
