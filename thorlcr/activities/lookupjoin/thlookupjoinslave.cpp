@@ -694,7 +694,7 @@ public:
 
                 fuzzyMatch = 0 != (JFmatchrequired & flags);
                 bool maySkip = 0 != (flags & JFtransformMaySkip);
-                dedup = compareRight && !maySkip && !fuzzyMatch && (!returnMany || 1==keepLimit);
+                dedup = compareRight && !maySkip && !fuzzyMatch && !returnMany;
 
                 // code gen should spot invalid constants on KEEP with LOOKUP (without MANY)
                 break;
