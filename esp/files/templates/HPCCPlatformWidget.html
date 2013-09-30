@@ -4,10 +4,10 @@
             <div id="${id}StackController" class="left glow" data-dojo-props="containerId:'${id}TabContainer'" data-dojo-type="dijit.layout.StackController"></div>
             <div class="right">
                 <div class="seperator grey"></div>
-                <div id="search-form">
+                <form id="search-form" onsubmit="return false;">
                     <input id="${id}FindText" class="roundForm" data-dojo-props="placeHolder: 'Wuid, User, More...'" data-dojo-type="dijit.form.TextBox" />
-                    <button id="${id}Find" data-dojo-props="iconClass:'iconFind', showLabel: false" data-dojo-attach-event="onClick:_onFind" data-dojo-type="dijit.form.Button">Find</button>
-                </div>
+                    <button id="${id}Find" type="submit" data-dojo-props="iconClass:'iconFind', showLabel: false" data-dojo-attach-event="onClick:_onFind" data-dojo-type="dijit.form.Button">Find</button>
+                </form>
                 <div class="seperator grey"></div>
                 <div id="userAccount">
                     <span class="navBarLoggedin">logged in as:  </span>
