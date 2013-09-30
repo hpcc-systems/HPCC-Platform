@@ -176,6 +176,10 @@ homePath=$HOME/$user
 binPath="$path/bin"
 
 add_user $user $group $homePath || exit 1
+
+# If user already exists get the home directory
+homePath=$(cat /etc/passwd | grep -e "^$user" | cut -d':' -f6)
+homeBase=$(dirname $homePath)
 echo ""
 
 # installing files
@@ -232,10 +236,12 @@ else
 fi
 
 # Added code to change environment.conf file user home directory location for key generation
-if [ "$HOME" != "$home" ]; then
-    sed -e "s;^\(.*\)\/home$;\1$HOME;" ${CONFIG_DIR}/${ENV_CONF_FILE} > temp.conf
+if [ "$homeBase" != "$home" ]; then
+    sed -e "s;^[[:space:]]*home[[:space:]]*=.*$;home=$homeBase;" ${CONFIG_DIR}/${ENV_CONF_FILE} > temp.conf
     mv temp.conf ${CONFIG_DIR}/${ENV_CONF_FILE}
 fi
+
+
 
 # Setting up values for /etc/sudoers and /etc/security/limits.conf files
 ${path}/sbin/add_conf_settings.sh
