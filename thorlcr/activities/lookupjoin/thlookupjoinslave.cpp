@@ -522,6 +522,8 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
             case TAKlookupdenormalize:
             case TAKlookupdenormalizegroup:
             case TAKsmartjoin:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
                 return true;
         }
         return false;
@@ -545,8 +547,8 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
             case TAKlookupdenormalizegroup:
             case TAKalldenormalize:
             case TAKalldenormalizegroup:
-            case TAKsmartdenormalizegroup:
             case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
                 return true;
         }
         return false;
@@ -555,9 +557,20 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     {
         switch (container.getKind())
         {
-            case (TAKlookupdenormalizegroup:
+            case TAKlookupdenormalizegroup:
             case TAKsmartdenormalizegroup:
             case TAKalldenormalizegroup:
+                return true;
+        }
+        return false;
+    }
+    inline bool isSmart() const
+    {
+        switch (container.getKind())
+        {
+            case TAKsmartjoin:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
                 return true;
         }
         return false;
@@ -678,11 +691,8 @@ public:
           rowProcessor(*this)
     {
         gotRHS = false;
-        joinType = JT_Undefined;
         nextRhsRow = 0;
         rhsNext = NULL;
-        returnMany = false;
-        candidateMatches = 0;
         atMost = 0;
         spiltBroadcastingRHS = localLookupJoin = false;
         myNode = queryJob().queryMyRank();
@@ -696,6 +706,8 @@ public:
         rhsTotalCount = RCUNSET;
         leftITDL = rightITDL = NULL;
         candidateIndex = 0;
+        candidateMatches = 0;
+        candidateMatches = 0;
 
         eos = false;
         eog = someSinceEog = false;
@@ -717,45 +729,36 @@ public:
         hashJoinHelper = NULL;
         compareLeft = compareRight = compareLeftRight = NULL;
 
-        switch (container.getKind())
+        if (isAll())
         {
-            case TAKalljoin:
-            case TAKalldenormalize:
-            case TAKalldenormalizegroup:
-            {
-                allJoinHelper = (IHThorAllJoinArg *)queryHelper();
-                flags = allJoinHelper->getJoinFlags();
+            allJoinHelper = (IHThorAllJoinArg *)queryHelper();
+            flags = allJoinHelper->getJoinFlags();
+            returnMany = true;
+            keepLimit = allJoinHelper->getKeepLimit();
+            fuzzyMatch = 0 != (JFmatchrequired & flags);
+        }
+        else
+        {
+            dbgassertex(isLookup());
+
+            hashJoinHelper = (IHThorHashJoinArg *)queryHelper();
+            flags = hashJoinHelper->getJoinFlags();
+            leftHash = hashJoinHelper->queryHashLeft();
+            rightHash = hashJoinHelper->queryHashRight();
+            compareRight = hashJoinHelper->queryCompareRight();
+            compareLeft = hashJoinHelper->queryCompareLeft();
+            compareLeftRight = hashJoinHelper->queryCompareLeftRight();
+            if (JFmanylookup & flags)
                 returnMany = true;
-                keepLimit = allJoinHelper->getKeepLimit();
-                fuzzyMatch = 0 != (JFmatchrequired & flags);
-                break;
-            }
-            case TAKlookupjoin:
-            case TAKlookupdenormalize:
-            case TAKlookupdenormalizegroup:
-            {
-                hashJoinHelper = (IHThorHashJoinArg *)queryHelper();
-                flags = hashJoinHelper->getJoinFlags();
-                leftHash = hashJoinHelper->queryHashLeft();
-                rightHash = hashJoinHelper->queryHashRight();
-                compareRight = hashJoinHelper->queryCompareRight();
-                compareLeft = hashJoinHelper->queryCompareLeft();
-                compareLeftRight = hashJoinHelper->queryCompareLeftRight();
-                if (JFmanylookup & flags)
-                    returnMany = true;
-                keepLimit = hashJoinHelper->getKeepLimit();
-                abortLimit = hashJoinHelper->getMatchAbortLimit();
-                atMost = hashJoinHelper->getJoinLimit();
+            keepLimit = hashJoinHelper->getKeepLimit();
+            abortLimit = hashJoinHelper->getMatchAbortLimit();
+            atMost = hashJoinHelper->getJoinLimit();
 
-                fuzzyMatch = 0 != (JFmatchrequired & flags);
-                bool maySkip = 0 != (flags & JFtransformMaySkip);
-                dedup = compareRight && !maySkip && !fuzzyMatch && !returnMany;
+            fuzzyMatch = 0 != (JFmatchrequired & flags);
+            bool maySkip = 0 != (flags & JFtransformMaySkip);
+            dedup = compareRight && !maySkip && !fuzzyMatch && !returnMany;
 
-                // code gen should spot invalid constants on KEEP with LOOKUP (without MANY)
-                break;
-            }
-            default:
-                assertex(!"Unexpected join kind");
+            // code gen should spot invalid constants on KEEP with LOOKUP (without MANY)
         }
         exclude = 0 != (flags & JFexclude);
         if(0 == keepLimit)
@@ -779,8 +782,7 @@ public:
             joinType = JT_Inner;
         StringBuffer str;
 
-        failoverToStdJoin = getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER, 0 != (flags & JFsmart));
-        failoverToLocalLookupJoin = getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, failoverToStdJoin); // NB: implied if failoverToStdJoin
+        failoverToLocalLookupJoin = failoverToStdJoin = isSmart();
         ActPrintLog("Join type is %s, failoverToLocalLookupJoin=%s, failoverToStdJoin=%s",
                 getJoinTypeStr(str).str(), failoverToLocalLookupJoin?"true":"false", failoverToStdJoin?"true":"false");
     }
@@ -816,14 +818,8 @@ public:
                         ++clearedRows;
                     }
                 }
-                rowidx_t chkCount = 0;
-                for (unsigned r=0; r<numRows; r++)
-                {
-                    if (NULL != rows.query(r))
-                        ++chkCount;
-                }
                 rows.compact();
-                ActPrintLog("post-hash-clear - rows[%d] has %"RIPF"d rows (chkCount=%"RIPF"d)", a, rows.ordinality(), chkCount);
+                ActPrintLog("post-hash-clear - rows[%d] has %"RIPF"d rows", a, rows.ordinality());
             }
         }
 
@@ -879,13 +875,10 @@ public:
         eos = eog = someSinceEog = false;
         leftITDL = inputs.item(0);
         rightITDL = inputs.item(1);
-        grouped = leftITDL->isGrouped();
         allocator.set(queryRowAllocator());
         leftAllocator.set(::queryRowAllocator(leftITDL));
         outputMeta.set(leftITDL->queryFromActivity()->queryContainer().queryHelper()->queryOutputMeta());
-        leftITDL = createDataLinkSmartBuffer(this,leftITDL,LOOKUPJOINL_SMART_BUFFER_SIZE,isSmartBufferSpillNeeded(leftITDL->queryFromActivity()),grouped,RCUNBOUND,this,false,&container.queryJob().queryIDiskUsage());
-        left.setown(leftITDL);
-        startInput(leftITDL);
+
         right.set(rightITDL);
         rightAllocator.set(::queryRowAllocator(rightITDL));
         rightSerializer.set(::queryRowSerializer(rightITDL));
@@ -899,8 +892,50 @@ public:
                 queryJob().queryRowManager()->addRowBuffer(this);
         }
 
+        RtlDynamicRowBuilder rr(rightAllocator);
+        if ((flags & JFonfail) || (flags & JFleftouter))
+            rr.ensureRow();
+        RtlDynamicRowBuilder rl(leftAllocator);
+        if (flags & JFrightouter)
+            rl.ensureRow();
+        size32_t rrsz=0;
+        size32_t rlsz=0;
+
+        if (isAll())
+        {
+            if (rr.exists())
+                rrsz = allJoinHelper->createDefaultRight(rr);
+            if (rl.exists())
+                rlsz = allJoinHelper->createDefaultLeft(rl);
+            grouped = allJoinHelper->queryOutputMeta()->isGrouped();
+        }
+        else
+        {
+            dbgassertex(isLookup());
+            if (rr.exists())
+                rrsz = hashJoinHelper->createDefaultRight(rr);
+            if (rl.exists())
+                rlsz = hashJoinHelper->createDefaultLeft(rl);
+            grouped = hashJoinHelper->queryOutputMeta()->isGrouped();
+        }
+
+        leftITDL = createDataLinkSmartBuffer(this,leftITDL,LOOKUPJOINL_SMART_BUFFER_SIZE,isSmartBufferSpillNeeded(leftITDL->queryFromActivity()),grouped,RCUNBOUND,this,false,&container.queryJob().queryIDiskUsage());
+        left.setown(leftITDL);
+        startInput(leftITDL);
+
         try
         {
+            if (isLookup() && !isSmart())
+            {
+                bool inputGrouped = leftITDL->isGrouped();
+                dbgassertex(inputGrouped == grouped); // std. lookup join expects these to match
+            }
+
+            if (rrsz)
+                defaultRight.setown(rr.finalizeRowClear(rrsz));
+            if (rlsz)
+                defaultLeft.setown(rl.finalizeRowClear(rlsz));
+
             startInput(rightITDL);
         }
         catch (CATCHALL)
@@ -910,47 +945,11 @@ public:
             throw;
         }
         leftstartsem.wait();
-        if (leftexception) 
+        if (leftexception)
         {
-            IException *e = leftexception.getClear();
             right->stop();
-            throw e;
+            throw leftexception.getClear();
         }
-        RtlDynamicRowBuilder rr(rightAllocator);
-        if ((flags & JFonfail) || (flags & JFleftouter))
-            rr.ensureRow();
-        RtlDynamicRowBuilder rl(leftAllocator);
-        if (flags & JFrightouter)
-            rl.ensureRow();
-        size32_t rrsz=0;
-        size32_t rlsz=0;
-        switch (container.getKind())
-        {
-            case TAKalljoin:
-            case TAKalldenormalize:
-            case TAKalldenormalizegroup:
-            {
-                if (rr.exists()) 
-                    rrsz = allJoinHelper->createDefaultRight(rr);
-                if (rl.exists()) 
-                    rlsz = allJoinHelper->createDefaultLeft(rl);
-                break;
-            }
-            case TAKlookupjoin:
-            case TAKlookupdenormalize:
-            case TAKlookupdenormalizegroup:
-            {
-                if (rr.exists()) 
-                    rrsz = hashJoinHelper->createDefaultRight(rr);
-                if (rl.exists()) 
-                    rlsz = hashJoinHelper->createDefaultLeft(rl);
-                break;
-            }
-        };
-        if (rrsz) 
-            defaultRight.setown(rr.finalizeRowClear(rrsz));
-        if (rlsz)
-            defaultLeft.setown(rl.finalizeRowClear(rlsz));
         dataLinkStart();
     }
     virtual void abort()
@@ -996,18 +995,12 @@ public:
     }
     inline bool match(const void *lhs, const void *rhsrow)
     {
-        switch (container.getKind())
+        if (isAll())
+            return allJoinHelper->match(lhs, rhsrow);
+        else
         {
-            case TAKalljoin:
-            case TAKalldenormalize:
-            case TAKalldenormalizegroup:
-                return allJoinHelper->match(lhs, rhsrow);
-            case TAKlookupjoin:
-            case TAKlookupdenormalize:
-            case TAKlookupdenormalizegroup:
-                return hashJoinHelper->match(lhs, rhsrow);
-            default:
-                throwUnexpected();
+            dbgassertex(isLookup());
+            return hashJoinHelper->match(lhs, rhsrow);
         }
     }
     inline const void *joinTransform(const void *lhs, const void *rhsrow)
@@ -1022,6 +1015,8 @@ public:
                 break;
             case TAKlookupjoin:
             case TAKlookupdenormalize:
+            case TAKsmartjoin:
+            case TAKsmartdenormalize:
                 thisSize = hashJoinHelper->transform(row, lhs, rhsrow);
                 break;
             default:
@@ -1586,10 +1581,8 @@ public:
              * If any have, still need to distribute rest of RHS..
              */
 
-#if defined(TEST_FAILOVER_DISTRIBUTED_LOOKUPJOIN) || defined (TEST_FAILOVER_HASHJOIN)
-            if (failoverToLocalLookupJoin && isLookup())
+            if (isSmart() && getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER))) // For testing purposes only
                 clearNonLocalRows("testing");
-#endif
 
             if (spiltBroadcastingRHS) // NB: Can only be active for LOOKUP (not ALL)
             {
@@ -1597,7 +1590,6 @@ public:
                 localLookupJoin = true;
 
                 // NB: lhs ordering and grouping lost from here on..
-                // JCS->GH - I hope it never hits this.. i.e. you prevent such forms being generated..
                 if (grouped)
                     throw MakeActivityException(this, 0, "Degraded to distributed lookup join, LHS order cannot be preserved");
 
@@ -1606,6 +1598,12 @@ public:
 
                 setupDistributors();
 
+                /* NB: The collected broadcast rows thus far (in rhsNodeRows) were ordered/deterministic.
+                 * However, the rest of the rows received via the distributor and non-deterministic.
+                 * Therefore the order overall is non-deterministic from this point on.
+                 * For that reason, the rest of the RHS (distributed) rows will be processed ahead of the
+                 * collected [broadcast] rows in the code below for efficiency reasons.
+                 */
                 IArrayOf<IRowStream> streams;
                 streams.append(*right.getLink()); // what remains of 'right' will be read through distributor
                 ForEachItemIn(a, rhsNodeRows)
@@ -1650,12 +1648,13 @@ public:
             Owned<IThorRowLoader> rowLoader;
             if (failoverToStdJoin)
             {
-#ifdef TEST_FAILOVER_HASHJOIN
-                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, false, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
-#else
-                rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, false, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
-                rowLoader->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it sorted
-#endif
+                if (getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER)) // for testing only (force to disk, as if spilt)
+                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, false, rc_allDisk, SPILL_PRIORITY_LOOKUPJOIN));
+                else
+                {
+                    rowLoader.setown(createThorRowLoader(*this, queryRowInterfaces(rightITDL), compareRight, false, rc_mixed, SPILL_PRIORITY_LOOKUPJOIN));
+                    rowLoader->setOptions(rcflag_noAllInMemSort); // If fits into memory, don't want it sorted
+                }
             }
             else
             {
@@ -1701,7 +1700,6 @@ public:
                 ActPrintLog("Loading/Sorting LHS");
 
                 // NB: lhs ordering and grouping lost from here on.. (will have been caught earlier if global)
-                // JCS->GH - I hope it never hits this.. i.e. you prevent such a form being generated..
                 if (grouped)
                     throw MakeActivityException(this, 0, "Degraded to standard join, LHS order cannot be preserved");
 
@@ -1715,15 +1713,18 @@ public:
                 switch(container.getKind())
                 {
                     case TAKlookupjoin:
+                    case TAKsmartjoin:
                     {
                         // JCS->GH - are you going to generate JFreorderable flag?
-                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, JFreorderable & flags);
+                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, true);
                         bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                         joinHelper.setown(createJoinHelper(*this, hashJoinHelper, this, hintparallelmatch, hintunsortedoutput));
                         break;
                     }
                     case TAKlookupdenormalize:
                     case TAKlookupdenormalizegroup:
+                    case TAKsmartdenormalize:
+                    case TAKsmartdenormalizegroup:
                         joinHelper.setown(createDenormalizeHelper(*this, hashJoinHelper, this));
                         break;
                     default:

@@ -438,12 +438,14 @@ public:
                 ret = createHashJoinSlave(this);
                 break;
             case TAKlookupjoin:
-            case TAKsmartjoin:
             case TAKlookupdenormalize:
             case TAKlookupdenormalizegroup:
             case TAKalljoin:
             case TAKalldenormalize:
             case TAKalldenormalizegroup:
+            case TAKsmartjoin:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
                 ret = createLookupJoinSlave(this);
                 break;
             case TAKselfjoin:
@@ -537,19 +539,6 @@ public:
             case TAKnwayjoin:
                 ret = createNWayMergeJoinActivity(this);
                 break;
-<<<<<<< HEAD
-            case TAKalldenormalize:
-            case TAKalldenormalizegroup:
-                ret = createAllDenormalizeSlave(this);
-                break;
-            case TAKlookupdenormalize:
-            case TAKlookupdenormalizegroup:
-            case TAKsmartdenormalize:
-            case TAKsmartdenormalizegroup:
-                ret = createLookupDenormalizeSlave(this);
-                break;
-=======
->>>>>>> HPCC-8245 - Clear up a few things
             case TAKchilddataset:
                 UNIMPLEMENTED;
             case TAKchilditerator:

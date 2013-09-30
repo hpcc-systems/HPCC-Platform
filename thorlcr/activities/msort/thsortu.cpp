@@ -474,7 +474,7 @@ public:
             abortlimit = (unsigned)-1;
         keepremaining = keepmax;
         outputmetaL = _outputmeta;
-        if (TAKdenormalize == kind || TAKhashdenormalize == kind || TAKlookupdenormalize == kind)
+        if (TAKdenormalize == kind || TAKhashdenormalize == kind || TAKlookupdenormalize == kind || TAKsmartdenormalize == kind)
             denormTmp.setAllocator(allocator).ensureRow();
         return true;
     }
@@ -554,6 +554,7 @@ public:
                         case TAKdenormalize:
                         case TAKhashdenormalize:
                         case TAKlookupdenormalize:
+                        case TAKsmartdenormalize:
                         {
                             const void *lhs = defaultLeft;
                             do {
@@ -571,6 +572,7 @@ public:
                         case TAKdenormalizegroup:
                         case TAKhashdenormalizegroup:
                         case TAKlookupdenormalizegroup:
+                        case TAKsmartdenormalizegroup:
                             assertex(!denormRows.ordinality());
                             do {
                                 denormRows.append(nextright.getLink());
@@ -585,6 +587,7 @@ public:
                         case TAKselfjoin:
                         case TAKselfjoinlight:
                         case TAKlookupjoin:
+                        case TAKsmartjoin:
                             gotsz = helper->transform(ret, defaultLeft, nextright);
                             nextR();
                             break;
@@ -600,6 +603,7 @@ public:
                     case TAKdenormalize:
                     case TAKhashdenormalize:
                     case TAKlookupdenormalize:
+                    case TAKsmartdenormalize:
                     {
                         const void *lhs = defaultLeft;
                         do {
@@ -619,7 +623,7 @@ public:
                     case TAKdenormalizegroup:
                     case TAKhashdenormalizegroup:
                     case TAKlookupdenormalizegroup:
-
+                    case TAKsmartdenormalizegroup:
                         assertex(!denormRows.ordinality());
                         do {
                             if (!rightgroupmatched[rightidx])
@@ -639,6 +643,7 @@ public:
                     case TAKselfjoin:
                     case TAKselfjoinlight:
                     case TAKlookupjoin:
+                    case TAKsmartjoin:
                         if (!rightgroupmatched[rightidx]) 
                             gotsz = helper->transform(ret, defaultLeft, rightgroup.query(rightidx));
                         rightidx++;
@@ -655,11 +660,13 @@ public:
                     case TAKdenormalize:
                     case TAKhashdenormalize:
                     case TAKlookupdenormalize:
+                    case TAKsmartdenormalize:
                         fret.set(nextleft);
                         break;
                     case TAKdenormalizegroup:
                     case TAKhashdenormalizegroup:
                     case TAKlookupdenormalizegroup:
+                    case TAKsmartdenormalizegroup:
                         gotsz = helper->transform(ret, nextleft, NULL, 0, (const void **)NULL);
                         break;
                     case TAKjoin:
@@ -667,6 +674,7 @@ public:
                     case TAKselfjoin:
                     case TAKselfjoinlight:
                     case TAKlookupjoin:
+                    case TAKsmartjoin:
                         gotsz = helper->transform(ret, nextleft, defaultRight);
                         break;
                     default:
@@ -682,12 +690,14 @@ public:
                     case TAKdenormalize:
                     case TAKhashdenormalize:
                     case TAKlookupdenormalize:
+                    case TAKsmartdenormalize:
                         if (outSz)
                             fret.setown(denormLhs.getClear()); // denormLhs holding transform progress
                         break;
                     case TAKdenormalizegroup:
                     case TAKhashdenormalizegroup:
                     case TAKlookupdenormalizegroup:
+                    case TAKsmartdenormalizegroup:
                         if (denormRows.ordinality())
                         {
                             gotsz = helper->transform(ret, nextleft, denormRows.query(0), denormRows.ordinality(), denormRows.getRowArray());
@@ -714,6 +724,7 @@ public:
                         case TAKdenormalize:
                         case TAKhashdenormalize:
                         case TAKlookupdenormalize:
+                        case TAKsmartdenormalize:
                         {
                             size32_t sz = helper->transform(ret, denormLhs, rightgroup.query(rightidx), ++denormCount);
                             if (sz)
@@ -727,6 +738,7 @@ public:
                         case TAKdenormalizegroup:
                         case TAKhashdenormalizegroup:
                         case TAKlookupdenormalizegroup:
+                        case TAKsmartdenormalizegroup:
                         {
                             const void *rhsRow = rightgroup.query(rightidx);
                             LinkThorRow(rhsRow);
@@ -739,6 +751,7 @@ public:
                         case TAKselfjoin:
                         case TAKselfjoinlight:
                         case TAKlookupjoin:
+                        case TAKsmartjoin:
                             gotsz = helper->transform(ret,nextleft,rightgroup.query(rightidx));
                             break;
                         default:
@@ -765,10 +778,12 @@ public:
         case TAKdenormalizegroup:
         case TAKhashdenormalizegroup:
         case TAKlookupdenormalizegroup:
+        case TAKsmartdenormalizegroup:
             denormRows.kill(); // fall through
         case TAKdenormalize:
         case TAKhashdenormalize:
         case TAKlookupdenormalize:
+        case TAKsmartdenormalize:
             outSz = 0;
             denormLhs.clear();
             denormCount = 0;
