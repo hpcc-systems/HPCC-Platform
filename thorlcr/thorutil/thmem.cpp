@@ -582,34 +582,20 @@ void CThorExpandingRowArray::compact()
     const void **freeFinger = rows;
     const void **filledFinger = NULL;
     const void **rowEnd = rows+numRows;
-    rowidx_t newCount = 0;
-    while (freeFinger != rowEnd)
+    //skip any leading filled in entries.
+    while (freeFinger != rowEnd && *freeFinger)
+        freeFinger++;
+
+    // move any subsequent filled in entries.
+    for (filledFinger = freeFinger; filledFinger != rowEnd; filledFinger++)
     {
-        if (NULL == *freeFinger)
+        if (*filledFinger)
         {
-            if (!filledFinger)
-                filledFinger = freeFinger+1;
-            while (filledFinger != rowEnd)
-            {
-                if (*filledFinger)
-                {
-                    ++newCount;
-                    *freeFinger = *filledFinger;
-                    *filledFinger = NULL; // if !sparse, would prob. be better to memset at end
-                    ++filledFinger;
-                    break;
-                }
-                ++filledFinger;
-            }
-            if (filledFinger == rowEnd) // no more filled elements, so stop
-                break;
+            *freeFinger++ = *filledFinger;
+            *filledFinger = NULL;
         }
-        else
-            ++newCount;
-        ++freeFinger;
     }
-    numRows = newCount;
-    // should this [optionally] shrink the row array too?
+    numRows = freeFinger-rows;
 }
 
 void CThorExpandingRowArray::kill()
@@ -1476,11 +1462,8 @@ public:
         mmRegistered = false;
         if (rc_allMem == diskMemMix)
             spillPriority = SPILL_PRIORITY_DISABLE; // all mem, implies no spilling
-        else if (spillingEnabled())
-        {
-            activity.queryJob().queryRowManager()->addRowBuffer(this);
-            mmRegistered = true;
-        }
+        else
+            enableSpillingCallback();
         maxCores = activity.queryMaxCores();
         options = 0;
         spillableRows.setup(rowIf, false, isStable?stableSort_earlyAlloc:stableSort_none);

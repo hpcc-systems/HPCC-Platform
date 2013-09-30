@@ -28,7 +28,7 @@ public:
     CLookupJoinActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
     {
         if (container.queryLocal())
-            lhsDistributeTag = rhsDistributeTag = TAG_NULL;
+            broadcast2MpTag = lhsDistributeTag = rhsDistributeTag = TAG_NULL;
         else
         {
             mpTag = container.queryJob().allocateMPTag(); // NB: base takes ownership and free's

@@ -34,9 +34,6 @@
 #define _TRACEBROADCAST
 #endif
 
-//#define TEST_FAILOVER_DISTRIBUTED_LOOKUPJOIN
-//#define TEST_FAILOVER_HASHJOIN
-
 
 enum join_t { JT_Undefined, JT_Inner, JT_LeftOuter, JT_RightOuter, JT_LeftOnly, JT_RightOnly, JT_LeftOnlyTransform };
 
@@ -45,7 +42,7 @@ enum join_t { JT_Undefined, JT_Inner, JT_LeftOuter, JT_RightOuter, JT_LeftOnly, 
 #define MAX_QUEUE_BLOCKS 5
 
 enum broadcast_code { bcast_none, bcast_send, bcast_sendStopping, bcast_stop };
-enum broadcast_flags { bcastflag_spilt=0x01 };
+enum broadcast_flags { bcastflag_spilt=0x100 };
 #define BROADCAST_CODE_MASK 0x00FF
 #define BROADCAST_FLAG_MASK 0xFF00
 class CSendItem : public CSimpleInterface
@@ -63,7 +60,7 @@ public:
     CSendItem(CMessageBuffer &_msg)
     {
         msg.swapWith(_msg);
-        msg.read((unsigned &)info);
+        msg.read(info);
         msg.read(origin);
     }
     unsigned length() const { return msg.length(); }
@@ -71,10 +68,10 @@ public:
     CMessageBuffer &queryMsg() { return msg; }
     broadcast_code queryCode() const { return (broadcast_code)(info & BROADCAST_CODE_MASK); }
     unsigned queryOrigin() const { return origin; }
-    broadcast_flags queryFlags() const { return (broadcast_flags)((info & BROADCAST_FLAG_MASK)>>8); }
+    broadcast_flags queryFlags() const { return (broadcast_flags)(info & BROADCAST_FLAG_MASK); }
     void setFlag(broadcast_flags _flag)
     {
-        info = (info & ~BROADCAST_FLAG_MASK) | ((byte)_flag << 8);
+        info = (info & ~BROADCAST_FLAG_MASK) | ((short)_flag);
         msg.writeDirect(0, sizeof(info), &info); // update
     }
 };
@@ -781,9 +778,11 @@ public:
         else
             joinType = JT_Inner;
         StringBuffer str;
-        ActPrintLog("Join type is %s", getJoinTypeStr(str).str());
 
-        failoverToLocalLookupJoin = failoverToStdJoin = (0 != (flags & JFsmart));
+        failoverToStdJoin = getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER, 0 != (flags & JFsmart));
+        failoverToLocalLookupJoin = getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, failoverToStdJoin); // NB: implied if failoverToStdJoin
+        ActPrintLog("Join type is %s, failoverToLocalLookupJoin=%s, failoverToStdJoin=%s",
+                getJoinTypeStr(str).str(), failoverToLocalLookupJoin?"true":"false", failoverToStdJoin?"true":"false");
     }
     ~CLookupJoinActivity()
     {
@@ -1019,12 +1018,10 @@ public:
         {
             case TAKalljoin:
             case TAKalldenormalize:
-            case TAKalldenormalizegroup:
                 thisSize = allJoinHelper->transform(row, lhs, rhsrow);
                 break;
             case TAKlookupjoin:
             case TAKlookupdenormalize:
-            case TAKlookupdenormalizegroup:
                 thisSize = hashJoinHelper->transform(row, lhs, rhsrow);
                 break;
             default:
