@@ -1158,7 +1158,7 @@ IHqlExpression * getNormalizedFilename(IHqlExpression * filename)
 
 bool canBeSlidingJoin(IHqlExpression * expr)
 {
-    if (expr->hasAttribute(hashAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(allAtom))
+    if (expr->hasAttribute(hashAtom) || expr->hasAttribute(lookupAtom) || expr->hasAttribute(smartAtom)|| expr->hasAttribute(allAtom))
         return false;
     if (expr->hasAttribute(rightouterAtom) || expr->hasAttribute(fullouterAtom) ||
         expr->hasAttribute(leftonlyAtom) || expr->hasAttribute(rightonlyAtom) || expr->hasAttribute(fullonlyAtom))

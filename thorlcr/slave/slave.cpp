@@ -438,6 +438,7 @@ public:
                 ret = createHashJoinSlave(this);
                 break;
             case TAKlookupjoin:
+            case TAKsmartjoin:
                 ret = createLookupJoinSlave(this);
                 break;
             case TAKalljoin:
@@ -540,6 +541,8 @@ public:
                 break;
             case TAKlookupdenormalize:
             case TAKlookupdenormalizegroup:
+            case TAKsmartdenormalize:
+            case TAKsmartdenormalizegroup:
                 ret = createLookupDenormalizeSlave(this);
                 break;
             case TAKchilddataset:

@@ -5243,6 +5243,7 @@ void CHThorLookupJoinActivity::ready()
         atmostLimit = static_cast<unsigned>(-1);
     if(limitLimit==0)
         limitLimit = static_cast<unsigned>(-1);
+    isSmartJoin = (helper.getJoinFlags() & JFsmart) != 0;
     getLimitType(helper.getJoinFlags(), limitFail, limitOnFail);
 
     if((leftOuterJoin || limitOnFail) && !defaultRight)
@@ -5364,9 +5365,12 @@ const void * CHThorLookupJoinActivity::nextInGroup()
     switch (kind)
     {
     case TAKlookupjoin:
+    case TAKsmartjoin:
         return nextInGroupJoin();
     case TAKlookupdenormalize:
     case TAKlookupdenormalizegroup:
+    case TAKsmartdenormalize:
+    case TAKsmartdenormalizegroup:
         return nextInGroupDenormalize();
     }
     throwUnexpected();
@@ -5383,14 +5387,20 @@ const void * CHThorLookupJoinActivity::nextInGroupJoin()
             keepCount = keepLimit;
             if(!left)
             {
-                if(matchedGroup || eog)
+                if (isSmartJoin)
+                    left.setown(input->nextInGroup());
+
+                if(!left)
                 {
-                    matchedGroup = false;
+                    if(matchedGroup || eog)
+                    {
+                        matchedGroup = false;
+                        eog = true;
+                        return NULL;
+                    }
                     eog = true;
-                    return NULL;
+                    continue;
                 }
-                eog = true;
-                continue;
             }
             eog = false;
             gotMatch = false;
@@ -5447,7 +5457,7 @@ const void * CHThorLookupJoinActivity::nextInGroupDenormalize()
         left.setown(input->nextInGroup());
         if(!left)
         {
-            if (!matchedGroup)
+            if (!matchedGroup || isSmartJoin)
                 left.setown(input->nextInGroup());
 
             if (!left)
@@ -5462,7 +5472,7 @@ const void * CHThorLookupJoinActivity::nextInGroupDenormalize()
         const void * ret = NULL;
         if (failingLimit)
             ret = joinException(left, failingLimit);
-        else if (kind == TAKlookupdenormalize)
+        else if (kind == TAKlookupdenormalize || kind == TAKsmartdenormalize)
         {
             OwnedConstRoxieRow newLeft(left.getLink());
             unsigned rowSize = 0;

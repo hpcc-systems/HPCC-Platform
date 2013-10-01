@@ -358,6 +358,7 @@ extern HQL_API IAtom * sizeAtom;
 extern HQL_API IAtom * sizeofAtom;
 extern HQL_API IAtom * skewAtom;
 extern HQL_API IAtom * skipAtom;
+extern HQL_API IAtom * smartAtom;
 extern HQL_API IAtom * snapshotAtom;
 extern HQL_API IAtom * soapActionAtom;
 extern HQL_API IAtom * httpHeaderAtom;

@@ -200,6 +200,9 @@ MODULE_INIT(INIT_PRIORITY_STANDARD)
     kindArray[TAKsubsort] = "subsort";
     kindArray[TAKdictionaryworkunitwrite] = "dictionaryworkunitwrite";
     kindArray[TAKdictionaryresultwrite] = "dictionaryresultwrite";
+    kindArray[TAKsmartjoin] = "smartjoin";
+    kindArray[TAKsmartdenormalize] = "smartdenormalize";
+    kindArray[TAKsmartdenormalizegroup] = "smartdenormalizegroup";
 
 //Non standard
     kindArray[TAKcountdisk] = "countdisk";

@@ -89,6 +89,11 @@ void getResources(IHqlExpression * expr, CResources & resources, const CResource
                 resources.setManyToMasterSockets(1);
             }
         }
+        else if (expr->hasAttribute(smartAtom))
+        {
+            resources.setHeavyweight();
+            setHashResources(expr, resources, options);
+        }
         else if (expr->hasAttribute(hashAtom))
         {
             resources.setHeavyweight();
