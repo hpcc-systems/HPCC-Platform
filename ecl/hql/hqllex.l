@@ -794,6 +794,7 @@ MERGEJOIN           { RETURNSYM(MERGEJOIN); }
 MIN                 { RETURNSYM(MIN); }
 MODULE              { RETURNHARD(MODULE); }
 MOFN                { RETURNSYM(MOFN); }
+MULTIPLE            { RETURNSYM(MULTIPLE); }
 NAMED               { RETURNSYM(NAMED); }
 __NAMEOF__          { RETURNSYM(NAMEOF); }
 NAMESPACE           { RETURNSYM(NAMESPACE); }
