@@ -260,6 +260,7 @@ public:
     bool isFiltered:1;
     bool isPostFiltered:1;
     bool isCreateRowLimited:1;
+    bool hasOnFail:1;
 };
 
 enum
