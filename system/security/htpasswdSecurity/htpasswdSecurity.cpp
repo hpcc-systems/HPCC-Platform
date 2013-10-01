@@ -37,6 +37,11 @@ public:
 		userMap.kill();
 	}
 
+	secManagerType querySecMgrType()
+	{
+		return SMT_HTPasswd;
+	}
+
 	IAuthMap * createAuthMap(IPropertyTree * authconfig)
 	{
 		CAuthMap* authmap = new CAuthMap(this);
