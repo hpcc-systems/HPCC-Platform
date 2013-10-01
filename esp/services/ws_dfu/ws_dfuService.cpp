@@ -1557,7 +1557,7 @@ static void getFilePermission(const CDfsLogicalFileName &dlfn, ISecUser* user, I
 {
     if (dlfn.isMulti())
     {
-        if (dlfn.isWild())
+        if (!dlfn.isExpanded())
             const_cast<CDfsLogicalFileName &>(dlfn).expand(udesc);
         unsigned i = dlfn.multiOrdinality();
         while (i--)

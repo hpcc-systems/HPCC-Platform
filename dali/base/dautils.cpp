@@ -95,7 +95,6 @@ inline bool validFNameChar(char c)
 class CMultiDLFN
 {
     std::vector<CDfsLogicalFileName> dlfns;
-    bool anywilds;
     bool expanded;
     StringBuffer prefix;
 public:
@@ -109,7 +108,6 @@ public:
         unsigned c = lfns.ordinality();
         StringBuffer lfn(_prefix);
         size32_t len = lfn.length();
-        anywilds = false;
         expanded = true;
         for (unsigned i=0;i<c;i++) {    //Populate CDfsLogicalFileName array with each logical filespec
             const char * s = lfns.item(i);
@@ -124,18 +122,14 @@ public:
             CDfsLogicalFileName lfn;
             lfn.set(s);
             dlfns.push_back(lfn);
-            if (!anywilds && (strchr(s,'*') || strchr(s,'?')))
-            {
+            if (expanded && (strchr(s,'*') || strchr(s,'?')))
                 expanded = false;
-                anywilds = true;
-            }
         }
         prefix.append(_prefix);
     }
 
     CMultiDLFN(CMultiDLFN &other)
     {
-        anywilds = other.anywilds;
         expanded = other.expanded;
         prefix = other.prefix;
         ForEachItemIn(i,other)
@@ -149,7 +143,7 @@ public:
 
     bool expand(IUserDescriptor *_udesc)
     {
-        if (expanded || !anywilds)
+        if (expanded)
             return true;
         StringArray lfnExpanded;
         StringBuffer tmp;
@@ -232,14 +226,13 @@ public:
         return NULL;
     }
 
-    CDfsLogicalFileName &item(unsigned idx)
+    const CDfsLogicalFileName &item(unsigned idx)
     {
         assertex(idx < dlfns.size());
         return dlfns.at(idx);
     }
 
     inline unsigned ordinality(){ return dlfns.size(); }
-    inline bool anyWildcards()  { return anywilds; }
     inline bool isExpanded()    { return expanded; }
 };
 
@@ -308,16 +301,16 @@ bool CDfsLogicalFileName::isForeign() const
     return false;
 }
 
-bool CDfsLogicalFileName::isWild() const
+bool CDfsLogicalFileName::isExpanded() const
 {
     if (multi)
-        return multi->anyWildcards();
+        return multi->isExpanded();
     return false;
 }
 
 bool CDfsLogicalFileName::expand(IUserDescriptor *user)
 {
-    if (multi && multi->anyWildcards() && !multi->isExpanded())
+    if (multi && !multi->isExpanded())
     {
         try
         {
@@ -341,8 +334,9 @@ bool CDfsLogicalFileName::expand(IUserDescriptor *user)
         {
             StringBuffer err;
             e->errorMessage(err);
-            WARNLOG("CDfsLogicalFileName::expand %s",err.str());
+            ERRLOG("CDfsLogicalFileName::expand %s",err.str());
             e->Release();
+            throw;
         }
     }
     return true;
