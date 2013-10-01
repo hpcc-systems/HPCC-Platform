@@ -78,6 +78,7 @@ class Cws_accessEx : public Cws_access
     void getBaseDNsForAddingPermssionToAccount(CLdapSecManager* secmgr, const char* prefix, const char* accountName, 
         int accountType, StringArray& basednNames);
     int enableDisableScopeScans(IEspContext &context, bool doEnable, StringBuffer &retMsg);
+    CLdapSecManager* queryLDAPSecurityManager(IEspContext &context);
 
 public:
     IMPLEMENT_IINTERFACE;
