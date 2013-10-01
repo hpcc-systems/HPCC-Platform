@@ -1,0 +1,6 @@
+CLIENT_TOOLS_BASE=${PREFIX}/${DIR_NAME}/${version}
+if [ -e "$CLIENT_TOOLS_BASE" ] &&  [ -n $(ls -A $CLIENT_TOOLS_BASE) ]  
+then
+   rm -rf $CLIENT_TOOLS_BASE > /dev/null 2>&1
+fi
+
