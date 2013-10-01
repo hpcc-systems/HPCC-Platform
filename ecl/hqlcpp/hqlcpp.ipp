@@ -720,6 +720,7 @@ struct HqlCppOptions
     bool                expandHashJoin;
     bool                traceIR;
     bool                preserveCaseExternalParameter;
+    bool                multiplePersistInstances;
     bool                optimizeParentAccess;
     bool                expandPersistInputDependencies;
 };

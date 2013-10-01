@@ -613,12 +613,6 @@ const char * cppSystemText[]  = {
 
     "   selectCluster(const varstring src)  : gctxmethod,entrypoint='selectCluster';",
     "   restoreCluster()    : gctxmethod,entrypoint='restoreCluster';",
-    "   startPersist(const varstring src)   : gctxmethod,entrypoint='startPersist';",
-    "   finishPersist() : gctxmethod,entrypoint='finishPersist';",
-
-    "   clearPersist(const varstring name)  : gctxmethod,entrypoint='clearPersist';",
-    "   updatePersist(const varstring name, unsigned4 eclCRC, unsigned8 allCRC) : gctxmethod,entrypoint='updatePersist';",
-    "   checkPersistMatches(const varstring name, unsigned4 eclCRC) : gctxmethod,entrypoint='checkPersistMatches';",
 
     "   integer4 compareUtf8Utf8(const utf8 l, const utf8 r, const varstring codepage) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareUtf8Utf8';",
     "   integer4 compareUtf8Utf8Strength(const utf8 l, const utf8 r, const varstring loc, unsigned4 str) : eclrtl,pure,library='eclrtl',entrypoint='rtlCompareUtf8Utf8Strength';",

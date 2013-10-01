@@ -187,6 +187,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   ENTH
   ENUM
   TOK_ERROR
+  ESCAPE
   EVALUATE
   EVENT
   EVENTEXTRA
@@ -297,6 +298,7 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   MIN
   MODULE
   MOFN
+  MULTIPLE
   NAMED
   NAMEOF
   NAMESPACE
@@ -415,7 +417,6 @@ static void eclsyntaxerror(HqlGram * parser, const char * s, short yystate, int 
   TAN
   TANH
   TERMINATOR
-  ESCAPE
   THEN
   THISNODE
   THOR
@@ -1663,6 +1664,13 @@ persistOpt
     : fewMany
     | expireAttr
     | clusterAttr
+    | SINGLE            {   $$.setExpr(createAttribute(singleAtom), $1); }
+    | MULTIPLE          {   $$.setExpr(createExprAttribute(multipleAtom), $1); }
+    | MULTIPLE '(' expression ')'
+                        {
+                            parser->normalizeExpression($3, type_int, true);
+                            $$.setExpr(createExprAttribute(multipleAtom, $3.getExpr()), $1);
+                        }
     ;
 
 globalOpts

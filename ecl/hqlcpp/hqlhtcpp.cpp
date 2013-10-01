@@ -65,7 +65,6 @@
 #include "eclhelper_base.hpp"
 
 #define MAX_ROWS_OUTPUT_TO_SDS              1000
-#define PERSIST_VERSION                     1           // Increment when implementation is incompatible.
 #define MAX_SAFE_RECORD_SIZE                10000000
 #define DEFAULT_EXPIRY_PERIOD               7
 #define MAX_GRAPH_ECL_LENGTH                1000
@@ -17233,7 +17232,6 @@ void HqlCppTranslator::buildWorkflowItem(BuildCtx & ctx, IHqlStmt * switchStmt, 
 
 void HqlCppTranslator::buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression * expr)
 {
-    IHqlExpression * original = queryAttributeChild(expr, _original_Atom, 0);
 
     OwnedHqlExpr resultName = ::createResultName(queryAttributeChild(expr, namedAtom, 0));
     resultName.setown(ensureExprType(resultName, unknownVarStringType));
@@ -17249,8 +17247,7 @@ void HqlCppTranslator::buildWorkflowPersistCheck(BuildCtx & ctx, IHqlExpression 
     if (resultsRead)
         unwindChildren(dependencies.resultsRead, resultsRead);
 
-    unsigned crc = getExpressionCRC(original) + PERSIST_VERSION;
-    OwnedHqlExpr crcVal = getSizetConstant(crc);
+    IHqlExpression *  crcVal = queryAttributeChild(expr, _codehash_Atom, 0);
     OwnedHqlExpr crcExpr = calculatePersistInputCrc(ctx, dependencies);
     HqlExprArray args;
     args.append(*LINK(resultName));

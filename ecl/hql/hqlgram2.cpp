@@ -10269,6 +10269,7 @@ static void getTokenText(StringBuffer & msg, int token)
     case MIN: msg.append("MIN"); break;
     case MODULE: msg.append("MODULE"); break;
     case MOFN: msg.append("MOFN"); break;
+    case MULTIPLE: msg.append("MULTIPLE"); break;
     case NAMED: msg.append("NAMED"); break;
     case NAMEOF: msg.append("__NAMEOF__"); break;
     case NAMESPACE: msg.append("NAMESPACE"); break;

@@ -626,6 +626,7 @@ interface IConstWorkflowItem : extends IInterface
     virtual unsigned queryContingencyFor() const = 0;
     virtual IStringVal & getPersistName(IStringVal & val) const = 0;
     virtual unsigned queryPersistWfid() const = 0;
+    virtual int queryPersistCopies() const = 0;  // 0 - unmangled name,  < 0 - use default, > 0 - max number
     virtual unsigned queryScheduleCountRemaining() const = 0;
     virtual WFState queryState() const = 0;
     virtual unsigned queryRetriesRemaining() const = 0;
@@ -657,7 +658,7 @@ interface IWorkflowItem : extends IRuntimeWorkflowItem
     virtual void setSchedulePriority(unsigned priority) = 0;
     virtual void setScheduleCount(unsigned count) = 0;
     virtual void addDependency(unsigned wfid) = 0;
-    virtual void setPersistInfo(const char * name, unsigned wfid) = 0;
+    virtual void setPersistInfo(const char * name, unsigned wfid, int maxCopies) = 0;
     virtual void syncRuntimeData(const IConstWorkflowItem & other) = 0;
     virtual void setScheduledWfid(unsigned wfid) = 0;
     virtual void setCluster(const char * cluster) = 0;

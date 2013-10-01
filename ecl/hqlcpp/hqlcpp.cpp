@@ -1707,6 +1707,7 @@ void HqlCppTranslator::cacheOptions()
         DebugOption(options.preserveCaseExternalParameter,"preserveCaseExternalParameter",true),
         DebugOption(options.optimizeParentAccess,"optimizeParentAccess",false),
         DebugOption(options.expandPersistInputDependencies,"expandPersistInputDependencies",true),
+        DebugOption(options.multiplePersistInstances,"multiplePersistInstances",true),
     };
 
     //get options values from workunit

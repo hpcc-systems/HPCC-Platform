@@ -455,7 +455,7 @@ protected:
     IWorkflowItem *           addWorkflowToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, ContingencyData const & conts, IHqlExpression * cluster);
     IWorkflowItem *           addWorkflowContingencyToWorkunit(unsigned wfid, WFType type, WFMode mode, UnsignedArray const & dependencies, IHqlExpression * cluster, unsigned wfidFor) { ContingencyData conts; conts.contingencyFor = wfidFor; return addWorkflowToWorkunit(wfid, type, mode, dependencies, conts, cluster); }
 
-    void setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid);
+    void setWorkflowPersist(IWorkflowItem * wf, char const * persistName, unsigned persistWfid, int  numPersistInstances);
     void setWorkflowSchedule(IWorkflowItem * wf, ScheduleData const & sched);
 
     virtual IHqlExpression *  createTransformed(IHqlExpression * expr);
@@ -534,6 +534,7 @@ protected:
     bool                      isRootAction;
     bool                      isRoxie;
     bool                      expandPersistInputDependencies;
+    bool                      multiplePersistInstances;
     UnsignedArray             cumulativeDependencies;
     UnsignedArray             emptyDependencies;
     UnsignedArray             storedWfids;
