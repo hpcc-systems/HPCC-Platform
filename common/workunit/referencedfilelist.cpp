@@ -428,11 +428,6 @@ void ReferencedFileList::addFiles(StringArray &files)
 
 void ReferencedFileList::addFileFromSubFile(IPropertyTree &subFile, const char *daliip, const char *srcCluster)
 {
-    if (subFile.hasProp("@daliip"))
-        daliip = subFile.queryProp("@daliip");
-    if (subFile.hasProp("@sourceCluster"))
-        srcCluster = subFile.queryProp("@sourceCluster");
-
     addFile(subFile.queryProp("@value"), daliip, srcCluster);
 }
 
