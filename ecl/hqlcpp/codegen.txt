@@ -28,7 +28,7 @@ o no_setresult
   The representation is ugly for walking activity lists - much better if could guarantee that a dataset was the first parameter
   no_setresult(dataset, select, sequence).
 
-o It isn't ever simple to walk the activity tree because of exceptions like if(), setresult(), activerow etc.
+o It is never simple to walk the activity tree because of exceptions like if(), setresult(), activerow etc.
 
 o Should possibly represent selectors as different HqlExpressions - it might remove some of the complication from the transformers.
 
@@ -38,7 +38,7 @@ o Hoisting common items: conditions and dependencies
   - If a cse is used in a condition branch then don't want to hoist it globally unless it is (first) used non-globally
   - cses shouldn't be moved within sequentials because it may change the meaning.  We can assume that all evaluation
     of the same expressions produce the same result though
-  - careful if hoisting, because may also need to hoist items in no_comma that are futher up the tree....
+  - careful if hoisting, because may also need to hoist items in no_comma that are further up the tree....
   - if sequential inside a condition, then can't common up with a later non-conditional cse.
   - Need comma expressions to be created in the best locations.  Generally tagged onto the activity at a minimum.
   - problem with creating a comma locally and then hoisting without analysing is they won't get commoned up.
@@ -76,7 +76,7 @@ o The nested child dataset is relatively simple if node created is (select(selec
   would be requested to build iterator on address.person.  
   - If no break required, can just use nested iterators
   - if break required we need a class that can iterate; AND provide access to both person and book fields.
-  - Similar problem as outer level nested iterator, except we can use use pointers to parent record.
+  - Similar problem as outer level nested iterator, except we can use pointers to parent record.
 
 o Would be easier if we had a representation:
   address(exists(related(person(parent-join-condition), books(join-condition))(f));
@@ -134,7 +134,7 @@ o Automatic spotting:
 * In what sense are parent fields accessible when iterating through people at root level?  
 
 Could theoretically be serialised as part of the
-  record, but removed by an output with no table.  Implicit projects would then make it usable.  Worth persuing.
+  record, but removed by an output with no table.  Implicit projects would then make it usable.  Worth pursuing.
   >> Needs a representation in a record to indicate it also contains parent references.
 
 * How do you alias a dataset?  Otherwise can't implement sqjoin for a disk based item.
