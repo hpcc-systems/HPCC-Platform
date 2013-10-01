@@ -877,16 +877,19 @@ bool isGlobalActivity(CGraphElementBase &container)
         case TAKjoin:
         case TAKselfjoin:
         case TAKhashjoin:
+        case TAKsmartjoin:
         case TAKkeyeddenormalize:
         case TAKhashdenormalize:
         case TAKdenormalize:
-        case TAKlookupdenormalize:
+        case TAKlookupdenormalize: //GH->JCS why are these here, and join not?
         case TAKalldenormalize:
+        case TAKsmartdenormalize:
         case TAKdenormalizegroup:
         case TAKhashdenormalizegroup:
         case TAKlookupdenormalizegroup:
         case TAKkeyeddenormalizegroup:
         case TAKalldenormalizegroup:
+        case TAKsmartdenormalizegroup:
         case TAKaggregate:
         case TAKexistsaggregate:
         case TAKcountaggregate:
