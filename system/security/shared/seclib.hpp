@@ -257,6 +257,14 @@ interface IAuthMap : extends IInterface
     virtual ISecResourceList * getResourceList(const char * path) = 0;
 };
 
+enum secManagerType
+{
+    SMT_New,
+    SMT_Default,
+    SMT_Local,
+    SMT_LDAP,
+    SMT_HTPasswd
+};
 interface ISecManager : extends IInterface
 {
     virtual ISecUser * createUser(const char * user_name) = 0;
@@ -300,6 +308,7 @@ interface ISecManager : extends IInterface
     virtual int queryDefaultPermission(ISecUser& user) = 0;
     virtual bool clearPermissionsCache(ISecUser & user) = 0;
     virtual bool authenticateUser(ISecUser & user, bool &superUser) = 0;
+    virtual secManagerType querySecMgrType() = 0;
 };
 
 interface IExtSecurityManager

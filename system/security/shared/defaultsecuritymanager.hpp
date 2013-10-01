@@ -82,6 +82,7 @@ public:
     virtual bool createUserScopes() { return false; }
     virtual aindex_t getManagedFileScopes(IArrayOf<ISecResource>& scopes) { return 0; }
     virtual int queryDefaultPermission(ISecUser& user) { return SecAccess_Full; }
+    virtual secManagerType querySecMgrType() { return SMT_Default; }
 };
 
 class CLocalSecurityManager : public CDefaultSecurityManager
@@ -93,6 +94,7 @@ public:
     IAuthMap * createAuthMap(IPropertyTree * authconfig);
 protected:
     virtual bool IsPasswordValid(ISecUser& sec_user);
+    virtual secManagerType querySecMgrType() { return SMT_Local; }
 };
 
 
