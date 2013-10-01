@@ -2871,10 +2871,10 @@ public:
 
     // persist-related code - usage of persist should have been caught and rejected at codegen time
     virtual char * getExpandLogicalName(const char * logicalName) { throwUnexpected(); }
-    virtual void startPersist(const char * name) { throwUnexpected(); }
-    virtual void finishPersist() { throwUnexpected(); }
+    virtual IRemoteConnection *startPersist(const char * name) { throwUnexpected(); }
+    virtual void finishPersist(IRemoteConnection *) { throwUnexpected(); }
     virtual void clearPersist(const char * logicalName) { throwUnexpected(); }
-    virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) { throwUnexpected(); }
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC) { throwUnexpected(); }
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC) { throwUnexpected(); }
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
     virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { throwUnexpected(); }

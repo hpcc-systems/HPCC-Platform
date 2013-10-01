@@ -110,13 +110,13 @@ public:
     {
         ctx->restoreCluster();
     }
-    virtual void startPersist(const char * name)
+    virtual IRemoteConnection *startPersist(const char * name)
     {
-        ctx->startPersist(name);
+        return ctx->startPersist(name);
     }
-    virtual void finishPersist()
+    virtual void finishPersist(IRemoteConnection *persistLock)
     {
-        ctx->finishPersist();
+        ctx->finishPersist(persistLock);
     }
     virtual bool queryResolveFilesLocally()
     {
@@ -150,9 +150,9 @@ public:
     {
         ctx->clearPersist(logicalName);
     }
-    virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
     {
-        ctx->updatePersist(logicalName, eclCRC, allCRC);
+        ctx->updatePersist(persistLock, logicalName, eclCRC, allCRC);
     }
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC)
     {
@@ -303,6 +303,7 @@ private:
     Owned<IWorkflowScheduleConnection> wfconn;
     Owned<PersistVersion> persist;
     bool persistsPrelocked;
+    MapStringToMyClass<IRemoteConnection> persistCache;
 };
 
 class EclAgentQueryLibrary : public CInterface
@@ -369,8 +370,6 @@ private:
     CriticalSection wusect;
     StringArray tempFiles;
     CriticalSection tfsect;
-    Owned<IRemoteConnection> persistLock;
-    MapStringToMyClass<IRemoteConnection> persistCache;
     Array persistReadLocks;
 
     Owned<ILoadedDllEntry> dll;
@@ -401,10 +400,10 @@ private:
 
     void processXmlParams(const IPropertyTree *params);
     bool checkPersistUptoDate(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile, StringBuffer & errText);
-    bool isPersistUptoDate(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
-    bool changePersistLockMode(unsigned mode, const char * name, bool repeat);
+    bool isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile);
+    bool changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat);
     bool expandLogicalName(StringBuffer & fullname, const char * logicalName);
-    void getPersistReadLock(const char * logicalName);
+    IRemoteConnection *getPersistReadLock(const char * logicalName);
     void doSimpleResult(type_t type, int size, char * buffer, int sequence);
     IWUResult *updateResult(const char *name, unsigned sequence);
     IConstWUResult *getResult(const char *name, unsigned sequence);
@@ -505,12 +504,10 @@ public:
     virtual IUserDescriptor *queryUserDescriptor();
     virtual void selectCluster(const char * cluster);
     virtual void restoreCluster();
-    virtual void startPersist(const char * name);
-    virtual void cachePersist(const char * name);
-    virtual void decachePersist(const char * name);
-    virtual void finishPersist();
+    virtual IRemoteConnection *startPersist(const char * name);
+    virtual void finishPersist(IRemoteConnection *persistLock);
     virtual void clearPersist(const char * logicalName);
-    virtual void updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
+    virtual void updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC);
     virtual void checkPersistMatches(const char * logicalName, unsigned eclCRC);
     virtual bool queryResolveFilesLocally() { return resolveFilesLocally; }
     virtual bool queryRemoteWorkunit() { return isRemoteWorkunit; }
