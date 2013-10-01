@@ -373,8 +373,28 @@ bool outputPartsFiles(const char *daliserver,const char *cluster,const char *out
             dalistarted = true;
             CFileListWriter writer;
             writer.verbose = verbose;
-            Owned<IGroup> group = queryNamedGroupStore().lookup(cluster);
+            StringBuffer groupDir;
+            GroupType groupType;
+            Owned<IGroup> group = queryNamedGroupStore().lookup(cluster, groupDir, groupType);
             if (group) {
+                if (groupType != grp_thor)
+                {
+                    errstr.appendf(LOGPFX "expected cluster %s to be a thor cluster",cluster);
+                    closedownClientProcess();
+                    return false;
+                }
+                const char * overrideBaseDirectory = NULL;
+                const char * overrideReplicateDirectory = NULL;
+                StringBuffer datadir;
+                StringBuffer repdir;
+                if (getConfigurationDirectory(NULL,"data","thor",cluster,datadir))
+                    overrideBaseDirectory = datadir.str();
+                if (getConfigurationDirectory(NULL,"mirror","thor",cluster,repdir))
+                    overrideReplicateDirectory = repdir.str();
+                if (overrideBaseDirectory&&*overrideBaseDirectory)
+                    setBaseDirectory(overrideBaseDirectory, false);
+                if (overrideReplicateDirectory&&*overrideBaseDirectory)
+                    setBaseDirectory(overrideReplicateDirectory, true);
                 IArrayOf<IFileIOStream> outStreams;
                 StringBuffer path;
                 ForEachNodeInGroup(i,*group) {
