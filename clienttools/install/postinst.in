@@ -1,1 +1,2 @@
+#!/bin/bash
 ${CMAKE_INSTALL_PREFIX}/etc/init.d/install/post_install.sh 

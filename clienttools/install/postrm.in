@@ -1,3 +1,4 @@
+#!/bin/bash
 CLIENT_TOOLS_BASE=${PREFIX}/${DIR_NAME}/${version}
 if [ -e "$CLIENT_TOOLS_BASE" ] &&  [ -n $(ls -A $CLIENT_TOOLS_BASE) ]  
 then
