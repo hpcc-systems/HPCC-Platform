@@ -313,6 +313,7 @@ protected:
     size32_t                transferBufferSize;
     StringAttr              encryptKey;
     StringAttr              decryptKey;
+    UnsignedArray           compressedPartSize;
 };
 
 

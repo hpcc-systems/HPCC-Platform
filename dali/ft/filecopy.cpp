@@ -381,6 +381,17 @@ bool FileTransferThread::performTransfer()
 
             OutputProgress newProgress;
             newProgress.deserialize(msg);
+            // We can receive the compressed file size from ftclient after
+            // the file transformed and renamed
+            if( sprayer.compressOutput && (newProgress.status == OutputProgress::StatusRenamed))
+            {
+                size32_t compressedSize;
+                if( msg.remaining() >= sizeof(compressedSize))
+                    msg.read(compressedSize);
+                else
+                    compressedSize = newProgress.outputLength;
+                sprayer.compressedPartSize.append(compressedSize);
+            }
             sprayer.updateProgress(newProgress);
 
             LOG(MCdebugProgress(10000), job, "Update %s: %d %"I64F"d->%"I64F"d", url.str(), newProgress.whichPartition, newProgress.inputLength, newProgress.outputLength);
@@ -2848,9 +2859,7 @@ void FileSprayer::updateTargetProperties()
 
                 if (compressOutput)
                 {
-                    curProps.setPropInt64(FAcompressedSize, physPartLength);
-                    offset_t compressedSize = distributedTarget->getPart(idx)->getFileSize(false, true);
-                    curProps.setPropInt64(FAcompressedSize, compressedSize);
+                    curProps.setPropInt64(FAcompressedSize, compressedPartSize.item(idx));
                 }
 
                 TargetLocation & curTarget = targets.item(cur.whichOutput);

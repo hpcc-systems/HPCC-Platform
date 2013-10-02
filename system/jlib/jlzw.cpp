@@ -2050,6 +2050,12 @@ public:
         return trailer.expandedSize;
     }
 
+    virtual offset_t compressedSize()
+    {
+        CriticalBlock block(crit);
+        return compressor->buflen();
+    }
+
     virtual size32_t read(offset_t pos, size32_t len, void * data)          
     {
         CriticalBlock block(crit);
