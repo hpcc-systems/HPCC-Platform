@@ -136,11 +136,6 @@ public:
             dlfns.push_back(other.item(i));
     }
 
-    virtual ~CMultiDLFN()
-    {
-        dlfns.clear();
-    }
-
     bool expand(IUserDescriptor *_udesc)
     {
         if (expanded)
@@ -232,8 +227,8 @@ public:
         return dlfns.at(idx);
     }
 
-    inline unsigned ordinality(){ return dlfns.size(); }
-    inline bool isExpanded()    { return expanded; }
+    inline unsigned ordinality() const { return dlfns.size(); }
+    inline bool isExpanded()     const { return expanded; }
 };
 
 
