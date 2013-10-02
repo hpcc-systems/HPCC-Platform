@@ -707,7 +707,6 @@ public:
         leftITDL = rightITDL = NULL;
         candidateIndex = 0;
         candidateMatches = 0;
-        candidateMatches = 0;
 
         eos = false;
         eog = someSinceEog = false;
@@ -1715,8 +1714,7 @@ public:
                     case TAKlookupjoin:
                     case TAKsmartjoin:
                     {
-                        // JCS->GH - are you going to generate JFreorderable flag?
-                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, true);
+                        bool hintunsortedoutput = getOptBool(THOROPT_UNSORTED_OUTPUT, TAKsmartjoin == container.getKind());
                         bool hintparallelmatch = getOptBool(THOROPT_PARALLEL_MATCH, hintunsortedoutput); // i.e. unsorted, implies use parallel by default, otherwise no point
                         joinHelper.setown(createJoinHelper(*this, hashJoinHelper, this, hintparallelmatch, hintunsortedoutput));
                         break;
