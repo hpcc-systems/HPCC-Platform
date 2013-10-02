@@ -101,7 +101,7 @@ const unsigned roxieQueryRoxieTimeOut = 60000;
 
 #define SDS_LOCK_TIMEOUT (5*60*1000) // 5mins, 30s a bit short
 
-bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, IConstWUClusterInfo *clusterInfo, IUserDescriptor* userdesc)
+bool isFileKnownOnCluster(const char *logicalname, IConstWUClusterInfo *clusterInfo, IUserDescriptor* userdesc)
 {
     Owned<IDistributedFile> dst = queryDistributedFileDirectory().lookup(logicalname, userdesc, true);
     if (dst)
@@ -114,16 +114,16 @@ bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, ICo
     return false;
 }
 
-bool isFileKnownOnCluster(const char *logicalname, const char *lookupDaliIp, const char *target, IUserDescriptor* userdesc)
+bool isFileKnownOnCluster(const char *logicalname, const char *target, IUserDescriptor* userdesc)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
 
-    return isFileKnownOnCluster(logicalname, lookupDaliIp, clusterInfo, userdesc);
+    return isFileKnownOnCluster(logicalname, clusterInfo, userdesc);
 }
 
-void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, bool overWrite, IUserDescriptor* userdesc)
+void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, IConstWUClusterInfo *dstInfo, const char *srcCluster, bool overWrite, IUserDescriptor* userdesc)
 {
     StringBuffer user;
     StringBuffer password;
@@ -135,7 +135,7 @@ void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const ch
     }
 
     Owned<IReferencedFileList> wufiles = createReferencedFileList(user, password);
-    wufiles->addFiles(fileNames);
+    wufiles->addFilesFromPackageMap(packageMap);
     SCMStringBuffer processName;
     dstInfo->getRoxieProcess(processName);
     wufiles->resolveFiles(processName.str(), lookupDaliIp, srcCluster, !overWrite, false);
@@ -151,13 +151,13 @@ void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const ch
     }
 }
 
-void cloneFileInfoToDali(StringArray &notFound, StringArray &fileNames, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, bool overWrite, IUserDescriptor* userdesc)
+void cloneFileInfoToDali(StringArray &notFound, IPropertyTree *packageMap, const char *lookupDaliIp, const char *dstCluster, const char *srcCluster, bool overWrite, IUserDescriptor* userdesc)
 {
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(dstCluster);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", dstCluster);
 
-    cloneFileInfoToDali(notFound, fileNames, lookupDaliIp, clusterInfo, srcCluster, overWrite, userdesc);
+    cloneFileInfoToDali(notFound, packageMap, lookupDaliIp, clusterInfo, srcCluster, overWrite, userdesc);
 }
 
 
@@ -204,9 +204,11 @@ void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry
 
 
     mapTree = root->addPropTree("PackageMap", createPTree());
-    mapTree->addProp("@id", pmid);
+    Owned<IAttributeIterator> attributes = packageInfo->getAttributes();
+    ForEach(*attributes)
+        mapTree->setProp(attributes->queryName(), attributes->queryValue());
+    mapTree->setProp("@id", pmid);
 
-    StringArray fileNames;
     Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(target);
     if (!clusterInfo)
         throw MakeStringException(PKG_TARGET_NOT_DEFINED, "Could not find information about target cluster %s ", target);
@@ -232,14 +234,9 @@ void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry
                 ForEach(*sub_iter)
                 {
                     IPropertyTree &subtree = sub_iter->query();
-                    StringAttr subid = subtree.queryProp("@value");
-                    if (subid.length())
-                    {
-                        if (subid[0] == '~')
-                            subtree.setProp("@value", subid+1);
-                        if (!isFileKnownOnCluster(subid, lookupDaliIp, clusterInfo, userdesc))
-                            fileNames.append(subid);
-                    }
+                    const char *subid = subtree.queryProp("@value");
+                    if (subid && *subid == '~')
+                        subtree.setProp("@value", subid+1);
                 }
             }
             mapTree->addPropTree("Package", LINK(&item));
@@ -251,7 +248,7 @@ void addPackageMapInfo(StringArray &filesNotFound, IPropertyTree *pkgSetRegistry
     }
 
     mergePTree(mapTree, baseInfo);
-    cloneFileInfoToDali(filesNotFound, fileNames, lookupDaliIp, clusterInfo, srcCluster, overWrite, userdesc);
+    cloneFileInfoToDali(filesNotFound, mapTree, lookupDaliIp, clusterInfo, srcCluster, overWrite, userdesc);
 
     globalLock->commit();
 
