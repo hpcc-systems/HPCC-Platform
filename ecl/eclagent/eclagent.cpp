@@ -2134,7 +2134,8 @@ void EclAgentWorkflowMachine::prelockPersists()
     ForEachItemIn(idx, names)
     {
         char const * name = names.item(idx);
-        persistCache.setValue(name, agent.startPersist(name));
+        Owned<IRemoteConnection> persistLock = agent.startPersist(name);
+        persistCache.setValue(name, persistLock);
         LOG(MCrunlock, unknownJob, "Cached persist read lock for %s", name);
     }
     persistsPrelocked = true;
@@ -2241,7 +2242,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     Owned<IRemoteConnection> persistLock;  // MORE - pass it to isPersistUptoDate (which may change it)
     if(persistsPrelocked)
     {
-        persistLock.setown(persistCache.getValue(logicalName));
+        persistLock.set(persistCache.getValue(logicalName));
         persistCache.setValue(logicalName, NULL);
         LOG(MCrunlock, unknownJob, "Decached persist read lock for %s", logicalName);
     }
@@ -3080,9 +3081,10 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         {
             agentTopology.setown(createPTreeFromXMLFile("agentexec.xml", ipt_caseInsensitive));
         }
-        catch (IException *) 
+        catch (IException *E)
         {
             agentTopology.setown(createPTree("AGENTEXEC"));
+            E->Release();
         }
     }
     else
@@ -3399,6 +3401,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     setDaliServixSocketCaching(false);
     closeDllServer();
     closeEnvironment();
+    roxiemem::releaseRoxieHeap();
     ::closedownClientProcess(); // dali client closedown
     if (traceLevel)
         PrintLog("exiting");
