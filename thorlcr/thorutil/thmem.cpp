@@ -810,20 +810,28 @@ bool CThorExpandingRowArray::checkSorted(ICompare *icmp)
     return true;
 }
 
-IRowStream *CThorExpandingRowArray::createRowStream(rowidx_t start, rowidx_t num, bool streamOwns, bool clearAtEos)
+IRowStream *CThorExpandingRowArray::createRowStream(rowidx_t start, rowidx_t num, bool streamOwns)
 {
     class CStream : public CSimpleInterface, implements IRowStream
     {
-        CThorExpandingRowArray &parent;
+        CThorExpandingRowArray *parent;
+        CThorExpandingRowArray rows;
         rowidx_t pos, lastRow;
-        bool owns, clearAtEos;
+        bool owns;
 
     public:
         IMPLEMENT_IINTERFACE_USING(CSimpleInterface);
 
-        CStream(CThorExpandingRowArray &_parent, rowidx_t firstRow, rowidx_t _lastRow, bool _owns, bool _clearAtEos)
-            : parent(_parent), pos(firstRow), lastRow(_lastRow), owns(_owns), clearAtEos(_clearAtEos)
+        CStream(CThorExpandingRowArray &_parent, rowidx_t firstRow, rowidx_t _lastRow, bool _owns)
+            : pos(firstRow), lastRow(_lastRow), owns(_owns), rows(_parent.queryActivity(), NULL)
         {
+            if (owns)
+            {
+                parent = NULL;
+                rows.swap(_parent);
+            }
+            else
+                parent = &_parent;
         }
 
     // IRowStream
@@ -831,22 +839,23 @@ IRowStream *CThorExpandingRowArray::createRowStream(rowidx_t start, rowidx_t num
         {
             if (pos >= lastRow)
             {
-                if (owns && clearAtEos)
-                    parent.kill();
+                if (owns)
+                    rows.kill();
                 return NULL;
             }
             if (owns)
-                return parent.getClear(pos++);
+                return rows.getClear(pos++);
             else
-                return parent.get(pos++);
+                return parent->get(pos++);
         }
         virtual void stop()
         {
-            if (owns && clearAtEos)
-                parent.kill();
+            if (owns)
+                rows.kill();
         }
     };
 
+    dbgassertex(!streamOwns || ((0 == start) && ((rowidx_t)-1 == num)));
     if (start>ordinality())
         start = ordinality();
     rowidx_t lastRow;
@@ -855,7 +864,7 @@ IRowStream *CThorExpandingRowArray::createRowStream(rowidx_t start, rowidx_t num
     else
         lastRow = start+num;
 
-    return new CStream(*this, start, lastRow, streamOwns, clearAtEos);
+    return new CStream(*this, start, lastRow, streamOwns);
 }
 
 void CThorExpandingRowArray::partition(ICompare &compare, unsigned num, UnsignedArray &out)
@@ -1103,6 +1112,13 @@ void CThorSpillableRowArray::clearRows()
     numRows = 0;
     firstRow = 0;
     commitRows = 0;
+}
+
+void CThorSpillableRowArray::compact()
+{
+    assertex(0 == firstRow && numRows == commitRows);
+    CThorExpandingRowArray::compact();
+    commitRows = numRows;
 }
 
 void CThorSpillableRowArray::kill()

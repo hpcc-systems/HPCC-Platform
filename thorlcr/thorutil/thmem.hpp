@@ -332,8 +332,6 @@ public:
             return NULL;
         const void *row = rows[i];
         rows[i] = NULL;
-        if (i == (numRows-1)) // keeping high water mark
-            --numRows;
         return row;
     }
     inline rowidx_t ordinality() const { return numRows; }
@@ -358,7 +356,7 @@ public:
     bool equal(ICompare *icmp, CThorExpandingRowArray &other);
     bool checkSorted(ICompare *icmp);
 
-    IRowStream *createRowStream(rowidx_t start=0, rowidx_t num=(rowidx_t)-1, bool streamOwns=true, bool clearAtEos=false);
+    IRowStream *createRowStream(rowidx_t start=0, rowidx_t num=(rowidx_t)-1, bool streamOwns=true);
 
     void partition(ICompare &compare, unsigned num, UnsignedArray &out); // returns num+1 points
 
@@ -404,6 +402,7 @@ public:
     inline void setAllowNulls(bool b) { CThorExpandingRowArray::setAllowNulls(b); }
     void kill();
     void clearRows();
+    void compact();
     void flush();
     inline bool append(const void *row)
     {
@@ -491,7 +490,7 @@ public:
 
 
 enum RowCollectorSpillFlags { rc_mixed, rc_allMem, rc_allDisk, rc_allDiskOrAllMem };
-#define rcflag_noAllInMemSort 0x01
+enum RowCollectorOptionFlags { rcflag_noAllInMemSort=0x01 };
 interface IThorRowCollectorCommon : extends IInterface
 {
     virtual rowcount_t numRows() const = 0;

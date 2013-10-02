@@ -62,6 +62,7 @@ public:
         msg.swapWith(_msg);
         msg.read(info);
         msg.read(origin);
+        headerLen = msg.getPos();
     }
     unsigned length() const { return msg.length(); }
     void reset() { msg.setLength(headerLen); }
@@ -488,7 +489,7 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     rowcount_t rhsTotalCount;
     mptag_t lhsDistributeTag, rhsDistributeTag, broadcast2MpTag;
 
-    PointerArrayOf<CThorExpandingRowArray> rhsNodeRows;
+    PointerArrayOf<CThorSpillableRowArray> rhsNodeRows;
     CBroadcaster broadcaster;
 
     // AllJoin only
@@ -505,14 +506,16 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
     bool waitForOtherRO, fuzzyMatch, returnMany, dedup;
 
     // Handling failover to a) hashed local lookupjoin b) hash distributed standard join
-    CriticalSection localHashCrit;
-    bool spiltBroadcastingRHS, localLookupJoin;
+    atomic_t spiltBroadcastingRHS;
+    CriticalSection broadcastSpillingLock;
+    bool localLookupJoin;
     bool failoverToLocalLookupJoin, failoverToStdJoin;
     rank_t myNode;
     unsigned numNodes;
     Owned<IHashDistributor> lhsDistributor, rhsDistributor;
     ICompare *compareLeft;
     Owned<IJoinHelper> joinHelper;
+    UnsignedArray flushedRowMarkers;
 
     inline bool isLookup() const
     {
@@ -575,6 +578,9 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
         }
         return false;
     }
+    inline bool hasBroadcastSpilt() const { return 0 != atomic_read(&spiltBroadcastingRHS); }
+    inline void setBroadcastingSpilt(bool tf) { atomic_set(&spiltBroadcastingRHS, (int)tf); }
+
     StringBuffer &getJoinTypeStr(StringBuffer &str)
     {
         switch(joinType)
@@ -678,7 +684,7 @@ class CLookupJoinActivity : public CSlaveActivity, public CThorDataLink, impleme
         rhs.kill();
         ForEachItemIn(a, rhsNodeRows)
         {
-            CThorExpandingRowArray *rows = rhsNodeRows.item(a);
+            CThorSpillableRowArray *rows = rhsNodeRows.item(a);
             if (rows)
                 rows->kill();
         }
@@ -694,7 +700,8 @@ public:
         nextRhsRow = 0;
         rhsNext = NULL;
         atMost = 0;
-        spiltBroadcastingRHS = localLookupJoin = false;
+        setBroadcastingSpilt(0);
+        localLookupJoin = false;
         myNode = queryJob().queryMyRank();
         numNodes = queryJob().querySlaves();
         needGlobal = !container.queryLocal() && (container.queryJob().querySlaves() > 1);
@@ -789,39 +796,51 @@ public:
     {
         ForEachItemIn(a, rhsNodeRows)
         {
-            CThorExpandingRowArray *rows = rhsNodeRows.item(a);
+            CThorSpillableRowArray *rows = rhsNodeRows.item(a);
             if (rows)
-                rows->Release();
+                delete rows;
         }
     }
-    bool clearNonLocalRows(const char *msg)
+    rowidx_t clearNonLocalRows(CThorSpillableRowArray &rows, rowidx_t startPos)
     {
         rowidx_t clearedRows = 0;
+        rowidx_t numRows = rows.numCommitted();
+        for (unsigned r=startPos; r<numRows; r++)
         {
-            CriticalBlock b(localHashCrit);
-            if (spiltBroadcastingRHS)
-                return false;
-            ActPrintLog("Clearing non-local rows - cause: %s", msg);
-            spiltBroadcastingRHS = true;
-            ForEachItemIn(a, rhsNodeRows)
+            unsigned hv = rightHash->hash(rows.query(r));
+            if ((myNode-1) != (hv % numNodes))
             {
-                CThorExpandingRowArray &rows = *rhsNodeRows.item(a);
-                ActPrintLog("pre-hash-clear - rows[%d] had %"RIPF"d rows", a, rows.ordinality());
-                rowidx_t numRows = rows.ordinality();
-                for (unsigned r=0; r<numRows; r++)
-                {
-                    unsigned hv = rightHash->hash(rows.query(r));
-                    if ((myNode-1) != (hv % numNodes))
-                    {
-                        OwnedConstThorRow row = rows.getClear(r); // dispose of
-                        ++clearedRows;
-                    }
-                }
-                rows.compact();
-                ActPrintLog("post-hash-clear - rows[%d] has %"RIPF"d rows", a, rows.ordinality());
+                OwnedConstThorRow row = rows.getClear(r); // dispose of
+                ++clearedRows;
             }
         }
+        return clearedRows;
+    }
+    bool clearAllNonLocalRows(const char *msg)
+    {
+        // This is likely to free memory, so block others (threads) until done
+        // NB: This will not block appends
+        CriticalBlock b(broadcastSpillingLock);
+        if (hasBroadcastSpilt())
+            return false;
 
+        rowidx_t clearedRows = 0;
+        /* NB: It is likely that there will be unflushed rows in the rhsNodeRows arrays after we are done here.
+        /* These will need flushing when all is done and clearNonLocalRows will need recalling to process rest
+         */
+
+        setBroadcastingSpilt(1);
+        ActPrintLog("Clearing non-local rows - cause: %s", msg);
+        ForEachItemIn(a, rhsNodeRows)
+        {
+            CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
+
+            /* Record point to which clearNonLocalRows will reach
+             * so that can resume from that point, when done adding/flushing
+             */
+            flushedRowMarkers.append(rows.numCommitted());
+            clearedRows += clearNonLocalRows(rows, 0);
+        }
         ActPrintLog("handleLowMem: clearedRows = %"RIPF"d", clearedRows);
         return 0 != clearedRows;
     }
@@ -842,7 +861,7 @@ public:
         unsigned slaves = container.queryJob().querySlaves();
         rhsNodeRows.ensure(slaves);
         while (slaves--)
-            rhsNodeRows.append(new CThorExpandingRowArray(*this, NULL, true)); // true, nulls not needed?
+            rhsNodeRows.append(new CThorSpillableRowArray(*this, NULL));
     }
     virtual void onInputStarted(IException *except)
     {
@@ -883,7 +902,8 @@ public:
         rightSerializer.set(::queryRowSerializer(rightITDL));
         rightDeserializer.set(::queryRowDeserializer(rightITDL));
 
-        spiltBroadcastingRHS = localLookupJoin = false;
+        setBroadcastingSpilt(0);
+        localLookupJoin = false;
 
         if (failoverToLocalLookupJoin && hashJoinHelper) // only for LOOKUP not ALL
         {
@@ -1388,7 +1408,7 @@ public:
         MemoryBuffer mb;
         try
         {
-            CThorExpandingRowArray &localRhsRows = *rhsNodeRows.item(queryJob().queryMyRank()-1);
+            CThorSpillableRowArray &localRhsRows = *rhsNodeRows.item(queryJob().queryMyRank()-1);
             CMemoryRowSerializer mbser(mb);
             while (!abortSoon)
             {
@@ -1399,8 +1419,7 @@ public:
                         break;
 
                     {
-                        CriticalBlock b(localHashCrit);
-                        if (spiltBroadcastingRHS)
+                        if (hasBroadcastSpilt())
                         {
                             // keep it only if it hashes to my node
                             unsigned hv = rightHash->hash(row.get());
@@ -1408,7 +1427,7 @@ public:
                                 localRhsRows.append(row.getLink());
 
                             // ok so switch tactics.
-                            // clearNonLocalRows() will have cleared out non-locals by now
+                            // clearAllNonLocalRows() will have cleared out non-locals by now
                             // but I may be half way through serializing rows here, which are mixed and this row
                             // may still need to be sent.
                             // The destination rowProcessor will take care of any that need post-filtering,
@@ -1417,7 +1436,12 @@ public:
                             stopRHSBroadcast = true;
                         }
                         else
+                        {
+                            /* NB: It could still spill here, i.e. before appending a non-local row
+                             * When all is done, a last pass is needed to clear out non-locals
+                             */
                             localRhsRows.append(row.getLink());
+                        }
                     }
 
                     rightSerializer->serialize(mbser, (const byte *)row.get());
@@ -1451,15 +1475,14 @@ public:
     }
     void processRHSRows(unsigned slave, MemoryBuffer &mb)
     {
-        CThorExpandingRowArray &rows = *rhsNodeRows.item(slave-1);
+        CThorSpillableRowArray &rows = *rhsNodeRows.item(slave-1);
         RtlDynamicRowBuilder rowBuilder(rightAllocator);
         CThorStreamDeserializerSource memDeserializer(mb.length(), mb.toByteArray());
         while (!memDeserializer.eos())
         {
             size32_t sz = rightDeserializer->deserialize(rowBuilder, memDeserializer);
             OwnedConstThorRow fRow = rowBuilder.finalizeRowClear(sz);
-            CriticalBlock b(localHashCrit);
-            if (spiltBroadcastingRHS)
+            if (hasBroadcastSpilt())
             {
                 /* NB: recvLoop should be winding down, a slave signal spilt and communicated to all
                  * So these will be the last few broadcast rows, when broadcaster is complete, the rest will be hash distributed
@@ -1471,7 +1494,12 @@ public:
                     rows.append(fRow.getClear());
             }
             else
+            {
+                /* NB: It could still spill here, i.e. before appending a non-local row
+                 * When all is done, a last pass is needed to clear out non-locals
+                 */
                 rows.append(fRow.getClear());
+            }
         }
     }
     void setupDistributors()
@@ -1536,26 +1564,33 @@ public:
                 return;
             }
 
+            // NB: no more rows can be added to rhsNodeRows at this point, but they could stil be flushed
+
             rhsRows = 0;
+            ForEachItemIn(a, rhsNodeRows)
             {
-                CriticalBlock b(localHashCrit);
-                ForEachItemIn(a, rhsNodeRows)
-                {
-                    CThorExpandingRowArray &rows = *rhsNodeRows.item(a);
-                    rhsRows += rows.ordinality();
-                }
+                CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
+                rows.flush();
+                rhsRows += rows.numCommitted();
             }
+
+            if (isSmart() && getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER))) // For testing purposes only
+                clearAllNonLocalRows("testing");
 
             if (isLookup())
             {
-                rhsTableLen = getHTSize(rhsRows);
-                // NB: This sizing could cause spilling callback to be triggered
-                ht.ensure(rhsTableLen); // Pessimistic if LOOKUP,KEEP(1)
-                /* JCSMORE - failure to size should not be failure condition
-                 * It will mark spiltBroadcastingRHS and try to degrade
-                 * JCS->GH: However, need to catch OOM somehow..
-                 */
-                ht.clearUnused();
+                // If spilt, don't size ht table now, if local rhs fits, ht will be sized later
+                if (!hasBroadcastSpilt())
+                {
+                    rhsTableLen = getHTSize(rhsRows);
+                    // NB: This sizing could cause spilling callback to be triggered
+                    ht.ensure(rhsTableLen); // Pessimistic if LOOKUP,KEEP(1)
+                    /* JCSMORE - failure to size should not be failure condition
+                     * It will mark spiltBroadcastingRHS and try to degrade
+                     * JCS->GH: However, need to catch OOM somehow..
+                     */
+                    ht.clearUnused();
+                }
             }
             else
                 rhs.ensure(rhsRows);
@@ -1571,7 +1606,7 @@ public:
             // NB: using a different tag from 1st broadcast, as 2nd on other nodes can start sending before 1st on this has quit receiving
             broadcaster.start(this, broadcast2MpTag, false);
             Owned<CSendItem> sendItem = broadcaster.newSendItem(bcast_stop);
-            if (spiltBroadcastingRHS)
+            if (hasBroadcastSpilt())
                 sendItem->setFlag(bcastflag_spilt);
             broadcaster.send(sendItem); // signals stop to others
             broadcaster.end();
@@ -1580,10 +1615,18 @@ public:
              * If any have, still need to distribute rest of RHS..
              */
 
-            if (isSmart() && getOptBool(THOROPT_LKJOIN_LOCALFAILOVER, getOptBool(THOROPT_LKJOIN_HASHJOINFAILOVER))) // For testing purposes only
-                clearNonLocalRows("testing");
+            // flush spillable row arrays, and clear any non-locals if spiltBroadcastingRHS and compact
+            if (hasBroadcastSpilt())
+            {
+                ForEachItemIn(a, rhsNodeRows)
+                {
+                    CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
+                    clearNonLocalRows(rows, flushedRowMarkers.item(a));
+                    rows.compact();
+                }
+            }
 
-            if (spiltBroadcastingRHS) // NB: Can only be active for LOOKUP (not ALL)
+            if (hasBroadcastSpilt()) // NB: Can only be active for LOOKUP (not ALL)
             {
                 ActPrintLog("Spilt whilst broadcasting, will attempt distribute local lookup join");
                 localLookupJoin = true;
@@ -1607,8 +1650,10 @@ public:
                 streams.append(*right.getLink()); // what remains of 'right' will be read through distributor
                 ForEachItemIn(a, rhsNodeRows)
                 {
-                    CThorExpandingRowArray &rowArray = *rhsNodeRows.item(a);
-                    streams.append(*rowArray.createRowStream(0, (rowidx_t)-1, true, true)); // NB: will kill array when stream exhausted
+                    CThorSpillableRowArray &sRowArray = *rhsNodeRows.item(a);
+                    CThorExpandingRowArray rowArray(*this, NULL);
+                    rowArray.transferFrom(sRowArray);
+                    streams.append(*rowArray.createRowStream(0, (rowidx_t)-1, true)); // NB: will kill array when stream exhausted
                 }
                 right.setown(createConcatRowStream(streams.ordinality(), streams.getArray()));
             }
@@ -1695,8 +1740,7 @@ public:
             {
                 ht.kill(); // no longer needed
 
-                ActPrintLog("RHS spilt to disk. Standard Join will be used.");
-                ActPrintLog("Loading/Sorting LHS");
+                ActPrintLog("RHS spilt to disk. Standard Join will be used");
 
                 // NB: lhs ordering and grouping lost from here on.. (will have been caught earlier if global)
                 if (grouped)
@@ -1731,6 +1775,8 @@ public:
                 joinHelper->init(left, rightStream, leftAllocator, rightAllocator, ::queryRowMetaData(leftITDL), &abortSoon);
                 return;
             }
+            else
+                ActPrintLog("Local RHS loaded to memory, performing local lookup join");
         }
         if (!stopping)
             prepareRHS();
@@ -1758,9 +1804,9 @@ public:
             {
                 ForEachItemIn(a2, rhsNodeRows)
                 {
-                    CThorExpandingRowArray &rows = *rhsNodeRows.item(a2);
+                    CThorSpillableRowArray &rows = *rhsNodeRows.item(a2);
                     rowidx_t r=0;
-                    for (; r<rows.ordinality(); r++)
+                    for (; r<rows.numCommitted(); r++)
                         rhs.append(rows.getClear(r));
                     rows.kill(); // free up ptr table asap
                 }
@@ -1769,9 +1815,9 @@ public:
             {
                 ForEachItemIn(a2, rhsNodeRows)
                 {
-                    CThorExpandingRowArray &rows = *rhsNodeRows.item(a2);
+                    CThorSpillableRowArray &rows = *rhsNodeRows.item(a2);
                     rowidx_t r=0;
-                    for (; r<rows.ordinality(); r++)
+                    for (; r<rows.numCommitted(); r++)
                         addRowHt(rows.getClear(r));
                     rows.kill(); // free up ptr table asap
                 }
@@ -1794,7 +1840,7 @@ public:
             if (0 != (sendItem->queryFlags() & bcastflag_spilt))
             {
                 VStringBuffer msg("Notification that slave %d spilt", sendItem->queryOrigin());
-                clearNonLocalRows(msg.str());
+                clearAllNonLocalRows(msg.str());
             }
         }
         rowProcessor.addBlock(sendItem); // NB: NULL indicates end
@@ -1807,7 +1853,7 @@ public:
     virtual bool freeBufferedRows(bool critical)
     {
         // NB: only installed if lookup join and global
-        return clearNonLocalRows("Out of memory callback");
+        return clearAllNonLocalRows("Out of memory callback");
     }
 };
 
