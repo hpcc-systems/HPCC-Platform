@@ -3992,6 +3992,20 @@ void CompoundSourceTransformer::analyseGatherInfo(IHqlExpression * expr)
                 if (parentExtra->hasAnyLimit() && !isSimpleCountExists)
                     break;
 
+                //We either have a limit or choosen as the input
+                if (parentExtra->isCloned)
+                {
+                    assertex(isSimpleCountExists);
+                    //Too complicated if the limit is local
+                    if ((targetClusterType == ThorLCRCluster) && dataset->hasAttribute(localAtom))
+                        break;
+
+                    //CHOOSEN(ds, x, <n>)
+                    if ((dataset->getOperator() == no_choosen) && queryRealChild(dataset, 2))
+                        break;
+                }
+
+
                 node_operator newOp = no_none;
                 node_operator parentOp = parentExtra->sourceOp;
                 if (queryRealChild(expr, 3))
