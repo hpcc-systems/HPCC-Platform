@@ -2134,8 +2134,9 @@ void EclAgentWorkflowMachine::prelockPersists()
     ForEachItemIn(idx, names)
     {
         char const * name = names.item(idx);
-        agent.startPersist(name);
-        agent.cachePersist(name);
+        Owned<IRemoteConnection> persistLock = agent.startPersist(name);
+        persistCache.setValue(name, persistLock);
+        LOG(MCrunlock, unknownJob, "Cached persist read lock for %s", name);
     }
     persistsPrelocked = true;
 }
@@ -2237,39 +2238,44 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     if (!agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
         doExecuteItemDependencies(item, wfid);
     SCMStringBuffer name;
-    item.getPersistName(name);
+    const char *logicalName = item.getPersistName(name).str();
+    Owned<IRemoteConnection> persistLock;  // MORE - pass it to isPersistUptoDate (which may change it)
     if(persistsPrelocked)
-        agent.decachePersist(name.str());
+    {
+        persistLock.set(persistCache.getValue(logicalName));
+        persistCache.setValue(logicalName, NULL);
+        LOG(MCrunlock, unknownJob, "Decached persist read lock for %s", logicalName);
+    }
     else
-        agent.startPersist(name.str());
-    doExecuteItemDependency(item, item.queryPersistWfid(), wfid, true);
+        persistLock.setown(agent.startPersist(logicalName));
+    doExecuteItemDependency(item, item.queryPersistWfid(), wfid, true);  // generated code should end up calling back to returnPersistVersion, which sets persist
     if(!persist)
     {
         StringBuffer errmsg;
         errmsg.append("Internal error in generated code: for wfid ").append(wfid).append(", persist CRC wfid ").append(item.queryPersistWfid()).append(" did not call returnPersistVersion");
         throw MakeStringExceptionDirect(0, errmsg.str());
     }
-    if(strcmp(name.str(), persist->logicalName.get()) != 0)
+    Owned<PersistVersion> thisPersist = persist.getClear();
+    if(strcmp(logicalName, thisPersist->logicalName.get()) != 0)
     {
         StringBuffer errmsg;
-        errmsg.append("Failed workflow/persist consistency check: wfid ").append(wfid).append(", WU persist name ").append(name.str()).append(", runtime persist name ").append(persist->logicalName.get());
+        errmsg.append("Failed workflow/persist consistency check: wfid ").append(wfid).append(", WU persist name ").append(logicalName).append(", runtime persist name ").append(thisPersist->logicalName.get());
         throw MakeStringExceptionDirect(0, errmsg.str());
     }
     if(agent.arePersistsFrozen())
     {
-        agent.checkPersistMatches(name.str(), persist->eclCRC);
+        agent.checkPersistMatches(logicalName, thisPersist->eclCRC);
     }
-    else if(!agent.isPersistUptoDate(name.str(), persist->eclCRC, persist->allCRC, persist->isFile))
+    else if(!agent.isPersistUptoDate(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC, thisPersist->isFile))
     {
-        agent.clearPersist(name.str());
+        agent.clearPersist(logicalName);
         // New persist model allows dependencies to be executed AFTER checking if the persist is up to date
         if (agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
             doExecuteItemDependencies(item, wfid);
         doExecuteItem(item, wfid);
-        agent.updatePersist(name.str(), persist->eclCRC, persist->allCRC);
+        agent.updatePersist(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC);
     }
-    persist.clear();
-    agent.finishPersist();
+    agent.finishPersist(persistLock.getClear());
 }
 
 //----------------------------------------------------------------
@@ -2484,7 +2490,7 @@ bool EclAgent::checkPersistUptoDate(const char * logicalName, unsigned eclCRC, u
     return false;
 }
 
-bool EclAgent::changePersistLockMode(unsigned mode, const char * name, bool repeat)
+bool EclAgent::changePersistLockMode(IRemoteConnection *persistLock, unsigned mode, const char * name, bool repeat)
 {
     LOG(MCrunlock, unknownJob, "Waiting to change persist lock to %s for %s", (mode == RTM_LOCK_WRITE) ? "write" : "read", name);
     loop
@@ -2510,7 +2516,7 @@ bool EclAgent::changePersistLockMode(unsigned mode, const char * name, bool repe
     }
 }
 
-void EclAgent::getPersistReadLock(const char * logicalName)
+IRemoteConnection *EclAgent::getPersistReadLock(const char * logicalName)
 {
     StringBuffer lfn;
     expandLogicalName(lfn, logicalName);
@@ -2527,6 +2533,7 @@ void EclAgent::getPersistReadLock(const char * logicalName)
         xpath.append(isalnum(*cur) ? *cur : '_');
 
     LOG(MCrunlock, unknownJob, "Waiting for persist read lock for %s", name);
+    Owned<IRemoteConnection> persistLock;
     loop
     {
         try
@@ -2548,6 +2555,7 @@ void EclAgent::getPersistReadLock(const char * logicalName)
     }
 
     reportProgress("Obtained persist read lock");
+    return persistLock.getClear();
 }
 
 void EclAgent::setBlockedOnPersist(const char * logicalName)
@@ -2559,7 +2567,7 @@ void EclAgent::setBlockedOnPersist(const char * logicalName)
     w->setStateEx(s.str());
 }
 
-bool EclAgent::isPersistUptoDate(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
 {
     //Loop trying to get a write lock - if it fails, then release the read lock, otherwise
     //you can get a deadlock with several things waiting to read, and none being able to write.
@@ -2577,13 +2585,13 @@ bool EclAgent::isPersistUptoDate(const char * logicalName, unsigned eclCRC, unsi
         //Get a write lock
         setBlockedOnPersist(logicalName);
         unlockWorkUnit();
-        if (changePersistLockMode(RTM_LOCK_WRITE, logicalName, false))
+        if (changePersistLockMode(persistLock, RTM_LOCK_WRITE, logicalName, false))
             break;
 
         //failed to get a write lock, so release our read lock
         persistLock.clear();
         MilliSleep(getRandom()%2000);
-        getPersistReadLock(logicalName);
+        persistLock.setown(getPersistReadLock(logicalName));
     }
     setRunning();
 
@@ -2594,7 +2602,7 @@ bool EclAgent::isPersistUptoDate(const char * logicalName, unsigned eclCRC, unsi
         StringBuffer msg;
         msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");
         logException(ExceptionSeverityInformation, 0, msg.str(), false);
-        changePersistLockMode(RTM_LOCK_READ, logicalName, true);
+        changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
         return true;
     }
     if (errText.length())
@@ -2614,7 +2622,7 @@ void EclAgent::clearPersist(const char * logicalName)
     LOG(MCrunlock, unknownJob, "Recalculate persistent value %s", logicalName);
 }
 
-void EclAgent::updatePersist(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
+void EclAgent::updatePersist(IRemoteConnection *persistLock, const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC)
 {
     StringBuffer lfn, crcName, eclName;
     expandLogicalName(lfn, logicalName);
@@ -2625,34 +2633,22 @@ void EclAgent::updatePersist(const char * logicalName, unsigned eclCRC, unsigned
     setResultInt(eclName,(unsigned)-2,eclCRC);
 
     reportProgress("Convert persist write lock to read lock");
-    changePersistLockMode(RTM_LOCK_READ, logicalName, true);
+    changePersistLockMode(persistLock, RTM_LOCK_READ, logicalName, true);
 }
 
-void EclAgent::startPersist(const char * logicalName)
+IRemoteConnection *EclAgent::startPersist(const char * logicalName)
 {
     setBlockedOnPersist(logicalName);
     unlockWorkUnit();
-    getPersistReadLock(logicalName);
+    IRemoteConnection *persistLock = getPersistReadLock(logicalName);
     setRunning();
+    return persistLock;
 }
 
-void EclAgent::cachePersist(const char * logicalName)
-{
-    persistCache.setValue(logicalName, persistLock.getClear());
-    LOG(MCrunlock, unknownJob, "Cached persist read lock for %s", logicalName);
-}
-
-void EclAgent::decachePersist(const char * logicalName)
-{
-    persistLock.setown(persistCache.getValue(logicalName));
-    persistCache.setValue(logicalName, NULL);
-    LOG(MCrunlock, unknownJob, "Decached persist read lock for %s", logicalName);
-}
-
-void EclAgent::finishPersist()
+void EclAgent::finishPersist(IRemoteConnection *persistLock)
 {
     LOG(MCrunlock, unknownJob, "Finished persists - add to read lock list");
-    persistReadLocks.append(*persistLock.getClear());
+    persistReadLocks.append(*persistLock);
 }
 
 void EclAgent::checkPersistMatches(const char * logicalName, unsigned eclCRC)
@@ -3085,9 +3081,10 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
         {
             agentTopology.setown(createPTreeFromXMLFile("agentexec.xml", ipt_caseInsensitive));
         }
-        catch (IException *) 
+        catch (IException *E)
         {
             agentTopology.setown(createPTree("AGENTEXEC"));
+            E->Release();
         }
     }
     else
@@ -3404,6 +3401,7 @@ extern int HTHOR_API eclagent_main(int argc, const char *argv[], StringBuffer * 
     setDaliServixSocketCaching(false);
     closeDllServer();
     closeEnvironment();
+    roxiemem::releaseRoxieHeap();
     ::closedownClientProcess(); // dali client closedown
     if (traceLevel)
         PrintLog("exiting");
