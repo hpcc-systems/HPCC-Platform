@@ -30,14 +30,14 @@ files_to_link=(
    'ecl-queries'
    'ecl-roxie'
    'soapplus'
-   'start-stop-daemon'
    'wuget'
+   'ecl-bundle'
 )
 
 # Check if this is post uninstall
 #################################
-IS_UNINSTAL=0
-[ "$1" = "-u" ] && IS_UNINSTAL=1
+IS_UNINSTALL=0
+[ "$1" = "-u" ] && IS_UNINSTALL=1
 
 
 
@@ -55,7 +55,7 @@ cd $CUR_DIR
 ################################################
 [ -e /opt/HPCCSystems/etc/init.d/hpcc-init ] && exit 0
 
-if [ $IS_UNINSTAL -eq 0 ]
+if [ $IS_UNINSTALL -eq 0 ]
 then
     # Add symbolic link
     for file in ${files_to_link[@]}
