@@ -2848,8 +2848,12 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
                 maxSingleRowOut = true;
             else if (isLeftJoin(expr) || isInnerJoin(expr))
             {
+                //MORE: Could get an upper limit on scaling from keep/atmost
                 IHqlExpression * keep = queryAttributeChild(expr, keepAtom, 0);
                 if (matchesConstantValue(keep, 1))
+                    maxSingleRowOut = true;
+                IHqlExpression * atmost = queryAttributeChild(expr, atmostAtom, 0);
+                if (matchesConstantValue(atmost, 1))
                     maxSingleRowOut = true;
             }
             if (maxSingleRowOut)

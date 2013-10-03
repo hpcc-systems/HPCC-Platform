@@ -3367,6 +3367,16 @@ IHqlExpression * preserveGrouping(IHqlExpression * child, IHqlExpression * expr)
     return LINK(child);
 }
 
+static bool matchesAtmost1(IHqlExpression * expr)
+{
+    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
+    if (!atmost)
+        return false;
+    if (!matchesConstantValue(atmost->queryChild(0), 1))
+        return false;
+    return true;
+}
+
 IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
@@ -3501,6 +3511,8 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 {
                     if (matchesConstantValue(queryAttributeChild(expr, keepAtom, 0), 1))
                         potentialLeftProjectReason = "(,LEFT OUTER,KEEP(1))";
+                    else if (matchesAtmost1(expr))
+                        potentialLeftProjectReason = "(,LEFT OUTER,ATMOST(1))";
                     else if (expr->hasAttribute(lookupAtom) && !expr->hasAttribute(manyAtom))
                         potentialLeftProjectReason = "(,LEFT OUTER,SINGLE LOOKUP)";
                     else if (hasNoMoreRowsThan(expr, 1))
