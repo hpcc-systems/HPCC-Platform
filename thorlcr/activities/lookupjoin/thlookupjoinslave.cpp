@@ -700,7 +700,7 @@ public:
         nextRhsRow = 0;
         rhsNext = NULL;
         atMost = 0;
-        setBroadcastingSpilt(0);
+        setBroadcastingSpilt(false);
         localLookupJoin = false;
         myNode = queryJob().queryMyRank();
         numNodes = queryJob().querySlaves();
@@ -829,7 +829,7 @@ public:
         /* These will need flushing when all is done and clearNonLocalRows will need recalling to process rest
          */
 
-        setBroadcastingSpilt(1);
+        setBroadcastingSpilt(true);
         ActPrintLog("Clearing non-local rows - cause: %s", msg);
         ForEachItemIn(a, rhsNodeRows)
         {
@@ -902,8 +902,9 @@ public:
         rightSerializer.set(::queryRowSerializer(rightITDL));
         rightDeserializer.set(::queryRowDeserializer(rightITDL));
 
-        setBroadcastingSpilt(0);
+        setBroadcastingSpilt(false);
         localLookupJoin = false;
+        flushedRowMarkers.kill();
 
         if (failoverToLocalLookupJoin && hashJoinHelper) // only for LOOKUP not ALL
         {
