@@ -14,19 +14,19 @@ that is suitable for running by one of the engines.
 Aims
 ====
 The code generator has to do its job accurately.  If the code generator does not correctly map the
-ecl to the workunit it can lead to corrupt data and invalid results.  Problems like that can often be
+ECL to the workunit it can lead to corrupt data and invalid results.  Problems like that can often be
 very hard and frustrating for the ECL users to track down.
 
 There is also a strong emphasis on generating output that is as good as possible.  Eclcc contains
-many different optimizations stages, and is extensible to allow others to be easily added.
+many different optimization stages, and is extensible to allow others to be easily added.
 
 Eclcc needs to be able to cope with reasonably large jobs.  Queries that contain several megabytes of
-ECL, and generate tens of thousands of activies, and 10s of Mb of C++ are routine.  These queries
+ECL, and generate tens of thousands of activities, and 10s of Mb of C++ are routine.  These queries
 need to be processed relatively quickly.
 
 Key ideas
 =========
-Nearly all the processing of ecl is done using an expression graph.  The representation of the
+Nearly all the processing of ECL is done using an expression graph.  The representation of the
 expression graph has some particular characteristics:
 
 * Once the nodes in the expression graph have been created they are NEVER modified.
@@ -34,14 +34,14 @@ expression graph has some particular characteristics:
 * Each node in the expression graph is link counted (see below) to track its lifetime.
 * If a modified graph is required a new graph is created (sharing nodes from the old one)
 
-The ecl language is a declarative language, and in general is assumed to be pure - i.e. there are no
+The ECL language is a declarative language, and in general is assumed to be pure - i.e. there are no
 side-effects, expressions can be evaluated lazily and re-evaluating an expression causes no
 problems.  This allows eclcc to transform the graph in lots of interesting ways.  (Life is never that
 simple so there are mechanisms for handling the exceptions.)
 
 From declarative to imperative
 ==============================
-One of the main challenges with eclcc is converting the declarative ecl code into imperative C++
+One of the main challenges with eclcc is converting the declarative ECL code into imperative C++
 code.  One key problem is it needs to try to ensure that code is only evaluated when it is required,
 but that it is also only evaluated once.  It isn't always possible to satisfy both constraints - for
 example a global dataset expression used within a child query.  Should it be evaluated once before
@@ -49,7 +49,7 @@ the activity containing the child query is called, or each time the child query 
 called on demand then it may not be evaluated as efficiently...
 
 This issue complicates many of the optimizations and transformations that are done to the queries.
-Long term the plan is to allow the engines to support more delayed lazy-evaluation, so that whther
+Long term the plan is to allow the engines to support more delayed lazy-evaluation, so that whether
 something is evaluated is more dynamic rather than static.
 
 Flow of processing
@@ -95,7 +95,7 @@ The key data structure within eclcc is the graph representation.  The design has
 
   Link counts are used to control the lifetime of the expression objects.  Whenever a reference to an
   expression node is held, its link count is increased, and decreased when no longer required.  The
-  node is freed when there no more references.  (This generally works well, but does give us problems 
+  node is freed when there are no more references.  (This generally works well, but does give us problems
   with forward references.)
 
 * The access to the graph is through interfaces.
@@ -119,8 +119,8 @@ The key data structure within eclcc is the graph representation.  The design has
 * Memory consumption is critical.
 
 It is not unusual to have 10M or even 100M nodes in memory as a query is being processed.  At that
-scale the memory consumption of each node matter - so great care should be taken when considering
-increasing the size of the objects.  The node classes contain a class hierarchy which i- s there
+scale the memory consumption of each node matters - so great care should be taken when considering
+increasing the size of the objects.  The node classes contain a class hierarchy which is there
 purely to reduce the memory consumption - not to reflect the functionality.  With no memory
 constraints they wouldn't be there, but removing a single pointer per node can save 1Gb of memory
 usage for very complex queries.
@@ -136,7 +136,7 @@ queryBody()	Used to skip annotations (see below)
 queryProperty()	Does this node have a child which is an attribute that matches a given name.  (see below for more about attributes).
 queryValue()	For a no_constant return the value of the constant.  It returns NULL otherwise.
 
-The nodes in the expression graph are create through factory functions.  Some of the expression types
+The nodes in the expression graph are created through factory functions.  Some of the expression types
 have specialised functions - e.g., createDataset, createRow, createDictionary, but scalar expressions
 and actions are normally created with createValue().
 
@@ -146,7 +146,7 @@ the newly created node.
 The values of the enumeration constants in node_operator are used to calculate "crcs" which are used
 to check if the ECL for a query matches, and if disk and index record formats match.  It contains
 quite a few legacy entries no_unusedXXX which can be used for new operators (otherwise new operators
-must be added to the end.)
+must be added to the end).
 
 IHqlSimpleScope
 ---------------
@@ -159,15 +159,15 @@ IHqlScope
 Normally obtained by calling IHqlExpression::queryScope().  It is primarily used in the parser to
 resolve fields from within modules.
 
-The ecl is parsed on demand so as the symbol is looked up it may cause a cascade of ecl to be
+The ECL is parsed on demand so as the symbol is looked up it may cause a cascade of ECL to be
 compiled.  The lookup context (HqlLookupContext ) is passed to IHqlScope::lookupSymbol() for several
 reasons:
 
-* It contains information about the active repository - the source of the ecl which will be dynamically parsed.
+* It contains information about the active repository - the source of the ECL which will be dynamically parsed.
 * It contains caches of expanded functions - to avoid repeating expansion transforms.
 * Some members are used for tracking definitions that are read to build dependency graphs, or archives of submitted queries.
 
-This interface IHqlScope currently has some members that are used for creation; this should be
+The interface IHqlScope currently has some members that are used for creation; this should be
 refactored and placed in a different interface.
 
 IHqlDataset
@@ -176,7 +176,7 @@ This is normally obtained by calling IHqlExpression::queryDataset().  It has shr
 time, and could quite possibly be folded into IHqlExpression with little pain.
 
 There is a distinction in the code generator between "tables" and "datasets".  A table
-(IHqlDataset::queryTable()) is a dataset operation that defines a new output record.  Any operations
+(IHqlDataset::queryTable()) is a dataset operation that defines a new output record.  Any operation
 that has a transform or record that defines an output record (e.g., PROJECT,TABLE) is a table, whilst
 those that don't (e.g., a filter, dedup) are not.  There are a few apparent exceptions -e.g., IF
 (This is controlled by definesColumnList() which returns true the operator is a table.)
@@ -212,16 +212,16 @@ Fields can be selected from active rows of a dataset in three main ways:
 
 * LEFT/RIGHT.
 
-  The problem is that the different uses of LEFT/RIGHT need to be disambiguated since ther may be
+  The problem is that the different uses of LEFT/RIGHT need to be disambiguated since there may be
   several different uses of LEFT in a query.  This is especially true when operations are executed in
   child queries.  LEFT is represented by a node no_left(record, selSeq).  Often the record is
   sufficient to disambiguate the uses, but there are situations where it isn't enough.  So in
   addition no_left has a child which is a selSeq (selector sequence) which is added as a child
-  attribute of the PROJECT or other operator.  At parse time it is a function of the input dataset. 
-  That is later normalized to a unique id to reduce the transformation work.
+  attribute of the PROJECT or other operator.  At parse time it is a function of the input dataset
+  that is later normalized to a unique id to reduce the transformation work.
 
 * Active datasets.  It is slightly more complicated - because the dataset used as the selector can
-  be any upstream dataset up to the nearest table. So the following ecl code is legal:
+  be any upstream dataset up to the nearest table. So the following ECL code is legal:
 
   ::
 
@@ -249,7 +249,7 @@ Or::
 
   EXISTS(dataset.childdataset(EXISTS(dataset.childdataset.grandchild))
 
-In the first example dataset.childdataset within the dataset.childdataset .grandchild is a reference
+In the first example dataset.childdataset within the dataset.childdataset.grandchild is a reference
 to a dataset that doesn't have an active cursor and needs to be iterated), whilst in the second it
 refers to an active cursor.
 
@@ -271,11 +271,11 @@ expressions needs to take care to interpret no_selects correctly.
 
 Transforming selects
 --------------------
-When an expression graph is transformed and none of the records are change then the representation of
+When an expression graph is transformed and none of the records are changed, the representation of
 LEFT/RIGHT remains the same.  This means any no_select nodes in the expression tree will also stay
 the same.
 
-However if the transform modifies a table (highly likely) it means that the selector for the second
+However, if the transform modifies a table (highly likely) it means that the selector for the second
 form of field selector will also change.  Unfortunately this means that transforms often cannot be
 short-circuited.
 
@@ -301,7 +301,7 @@ IHqlExpression:: queryAnnotation().
 
 Associated side-effects
 =======================
-In legacy ecl you will see code like the following\:::
+In legacy ECL you will see code like the following\:::
 
   EXPORT a(x) := FUNCTION
      Y := F(x);
@@ -320,13 +320,13 @@ actions are normally evaluated.
 
 Derived properties
 ==================
-There are many pieces of information it is useful to know about a node in the expression graph - many
+There are many pieces of information that it is useful to know about a node in the expression graph - many
 of which would be expensive to recomputed each time there were required.  Eclcc has several
 mechanisms for caching derived information so it is available efficiently.
 
 * Boolean flags - getInfoFlags()/getInfoFlags2().
 
-  There are many Boolean attributes of an expression that it is useful to know - e.g., is it
+  There are many Boolean attributes of an expression that are useful to know - e.g., is it
   constant, does it have side-effects, does it reference any fields from a dataset etc. etc.  The
   bulk of these are calculated and stored in a couple of members of the expression class.  They are
   normally retrieved via accessor functions e.g., containsAssertKeyed(IHqlExpression*).
@@ -355,18 +355,18 @@ mechanisms for caching derived information so it is available efficiently.
 * Helper functions.
 
   Some information doesn't need to be cached because it isn't expensive to calculate, but rather than
-  duplicating the code, a helper function is provided.  E.g., queryOriginalRecord(),
+  duplicating the code, a helper function is provided.  E.g., queryOriginalRecord() and
   hasUnknownTransform().  They are not part of the interface because the number would make the
   interface unwieldy and they can be completely calculated from the public functions.
 
-  However it can be very hard to find the function you are looking for, and they would greatly
+  However, it can be very hard to find the function you are looking for, and they would greatly
   benefit from being grouped e.g., into namespaces.
 
 Transformations
 ===============
 One of the key processes in eclcc is walking and transforming the expression graphs.  Both of these
 are covered by the term transformations.  One of the key things to bear in mind is that you need to
-walk the expression graph as a graph, not as a tree.  If you have already examined a node one you
+walk the expression graph as a graph, not as a tree.  If you have already examined a node once you
 shouldn't repeat the work - otherwise the execution time may be exponential with node depth.
 
 Other things to bear in mind
@@ -377,8 +377,8 @@ Other things to bear in mind
 * Sometimes you can be tempted to try and short-circuit transforming part of a graph (e.g., the
   arguments to a dataset activity), but because of the way references to fields within dataset work
   that often doesn't work.
-* If an expression is moved to another place in the graph you need to be very careful to check if the
-  original context was conditional and the new context is not.
+* If an expression is moved to another place in the graph, you need to be very careful to check if the
+  original context was conditional and that the new context is not.
 * The meaning of expressions can be context dependent.  E.g., References to active datasets can be
   ambiguous.
 * Never walk the expressions as a tree, always as a graph!
@@ -402,9 +402,9 @@ Some examples of the work done by transformations are:
 * Constant folding.
 * Expanding function calls.
 * Walking the graph and reporting warnings.
-* Optimizing the order and removing redundant  activities.
+* Optimizing the order and removing redundant activities.
 * Reducing the fields flowing through the generated graph.
-* Spotting common sub expressions
+* Spotting common sub expressions.
 * Calculating the best location to evaluate an expression (e.g., globally instead of in a child query).
 * Many, many others.
 
@@ -415,7 +415,7 @@ Key Stages
 **********
 Parsing
 =======
-The first job of eclcc is to parse the ECL into an expression graph.  The source for the ecl can come
+The first job of eclcc is to parse the ECL into an expression graph.  The source for the ECL can come
 from various different sources (archive, source files, remote repository).  The details are hidden
 behind the IEclSource/IEclSourceCollection interfaces.  The createRepository() function is then used
 to resolve and parse the various source files on demand.
@@ -433,7 +433,7 @@ Several things occur while the ECL is being parsed:
   test conditions are always true/false.  To reduce the transformations the condition may be folded
   early on.  
   
-* When a symbol is referenced from another module that will recursively cause the ecl for that module
+* When a symbol is referenced from another module this will recursively cause the ECL for that module
   (or definition within that module) to be parsed.
 
 * Currently the semantic checking is done as the ECL is parsed.
@@ -556,20 +556,20 @@ Graph
 =====
 The activity graphs are stored in the xml.  The graph contains details of which activities are
 required, how those activities link together, what dependencies there are between the activities. 
-For each activity it might the following information:
+For each activity it might contain the following information:
 
 * A unique id.
 * The "kind" of the activity (from enum ThorActivityKind in eclhelper.hpp)
-* The ecl that created the activity.
+* The ECL that created the activity.
 * Name of the original definition
-* Location (e.g., file, line number) of the original ecl.
+* Location (e.g., file, line number) of the original ECL.
 * Information about the record size, number of rows, sort order etc.
 * Hints which control options for a particular activity (e.g,, the number of threads to use while sorting).
 * Record counts and stats once the job has executed.
 
 Each activity in a graph also has a corresponding helper class instance in the generated code.  (The
 name of the class is cAc followed by the activity number, and the exported factory method is fAc
-followed by the activity number.)  The classes implement the interfaces defined in eclhelper.hpp.
+followed by the activity number.)  These classes implement the interfaces defined in eclhelper.hpp.
 
 The engine uses the information from the xml to produce a graph of activities that need to be
 executed.  It has a general purpose implementation of each activity kind, and it uses the class
@@ -579,7 +579,7 @@ fields are set up, what is the sort order?
 Inputs and Results
 ==================
 The workunit xml contains details of what inputs can be supplied when that workunit is run.  These
-correspond to STORED definitions in the ecl.  The result xml also contains the schema for the results
+correspond to STORED definitions in the ECL.  The result xml also contains the schema for the results
 that the workunit will generate.
 
 Once an instance of the workunit has been run, the values of the results may be written back into
@@ -636,7 +636,7 @@ First a few pointers to help understand the code within eclcc:
 
 Parser
 ======
-The ECLCC parser uses the standard tools bison and flex to process the ecl and convert it to a
+The eclcc parser uses the standard tools bison and flex to process the ECL and convert it to a
  expression graph.  There are a couple of idiosyncrasies with the way it is implemented.
 
 * Macros with fully qualified scope.
@@ -680,12 +680,12 @@ As well as building up a tree of expressions, this data structure also maintains
 associations.  For instance when a value is evaluated and assigned to a temporary variable, the
 logical value is associated with that temporary.  If the same expression is required later, the
 association is matched, and the temporary value is used instead of recalculating it.  The
-associations are also use to track the active datasets, classes generated for row-meta information,
+associations are also used to track the active datasets, classes generated for row-meta information,
 activity classes etc. etc.
 
 Activity Helper
 ===============
-Each activity in an expression graph will have an associated class generated in the c++.  Each
+Each activity in an expression graph will have an associated class generated in the C++.  Each
 different activity kind expects a helper that implements a particular IHThorArg interface.  E.g., a
 sort activity of kind TAKsort requires a helper that implements IHThorSortArg.  The associated
 factory function is used to create instances of the helper class.
@@ -732,7 +732,7 @@ CHqlBoundTarget.
   result of evaluating an expression.  It is almost always passed as a const parameter to a function
   because the target is well-defined and the function needs to update that target.
 
-  A C++ expression is sometimes converted back to a ecl pseudo-expression by calling
+  A C++ expression is sometimes converted back to an ECL pseudo-expression by calling
   getTranslatedExpr().  This creates an expression node of kind no_translated to indicate the child
   expression has already been converted.
 
@@ -774,11 +774,11 @@ translated.  (The names could be rationalised!)
 Datasets
 --------
 Most dataset operations are only implemented as activities (e.g., PARSE, DEDUP).  If these are used
-within a transform/filter then eclcc with generate a call to a child query.  An activity helper for the
+within a transform/filter then eclcc will generate a call to a child query.  An activity helper for the
 appropriate operation will then be generated.
 
 However a subset of the dataset operations can also be evaluated inline without calling a child query. 
-Some examples are filters, projects, simple aggregation.  It removes the overhead of the child query
+Some examples are filters, projects, and simple aggregation.  It removes the overhead of the child query
 call in the simple cases, and often generates more concise code.
 
 When datasets are evaluated inline there is a similar hierarchy of function calls:
@@ -860,7 +860,7 @@ Challenges
 From declarative to imperative
 ==============================
 As mentioned at the start of this document, one of the main challenges with eclcc is converting the
-declarative ecl code into imperative C++ code.  The direction we are heading in is to allow the
+declarative ECL code into imperative C++ code.  The direction we are heading in is to allow the
 engines to support more lazy-evaluation so possibly in this instance to evaluate it the first time it
 is used (although that may potentially be much less efficient).  This will allow the code generator
 to relax some of its current assumptions.
