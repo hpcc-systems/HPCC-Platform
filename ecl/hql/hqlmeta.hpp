@@ -37,6 +37,7 @@ public:
     void getIntersection(const CHqlMetaInfo & other);
     IHqlExpression * getLocalSortOrder() const;
     bool hasUsefulInformation() const;
+    bool hasKnownSortGroupDistribution(bool isLocal) const;
     bool matches(const CHqlMetaInfo & other) const;
 
     void preserveGrouping(IHqlExpression * dataset);
@@ -126,6 +127,7 @@ extern HQL_API IHqlExpression * createMatchingDistribution(IHqlExpression * expr
 extern HQL_API void calculateDatasetMeta(CHqlMetaInfo & meta, IHqlExpression * expr);
 extern HQL_API CHqlMetaProperty * querySimpleDatasetMeta(IHqlExpression * expr);
 extern HQL_API bool hasSameSortGroupDistribution(IHqlExpression * expr, IHqlExpression * other);
+extern HQL_API bool hasKnownSortGroupDistribution(IHqlExpression * expr, bool isLocal);
 
 inline IHqlExpression * queryRemoveOmitted(IHqlExpression * expr)
 {

@@ -262,6 +262,19 @@ IHqlExpression * queryAnyOrderSortlist() { return cacheAnyOrderSortlist; }
 IHqlExpression * queryAnyDistributionAttribute() { return cacheAnyAttribute; }
 CHqlMetaProperty * queryNullMetaProperty(bool isGrouped) { return isGrouped ? nullGroupedMetaProperty : nullMetaProperty; }
 
+bool hasKnownSortlist(IHqlExpression * sortlist)
+{
+    if (!sortlist)
+        return false;
+
+    unsigned max = sortlist->numChildren();
+    if (max == 0)
+        return false;
+
+    return (sortlist->queryChild(max-1)->queryName() != unknownAtom);
+}
+
+
 bool CHqlMetaInfo::appearsToBeSorted(bool isLocal, bool ignoreGrouping)
 {
     if (isLocal)
@@ -295,6 +308,29 @@ void CHqlMetaInfo::ensureAppearsSorted(bool isLocal, bool ignoreGrouping)
             localUngroupedSortOrder.set(unknownOrder);
         }
     }
+}
+
+bool CHqlMetaInfo::hasKnownSortGroupDistribution(bool isLocal) const
+{
+    if (!isLocal)
+    {
+        if (!distribution || (distribution->queryName() == unknownAtom))
+            return false;
+        if (!hasKnownSortlist(globalSortOrder))
+            return false;
+    }
+    else
+    {
+        if (!hasKnownSortlist(localUngroupedSortOrder))
+            return false;
+    }
+    if (!grouping)
+        return true;
+    if (grouping->queryName() == unknownAtom)
+        return false;
+    if (!hasKnownSortlist(groupSortOrder))
+        return false;
+    return true;
 }
 
 bool CHqlMetaInfo::hasUsefulInformation() const
@@ -3330,4 +3366,9 @@ extern HQL_API bool hasSameSortGroupDistribution(IHqlExpression * expr, IHqlExpr
     CHqlMetaInfo & left = queryMetaProperty(expr)->meta;
     CHqlMetaInfo & right = queryMetaProperty(other)->meta;
     return left.matches(right);
+}
+
+extern HQL_API bool hasKnownSortGroupDistribution(IHqlExpression * expr, bool isLocal)
+{
+    return queryMetaProperty(expr)->meta.hasKnownSortGroupDistribution(isLocal);
 }
