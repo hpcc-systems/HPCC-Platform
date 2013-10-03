@@ -1065,6 +1065,11 @@ bool CWsWorkunitsEx::onWUListQueries(IEspContext &context, IEspWUListQueriesRequ
             q->setPriority(getQueryPriorityName(query.getPropInt("@priority")));
         if (query.hasProp("@comment"))
             q->setComment(query.queryProp("@comment"));
+        if (version >= 1.46)
+        {
+            q->setPublishedBy(query.queryProp("@publishedBy"));
+            q->setIsLibrary(query.getPropBool("@isLibrary"));
+        }
 
         try
         {
