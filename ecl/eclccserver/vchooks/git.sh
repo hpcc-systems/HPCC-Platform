@@ -115,9 +115,9 @@ function fetch_repo {
         if [ -n "$GIT_VERBOSE" ]; then
             echo "GIT: using directory $git_directory" 1>&2
             echo "GIT: Running git fetch $git_url" 1>&2
-            git fetch $git_url 2>&1 >/dev/null
+            git fetch $git_url 1>&2
         else
-            git fetch $git_url >/dev/null
+            git fetch $git_url 2>&1 >/dev/null
         fi
         if [ $? -ne 0 ]; then
             echo "Failed to run git fetch $git_url" 1>&2
