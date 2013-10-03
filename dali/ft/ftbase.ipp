@@ -80,6 +80,8 @@ public:
     CDateTime       resultTime;
     byte            status;
     bool            hasInputCRC;
+    bool            hasCompressed;
+    offset_t        compressedPartSize;
 
 //Not saved/serialized - should probably be in a Sprayer-only class that contains an outputProgress.
     Owned<IPropertyTree> tree;

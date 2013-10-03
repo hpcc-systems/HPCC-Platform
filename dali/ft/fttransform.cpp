@@ -830,6 +830,7 @@ processedProgress:
                     compressor.setown(createAESCompressor256(key.length(),key.str()));
                 }
                 outio.setown(createCompressedFileWriter(outio, 0, true, compressor));
+                curProgress.hasCompressed = true;
             }
 
             LOG(MCdebugProgress, unknownJob, "Start pulling to file: %s", localFilename.str());
@@ -903,15 +904,8 @@ processedProgress:
                     //Notify the master that the file has been renamed - and send the modified time.
                     msg.setEndian(__BIG_ENDIAN);
                     curProgress.status = OutputProgress::StatusRenamed;
+                    curProgress.compressedPartSize = output->compressedSize();
                     curProgress.serialize(msg.clear().append(false));
-                    // If output compressed then send the compressed size in the end of
-                    // 'StatusRenamed' message
-                    if (compressOutput)
-                    {
-                        size32_t compressedSize = output->compressedSize();
-                        msg.append(compressedSize);
-                    }
-
                     if (!catchWriteBuffer(masterSocket, msg))
                         throwError(RFSERR_TimeoutWaitMaster);
                 }
