@@ -6,23 +6,12 @@
       <primary>DICTIONARY</primary>
     </indexterm></title>
 
-  <para>
-    <emphasis>attr</emphasis>
+  <para><emphasis>attr</emphasis> <emphasis role="bold">:=
+  DICTIONARY(</emphasis> <emphasis>dataset, structure</emphasis> <emphasis
+  role="bold">);</emphasis></para>
 
-    <emphasis role="bold">:= DICTIONARY(</emphasis>
-
-    <emphasis>dataset, structure</emphasis>
-
-    <emphasis role="bold">);</emphasis>
-  </para>
-
-  <para>
-    <emphasis role="bold">DICTIONARY(</emphasis>
-
-    <emphasis>structure</emphasis>
-
-    <emphasis role="bold">)</emphasis>
-  </para>
+  <para><emphasis role="bold">DICTIONARY(</emphasis>
+  <emphasis>structure</emphasis> <emphasis role="bold">)</emphasis></para>
 
   <informaltable colsep="1" frame="all" rowsep="1">
     <tgroup cols="2">
@@ -32,18 +21,14 @@
 
       <tbody>
         <row>
-          <entry>
-            <emphasis>attr</emphasis>
-          </entry>
+          <entry><emphasis>attr</emphasis></entry>
 
           <entry>The name of the DICTIONARY for later use in other
           definitions.</entry>
         </row>
 
         <row>
-          <entry>
-            <emphasis>dataset</emphasis>
-          </entry>
+          <entry><emphasis>dataset</emphasis></entry>
 
           <entry>The name of a DATASET or recordset from which to derive the
           DICTIONARY. This may be defined inline (similar to an inline
@@ -51,9 +36,7 @@
         </row>
 
         <row>
-          <entry>
-            <emphasis>structure</emphasis>
-          </entry>
+          <entry><emphasis>structure</emphasis></entry>
 
           <entry>The RECORD structure (often defined inline) specifying the
           layout of the fields. The first field(s) are key fields, optionally
@@ -94,9 +77,9 @@
     child dataset, similar to the way DATASET may be used to define a child
     dataset. This may also be used to pass a DICTIONARY as a parameter.</para>
 
-  <para>Example:</para>
+    <para>Example:</para>
 
-  <programlisting>ColorCodes := DATASET([{'Black' ,0 },
+    <programlisting>ColorCodes := DATASET([{'Black' ,0 },
                        {'Brown' ,1 },
                        {'Red'   ,2 },
                        {'Orange',3 },
@@ -159,8 +142,9 @@ MyDCTfunc(InlineDCT,'White');  //Jo
 MyDCTfunc(DsDCT,'Brown');      //Seth
 </programlisting>
 
-  <para>See Also: <link linkend="DATASET">DATASET</link>, <link
-  linkend="RECORD_Structure">RECORD Structure</link>, <link
-  linkend="INDEX">INDEX</link>, <link linkend="IN_Operator">IN Operator</link></para>
-</sect2>
+    <para>See Also: <link linkend="DATASET">DATASET</link>, <link
+    linkend="RECORD_Structure">RECORD Structure</link>, <link
+    linkend="INDEX_record_structure">INDEX</link>, <link
+    linkend="IN_Operator">IN Operator</link></para>
+  </sect2>
 </sect1>

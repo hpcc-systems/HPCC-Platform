@@ -47,8 +47,9 @@
 END;
 rec1 := TOXML(ROW({42,'Fred','Flintstone'},namesRec1));
 OUTPUT(rec1);
+
 //returns this string:
-//<EmpID>'&lt;EmpID&gt;42&lt;/EmpID&gt;&lt;FName&gt;Fred&lt;/FName&gt;&lt;LName&gt;Flintstone&lt;/LName&gt;'</EmpID><FName /><LName />
+//'&lt;EmpID&gt;42&lt;/EmpID&gt;&lt;FName&gt;Fred&lt;/FName&gt;&lt;LName&gt;Flintstone&lt;/LName&gt;'
 
 namesRec2 := RECORD
   UNSIGNED2 EmployeeID;
@@ -58,7 +59,7 @@ END;
 rec2 := TOXML(ROW({42,'Fred','Flintstone'},namesRec2));
 OUTPUT(rec2);
 //returns this string:
-//'&lt;employeeid&gt;42&lt;/employeeid&gt;&lt;firstname&gt;Fred&lt;/firstname&gt;&lt;lastname&gt;Flintstone&lt;/lastname&gt;'<employeeid /><firstname /><lastname />
+//'&lt;employeeid&gt;42&lt;/employeeid&gt;&lt;firstname&gt;Fred&lt;/firstname&gt;&lt;lastname&gt;Flintstone&lt;/lastname&gt;'
 </programlisting>
 
   <para>See Also: <link linkend="ROW">ROW</link>, <link
