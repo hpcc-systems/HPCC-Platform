@@ -72,13 +72,13 @@ dg2 := DENORMALIZE(gr1, ds2, LEFT.i = RIGHT.i, GROUP, trg(LEFT, ROWS(RIGHT)), SM
 dg3 := DENORMALIZE(gr1, gr1, LEFT.i = RIGHT.i, GROUP, trg(LEFT, ROWS(RIGHT)), SMART);
 
 sequential(
-    output(j1),
-    output(TABLE(j2, { cnt := COUNT(GROUP) })),  // check output is not grouped
-    output(j3),
-    output(d1),
-    output(TABLE(d2, { cnt := COUNT(GROUP) })),  // check output is not grouped
-    output(d3),
-    output(dg1),
-    output(TABLE(dg2, { cnt := COUNT(GROUP) })),  // check output is not grouped
-    output(dg3),
+    output(SORT(j1, i)),
+    output(SORT(TABLE(j2, { cnt := COUNT(GROUP) }), cnt)),  // check output is not grouped
+    output(SORT(j3, i)),
+    output(SORT(d1, i)),
+    output(SORT(TABLE(d2, { cnt := COUNT(GROUP) }), cnt)),  // check output is not grouped
+    output(SORT(d3, i)),
+    output(SORT(dg1, i)),
+    output(SORT(TABLE(dg2, { cnt := COUNT(GROUP) }), cnt)),  // check output is not grouped
+    output(SORT(dg3, i)),
 );
