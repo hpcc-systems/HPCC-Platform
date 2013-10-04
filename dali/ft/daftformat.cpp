@@ -575,17 +575,7 @@ CCsvPartitioner::CCsvPartitioner(const FileFormat & _format) : CInputBasePartiti
     maxElementLength = 1;
     format.set(_format);
     addActionList(matcher, format.separate.get() ? format.separate.get() : "\\,", SEPARATOR, &maxElementLength);
-    const char * quote = format.quote.get();
-    if (quote)
-    {
-        if (*quote)
-            // Define new quote char(s)
-            addActionList(matcher, quote, QUOTE, &maxElementLength);
-    }
-    else
-        // Set default quote char
-        addActionList(matcher, "'", QUOTE, &maxElementLength);
-
+    addActionList(matcher, format.quote.get() ? format.quote.get() : "'", QUOTE, &maxElementLength);
     addActionList(matcher, format.terminate.get() ? format.terminate.get() : "\\n,\\r\\n", TERMINATOR, &maxElementLength);
     const char * escape = format.escape.get();
     if (escape && *escape)
