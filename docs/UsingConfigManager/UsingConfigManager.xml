@@ -2052,7 +2052,7 @@ sudo -u hpcc cp /etc/HPCCSystems/source/NewEnvironment.xml /etc/HPCCSystems/envi
             <?dbfo keep-together="always"?>
 
             <para>Select the redundancy scheme to use. Typically, this is
-            Circular Redundancy, as shown below.</para>
+            cyclic redundancy, as shown below.</para>
 
             <para>
               <graphic fileref="images/CM-112-1.jpg" vendor="configmgrSS" />
