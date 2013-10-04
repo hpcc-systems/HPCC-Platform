@@ -97,7 +97,7 @@ class CDistributorBase : public CSimpleInterface, implements IHashDistributor, i
     Owned<ISmartRowBuffer> piperd;
 
     /*
-     * CSendBucket - a collection of rows destinate for a particular destination target(slave)
+     * CSendBucket - a collection of rows destined for a particular destination target(slave)
      */
     class CSendBucket : public CSimpleInterface, implements IRowStream
     {

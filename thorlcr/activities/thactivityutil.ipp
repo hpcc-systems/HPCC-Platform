@@ -38,9 +38,6 @@
 #define OUTPUT_RECORDSIZE
 
 
-//void startInput(CActivityBase *activity, IThorDataLink * i, const char *extra=NULL);
-//void stopInput(IThorDataLink * i, const char * activityName = NULL, activity_id activitiyId = 0);
-
 class CPartHandler : public CSimpleInterface, implements IRowStream
 {
 public:
@@ -216,7 +213,7 @@ public:
 };
 
 interface IDiskUsage;
-IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity,IThorDataLink *in,size32_t bufsize,bool spillenabled,bool preserveLhsGrouping=true,rowcount_t maxcount=RCUNBOUND,ISmartBufferNotify *notify=NULL, bool inputstarted=false, IDiskUsage *_diskUsage=NULL); //maxcount is maximum rows to read set to RCUNBOUND for all
+IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity,IThorDataLink *in,size32_t bufsize,bool spillenabled,bool preserveGrouping=true,rowcount_t maxcount=RCUNBOUND,ISmartBufferNotify *notify=NULL, bool inputstarted=false, IDiskUsage *_diskUsage=NULL); //maxcount is maximum rows to read set to RCUNBOUND for all
 
 bool isSmartBufferSpillNeeded(CActivityBase *act);
 
