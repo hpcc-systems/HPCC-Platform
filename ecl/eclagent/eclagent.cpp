@@ -2239,7 +2239,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
         doExecuteItemDependencies(item, wfid);
     SCMStringBuffer name;
     const char *logicalName = item.getPersistName(name).str();
-    Owned<IRemoteConnection> persistLock;  // MORE - pass it to isPersistUptoDate (which may change it)
+    Owned<IRemoteConnection> persistLock;
     if(persistsPrelocked)
     {
         persistLock.set(persistCache.getValue(logicalName));
@@ -2571,10 +2571,11 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
 {
     //Loop trying to get a write lock - if it fails, then release the read lock, otherwise
     //you can get a deadlock with several things waiting to read, and none being able to write.
+    bool rebuildAllPersists = globals->getPropBool("REBUILDPERSISTS", false);   // Useful for debugging purposes
     loop
     {
         StringBuffer dummy;
-        if (checkPersistUptoDate(logicalName, eclCRC, allCRC, isFile, dummy))
+        if (checkPersistUptoDate(logicalName, eclCRC, allCRC, isFile, dummy) && !rebuildAllPersists)
         {
             StringBuffer msg;
             msg.append("PERSIST('").append(logicalName).append("') is up to date");
@@ -2597,7 +2598,7 @@ bool EclAgent::isPersistUptoDate(Owned<IRemoteConnection> &persistLock, const ch
 
     //Check again whether up to date, someone else might have updated it!
     StringBuffer errText;
-    if (checkPersistUptoDate(logicalName, eclCRC, allCRC, isFile, errText))
+    if (checkPersistUptoDate(logicalName, eclCRC, allCRC, isFile, errText) && !rebuildAllPersists)
     {
         StringBuffer msg;
         msg.append("PERSIST('").append(logicalName).append("') is up to date (after being calculated by another job)");

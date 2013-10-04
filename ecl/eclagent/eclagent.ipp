@@ -279,7 +279,10 @@ private:
 
 public:
     EclAgentWorkflowMachine(EclAgent & _agent);
-    void returnPersistVersion(char const * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { persist.setown(new PersistVersion(logicalName, eclCRC, allCRC, isFile)); }
+    void returnPersistVersion(char const * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+    {
+        persist.setown(new PersistVersion(logicalName, eclCRC, allCRC, isFile));
+    }
 
 protected:
     virtual void begin();
@@ -522,7 +525,10 @@ public:
 
 //New workflow interface
     virtual void setWorkflowCondition(bool value) { if(workflow) workflow->setCondition(value); }
-    virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile) { if(workflow) workflow->returnPersistVersion(logicalName, eclCRC, allCRC, isFile); }
+    virtual void returnPersistVersion(const char * logicalName, unsigned eclCRC, unsigned __int64 allCRC, bool isFile)
+    {
+        if(workflow) workflow->returnPersistVersion(logicalName, eclCRC, allCRC, isFile);
+    }
 
     virtual void fail(int code, char const * str); 
     void failv(int code, char const * fmt, ...) __attribute__((format(printf, 3, 4)));
