@@ -61,7 +61,7 @@ class ThorLookaheadCache: public IThorDataLink, public CSimpleInterface
     Owned<ISmartRowBuffer> smartbuf;
     size32_t bufsize;
     CActivityBase &activity;
-    bool allowspill, preserveLhsGrouping;
+    bool allowspill, preserveGrouping;
     ISmartBufferNotify *notify;
     bool running;
     bool stopped;
@@ -129,7 +129,7 @@ public:
                 notify->onInputStarted(NULL);
             startsem.signal();
             IRowWriter *writer = smartbuf->queryWriter();
-            if (preserveLhsGrouping)
+            if (preserveGrouping)
             {
                 while (required&&running)
                 {
@@ -216,7 +216,7 @@ public:
     }
         
 
-    ThorLookaheadCache(CActivityBase &_activity, IThorDataLink *_in,size32_t _bufsize,bool _allowspill,bool _preserveLhsGrouping, rowcount_t _required,ISmartBufferNotify *_notify, bool _instarted, IDiskUsage *_iDiskUsage)
+    ThorLookaheadCache(CActivityBase &_activity, IThorDataLink *_in,size32_t _bufsize,bool _allowspill,bool _preserveGrouping, rowcount_t _required,ISmartBufferNotify *_notify, bool _instarted, IDiskUsage *_iDiskUsage)
         : thread(*this), activity(_activity), in(_in)
     {
 #ifdef _FULL_TRACE
@@ -224,7 +224,7 @@ public:
 #endif
         asyncstart = false;
         allowspill = _allowspill;
-        preserveLhsGrouping = _preserveLhsGrouping;
+        preserveGrouping = _preserveGrouping;
         assertex((unsigned)-1 != _bufsize); // no longer supported
         bufsize = _bufsize?_bufsize:(0x40000*3); // use .75 MB buffer if bufsize omitted
         notify = _notify;
@@ -285,7 +285,7 @@ public:
         return row.getClear();
     }
 
-    bool isGrouped() { return false; }
+    bool isGrouped() { return preserveGrouping; }
             
     void getMetaInfo(ThorDataLinkMetaInfo &info)
     {
@@ -309,9 +309,9 @@ public:
 #endif
 
 
-IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity, IThorDataLink *in, size32_t bufsize, bool allowspill, bool preserveLhsGrouping, rowcount_t maxcount, ISmartBufferNotify *notify, bool instarted, IDiskUsage *iDiskUsage)
+IThorDataLink *createDataLinkSmartBuffer(CActivityBase *activity, IThorDataLink *in, size32_t bufsize, bool allowspill, bool preserveGrouping, rowcount_t maxcount, ISmartBufferNotify *notify, bool instarted, IDiskUsage *iDiskUsage)
 {
-    return new ThorLookaheadCache(*activity, in,bufsize,allowspill,preserveLhsGrouping,maxcount,notify,instarted,iDiskUsage);
+    return new ThorLookaheadCache(*activity, in,bufsize,allowspill,preserveGrouping,maxcount,notify,instarted,iDiskUsage);
 }
 
 

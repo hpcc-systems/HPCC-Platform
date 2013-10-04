@@ -35,6 +35,7 @@ typedef size32_t rowidx_t;
 #define RCIDXMAX ((rowidx_t)(size32_t)-1)
 #define RIPF ""
 #define RIMAX ((rowidx_t)-1)
+#define RIUNSET RIMAX
 
 #include "jexcept.hpp"
 
