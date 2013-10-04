@@ -19331,7 +19331,10 @@ public:
                 response->startDataset("Dataset", helper.queryName(), sequence, (helper.getFlags() & POFextend) != 0);
                 if (response->mlFmt==MarkupFmt_XML || response->mlFmt==MarkupFmt_JSON)
                 {
-                    writer.setown(createIXmlWriter(serverContext->getXmlFlags(), 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
+                    unsigned int writeFlags = serverContext->getXmlFlags();
+                    if (response->mlFmt==MarkupFmt_JSON)
+                        writeFlags |= XWFnoindent;
+                    writer.setown(createIXmlWriter(writeFlags, 1, response, (response->mlFmt==MarkupFmt_JSON) ? WTJSON : WTStandard));
                     writer->outputBeginArray("Row");
                 }
             }
