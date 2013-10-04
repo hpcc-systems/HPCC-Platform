@@ -22,3 +22,6 @@
  <Row><surname>Smithe              </surname><forename>Pru       </forename><age>10</age></Row>
  <Row><surname>X                   </surname><forename>Z         </forename><age>25</age></Row>
 </Dataset>
+<Dataset name='Result 4'>
+ <Row><Result_4>6</Result_4></Row>
+</Dataset>

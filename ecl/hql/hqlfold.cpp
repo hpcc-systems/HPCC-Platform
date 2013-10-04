@@ -3509,7 +3509,7 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 const char * potentialLeftProjectReason = NULL;
                 if (isSpecificJoin(expr, leftouterAtom))
                 {
-                    if (matchesConstantValue(queryAttributeChild(expr, keepAtom, 0), 1))
+                    if (matchesConstantValue(queryAttributeChild(expr, keepAtom, 0), 1) && !expr->hasAttribute(rowLimitAtom))
                         potentialLeftProjectReason = "(,LEFT OUTER,KEEP(1))";
                     else if (matchesAtmost1(expr))
                         potentialLeftProjectReason = "(,LEFT OUTER,ATMOST(1))";

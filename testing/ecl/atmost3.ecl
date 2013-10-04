@@ -29,8 +29,5 @@ addressTable := dataset([
         ], addressRecord);
 
 sequential(
-output(sort(join(namesTable, addressTable, left.surname = right.surname, ATMOST(1),LEFT OUTER),surname,forename));
-output(sort(join(namesTable, addressTable, left.surname = right.surname, Transform (LEFT), ATMOST(1),LEFT OUTER),surname,forename));
-output(sort(join(namesTable, addressTable, left.surname = right.surname, Transform (LEFT), ATMOST(1),LEFT OUTER,ONFAIL(SKIP)),surname,forename));
-output(count(join(namesTable, addressTable, left.surname = right.surname, ATMOST(1),LEFT OUTER)));
+output(sort(join(namesTable, addressTable, left.surname = right.surname, TRANSFORM(LEFT), KEEP(1),limit(1),LEFT OUTER),surname,forename))
 );
