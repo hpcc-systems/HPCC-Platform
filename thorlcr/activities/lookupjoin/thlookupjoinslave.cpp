@@ -823,14 +823,15 @@ public:
         CriticalBlock b(broadcastSpillingLock);
         if (hasBroadcastSpilt())
             return false;
+        setBroadcastingSpilt(true);
 
-        rowidx_t clearedRows = 0;
+        ActPrintLog("Clearing non-local rows - cause: %s", msg);
+
         /* NB: It is likely that there will be unflushed rows in the rhsNodeRows arrays after we are done here.
         /* These will need flushing when all is done and clearNonLocalRows will need recalling to process rest
          */
 
-        setBroadcastingSpilt(true);
-        ActPrintLog("Clearing non-local rows - cause: %s", msg);
+        rowidx_t clearedRows = 0;
         ForEachItemIn(a, rhsNodeRows)
         {
             CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
@@ -1559,12 +1560,6 @@ public:
             broadcaster.end();
             rowProcessor.wait();
 
-            if (stopping)
-            {
-                queryJob().queryRowManager()->removeRowBuffer(this);
-                return;
-            }
-
             // NB: no more rows can be added to rhsNodeRows at this point, but they could stil be flushed
 
             rhsRows = 0;
@@ -1617,16 +1612,6 @@ public:
              */
 
             // flush spillable row arrays, and clear any non-locals if spiltBroadcastingRHS and compact
-            if (hasBroadcastSpilt())
-            {
-                ForEachItemIn(a, rhsNodeRows)
-                {
-                    CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
-                    clearNonLocalRows(rows, flushedRowMarkers.item(a));
-                    rows.compact();
-                }
-            }
-
             if (hasBroadcastSpilt()) // NB: Can only be active for LOOKUP (not ALL)
             {
                 ActPrintLog("Spilt whilst broadcasting, will attempt distribute local lookup join");
@@ -1641,6 +1626,23 @@ public:
 
                 setupDistributors();
 
+                if (stopping)
+                {
+                    ActPrintLog("getRHS stopped");
+                    /* NB: Can only stop now, after distributors are setup
+                     * since other slaves may not be stopping and are dependent on the distributors
+                     * The distributor will not actually stop until everyone else does.
+                     */
+                    return;
+                }
+
+                ForEachItemIn(a, rhsNodeRows)
+                {
+                    CThorSpillableRowArray &rows = *rhsNodeRows.item(a);
+                    clearNonLocalRows(rows, flushedRowMarkers.item(a));
+                    rows.compact();
+                }
+
                 /* NB: The collected broadcast rows thus far (in rhsNodeRows) were ordered/deterministic.
                  * However, the rest of the rows received via the distributor and non-deterministic.
                  * Therefore the order overall is non-deterministic from this point on.
@@ -1649,9 +1651,9 @@ public:
                  */
                 IArrayOf<IRowStream> streams;
                 streams.append(*right.getLink()); // what remains of 'right' will be read through distributor
-                ForEachItemIn(a, rhsNodeRows)
+                ForEachItemIn(a2, rhsNodeRows)
                 {
-                    CThorSpillableRowArray &sRowArray = *rhsNodeRows.item(a);
+                    CThorSpillableRowArray &sRowArray = *rhsNodeRows.item(a2);
                     CThorExpandingRowArray rowArray(*this, NULL);
                     rowArray.transferFrom(sRowArray);
                     streams.append(*rowArray.createRowStream(0, (rowidx_t)-1, true)); // NB: will kill array when stream exhausted
@@ -1660,13 +1662,18 @@ public:
             }
             else
             {
+                if (stopping) // broadcast done and no-one spilt, this node can now stop
+                    return;
+
                 if (rhsTotalCount != RCUNSET) // verify matches meta if set/calculated (and haven't spilt)
                     assertex(rhsRows == rhsTotalCount);
             }
         }
         else
         {
-            if (isLookup())
+            if (stopping) // if local can stop now
+                return;
+            else if (isLookup())
                 localLookupJoin = true;
             else
             {
