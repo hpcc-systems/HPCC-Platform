@@ -1587,13 +1587,19 @@ char *EclAgent::getEnv(const char *name, const char *defaultValue) const
         return strdup("");
 }
 
-void EclAgent::selectCluster(const char * cluster)
+void EclAgent::selectCluster(const char *newCluster)
 {
-    SCMStringBuffer clusterName;
-    queryWorkUnit()->getClusterName(clusterName);
-    clusterNames.append(clusterName.str());
+    SCMStringBuffer oldCluster;
+    queryWorkUnit()->getClusterName(oldCluster);
+    if (getClusterType(clusterType)==HThorCluster)
+    {
+        // If the current cluster is an hthor cluster, it's an error to change it...
+        if (!streq(oldCluster.str(), newCluster))
+            throw MakeStringException(-1, "Error - cannot switch cluster in hthor jobs");
+    }
+    clusterNames.append(oldCluster.str());
     WorkunitUpdate wu = updateWorkUnit();
-    wu->setClusterName(cluster);
+    wu->setClusterName(newCluster);
     clusterWidth = -1;
 }
 
@@ -2268,7 +2274,7 @@ void EclAgentWorkflowMachine::doExecutePersistItem(IRuntimeWorkflowItem & item)
     }
     else if(!agent.isPersistUptoDate(persistLock, logicalName, thisPersist->eclCRC, thisPersist->allCRC, thisPersist->isFile))
     {
-        agent.clearPersist(logicalName);
+        // We used to call agent.clearPersist(logicalName) here - but that means if the persist rebuild fails, we forget WHY we wanted to.
         // New persist model allows dependencies to be executed AFTER checking if the persist is up to date
         if (agent.queryWorkUnit()->getDebugValueBool("expandPersistInputDependencies", false))
             doExecuteItemDependencies(item, wfid);
