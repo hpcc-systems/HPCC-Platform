@@ -358,6 +358,14 @@ class EclccCompileThread : public CInterface, implements IPooledThread, implemen
         return false;
     }
 
+    void failCompilation(const char *error)
+    {
+        reportError(error, 2);
+        workunit->setState(WUStateFailed);
+        workunit->commit();
+        workunit.clear();
+    }
+
 public:
     IMPLEMENT_IINTERFACE;
     EclccCompileThread(unsigned _idx)
@@ -397,12 +405,8 @@ public:
         Owned<IConstWUClusterInfo> clusterInfo = getTargetClusterInfo(clusterName.str());
         if (!clusterInfo)
         {
-            StringBuffer errStr;
-            errStr.appendf("Cluster %s not recognized", clusterName.str());
-            reportError(errStr, 2);
-            workunit->setState(WUStateFailed);
-            workunit->commit();
-            workunit.clear();
+            VStringBuffer errStr("Cluster %s not recognized", clusterName.str());
+            failCompilation(errStr);
             return;
         }
         ClusterType platform = clusterInfo->getPlatform();
@@ -413,6 +417,25 @@ public:
         if (ok)
         {
             workunit->setState(WUStateCompiled);
+            SCMStringBuffer newClusterName;
+            workunit->getClusterName(newClusterName);   // Workunit can change the cluster name via #workunit, so reload it
+            if (strcmp(newClusterName.str(), clusterName.str()) != 0)
+            {
+                clusterInfo.setown(getTargetClusterInfo(clusterName.str()));
+                if (!clusterInfo)
+                {
+                    VStringBuffer errStr("Cluster %s by #workunit not recognized", clusterName.str());
+                    failCompilation(errStr);
+                    return;
+                }
+                if (platform != clusterInfo->getPlatform())
+                {
+                    VStringBuffer errStr("Cluster %s specified by #workunit is wrong type for this queue", clusterName.str());
+                    failCompilation(errStr);
+                    return;
+                }
+                clusterInfo.clear();
+            }
             if (workunit->getAction()==WUActionRun || workunit->getAction()==WUActionUnknown)  // Assume they meant run....
             {
                 if (isLibrary(workunit))
