@@ -3367,6 +3367,22 @@ IHqlExpression * preserveGrouping(IHqlExpression * child, IHqlExpression * expr)
     return LINK(child);
 }
 
+static bool matchesAtmost1(IHqlExpression * expr)
+{
+    IHqlExpression * atmost = expr->queryAttribute(atmostAtom);
+    if (!atmost)
+        return false;
+    if (!matchesConstantValue(atmost->queryChild(0), 1))
+        return false;
+    return true;
+}
+
+static bool hasRowLimit(IHqlExpression * expr)
+{
+    IHqlExpression * limit = expr->queryAttribute(rowLimitAtom);
+    return limit && !matchesConstantValue(limit->queryChild(0), 0);
+}
+
 IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
 {
     IHqlExpression * child = expr->queryChild(0);
@@ -3503,8 +3519,10 @@ IHqlExpression * NullFolderMixin::foldNullDataset(IHqlExpression * expr)
                 const char * potentialLeftProjectReason = NULL;
                 if (isSpecificJoin(expr, leftouterAtom))
                 {
-                    if (matchesConstantValue(queryAttributeChild(expr, keepAtom, 0), 1))
+                    if (matchesConstantValue(queryAttributeChild(expr, keepAtom, 0), 1) && !hasRowLimit(expr))
                         potentialLeftProjectReason = "(,LEFT OUTER,KEEP(1))";
+                    else if (matchesAtmost1(expr) && !hasRowLimit(expr))
+                        potentialLeftProjectReason = "(,LEFT OUTER,ATMOST(1))";
                     else if (expr->hasAttribute(lookupAtom) && !expr->hasAttribute(manyAtom))
                         potentialLeftProjectReason = "(,LEFT OUTER,SINGLE LOOKUP)";
                     else if (hasNoMoreRowsThan(expr, 1))
