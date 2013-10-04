@@ -2843,16 +2843,20 @@ IHqlExpression * calcRowInformation(IHqlExpression * expr)
     case no_join:
     case no_selfjoin:
         {
-            bool maxSingleRowOut = false;
+            __uint64 maxMatchesPerLeftRow = (__uint64)-1;
             if (expr->hasAttribute(leftonlyAtom))
-                maxSingleRowOut = true;
+                maxMatchesPerLeftRow = 1;
             else if (isLeftJoin(expr) || isInnerJoin(expr))
             {
+                //MORE: Could process other small scalings e.g., < 10 from keep/atmost attributes
                 IHqlExpression * keep = queryAttributeChild(expr, keepAtom, 0);
                 if (matchesConstantValue(keep, 1))
-                    maxSingleRowOut = true;
+                    maxMatchesPerLeftRow = 1;
+                IHqlExpression * atmost = queryAttributeChild(expr, atmostAtom, 0);
+                if (matchesConstantValue(atmost, 1))
+                    maxMatchesPerLeftRow = 1;
             }
-            if (maxSingleRowOut)
+            if (maxMatchesPerLeftRow == 1)
             {
                 retrieveRowInformation(info, ds);
                 if (!expr->hasAttribute(leftouterAtom) || containsSkip(expr->queryChild(3)))
