@@ -2029,6 +2029,7 @@ void doWUQueryWithSort(IEspContext &context, IEspWUQueryRequest & req, IEspWUQue
             bDoubleCheckState = true;
     }
 
+    addWUQueryFilter(filters, filterCount, filterbuf, req.getWuid(), WUSFwildwuid);
     addWUQueryFilter(filters, filterCount, filterbuf, req.getCluster(), WUSFcluster);
     if(version > 1.07)
         addWUQueryFilter(filters, filterCount, filterbuf, req.getRoxieCluster(), WUSFroxiecluster);
@@ -2385,13 +2386,8 @@ bool CWsWorkunitsEx::onWUQuery(IEspContext &context, IEspWUQueryRequest & req, I
 
         if (req.getType() && strieq(req.getType(), "archived workunits"))
             doWUQueryFromArchive(context, *archivedWuCache, awusCacheMinutes, req, resp);
-        else if(notEmpty(wuid))
-        {
-            if (!looksLikeAWuid(wuid))
-                throw MakeStringException(ECLWATCH_INVALID_INPUT, "Invalid Workunit ID: %s", wuid);
-
+        else if(notEmpty(wuid) && looksLikeAWuid(wuid))
             doWUQueryBySingleWuid(context, wuid, resp);
-        }
         else if (notEmpty(req.getECL()) || notEmpty(req.getApplicationName()) || notEmpty(req.getApplicationKey()) || notEmpty(req.getApplicationData()))
             doWUQueryByXPath(context, req, resp);
         else if (notEmpty(req.getLogicalFile()) && req.getLogicalFileSearchType() && strieq(req.getLogicalFileSearchType(), "Created"))
