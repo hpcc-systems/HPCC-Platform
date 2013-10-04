@@ -134,7 +134,7 @@ public:
     IPropertyTree *createSuperTree() const;
     void allowOsPath(bool allow=true) { allowospath = allow; } // allow local OS path to be specified
     bool isExpanded() const;
-    bool expand(IUserDescriptor *user);
+    void expand(IUserDescriptor *user);
     void normalizeName(const char * name, StringAttr &res);
 };
 

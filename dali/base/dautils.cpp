@@ -300,10 +300,10 @@ bool CDfsLogicalFileName::isExpanded() const
 {
     if (multi)
         return multi->isExpanded();
-    return false;
+    return true;
 }
 
-bool CDfsLogicalFileName::expand(IUserDescriptor *user)
+void CDfsLogicalFileName::expand(IUserDescriptor *user)
 {
     if (multi && !multi->isExpanded())
     {
@@ -334,7 +334,6 @@ bool CDfsLogicalFileName::expand(IUserDescriptor *user)
             throw;
         }
     }
-    return true;
 }
 
 void CDfsLogicalFileName::normalizeName(const char * name, StringAttr &res)
