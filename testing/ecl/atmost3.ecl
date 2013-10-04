@@ -1,3 +1,6 @@
+//This test really should work in thor, but there appear to be issues with the CATCH processing
+//nothorlcr
+
 namesRecord :=
             RECORD
 string20        surname;
@@ -28,6 +31,6 @@ addressTable := dataset([
         {'Z','The end of the world'}
         ], addressRecord);
 
-sequential(
-output(sort(join(namesTable, addressTable, left.surname = right.surname, TRANSFORM(LEFT), KEEP(1),limit(1),LEFT OUTER),surname,forename))
-);
+j := join(namesTable, addressTable, left.surname = right.surname, TRANSFORM(LEFT), KEEP(1),limit(1),LEFT OUTER);
+c := catch(j, ONFAIL(TRANSFORM(namesRecord, SELF.surname := 'Correctly failed', SELF := [])));
+output(c);

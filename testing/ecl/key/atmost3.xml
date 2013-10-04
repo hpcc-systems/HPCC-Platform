@@ -1,1 +1,3 @@
-<Error><source>eclagent</source><code>0</code><message>System error: 0: JOIN limit exceeded(1) [id=4]</message></Error>
+<Dataset name='Result 1'>
+ <Row><surname>Correctly failed    </surname><forename>          </forename><age>0</age></Row>
+</Dataset>
