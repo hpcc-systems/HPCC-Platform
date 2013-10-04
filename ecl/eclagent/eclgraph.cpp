@@ -1447,6 +1447,8 @@ void EclAgent::executeThorGraph(const char * graphName)
     int priority = wuRead->getPriorityValue();
     unsigned timelimit = queryWorkUnit()->getDebugValueInt("thorConnectTimeout", config->getPropInt("@thorConnectTimeout", 60));
     Owned<IConstWUClusterInfo> c = getTargetClusterInfo(cluster.str());
+    if (!c)
+        throw MakeStringException(0, "Invalid thor cluster %s", cluster.str());
     SCMStringBuffer queueName;
     c->getThorQueue(queueName);
     Owned<IJobQueue> jq = createJobQueue(queueName.str());
