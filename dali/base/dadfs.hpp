@@ -450,6 +450,7 @@ interface IDistributedFileDirectory: extends IInterface
 
     // Removes files and super-files with format: context/file@cluster
     virtual bool removeEntry(const char *name, IUserDescriptor *user, IDistributedFileTransaction *transaction=NULL, unsigned timeoutms=INFINITE) = 0;
+    virtual bool removeEntry(const char *name, IUserDescriptor *user, StringBuffer &returnMsg, IDistributedFileTransaction *transaction=NULL, unsigned timeoutms=INFINITE) = 0;
     virtual void renamePhysical(const char *oldname,const char *newname,IUserDescriptor *user,IDistributedFileTransaction *transaction) = 0;                         // renames the physical parts as well as entry
     virtual void removeEmptyScope(const char *scope) = 0;   // does nothing if called on non-empty scope
     
