@@ -3095,5 +3095,485 @@ sudo /sbin/service hpcc-init -c esp start
         </listitem>
       </orderedlist>
     </sect1>
+
+    <sect1 id="ExternLang_Support">
+      <title>External Language Support</title>
+
+      <para>This section covers the steps to add external language support to
+      the HPCC platform. HPCC offers support for several programming
+      languages, some have additional dependencies that must be installed.
+      External language support is included with the platform installation
+      package, however there are RPM-based HPCC Platform installation packages
+      that explicitly state <emphasis role="bold">with
+      plug-ins</emphasis>.</para>
+
+      <para><emphasis role="bold">RPM-based systems:</emphasis></para>
+
+      <para>If you are interested in using external languages for RPM-based
+      systems (CentOS/Red Hat/SuSe), you need to download and install the
+      appropriate platform installation distribution <emphasis
+      role="bold">with plug-ins</emphasis> option from the downloads
+      site.</para>
+
+      <para>For RPM based systems, there are two different installation
+      packages available. One package includes the optional plug-ins to
+      support embedded code from other languages. If you want support for
+      other languages, choose the package for your distro that begins
+      with:</para>
+
+      <programlisting>hpccsystems-platform_community-with-plugins- </programlisting>
+
+      <para><emphasis role="bold">Debian-based systems:</emphasis></para>
+
+      <para>Optional plug-in downloads are NOT needed for the Debian-based
+      systems (Ubuntu) installation package, as the plug-ins are included in
+      all the Debian installation packages.</para>
+
+      <para>The external languages currently supported include:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>C++ (full support is already built-in)</para>
+        </listitem>
+
+        <listitem>
+          <para>Java</para>
+        </listitem>
+
+        <listitem>
+          <para>JavaScript</para>
+        </listitem>
+
+        <listitem>
+          <para>Python</para>
+        </listitem>
+
+        <listitem>
+          <para>R</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>The following sections detail what is required to utilize these
+      languages in your HPCC platform.</para>
+
+      <para>In addition to these languages, you can add support for additional
+      languages by creating your own plug-in. This is not very difficult to
+      do. For example the JavaScript plug-in is about 500 lines of C++ code.
+      You can use that as a template to write your own and, if desired, you
+      can contribute it back to the open source initiative.</para>
+
+      <sect2 id="Add_On_Java" role="brk">
+        <title>Java</title>
+
+        <para>You can run external Java code on the HPCC platform. Compiled
+        Java can be used either as a .class (or a .jar) and called from ECL
+        just like any other ECL function.</para>
+
+        <para>To extract the JNI signatures:</para>
+
+        <programlisting>javap -s</programlisting>
+
+        <para>To set up Java to integrate with the HPCC platform:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Install a Java development package, such as OpenJDK or
+            Oracle Java SE Development Kit (JDK) on the server.</para>
+          </listitem>
+
+          <listitem>
+            <para>Set the Java CLASSPATH</para>
+
+            <para>You can set the classpath several ways:<itemizedlist>
+                <listitem>
+                  <para>In your profile.</para>
+                </listitem>
+
+                <listitem>
+                  <para>In your environment.</para>
+                </listitem>
+
+                <listitem>
+                  <para>in your JVM Profile.</para>
+                </listitem>
+
+                <listitem>
+                  <para>using classpath value in environment.conf</para>
+
+                  <para>The default configuration file for the HPCC platform
+                  is <emphasis
+                  role="bold">/etc/HPCCSystems/environment.conf</emphasis> you
+                  will need to edit this file to point to your Java build
+                  directory.</para>
+
+                  <para>For example (on a Linux system):</para>
+
+                  <programlisting> classpath=/opt/HPCCSystems/classes:/home/username/workspace/StreamAPI/bin </programlisting>
+
+                  <para>The classpath should point to your Java build
+                  directory.</para>
+                </listitem>
+              </itemizedlist></para>
+          </listitem>
+
+          <listitem>
+            <para>Start the HPCC Systems platform (restart if it is already
+            running) in order to read the new configuration.</para>
+
+            <para>For example :</para>
+
+            <programlisting> sudo service hpcc-init start </programlisting>
+
+            <para>or</para>
+
+            <programlisting>sudo service hpcc-init restart </programlisting>
+
+            <para>For more information see the <link
+            linkend="Starting-and-stopping">Starting-and-stopping</link> the
+            HPCC System in the <emphasis>Installing and Running The HPCC
+            Platform</emphasis> document.</para>
+          </listitem>
+
+          <listitem>
+            <?dbfo keep-together="always"?>
+
+            <para>Test the Java integration.</para>
+
+            <para>The HPCC Systems platform comes with a Java example class.
+            You can execute some Java code either in your ECL IDE or the ECL
+            Playground.</para>
+
+            <para>For example:</para>
+
+            <para><programlisting>IMPORT java;
+
+integer add1(integer val) := IMPORT(java, 'JavaCat.add1:(I)I');
+
+add1(10);
+</programlisting>If this successfully executes, you have correctly set up Java
+            to work with your HPCC platform.</para>
+
+            <para>If you get a "unable to load libjvm.so" error you should
+            reinstall or try a different Java package.</para>
+          </listitem>
+        </orderedlist>
+
+        <para>You can call Java from ECL just like any other ECL function.
+        Java static functions can be easily prototyped using ECL types.</para>
+
+        <para>Additional examples of Java for HPCC can be found at:</para>
+
+        <para><ulink
+        url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
+      </sect2>
+
+      <sect2 id="Add_On_Javascript" role="brk">
+        <title>JavaScript</title>
+
+        <para>To enable JavaScript support within the HPCC Systems
+        Platform:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Install the appropriate dependencies for your
+            platform.</para>
+
+            <para><emphasis role="bold">RPM-based systems:</emphasis></para>
+
+            <para>On an RPM-based system (CentOS/Red Hat/SuSe) install
+            <emphasis role="bold">v8embed</emphasis></para>
+
+            <para><emphasis role="bold">Debian-based
+            systems:</emphasis></para>
+
+            <para>For a Debian-based system (Ubuntu) install the <emphasis
+            role="bold">libv8-dev</emphasis> package.</para>
+          </listitem>
+
+          <listitem>
+            <para>Test the JavaScript integration.</para>
+
+            <para>JavaScript does multi-thread, as a result this can be the
+            fastest of the currently supported embedded languages.</para>
+
+            <para>You can now execute some JavaScript code either in your ECL
+            IDE or the ECL Playground.</para>
+
+            <para>For example:</para>
+
+            <para><programlisting format="linespecific">//nothor
+
+IMPORT javascript;
+
+javascript.Language.syntaxcheck('1+2');
+
+integer add1(integer val) := EMBED(javascript) val+1; ENDEMBED;
+
+data testData(data val) := EMBED(javascript) val[0] = val[0] + 1; val; ENDEMBED;
+set of integer testSet(set of integer val) := EMBED(javascript)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+add1(10);
+</programlisting>If this successfully executes, you have correctly set up
+            JavaScript to work with your HPCC platform.</para>
+
+            <para>Additional examples of HPCC code can be found at:</para>
+
+            <para><ulink
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="Add_Python_support" role="brk">
+        <title>Python</title>
+
+        <para>To enable Python support within the HPCC Systems
+        Platform:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Install Python, if not already installed. Many distributions
+            come with Python already installed.</para>
+
+            <para>Python 2.6 or 2.7 depending on your distribution's default
+            version.</para>
+          </listitem>
+
+          <listitem>
+            <para>You can embed Python natively inside an ECL Program, much
+            like BEGINC++</para>
+          </listitem>
+
+          <listitem>
+            <para>Call Python from ECL as you would any other ECL
+            function.</para>
+
+            <para>Python does not multi-thread efficiently (Global Interpreter
+            Lock). Effectively only one thread can be in the python code at
+            once. Scripts are compiled every call (but with caching of most
+            recent, per thread). The IMPORT case will avoid recompiles.</para>
+          </listitem>
+
+          <listitem>
+            <para>Test the Python integration.</para>
+
+            <para>You can now execute some Python code either in your ECL IDE
+            or the ECL Playground.</para>
+
+            <para>For example:</para>
+
+            <para><programlisting>IMPORT Python;
+
+SET OF STRING split_words(STRING val) := EMBED(Python)
+  return val.split()
+ENDEMBED;
+
+split_words('Once upon a time');
+
+</programlisting>If this successfully executes, you have correctly set up
+            Python to work with your HPCC platform. You can now embed Python
+            anywhere you would use ECL within with your HPCC System.</para>
+
+            <para>Additional examples of HPCC code can be found at:</para>
+
+            <para><ulink
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+
+      <sect2 id="R" role="brk">
+        <title>R</title>
+
+        <para>To enable R support within The HPCC Systems Platform:</para>
+
+        <orderedlist>
+          <listitem>
+            <para>Install R-core distribution of your choice:</para>
+
+            <para><emphasis role="bold">RPM-based systems:</emphasis></para>
+
+            <para>On an RPM-based system (CentOS/Red Hat/SuSe) use <emphasis
+            role="bold">R-core</emphasis> and <emphasis
+            role="bold">R-core-devel</emphasis></para>
+
+            <para><emphasis role="bold">Debian-based
+            systems:</emphasis></para>
+
+            <para>For a Debian-based (Ubuntu) system use <emphasis
+            role="bold">r-base-core</emphasis>.</para>
+          </listitem>
+
+          <listitem>
+            <para>Install the <emphasis role="bold">Rcpp</emphasis> and the
+            <emphasis role="bold">RInside</emphasis> libraries.</para>
+
+            <para>You will need both Rcpp and RInside libraries in order for
+            the R-embedding to work properly. The library installation
+            packages are named with the version number appended so you should
+            search for Rcpp_ and RInside_ to obtain the latest version for
+            your system.</para>
+
+            <para>For Example:</para>
+
+            <programlisting>wget http://cran.r-project.org/src/contrib/<emphasis
+                role="bold">Rcpp_0.10.4.</emphasis>tar.gz
+wget http://cran.r-project.org/src/contrib/<emphasis role="bold">RInside</emphasis><emphasis
+                role="bold">_0.2.10.tar.gz</emphasis>
+</programlisting>
+
+            <para>To Install:</para>
+
+            <programlisting>sudo R CMD INSTALL <emphasis role="bold">Rcpp_0.10.4.</emphasis>tar.gz
+sudo R CMD INSTALL <emphasis role="bold">RInside_0.2.10</emphasis>.tar.gz</programlisting>
+
+            <para><variablelist>
+                <varlistentry>
+                  <term>Note:</term>
+
+                  <listitem>
+                    <para>The version of library files to install on your
+                    system should be a version supported by the distribution
+                    of R installed on your system. The above files are for
+                    demonstration purposes only, these may not be the
+                    appropriate files to install on your system.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist>These libraries are maintained by the R project
+            and can be found on the site <ulink
+            url="http://cran.r-project.org/src/contrib/">http://cran.r-project.org/src/contrib/</ulink>
+            along with more information. Use the version number appropriate
+            for your system. If a version number is unsupported, you must use
+            an earlier version.</para>
+          </listitem>
+
+          <listitem>
+            <para>Test the R integration.</para>
+
+            <para>R is not multi-thread aware, so you must wrap all calls to R
+            for critical sections. Scripts are compiled with every call to
+            R.</para>
+
+            <para>You can now execute some R code either in your ECL IDE or
+            the ECL Playground.</para>
+
+            <para>For example:</para>
+
+            <para><programlisting>IMPORT R;
+
+integer add1(integer val) := EMBED(R)
+val+1
+ENDEMBED;
+
+string cat(varstring what, string who) := EMBED(R)
+paste(what,who)
+ENDEMBED;
+
+data testData(data val) := EMBED(R)
+val[1] = val[2];
+val;
+ENDEMBED;
+
+set of integer testSet(set of integer val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of unsigned2 testSet0(set of unsigned2 val) := EMBED(R)
+sort(val);
+ENDEMBED;
+
+set of string testSet2(set of string val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of string testSet3(set of string8 val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of varstring testSet4(set of varstring val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of varstring8 testSet5(set of varstring8 val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of boolean testSet6(set of boolean val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of real4 testSet7(set of real4 val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of real8 testSet8(set of real8 val) := EMBED(R)
+t = val [1];
+val[1] = val[2];
+val[2] = t;
+val;
+ENDEMBED;
+
+set of integer2 testSet9(set of integer2 val) := EMBED(R)
+sort(val);
+ENDEMBED;
+
+add1(10);
+cat('Hello', 'World');
+testData(D'ab');
+testSet([1,2,3]);
+testSet0([30000,40000,50000]);
+testSet2(['one','two','three']);
+testSet3(['uno','dos','tre']);
+testSet4(['un','deux','trois']);
+testSet5(['ein','zwei','drei']);
+testSet6([false,true,false,true]);
+testSet7([1.1,2.2,3.3]);
+testSet8([1.2,2.3,3.4]);
+testSet9([-111,0,113]);
+
+s1 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER)));
+s2 :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := add1(COUNTER/2)));
+SUM(NOFOLD(s1 + s2), a);
+
+s1b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := COUNTER+1));
+s2b :=DATASET(250000, TRANSFORM({ integer a }, SELF.a := (COUNTER/2)+1));
+SUM(NOFOLD(s1b + s2b), a); 
+</programlisting>If this successfully executes, you have correctly set up R to
+            work with your HPCC platform.</para>
+
+            <para>Additional examples of HPCC code can be found at:</para>
+
+            <para><ulink
+            url="https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl">https://github.com/hpcc-systems/HPCC-Platform/tree/master/testing/ecl/embedjava.ecl</ulink></para>
+          </listitem>
+        </orderedlist>
+      </sect2>
+    </sect1>
   </chapter>
 </book>
