@@ -4898,6 +4898,11 @@ static void updateProp(IPropertyTree * to, const IPropertyTree * from, const cha
         to->setProp(xpath, from->queryProp(xpath));
 }
 
+static void setProp(IPropertyTree * to, const IPropertyTree * from, const char * xpath)
+{
+    if (from->hasProp(xpath))
+        to->setProp(xpath, from->queryProp(xpath));
+}
 
 static void copyTree(IPropertyTree * to, const IPropertyTree * from, const char * xpath)
 {
@@ -4959,6 +4964,8 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     copyTree(p, fromP, "Workflow");
     if (all)
     {
+        // 'all' mode is used when setting up a dali WU from the embedded wu in a workunit dll
+
         // Merge timing info from both branches
         pt = fromP->getBranch("Timings");
         if (pt)
@@ -4976,10 +4983,13 @@ void CLocalWorkUnit::copyWorkUnit(IConstWorkUnit *cached, bool all)
     updateProp(p, fromP, "SNAPSHOT");
 
     //MORE: This is very adhoc.  All options that should be cloned should really be in a common branch
-    if (all && (fromP->hasProp("PriorityFlag") || fromP->hasProp("@priorityClass")))
+    if (all)
     {
-        updateProp(p, fromP, "PriorityFlag");
-        updateProp(p, fromP, "@priorityClass");
+        setProp(p, fromP, "PriorityFlag");
+        setProp(p, fromP, "@priorityClass");
+        setProp(p, fromP, "@protected");
+        setProp(p, fromP, "@clusterName");
+        updateProp(p, fromP, "@scope");
     }
 
     //Variables may have been set up as parameters to the query - so need to preserve any values that were supplied.
