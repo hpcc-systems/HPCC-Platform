@@ -273,6 +273,7 @@ void CSlaveMessageHandler::main()
                     else
                         queryThorFileManager().getPhysicalName(job, logicalName, partNo, phys);
                     msg.append(phys);
+                    job.queryJobComm().reply(msg);
                     break;
                 }
                 case smt_getFileOffset:
