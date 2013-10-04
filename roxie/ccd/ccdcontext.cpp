@@ -3007,7 +3007,7 @@ public:
         StringBuffer responseHead, responseTail;
         appendfJSONName(responseHead, "%sResponse", queryName.get()).append(" {");
         appendJSONValue(responseHead, "sequence", seqNo);
-        appendJSONName(responseHead, "Results").append(" {\n ");
+        appendJSONName(responseHead, "Results").append(" {");
 
         unsigned len = responseHead.length();
         client->write(responseHead.detach(), len, true);
@@ -3027,7 +3027,7 @@ public:
                         break;
                     if (needDelimiter)
                     {
-                        StringAttr s(",\n "); //write() will take ownership of buffer
+                        StringAttr s(","); //write() will take ownership of buffer
                         size32_t len = s.length();
                         client->write((void *)s.detach(), len, true);
                         needDelimiter=false;
