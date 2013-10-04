@@ -5,7 +5,7 @@
   <title>Data Handling Components</title>
 
   <para>This document Module is used to allow us to include data handling
-  sections in multiple books. </para>
+  sections in multiple books.</para>
 
   <sect1 id="Data_Handling_Terms">
     <title>Data Handling Terms</title>
@@ -300,56 +300,54 @@
             <para>Provide <emphasis role="bold">Destination</emphasis>
             information.</para>
 
-            <para><informaltable colsep="0" frame="none" rowsep="0">
-                <tgroup cols="2">
-                  <colspec align="left" colwidth="122.40pt" />
+            <para><variablelist>
+                <varlistentry>
+                  <term>Destination-Machine</term>
 
-                  <colspec colwidth="333.00pt" />
+                  <listitem>
+                    <para>Use the drop list to select the machine to despray
+                    to. The items in the list are landing zones defined in the
+                    system’s confguration.</para>
+                  </listitem>
+                </varlistentry>
 
-                  <tbody>
-                    <row>
-                      <entry><emphasis
-                      role="bold">Destination-Machine</emphasis></entry>
+                <varlistentry>
+                  <term>Destination-IP Address</term>
 
-                      <entry>Use the drop list to select the machine to
-                      despray to. The items in the list are landing zones
-                      defined in the system’s confguration.</entry>
-                    </row>
+                  <listitem>
+                    <para>This is prefilled based upon the selected
+                    machine.</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Destination-IP
-                      Address</emphasis></entry>
+                <varlistentry>
+                  <term>Destination-Local Path</term>
 
-                      <entry>This is prefilled based upon the selected
-                      machine.</entry>
-                    </row>
+                  <listitem>
+                    <para>Provide the complete file path of the destination
+                    including file name and extention.</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Destination-Local
-                      Path</emphasis></entry>
+                <varlistentry>
+                  <term>Destination-<emphasis role="bold">Network
+                  Path</emphasis></term>
 
-                      <entry>Provide the complete file path of the destination
-                      including file name and extention.</entry>
-                    </row>
+                  <listitem>
+                    <para>The complete network path of the destination
+                    including file name and extension. (read only)</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Destination-<emphasis
-                      role="bold">Network Path</emphasis></emphasis></entry>
+                <varlistentry>
+                  <term>Overwrite</term>
 
-                      <entry>The complete network path of the destination
-                      including file name and extension. (read only)</entry>
-                    </row>
-
-                    <row>
-                      <entry><emphasis
-                      role="bold">Overwrite</emphasis></entry>
-
-                      <entry>Check this box to overwrite a file with the same
-                      name if it exists.</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable></para>
+                  <listitem>
+                    <para>Check this box to overwrite a file with the same
+                    name if it exists.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist> </para>
           </listitem>
 
           <listitem>
@@ -404,99 +402,115 @@
             role="bold">Group</emphasis>and <emphasis role="bold">Label
             ).</emphasis></para>
 
-            <para><informaltable colsep="0" frame="none" rowsep="0">
-                <tgroup cols="2">
-                  <colspec colwidth="122.40pt" />
+            <para><variablelist>
+                <varlistentry>
+                  <term><emphasis>Source:</emphasis></term>
 
-                  <colspec colwidth="333.00pt" />
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                  <tbody>
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Source:</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term>Machine</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Machine</emphasis></entry>
+                  <listitem>
+                    <para>Use the drop list to select the machine where the
+                    source file is located.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>Use the drop list to select the machine where the
-                      source file is located.</entry>
-                    </row>
+                <varlistentry>
+                  <term>IP</term>
 
-                    <row>
-                      <entry><emphasis role="bold">IP</emphasis></entry>
+                  <listitem>
+                    <para>IP address of machine from which to spray. This is
+                    automatically completed when you select the <emphasis
+                    role="bold">Source Machine.</emphasis></para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>IP address of machine from which to spray. This
-                      is automatically completed when you select the <emphasis
-                      role="bold">Source Machine.</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term>Local Path</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Local
-                      Path</emphasis></entry>
+                  <listitem>
+                    <para>The file path of source file to spray.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The file path of source file to spray.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Record Length</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Record
-                      Length</emphasis></entry>
+                  <listitem>
+                    <para>The size of each record.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The size of each record.</entry>
-                    </row>
+                <varlistentry>
+                  <term><emphasis>Destination:</emphasis></term>
 
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Destination:</emphasis></entry>
-                    </row>
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Group</emphasis></entry>
+                <varlistentry>
+                  <term>Group</term>
 
-                      <entry>Select the name of THOR cluster to spray
-                      to.</entry>
-                    </row>
+                  <listitem>
+                    <para>Select the name of THOR cluster to spray to.</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Label</emphasis></entry>
+                <varlistentry>
+                  <term>Label</term>
 
-                      <entry>The logical name that you choose for the
-                      file.</entry>
-                    </row>
+                  <listitem>
+                    <para>The logical name that you choose for the
+                    file.</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Options:</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term><emphasis>Options:</emphasis></term>
 
-                    <row>
-                      <entry><emphasis
-                      role="bold">Overwrite</emphasis></entry>
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>Check this box to overwrite files of the same
-                      name.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Overwrite</term>
 
-                    <row>
-                      <entry><emphasis
-                      role="bold">Replicate</emphasis></entry>
+                  <listitem>
+                    <para>Check this box to overwrite files of the same
+                    name.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry><para>Check this box to create backup copies of
-                      all file parts in the backup directory (by convention on
-                      the secondary drive of the node following in the
-                      cluster).</para><para><emphasis role="bold">This option
-                      is only available on systems where replication has been
-                      enabled.</emphasis></para></entry>
-                    </row>
+                <varlistentry>
+                  <term>Replicate</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Compress</emphasis></entry>
+                  <listitem>
+                    <para>Check this box to create backup copies of all file
+                    parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para>
 
-                      <entry>Check this box to compress the files.</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable></para>
+                    <para><emphasis role="bold">This option is only available
+                    on systems where replication has been
+                    enabled.</emphasis></para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Compress</term>
+
+                  <listitem>
+                    <para>Check this box to compress the files.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
           </listitem>
 
           <listitem>
@@ -558,122 +572,142 @@
             role="bold">Group</emphasis> and <emphasis
             role="bold">Label</emphasis>).</para>
 
-            <para><informaltable colsep="0" frame="none" rowsep="0">
-                <tgroup cols="2">
-                  <colspec colwidth="122.40pt" />
+            <para><variablelist>
+                <varlistentry>
+                  <term><emphasis>Source:</emphasis></term>
 
-                  <colspec colwidth="333.00pt" />
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                  <tbody>
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Source:</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term>Machine</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Machine</emphasis></entry>
+                  <listitem>
+                    <para>Use the drop list to select the machine where the
+                    source file is located.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>Use the drop list to select the machine where the
-                      source file is located.</entry>
-                    </row>
+                <varlistentry>
+                  <term>IP</term>
 
-                    <row>
-                      <entry><emphasis role="bold">IP</emphasis></entry>
+                  <listitem>
+                    <para>IP address of machine from which to spray. This is
+                    automatically completed when you select the <emphasis
+                    role="bold">Source Machine.</emphasis></para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>IP address of machine from which to spray. This
-                      is automatically completed when you select the <emphasis
-                      role="bold">Source Machine.</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term>Local Path</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Local
-                      Path</emphasis></entry>
+                  <listitem>
+                    <para>The file path of source file to spray.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The file path of source file to spray.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Max Record Length</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Max Record
-                      Length</emphasis></entry>
+                  <listitem>
+                    <para>The length of longest record in the file.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The length of longest record in the file.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Separator</term>
 
-                    <row>
-                      <entry><emphasis
-                      role="bold">Separator</emphasis></entry>
+                  <listitem>
+                    <para>The character used as a separator in the source
+                    file.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The character used as a separator in the source
-                      file.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Line Terminator</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Line
-                      Terminator</emphasis></entry>
+                  <listitem>
+                    <para>The character used as a line terminator in the
+                    source file.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The character used as a line terminator in the
-                      source file.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Quote</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Quote</emphasis></entry>
+                  <listitem>
+                    <para>The character used as a quote in the source
+                    file.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The character used as a quote in the source
-                      file.</entry>
-                    </row>
+                <varlistentry>
+                  <term><emphasis>Destination:</emphasis></term>
 
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Destination:</emphasis></entry>
-                    </row>
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Group</emphasis></entry>
+                <varlistentry>
+                  <term>Group</term>
 
-                      <entry>Select the name of THOR cluster to spray
-                      to.</entry>
-                    </row>
+                  <listitem>
+                    <para>Select the name of THOR cluster to spray to.</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Label</emphasis></entry>
+                <varlistentry>
+                  <term>Label</term>
 
-                      <entry>The logical name that you choose for the
-                      file.</entry>
-                    </row>
+                  <listitem>
+                    <para>The logical name that you choose for the
+                    file.</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Options:</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term><emphasis>Options:</emphasis></term>
 
-                    <row>
-                      <entry><emphasis
-                      role="bold">Overwrite</emphasis></entry>
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>Check this box to overwrite files of the same
-                      name.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Overwrite</term>
 
-                    <row>
-                      <entry><emphasis
-                      role="bold">Replicate</emphasis></entry>
+                  <listitem>
+                    <para>Check this box to overwrite files of the same
+                    name.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry><para>Check this box to create backup copies of
-                      all file parts in the backup directory (by convention on
-                      the secondary drive of the node following in the
-                      cluster).</para><para><emphasis role="bold">This option
-                      is only available on systems where replication has been
-                      enabled.</emphasis></para></entry>
-                    </row>
+                <varlistentry>
+                  <term>Replicate</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Compress</emphasis></entry>
+                  <listitem>
+                    <para>Check this box to create backup copies of all file
+                    parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para>
 
-                      <entry>Check this box to compress the files.</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable></para>
+                    <para><emphasis role="bold">This option is only available
+                    on systems where replication has been
+                    enabled.</emphasis></para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Compress</term>
+
+                  <listitem>
+                    <para>Check this box to compress the files.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
           </listitem>
 
           <listitem>
@@ -733,112 +767,131 @@
             role="bold">Group</emphasis> and <emphasis role="bold">Label
             ).</emphasis></para>
 
-            <para><informaltable colsep="0" frame="none" rowsep="0">
-                <tgroup cols="2">
-                  <colspec colwidth="122.40pt" />
+            <para><variablelist>
+                <varlistentry>
+                  <term><emphasis>Source:</emphasis></term>
 
-                  <colspec colwidth="333.00pt" />
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                  <tbody>
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Source:</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term>Machine</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Machine</emphasis></entry>
+                  <listitem>
+                    <para>Use the drop list to select the machine where the
+                    source file is located.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>Use the drop list to select the machine where the
-                      source file is located.</entry>
-                    </row>
+                <varlistentry>
+                  <term>IP</term>
 
-                    <row>
-                      <entry><emphasis role="bold">IP</emphasis></entry>
+                  <listitem>
+                    <para>IP address of machine from which to spray. This is
+                    automatically completed when you select the <emphasis
+                    role="bold">Source Machine.</emphasis></para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>IP address of machine from which to spray. This
-                      is automatically completed when you select the <emphasis
-                      role="bold">Source Machine.</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term>Local Path</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Local
-                      Path</emphasis></entry>
+                  <listitem>
+                    <para>The file path of source file to spray.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The file path of source file to spray.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Format</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Format</emphasis></entry>
+                  <listitem>
+                    <para>Select the file format from the drop list.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>Select the file format from the drop
-                      list.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Max Record Length</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Max Record
-                      Length</emphasis></entry>
+                  <listitem>
+                    <para>The length of longest record in the file.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The length of longest record in the file.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Row Tag</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Row Tag</emphasis></entry>
+                  <listitem>
+                    <para>The record separator tag in the XML file</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>The record separator tag in the XML file</entry>
-                    </row>
+                <varlistentry>
+                  <term><emphasis>Destination:</emphasis></term>
 
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Destination:</emphasis></entry>
-                    </row>
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Group</emphasis></entry>
+                <varlistentry>
+                  <term>Group</term>
 
-                      <entry>Select the name of THOR cluster to spray
-                      to.</entry>
-                    </row>
+                  <listitem>
+                    <para>Select the name of THOR cluster to spray to.</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry><emphasis role="bold">Label</emphasis></entry>
+                <varlistentry>
+                  <term>Label</term>
 
-                      <entry>The logical name that you choose for the
-                      file.</entry>
-                    </row>
+                  <listitem>
+                    <para>The logical name that you choose for the
+                    file.</para>
+                  </listitem>
+                </varlistentry>
 
-                    <row>
-                      <entry align="right"><emphasis
-                      role="bold">Options:</emphasis></entry>
-                    </row>
+                <varlistentry>
+                  <term><emphasis>Options:</emphasis></term>
 
-                    <row>
-                      <entry><emphasis
-                      role="bold">Overwrite</emphasis></entry>
+                  <listitem>
+                    <para> </para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry>Check this box to overwrite files of the same
-                      name.</entry>
-                    </row>
+                <varlistentry>
+                  <term>Overwrite</term>
 
-                    <row>
-                      <entry><emphasis
-                      role="bold">Replicate</emphasis></entry>
+                  <listitem>
+                    <para>Check this box to overwrite files of the same
+                    name.</para>
+                  </listitem>
+                </varlistentry>
 
-                      <entry><para>Check this box to create backup copies of
-                      all file parts in the backup directory (by convention on
-                      the secondary drive of the node following in the
-                      cluster).</para><para><emphasis role="bold">This option
-                      is only available on systems where replication has been
-                      enabled.</emphasis></para></entry>
-                    </row>
+                <varlistentry>
+                  <term>Replicate</term>
 
-                    <row>
-                      <entry><emphasis role="bold">Compress</emphasis></entry>
+                  <listitem>
+                    <para>Check this box to create backup copies of all file
+                    parts in the backup directory (by convention on the
+                    secondary drive of the node following in the
+                    cluster).</para>
 
-                      <entry>Check this box to compress the files.</entry>
-                    </row>
-                  </tbody>
-                </tgroup>
-              </informaltable></para>
+                    <para><emphasis role="bold">This option is only available
+                    on systems where replication has been
+                    enabled.</emphasis></para>
+                  </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                  <term>Compress</term>
+
+                  <listitem>
+                    <para>Check this box to compress the files.</para>
+                  </listitem>
+                </varlistentry>
+              </variablelist></para>
           </listitem>
 
           <listitem>
@@ -891,93 +944,103 @@
             <para>Fill in <emphasis role="bold">Destination</emphasis> and
             <emphasis role="bold">Options </emphasis>information.</para>
 
-            <informaltable colsep="0" frame="none" rowsep="0">
-              <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+            <variablelist>
+              <varlistentry>
+                <term><emphasis>Destination:</emphasis></term>
 
-                <colspec colwidth="333.00pt" />
+                <listitem>
+                  <para> </para>
+                </listitem>
+              </varlistentry>
 
-                <tbody>
-                  <row>
-                    <entry align="right"><emphasis
-                    role="bold">Destination:</emphasis></entry>
-                  </row>
+              <varlistentry>
+                <term>Group</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Group</emphasis></entry>
+                <listitem>
+                  <para>Select the name of THOR cluster to spray to.</para>
 
-                    <entry>Select the name of THOR cluster to copy to.</entry>
-                  </row>
+                  <para><emphasis role="bold">Note: </emphasis>You can only
+                  choose from THOR clusters within the current
+                  environment.</para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry align="right"><emphasis
-                    role="bold">Note</emphasis></entry>
+              <varlistentry>
+                <term>Logical File</term>
 
-                    <entry>You can only choose from THOR clusters within the
-                    current environment.</entry>
-                  </row>
+                <listitem>
+                  <para>The logical name for the copied file.</para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry><emphasis role="bold">Logical
-                    File</emphasis></entry>
+              <varlistentry>
+                <term>File Mask</term>
 
-                    <entry>The logical name for the copied file.</entry>
-                  </row>
+                <listitem>
+                  <para>Automatically updated based on logical file name
+                  entered.</para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry><emphasis role="bold">File Mask</emphasis></entry>
+              <varlistentry>
+                <term><emphasis>Options:</emphasis></term>
 
-                    <entry>Automatically updated based on logical file name
-                    entered.</entry>
-                  </row>
+                <listitem>
+                  <para> </para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry align="right"><emphasis
-                    role="bold">Options:</emphasis></entry>
-                  </row>
+              <varlistentry>
+                <term>Replicate</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+                <listitem>
+                  <para>Check this box to create backup copies of all file
+                  parts in the backup directory (by convention on the
+                  secondary drive of the node following in the
+                  cluster).</para>
 
-                    <entry><para>Check this box to create backup copies of all
-                    file parts in the backup directory (by convention on the
-                    secondary drive of the node following in the
-                    cluster).</para><para><emphasis role="bold">This option is
-                    only available on systems where replication has been
-                    enabled.</emphasis></para></entry>
-                  </row>
+                  <para><emphasis role="bold">This option is only available on
+                  systems where replication has been
+                  enabled.</emphasis></para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry><emphasis role="bold">Wrap</emphasis></entry>
+              <varlistentry>
+                <term>Wrap</term>
 
-                    <entry>Check this box to keep the number of parts the same
-                    and wrap if the target cluster is smaller that the
-                    original.</entry>
-                  </row>
+                <listitem>
+                  <para>Check this box to keep the number of parts the same
+                  and wrap if the target cluster is smaller that the
+                  original.</para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+              <varlistentry>
+                <term>Overwrite</term>
 
-                    <entry>Check this box to overwrite files of the same
-                    name.</entry>
-                  </row>
+                <listitem>
+                  <para>Check this box to overwrite files of the same
+                  name.</para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry><emphasis role="bold">Compress</emphasis></entry>
+              <varlistentry>
+                <term>Compress</term>
 
-                    <entry>Check this box to compress the files.</entry>
-                  </row>
+                <listitem>
+                  <para>Check this box to compress the files.</para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry><emphasis role="bold">Retain Superfile
-                    Structure</emphasis></entry>
+              <varlistentry>
+                <term>Retain Superfile Structure</term>
 
-                    <entry>Check this box to retain the superfile
-                    structure.</entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable>
+                <listitem>
+                  <para>Check this box to retain the superfile
+                  structure.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
           </listitem>
 
           <listitem>
@@ -1019,121 +1082,136 @@
             Destination,</emphasis> and <emphasis role="bold">Options
             </emphasis>information.</para>
 
-            <informaltable colsep="0" frame="none" rowsep="0">
-              <tgroup cols="2">
-                <colspec colwidth="122.40pt" />
+            <variablelist>
+              <varlistentry>
+                <term><emphasis>Source:</emphasis></term>
 
-                <colspec colwidth="333.00pt" />
+                <listitem>
+                  <para> </para>
+                </listitem>
+              </varlistentry>
 
-                <tbody>
-                  <row>
-                    <entry align="right"><emphasis
-                    role="bold">Source:</emphasis></entry>
-                  </row>
+              <varlistentry>
+                <term>Logical File</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Logical
-                    File</emphasis></entry>
+                <listitem>
+                  <para>The logical file name in the remote
+                  environment.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>The logical file name in the remote
-                    environment.</entry>
-                  </row>
+              <varlistentry>
+                <term>Source Dali</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Source
-                    Dali</emphasis></entry>
+                <listitem>
+                  <para>The Dali Server in the remote environment.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>The Dali Server in the remote environment</entry>
-                  </row>
+              <varlistentry>
+                <term>Source Username</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Source
-                    Username</emphasis></entry>
+                <listitem>
+                  <para>A valid user in the remote environment.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>A valid user in the remote environment</entry>
-                  </row>
+              <varlistentry>
+                <term>Source Password</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Source
-                    Password</emphasis></entry>
+                <listitem>
+                  <para>The password for the user in the remote
+                  environment.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>The password for the user in the remote
-                    environment</entry>
-                  </row>
+              <varlistentry>
+                <term><emphasis>Destination:</emphasis></term>
 
-                  <row>
-                    <entry align="right"><emphasis
-                    role="bold">Destination:</emphasis></entry>
-                  </row>
+                <listitem>
+                  <para> </para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry><emphasis role="bold">Group</emphasis></entry>
+              <varlistentry>
+                <term>Group</term>
 
-                    <entry>Select the name of THOR cluster to copy to.</entry>
-                  </row>
+                <listitem>
+                  <para>Select the name of THOR cluster to spray to. </para>
 
-                  <row>
-                    <entry align="right"><emphasis
-                    role="bold">Note</emphasis></entry>
+                  <para><emphasis role="bold">Note: </emphasis>You can only
+                  choose from THOR clusters within the current
+                  environment.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>You can only choose from THOR clusters within the
-                    current environment.</entry>
-                  </row>
+              <varlistentry>
+                <term>Logical Name</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Logical
-                    Name</emphasis></entry>
+                <listitem>
+                  <para>The logical name for the copied file.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>The logical name for the copied file.</entry>
-                  </row>
+              <varlistentry>
+                <term><emphasis>Options:</emphasis></term>
 
-                  <row>
-                    <entry align="right"><emphasis
-                    role="bold">Options:</emphasis></entry>
-                  </row>
+                <listitem>
+                  <para> </para>
+                </listitem>
+              </varlistentry>
 
-                  <row>
-                    <entry><emphasis role="bold">Replicate</emphasis></entry>
+              <varlistentry>
+                <term>Replicate</term>
 
-                    <entry><para>Check this box to create backup copies of all
-                    file parts in the backup directory (by convention on the
-                    secondary drive of the node following in the
-                    cluster).</para><para><emphasis role="bold">This option is
-                    only available on systems where replication has been
-                    enabled.</emphasis></para></entry>
-                  </row>
+                <listitem>
+                  <para>Check this box to create backup copies of all file
+                  parts in the backup directory (by convention on the
+                  secondary drive of the node following in the
+                  cluster).</para>
 
-                  <row>
-                    <entry><emphasis role="bold">Wrap</emphasis></entry>
+                  <para><emphasis role="bold">This option is only available on
+                  systems where replication has been
+                  enabled.</emphasis></para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>Check this box to keep the number of parts the same
-                    and wrap if the target cluster is smaller that the
-                    original.</entry>
-                  </row>
+              <varlistentry>
+                <term>Wrap</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Overwrite</emphasis></entry>
+                <listitem>
+                  <para>Check this box to keep the number of parts the same
+                  and wrap if the target cluster is smaller that the
+                  original.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>Check this box to overwrite files of the same
-                    name.</entry>
-                  </row>
+              <varlistentry>
+                <term>Overwrite</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Compress</emphasis></entry>
+                <listitem>
+                  <para>Check this box to overwrite files of the same
+                  name.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>Check this box to compress the files.</entry>
-                  </row>
+              <varlistentry>
+                <term>Compress</term>
 
-                  <row>
-                    <entry><emphasis role="bold">Retain Superfile
-                    Structure</emphasis></entry>
+                <listitem>
+                  <para>Check this box to compress the files.</para>
+                </listitem>
+              </varlistentry>
 
-                    <entry>Check this box to retain the superfile
-                    structure.</entry>
-                  </row>
-                </tbody>
-              </tgroup>
-            </informaltable>
+              <varlistentry>
+                <term>Retain Superfile Structure</term>
+
+                <listitem>
+                  <para>Check this box to retain the superfile
+                  structure.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist>
           </listitem>
 
           <listitem>
