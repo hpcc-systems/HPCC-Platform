@@ -105,7 +105,7 @@ interface ICompressedFileIO: extends IFileIO
     virtual size32_t blockSize()=0;                 // block size used
     virtual void setBlockSize(size32_t size)=0;     // only callable before any writes
     virtual bool readMode()=0;                      // true if created using createCompressedFileReader
-    virtual unsigned method()=0;                    
+    virtual unsigned method()=0;
 };
 
 extern jlib_decl ICompressedFileIO *createCompressedFileReader(IFile *file,IExpander *expander=NULL, bool memorymapped=false);
