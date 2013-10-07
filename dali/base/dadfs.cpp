@@ -153,10 +153,9 @@ static IPropertyTree *addNamedPropTree(IPropertyTree *parent,const char *sub,con
     return LINK(ret);
 }
 
-const char *normalizeLFN(const char *s,StringBuffer &tmp, IUserDescriptor *user)
+const char *normalizeLFN(const char *s,StringBuffer &tmp)
 { 
     CDfsLogicalFileName dlfn;
-    dlfn.setUserDescriptor(user);
     dlfn.set(s);
     return dlfn.get(tmp).str();
 }
@@ -884,10 +883,10 @@ public:
         redirection.setown(createDFSredirection());
     }
 
-    IDistributedFile *dolookup(const CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
+    IDistributedFile *dolookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
 
     IDistributedFile *lookup(const char *_logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
-    IDistributedFile *lookup(const CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
+    IDistributedFile *lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout);
     
     IDistributedFile *createNew(IFileDescriptor * fdesc, const char *lname,bool includeports=false);
     IDistributedFile *createNew(IFileDescriptor * fdesc, bool includeports=false)
@@ -1147,15 +1146,17 @@ static void checkLogicalScope(const char *scopename,IUserDescriptor *user,bool r
         throw e;
 }
 
-static bool checkLogicalName(const CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
+static bool checkLogicalName(CDfsLogicalFileName &dlfn,IUserDescriptor *user,bool readreq,bool createreq,bool allowquery,const char *specialnotallowedmsg)
 {
     bool ret = true;
     if (dlfn.isMulti()) { //is temporary superFile?
         if (specialnotallowedmsg)
             throw MakeStringException(-1,"cannot %s a multi file name (%s)",specialnotallowedmsg,dlfn.get());
+        if (!dlfn.isExpanded())
+            dlfn.expand(user);//expand wildcards
         unsigned i = dlfn.multiOrdinality();
         while (--i)//continue looping even when ret is false, in order to check for illegal elements (foreigns/externals), and to check each scope permission
-            ret = checkLogicalName(dlfn.multiItem(i),user,readreq,createreq,allowquery,specialnotallowedmsg)&&ret;
+            ret = checkLogicalName((CDfsLogicalFileName &)dlfn.multiItem(i),user,readreq,createreq,allowquery,specialnotallowedmsg)&&ret;
     }
     else {
         if (specialnotallowedmsg) {
@@ -1346,7 +1347,7 @@ class CDistributedFileTransaction: public CInterface, implements IDistributedFil
         if (!trackedFile)
         {
             StringBuffer tmp;
-            name = normalizeLFN(name, tmp, udesc);
+            name = normalizeLFN(name, tmp);
             trackedFile.setown(new CTransactionFile(*this, tmp.str(), file));
             trackedFiles.replace(*trackedFile.getLink());
             trackedFilesByName.replace(*trackedFile.getLink());
@@ -1565,7 +1566,7 @@ public:
     IDistributedFile *findFile(const char *name)
     {
         StringBuffer tmp;
-        name = normalizeLFN(name, tmp, udesc);
+        name = normalizeLFN(name, tmp);
         CTransactionFile *trackedFile = trackedFilesByName.find(tmp.str());
         if (!trackedFile)
             return NULL;
@@ -4853,7 +4854,7 @@ public:
     unsigned findSubFile(const char *name)
     {
         StringBuffer lfn;
-        normalizeLFN(name,lfn, udesc);
+        normalizeLFN(name,lfn);
         ForEachItemIn(i,subfiles) 
             if (stricmp(subfiles.item(i).queryLogicalName(),lfn.str())==0)
                 return i;
@@ -4888,10 +4889,12 @@ public:
         init(_parent,conn->queryRoot(),_name,user,transaction,timeout);
     }
 
-    CDistributedSuperFile(CDistributedFileDirectory *_parent,const CDfsLogicalFileName &_name, IUserDescriptor* user, IDistributedFileTransaction *transaction)
+    CDistributedSuperFile(CDistributedFileDirectory *_parent, CDfsLogicalFileName &_name, IUserDescriptor* user, IDistributedFileTransaction *transaction)
     {
         // temp super file
         assertex(_name.isMulti());
+        if (!_name.isExpanded())
+            _name.expand(user);//expand wildcards
         Owned<IPropertyTree> tree = _name.createSuperTree();
         init(_parent,tree,_name,user,transaction);
     }
@@ -6895,9 +6898,9 @@ IDistributedFile *CDistributedFileDirectory::lookup(const char *_logicalname, IU
     return lookup(logicalname, user, writeattr, hold, transaction, timeout);
 }
 
-IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName &_logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::dolookup(CDfsLogicalFileName &_logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout)
 {
-    const CDfsLogicalFileName *logicalname = &_logicalname;
+    CDfsLogicalFileName *logicalname = &_logicalname;
     if (logicalname->isMulti()) 
         // don't bother checking because the sub file creation will
         return new CDistributedSuperFile(this,*logicalname,user,transaction); // temp superfile
@@ -6971,7 +6974,7 @@ IDistributedFile *CDistributedFileDirectory::dolookup(const CDfsLogicalFileName 
     return NULL;
 }
 
-IDistributedFile *CDistributedFileDirectory::lookup(const CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout)
+IDistributedFile *CDistributedFileDirectory::lookup(CDfsLogicalFileName &logicalname, IUserDescriptor *user, bool writeattr, bool hold, IDistributedFileTransaction *transaction, unsigned timeout)
 {
     return dolookup(logicalname, user, writeattr, hold, transaction, timeout);
 }
@@ -8893,7 +8896,7 @@ public:
         mb.clear();
         CDfsLogicalFileName dlfn;   
         dlfn.set(lname);
-        const CDfsLogicalFileName *logicalname=&dlfn;   
+        CDfsLogicalFileName *logicalname=&dlfn;
         Owned<IDfsLogicalFileNameIterator> redmatch;
         loop {
             StringBuffer tail;
@@ -10164,7 +10167,7 @@ public:
         if (n!=NotFound)
             return n;
         StringBuffer lfn;
-        normalizeLFN(subname,lfn, udesc);
+        normalizeLFN(subname,lfn);
         Owned<IPropertyTreeIterator> iter = lock.queryRoot()->getElements("SubFile");
         ForEach(*iter) {
             if (stricmp(iter->query().queryProp("@name"),lfn.str())==0) {

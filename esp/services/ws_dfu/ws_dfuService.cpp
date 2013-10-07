@@ -1554,14 +1554,16 @@ bool FindInStringArray(StringArray& clusters, const char *cluster)
     return bFound;
 }
 
-static void getFilePermission(const CDfsLogicalFileName &dlfn, ISecUser* user, IUserDescriptor* udesc, ISecManager* secmgr, int& permission)
+static void getFilePermission(CDfsLogicalFileName &dlfn, ISecUser* user, IUserDescriptor* udesc, ISecManager* secmgr, int& permission)
 {
     if (dlfn.isMulti())
     {
+        if (!dlfn.isExpanded())
+            dlfn.expand(udesc);
         unsigned i = dlfn.multiOrdinality();
         while (i--)
         {
-            getFilePermission(dlfn.multiItem(i), user, udesc, secmgr, permission);
+            getFilePermission((CDfsLogicalFileName &)dlfn.multiItem(i), user, udesc, secmgr, permission);
         }
     }
     else
