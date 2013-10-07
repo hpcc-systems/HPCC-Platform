@@ -41,6 +41,8 @@ gr1 := GROUP(ds1, i, id);
 j1 := JOIN(ds1, ds2, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), SMART);
 j2 := JOIN(gr1, ds2, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), SMART);
 j3 := JOIN(gr1, gr1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), SMART);
+j4 := JOIN(gr1, gr1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), SMART, HINT(lkjoin_localfailover));
+j5 := JOIN(gr1, gr1, LEFT.i = RIGHT.i, trans(LEFT, RIGHT), SMART, HINT(lkjoin_hashjoinfailover));
 
 p1 := PROJECT(ds1, createOut(LEFT.i, LEFT.id, ''));
 gp1 := GROUP(p1, i, idL);
@@ -75,6 +77,8 @@ sequential(
     output(SORT(j1, i)),
     output(SORT(TABLE(j2, { cnt := COUNT(GROUP) }), cnt)),  // check output is not grouped
     output(SORT(j3, i)),
+    output(SORT(j4, i)),
+    output(SORT(j5, i)),
     output(SORT(d1, i)),
     output(SORT(TABLE(d2, { cnt := COUNT(GROUP) }), cnt)),  // check output is not grouped
     output(SORT(d3, i)),

@@ -24,6 +24,17 @@ class CLookupJoinActivityMaster : public CMasterActivity
 {
     mptag_t broadcast2MpTag, lhsDistributeTag, rhsDistributeTag;
 
+    bool isAll() const
+    {
+        switch (container.getKind())
+        {
+            case TAKalljoin:
+            case TAKalldenormalize:
+            case TAKalldenormalizegroup:
+                return true;
+        }
+        return false;
+    }
 public:
     CLookupJoinActivityMaster(CMasterGraphElement * info) : CMasterActivity(info)
     {
@@ -32,14 +43,17 @@ public:
         else
         {
             mpTag = container.queryJob().allocateMPTag(); // NB: base takes ownership and free's
-            broadcast2MpTag = container.queryJob().allocateMPTag();
-            lhsDistributeTag = container.queryJob().allocateMPTag();
-            rhsDistributeTag = container.queryJob().allocateMPTag();
+            if (!isAll())
+            {
+                broadcast2MpTag = container.queryJob().allocateMPTag();
+                lhsDistributeTag = container.queryJob().allocateMPTag();
+                rhsDistributeTag = container.queryJob().allocateMPTag();
+            }
         }
     }
     ~CLookupJoinActivityMaster()
     {
-        if (!container.queryLocal())
+        if (!container.queryLocal() && !isAll())
         {
             container.queryJob().freeMPTag(broadcast2MpTag);
             container.queryJob().freeMPTag(lhsDistributeTag);
@@ -52,35 +66,12 @@ public:
         if (!container.queryLocal())
         {
             serializeMPtag(dst, mpTag);
-            serializeMPtag(dst, broadcast2MpTag);
-            serializeMPtag(dst, lhsDistributeTag);
-            serializeMPtag(dst, rhsDistributeTag);
-        }
-    }
-    void process()
-    {
-        if (!container.queryLocal() && container.queryJob().querySlaves() > 1)
-        {
-            CMessageBuffer msg;
-            unsigned nslaves = container.queryJob().querySlaves();
-            unsigned s = 1;
-            rowcount_t totalCount = 0, slaveCount;
-            for (; s<=nslaves; s++)
+            if (!isAll())
             {
-                if (!receiveMsg(msg, s, mpTag))
-                    return;
-                msg.read(slaveCount);
-                if (RCUNSET == slaveCount)
-                {
-                    totalCount = RCUNSET;
-                    break; // unknown
-                }
-                totalCount += slaveCount;
+                serializeMPtag(dst, broadcast2MpTag);
+                serializeMPtag(dst, lhsDistributeTag);
+                serializeMPtag(dst, rhsDistributeTag);
             }
-            s=1;
-            msg.clear().append(totalCount);
-            for (; s<=nslaves; s++)
-                container.queryJob().queryJobComm().send(msg, s, mpTag);
         }
     }
 };

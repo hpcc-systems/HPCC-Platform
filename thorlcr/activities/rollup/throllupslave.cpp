@@ -87,7 +87,7 @@ public:
         in = NULL;
         helper = NULL;
         abort = NULL;
-        rowLoader.setown(createThorRowLoader(*activity, NULL, false, rc_allMem));
+        rowLoader.setown(createThorRowLoader(*activity, NULL, stableSort_none, rc_allMem));
     }
 
     void init(IThorDataLink * _in, IHThorDedupArg * _helper, bool _keepLeft, bool * _abort, IStopInput *_iStopInput)
@@ -573,7 +573,7 @@ public:
     {
         helper = (IHThorRollupGroupArg *)queryHelper();
         appendOutputLinked(this);   // adding 'me' to outputs array
-        groupLoader.setown(createThorRowLoader(*this, NULL, false, rc_allMem));
+        groupLoader.setown(createThorRowLoader(*this, NULL, stableSort_none, rc_allMem));
     }
     virtual void start()
     {

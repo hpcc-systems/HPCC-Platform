@@ -472,7 +472,7 @@ public:
         }
         else
         {
-            collector->setup(&iCompare, isStable, rc_allMem, SPILL_PRIORITY_DISABLE); // must not spill
+            collector->setup(&iCompare, isStable ? stableSort_earlyAlloc : stableSort_none, rc_allMem, SPILL_PRIORITY_DISABLE); // must not spill
             collector->transferRowsIn(localRows);
             collector->ensure((rowidx_t)globalTotal); // pre-expand row array for efficiency
 
@@ -1198,7 +1198,7 @@ public:
         icollate = _icollate?_icollate:_icompare;
         icollateupper = _icollateupper?_icollateupper:icollate;
 
-        Owned<IThorRowLoader> sortedloader = createThorRowLoader(*activity, rowif, nosort?NULL:icompare, isstable, rc_allDiskOrAllMem, SPILL_PRIORITY_SELFJOIN);
+        Owned<IThorRowLoader> sortedloader = createThorRowLoader(*activity, rowif, nosort?NULL:icompare, isstable ? stableSort_earlyAlloc : stableSort_none, rc_allDiskOrAllMem, SPILL_PRIORITY_SELFJOIN);
         Owned<IRowStream> overflowstream;
         memsize_t inMemUsage = 0;
         try

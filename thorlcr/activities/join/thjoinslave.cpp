@@ -414,8 +414,8 @@ public:
     void dolocaljoin()
     {
         // NB: old version used to force both sides all to disk
-        Owned<IThorRowLoader> iLoaderL = createThorRowLoader(*this, ::queryRowInterfaces(input1), compare1, true, rc_mixed, SPILL_PRIORITY_JOIN);
-        Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(input2), compare2, true, rc_mixed, SPILL_PRIORITY_JOIN);
+        Owned<IThorRowLoader> iLoaderL = createThorRowLoader(*this, ::queryRowInterfaces(input1), compare1, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
+        Owned<IThorRowLoader> iLoaderR = createThorRowLoader(*this, ::queryRowInterfaces(input2), compare2, stableSort_earlyAlloc, rc_mixed, SPILL_PRIORITY_JOIN);
         bool isemptylhs = false;
         if (helper->isLeftAlreadySorted()) {
             ThorDataLinkMetaInfo info;
