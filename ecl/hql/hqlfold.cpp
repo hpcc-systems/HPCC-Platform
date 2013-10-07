@@ -4016,9 +4016,7 @@ public:
         case no_attr_expr:
             {
                 IAtom * name = expr->queryName();
-                if (name == atmostAtom)
-                    return LINK(expr);
-                else if (name == _selectors_Atom)
+                if (name == _selectors_Atom)
                 {
                     HqlExprArray args;
                     ForEachChild(i, expr)
@@ -5120,12 +5118,18 @@ IHqlExpression * CExprFolderTransformer::percolateConstants(IHqlExpression * exp
                         updated.setown(removeProperty(updated, atmostAtom));
                     else
                     {
-                        HqlExprArray args;
-                        unwindChildren(args, updated);
-                        args.replace(*LINK(oldCond), 2);
-                        removeProperty(args, atmostAtom);
-                        args.append(*LINK(atmost));
-                        updated.setown(updated->clone(args));
+                        //KEYED joins support ATMOST and RIGHT.xxx = value
+                        if (!isKeyedJoin(updated) && joinHasRightOnlyHardMatch(updated, false))
+                        {
+                            HqlExprArray args;
+                            unwindChildren(args, updated);
+                            args.replace(*LINK(oldCond), 2);
+                            removeProperty(args, atmostAtom);
+                            args.append(*LINK(atmost));
+                            updated.setown(updated->clone(args));
+                        }
+                        else
+                            updated.setown(appendOwnedOperand(updated, createAttribute(_conditionFolded_Atom)));
                     }
                 }
                 //otherwise this might convert to an all join, accept variants that are supported by all joins

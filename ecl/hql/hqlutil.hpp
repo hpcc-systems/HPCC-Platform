@@ -701,6 +701,7 @@ public:
 
     inline bool hasRequiredEqualities() const { return leftReq.ordinality() != 0; }
     inline bool hasOptionalEqualities() const { return leftOpt.ordinality() != 0; }
+    inline bool hasHardRightNonEquality() const { return hasRightNonEquality; }
     inline const HqlExprArray & queryLeftReq() { return leftReq; }
     inline const HqlExprArray & queryRightReq() { return rightReq; }
     inline const HqlExprArray & queryLeftOpt() { return leftOpt; }
@@ -716,6 +717,7 @@ public:
     OwnedHqlExpr extraMatch;
     HqlExprArray slidingMatches;
     bool conditionAllEqualities;
+    bool hasRightNonEquality;
 protected:
     HqlExprArray leftReq;
     HqlExprArray leftOpt;
@@ -724,5 +726,7 @@ protected:
     HqlExprArray rightOpt;
     HqlExprArray rightSorts;
 };
+
+extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch);
 
 #endif

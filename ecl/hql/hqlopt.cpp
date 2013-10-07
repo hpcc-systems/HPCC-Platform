@@ -3688,6 +3688,7 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                     {
                         if (!isPureActivity(child) || child->queryAttribute(_countProject_Atom) || child->hasAttribute(prefetchAtom))
                             break;
+
                         IHqlExpression * transform = queryNewColumnProvider(child);
                         if (transformContainsSkip(transform) || !isSimpleTransformToMergeWith(transform))
                             break;
@@ -3724,7 +3725,18 @@ IHqlExpression * CTreeOptimizer::doCreateTransformed(IHqlExpression * transforme
                                 args.append(*createAttribute(allAtom));
                             DBGLOG("Optimizer: Merge %s and %s", queryNode0Text(transformed), queryNode1Text(child));
                             noteUnused(child);
-                            return transformed->clone(args);
+                            OwnedHqlExpr merged = transformed->clone(args);
+
+                            //Substituting constants into LEFT join expression can cause problems for the ATMOST join
+                            //Only keyed joins currently support it.
+                            if (transformed->hasAttribute(atmostAtom) && !isKeyedJoin(transformed))
+                            {
+                                if (joinHasRightOnlyHardMatch(merged, false))
+                                    merged.clear();
+                            }
+
+                            if (merged)
+                                return merged.getClear();
                         }
                         break;
                     }

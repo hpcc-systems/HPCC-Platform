@@ -7735,7 +7735,7 @@ void HqlGram::checkJoinFlags(const attribute &err, IHqlExpression * join)
         if (keep && !isMany)
             reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support KEEP", joinText);
         if (join->hasAttribute(atmostAtom) && !isMany)
-            reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support ATMOST", joinText);
+            reportError(ERR_BADKIND_LOOKUPJOIN, err, "Non-Many %s joins do not support ATMOST", joinText);
         if (rowLimit && !isMany)
             reportError(ERR_BADKIND_LOOKUPJOIN, err, "%s joins do not support LIMIT (they can only match 1 entry)", joinText);
         if (isKey(join->queryChild(1)))

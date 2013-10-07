@@ -939,6 +939,16 @@ IHqlExpression * JoinOrderSpotter::doFindJoinSortOrders(IHqlExpression * conditi
             return NULL;
         return LINK(condition);
 
+    case no_assertkeyed:
+    {
+        OwnedHqlExpr ret = doFindJoinSortOrders(l, allowSlidingMatch, matched);
+        if (ret)
+            return createValue(no_assertkeyed, condition->getType(), ret.getClear());
+        return NULL;
+    }
+    case no_assertwild:
+        return NULL;
+
     default:
         return LINK(condition);
     }
@@ -1043,6 +1053,7 @@ void JoinOrderSpotter::findImplicitBetween(IHqlExpression * condition, HqlExprAr
 JoinSortInfo::JoinSortInfo()
 {
     conditionAllEqualities = false;
+    hasRightNonEquality = false;
 }
 
 void JoinSortInfo::findJoinSortOrders(IHqlExpression * condition, IHqlExpression * leftDs, IHqlExpression * rightDs, IHqlExpression * seq, bool allowSlidingMatch)
@@ -1059,6 +1070,12 @@ void JoinSortInfo::findJoinSortOrders(IHqlExpression * condition, IHqlExpression
     
     extraMatch.setown(spotter.doFindJoinSortOrders(condition, allowSlidingMatch, matched));
     conditionAllEqualities = (extraMatch == NULL);
+    if (extraMatch)
+    {
+        OwnedHqlExpr right = createSelector(no_right, rightDs, seq);
+        if (extraMatch->usesSelector(right))
+            hasRightNonEquality = true;
+    }
 
     //Support for legacy syntax where x[n..*] was present in join and atmost condition
     //Ensure they are tagged as optional join fields.
@@ -1118,7 +1135,8 @@ void JoinSortInfo::findJoinSortOrders(IHqlExpression * expr, bool allowSlidingMa
 
     OwnedHqlExpr fuzzy, hard;
     splitFuzzyCondition(expr->queryChild(2), atmost.required, fuzzy, hard);
-    findJoinSortOrders(hard, lhs, rhs, selSeq, allowSlidingMatch);
+    if (hard)
+        findJoinSortOrders(hard, lhs, rhs, selSeq, allowSlidingMatch);
 
     extraMatch.setown(extendConditionOwn(no_and, extraMatch.getClear(), fuzzy.getClear()));
 }
@@ -1144,6 +1162,13 @@ void JoinSortInfo::initSorts()
     }
 }
 
+
+extern HQL_API bool joinHasRightOnlyHardMatch(IHqlExpression * expr, bool allowSlidingMatch)
+{
+    JoinSortInfo joinInfo;
+    joinInfo.findJoinSortOrders(expr, false);
+    return joinInfo.hasHardRightNonEquality();
+}
 
 IHqlExpression * createImpureOwn(IHqlExpression * expr)
 {
