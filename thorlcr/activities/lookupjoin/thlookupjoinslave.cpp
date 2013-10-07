@@ -734,6 +734,7 @@ public:
         leftHash = rightHash = NULL;
         hashJoinHelper = NULL;
         compareLeft = compareRight = compareLeftRight = NULL;
+        dedup = false;
 
         if (isAll())
         {
@@ -763,7 +764,13 @@ public:
             fuzzyMatch = 0 != (JFmatchrequired & flags);
             bool maySkip = 0 != (flags & JFtransformMaySkip);
             dedup = compareRight && !maySkip && !fuzzyMatch && !returnMany;
-
+            if (compareRight && !maySkip && !fuzzyMatch)
+            {
+                if (returnMany)
+                    dedup = (1==keepLimit) && (0==atMost) && (0==abortLimit);
+                else
+                    dedup = true;
+            }
             // code gen should spot invalid constants on KEEP with LOOKUP (without MANY)
         }
         exclude = 0 != (flags & JFexclude);
