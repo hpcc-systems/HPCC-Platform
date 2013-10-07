@@ -2847,9 +2847,7 @@ void FileSprayer::updateTargetProperties()
                 curProps.setPropInt64(FAsize, partLength);
 
                 if (compressOutput)
-                {
                     curProps.setPropInt64(FAcompressedSize, curProgress.compressedPartSize);
-                }
 
                 TargetLocation & curTarget = targets.item(cur.whichOutput);
                 if (!curTarget.modifiedTime.isNull())

@@ -961,14 +961,9 @@ bool TransferServer::push()
             if (compressOutput)
             {
                 //Notify the master that the file compressed and its new size
-                MemoryBuffer msg;
-                msg.setEndian(__BIG_ENDIAN);
                 curProgress.compressedPartSize = output->size();
                 curProgress.hasCompressed = true;
-
-                curProgress.serialize(msg.clear().append(false));
-                if (!catchWriteBuffer(masterSocket, msg))
-                    throwError(RFSERR_TimeoutWaitMaster);
+                sendProgress(curProgress);
             }
             crcOut.clear();
             out.clear();

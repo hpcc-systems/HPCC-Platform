@@ -509,6 +509,7 @@ void OutputProgress::reset()
     inputLength = 0;
     outputCRC = 0;
     outputLength = 0;
+    hasCompressed = false;
     compressedPartSize = 0;
 }
 
