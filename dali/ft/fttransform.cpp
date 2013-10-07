@@ -903,6 +903,11 @@ processedProgress:
                     //Notify the master that the file has been renamed - and send the modified time.
                     msg.setEndian(__BIG_ENDIAN);
                     curProgress.status = OutputProgress::StatusRenamed;
+                    if (compressOutput)
+                    {
+                        curProgress.compressedPartSize = output->size();
+                        curProgress.hasCompressed = true;
+                    }
                     curProgress.serialize(msg.clear().append(false));
                     if (!catchWriteBuffer(masterSocket, msg))
                         throwError(RFSERR_TimeoutWaitMaster);
@@ -953,6 +958,13 @@ bool TransferServer::push()
             wrapOutInCRC(curProgress.outputCRC);
 
             transferChunk(idx);
+            if (compressOutput)
+            {
+                //Notify the master that the file compressed and its new size
+                curProgress.compressedPartSize = output->size();
+                curProgress.hasCompressed = true;
+                sendProgress(curProgress);
+            }
             crcOut.clear();
             out.clear();
         }
